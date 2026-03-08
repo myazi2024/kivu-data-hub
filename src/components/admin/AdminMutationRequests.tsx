@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,14 +27,14 @@ import { fr } from 'date-fns/locale';
 import { 
   FileEdit, Search, Eye, CheckCircle, XCircle, 
   Loader2, RefreshCw, DollarSign, MapPin, User, Calendar,
-  Settings, Plus, Trash2, Edit2, Save, Download
+  Settings, Plus, Trash2, Edit2, Save, Download, Filter
 } from 'lucide-react';
 import { generateAndUploadCertificate } from '@/utils/certificateService';
 import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/shared/PaginationControls';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { exportToCSV } from '@/utils/csvExport';
-import { getMutationTypeLabel, MUTATION_STATUS_LABELS } from '@/components/cadastral/mutation/MutationConstants';
+import { getMutationTypeLabel, MUTATION_TYPES, MUTATION_STATUS_LABELS } from '@/components/cadastral/mutation/MutationConstants';
 
 import type { MutationFee, MutationRequest } from '@/types/mutation';
 
@@ -46,6 +46,7 @@ const AdminMutationRequests: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('_all');
+  const [typeFilter, setTypeFilter] = useState<string>('_all');
   
   // Dialog states
   const [selectedRequest, setSelectedRequest] = useState<MutationRequest | null>(null);
@@ -107,18 +108,20 @@ const AdminMutationRequests: React.FC = () => {
     fetchFees();
   }, []);
 
-  const filteredRequests = requests.filter(request => {
-    // #2: Null-safe reference_number access
-    const refNum = request.reference_number || '';
-    const matchesSearch = 
-      refNum.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      request.parcel_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      request.requester_name.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesStatus = statusFilter === '_all' || request.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
+  const filteredRequests = useMemo(() => {
+    return requests.filter(request => {
+      const refNum = request.reference_number || '';
+      const matchesSearch = 
+        refNum.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        request.parcel_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        request.requester_name.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesStatus = statusFilter === '_all' || request.status === statusFilter;
+      const matchesType = typeFilter === '_all' || request.mutation_type === typeFilter;
+      
+      return matchesSearch && matchesStatus && matchesType;
+    });
+  }, [requests, searchQuery, statusFilter, typeFilter]);
 
   const pagination = usePagination(filteredRequests, { initialPageSize: 15 });
 
@@ -142,6 +145,12 @@ const AdminMutationRequests: React.FC = () => {
   const handleProcessRequest = async () => {
     if (!selectedRequest || !user) return;
 
+    // FIX: Validate rejection reason is not just whitespace
+    if (processAction === 'reject' && !rejectionReason.trim()) {
+      toast.error('Veuillez indiquer un motif de rejet valide.');
+      return;
+    }
+
     setProcessing(true);
     try {
       let newStatus: string;
@@ -158,8 +167,8 @@ const AdminMutationRequests: React.FC = () => {
         .from('mutation_requests')
         .update({
           status: newStatus,
-          processing_notes: processingNotes || null,
-          rejection_reason: processAction === 'reject' ? rejectionReason : null,
+          processing_notes: processingNotes.trim() || null,
+          rejection_reason: processAction === 'reject' ? rejectionReason.trim() : null,
           reviewed_by: user.id,
           reviewed_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
@@ -168,7 +177,7 @@ const AdminMutationRequests: React.FC = () => {
 
       if (error) throw error;
 
-      // #15: Log to audit_logs
+      // Audit log
       await supabase.from('audit_logs').insert({
         user_id: user.id,
         admin_name: adminName,
@@ -178,8 +187,8 @@ const AdminMutationRequests: React.FC = () => {
         old_values: { status: selectedRequest.status },
         new_values: { 
           status: newStatus, 
-          processing_notes: processingNotes || null,
-          rejection_reason: processAction === 'reject' ? rejectionReason : null
+          processing_notes: processingNotes.trim() || null,
+          rejection_reason: processAction === 'reject' ? rejectionReason.trim() : null
         }
       });
 
@@ -216,7 +225,9 @@ const AdminMutationRequests: React.FC = () => {
         title: `Demande de mutation ${processAction === 'approve' ? 'approuvée' : processAction === 'reject' ? 'rejetée' : 'mise en attente'}`,
         message: processAction === 'approve'
           ? `Votre demande ${selectedRequest.reference_number} a été approuvée. Le certificat est disponible dans votre espace.`
-          : `Votre demande ${selectedRequest.reference_number} a été ${processAction === 'reject' ? 'rejetée' : 'mise en attente'}.`,
+          : processAction === 'reject'
+            ? `Votre demande ${selectedRequest.reference_number} a été rejetée. Motif : ${rejectionReason.trim()}`
+            : `Votre demande ${selectedRequest.reference_number} a été mise en attente.`,
         action_url: '/user-dashboard?tab=mutations'
       });
 
@@ -238,7 +249,6 @@ const AdminMutationRequests: React.FC = () => {
       toast.error('Veuillez remplir le nom du frais');
       return;
     }
-    // #14: Validate fee amount is a valid positive number
     const parsedAmount = parseFloat(feeAmount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
       toast.error('Le montant doit être un nombre positif valide');
@@ -340,7 +350,6 @@ const AdminMutationRequests: React.FC = () => {
     return statusMap[status] || { variant: 'default', label: status };
   };
 
-  // Safe access helper for proposed_changes (#4)
   const safeProposedChanges = (request: MutationRequest | null) => {
     if (!request?.proposed_changes) return {} as Record<string, any>;
     return request.proposed_changes;
@@ -442,15 +451,16 @@ const AdminMutationRequests: React.FC = () => {
     }
   ];
 
-  // #11: Enhanced stats with rejected & cancelled counts
-  const stats = {
+  // Enhanced stats with all statuses
+  const stats = useMemo(() => ({
     total: requests.length,
     pending: requests.filter(r => r.status === 'pending' || r.status === 'in_review').length,
     approved: requests.filter(r => r.status === 'approved').length,
     rejected: requests.filter(r => r.status === 'rejected').length,
     cancelled: requests.filter(r => r.status === 'cancelled').length,
+    onHold: requests.filter(r => r.status === 'on_hold').length,
     revenue: requests.filter(r => r.payment_status === 'paid').reduce((sum, r) => sum + Number(r.total_amount_usd), 0)
-  };
+  }), [requests]);
 
   return (
     <div className="space-y-4">
@@ -478,8 +488,8 @@ const AdminMutationRequests: React.FC = () => {
         </TabsList>
 
         <TabsContent value="requests" className="space-y-4">
-          {/* Stats - #11 enhanced */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {/* Stats - all statuses */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
             <Card>
               <CardContent className="p-3">
                 <div className="text-xs text-muted-foreground">Total</div>
@@ -500,13 +510,31 @@ const AdminMutationRequests: React.FC = () => {
             </Card>
             <Card>
               <CardContent className="p-3">
+                <div className="text-xs text-muted-foreground">Rejetées</div>
+                <div className="text-xl font-bold text-destructive">{stats.rejected}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-3">
+                <div className="text-xs text-muted-foreground">Annulées</div>
+                <div className="text-xl font-bold text-muted-foreground">{stats.cancelled}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-3">
+                <div className="text-xs text-muted-foreground">Suspendues</div>
+                <div className="text-xl font-bold text-amber-600">{stats.onHold}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-3">
                 <div className="text-xs text-muted-foreground">Revenus</div>
                 <div className="text-xl font-bold text-primary">${stats.revenue.toFixed(2)}</div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Filters - #10: Added cancelled status */}
+          {/* Filters - with type filter */}
           <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -522,13 +550,24 @@ const AdminMutationRequests: React.FC = () => {
                 <SelectValue placeholder="Statut" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="_all">Tous</SelectItem>
+                <SelectItem value="_all">Tous statuts</SelectItem>
                 <SelectItem value="pending">En attente</SelectItem>
                 <SelectItem value="in_review">En cours</SelectItem>
                 <SelectItem value="approved">Approuvée</SelectItem>
                 <SelectItem value="rejected">Rejetée</SelectItem>
                 <SelectItem value="on_hold">Suspendue</SelectItem>
                 <SelectItem value="cancelled">Annulée</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-full sm:w-[150px] h-9">
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_all">Tous types</SelectItem>
+                {MUTATION_TYPES.map(t => (
+                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -648,7 +687,7 @@ const AdminMutationRequests: React.FC = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Details Dialog - #12: Shows request info for context */}
+      {/* Details Dialog */}
       <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -709,7 +748,7 @@ const AdminMutationRequests: React.FC = () => {
                   </div>
                 )}
 
-                {/* Documents joints - #4: safe access */}
+                {/* Documents joints */}
                 {Array.isArray(safeProposedChanges(selectedRequest).supporting_documents) && safeProposedChanges(selectedRequest).supporting_documents.length > 0 && (
                   <div>
                     <Label className="text-xs text-muted-foreground">Documents joints</Label>
@@ -723,7 +762,7 @@ const AdminMutationRequests: React.FC = () => {
                   </div>
                 )}
 
-                {/* Certificat d'expertise - #4: safe access */}
+                {/* Certificat d'expertise */}
                 {safeProposedChanges(selectedRequest).expertise_certificate_url && (
                   <div>
                     <Label className="text-xs text-muted-foreground">Certificat d'expertise</Label>
@@ -743,11 +782,10 @@ const AdminMutationRequests: React.FC = () => {
 
                 <Separator />
 
-                {/* Décomposition des frais - #3: all amounts with .toFixed(2) */}
+                {/* Décomposition des frais */}
                 <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground font-semibold">Détail des frais</Label>
                   
-                  {/* Fee items from request */}
                   {Array.isArray(selectedRequest.fee_items) && selectedRequest.fee_items.map((item: any, i: number) => (
                     <div key={i} className="flex justify-between text-xs">
                       <span>{item.fee_name}</span>
@@ -755,7 +793,6 @@ const AdminMutationRequests: React.FC = () => {
                     </div>
                   ))}
 
-                  {/* Mutation fees */}
                   {safeProposedChanges(selectedRequest).mutation_fees && (
                     <>
                       <div className="flex justify-between text-xs">
@@ -771,7 +808,6 @@ const AdminMutationRequests: React.FC = () => {
                     </>
                   )}
 
-                  {/* Late fees */}
                   {safeProposedChanges(selectedRequest).late_fees && (
                     <div className="flex justify-between text-xs text-orange-600">
                       <span>Retard ({safeProposedChanges(selectedRequest).late_fees.days}j)</span>
@@ -801,7 +837,7 @@ const AdminMutationRequests: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Process Dialog - #12: Shows request context */}
+      {/* Process Dialog */}
       <Dialog open={showProcessDialog} onOpenChange={setShowProcessDialog}>
         <DialogContent>
           <DialogHeader>
@@ -812,7 +848,7 @@ const AdminMutationRequests: React.FC = () => {
           </DialogHeader>
           {selectedRequest && (
             <div className="space-y-4">
-              {/* #12: Quick context about the request */}
+              {/* Quick context */}
               <Card className="bg-muted/50 border-0">
                 <CardContent className="p-3 space-y-1.5">
                   <div className="flex justify-between text-xs">
@@ -833,6 +869,12 @@ const AdminMutationRequests: React.FC = () => {
                     <div className="flex justify-between text-xs">
                       <span className="text-muted-foreground">Valeur vénale</span>
                       <span>${Number(safeProposedChanges(selectedRequest).market_value_usd).toLocaleString()}</span>
+                    </div>
+                  )}
+                  {selectedRequest.justification && (
+                    <div className="pt-1 border-t">
+                      <span className="text-[10px] text-muted-foreground">Justification :</span>
+                      <p className="text-xs mt-0.5">{selectedRequest.justification}</p>
                     </div>
                   )}
                 </CardContent>
@@ -881,7 +923,7 @@ const AdminMutationRequests: React.FC = () => {
             </Button>
             <Button 
               onClick={handleProcessRequest}
-              disabled={processing || (processAction === 'reject' && !rejectionReason)}
+              disabled={processing || (processAction === 'reject' && !rejectionReason.trim())}
             >
               {processing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Confirmer
@@ -890,7 +932,7 @@ const AdminMutationRequests: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Fee Dialog - #22: Using shadcn Checkbox instead of native */}
+      {/* Fee Dialog */}
       <Dialog open={showFeeDialog} onOpenChange={setShowFeeDialog}>
         <DialogContent>
           <DialogHeader>

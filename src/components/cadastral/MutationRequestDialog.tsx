@@ -12,6 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Textarea } from '@/components/ui/textarea';
 import { Loader2, FileEdit, CreditCard, CheckCircle2, AlertTriangle, MapPin, Clock, Hash, Upload, X, FileText, Image, Eye, ArrowLeft, AlertCircle, FileSearch, ExternalLink, Calendar, DollarSign, Award, HelpCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useMutationRequest } from '@/hooks/useMutationRequest';
@@ -79,7 +80,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   
   const isMobile = useIsMobile();
   const { user, profile } = useAuth();
-  const { loading, fees, createMutationRequest, updatePaymentStatus } = useMutationRequest();
+  const { loading, fees, createMutationRequest, updatePaymentStatus, checkExistingPendingRequest } = useMutationRequest();
   const { availableMethods } = usePaymentConfig();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -100,6 +101,9 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   
   const [selectedFees, setSelectedFees] = useState<string[]>([]);
   const [requiredDocumentChecks, setRequiredDocumentChecks] = useState<Record<string, boolean>>({});
+  
+  // Justification / notes utilisateur
+  const [justification, setJustification] = useState('');
   
   // Pièces jointes
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
@@ -126,6 +130,9 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   const [paymentProvider, setPaymentProvider] = useState('');
   const [paymentPhone, setPaymentPhone] = useState('');
   const [processingPayment, setProcessingPayment] = useState(false);
+  
+  // Guard against duplicate submission
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const enabledMobileProviders = availableMethods.enabledProviders.mobileMoneyProviders;
   const hasAnyPaymentMethod = availableMethods.hasMobileMoney || availableMethods.hasBankCard;
@@ -134,7 +141,6 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   const isTransferMutation = useMemo(() => checkIsTransfer(mutationType), [mutationType]);
   const showLateFees = useMemo(() => checkHasLateFees(mutationType), [mutationType]);
 
-  // #20: Memoized mutation type details
   const mutationTypeDetails = useMemo(() => MUTATION_TYPES.find(t => t.value === mutationType), [mutationType]);
 
   // Récupérer automatiquement les données CCC
@@ -211,7 +217,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     setTitleAgeAutoDetected(true);
   };
 
-  // Memoized: late fee calculation — only for types that support late fees
+  // Memoized: late fee calculation
   const lateFeesCalculation = useMemo(() => {
     if (!showLateFees) return { days: 0, fee: 0, applicable: false, capped: false };
     const dateToUse = ownerAcquisitionDate || manualAcquisitionDate;
@@ -232,7 +238,6 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     };
   }, [showLateFees, ownerAcquisitionDate, manualAcquisitionDate]);
 
-  // #9: Only compute certificate validity when user said 'yes'
   const certificateValidity = useMemo(() => {
     if (hasExpertiseCertificate !== 'yes' || !expertiseCertificateDate) return { isValid: false, daysRemaining: 0, isExpired: false };
     const issueDate = new Date(expertiseCertificateDate);
@@ -245,7 +250,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   // Memoized: mutation fees calculation
   const mutationFeesCalculation = useMemo(() => {
     const value = parseFloat(marketValueUsd) || 0;
-    const BANK_FEE_PERCENTAGE = 0.005; // TODO: #5 - move to DB config
+    const BANK_FEE_PERCENTAGE = 0.005; // Commission bancaire réglementaire
     
     if (value < 10000) {
       return { mutationFee: 0, bankFee: 0, total: 0, applicable: false, percentage: 0 };
@@ -270,7 +275,6 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     setSelectedFees(mandatoryFeeIds);
   }, [fees]);
 
-  // #21: Only run payment method auto-selection on payment step
   useEffect(() => {
     if (step !== 'payment') return;
     if (paymentMethod === 'mobile_money' && !availableMethods.hasMobileMoney && availableMethods.hasBankCard) {
@@ -291,16 +295,17 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     setSelectedFees(prev => prev.includes(feeId) ? prev.filter(id => id !== feeId) : [...prev, feeId]);
   };
 
-  const getSelectedFeesDetails = useCallback(() => {
+  // Memoized fee details and total
+  const selectedFeesDetails = useMemo(() => {
     return fees.filter(f => selectedFees.includes(f.id));
   }, [fees, selectedFees]);
 
-  const getTotalAmount = useCallback(() => {
-    const baseFees = getSelectedFeesDetails().reduce((sum, fee) => sum + fee.amount_usd, 0);
+  const totalAmount = useMemo(() => {
+    const baseFees = selectedFeesDetails.reduce((sum, fee) => sum + fee.amount_usd, 0);
     const mutationFees = isTransferMutation && mutationFeesCalculation.applicable ? mutationFeesCalculation.total : 0;
     const lateFees = showLateFees && lateFeesCalculation.applicable ? lateFeesCalculation.fee : 0;
     return baseFees + mutationFees + lateFees;
-  }, [getSelectedFeesDetails, isTransferMutation, mutationFeesCalculation, showLateFees, lateFeesCalculation]);
+  }, [selectedFeesDetails, isTransferMutation, mutationFeesCalculation, showLateFees, lateFeesCalculation]);
 
   // File handlers
   const handleExpertiseCertificateSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -392,7 +397,6 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     [getRequiredDocuments]
   );
 
-  // #16: Memoize all required documents for the form display (avoid double call)
   const allRequiredDocuments = useMemo(() => getRequiredDocuments(), [getRequiredDocuments]);
 
   useEffect(() => {
@@ -432,7 +436,6 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       toast.error(`Veuillez confirmer les pièces requises : ${missingCheckedDocuments.map(doc => doc.label).join(', ')}`);
       return false;
     }
-    // #6: Require at least 1 file (not 1 per document - user may combine in a single PDF)
     if (requiredSupportingDocuments.length > 0 && attachedFiles.length === 0) {
       toast.error('Ajoutez au moins un document justificatif pour ce type de mutation.');
       return false;
@@ -462,28 +465,41 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     }
   };
 
-  // #17: Single source of truth for beneficiary full name
   const getBeneficiaryFullName = useCallback(() => {
     if (beneficiaryLegalStatus === 'personne_morale') return beneficiaryLastName;
     return [beneficiaryLastName, beneficiaryMiddleName, beneficiaryFirstName].filter(Boolean).join(' ');
   }, [beneficiaryLegalStatus, beneficiaryLastName, beneficiaryMiddleName, beneficiaryFirstName]);
 
   const handleSubmitForm = async () => {
+    // Guard: prevent duplicate submissions
+    if (isSubmitting || createdRequest) {
+      toast.error('La demande a déjà été créée. Veuillez procéder au paiement.');
+      setStep('payment');
+      return;
+    }
+
+    // Check for existing pending request on same parcel
+    const hasPending = await checkExistingPendingRequest(parcelNumber);
+    if (hasPending) {
+      toast.error('Une demande de mutation est déjà en cours pour cette parcelle. Veuillez attendre son traitement avant d\'en soumettre une nouvelle.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
     let documentUrls: string[] = [];
     if (attachedFiles.length > 0) {
       documentUrls = await uploadFiles();
-      if (documentUrls.length === 0 && attachedFiles.length > 0) return;
+      if (documentUrls.length === 0 && attachedFiles.length > 0) { setIsSubmitting(false); return; }
     }
 
     let expertiseCertificateUrl: string | null = null;
     if (isTransferMutation && expertiseCertificateFile) {
       expertiseCertificateUrl = await uploadExpertiseCertificate();
-      if (!expertiseCertificateUrl) return;
+      if (!expertiseCertificateUrl) { setIsSubmitting(false); return; }
     }
 
-    // #17: Use single function
     const fullBeneficiaryName = getBeneficiaryFullName();
-
     const requesterName = profile?.full_name || user?.email || 'Utilisateur';
     const requesterEmail = profile?.email || user?.email || '';
 
@@ -491,18 +507,16 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       ? `${mutationTypeDetails?.label} - Transfert à ${fullBeneficiaryName}`
       : `${mutationTypeDetails?.label} - ${mutationTypeDetails?.description}`;
 
-    const totalCalculated = getTotalAmount();
-
     const request = await createMutationRequest({
       parcel_number: parcelNumber,
       parcel_id: parcelId,
       mutation_type: mutationType,
       requester_type: requesterType,
       requester_name: requesterName,
-      requester_phone: '', // #7: profile phone not available in Profile type
+      requester_phone: undefined, // FIX: Send undefined (→ null) instead of empty string
       requester_email: requesterEmail,
       beneficiary_name: isTransferMutation ? fullBeneficiaryName : undefined,
-      beneficiary_phone: isTransferMutation ? beneficiaryPhone : undefined,
+      beneficiary_phone: isTransferMutation && beneficiaryPhone.trim() ? beneficiaryPhone.trim() : undefined,
       proposed_changes: { 
         description: autoDescription,
         beneficiary_legal_status: isTransferMutation ? beneficiaryLegalStatus : undefined,
@@ -522,10 +536,12 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           fee: lateFeesCalculation.fee
         } : undefined
       },
-      justification: '',
-      selected_fees: getSelectedFeesDetails(),
-      total_amount_override: totalCalculated
+      justification: justification.trim() || undefined,
+      selected_fees: selectedFeesDetails,
+      total_amount_override: totalAmount
     });
+
+    setIsSubmitting(false);
 
     if (request) {
       setCreatedRequest(request);
@@ -533,9 +549,12 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     }
   };
 
+  // FIX: Broadened phone validation - accepts international formats
   const validatePhoneNumber = (phone: string): boolean => {
-    const regex = /^(\+?243|0)(8[1-9]|9[0-9])\d{7}$/;
-    return regex.test(phone.replace(/\s/g, ''));
+    const cleaned = phone.replace(/\s/g, '');
+    // Accept DRC (+243/0), and generic international formats (+XX...)
+    const regex = /^(\+?\d{1,4})\d{7,12}$/;
+    return regex.test(cleaned);
   };
 
   const handlePayment = async () => {
@@ -552,7 +571,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
         if (!enabledMobileProviders.length) throw new Error('Aucun opérateur Mobile Money actif n\'est configuré.');
         if (!paymentProvider) { toast.error('Veuillez sélectionner un opérateur'); setProcessingPayment(false); return; }
         if (!paymentPhone) { toast.error('Veuillez entrer votre numéro de téléphone'); setProcessingPayment(false); return; }
-        if (!validatePhoneNumber(paymentPhone)) { toast.error('Numéro invalide. Format attendu : +243XXXXXXXXX ou 0XXXXXXXXX'); setProcessingPayment(false); return; }
+        if (!validatePhoneNumber(paymentPhone)) { toast.error('Numéro invalide. Entrez un numéro valide avec indicatif pays.'); setProcessingPayment(false); return; }
 
         const { data: paymentResult, error: paymentError } = await supabase.functions.invoke('process-mobile-money-payment', {
           body: { payment_provider: paymentProvider, phone_number: paymentPhone.replace(/\s/g, ''), amount_usd: createdRequest.total_amount_usd, payment_type: 'mutation_request', invoice_id: createdRequest.id },
@@ -586,11 +605,12 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     }
   };
 
-  // #1: handleClose properly resets showIntro
+  // handleClose properly resets all state
   const handleClose = () => {
     setStep('form');
-    setShowIntro(true); // #1: Ensure intro shows on next open
+    setShowIntro(true);
     setCreatedRequest(null);
+    setIsSubmitting(false);
     setMutationType('vente');
     setRequesterType('proprietaire');
     setBeneficiaryLegalStatus('personne_physique');
@@ -600,6 +620,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     setBeneficiaryPhone('');
     setAttachedFiles([]);
     setRequiredDocumentChecks({});
+    setJustification('');
     setHasExpertiseCertificate(null);
     setExpertiseCertificateFile(null);
     setExpertiseCertificateDate('');
@@ -616,7 +637,15 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     onOpenChange(false);
   };
 
-  // =============== SHARED FEE SECTION (deduplicated) ===============
+  // FIX: FormIntroDialog close should NOT close parent — only dismiss intro
+  const handleIntroDismiss = (isOpen: boolean) => {
+    if (!isOpen) {
+      // User pressed Escape or overlay on intro — close everything
+      handleClose();
+    }
+  };
+
+  // =============== SHARED FEE SECTION ===============
   const renderAdminFeesSection = () => (
     <Card className="border-2 border-amber-200 dark:border-amber-700 rounded-xl">
       <CardContent className="p-3 space-y-3">
@@ -696,7 +725,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           <p className="text-xs text-muted-foreground leading-relaxed">{mutationTypeDetails?.description}</p>
         </div>
 
-        {/* Documents justificatifs - #16: Use memoized allRequiredDocuments */}
+        {/* Documents justificatifs */}
         <Card className="border rounded-xl">
           <CardContent className="p-3 space-y-3">
             <h4 className="text-sm font-semibold flex items-center gap-2">
@@ -753,53 +782,58 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           </CardContent>
         </Card>
 
-        {/* Type de demandeur */}
+        {/* Qualité du demandeur */}
         <div className="space-y-2">
           <Label className="text-sm font-semibold flex items-center gap-2">
-            Vous êtes
-            <SectionHelpPopover title="Type de demandeur" description="Indiquez si vous êtes le propriétaire actuel de la parcelle ou un mandataire agissant en son nom." />
+            Qualité du demandeur
+            <SectionHelpPopover title="Qualité du demandeur" description="Indiquez si vous êtes le propriétaire actuel ou si vous agissez en tant que mandataire/représentant." />
           </Label>
           <Select value={requesterType} onValueChange={setRequesterType}>
-            <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-11 text-sm rounded-xl border-2">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent className="rounded-xl">
-              {REQUESTER_TYPES.map(type => (<SelectItem key={type.value} value={type.value} className="text-sm py-2">{type.label}</SelectItem>))}
+              {REQUESTER_TYPES.map(type => (
+                <SelectItem key={type.value} value={type.value} className="text-sm py-2">{type.label}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
 
-        {/* Bénéficiaire (transfert uniquement) */}
+        {/* Nouveau propriétaire (transfert uniquement) */}
         {isTransferMutation && (
-          <Card className="border-2 border-dashed rounded-xl">
+          <Card className="border-2 border-primary/20 rounded-xl">
             <CardContent className="p-3 space-y-3">
               <h4 className="text-sm font-semibold text-primary flex items-center gap-2">
-                <div className="w-1.5 h-1.5 bg-primary rounded-full" />
+                <FileEdit className="h-4 w-4" />
                 Nouveau propriétaire
-                <SectionHelpPopover title="Nouveau propriétaire" description="Renseignez l'identité complète du futur propriétaire." />
               </h4>
               <div className="space-y-2">
                 <Label className="text-sm">Statut juridique</Label>
                 <Select value={beneficiaryLegalStatus} onValueChange={setBeneficiaryLegalStatus}>
-                  <SelectTrigger className="h-11 text-sm rounded-xl border-2"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-11 text-sm rounded-xl border-2">
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent className="rounded-xl">
-                    {LEGAL_STATUS_OPTIONS.map(status => (<SelectItem key={status.value} value={status.value} className="text-sm py-2">{status.label}</SelectItem>))}
+                    {LEGAL_STATUS_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value} className="text-sm">{opt.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               {beneficiaryLegalStatus === 'personne_physique' ? (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <div className="space-y-1.5">
                     <Label className="text-sm">Nom de famille *</Label>
-                    <Input value={beneficiaryLastName} onChange={(e) => setBeneficiaryLastName(e.target.value)} placeholder="Entrez le nom" className="h-11 text-sm rounded-xl border-2" />
+                    <Input value={beneficiaryLastName} onChange={(e) => setBeneficiaryLastName(e.target.value)} placeholder="Nom de famille" className="h-11 text-sm rounded-xl border-2" />
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1.5">
-                      <Label className="text-sm">Post-nom</Label>
-                      <Input value={beneficiaryMiddleName} onChange={(e) => setBeneficiaryMiddleName(e.target.value)} placeholder="Post-nom" className="h-11 text-sm rounded-xl border-2" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-sm">Prénom *</Label>
-                      <Input value={beneficiaryFirstName} onChange={(e) => setBeneficiaryFirstName(e.target.value)} placeholder="Prénom" className="h-11 text-sm rounded-xl border-2" />
-                    </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">Post-nom</Label>
+                    <Input value={beneficiaryMiddleName} onChange={(e) => setBeneficiaryMiddleName(e.target.value)} placeholder="Post-nom (optionnel)" className="h-11 text-sm rounded-xl border-2" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">Prénom *</Label>
+                    <Input value={beneficiaryFirstName} onChange={(e) => setBeneficiaryFirstName(e.target.value)} placeholder="Prénom" className="h-11 text-sm rounded-xl border-2" />
                   </div>
                 </div>
               ) : (
@@ -959,7 +993,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           </Card>
         )}
 
-        {/* ===== Fees section (UNIFIED for all mutation types) ===== */}
+        {/* ===== Fees section ===== */}
         {renderAdminFeesSection()}
 
         {/* Mutation fees (transfer types only) */}
@@ -997,7 +1031,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           </Card>
         )}
 
-        {/* Late fees section — only for types that support it (#8: NOT expropriation/echange/correction/mise_a_jour) */}
+        {/* Late fees section */}
         {showLateFees && (
           <MutationLateFeeSection
             ownerAcquisitionDate={ownerAcquisitionDate}
@@ -1008,12 +1042,31 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           />
         )}
 
+        {/* Justification / notes utilisateur */}
+        <Card className="border rounded-xl">
+          <CardContent className="p-3 space-y-2">
+            <Label className="text-sm font-semibold flex items-center gap-2">
+              <FileText className="h-4 w-4 text-muted-foreground" />
+              Notes / Justification (optionnel)
+              <SectionHelpPopover title="Justification" description="Ajoutez des informations ou explications complémentaires pour accompagner votre demande de mutation." />
+            </Label>
+            <Textarea
+              value={justification}
+              onChange={(e) => setJustification(e.target.value)}
+              placeholder="Ajoutez une justification ou des notes complémentaires..."
+              className="min-h-[60px] text-sm rounded-xl border-2 resize-none"
+              maxLength={1000}
+            />
+            <p className="text-[10px] text-muted-foreground text-right">{justification.length}/1000</p>
+          </CardContent>
+        </Card>
+
         {/* Total à payer */}
         <Card className="border rounded-xl">
           <CardContent className="p-3">
             <div className="flex items-center justify-between p-3 bg-primary/10 rounded-xl">
               <span className="font-semibold text-sm">Total à payer</span>
-              <span className="text-xl font-bold text-primary">${getTotalAmount().toFixed(2)}</span>
+              <span className="text-xl font-bold text-primary">${totalAmount.toFixed(2)}</span>
             </div>
           </CardContent>
         </Card>
@@ -1086,6 +1139,17 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
               </>
             )}
 
+            {/* Justification in preview */}
+            {justification.trim() && (
+              <>
+                <Separator />
+                <div className="space-y-1">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Justification</span>
+                  <p className="text-sm text-foreground">{justification}</p>
+                </div>
+              </>
+            )}
+
             {attachedFiles.length > 0 && (
               <>
                 <Separator />
@@ -1108,7 +1172,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
             {/* Frais détaillés */}
             <div className="space-y-2">
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Détail des frais</span>
-              {getSelectedFeesDetails().map((fee) => (
+              {selectedFeesDetails.map((fee) => (
                 <div key={fee.id} className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">{fee.fee_name}</span>
                   <span className="text-sm font-mono font-semibold">${fee.amount_usd.toFixed(2)}</span>
@@ -1136,7 +1200,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
               )}
               <div className="flex items-center justify-between pt-2 border-t-2">
                 <span className="text-sm font-bold">Total</span>
-                <span className="text-lg font-bold text-primary">${getTotalAmount().toFixed(2)}</span>
+                <span className="text-lg font-bold text-primary">${totalAmount.toFixed(2)}</span>
               </div>
             </div>
           </CardContent>
@@ -1148,14 +1212,20 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
         </Alert>
 
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setStep('form')} className="flex-1 h-12 text-sm font-semibold rounded-xl">
+          {/* FIX: Disable "Modifier" if request already created to prevent duplicates */}
+          <Button 
+            variant="outline" 
+            onClick={() => setStep('form')} 
+            className="flex-1 h-12 text-sm font-semibold rounded-xl"
+            disabled={!!createdRequest}
+          >
             <ArrowLeft className="h-4 w-4 mr-2" /> Modifier
           </Button>
-          <Button onClick={handleSubmitForm} className="flex-1 h-12 text-sm font-semibold rounded-xl shadow-lg" disabled={loading || uploadingFiles}>
-            {loading || uploadingFiles ? (
+          <Button onClick={handleSubmitForm} className="flex-1 h-12 text-sm font-semibold rounded-xl shadow-lg" disabled={loading || uploadingFiles || isSubmitting}>
+            {loading || uploadingFiles || isSubmitting ? (
               <><Loader2 className="h-4 w-4 animate-spin mr-2" />{uploadingFiles ? 'Envoi...' : 'Création...'}</>
             ) : (
-              <><CreditCard className="h-4 w-4 mr-2" /> Payer ${getTotalAmount().toFixed(2)}</>
+              <><CreditCard className="h-4 w-4 mr-2" /> Payer ${totalAmount.toFixed(2)}</>
             )}
           </Button>
         </div>
@@ -1283,14 +1353,13 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     }
   };
 
-  // #1: Only set showIntro on open, handleClose already resets it
   useEffect(() => { if (open) setShowIntro(true); }, [open]);
 
   const handleIntroComplete = () => setShowIntro(false);
 
   if (showIntro && open) {
     return (
-      <FormIntroDialog open={open} onOpenChange={handleClose} onContinue={handleIntroComplete} config={FORM_INTRO_CONFIGS.mutation} />
+      <FormIntroDialog open={open} onOpenChange={handleIntroDismiss} onContinue={handleIntroComplete} config={FORM_INTRO_CONFIGS.mutation} />
     );
   }
 
