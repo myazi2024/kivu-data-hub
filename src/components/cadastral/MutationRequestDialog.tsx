@@ -2078,7 +2078,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           {step === 'confirmation' && renderConfirmationStep()}
         </DialogContent>
 
-      {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec le formulaire de mutation." />}
+      {open && step === 'form' && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec le formulaire de mutation." />}
 
       {/* Dialog pour demande d'expertise immobilière */}
       <RealEstateExpertiseRequestDialog
