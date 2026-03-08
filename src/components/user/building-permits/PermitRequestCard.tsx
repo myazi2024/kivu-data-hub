@@ -65,7 +65,7 @@ export function PermitRequestCard({ parcelNumber }: PermitRequestCardProps) {
                 <Building2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div className="flex-1 text-left">
-                <h4 className="text-sm font-medium text-foreground">Permis de construire</h4>
+                <h4 className="text-sm font-medium text-foreground">Autorisation de bâtir</h4>
                 <p className="text-[10px] text-muted-foreground leading-tight">
                   Nouvelle construction ou projet futur
                 </p>
