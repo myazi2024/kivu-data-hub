@@ -17,7 +17,10 @@ import {
   Activity,
   Home,
   DollarSign,
-  Info
+  Info,
+  Users,
+  Building,
+  Landmark
 } from 'lucide-react';
 import { ProvinceData } from '@/types/province';
 import { VacancyRateVisualization } from './VacancyRateVisualization';
@@ -26,6 +29,10 @@ import { TransactionVolumeVisualization } from './TransactionVolumeVisualization
 import { RentalYieldVisualization } from './RentalYieldVisualization';
 import { PropertyTypeVisualization } from './PropertyTypeVisualization';
 import { LandPressureVisualization } from './LandPressureVisualization';
+import { FiscalRevenueVisualization } from './FiscalRevenueVisualization';
+import { OwnershipRateVisualization } from './OwnershipRateVisualization';
+import { HousingAccessVisualization } from './HousingAccessVisualization';
+import { LandValueVisualization } from './LandValueVisualization';
 
 interface ProvinceDataVisualizationProps {
   provinces: ProvinceData[];
@@ -86,6 +93,30 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
       name: 'Pression foncière',
       icon: Map,
       description: 'Indice de tension entre demande et offre foncière'
+    },
+    {
+      id: 'fiscal-revenue',
+      name: 'Recettes fiscales',
+      icon: DollarSign,
+      description: 'Comparaison des recettes fiscales et locatives par province'
+    },
+    {
+      id: 'ownership-rate',
+      name: 'Taux de propriété',
+      icon: Users,
+      description: 'Répartition propriétaires vs locataires par province'
+    },
+    {
+      id: 'housing-access',
+      name: 'Accessibilité logement',
+      icon: Building,
+      description: 'Indice d\'accessibilité au logement et croissance des prix'
+    },
+    {
+      id: 'land-value',
+      name: 'Valeur foncière',
+      icon: Landmark,
+      description: 'Valeur foncière moyenne des parcelles et prix au m² par province'
     }
   ];
 
@@ -105,6 +136,14 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
         return <PropertyTypeVisualization provinces={filteredProvinces} selectedProvince={selectedProvince} />;
       case 'land-pressure':
         return <LandPressureVisualization provinces={filteredProvinces} selectedProvince={selectedProvince} />;
+      case 'fiscal-revenue':
+        return <FiscalRevenueVisualization provinces={filteredProvinces} selectedProvince={selectedProvince} />;
+      case 'ownership-rate':
+        return <OwnershipRateVisualization provinces={filteredProvinces} selectedProvince={selectedProvince} />;
+      case 'housing-access':
+        return <HousingAccessVisualization provinces={filteredProvinces} selectedProvince={selectedProvince} />;
+      case 'land-value':
+        return <LandValueVisualization provinces={filteredProvinces} selectedProvince={selectedProvince} />;
       default:
         return <VacancyRateVisualization provinces={filteredProvinces} selectedProvince={selectedProvince} />;
     }
@@ -224,6 +263,24 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
                     {(filteredProvinces.reduce((sum, p) => sum + p.populationLocativeEstimee, 0) / 1000000).toFixed(1)}M
                   </div>
                   <div className="responsive-caption text-muted-foreground leading-tight">Population</div>
+                </div>
+                <div className="flex-shrink-0 text-center p-3 sm:p-4 bg-primary/5 rounded border min-w-[80px] sm:min-w-[100px]">
+                  <div className="text-lg sm:text-xl font-semibold text-foreground">
+                    ${(filteredProvinces.reduce((sum, p) => sum + p.recettesFiscalesUsd, 0) / 1000).toFixed(0)}k
+                  </div>
+                  <div className="responsive-caption text-muted-foreground leading-tight">Fiscal</div>
+                </div>
+                <div className="flex-shrink-0 text-center p-3 sm:p-4 bg-primary/5 rounded border min-w-[80px] sm:min-w-[100px]">
+                  <div className="text-lg sm:text-xl font-semibold text-foreground">
+                    {Math.round(filteredProvinces.reduce((sum, p) => sum + (p.tauxPropriete || 0), 0) / filteredProvinces.length)}%
+                  </div>
+                  <div className="responsive-caption text-muted-foreground leading-tight">Propriété</div>
+                </div>
+                <div className="flex-shrink-0 text-center p-3 sm:p-4 bg-primary/5 rounded border min-w-[80px] sm:min-w-[100px]">
+                  <div className="text-lg sm:text-xl font-semibold text-foreground">
+                    ${(filteredProvinces.reduce((sum, p) => sum + p.valeurFonciereParcelleUsd, 0) / filteredProvinces.length / 1000).toFixed(1)}k
+                  </div>
+                  <div className="responsive-caption text-muted-foreground leading-tight">Val. moy.</div>
                 </div>
               </div>
             </div>
