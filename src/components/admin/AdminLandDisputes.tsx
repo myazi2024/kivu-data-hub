@@ -380,6 +380,36 @@ const AdminLandDisputes: React.FC = () => {
                 </Card>
               )}
 
+              {/* Cross-navigation: related disputes */}
+              {(() => {
+                const related = getRelatedDisputes(selectedDispute);
+                if (related.length === 0) return null;
+                return (
+                  <Card className="rounded-xl shadow-sm border-primary/20">
+                    <CardContent className="p-3 space-y-2">
+                      <div className="text-sm font-semibold text-primary flex items-center gap-2"><Link2 className="h-4 w-4" /> Dossiers liés</div>
+                      {related.map(r => (
+                        <Button
+                          key={r.id}
+                          variant="ghost"
+                          size="sm"
+                          className="w-full justify-between h-auto py-2 px-3 rounded-xl"
+                          onClick={() => { setSelectedDispute(r); setAdminNotes(''); setNewStatus(r.current_status); }}
+                        >
+                          <span className="flex items-center gap-2 text-xs">
+                            <span className="font-mono font-bold">{r.reference_number}</span>
+                            <Badge variant={r.dispute_type === 'report' ? 'destructive' : 'default'} className="text-[10px]">
+                              {r.dispute_type === 'report' ? 'Signalement' : 'Levée'}
+                            </Badge>
+                          </span>
+                          <DisputeStatusBadge status={r.current_status} />
+                        </Button>
+                      ))}
+                    </CardContent>
+                  </Card>
+                );
+              })()}
+
               {/* Parties involved */}
               {selectedDispute.parties_involved && Array.isArray(selectedDispute.parties_involved) && selectedDispute.parties_involved.length > 0 && (
                 <Card className="rounded-xl shadow-sm">
