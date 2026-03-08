@@ -185,7 +185,7 @@ const AdminMortgages = () => {
         }
         const { error: insertError } = await supabase
           .from('cadastral_mortgages')
-          .insert(mortgageInsertData);
+          .insert(mortgageInsertData as any);
 
         if (insertError) {
           console.error('Error inserting mortgage:', insertError);
