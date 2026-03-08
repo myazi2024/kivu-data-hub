@@ -204,7 +204,7 @@ export const UserLandDisputes: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-[10px] text-muted-foreground">{DISPUTE_NATURES_MAP[dispute.dispute_nature] || dispute.dispute_nature}</span>
-                      {getStatusBadge(dispute.current_status)}
+                      <DisputeStatusBadge status={dispute.current_status} />
                     </div>
                     <p className="text-[10px] text-muted-foreground mt-1">
                       {new Date(dispute.created_at).toLocaleDateString('fr-FR')}
