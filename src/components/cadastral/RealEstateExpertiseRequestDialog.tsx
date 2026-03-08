@@ -300,8 +300,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   // === NOTES & DOCUMENTS ===
   const [additionalNotes, setAdditionalNotes] = useState('');
   const [parcelDocuments, setParcelDocuments] = useState<File[]>([]);
-  const [constructionImages, setConstructionImages] = useState<File[]>([]);
-  const [uploadingFiles, setUploadingFiles] = useState(false);
+   const [constructionImages, setConstructionImages] = useState<File[]>([]);
+   const [constructionImageUrls, setConstructionImageUrls] = useState<string[]>([]);
+   const [uploadingFiles, setUploadingFiles] = useState(false);
 
   // Fetch expertise fees on mount
   useEffect(() => {
