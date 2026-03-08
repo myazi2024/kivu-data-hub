@@ -76,40 +76,11 @@ const SOUND_ENVIRONMENT_OPTIONS = [
   { value: 'tres_bruyant', label: SOUND_LABELS.tres_bruyant + ' (> 85 dB)', minDb: 85, maxDb: 200 },
 ];
 
-const FACADE_ORIENTATION_OPTIONS = [
-  { value: 'nord', label: 'Nord' },
-  { value: 'nord_est', label: 'Nord-Est' },
-  { value: 'est', label: 'Est' },
-  { value: 'sud_est', label: 'Sud-Est' },
-  { value: 'sud', label: 'Sud' },
-  { value: 'sud_ouest', label: 'Sud-Ouest' },
-  { value: 'ouest', label: 'Ouest' },
-  { value: 'nord_ouest', label: 'Nord-Ouest' },
-];
+const FACADE_ORIENTATION_OPTIONS = toOptions(FACADE_ORIENTATION_LABELS);
 
-// Générer les options d'année (1950 à année actuelle)
-const YEAR_OPTIONS = Array.from(
-  { length: new Date().getFullYear() - 1950 + 1 },
-  (_, i) => {
-    const year = new Date().getFullYear() - i;
-    return { value: year.toString(), label: year.toString() };
-  }
-);
+const BUILDING_POSITION_OPTIONS = toOptions(BUILDING_POSITION_LABELS);
 
-const BUILDING_POSITION_OPTIONS = [
-  { value: 'premiere_position', label: 'Première position (bordure de route)' },
-  { value: 'deuxieme_position', label: 'Deuxième position' },
-  { value: 'fond_parcelle', label: 'Fond de parcelle' },
-  { value: 'dans_servitude', label: 'Dans une servitude' },
-  { value: 'coin_parcelle', label: 'En coin de parcelle' },
-];
-
-const ACCESSIBILITY_OPTIONS = [
-  { value: 'escalier', label: 'Escalier uniquement' },
-  { value: 'ascenseur', label: 'Ascenseur disponible' },
-  { value: 'escalier_ascenseur', label: 'Escalier + Ascenseur' },
-  { value: 'plain_pied', label: 'Plain-pied (RDC)' },
-];
+const ACCESSIBILITY_OPTIONS = toOptions(ACCESSIBILITY_LABELS);
 
 const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialogProps> = ({
   parcelNumber,
