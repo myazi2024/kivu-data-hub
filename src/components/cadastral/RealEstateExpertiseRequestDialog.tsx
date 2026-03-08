@@ -1874,7 +1874,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
               </AlertDescription>
             </Alert>
           </TabsContent>
-        </ScrollArea>
+        </div>
       </Tabs>
 
       <Button 
