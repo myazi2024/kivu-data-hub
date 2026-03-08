@@ -757,12 +757,18 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
               Documents justificatifs
               <SectionHelpPopover
                 title="Documents justificatifs"
-                description="Joignez les pièces justificatives nécessaires : acte de vente notarié, certificat d'héritage, attestation de donation, etc. Max 10MB par fichier."
+                description="Joignez les pièces justificatives nécessaires selon le type de mutation. Max 10MB par fichier."
               />
             </h4>
-            <p className="text-xs text-muted-foreground">
-              Acte de vente, certificat, attestation... (max 10MB/fichier)
-            </p>
+            {/* Liste des documents requis selon le type de mutation */}
+            <div className="space-y-1">
+              {getRequiredDocuments().map((doc, idx) => (
+                <p key={idx} className={`text-xs flex items-center gap-1 ${doc.required ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground'}`}>
+                  {doc.required ? <AlertCircle className="h-3 w-3 flex-shrink-0" /> : <FileText className="h-3 w-3 flex-shrink-0" />}
+                  {doc.label} {doc.required && '*'}
+                </p>
+              ))}
+            </div>
             
             <input
               ref={fileInputRef}
