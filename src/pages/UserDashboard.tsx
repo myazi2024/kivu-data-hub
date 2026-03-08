@@ -142,6 +142,10 @@ const UserDashboard = () => {
               <UserExpertiseRequests />
             </TabsContent>
 
+            <TabsContent value="mortgages" className="mt-4">
+              <UserMortgageRequests />
+            </TabsContent>
+
             <TabsContent value="disputes" className="mt-4">
               <UserLandDisputes />
             </TabsContent>
