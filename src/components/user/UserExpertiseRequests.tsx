@@ -11,27 +11,15 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-
-interface ExpertiseRequest {
-  id: string;
-  reference_number: string;
-  parcel_number: string;
-  status: string;
-  payment_status: string;
-  market_value_usd?: number;
-  certificate_url?: string;
-  certificate_issue_date?: string;
-  certificate_expiry_date?: string;
-  rejection_reason?: string;
-  created_at: string;
-}
+import type { ExpertiseRequest } from '@/types/expertise';
+import { STATUS_LABELS } from '@/constants/expertiseLabels';
 
 const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ReactNode }> = {
-  pending: { label: 'En attente', variant: 'secondary', icon: <Clock className="h-3 w-3" /> },
-  assigned: { label: 'Assigné', variant: 'outline', icon: <Clock className="h-3 w-3" /> },
-  in_progress: { label: 'En cours', variant: 'default', icon: <Loader2 className="h-3 w-3 animate-spin" /> },
-  completed: { label: 'Terminé', variant: 'default', icon: <CheckCircle2 className="h-3 w-3" /> },
-  rejected: { label: 'Rejeté', variant: 'destructive', icon: <XCircle className="h-3 w-3" /> },
+  pending: { label: STATUS_LABELS.pending, variant: 'secondary', icon: <Clock className="h-3 w-3" /> },
+  assigned: { label: STATUS_LABELS.assigned, variant: 'outline', icon: <Clock className="h-3 w-3" /> },
+  in_progress: { label: STATUS_LABELS.in_progress, variant: 'default', icon: <Loader2 className="h-3 w-3 animate-spin" /> },
+  completed: { label: STATUS_LABELS.completed, variant: 'default', icon: <CheckCircle2 className="h-3 w-3" /> },
+  rejected: { label: STATUS_LABELS.rejected, variant: 'destructive', icon: <XCircle className="h-3 w-3" /> },
 };
 
 export const UserExpertiseRequests: React.FC = () => {
