@@ -378,7 +378,7 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
             alignItems: 'center',
             justifyContent: 'center'
           }}
-          dangerouslySetInnerHTML={{ __html: svgContent }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(svgContent, { USE_PROFILES: { svg: true, svgFilters: true }, ADD_TAGS: ['use'], ADD_ATTR: ['preserveAspectRatio', 'viewBox', 'data-province', 'data-name'] }) }}
         />
       </div>
       

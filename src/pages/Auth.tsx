@@ -484,11 +484,11 @@ const Auth = () => {
                     <Input
                       id="signup-password"
                       type="password"
-                      placeholder="Au moins 6 caractères"
+                      placeholder="Au moins 8 caractères"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      minLength={6}
+                      minLength={8}
                     />
                   </div>
                   
