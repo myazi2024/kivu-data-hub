@@ -804,6 +804,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
               <Label className="text-xs">Date souhaitée de radiation *</Label>
               <Input
                 type="date"
+                min={new Date().toISOString().split('T')[0]}
                 value={formData.cancellationDate}
                 onChange={(e) => setFormData(prev => ({ ...prev, cancellationDate: e.target.value }))}
                 className="h-10 text-sm rounded-xl"
