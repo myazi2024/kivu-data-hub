@@ -92,6 +92,13 @@ const UserDashboard = () => {
                   <span className="text-[10px] font-medium">Mutations</span>
                 </TabsTrigger>
                 <TabsTrigger 
+                  value="mortgages" 
+                  className="flex flex-col items-center gap-0.5 py-2 px-3 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
+                >
+                  <Landmark className="h-4 w-4" />
+                  <span className="text-[10px] font-medium">Hypothèques</span>
+                </TabsTrigger>
+                <TabsTrigger 
                   value="disputes" 
                   className="flex flex-col items-center gap-0.5 py-2 px-3 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
                 >
