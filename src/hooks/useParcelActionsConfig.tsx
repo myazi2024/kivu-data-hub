@@ -91,7 +91,7 @@ const DEFAULT_ACTIONS: ParcelAction[] = [
     id: '8',
     key: 'permit_request',
     label: 'Obtenir une autorisation',
-    description: 'Demande d\'autorisation de bâtir',
+    description: 'Autorisation de bâtir ou de régularisation',
     isActive: true,
     isVisible: true,
     displayOrder: 8,
