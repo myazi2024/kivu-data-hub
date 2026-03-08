@@ -340,7 +340,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     applicantPhone: '',
     applicantEmail: '',
     selectedOwnerIndex: -1, // Index du propriétaire sélectionné
-    // Champs spécifiques permis de construire
+    // Champs spécifiques autorisation de bâtir
     numberOfFloors: '',
     buildingMaterials: '',
     architecturalPlanImages: [] as File[],
