@@ -7,7 +7,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { Scale, Search, Eye, Clock, CheckCircle, AlertTriangle, FileText, ChevronLeft, ChevronRight, User, Calendar, MapPin } from 'lucide-react';
+import { Scale, Search, Eye, Clock, CheckCircle, AlertTriangle, FileText, ChevronLeft, ChevronRight, User, ExternalLink, Image, Copy } from 'lucide-react';
+import {
+  DISPUTE_NATURES_MAP,
+  DISPUTE_STATUS_CONFIG,
+  LIFTING_REASONS_MAP,
+} from '@/utils/disputeUploadUtils';
 
 interface LandDispute {
   id: string;
@@ -18,38 +23,21 @@ interface LandDispute {
   dispute_description: string | null;
   current_status: string;
   resolution_level: string | null;
+  resolution_details: string | null;
   declarant_name: string;
   declarant_quality: string;
+  declarant_phone: string | null;
+  declarant_email: string | null;
   dispute_start_date: string | null;
   lifting_status: string | null;
   lifting_reason: string | null;
+  lifting_request_reference: string | null;
+  supporting_documents: any;
+  lifting_documents: any;
+  parties_involved: any;
   created_at: string;
   updated_at: string;
 }
-
-const DISPUTE_NATURES_MAP: Record<string, string> = {
-  succession: 'Litige successoral',
-  delimitation: 'Conflit de délimitation',
-  construction_anarchique: 'Construction anarchique',
-  expropriation: 'Expropriation',
-  double_vente: 'Double vente',
-  occupation_illegale: 'Occupation illégale',
-  contestation_titre: 'Contestation de titre',
-  servitude: 'Litige de servitude',
-  autre: 'Autre',
-};
-
-const STATUS_MAP: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ReactNode }> = {
-  en_cours: { label: 'En cours', variant: 'secondary', icon: <Clock className="h-3 w-3" /> },
-  resolu: { label: 'Résolu', variant: 'default', icon: <CheckCircle className="h-3 w-3" /> },
-  non_entame: { label: 'Non entamé', variant: 'outline', icon: <AlertTriangle className="h-3 w-3" /> },
-  familial: { label: 'Niveau familial', variant: 'secondary', icon: <User className="h-3 w-3" /> },
-  conciliation_amiable: { label: 'Conciliation', variant: 'secondary', icon: <Scale className="h-3 w-3" /> },
-  autorite_locale: { label: 'Autorité locale', variant: 'secondary', icon: <Scale className="h-3 w-3" /> },
-  arbitrage: { label: 'Arbitrage', variant: 'outline', icon: <Scale className="h-3 w-3" /> },
-  tribunal: { label: 'Tribunal', variant: 'destructive', icon: <Scale className="h-3 w-3" /> },
-  appel: { label: 'En appel', variant: 'destructive', icon: <Scale className="h-3 w-3" /> },
-};
 
 export const UserLandDisputes: React.FC = () => {
   const { user } = useAuth();
@@ -98,8 +86,40 @@ export const UserLandDisputes: React.FC = () => {
   const paginatedDisputes = filteredDisputes.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const getStatusBadge = (status: string) => {
-    const s = STATUS_MAP[status] || { label: status, variant: 'secondary' as const, icon: <Clock className="h-3 w-3" /> };
-    return <Badge variant={s.variant} className="flex items-center gap-1 text-[10px]">{s.icon}{s.label}</Badge>;
+    const s = DISPUTE_STATUS_CONFIG[status] || { label: status, variant: 'secondary' as const };
+    return <Badge variant={s.variant} className="text-[10px]">{s.label}</Badge>;
+  };
+
+  const copyReference = (ref: string) => {
+    navigator.clipboard.writeText(ref);
+    toast.success('Référence copiée');
+  };
+
+  const renderDocumentLinks = (docs: any, label: string) => {
+    if (!docs || (Array.isArray(docs) && docs.length === 0)) return null;
+    const docList = Array.isArray(docs) ? docs : [docs];
+    if (docList.length === 0) return null;
+
+    return (
+      <div className="pt-2 border-t">
+        <span className="text-xs text-muted-foreground">{label} ({docList.length})</span>
+        <div className="flex flex-wrap gap-1.5 mt-1">
+          {docList.map((url: string, i: number) => (
+            <a
+              key={i}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-primary hover:underline bg-primary/5 px-2 py-1 rounded-lg"
+            >
+              {url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? <Image className="h-3 w-3" /> : <FileText className="h-3 w-3" />}
+              Doc {i + 1}
+              <ExternalLink className="h-2.5 w-2.5" />
+            </a>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   const stats = {
@@ -223,7 +243,12 @@ export const UserLandDisputes: React.FC = () => {
                 <CardContent className="p-3 space-y-2">
                   <div className="flex items-center gap-2 text-sm font-semibold text-primary"><FileText className="h-4 w-4" /> Informations</div>
                   <div className="space-y-1.5 text-sm">
-                    <div className="flex justify-between"><span className="text-muted-foreground">Référence :</span><span className="font-mono font-bold">{selectedDispute.reference_number}</span></div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Référence :</span>
+                      <button onClick={() => copyReference(selectedDispute.reference_number)} className="flex items-center gap-1 font-mono font-bold hover:text-primary transition-colors">
+                        {selectedDispute.reference_number} <Copy className="h-3 w-3" />
+                      </button>
+                    </div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Parcelle :</span><span className="font-mono">{selectedDispute.parcel_number}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Type :</span>
                       <Badge variant={selectedDispute.dispute_type === 'report' ? 'destructive' : 'default'} className="text-[10px]">
@@ -234,6 +259,9 @@ export const UserLandDisputes: React.FC = () => {
                     <div className="flex justify-between"><span className="text-muted-foreground">Statut :</span>{getStatusBadge(selectedDispute.current_status)}</div>
                     {selectedDispute.dispute_start_date && (
                       <div className="flex justify-between"><span className="text-muted-foreground">Début :</span><span>{new Date(selectedDispute.dispute_start_date).toLocaleDateString('fr-FR')}</span></div>
+                    )}
+                    {selectedDispute.resolution_level && (
+                      <div className="flex justify-between"><span className="text-muted-foreground">Niveau :</span><span className="capitalize">{selectedDispute.resolution_level.replace(/_/g, ' ')}</span></div>
                     )}
                   </div>
                 </CardContent>
@@ -248,18 +276,76 @@ export const UserLandDisputes: React.FC = () => {
                 </Card>
               )}
 
+              {/* Lifting info */}
+              {selectedDispute.dispute_type === 'lifting' && (selectedDispute.lifting_reason || selectedDispute.lifting_request_reference) && (
+                <Card className="rounded-xl shadow-sm">
+                  <CardContent className="p-3 space-y-2">
+                    <div className="text-sm font-semibold text-primary">Demande de levée</div>
+                    <div className="space-y-1.5 text-sm">
+                      {selectedDispute.lifting_request_reference && (
+                        <div className="flex justify-between"><span className="text-muted-foreground">Réf. litige :</span><span className="font-mono">{selectedDispute.lifting_request_reference}</span></div>
+                      )}
+                      {selectedDispute.lifting_reason && (
+                        <div className="flex justify-between"><span className="text-muted-foreground">Motif :</span><span>{LIFTING_REASONS_MAP[selectedDispute.lifting_reason] || selectedDispute.lifting_reason}</span></div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               <Card className="rounded-xl shadow-sm">
                 <CardContent className="p-3 space-y-2">
                   <div className="flex items-center gap-2 text-sm font-semibold text-primary"><User className="h-4 w-4" /> Déclarant</div>
                   <div className="space-y-1.5 text-sm">
                     <div className="flex justify-between"><span className="text-muted-foreground">Nom :</span><span>{selectedDispute.declarant_name}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Qualité :</span><span className="capitalize">{selectedDispute.declarant_quality}</span></div>
+                    {selectedDispute.declarant_phone && <div className="flex justify-between"><span className="text-muted-foreground">Téléphone :</span><span>{selectedDispute.declarant_phone}</span></div>}
+                    {selectedDispute.declarant_email && <div className="flex justify-between"><span className="text-muted-foreground">Email :</span><span className="truncate">{selectedDispute.declarant_email}</span></div>}
                   </div>
                 </CardContent>
               </Card>
 
+              {/* Parties involved */}
+              {selectedDispute.parties_involved && Array.isArray(selectedDispute.parties_involved) && selectedDispute.parties_involved.length > 0 && (
+                <Card className="rounded-xl shadow-sm">
+                  <CardContent className="p-3 space-y-2">
+                    <div className="text-sm font-semibold text-primary">Parties concernées</div>
+                    {selectedDispute.parties_involved.map((party: any, i: number) => (
+                      <div key={i} className="text-sm flex justify-between border-b last:border-0 pb-1">
+                        <span className="text-muted-foreground capitalize">{party.role}</span>
+                        <span>{party.name}</span>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Documents */}
+              {(selectedDispute.supporting_documents || selectedDispute.lifting_documents) && (
+                <Card className="rounded-xl shadow-sm">
+                  <CardContent className="p-3 space-y-2">
+                    <div className="text-sm font-semibold text-primary">Documents</div>
+                    {renderDocumentLinks(selectedDispute.supporting_documents, 'Documents justificatifs')}
+                    {renderDocumentLinks(selectedDispute.lifting_documents, 'Documents de levée')}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Resolution details */}
+              {selectedDispute.resolution_details && (
+                <Card className="rounded-xl shadow-sm">
+                  <CardContent className="p-3 space-y-2">
+                    <div className="text-sm font-semibold text-primary">Notes de résolution</div>
+                    <p className="text-sm whitespace-pre-line text-muted-foreground">{selectedDispute.resolution_details}</p>
+                  </CardContent>
+                </Card>
+              )}
+
               <div className="text-[10px] text-muted-foreground text-center">
                 Créé le {new Date(selectedDispute.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                {selectedDispute.updated_at !== selectedDispute.created_at && (
+                  <> · Mis à jour le {new Date(selectedDispute.updated_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</>
+                )}
               </div>
             </div>
           )}

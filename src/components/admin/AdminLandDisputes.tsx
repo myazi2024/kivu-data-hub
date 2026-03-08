@@ -9,7 +9,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Scale, Search, Eye, Clock, CheckCircle, AlertTriangle, FileText, ChevronLeft, ChevronRight, User, RefreshCw, Filter } from 'lucide-react';
+import { Scale, Search, Eye, Clock, CheckCircle, AlertTriangle, FileText, ChevronLeft, ChevronRight, User, RefreshCw, Filter, ExternalLink, Image } from 'lucide-react';
+import {
+  DISPUTE_NATURES_MAP,
+  DISPUTE_STATUS_CONFIG,
+  LIFTING_REASONS_MAP,
+} from '@/utils/disputeUploadUtils';
 
 interface LandDispute {
   id: string;
@@ -38,22 +43,11 @@ interface LandDispute {
   updated_at: string;
 }
 
-const DISPUTE_NATURES_MAP: Record<string, string> = {
-  succession: 'Litige successoral',
-  delimitation: 'Conflit de délimitation',
-  construction_anarchique: 'Construction anarchique',
-  expropriation: 'Expropriation',
-  double_vente: 'Double vente',
-  occupation_illegale: 'Occupation illégale',
-  contestation_titre: 'Contestation de titre',
-  servitude: 'Litige de servitude',
-  autre: 'Autre',
-};
-
 const STATUS_OPTIONS = [
   { value: 'all', label: 'Tous les statuts' },
   { value: 'en_cours', label: 'En cours' },
   { value: 'non_entame', label: 'Non entamé' },
+  { value: 'demande_levee', label: 'Demande de levée' },
   { value: 'familial', label: 'Niveau familial' },
   { value: 'conciliation_amiable', label: 'Conciliation' },
   { value: 'autorite_locale', label: 'Autorité locale' },
@@ -61,6 +55,18 @@ const STATUS_OPTIONS = [
   { value: 'tribunal', label: 'Tribunal' },
   { value: 'appel', label: 'En appel' },
   { value: 'resolu', label: 'Résolu' },
+  { value: 'leve', label: 'Levé' },
+];
+
+const ADMIN_STATUS_TRANSITIONS = [
+  { value: 'en_cours', label: 'En cours' },
+  { value: 'conciliation_amiable', label: 'Conciliation' },
+  { value: 'autorite_locale', label: 'Autorité locale' },
+  { value: 'arbitrage', label: 'Arbitrage' },
+  { value: 'tribunal', label: 'Tribunal' },
+  { value: 'appel', label: 'En appel' },
+  { value: 'resolu', label: 'Résolu' },
+  { value: 'leve', label: 'Levé' },
 ];
 
 const AdminLandDisputes: React.FC = () => {
@@ -73,6 +79,7 @@ const AdminLandDisputes: React.FC = () => {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [adminNotes, setAdminNotes] = useState('');
+  const [newStatus, setNewStatus] = useState('');
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const itemsPerPage = 15;
 
@@ -98,21 +105,33 @@ const AdminLandDisputes: React.FC = () => {
     }
   };
 
-  const handleUpdateStatus = async (disputeId: string, newStatus: string) => {
+  const handleUpdateStatus = async (disputeId: string) => {
+    if (!newStatus) { toast.error('Veuillez sélectionner un statut'); return; }
     setUpdatingStatus(true);
     try {
+      const updateData: any = {
+        current_status: newStatus,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Store admin notes separately — don't overwrite resolution_details
+      if (adminNotes.trim()) {
+        const existing = selectedDispute?.resolution_details || '';
+        const timestamp = new Date().toLocaleDateString('fr-FR');
+        updateData.resolution_details = existing
+          ? `${existing}\n\n[Admin ${timestamp}] ${adminNotes.trim()}`
+          : `[Admin ${timestamp}] ${adminNotes.trim()}`;
+      }
+
       const { error } = await supabase
         .from('cadastral_land_disputes' as any)
-        .update({
-          current_status: newStatus,
-          resolution_details: adminNotes || null,
-          updated_at: new Date().toISOString(),
-        } as any)
+        .update(updateData as any)
         .eq('id', disputeId);
 
       if (error) throw error;
       toast.success('Statut mis à jour');
       setAdminNotes('');
+      setNewStatus('');
       fetchDisputes();
       setIsDetailsOpen(false);
     } catch (error: any) {
@@ -146,26 +165,42 @@ const AdminLandDisputes: React.FC = () => {
   const paginatedDisputes = filteredDisputes.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const getStatusBadge = (status: string) => {
-    const map: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-      en_cours: { label: 'En cours', variant: 'secondary' },
-      resolu: { label: 'Résolu', variant: 'default' },
-      non_entame: { label: 'Non entamé', variant: 'outline' },
-      familial: { label: 'Familial', variant: 'secondary' },
-      conciliation_amiable: { label: 'Conciliation', variant: 'secondary' },
-      autorite_locale: { label: 'Autorité locale', variant: 'secondary' },
-      arbitrage: { label: 'Arbitrage', variant: 'outline' },
-      tribunal: { label: 'Tribunal', variant: 'destructive' },
-      appel: { label: 'En appel', variant: 'destructive' },
-    };
-    const s = map[status] || { label: status, variant: 'secondary' as const };
+    const s = DISPUTE_STATUS_CONFIG[status] || { label: status, variant: 'secondary' as const };
     return <Badge variant={s.variant} className="text-[10px]">{s.label}</Badge>;
+  };
+
+  const renderDocumentLinks = (docs: any, label: string) => {
+    if (!docs || (Array.isArray(docs) && docs.length === 0)) return null;
+    const docList = Array.isArray(docs) ? docs : [docs];
+    if (docList.length === 0) return null;
+
+    return (
+      <div className="pt-2 border-t">
+        <span className="text-xs text-muted-foreground">{label} ({docList.length})</span>
+        <div className="flex flex-wrap gap-1.5 mt-1">
+          {docList.map((url: string, i: number) => (
+            <a
+              key={i}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-primary hover:underline bg-primary/5 px-2 py-1 rounded-lg"
+            >
+              {url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? <Image className="h-3 w-3" /> : <FileText className="h-3 w-3" />}
+              Doc {i + 1}
+              <ExternalLink className="h-2.5 w-2.5" />
+            </a>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   const stats = {
     total: disputes.length,
     reports: disputes.filter(d => d.dispute_type === 'report').length,
     liftings: disputes.filter(d => d.dispute_type === 'lifting').length,
-    enCours: disputes.filter(d => !['resolu'].includes(d.current_status)).length,
+    enCours: disputes.filter(d => !['resolu', 'leve'].includes(d.current_status)).length,
   };
 
   if (loading) {
@@ -275,7 +310,7 @@ const AdminLandDisputes: React.FC = () => {
                   <td className="p-3 text-xs hidden md:table-cell">{dispute.declarant_name}</td>
                   <td className="p-3 text-xs hidden md:table-cell">{new Date(dispute.created_at).toLocaleDateString('fr-FR')}</td>
                   <td className="p-3 text-center">
-                    <Button variant="ghost" size="sm" onClick={() => { setSelectedDispute(dispute); setIsDetailsOpen(true); setAdminNotes(''); }} className="h-7 w-7 p-0">
+                    <Button variant="ghost" size="sm" onClick={() => { setSelectedDispute(dispute); setIsDetailsOpen(true); setAdminNotes(''); setNewStatus(dispute.current_status); }} className="h-7 w-7 p-0">
                       <Eye className="h-4 w-4" />
                     </Button>
                   </td>
@@ -329,6 +364,10 @@ const AdminLandDisputes: React.FC = () => {
                       <p className="text-sm mt-1">{selectedDispute.dispute_description}</p>
                     </div>
                   )}
+                  {/* Supporting documents */}
+                  {renderDocumentLinks(selectedDispute.supporting_documents, 'Documents justificatifs')}
+                  {/* Lifting documents */}
+                  {renderDocumentLinks(selectedDispute.lifting_documents, 'Documents de levée')}
                 </CardContent>
               </Card>
 
@@ -345,6 +384,19 @@ const AdminLandDisputes: React.FC = () => {
                 </CardContent>
               </Card>
 
+              {/* Lifting info */}
+              {selectedDispute.dispute_type === 'lifting' && (selectedDispute.lifting_reason || selectedDispute.lifting_request_reference) && (
+                <Card className="rounded-xl shadow-sm">
+                  <CardContent className="p-3 space-y-2">
+                    <div className="text-sm font-semibold text-primary">Demande de levée</div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      {selectedDispute.lifting_request_reference && <div><span className="text-muted-foreground text-xs">Réf. litige original</span><p className="font-mono">{selectedDispute.lifting_request_reference}</p></div>}
+                      {selectedDispute.lifting_reason && <div><span className="text-muted-foreground text-xs">Motif</span><p>{LIFTING_REASONS_MAP[selectedDispute.lifting_reason] || selectedDispute.lifting_reason}</p></div>}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Parties involved */}
               {selectedDispute.parties_involved && Array.isArray(selectedDispute.parties_involved) && selectedDispute.parties_involved.length > 0 && (
                 <Card className="rounded-xl shadow-sm">
@@ -360,36 +412,52 @@ const AdminLandDisputes: React.FC = () => {
                 </Card>
               )}
 
+              {/* Resolution details (user's original + admin notes) */}
+              {selectedDispute.resolution_details && (
+                <Card className="rounded-xl shadow-sm">
+                  <CardContent className="p-3 space-y-2">
+                    <div className="text-sm font-semibold text-primary">Notes de résolution</div>
+                    <p className="text-sm whitespace-pre-line">{selectedDispute.resolution_details}</p>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Admin action: Update status */}
               <Card className="rounded-xl shadow-sm border-primary/20">
                 <CardContent className="p-3 space-y-3">
                   <div className="text-sm font-semibold text-primary">Action administrative</div>
                   <div className="space-y-2">
                     <Label className="text-xs">Changer le statut</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {['en_cours', 'resolu'].map(status => (
-                        <Button
-                          key={status}
-                          variant={selectedDispute.current_status === status ? 'default' : 'outline'}
-                          size="sm"
-                          className="text-xs h-8 rounded-lg"
-                          disabled={updatingStatus || selectedDispute.current_status === status}
-                          onClick={() => handleUpdateStatus(selectedDispute.id, status)}
-                        >
-                          {status === 'resolu' ? 'Marquer résolu' : 'En cours'}
-                        </Button>
-                      ))}
-                    </div>
+                    <Select value={newStatus} onValueChange={setNewStatus}>
+                      <SelectTrigger className="h-9 text-sm rounded-xl">
+                        <SelectValue placeholder="Sélectionner un statut" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ADMIN_STATUS_TRANSITIONS.map(s => (
+                          <SelectItem key={s.value} value={s.value} disabled={selectedDispute.current_status === s.value}>
+                            {s.label} {selectedDispute.current_status === s.value ? '(actuel)' : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">Notes administratives</Label>
                     <Textarea
                       value={adminNotes}
                       onChange={(e) => setAdminNotes(e.target.value)}
-                      placeholder="Ajouter des notes de résolution..."
+                      placeholder="Ajouter des notes (sera ajouté à l'historique, pas en remplacement)..."
                       className="text-sm rounded-xl min-h-[60px]"
                     />
                   </div>
+                  <Button
+                    size="sm"
+                    className="w-full rounded-xl"
+                    disabled={updatingStatus || newStatus === selectedDispute.current_status}
+                    onClick={() => handleUpdateStatus(selectedDispute.id)}
+                  >
+                    {updatingStatus ? 'Mise à jour...' : 'Mettre à jour le statut'}
+                  </Button>
                 </CardContent>
               </Card>
             </div>

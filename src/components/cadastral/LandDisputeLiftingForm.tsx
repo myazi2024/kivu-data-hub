@@ -21,6 +21,8 @@ import {
   sendDisputeNotification,
   validateEmail,
   validatePhone,
+  validateFileCount,
+  validateFile,
   getDisputeLiftingDraftKey,
 } from '@/utils/disputeUploadUtils';
 
@@ -201,13 +203,8 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    const newFiles = Array.from(files).filter(file => {
-      const isValid = file.type.startsWith('image/') || file.type === 'application/pdf';
-      const isValidSize = file.size <= 10 * 1024 * 1024;
-      if (!isValid) toast.error(`${file.name}: Format non supporté`);
-      if (!isValidSize) toast.error(`${file.name}: Trop volumineux (max 10 Mo)`);
-      return isValid && isValidSize;
-    });
+    if (!validateFileCount(documents.length, files.length)) return;
+    const newFiles = Array.from(files).filter(file => validateFile(file));
     setDocuments(prev => [...prev, ...newFiles]);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
