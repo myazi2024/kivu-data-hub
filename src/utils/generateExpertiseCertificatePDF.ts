@@ -35,6 +35,27 @@ export interface ExpertiseCertificateData {
   approvedBy: string;
 }
 
+// Label maps for human-readable display
+const QUALITY_LABELS: Record<string, string> = {
+  luxe: 'Luxe / Haut standing',
+  standard: 'Standard / Moyen standing',
+  economique: 'Économique / Social',
+};
+
+const CONDITION_LABELS: Record<string, string> = {
+  neuf: 'Neuf (< 2 ans)',
+  bon: 'Bon état',
+  moyen: 'État moyen',
+  mauvais: 'Mauvais état',
+  a_renover: 'À rénover',
+};
+
+const ROAD_LABELS: Record<string, string> = {
+  asphalte: 'Route asphaltée',
+  terre: 'Route en terre',
+  piste: 'Piste / Sentier',
+};
+
 export async function generateExpertiseCertificatePDF(data: ExpertiseCertificateData): Promise<Blob> {
   const doc = new jsPDF();
   const pw = doc.internal.pageSize.getWidth();
