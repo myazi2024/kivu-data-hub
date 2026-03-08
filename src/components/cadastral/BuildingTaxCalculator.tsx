@@ -105,8 +105,8 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
   const defaultConstruction = detectedConstruction || (parcelData?.construction_type && parcelData.construction_type !== 'Terrain nu' ? 'en_dur' : 'en_dur');
 
   // #7 fix: Zone is now editable via a Select
-  const [zoneType, setZoneType] = useState(defaultZone);
-  const [constructionType, setConstructionType] = useState(defaultConstruction);
+  const [zoneType, setZoneType] = useState<'urban' | 'rural'>(defaultZone);
+  const [constructionType, setConstructionType] = useState<'en_dur' | 'semi_dur' | 'en_paille'>(defaultConstruction);
   const [areaSqm, setAreaSqm] = useState(Number(parcelData?.area_sqm) || 0);
   const [fiscalYear, setFiscalYear] = useState(currentYear);
   const [numberOfFloors, setNumberOfFloors] = useState(1);
