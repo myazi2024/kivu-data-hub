@@ -1600,7 +1600,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
               
               <div className="flex items-center justify-between pt-2 border-t-2">
                 <span className="text-sm font-bold">Total</span>
-                <span className="text-lg font-bold text-primary">${getTotalAmount()}</span>
+                <span className="text-lg font-bold text-primary">${getTotalAmount().toFixed(2)}</span>
               </div>
             </div>
           </CardContent>
