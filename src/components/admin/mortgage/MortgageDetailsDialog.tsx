@@ -3,21 +3,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { formatCurrency } from '@/utils/formatters';
-import { getCreditorTypeLabel } from './mortgageHelpers';
-
-interface Mortgage {
-  id: string;
-  parcel_id: string;
-  creditor_name: string;
-  creditor_type: string;
-  mortgage_amount_usd: number;
-  mortgage_status: string;
-  contract_date: string;
-  duration_months: number;
-  created_at: string;
-  parcel_number?: string;
-  reference_number?: string;
-}
+import { StatusBadge } from '@/components/shared/StatusBadge';
+import { getCreditorTypeLabel, getMortgageStatusType } from './mortgageHelpers';
+import type { Mortgage } from './mortgageTypes';
 
 interface MortgageDetailsDialogProps {
   open: boolean;
@@ -25,6 +13,7 @@ interface MortgageDetailsDialogProps {
   mortgage: Mortgage | null;
 }
 
+/** Fix #8: Added mortgage status display with StatusBadge */
 const MortgageDetailsDialog: React.FC<MortgageDetailsDialogProps> = ({ open, onOpenChange, mortgage }) => (
   <Dialog open={open} onOpenChange={onOpenChange}>
     <DialogContent className="max-w-[340px] rounded-2xl">
@@ -37,6 +26,12 @@ const MortgageDetailsDialog: React.FC<MortgageDetailsDialogProps> = ({ open, onO
               <p className="text-sm font-mono font-bold text-primary">{mortgage.reference_number}</p>
             </div>
           )}
+          <div className="p-2.5 rounded-lg bg-muted/50">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] text-muted-foreground">Statut</p>
+              <StatusBadge status={getMortgageStatusType(mortgage.mortgage_status)} compact />
+            </div>
+          </div>
           <div className="p-2.5 rounded-lg bg-muted/50">
             <p className="text-[10px] text-muted-foreground mb-1">Créancier</p>
             <p className="text-xs font-medium">{mortgage.creditor_name}</p>

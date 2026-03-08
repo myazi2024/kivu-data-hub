@@ -330,7 +330,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
     const hasPending = await checkExistingCancellationRequest();
-    if (hasPending) { toast.error('Une demande de radiation est déjà en cours ou renvoyée pour correction pour cette hypothèque.'); isSubmittingRef.current = false; return; }
+    if (hasPending) { toast.error('Une demande de radiation est déjà en cours pour cette hypothèque.'); isSubmittingRef.current = false; return; }
     setLoading(true);
     try {
       const documentUrls = await uploadDocuments();
@@ -342,41 +342,53 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
 
       const reasonLabel = CANCELLATION_REASONS.find(r => r.value === formData.reason)?.label || formData.reason;
 
-      const { error } = await supabase.from('cadastral_contributions').insert({
-        parcel_number: parcelNumber,
-        original_parcel_id: parcelId || null,
-        user_id: user.id,
-        contribution_type: 'mortgage_cancellation',
-        status: 'pending',
-        change_justification: formData.comments || null,
-        mortgage_history: [{
-          type: 'cancellation_request',
-          request_reference_number: requestReferenceNumber,
-          mortgage_reference_number: formData.mortgageReferenceNumber.toUpperCase(),
-          mortgage_data: mortgageData,
-          parcel_data: parcelData,
-          cancellation_reason: formData.reason,
-          cancellation_reason_label: reasonLabel,
-          cancellation_date: formData.cancellationDate,
-          settlement_amount: formData.settlementAmount ? parseFloat(formData.settlementAmount) : null,
-          requester_name: formData.requesterName,
-          requester_phone: formData.requesterPhone || null,
-          requester_email: formData.requesterEmail || null,
-          requester_id_number: formData.requesterIdNumber || null,
-          requester_quality: formData.requesterQuality,
-          creditor_accord: formData.creditorAccord,
-          supporting_documents: documentUrls,
-          fees_paid: selectedFeesDetails,
-          total_amount_paid: totalAmount,
-          payment_method: 'mobile_money',
-          payment_provider: paymentProvider,
-          payment_transaction_id: paymentResult.transactionId || null,
-          submitted_at: new Date().toISOString()
-        }] as any
-      });
-      if (error) throw error;
+      // Fix #3: Separate try/catch for DB insert to handle payment rollback
+      try {
+        const { error } = await supabase.from('cadastral_contributions').insert({
+          parcel_number: parcelNumber,
+          original_parcel_id: parcelId || null,
+          user_id: user.id,
+          contribution_type: 'mortgage_cancellation',
+          status: 'pending',
+          change_justification: formData.comments || null,
+          mortgage_history: [{
+            type: 'cancellation_request',
+            request_reference_number: requestReferenceNumber,
+            mortgage_reference_number: formData.mortgageReferenceNumber.toUpperCase(),
+            mortgage_data: mortgageData,
+            parcel_data: parcelData,
+            cancellation_reason: formData.reason,
+            cancellation_reason_label: reasonLabel,
+            cancellation_date: formData.cancellationDate,
+            settlement_amount: formData.settlementAmount ? parseFloat(formData.settlementAmount) : null,
+            requester_name: formData.requesterName,
+            requester_phone: formData.requesterPhone || null,
+            requester_email: formData.requesterEmail || null,
+            requester_id_number: formData.requesterIdNumber || null,
+            requester_quality: formData.requesterQuality,
+            creditor_accord: formData.creditorAccord,
+            supporting_documents: documentUrls,
+            fees_paid: selectedFeesDetails,
+            total_amount_paid: totalAmount,
+            payment_method: 'mobile_money',
+            payment_provider: paymentProvider,
+            payment_transaction_id: paymentResult.transactionId || null,
+            submitted_at: new Date().toISOString()
+          }] as any
+        });
+        if (error) throw error;
+      } catch (insertErr) {
+        console.error('DB insert failed after payment:', insertErr);
+        toast.error(
+          `Erreur de sauvegarde. Votre paiement (ID: ${paymentResult.transactionId || 'N/A'}) est confirmé. Contactez le support avec cette référence.`,
+          { duration: 15000 }
+        );
+        setLoading(false);
+        isSubmittingRef.current = false;
+        return;
+      }
 
-      // Fix #11: Create notification for user tracking
+      // Post-insert actions (non-blocking)
       try {
         await supabase.from('notifications').insert({
           user_id: user.id,

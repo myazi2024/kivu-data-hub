@@ -7,6 +7,7 @@ export const getMortgageStatusType = (status: string): StatusType => {
     case 'active': return 'active';
     case 'paid': return 'paid';
     case 'en_defaut': return 'defaulted';
+    case 'renegociee': return 'active';
     case 'pending': return 'pending';
     case 'rejected': return 'rejected';
     case 'approved': return 'active';

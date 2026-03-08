@@ -1,25 +1,14 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, XCircle, RotateCcw, FileX2, Landmark } from 'lucide-react';
+import { CheckCircle2, XCircle, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { formatCurrency } from '@/utils/formatters';
 import { getMortgageStatusType, getRequestTypeLabel } from './mortgageHelpers';
-
-interface MortgageRequest {
-  id: string;
-  parcel_number: string;
-  contribution_type: string;
-  mortgage_history: any[];
-  status: string;
-  created_at: string;
-  user_id: string;
-  original_parcel_id?: string;
-  rejection_reason?: string | null;
-  change_justification?: string | null;
-}
+import { getRequestTypeIcon } from './mortgageTypes';
+import type { MortgageRequest } from './mortgageTypes';
 
 interface MortgageRequestDetailsDialogProps {
   open: boolean;
@@ -30,12 +19,6 @@ interface MortgageRequestDetailsDialogProps {
   onReject: () => void;
   onReturn: (request: MortgageRequest) => void;
 }
-
-const getRequestTypeIcon = (type: string) => {
-  return type === 'mortgage_cancellation'
-    ? <FileX2 className="h-3.5 w-3.5 text-destructive" />
-    : <Landmark className="h-3.5 w-3.5 text-amber-600" />;
-};
 
 const MortgageRequestDetailsDialog: React.FC<MortgageRequestDetailsDialogProps> = ({
   open, onOpenChange, request, processingAction, onApprove, onReject, onReturn
@@ -88,9 +71,12 @@ const MortgageRequestDetailsDialog: React.FC<MortgageRequestDetailsDialogProps> 
             </div>
           ))}
 
+          {/* Fix #9: Show appropriate label based on status */}
           {request.change_justification && (
             <div className="p-2.5 rounded-lg bg-muted/50">
-              <p className="text-[10px] text-muted-foreground mb-1">Commentaire</p>
+              <p className="text-[10px] text-muted-foreground mb-1">
+                {request.status === 'returned' ? 'Corrections demandées' : 'Commentaire'}
+              </p>
               <p className="text-xs">{request.change_justification}</p>
             </div>
           )}

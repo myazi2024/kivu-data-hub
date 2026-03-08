@@ -1,5 +1,6 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
+import { formatCurrency } from '@/utils/formatters';
 
 interface MortgageStatsCardsProps {
   activeCount: number;
@@ -9,6 +10,7 @@ interface MortgageStatsCardsProps {
   onTabChange: (tab: string) => void;
 }
 
+/** Fix #10: Use formatCurrency instead of manual $Xk formatting */
 const MortgageStatsCards: React.FC<MortgageStatsCardsProps> = ({
   activeCount, paidCount, pendingCount, totalAmount, onTabChange
 }) => (
@@ -26,7 +28,7 @@ const MortgageStatsCards: React.FC<MortgageStatsCardsProps> = ({
       <p className="text-[9px] md:text-[10px] text-muted-foreground">En attente</p>
     </Card>
     <Card className="p-2.5 md:p-3 bg-background rounded-xl shadow-sm border text-center">
-      <p className="text-lg md:text-xl font-bold text-primary">${(totalAmount / 1000).toFixed(0)}k</p>
+      <p className="text-sm md:text-base font-bold text-primary truncate">{formatCurrency(totalAmount)}</p>
       <p className="text-[9px] md:text-[10px] text-muted-foreground">Total actif</p>
     </Card>
   </div>

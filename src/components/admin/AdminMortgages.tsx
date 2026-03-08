@@ -226,6 +226,7 @@ const AdminMortgages = () => {
       setApproveConfirmOpen(false);
       setPendingApproveRequest(null);
       setRequestDetailsOpen(false);
+      setSelectedRequest(null);
       fetchData();
     } catch (error) {
       console.error('Approve error:', error);

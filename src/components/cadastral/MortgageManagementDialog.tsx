@@ -175,15 +175,18 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
                   </Alert>
                 </div>
               )}
-              <MortgageCancellationDialog
-                parcelNumber={parcelNumber}
-                parcelId={parcelId}
-                open={true}
-                onOpenChange={(isOpen) => {
-                  if (!isOpen) handleClose();
-                }}
-                embedded
-              />
+              {/* Fix #5: Only render cancellation form when active mortgages exist */}
+              {hasActiveMortgage !== false && (
+                <MortgageCancellationDialog
+                  parcelNumber={parcelNumber}
+                  parcelId={parcelId}
+                  open={true}
+                  onOpenChange={(isOpen) => {
+                    if (!isOpen) handleClose();
+                  }}
+                  embedded
+                />
+              )}
             </>
           )}
         </div>

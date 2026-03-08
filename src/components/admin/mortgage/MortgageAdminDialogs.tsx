@@ -5,14 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle2, RefreshCw } from 'lucide-react';
-
-interface MortgageRequest {
-  id: string;
-  parcel_number: string;
-  contribution_type: string;
-  mortgage_history: any[];
-  status: string;
-}
+import type { MortgageRequest } from './mortgageTypes';
 
 // --- Approval Confirmation Dialog ---
 interface ApproveConfirmDialogProps {
