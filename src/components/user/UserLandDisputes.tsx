@@ -16,10 +16,9 @@ import {
   LIFTING_REASONS_MAP,
   DECLARANT_QUALITIES_MAP,
   PARTY_ROLES_MAP,
-  getStatusVariant,
-  getStatusLabel,
 } from '@/utils/disputeSharedTypes';
 import DisputeDocumentLinks from '@/components/cadastral/DisputeDocumentLinks';
+import DisputeStatusBadge from '@/components/cadastral/DisputeStatusBadge';
 
 export const UserLandDisputes: React.FC = () => {
   const { user } = useAuth();
