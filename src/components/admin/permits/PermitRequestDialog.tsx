@@ -176,7 +176,7 @@ export const PermitRequestDialog: React.FC<PermitRequestDialogProps> = ({
           user?.id
         );
         if (certResult) {
-          toast.success('Certificat de permis de construire généré');
+          toast.success('Certificat d\'autorisation de bâtir généré');
         }
       }
 
