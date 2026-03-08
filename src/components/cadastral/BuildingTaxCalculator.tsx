@@ -373,7 +373,7 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
             {/* #7 fix: Zone selector instead of read-only */}
             <div className="p-1.5">
               <Label className="text-[10px] text-muted-foreground">Zone</Label>
-              <Select value={zoneType} onValueChange={setZoneType}>
+              <Select value={zoneType} onValueChange={(v) => setZoneType(v as 'urban' | 'rural')}>
                 <SelectTrigger className="h-7 text-xs rounded-lg border">
                   <SelectValue />
                 </SelectTrigger>
