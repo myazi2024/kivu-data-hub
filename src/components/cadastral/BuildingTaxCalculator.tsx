@@ -76,15 +76,14 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
 
       if (data) {
         for (const row of data) {
+          const val = row.config_value;
           if (row.config_key === 'cdf_usd_exchange_rate') {
-            const val = row.config_value;
             if (typeof val === 'number') setExchangeRate(val);
             else if (typeof (val as any)?.rate === 'number') setExchangeRate((val as any).rate);
           }
-          // #5 fix: Load building tax rates from DB if configured
           if (row.config_key === 'building_tax_rates' && typeof val === 'object') {
             try {
-              const rates = row.config_value as any;
+              const rates = val as any;
               if (rates?.urban && rates?.rural) {
                 setDbBuildingRates(rates);
               }
