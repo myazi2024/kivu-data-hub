@@ -17,7 +17,10 @@ import {
   Activity,
   Home,
   DollarSign,
-  Info
+  Info,
+  Users,
+  Building,
+  Landmark
 } from 'lucide-react';
 import { ProvinceData } from '@/types/province';
 import { VacancyRateVisualization } from './VacancyRateVisualization';
