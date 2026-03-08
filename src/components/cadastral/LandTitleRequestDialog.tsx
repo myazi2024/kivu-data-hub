@@ -325,22 +325,26 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     }
   }, [constructionType, constructionNature]);
 
-  // Pre-fill with user info
+  // Pre-fill with user info — only on mount (when dialog opens), not on every profile change
+  const hasPrefilledRef = useRef(false);
   useEffect(() => {
-    if (profile) {
+    if (profile && open && !hasPrefilledRef.current) {
+      hasPrefilledRef.current = true;
       const fullName = (profile.full_name || '').trim();
       const nameParts = fullName.split(/\s+/);
-      // Convention: last token = first name, rest = last name
       const lastName = nameParts.length > 1 ? nameParts.slice(0, -1).join(' ') : nameParts[0] || '';
       const firstName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
       setFormData(prev => ({
         ...prev,
-        requesterLastName: lastName,
-        requesterFirstName: firstName,
-        requesterEmail: profile.email || ''
+        requesterLastName: prev.requesterLastName || lastName,
+        requesterFirstName: prev.requesterFirstName || firstName,
+        requesterEmail: prev.requesterEmail || profile.email || ''
       }));
     }
-  }, [profile]);
+    if (!open) {
+      hasPrefilledRef.current = false;
+    }
+  }, [profile, open]);
 
   // Update location options
   useEffect(() => {
