@@ -397,7 +397,7 @@ const AdminMutationRequests: React.FC = () => {
           >
             <Eye className="h-3.5 w-3.5" />
           </Button>
-          {request.payment_status === 'paid' && request.status === 'in_review' && (
+           {(request.payment_status === 'paid' && ['in_review', 'on_hold'].includes(request.status)) && (
             <Button
               variant="ghost"
               size="sm"
