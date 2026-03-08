@@ -546,23 +546,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     return () => clearInterval(autoSaveInterval);
   }, [open, user, formData, currentOwners, previousOwners, taxRecords, mortgageRecords, buildingPermits, gpsCoordinates, parcelSides]);
 
-  // Sauvegarder les données quand le dialogue se ferme
-  useEffect(() => {
-    if (!open && formData.parcelNumber) {
-      // Sauvegarder uniquement si des données ont été renseignées
-      const hasData = Object.keys(formData).length > 1 || 
-                     currentOwners.some(o => o.lastName || o.firstName) ||
-                     previousOwners.some(o => o.name) ||
-                     taxRecords.some(t => t.taxAmount) ||
-                     mortgageRecords.some(m => m.mortgageAmount) ||
-                     buildingPermits.some(p => p.permitNumber) ||
-                     gpsCoordinates.some(g => g.lat || g.lng);
-      
-      if (hasData) {
-        saveFormDataToStorage();
-      }
-    }
-  }, [open]);
+  // NOTE: Draft is saved BEFORE resetting state in handleClose/handleAttemptClose.
+  // We no longer save on !open to avoid the race condition where reset state overwrites the draft.
 
   // Détecter automatiquement le type de section à partir du préfixe du numéro de parcelle
   useEffect(() => {
