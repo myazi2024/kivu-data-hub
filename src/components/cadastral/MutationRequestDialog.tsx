@@ -133,6 +133,9 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   const [paymentPhone, setPaymentPhone] = useState('');
   const [processingPayment, setProcessingPayment] = useState(false);
 
+  // Vérifier si c'est un type de mutation avec transfert
+  const isTransferMutation = ['vente', 'donation', 'succession', 'expropriation', 'echange'].includes(mutationType);
+
   // Récupérer automatiquement les données CCC (date titre + date acquisition) en UNE SEULE requête
   useEffect(() => {
     const fetchParcelDates = async () => {
