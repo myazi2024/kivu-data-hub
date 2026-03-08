@@ -225,9 +225,9 @@ export default function AdminPermitFeesConfig() {
             </Table>
           </div>
 
-          {/* Permis de régularisation */}
+          {/* Autorisation de régularisation */}
           <div>
-            <h3 className="text-lg font-semibold mb-3">Permis de régularisation</h3>
+            <h3 className="text-lg font-semibold mb-3">Autorisation de régularisation</h3>
             <Table>
               <TableHeader>
                 <TableRow>
