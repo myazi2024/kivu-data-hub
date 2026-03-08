@@ -58,7 +58,9 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
   const [step, setStep] = useState<Step>('form');
   const [loading, setLoading] = useState(false);
   const [showAuthDialog, setShowAuthDialog] = useState(false);
+  const [showDraftPrompt, setShowDraftPrompt] = useState(false);
   const isSubmittingRef = useRef(false);
+  const { hasDraft, loadDraft, clearDraft, autoSave } = useMortgageDraft('registration', parcelNumber, open);
   
   const [mortgageRecord, setMortgageRecord] = useState<MortgageRecord>({
     mortgageAmount: '',
