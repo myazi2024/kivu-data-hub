@@ -156,7 +156,10 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
 
   // Charger les données de la parcelle
   const loadParcelData = async () => {
-    if (!parcelId) return;
+    if (!parcelId) {
+      console.warn('loadParcelData: parcelId is undefined, skipping fetch');
+      return;
+    }
     
     setLoadingData(true);
     try {
@@ -172,6 +175,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       }
     } catch (error) {
       console.error('Error loading parcel data:', error);
+      toast.error('Erreur lors du chargement des données de la parcelle');
     } finally {
       setLoadingData(false);
     }
