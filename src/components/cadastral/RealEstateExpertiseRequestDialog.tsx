@@ -893,20 +893,102 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   };
 
   const handleClose = () => {
+    // Stop any active sound measurement
+    stopSoundMeasurement();
+
+    // Navigation & flow
     setStep('form');
     setActiveTab('general');
     setShowIntro(true);
     setCreatedRequest(null);
     setFormData(null);
+
+    // General
     setPropertyDescription('');
+    setConstructionType('villa');
     setConstructionYear('');
+    setConstructionQuality('standard');
+    setNumberOfFloors('1');
     setTotalBuiltAreaSqm('');
+    setPropertyCondition('bon');
+    setNumberOfRooms('');
+    setNumberOfBedrooms('');
+    setNumberOfBathrooms('');
+
+    // Materials
+    setWallMaterial('parpaings');
+    setRoofMaterial('tole_bac');
+    setWindowType('aluminium');
+    setFloorMaterial('carrelage');
+    setHasPlaster(true);
+    setHasPainting(true);
+    setHasCeiling(true);
+
+    // Position
+    setBuildingPosition('premiere_position');
+    setFacadeOrientation('');
+    setDistanceFromRoad('');
+    setIsCornerPlot(false);
+    setHasDirectStreetAccess(true);
+
+    // Apartment
+    setFloorNumber('');
+    setTotalBuildingFloors('');
+    setAccessibility('escalier');
+    setApartmentNumber('');
+    setHasCommonAreas(false);
+    setMonthlyCharges('');
+
+    // Sound
+    setSoundEnvironment('calme');
+    setNearbyNoiseSources([]);
+    setHasDoubleGlazing(false);
+    setIsOnSite(null);
+    setMeasuredDecibels(null);
+    setMicrophoneError(null);
+
+    // Equipment
+    setHasWaterSupply(false);
+    setHasElectricity(false);
+    setHasSewageSystem(false);
+    setHasInternet(false);
+    setHasSecuritySystem(false);
+    setHasParking(false);
+    setParkingSpaces('');
+    setHasGarden(false);
+    setGardenAreaSqm('');
+    setHasPool(false);
+    setHasAirConditioning(false);
+    setHasSolarPanels(false);
+    setHasWaterTank(false);
+    setHasGenerator(false);
+    setHasBorehole(false);
+    setHasElectricFence(false);
+    setHasGarage(false);
+    setHasCellar(false);
+    setHasAutomaticGate(false);
+
+    // Environment
+    setRoadAccessType('asphalte');
+    setDistanceToMainRoad('');
+    setDistanceToHospital('');
+    setDistanceToSchool('');
+    setDistanceToMarket('');
+    setFloodRiskZone(false);
+    setErosionRiskZone(false);
+    setNearbyAmenities([]);
+
+    // Documents
     setAdditionalNotes('');
     setParcelDocuments([]);
     setConstructionImages([]);
+
+    // Payment
     setPaymentMethod('mobile_money');
     setPaymentProvider('');
     setPaymentPhone('');
+
+    // Certificate
     setExistingCertificate(null);
     setCertificateChecked(false);
     setShowCertificatePayment(false);
@@ -915,6 +997,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setCertPaymentPhone('');
     setHasCertificateAccess(false);
     setCheckingCertificateAccess(false);
+    setCertificateAccessFee(0);
+
     onOpenChange(false);
   };
 
