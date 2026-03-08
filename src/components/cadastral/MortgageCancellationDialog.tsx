@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,13 +11,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Loader2, FileX2, CheckCircle2, Upload, X, Info, ArrowLeft, FileText, AlertTriangle, Landmark, Calendar, DollarSign, Clock, Award, CreditCard, Phone, Hash, Image, MapPin, User, Building, FileCheck } from 'lucide-react';
+import { Loader2, FileX2, CheckCircle2, Upload, X, Info, ArrowLeft, FileText, AlertTriangle, Calendar, DollarSign, Award, CreditCard, Phone, Hash, Image, MapPin, User, Building, FileCheck, ExternalLink } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { QuickAuthDialog } from './QuickAuthDialog';
 
 
 interface MortgageCancellationDialogProps {
@@ -123,6 +124,8 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
   const [referenceError, setReferenceError] = useState<string | null>(null);
   const [requestReferenceNumber, setRequestReferenceNumber] = useState('');
   const [selectedFees, setSelectedFees] = useState<string[]>([]);
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
+  const isSubmittingRef = useRef(false);
   
   // Données pré-remplies depuis la base de données
   const [parcelData, setParcelData] = useState<ParcelData | null>(null);
@@ -153,7 +156,10 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
 
   // Charger les données de la parcelle
   const loadParcelData = async () => {
-    if (!parcelId) return;
+    if (!parcelId) {
+      console.warn('loadParcelData: parcelId is undefined, skipping fetch');
+      return;
+    }
     
     setLoadingData(true);
     try {
@@ -169,6 +175,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       }
     } catch (error) {
       console.error('Error loading parcel data:', error);
+      toast.error('Erreur lors du chargement des données de la parcelle');
     } finally {
       setLoadingData(false);
     }
@@ -206,6 +213,12 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       setReferenceValid(null);
       setReferenceError(null);
       setMortgageData(null);
+      return;
+    }
+
+    if (!parcelId) {
+      setReferenceValid(false);
+      setReferenceError('Impossible de valider: identifiant de parcelle manquant.');
       return;
     }
 
@@ -298,13 +311,17 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     );
   };
 
-  const getSelectedFeesDetails = () => {
+  const selectedFeesDetails = useMemo(() => {
     return CANCELLATION_FEES.filter(f => selectedFees.includes(f.id));
-  };
+  }, [selectedFees]);
 
-  const getTotalAmount = () => {
-    return getSelectedFeesDetails().reduce((sum, fee) => sum + fee.amount_usd, 0);
-  };
+  const totalAmount = useMemo(() => {
+    return selectedFeesDetails.reduce((sum, fee) => sum + fee.amount_usd, 0);
+  }, [selectedFeesDetails]);
+
+  // Keep backward-compatible function names for inline usage
+  const getSelectedFeesDetails = () => selectedFeesDetails;
+  const getTotalAmount = () => totalAmount;
 
   const validateForm = (): boolean => {
     if (!formData.mortgageReferenceNumber.trim()) {
@@ -339,6 +356,10 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
   };
 
   const handleGoToReview = () => {
+    if (!user) {
+      setShowAuthDialog(true);
+      return;
+    }
     if (!validateForm()) return;
     setStep('review');
   };
@@ -349,6 +370,8 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
 
   const uploadDocuments = async (): Promise<string[]> => {
     const urls: string[] = [];
+    const failedUploads: string[] = [];
+    
     for (const file of formData.supportingDocuments) {
       const fileExt = file.name.split('.').pop();
       const fileName = `cancellation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
@@ -358,24 +381,51 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
         .from('cadastral-documents')
         .upload(filePath, file);
       
-      if (!error) {
+      if (error) {
+        console.error(`Failed to upload ${file.name}:`, error);
+        failedUploads.push(file.name);
+      } else {
         const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
         urls.push(data.publicUrl);
       }
     }
+    
+    if (failedUploads.length > 0) {
+      toast.warning(`${failedUploads.length} document(s) n'ont pas pu être téléversés: ${failedUploads.join(', ')}`);
+    }
+    
     return urls;
   };
+
+  const PHONE_REGEX_DRC = /^(\+?243|0)(8[1-9]|9[0-9])\d{7}$/;
 
   const processPayment = async (): Promise<boolean> => {
     setProcessingPayment(true);
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      if (paymentMethod === 'mobile_money' && (!paymentProvider || !paymentPhone)) {
-        toast.error('Veuillez renseigner tous les champs de paiement');
+      if (paymentMethod === 'mobile_money') {
+        if (!paymentProvider) {
+          toast.error('Veuillez sélectionner un opérateur Mobile Money');
+          return false;
+        }
+        if (!paymentPhone) {
+          toast.error('Veuillez renseigner votre numéro de téléphone');
+          return false;
+        }
+        if (!PHONE_REGEX_DRC.test(paymentPhone.replace(/\s/g, ''))) {
+          toast.error('Numéro de téléphone invalide. Format attendu: +243XXXXXXXXX ou 0XXXXXXXXX');
+          return false;
+        }
+      }
+      // Bank card: handled by Stripe redirect (future integration)
+      if (paymentMethod === 'bank_card') {
+        toast.info('Le paiement par carte bancaire sera disponible prochainement. Veuillez utiliser Mobile Money.');
         return false;
       }
+
+      // TODO: Integrate with real payment Edge Function (process-mobile-money-payment)
+      // For now, simulate processing with validation
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
       return true;
     } catch (error) {
@@ -389,12 +439,18 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
 
   const handleSubmit = async () => {
     if (!user) {
-      toast.error('Vous devez être connecté pour soumettre cette demande');
+      setShowAuthDialog(true);
       return;
     }
+    
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
 
     const paymentSuccess = await processPayment();
-    if (!paymentSuccess) return;
+    if (!paymentSuccess) {
+      isSubmittingRef.current = false;
+      return;
+    }
 
     setLoading(true);
     try {
@@ -450,6 +506,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       toast.error('Erreur lors de la soumission');
     } finally {
       setLoading(false);
+      isSubmittingRef.current = false;
     }
   };
 
@@ -459,6 +516,8 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     setReferenceError(null);
     setMortgageData(null);
     setParcelData(null);
+    setRequestReferenceNumber('');
+    isSubmittingRef.current = false;
     setFormData({
       mortgageReferenceNumber: '',
       reason: 'remboursement_integral',
@@ -745,6 +804,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
               <Label className="text-xs">Date souhaitée de radiation *</Label>
               <Input
                 type="date"
+                min={new Date().toISOString().split('T')[0]}
                 value={formData.cancellationDate}
                 onChange={(e) => setFormData(prev => ({ ...prev, cancellationDate: e.target.value }))}
                 className="h-10 text-sm rounded-xl"
@@ -1191,14 +1251,28 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
             </Select>
 
             <div className="space-y-1.5">
-              <Label className="text-xs">Numéro de téléphone</Label>
+              <Label className="text-xs">Numéro de téléphone *</Label>
               <Input
                 value={paymentPhone}
                 onChange={(e) => setPaymentPhone(e.target.value)}
-                placeholder="+243..."
+                placeholder="+243XXXXXXXXX"
                 className="h-10 rounded-xl"
               />
+              <p className="text-[10px] text-muted-foreground">Format: +243XXXXXXXXX ou 0XXXXXXXXX</p>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {paymentMethod === 'bank_card' && (
+        <Card className="rounded-2xl border-amber-200 dark:border-amber-800">
+          <CardContent className="p-4">
+            <Alert className="bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800 rounded-xl">
+              <Info className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-xs text-amber-700 dark:text-amber-300">
+                Le paiement par carte bancaire sera disponible prochainement. Veuillez sélectionner Mobile Money pour le moment.
+              </AlertDescription>
+            </Alert>
           </CardContent>
         </Card>
       )}
@@ -1271,30 +1345,47 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
         </AlertDescription>
       </Alert>
 
-      <Button onClick={handleClose} className="w-full h-11 rounded-xl">
-        Fermer
-      </Button>
+      <div className="flex flex-col gap-2">
+        <Button
+          variant="outline"
+          onClick={() => window.location.href = '/user-dashboard'}
+          className="w-full h-11 rounded-xl gap-2"
+        >
+          <ExternalLink className="h-4 w-4" />
+          Voir mes demandes
+        </Button>
+        <Button onClick={handleClose} className="w-full h-11 rounded-xl">
+          Fermer
+        </Button>
+      </div>
     </div>
   );
 
   if (embedded) {
     return (
-      <div className="overflow-y-auto h-full px-4 pb-4">
-        {step === 'form' && renderFormStep()}
-        {step === 'review' && renderReviewStep()}
-        {step === 'payment' && renderPaymentStep()}
-        {step === 'confirmation' && renderConfirmationStep()}
-      </div>
+      <>
+        <div className="overflow-y-auto h-full px-4 pb-4">
+          {step === 'form' && renderFormStep()}
+          {step === 'review' && renderReviewStep()}
+          {step === 'payment' && renderPaymentStep()}
+          {step === 'confirmation' && renderConfirmationStep()}
+        </div>
+        <QuickAuthDialog
+          open={showAuthDialog}
+          onOpenChange={setShowAuthDialog}
+          onAuthSuccess={() => setShowAuthDialog(false)}
+        />
+      </>
     );
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className={`z-[1200] ${isMobile ? 'w-[92vw] max-w-[380px] max-h-[88vh]' : 'max-w-lg max-h-[85vh]'} rounded-2xl p-0 overflow-hidden`}>
           <DialogHeader className="p-4 pb-2">
             <DialogTitle className="flex items-center gap-2 text-base font-bold">
-              <div className="p-1.5 bg-red-500/10 rounded-lg">
-                <FileX2 className="h-4 w-4 text-red-600" />
+              <div className="p-1.5 bg-destructive/10 rounded-lg">
+                <FileX2 className="h-4 w-4 text-destructive" />
               </div>
               Radiation d'hypothèque
             </DialogTitle>
@@ -1311,6 +1402,11 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
           </ScrollArea>
         </DialogContent>
       {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec la radiation d'hypothèque." />}
+      <QuickAuthDialog
+        open={showAuthDialog}
+        onOpenChange={setShowAuthDialog}
+        onAuthSuccess={() => setShowAuthDialog(false)}
+      />
     </Dialog>
   );
 };

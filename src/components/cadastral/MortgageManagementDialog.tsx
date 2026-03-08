@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Landmark, Plus, FileX2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
@@ -26,14 +25,26 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
   const isMobile = useIsMobile();
   const [showIntro, setShowIntro] = useState(true);
   const [activeTab, setActiveTab] = useState<MortgageTab>('add');
+  
+  // Ref to track if user clicked "Continue" vs dismissed the intro
+  const introCompletedRef = useRef(false);
+
+  // Reset ref when dialog opens
+  useEffect(() => {
+    if (open) {
+      introCompletedRef.current = false;
+    }
+  }, [open]);
 
   const handleIntroComplete = () => {
+    introCompletedRef.current = true;
     setShowIntro(false);
   };
 
   const handleClose = () => {
     setShowIntro(true);
     setActiveTab('add');
+    introCompletedRef.current = false;
     onOpenChange(false);
   };
 
@@ -43,7 +54,15 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
       <FormIntroDialog
         open={true}
         onOpenChange={(isOpen) => {
-          if (!isOpen) handleClose();
+          if (!isOpen) {
+            // If continue was clicked, don't close parent — just let showIntro=false take effect
+            if (introCompletedRef.current) {
+              introCompletedRef.current = false;
+            } else {
+              // User dismissed intro (Escape, overlay click) → close everything
+              handleClose();
+            }
+          }
         }}
         onContinue={handleIntroComplete}
         config={FORM_INTRO_CONFIGS.mortgage_management}
