@@ -94,10 +94,6 @@ export const UserLandDisputes: React.FC = () => {
   const totalPages = Math.ceil(filteredDisputes.length / itemsPerPage);
   const paginatedDisputes = filteredDisputes.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const getStatusBadge = (status: string) => {
-    return <Badge variant={getStatusVariant(status)} className="text-[10px]">{getStatusLabel(status)}</Badge>;
-  };
-
   const copyReference = (ref: string) => {
     navigator.clipboard.writeText(ref);
     toast.success('Référence copiée');
