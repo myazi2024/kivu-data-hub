@@ -152,7 +152,7 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
           </div>
         </div>
 
-        {/* Render the selected form inline — no double scroll */}
+        {/* Render the selected form inline */}
         <div className="flex-1 min-h-0 overflow-hidden">
           {activeTab === 'add' ? (
             <MortgageFormDialog
@@ -166,18 +166,40 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
               embedded
             />
           ) : (
-            <MortgageCancellationDialog
-              key={`remove-${removeKey}`}
-              parcelNumber={parcelNumber}
-              parcelId={parcelId}
-              open={true}
-              onOpenChange={(isOpen) => {
-                if (!isOpen) handleClose();
-              }}
-              embedded
-            />
+            <>
+              {/* Fix #15: Show warning if no active mortgage found */}
+              {checkingMortgage && (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                </div>
+              )}
+              {!checkingMortgage && hasActiveMortgage === false && (
+                <div className="px-4 py-3">
+                  <Alert className="bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 rounded-xl">
+                    <AlertTriangle className="h-4 w-4 text-amber-600" />
+                    <AlertDescription className="text-xs text-amber-700 dark:text-amber-300">
+                      <strong>Aucune hypothèque active détectée</strong> sur cette parcelle.
+                      La radiation nécessite un numéro de référence d'hypothèque active.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
+              <MortgageCancellationDialog
+                key={`remove-${removeKey}`}
+                parcelNumber={parcelNumber}
+                parcelId={parcelId}
+                open={true}
+                onOpenChange={(isOpen) => {
+                  if (!isOpen) handleClose();
+                }}
+                embedded
+              />
+            </>
           )}
         </div>
+
+        {/* Fix #19: WhatsApp centralized in parent dialog */}
+        {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec la gestion d'hypothèque." />}
       </DialogContent>
     </Dialog>
   );
