@@ -118,11 +118,11 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   const [beneficiaryPhone, setBeneficiaryPhone] = useState('');
   
   const [selectedFees, setSelectedFees] = useState<string[]>([]);
+  const [requiredDocumentChecks, setRequiredDocumentChecks] = useState<Record<string, boolean>>({});
   
   // Pièces jointes
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState(false);
-  const [uploadedFileUrls, setUploadedFileUrls] = useState<string[]>([]);
   
   // Certificat d'expertise immobilière
   const [hasExpertiseCertificate, setHasExpertiseCertificate] = useState<'yes' | 'no' | null>(null);
