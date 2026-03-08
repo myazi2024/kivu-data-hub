@@ -27,7 +27,7 @@ import { fr } from 'date-fns/locale';
 import { 
   FileEdit, Search, Eye, CheckCircle, XCircle, 
   Loader2, RefreshCw, DollarSign, MapPin, User, Calendar,
-  Settings, Plus, Trash2, Edit2, Save, Download, Filter
+  Settings, Plus, Trash2, Edit2, Save, Download, RotateCcw
 } from 'lucide-react';
 import { generateAndUploadCertificate } from '@/utils/certificateService';
 import { usePagination } from '@/hooks/usePagination';
