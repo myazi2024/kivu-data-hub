@@ -48,91 +48,29 @@ interface RealEstateExpertiseRequestDialogProps {
   onSuccess?: () => void;
 }
 
-interface ExpertiseFee {
-  id: string;
-  fee_name: string;
-  amount_usd: number;
-  description: string | null;
-  is_mandatory: boolean;
-  is_active: boolean;
-  display_order: number;
-}
+import type { ExpertiseFee } from '@/types/expertise';
+import {
+  CONSTRUCTION_TYPE_LABELS, QUALITY_LABELS, CONDITION_LABELS,
+  ROAD_LABELS, WALL_LABELS, ROOF_LABELS, SOUND_LABELS
+} from '@/constants/expertiseLabels';
 
-// Options de configuration
-const CONSTRUCTION_TYPE_OPTIONS = [
-  { value: 'villa', label: 'Villa / Maison individuelle' },
-  { value: 'appartement', label: 'Appartement' },
-  { value: 'immeuble', label: 'Immeuble / Bâtiment' },
-  { value: 'duplex', label: 'Duplex / Triplex' },
-  { value: 'studio', label: 'Studio' },
-  { value: 'commercial', label: 'Local commercial' },
-  { value: 'entrepot', label: 'Entrepôt / Hangar' },
-  { value: 'terrain_nu', label: 'Terrain nu (sans construction)' },
-  { value: 'autre', label: 'Autre' },
-];
+// Derive select options from centralized labels
+const toOptions = (labels: Record<string, string>) =>
+  Object.entries(labels).map(([value, label]) => ({ value, label }));
 
-const CONSTRUCTION_QUALITY_OPTIONS = [
-  { value: 'luxe', label: 'Luxe / Haut standing' },
-  { value: 'standard', label: 'Standard / Moyen standing' },
-  { value: 'economique', label: 'Économique / Social' },
-];
-
-const PROPERTY_CONDITION_OPTIONS = [
-  { value: 'neuf', label: 'Neuf (< 2 ans)' },
-  { value: 'bon', label: 'Bon état' },
-  { value: 'moyen', label: 'État moyen' },
-  { value: 'mauvais', label: 'Mauvais état' },
-  { value: 'a_renover', label: 'À rénover' },
-];
-
-const ROAD_ACCESS_OPTIONS = [
-  { value: 'asphalte', label: 'Route asphaltée' },
-  { value: 'terre', label: 'Route en terre' },
-  { value: 'piste', label: 'Piste / Sentier' },
-];
-
-const WALL_MATERIAL_OPTIONS = [
-  { value: 'beton', label: 'Béton armé' },
-  { value: 'briques_cuites', label: 'Briques cuites' },
-  { value: 'briques_adobe', label: 'Briques adobe' },
-  { value: 'parpaings', label: 'Parpaings / Blocs' },
-  { value: 'bois', label: 'Bois' },
-  { value: 'tole', label: 'Tôles métalliques' },
-  { value: 'mixte', label: 'Mixte' },
-];
-
-const ROOF_MATERIAL_OPTIONS = [
-  { value: 'tole_bac', label: 'Tôle bac / Ondulée' },
-  { value: 'tuiles', label: 'Tuiles' },
-  { value: 'dalle_beton', label: 'Dalle béton (terrasse)' },
-  { value: 'ardoise', label: 'Ardoise' },
-  { value: 'chaume', label: 'Chaume / Paille' },
-  { value: 'autre', label: 'Autre' },
-];
-
-const WINDOW_TYPE_OPTIONS = [
-  { value: 'aluminium', label: 'Aluminium' },
-  { value: 'bois', label: 'Bois' },
-  { value: 'pvc', label: 'PVC' },
-  { value: 'fer', label: 'Fer forgé' },
-  { value: 'sans_fenetres', label: 'Sans fenêtres' },
-];
-
-const FLOOR_MATERIAL_OPTIONS = [
-  { value: 'carrelage', label: 'Carrelage' },
-  { value: 'ciment_lisse', label: 'Ciment lissé' },
-  { value: 'parquet', label: 'Parquet / Bois' },
-  { value: 'marbre', label: 'Marbre / Granit' },
-  { value: 'terre_battue', label: 'Terre battue' },
-  { value: 'autre', label: 'Autre' },
-];
+const CONSTRUCTION_TYPE_OPTIONS = toOptions(CONSTRUCTION_TYPE_LABELS);
+const CONSTRUCTION_QUALITY_OPTIONS = toOptions(QUALITY_LABELS);
+const PROPERTY_CONDITION_OPTIONS = toOptions(CONDITION_LABELS);
+const ROAD_ACCESS_OPTIONS = toOptions(ROAD_LABELS);
+const WALL_MATERIAL_OPTIONS = toOptions(WALL_LABELS);
+const ROOF_MATERIAL_OPTIONS = toOptions(ROOF_LABELS);
 
 const SOUND_ENVIRONMENT_OPTIONS = [
-  { value: 'tres_calme', label: 'Très calme (< 40 dB)', minDb: 0, maxDb: 40 },
-  { value: 'calme', label: 'Calme (40-55 dB)', minDb: 40, maxDb: 55 },
-  { value: 'modere', label: 'Modéré (55-70 dB)', minDb: 55, maxDb: 70 },
-  { value: 'bruyant', label: 'Bruyant (70-85 dB)', minDb: 70, maxDb: 85 },
-  { value: 'tres_bruyant', label: 'Très bruyant (> 85 dB)', minDb: 85, maxDb: 200 },
+  { value: 'tres_calme', label: SOUND_LABELS.tres_calme + ' (< 40 dB)', minDb: 0, maxDb: 40 },
+  { value: 'calme', label: SOUND_LABELS.calme + ' (40-55 dB)', minDb: 40, maxDb: 55 },
+  { value: 'modere', label: SOUND_LABELS.modere + ' (55-70 dB)', minDb: 55, maxDb: 70 },
+  { value: 'bruyant', label: SOUND_LABELS.bruyant + ' (70-85 dB)', minDb: 70, maxDb: 85 },
+  { value: 'tres_bruyant', label: SOUND_LABELS.tres_bruyant + ' (> 85 dB)', minDb: 85, maxDb: 200 },
 ];
 
 const FACADE_ORIENTATION_OPTIONS = [
