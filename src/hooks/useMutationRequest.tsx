@@ -98,6 +98,7 @@ export const useMutationRequest = () => {
       }));
 
       const insertData = {
+        reference_number: generateMutationReference(),
         user_id: user.id,
         parcel_number: data.parcel_number,
         parcel_id: data.parcel_id || null,
@@ -113,7 +114,8 @@ export const useMutationRequest = () => {
         fee_items: feeItems,
         total_amount_usd: totalAmount,
         payment_status: 'pending',
-        status: 'pending'
+        status: 'pending',
+        estimated_processing_days: 14
       };
 
       const { data: request, error } = await supabase

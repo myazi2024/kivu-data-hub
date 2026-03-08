@@ -108,7 +108,7 @@ export const UserMutationRequests: React.FC = () => {
                       <span className="text-muted-foreground flex items-center gap-1">
                         <DollarSign className="h-3 w-3" /> Montant
                       </span>
-                      <span className="font-bold text-primary">${request.total_amount_usd.toFixed(2)}</span>
+                      <span className="font-bold text-primary">${Number(request.total_amount_usd || 0).toFixed(2)}</span>
                     </div>
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-muted-foreground">Paiement</span>
