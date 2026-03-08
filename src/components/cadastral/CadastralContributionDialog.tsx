@@ -1838,12 +1838,14 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (parcelSides.length > 2 && index < parcelSides.length) {
       setParcelSides(parcelSides.filter((_, i) => i !== index));
     }
+    markDirty();
   };
   
   const updateGPSCoordinate = (index: number, field: string, value: any) => {
     const updated = [...gpsCoordinates];
     updated[index] = { ...updated[index], [field]: value };
     setGpsCoordinates(updated);
+    markDirty();
   };
   
   const captureCurrentLocation = (index: number) => {
