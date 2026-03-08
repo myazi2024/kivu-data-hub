@@ -3,41 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
-export interface MutationFee {
-  id: string;
-  fee_name: string;
-  amount_usd: number;
-  description: string | null;
-  is_mandatory: boolean;
-  is_active: boolean;
-  display_order: number;
-}
+import type { MutationFee, MutationRequest } from '@/types/mutation';
 
-export interface MutationRequest {
-  id: string;
-  reference_number: string;
-  user_id: string;
-  parcel_number: string;
-  parcel_id: string | null;
-  mutation_type: string;
-  requester_type: string;
-  requester_name: string;
-  requester_phone: string | null;
-  requester_email: string | null;
-  beneficiary_name: string | null;
-  beneficiary_phone: string | null;
-  proposed_changes: Record<string, any>;
-  justification: string | null;
-  fee_items: any[];
-  total_amount_usd: number;
-  payment_status: string;
-  status: string;
-  processing_notes: string | null;
-  rejection_reason: string | null;
-  estimated_processing_days: number;
-  created_at: string;
-  updated_at: string;
-}
+export type { MutationFee, MutationRequest };
 
 export const useMutationRequest = () => {
   const [loading, setLoading] = useState(false);
