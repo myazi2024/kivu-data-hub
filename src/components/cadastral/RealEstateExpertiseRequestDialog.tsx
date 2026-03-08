@@ -500,7 +500,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     } catch (error: any) {
       console.error('Upload error:', error);
       toast.error('Erreur lors du téléchargement des fichiers');
-      return result;
+      throw error; // Propagate to block submission
     } finally {
       setUploadingFiles(false);
     }
@@ -600,9 +600,16 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const handlePayment = async () => {
     if (!user || !formData) return;
 
-    if (paymentMethod === 'mobile_money' && (!paymentProvider || !paymentPhone)) {
-      toast.error('Veuillez sélectionner un opérateur et entrer votre numéro');
-      return;
+    if (paymentMethod === 'mobile_money') {
+      if (!paymentProvider || !paymentPhone) {
+        toast.error('Veuillez sélectionner un opérateur et entrer votre numéro');
+        return;
+      }
+      const phoneRegex = /^(\+?243|0)(8[1-9]|9[0-9])\d{7}$/;
+      if (!phoneRegex.test(paymentPhone.replace(/\s/g, ''))) {
+        toast.error('Numéro de téléphone invalide. Format attendu: +243XXXXXXXXX ou 0XXXXXXXXX');
+        return;
+      }
     }
 
     setProcessingPayment(true);
@@ -697,9 +704,16 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const handleCertificateAccessPayment = async () => {
     if (!user || !existingCertificate) return;
 
-    if (certPaymentMethod === 'mobile_money' && (!certPaymentProvider || !certPaymentPhone)) {
-      toast.error('Veuillez sélectionner un opérateur et entrer votre numéro');
-      return;
+    if (certPaymentMethod === 'mobile_money') {
+      if (!certPaymentProvider || !certPaymentPhone) {
+        toast.error('Veuillez sélectionner un opérateur et entrer votre numéro');
+        return;
+      }
+      const phoneRegex = /^(\+?243|0)(8[1-9]|9[0-9])\d{7}$/;
+      if (!phoneRegex.test(certPaymentPhone.replace(/\s/g, ''))) {
+        toast.error('Numéro de téléphone invalide. Format attendu: +243XXXXXXXXX ou 0XXXXXXXXX');
+        return;
+      }
     }
 
     setProcessingCertPayment(true);
@@ -2044,16 +2058,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       erosionRiskZone && 'Zone d\'érosion'
     ].filter(Boolean) as string[];
 
-    const ORIENTATION_LABELS: Record<string, string> = {
-      nord: 'Nord',
-      nord_est: 'Nord-Est',
-      est: 'Est',
-      sud_est: 'Sud-Est',
-      sud: 'Sud',
-      sud_ouest: 'Sud-Ouest',
-      ouest: 'Ouest',
-      nord_ouest: 'Nord-Ouest'
-    };
+    // Use centralized labels (no local duplicate)
 
     return (
       <div className="flex flex-col" style={{ maxHeight: isMobile ? '75vh' : '70vh' }}>
@@ -2345,7 +2350,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                   {facadeOrientation && (
                     <div className="flex justify-between text-xs py-1.5">
                       <span className="text-muted-foreground">Orientation façade</span>
-                      <span className="font-medium">{ORIENTATION_LABELS[facadeOrientation] || facadeOrientation}</span>
+                      <span className="font-medium">{FACADE_ORIENTATION_LABELS[facadeOrientation] || facadeOrientation}</span>
                     </div>
                   )}
                   {distanceFromRoad && (

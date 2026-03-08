@@ -11,12 +11,24 @@ export const useRealEstateExpertise = () => {
   const [loading, setLoading] = useState(false);
   const [requests, setRequests] = useState<ExpertiseRequest[]>([]);
 
-  const generateReferenceNumber = () => {
+  const generateReferenceNumber = async (): Promise<string> => {
     const date = new Date();
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
-    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-    return `EXP-${year}${month}-${random}`;
+    let attempts = 0;
+    while (attempts < 5) {
+      const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const ref = `EXP-${year}${month}-${random}`;
+      const { data } = await supabase
+        .from('real_estate_expertise_requests')
+        .select('id')
+        .eq('reference_number', ref)
+        .maybeSingle();
+      if (!data) return ref;
+      attempts++;
+    }
+    // Fallback with timestamp for guaranteed uniqueness
+    return `EXP-${year}${month}-${Date.now().toString(36).toUpperCase()}`;
   };
 
   const fetchUserRequests = useCallback(async () => {
@@ -48,7 +60,7 @@ export const useRealEstateExpertise = () => {
 
     setLoading(true);
     try {
-      const reference_number = generateReferenceNumber();
+      const reference_number = await generateReferenceNumber();
 
       const { data: insertedData, error } = await supabase
         .from('real_estate_expertise_requests')
@@ -96,12 +108,18 @@ export const useRealEstateExpertise = () => {
     }
   }, [user]);
 
-  const checkCertificateValidity = useCallback((certificateIssueDate?: string): { isValid: boolean; daysRemaining: number } => {
+  const checkCertificateValidity = useCallback((certificateIssueDate?: string, certificateExpiryDate?: string): { isValid: boolean; daysRemaining: number } => {
     if (!certificateIssueDate) return { isValid: false, daysRemaining: 0 };
 
-    const issueDate = new Date(certificateIssueDate);
-    const expiryDate = new Date(issueDate);
-    expiryDate.setMonth(expiryDate.getMonth() + 6);
+    let expiryDate: Date;
+    if (certificateExpiryDate) {
+      // Prefer DB-stored expiry date for consistency
+      expiryDate = new Date(certificateExpiryDate);
+    } else {
+      // Fallback: calculate from issue date
+      expiryDate = new Date(certificateIssueDate);
+      expiryDate.setMonth(expiryDate.getMonth() + 6);
+    }
     
     const today = new Date();
     const daysRemaining = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
@@ -128,7 +146,7 @@ export const useRealEstateExpertise = () => {
       if (error) throw error;
       if (!data || !data.certificate_url?.trim()) return null;
 
-      const validity = checkCertificateValidity(data.certificate_issue_date);
+      const validity = checkCertificateValidity(data.certificate_issue_date, data.certificate_expiry_date);
       return validity.isValid ? (data as ExpertiseRequest) : null;
     } catch (error: any) {
       console.error('Error checking existing certificate:', error);
