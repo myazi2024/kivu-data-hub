@@ -1,6 +1,5 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Save, Download } from 'lucide-react';
 import { useMortgageDraft } from '@/hooks/useMortgageDraft';
@@ -17,6 +16,9 @@ import { supabase } from '@/integrations/supabase/client';
 import SectionHelpPopover from './SectionHelpPopover';
 import { QuickAuthDialog } from './QuickAuthDialog';
 import { generateMortgageReceiptPDF } from '@/utils/generateMortgageReceiptPDF';
+import { generateMortgageReference } from '@/utils/mortgageReferences';
+import MortgageFlowContainer from './MortgageFlowContainer';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 interface MortgageFormDialogProps {
   parcelNumber: string;
