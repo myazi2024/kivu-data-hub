@@ -52,16 +52,32 @@ export function UserBuildingPermits() {
     try {
       setLoading(true);
 
-      // Fetch both permit_request (demandes) AND update contributions with building_permits
-      const { data, error } = await supabase
+      // Fetch permit_request contributions
+      const { data: permitRequests, error: err1 } = await supabase
         .from('cadastral_contributions')
         .select('*')
         .eq('user_id', user.id)
-        .in('contribution_type', ['permit_request', 'update'])
+        .eq('contribution_type', 'permit_request')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setPermits(data || []);
+      if (err1) throw err1;
+
+      // Fetch update contributions that specifically have building_permits data
+      const { data: updateContribs, error: err2 } = await supabase
+        .from('cadastral_contributions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('contribution_type', 'update')
+        .not('building_permits', 'is', null)
+        .order('created_at', { ascending: false });
+
+      if (err2) throw err2;
+
+      // Merge both lists
+      const allPermits = [...(permitRequests || []), ...(updateContribs || [])];
+      // Sort by created_at descending
+      allPermits.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      setPermits(allPermits);
     } catch (error) {
       console.error('Error fetching building permits:', error);
       toast.error("Erreur lors du chargement des demandes d'autorisation");
