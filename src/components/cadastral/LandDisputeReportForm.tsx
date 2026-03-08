@@ -180,6 +180,10 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
   }, [profile]);
 
   const addParty = () => {
+    if (parties.length >= MAX_PARTIES) {
+      toast.error(`Maximum ${MAX_PARTIES} parties autorisées`);
+      return;
+    }
     setParties(prev => [...prev, { name: '', phone: '', role: 'defendeur', relationship: '' }]);
   };
 
