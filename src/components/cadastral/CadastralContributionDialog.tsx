@@ -1454,11 +1454,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   };
 
   const updatePreviousOwner = (index: number, field: string | Record<string, string>, value?: string) => {
+    markDirty();
     setPreviousOwners(prev => {
       const updated = [...prev];
       if (typeof field === 'string') {
         updated[index] = { ...updated[index], [field]: value };
-        // Auto-remplir la date de fin du propriétaire suivant (plus ancien) quand on change la date de début
         if (field === 'startDate' && value && index < updated.length - 1) {
           updated[index + 1] = { ...updated[index + 1], endDate: value };
         }
