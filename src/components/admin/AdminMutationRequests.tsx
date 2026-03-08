@@ -33,6 +33,7 @@ import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/shared/PaginationControls';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { exportToCSV } from '@/utils/csvExport';
+import { getMutationTypeLabel } from '@/components/cadastral/mutation/MutationConstants';
 
 import type { MutationFee, MutationRequest } from '@/types/mutation';
 
