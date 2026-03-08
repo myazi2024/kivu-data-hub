@@ -1958,6 +1958,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       lat: '',
       lng: ''
     }]);
+    markDirty();
   };
 
   const removeParcelSide = (index: number) => {
@@ -1968,6 +1969,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       if (gpsCoordinates.length > 0) {
         setGpsCoordinates(gpsCoordinates.slice(0, -1));
       }
+      markDirty();
     }
   };
 
@@ -1975,6 +1977,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     const updated = [...parcelSides];
     updated[index] = { ...updated[index], [field]: value };
     setParcelSides(updated);
+    markDirty();
   };
 
 
