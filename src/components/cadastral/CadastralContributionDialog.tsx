@@ -344,7 +344,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     numberOfFloors: '',
     buildingMaterials: '',
     architecturalPlanImages: [] as File[],
-    // Champs spécifiques permis de régularisation
+    // Champs spécifiques autorisation de régularisation
     constructionYear: '',
     regularizationReason: '',
     originalPermitNumber: '',
