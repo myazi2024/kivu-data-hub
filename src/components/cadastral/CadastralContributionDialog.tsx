@@ -1712,13 +1712,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     }
 
     // Logique 3: Si type de construction ≠ "terrain nu"
-    // Les deux options (Permis de construire et Permis de régularisation) restent disponibles
+    // Les deux options (Autorisation de bâtir et Autorisation de régularisation) restent disponibles
     if (formData.constructionType && formData.constructionType !== 'Terrain nu') {
-      // Dates pour permis de construire: 3 ans passé - 1 mois avant aujourd'hui
+      // Dates pour autorisation de bâtir: 3 ans passé - 1 mois avant aujourd'hui
       restrictions.dateMinExisting = threeYearsAgo.toISOString().split('T')[0];
       restrictions.dateMaxExisting = oneMonthAgo.toISOString().split('T')[0];
       
-      // Dates pour permis de régularisation: 3 ans passé - aujourd'hui
+      // Dates pour autorisation de régularisation: 3 ans passé - aujourd'hui
       restrictions.dateMinRegularization = threeYearsAgo.toISOString().split('T')[0];
       restrictions.dateMaxRegularization = today.toISOString().split('T')[0];
     }
