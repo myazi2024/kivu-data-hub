@@ -178,15 +178,15 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
 
   const checkExistingPending = async (): Promise<boolean> => {
     if (!user) return false;
-    
+
     const { data } = await supabase
       .from('cadastral_contributions')
       .select('id')
       .eq('parcel_number', parcelNumber)
       .eq('user_id', user.id)
       .eq('contribution_type', 'mortgage_registration')
-      .in('status', ['pending']);
-    
+      .in('status', ['pending', 'returned']);
+
     return (data?.length ?? 0) > 0;
   };
 
