@@ -224,6 +224,33 @@ const CadastralMap = () => {
           } else {
             toast.message('Paiement confirmé, synchronisation en cours. Réessayez dans quelques secondes.');
           }
+        } else if (paymentType === 'mutation_request') {
+          // Polling pour vérifier que le webhook Stripe a mis à jour la mutation
+          let mutationPaid = false;
+
+          for (let attempt = 0; attempt < 15; attempt++) {
+            const { data: tx } = await supabase
+              .from('payment_transactions')
+              .select('status')
+              .eq('id', sessionId)
+              .maybeSingle();
+
+            if (tx?.status === 'completed') {
+              mutationPaid = true;
+              break;
+            }
+            if (tx?.status === 'failed') {
+              throw new Error('Le paiement de la mutation a échoué.');
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+
+          if (mutationPaid) {
+            toast.success('Paiement réussi ! Votre demande de mutation est en cours d\'examen.');
+          } else {
+            toast.message('Paiement confirmé, synchronisation en cours. Vérifiez dans votre tableau de bord.');
+          }
         } else {
           toast.success('Paiement réussi.');
         }
