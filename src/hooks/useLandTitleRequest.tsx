@@ -13,6 +13,10 @@ export interface LandTitleFee {
 }
 
 export interface LandTitleRequestData {
+  // Type de demande
+  requestType?: 'initial' | 'renouvellement' | 'definitif' | '';
+  selectedParcelNumber?: string;
+  
   // Demandeur
   requesterType: 'owner' | 'representative';
   requesterLastName: string;
@@ -50,12 +54,20 @@ export interface LandTitleRequestData {
   parcelSides?: Array<{ name: string; length: string }>;
   roadBorderingSides?: Array<{ side: string; roadName: string }>;
   
+  // Valorisation
+  constructionType?: string;
+  declaredUsage?: string;
+  deducedTitleType?: string;
+  
   // Documents
   proofOfOwnershipFile?: File | null;
   additionalDocuments?: File[];
   
   // Frais sélectionnés
   selectedFees: string[];
+  
+  // Total calculé dynamiquement
+  totalAmountOverride?: number;
 }
 
 export const useLandTitleRequest = () => {
