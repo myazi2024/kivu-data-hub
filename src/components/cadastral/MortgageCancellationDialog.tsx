@@ -165,16 +165,26 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     }
   }, [parcelId]);
 
-  // Fix #24: Proper useEffect with stable dependencies
+  // Fix #1 + #10: Separate data loading from fee initialization; don't reset fees on every reload
+  const feesInitializedRef = useRef(false);
+
   useEffect(() => {
     if (open) {
-      // Initialize mandatory fees
+      loadParcelData();
+      setRequestReferenceNumber(generateUniqueReference());
+    }
+  }, [open, loadParcelData, generateUniqueReference]);
+
+  useEffect(() => {
+    if (open && fees.length > 0 && !feesInitializedRef.current) {
       const mandatoryFeeIds = fees.filter(f => f.is_mandatory).map(f => f.id);
       setSelectedFees(mandatoryFeeIds);
-      loadParcelData();
-      generateUniqueReference().then(setRequestReferenceNumber);
+      feesInitializedRef.current = true;
     }
-  }, [open, fees, loadParcelData, generateUniqueReference]);
+    if (!open) {
+      feesInitializedRef.current = false;
+    }
+  }, [open, fees]);
 
   // Pre-fill with user profile
   useEffect(() => {
