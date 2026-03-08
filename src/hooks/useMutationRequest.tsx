@@ -19,8 +19,8 @@ export interface MutationRequest {
   user_id: string;
   parcel_number: string;
   parcel_id: string | null;
-  mutation_type: 'update' | 'transfer' | 'correction';
-  requester_type: 'owner' | 'representative' | 'third_party';
+  mutation_type: string;
+  requester_type: string;
   requester_name: string;
   requester_phone: string | null;
   requester_email: string | null;
@@ -30,8 +30,8 @@ export interface MutationRequest {
   justification: string | null;
   fee_items: any[];
   total_amount_usd: number;
-  payment_status: 'pending' | 'paid' | 'failed';
-  status: 'pending' | 'in_review' | 'approved' | 'rejected' | 'on_hold';
+  payment_status: string;
+  status: string;
   processing_notes: string | null;
   rejection_reason: string | null;
   estimated_processing_days: number;
