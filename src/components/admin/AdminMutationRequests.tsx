@@ -920,7 +920,8 @@ const AdminMutationRequests: React.FC = () => {
                 </div>
               </div>
             </ScrollArea>
-          )}
+            );
+          })()}
         </DialogContent>
       </Dialog>
 
