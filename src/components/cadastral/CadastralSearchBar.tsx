@@ -343,10 +343,10 @@ const CadastralSearchBar = () => {
         {/* Invalid character warning - floating pill below */}
         {showInvalidCharWarning && (
           <div className="absolute left-0 right-0 mt-2 z-50 animate-in fade-in slide-in-from-top-1 duration-200">
-            <div className="mx-auto max-w-fit px-3 py-2 rounded-xl bg-amber-50 border border-amber-200/80 shadow-lg">
+            <div className="mx-auto max-w-fit px-3 py-2 rounded-xl bg-accent/5 border border-accent/20 shadow-lg">
               <div className="flex items-center gap-2">
-                <AlertCircle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-                <p className="text-xs font-medium text-amber-800">
+                <AlertCircle className="h-3.5 w-3.5 text-accent shrink-0" />
+                <p className="text-xs font-medium text-accent-foreground/80">
                   Caractères acceptés : A-Z, 0-9, / , - , _
                 </p>
               </div>
