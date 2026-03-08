@@ -165,20 +165,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   useEffect(() => {
+    let isMounted = true;
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        if (!isMounted) return;
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
           // Defer profile fetching to prevent deadlocks
           setTimeout(() => {
-            fetchProfile(session.user.id);
+            if (isMounted) fetchProfile(session.user.id);
           }, 0);
         } else {
           setProfile(null);
-          // Clear cache on logout
           setProfileCache(new Map());
         }
         
@@ -186,23 +188,27 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
     );
 
-    // THEN check for existing session
+    // THEN check for existing session (only set loading=false, no duplicate fetch)
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        setTimeout(() => {
-          fetchProfile(session.user.id);
-        }, 0);
+      if (!isMounted) return;
+      // Only initialize if onAuthStateChange hasn't fired yet
+      if (loading) {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          setTimeout(() => {
+            if (isMounted) fetchProfile(session.user.id);
+          }, 0);
+        }
+        
+        setLoading(false);
       }
-      
-      setLoading(false);
     });
 
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
-      // Clear cache on component unmount
       setProfileCache(new Map());
     };
   }, []);
