@@ -255,31 +255,6 @@ export function PermitCard({ permit, onAppealClick }: PermitCardProps) {
           </div>
         </div>
 
-        {/* Bouton de recours si refusé */}
-        {permit.status === "rejected" && (() => {
-          const deadlineInfo = getAppealDeadlineInfo();
-          return deadlineInfo && (
-            <div className="pt-2 border-t">
-              <Button
-                onClick={onAppealClick}
-                variant="outline"
-                size="sm"
-                className="w-full text-xs md:text-sm gap-1.5 md:gap-2"
-                disabled={!deadlineInfo.canAppeal || permit.appeal_submitted}
-              >
-                <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4 shrink-0" />
-                <span className="truncate">
-                  {permit.appeal_submitted
-                    ? "Recours déjà soumis"
-                    : deadlineInfo.canAppeal
-                    ? `Soumettre un recours (${deadlineInfo.message})`
-                    : deadlineInfo.message}
-                </span>
-              </Button>
-            </div>
-          );
-        })()}
-
         {/* Section détails extensible */}
         <Collapsible open={showDetails} onOpenChange={setShowDetails} className="pt-2 border-t">
           <CollapsibleTrigger asChild>

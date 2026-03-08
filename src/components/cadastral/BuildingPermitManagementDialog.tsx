@@ -88,19 +88,32 @@ const BuildingPermitManagementDialog: React.FC<BuildingPermitManagementDialogPro
           </div>
         </div>
 
-        {/* Render the selected form inline */}
+        {/* Render both forms, show/hide based on active tab to preserve state */}
         <div className="overflow-y-auto flex-1 min-h-0" style={{ maxHeight: 'calc(85vh - 140px)' }}>
-          <BuildingPermitFormDialog
-            key={activeTab}
-            parcelNumber={parcelNumber}
-            parcelId={parcelId}
-            permitType={activeTab}
-            open={true}
-            onOpenChange={(isOpen) => {
-              if (!isOpen) handleClose();
-            }}
-            embedded
-          />
+          <div style={{ display: activeTab === 'construction' ? 'block' : 'none' }}>
+            <BuildingPermitFormDialog
+              parcelNumber={parcelNumber}
+              parcelId={parcelId}
+              permitType="construction"
+              open={true}
+              onOpenChange={(isOpen) => {
+                if (!isOpen) handleClose();
+              }}
+              embedded
+            />
+          </div>
+          <div style={{ display: activeTab === 'regularisation' ? 'block' : 'none' }}>
+            <BuildingPermitFormDialog
+              parcelNumber={parcelNumber}
+              parcelId={parcelId}
+              permitType="regularisation"
+              open={true}
+              onOpenChange={(isOpen) => {
+                if (!isOpen) handleClose();
+              }}
+              embedded
+            />
+          </div>
         </div>
       </DialogContent>
     </Dialog>
