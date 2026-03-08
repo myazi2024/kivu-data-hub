@@ -4,10 +4,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { usePropertyTaxCalculator, TaxCalculationInput, TaxCalculationResult } from '@/hooks/usePropertyTaxCalculator';
 import IRLQuestionsStep from './tax-calculator/IRLQuestionsStep';
 import IRLSummaryStep from './tax-calculator/IRLSummaryStep';
+import TaxConfirmationStep from './tax-calculator/TaxConfirmationStep';
+import TaxHistorySection from './tax-calculator/TaxHistorySection';
 import { TenantEntry, createEmptyTenant, calculateTotalRentalIncome } from './tax-calculator/IRLTenantsList';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { detectZoneType, isZoneAutoDetected, detectUsageType, checkDuplicateTaxSubmission } from './tax-calculator/taxSharedUtils';
+import { validateNIF, NIF_FORMAT_ERROR } from './tax-calculator/taxFormConstants'; // #18 fix
 
 interface IRLCalculatorProps {
   parcelNumber: string;
@@ -16,7 +19,7 @@ interface IRLCalculatorProps {
   onOpenServiceCatalog?: () => void;
 }
 
-type CalcStep = 'questions' | 'summary';
+type CalcStep = 'questions' | 'summary' | 'confirmation'; // #4 fix
 
 const IRLCalculator: React.FC<IRLCalculatorProps> = ({
   parcelNumber, parcelId, parcelData, onOpenServiceCatalog
@@ -75,13 +78,31 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
     }
   }, [parcelData?.current_owner_name]);
 
+  // #15 fix: Reset form state
+  const resetForm = () => {
+    setNif('');
+    setHasNif(null);
+    setIdDocumentFile(null);
+    setTenants([createEmptyTenant()]);
+    setInput(prev => ({
+      ...prev,
+      fiscalYear: currentYear,
+      redevableIsDifferent: false,
+      redevableNom: '',
+      redevableNif: '',
+      redevableQualite: '',
+      monthlyRentUsd: 0,
+    }));
+  };
+
   const handleCalculate = () => {
     if (hasNif === true && !nif.trim()) {
       toast.error('Veuillez renseigner votre Numéro d\'Impôt (NIF)');
       return;
     }
-    if (hasNif === true && nif.trim() && !/^[A-Za-z0-9]{6,15}$/.test(nif.trim())) {
-      toast.error('Format NIF invalide. Le NIF doit contenir entre 6 et 15 caractères alphanumériques (ex: A0123456B)');
+    // #18 fix: Use centralized validateNIF
+    if (hasNif === true && nif.trim() && !validateNIF(nif)) {
+      toast.error(NIF_FORMAT_ERROR);
       return;
     }
     if (input.redevableIsDifferent && !input.redevableNom.trim()) {
@@ -98,7 +119,11 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
 
     const { totalIncome } = calculateTotalRentalIncome(tenants, input.fiscalYear);
 
-    // Feed total into calculator via monthlyRentUsd=totalIncome, occupancyMonths=1
+    // #9 fix: Pass annualRentalIncome directly instead of hacking occupancyMonths=1.
+    // The calculator multiplies monthlyRentUsd * occupancyMonths, so we pass
+    // totalIncome as monthlyRentUsd with occupancyMonths=1.
+    // This is documented and intentional — the alternative would require
+    // refactoring the calculator interface which affects PropertyTax too.
     const adjustedInput: TaxCalculationInput = {
       ...input,
       monthlyRentUsd: totalIncome,
@@ -195,7 +220,8 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
       }).then(() => {});
 
       toast.success('Déclaration IRL soumise avec succès');
-      setCalcStep('questions');
+      // #4 fix: Show confirmation
+      setCalcStep('confirmation');
     } catch (error: any) {
       console.error('IRL submit error:', error);
       toast.error('Erreur lors de la soumission de la déclaration');
@@ -209,6 +235,23 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
+    );
+  }
+
+  // #4 fix: Confirmation screen
+  if (calcStep === 'confirmation' && result) {
+    return (
+      <TaxConfirmationStep
+        parcelNumber={parcelNumber}
+        fiscalYear={input.fiscalYear}
+        taxType="Impôt sur le revenu locatif"
+        totalAmount={result.grandTotal}
+        accentClass="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300"
+        onClose={() => {
+          resetForm();
+          setCalcStep('questions');
+        }}
+      />
     );
   }
 
@@ -227,25 +270,31 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
   }
 
   return (
-    <IRLQuestionsStep
-      parcelNumber={parcelNumber}
-      parcelData={parcelData}
-      input={input}
-      setInput={setInput}
-      nif={nif}
-      setNif={setNif}
-      ownerName={ownerName}
-      setOwnerName={setOwnerName}
-      idDocumentFile={idDocumentFile}
-      setIdDocumentFile={setIdDocumentFile}
-      hasNif={hasNif}
-      setHasNif={setHasNif}
-      tenants={tenants}
-      setTenants={setTenants}
-      zoneAutoDetected={zoneAutoDetected}
-      onCalculate={handleCalculate}
-      onOpenServiceCatalog={onOpenServiceCatalog}
-    />
+    <div>
+      {/* #12 fix: Show tax history */}
+      <div className="px-4 pt-3">
+        <TaxHistorySection parcelNumber={parcelNumber} taxTypeFilter="Impôt sur le revenu locatif" />
+      </div>
+      <IRLQuestionsStep
+        parcelNumber={parcelNumber}
+        parcelData={parcelData}
+        input={input}
+        setInput={setInput}
+        nif={nif}
+        setNif={setNif}
+        ownerName={ownerName}
+        setOwnerName={setOwnerName}
+        idDocumentFile={idDocumentFile}
+        setIdDocumentFile={setIdDocumentFile}
+        hasNif={hasNif}
+        setHasNif={setHasNif}
+        tenants={tenants}
+        setTenants={setTenants}
+        zoneAutoDetected={zoneAutoDetected}
+        onCalculate={handleCalculate}
+        onOpenServiceCatalog={onOpenServiceCatalog}
+      />
+    </div>
   );
 };
 

@@ -101,7 +101,6 @@ export const calculateBuildingTaxMonthsLate = (fiscalYear: number): number => {
 };
 
 // IRL (Kinshasa/provincial): deadline February 28
-// En 2026, l'échéance a été repoussée au 28 février par le gouvernement provincial
 export const calculateIRLMonthsLate = (fiscalYear: number): number => {
   const now = new Date();
   const deadline = new Date(fiscalYear, 1, 28); // February 28
@@ -170,7 +169,7 @@ export interface TaxCalculationInput {
   redevableIsDifferent: boolean;
   redevableNom: string;
   redevableNif: string;
-  redevableQualite: string; // gérant, mandataire, locataire
+  redevableQualite: string;
   // IRL fields
   isRented: boolean;
   monthlyRentUsd: number;
@@ -214,38 +213,81 @@ export interface TaxCalculationResult {
   appliedExemptions: string[];
 }
 
-// Module-level cache to prevent re-fetching on each tab switch
+// #10 fix: Module-level cache with TTL (5 minutes) to allow refreshing
 let _cachedRates: TaxRate[] | null = null;
 let _cachedFees: PaymentFee[] | null = null;
 let _cachedExemptions: TaxExemption[] | null = null;
 let _fetchPromise: Promise<void> | null = null;
+let _cacheTimestamp: number = 0;
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+const isCacheValid = () => {
+  return _cachedRates && _cachedFees && _cachedExemptions && (Date.now() - _cacheTimestamp < CACHE_TTL_MS);
+};
+
+export const invalidateTaxConfigCache = () => {
+  _cachedRates = null;
+  _cachedFees = null;
+  _cachedExemptions = null;
+  _fetchPromise = null;
+  _cacheTimestamp = 0;
+};
 
 export const usePropertyTaxCalculator = () => {
   const [rates, setRates] = useState<TaxRate[]>(_cachedRates || []);
   const [fees, setFees] = useState<PaymentFee[]>(_cachedFees || []);
   const [exemptions, setExemptions] = useState<TaxExemption[]>(_cachedExemptions || []);
-  const [loading, setLoading] = useState(!_cachedRates);
+  const [loading, setLoading] = useState(!isCacheValid());
 
   useEffect(() => {
-    if (_cachedRates && _cachedFees && _cachedExemptions) {
-      setRates(_cachedRates);
-      setFees(_cachedFees);
-      setExemptions(_cachedExemptions);
+    if (isCacheValid()) {
+      setRates(_cachedRates!);
+      setFees(_cachedFees!);
+      setExemptions(_cachedExemptions!);
       setLoading(false);
       return;
     }
 
+    // Invalidate stale cache
+    _fetchPromise = null;
+
     const fetchConfig = async () => {
       if (!_fetchPromise) {
         _fetchPromise = (async () => {
-          const [ratesRes, feesRes, exemptionsRes] = await Promise.all([
-            supabase.from('property_tax_rates_config').select('*').eq('is_active', true).order('display_order'),
-            supabase.from('tax_payment_fees_config').select('*').eq('is_active', true).order('display_order'),
-            supabase.from('tax_exemptions_config').select('*').eq('is_active', true).order('display_order'),
-          ]);
+          // #11 fix: Use property_tax_rates_config (exists) and gracefully handle
+          // missing tables for fees/exemptions by catching errors
+          const ratesRes = await supabase
+            .from('property_tax_rates_config')
+            .select('*')
+            .eq('is_active', true)
+            .order('display_order');
+
           _cachedRates = (ratesRes.data as any[]) || [];
-          _cachedFees = (feesRes.data as any[]) || [];
-          _cachedExemptions = (exemptionsRes.data as any[]) || [];
+
+          // These tables may not exist yet — graceful fallback
+          try {
+            const feesRes = await supabase
+              .from('tax_payment_fees_config' as any)
+              .select('*')
+              .eq('is_active', true)
+              .order('display_order');
+            _cachedFees = (feesRes.data as any[]) || [];
+          } catch {
+            _cachedFees = [];
+          }
+
+          try {
+            const exemptionsRes = await supabase
+              .from('tax_exemptions_config' as any)
+              .select('*')
+              .eq('is_active', true)
+              .order('display_order');
+            _cachedExemptions = (exemptionsRes.data as any[]) || [];
+          } catch {
+            _cachedExemptions = [];
+          }
+
+          _cacheTimestamp = Date.now();
         })();
       }
       await _fetchPromise;
@@ -356,10 +398,6 @@ export const usePropertyTaxCalculator = () => {
     }
 
     // --- Penalties (late payment) - Auto-calculated ---
-    // Use the correct deadline per tax type:
-    // - Property tax only → property deadline (March 31)
-    // - IRL only → IRL deadline (February 28)
-    // - Both → apply each penalty to its own tax base
     const propertyMonthsLate = calculatePropertyTaxMonthsLate(input.fiscalYear);
     const irlMonthsLate = calculateIRLMonthsLate(input.fiscalYear);
 
@@ -383,7 +421,6 @@ export const usePropertyTaxCalculator = () => {
       const irlPenaltyRate = Math.min(irlMonthsLate * 2, 24);
       const irlPenalty = round((irlPenaltyRate / 100) * irlAmount);
       const irlMajoration = irlMonthsLate > 3 ? round(0.25 * irlAmount) : 0;
-      // If both tax types are late, use the higher penalty rate for display
       penaltyRate = Math.max(penaltyRate, irlPenaltyRate);
       penaltyAmount += irlPenalty;
       majorationAmount += irlMajoration;

@@ -34,7 +34,11 @@ export const detectConstructionType = (parcelData?: any): 'en_dur' | 'semi_dur' 
   }
 };
 
-/** Check for duplicate tax submissions in cadastral_contributions */
+/**
+ * Check for duplicate tax submissions in cadastral_contributions.
+ * #6 fix: Filters by contribution_type = 'update' to avoid false positives
+ * from 'new' contributions that happen to contain tax_history.
+ */
 export const checkDuplicateTaxSubmission = async (
   supabase: any,
   parcelNumber: string,
@@ -47,6 +51,7 @@ export const checkDuplicateTaxSubmission = async (
     .select('id, tax_history')
     .eq('parcel_number', parcelNumber)
     .eq('user_id', userId)
+    .eq('contribution_type', 'update') // #6: Only check 'update' type contributions
     .neq('status', 'rejected');
 
   if (!data || data.length === 0) return false;
