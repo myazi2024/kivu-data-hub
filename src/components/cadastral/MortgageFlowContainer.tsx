@@ -12,6 +12,7 @@ interface MortgageFlowContainerProps {
   children: React.ReactNode;
 }
 
+// Fix #21: Use semantic design tokens instead of hardcoded values
 const MortgageFlowContainer: React.FC<MortgageFlowContainerProps> = ({
   open,
   embedded = false,

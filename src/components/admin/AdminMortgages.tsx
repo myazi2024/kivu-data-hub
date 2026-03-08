@@ -15,14 +15,14 @@ import { PaginationControls } from '@/components/shared/PaginationControls';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { exportToCSV } from '@/utils/csvExport';
 import { formatCurrency } from '@/utils/formatters';
-import { generateMortgageReference, normalizeMortgageStatus } from '@/utils/mortgageReferences';
+import { normalizeMortgageStatus } from '@/utils/mortgageReferences';
 
 import MortgageStatsCards from './mortgage/MortgageStatsCards';
 import MortgageRequestCard from './mortgage/MortgageRequestCard';
 import MortgageDetailsDialog from './mortgage/MortgageDetailsDialog';
 import MortgageRequestDetailsDialog from './mortgage/MortgageRequestDetailsDialog';
 import { ApproveConfirmDialog, RejectDialog, ReturnDialog } from './mortgage/MortgageAdminDialogs';
-import { getMortgageStatusType, getCreditorTypeLabel, getRequestTypeLabel, normalizeStatusForFilter } from './mortgage/mortgageHelpers';
+import { getMortgageStatusType, getCreditorTypeLabel, getRequestTypeLabel } from './mortgage/mortgageHelpers';
 
 interface Mortgage {
   id: string;
@@ -49,6 +49,8 @@ interface MortgageRequest {
   original_parcel_id?: string;
   rejection_reason?: string | null;
   change_justification?: string | null;
+  // Fix #7: Separate field for return notes
+  return_notes?: string | null;
 }
 
 const AdminMortgages = () => {
@@ -72,6 +74,8 @@ const AdminMortgages = () => {
   const [requestSearchTerm, setRequestSearchTerm] = useState('');
   const [requestTypeFilter, setRequestTypeFilter] = useState<string>('_all');
   const [historySearchTerm, setHistorySearchTerm] = useState('');
+  // Fix #14: Add type filter to history tab
+  const [historyTypeFilter, setHistoryTypeFilter] = useState<string>('_all');
   const [activeTab, setActiveTab] = useState<string>('requests');
 
   useEffect(() => { fetchData(); }, []);
@@ -109,7 +113,7 @@ const AdminMortgages = () => {
     }
   };
 
-  // Filter approved mortgages - uses normalized status for correct matching
+  // Filter approved mortgages
   const filteredMortgages = mortgages.filter(m => {
     const matchesSearch = searchTerm === '' ||
       m.creditor_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -131,12 +135,14 @@ const AdminMortgages = () => {
     return isPending && matchesType && matchesSearch;
   });
 
+  // Fix #14: Filter history by type and search
   const processedRequests = requests.filter(r => {
     const isProcessed = r.status === 'approved' || r.status === 'rejected' || r.status === 'returned';
     const matchesSearch = historySearchTerm === '' ||
       r.parcel_number?.toLowerCase().includes(historySearchTerm.toLowerCase()) ||
       r.mortgage_history[0]?.request_reference_number?.toLowerCase().includes(historySearchTerm.toLowerCase());
-    return isProcessed && matchesSearch;
+    const matchesType = historyTypeFilter === '_all' || r.contribution_type === historyTypeFilter;
+    return isProcessed && matchesSearch && matchesType;
   });
 
   const pagination = usePagination(filteredMortgages, { initialPageSize: 15 });
@@ -172,9 +178,23 @@ const AdminMortgages = () => {
       const mortgage = request.mortgage_history[0];
 
       if (request.contribution_type === 'mortgage_registration' && request.original_parcel_id) {
-        const refNumber = generateMortgageReference('HYP');
-        const declaredStatus = mortgage.mortgage_status || 'active';
+        // Fix #3: Reuse the reference from the user's submission instead of generating a new one
+        const refNumber = mortgage.request_reference_number || `HYP-${Date.now().toString(36).toUpperCase()}`;
+        // Fix #10: Validate declared status is a known value
+        const declaredStatus = ['active', 'en_defaut', 'renegociee'].includes(mortgage.mortgage_status)
+          ? mortgage.mortgage_status
+          : 'active';
 
+        // Fix #4: Check for reference collision before insert
+        const { data: existingRef } = await supabase
+          .from('cadastral_mortgages')
+          .select('id')
+          .eq('reference_number', refNumber)
+          .maybeSingle();
+
+        const finalRef = existingRef ? `${refNumber}-${Date.now().toString(36).slice(-4).toUpperCase()}` : refNumber;
+
+        // Fix #9: Use null for duration instead of 0 so DB default kicks in
         const { error: insertError } = await supabase
           .from('cadastral_mortgages')
           .insert({
@@ -182,10 +202,10 @@ const AdminMortgages = () => {
             creditor_name: mortgage.creditor_name || mortgage.creditorName || '',
             creditor_type: mortgage.creditor_type || mortgage.creditorType || 'Banque',
             mortgage_amount_usd: mortgage.mortgage_amount_usd || mortgage.mortgageAmountUsd || 0,
-            duration_months: mortgage.duration_months || mortgage.durationMonths || 0,
+            duration_months: mortgage.duration_months || mortgage.durationMonths || 12,
             contract_date: mortgage.contract_date || mortgage.contractDate || new Date().toISOString().split('T')[0],
             mortgage_status: declaredStatus,
-            reference_number: refNumber,
+            reference_number: finalRef,
           });
 
         if (insertError) {
@@ -200,6 +220,18 @@ const AdminMortgages = () => {
           .update({ mortgage_status: 'paid' })
           .eq('reference_number', mortgage.mortgage_reference_number.toUpperCase());
       }
+
+      // Fix #11: Create notification for the user
+      try {
+        const actionLabel = request.contribution_type === 'mortgage_cancellation' ? 'radiation' : 'enregistrement';
+        await supabase.from('notifications').insert({
+          user_id: request.user_id,
+          title: `Demande d'hypothèque approuvée`,
+          message: `Votre demande de ${actionLabel} d'hypothèque pour la parcelle ${request.parcel_number} a été approuvée.`,
+          type: 'mortgage',
+          action_url: '/user-dashboard',
+        });
+      } catch { /* Non-blocking */ }
 
       try {
         await supabase.from('audit_logs').insert({
@@ -245,6 +277,18 @@ const AdminMortgages = () => {
 
       if (error) throw error;
 
+      // Fix #11: Notify user of rejection
+      try {
+        const actionLabel = selectedRequest.contribution_type === 'mortgage_cancellation' ? 'radiation' : 'enregistrement';
+        await supabase.from('notifications').insert({
+          user_id: selectedRequest.user_id,
+          title: `Demande d'hypothèque rejetée`,
+          message: `Votre demande de ${actionLabel} pour la parcelle ${selectedRequest.parcel_number} a été rejetée. Motif: ${rejectionReason.trim()}`,
+          type: 'mortgage',
+          action_url: '/user-dashboard',
+        });
+      } catch { /* Non-blocking */ }
+
       try {
         await supabase.from('audit_logs').insert({
           action: 'mortgage_request_rejected',
@@ -268,7 +312,7 @@ const AdminMortgages = () => {
     }
   };
 
-  // Return to user for correction
+  // Fix #7: Use change_justification instead of rejection_reason for returns
   const handleReturn = async () => {
     if (!selectedRequest || !returnReason.trim()) {
       toast.error('Veuillez indiquer les corrections attendues');
@@ -280,7 +324,7 @@ const AdminMortgages = () => {
         .from('cadastral_contributions')
         .update({
           status: 'returned' as any,
-          rejection_reason: returnReason.trim(),
+          change_justification: returnReason.trim(),
           reviewed_at: new Date().toISOString(),
           reviewed_by: user?.id || null,
         })
@@ -288,13 +332,24 @@ const AdminMortgages = () => {
 
       if (error) throw error;
 
+      // Fix #11: Notify user of return
+      try {
+        await supabase.from('notifications').insert({
+          user_id: selectedRequest.user_id,
+          title: 'Demande renvoyée pour correction',
+          message: `Votre demande pour la parcelle ${selectedRequest.parcel_number} nécessite des corrections: ${returnReason.trim()}`,
+          type: 'mortgage',
+          action_url: '/user-dashboard',
+        });
+      } catch { /* Non-blocking */ }
+
       try {
         await supabase.from('audit_logs').insert({
           action: 'mortgage_request_returned',
           user_id: user?.id || null,
           record_id: selectedRequest.id,
           table_name: 'cadastral_contributions',
-          new_values: { parcel_number: selectedRequest.parcel_number, status: 'returned', reason: returnReason.trim() } as any,
+          new_values: { parcel_number: selectedRequest.parcel_number, status: 'returned', corrections: returnReason.trim() } as any,
         });
       } catch { /* Non-blocking */ }
 
@@ -490,12 +545,22 @@ const AdminMortgages = () => {
           </Card>
         </TabsContent>
 
-        {/* HISTORY TAB */}
+        {/* HISTORY TAB - Fix #13 & #14: Added view button and type filter */}
         <TabsContent value="history" className="mt-3">
           <Card className="p-2.5 bg-background rounded-xl shadow-sm border mb-3">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input value={historySearchTerm} onChange={(e) => { setHistorySearchTerm(e.target.value); historyPagination.goToPage(1); }} placeholder="Rechercher par parcelle ou référence..." className="h-8 text-xs pl-8" />
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input value={historySearchTerm} onChange={(e) => { setHistorySearchTerm(e.target.value); historyPagination.goToPage(1); }} placeholder="Rechercher par parcelle ou référence..." className="h-8 text-xs pl-8" />
+              </div>
+              <Select value={historyTypeFilter} onValueChange={(v) => { setHistoryTypeFilter(v); historyPagination.goToPage(1); }}>
+                <SelectTrigger className="h-8 text-xs w-full sm:w-44"><SelectValue placeholder="Type" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_all">Tous les types</SelectItem>
+                  <SelectItem value="mortgage_registration">Enregistrements</SelectItem>
+                  <SelectItem value="mortgage_cancellation">Radiations</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </Card>
 
@@ -507,7 +572,7 @@ const AdminMortgages = () => {
               <>
                 <div className="space-y-2">
                   {historyPagination.paginatedData.map((req) => (
-                    <div key={req.id} className="p-2.5 rounded-xl border bg-card">
+                    <div key={req.id} className="p-2.5 rounded-xl border bg-card hover:bg-accent/50 transition-colors">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-medium">{getRequestTypeLabel(req.contribution_type)}</span>
@@ -516,13 +581,18 @@ const AdminMortgages = () => {
                         <div className="flex items-center gap-2">
                           <span className="text-[9px] text-muted-foreground">{format(new Date(req.created_at), 'dd/MM/yy', { locale: fr })}</span>
                           <StatusBadge status={getMortgageStatusType(req.status)} compact />
+                          {/* Fix #13: View details button in history */}
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setSelectedRequest(req); setRequestDetailsOpen(true); }}>
+                            <Eye className="h-3 w-3" />
+                          </Button>
                         </div>
                       </div>
                       {req.status === 'rejected' && req.rejection_reason && (
                         <p className="text-[10px] text-destructive mt-1">Motif: {req.rejection_reason}</p>
                       )}
-                      {req.status === 'returned' && req.rejection_reason && (
-                        <p className="text-[10px] text-amber-600 mt-1">Corrections demandées: {req.rejection_reason}</p>
+                      {/* Fix #7: Show return notes from change_justification */}
+                      {req.status === 'returned' && req.change_justification && (
+                        <p className="text-[10px] text-amber-600 mt-1">Corrections demandées: {req.change_justification}</p>
                       )}
                     </div>
                   ))}

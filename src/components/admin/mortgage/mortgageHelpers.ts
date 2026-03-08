@@ -29,9 +29,4 @@ export const getRequestTypeLabel = (type: string) => {
   return type === 'mortgage_cancellation' ? 'Radiation' : 'Enregistrement';
 };
 
-/** Normalize mortgage_status for filtering (maps DB values to filter keys) */
-export const normalizeStatusForFilter = (status: string): string => {
-  const normalized = normalizeMortgageStatus(status);
-  // Map 'en_defaut' to the filter key used in the UI
-  return normalized;
-};
+// Fix #18: Removed dead normalizeStatusForFilter function (was just a pass-through to normalizeMortgageStatus)

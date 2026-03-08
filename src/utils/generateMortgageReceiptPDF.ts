@@ -100,7 +100,6 @@ export async function generateMortgageReceiptPDF(data: MortgageReceiptData): Pro
 
   if (data.mortgageData) {
     addRow('Créancier', data.mortgageData.creditorName);
-    // Fix #22: Use formatCurrency consistently
     addRow('Montant hypothèque', formatCurrency(data.mortgageData.amount));
     addRow('Date contrat', new Date(data.mortgageData.contractDate).toLocaleDateString('fr-FR'));
   }
@@ -109,7 +108,7 @@ export async function generateMortgageReceiptPDF(data: MortgageReceiptData): Pro
     addRow('Motif', data.reason);
   }
 
-  // Section: Fees (only if there are fees)
+  // Fix #16: Section Fees — show "Gratuit" if no fees
   if (data.fees.length > 0) {
     yPos += 5;
     doc.setFont('helvetica', 'bold');
@@ -145,6 +144,20 @@ export async function generateMortgageReceiptPDF(data: MortgageReceiptData): Pro
     doc.text('TOTAL PAYÉ:', 27, yPos);
     doc.setTextColor(0, 120, 60);
     doc.text(formatCurrency(data.totalAmountPaid), pageWidth - 27, yPos, { align: 'right' });
+  } else {
+    // Fix #16: Explicitly indicate free service for registration receipts
+    yPos += 5;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(0, 50, 100);
+    doc.text('FRAIS', 25, yPos);
+    yPos += 8;
+
+    doc.setFontSize(10);
+    doc.setTextColor(0, 120, 60);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Service gratuit — Aucun frais facturé', 27, yPos);
+    doc.setTextColor(0, 0, 0);
   }
 
   // QR Code
