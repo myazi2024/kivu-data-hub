@@ -500,7 +500,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     } catch (error: any) {
       console.error('Upload error:', error);
       toast.error('Erreur lors du téléchargement des fichiers');
-      return result;
+      throw error; // Propagate to block submission
     } finally {
       setUploadingFiles(false);
     }
