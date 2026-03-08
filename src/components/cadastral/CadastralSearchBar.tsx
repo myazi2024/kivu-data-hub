@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, X, Loader2, AlertCircle } from 'lucide-react';
+import { Search, X, Loader2, AlertCircle, MapPin } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useCadastralSearch } from '@/hooks/useCadastralSearch';
@@ -163,10 +162,8 @@ const CadastralSearchBar = () => {
     setIsShaking(true);
     setShowInvalidCharWarning(true);
     
-    // Arrêter le shake après l'animation
     setTimeout(() => setIsShaking(false), 500);
     
-    // Masquer l'avertissement après 3 secondes
     if (warningTimeoutRef.current) {
       clearTimeout(warningTimeoutRef.current);
     }
@@ -178,10 +175,9 @@ const CadastralSearchBar = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     
-    // Vérifier si les caractères sont autorisés
     if (!ALLOWED_CHARS_REGEX.test(value)) {
       triggerShakeAnimation();
-      return; // Ne pas mettre à jour la valeur si caractères invalides
+      return;
     }
     
     setSearchQuery(value);
@@ -218,8 +214,9 @@ const CadastralSearchBar = () => {
 
   return (
     <>
-      <Card className={cn(
-        "relative overflow-visible bg-white/95 backdrop-blur-sm border-white/20 shadow-2xl transition-transform",
+      {/* Modern search container */}
+      <div className={cn(
+        "relative overflow-visible transition-transform",
         isShaking && "animate-[shake_0.5s_ease-in-out]"
       )}>
         <style>{`
@@ -229,12 +226,43 @@ const CadastralSearchBar = () => {
             20%, 40%, 60%, 80% { transform: translateX(4px); }
           }
         `}</style>
-        <div className="p-4 sm:p-6">
-          <div className="flex items-center gap-2 sm:gap-3 relative">
-            <div className="h-11 w-11 shrink-0 flex items-center justify-center text-seloger-red">
-              <Search className="h-5 w-5" />
+
+        {/* Glassmorphism search pill */}
+        <div className={cn(
+          "relative rounded-2xl transition-all duration-300",
+          "bg-background/95 backdrop-blur-xl",
+          "shadow-[0_4px_24px_-4px_hsl(var(--primary)/0.15)]",
+          "border border-border/50",
+          isFocused && "shadow-[0_8px_32px_-4px_hsl(var(--primary)/0.25)] border-primary/30",
+          inputStatus === 'success' && "border-green-400/50 shadow-[0_4px_24px_-4px_hsl(142_71%_45%/0.2)]",
+          inputStatus === 'error' && "border-destructive/40 shadow-[0_4px_24px_-4px_hsl(var(--destructive)/0.2)]",
+        )}>
+          {/* Top accent bar */}
+          <div className={cn(
+            "absolute inset-x-0 top-0 h-[2px] rounded-t-2xl transition-all duration-300",
+            isFocused
+              ? "bg-gradient-to-r from-transparent via-primary to-transparent opacity-100"
+              : "bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-60"
+          )} />
+
+          <div className="flex items-center gap-2 px-3 py-2.5 sm:px-4 sm:py-3">
+            {/* Search icon with pulse when loading */}
+            <div className={cn(
+              "relative flex items-center justify-center h-9 w-9 rounded-xl shrink-0 transition-all duration-300",
+              isFocused ? "bg-primary/10" : "bg-muted/60",
+              loading && "animate-pulse"
+            )}>
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              ) : (
+                <Search className={cn(
+                  "h-4 w-4 transition-colors duration-200",
+                  isFocused ? "text-primary" : "text-muted-foreground"
+                )} />
+              )}
             </div>
 
+            {/* Input field */}
             <div className="flex-1 relative">
               <Input
                 type="text"
@@ -247,90 +275,106 @@ const CadastralSearchBar = () => {
                 }}
                 placeholder=""
                 className={cn(
-                  "h-11 pr-10 text-base font-medium transition-all duration-200",
-                  inputStatus === 'loading' && 'border-blue-400 ring-2 ring-blue-100',
-                  inputStatus === 'error' && 'border-red-400 ring-2 ring-red-100',
-                  inputStatus === 'success' && 'border-green-400 ring-2 ring-green-100',
-                  !searchQuery && !isFocused && 'border-gray-200',
-                  isShaking && 'border-amber-400 ring-2 ring-amber-100'
+                  "h-9 border-0 bg-transparent shadow-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0",
+                  "text-sm sm:text-base font-medium text-foreground placeholder:text-muted-foreground",
+                  "px-1"
                 )}
                 disabled={loading}
               />
 
+              {/* Animated placeholder overlay */}
               {!searchQuery && !isFocused && displayedText && (
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none flex items-center text-muted-foreground">
-                  <span className="opacity-60">{FIXED_TEXT}</span>
-                  <span className="font-medium">
+                <div className="absolute left-1 top-1/2 -translate-y-1/2 pointer-events-none flex items-center text-muted-foreground">
+                  <span className="text-sm opacity-50">{FIXED_TEXT}</span>
+                  <span className="text-sm font-medium text-muted-foreground/70">
                     {displayedText}
-                    {showCursor && <span className="animate-pulse">|</span>}
+                    {showCursor && <span className="text-primary animate-pulse">|</span>}
                   </span>
                 </div>
               )}
-
-              {searchSuggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-[100] max-h-64 overflow-y-auto">
-                  {searchSuggestions.map((suggestion) => (
-                    <button
-                      key={suggestion.id}
-                      onClick={() => handleSelectSuggestion(suggestion.parcel_number)}
-                      className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <p className="font-semibold text-seloger-red">{suggestion.parcel_number}</p>
-                          {(suggestion.ville || suggestion.commune || suggestion.quartier) && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {[suggestion.ville, suggestion.commune, suggestion.quartier].filter(Boolean).join(', ')}
-                            </p>
-                          )}
-                        </div>
-                        <Search className="h-4 w-4 text-muted-foreground shrink-0 ml-2" />
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {loading && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <Loader2 className="h-5 w-5 animate-spin text-seloger-red" />
-                </div>
-              )}
-              {!loading && searchQuery && (
-                <button onClick={handleClearSearch} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
-                  <X className="h-5 w-5" />
-                </button>
-              )}
             </div>
+
+            {/* Clear button */}
+            {!loading && searchQuery && (
+              <button
+                onClick={handleClearSearch}
+                className="flex items-center justify-center h-8 w-8 rounded-lg bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-all duration-200 shrink-0"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
 
-          {/* Notification contextuelle pour caractères invalides */}
-          {showInvalidCharWarning && (
-            <div className="mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200 animate-fade-in">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-xs font-medium text-amber-800">Caractère non autorisé</p>
-                  <p className="text-xs text-amber-700 mt-0.5">
-                    Caractères acceptés : lettres (A-Z), chiffres (0-9), / , - , _
-                  </p>
-                </div>
+          {/* Suggestions dropdown */}
+          {searchSuggestions.length > 0 && (
+            <div className="border-t border-border/30">
+              <div className="py-1.5 max-h-60 overflow-y-auto">
+                {searchSuggestions.map((suggestion, index) => (
+                  <button
+                    key={suggestion.id}
+                    onClick={() => handleSelectSuggestion(suggestion.parcel_number)}
+                    className={cn(
+                      "w-full px-4 py-2.5 text-left transition-colors duration-150",
+                      "hover:bg-primary/5 active:bg-primary/10",
+                      index !== searchSuggestions.length - 1 && "border-b border-border/20"
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-primary/10 shrink-0">
+                        <MapPin className="h-3.5 w-3.5 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-primary truncate">{suggestion.parcel_number}</p>
+                        {(suggestion.ville || suggestion.commune || suggestion.quartier) && (
+                          <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                            {[suggestion.ville, suggestion.commune, suggestion.quartier].filter(Boolean).join(' · ')}
+                          </p>
+                        )}
+                      </div>
+                      <Search className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
+                    </div>
+                  </button>
+                ))}
               </div>
             </div>
           )}
+        </div>
 
-          {error && (
-            <div className="mt-4 p-3 sm:p-4 rounded-lg bg-red-50 border border-red-200">
-              <div className="flex items-start gap-3">
-                <X className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-red-800">{error}</p>
+        {/* Invalid character warning - floating pill below */}
+        {showInvalidCharWarning && (
+          <div className="absolute left-0 right-0 mt-2 z-50 animate-in fade-in slide-in-from-top-1 duration-200">
+            <div className="mx-auto max-w-fit px-3 py-2 rounded-xl bg-amber-50 border border-amber-200/80 shadow-lg">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                <p className="text-xs font-medium text-amber-800">
+                  Caractères acceptés : A-Z, 0-9, / , - , _
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Error state - floating card below */}
+        {error && (
+          <div className="mt-2.5 animate-in fade-in slide-in-from-top-1 duration-200">
+            <div className="rounded-xl bg-destructive/5 border border-destructive/20 p-3 backdrop-blur-sm">
+              <div className="flex items-start gap-2.5">
+                <div className="flex items-center justify-center h-6 w-6 rounded-lg bg-destructive/10 shrink-0 mt-0.5">
+                  <X className="h-3.5 w-3.5 text-destructive" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-destructive">{error}</p>
                   {error.includes('Aucune parcelle trouvée') && (
-                    <div className="mt-3 space-y-2">
-                      <p className="text-xs text-red-700">
-                        Cette parcelle n'existe pas encore dans notre base de données. Vous pouvez contribuer en ajoutant ces informations !
+                    <div className="mt-2.5 space-y-2">
+                      <p className="text-xs text-muted-foreground">
+                        Parcelle introuvable. Contribuez en l'ajoutant !
                       </p>
-                      <Button onClick={() => setShowIntroDialog(true)} variant="outline" size="sm" className="text-seloger-red border-seloger-red hover:bg-seloger-red/10">
+                      <Button
+                        onClick={() => setShowIntroDialog(true)}
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-xs rounded-lg border-primary/30 text-primary hover:bg-primary/5"
+                      >
                         Ajouter cette parcelle
                       </Button>
                     </div>
@@ -338,9 +382,9 @@ const CadastralSearchBar = () => {
                 </div>
               </div>
             </div>
-          )}
-        </div>
-      </Card>
+          </div>
+        )}
+      </div>
 
       {showResultsDialog && searchResult && (
         <CadastralResultsDialog 
