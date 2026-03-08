@@ -465,20 +465,34 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   };
 
   const handlePaymentSuccess = async () => {
+    // Build fee items from the calculated dynamic fees
+    const feeItems = calculatedFeesResult.fees.map(fee => ({
+      id: fee.id,
+      name: fee.fee_name,
+      amount: fee.final_amount,
+      is_mandatory: fee.is_mandatory
+    }));
+
     const result = await submitRequest({
       ...formData,
       requestType,
       selectedParcelNumber,
+      isOwnerSameAsRequester: formData.requesterType === 'owner',
       constructionType,
+      constructionNature,
+      constructionMaterials,
       declaredUsage,
       deducedTitleType: deducedTitleType?.type || '',
+      nationality,
+      occupationDuration,
       requesterIdDocumentFile: requesterIdFile,
       ownerIdDocumentFile: ownerIdFile,
       proofOfOwnershipFile: proofOfOwnershipFile,
       gpsCoordinates: gpsCoordinates,
       parcelSides: parcelSides,
+      roadBorderingSides: roadSides,
       totalAmountOverride: totalAmount
-    });
+    }, feeItems);
     
     if (result.success) {
       setSavedReferenceNumber(result.referenceNumber || '');
