@@ -1002,7 +1002,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     onOpenChange(false);
   };
 
-  const isApartmentOrBuilding = constructionType === 'appartement' || constructionType === 'immeuble' || constructionType === 'duplex';
+  const isApartmentOrBuilding = constructionType === 'appartement' || constructionType === 'immeuble' || constructionType === 'duplex' || constructionType === 'studio';
 
   const renderForm = () => (
     <div className="space-y-3">
