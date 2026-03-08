@@ -108,12 +108,18 @@ export const useRealEstateExpertise = () => {
     }
   }, [user]);
 
-  const checkCertificateValidity = useCallback((certificateIssueDate?: string): { isValid: boolean; daysRemaining: number } => {
+  const checkCertificateValidity = useCallback((certificateIssueDate?: string, certificateExpiryDate?: string): { isValid: boolean; daysRemaining: number } => {
     if (!certificateIssueDate) return { isValid: false, daysRemaining: 0 };
 
-    const issueDate = new Date(certificateIssueDate);
-    const expiryDate = new Date(issueDate);
-    expiryDate.setMonth(expiryDate.getMonth() + 6);
+    let expiryDate: Date;
+    if (certificateExpiryDate) {
+      // Prefer DB-stored expiry date for consistency
+      expiryDate = new Date(certificateExpiryDate);
+    } else {
+      // Fallback: calculate from issue date
+      expiryDate = new Date(certificateIssueDate);
+      expiryDate.setMonth(expiryDate.getMonth() + 6);
+    }
     
     const today = new Date();
     const daysRemaining = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
