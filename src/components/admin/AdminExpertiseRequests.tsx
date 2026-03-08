@@ -24,6 +24,10 @@ import { ResponsiveTable, ResponsiveTableHeader, ResponsiveTableBody, Responsive
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { exportToCSV } from '@/utils/csvExport';
 import { generateExpertiseCertificatePDF } from '@/utils/generateExpertiseCertificatePDF';
+import { 
+  QUALITY_LABELS, CONDITION_LABELS, CONSTRUCTION_TYPE_LABELS, 
+  WALL_LABELS, ROOF_LABELS, ROAD_LABELS, SOUND_LABELS, STATUS_LABELS 
+} from '@/constants/expertiseLabels';
 
 interface ExpertiseRequest {
   id: string;
