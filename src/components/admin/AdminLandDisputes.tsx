@@ -450,11 +450,15 @@ const AdminLandDisputes: React.FC = () => {
                       className="text-sm rounded-xl min-h-[60px]"
                     />
                   </div>
-                  <Button
+              <Button
                     size="sm"
                     className="w-full rounded-xl"
                     disabled={updatingStatus || newStatus === selectedDispute.current_status}
-                    onClick={() => handleUpdateStatus(selectedDispute.id)}
+                    onClick={() => {
+                      if (window.confirm(`Confirmer le changement de statut vers "${ADMIN_STATUS_TRANSITIONS.find(s => s.value === newStatus)?.label || newStatus}" ?`)) {
+                        handleUpdateStatus(selectedDispute.id);
+                      }
+                    }}
                   >
                     {updatingStatus ? 'Mise à jour...' : 'Mettre à jour le statut'}
                   </Button>

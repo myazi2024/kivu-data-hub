@@ -24,6 +24,8 @@ import {
   validateFileCount,
   validateFile,
   getDisputeLiftingDraftKey,
+  DISPUTE_NATURES_MAP,
+  DISPUTE_STATUS_CONFIG,
 } from '@/utils/disputeUploadUtils';
 
 interface LandDisputeLiftingFormProps {

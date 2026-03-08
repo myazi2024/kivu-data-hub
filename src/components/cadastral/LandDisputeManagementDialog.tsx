@@ -181,6 +181,24 @@ const LandDisputeManagementDialog: React.FC<LandDisputeManagementDialogProps> = 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Tab switch confirmation dialog */}
+      <AlertDialog open={showTabSwitchConfirm} onOpenChange={setShowTabSwitchConfirm}>
+        <AlertDialogContent className="rounded-2xl z-[1300]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Changer d'onglet ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Vous avez des modifications non enregistrées dans l'onglet actuel. Vos données texte seront conservées en brouillon, mais les fichiers joints seront perdus.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">Rester ici</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmTabSwitch} className="rounded-xl">
+              Changer d'onglet
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

@@ -173,10 +173,13 @@ export const UserLandDisputes: React.FC = () => {
             <Scale className="h-4 w-4 text-orange-600" />
             <h3 className="text-sm font-semibold">Mes litiges fonciers</h3>
           </div>
+          <Button variant="ghost" size="sm" onClick={fetchDisputes} className="h-7 w-7 p-0">
+            <RefreshCw className="h-3.5 w-3.5" />
+          </Button>
         </div>
 
         {disputes.length > 0 && (
-          <div className="px-3 pt-3">
+          <div className="px-3 pt-3 space-y-2">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
@@ -185,6 +188,29 @@ export const UserLandDisputes: React.FC = () => {
                 onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                 className="h-8 pl-8 text-xs rounded-xl"
               />
+            </div>
+            <div className="flex gap-2">
+              <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setCurrentPage(1); }}>
+                <SelectTrigger className="h-7 text-[10px] rounded-lg flex-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous types</SelectItem>
+                  <SelectItem value="report">Signalements</SelectItem>
+                  <SelectItem value="lifting">Levées</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setCurrentPage(1); }}>
+                <SelectTrigger className="h-7 text-[10px] rounded-lg flex-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous statuts</SelectItem>
+                  {Object.entries(DISPUTE_STATUS_CONFIG).map(([key, cfg]) => (
+                    <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         )}
