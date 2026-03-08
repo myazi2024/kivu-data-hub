@@ -969,10 +969,12 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setErosionRiskZone(false);
     setNearbyAmenities([]);
 
-    // Documents
-    setAdditionalNotes('');
-    setParcelDocuments([]);
-    setConstructionImages([]);
+     // Documents - revoke all object URLs before clearing
+     setAdditionalNotes('');
+     setParcelDocuments([]);
+     constructionImageUrls.forEach(url => URL.revokeObjectURL(url));
+     setConstructionImages([]);
+     setConstructionImageUrls([]);
 
     // Payment
     setPaymentMethod('mobile_money');
