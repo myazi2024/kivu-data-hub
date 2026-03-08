@@ -1941,11 +1941,11 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                   <div className="grid grid-cols-3 gap-2">
                     {constructionImages.map((file, index) => (
                       <div key={index} className="relative group">
-                        <div className="aspect-square rounded-lg overflow-hidden bg-muted">
-                          <img
-                            src={URL.createObjectURL(file)}
-                            alt={file.name}
-                            className="w-full h-full object-cover"
+                         <div className="aspect-square rounded-lg overflow-hidden bg-muted">
+                           <img
+                             src={constructionImageUrls[index] || ''}
+                             alt={file.name}
+                             className="w-full h-full object-cover"
                           />
                         </div>
                         <Button
