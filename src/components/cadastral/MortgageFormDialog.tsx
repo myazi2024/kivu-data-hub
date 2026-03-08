@@ -582,7 +582,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
           Modifier
         </Button>
         <Button
-          onClick={handleSubmit}
+          onClick={() => setShowSubmitConfirm(true)}
           disabled={loading}
           className="flex-1 h-11 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700"
         >
