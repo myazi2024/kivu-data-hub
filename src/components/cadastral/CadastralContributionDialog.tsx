@@ -2318,8 +2318,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     const permitType = savedPermitRequestData.permitType;
     const servicePrice = permitType === 'construction' ? 150 : 200;
     const serviceName = permitType === 'construction' 
-      ? 'Permis de construire' 
-      : 'Permis de régularisation';
+      ? 'Autorisation de bâtir' 
+      : 'Autorisation de régularisation';
     
     const cartItem: CartItem = {
       id: `permit-${Date.now()}`,
