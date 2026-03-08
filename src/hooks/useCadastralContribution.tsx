@@ -388,9 +388,10 @@ export const useCadastralContribution = () => {
       // Recharger les codes CCC
       await fetchUserCodes();
 
-      // ✅ Nettoyer le localStorage SEULEMENT après confirmation complète
+      // ✅ Nettoyer le localStorage avec la clé correcte (même format que le Dialog)
       try {
-        localStorage.removeItem('ccc_form_draft');
+        localStorage.removeItem(`cadastral_contribution_${data.parcelNumber}`);
+        localStorage.removeItem('ccc_form_draft'); // Legacy key cleanup
       } catch (storageError) {
         console.warn('Impossible de nettoyer le localStorage:', storageError);
       }
