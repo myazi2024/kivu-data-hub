@@ -63,7 +63,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isConstruction = permitType === 'construction';
-  const title = isConstruction ? 'Permis de construire' : 'Permis de régularisation';
+  const title = isConstruction ? 'Autorisation de bâtir' : 'Autorisation de régularisation';
   const iconColor = isConstruction ? 'text-blue-600' : 'text-green-600';
   const bgColor = isConstruction ? 'bg-blue-500/10' : 'bg-green-500/10';
   const gradientFrom = isConstruction ? 'from-blue-500' : 'from-green-500';
