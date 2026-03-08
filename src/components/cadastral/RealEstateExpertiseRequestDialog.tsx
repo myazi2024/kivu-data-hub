@@ -572,6 +572,10 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       has_water_tank: hasWaterTank,
       has_generator: hasGenerator,
       has_borehole: hasBorehole,
+      has_electric_fence: hasElectricFence,
+      has_garage: hasGarage,
+      has_cellar: hasCellar,
+      has_automatic_gate: hasAutomaticGate,
       nearby_amenities: nearbyAmenities.length > 0 ? nearbyAmenities.join(', ') : undefined,
     };
 
