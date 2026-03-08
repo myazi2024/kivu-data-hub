@@ -240,9 +240,11 @@ export function PermitCard({ permit, onAppealClick }: PermitCardProps) {
                         <span className="ml-1 font-medium">{validMonths} mois</span>
                       </div>
                     </div>
-                  <PermitDownloadButton permit={permit} className="w-full" />
-                </div>
-              ))}
+                    <PermitDownloadButton permit={permit} className="w-full" />
+                  </div>
+                );
+              })}
+
             </div>
           </div>
         )}
