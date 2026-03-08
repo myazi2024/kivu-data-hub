@@ -673,21 +673,90 @@ const AdminMutationRequests: React.FC = () => {
                   </div>
                 )}
 
+                {/* Documents joints */}
+                {selectedRequest.proposed_changes?.supporting_documents?.length > 0 && (
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Documents joints</Label>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {selectedRequest.proposed_changes.supporting_documents.map((url: string, i: number) => (
+                        <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline">
+                          Document {i + 1}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Certificat d'expertise */}
+                {selectedRequest.proposed_changes?.expertise_certificate_url && (
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Certificat d'expertise</Label>
+                    <div className="mt-1 space-y-1">
+                      <a href={selectedRequest.proposed_changes.expertise_certificate_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline block">
+                        Voir le certificat
+                      </a>
+                      {selectedRequest.proposed_changes.market_value_usd && (
+                        <p className="text-xs">Valeur vénale: <strong>${selectedRequest.proposed_changes.market_value_usd.toLocaleString()}</strong></p>
+                      )}
+                      {selectedRequest.proposed_changes.expertise_certificate_date && (
+                        <p className="text-xs text-muted-foreground">Date: {selectedRequest.proposed_changes.expertise_certificate_date}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <Separator />
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Montant payé</Label>
-                    <p className="text-lg font-bold text-primary">${selectedRequest.total_amount_usd}</p>
-                  </div>
-                  <div className="text-right">
-                    <Label className="text-xs text-muted-foreground">Paiement</Label>
-                    <div className="mt-1">
-                      {(() => {
-                        const badge = getPaymentBadge(selectedRequest.payment_status);
-                        return <Badge variant={badge.variant}>{badge.label}</Badge>;
-                      })()}
+                {/* Décomposition des frais */}
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground font-semibold">Détail des frais</Label>
+                  
+                  {/* Fee items from request */}
+                  {selectedRequest.fee_items?.map((item: any, i: number) => (
+                    <div key={i} className="flex justify-between text-xs">
+                      <span>{item.fee_name}</span>
+                      <span className="font-mono">${item.amount_usd}</span>
                     </div>
+                  ))}
+
+                  {/* Mutation fees */}
+                  {selectedRequest.proposed_changes?.mutation_fees && (
+                    <>
+                      <div className="flex justify-between text-xs">
+                        <span>Frais de mutation ({selectedRequest.proposed_changes.mutation_fees.percentage}%)</span>
+                        <span className="font-mono">${selectedRequest.proposed_changes.mutation_fees.mutation_fee}</span>
+                      </div>
+                      {selectedRequest.proposed_changes.mutation_fees.bank_fee > 0 && (
+                        <div className="flex justify-between text-xs">
+                          <span>Frais bancaires</span>
+                          <span className="font-mono">${selectedRequest.proposed_changes.mutation_fees.bank_fee}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Late fees */}
+                  {selectedRequest.proposed_changes?.late_fees && (
+                    <div className="flex justify-between text-xs text-orange-600">
+                      <span>Retard ({selectedRequest.proposed_changes.late_fees.days}j)</span>
+                      <span className="font-mono">${selectedRequest.proposed_changes.late_fees.fee}</span>
+                    </div>
+                  )}
+
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold">Total</span>
+                    <span className="text-lg font-bold text-primary">${selectedRequest.total_amount_usd.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <Label className="text-xs text-muted-foreground">Paiement</Label>
+                  <div className="mt-1">
+                    {(() => {
+                      const badge = getPaymentBadge(selectedRequest.payment_status);
+                      return <Badge variant={badge.variant}>{badge.label}</Badge>;
+                    })()}
                   </div>
                 </div>
               </div>
