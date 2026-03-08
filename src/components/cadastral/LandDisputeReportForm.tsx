@@ -262,7 +262,7 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
               parcel_number: parcelNumber,
               original_parcel_id: parcelId || null as any,
             user_id: user.id,
-            contribution_type: 'dispute_report',
+            contribution_type: 'new',
             status: 'pending',
             current_owner_name: declarantName,
             province: null,
