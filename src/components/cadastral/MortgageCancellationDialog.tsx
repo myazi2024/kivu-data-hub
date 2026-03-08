@@ -516,6 +516,8 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     setReferenceError(null);
     setMortgageData(null);
     setParcelData(null);
+    setRequestReferenceNumber('');
+    isSubmittingRef.current = false;
     setFormData({
       mortgageReferenceNumber: '',
       reason: 'remboursement_integral',
