@@ -25,6 +25,7 @@ import {
   validateFile,
   getDisputeReportDraftKey,
 } from '@/utils/disputeUploadUtils';
+import { MAX_PARTIES, MAX_DESCRIPTION_LENGTH } from '@/utils/disputeSharedTypes';
 
 interface LandDisputeReportFormProps {
   parcelNumber: string;
