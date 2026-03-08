@@ -1519,6 +1519,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   };
 
   const updateCurrentOwner = (index: number, field: string | Record<string, string>, value?: string) => {
+    markDirty();
     setCurrentOwners(prev => {
       const updated = [...prev];
       if (typeof field === 'string') {
