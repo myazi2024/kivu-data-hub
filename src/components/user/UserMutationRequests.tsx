@@ -72,7 +72,7 @@ export const UserMutationRequests: React.FC = () => {
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <Hash className="h-3 w-3" />
-                        <span className="font-mono font-bold">{request.reference_number}</span>
+                        <span className="font-mono font-bold">{request.reference_number || 'Référence en cours de génération'}</span>
                       </div>
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
                         <Calendar className="h-3 w-3" />
@@ -96,7 +96,7 @@ export const UserMutationRequests: React.FC = () => {
                     </div>
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-muted-foreground">Type</span>
-                      <span className="font-medium capitalize">{request.mutation_type.replace('_', ' ')}</span>
+                      <span className="font-medium capitalize">{request.mutation_type.replace(/_/g, ' ')}</span>
                     </div>
                     {request.beneficiary_name && (
                       <div className="flex items-center justify-between text-xs">
@@ -108,7 +108,7 @@ export const UserMutationRequests: React.FC = () => {
                       <span className="text-muted-foreground flex items-center gap-1">
                         <DollarSign className="h-3 w-3" /> Montant
                       </span>
-                      <span className="font-bold text-primary">${request.total_amount_usd.toFixed(2)}</span>
+                      <span className="font-bold text-primary">${Number(request.total_amount_usd || 0).toFixed(2)}</span>
                     </div>
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-muted-foreground">Paiement</span>

@@ -163,6 +163,49 @@ serve(async (req) => {
               });
             }
           }
+        } else if (paymentType === "mutation_request") {
+          const mutationRequestId = (metadata.mutation_request_id || metadata.invoice_id) as string | undefined;
+
+          const { data: mutationTx } = await supabase
+            .from("payment_transactions")
+            .update({
+              status: "completed",
+              transaction_reference: session.id,
+              metadata: {
+                stripe_session_id: session.id,
+                completed_at: new Date().toISOString(),
+                payment_type: "mutation_request",
+                mutation_request_id: mutationRequestId || null,
+              },
+            })
+            .eq("transaction_reference", session.id)
+            .select("id, invoice_id")
+            .maybeSingle();
+
+          const targetRequestId = mutationRequestId || mutationTx?.invoice_id || null;
+
+          if (targetRequestId) {
+            await supabase
+              .from("mutation_requests")
+              .update({
+                payment_status: "paid",
+                status: "in_review",
+                paid_at: new Date().toISOString(),
+                payment_id: mutationTx?.id || null,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", targetRequestId);
+          }
+
+          if (metadata.user_id) {
+            await supabase.from("notifications").insert({
+              user_id: metadata.user_id,
+              type: "success",
+              title: "Paiement mutation confirmé",
+              message: "Votre paiement de mutation a été confirmé et la demande est en cours d'examen.",
+              action_url: "/user-dashboard?tab=mutations",
+            });
+          }
         } else if (paymentType === "publications") {
           // Mettre à jour la commande
           await supabase

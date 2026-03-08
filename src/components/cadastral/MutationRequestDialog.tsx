@@ -48,6 +48,13 @@ interface MutationRequestDialogProps {
 
 type Step = 'form' | 'preview' | 'payment' | 'confirmation';
 
+type RequiredDocument = {
+  key: string;
+  label: string;
+  required: boolean;
+  handledByExpertiseCertificate?: boolean;
+};
+
 // Types de mutation alignés avec le formulaire CCC
 const MUTATION_TYPES = [
   { value: 'vente', label: 'Vente', description: 'Transfert de propriété suite à une vente' },
@@ -69,6 +76,12 @@ const REQUESTER_TYPES = [
   { value: 'proprietaire', label: 'Propriétaire actuel' },
   { value: 'mandataire', label: 'Mandataire/Représentant' }
 ];
+
+const PROVIDER_LABELS: Record<string, string> = {
+  airtel: 'Airtel Money',
+  orange: 'Orange Money',
+  mpesa: 'M-Pesa',
+};
 
 const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   parcelNumber,
@@ -105,11 +118,11 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   const [beneficiaryPhone, setBeneficiaryPhone] = useState('');
   
   const [selectedFees, setSelectedFees] = useState<string[]>([]);
+  const [requiredDocumentChecks, setRequiredDocumentChecks] = useState<Record<string, boolean>>({});
   
   // Pièces jointes
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState(false);
-  const [uploadedFileUrls, setUploadedFileUrls] = useState<string[]>([]);
   
   // Certificat d'expertise immobilière
   const [hasExpertiseCertificate, setHasExpertiseCertificate] = useState<'yes' | 'no' | null>(null);
@@ -132,6 +145,9 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   const [paymentProvider, setPaymentProvider] = useState('');
   const [paymentPhone, setPaymentPhone] = useState('');
   const [processingPayment, setProcessingPayment] = useState(false);
+
+  const enabledMobileProviders = availableMethods.enabledProviders.mobileMoneyProviders;
+  const hasAnyPaymentMethod = availableMethods.hasMobileMoney || availableMethods.hasBankCard;
 
   // Vérifier si c'est un type de mutation avec transfert
   const isTransferMutation = ['vente', 'donation', 'succession', 'expropriation', 'echange'].includes(mutationType);
@@ -301,6 +317,31 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     setSelectedFees(mandatoryFeeIds);
   }, [fees]);
 
+  useEffect(() => {
+    if (step !== 'payment') return;
+
+    if (paymentMethod === 'mobile_money' && !availableMethods.hasMobileMoney && availableMethods.hasBankCard) {
+      setPaymentMethod('bank_card');
+      return;
+    }
+
+    if (paymentMethod === 'bank_card' && !availableMethods.hasBankCard && availableMethods.hasMobileMoney) {
+      setPaymentMethod('mobile_money');
+      return;
+    }
+
+    if (paymentMethod === 'mobile_money' && enabledMobileProviders.length > 0 && !paymentProvider) {
+      setPaymentProvider(enabledMobileProviders[0]);
+    }
+  }, [
+    step,
+    paymentMethod,
+    paymentProvider,
+    availableMethods.hasMobileMoney,
+    availableMethods.hasBankCard,
+    enabledMobileProviders,
+  ]);
+
   const handleFeeToggle = (feeId: string, isMandatory: boolean) => {
     if (isMandatory) return;
     setSelectedFees(prev => 
@@ -389,7 +430,6 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
         urls.push(data.publicUrl);
       }
       
-      setUploadedFileUrls(urls);
       return urls;
     } catch (error: any) {
       console.error('Upload error:', error);
@@ -401,27 +441,69 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   };
 
   // Documents requis par type de mutation
-  const getRequiredDocuments = (): { label: string; required: boolean }[] => {
-    const base = [{ label: 'Pièce d\'identité du demandeur', required: true }];
+  const getRequiredDocuments = (): RequiredDocument[] => {
+    const base: RequiredDocument[] = [
+      { key: 'requester_id', label: 'Pièce d\'identité du demandeur', required: true },
+    ];
+
     switch (mutationType) {
       case 'vente':
-        return [...base, { label: 'Acte de vente notarié', required: true }, { label: 'Certificat d\'expertise immobilière', required: true }];
+        return [
+          ...base,
+          { key: 'sale_deed', label: 'Acte de vente notarié', required: true },
+          { key: 'expertise_certificate', label: 'Certificat d\'expertise immobilière', required: true, handledByExpertiseCertificate: true },
+        ];
       case 'donation':
-        return [...base, { label: 'Acte de donation notarié', required: true }, { label: 'Certificat d\'expertise immobilière', required: true }];
+        return [
+          ...base,
+          { key: 'donation_deed', label: 'Acte de donation notarié', required: true },
+          { key: 'expertise_certificate', label: 'Certificat d\'expertise immobilière', required: true, handledByExpertiseCertificate: true },
+        ];
       case 'succession':
-        return [...base, { label: 'Certificat d\'héritage / Jugement supplétif', required: true }, { label: 'Acte de décès', required: true }, { label: 'Certificat d\'expertise immobilière', required: true }];
+        return [
+          ...base,
+          { key: 'inheritance_certificate', label: 'Certificat d\'héritage / Jugement supplétif', required: true },
+          { key: 'death_certificate', label: 'Acte de décès', required: true },
+          { key: 'expertise_certificate', label: 'Certificat d\'expertise immobilière', required: true, handledByExpertiseCertificate: true },
+        ];
       case 'expropriation':
-        return [...base, { label: 'Arrêté d\'expropriation', required: true }, { label: 'PV d\'indemnisation', required: true }];
+        return [
+          ...base,
+          { key: 'expropriation_order', label: 'Arrêté d\'expropriation', required: true },
+          { key: 'compensation_report', label: 'PV d\'indemnisation', required: true },
+        ];
       case 'echange':
-        return [...base, { label: 'Contrat d\'échange notarié', required: true }, { label: 'Certificat d\'expertise des deux biens', required: true }];
+        return [
+          ...base,
+          { key: 'exchange_contract', label: 'Contrat d\'échange notarié', required: true },
+          { key: 'dual_expertise_certificate', label: 'Certificat d\'expertise des deux biens', required: true, handledByExpertiseCertificate: true },
+        ];
       case 'correction':
-        return [...base, { label: 'Document justificatif de la correction', required: true }];
+        return [...base, { key: 'correction_proof', label: 'Document justificatif de la correction', required: true }];
       case 'mise_a_jour':
-        return [...base, { label: 'Document attestant la mise à jour', required: false }];
+        return [...base, { key: 'update_proof', label: 'Document attestant la mise à jour', required: true }];
       default:
         return base;
     }
   };
+
+  const requiredSupportingDocuments = getRequiredDocuments().filter(
+    (doc) => doc.required && !doc.handledByExpertiseCertificate
+  );
+
+  useEffect(() => {
+    const requiredDocsForType = getRequiredDocuments().filter(
+      (doc) => doc.required && !doc.handledByExpertiseCertificate
+    );
+
+    setRequiredDocumentChecks((prev) => {
+      const next: Record<string, boolean> = {};
+      requiredDocsForType.forEach((doc) => {
+        next[doc.key] = prev[doc.key] ?? false;
+      });
+      return next;
+    });
+  }, [mutationType]);
 
   const validateForm = (): boolean => {
     if (isTransferMutation && (!beneficiaryLastName.trim() || (beneficiaryLegalStatus === 'personne_physique' && !beneficiaryFirstName.trim()))) {
@@ -463,11 +545,17 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       }
     }
 
-    // Valider les documents requis selon le type de mutation
-    const requiredDocs = getRequiredDocuments().filter(d => d.required);
-    if (requiredDocs.length > 0 && attachedFiles.length === 0 && !expertiseCertificateFile) {
-      const docNames = requiredDocs.map(d => d.label).join(', ');
-      toast.error(`Documents requis pour ce type de mutation : ${docNames}`);
+    const missingCheckedDocuments = requiredSupportingDocuments.filter(
+      (doc) => !requiredDocumentChecks[doc.key]
+    );
+
+    if (missingCheckedDocuments.length > 0) {
+      toast.error(`Veuillez confirmer les pièces requises : ${missingCheckedDocuments.map((doc) => doc.label).join(', ')}`);
+      return false;
+    }
+
+    if (requiredSupportingDocuments.length > 0 && attachedFiles.length < requiredSupportingDocuments.length) {
+      toast.error(`Ajoutez au moins ${requiredSupportingDocuments.length} document(s) justificatif(s) pour ce type de mutation.`);
       return false;
     }
     
@@ -587,11 +675,24 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
 
   const handlePayment = async () => {
     if (!createdRequest) return;
+
+    if (!hasAnyPaymentMethod) {
+      toast.error('Aucun moyen de paiement n’est disponible pour le moment.');
+      return;
+    }
     
     setProcessingPayment(true);
     
     try {
       if (paymentMethod === 'mobile_money') {
+        if (!availableMethods.hasMobileMoney) {
+          throw new Error('Le paiement Mobile Money est indisponible actuellement.');
+        }
+
+        if (!enabledMobileProviders.length) {
+          throw new Error('Aucun opérateur Mobile Money actif n’est configuré.');
+        }
+
         if (!paymentProvider) {
           toast.error('Veuillez sélectionner un opérateur');
           setProcessingPayment(false);
@@ -639,6 +740,10 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           toast.error('Erreur lors de la mise à jour du paiement');
         }
       } else {
+        if (!availableMethods.hasBankCard) {
+          throw new Error('Le paiement par carte bancaire est indisponible actuellement.');
+        }
+
         // Stripe - redirection vers la page de paiement
         const { data: stripeSession, error: stripeError } = await supabase.functions.invoke('create-payment', {
           body: {
@@ -676,7 +781,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     setBeneficiaryMiddleName('');
     setBeneficiaryPhone('');
     setAttachedFiles([]);
-    setUploadedFileUrls([]);
+    setRequiredDocumentChecks({});
     setHasExpertiseCertificate(null);
     setExpertiseCertificateFile(null);
     setExpertiseCertificateDate('');
@@ -761,13 +866,38 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
               />
             </h4>
             {/* Liste des documents requis selon le type de mutation */}
-            <div className="space-y-1">
-              {getRequiredDocuments().map((doc, idx) => (
-                <p key={idx} className={`text-xs flex items-center gap-1 ${doc.required ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground'}`}>
-                  {doc.required ? <AlertCircle className="h-3 w-3 flex-shrink-0" /> : <FileText className="h-3 w-3 flex-shrink-0" />}
-                  {doc.label} {doc.required && '*'}
-                </p>
-              ))}
+            <div className="space-y-2">
+              {getRequiredDocuments().map((doc) => {
+                const isCheckable = doc.required && !doc.handledByExpertiseCertificate;
+                return (
+                  <div key={doc.key} className="rounded-lg border p-2">
+                    <p className={`text-xs flex items-center gap-1 ${doc.required ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground'}`}>
+                      {doc.required ? <AlertCircle className="h-3 w-3 flex-shrink-0" /> : <FileText className="h-3 w-3 flex-shrink-0" />}
+                      {doc.label} {doc.required && '*'}
+                      {doc.handledByExpertiseCertificate && (
+                        <span className="ml-1 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                          vérifié via certificat d'expertise
+                        </span>
+                      )}
+                    </p>
+
+                    {isCheckable && (
+                      <div className="mt-2 ml-4 flex items-center gap-2">
+                        <Checkbox
+                          id={`doc-check-${doc.key}`}
+                          checked={requiredDocumentChecks[doc.key] || false}
+                          onCheckedChange={(checked) =>
+                            setRequiredDocumentChecks((prev) => ({ ...prev, [doc.key]: Boolean(checked) }))
+                          }
+                        />
+                        <Label htmlFor={`doc-check-${doc.key}`} className="text-[11px] text-muted-foreground cursor-pointer">
+                          Je confirme avoir joint cette pièce
+                        </Label>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
             
             <input
@@ -1150,31 +1280,12 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                         </div>
                       </RadioGroup>
 
-                      {/* Affichage des frais calculés */}
                       {titleAge && mutationFeesCalculation.applicable && (
                         <Alert className="bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800 rounded-lg mt-2">
                           <DollarSign className="h-4 w-4 text-green-600" />
                           <AlertDescription className="text-xs text-green-700 dark:text-green-400">
-                            <strong>Frais de mutation calculés:</strong>
-                            <div className="mt-1 space-y-0.5">
-                              <div className="flex justify-between">
-                                <span>Frais de mutation ({mutationFeesCalculation.percentage}%)</span>
-                               <span className="font-mono">${mutationFeesCalculation.mutationFee.toFixed(2)}</span>
-                              </div>
-                              {mutationFeesCalculation.bankFee > 0 && (
-                                <div className="flex justify-between">
-                                  <span>Frais bancaires (0.5%)</span>
-                                  <span className="font-mono">${mutationFeesCalculation.bankFee.toFixed(2)}</span>
-                                </div>
-                              )}
-                              <div className="flex justify-between font-bold pt-1 border-t border-green-300 dark:border-green-700">
-                                <span>Total frais de mutation</span>
-                                <span className="font-mono">${mutationFeesCalculation.total.toFixed(2)}</span>
-                              </div>
-                            </div>
-                            <p className="mt-2 text-[10px] text-green-600 dark:text-green-500">
-                              Réf: n°0076 CAB/MIN.AFF.FONC/ASM/TMM/2023 et 010/CAB/MIN.FINANCES/2023
-                            </p>
+                            Les frais de mutation ont bien été calculés automatiquement selon l'ancienneté du titre.
+                            Le détail complet est affiché dans la section <strong>Frais liés à l'expertise immobilière</strong> ci-dessous.
                           </AlertDescription>
                         </Alert>
                       )}
@@ -1443,9 +1554,91 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           </>
         )}
 
-        {/* Pour les mutations non-transfert, afficher directement le bouton preview */}
+        {/* Pour les mutations non-transfert, afficher les frais administratifs + retard */}
         {!isTransferMutation && (
           <>
+            <Card className="border-2 border-amber-200 dark:border-amber-700 rounded-xl">
+              <CardContent className="p-3 space-y-3">
+                <h4 className="text-sm font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  Frais administratifs de mutation
+                </h4>
+
+                <div className="space-y-2">
+                  {getSelectedFeesDetails().length > 0 ? (
+                    getSelectedFeesDetails().map((fee) => (
+                      <div key={fee.id} className="flex items-center justify-between rounded-lg border bg-muted/20 px-3 py-2">
+                        <div>
+                          <p className="text-sm font-medium">{fee.fee_name}</p>
+                          {fee.description && <p className="text-xs text-muted-foreground">{fee.description}</p>}
+                        </div>
+                        <span className="text-sm font-bold text-amber-700 dark:text-amber-400">${fee.amount_usd.toFixed(2)}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Aucun frais actif configuré.</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-2 border-orange-200 dark:border-orange-700 rounded-xl">
+              <CardContent className="p-3 space-y-3">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-sm font-semibold text-orange-700 dark:text-orange-400 flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Traitement hors délai légal
+                  </h4>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground flex items-center gap-2">
+                      Date d'acquisition par le propriétaire actuel
+                      {ownerAcquisitionDateAutoDetected && (
+                        <span className="text-[10px] text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/50 px-1.5 py-0.5 rounded">
+                          détectée automatiquement
+                        </span>
+                      )}
+                    </Label>
+                    {ownerAcquisitionDate ? (
+                      <div className="flex items-center gap-2 p-2.5 bg-muted/50 rounded-lg">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">
+                          {format(new Date(ownerAcquisitionDate), 'd MMMM yyyy', { locale: fr })}
+                        </span>
+                      </div>
+                    ) : (
+                      <Input
+                        type="date"
+                        max={new Date().toISOString().split('T')[0]}
+                        value={manualAcquisitionDate}
+                        onChange={(e) => setManualAcquisitionDate(e.target.value)}
+                        className="h-9 text-sm"
+                        placeholder="Sélectionnez la date d'acquisition"
+                      />
+                    )}
+                  </div>
+
+                  {lateFeesCalculation.applicable && (
+                    <div className="flex items-start gap-3 p-3 rounded-xl transition-colors bg-orange-50 dark:bg-orange-950/30 border-2 border-orange-200 dark:border-orange-700">
+                      <div className="p-1.5 bg-orange-100 dark:bg-orange-900/50 rounded-lg mt-0.5">
+                        <Clock className="h-4 w-4 text-orange-700 dark:text-orange-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-medium">Frais de retard ({lateFeesCalculation.days} jours)</span>
+                          <span className="text-sm font-bold text-orange-700 dark:text-orange-400 whitespace-nowrap">
+                            ${lateFeesCalculation.fee.toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Total à payer */}
             <Card className="border rounded-xl">
               <CardContent className="p-3">
@@ -1459,6 +1652,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
             <Button 
               onClick={handlePreview} 
               className="w-full h-12 text-sm font-semibold rounded-xl shadow-lg"
+              disabled={fees.length > 0 && selectedFees.length === 0}
             >
               <Eye className="h-4 w-4 mr-2" />
               Aperçu avant soumission
@@ -1582,7 +1776,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                   {getSelectedFeesDetails().length > 0 && <Separator className="my-1" />}
                   <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">Frais de mutation</span>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Frais ({mutationFeesCalculation.percentage}% de ${marketValueUsd})</span>
+                    <span className="text-sm text-muted-foreground">Frais ({mutationFeesCalculation.percentage}% de ${Number(marketValueUsd || 0).toFixed(2)})</span>
                     <span className="text-sm font-medium">${mutationFeesCalculation.mutationFee.toFixed(2)}</span>
                   </div>
                   {mutationFeesCalculation.bankFee > 0 && (
@@ -1659,11 +1853,11 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <p className="text-[10px] text-muted-foreground">Référence</p>
-              <p className="font-mono font-bold text-sm">{createdRequest?.reference_number}</p>
+              <p className="font-mono font-bold text-sm">{createdRequest?.reference_number || 'Référence en cours'}</p>
             </div>
             <div className="text-right">
               <p className="text-[10px] text-muted-foreground">Montant</p>
-              <p className="text-lg font-bold text-primary">${createdRequest?.total_amount_usd.toFixed(2)}</p>
+              <p className="text-lg font-bold text-primary">${Number(createdRequest?.total_amount_usd || 0).toFixed(2)}</p>
             </div>
           </div>
         </CardContent>
@@ -1671,27 +1865,40 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
 
       <div className="space-y-2">
         <Label className="text-xs font-medium">Mode de paiement</Label>
-        <div className="grid grid-cols-2 gap-1.5">
-          <Button
-            variant={paymentMethod === 'mobile_money' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setPaymentMethod('mobile_money')}
-            className="h-8 text-xs rounded-lg"
-          >
-            Mobile Money
-          </Button>
-          <Button
-            variant={paymentMethod === 'bank_card' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setPaymentMethod('bank_card')}
-            className="h-8 text-xs rounded-lg"
-          >
-            Carte bancaire
-          </Button>
-        </div>
+        {!hasAnyPaymentMethod ? (
+          <Alert className="rounded-lg border-destructive/20 bg-destructive/10">
+            <AlertCircle className="h-4 w-4 text-destructive" />
+            <AlertDescription className="text-xs text-destructive">
+              Aucun moyen de paiement actif n'est disponible pour le moment.
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <div className={`grid ${availableMethods.hasMobileMoney && availableMethods.hasBankCard ? 'grid-cols-2' : 'grid-cols-1'} gap-1.5`}>
+            {availableMethods.hasMobileMoney && (
+              <Button
+                variant={paymentMethod === 'mobile_money' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setPaymentMethod('mobile_money')}
+                className="h-8 text-xs rounded-lg"
+              >
+                Mobile Money
+              </Button>
+            )}
+            {availableMethods.hasBankCard && (
+              <Button
+                variant={paymentMethod === 'bank_card' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setPaymentMethod('bank_card')}
+                className="h-8 text-xs rounded-lg"
+              >
+                Carte bancaire
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
-      {paymentMethod === 'mobile_money' && (
+      {paymentMethod === 'mobile_money' && availableMethods.hasMobileMoney && (
         <div className="space-y-2">
           <div className="space-y-1">
             <Label className="text-[10px]">Opérateur</Label>
@@ -1700,19 +1907,11 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                 <SelectValue placeholder="Sélectionner..." />
               </SelectTrigger>
               <SelectContent>
-                {availableMethods.enabledProviders.mobileMoneyProviders.length > 0 ? (
-                  availableMethods.enabledProviders.mobileMoneyProviders.map(provider => (
-                    <SelectItem key={provider} value={provider} className="text-xs">
-                      {provider === 'airtel' ? 'Airtel Money' : provider === 'orange' ? 'Orange Money' : provider === 'mpesa' ? 'M-Pesa' : provider}
-                    </SelectItem>
-                  ))
-                ) : (
-                  <>
-                    <SelectItem value="airtel" className="text-xs">Airtel Money</SelectItem>
-                    <SelectItem value="orange" className="text-xs">Orange Money</SelectItem>
-                    <SelectItem value="mpesa" className="text-xs">M-Pesa</SelectItem>
-                  </>
-                )}
+                {enabledMobileProviders.map(provider => (
+                  <SelectItem key={provider} value={provider} className="text-xs">
+                    {PROVIDER_LABELS[provider] || provider}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -1739,7 +1938,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
         </Button>
         <Button 
           onClick={handlePayment}
-          disabled={processingPayment}
+          disabled={processingPayment || !hasAnyPaymentMethod}
           className="flex-1 h-8 text-xs rounded-lg"
         >
           {processingPayment ? (
@@ -1748,7 +1947,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
               Paiement...
             </>
           ) : (
-            'Payer'
+            `Payer $${Number(createdRequest?.total_amount_usd || 0).toFixed(2)}`
           )}
         </Button>
       </div>
@@ -1879,7 +2078,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           {step === 'confirmation' && renderConfirmationStep()}
         </DialogContent>
 
-      {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec le formulaire de mutation." />}
+      {open && step === 'form' && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec le formulaire de mutation." />}
 
       {/* Dialog pour demande d'expertise immobilière */}
       <RealEstateExpertiseRequestDialog

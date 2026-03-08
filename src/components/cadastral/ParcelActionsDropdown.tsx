@@ -166,7 +166,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
       )}
 
       {/* All dialogs */}
-      <MutationRequestDialog parcelNumber={parcelNumber} parcelId={parcelId} open={showMutationDialog} onOpenChange={setShowMutationDialog} />
+      <MutationRequestDialog parcelNumber={parcelNumber} parcelId={parcelId} parcelData={parcelData} open={showMutationDialog} onOpenChange={setShowMutationDialog} />
       <MortgageManagementDialog parcelNumber={parcelNumber} parcelId={parcelId} open={showMortgageManagementDialog} onOpenChange={setShowMortgageManagementDialog} />
       <BuildingPermitManagementDialog parcelNumber={parcelNumber} parcelId={parcelId} open={showBuildingPermitManagementDialog} onOpenChange={setShowBuildingPermitManagementDialog} />
       <TaxManagementDialog parcelNumber={parcelNumber} parcelId={parcelId} parcelData={parcelData} open={showTaxDialog} onOpenChange={setShowTaxDialog}

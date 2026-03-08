@@ -14,6 +14,13 @@ export const useMutationRequest = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
+  const generateMutationReference = () => {
+    const year = new Date().getFullYear();
+    const timestamp = Date.now().toString().slice(-6);
+    const random = Math.random().toString(36).slice(2, 6).toUpperCase();
+    return `MUT-${year}-${timestamp}-${random}`;
+  };
+
   const fetchFees = async () => {
     try {
       const { data, error } = await supabase
@@ -91,6 +98,7 @@ export const useMutationRequest = () => {
       }));
 
       const insertData = {
+        reference_number: generateMutationReference(),
         user_id: user.id,
         parcel_number: data.parcel_number,
         parcel_id: data.parcel_id || null,
@@ -106,7 +114,8 @@ export const useMutationRequest = () => {
         fee_items: feeItems,
         total_amount_usd: totalAmount,
         payment_status: 'pending',
-        status: 'pending'
+        status: 'pending',
+        estimated_processing_days: 14
       };
 
       const { data: request, error } = await supabase

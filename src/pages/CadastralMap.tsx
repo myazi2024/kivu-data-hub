@@ -225,18 +225,17 @@ const CadastralMap = () => {
             toast.message('Paiement confirmé, synchronisation en cours. Réessayez dans quelques secondes.');
           }
         } else if (paymentType === 'mutation_request') {
-          // Polling pour vérifier que le webhook Stripe a mis à jour la mutation
-          let mutationPaid = false;
+          let mutationPayment: { status: string; invoice_id: string | null } | null = null;
 
           for (let attempt = 0; attempt < 15; attempt++) {
             const { data: tx } = await supabase
               .from('payment_transactions')
-              .select('status')
-              .eq('id', sessionId)
+              .select('status, invoice_id')
+              .eq('transaction_reference', sessionId)
               .maybeSingle();
 
             if (tx?.status === 'completed') {
-              mutationPaid = true;
+              mutationPayment = tx;
               break;
             }
             if (tx?.status === 'failed') {
@@ -246,8 +245,18 @@ const CadastralMap = () => {
             await new Promise(resolve => setTimeout(resolve, 2000));
           }
 
-          if (mutationPaid) {
-            toast.success('Paiement réussi ! Votre demande de mutation est en cours d\'examen.');
+          if (mutationPayment?.invoice_id) {
+            const { data: mutationRequest } = await supabase
+              .from('mutation_requests')
+              .select('reference_number, payment_status')
+              .eq('id', mutationPayment.invoice_id)
+              .maybeSingle();
+
+            if (mutationRequest?.payment_status === 'paid') {
+              toast.success(`Paiement réussi ! Demande ${mutationRequest.reference_number} en cours d'examen.`);
+            } else {
+              toast.message('Paiement confirmé, synchronisation en cours. Vérifiez dans votre tableau de bord.');
+            }
           } else {
             toast.message('Paiement confirmé, synchronisation en cours. Vérifiez dans votre tableau de bord.');
           }

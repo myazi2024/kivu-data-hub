@@ -10,7 +10,7 @@ const corsHeaders = {
 interface PaymentRequest {
   items?: string[]; // Publication IDs
   invoice_id?: string; // Cadastral invoice ID or expertise payment ID
-  payment_type: 'publications' | 'cadastral_service' | 'expertise_fee' | 'certificate_access';
+  payment_type: 'publications' | 'cadastral_service' | 'expertise_fee' | 'certificate_access' | 'mutation_request';
   amount_usd?: number; // For cadastral/expertise services
 }
 
@@ -154,6 +154,41 @@ serve(async (req) => {
       totalAmount = Math.round(expertisePayment.total_amount_usd * 100);
       orderMetadata.expertise_payment_id = invoice_id;
     }
+    else if (payment_type === 'mutation_request' && invoice_id && amount_usd) {
+      const supabaseService = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+        { auth: { persistSession: false } }
+      );
+
+      const { data: mutationRequest, error: mutationError } = await supabaseService
+        .from("mutation_requests")
+        .select("id, reference_number, parcel_number, total_amount_usd, user_id")
+        .eq("id", invoice_id)
+        .eq("user_id", user.id)
+        .single();
+
+      if (mutationError || !mutationRequest) {
+        throw new Error("Invalid mutation request");
+      }
+
+      lineItems = [{
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: `Demande de mutation ${mutationRequest.reference_number}`,
+            description: `Paiement mutation parcelle ${mutationRequest.parcel_number}`,
+          },
+          unit_amount: Math.round(Number(mutationRequest.total_amount_usd) * 100),
+        },
+        quantity: 1,
+      }];
+
+      totalAmount = Math.round(Number(mutationRequest.total_amount_usd) * 100);
+      orderMetadata.mutation_request_id = invoice_id;
+      orderMetadata.invoice_id = invoice_id;
+      orderMetadata.parcel_number = mutationRequest.parcel_number;
+    }
     else {
       throw new Error("Invalid payment request: missing items or invoice_id");
     }
@@ -217,7 +252,7 @@ serve(async (req) => {
     let cancelUrl: string;
     const origin = req.headers.get("origin") || "";
 
-    if (payment_type === 'expertise_fee' || payment_type === 'certificate_access') {
+    if (payment_type === 'expertise_fee' || payment_type === 'certificate_access' || payment_type === 'mutation_request') {
       successUrl = `${origin}/cadastral-map?payment=success&type=${payment_type}&session_id={CHECKOUT_SESSION_ID}`;
       cancelUrl = `${origin}/cadastral-map?payment=cancelled`;
     } else if (payment_type === 'cadastral_service') {
@@ -281,6 +316,21 @@ serve(async (req) => {
         payment_method: 'bank_card',
         payment_provider: 'stripe',
       }).eq('id', invoice_id);
+    } else if (payment_type === 'mutation_request' && invoice_id) {
+      await supabaseService.from("payment_transactions").insert({
+        user_id: user.id,
+        invoice_id: invoice_id,
+        payment_method: 'bank_card',
+        provider: 'stripe',
+        amount_usd: amount_usd!,
+        status: 'pending',
+        transaction_reference: session.id,
+        metadata: {
+          stripe_session_id: session.id,
+          payment_type: 'mutation_request',
+          mutation_request_id: invoice_id,
+        }
+      });
     }
 
     return new Response(JSON.stringify({ url: session.url }), {
