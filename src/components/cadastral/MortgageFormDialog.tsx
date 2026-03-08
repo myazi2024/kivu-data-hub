@@ -138,6 +138,10 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
       toast.error('Le montant de l\'hypothèque doit être supérieur à 0');
       return false;
     }
+    if (amount > MAX_MORTGAGE_AMOUNT_USD) {
+      toast.error(`Le montant dépasse la limite autorisée (${MAX_MORTGAGE_AMOUNT_USD.toLocaleString()} USD)`);
+      return false;
+    }
     if (mortgageRecord.duration) {
       const dur = parseInt(mortgageRecord.duration);
       if (isNaN(dur) || dur <= 0) {
