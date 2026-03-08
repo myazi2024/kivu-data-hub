@@ -74,11 +74,10 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     comments: ''
   });
 
-  // Fix #2: Generate reference once on open, not as a dependency
   useEffect(() => {
-    if (open) {
-      setRequestReferenceNumber(`RAD-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`);
-    }
+    if (!open) return;
+    setRequestReferenceNumber(generateMortgageReference('RAD'));
+    setParcelData(null);
   }, [open]);
 
   const loadParcelData = useCallback(async () => {
