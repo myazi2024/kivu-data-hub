@@ -1086,6 +1086,29 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       return;
     }
 
+    // Vérification de contribution dupliquée (même parcelle, en attente)
+    if (!editingContributionId) {
+      const authenticatedUserId = user?.id || session?.user?.id;
+      if (authenticatedUserId) {
+        const { data: existingContrib } = await supabase
+          .from('cadastral_contributions')
+          .select('id, status')
+          .eq('parcel_number', formData.parcelNumber)
+          .eq('user_id', authenticatedUserId)
+          .in('status', ['pending', 'returned'])
+          .maybeSingle();
+        
+        if (existingContrib) {
+          toast({
+            title: "Contribution existante",
+            description: `Vous avez déjà une contribution ${existingContrib.status === 'returned' ? 'à corriger' : 'en attente'} pour cette parcelle. Veuillez la modifier depuis votre tableau de bord.`,
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+    }
+
     // Validation centralisée - utilise getMissingFields() pour cohérence
     const missingFields = getMissingFields();
     if (missingFields.length > 0) {
