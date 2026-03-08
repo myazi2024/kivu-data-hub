@@ -824,7 +824,7 @@ const AdminMutationRequests: React.FC = () => {
                 <div>
                   <Label className="text-xs text-muted-foreground">Modifications demandées</Label>
                   <p className="text-sm mt-1">
-                    {safeProposedChanges(selectedRequest).description || 'Non spécifié'}
+                    {changes.description || 'Non spécifié'}
                   </p>
                 </div>
 
@@ -836,11 +836,11 @@ const AdminMutationRequests: React.FC = () => {
                 )}
 
                 {/* Documents joints */}
-                {Array.isArray(safeProposedChanges(selectedRequest).supporting_documents) && safeProposedChanges(selectedRequest).supporting_documents.length > 0 && (
+                {Array.isArray(changes.supporting_documents) && changes.supporting_documents.length > 0 && (
                   <div>
                     <Label className="text-xs text-muted-foreground">Documents joints</Label>
                     <div className="flex flex-wrap gap-1 mt-1">
-                      {safeProposedChanges(selectedRequest).supporting_documents.map((url: string, i: number) => (
+                      {changes.supporting_documents.map((url: string, i: number) => (
                         <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline">
                           Document {i + 1}
                         </a>
@@ -850,18 +850,18 @@ const AdminMutationRequests: React.FC = () => {
                 )}
 
                 {/* Certificat d'expertise */}
-                {safeProposedChanges(selectedRequest).expertise_certificate_url && (
+                {changes.expertise_certificate_url && (
                   <div>
                     <Label className="text-xs text-muted-foreground">Certificat d'expertise</Label>
                     <div className="mt-1 space-y-1">
-                      <a href={safeProposedChanges(selectedRequest).expertise_certificate_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline block">
+                      <a href={changes.expertise_certificate_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline block">
                         Voir le certificat
                       </a>
-                      {safeProposedChanges(selectedRequest).market_value_usd && (
-                        <p className="text-xs">Valeur vénale: <strong>${Number(safeProposedChanges(selectedRequest).market_value_usd).toLocaleString()}</strong></p>
+                      {changes.market_value_usd && (
+                        <p className="text-xs">Valeur vénale: <strong>${Number(changes.market_value_usd).toLocaleString()}</strong></p>
                       )}
-                      {safeProposedChanges(selectedRequest).expertise_certificate_date && (
-                        <p className="text-xs text-muted-foreground">Date: {safeProposedChanges(selectedRequest).expertise_certificate_date}</p>
+                      {changes.expertise_certificate_date && (
+                        <p className="text-xs text-muted-foreground">Date: {changes.expertise_certificate_date}</p>
                       )}
                     </div>
                   </div>
@@ -880,25 +880,25 @@ const AdminMutationRequests: React.FC = () => {
                     </div>
                   ))}
 
-                  {safeProposedChanges(selectedRequest).mutation_fees && (
+                  {changes.mutation_fees && (
                     <>
                       <div className="flex justify-between text-xs">
-                        <span>Frais de mutation ({safeProposedChanges(selectedRequest).mutation_fees.percentage}%)</span>
-                        <span className="font-mono">${Number(safeProposedChanges(selectedRequest).mutation_fees.mutation_fee).toFixed(2)}</span>
+                        <span>Frais de mutation ({changes.mutation_fees.percentage}%)</span>
+                        <span className="font-mono">${Number(changes.mutation_fees.mutation_fee).toFixed(2)}</span>
                       </div>
-                      {Number(safeProposedChanges(selectedRequest).mutation_fees.bank_fee) > 0 && (
+                      {Number(changes.mutation_fees.bank_fee) > 0 && (
                         <div className="flex justify-between text-xs">
                           <span>Frais bancaires</span>
-                          <span className="font-mono">${Number(safeProposedChanges(selectedRequest).mutation_fees.bank_fee).toFixed(2)}</span>
+                          <span className="font-mono">${Number(changes.mutation_fees.bank_fee).toFixed(2)}</span>
                         </div>
                       )}
                     </>
                   )}
 
-                  {safeProposedChanges(selectedRequest).late_fees && (
+                  {changes.late_fees && (
                     <div className="flex justify-between text-xs text-orange-600">
-                      <span>Retard ({safeProposedChanges(selectedRequest).late_fees.days}j)</span>
-                      <span className="font-mono">${Number(safeProposedChanges(selectedRequest).late_fees.fee).toFixed(2)}</span>
+                      <span>Retard ({changes.late_fees.days}j)</span>
+                      <span className="font-mono">${Number(changes.late_fees.fee).toFixed(2)}</span>
                     </div>
                   )}
 
