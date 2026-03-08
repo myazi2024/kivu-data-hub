@@ -77,11 +77,8 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
     onOpenChange(false);
   }, [onOpenChange]);
 
-  // Fix #11: Only reset the tab being LEFT
   const handleTabChange = useCallback((tab: MortgageTab) => {
     if (tab === activeTab) return;
-    if (activeTab === 'add') setAddKey(k => k + 1);
-    else setRemoveKey(k => k + 1);
     setActiveTab(tab);
   }, [activeTab]);
 
