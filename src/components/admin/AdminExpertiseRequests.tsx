@@ -274,16 +274,43 @@ export const AdminExpertiseRequests: React.FC = () => {
     }
   };
 
-  const getStats = () => {
-    return {
-      total: totalCount,
-      pending: requests.filter(r => r.status === 'pending').length,
-      inProgress: requests.filter(r => r.status === 'in_progress' || r.status === 'assigned').length,
-      completed: requests.filter(r => r.status === 'completed').length,
-    };
-  };
+  const getStats = useCallback(async () => {
+    try {
+      const statuses = ['pending', 'assigned', 'in_progress', 'completed'];
+      const results: Record<string, number> = {};
+      
+      await Promise.all(statuses.map(async (status) => {
+        const statusList = status === 'in_progress' ? ['in_progress', 'assigned'] : [status];
+        let query = supabase
+          .from('real_estate_expertise_requests')
+          .select('*', { count: 'exact', head: true });
+        
+        if (statusList.length > 1) {
+          query = query.in('status', statusList);
+        } else {
+          query = query.eq('status', status);
+        }
+        
+        const { count } = await query;
+        results[status] = count || 0;
+      }));
+      
+      return {
+        total: totalCount,
+        pending: results['pending'] || 0,
+        inProgress: results['in_progress'] || 0,
+        completed: results['completed'] || 0,
+      };
+    } catch {
+      return { total: totalCount, pending: 0, inProgress: 0, completed: 0 };
+    }
+  }, [totalCount]);
 
-  const stats = getStats();
+  const [stats, setStats] = useState({ total: 0, pending: 0, inProgress: 0, completed: 0 });
+  
+  useEffect(() => {
+    getStats().then(setStats);
+  }, [getStats, requests]);
 
   return (
     <div className="space-y-6">
