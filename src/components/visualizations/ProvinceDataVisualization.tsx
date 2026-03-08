@@ -264,6 +264,24 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
                   </div>
                   <div className="responsive-caption text-muted-foreground leading-tight">Population</div>
                 </div>
+                <div className="flex-shrink-0 text-center p-3 sm:p-4 bg-primary/5 rounded border min-w-[80px] sm:min-w-[100px]">
+                  <div className="text-lg sm:text-xl font-semibold text-foreground">
+                    ${(filteredProvinces.reduce((sum, p) => sum + p.recettesFiscalesUsd, 0) / 1000).toFixed(0)}k
+                  </div>
+                  <div className="responsive-caption text-muted-foreground leading-tight">Fiscal</div>
+                </div>
+                <div className="flex-shrink-0 text-center p-3 sm:p-4 bg-primary/5 rounded border min-w-[80px] sm:min-w-[100px]">
+                  <div className="text-lg sm:text-xl font-semibold text-foreground">
+                    {Math.round(filteredProvinces.reduce((sum, p) => sum + (p.tauxPropriete || 0), 0) / filteredProvinces.length)}%
+                  </div>
+                  <div className="responsive-caption text-muted-foreground leading-tight">Propriété</div>
+                </div>
+                <div className="flex-shrink-0 text-center p-3 sm:p-4 bg-primary/5 rounded border min-w-[80px] sm:min-w-[100px]">
+                  <div className="text-lg sm:text-xl font-semibold text-foreground">
+                    ${(filteredProvinces.reduce((sum, p) => sum + p.valeurFonciereParcelleUsd, 0) / filteredProvinces.length / 1000).toFixed(1)}k
+                  </div>
+                  <div className="responsive-caption text-muted-foreground leading-tight">Val. moy.</div>
+                </div>
               </div>
             </div>
           </div>
