@@ -1,10 +1,13 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Landmark, Plus, FileX2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Landmark, Plus, FileX2, AlertTriangle, Loader2 } from 'lucide-react';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 import MortgageFormDialog from './MortgageFormDialog';
 import MortgageCancellationDialog from './MortgageCancellationDialog';
+import WhatsAppFloatingButton from './WhatsAppFloatingButton';
+import { supabase } from '@/integrations/supabase/client';
 
 interface MortgageManagementDialogProps {
   parcelNumber: string;
