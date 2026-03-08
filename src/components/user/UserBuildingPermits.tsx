@@ -95,12 +95,23 @@ export function UserBuildingPermits() {
     fetchBuildingPermits();
   };
 
-  // Filtrer les permis par type
+  // Filtrer les permis par type - support both permit_request_data and building_permits entries
+  const getPermitRequestType = (p: BuildingPermitRequest): string => {
+    // From permit_request_data (new requests)
+    if (p.permit_request_data?.requestType) return p.permit_request_data.requestType;
+    // From building_permits JSON (manual registrations)
+    if (Array.isArray(p.building_permits) && p.building_permits.length > 0) {
+      const bpType = p.building_permits[0]?.permitType;
+      if (bpType === 'regularization') return 'regularization';
+    }
+    return 'construction';
+  };
+
   const constructionPermits = permits.filter(
-    p => p.permit_request_data?.requestType !== 'regularization'
+    p => getPermitRequestType(p) !== 'regularization'
   );
   const regularizationPermits = permits.filter(
-    p => p.permit_request_data?.requestType === 'regularization'
+    p => getPermitRequestType(p) === 'regularization'
   );
 
   // Fonction pour organiser les permis par statut
