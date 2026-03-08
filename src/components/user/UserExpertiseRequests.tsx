@@ -101,7 +101,7 @@ export const UserExpertiseRequests: React.FC = () => {
         <div className="space-y-3 pr-2">
           {requests.map((req) => {
             const statusCfg = STATUS_CONFIG[req.status] || STATUS_CONFIG.pending;
-            const validity = getCertificateValidity(req.certificate_issue_date);
+            const validity = getCertificateValidity(req.certificate_issue_date, req.certificate_expiry_date);
 
             return (
               <Card key={req.id} className="rounded-xl border shadow-sm">
