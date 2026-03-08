@@ -629,6 +629,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     setCreatedRequest(null);
     setMutationType('vente');
     setRequesterType('proprietaire');
+    setBeneficiaryLegalStatus('personne_physique'); // Bug #6: reset
     setBeneficiaryLastName('');
     setBeneficiaryFirstName('');
     setBeneficiaryMiddleName('');
@@ -642,6 +643,12 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     setTitleAge(null);
     setTitleIssueDateFromCCC(null);
     setTitleAgeAutoDetected(false);
+    setOwnerAcquisitionDate(null);
+    setOwnerAcquisitionDateAutoDetected(false);
+    setManualAcquisitionDate('');
+    setPaymentMethod('mobile_money');
+    setPaymentProvider('');
+    setPaymentPhone('');
     onOpenChange(false);
   };
 
