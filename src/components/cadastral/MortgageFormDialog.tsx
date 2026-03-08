@@ -82,14 +82,14 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fix #1: Draft prompt shown once per session
+  // Draft prompt shown once per session
   useEffect(() => {
-    if (open && hasDraft && !draftPromptShownRef.current) {
+    if (open && draftLoaded && hasDraft && !draftPromptShownRef.current) {
       draftPromptShownRef.current = true;
       setShowDraftPrompt(true);
     }
     if (!open) draftPromptShownRef.current = false;
-  }, [open, hasDraft]);
+  }, [open, draftLoaded, hasDraft]);
 
   // Draft: auto-save
   useEffect(() => {
