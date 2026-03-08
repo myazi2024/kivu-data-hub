@@ -640,48 +640,53 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
     </div>
   );
 
-  if (embedded) {
-    return (
-      <>
-        <div className="overflow-y-auto h-full px-4 pb-4">
-          {step === 'form' && renderFormStep()}
-          {step === 'preview' && renderPreviewStep()}
-          {step === 'confirmation' && renderConfirmationStep()}
-        </div>
-        <QuickAuthDialog
-          open={showAuthDialog}
-          onOpenChange={setShowAuthDialog}
-          onAuthSuccess={() => setShowAuthDialog(false)}
-        />
-      </>
-    );
-  }
-
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className={`${isMobile ? 'max-w-[95vw]' : 'max-w-md'} rounded-2xl p-0 gap-0 max-h-[90vh] overflow-hidden z-[1200]`}>
-        <DialogHeader className="p-4 pb-2 border-b">
-          <DialogTitle className="flex items-center gap-2 text-lg">
+    <>
+      <MortgageFlowContainer
+        open={open}
+        embedded={embedded}
+        isMobile={isMobile}
+        onClose={handleClose}
+        title={(
+          <>
             <Landmark className="h-5 w-5 text-amber-600" />
             Déclarer une hypothèque
-          </DialogTitle>
-          <DialogDescription className="text-xs">
-            Enregistrez une hypothèque active sur cette parcelle
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="flex-1 max-h-[calc(90vh-80px)] overflow-y-auto p-4">
-          {step === 'form' && renderFormStep()}
-          {step === 'preview' && renderPreviewStep()}
-          {step === 'confirmation' && renderConfirmationStep()}
-        </div>
-      </DialogContent>
+          </>
+        )}
+        description="Enregistrez une hypothèque active sur cette parcelle"
+      >
+        {step === 'form' && renderFormStep()}
+        {step === 'preview' && renderPreviewStep()}
+        {step === 'confirmation' && renderConfirmationStep()}
+      </MortgageFlowContainer>
+
+      <AlertDialog open={showSubmitConfirm} onOpenChange={setShowSubmitConfirm}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la soumission</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette demande sera envoyée à l'administration pour validation. Voulez-vous continuer ?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleSubmit}
+              disabled={loading}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              Confirmer la soumission
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <QuickAuthDialog
         open={showAuthDialog}
         onOpenChange={setShowAuthDialog}
         onAuthSuccess={() => setShowAuthDialog(false)}
       />
-    </Dialog>
+    </>
   );
 };
 
