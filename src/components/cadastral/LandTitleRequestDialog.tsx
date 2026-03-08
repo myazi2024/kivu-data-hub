@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -7,14 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Loader2, CheckCircle2, Upload, X, Info, ChevronRight, User, MapPin, FileText, CreditCard, Building, Home, Award, AlertCircle, Check, ClipboardCheck, TrendingUp, Search, Plus } from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   getAllProvinces, 
@@ -58,7 +54,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const { config: mapConfig } = useMapConfig();
   const { 
     loading, 
-    submitRequest 
+    createPendingRequest,
+    markRequestPaid 
   } = useLandTitleRequest();
   
   // Frais dynamiques
@@ -72,6 +69,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [showPayment, setShowPayment] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [savedReferenceNumber, setSavedReferenceNumber] = useState<string>('');
+  const [savedRequestId, setSavedRequestId] = useState<string>('');
   const [showCloseConfirmation, setShowCloseConfirmation] = useState(false);
   
   // Request type state
@@ -82,7 +80,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [parcelValidated, setParcelValidated] = useState(false);
   const [parcelSearchLoading, setParcelSearchLoading] = useState(false);
   const [showParcelDropdown, setShowParcelDropdown] = useState(false);
-  const [showCCCDialog, setShowCCCDialog] = useState(false);
+  // showCCCDialog removed - unused
   
   // Form data
   const [formData, setFormData] = useState<LandTitleRequestData>({
@@ -327,22 +325,26 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     }
   }, [constructionType, constructionNature]);
 
-  // Pre-fill with user info
+  // Pre-fill with user info — only on mount (when dialog opens), not on every profile change
+  const hasPrefilledRef = useRef(false);
   useEffect(() => {
-    if (profile) {
+    if (profile && open && !hasPrefilledRef.current) {
+      hasPrefilledRef.current = true;
       const fullName = (profile.full_name || '').trim();
       const nameParts = fullName.split(/\s+/);
-      // Convention: last token = first name, rest = last name
       const lastName = nameParts.length > 1 ? nameParts.slice(0, -1).join(' ') : nameParts[0] || '';
       const firstName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
       setFormData(prev => ({
         ...prev,
-        requesterLastName: lastName,
-        requesterFirstName: firstName,
-        requesterEmail: profile.email || ''
+        requesterLastName: prev.requesterLastName || lastName,
+        requesterFirstName: prev.requesterFirstName || firstName,
+        requesterEmail: prev.requesterEmail || profile.email || ''
       }));
     }
-  }, [profile]);
+    if (!open) {
+      hasPrefilledRef.current = false;
+    }
+  }, [profile, open]);
 
   // Update location options
   useEffect(() => {
@@ -406,14 +408,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     }
   };
 
-  const toggleFee = (feeId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      selectedFees: prev.selectedFees.includes(feeId)
-        ? prev.selectedFees.filter(id => id !== feeId)
-        : [...prev.selectedFees, feeId]
-    }));
-  };
+  // toggleFee removed — fees are now fully dynamic and non-toggleable
 
   const isFormValid = (): boolean => {
     // Check request type
@@ -453,7 +448,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     return true;
   };
 
-  const handleProceedToPayment = () => {
+  const handleProceedToPayment = async () => {
     if (!user) {
       setShowQuickAuth(true);
       return;
@@ -468,11 +463,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       return;
     }
 
-    setShowPayment(true);
-  };
-
-  const handlePaymentSuccess = async () => {
-    // Build fee items from the calculated dynamic fees
+    // SECURE FLOW: Create DB record FIRST, then show payment
     const feeItems = calculatedFeesResult.fees.map(fee => ({
       id: fee.id,
       name: fee.fee_name,
@@ -480,7 +471,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       is_mandatory: fee.is_mandatory
     }));
 
-    const result = await submitRequest({
+    const result = await createPendingRequest({
       ...formData,
       requestType,
       selectedParcelNumber,
@@ -500,23 +491,37 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       roadBorderingSides: roadSides,
       totalAmountOverride: totalAmount
     }, feeItems);
-    
-    if (result.success) {
+
+    if (result.success && result.requestId) {
+      setSavedRequestId(result.requestId);
       setSavedReferenceNumber(result.referenceNumber || '');
-      setShowPayment(false);
-      setShowSuccess(true);
+      setShowPayment(true);
     }
   };
 
+  const handlePaymentSuccess = async () => {
+    // Payment succeeded — mark the pre-created request as paid
+    if (savedRequestId) {
+      await markRequestPaid(savedRequestId);
+    }
+    setShowPayment(false);
+    setShowSuccess(true);
+  };
+
   const handleCloseRequest = () => {
-    // If user has entered any data, show confirmation
+    // Comprehensive check for any user-entered data
     const hasData = formData.requesterLastName || 
                    formData.requesterFirstName || 
                    formData.requesterPhone ||
                    formData.province ||
+                   formData.sectionType ||
+                   constructionType ||
+                   nationality ||
                    requesterIdFile || 
                    ownerIdFile || 
-                   proofOfOwnershipFile;
+                   proofOfOwnershipFile ||
+                   gpsCoordinates.some(c => c.lat || c.lng) ||
+                   requestType;
     
     if (hasData) {
       setShowCloseConfirmation(true);
@@ -546,6 +551,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setActiveTab('requester');
     setShowPayment(false);
     setShowSuccess(false);
+    setSavedRequestId('');
     // Reset request type & parcel
     setRequestType('');
     setParcelNumberSearch('');
