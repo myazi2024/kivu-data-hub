@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Globe, User, LogOut, ChevronDown, Shield } from 'lucide-react';
+import { Menu, X, User, LogOut, ChevronDown, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -16,9 +16,10 @@ import bicLogo from '@/assets/bic-logo.png';
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [language, setLanguage] = useState('fr');
   const [mediaMenuOpen, setMediaMenuOpen] = useState(false);
   const { user, profile, signOut, loading } = useAuth();
+
+  const isAdminOrSuperAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
 
   const navigation = [
     { name: 'Accueil', href: '/' },
@@ -89,7 +90,7 @@ const Navigation = () => {
             </NavigationMenu>
             
             {/* Admin Link - Desktop only */}
-            {profile?.role === 'admin' && (
+            {isAdminOrSuperAdmin && (
               <Link to="/admin">
                 <Button variant="ghost" size="sm" className="gap-2 text-sm font-medium">
                   <Shield className="h-4 w-4" />
@@ -99,7 +100,7 @@ const Navigation = () => {
             )}
           </div>
 
-          {/* Auth & Language Toggle & Mobile Menu Button */}
+          {/* Auth & Mobile Menu Button */}
           <div className="flex items-center space-x-1 sm:space-x-2">
             {!loading && (
               <>
@@ -119,7 +120,7 @@ const Navigation = () => {
                           </span>
                         </Link>
                       </Button>
-                      {profile?.role === 'admin' && (
+                      {isAdminOrSuperAdmin && (
                         <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">
                           Admin
                         </span>
@@ -155,23 +156,14 @@ const Navigation = () => {
                 )}
               </>
             )}
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setLanguage(language === 'fr' ? 'en' : 'fr')}
-              className="hidden sm:flex items-center space-x-1 text-xs"
-            >
-              <Globe className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="text-xs font-semibold">{language.toUpperCase()}</span>
-            </Button>
 
             <Button
               variant="ghost"
               size="sm"
               className="lg:hidden p-1 sm:p-2"
               onClick={() => setIsOpen(!isOpen)}
-              aria-expanded="false"
+              aria-expanded={isOpen}
+              aria-label="Menu de navigation"
             >
               {isOpen ? <X className="h-4 w-4 sm:h-5 sm:w-5" /> : <Menu className="h-4 w-4 sm:h-5 sm:w-5" />}
             </Button>
@@ -190,7 +182,7 @@ const Navigation = () => {
                   <div>
                     <button
                       onClick={() => setMediaMenuOpen(!mediaMenuOpen)}
-                      className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-foreground hover:text-white hover:bg-seloger-red/90 rounded-md transition-colors duration-200"
+                      className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-foreground hover:text-primary-foreground hover:bg-primary/90 rounded-md transition-colors duration-200"
                     >
                       {item.name}
                       <ChevronDown className={cn("h-4 w-4 transition-transform", mediaMenuOpen && "rotate-180")} />
@@ -201,7 +193,7 @@ const Navigation = () => {
                           <Link
                             key={subItem.name}
                             to={subItem.href}
-                            className="block px-3 py-2 text-sm font-medium text-muted-foreground hover:text-white hover:bg-seloger-red/90 rounded-md transition-colors duration-200"
+                            className="block px-3 py-2 text-sm font-medium text-muted-foreground hover:text-primary-foreground hover:bg-primary/90 rounded-md transition-colors duration-200"
                             onClick={() => setIsOpen(false)}
                           >
                             {subItem.name}
@@ -213,7 +205,7 @@ const Navigation = () => {
                 ) : (
                   <Link
                     to={item.href}
-                    className="block px-3 py-2 text-sm font-medium text-foreground hover:text-white hover:bg-seloger-red/90 rounded-md transition-colors duration-200"
+                    className="block px-3 py-2 text-sm font-medium text-foreground hover:text-primary-foreground hover:bg-primary/90 rounded-md transition-colors duration-200"
                     onClick={() => setIsOpen(false)}
                   >
                     {item.name}
@@ -237,14 +229,14 @@ const Navigation = () => {
                     </Link>
                     {profile?.role && (
                       <p className="text-xs text-muted-foreground capitalize mt-1 ml-7">
-                        {profile.role === 'admin' ? 'Administrateur' : 
+                        {isAdminOrSuperAdmin ? 'Administrateur' : 
                          profile.role === 'partner' ? 'Partenaire' : 'Utilisateur'}
                       </p>
                     )}
                   </div>
                   
                   {/* Admin Link - Mobile */}
-                  {profile?.role === 'admin' && (
+                  {isAdminOrSuperAdmin && (
                     <Link to="/admin" onClick={() => setIsOpen(false)}>
                       <Button
                         variant="ghost"
@@ -282,16 +274,6 @@ const Navigation = () => {
                   )}
                 </>
               )}
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setLanguage(language === 'fr' ? 'en' : 'fr')}
-                className="flex items-center space-x-1 px-3 py-2 w-full justify-start text-sm"
-              >
-                <Globe className="h-4 w-4" />
-                <span className="text-xs font-semibold">{language.toUpperCase()}</span>
-              </Button>
             </div>
           </div>
         </div>

@@ -17,11 +17,11 @@ const HeroSection = () => {
           loading="eager"
           decoding="async"
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-seloger-red/90 via-seloger-red/70 to-seloger-red-light/80"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/90 via-primary/70 to-primary/80"></div>
       </div>
 
       {/* Content */}
-      <div className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 text-center text-white">
+      <div className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 text-center text-primary-foreground">
         {/* Main Heading */}
         <div className="mb-8 sm:mb-10">
           <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 sm:mb-3 leading-tight">
@@ -31,12 +31,12 @@ const HeroSection = () => {
           <TypewriterAnimation />
         </div>
 
-        {/* Call to Action Buttons - Premium Mobile Design */}
+        {/* Call to Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center px-4 max-w-2xl mx-auto">
           <Link to="/cadastral-map" className="w-full sm:flex-1">
             <Button 
               size="lg"
-              className="w-full bg-white text-seloger-red hover:bg-white/95 hover:scale-[1.02] font-bold px-6 sm:px-8 py-6 sm:py-7 text-base sm:text-lg group transition-all duration-300 rounded-xl shadow-2xl hover:shadow-3xl"
+              className="w-full bg-background text-primary hover:bg-background/95 hover:scale-[1.02] font-bold px-6 sm:px-8 py-6 sm:py-7 text-base sm:text-lg group transition-all duration-300 rounded-xl shadow-2xl"
             >
               <Map className="mr-3 h-6 w-6 sm:h-7 sm:w-7" />
               <span>Cadastre numérique</span>
@@ -48,7 +48,7 @@ const HeroSection = () => {
             <Button 
               variant="outline"
               size="lg"
-              className="w-full bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white hover:bg-white hover:text-seloger-red hover:scale-[1.02] font-semibold px-6 sm:px-8 py-6 sm:py-7 text-base sm:text-lg transition-all duration-300 rounded-xl shadow-lg hover:shadow-xl"
+              className="w-full bg-primary-foreground/10 backdrop-blur-sm border-2 border-primary-foreground/30 text-primary-foreground hover:bg-background hover:text-primary hover:scale-[1.02] font-semibold px-6 sm:px-8 py-6 sm:py-7 text-base sm:text-lg transition-all duration-300 rounded-xl shadow-lg"
             >
               <BarChart3 className="mr-3 h-5 w-5 sm:h-6 sm:w-6" />
               <span>Nos Publications</span>
@@ -59,7 +59,7 @@ const HeroSection = () => {
             <Button 
               variant="outline"
               size="lg"
-              className="w-full bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white hover:bg-white hover:text-seloger-red hover:scale-[1.02] font-semibold px-6 sm:px-8 py-6 sm:py-7 text-base sm:text-lg transition-all duration-300 rounded-xl shadow-lg hover:shadow-xl"
+              className="w-full bg-primary-foreground/10 backdrop-blur-sm border-2 border-primary-foreground/30 text-primary-foreground hover:bg-background hover:text-primary hover:scale-[1.02] font-semibold px-6 sm:px-8 py-6 sm:py-7 text-base sm:text-lg transition-all duration-300 rounded-xl shadow-lg"
             >
               <MapPin className="mr-3 h-5 w-5 sm:h-6 sm:w-6" />
               <span>Données foncières</span>
