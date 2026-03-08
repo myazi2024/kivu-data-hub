@@ -262,13 +262,20 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     return reasonsRequiringPermit.includes(formData.regularizationReason);
   };
 
-  // ========== FEE CALCULATION (from config) ==========
+  // ========== FEE CALCULATION (from config, with fallback) ==========
   const areaSqm = parseFloat(formData.plannedArea) || 0;
 
-  // Calculate total from dynamic fees
-  const totalFeeUSD = dynamicFees.reduce((sum, fee) => sum + fee.amount_usd, 0);
+  // Fallback fees when permit_fees_config is empty
+  const FALLBACK_FEES: FeeItem[] = requestType === 'new'
+    ? [{ id: 'fallback_1', fee_name: 'Frais d\'instruction', amount_usd: 75, description: 'Tarif standard', is_mandatory: true }]
+    : [{ id: 'fallback_2', fee_name: 'Frais de régularisation', amount_usd: 120, description: 'Tarif majoré', is_mandatory: true }];
 
-  const feeBreakdown = dynamicFees.map(fee => ({
+  const activeFees = dynamicFees.length > 0 ? dynamicFees : FALLBACK_FEES;
+
+  // Calculate total from active fees
+  const totalFeeUSD = activeFees.reduce((sum, fee) => sum + fee.amount_usd, 0);
+
+  const feeBreakdown = activeFees.map(fee => ({
     label: fee.fee_name,
     amount: fee.amount_usd,
     detail: fee.description || undefined
@@ -403,14 +410,18 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
 
     if (error) throw error;
 
-    // Send notification
-    await supabase.from('notifications').insert({
-      user_id: user.id,
-      type: 'success',
-      title: 'Demande d\'autorisation soumise',
-      message: `Votre demande d'${requestType === 'new' ? 'autorisation de bâtir' : 'autorisation de régularisation'} pour la parcelle ${parcelNumber} a été soumise. Délai de traitement: 15-30 jours.`,
-      action_url: '/user-dashboard?tab=building-permits'
-    });
+    // Send notification (non-blocking, with error handling)
+    try {
+      await supabase.from('notifications').insert({
+        user_id: user.id,
+        type: 'success',
+        title: 'Demande d\'autorisation soumise',
+        message: `Votre demande d'${requestType === 'new' ? 'autorisation de bâtir' : 'autorisation de régularisation'} pour la parcelle ${parcelNumber} a été soumise. Délai de traitement: 15-30 jours.`,
+        action_url: '/user-dashboard?tab=building-permits'
+      });
+    } catch (notifErr) {
+      console.warn('Notification insert failed (non-blocking):', notifErr);
+    }
 
     return data.id;
   };
@@ -484,8 +495,8 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
 
     // Step 3: Process payment
     if (paymentMethod === 'mobile_money') {
-      if (!paymentProvider || !paymentPhone || !paymentPin) {
-        toast({ title: 'Champs requis', description: 'Veuillez remplir tous les champs de paiement.', variant: 'destructive' });
+      if (!paymentProvider || !paymentPhone || paymentPin.length < 4) {
+        toast({ title: 'Champs requis', description: 'Veuillez remplir tous les champs de paiement (code PIN min. 4 chiffres).', variant: 'destructive' });
         setProcessingPayment(false);
         return;
       }
@@ -498,7 +509,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
       try {
         const { data: paymentResult, error: paymentError } = await supabase.functions.invoke(
           'process-mobile-money-payment',
-          { body: { payment_provider: paymentProvider, phone_number: paymentPhone, amount_usd: totalFeeUSD, payment_type: 'permit_request', test_mode: paymentMode.test_mode } }
+          { body: { payment_provider: paymentProvider, phone_number: paymentPhone, payment_pin: paymentPin, amount_usd: totalFeeUSD, payment_type: 'permit_request', test_mode: paymentMode.test_mode } }
         );
         if (paymentError) throw paymentError;
         if (!paymentResult?.success) throw new Error(paymentResult?.error || 'Payment failed');
@@ -954,7 +965,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
           </CardContent>
         </Card>
 
-        <Button onClick={handlePreview} className="w-full h-11 text-sm font-semibold rounded-xl shadow-lg" disabled={!isFormValid() || feesLoading || dynamicFees.length === 0}>
+    <Button onClick={handlePreview} className="w-full h-11 text-sm font-semibold rounded-xl shadow-lg" disabled={!isFormValid() || feesLoading}>
           Aperçu avant soumission
         </Button>
       </div>

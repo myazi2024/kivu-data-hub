@@ -1,5 +1,4 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Sparkles, Clock, Beaker, Tag } from 'lucide-react';
@@ -7,7 +6,6 @@ import { useParcelActionsConfig, ParcelAction } from '@/hooks/useParcelActionsCo
 import MutationRequestDialog from './MutationRequestDialog';
 import MortgageManagementDialog from './MortgageManagementDialog';
 import BuildingPermitManagementDialog from './BuildingPermitManagementDialog';
-import TaxFormDialog from './TaxFormDialog';
 import TaxManagementDialog from './TaxManagementDialog';
 import BuildingPermitRequestDialog from './BuildingPermitRequestDialog';
 import SubdivisionRequestDialog from './SubdivisionRequestDialog';
@@ -89,7 +87,6 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
       'mutation': () => setShowMutationDialog(true),
       'mortgage_management': () => setShowMortgageManagementDialog(true),
       'permit_add': () => setShowBuildingPermitManagementDialog(true),
-      'permit_regularization': () => setShowBuildingPermitManagementDialog(true),
       'tax': () => setShowTaxDialog(true),
       'permit_request': () => setShowPermitRequestDialog(true),
       'subdivision': () => setShowSubdivisionDialog(true),
@@ -98,12 +95,10 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
     return handlers[key];
   };
 
+  // No need to filter permit_regularization — already removed from config
   const visibleActions = actions
-    .filter(a => a.isVisible && a.key !== 'permit_regularization')
+    .filter(a => a.isVisible)
     .sort((a, b) => a.displayOrder - b.displayOrder);
-
-  const getDisplayLabel = (action: ParcelAction) => action.key === 'permit_add' ? 'Ajouter une autorisation' : action.label;
-  const getDisplayDescription = (action: ParcelAction) => action.key === 'permit_add' ? 'Bâtir ou régulariser' : action.description;
 
   const groupedActions: (ParcelAction | 'separator')[] = [];
   let lastCategory = '';
@@ -150,10 +145,10 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-[13px] text-foreground truncate">{getDisplayLabel(action)}</span>
+                        <span className="font-medium text-[13px] text-foreground truncate">{action.label}</span>
                         <ActionBadge badge={action.badge} />
                       </div>
-                      <p className="text-[10px] text-muted-foreground truncate mt-0.5">{getDisplayDescription(action)}</p>
+                      <p className="text-[10px] text-muted-foreground truncate mt-0.5">{action.description}</p>
                     </div>
                   </button>
                 );
