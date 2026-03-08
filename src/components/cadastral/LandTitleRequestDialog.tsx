@@ -330,11 +330,15 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   // Pre-fill with user info
   useEffect(() => {
     if (profile) {
-      const nameParts = (profile.full_name || '').split(' ');
+      const fullName = (profile.full_name || '').trim();
+      const nameParts = fullName.split(/\s+/);
+      // Convention: last token = first name, rest = last name
+      const lastName = nameParts.length > 1 ? nameParts.slice(0, -1).join(' ') : nameParts[0] || '';
+      const firstName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
       setFormData(prev => ({
         ...prev,
-        requesterLastName: nameParts[0] || '',
-        requesterFirstName: nameParts.slice(1).join(' ') || '',
+        requesterLastName: lastName,
+        requesterFirstName: firstName,
         requesterEmail: profile.email || ''
       }));
     }
