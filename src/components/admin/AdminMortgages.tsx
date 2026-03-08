@@ -24,34 +24,7 @@ import MortgageRequestDetailsDialog from './mortgage/MortgageRequestDetailsDialo
 import { ApproveConfirmDialog, RejectDialog, ReturnDialog } from './mortgage/MortgageAdminDialogs';
 import { getMortgageStatusType, getCreditorTypeLabel, getRequestTypeLabel } from './mortgage/mortgageHelpers';
 
-interface Mortgage {
-  id: string;
-  parcel_id: string;
-  creditor_name: string;
-  creditor_type: string;
-  mortgage_amount_usd: number;
-  mortgage_status: string;
-  contract_date: string;
-  duration_months: number;
-  created_at: string;
-  parcel_number?: string;
-  reference_number?: string;
-}
-
-interface MortgageRequest {
-  id: string;
-  parcel_number: string;
-  contribution_type: string;
-  mortgage_history: any[];
-  status: string;
-  created_at: string;
-  user_id: string;
-  original_parcel_id?: string;
-  rejection_reason?: string | null;
-  change_justification?: string | null;
-  // Fix #7: Separate field for return notes
-  return_notes?: string | null;
-}
+import type { Mortgage, MortgageRequest } from './mortgage/mortgageTypes';
 
 const AdminMortgages = () => {
   const { user } = useAuth();
@@ -83,9 +56,10 @@ const AdminMortgages = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
+      // Fix #20: Select only required columns instead of *
       const { data: approvedData, error: approvedError } = await supabase
         .from('cadastral_mortgages')
-        .select('*, cadastral_parcels(parcel_number)')
+        .select('id, parcel_id, creditor_name, creditor_type, mortgage_amount_usd, mortgage_status, contract_date, duration_months, created_at, reference_number, cadastral_parcels(parcel_number)')
         .order('created_at', { ascending: false });
 
       if (approvedError) throw approvedError;
@@ -195,18 +169,23 @@ const AdminMortgages = () => {
         const finalRef = existingRef ? `${refNumber}-${Date.now().toString(36).slice(-4).toUpperCase()}` : refNumber;
 
         // Fix #9: Use null for duration instead of 0 so DB default kicks in
+        // Fix #1: Omit duration_months when null to let DB default (12) apply
+        const durationValue = mortgage.duration_months ?? mortgage.durationMonths;
+        const mortgageInsertData: Record<string, any> = {
+          parcel_id: request.original_parcel_id,
+          creditor_name: mortgage.creditor_name || mortgage.creditorName || '',
+          creditor_type: mortgage.creditor_type || mortgage.creditorType || 'Banque',
+          mortgage_amount_usd: mortgage.mortgage_amount_usd || mortgage.mortgageAmountUsd || 0,
+          contract_date: mortgage.contract_date || mortgage.contractDate || new Date().toISOString().split('T')[0],
+          mortgage_status: declaredStatus,
+          reference_number: finalRef,
+        };
+        if (durationValue != null && durationValue > 0) {
+          mortgageInsertData.duration_months = durationValue;
+        }
         const { error: insertError } = await supabase
           .from('cadastral_mortgages')
-          .insert({
-            parcel_id: request.original_parcel_id,
-            creditor_name: mortgage.creditor_name || mortgage.creditorName || '',
-            creditor_type: mortgage.creditor_type || mortgage.creditorType || 'Banque',
-            mortgage_amount_usd: mortgage.mortgage_amount_usd || mortgage.mortgageAmountUsd || 0,
-            duration_months: mortgage.duration_months || mortgage.durationMonths || 12,
-            contract_date: mortgage.contract_date || mortgage.contractDate || new Date().toISOString().split('T')[0],
-            mortgage_status: declaredStatus,
-            reference_number: finalRef,
-          });
+          .insert(mortgageInsertData as any);
 
         if (insertError) {
           console.error('Error inserting mortgage:', insertError);
@@ -247,6 +226,7 @@ const AdminMortgages = () => {
       setApproveConfirmOpen(false);
       setPendingApproveRequest(null);
       setRequestDetailsOpen(false);
+      setSelectedRequest(null);
       fetchData();
     } catch (error) {
       console.error('Approve error:', error);

@@ -290,7 +290,7 @@ const CancellationFormStep: React.FC<CancellationFormStepProps> = ({
               </ul>
             </AlertDescription>
           </Alert>
-          <input ref={fileInputRef} type="file" accept="image/*,.pdf" multiple onChange={handleFileChange} className="hidden" />
+          <input ref={fileInputRef} type="file" accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf" multiple onChange={handleFileChange} className="hidden" />
           <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="w-full h-11 text-sm rounded-xl border-2 border-dashed hover:border-primary hover:bg-primary/5" disabled={formData.supportingDocuments.length >= MAX_DOCUMENTS}>
             <Upload className="h-4 w-4 mr-2" />
             Ajouter des documents

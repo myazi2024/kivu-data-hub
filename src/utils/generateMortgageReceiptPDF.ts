@@ -161,7 +161,7 @@ export async function generateMortgageReceiptPDF(data: MortgageReceiptData): Pro
   }
 
   // QR Code
-  const qrData = `https://bic-rdc.com/verify-mortgage/${data.requestReference}`;
+  const qrData = `${typeof window !== 'undefined' ? window.location.origin : 'https://bic-rdc.com'}/verify-mortgage/${data.requestReference}`;
   const qrImage = await QRCode.toDataURL(qrData, { width: 200 });
   doc.addImage(qrImage, 'PNG', pageWidth - 50, pageHeight - 70, 30, 30);
   doc.setFontSize(7);

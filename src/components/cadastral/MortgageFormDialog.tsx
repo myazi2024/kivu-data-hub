@@ -18,6 +18,7 @@ import { generateMortgageReceiptPDF } from '@/utils/generateMortgageReceiptPDF';
 import { generateMortgageReference } from '@/utils/mortgageReferences';
 import MortgageFlowContainer from './MortgageFlowContainer';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useNavigate } from 'react-router-dom';
 
 interface MortgageFormDialogProps {
   parcelNumber: string;
@@ -57,6 +58,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
 }) => {
   const isMobile = useIsMobile();
   const { user, profile } = useAuth();
+  const navigate = useNavigate();
   const [step, setStep] = useState<Step>('form');
   const [loading, setLoading] = useState(false);
   const [showAuthDialog, setShowAuthDialog] = useState(false);
@@ -208,7 +210,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
       .eq('parcel_number', parcelNumber)
       .eq('user_id', user.id)
       .eq('contribution_type', 'mortgage_registration')
-      .in('status', ['pending', 'returned']);
+      .in('status', ['pending']);
 
     return (data?.length ?? 0) > 0;
   };
@@ -301,6 +303,17 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
         });
       } catch { /* Non-blocking */ }
 
+      // Fix #11: Create notification for registration
+      try {
+        await supabase.from('notifications').insert({
+          user_id: user.id,
+          title: 'Demande d\'enregistrement soumise',
+          message: `Votre demande d'enregistrement d'hypothèque (Réf: ${regReference}) pour la parcelle ${parcelNumber} a été soumise avec succès.`,
+          type: 'mortgage',
+          action_url: '/user-dashboard',
+        });
+      } catch { /* Non-blocking */ }
+
       clearDraft();
       setSubmissionReference(regReference);
       setStep('confirmation');
@@ -308,6 +321,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
     } catch (error: any) {
       console.error('Error:', error);
       toast.error('Erreur lors de l\'enregistrement');
+      setShowSubmitConfirm(false);
     } finally {
       setLoading(false);
       isSubmittingRef.current = false;
@@ -682,7 +696,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
         {!embedded && (
           <Button
             variant="outline"
-            onClick={() => { performClose(); window.location.href = '/user-dashboard'; }}
+            onClick={() => { performClose(); navigate('/user-dashboard'); }}
             className="w-full h-11 rounded-xl gap-2"
           >
             <ExternalLink className="h-4 w-4" />
