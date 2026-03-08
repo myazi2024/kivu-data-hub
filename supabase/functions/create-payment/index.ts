@@ -154,6 +154,41 @@ serve(async (req) => {
       totalAmount = Math.round(expertisePayment.total_amount_usd * 100);
       orderMetadata.expertise_payment_id = invoice_id;
     }
+    else if (payment_type === 'mutation_request' && invoice_id && amount_usd) {
+      const supabaseService = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+        { auth: { persistSession: false } }
+      );
+
+      const { data: mutationRequest, error: mutationError } = await supabaseService
+        .from("mutation_requests")
+        .select("id, reference_number, parcel_number, total_amount_usd, user_id")
+        .eq("id", invoice_id)
+        .eq("user_id", user.id)
+        .single();
+
+      if (mutationError || !mutationRequest) {
+        throw new Error("Invalid mutation request");
+      }
+
+      lineItems = [{
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: `Demande de mutation ${mutationRequest.reference_number}`,
+            description: `Paiement mutation parcelle ${mutationRequest.parcel_number}`,
+          },
+          unit_amount: Math.round(Number(mutationRequest.total_amount_usd) * 100),
+        },
+        quantity: 1,
+      }];
+
+      totalAmount = Math.round(Number(mutationRequest.total_amount_usd) * 100);
+      orderMetadata.mutation_request_id = invoice_id;
+      orderMetadata.invoice_id = invoice_id;
+      orderMetadata.parcel_number = mutationRequest.parcel_number;
+    }
     else {
       throw new Error("Invalid payment request: missing items or invoice_id");
     }
