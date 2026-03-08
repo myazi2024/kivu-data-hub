@@ -195,7 +195,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
         documentUrl = data.publicUrl;
       }
 
-      const calculatedStatus = computedStatus();
+      // Use memoized calculatedStatus (already in scope)
 
       // Standardize permit_type: always use 'construction' or 'regularization' (EN)
       const standardizedPermitType = permitType === 'regularisation' ? 'regularization' : 'construction';
