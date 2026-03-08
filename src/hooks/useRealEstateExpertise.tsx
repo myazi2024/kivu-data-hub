@@ -60,7 +60,7 @@ export const useRealEstateExpertise = () => {
 
     setLoading(true);
     try {
-      const reference_number = generateReferenceNumber();
+      const reference_number = await generateReferenceNumber();
 
       const { data: insertedData, error } = await supabase
         .from('real_estate_expertise_requests')
