@@ -131,6 +131,10 @@ export const AdminExpertiseRequests: React.FC = () => {
   const [marketValue, setMarketValue] = useState('');
   const [processingNotes, setProcessingNotes] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
+  const [expertName, setExpertName] = useState('');
+  const [expertTitle, setExpertTitle] = useState('L\'Expert Évaluateur Agréé');
+  const [stampImageUrl, setStampImageUrl] = useState('');
+  const [uploadingStamp, setUploadingStamp] = useState(false);
 
   const fetchRequests = useCallback(async () => {
     setLoading(true);
@@ -182,7 +186,31 @@ export const AdminExpertiseRequests: React.FC = () => {
     
     setProcessingNotes(request.processing_notes || '');
     setRejectionReason('');
+    setExpertName('');
+    setExpertTitle('L\'Expert Évaluateur Agréé');
+    setStampImageUrl('');
     setShowProcessDialog(true);
+  };
+
+  const handleUploadStamp = async (file: File) => {
+    setUploadingStamp(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `stamps/stamp_${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('expertise-certificates')
+        .upload(path, file, { contentType: file.type, upsert: true });
+      if (uploadError) throw uploadError;
+      const { data: urlData } = supabase.storage
+        .from('expertise-certificates')
+        .getPublicUrl(path);
+      setStampImageUrl(urlData.publicUrl);
+      toast.success('Sceau uploadé avec succès');
+    } catch (err: any) {
+      toast.error(`Erreur upload: ${err.message}`);
+    } finally {
+      setUploadingStamp(false);
+    }
   };
 
   const handleProcessRequest = async () => {
@@ -249,7 +277,10 @@ export const AdminExpertiseRequests: React.FC = () => {
           expertiseDateStr: issueDate,
           issueDate: issueDate,
           expiryDate: expiryDate.toISOString(),
-          approvedBy: 'Bureau d\'Information Cadastrale',
+          approvedBy: expertName || 'Bureau d\'Information Cadastrale',
+          expertName: expertName || undefined,
+          expertTitle: expertTitle || undefined,
+          stampImageUrl: stampImageUrl || undefined,
         });
 
         // Upload to Supabase Storage
@@ -795,7 +826,7 @@ export const AdminExpertiseRequests: React.FC = () => {
 
       {/* Process Dialog */}
       <Dialog open={showProcessDialog} onOpenChange={setShowProcessDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Traiter la demande</DialogTitle>
             <DialogDescription>
@@ -834,10 +865,51 @@ export const AdminExpertiseRequests: React.FC = () => {
                     placeholder="Ex: 50000"
                   />
                 </div>
+
+                <Separator />
+                <p className="text-xs font-semibold text-muted-foreground">Informations de l'expert</p>
+
+                <div className="space-y-2">
+                  <Label>Nom de l'expert immobilier</Label>
+                  <Input
+                    value={expertName}
+                    onChange={(e) => setExpertName(e.target.value)}
+                    placeholder="Ex: Jean-Paul MUKENDI"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Titre / Fonction</Label>
+                  <Input
+                    value={expertTitle}
+                    onChange={(e) => setExpertTitle(e.target.value)}
+                    placeholder="Ex: L'Expert Évaluateur Agréé"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Sceau / Cachet (image)</Label>
+                  <div className="flex gap-2 items-center">
+                    {stampImageUrl && (
+                      <img src={stampImageUrl} alt="Sceau" className="h-10 w-10 object-contain border rounded" />
+                    )}
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      disabled={uploadingStamp}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleUploadStamp(file);
+                      }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    Format PNG recommandé avec fond transparent. Apparaîtra à côté de la signature sur le certificat.
+                  </p>
+                </div>
+
                 <Alert className="bg-primary/5 border-primary/20">
                   <Award className="h-4 w-4 text-primary" />
                   <AlertDescription className="text-xs">
-                    Le certificat PDF sera <strong>généré automatiquement</strong> avec toutes les informations du bien et uploadé dans le stockage sécurisé.
+                    Le certificat PDF sera <strong>généré automatiquement</strong> avec le nom de l'expert, le sceau et toutes les informations du bien.
                   </AlertDescription>
                 </Alert>
                 <div className="space-y-2">

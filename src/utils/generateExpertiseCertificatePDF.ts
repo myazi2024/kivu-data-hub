@@ -33,6 +33,9 @@ export interface ExpertiseCertificateData {
   issueDate: string;
   expiryDate: string;
   approvedBy: string;
+  expertName?: string;
+  expertTitle?: string;
+  stampImageUrl?: string;
 }
 
 // Label maps for human-readable display
@@ -55,6 +58,17 @@ const ROAD_LABELS: Record<string, string> = {
   terre: 'Route en terre',
   piste: 'Piste / Sentier',
 };
+
+function drawTextStamp(doc: jsPDF, sigY: number) {
+  doc.setDrawColor(0, 120, 60);
+  doc.setLineWidth(1.5);
+  doc.circle(55, sigY + 10, 12);
+  doc.setFontSize(6);
+  doc.setTextColor(0, 120, 60);
+  doc.setFont('helvetica', 'bold');
+  doc.text('CERTIFIÉ', 55, sigY + 8, { align: 'center' });
+  doc.text('CONFORME', 55, sigY + 12, { align: 'center' });
+}
 
 export async function generateExpertiseCertificatePDF(data: ExpertiseCertificateData): Promise<Blob> {
   const doc = new jsPDF();
@@ -229,19 +243,21 @@ export async function generateExpertiseCertificatePDF(data: ExpertiseCertificate
   doc.setTextColor(0, 0, 0);
   doc.text(`Fait à Goma, le ${new Date(data.issueDate).toLocaleDateString('fr-FR')}`, 22, sigY);
   doc.setFont('helvetica', 'bold');
-  doc.text('L\'Expert Évaluateur Agréé', 22, sigY + 12);
+  doc.text(data.expertTitle || 'L\'Expert Évaluateur Agréé', 22, sigY + 12);
   doc.setFont('helvetica', 'italic');
-  doc.text(data.approvedBy, 22, sigY + 20);
+  doc.text(data.expertName || data.approvedBy, 22, sigY + 20);
 
-  // Stamp
-  doc.setDrawColor(0, 120, 60);
-  doc.setLineWidth(1.5);
-  doc.circle(55, sigY + 10, 12);
-  doc.setFontSize(6);
-  doc.setTextColor(0, 120, 60);
-  doc.setFont('helvetica', 'bold');
-  doc.text('CERTIFIÉ', 55, sigY + 8, { align: 'center' });
-  doc.text('CONFORME', 55, sigY + 12, { align: 'center' });
+  // Stamp - use uploaded image if available, otherwise draw text stamp
+  if (data.stampImageUrl) {
+    try {
+      doc.addImage(data.stampImageUrl, 'PNG', 45, sigY - 2, 28, 28);
+    } catch {
+      // Fallback to text stamp if image fails
+      drawTextStamp(doc, sigY);
+    }
+  } else {
+    drawTextStamp(doc, sigY);
+  }
 
   // Footer
   doc.setFontSize(7);
