@@ -264,6 +264,8 @@ const AdminMutationRequests: React.FC = () => {
     }
 
     try {
+      const adminName = profile?.full_name || user?.email || 'Admin';
+
       if (editingFee) {
         const { error } = await supabase
           .from('mutation_fees_config')
@@ -277,9 +279,21 @@ const AdminMutationRequests: React.FC = () => {
           .eq('id', editingFee.id);
 
         if (error) throw error;
+
+        // Audit log for fee modification
+        await supabase.from('audit_logs').insert({
+          user_id: user?.id,
+          admin_name: adminName,
+          action: 'mutation_fee_updated',
+          table_name: 'mutation_fees_config',
+          record_id: editingFee.id,
+          old_values: { fee_name: editingFee.fee_name, amount_usd: editingFee.amount_usd, is_mandatory: editingFee.is_mandatory },
+          new_values: { fee_name: feeName.trim(), amount_usd: parsedAmount, is_mandatory: feeMandatory }
+        });
+
         toast.success('Frais modifié');
       } else {
-        const { error } = await supabase
+        const { data: newFee, error } = await supabase
           .from('mutation_fees_config')
           .insert({
             fee_name: feeName.trim(),
@@ -287,9 +301,22 @@ const AdminMutationRequests: React.FC = () => {
             description: feeDescription.trim() || null,
             is_mandatory: feeMandatory,
             display_order: fees.length + 1
-          });
+          })
+          .select()
+          .single();
 
         if (error) throw error;
+
+        // Audit log for fee creation
+        await supabase.from('audit_logs').insert({
+          user_id: user?.id,
+          admin_name: adminName,
+          action: 'mutation_fee_created',
+          table_name: 'mutation_fees_config',
+          record_id: newFee?.id,
+          new_values: { fee_name: feeName.trim(), amount_usd: parsedAmount, is_mandatory: feeMandatory }
+        });
+
         toast.success('Frais ajouté');
       }
 
