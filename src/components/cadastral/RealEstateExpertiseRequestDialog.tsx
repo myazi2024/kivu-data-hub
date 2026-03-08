@@ -399,9 +399,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     return () => { cancelled = true; };
   }, [open, showIntro, user?.id, existingCertificate?.id]);
 
-  const getTotalAmount = () => {
-    return fees.reduce((sum, fee) => sum + fee.amount_usd, 0);
-  };
+   const getTotalAmount = () => {
+     const total = fees.reduce((sum, fee) => sum + fee.amount_usd, 0);
+     return Math.max(total, 0);
+   };
+
+   const isPaymentValid = () => {
+     return fees.length > 0 && getTotalAmount() > 0;
+   };
 
   // Fonctions pour la mesure du bruit avec microphone
   const getSoundLevelFromDecibels = useCallback((db: number): string => {
