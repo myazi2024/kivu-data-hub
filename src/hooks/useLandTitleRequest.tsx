@@ -158,7 +158,7 @@ export const useLandTitleRequest = () => {
       // 3. Insert with payment_status = 'pending_payment'
       const { data: insertedData, error } = await supabase
         .from('land_title_requests')
-        .insert({
+        .insert([{
           user_id: user.id,
           request_type: data.requestType || 'initial',
           selected_parcel_number: data.selectedParcelNumber || null,
