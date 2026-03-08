@@ -124,6 +124,8 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
   const [referenceError, setReferenceError] = useState<string | null>(null);
   const [requestReferenceNumber, setRequestReferenceNumber] = useState('');
   const [selectedFees, setSelectedFees] = useState<string[]>([]);
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
+  const isSubmittingRef = useRef(false);
   
   // Données pré-remplies depuis la base de données
   const [parcelData, setParcelData] = useState<ParcelData | null>(null);
