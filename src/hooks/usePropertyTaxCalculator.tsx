@@ -91,6 +91,15 @@ export const calculatePropertyTaxMonthsLate = (fiscalYear: number): number => {
   return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24 * 30.44)));
 };
 
+// Taxe de bâtisse (provincial): deadline June 30
+export const calculateBuildingTaxMonthsLate = (fiscalYear: number): number => {
+  const now = new Date();
+  const deadline = new Date(fiscalYear, 5, 30); // June 30
+  if (now <= deadline) return 0;
+  const diffMs = now.getTime() - deadline.getTime();
+  return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24 * 30.44)));
+};
+
 // IRL (Kinshasa/provincial): deadline February 28
 // En 2026, l'échéance a été repoussée au 28 février par le gouvernement provincial
 export const calculateIRLMonthsLate = (fiscalYear: number): number => {
