@@ -169,9 +169,9 @@ export default function AdminPermitFeesConfig() {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Permis de construire */}
+          {/* Autorisation de bâtir */}
           <div>
-            <h3 className="text-lg font-semibold mb-3">Permis de construire</h3>
+            <h3 className="text-lg font-semibold mb-3">Autorisation de bâtir</h3>
             <Table>
               <TableHeader>
                 <TableRow>
