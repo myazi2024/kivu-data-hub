@@ -75,15 +75,15 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
     setPermitRecord(prev => ({ ...prev, [field]: value }));
   };
 
-  // Calculate administrative status automatically from issue date + validity
-  const computedStatus = (): string => {
+  // Calculate administrative status automatically from issue date + validity (memoized)
+  const calculatedStatus = useMemo((): string => {
     if (!permitRecord.issueDate || !permitRecord.validityPeriod) return 'En cours';
     const issueDate = new Date(permitRecord.issueDate);
     const validityMonths = parseInt(permitRecord.validityPeriod) || 12;
     const expiryDate = new Date(issueDate);
     expiryDate.setMonth(expiryDate.getMonth() + validityMonths);
     return expiryDate > new Date() ? 'Valide' : 'Expiré';
-  };
+  }, [permitRecord.issueDate, permitRecord.validityPeriod]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
