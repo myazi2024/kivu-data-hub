@@ -397,16 +397,35 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     return urls;
   };
 
+  const PHONE_REGEX_DRC = /^(\+?243|0)(8[1-9]|9[0-9])\d{7}$/;
+
   const processPayment = async (): Promise<boolean> => {
     setProcessingPayment(true);
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      if (paymentMethod === 'mobile_money' && (!paymentProvider || !paymentPhone)) {
-        toast.error('Veuillez renseigner tous les champs de paiement');
+      if (paymentMethod === 'mobile_money') {
+        if (!paymentProvider) {
+          toast.error('Veuillez sélectionner un opérateur Mobile Money');
+          return false;
+        }
+        if (!paymentPhone) {
+          toast.error('Veuillez renseigner votre numéro de téléphone');
+          return false;
+        }
+        if (!PHONE_REGEX_DRC.test(paymentPhone.replace(/\s/g, ''))) {
+          toast.error('Numéro de téléphone invalide. Format attendu: +243XXXXXXXXX ou 0XXXXXXXXX');
+          return false;
+        }
+      }
+      // Bank card: handled by Stripe redirect (future integration)
+      if (paymentMethod === 'bank_card') {
+        toast.info('Le paiement par carte bancaire sera disponible prochainement. Veuillez utiliser Mobile Money.');
         return false;
       }
+
+      // TODO: Integrate with real payment Edge Function (process-mobile-money-payment)
+      // For now, simulate processing with validation
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
       return true;
     } catch (error) {
