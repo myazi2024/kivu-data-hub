@@ -214,24 +214,44 @@ export interface TaxCalculationResult {
   appliedExemptions: string[];
 }
 
+// Module-level cache to prevent re-fetching on each tab switch
+let _cachedRates: TaxRate[] | null = null;
+let _cachedFees: PaymentFee[] | null = null;
+let _cachedExemptions: TaxExemption[] | null = null;
+let _fetchPromise: Promise<void> | null = null;
+
 export const usePropertyTaxCalculator = () => {
-  const [rates, setRates] = useState<TaxRate[]>([]);
-  const [fees, setFees] = useState<PaymentFee[]>([]);
-  const [exemptions, setExemptions] = useState<TaxExemption[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [rates, setRates] = useState<TaxRate[]>(_cachedRates || []);
+  const [fees, setFees] = useState<PaymentFee[]>(_cachedFees || []);
+  const [exemptions, setExemptions] = useState<TaxExemption[]>(_cachedExemptions || []);
+  const [loading, setLoading] = useState(!_cachedRates);
 
   useEffect(() => {
-    const fetchConfig = async () => {
-      setLoading(true);
-      const [ratesRes, feesRes, exemptionsRes] = await Promise.all([
-        supabase.from('property_tax_rates_config').select('*').eq('is_active', true).order('display_order'),
-        supabase.from('tax_payment_fees_config').select('*').eq('is_active', true).order('display_order'),
-        supabase.from('tax_exemptions_config').select('*').eq('is_active', true).order('display_order'),
-      ]);
+    if (_cachedRates && _cachedFees && _cachedExemptions) {
+      setRates(_cachedRates);
+      setFees(_cachedFees);
+      setExemptions(_cachedExemptions);
+      setLoading(false);
+      return;
+    }
 
-      if (ratesRes.data) setRates(ratesRes.data as any[]);
-      if (feesRes.data) setFees(feesRes.data as any[]);
-      if (exemptionsRes.data) setExemptions(exemptionsRes.data as any[]);
+    const fetchConfig = async () => {
+      if (!_fetchPromise) {
+        _fetchPromise = (async () => {
+          const [ratesRes, feesRes, exemptionsRes] = await Promise.all([
+            supabase.from('property_tax_rates_config').select('*').eq('is_active', true).order('display_order'),
+            supabase.from('tax_payment_fees_config').select('*').eq('is_active', true).order('display_order'),
+            supabase.from('tax_exemptions_config').select('*').eq('is_active', true).order('display_order'),
+          ]);
+          _cachedRates = (ratesRes.data as any[]) || [];
+          _cachedFees = (feesRes.data as any[]) || [];
+          _cachedExemptions = (exemptionsRes.data as any[]) || [];
+        })();
+      }
+      await _fetchPromise;
+      setRates(_cachedRates!);
+      setFees(_cachedFees!);
+      setExemptions(_cachedExemptions!);
       setLoading(false);
     };
     fetchConfig();
