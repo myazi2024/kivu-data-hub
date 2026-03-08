@@ -1910,7 +1910,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
             </ScrollArea>
           </DialogContent>
       </Dialog>
-      </Dialog>
 
       {/* Quick Auth Dialog */}
       <QuickAuthDialog
