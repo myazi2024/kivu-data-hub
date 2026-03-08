@@ -866,13 +866,38 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
               />
             </h4>
             {/* Liste des documents requis selon le type de mutation */}
-            <div className="space-y-1">
-              {getRequiredDocuments().map((doc, idx) => (
-                <p key={idx} className={`text-xs flex items-center gap-1 ${doc.required ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground'}`}>
-                  {doc.required ? <AlertCircle className="h-3 w-3 flex-shrink-0" /> : <FileText className="h-3 w-3 flex-shrink-0" />}
-                  {doc.label} {doc.required && '*'}
-                </p>
-              ))}
+            <div className="space-y-2">
+              {getRequiredDocuments().map((doc) => {
+                const isCheckable = doc.required && !doc.handledByExpertiseCertificate;
+                return (
+                  <div key={doc.key} className="rounded-lg border p-2">
+                    <p className={`text-xs flex items-center gap-1 ${doc.required ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground'}`}>
+                      {doc.required ? <AlertCircle className="h-3 w-3 flex-shrink-0" /> : <FileText className="h-3 w-3 flex-shrink-0" />}
+                      {doc.label} {doc.required && '*'}
+                      {doc.handledByExpertiseCertificate && (
+                        <span className="ml-1 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                          vérifié via certificat d'expertise
+                        </span>
+                      )}
+                    </p>
+
+                    {isCheckable && (
+                      <div className="mt-2 ml-4 flex items-center gap-2">
+                        <Checkbox
+                          id={`doc-check-${doc.key}`}
+                          checked={requiredDocumentChecks[doc.key] || false}
+                          onCheckedChange={(checked) =>
+                            setRequiredDocumentChecks((prev) => ({ ...prev, [doc.key]: Boolean(checked) }))
+                          }
+                        />
+                        <Label htmlFor={`doc-check-${doc.key}`} className="text-[11px] text-muted-foreground cursor-pointer">
+                          Je confirme avoir joint cette pièce
+                        </Label>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
             
             <input
