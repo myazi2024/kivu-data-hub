@@ -74,6 +74,24 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Draft: check on open
+  useEffect(() => {
+    if (open && hasDraft) setShowDraftPrompt(true);
+  }, [open, hasDraft]);
+
+  // Draft: auto-save
+  useEffect(() => {
+    if (open && step === 'form') autoSave(mortgageRecord);
+  }, [mortgageRecord, open, step, autoSave]);
+
+  const handleRestoreDraft = () => {
+    const draftData = loadDraft();
+    if (draftData) setMortgageRecord(prev => ({ ...prev, ...draftData, receiptFile: null }));
+    setShowDraftPrompt(false);
+  };
+
+  const handleDiscardDraft = () => { clearDraft(); setShowDraftPrompt(false); };
+
   const updateMortgage = (field: keyof MortgageRecord, value: string | File | null) => {
     setMortgageRecord(prev => ({ ...prev, [field]: value }));
   };
