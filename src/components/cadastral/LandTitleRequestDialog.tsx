@@ -80,7 +80,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [parcelValidated, setParcelValidated] = useState(false);
   const [parcelSearchLoading, setParcelSearchLoading] = useState(false);
   const [showParcelDropdown, setShowParcelDropdown] = useState(false);
-  const [showCCCDialog, setShowCCCDialog] = useState(false);
+  // showCCCDialog removed - unused
   
   // Form data
   const [formData, setFormData] = useState<LandTitleRequestData>({
