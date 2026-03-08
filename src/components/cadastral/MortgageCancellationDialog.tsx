@@ -605,17 +605,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     onOpenChange(false);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD' }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), 'dd MMMM yyyy', { locale: fr });
-    } catch {
-      return dateString;
-    }
-  };
+  // Fix #21/#22: formatCurrency and formatDate imported from @/utils/formatters
 
   // ===================== FORM STEP =====================
   const renderFormStep = () => (
