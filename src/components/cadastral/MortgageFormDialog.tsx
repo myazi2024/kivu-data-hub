@@ -219,13 +219,15 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
 
       if (error) throw error;
 
-      // Notification (non-blocking)
-      supabase.from('notifications').insert({
-        user_id: user.id,
-        title: 'Hypothèque soumise',
-        message: `Votre déclaration d'hypothèque pour la parcelle ${parcelNumber} a été soumise avec succès.`,
-        type: 'success'
-      }).then(() => {});
+      // Fix #4: Notification with error handling (table may not be in TS types)
+      try {
+        await (supabase as any).from('notifications').insert({
+          user_id: user.id,
+          title: 'Hypothèque soumise',
+          message: `Votre déclaration d'hypothèque pour la parcelle ${parcelNumber} a été soumise avec succès.`,
+          type: 'success'
+        });
+      } catch { /* Non-blocking */ }
 
       setStep('confirmation');
       toast.success('Hypothèque enregistrée avec succès');
