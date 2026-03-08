@@ -52,7 +52,8 @@ import type { ExpertiseFee } from '@/types/expertise';
 import {
   CONSTRUCTION_TYPE_LABELS, QUALITY_LABELS, CONDITION_LABELS,
   ROAD_LABELS, WALL_LABELS, ROOF_LABELS, SOUND_LABELS,
-  WINDOW_LABELS, FLOOR_LABELS
+  WINDOW_LABELS, FLOOR_LABELS, FACADE_ORIENTATION_LABELS,
+  BUILDING_POSITION_LABELS, ACCESSIBILITY_LABELS
 } from '@/constants/expertiseLabels';
 
 // Derive select options from centralized labels
@@ -76,16 +77,11 @@ const SOUND_ENVIRONMENT_OPTIONS = [
   { value: 'tres_bruyant', label: SOUND_LABELS.tres_bruyant + ' (> 85 dB)', minDb: 85, maxDb: 200 },
 ];
 
-const FACADE_ORIENTATION_OPTIONS = [
-  { value: 'nord', label: 'Nord' },
-  { value: 'nord_est', label: 'Nord-Est' },
-  { value: 'est', label: 'Est' },
-  { value: 'sud_est', label: 'Sud-Est' },
-  { value: 'sud', label: 'Sud' },
-  { value: 'sud_ouest', label: 'Sud-Ouest' },
-  { value: 'ouest', label: 'Ouest' },
-  { value: 'nord_ouest', label: 'Nord-Ouest' },
-];
+const FACADE_ORIENTATION_OPTIONS = toOptions(FACADE_ORIENTATION_LABELS);
+
+const BUILDING_POSITION_OPTIONS = toOptions(BUILDING_POSITION_LABELS);
+
+const ACCESSIBILITY_OPTIONS = toOptions(ACCESSIBILITY_LABELS);
 
 // Générer les options d'année (1950 à année actuelle)
 const YEAR_OPTIONS = Array.from(
@@ -95,21 +91,6 @@ const YEAR_OPTIONS = Array.from(
     return { value: year.toString(), label: year.toString() };
   }
 );
-
-const BUILDING_POSITION_OPTIONS = [
-  { value: 'premiere_position', label: 'Première position (bordure de route)' },
-  { value: 'deuxieme_position', label: 'Deuxième position' },
-  { value: 'fond_parcelle', label: 'Fond de parcelle' },
-  { value: 'dans_servitude', label: 'Dans une servitude' },
-  { value: 'coin_parcelle', label: 'En coin de parcelle' },
-];
-
-const ACCESSIBILITY_OPTIONS = [
-  { value: 'escalier', label: 'Escalier uniquement' },
-  { value: 'ascenseur', label: 'Ascenseur disponible' },
-  { value: 'escalier_ascenseur', label: 'Escalier + Ascenseur' },
-  { value: 'plain_pied', label: 'Plain-pied (RDC)' },
-];
 
 const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialogProps> = ({
   parcelNumber,
@@ -572,6 +553,10 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       has_water_tank: hasWaterTank,
       has_generator: hasGenerator,
       has_borehole: hasBorehole,
+      has_electric_fence: hasElectricFence,
+      has_garage: hasGarage,
+      has_cellar: hasCellar,
+      has_automatic_gate: hasAutomaticGate,
       nearby_amenities: nearbyAmenities.length > 0 ? nearbyAmenities.join(', ') : undefined,
     };
 
@@ -663,38 +648,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
       // Process payment
       if (paymentMethod === 'mobile_money') {
-        const { data: paymentResult, error: mmError } = await supabase.functions.invoke(
-          'process-mobile-money-payment',
-          {
-            body: {
-              payment_provider: paymentProvider,
-              phone_number: paymentPhone,
-              amount_usd: getTotalAmount(),
-              payment_type: 'expertise_fee',
-              invoice_id: paymentRecord.id
-            }
-          }
-        );
-
-        if (mmError) throw mmError;
-
-         // Poll transaction status
-         const txId = paymentResult?.transaction_id;
-         if (txId) {
-           const { pollTransactionStatus } = await import('@/utils/pollTransactionStatus');
-           const result = await pollTransactionStatus(txId);
-           if (result === 'failed') throw new Error('Le paiement a échoué');
-           if (result === 'timeout') throw new Error('Délai de paiement dépassé');
-         }
-
-        await supabase
-          .from('expertise_payments')
-          .update({
-            status: 'completed',
-            paid_at: new Date().toISOString(),
-            transaction_id: paymentResult?.transaction_id || 'TXN-' + Date.now()
-          })
-          .eq('id', paymentRecord.id);
+        const { processExpertiseMobileMoneyPayment } = await import('@/utils/expertisePaymentHelper');
+        await processExpertiseMobileMoneyPayment({
+          provider: paymentProvider,
+          phone: paymentPhone,
+          amountUsd: getTotalAmount(),
+          paymentType: 'expertise_fee',
+          paymentRecordId: paymentRecord.id,
+        });
 
         await supabase
           .from('real_estate_expertise_requests')
@@ -702,23 +663,13 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
           .eq('id', request.id);
 
       } else if (paymentMethod === 'bank_card') {
-        const { data: stripeSession, error: stripeError } = await supabase.functions.invoke(
-          'create-payment',
-          {
-            body: {
-              invoice_id: paymentRecord.id,
-              payment_type: 'expertise_fee',
-              amount_usd: getTotalAmount()
-            }
-          }
-        );
-
-        if (stripeError) throw stripeError;
-
-        if (stripeSession?.url) {
-          window.location.href = stripeSession.url;
-          return;
-        }
+        const { processExpertiseStripePayment } = await import('@/utils/expertisePaymentHelper');
+        const redirected = await processExpertiseStripePayment({
+          paymentRecordId: paymentRecord.id,
+          paymentType: 'expertise_fee',
+          amountUsd: getTotalAmount(),
+        });
+        if (redirected) return;
       }
 
       // Create notification
@@ -772,37 +723,22 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       if (paymentError) throw paymentError;
 
       if (certPaymentMethod === 'mobile_money') {
-        const { data: mmResult, error: mmError } = await supabase.functions.invoke('process-mobile-money-payment', {
-          body: {
-            payment_provider: certPaymentProvider,
-            phone_number: certPaymentPhone,
-            amount_usd: certificateAccessFee,
-            payment_type: 'certificate_access',
-            invoice_id: paymentRecord.id
-          }
+        const { processExpertiseMobileMoneyPayment } = await import('@/utils/expertisePaymentHelper');
+        await processExpertiseMobileMoneyPayment({
+          provider: certPaymentProvider,
+          phone: certPaymentPhone,
+          amountUsd: certificateAccessFee,
+          paymentType: 'certificate_access',
+          paymentRecordId: paymentRecord.id,
         });
-        if (mmError) throw mmError;
-
-         // Poll transaction status
-         const txId = mmResult?.transaction_id;
-         if (txId) {
-           const { pollTransactionStatus } = await import('@/utils/pollTransactionStatus');
-           const result = await pollTransactionStatus(txId);
-           if (result === 'failed') throw new Error('Le paiement a échoué');
-           if (result === 'timeout') throw new Error('Délai de paiement dépassé');
-         }
-
-        await supabase.from('expertise_payments').update({
-          status: 'completed',
-          paid_at: new Date().toISOString(),
-          transaction_id: mmResult?.transaction_id || 'TXN-' + Date.now()
-        }).eq('id', paymentRecord.id);
       } else {
-        const { data: stripeSession, error: stripeError } = await supabase.functions.invoke('create-payment', {
-          body: { invoice_id: paymentRecord.id, payment_type: 'certificate_access', amount_usd: certificateAccessFee }
+        const { processExpertiseStripePayment } = await import('@/utils/expertisePaymentHelper');
+        const redirected = await processExpertiseStripePayment({
+          paymentRecordId: paymentRecord.id,
+          paymentType: 'certificate_access',
+          amountUsd: certificateAccessFee,
         });
-        if (stripeError) throw stripeError;
-        if (stripeSession?.url) { window.location.href = stripeSession.url; return; }
+        if (redirected) return;
       }
 
       setHasCertificateAccess(true);

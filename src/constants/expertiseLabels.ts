@@ -86,3 +86,29 @@ export const STATUS_LABELS: Record<string, string> = {
   completed: 'Terminé',
   rejected: 'Rejeté',
 };
+
+export const FACADE_ORIENTATION_LABELS: Record<string, string> = {
+  nord: 'Nord',
+  nord_est: 'Nord-Est',
+  est: 'Est',
+  sud_est: 'Sud-Est',
+  sud: 'Sud',
+  sud_ouest: 'Sud-Ouest',
+  ouest: 'Ouest',
+  nord_ouest: 'Nord-Ouest',
+};
+
+export const BUILDING_POSITION_LABELS: Record<string, string> = {
+  premiere_position: 'Première position (bordure de route)',
+  deuxieme_position: 'Deuxième position',
+  fond_parcelle: 'Fond de parcelle',
+  dans_servitude: 'Dans une servitude',
+  coin_parcelle: 'En coin de parcelle',
+};
+
+export const ACCESSIBILITY_LABELS: Record<string, string> = {
+  escalier: 'Escalier uniquement',
+  ascenseur: 'Ascenseur disponible',
+  escalier_ascenseur: 'Escalier + Ascenseur',
+  plain_pied: 'Plain-pied (RDC)',
+};

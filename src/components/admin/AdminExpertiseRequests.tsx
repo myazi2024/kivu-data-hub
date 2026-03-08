@@ -26,7 +26,9 @@ import { exportToCSV } from '@/utils/csvExport';
 import { generateExpertiseCertificatePDF } from '@/utils/generateExpertiseCertificatePDF';
 import { 
   QUALITY_LABELS, CONDITION_LABELS, CONSTRUCTION_TYPE_LABELS, 
-  WALL_LABELS, ROOF_LABELS, ROAD_LABELS, SOUND_LABELS, STATUS_LABELS 
+  WALL_LABELS, ROOF_LABELS, ROAD_LABELS, SOUND_LABELS, STATUS_LABELS,
+  WINDOW_LABELS, FLOOR_LABELS, FACADE_ORIENTATION_LABELS,
+  BUILDING_POSITION_LABELS, ACCESSIBILITY_LABELS
 } from '@/constants/expertiseLabels';
 import type { ExpertiseRequest } from '@/types/expertise';
 
@@ -197,19 +199,19 @@ export const AdminExpertiseRequests: React.FC = () => {
           hasWaterSupply: selectedRequest.has_water_supply,
           hasElectricity: selectedRequest.has_electricity,
           hasSewageSystem: selectedRequest.has_sewage_system,
-          hasInternet: (selectedRequest as any).has_internet || false,
-          hasSecuritySystem: (selectedRequest as any).has_security_system || false,
-          hasParking: (selectedRequest as any).has_parking || false,
-          parkingSpaces: (selectedRequest as any).parking_spaces,
-          hasGarden: (selectedRequest as any).has_garden || false,
-          gardenAreaSqm: (selectedRequest as any).garden_area_sqm,
+          hasInternet: selectedRequest.has_internet || false,
+          hasSecuritySystem: selectedRequest.has_security_system || false,
+          hasParking: selectedRequest.has_parking || false,
+          parkingSpaces: selectedRequest.parking_spaces,
+          hasGarden: selectedRequest.has_garden || false,
+          gardenAreaSqm: selectedRequest.garden_area_sqm,
           roadAccessType: selectedRequest.road_access_type,
-          distanceToMainRoadM: (selectedRequest as any).distance_to_main_road_m,
-          distanceToHospitalKm: (selectedRequest as any).distance_to_hospital_km,
-          distanceToSchoolKm: (selectedRequest as any).distance_to_school_km,
-          distanceToMarketKm: (selectedRequest as any).distance_to_market_km,
-          floodRiskZone: (selectedRequest as any).flood_risk_zone || false,
-          erosionRiskZone: (selectedRequest as any).erosion_risk_zone || false,
+          distanceToMainRoadM: selectedRequest.distance_to_main_road_m,
+          distanceToHospitalKm: selectedRequest.distance_to_hospital_km,
+          distanceToSchoolKm: selectedRequest.distance_to_school_km,
+          distanceToMarketKm: selectedRequest.distance_to_market_km,
+          floodRiskZone: selectedRequest.flood_risk_zone || false,
+          erosionRiskZone: selectedRequest.erosion_risk_zone || false,
           marketValueUsd: parseFloat(marketValue),
           expertiseDateStr: issueDate,
           issueDate: issueDate,
@@ -661,7 +663,7 @@ export const AdminExpertiseRequests: React.FC = () => {
                       </div>
 
                       {/* Matériaux & Position (extended data) */}
-                      {(extendedData.wall_material || extendedData.roof_material || extendedData.building_position) && (
+                      {(extendedData.wall_material || extendedData.roof_material || extendedData.building_position || extendedData.window_type || extendedData.floor_material) && (
                         <>
                           <Separator />
                           <div>
@@ -679,6 +681,18 @@ export const AdminExpertiseRequests: React.FC = () => {
                                   <p>{ROOF_LABELS[extendedData.roof_material] || extendedData.roof_material}</p>
                                 </div>
                               )}
+                              {extendedData.window_type && (
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Fenêtres</Label>
+                                  <p>{WINDOW_LABELS[extendedData.window_type] || extendedData.window_type}</p>
+                                </div>
+                              )}
+                              {extendedData.floor_material && (
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Sol</Label>
+                                  <p>{FLOOR_LABELS[extendedData.floor_material] || extendedData.floor_material}</p>
+                                </div>
+                              )}
                               {extendedData.sound_environment && (
                                 <div>
                                   <Label className="text-xs text-muted-foreground">Environnement sonore</Label>
@@ -691,9 +705,121 @@ export const AdminExpertiseRequests: React.FC = () => {
                                   <p>{ROAD_LABELS[selectedRequest.road_access_type] || selectedRequest.road_access_type}</p>
                                 </div>
                               )}
+                              {extendedData.building_position && (
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Position du bâtiment</Label>
+                                  <p>{BUILDING_POSITION_LABELS[extendedData.building_position] || extendedData.building_position}</p>
+                                </div>
+                              )}
+                              {extendedData.facade_orientation && (
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Orientation façade</Label>
+                                  <p>{FACADE_ORIENTATION_LABELS[extendedData.facade_orientation] || extendedData.facade_orientation}</p>
+                                </div>
+                              )}
+                              {extendedData.accessibility && (
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Accessibilité</Label>
+                                  <p>{ACCESSIBILITY_LABELS[extendedData.accessibility] || extendedData.accessibility}</p>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </>
+                      )}
+
+                      {/* Finitions */}
+                      {(extendedData.has_plaster !== undefined || extendedData.has_painting !== undefined || extendedData.has_ceiling !== undefined || extendedData.has_double_glazing) && (
+                        <>
+                          <Separator />
+                          <div>
+                            <h4 className="text-sm font-semibold mb-2">Finitions</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {extendedData.has_plaster && <Badge variant="secondary">Crépi</Badge>}
+                              {extendedData.has_painting && <Badge variant="secondary">Peinture</Badge>}
+                              {extendedData.has_ceiling && <Badge variant="secondary">Faux plafond</Badge>}
+                              {extendedData.has_double_glazing && <Badge variant="secondary">Double vitrage</Badge>}
+                              {extendedData.is_corner_plot && <Badge variant="secondary">Parcelle en coin</Badge>}
+                              {extendedData.has_direct_street_access && <Badge variant="secondary">Accès direct route</Badge>}
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Équipements supplémentaires (extended) */}
+                      {(extendedData.has_pool || extendedData.has_air_conditioning || extendedData.has_solar_panels || extendedData.has_water_tank || extendedData.has_generator || extendedData.has_borehole || extendedData.has_electric_fence || extendedData.has_garage || extendedData.has_cellar || extendedData.has_automatic_gate) && (
+                        <>
+                          <Separator />
+                          <div>
+                            <h4 className="text-sm font-semibold mb-2">Équipements supplémentaires</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {extendedData.has_pool && <Badge variant="outline">Piscine</Badge>}
+                              {extendedData.has_air_conditioning && <Badge variant="outline">Climatisation</Badge>}
+                              {extendedData.has_solar_panels && <Badge variant="outline">Panneaux solaires</Badge>}
+                              {extendedData.has_water_tank && <Badge variant="outline">Citerne d'eau</Badge>}
+                              {extendedData.has_generator && <Badge variant="outline">Groupe électrogène</Badge>}
+                              {extendedData.has_borehole && <Badge variant="outline">Forage</Badge>}
+                              {extendedData.has_electric_fence && <Badge variant="outline">Clôture électrique</Badge>}
+                              {extendedData.has_garage && <Badge variant="outline">Garage</Badge>}
+                              {extendedData.has_cellar && <Badge variant="outline">Cave</Badge>}
+                              {extendedData.has_automatic_gate && <Badge variant="outline">Portail automatique</Badge>}
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Appartement details */}
+                      {(extendedData.floor_number || extendedData.apartment_number || extendedData.monthly_charges) && (
+                        <>
+                          <Separator />
+                          <div>
+                            <h4 className="text-sm font-semibold mb-2">Détails appartement</h4>
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                              {extendedData.floor_number && (
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Étage</Label>
+                                  <p>{extendedData.floor_number} / {extendedData.total_building_floors || '?'}</p>
+                                </div>
+                              )}
+                              {extendedData.apartment_number && (
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">N° Appartement</Label>
+                                  <p>{extendedData.apartment_number}</p>
+                                </div>
+                              )}
+                              {extendedData.monthly_charges && (
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Charges mensuelles</Label>
+                                  <p>${extendedData.monthly_charges}</p>
+                                </div>
+                              )}
+                              {extendedData.has_common_areas && (
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Parties communes</Label>
+                                  <p>Oui</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Nearby amenities */}
+                      {extendedData.nearby_amenities && (
+                        <>
+                          <Separator />
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Commodités à proximité</Label>
+                            <p className="text-sm mt-1">{extendedData.nearby_amenities}</p>
+                          </div>
+                        </>
+                      )}
+
+                      {extendedData.nearby_noise_sources && (
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Sources de bruit</Label>
+                          <p className="text-sm mt-1">{extendedData.nearby_noise_sources}</p>
+                        </div>
                       )}
 
                       {/* Notes utilisateur */}
