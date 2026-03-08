@@ -111,35 +111,45 @@ export function PermitCard({ permit, onAppealClick }: PermitCardProps) {
           </div>
         )}
 
-        {/* Informations de la demande */}
-        {permit.permit_request_data && (
-          <div className="space-y-1.5 md:space-y-2">
-            <h4 className="text-xs md:text-sm font-semibold flex items-center gap-1 md:gap-1.5">
-              <FileText className="h-3 w-3 md:h-4 md:w-4 shrink-0" />
-              Informations de la demande
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 text-xs md:text-sm bg-muted/50 p-2 md:p-3 rounded-lg">
-              {permit.permit_request_data.issuingService && (
-                <div>
-                  <span className="text-muted-foreground text-[10px] md:text-xs block mb-0.5">Service délivrant:</span>
-                  <p className="font-medium text-xs md:text-sm">{permit.permit_request_data.issuingService}</p>
-                </div>
-              )}
-              {permit.permit_request_data.contactPerson && (
-                <div>
-                  <span className="text-muted-foreground text-[10px] md:text-xs block mb-0.5">Personne de contact:</span>
-                  <p className="font-medium text-xs md:text-sm">{permit.permit_request_data.contactPerson}</p>
-                </div>
-              )}
-              {permit.permit_request_data.contactPhone && (
-                <div className="flex items-center gap-1 md:gap-1.5">
-                  <Phone className="h-3 w-3 md:h-3.5 md:w-3.5 text-muted-foreground shrink-0" />
-                  <span className="font-medium text-xs md:text-sm">{permit.permit_request_data.contactPhone}</span>
-                </div>
-              )}
+        {/* Informations de la demande - from permit_request_data OR building_permits */}
+        {(() => {
+          const prd = permit.permit_request_data;
+          const bp = Array.isArray(permit.building_permits) && permit.building_permits[0];
+          const issuingService = prd?.issuingService || bp?.issuingService || bp?.issuing_service;
+          const contact = prd?.contactPerson || bp?.issuingServiceContact || bp?.issuing_service_contact;
+          const contactPhone = prd?.contactPhone;
+
+          if (!issuingService && !contact && !contactPhone) return null;
+
+          return (
+            <div className="space-y-1.5 md:space-y-2">
+              <h4 className="text-xs md:text-sm font-semibold flex items-center gap-1 md:gap-1.5">
+                <FileText className="h-3 w-3 md:h-4 md:w-4 shrink-0" />
+                Informations de la demande
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 text-xs md:text-sm bg-muted/50 p-2 md:p-3 rounded-lg">
+                {issuingService && (
+                  <div>
+                    <span className="text-muted-foreground text-[10px] md:text-xs block mb-0.5">Service délivrant:</span>
+                    <p className="font-medium text-xs md:text-sm">{issuingService}</p>
+                  </div>
+                )}
+                {contact && (
+                  <div>
+                    <span className="text-muted-foreground text-[10px] md:text-xs block mb-0.5">Contact:</span>
+                    <p className="font-medium text-xs md:text-sm">{contact}</p>
+                  </div>
+                )}
+                {contactPhone && (
+                  <div className="flex items-center gap-1 md:gap-1.5">
+                    <Phone className="h-3 w-3 md:h-3.5 md:w-3.5 text-muted-foreground shrink-0" />
+                    <span className="font-medium text-xs md:text-sm">{contactPhone}</span>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Raisons de refus */}
         {permit.status === 'rejected' && permit.rejection_reasons && permit.rejection_reasons.length > 0 && (

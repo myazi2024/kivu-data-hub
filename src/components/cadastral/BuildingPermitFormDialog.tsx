@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { Button } from '@/components/ui/button';
@@ -33,8 +33,9 @@ interface PermitRecord {
   permitFile: File | null;
 }
 
-// Permit number format validation: PC-YYYY-XXXXX or similar
-const PERMIT_NUMBER_REGEX = /^[A-Z]{2,4}[-/]\d{4}[-/]\d{3,6}$/i;
+// Permit number format validation: flexible for DRC formats
+// Supports: PC-2024-001, AB/2024/00123, PC.2024.001, URB-2024-001234, etc.
+const PERMIT_NUMBER_REGEX = /^[A-Z]{2,6}[-/.]\d{4}[-/.]\d{2,6}$/i;
 
 const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
   parcelNumber,
@@ -74,15 +75,15 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
     setPermitRecord(prev => ({ ...prev, [field]: value }));
   };
 
-  // Calculate administrative status automatically from issue date + validity
-  const computedStatus = (): string => {
+  // Calculate administrative status automatically from issue date + validity (memoized)
+  const calculatedStatus = useMemo((): string => {
     if (!permitRecord.issueDate || !permitRecord.validityPeriod) return 'En cours';
     const issueDate = new Date(permitRecord.issueDate);
     const validityMonths = parseInt(permitRecord.validityPeriod) || 12;
     const expiryDate = new Date(issueDate);
     expiryDate.setMonth(expiryDate.getMonth() + validityMonths);
     return expiryDate > new Date() ? 'Valide' : 'Expiré';
-  };
+  }, [permitRecord.issueDate, permitRecord.validityPeriod]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -118,7 +119,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
 
     // Validate permit number format
     if (!PERMIT_NUMBER_REGEX.test(normalized)) {
-      toast.error('Format du N° autorisation invalide. Utilisez un format tel que PC-2024-001 ou AB/2024/00123');
+      toast.error('Format du N° autorisation invalide. Utilisez un format tel que PC-2024-001, AB/2024/00123 ou URB.2024.0001');
       return false;
     }
 
@@ -194,7 +195,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
         documentUrl = data.publicUrl;
       }
 
-      const calculatedStatus = computedStatus();
+      // Use memoized calculatedStatus (already in scope)
 
       // Standardize permit_type: always use 'construction' or 'regularization' (EN)
       const standardizedPermitType = permitType === 'regularisation' ? 'regularization' : 'construction';
@@ -229,17 +230,14 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
         throw error;
       }
 
-      // Step 4: Send notification (non-blocking, with error handling)
-      try {
-        await supabase.from('notifications').insert({
-          user_id: user.id,
-          title: `${title} soumise`,
-          message: `Votre ${title.toLowerCase()} pour la parcelle ${parcelNumber} a été soumise avec succès.`,
-          type: 'success'
-        });
-      } catch (notifErr) {
-        console.warn('Notification insert failed (non-blocking):', notifErr);
-      }
+      // Step 4: Send notification (non-blocking, fire-and-forget)
+      supabase.from('notifications').insert({
+        user_id: user.id,
+        title: `${title} soumise`,
+        message: `Votre ${title.toLowerCase()} pour la parcelle ${parcelNumber} a été soumise avec succès.`,
+      }).then(({ error: notifErr }) => {
+        if (notifErr) console.warn('Notification insert failed (non-blocking):', notifErr);
+      });
 
       setStep('confirmation');
       toast.success(`${title} enregistrée avec succès`);
@@ -285,7 +283,13 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
     resetAndClose();
   };
 
-  const calculatedStatus = computedStatus();
+  // Inline validation hint for permit number
+  const permitNumberHint = useMemo(() => {
+    if (!permitRecord.permitNumber) return null;
+    const normalized = normalizePermitNumber(permitRecord.permitNumber);
+    if (PERMIT_NUMBER_REGEX.test(normalized)) return null;
+    return 'Format attendu: XX-YYYY-NNN (ex: PC-2024-001)';
+  }, [permitRecord.permitNumber]);
 
   const renderFormStep = () => (
     <div className="space-y-3">
@@ -297,8 +301,11 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
             placeholder="ex: PC-2024-001"
             value={permitRecord.permitNumber}
             onChange={(e) => updatePermit('permitNumber', e.target.value)}
-            className="h-9 text-sm rounded-xl"
+            className={`h-9 text-sm rounded-xl ${permitNumberHint ? 'border-orange-400 focus-visible:ring-orange-400' : ''}`}
           />
+          {permitNumberHint && (
+            <p className="text-[10px] text-orange-500 mt-0.5">{permitNumberHint}</p>
+          )}
         </div>
         <div className="space-y-1">
           <Label className="text-xs font-medium">Date délivrance *</Label>

@@ -1,8 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { Info, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 interface BuildingPermitIssuingService {
@@ -87,31 +85,7 @@ const BuildingPermitIssuingServiceSelect: React.FC<BuildingPermitIssuingServiceS
   const groupedLevels = ['National', 'Provincial', 'Communal', 'Autre'] as const;
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <label className="text-sm font-medium">Service émetteur de l'autorisation</label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full">
-              <Info className="h-4 w-4 text-muted-foreground" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[calc(100vw-2rem)] sm:w-96" side="top">
-            <div className="space-y-2">
-              <h4 className="font-semibold text-sm">Services émetteurs d'autorisations</h4>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                En RDC, les autorisations de bâtir sont délivrées par différents niveaux de services selon l'ampleur du projet :
-              </p>
-              <ul className="text-xs space-y-1 text-muted-foreground">
-                <li>• <strong>National</strong> : Ministère de l'Urbanisme et Habitat pour les grands projets</li>
-                <li>• <strong>Provincial</strong> : Divisions Provinciales de l'Urbanisme et Habitat (DPUH)</li>
-                <li>• <strong>Communal/Local</strong> : Services communaux d'urbanisme pour les projets locaux</li>
-              </ul>
-            </div>
-          </PopoverContent>
-        </Popover>
-      </div>
-      
+    <div className="space-y-1.5">
       <Select value={value} onValueChange={(v) => { onValueChange(v); setSearchQuery(''); }}>
         <SelectTrigger>
           <SelectValue placeholder="Sélectionner le service émetteur" />
@@ -167,11 +141,6 @@ const BuildingPermitIssuingServiceSelect: React.FC<BuildingPermitIssuingServiceS
         </SelectContent>
       </Select>
       
-      {value && (
-        <p className="text-xs text-muted-foreground">
-          {ISSUING_SERVICES.find(s => s.value === value)?.description}
-        </p>
-      )}
     </div>
   );
 };
