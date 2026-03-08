@@ -465,9 +465,15 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
               <span>{taxRecord.paymentStatus}</span>
             </div>
             {taxRecord.paymentDate && (
-              <div className="flex justify-between py-2">
+              <div className="flex justify-between py-2 border-b">
                 <span className="text-muted-foreground">Date paiement</span>
                 <span>{taxRecord.paymentDate}</span>
+              </div>
+            )}
+            {taxRecord.receiptFile && (
+              <div className="flex justify-between py-2">
+                <span className="text-muted-foreground">Reçu joint</span>
+                <span className="text-xs font-medium text-primary truncate max-w-[180px]">{taxRecord.receiptFile.name}</span>
               </div>
             )}
           </div>

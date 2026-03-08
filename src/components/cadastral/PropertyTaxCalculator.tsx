@@ -5,6 +5,8 @@ import { usePropertyTaxCalculator, TaxCalculationInput, TaxCalculationResult } f
 import PropertyTaxQuestionsStep from './tax-calculator/PropertyTaxQuestionsStep';
 import PropertyTaxSummaryStep from './tax-calculator/PropertyTaxSummaryStep';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { detectZoneType, isZoneAutoDetected, detectUsageType, detectConstructionType, checkDuplicateTaxSubmission } from './tax-calculator/taxSharedUtils';
 
 interface PropertyTaxCalculatorProps {
   parcelNumber: string;
@@ -29,23 +31,17 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
   const [idDocumentFile, setIdDocumentFile] = useState<File | null>(null);
   const [hasNif, setHasNif] = useState<boolean | null>(null);
   const [exemptionCertificateFile, setExemptionCertificateFile] = useState<File | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const defaultZone = parcelNumber?.startsWith('SR') ? 'rural' : parcelNumber?.startsWith('SU') ? 'urban' : (parcelData?.parcel_type === 'rural' ? 'rural' : 'urban');
-  const zoneAutoDetected = parcelNumber?.startsWith('SR') || parcelNumber?.startsWith('SU');
-  const defaultUsage = parcelData?.declared_usage === 'Commercial' ? 'commercial'
-    : parcelData?.declared_usage === 'Industriel' ? 'industrial'
-    : parcelData?.declared_usage === 'Agricole' ? 'agricultural'
-    : 'residential';
-  const defaultConstruction = parcelData?.construction_type === 'En dur' ? 'en_dur'
-    : parcelData?.construction_type === 'Semi-dur' ? 'semi_dur'
-    : parcelData?.construction_type === 'En paille' ? 'en_paille'
-    : parcelData?.construction_type === 'Terrain nu' ? 'none'
-    : null;
+  const defaultZone = detectZoneType(parcelNumber, parcelData);
+  const zoneAutoDetected = isZoneAutoDetected(parcelNumber);
+  const defaultUsage = detectUsageType(parcelData);
+  const defaultConstruction = detectConstructionType(parcelData);
 
   const [input, setInput] = useState<TaxCalculationInput>({
-    zoneType: (defaultZone as any) || 'urban',
-    usageType: (defaultUsage as any) || 'residential',
-    constructionType: defaultConstruction === 'none' ? null : (defaultConstruction as any),
+    zoneType: defaultZone,
+    usageType: defaultUsage,
+    constructionType: defaultConstruction,
     areaSqm: parcelData?.area_sqm || 0,
     fiscalYear: currentYear,
     province: parcelData?.province || 'Nord-Kivu',
@@ -65,7 +61,7 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
     monthsLate: 0,
   });
 
-  const [hasNoConstruction, setHasNoConstruction] = useState(defaultConstruction === 'none');
+  const [hasNoConstruction, setHasNoConstruction] = useState(defaultConstruction === null && parcelData?.construction_type === 'Terrain nu');
 
   // Sync areaSqm and ownerName when parcelData loads asynchronously
   useEffect(() => {
@@ -94,7 +90,6 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
       toast.error('Veuillez renseigner le nom du redevable');
       return;
     }
-    // Use parcelData.area_sqm as fallback if input.areaSqm hasn't synced yet
     const effectiveArea = input.areaSqm || Number(parcelData?.area_sqm) || 0;
     if (effectiveArea <= 0) {
       toast.error('Veuillez renseigner la superficie de la parcelle');
@@ -106,12 +101,110 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
     setCalcStep('summary');
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!user) {
       toast.error('Vous devez être connecté pour soumettre la déclaration');
       return;
     }
-    toast.info('La soumission des déclarations sera disponible prochainement');
+    if (!result) return;
+
+    setSubmitting(true);
+    try {
+      // Duplicate check
+      const isDuplicate = await checkDuplicateTaxSubmission(
+        supabase, parcelNumber, user.id, 'Impôt foncier annuel', input.fiscalYear
+      );
+      if (isDuplicate) {
+        toast.error(`Une déclaration "Impôt foncier annuel" pour l'exercice ${input.fiscalYear} existe déjà pour cette parcelle.`);
+        return;
+      }
+
+      // Upload ID document if present
+      let idDocUrl: string | null = null;
+      let uploadedIdPath: string | null = null;
+      if (idDocumentFile) {
+        const ext = idDocumentFile.name.split('.').pop();
+        const path = `tax-documents/${user.id}/id_${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from('cadastral-documents').upload(path, idDocumentFile);
+        if (upErr) throw upErr;
+        uploadedIdPath = path;
+        idDocUrl = supabase.storage.from('cadastral-documents').getPublicUrl(path).data.publicUrl;
+      }
+
+      // Upload exemption certificate if present
+      let exemptionDocUrl: string | null = null;
+      let uploadedExemptionPath: string | null = null;
+      if (exemptionCertificateFile) {
+        const ext = exemptionCertificateFile.name.split('.').pop();
+        const path = `tax-documents/${user.id}/exemption_${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from('cadastral-documents').upload(path, exemptionCertificateFile);
+        if (upErr) throw upErr;
+        uploadedExemptionPath = path;
+        exemptionDocUrl = supabase.storage.from('cadastral-documents').getPublicUrl(path).data.publicUrl;
+      }
+
+      const { error } = await supabase.from('cadastral_contributions').insert({
+        parcel_number: parcelNumber,
+        original_parcel_id: parcelId || null,
+        user_id: user.id,
+        contribution_type: 'update',
+        status: 'pending',
+        province: input.province,
+        ville: input.ville,
+        area_sqm: input.areaSqm,
+        construction_type: input.constructionType ? (
+          input.constructionType === 'en_dur' ? 'En dur'
+          : input.constructionType === 'semi_dur' ? 'Semi-dur'
+          : 'En paille'
+        ) : null,
+        declared_usage: input.usageType === 'commercial' ? 'Commercial'
+          : input.usageType === 'industrial' ? 'Industriel'
+          : input.usageType === 'agricultural' ? 'Agricole'
+          : 'Résidentiel',
+        construction_year: input.constructionYear,
+        owner_document_url: idDocUrl,
+        tax_history: [{
+          tax_type: 'Impôt foncier annuel',
+          tax_year: input.fiscalYear,
+          amount_usd: result.grandTotal,
+          base_tax_usd: result.totalPropertyTax,
+          penalty_amount_usd: result.totalPenalties,
+          fees_usd: result.totalFees,
+          fiscal_zone: result.fiscalZoneCategory,
+          is_exempt: result.isExempt,
+          exemptions: result.appliedExemptions,
+          exemption_certificate_url: exemptionDocUrl,
+          nif: hasNif ? nif : null,
+          payment_status: 'En attente',
+        }],
+      });
+
+      if (error) {
+        // Cleanup orphaned files
+        const toRemove = [uploadedIdPath, uploadedExemptionPath].filter(Boolean) as string[];
+        if (toRemove.length > 0) {
+          await supabase.storage.from('cadastral-documents').remove(toRemove);
+        }
+        throw error;
+      }
+
+      // Fire-and-forget notification
+      supabase.from('notifications').insert({
+        user_id: user.id,
+        title: 'Déclaration impôt foncier',
+        message: `Déclaration impôt foncier pour ${parcelNumber} (exercice ${input.fiscalYear}). Montant: ${result.grandTotal.toFixed(2)} USD.`,
+        type: 'info',
+        action_url: '/user-dashboard',
+      }).then(() => {});
+
+      toast.success('Déclaration soumise avec succès');
+      setCalcStep('questions');
+    } catch (error: any) {
+      console.error('PropertyTax submit error:', error);
+      toast.error('Erreur lors de la soumission de la déclaration');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (configLoading) {
@@ -131,6 +224,7 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
         result={result}
         onBack={() => setCalcStep('questions')}
         onSubmit={handleSubmit}
+        loading={submitting}
       />
     );
   }

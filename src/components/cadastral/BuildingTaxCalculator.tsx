@@ -141,7 +141,17 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
     if (!user) { toast.error('Vous devez être connecté'); return; }
     setLoading(true);
     try {
-      // Persist to cadastral_contributions (was missing — critical fix)
+      // Duplicate check
+      const isDuplicate = await checkDuplicateTaxSubmission(
+        supabase, parcelNumber, user.id, 'Taxe de bâtisse', fiscalYear
+      );
+      if (isDuplicate) {
+        toast.error(`Une déclaration "Taxe de bâtisse" pour l'exercice ${fiscalYear} existe déjà pour cette parcelle.`);
+        setLoading(false);
+        return;
+      }
+
+      // Persist to cadastral_contributions
       const { error } = await supabase.from('cadastral_contributions').insert({
         parcel_number: parcelNumber,
         original_parcel_id: parcelId || null,
