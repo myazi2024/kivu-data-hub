@@ -38,26 +38,7 @@ export interface ExpertiseCertificateData {
   stampImageUrl?: string;
 }
 
-// Label maps for human-readable display
-const QUALITY_LABELS: Record<string, string> = {
-  luxe: 'Luxe / Haut standing',
-  standard: 'Standard / Moyen standing',
-  economique: 'Économique / Social',
-};
-
-const CONDITION_LABELS: Record<string, string> = {
-  neuf: 'Neuf (< 2 ans)',
-  bon: 'Bon état',
-  moyen: 'État moyen',
-  mauvais: 'Mauvais état',
-  a_renover: 'À rénover',
-};
-
-const ROAD_LABELS: Record<string, string> = {
-  asphalte: 'Route asphaltée',
-  terre: 'Route en terre',
-  piste: 'Piste / Sentier',
-};
+import { QUALITY_LABELS, CONDITION_LABELS, ROAD_LABELS } from '@/constants/expertiseLabels';
 
 function drawTextStamp(doc: jsPDF, sigY: number) {
   doc.setDrawColor(0, 120, 60);
