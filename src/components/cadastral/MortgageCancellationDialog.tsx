@@ -1351,7 +1351,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
           {step === 'confirmation' && renderConfirmationStep()}
         </ScrollArea>
       </DialogContent>
-      {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec la radiation d'hypothèque." />}
+      {/* Fix #19: WhatsApp removed - parent dialog handles it */}
       <QuickAuthDialog
         open={showAuthDialog}
         onOpenChange={setShowAuthDialog}
