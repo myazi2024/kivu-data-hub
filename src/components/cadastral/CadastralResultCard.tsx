@@ -656,7 +656,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                           </div>
                         )}
                         
-                        {/* Informations du permis de construire actuel intégrées */}
+                        {/* Informations de l'autorisation de bâtir actuelle intégrées */}
                         {building_permits.filter(permit => permit.is_current).map((permit) => {
                           const issueDate = new Date(permit.issue_date);
                           const validityEndDate = new Date(issueDate.getTime() + permit.validity_period_months * 30 * 24 * 60 * 60 * 1000);
