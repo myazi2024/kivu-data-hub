@@ -1541,6 +1541,18 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                   )}
                 </>
               )}
+
+              {/* Bug #21: Frais de retard dans le récapitulatif */}
+              {lateFeesCalculation.applicable && (
+                <>
+                  <Separator className="my-1" />
+                  <span className="text-xs font-semibold text-orange-700 dark:text-orange-400 uppercase tracking-wide">Frais de retard</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Retard ({lateFeesCalculation.days} jours × 0,45$/j)</span>
+                    <span className="text-sm font-medium">${lateFeesCalculation.fee.toFixed(2)}</span>
+                  </div>
+                </>
+              )}
               
               <div className="flex items-center justify-between pt-2 border-t-2">
                 <span className="text-sm font-bold">Total</span>
