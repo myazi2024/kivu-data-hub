@@ -301,8 +301,11 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
             placeholder="ex: PC-2024-001"
             value={permitRecord.permitNumber}
             onChange={(e) => updatePermit('permitNumber', e.target.value)}
-            className="h-9 text-sm rounded-xl"
+            className={`h-9 text-sm rounded-xl ${permitNumberHint ? 'border-orange-400 focus-visible:ring-orange-400' : ''}`}
           />
+          {permitNumberHint && (
+            <p className="text-[10px] text-orange-500 mt-0.5">{permitNumberHint}</p>
+          )}
         </div>
         <div className="space-y-1">
           <Label className="text-xs font-medium">Date délivrance *</Label>

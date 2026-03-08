@@ -88,9 +88,10 @@ const BuildingPermitManagementDialog: React.FC<BuildingPermitManagementDialogPro
           </div>
         </div>
 
-        {/* Render only the active tab form (lazy) */}
+        {/* Render only the active tab form (lazy) - key forces remount on tab switch */}
         <div className="overflow-y-auto flex-1 min-h-0" style={{ maxHeight: 'calc(85vh - 140px)' }}>
           <BuildingPermitFormDialog
+            key={activeTab}
             parcelNumber={parcelNumber}
             parcelId={parcelId}
             permitType={activeTab}

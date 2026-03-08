@@ -143,11 +143,6 @@ const BuildingPermitIssuingServiceSelect: React.FC<BuildingPermitIssuingServiceS
         </SelectContent>
       </Select>
       
-      {value && (
-        <p className="text-xs text-muted-foreground">
-          {ISSUING_SERVICES.find(s => s.value === value)?.description}
-        </p>
-      )}
     </div>
   );
 };
