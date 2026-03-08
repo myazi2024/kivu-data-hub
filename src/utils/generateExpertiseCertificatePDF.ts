@@ -138,6 +138,28 @@ export async function generateExpertiseCertificatePDF(data: ExpertiseCertificate
   if (data.propertyCondition) addRow('État:', CONDITION_LABELS[data.propertyCondition] || data.propertyCondition);
   if (data.roadAccessType) addRow('Accès routier:', ROAD_LABELS[data.roadAccessType] || data.roadAccessType);
 
+  // Extended data from additional_notes JSON
+  const ext = data.extendedData || {};
+  if (ext.construction_type) addRow('Type de bien:', CONSTRUCTION_TYPE_LABELS[ext.construction_type] || ext.construction_type);
+  if (ext.wall_material) addRow('Murs:', WALL_LABELS[ext.wall_material] || ext.wall_material);
+  if (ext.roof_material) addRow('Toiture:', ROOF_LABELS[ext.roof_material] || ext.roof_material);
+  if (ext.floor_material) addRow('Sol:', FLOOR_LABELS[ext.floor_material] || ext.floor_material);
+  if (ext.window_type) addRow('Menuiserie:', WINDOW_LABELS[ext.window_type] || ext.window_type);
+  if (ext.facade_orientation) addRow('Orientation:', FACADE_ORIENTATION_LABELS[ext.facade_orientation] || ext.facade_orientation);
+  if (ext.building_position) addRow('Position:', BUILDING_POSITION_LABELS[ext.building_position] || ext.building_position);
+  if (ext.sound_environment) addRow('Env. sonore:', SOUND_LABELS[ext.sound_environment] || ext.sound_environment);
+  if (ext.number_of_rooms) addRow('Pièces:', ext.number_of_rooms.toString());
+  if (ext.number_of_bedrooms) addRow('Chambres:', ext.number_of_bedrooms.toString());
+  if (ext.number_of_bathrooms) addRow('Salles de bain:', ext.number_of_bathrooms.toString());
+
+  // Finitions
+  const finitions: string[] = [];
+  if (ext.has_plaster) finitions.push('Crépissage');
+  if (ext.has_painting) finitions.push('Peinture');
+  if (ext.has_ceiling) finitions.push('Plafond');
+  if (ext.has_double_glazing) finitions.push('Double vitrage');
+  if (finitions.length > 0) addRow('Finitions:', finitions.join(', '));
+
   // Equipments
   const equipments: string[] = [];
   if (data.hasWaterSupply) equipments.push('Eau');
@@ -147,6 +169,16 @@ export async function generateExpertiseCertificatePDF(data: ExpertiseCertificate
   if (data.hasSecuritySystem) equipments.push('Sécurité');
   if (data.hasParking) equipments.push(`Parking (${data.parkingSpaces || 1} places)`);
   if (data.hasGarden) equipments.push(`Jardin (${data.gardenAreaSqm || '?'} m²)`);
+  if (ext.has_pool) equipments.push('Piscine');
+  if (ext.has_air_conditioning) equipments.push('Climatisation');
+  if (ext.has_solar_panels) equipments.push('Panneaux solaires');
+  if (ext.has_water_tank) equipments.push('Citerne');
+  if (ext.has_generator) equipments.push('Groupe électrogène');
+  if (ext.has_borehole) equipments.push('Forage');
+  if (ext.has_electric_fence) equipments.push('Clôture électrique');
+  if (ext.has_garage) equipments.push('Garage');
+  if (ext.has_cellar) equipments.push('Cave');
+  if (ext.has_automatic_gate) equipments.push('Portail automatique');
   if (equipments.length > 0) addRow('Équipements:', equipments.join(', '));
 
   // Risks
