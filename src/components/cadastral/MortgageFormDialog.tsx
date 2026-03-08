@@ -542,13 +542,12 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
   if (embedded) {
     return (
       <>
-        {/* Fix #15 & #20: WhatsApp in embedded + single scroll container */}
+        {/* Fix #19: WhatsApp removed from embedded - parent handles it */}
         <div className="overflow-y-auto h-full px-4 pb-4">
           {step === 'form' && renderFormStep()}
           {step === 'preview' && renderPreviewStep()}
           {step === 'confirmation' && renderConfirmationStep()}
         </div>
-        {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec le formulaire d'hypothèque." />}
         <QuickAuthDialog
           open={showAuthDialog}
           onOpenChange={setShowAuthDialog}
