@@ -427,57 +427,55 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     return hasSameMortgage;
   };
 
-  // Fix #1: Real payment via Edge Function + polling
-  const processPayment = async (): Promise<boolean> => {
+  // Fix #7: Remove `as any` cast; Fix #12: Return transaction_id for linkage
+  const processPayment = async (): Promise<{ success: boolean; transactionId?: string }> => {
     setProcessingPayment(true);
     try {
       if (!paymentProvider) {
         toast.error('Veuillez sélectionner un opérateur Mobile Money');
-        return false;
+        return { success: false };
       }
       const cleanPhone = paymentPhone.replace(/\s/g, '');
       if (!cleanPhone) {
         toast.error('Veuillez renseigner votre numéro de téléphone');
-        return false;
+        return { success: false };
       }
       if (!PHONE_REGEX_DRC.test(cleanPhone)) {
         toast.error('Numéro de téléphone invalide. Format attendu: +243XXXXXXXXX ou 0XXXXXXXXX');
-        return false;
+        return { success: false };
       }
 
-      // Call the Edge Function
       const { data, error } = await supabase.functions.invoke('process-mobile-money-payment', {
         body: {
           payment_provider: paymentProvider,
           phone_number: cleanPhone,
           amount_usd: totalAmount,
-          payment_type: 'mortgage_cancellation' as any,
+          payment_type: 'mortgage_cancellation',
         }
       });
 
       if (error || !data?.success) {
         toast.error(data?.error || 'Erreur lors du paiement');
-        return false;
+        return { success: false };
       }
 
       toast.info('Confirmez le paiement sur votre téléphone...');
 
-      // Fix #17: Poll transaction status
       const result = await pollTransactionStatus(data.transaction_id);
       if (result === 'completed') {
         toast.success('Paiement confirmé');
-        return true;
+        return { success: true, transactionId: data.transaction_id };
       } else if (result === 'failed') {
         toast.error('Le paiement a échoué');
-        return false;
+        return { success: false };
       } else {
         toast.error('Délai d\'attente dépassé. Vérifiez votre téléphone et réessayez.');
-        return false;
+        return { success: false };
       }
     } catch (error) {
       console.error('Payment error:', error);
       toast.error('Erreur lors du paiement');
-      return false;
+      return { success: false };
     } finally {
       setProcessingPayment(false);
     }
