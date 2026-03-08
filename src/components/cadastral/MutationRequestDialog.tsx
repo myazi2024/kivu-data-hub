@@ -1661,7 +1661,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
             </div>
             <div className="text-right">
               <p className="text-[10px] text-muted-foreground">Montant</p>
-              <p className="text-lg font-bold text-primary">${createdRequest?.total_amount_usd}</p>
+              <p className="text-lg font-bold text-primary">${createdRequest?.total_amount_usd.toFixed(2)}</p>
             </div>
           </div>
         </CardContent>
