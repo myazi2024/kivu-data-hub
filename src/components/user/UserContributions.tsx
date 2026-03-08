@@ -234,8 +234,11 @@ export const UserContributions: React.FC = () => {
     
     // Pour le formulaire CCC complet, stocker les données dans localStorage
     if (formType === 'ccc') {
-      const STORAGE_KEY = `ccc_form_draft_${contribution.parcel_number}`;
+      // ✅ FIX P0-1: Utiliser la même clé que le Dialog (cadastral_contribution_)
+      const STORAGE_KEY = `cadastral_contribution_${contribution.parcel_number}`;
       
+      // ✅ FIX P0-2: Aligner la structure du draft avec celle attendue par loadFormDataFromStorage()
+      // Le Dialog attend formData avec les clés CadastralContributionData (camelCase)
       const formDataToSave = {
         formData: {
           parcelNumber: contribution.parcel_number,
@@ -245,37 +248,102 @@ export const UserContributions: React.FC = () => {
           commune: (contribution as any).commune || '',
           quartier: (contribution as any).quartier || '',
           avenue: (contribution as any).avenue || '',
-          numero: (contribution as any).numero || '',
           territoire: (contribution as any).territoire || '',
           collectivite: (contribution as any).collectivite || '',
           groupement: (contribution as any).groupement || '',
           village: (contribution as any).village || '',
-          area: contribution.area_sqm?.toString() || '',
+          areaSqm: contribution.area_sqm || undefined, // ✅ FIX: 'areaSqm' au lieu de 'area'
           titleReferenceNumber: (contribution as any).title_reference_number || '',
           titleIssueDate: (contribution as any).title_issue_date || '',
           leaseType: (contribution as any).lease_type || '',
-          currentOwnerLegalStatus: (contribution as any).current_owner_legal_status || '',
-          currentOwnerSince: (contribution as any).current_owner_since || '',
           declaredUsage: (contribution as any).declared_usage || '',
           constructionNature: (contribution as any).construction_nature || '',
           constructionType: (contribution as any).construction_type || '',
+          constructionYear: (contribution as any).construction_year || undefined,
           whatsappNumber: (contribution as any).whatsapp_number || '',
           circonscriptionFonciere: (contribution as any).circonscription_fonciere || '',
           isTitleInCurrentOwnerName: (contribution as any).is_title_in_current_owner_name,
         },
-        currentOwners: (contribution as any).current_owners_details || [{
-          lastName: contribution.current_owner_name?.split(' ')[0] || '',
-          middleName: '',
-          firstName: contribution.current_owner_name?.split(' ').slice(1).join(' ') || '',
-          legalStatus: (contribution as any).current_owner_legal_status || 'Personne physique',
-          since: (contribution as any).current_owner_since || ''
-        }],
-        previousOwners: (contribution as any).ownership_history || [],
-        taxRecords: contribution.tax_history || [],
-        mortgageRecords: contribution.mortgage_history || [],
-        buildingPermits: contribution.building_permits || [],
+        // ✅ FIX: Restaurer currentOwners avec la structure complète attendue par le Dialog
+        currentOwners: ((contribution as any).current_owners_details && Array.isArray((contribution as any).current_owners_details) && (contribution as any).current_owners_details.length > 0) 
+          ? (contribution as any).current_owners_details.map((owner: any) => ({
+              lastName: owner.lastName || '',
+              middleName: owner.middleName || '',
+              firstName: owner.firstName || '',
+              legalStatus: owner.legalStatus || 'Personne physique',
+              entityType: owner.entityType || '',
+              entitySubType: owner.entitySubType || '',
+              entitySubTypeOther: owner.entitySubTypeOther || '',
+              stateExploitedBy: owner.stateExploitedBy || '',
+              rightType: owner.rightType || '',
+              since: owner.since || ''
+            }))
+          : [{
+              lastName: contribution.current_owner_name?.split(' ')[0] || '',
+              middleName: '',
+              firstName: contribution.current_owner_name?.split(' ').slice(1).join(' ') || '',
+              legalStatus: (contribution as any).current_owner_legal_status || 'Personne physique',
+              entityType: '',
+              entitySubType: '',
+              entitySubTypeOther: '',
+              stateExploitedBy: '',
+              rightType: '',
+              since: (contribution as any).current_owner_since || ''
+            }],
+        // ✅ FIX: Mapper previousOwners depuis ownership_history (snake_case → camelCase)
+        previousOwners: ((contribution as any).ownership_history && Array.isArray((contribution as any).ownership_history)) 
+          ? (contribution as any).ownership_history.map((o: any) => ({
+              name: o.owner_name || o.ownerName || '',
+              legalStatus: o.legal_status || o.legalStatus || 'Personne physique',
+              entityType: '',
+              entitySubType: '',
+              entitySubTypeOther: '',
+              stateExploitedBy: '',
+              startDate: o.ownership_start_date || o.startDate || '',
+              endDate: o.ownership_end_date || o.endDate || '',
+              mutationType: o.mutation_type || o.mutationType || 'Vente'
+            }))
+          : [],
+        // ✅ FIX: Mapper taxRecords depuis tax_history (snake_case → camelCase)
+        taxRecords: ((contribution as any).tax_history && Array.isArray((contribution as any).tax_history))
+          ? (contribution as any).tax_history.map((t: any) => ({
+              taxType: t.tax_type || t.taxType || 'Taxe foncière',
+              taxYear: String(t.tax_year || t.taxYear || ''),
+              taxAmount: String(t.amount_usd || t.amountUsd || ''),
+              paymentStatus: t.payment_status || t.paymentStatus || 'Non payée',
+              paymentDate: t.payment_date || t.paymentDate || '',
+              receiptFile: null
+            }))
+          : [],
+        // ✅ FIX: Mapper mortgageRecords depuis mortgage_history (snake_case → camelCase)
+        mortgageRecords: ((contribution as any).mortgage_history && Array.isArray((contribution as any).mortgage_history))
+          ? (contribution as any).mortgage_history.map((m: any) => ({
+              mortgageAmount: String(m.mortgage_amount_usd || m.mortgageAmountUsd || ''),
+              duration: String(m.duration_months || m.durationMonths || ''),
+              creditorName: m.creditor_name || m.creditorName || '',
+              creditorType: m.creditor_type || m.creditorType || 'Banque',
+              contractDate: m.contract_date || m.contractDate || '',
+              mortgageStatus: m.mortgage_status || m.mortgageStatus || 'Active',
+              receiptFile: null
+            }))
+          : [],
+        // ✅ FIX: Mapper buildingPermits depuis building_permits (snake_case → camelCase)
+        buildingPermits: ((contribution as any).building_permits && Array.isArray((contribution as any).building_permits))
+          ? (contribution as any).building_permits.map((p: any) => ({
+              permitType: p.permit_type || p.permitType || 'construction',
+              permitNumber: p.permit_number || p.permitNumber || '',
+              issuingService: p.issuing_service || p.issuingService || '',
+              issueDate: p.issue_date || p.issueDate || '',
+              validityMonths: String(p.validity_period_months || p.validityMonths || '36'),
+              administrativeStatus: p.administrative_status || p.administrativeStatus || 'En attente',
+              issuingServiceContact: p.issuing_service_contact || p.issuingServiceContact || '',
+              attachmentFile: null
+            }))
+          : [],
         gpsCoordinates: (contribution as any).gps_coordinates || [],
         parcelSides: (contribution as any).parcel_sides || [],
+        // ✅ FIX: Déterminer le sectionType depuis parcel_type
+        sectionType: (contribution as any).parcel_type === 'SR' ? 'rurale' : (contribution as any).parcel_type === 'SU' ? 'urbaine' : '',
         timestamp: new Date().toISOString(),
         editingContributionId: contribution.id
       };

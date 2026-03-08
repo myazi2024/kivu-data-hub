@@ -968,6 +968,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // ✅ FIX P1-1: Helper to mark form as dirty for sub-array changes
+  const markDirty = useCallback(() => {
+    formDirtyRef.current = true;
+  }, []);
+
   const handleSectionTypeChange = (type: 'urbaine' | 'rurale') => {
     setSectionType(type);
     
