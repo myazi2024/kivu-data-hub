@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { useToast } from '@/hooks/use-toast';
-import { AlertCircle, CalendarIcon, MapPin, Loader2, Plus, X, FileText, Upload, Info } from 'lucide-react';
+import { AlertCircle, CalendarIcon, MapPin, Loader2, Plus, X, FileText, Upload, Info, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -34,12 +34,15 @@ interface PermitFormStepProps {
   isFormValid: () => boolean;
   requiresOriginalPermit: () => boolean;
   onPreview: () => void;
+  /** Fix #15: Show draft restored indicator */
+  isDraftRestored?: boolean;
 }
 
 const PermitFormStep: React.FC<PermitFormStepProps> = ({
   parcelNumber, requestType, setRequestType, formData, handleInputChange,
   attachments, setAttachments, feesLoading, feesSource, feeBreakdown,
   totalFeeUSD, isFormValid, requiresOriginalPermit, onPreview,
+  isDraftRestored = false,
 }) => {
   const { toast } = useToast();
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -61,10 +64,22 @@ const PermitFormStep: React.FC<PermitFormStepProps> = ({
   const phoneInvalid = formData.applicantPhone && !isValidPhone(formData.applicantPhone);
   const areaValue = parseFloat(formData.plannedArea);
   const areaInvalid = formData.plannedArea && (isNaN(areaValue) || areaValue <= 0);
+  const nameInvalid = formData.applicantName && formData.applicantName.trim().length > 0 && formData.applicantName.trim().length < 3;
+  const descInvalid = formData.projectDescription && formData.projectDescription.trim().length > 0 && formData.projectDescription.trim().length < 10;
 
   return (
     <ScrollArea className="h-[65vh] sm:h-[70vh]">
       <div className="space-y-4 pr-2">
+        {/* Fix #15: Draft restored indicator */}
+        {isDraftRestored && (
+          <Alert className="rounded-xl bg-blue-50/80 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
+            <RotateCcw className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <AlertDescription className="text-xs text-blue-700 dark:text-blue-300">
+              Brouillon restauré automatiquement. Vous pouvez reprendre votre saisie.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Parcelle info */}
         <Card className="bg-muted/50 border-0 rounded-xl">
           <CardContent className="p-3">
@@ -206,11 +221,12 @@ const PermitFormStep: React.FC<PermitFormStepProps> = ({
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm">Coût estimé (USD)</Label>
-              <Input type="number" placeholder="50000" value={formData.estimatedCost} onChange={(e) => handleInputChange('estimatedCost', e.target.value)} className="h-10 text-sm rounded-xl border-2" />
+              <Input type="number" min="0" placeholder="50000" value={formData.estimatedCost} onChange={(e) => handleInputChange('estimatedCost', e.target.value)} className="h-10 text-sm rounded-xl border-2" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm">Description du projet *</Label>
-              <Textarea placeholder="Décrivez brièvement votre projet de construction..." value={formData.projectDescription} onChange={(e) => handleInputChange('projectDescription', e.target.value)} rows={3} className="resize-none text-sm rounded-xl border-2" />
+              <Label className="text-sm">Description du projet * <span className="text-muted-foreground font-normal">(min. 10 caractères)</span></Label>
+              <Textarea placeholder="Décrivez brièvement votre projet de construction..." value={formData.projectDescription} onChange={(e) => handleInputChange('projectDescription', e.target.value)} rows={3} className={cn("resize-none text-sm rounded-xl border-2", descInvalid && "border-destructive")} />
+              {descInvalid && <p className="text-[10px] text-destructive">La description doit contenir au moins 10 caractères</p>}
             </div>
           </CardContent>
         </Card>
@@ -244,7 +260,7 @@ const PermitFormStep: React.FC<PermitFormStepProps> = ({
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm">Durée (mois)</Label>
-                  <Input type="number" placeholder="12" value={formData.estimatedDuration} onChange={(e) => handleInputChange('estimatedDuration', e.target.value)} className="h-10 text-sm rounded-xl border-2" />
+                  <Input type="number" min="1" placeholder="12" value={formData.estimatedDuration} onChange={(e) => handleInputChange('estimatedDuration', e.target.value)} className="h-10 text-sm rounded-xl border-2" />
                 </div>
               </div>
             </CardContent>
@@ -310,8 +326,9 @@ const PermitFormStep: React.FC<PermitFormStepProps> = ({
           <CardContent className="p-3 space-y-3">
             <h4 className="text-sm font-semibold">Informations du demandeur</h4>
             <div className="space-y-1.5">
-              <Label className="text-sm">Nom complet *</Label>
-              <Input type="text" placeholder="Jean Dupont" value={formData.applicantName} onChange={(e) => handleInputChange('applicantName', e.target.value)} className="h-10 text-sm rounded-xl border-2" />
+              <Label className="text-sm">Nom complet * <span className="text-muted-foreground font-normal">(min. 3 caractères)</span></Label>
+              <Input type="text" placeholder="Jean Dupont" value={formData.applicantName} onChange={(e) => handleInputChange('applicantName', e.target.value)} className={cn("h-10 text-sm rounded-xl border-2", nameInvalid && "border-destructive")} />
+              {nameInvalid && <p className="text-[10px] text-destructive">Le nom doit contenir au moins 3 caractères</p>}
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1.5">

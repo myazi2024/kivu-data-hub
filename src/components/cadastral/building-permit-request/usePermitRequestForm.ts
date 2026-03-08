@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -23,14 +23,32 @@ export const usePermitRequestForm = ({ parcelNumber, hasExistingConstruction }: 
   const [requestType, setRequestType] = useState<'new' | 'regularization'>(
     hasExistingConstruction ? 'regularization' : 'new'
   );
+
+  // Fix #15: Track if draft was restored
+  const draftRestoredRef = useRef(false);
+  const [isDraftRestored, setIsDraftRestored] = useState(false);
+
   const [formData, setFormData] = useState<PermitFormData>(() => {
-    // Restore draft from localStorage
     try {
       const stored = localStorage.getItem(`${DRAFT_KEY}_${parcelNumber}`);
-      if (stored) return JSON.parse(stored) as PermitFormData;
+      if (stored) {
+        draftRestoredRef.current = true;
+        return JSON.parse(stored) as PermitFormData;
+      }
     } catch {}
     return { ...INITIAL_FORM_DATA };
   });
+
+  // Set isDraftRestored after mount
+  useEffect(() => {
+    if (draftRestoredRef.current) {
+      setIsDraftRestored(true);
+      // Auto-dismiss after 4s
+      const timer = setTimeout(() => setIsDraftRestored(false), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
   const [attachments, setAttachments] = useState<Record<string, AttachmentFile | null>>({ ...INITIAL_ATTACHMENTS });
 
   // Fees
@@ -38,7 +56,6 @@ export const usePermitRequestForm = ({ parcelNumber, hasExistingConstruction }: 
   const [feesLoading, setFeesLoading] = useState(false);
   const [feesSource, setFeesSource] = useState<'config' | 'fallback'>('config');
 
-  // Memoized fallback fees to avoid stale closures (#1)
   const fallbackFees = useMemo<FeeItem[]>(() => (
     requestType === 'new'
       ? [{ id: 'fallback_1', fee_name: 'Frais d\'instruction', amount_usd: 75, description: 'Tarif standard (barème par défaut)', is_mandatory: true }]
@@ -62,14 +79,14 @@ export const usePermitRequestForm = ({ parcelNumber, hasExistingConstruction }: 
     }
   }, [user]);
 
-  // Save draft to localStorage on form change (#10)
+  // Save draft to localStorage on form change
   useEffect(() => {
     try {
       localStorage.setItem(`${DRAFT_KEY}_${parcelNumber}`, JSON.stringify(formData));
     } catch {}
   }, [formData, parcelNumber]);
 
-  // Load fees from permit_fees_config (uses memoized fallback)
+  // Load fees from permit_fees_config
   useEffect(() => {
     const loadFees = async () => {
       setFeesLoading(true);
@@ -101,24 +118,32 @@ export const usePermitRequestForm = ({ parcelNumber, hasExistingConstruction }: 
     loadFees();
   }, [requestType, fallbackFees]);
 
+  // Fix #6: Simplified handleInputChange — removed redundant date validation
+  // (Calendar component already handles disabled dates)
   const handleInputChange = useCallback((field: string, value: string) => {
-    if (field === 'constructionDate' && value) {
-      const selectedDate = new Date(value);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const minDate = new Date(1900, 0, 1);
-
-      if (selectedDate > today) {
-        toast({ title: "Date invalide", description: "La date de construction ne peut pas être dans le futur", variant: "destructive" });
-        return;
-      }
-      if (selectedDate < minDate) {
-        toast({ title: "Date invalide", description: "La date de construction est trop ancienne", variant: "destructive" });
-        return;
-      }
+    // Fix #7: Clamp numeric fields to valid ranges
+    if (field === 'numberOfFloors') {
+      const n = parseInt(value);
+      if (value && (isNaN(n) || n < 1)) return;
+    }
+    if (field === 'estimatedDuration') {
+      const n = parseInt(value);
+      if (value && (isNaN(n) || n < 1)) return;
+    }
+    if (field === 'numberOfRooms') {
+      const n = parseInt(value);
+      if (value && (isNaN(n) || n < 1)) return;
+    }
+    if (field === 'plannedArea') {
+      const n = parseFloat(value);
+      if (value && (isNaN(n) || n < 0)) return;
+    }
+    if (field === 'estimatedCost') {
+      const n = parseFloat(value);
+      if (value && (isNaN(n) || n < 0)) return;
     }
     setFormData(prev => ({ ...prev, [field]: value }));
-  }, [toast]);
+  }, []);
 
   const requiresOriginalPermit = useCallback(() => {
     return ['Modification non autorisée', 'Extension ou agrandissement', 'Changement d\'usage sans autorisation']
@@ -133,6 +158,7 @@ export const usePermitRequestForm = ({ parcelNumber, hasExistingConstruction }: 
     detail: fee.description || undefined,
   })), [dynamicFees]);
 
+  // Fix #8: Added minimum length validation for name and description
   const isFormValid = useCallback(() => {
     const baseFields = [
       formData.constructionType, formData.constructionNature, formData.declaredUsage,
@@ -140,14 +166,18 @@ export const usePermitRequestForm = ({ parcelNumber, hasExistingConstruction }: 
       formData.projectDescription,
     ];
 
-    // Validate area is positive (#9)
+    // Validate area is positive
     const area = parseFloat(formData.plannedArea);
     if (!area || area <= 0) return false;
 
-    // Validate email if provided (#13)
+    // Fix #8: Min length checks
+    if (formData.applicantName.trim().length < 3) return false;
+    if (formData.projectDescription.trim().length < 10) return false;
+
+    // Validate email if provided
     if (formData.applicantEmail && !isValidEmail(formData.applicantEmail)) return false;
 
-    // Validate phone (#5)
+    // Validate phone
     if (!isValidPhone(formData.applicantPhone)) return false;
 
     // Required attachments
@@ -162,7 +192,7 @@ export const usePermitRequestForm = ({ parcelNumber, hasExistingConstruction }: 
     return baseFields.every(f => !!f) && !!formData.startDate;
   }, [formData, attachments, requestType, requiresOriginalPermit]);
 
-  // Duplicate detection (includes 'returned' status — fix #6)
+  // Duplicate detection (includes 'returned' status)
   const checkDuplicateRequest = useCallback(async (): Promise<boolean> => {
     if (!user) return false;
     try {
@@ -218,5 +248,6 @@ export const usePermitRequestForm = ({ parcelNumber, hasExistingConstruction }: 
     isFormValid, requiresOriginalPermit,
     checkDuplicateRequest,
     resetForm, clearDraft,
+    isDraftRestored,
   };
 };
