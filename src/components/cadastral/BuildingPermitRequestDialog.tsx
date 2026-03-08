@@ -22,7 +22,6 @@ import { Calendar } from '@/components/ui/calendar';
 import PhoneNumberInput from '@/components/ui/phone-number-input';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { usePaymentConfig } from '@/hooks/usePaymentConfig';
 import { supabase } from '@/integrations/supabase/client';
 import { Building2, CheckCircle2, AlertCircle, ArrowLeft, CalendarIcon, Clock, MapPin, CreditCard, Loader2, Smartphone, Shield, Plus, X, FileText, Upload, Info } from 'lucide-react';
@@ -61,7 +60,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
 }) => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const isMobile = useIsMobile();
+  const isMobile = (typeof window !== 'undefined' && window.innerWidth < 768);
   const { paymentMode, availableMethods, isPaymentRequired } = usePaymentConfig();
   const abortControllerRef = useRef<AbortController | null>(null);
   

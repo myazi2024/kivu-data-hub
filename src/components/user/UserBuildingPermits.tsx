@@ -52,18 +52,19 @@ export function UserBuildingPermits() {
     try {
       setLoading(true);
 
+      // Fetch both permit_request (demandes) AND update contributions with building_permits
       const { data, error } = await supabase
         .from('cadastral_contributions')
         .select('*')
         .eq('user_id', user.id)
-        .not('permit_request_data', 'is', null)
+        .in('contribution_type', ['permit_request', 'update'])
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       setPermits(data || []);
     } catch (error) {
       console.error('Error fetching building permits:', error);
-      toast.error("Erreur lors du chargement des demandes de permis");
+      toast.error("Erreur lors du chargement des demandes d'autorisation");
     } finally {
       setLoading(false);
     }
@@ -123,9 +124,9 @@ export function UserBuildingPermits() {
             <FileEdit className="h-8 w-8 text-muted-foreground" />
           </div>
           <div>
-            <p className="text-sm font-medium text-foreground">Aucune demande de permis</p>
+          <p className="text-sm font-medium text-foreground">Aucune demande d'autorisation</p>
             <p className="text-xs text-muted-foreground mt-1">
-              Demandez un permis depuis la Carte cadastrale
+              Demandez une autorisation depuis la Carte cadastrale
             </p>
             <a href="/carte-cadastrale">
               <Button size="sm" className="mt-3 gap-2 rounded-xl">
