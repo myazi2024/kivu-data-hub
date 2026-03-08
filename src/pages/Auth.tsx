@@ -323,7 +323,17 @@ const Auth = () => {
                       </div>
                       
                       <div className="space-y-2">
-                        <Label htmlFor="signin-password">Mot de passe</Label>
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="signin-password">Mot de passe</Label>
+                          <Button
+                            type="button"
+                            variant="link"
+                            className="px-0 h-auto text-xs text-primary"
+                            onClick={handleForgotPassword}
+                          >
+                            Mot de passe oublié ?
+                          </Button>
+                        </div>
                         <Input
                           id="signin-password"
                           type="password"
