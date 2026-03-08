@@ -11,25 +11,29 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Scale, Search, Eye, FileText, ChevronLeft, ChevronRight, User, RefreshCw } from 'lucide-react';
+import { sendDisputeNotification } from '@/utils/disputeUploadUtils';
 import {
+  LandDispute,
   DISPUTE_NATURES_MAP,
   DISPUTE_STATUS_CONFIG,
   LIFTING_REASONS_MAP,
-} from '@/utils/disputeUploadUtils';
-import { LandDispute } from '@/utils/disputeSharedTypes';
+  DECLARANT_QUALITIES_MAP,
+  PARTY_ROLES_MAP,
+  getStatusVariant,
+  getStatusLabel,
+} from '@/utils/disputeSharedTypes';
 import DisputeDocumentLinks from '@/components/cadastral/DisputeDocumentLinks';
 
 const STATUS_OPTIONS = [
   { value: 'all', label: 'Tous les statuts' },
   { value: 'en_cours', label: 'En cours' },
-  { value: 'non_entame', label: 'Non entamé' },
-  { value: 'demande_levee', label: 'Demande de levée' },
   { value: 'familial', label: 'Niveau familial' },
   { value: 'conciliation_amiable', label: 'Conciliation' },
   { value: 'autorite_locale', label: 'Autorité locale' },
   { value: 'arbitrage', label: 'Arbitrage' },
   { value: 'tribunal', label: 'Tribunal' },
   { value: 'appel', label: 'En appel' },
+  { value: 'demande_levee', label: 'Demande de levée' },
   { value: 'resolu', label: 'Résolu' },
   { value: 'leve', label: 'Levé' },
 ];
@@ -62,6 +66,20 @@ const AdminLandDisputes: React.FC = () => {
 
   useEffect(() => {
     fetchDisputes();
+
+    // Realtime subscription
+    const channel = supabase
+      .channel('admin-land-disputes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'cadastral_land_disputes',
+      }, () => {
+        fetchDisputes();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   const fetchDisputes = async () => {
@@ -109,6 +127,16 @@ const AdminLandDisputes: React.FC = () => {
       // Refresh selectedDispute with updated data
       setSelectedDispute(prev => prev ? { ...prev, ...updateData } : prev);
 
+      // Notify the user who reported the dispute
+      if (selectedDispute?.reported_by) {
+        await sendDisputeNotification(
+          selectedDispute.reported_by,
+          'Mise à jour de votre litige foncier',
+          `Le statut de votre litige (${selectedDispute.reference_number}) a été mis à jour vers « ${getStatusLabel(newStatus)} ».${adminNotes.trim() ? ` Note: ${adminNotes.trim()}` : ''}`,
+          '/user-dashboard?tab=disputes'
+        );
+      }
+
       toast.success('Statut mis à jour');
       setAdminNotes('');
       setNewStatus('');
@@ -145,8 +173,7 @@ const AdminLandDisputes: React.FC = () => {
   const paginatedDisputes = filteredDisputes.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const getStatusBadge = (status: string) => {
-    const s = DISPUTE_STATUS_CONFIG[status] || { label: status, variant: 'secondary' as const };
-    return <Badge variant={s.variant} className="text-[10px]">{s.label}</Badge>;
+    return <Badge variant={getStatusVariant(status)} className="text-[10px]">{getStatusLabel(status)}</Badge>;
   };
 
   const stats = {
@@ -327,7 +354,7 @@ const AdminLandDisputes: React.FC = () => {
                   <div className="text-sm font-semibold text-primary flex items-center gap-2"><User className="h-4 w-4" /> Déclarant</div>
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div><span className="text-muted-foreground text-xs">Nom</span><p>{selectedDispute.declarant_name}</p></div>
-                    <div><span className="text-muted-foreground text-xs">Qualité</span><p className="capitalize">{selectedDispute.declarant_quality}</p></div>
+                    <div><span className="text-muted-foreground text-xs">Qualité</span><p>{DECLARANT_QUALITIES_MAP[selectedDispute.declarant_quality] || selectedDispute.declarant_quality}</p></div>
                     {selectedDispute.declarant_phone && <div><span className="text-muted-foreground text-xs">Téléphone</span><p>{selectedDispute.declarant_phone}</p></div>}
                     {selectedDispute.declarant_email && <div><span className="text-muted-foreground text-xs">Email</span><p className="truncate">{selectedDispute.declarant_email}</p></div>}
                   </div>
@@ -354,7 +381,7 @@ const AdminLandDisputes: React.FC = () => {
                     <div className="text-sm font-semibold text-primary">Parties concernées</div>
                     {selectedDispute.parties_involved.map((party: any, i: number) => (
                       <div key={i} className="text-sm flex justify-between border-b last:border-0 pb-1">
-                        <span className="text-muted-foreground capitalize">{party.role}</span>
+                        <span className="text-muted-foreground">{PARTY_ROLES_MAP[party.role] || party.role}</span>
                         <span>{party.name}</span>
                       </div>
                     ))}
@@ -423,6 +450,7 @@ const AdminLandDisputes: React.FC = () => {
             <AlertDialogDescription>
               Voulez-vous vraiment changer le statut vers « {ADMIN_STATUS_TRANSITIONS.find(s => s.value === newStatus)?.label || newStatus} » ?
               {adminNotes.trim() && <span className="block mt-1">Une note administrative sera ajoutée.</span>}
+              <span className="block mt-1 text-xs">L'utilisateur concerné sera notifié de ce changement.</span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
