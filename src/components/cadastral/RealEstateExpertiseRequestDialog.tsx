@@ -648,38 +648,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
       // Process payment
       if (paymentMethod === 'mobile_money') {
-        const { data: paymentResult, error: mmError } = await supabase.functions.invoke(
-          'process-mobile-money-payment',
-          {
-            body: {
-              payment_provider: paymentProvider,
-              phone_number: paymentPhone,
-              amount_usd: getTotalAmount(),
-              payment_type: 'expertise_fee',
-              invoice_id: paymentRecord.id
-            }
-          }
-        );
-
-        if (mmError) throw mmError;
-
-         // Poll transaction status
-         const txId = paymentResult?.transaction_id;
-         if (txId) {
-           const { pollTransactionStatus } = await import('@/utils/pollTransactionStatus');
-           const result = await pollTransactionStatus(txId);
-           if (result === 'failed') throw new Error('Le paiement a échoué');
-           if (result === 'timeout') throw new Error('Délai de paiement dépassé');
-         }
-
-        await supabase
-          .from('expertise_payments')
-          .update({
-            status: 'completed',
-            paid_at: new Date().toISOString(),
-            transaction_id: paymentResult?.transaction_id || 'TXN-' + Date.now()
-          })
-          .eq('id', paymentRecord.id);
+        const { processExpertiseMobileMoneyPayment } = await import('@/utils/expertisePaymentHelper');
+        await processExpertiseMobileMoneyPayment({
+          provider: paymentProvider,
+          phone: paymentPhone,
+          amountUsd: getTotalAmount(),
+          paymentType: 'expertise_fee',
+          paymentRecordId: paymentRecord.id,
+        });
 
         await supabase
           .from('real_estate_expertise_requests')
@@ -687,23 +663,13 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
           .eq('id', request.id);
 
       } else if (paymentMethod === 'bank_card') {
-        const { data: stripeSession, error: stripeError } = await supabase.functions.invoke(
-          'create-payment',
-          {
-            body: {
-              invoice_id: paymentRecord.id,
-              payment_type: 'expertise_fee',
-              amount_usd: getTotalAmount()
-            }
-          }
-        );
-
-        if (stripeError) throw stripeError;
-
-        if (stripeSession?.url) {
-          window.location.href = stripeSession.url;
-          return;
-        }
+        const { processExpertiseStripePayment } = await import('@/utils/expertisePaymentHelper');
+        const redirected = await processExpertiseStripePayment({
+          paymentRecordId: paymentRecord.id,
+          paymentType: 'expertise_fee',
+          amountUsd: getTotalAmount(),
+        });
+        if (redirected) return;
       }
 
       // Create notification
