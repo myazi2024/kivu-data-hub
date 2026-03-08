@@ -1853,7 +1853,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <p className="text-[10px] text-muted-foreground">Référence</p>
-              <p className="font-mono font-bold text-sm">{createdRequest?.reference_number}</p>
+              <p className="font-mono font-bold text-sm">{createdRequest?.reference_number || 'Référence en cours'}</p>
             </div>
             <div className="text-right">
               <p className="text-[10px] text-muted-foreground">Montant</p>
