@@ -439,12 +439,18 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
 
   const handleSubmit = async () => {
     if (!user) {
-      toast.error('Vous devez être connecté pour soumettre cette demande');
+      setShowAuthDialog(true);
       return;
     }
+    
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
 
     const paymentSuccess = await processPayment();
-    if (!paymentSuccess) return;
+    if (!paymentSuccess) {
+      isSubmittingRef.current = false;
+      return;
+    }
 
     setLoading(true);
     try {
