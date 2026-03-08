@@ -58,6 +58,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
 }) => {
   const isMobile = useIsMobile();
   const { user, profile } = useAuth();
+  const navigate = useNavigate();
   const [step, setStep] = useState<Step>('form');
   const [loading, setLoading] = useState(false);
   const [showAuthDialog, setShowAuthDialog] = useState(false);
