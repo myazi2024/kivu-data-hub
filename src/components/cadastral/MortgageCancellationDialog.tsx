@@ -137,10 +137,10 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
 
   // Auto-save draft on form changes
   useEffect(() => {
-    if (open && step === 'form') {
+    if (open && draftLoaded && step === 'form') {
       autoSave(formData);
     }
-  }, [formData, open, step, autoSave]);
+  }, [formData, open, draftLoaded, step, autoSave]);
 
   const handleRestoreDraft = () => {
     const draftData = loadDraft();
