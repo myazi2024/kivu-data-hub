@@ -481,6 +481,8 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     }
   };
 
+  // Fix #2: Upload BEFORE payment to prevent paying without complete submission
+  // Fix #12: Store transaction_id in contribution for traceability
   const handleSubmit = async () => {
     if (!user) {
       setShowAuthDialog(true);
@@ -489,24 +491,35 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
 
-    // Fix #8: Check for existing pending cancellation
+    // Check for existing pending cancellation for the same mortgage
     const hasPending = await checkExistingCancellationRequest();
     if (hasPending) {
-      toast.error('Une demande de radiation est déjà en cours pour cette parcelle.');
-      isSubmittingRef.current = false;
-      return;
-    }
-
-    const paymentSuccess = await processPayment();
-    if (!paymentSuccess) {
+      toast.error('Une demande de radiation est déjà en cours pour cette hypothèque.');
       isSubmittingRef.current = false;
       return;
     }
 
     setLoading(true);
     try {
+      // Step 1: Upload documents FIRST (before payment)
       const documentUrls = await uploadDocuments();
+      if (documentUrls.length === 0 && formData.supportingDocuments.length > 0) {
+        toast.error('Échec du téléversement des documents. Veuillez réessayer.');
+        isSubmittingRef.current = false;
+        setLoading(false);
+        return;
+      }
 
+      // Step 2: Process payment AFTER successful upload
+      setLoading(false); // Show payment processing state instead
+      const paymentResult = await processPayment();
+      if (!paymentResult.success) {
+        isSubmittingRef.current = false;
+        return;
+      }
+      setLoading(true);
+
+      // Step 3: Submit contribution with all data
       const { error } = await supabase
         .from('cadastral_contributions')
         .insert({
@@ -536,19 +549,23 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
             total_amount_paid: totalAmount,
             payment_method: 'mobile_money',
             payment_provider: paymentProvider,
+            payment_transaction_id: paymentResult.transactionId || null,
             submitted_at: new Date().toISOString()
           }] as any
         });
 
       if (error) throw error;
 
-      await supabase.from('notifications').insert({
-        user_id: user.id,
-        title: 'Demande de radiation soumise',
-        message: `Votre demande de radiation d'hypothèque (${requestReferenceNumber}) pour la parcelle ${parcelNumber} a été soumise.`,
-        type: 'success',
-        action_url: '/user-dashboard'
-      });
+      // Fix #4: Notification with error handling (table may not be in TS types)
+      try {
+        await (supabase as any).from('notifications').insert({
+          user_id: user.id,
+          title: 'Demande de radiation soumise',
+          message: `Votre demande de radiation d'hypothèque (${requestReferenceNumber}) pour la parcelle ${parcelNumber} a été soumise.`,
+          type: 'success',
+          action_url: '/user-dashboard'
+        });
+      } catch { /* Non-blocking notification */ }
 
       setStep('confirmation');
       toast.success('Demande de radiation soumise avec succès');
