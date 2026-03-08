@@ -578,7 +578,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
           </div>
         </ScrollArea>
       </DialogContent>
-      {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec le formulaire d'hypothèque." />}
+      {/* Fix #19: WhatsApp removed - parent dialog handles it */}
       <QuickAuthDialog
         open={showAuthDialog}
         onOpenChange={setShowAuthDialog}
