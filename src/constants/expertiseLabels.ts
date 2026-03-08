@@ -86,9 +86,3 @@ export const STATUS_LABELS: Record<string, string> = {
   completed: 'Terminé',
   rejected: 'Rejeté',
 };
-  pending: 'En attente',
-  assigned: 'Assigné',
-  in_progress: 'En cours',
-  completed: 'Terminé',
-  rejected: 'Rejeté',
-};
