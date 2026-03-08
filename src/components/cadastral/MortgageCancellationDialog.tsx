@@ -303,10 +303,18 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       const cleanPhone = paymentPhone.replace(/\s/g, '');
       if (!cleanPhone) { toast.error('Veuillez renseigner votre numéro de téléphone'); return { success: false }; }
       if (!PHONE_REGEX_DRC.test(cleanPhone)) { toast.error('Numéro de téléphone invalide.'); return { success: false }; }
+      // Fix #14: Better error handling for Edge Function errors
       const { data, error } = await supabase.functions.invoke('process-mobile-money-payment', {
         body: { payment_provider: paymentProvider, phone_number: cleanPhone, amount_usd: totalAmount, payment_type: 'mortgage_cancellation' }
       });
-      if (error || !data?.success) { toast.error(data?.error || 'Erreur lors du paiement'); return { success: false }; }
+      if (error) {
+        const errMsg = error.message?.includes('404') || error.message?.includes('not found')
+          ? 'Le service de paiement est temporairement indisponible. Réessayez plus tard.'
+          : (error.message || 'Erreur lors du paiement');
+        toast.error(errMsg);
+        return { success: false };
+      }
+      if (!data?.success) { toast.error(data?.error || 'Erreur lors du paiement'); return { success: false }; }
       toast.info('Confirmez le paiement sur votre téléphone...');
       const result = await pollTransactionStatus(data.transaction_id);
       if (result === 'completed') { toast.success('Paiement confirmé'); return { success: true, transactionId: data.transaction_id }; }
