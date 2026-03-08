@@ -308,7 +308,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
         type: 'registration',
         requestReference: submissionReference,
         parcelNumber,
-        requesterName: user?.email || 'N/A',
+        requesterName: profile?.full_name || profile?.email || user?.email || 'N/A',
         totalAmountPaid: 0,
         fees: [],
         date: mortgageRecord.contractDate || new Date().toISOString(),
