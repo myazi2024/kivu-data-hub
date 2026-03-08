@@ -32,7 +32,7 @@ import {
   LIFTING_REASONS,
   REQUESTER_QUALITIES,
   DISPUTE_NATURES_MAP,
-  DISPUTE_STATUS_CONFIG,
+  getStatusLabel,
 } from '@/utils/disputeSharedTypes';
 
 interface LandDisputeLiftingFormProps {
@@ -269,15 +269,16 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
         throw error;
       }
 
-      // AFTER successful insert, update original dispute status (non-blocking)
+      // AFTER successful insert, update original dispute status (blocking - must succeed)
       if (disputeData?.id) {
-        try {
-          await supabase
-            .from('cadastral_land_disputes' as any)
-            .update({ current_status: 'demande_levee', updated_at: new Date().toISOString() } as any)
-            .eq('id', disputeData.id);
-        } catch (e) {
-          console.warn('Erreur mise à jour statut litige original:', e);
+        const { error: updateError } = await supabase
+          .from('cadastral_land_disputes' as any)
+          .update({ current_status: 'demande_levee', updated_at: new Date().toISOString() } as any)
+          .eq('id', disputeData.id);
+        
+        if (updateError) {
+          console.error('Erreur mise à jour statut litige original:', updateError);
+          toast.error('Le litige original n\'a pas pu être mis à jour. Contactez le support.');
         }
       }
 
@@ -310,9 +311,14 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
     setStep('form');
     setDisputeReference('');
     setReferenceValid(null);
+    setReferenceError(null);
     setDisputeData(null);
     setLiftingReason('');
     setLiftingDetails('');
+    setRequesterName('');
+    setRequesterPhone('');
+    setRequesterEmail('');
+    setRequesterQuality('proprietaire');
     setDocuments([]);
     setCertifyAccuracy(false);
     setAllPartiesAgree(false);
@@ -495,7 +501,7 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
             </div>
             <div className="text-xs text-green-700 space-y-0.5">
               <div>Nature : {DISPUTE_NATURES_MAP[disputeData.dispute_nature] || disputeData.dispute_nature}</div>
-              <div>Statut : {DISPUTE_STATUS_CONFIG[disputeData.current_status]?.label || disputeData.current_status}</div>
+              <div>Statut : {getStatusLabel(disputeData.current_status)}</div>
               <div>Déclarant : {disputeData.declarant_name}</div>
             </div>
           </CardContent>

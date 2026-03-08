@@ -226,9 +226,7 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
         uploadedPaths = uploadResult.paths;
       }
 
-      // Determine the status to persist
-      const persistedStatus = hasResolutionStarted && resolutionLevel ? resolutionLevel : 'en_cours';
-
+      // Always persist as 'en_cours'; resolution_level is stored separately
       const { error } = await supabase
         .from('cadastral_land_disputes' as any)
         .insert({
@@ -239,7 +237,7 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
           dispute_nature: disputeNature,
           dispute_description: disputeDescription,
           parties_involved: parties.filter(p => p.name.trim()),
-          current_status: persistedStatus,
+          current_status: 'en_cours',
           resolution_level: resolutionLevel || null,
           resolution_details: resolutionDetails || null,
           declarant_name: declarantName,
@@ -258,13 +256,13 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
 
       // Create CCC contribution (non-blocking)
       try {
-        await supabase
-          .from('cadastral_contributions')
-          .insert({
-            parcel_number: parcelNumber,
-            original_parcel_id: parcelId || null,
+          await supabase
+            .from('cadastral_contributions')
+            .insert({
+              parcel_number: parcelNumber,
+              original_parcel_id: parcelId || null as any,
             user_id: user.id,
-            contribution_type: 'dispute_report',
+            contribution_type: 'new',
             status: 'pending',
             current_owner_name: declarantName,
             province: null,
@@ -307,6 +305,10 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
     setHasResolutionStarted(false);
     setResolutionLevel('');
     setResolutionDetails('');
+    setDeclarantName('');
+    setDeclarantPhone('');
+    setDeclarantEmail('');
+    setDeclarantQuality('proprietaire');
     setParties([{ name: '', phone: '', role: 'defendeur', relationship: '' }]);
     setDocuments([]);
     setCertifyAccuracy(false);

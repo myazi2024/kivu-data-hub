@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,19 +10,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Scale, Search, Eye, FileText, ChevronLeft, ChevronRight, User, RefreshCw } from 'lucide-react';
+import { Scale, Search, Eye, FileText, ChevronLeft, ChevronRight, User, RefreshCw, Link2 } from 'lucide-react';
 import { sendDisputeNotification } from '@/utils/disputeUploadUtils';
 import {
   LandDispute,
   DISPUTE_NATURES_MAP,
-  DISPUTE_STATUS_CONFIG,
   LIFTING_REASONS_MAP,
   DECLARANT_QUALITIES_MAP,
   PARTY_ROLES_MAP,
-  getStatusVariant,
   getStatusLabel,
 } from '@/utils/disputeSharedTypes';
 import DisputeDocumentLinks from '@/components/cadastral/DisputeDocumentLinks';
+import DisputeStatusBadge from '@/components/cadastral/DisputeStatusBadge';
 
 const STATUS_OPTIONS = [
   { value: 'all', label: 'Tous les statuts' },
@@ -150,7 +149,7 @@ const AdminLandDisputes: React.FC = () => {
     }
   };
 
-  const filteredDisputes = React.useMemo(() => {
+  const filteredDisputes = useMemo(() => {
     let result = disputes;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -172,8 +171,15 @@ const AdminLandDisputes: React.FC = () => {
   const totalPages = Math.ceil(filteredDisputes.length / itemsPerPage);
   const paginatedDisputes = filteredDisputes.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const getStatusBadge = (status: string) => {
-    return <Badge variant={getStatusVariant(status)} className="text-[10px]">{getStatusLabel(status)}</Badge>;
+  // Find related disputes (cross-navigation)
+  const getRelatedDisputes = (dispute: LandDispute): LandDispute[] => {
+    return disputes.filter(d =>
+      d.id !== dispute.id &&
+      d.parcel_number === dispute.parcel_number && (
+        d.lifting_request_reference === dispute.reference_number ||
+        dispute.lifting_request_reference === d.reference_number
+      )
+    );
   };
 
   const stats = {
@@ -286,7 +292,7 @@ const AdminLandDisputes: React.FC = () => {
                     </Badge>
                   </td>
                   <td className="p-3 text-xs hidden md:table-cell">{DISPUTE_NATURES_MAP[dispute.dispute_nature] || dispute.dispute_nature}</td>
-                  <td className="p-3">{getStatusBadge(dispute.current_status)}</td>
+                  <td className="p-3"><DisputeStatusBadge status={dispute.current_status} /></td>
                   <td className="p-3 text-xs hidden md:table-cell">{dispute.declarant_name}</td>
                   <td className="p-3 text-xs hidden md:table-cell">{new Date(dispute.created_at).toLocaleDateString('fr-FR')}</td>
                   <td className="p-3 text-center">
@@ -334,7 +340,7 @@ const AdminLandDisputes: React.FC = () => {
                     <div><span className="text-muted-foreground text-xs">Parcelle</span><p className="font-mono font-bold">{selectedDispute.parcel_number}</p></div>
                     <div><span className="text-muted-foreground text-xs">Type</span><p>{selectedDispute.dispute_type === 'report' ? 'Signalement' : 'Levée'}</p></div>
                     <div><span className="text-muted-foreground text-xs">Nature</span><p>{DISPUTE_NATURES_MAP[selectedDispute.dispute_nature] || selectedDispute.dispute_nature}</p></div>
-                    <div><span className="text-muted-foreground text-xs">Statut</span><div>{getStatusBadge(selectedDispute.current_status)}</div></div>
+                    <div><span className="text-muted-foreground text-xs">Statut</span><div><DisputeStatusBadge status={selectedDispute.current_status} /></div></div>
                     {selectedDispute.dispute_start_date && <div><span className="text-muted-foreground text-xs">Début litige</span><p>{new Date(selectedDispute.dispute_start_date).toLocaleDateString('fr-FR')}</p></div>}
                     {selectedDispute.resolution_level && <div><span className="text-muted-foreground text-xs">Niveau résolution</span><p className="capitalize">{selectedDispute.resolution_level.replace(/_/g, ' ')}</p></div>}
                   </div>
@@ -373,6 +379,36 @@ const AdminLandDisputes: React.FC = () => {
                   </CardContent>
                 </Card>
               )}
+
+              {/* Cross-navigation: related disputes */}
+              {(() => {
+                const related = getRelatedDisputes(selectedDispute);
+                if (related.length === 0) return null;
+                return (
+                  <Card className="rounded-xl shadow-sm border-primary/20">
+                    <CardContent className="p-3 space-y-2">
+                      <div className="text-sm font-semibold text-primary flex items-center gap-2"><Link2 className="h-4 w-4" /> Dossiers liés</div>
+                      {related.map(r => (
+                        <Button
+                          key={r.id}
+                          variant="ghost"
+                          size="sm"
+                          className="w-full justify-between h-auto py-2 px-3 rounded-xl"
+                          onClick={() => { setSelectedDispute(r); setAdminNotes(''); setNewStatus(r.current_status); }}
+                        >
+                          <span className="flex items-center gap-2 text-xs">
+                            <span className="font-mono font-bold">{r.reference_number}</span>
+                            <Badge variant={r.dispute_type === 'report' ? 'destructive' : 'default'} className="text-[10px]">
+                              {r.dispute_type === 'report' ? 'Signalement' : 'Levée'}
+                            </Badge>
+                          </span>
+                          <DisputeStatusBadge status={r.current_status} />
+                        </Button>
+                      ))}
+                    </CardContent>
+                  </Card>
+                );
+              })()}
 
               {/* Parties involved */}
               {selectedDispute.parties_involved && Array.isArray(selectedDispute.parties_involved) && selectedDispute.parties_involved.length > 0 && (

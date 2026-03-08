@@ -16,10 +16,9 @@ import {
   LIFTING_REASONS_MAP,
   DECLARANT_QUALITIES_MAP,
   PARTY_ROLES_MAP,
-  getStatusVariant,
-  getStatusLabel,
 } from '@/utils/disputeSharedTypes';
 import DisputeDocumentLinks from '@/components/cadastral/DisputeDocumentLinks';
+import DisputeStatusBadge from '@/components/cadastral/DisputeStatusBadge';
 
 export const UserLandDisputes: React.FC = () => {
   const { user } = useAuth();
@@ -94,10 +93,6 @@ export const UserLandDisputes: React.FC = () => {
 
   const totalPages = Math.ceil(filteredDisputes.length / itemsPerPage);
   const paginatedDisputes = filteredDisputes.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
-  const getStatusBadge = (status: string) => {
-    return <Badge variant={getStatusVariant(status)} className="text-[10px]">{getStatusLabel(status)}</Badge>;
-  };
 
   const copyReference = (ref: string) => {
     navigator.clipboard.writeText(ref);
@@ -209,7 +204,7 @@ export const UserLandDisputes: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-[10px] text-muted-foreground">{DISPUTE_NATURES_MAP[dispute.dispute_nature] || dispute.dispute_nature}</span>
-                      {getStatusBadge(dispute.current_status)}
+                      <DisputeStatusBadge status={dispute.current_status} />
                     </div>
                     <p className="text-[10px] text-muted-foreground mt-1">
                       {new Date(dispute.created_at).toLocaleDateString('fr-FR')}
@@ -263,7 +258,7 @@ export const UserLandDisputes: React.FC = () => {
                       </Badge>
                     </div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Nature :</span><span>{DISPUTE_NATURES_MAP[selectedDispute.dispute_nature] || selectedDispute.dispute_nature}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Statut :</span>{getStatusBadge(selectedDispute.current_status)}</div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Statut :</span><DisputeStatusBadge status={selectedDispute.current_status} /></div>
                     {selectedDispute.dispute_start_date && (
                       <div className="flex justify-between"><span className="text-muted-foreground">Début :</span><span>{new Date(selectedDispute.dispute_start_date).toLocaleDateString('fr-FR')}</span></div>
                     )}
