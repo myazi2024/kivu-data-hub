@@ -237,7 +237,7 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
           dispute_nature: disputeNature,
           dispute_description: disputeDescription,
           parties_involved: parties.filter(p => p.name.trim()),
-          current_status: persistedStatus,
+          current_status: 'en_cours',
           resolution_level: resolutionLevel || null,
           resolution_details: resolutionDetails || null,
           declarant_name: declarantName,
