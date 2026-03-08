@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { Button } from '@/components/ui/button';
@@ -19,7 +20,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { QuickAuthDialog } from './QuickAuthDialog';
-
+import { useMortgageFees, type MortgageCancellationFee } from '@/hooks/useMortgageFees';
+import { pollTransactionStatus } from '@/utils/pollTransactionStatus';
 
 interface MortgageCancellationDialogProps {
   parcelNumber: string;
@@ -30,14 +32,6 @@ interface MortgageCancellationDialogProps {
 }
 
 type Step = 'form' | 'review' | 'payment' | 'confirmation';
-
-interface CancellationFee {
-  id: string;
-  name: string;
-  amount_usd: number;
-  is_mandatory: boolean;
-  description?: string;
-}
 
 interface ParcelData {
   id: string;
@@ -80,21 +74,11 @@ interface CancellationRequest {
   comments: string;
 }
 
-// Frais de radiation selon la législation RDC
-const CANCELLATION_FEES: CancellationFee[] = [
-  { id: 'dossier', name: 'Frais d\'ouverture de dossier', amount_usd: 50, is_mandatory: true, description: 'Frais administratifs de constitution du dossier' },
-  { id: 'radiation', name: 'Droit de radiation', amount_usd: 100, is_mandatory: true, description: 'Droit de radiation au registre des titres fonciers' },
-  { id: 'certificat', name: 'Certificat de radiation', amount_usd: 35, is_mandatory: true, description: 'Délivrance du certificat officiel de mainlevée' },
-  { id: 'timbre', name: 'Droit de timbre', amount_usd: 15, is_mandatory: true, description: 'Timbre fiscal légal' },
-  { id: 'conservation', name: 'Frais de conservation', amount_usd: 25, is_mandatory: true, description: 'Mise à jour du livre foncier' },
-  { id: 'verification', name: 'Vérification complémentaire', amount_usd: 20, is_mandatory: false, description: 'Vérification approfondie des documents' }
-];
-
 const CANCELLATION_REASONS = [
   { value: 'remboursement_integral', label: 'Remboursement intégral du prêt', description: 'La dette hypothécaire a été entièrement remboursée' },
   { value: 'refinancement', label: 'Refinancement', description: 'Transfert de la dette vers un autre créancier' },
   { value: 'accord_amiable', label: 'Accord amiable', description: 'Accord négocié avec le créancier' },
-  { value: 'prescription', label: 'Prescription extinctive', description: 'L\'hypothèque est prescrite (30 ans)' },
+  { value: 'prescription', label: 'Prescription extinctive', description: "L'hypothèque est prescrite (30 ans)" },
   { value: 'renonciation', label: 'Renonciation du créancier', description: 'Le créancier renonce à son droit' },
   { value: 'autre', label: 'Autre motif', description: 'Précisez dans les commentaires' }
 ];
@@ -107,6 +91,11 @@ const REQUESTER_QUALITIES = [
   { value: 'notaire', label: 'Notaire' }
 ];
 
+const PHONE_REGEX_DRC = /^(\+?243|0)(8[1-9]|9[0-9])\d{7}$/;
+
+// Fix #6: Normalized mortgage statuses for lookup
+const ACTIVE_MORTGAGE_STATUSES = ['active'];
+
 const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
   parcelNumber,
   parcelId,
@@ -115,7 +104,9 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
   embedded = false
 }) => {
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   const { user, profile } = useAuth();
+  const { fees, loadingFees } = useMortgageFees();
   const [step, setStep] = useState<Step>('form');
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
@@ -127,12 +118,10 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const isSubmittingRef = useRef(false);
   
-  // Données pré-remplies depuis la base de données
   const [parcelData, setParcelData] = useState<ParcelData | null>(null);
   const [mortgageData, setMortgageData] = useState<MortgageData | null>(null);
   
-  // Payment state
-  const [paymentMethod, setPaymentMethod] = useState<'mobile_money' | 'bank_card'>('mobile_money');
+  const [paymentMethod, setPaymentMethod] = useState<'mobile_money'>('mobile_money');
   const [paymentProvider, setPaymentProvider] = useState('');
   const [paymentPhone, setPaymentPhone] = useState('');
   const [processingPayment, setProcessingPayment] = useState(false);
@@ -154,13 +143,25 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Charger les données de la parcelle
-  const loadParcelData = async () => {
-    if (!parcelId) {
-      console.warn('loadParcelData: parcelId is undefined, skipping fetch');
-      return;
+  // Fix #25: Generate unique reference server-side with collision check
+  const generateUniqueReference = useCallback(async (): Promise<string> => {
+    let attempts = 0;
+    while (attempts < 5) {
+      const ref = `RAD-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+      const { data } = await supabase
+        .from('cadastral_contributions')
+        .select('id')
+        .eq('change_justification', ref)
+        .maybeSingle();
+      if (!data) return ref;
+      attempts++;
     }
-    
+    return `RAD-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 4).toUpperCase()}`;
+  }, []);
+
+  // Load parcel data
+  const loadParcelData = useCallback(async () => {
+    if (!parcelId) return;
     setLoadingData(true);
     try {
       const { data, error } = await supabase
@@ -168,35 +169,28 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
         .select('*')
         .eq('id', parcelId)
         .maybeSingle();
-      
       if (error) throw error;
-      if (data) {
-        setParcelData(data);
-      }
+      if (data) setParcelData(data);
     } catch (error) {
       console.error('Error loading parcel data:', error);
       toast.error('Erreur lors du chargement des données de la parcelle');
     } finally {
       setLoadingData(false);
     }
-  };
+  }, [parcelId]);
 
-  // Générer le numéro de référence et charger les données
+  // Fix #24: Proper useEffect with stable dependencies
   useEffect(() => {
     if (open) {
-      const ref = `RAD-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
-      setRequestReferenceNumber(ref);
-      
-      // Initialiser les frais obligatoires
-      const mandatoryFeeIds = CANCELLATION_FEES.filter(f => f.is_mandatory).map(f => f.id);
+      // Initialize mandatory fees
+      const mandatoryFeeIds = fees.filter(f => f.is_mandatory).map(f => f.id);
       setSelectedFees(mandatoryFeeIds);
-      
-      // Charger les données de la parcelle
       loadParcelData();
+      generateUniqueReference().then(setRequestReferenceNumber);
     }
-  }, [open, parcelId]);
+  }, [open, fees, loadParcelData, generateUniqueReference]);
 
-  // Pré-remplir avec le profil utilisateur
+  // Pre-fill with user profile
   useEffect(() => {
     if (profile) {
       setFormData(prev => ({
@@ -207,8 +201,8 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     }
   }, [profile]);
 
-  // Validation du numéro de référence et récupération des données de l'hypothèque
-  const validateMortgageReference = async (refNumber: string) => {
+  // Fix #6: Validate mortgage reference with normalized statuses
+  const validateMortgageReference = useCallback(async (refNumber: string) => {
     if (!refNumber.trim()) {
       setReferenceValid(null);
       setReferenceError(null);
@@ -231,7 +225,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
         .select('*')
         .eq('parcel_id', parcelId)
         .eq('reference_number', refNumber.trim().toUpperCase())
-        .in('mortgage_status', ['active', 'Active', 'En cours'])
+        .in('mortgage_status', ACTIVE_MORTGAGE_STATUSES)
         .maybeSingle();
 
       if (error) throw error;
@@ -240,7 +234,6 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
         setReferenceValid(true);
         setReferenceError(null);
         setMortgageData(data);
-        // Pré-remplir le montant de règlement avec le montant de l'hypothèque
         setFormData(prev => ({
           ...prev,
           settlementAmount: data.mortgage_amount_usd?.toString() || ''
@@ -248,7 +241,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       } else {
         setReferenceValid(false);
         setMortgageData(null);
-        setReferenceError('Ce numéro de référence n\'est pas valide ou ne correspond pas à une hypothèque active sur cette parcelle.');
+        setReferenceError("Ce numéro de référence n'est pas valide ou ne correspond pas à une hypothèque active sur cette parcelle.");
       }
     } catch (error) {
       console.error('Error validating reference:', error);
@@ -258,7 +251,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     } finally {
       setValidatingReference(false);
     }
-  };
+  }, [parcelId]);
 
   // Debounce validation
   useEffect(() => {
@@ -271,14 +264,12 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
         setMortgageData(null);
       }
     }, 500);
-
     return () => clearTimeout(timer);
-  }, [formData.mortgageReferenceNumber, parcelId]);
+  }, [formData.mortgageReferenceNumber, validateMortgageReference]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    
     const newFiles = Array.from(files);
     const validFiles = newFiles.filter(file => {
       const isValid = file.type.startsWith('image/') || file.type === 'application/pdf';
@@ -287,7 +278,6 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       if (!isValidSize) toast.error(`${file.name}: Fichier trop volumineux (max 10MB)`);
       return isValid && isValidSize;
     });
-    
     setFormData(prev => ({
       ...prev,
       supportingDocuments: [...prev.supportingDocuments, ...validFiles]
@@ -304,32 +294,29 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
 
   const handleFeeToggle = (feeId: string, isMandatory: boolean) => {
     if (isMandatory) return;
-    setSelectedFees(prev => 
-      prev.includes(feeId) 
+    setSelectedFees(prev =>
+      prev.includes(feeId)
         ? prev.filter(id => id !== feeId)
         : [...prev, feeId]
     );
   };
 
+  // Fix #19: Use memoized values directly instead of wrapper functions
   const selectedFeesDetails = useMemo(() => {
-    return CANCELLATION_FEES.filter(f => selectedFees.includes(f.id));
-  }, [selectedFees]);
+    return fees.filter(f => selectedFees.includes(f.id));
+  }, [selectedFees, fees]);
 
   const totalAmount = useMemo(() => {
     return selectedFeesDetails.reduce((sum, fee) => sum + fee.amount_usd, 0);
   }, [selectedFeesDetails]);
 
-  // Keep backward-compatible function names for inline usage
-  const getSelectedFeesDetails = () => selectedFeesDetails;
-  const getTotalAmount = () => totalAmount;
-
   const validateForm = (): boolean => {
     if (!formData.mortgageReferenceNumber.trim()) {
-      toast.error('Veuillez indiquer le numéro de référence de l\'hypothèque');
+      toast.error("Veuillez indiquer le numéro de référence de l'hypothèque");
       return false;
     }
     if (!referenceValid) {
-      toast.error('Le numéro de référence de l\'hypothèque n\'est pas valide');
+      toast.error("Le numéro de référence de l'hypothèque n'est pas valide");
       return false;
     }
     if (!formData.requesterName.trim()) {
@@ -344,12 +331,20 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       toast.error('Veuillez indiquer la date de radiation souhaitée');
       return false;
     }
+    // Fix #9: Validate settlement amount is non-negative
+    if (formData.settlementAmount) {
+      const amount = parseFloat(formData.settlementAmount);
+      if (isNaN(amount) || amount < 0) {
+        toast.error('Le montant de règlement ne peut pas être négatif');
+        return false;
+      }
+    }
     if (formData.supportingDocuments.length === 0) {
       toast.error('Veuillez joindre au moins un document justificatif');
       return false;
     }
     if (!formData.creditorAccord) {
-      toast.error('Vous devez confirmer avoir l\'accord du créancier');
+      toast.error("Vous devez confirmer avoir l'accord du créancier");
       return false;
     }
     return true;
@@ -371,16 +366,13 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
   const uploadDocuments = async (): Promise<string[]> => {
     const urls: string[] = [];
     const failedUploads: string[] = [];
-    
     for (const file of formData.supportingDocuments) {
       const fileExt = file.name.split('.').pop();
       const fileName = `cancellation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
       const filePath = `mortgage-cancellation/${user?.id}/${fileName}`;
-      
       const { error } = await supabase.storage
         .from('cadastral-documents')
         .upload(filePath, file);
-      
       if (error) {
         console.error(`Failed to upload ${file.name}:`, error);
         failedUploads.push(file.name);
@@ -389,45 +381,72 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
         urls.push(data.publicUrl);
       }
     }
-    
     if (failedUploads.length > 0) {
       toast.warning(`${failedUploads.length} document(s) n'ont pas pu être téléversés: ${failedUploads.join(', ')}`);
     }
-    
     return urls;
   };
 
-  const PHONE_REGEX_DRC = /^(\+?243|0)(8[1-9]|9[0-9])\d{7}$/;
+  // Fix #8: Check for existing pending cancellation request
+  const checkExistingCancellationRequest = async (): Promise<boolean> => {
+    if (!user || !formData.mortgageReferenceNumber) return false;
+    const { data } = await supabase
+      .from('cadastral_contributions')
+      .select('id')
+      .eq('parcel_number', parcelNumber)
+      .eq('user_id', user.id)
+      .eq('contribution_type', 'mortgage_cancellation')
+      .in('status', ['pending', 'in_review']);
+    return (data?.length ?? 0) > 0;
+  };
 
+  // Fix #1: Real payment via Edge Function + polling
   const processPayment = async (): Promise<boolean> => {
     setProcessingPayment(true);
-    
     try {
-      if (paymentMethod === 'mobile_money') {
-        if (!paymentProvider) {
-          toast.error('Veuillez sélectionner un opérateur Mobile Money');
-          return false;
-        }
-        if (!paymentPhone) {
-          toast.error('Veuillez renseigner votre numéro de téléphone');
-          return false;
-        }
-        if (!PHONE_REGEX_DRC.test(paymentPhone.replace(/\s/g, ''))) {
-          toast.error('Numéro de téléphone invalide. Format attendu: +243XXXXXXXXX ou 0XXXXXXXXX');
-          return false;
-        }
+      if (!paymentProvider) {
+        toast.error('Veuillez sélectionner un opérateur Mobile Money');
+        return false;
       }
-      // Bank card: handled by Stripe redirect (future integration)
-      if (paymentMethod === 'bank_card') {
-        toast.info('Le paiement par carte bancaire sera disponible prochainement. Veuillez utiliser Mobile Money.');
+      const cleanPhone = paymentPhone.replace(/\s/g, '');
+      if (!cleanPhone) {
+        toast.error('Veuillez renseigner votre numéro de téléphone');
+        return false;
+      }
+      if (!PHONE_REGEX_DRC.test(cleanPhone)) {
+        toast.error('Numéro de téléphone invalide. Format attendu: +243XXXXXXXXX ou 0XXXXXXXXX');
         return false;
       }
 
-      // TODO: Integrate with real payment Edge Function (process-mobile-money-payment)
-      // For now, simulate processing with validation
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      return true;
+      // Call the Edge Function
+      const { data, error } = await supabase.functions.invoke('process-mobile-money-payment', {
+        body: {
+          payment_provider: paymentProvider,
+          phone_number: cleanPhone,
+          amount_usd: totalAmount,
+          payment_type: 'mortgage_cancellation' as any,
+        }
+      });
+
+      if (error || !data?.success) {
+        toast.error(data?.error || 'Erreur lors du paiement');
+        return false;
+      }
+
+      toast.info('Confirmez le paiement sur votre téléphone...');
+
+      // Fix #17: Poll transaction status
+      const result = await pollTransactionStatus(data.transaction_id);
+      if (result === 'completed') {
+        toast.success('Paiement confirmé');
+        return true;
+      } else if (result === 'failed') {
+        toast.error('Le paiement a échoué');
+        return false;
+      } else {
+        toast.error('Délai d\'attente dépassé. Vérifiez votre téléphone et réessayez.');
+        return false;
+      }
     } catch (error) {
       console.error('Payment error:', error);
       toast.error('Erreur lors du paiement');
@@ -442,9 +461,16 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       setShowAuthDialog(true);
       return;
     }
-    
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
+
+    // Fix #8: Check for existing pending cancellation
+    const hasPending = await checkExistingCancellationRequest();
+    if (hasPending) {
+      toast.error('Une demande de radiation est déjà en cours pour cette parcelle.');
+      isSubmittingRef.current = false;
+      return;
+    }
 
     const paymentSuccess = await processPayment();
     if (!paymentSuccess) {
@@ -460,7 +486,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
         .from('cadastral_contributions')
         .insert({
           parcel_number: parcelNumber,
-          original_parcel_id: parcelId,
+          original_parcel_id: parcelId || null,
           user_id: user.id,
           contribution_type: 'mortgage_cancellation',
           status: 'pending',
@@ -475,15 +501,15 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
             cancellation_date: formData.cancellationDate,
             settlement_amount: formData.settlementAmount ? parseFloat(formData.settlementAmount) : null,
             requester_name: formData.requesterName,
-            requester_phone: formData.requesterPhone,
-            requester_email: formData.requesterEmail,
-            requester_id_number: formData.requesterIdNumber,
+            requester_phone: formData.requesterPhone || null,
+            requester_email: formData.requesterEmail || null,
+            requester_id_number: formData.requesterIdNumber || null,
             requester_quality: formData.requesterQuality,
             creditor_accord: formData.creditorAccord,
             supporting_documents: documentUrls,
-            fees_paid: getSelectedFeesDetails(),
-            total_amount_paid: getTotalAmount(),
-            payment_method: paymentMethod,
+            fees_paid: selectedFeesDetails,
+            total_amount_paid: totalAmount,
+            payment_method: 'mobile_money',
             payment_provider: paymentProvider,
             submitted_at: new Date().toISOString()
           }] as any
@@ -494,7 +520,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       await supabase.from('notifications').insert({
         user_id: user.id,
         title: 'Demande de radiation soumise',
-        message: `Votre demande de radiation d'hypothèque (${requestReferenceNumber}) pour la parcelle ${parcelNumber} a été soumise. Un certificat de radiation sera délivré après validation.`,
+        message: `Votre demande de radiation d'hypothèque (${requestReferenceNumber}) pour la parcelle ${parcelNumber} a été soumise.`,
         type: 'success',
         action_url: '/user-dashboard'
       });
@@ -532,7 +558,6 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       supportingDocuments: [],
       comments: ''
     });
-    setPaymentMethod('mobile_money');
     setPaymentProvider('');
     setPaymentPhone('');
     onOpenChange(false);
@@ -550,25 +575,25 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     }
   };
 
-  // Render Form Step
+  // ===================== FORM STEP =====================
   const renderFormStep = () => (
     <div className="space-y-4">
-      {/* En-tête */}
-      <Card className="rounded-2xl border-red-200 dark:border-red-800 bg-gradient-to-r from-red-50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/20">
+      {/* Header */}
+      <Card className="rounded-2xl border-destructive/30 bg-gradient-to-r from-destructive/5 to-destructive/10">
         <CardContent className="p-4">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-red-500/10 flex items-center justify-center">
-              <FileX2 className="h-5 w-5 text-red-600" />
+            <div className="h-10 w-10 rounded-xl bg-destructive/10 flex items-center justify-center">
+              <FileX2 className="h-5 w-5 text-destructive" />
             </div>
             <div>
-              <h3 className="font-semibold text-red-800 dark:text-red-200">Demande de Radiation d'Hypothèque</h3>
-              <p className="text-xs text-red-600 dark:text-red-400">Réf: {requestReferenceNumber}</p>
+              <h3 className="font-semibold text-destructive">Demande de Radiation d'Hypothèque</h3>
+              <p className="text-xs text-destructive/70">Réf: {requestReferenceNumber}</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Données de la parcelle (pré-remplies) */}
+      {/* Parcel data */}
       {loadingData ? (
         <Card className="rounded-2xl">
           <CardContent className="p-4 flex items-center justify-center">
@@ -577,13 +602,12 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
           </CardContent>
         </Card>
       ) : parcelData && (
-        <Card className="rounded-2xl shadow-md border-blue-200 dark:border-blue-800">
+        <Card className="rounded-2xl shadow-md border-primary/20">
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-blue-600" />
-              <Label className="text-sm font-semibold text-blue-700 dark:text-blue-300">Données de la parcelle</Label>
+              <MapPin className="h-4 w-4 text-primary" />
+              <Label className="text-sm font-semibold text-primary">Données de la parcelle</Label>
             </div>
-            
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="space-y-1">
                 <span className="text-muted-foreground">N° Parcelle</span>
@@ -606,14 +630,13 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
         </Card>
       )}
 
-      {/* Numéro de référence de l'hypothèque */}
+      {/* Mortgage reference */}
       <Card className="rounded-2xl shadow-md border-border/50">
         <CardContent className="p-4 space-y-4">
           <div className="flex items-center gap-2 mb-2">
             <Hash className="h-4 w-4 text-primary" />
             <Label className="text-sm font-semibold">Numéro de référence de l'hypothèque *</Label>
           </div>
-          
           <div className="space-y-2">
             <div className="relative">
               <Input
@@ -621,10 +644,10 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
                 onChange={(e) => setFormData(prev => ({ ...prev, mortgageReferenceNumber: e.target.value.toUpperCase() }))}
                 placeholder="Ex: HYP-202501-A1B2C"
                 className={`h-11 text-sm rounded-xl border-2 font-mono uppercase transition-all ${
-                  referenceValid === false 
-                    ? 'border-red-500 animate-pulse bg-red-50 dark:bg-red-950/30' 
-                    : referenceValid === true 
-                    ? 'border-green-500 bg-green-50 dark:bg-green-950/30' 
+                  referenceValid === false
+                    ? 'border-destructive bg-destructive/5'
+                    : referenceValid === true
+                    ? 'border-green-500 bg-green-50 dark:bg-green-950/30'
                     : ''
                 }`}
               />
@@ -637,14 +660,13 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
             </div>
 
             {referenceError && (
-              <Alert className="bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-800 rounded-xl">
-                <AlertTriangle className="h-4 w-4 text-red-600" />
-                <AlertDescription className="text-xs text-red-700 dark:text-red-300">
+              <Alert className="bg-destructive/5 border-destructive/30 rounded-xl">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                <AlertDescription className="text-xs text-destructive">
                   <p className="font-medium">{referenceError}</p>
-                  <p className="mt-1.5 text-red-600 dark:text-red-400">
-                    <strong>Comment obtenir ce numéro ?</strong> Le numéro de référence de l'hypothèque (format: HYP-XXXXXX-XXXXX) 
-                    est affiché dans le résultat cadastral, onglet "Obligations" → "Hypothèques actives". 
-                    Vous devez d'abord accéder au résultat cadastral pour obtenir cette information.
+                  <p className="mt-1.5 text-destructive/80">
+                    <strong>Comment obtenir ce numéro ?</strong> Le numéro de référence est affiché dans le résultat cadastral, 
+                    onglet "Obligations" → "Hypothèques actives".
                   </p>
                 </AlertDescription>
               </Alert>
@@ -681,24 +703,20 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
           <p className="text-xs text-muted-foreground flex items-start gap-1.5">
             <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
             <span>
-              Chaque hypothèque active possède un numéro de référence unique qui permet de l'identifier dans notre base de données. 
-              Pour l'obtenir, fermez ce formulaire, puis cliquez sur le bouton "Données". Ensuite, dans le catalogue de services, 
-              sélectionnez uniquement le service "Obligations fiscales et Hypothèque", puis procédez au paiement pour accéder au résultat cadastral. 
-              Le numéro de référence est disponible dans le résultat cadastral (onglet Obligations → Hypothèques). 
-              Une fois que vous l'avez obtenu, revenez sur ce formulaire, ajoutez-le et finalisez votre demande de radiation.
+              Le numéro de référence se trouve dans le résultat cadastral (onglet Obligations → Hypothèques). 
+              Accédez d'abord au catalogue de services pour obtenir cette information.
             </span>
           </p>
         </CardContent>
       </Card>
 
-      {/* Motif de la radiation */}
+      {/* Reason */}
       <Card className="rounded-2xl shadow-md border-border/50">
         <CardContent className="p-4 space-y-4">
           <div className="flex items-center gap-2">
             <FileText className="h-4 w-4 text-primary" />
             <Label className="text-sm font-semibold">Motif de la radiation *</Label>
           </div>
-          
           <Select
             value={formData.reason}
             onValueChange={(value) => setFormData(prev => ({ ...prev, reason: value }))}
@@ -706,7 +724,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
             <SelectTrigger className="h-11 text-sm rounded-xl border-2">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="rounded-xl bg-popover z-[1200]">
+            <SelectContent className="rounded-xl bg-popover z-[1300]">
               {CANCELLATION_REASONS.map(reason => (
                 <SelectItem key={reason.value} value={reason.value} className="rounded-lg">
                   <div>
@@ -720,14 +738,13 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
         </CardContent>
       </Card>
 
-      {/* Informations du demandeur */}
+      {/* Requester info */}
       <Card className="rounded-2xl shadow-md border-border/50">
         <CardContent className="p-4 space-y-4">
           <div className="flex items-center gap-2">
             <User className="h-4 w-4 text-primary" />
             <Label className="text-sm font-semibold">Informations du demandeur</Label>
           </div>
-
           <div className="space-y-3">
             <div className="space-y-1.5">
               <Label className="text-xs">Qualité du demandeur *</Label>
@@ -738,14 +755,13 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
                 <SelectTrigger className="h-10 text-sm rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl bg-popover z-[1200]">
+                <SelectContent className="rounded-xl bg-popover z-[1300]">
                   {REQUESTER_QUALITIES.map(q => (
                     <SelectItem key={q.value} value={q.value}>{q.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            
             <div className="space-y-1.5">
               <Label className="text-xs">Nom complet *</Label>
               <Input
@@ -755,7 +771,6 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
                 className="h-10 text-sm rounded-xl"
               />
             </div>
-            
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">N° Pièce d'identité</Label>
@@ -776,7 +791,6 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
                 />
               </div>
             </div>
-            
             <div className="space-y-1.5">
               <Label className="text-xs">Email</Label>
               <Input
@@ -791,17 +805,16 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
         </CardContent>
       </Card>
 
-      {/* Informations complémentaires */}
+      {/* Additional info */}
       <Card className="rounded-2xl shadow-md border-border/50">
         <CardContent className="p-4 space-y-4">
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-primary" />
             <Label className="text-sm font-semibold">Informations complémentaires</Label>
           </div>
-
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs">Date souhaitée de radiation *</Label>
+              <Label className="text-xs">Date souhaitée *</Label>
               <Input
                 type="date"
                 min={new Date().toISOString().split('T')[0]}
@@ -811,9 +824,12 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Montant de règlement (USD)</Label>
+              <Label className="text-xs">Montant règlement (USD)</Label>
+              {/* Fix #9: min=0 to prevent negatives */}
               <Input
                 type="number"
+                min="0"
+                step="0.01"
                 value={formData.settlementAmount}
                 onChange={(e) => setFormData(prev => ({ ...prev, settlementAmount: e.target.value }))}
                 placeholder="Montant final payé"
@@ -821,7 +837,6 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
               />
             </div>
           </div>
-
           <div className="space-y-1.5">
             <Label className="text-xs">Commentaires additionnels</Label>
             <Textarea
@@ -835,17 +850,16 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
         </CardContent>
       </Card>
 
-      {/* Documents justificatifs */}
+      {/* Documents */}
       <Card className="rounded-2xl shadow-md border-border/50">
         <CardContent className="p-4 space-y-4">
           <div className="flex items-center gap-2">
             <Upload className="h-4 w-4 text-primary" />
             <Label className="text-sm font-semibold">Documents justificatifs *</Label>
           </div>
-          
-          <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800 rounded-xl">
-            <Info className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-xs text-blue-700 dark:text-blue-300">
+          <Alert className="bg-primary/5 border-primary/20 rounded-xl">
+            <Info className="h-4 w-4 text-primary" />
+            <AlertDescription className="text-xs text-primary/80">
               <strong>Documents requis en RDC:</strong>
               <ul className="mt-1 list-disc list-inside space-y-0.5">
                 <li>Attestation de remboursement du créancier</li>
@@ -855,7 +869,6 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
               </ul>
             </AlertDescription>
           </Alert>
-          
           <input
             ref={fileInputRef}
             type="file"
@@ -864,7 +877,6 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
             onChange={handleFileChange}
             className="hidden"
           />
-          
           <Button
             type="button"
             variant="outline"
@@ -874,15 +886,14 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
             <Upload className="h-4 w-4 mr-2" />
             Ajouter des documents
           </Button>
-          
           {formData.supportingDocuments.length > 0 && (
             <div className="space-y-2">
               {formData.supportingDocuments.map((file, index) => (
                 <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded-xl">
                   {file.type.startsWith('image/') ? (
-                    <Image className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                    <Image className="h-4 w-4 text-primary flex-shrink-0" />
                   ) : (
-                    <FileText className="h-4 w-4 text-red-600 flex-shrink-0" />
+                    <FileText className="h-4 w-4 text-destructive flex-shrink-0" />
                   )}
                   <span className="flex-1 text-xs truncate">{file.name}</span>
                   <Button
@@ -900,7 +911,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
         </CardContent>
       </Card>
 
-      {/* Accord du créancier */}
+      {/* Creditor accord */}
       <Card className="rounded-2xl shadow-md border-amber-200 dark:border-amber-800">
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
@@ -913,83 +924,84 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
             <label htmlFor="creditorAccord" className="text-xs cursor-pointer">
               <span className="font-medium text-amber-700 dark:text-amber-300">Je certifie disposer de l'accord du créancier *</span>
               <p className="mt-1 text-muted-foreground">
-                Je confirme que le créancier (banque, institution financière ou particulier) a donné son accord 
-                pour la radiation de l'hypothèque, conformément à l'article 229 du Code foncier de la RDC.
+                Je confirme que le créancier a donné son accord pour la radiation de l'hypothèque, 
+                conformément à l'article 229 du Code foncier de la RDC.
               </p>
             </label>
           </div>
         </CardContent>
       </Card>
 
-      {/* Frais de radiation */}
+      {/* Fix #5: Config-driven fees */}
       <Card className="rounded-2xl shadow-md border-amber-200 dark:border-amber-800">
         <CardContent className="p-4 space-y-4">
           <div className="flex items-center gap-2">
             <DollarSign className="h-4 w-4 text-amber-600" />
             <Label className="text-sm font-semibold text-amber-700 dark:text-amber-300">Frais de radiation (RDC)</Label>
           </div>
-
-          <div className="space-y-2">
-            {CANCELLATION_FEES.map((fee) => (
-              <div 
-                key={fee.id}
-                className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${
-                  selectedFees.includes(fee.id) 
-                    ? 'bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-200 dark:border-amber-700' 
-                    : 'bg-muted/30 border-2 border-transparent'
-                }`}
-              >
-                <Checkbox
-                  id={fee.id}
-                  checked={selectedFees.includes(fee.id)}
-                  onCheckedChange={() => handleFeeToggle(fee.id, fee.is_mandatory)}
-                  disabled={fee.is_mandatory}
-                  className="mt-0.5"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <label htmlFor={fee.id} className="text-sm font-medium cursor-pointer">
-                      {fee.name}
-                      {fee.is_mandatory && (
-                        <span className="ml-1.5 text-[10px] text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50 px-1.5 py-0.5 rounded">
-                          obligatoire
-                        </span>
-                      )}
-                    </label>
-                    <span className="text-sm font-bold text-amber-700 dark:text-amber-400 whitespace-nowrap">
-                      ${fee.amount_usd}
-                    </span>
+          {loadingFees ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {fees.map((fee) => (
+                <div
+                  key={fee.id}
+                  className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${
+                    selectedFees.includes(fee.id)
+                      ? 'bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-200 dark:border-amber-700'
+                      : 'bg-muted/30 border-2 border-transparent'
+                  }`}
+                >
+                  <Checkbox
+                    id={fee.id}
+                    checked={selectedFees.includes(fee.id)}
+                    onCheckedChange={() => handleFeeToggle(fee.id, fee.is_mandatory)}
+                    disabled={fee.is_mandatory}
+                    className="mt-0.5"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <label htmlFor={fee.id} className="text-sm font-medium cursor-pointer">
+                        {fee.name}
+                        {fee.is_mandatory && (
+                          <span className="ml-1.5 text-[10px] text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50 px-1.5 py-0.5 rounded">
+                            obligatoire
+                          </span>
+                        )}
+                      </label>
+                      <span className="text-sm font-bold text-amber-700 dark:text-amber-400 whitespace-nowrap">
+                        ${fee.amount_usd}
+                      </span>
+                    </div>
+                    {fee.description && (
+                      <p className="text-xs text-muted-foreground mt-0.5">{fee.description}</p>
+                    )}
                   </div>
-                  {fee.description && (
-                    <p className="text-xs text-muted-foreground mt-0.5">{fee.description}</p>
-                  )}
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           <div className="flex items-center justify-between pt-3 border-t border-amber-200 dark:border-amber-700">
             <span className="text-sm font-semibold">Total à payer</span>
             <span className="text-lg font-bold text-amber-700 dark:text-amber-400">
-              {formatCurrency(getTotalAmount())}
+              {formatCurrency(totalAmount)}
             </span>
           </div>
         </CardContent>
       </Card>
 
-      {/* Boutons d'action */}
+      {/* Action buttons */}
       <div className="flex gap-3">
-        <Button
-          variant="outline"
-          onClick={handleClose}
-          className="flex-1 h-11 rounded-xl"
-        >
+        <Button variant="outline" onClick={handleClose} className="flex-1 h-11 rounded-xl">
           Annuler
         </Button>
         <Button
           onClick={handleGoToReview}
           disabled={!referenceValid}
-          className="flex-1 h-11 rounded-xl bg-red-600 hover:bg-red-700"
+          className="flex-1 h-11 rounded-xl bg-destructive hover:bg-destructive/90"
         >
           Continuer
         </Button>
@@ -997,32 +1009,26 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     </div>
   );
 
-  // Render Review Step
+  // ===================== REVIEW STEP =====================
   const renderReviewStep = () => (
     <div className="space-y-4">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setStep('form')}
-        className="flex items-center gap-1 text-xs mb-2"
-      >
+      <Button variant="ghost" size="sm" onClick={() => setStep('form')} className="flex items-center gap-1 text-xs mb-2">
         <ArrowLeft className="h-3.5 w-3.5" />
         Modifier
       </Button>
 
-      <Card className="rounded-2xl border-red-200 dark:border-red-800 bg-gradient-to-r from-red-50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/20">
+      <Card className="rounded-2xl border-destructive/30 bg-gradient-to-r from-destructive/5 to-destructive/10">
         <CardContent className="p-4">
           <div className="flex items-center gap-3">
-            <FileCheck className="h-6 w-6 text-red-600" />
+            <FileCheck className="h-6 w-6 text-destructive" />
             <div>
-              <h3 className="font-semibold text-red-800 dark:text-red-200">Révision de la demande</h3>
-              <p className="text-xs text-red-600 dark:text-red-400">Réf: {requestReferenceNumber}</p>
+              <h3 className="font-semibold text-destructive">Révision de la demande</h3>
+              <p className="text-xs text-destructive/70">Réf: {requestReferenceNumber}</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Récapitulatif parcelle */}
       {parcelData && (
         <Card className="rounded-2xl">
           <CardContent className="p-4 space-y-2">
@@ -1031,20 +1037,13 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
               Parcelle concernée
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs">
-              <div>
-                <span className="text-muted-foreground">N° Parcelle:</span>
-                <p className="font-medium">{parcelData.parcel_number}</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Propriétaire:</span>
-                <p className="font-medium">{parcelData.current_owner_name}</p>
-              </div>
+              <div><span className="text-muted-foreground">N° Parcelle:</span><p className="font-medium">{parcelData.parcel_number}</p></div>
+              <div><span className="text-muted-foreground">Propriétaire:</span><p className="font-medium">{parcelData.current_owner_name}</p></div>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Récapitulatif hypothèque */}
       {mortgageData && (
         <Card className="rounded-2xl">
           <CardContent className="p-4 space-y-2">
@@ -1053,28 +1052,15 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
               Hypothèque à radier
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs">
-              <div>
-                <span className="text-muted-foreground">Référence:</span>
-                <p className="font-medium font-mono">{mortgageData.reference_number}</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Créancier:</span>
-                <p className="font-medium">{mortgageData.creditor_name}</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Montant initial:</span>
-                <p className="font-medium">{formatCurrency(mortgageData.mortgage_amount_usd)}</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Date contrat:</span>
-                <p className="font-medium">{formatDate(mortgageData.contract_date)}</p>
-              </div>
+              <div><span className="text-muted-foreground">Référence:</span><p className="font-medium font-mono">{mortgageData.reference_number}</p></div>
+              <div><span className="text-muted-foreground">Créancier:</span><p className="font-medium">{mortgageData.creditor_name}</p></div>
+              <div><span className="text-muted-foreground">Montant initial:</span><p className="font-medium">{formatCurrency(mortgageData.mortgage_amount_usd)}</p></div>
+              <div><span className="text-muted-foreground">Date contrat:</span><p className="font-medium">{formatDate(mortgageData.contract_date)}</p></div>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Récapitulatif demandeur */}
       <Card className="rounded-2xl">
         <CardContent className="p-4 space-y-2">
           <div className="flex items-center gap-2 text-sm font-semibold">
@@ -1082,27 +1068,14 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
             Demandeur
           </div>
           <div className="grid grid-cols-2 gap-2 text-xs">
-            <div>
-              <span className="text-muted-foreground">Nom:</span>
-              <p className="font-medium">{formData.requesterName}</p>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Qualité:</span>
-              <p className="font-medium">{REQUESTER_QUALITIES.find(q => q.value === formData.requesterQuality)?.label}</p>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Téléphone:</span>
-              <p className="font-medium">{formData.requesterPhone || 'N/A'}</p>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Email:</span>
-              <p className="font-medium">{formData.requesterEmail || 'N/A'}</p>
-            </div>
+            <div><span className="text-muted-foreground">Nom:</span><p className="font-medium">{formData.requesterName}</p></div>
+            <div><span className="text-muted-foreground">Qualité:</span><p className="font-medium">{REQUESTER_QUALITIES.find(q => q.value === formData.requesterQuality)?.label}</p></div>
+            <div><span className="text-muted-foreground">Téléphone:</span><p className="font-medium">{formData.requesterPhone || 'N/A'}</p></div>
+            <div><span className="text-muted-foreground">Email:</span><p className="font-medium">{formData.requesterEmail || 'N/A'}</p></div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Récapitulatif motif */}
       <Card className="rounded-2xl">
         <CardContent className="p-4 space-y-2">
           <div className="flex items-center gap-2 text-sm font-semibold">
@@ -1116,7 +1089,6 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
         </CardContent>
       </Card>
 
-      {/* Documents */}
       <Card className="rounded-2xl">
         <CardContent className="p-4 space-y-2">
           <div className="flex items-center gap-2 text-sm font-semibold">
@@ -1134,7 +1106,6 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
         </CardContent>
       </Card>
 
-      {/* Frais */}
       <Card className="rounded-2xl border-amber-200 dark:border-amber-800">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center gap-2 text-sm font-semibold text-amber-700 dark:text-amber-300">
@@ -1142,7 +1113,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
             Frais à payer
           </div>
           <div className="space-y-1">
-            {getSelectedFeesDetails().map(fee => (
+            {selectedFeesDetails.map(fee => (
               <div key={fee.id} className="flex justify-between text-xs">
                 <span>{fee.name}</span>
                 <span className="font-medium">{formatCurrency(fee.amount_usd)}</span>
@@ -1151,39 +1122,27 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
           </div>
           <div className="flex justify-between pt-2 border-t border-amber-200 dark:border-amber-700">
             <span className="font-semibold">Total</span>
-            <span className="font-bold text-amber-700 dark:text-amber-400">{formatCurrency(getTotalAmount())}</span>
+            <span className="font-bold text-amber-700 dark:text-amber-400">{formatCurrency(totalAmount)}</span>
           </div>
         </CardContent>
       </Card>
 
-      {/* Boutons */}
       <div className="flex gap-3">
-        <Button
-          variant="outline"
-          onClick={() => setStep('form')}
-          className="flex-1 h-11 rounded-xl"
-        >
+        <Button variant="outline" onClick={() => setStep('form')} className="flex-1 h-11 rounded-xl">
           Modifier
         </Button>
-        <Button
-          onClick={handleGoToPayment}
-          className="flex-1 h-11 rounded-xl bg-red-600 hover:bg-red-700"
-        >
+        <Button onClick={handleGoToPayment} className="flex-1 h-11 rounded-xl bg-destructive hover:bg-destructive/90">
           Procéder au paiement
         </Button>
       </div>
     </div>
   );
 
-  // Render Payment Step
+  // ===================== PAYMENT STEP =====================
+  // Fix #16: Only show Mobile Money (bank card removed since non-functional)
   const renderPaymentStep = () => (
     <div className="space-y-4">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setStep('review')}
-        className="flex items-center gap-1 text-xs mb-2"
-      >
+      <Button variant="ghost" size="sm" onClick={() => setStep('review')} className="flex items-center gap-1 text-xs mb-2">
         <ArrowLeft className="h-3.5 w-3.5" />
         Retour
       </Button>
@@ -1199,85 +1158,43 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
               </div>
             </div>
             <span className="text-xl font-bold text-green-700 dark:text-green-400">
-              {formatCurrency(getTotalAmount())}
+              {formatCurrency(totalAmount)}
             </span>
           </div>
         </CardContent>
       </Card>
 
-      {/* Mode de paiement */}
       <Card className="rounded-2xl">
         <CardContent className="p-4 space-y-4">
-          <Label className="text-sm font-semibold">Mode de paiement</Label>
-          
-          <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as any)}>
-            <div className="flex items-center space-x-3 p-3 rounded-xl border-2 hover:border-primary cursor-pointer">
-              <RadioGroupItem value="mobile_money" id="mobile_money" />
-              <label htmlFor="mobile_money" className="flex items-center gap-2 cursor-pointer flex-1">
-                <Phone className="h-4 w-4 text-primary" />
-                <div>
-                  <p className="text-sm font-medium">Mobile Money</p>
-                  <p className="text-xs text-muted-foreground">M-Pesa, Airtel Money, Orange Money</p>
-                </div>
-              </label>
-            </div>
-            <div className="flex items-center space-x-3 p-3 rounded-xl border-2 hover:border-primary cursor-pointer">
-              <RadioGroupItem value="bank_card" id="bank_card" />
-              <label htmlFor="bank_card" className="flex items-center gap-2 cursor-pointer flex-1">
-                <CreditCard className="h-4 w-4 text-primary" />
-                <div>
-                  <p className="text-sm font-medium">Carte bancaire</p>
-                  <p className="text-xs text-muted-foreground">Visa, Mastercard</p>
-                </div>
-              </label>
-            </div>
-          </RadioGroup>
+          <Label className="text-sm font-semibold flex items-center gap-2">
+            <Phone className="h-4 w-4 text-primary" />
+            Paiement Mobile Money
+          </Label>
+
+          <Select value={paymentProvider} onValueChange={setPaymentProvider}>
+            <SelectTrigger className="h-10 rounded-xl">
+              <SelectValue placeholder="Sélectionnez un opérateur" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl bg-popover z-[1300]">
+              <SelectItem value="mpesa">M-Pesa (Vodacom)</SelectItem>
+              <SelectItem value="airtel">Airtel Money</SelectItem>
+              <SelectItem value="orange">Orange Money</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">Numéro de téléphone *</Label>
+            <Input
+              value={paymentPhone}
+              onChange={(e) => setPaymentPhone(e.target.value)}
+              placeholder="+243XXXXXXXXX"
+              className="h-10 rounded-xl"
+            />
+            <p className="text-[10px] text-muted-foreground">Format: +243XXXXXXXXX ou 0XXXXXXXXX</p>
+          </div>
         </CardContent>
       </Card>
 
-      {paymentMethod === 'mobile_money' && (
-        <Card className="rounded-2xl">
-          <CardContent className="p-4 space-y-4">
-            <Label className="text-sm font-semibold">Opérateur</Label>
-            <Select value={paymentProvider} onValueChange={setPaymentProvider}>
-              <SelectTrigger className="h-10 rounded-xl">
-                <SelectValue placeholder="Sélectionnez un opérateur" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl bg-popover z-[1200]">
-                <SelectItem value="mpesa">M-Pesa (Vodacom)</SelectItem>
-                <SelectItem value="airtel">Airtel Money</SelectItem>
-                <SelectItem value="orange">Orange Money</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs">Numéro de téléphone *</Label>
-              <Input
-                value={paymentPhone}
-                onChange={(e) => setPaymentPhone(e.target.value)}
-                placeholder="+243XXXXXXXXX"
-                className="h-10 rounded-xl"
-              />
-              <p className="text-[10px] text-muted-foreground">Format: +243XXXXXXXXX ou 0XXXXXXXXX</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {paymentMethod === 'bank_card' && (
-        <Card className="rounded-2xl border-amber-200 dark:border-amber-800">
-          <CardContent className="p-4">
-            <Alert className="bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800 rounded-xl">
-              <Info className="h-4 w-4 text-amber-600" />
-              <AlertDescription className="text-xs text-amber-700 dark:text-amber-300">
-                Le paiement par carte bancaire sera disponible prochainement. Veuillez sélectionner Mobile Money pour le moment.
-              </AlertDescription>
-            </Alert>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Bouton de paiement */}
       <Button
         onClick={handleSubmit}
         disabled={loading || processingPayment}
@@ -1291,14 +1208,14 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
         ) : (
           <>
             <CreditCard className="mr-2 h-4 w-4" />
-            Payer {formatCurrency(getTotalAmount())} et soumettre
+            Payer {formatCurrency(totalAmount)} et soumettre
           </>
         )}
       </Button>
     </div>
   );
 
-  // Render Confirmation Step
+  // ===================== CONFIRMATION STEP =====================
   const renderConfirmationStep = () => (
     <div className="space-y-4 text-center">
       <div className="flex justify-center">
@@ -1328,14 +1245,14 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
           </div>
           <div className="flex justify-between text-xs">
             <span className="text-muted-foreground">Montant payé</span>
-            <span className="font-medium text-green-600">{formatCurrency(getTotalAmount())}</span>
+            <span className="font-medium text-green-600">{formatCurrency(totalAmount)}</span>
           </div>
         </CardContent>
       </Card>
 
-      <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800 rounded-xl text-left">
-        <Award className="h-4 w-4 text-blue-600" />
-        <AlertDescription className="text-xs text-blue-700 dark:text-blue-300">
+      <Alert className="bg-primary/5 border-primary/20 rounded-xl text-left">
+        <Award className="h-4 w-4 text-primary" />
+        <AlertDescription className="text-xs text-primary/80">
           <strong>Prochaines étapes:</strong>
           <ol className="mt-1.5 list-decimal list-inside space-y-1">
             <li>Votre demande sera examinée par un officier hypothécaire</li>
@@ -1346,9 +1263,10 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       </Alert>
 
       <div className="flex flex-col gap-2">
+        {/* Fix #23: useNavigate */}
         <Button
           variant="outline"
-          onClick={() => window.location.href = '/user-dashboard'}
+          onClick={() => navigate('/user-dashboard')}
           className="w-full h-11 rounded-xl gap-2"
         >
           <ExternalLink className="h-4 w-4" />
@@ -1364,12 +1282,14 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
   if (embedded) {
     return (
       <>
+        {/* Fix #15 & #20: WhatsApp in embedded + single scroll */}
         <div className="overflow-y-auto h-full px-4 pb-4">
           {step === 'form' && renderFormStep()}
           {step === 'review' && renderReviewStep()}
           {step === 'payment' && renderPaymentStep()}
           {step === 'confirmation' && renderConfirmationStep()}
         </div>
+        {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec la radiation d'hypothèque." />}
         <QuickAuthDialog
           open={showAuthDialog}
           onOpenChange={setShowAuthDialog}
@@ -1381,26 +1301,25 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className={`z-[1200] ${isMobile ? 'w-[92vw] max-w-[380px] max-h-[88vh]' : 'max-w-lg max-h-[85vh]'} rounded-2xl p-0 overflow-hidden`}>
-          <DialogHeader className="p-4 pb-2">
-            <DialogTitle className="flex items-center gap-2 text-base font-bold">
-              <div className="p-1.5 bg-destructive/10 rounded-lg">
-                <FileX2 className="h-4 w-4 text-destructive" />
-              </div>
-              Radiation d'hypothèque
-            </DialogTitle>
-            <DialogDescription className="text-xs">
-              Parcelle {parcelNumber}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <ScrollArea className={`${isMobile ? 'h-[calc(88vh-80px)]' : 'max-h-[calc(85vh-80px)]'} px-4 pb-4`}>
-            {step === 'form' && renderFormStep()}
-            {step === 'review' && renderReviewStep()}
-            {step === 'payment' && renderPaymentStep()}
-            {step === 'confirmation' && renderConfirmationStep()}
-          </ScrollArea>
-        </DialogContent>
+      <DialogContent className={`z-[1200] ${isMobile ? 'w-[92vw] max-w-[380px] max-h-[88vh]' : 'max-w-lg max-h-[85vh]'} rounded-2xl p-0 overflow-hidden`}>
+        <DialogHeader className="p-4 pb-2">
+          <DialogTitle className="flex items-center gap-2 text-base font-bold">
+            <div className="p-1.5 bg-destructive/10 rounded-lg">
+              <FileX2 className="h-4 w-4 text-destructive" />
+            </div>
+            Radiation d'hypothèque
+          </DialogTitle>
+          <DialogDescription className="text-xs">
+            Parcelle {parcelNumber}
+          </DialogDescription>
+        </DialogHeader>
+        <ScrollArea className={`${isMobile ? 'h-[calc(88vh-80px)]' : 'max-h-[calc(85vh-80px)]'} px-4 pb-4`}>
+          {step === 'form' && renderFormStep()}
+          {step === 'review' && renderReviewStep()}
+          {step === 'payment' && renderPaymentStep()}
+          {step === 'confirmation' && renderConfirmationStep()}
+        </ScrollArea>
+      </DialogContent>
       {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec la radiation d'hypothèque." />}
       <QuickAuthDialog
         open={showAuthDialog}
