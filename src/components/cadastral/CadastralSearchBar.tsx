@@ -234,7 +234,7 @@ const CadastralSearchBar = () => {
           "shadow-[0_4px_24px_-4px_hsl(var(--primary)/0.15)]",
           "border border-border/50",
           isFocused && "shadow-[0_8px_32px_-4px_hsl(var(--primary)/0.25)] border-primary/30",
-          inputStatus === 'success' && "border-green-400/50 shadow-[0_4px_24px_-4px_hsl(142_71%_45%/0.2)]",
+          inputStatus === 'success' && "border-primary/40 shadow-[0_4px_24px_-4px_hsl(var(--primary)/0.15)]",
           inputStatus === 'error' && "border-destructive/40 shadow-[0_4px_24px_-4px_hsl(var(--destructive)/0.2)]",
         )}>
           {/* Top accent bar */}
