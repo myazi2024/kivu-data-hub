@@ -54,7 +54,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const { config: mapConfig } = useMapConfig();
   const { 
     loading, 
-    submitRequest 
+    createPendingRequest,
+    markRequestPaid 
   } = useLandTitleRequest();
   
   // Frais dynamiques
