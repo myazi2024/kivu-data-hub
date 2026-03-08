@@ -176,7 +176,6 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
                 </div>
               )}
               <MortgageCancellationDialog
-                key={`remove-${removeKey}`}
                 parcelNumber={parcelNumber}
                 parcelId={parcelId}
                 open={true}
