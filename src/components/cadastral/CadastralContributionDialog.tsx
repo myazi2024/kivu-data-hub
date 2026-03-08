@@ -1514,6 +1514,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const removeCurrentOwner = (index: number) => {
     if (currentOwners.length > 1) {
       setCurrentOwners(currentOwners.filter((_, i) => i !== index));
+      markDirty();
     }
   };
 
