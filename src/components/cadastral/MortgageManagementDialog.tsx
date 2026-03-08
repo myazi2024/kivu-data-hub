@@ -26,20 +26,46 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
 }) => {
   const [showIntro, setShowIntro] = useState(true);
   const [activeTab, setActiveTab] = useState<MortgageTab>('add');
-
-  // Keys to force remount sub-dialogs on tab switch (fixes #4: state not reset)
   const [addKey, setAddKey] = useState(0);
   const [removeKey, setRemoveKey] = useState(0);
-  
-  // Ref to track if user clicked "Continue" vs dismissed the intro
   const introCompletedRef = useRef(false);
 
-  // Reset ref when dialog opens
+  // Fix #15: Check if parcel has active mortgages for the radiation tab
+  const [hasActiveMortgage, setHasActiveMortgage] = useState<boolean | null>(null);
+  const [checkingMortgage, setCheckingMortgage] = useState(false);
+
   useEffect(() => {
     if (open) {
       introCompletedRef.current = false;
     }
   }, [open]);
+
+  // Check for active mortgages when dialog opens or parcelId changes
+  useEffect(() => {
+    const checkActiveMortgages = async () => {
+      if (!open || !parcelId) {
+        setHasActiveMortgage(null);
+        return;
+      }
+      setCheckingMortgage(true);
+      try {
+        const { data, error } = await supabase
+          .from('cadastral_mortgages')
+          .select('id')
+          .eq('parcel_id', parcelId)
+          .eq('mortgage_status', 'active')
+          .limit(1);
+        if (!error) {
+          setHasActiveMortgage((data?.length ?? 0) > 0);
+        }
+      } catch {
+        setHasActiveMortgage(null);
+      } finally {
+        setCheckingMortgage(false);
+      }
+    };
+    checkActiveMortgages();
+  }, [open, parcelId]);
 
   const handleIntroComplete = () => {
     introCompletedRef.current = true;
@@ -50,19 +76,18 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
     setShowIntro(true);
     setActiveTab('add');
     introCompletedRef.current = false;
-    // Increment keys to force fresh state on next open
     setAddKey(k => k + 1);
     setRemoveKey(k => k + 1);
     onOpenChange(false);
   }, [onOpenChange]);
 
-  // Fix #4: Reset sub-form state when switching tabs
+  // Fix #24: Reset the tab being LEFT (not the one being entered)
   const handleTabChange = useCallback((tab: MortgageTab) => {
     if (tab === activeTab) return;
-    setActiveTab(tab);
-    // Force remount of the other tab's component
-    if (tab === 'add') setAddKey(k => k + 1);
+    // Reset the component being left
+    if (activeTab === 'add') setAddKey(k => k + 1);
     else setRemoveKey(k => k + 1);
+    setActiveTab(tab);
   }, [activeTab]);
 
   // Show intro first
