@@ -14,7 +14,10 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Loader2, FileEdit, CreditCard, CheckCircle2, AlertTriangle, MapPin, Clock, Hash, Upload, X, FileText, Image, Eye, ArrowLeft, AlertCircle, FileSearch, ExternalLink, Calendar, DollarSign, Award, HelpCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useMutationRequest, MutationFee, MutationRequest } from '@/hooks/useMutationRequest';
+import { useMutationRequest } from '@/hooks/useMutationRequest';
+import type { MutationFee, MutationRequest } from '@/types/mutation';
+import { LATE_FEE_CAP_USD, DAILY_LATE_FEE_USD, LEGAL_GRACE_PERIOD_DAYS } from '@/types/mutation';
+import { pollTransactionStatus } from '@/utils/pollTransactionStatus';
 import { useRealEstateExpertise } from '@/hooks/useRealEstateExpertise';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
@@ -254,24 +257,23 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   // Selon la Note circulaire n°1.441/SG/AFF.F/003/2016 du 07 décembre 2016, le délai légal est de 20 jours
   const calculateLateFees = () => {
     const dateToUse = ownerAcquisitionDate || manualAcquisitionDate;
-    if (!dateToUse) return { days: 0, fee: 0, applicable: false };
+    if (!dateToUse) return { days: 0, fee: 0, applicable: false, capped: false };
     
     const acquisitionDate = new Date(dateToUse);
     const today = new Date();
     const totalDaysElapsed = differenceInDays(today, acquisitionDate);
     
-    // Délai légal de 20 jours - les frais s'appliquent à partir du 21ème jour
-    const LEGAL_GRACE_PERIOD = 20;
-    const daysAfterGracePeriod = Math.max(0, totalDaysElapsed - LEGAL_GRACE_PERIOD);
+    const daysAfterGracePeriod = Math.max(0, totalDaysElapsed - LEGAL_GRACE_PERIOD_DAYS);
     
-    // Tarif: 0.45$ par jour après le délai légal
-    const DAILY_LATE_FEE = 0.45;
-    const lateFee = daysAfterGracePeriod * DAILY_LATE_FEE;
+    const rawFee = daysAfterGracePeriod * DAILY_LATE_FEE_USD;
+    // Plafond légal
+    const cappedFee = Math.min(rawFee, LATE_FEE_CAP_USD);
     
     return {
       days: daysAfterGracePeriod,
-      fee: Math.round(lateFee * 100) / 100,
-      applicable: daysAfterGracePeriod > 0
+      fee: Math.round(cappedFee * 100) / 100,
+      applicable: daysAfterGracePeriod > 0,
+      capped: rawFee > LATE_FEE_CAP_USD
     };
   };
 
@@ -589,36 +591,78 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   const handlePayment = async () => {
     if (!createdRequest) return;
     
-    if (paymentMethod === 'mobile_money') {
-      if (!paymentProvider) {
-        toast.error('Veuillez sélectionner un opérateur');
-        return;
-      }
-      if (!paymentPhone) {
-        toast.error('Veuillez entrer votre numéro de téléphone');
-        return;
-      }
-      if (!validatePhoneNumber(paymentPhone)) {
-        toast.error('Numéro invalide. Format attendu : +243XXXXXXXXX ou 0XXXXXXXXX');
-        return;
-      }
-    }
-
     setProcessingPayment(true);
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const success = await updatePaymentStatus(createdRequest.id, 'paid', 'PAY-' + Date.now());
-      
-      if (success) {
-        setStep('confirmation');
-        toast.success('Paiement effectué avec succès');
+      if (paymentMethod === 'mobile_money') {
+        if (!paymentProvider) {
+          toast.error('Veuillez sélectionner un opérateur');
+          setProcessingPayment(false);
+          return;
+        }
+        if (!paymentPhone) {
+          toast.error('Veuillez entrer votre numéro de téléphone');
+          setProcessingPayment(false);
+          return;
+        }
+        if (!validatePhoneNumber(paymentPhone)) {
+          toast.error('Numéro invalide. Format attendu : +243XXXXXXXXX ou 0XXXXXXXXX');
+          setProcessingPayment(false);
+          return;
+        }
+
+        // Appel réel à l'Edge Function Mobile Money
+        const { data: paymentResult, error: paymentError } = await supabase.functions.invoke(
+          'process-mobile-money-payment',
+          {
+            body: {
+              payment_provider: paymentProvider,
+              phone_number: paymentPhone.replace(/\s/g, ''),
+              amount_usd: createdRequest.total_amount_usd,
+              payment_type: 'mutation_request',
+              invoice_id: createdRequest.id,
+            },
+          }
+        );
+
+        if (paymentError) throw paymentError;
+
+        const txId = paymentResult?.transaction_id;
+        if (txId) {
+          const result = await pollTransactionStatus(txId);
+          if (result === 'failed') throw new Error('Le paiement a échoué');
+          if (result === 'timeout') throw new Error('Délai de paiement dépassé. Vérifiez votre transaction.');
+        }
+
+        const success = await updatePaymentStatus(createdRequest.id, 'paid', txId || 'TXN-' + Date.now());
+        if (success) {
+          setStep('confirmation');
+          toast.success('Paiement effectué avec succès');
+        } else {
+          toast.error('Erreur lors de la mise à jour du paiement');
+        }
       } else {
-        toast.error('Erreur lors de la mise à jour du paiement');
+        // Stripe - redirection vers la page de paiement
+        const { data: stripeSession, error: stripeError } = await supabase.functions.invoke('create-payment', {
+          body: {
+            invoice_id: createdRequest.id,
+            payment_type: 'mutation_request',
+            amount_usd: createdRequest.total_amount_usd,
+          },
+        });
+
+        if (stripeError) throw stripeError;
+
+        if (stripeSession?.url) {
+          window.location.href = stripeSession.url;
+          return; // Redirection en cours
+        }
+
+        throw new Error('Session de paiement invalide');
       }
-    } catch (error) {
-      toast.error('Erreur lors du paiement');
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      toast.error(error.message || 'Erreur lors du paiement');
     } finally {
       setProcessingPayment(false);
     }
@@ -1164,8 +1208,8 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                 </h4>
                 
                 <div className="space-y-2">
-                  {/* Frais de dossier - 83$ obligatoire */}
-                  {fees.filter(f => f.fee_name === 'Frais de dossier').map((fee) => (
+                  {/* Frais obligatoires */}
+                  {fees.filter(f => f.is_mandatory).map((fee) => (
                     <div 
                       key={fee.id}
                       className="flex items-start gap-3 p-3 rounded-xl transition-colors bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-200 dark:border-amber-700"
@@ -1193,8 +1237,8 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                     </div>
                   ))}
 
-                  {/* Frais de vérification */}
-                  {fees.filter(f => f.fee_name === 'Frais de vérification').map((fee) => (
+                  {/* Frais optionnels */}
+                  {fees.filter(f => !f.is_mandatory).map((fee) => (
                     <div 
                       key={fee.id}
                       className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${
@@ -1361,7 +1405,12 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                           </span>
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {lateFeesCalculation.days} jours × 0,45 USD/jour
+                          {lateFeesCalculation.days} jours × {DAILY_LATE_FEE_USD} USD/jour
+                          {lateFeesCalculation.capped && (
+                            <span className="block text-orange-600 font-medium mt-0.5">
+                              ⚠ Plafonné à ${LATE_FEE_CAP_USD} USD (plafond légal)
+                            </span>
+                          )}
                         </p>
                       </div>
                     </div>
@@ -1556,7 +1605,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
               
               <div className="flex items-center justify-between pt-2 border-t-2">
                 <span className="text-sm font-bold">Total</span>
-                <span className="text-lg font-bold text-primary">${getTotalAmount()}</span>
+                <span className="text-lg font-bold text-primary">${getTotalAmount().toFixed(2)}</span>
               </div>
             </div>
           </CardContent>
