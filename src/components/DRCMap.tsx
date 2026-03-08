@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Tooltip, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import ProvinceTooltip from './ProvinceTooltip';
+import DOMPurify from 'dompurify';
 
 interface ProvinceData {
   id: string;
