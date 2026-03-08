@@ -600,9 +600,16 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const handlePayment = async () => {
     if (!user || !formData) return;
 
-    if (paymentMethod === 'mobile_money' && (!paymentProvider || !paymentPhone)) {
-      toast.error('Veuillez sélectionner un opérateur et entrer votre numéro');
-      return;
+    if (paymentMethod === 'mobile_money') {
+      if (!paymentProvider || !paymentPhone) {
+        toast.error('Veuillez sélectionner un opérateur et entrer votre numéro');
+        return;
+      }
+      const phoneRegex = /^(\+?243|0)(8[1-9]|9[0-9])\d{7}$/;
+      if (!phoneRegex.test(paymentPhone.replace(/\s/g, ''))) {
+        toast.error('Numéro de téléphone invalide. Format attendu: +243XXXXXXXXX ou 0XXXXXXXXX');
+        return;
+      }
     }
 
     setProcessingPayment(true);

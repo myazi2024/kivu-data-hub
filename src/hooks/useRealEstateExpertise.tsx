@@ -146,7 +146,7 @@ export const useRealEstateExpertise = () => {
       if (error) throw error;
       if (!data || !data.certificate_url?.trim()) return null;
 
-      const validity = checkCertificateValidity(data.certificate_issue_date);
+      const validity = checkCertificateValidity(data.certificate_issue_date, data.certificate_expiry_date);
       return validity.isValid ? (data as ExpertiseRequest) : null;
     } catch (error: any) {
       console.error('Error checking existing certificate:', error);
