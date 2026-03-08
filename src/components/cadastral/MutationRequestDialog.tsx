@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogOverlay, DialogPortal } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -437,6 +437,41 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       toast.error('Veuillez renseigner le nom du nouveau propriétaire');
       return false;
     }
+    
+    // Bug #9: Valider le certificat d'expertise pour les mutations avec transfert
+    if (isTransferMutation) {
+      if (!hasExpertiseCertificate) {
+        toast.error('Veuillez indiquer si vous avez un certificat d\'expertise immobilière');
+        return false;
+      }
+      if (hasExpertiseCertificate === 'yes') {
+        if (!expertiseCertificateFile) {
+          toast.error('Veuillez joindre votre certificat d\'expertise immobilière');
+          return false;
+        }
+        if (!expertiseCertificateDate) {
+          toast.error('Veuillez renseigner la date de délivrance du certificat');
+          return false;
+        }
+        if (certificateValidity.isExpired) {
+          toast.error('Le certificat d\'expertise est expiré (valide 6 mois). Veuillez en demander un nouveau.');
+          return false;
+        }
+        if (!marketValueUsd || parseFloat(marketValueUsd) <= 0) {
+          toast.error('Veuillez renseigner la valeur vénale du bien');
+          return false;
+        }
+        if (parseFloat(marketValueUsd) >= 10000 && !titleAge) {
+          toast.error('Veuillez indiquer l\'ancienneté du titre foncier');
+          return false;
+        }
+      }
+      if (hasExpertiseCertificate === 'no') {
+        toast.error('Un certificat d\'expertise immobilière est requis pour procéder à la mutation. Veuillez d\'abord en demander un.');
+        return false;
+      }
+    }
+    
     return true;
   };
 
@@ -445,12 +480,45 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     setStep('preview');
   };
 
+  // Bug #18: Upload du certificat d'expertise vers Supabase Storage
+  const uploadExpertiseCertificate = async (): Promise<string | null> => {
+    if (!expertiseCertificateFile || !user) return null;
+    
+    try {
+      const fileExt = expertiseCertificateFile.name.split('.').pop();
+      const fileName = `expertise_cert_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+      const filePath = `mutation-documents/${user.id}/certificates/${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('cadastral-documents')
+        .upload(filePath, expertiseCertificateFile);
+      
+      if (uploadError) throw uploadError;
+      
+      const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
+      return data.publicUrl;
+    } catch (error: any) {
+      console.error('Expertise certificate upload error:', error);
+      toast.error('Erreur lors de l\'envoi du certificat d\'expertise');
+      return null;
+    }
+  };
+
   const handleSubmitForm = async () => {
     // Upload des fichiers avant création
     let documentUrls: string[] = [];
     if (attachedFiles.length > 0) {
       documentUrls = await uploadFiles();
       if (documentUrls.length === 0 && attachedFiles.length > 0) {
+        return; // Upload failed
+      }
+    }
+
+    // Bug #18: Upload du certificat d'expertise
+    let expertiseCertificateUrl: string | null = null;
+    if (isTransferMutation && expertiseCertificateFile) {
+      expertiseCertificateUrl = await uploadExpertiseCertificate();
+      if (!expertiseCertificateUrl) {
         return; // Upload failed
       }
     }
@@ -469,11 +537,14 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       ? `${mutationDetails?.label} - Transfert à ${fullBeneficiaryName}`
       : `${mutationDetails?.label} - ${mutationDetails?.description}`;
 
+    // Bug #1: Passer le total calculé complet (base + mutation + retard)
+    const totalCalculated = getTotalAmount();
+
     const request = await createMutationRequest({
       parcel_number: parcelNumber,
       parcel_id: parcelId,
-      mutation_type: mutationType as any,
-      requester_type: requesterType as any,
+      mutation_type: mutationType,
+      requester_type: requesterType,
       requester_name: requesterName,
       requester_phone: '',
       requester_email: requesterEmail,
@@ -482,10 +553,25 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       proposed_changes: { 
         description: autoDescription,
         beneficiary_legal_status: isTransferMutation ? beneficiaryLegalStatus : undefined,
-        supporting_documents: documentUrls
+        supporting_documents: documentUrls,
+        expertise_certificate_url: expertiseCertificateUrl,
+        expertise_certificate_date: expertiseCertificateDate || undefined,
+        market_value_usd: marketValueUsd ? parseFloat(marketValueUsd) : undefined,
+        title_age: titleAge,
+        mutation_fees: mutationFeesCalculation.applicable ? {
+          percentage: mutationFeesCalculation.percentage,
+          mutation_fee: mutationFeesCalculation.mutationFee,
+          bank_fee: mutationFeesCalculation.bankFee,
+          total: mutationFeesCalculation.total
+        } : undefined,
+        late_fees: lateFeesCalculation.applicable ? {
+          days: lateFeesCalculation.days,
+          fee: lateFeesCalculation.fee
+        } : undefined
       },
       justification: '',
-      selected_fees: getSelectedFeesDetails()
+      selected_fees: getSelectedFeesDetails(),
+      total_amount_override: totalCalculated
     });
 
     if (request) {
@@ -494,12 +580,28 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     }
   };
 
+  // Validation du numéro de téléphone congolais (Bug #5)
+  const validatePhoneNumber = (phone: string): boolean => {
+    const regex = /^(\+?243|0)(8[1-9]|9[0-9])\d{7}$/;
+    return regex.test(phone.replace(/\s/g, ''));
+  };
+
   const handlePayment = async () => {
     if (!createdRequest) return;
     
-    if (paymentMethod === 'mobile_money' && (!paymentProvider || !paymentPhone)) {
-      toast.error('Veuillez sélectionner un opérateur et entrer votre numéro');
-      return;
+    if (paymentMethod === 'mobile_money') {
+      if (!paymentProvider) {
+        toast.error('Veuillez sélectionner un opérateur');
+        return;
+      }
+      if (!paymentPhone) {
+        toast.error('Veuillez entrer votre numéro de téléphone');
+        return;
+      }
+      if (!validatePhoneNumber(paymentPhone)) {
+        toast.error('Numéro invalide. Format attendu : +243XXXXXXXXX ou 0XXXXXXXXX');
+        return;
+      }
     }
 
     setProcessingPayment(true);
@@ -527,6 +629,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     setCreatedRequest(null);
     setMutationType('vente');
     setRequesterType('proprietaire');
+    setBeneficiaryLegalStatus('personne_physique'); // Bug #6: reset
     setBeneficiaryLastName('');
     setBeneficiaryFirstName('');
     setBeneficiaryMiddleName('');
@@ -540,6 +643,12 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     setTitleAge(null);
     setTitleIssueDateFromCCC(null);
     setTitleAgeAutoDetected(false);
+    setOwnerAcquisitionDate(null);
+    setOwnerAcquisitionDateAutoDetected(false);
+    setManualAcquisitionDate('');
+    setPaymentMethod('mobile_money');
+    setPaymentProvider('');
+    setPaymentPhone('');
     onOpenChange(false);
   };
 
@@ -1430,6 +1539,18 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                       <span className="text-sm font-medium">${mutationFeesCalculation.bankFee}</span>
                     </div>
                   )}
+                </>
+              )}
+
+              {/* Bug #21: Frais de retard dans le récapitulatif */}
+              {lateFeesCalculation.applicable && (
+                <>
+                  <Separator className="my-1" />
+                  <span className="text-xs font-semibold text-orange-700 dark:text-orange-400 uppercase tracking-wide">Frais de retard</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Retard ({lateFeesCalculation.days} jours × 0,45$/j)</span>
+                    <span className="text-sm font-medium">${lateFeesCalculation.fee.toFixed(2)}</span>
+                  </div>
                 </>
               )}
               
