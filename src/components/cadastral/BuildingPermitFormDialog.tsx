@@ -251,7 +251,20 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
     }
   };
 
-  const handleClose = () => {
+  // Check if form has unsaved changes
+  const hasUnsavedChanges = (): boolean => {
+    if (step === 'confirmation') return false;
+    return !!(
+      permitRecord.permitNumber ||
+      permitRecord.issueDate ||
+      permitRecord.issuingService ||
+      permitRecord.issuingServiceContact ||
+      permitRecord.permitFile ||
+      permitRecord.validityPeriod !== '12'
+    );
+  };
+
+  const resetAndClose = () => {
     setStep('form');
     setPermitRecord({
       permitNumber: '',
@@ -262,6 +275,14 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
       permitFile: null
     });
     onOpenChange(false);
+  };
+
+  const handleClose = () => {
+    if (hasUnsavedChanges()) {
+      const confirmed = window.confirm('Vous avez des modifications non enregistrées. Voulez-vous vraiment fermer ?');
+      if (!confirmed) return;
+    }
+    resetAndClose();
   };
 
   const calculatedStatus = computedStatus();
