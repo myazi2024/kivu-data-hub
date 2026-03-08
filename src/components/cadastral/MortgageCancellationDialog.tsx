@@ -360,6 +360,11 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       toast.error("Vous devez confirmer avoir l'accord du créancier");
       return false;
     }
+    // Fix #8: Validate parcelId exists
+    if (!parcelId) {
+      toast.error('Identifiant de parcelle manquant. Veuillez relancer la recherche.');
+      return false;
+    }
     return true;
   };
 
