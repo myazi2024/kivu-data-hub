@@ -203,13 +203,13 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
 
       if (error) throw error;
 
-      // Créer une notification
-      await supabase.from('notifications').insert({
+      // Créer une notification (non-blocking)
+      supabase.from('notifications').insert({
         user_id: user.id,
         title: 'Hypothèque soumise',
         message: `Votre déclaration d'hypothèque pour la parcelle ${parcelNumber} a été soumise avec succès.`,
         type: 'success'
-      }).then(() => {}).catch(() => {}); // Non-blocking
+      }).then(() => {});
 
       setStep('confirmation');
       toast.success('Hypothèque enregistrée avec succès');
