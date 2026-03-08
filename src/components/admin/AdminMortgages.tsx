@@ -169,18 +169,23 @@ const AdminMortgages = () => {
         const finalRef = existingRef ? `${refNumber}-${Date.now().toString(36).slice(-4).toUpperCase()}` : refNumber;
 
         // Fix #9: Use null for duration instead of 0 so DB default kicks in
+        // Fix #1: Omit duration_months when null to let DB default (12) apply
+        const durationValue = mortgage.duration_months ?? mortgage.durationMonths;
+        const mortgageInsertData: Record<string, any> = {
+          parcel_id: request.original_parcel_id,
+          creditor_name: mortgage.creditor_name || mortgage.creditorName || '',
+          creditor_type: mortgage.creditor_type || mortgage.creditorType || 'Banque',
+          mortgage_amount_usd: mortgage.mortgage_amount_usd || mortgage.mortgageAmountUsd || 0,
+          contract_date: mortgage.contract_date || mortgage.contractDate || new Date().toISOString().split('T')[0],
+          mortgage_status: declaredStatus,
+          reference_number: finalRef,
+        };
+        if (durationValue != null && durationValue > 0) {
+          mortgageInsertData.duration_months = durationValue;
+        }
         const { error: insertError } = await supabase
           .from('cadastral_mortgages')
-          .insert({
-            parcel_id: request.original_parcel_id,
-            creditor_name: mortgage.creditor_name || mortgage.creditorName || '',
-            creditor_type: mortgage.creditor_type || mortgage.creditorType || 'Banque',
-            mortgage_amount_usd: mortgage.mortgage_amount_usd || mortgage.mortgageAmountUsd || 0,
-            duration_months: mortgage.duration_months || mortgage.durationMonths || 12,
-            contract_date: mortgage.contract_date || mortgage.contractDate || new Date().toISOString().split('T')[0],
-            mortgage_status: declaredStatus,
-            reference_number: finalRef,
-          });
+          .insert(mortgageInsertData);
 
         if (insertError) {
           console.error('Error inserting mortgage:', insertError);
