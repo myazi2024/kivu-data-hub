@@ -34,6 +34,7 @@ import {
   LEGAL_STATUS_OPTIONS,
   REQUESTER_TYPES,
   PROVIDER_LABELS,
+  BANK_FEE_PERCENTAGE,
   isTransferMutation as checkIsTransfer,
   hasLateFees as checkHasLateFees,
 } from './mutation/MutationConstants';
