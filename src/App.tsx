@@ -39,7 +39,15 @@ const ArticleDetail = React.lazy(() => import("./pages/ArticleDetail"));
 const AboutCCC = React.lazy(() => import("./pages/AboutCCC"));
 const AboutDiscountCodes = React.lazy(() => import("./pages/AboutDiscountCodes"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center">
