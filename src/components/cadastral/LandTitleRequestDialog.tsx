@@ -1736,7 +1736,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                   </Card>
 
                   <div className="flex gap-2 pt-4">
-                    <Button variant="outline" onClick={() => setActiveTab('location')} className="flex-1 h-8 text-xs rounded-xl">
+                    <Button variant="outline" onClick={() => setActiveTab('valorisation')} className="flex-1 h-8 text-xs rounded-xl">
                       Précédent
                     </Button>
                     <Button onClick={() => setActiveTab('payment')} className="flex-1 h-8 text-xs rounded-xl gap-2">
