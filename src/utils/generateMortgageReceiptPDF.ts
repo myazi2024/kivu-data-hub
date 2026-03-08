@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
+import { formatCurrency } from '@/utils/formatters';
 
 interface MortgageReceiptData {
   type: 'registration' | 'cancellation';
@@ -99,7 +100,8 @@ export async function generateMortgageReceiptPDF(data: MortgageReceiptData): Pro
 
   if (data.mortgageData) {
     addRow('Créancier', data.mortgageData.creditorName);
-    addRow('Montant hypothèque', `${data.mortgageData.amount.toLocaleString('fr-FR')} USD`);
+    // Fix #22: Use formatCurrency consistently
+    addRow('Montant hypothèque', formatCurrency(data.mortgageData.amount));
     addRow('Date contrat', new Date(data.mortgageData.contractDate).toLocaleDateString('fr-FR'));
   }
 
@@ -107,41 +109,43 @@ export async function generateMortgageReceiptPDF(data: MortgageReceiptData): Pro
     addRow('Motif', data.reason);
   }
 
-  // Section: Fees
-  yPos += 5;
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.setTextColor(0, 50, 100);
-  doc.text('FRAIS ACQUITTÉS', 25, yPos);
-  yPos += 8;
+  // Section: Fees (only if there are fees)
+  if (data.fees.length > 0) {
+    yPos += 5;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(0, 50, 100);
+    doc.text('FRAIS ACQUITTÉS', 25, yPos);
+    yPos += 8;
 
-  doc.setFontSize(10);
-  doc.setTextColor(0, 0, 0);
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
 
-  // Table header
-  doc.setFont('helvetica', 'bold');
-  doc.setFillColor(240, 240, 240);
-  doc.rect(25, yPos - 4, pageWidth - 50, 7, 'F');
-  doc.text('Désignation', 27, yPos);
-  doc.text('Montant (USD)', pageWidth - 27, yPos, { align: 'right' });
-  yPos += 8;
+    // Table header
+    doc.setFont('helvetica', 'bold');
+    doc.setFillColor(240, 240, 240);
+    doc.rect(25, yPos - 4, pageWidth - 50, 7, 'F');
+    doc.text('Désignation', 27, yPos);
+    doc.text('Montant', pageWidth - 27, yPos, { align: 'right' });
+    yPos += 8;
 
-  doc.setFont('helvetica', 'normal');
-  for (const fee of data.fees) {
-    doc.text(fee.name, 27, yPos);
-    doc.text(`$${fee.amount.toFixed(2)}`, pageWidth - 27, yPos, { align: 'right' });
-    yPos += 6;
+    doc.setFont('helvetica', 'normal');
+    for (const fee of data.fees) {
+      doc.text(fee.name, 27, yPos);
+      doc.text(formatCurrency(fee.amount), pageWidth - 27, yPos, { align: 'right' });
+      yPos += 6;
+    }
+
+    // Total
+    doc.setLineWidth(0.3);
+    doc.line(25, yPos, pageWidth - 25, yPos);
+    yPos += 5;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text('TOTAL PAYÉ:', 27, yPos);
+    doc.setTextColor(0, 120, 60);
+    doc.text(formatCurrency(data.totalAmountPaid), pageWidth - 27, yPos, { align: 'right' });
   }
-
-  // Total
-  doc.setLineWidth(0.3);
-  doc.line(25, yPos, pageWidth - 25, yPos);
-  yPos += 5;
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.text('TOTAL PAYÉ:', 27, yPos);
-  doc.setTextColor(0, 120, 60);
-  doc.text(`$${data.totalAmountPaid.toFixed(2)}`, pageWidth - 27, yPos, { align: 'right' });
 
   // QR Code
   const qrData = `https://bic-rdc.com/verify-mortgage/${data.requestReference}`;

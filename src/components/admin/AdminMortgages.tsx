@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { RefreshCw, Building, Eye, DollarSign, Clock, CheckCircle2, Search, Download, XCircle, FileX2, Landmark, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
@@ -47,18 +48,25 @@ interface MortgageRequest {
 }
 
 const AdminMortgages = () => {
+  const { user } = useAuth();
   const [mortgages, setMortgages] = useState<Mortgage[]>([]);
   const [requests, setRequests] = useState<MortgageRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [requestDetailsOpen, setRequestDetailsOpen] = useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  // Fix #14: Confirmation dialog before approval
+  const [approveConfirmOpen, setApproveConfirmOpen] = useState(false);
+  const [pendingApproveRequest, setPendingApproveRequest] = useState<MortgageRequest | null>(null);
   const [selectedMortgage, setSelectedMortgage] = useState<Mortgage | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<MortgageRequest | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [processingAction, setProcessingAction] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('_all');
   const [searchTerm, setSearchTerm] = useState('');
+  // Fix #17/#18: Search and filter for requests tab
+  const [requestSearchTerm, setRequestSearchTerm] = useState('');
+  const [requestTypeFilter, setRequestTypeFilter] = useState<string>('_all');
   const [activeTab, setActiveTab] = useState<string>('requests');
 
   useEffect(() => {
@@ -68,7 +76,6 @@ const AdminMortgages = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch approved mortgages
       const { data: approvedData, error: approvedError } = await supabase
         .from('cadastral_mortgages')
         .select('*, cadastral_parcels(parcel_number)')
@@ -80,7 +87,6 @@ const AdminMortgages = () => {
         parcel_number: (m.cadastral_parcels as any)?.parcel_number || 'N/A'
       })));
 
-      // Fetch ALL mortgage requests (pending, in_review, approved, rejected)
       const { data: requestData, error: requestError } = await supabase
         .from('cadastral_contributions')
         .select('id, parcel_number, contribution_type, mortgage_history, status, created_at, user_id, original_parcel_id, rejection_reason, change_justification')
@@ -104,11 +110,10 @@ const AdminMortgages = () => {
     switch (status?.toLowerCase()) {
       case 'active': return 'active';
       case 'paid': return 'paid';
-      case 'defaulted': case 'en défaut': return 'defaulted';
+      case 'defaulted': case 'en défaut': case 'en_defaut': return 'defaulted';
       case 'pending': return 'pending';
       case 'rejected': return 'rejected';
       case 'approved': return 'active';
-      case 'in_review': return 'pending';
       default: return 'pending';
     }
   };
@@ -133,26 +138,49 @@ const AdminMortgages = () => {
     return matchesSearch && matchesStatus;
   });
 
-  // Filter requests
-  const pendingRequests = requests.filter(r => r.status === 'pending' || r.status === 'in_review');
+  // Fix #17/#18: Filter requests by type and search
+  const pendingRequests = requests.filter(r => {
+    const isPending = r.status === 'pending';
+    const matchesType = requestTypeFilter === '_all' || r.contribution_type === requestTypeFilter;
+    const mortgage = r.mortgage_history[0];
+    const matchesSearch = requestSearchTerm === '' ||
+      r.parcel_number?.toLowerCase().includes(requestSearchTerm.toLowerCase()) ||
+      (mortgage?.creditor_name || mortgage?.creditorName || '').toLowerCase().includes(requestSearchTerm.toLowerCase()) ||
+      (mortgage?.request_reference_number || '').toLowerCase().includes(requestSearchTerm.toLowerCase());
+    return isPending && matchesType && matchesSearch;
+  });
   const processedRequests = requests.filter(r => r.status === 'approved' || r.status === 'rejected');
 
   const pagination = usePagination(filteredMortgages, { initialPageSize: 15 });
   const requestsPagination = usePagination(pendingRequests, { initialPageSize: 15 });
+  // Fix #10: Paginate history tab
+  const historyPagination = usePagination(processedRequests, { initialPageSize: 15 });
 
   const activeCount = mortgages.filter(m => m.mortgage_status?.toLowerCase() === 'active').length;
   const paidCount = mortgages.filter(m => m.mortgage_status?.toLowerCase() === 'paid').length;
-  const pendingCount = pendingRequests.length;
+  const pendingCount = requests.filter(r => r.status === 'pending').length;
   const totalAmount = mortgages.filter(m => m.mortgage_status?.toLowerCase() === 'active').reduce((sum, m) => sum + (m.mortgage_amount_usd || 0), 0);
 
-  // APPROVE a mortgage request
-  const handleApprove = async (request: MortgageRequest) => {
+  // Fix #14: Show confirmation before approval
+  const handleApproveClick = (request: MortgageRequest) => {
+    setPendingApproveRequest(request);
+    setApproveConfirmOpen(true);
+  };
+
+  // Fix #3/#4/#9: APPROVE with admin ID, reference_number, and declared status
+  const handleApproveConfirmed = async () => {
+    if (!pendingApproveRequest) return;
+    const request = pendingApproveRequest;
     setProcessingAction(true);
     try {
-      // Update contribution status
+      // Fix #3: Include reviewed_by with admin user ID
       const { error: updateError } = await supabase
         .from('cadastral_contributions')
-        .update({ status: 'approved', reviewed_at: new Date().toISOString() })
+        .update({
+          status: 'approved',
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: user?.id || null,
+        })
         .eq('id', request.id);
 
       if (updateError) throw updateError;
@@ -161,6 +189,11 @@ const AdminMortgages = () => {
 
       // If registration: insert into cadastral_mortgages
       if (request.contribution_type === 'mortgage_registration' && request.original_parcel_id) {
+        // Fix #4: Generate a reference_number for the approved mortgage
+        const refNumber = `HYP-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 4).toUpperCase()}`;
+        // Fix #9: Use the declared mortgage_status from submission
+        const declaredStatus = mortgage.mortgage_status || 'active';
+
         const { error: insertError } = await supabase
           .from('cadastral_mortgages')
           .insert({
@@ -170,7 +203,8 @@ const AdminMortgages = () => {
             mortgage_amount_usd: mortgage.mortgage_amount_usd || mortgage.mortgageAmountUsd || 0,
             duration_months: mortgage.duration_months || mortgage.durationMonths || 0,
             contract_date: mortgage.contract_date || mortgage.contractDate || new Date().toISOString().split('T')[0],
-            mortgage_status: 'active',
+            mortgage_status: declaredStatus,
+            reference_number: refNumber,
           });
 
         if (insertError) {
@@ -187,18 +221,20 @@ const AdminMortgages = () => {
           .eq('reference_number', mortgage.mortgage_reference_number.toUpperCase());
       }
 
-      // Notification
+      // Fix #3: Audit log with admin identity
       try {
-        await (supabase as any).from('notifications').insert({
-          user_id: request.user_id,
-          title: request.contribution_type === 'mortgage_registration' ? 'Hypothèque approuvée' : 'Radiation approuvée',
-          message: `Votre demande pour la parcelle ${request.parcel_number} a été approuvée.`,
-          type: 'success',
-          action_url: '/user-dashboard'
+        await supabase.from('audit_logs').insert({
+          action: `mortgage_${request.contribution_type === 'mortgage_cancellation' ? 'cancellation' : 'registration'}_approved`,
+          user_id: user?.id || null,
+          record_id: request.id,
+          table_name: 'cadastral_contributions',
+          new_values: { parcel_number: request.parcel_number, status: 'approved' } as any,
         });
       } catch { /* Non-blocking */ }
 
       toast.success('Demande approuvée avec succès');
+      setApproveConfirmOpen(false);
+      setPendingApproveRequest(null);
       setRequestDetailsOpen(false);
       fetchData();
     } catch (error) {
@@ -209,7 +245,7 @@ const AdminMortgages = () => {
     }
   };
 
-  // REJECT a mortgage request
+  // Fix #3: REJECT with admin ID
   const handleReject = async () => {
     if (!selectedRequest || !rejectionReason.trim()) {
       toast.error('Veuillez indiquer un motif de rejet');
@@ -222,19 +258,22 @@ const AdminMortgages = () => {
         .update({
           status: 'rejected',
           rejection_reason: rejectionReason.trim(),
-          reviewed_at: new Date().toISOString()
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: user?.id || null,
+          rejected_by: user?.id || null,
+          rejection_date: new Date().toISOString(),
         })
         .eq('id', selectedRequest.id);
 
       if (error) throw error;
 
       try {
-        await (supabase as any).from('notifications').insert({
-          user_id: selectedRequest.user_id,
-          title: 'Demande rejetée',
-          message: `Votre demande pour la parcelle ${selectedRequest.parcel_number} a été rejetée: ${rejectionReason.trim()}`,
-          type: 'error',
-          action_url: '/user-dashboard'
+        await supabase.from('audit_logs').insert({
+          action: 'mortgage_request_rejected',
+          user_id: user?.id || null,
+          record_id: selectedRequest.id,
+          table_name: 'cadastral_contributions',
+          new_values: { parcel_number: selectedRequest.parcel_number, status: 'rejected', reason: rejectionReason.trim() } as any,
         });
       } catch { /* Non-blocking */ }
 
@@ -325,8 +364,26 @@ const AdminMortgages = () => {
           </TabsTrigger>
         </TabsList>
 
-        {/* REQUESTS TAB - with approve/reject */}
+        {/* REQUESTS TAB */}
         <TabsContent value="requests" className="mt-3">
+          {/* Fix #17/#18: Search and filter for requests */}
+          <Card className="p-2.5 bg-background rounded-xl shadow-sm border mb-3">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input value={requestSearchTerm} onChange={(e) => { setRequestSearchTerm(e.target.value); requestsPagination.goToPage(1); }} placeholder="Rechercher parcelle, créancier..." className="h-8 text-xs pl-8" />
+              </div>
+              <Select value={requestTypeFilter} onValueChange={(v) => { setRequestTypeFilter(v); requestsPagination.goToPage(1); }}>
+                <SelectTrigger className="h-8 text-xs w-full sm:w-44"><SelectValue placeholder="Type" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_all">Tous les types</SelectItem>
+                  <SelectItem value="mortgage_registration">Enregistrements</SelectItem>
+                  <SelectItem value="mortgage_cancellation">Radiations</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </Card>
+
           <Card className="p-3 md:p-4 bg-background rounded-2xl shadow-sm border">
             <h3 className="text-xs font-semibold mb-3">Demandes en attente de validation ({pendingRequests.length})</h3>
             {loading ? (
@@ -363,7 +420,8 @@ const AdminMortgages = () => {
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setSelectedRequest(req); setRequestDetailsOpen(true); }}>
                               <Eye className="h-3.5 w-3.5" />
                             </Button>
-                            <Button variant="default" size="icon" className="h-7 w-7 bg-green-600 hover:bg-green-700" onClick={() => handleApprove(req)} disabled={processingAction}>
+                            {/* Fix #14: Use confirmation dialog */}
+                            <Button variant="default" size="icon" className="h-7 w-7 bg-green-600 hover:bg-green-700" onClick={() => handleApproveClick(req)} disabled={processingAction}>
                               <CheckCircle2 className="h-3.5 w-3.5" />
                             </Button>
                             <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => { setSelectedRequest(req); setRejectDialogOpen(true); }} disabled={processingAction}>
@@ -440,7 +498,7 @@ const AdminMortgages = () => {
                           {mortgage.reference_number && <div className="mt-1 text-[10px] font-mono text-primary">Réf: {mortgage.reference_number}</div>}
                           <div className="flex items-center gap-2 mt-1 text-[10px]">
                             <DollarSign className="h-2.5 w-2.5 text-green-500" />
-                            <span className="font-semibold">${(mortgage.mortgage_amount_usd || 0).toLocaleString()}</span>
+                            <span className="font-semibold">{formatCurrency(mortgage.mortgage_amount_usd || 0)}</span>
                             <span className="text-muted-foreground">• {mortgage.duration_months} mois</span>
                           </div>
                         </div>
@@ -460,33 +518,43 @@ const AdminMortgages = () => {
           </Card>
         </TabsContent>
 
-        {/* HISTORY TAB */}
+        {/* HISTORY TAB - Fix #10: Paginated */}
         <TabsContent value="history" className="mt-3">
           <Card className="p-3 md:p-4 bg-background rounded-2xl shadow-sm border">
             <h3 className="text-xs font-semibold mb-3">Historique des demandes traitées ({processedRequests.length})</h3>
             {processedRequests.length === 0 ? (
               <div className="text-center py-8"><p className="text-xs text-muted-foreground">Aucune demande traitée</p></div>
             ) : (
-              <div className="space-y-2">
-                {processedRequests.slice(0, 20).map((req) => {
-                  const mortgage = req.mortgage_history[0];
-                  return (
-                    <div key={req.id} className="p-2.5 rounded-xl border bg-card">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          {getRequestTypeIcon(req.contribution_type)}
-                          <span className="text-xs font-medium">{getRequestTypeLabel(req.contribution_type)}</span>
-                          <span className="text-[10px] text-muted-foreground">{req.parcel_number}</span>
+              <>
+                <div className="space-y-2">
+                  {historyPagination.paginatedData.map((req) => {
+                    const mortgage = req.mortgage_history[0];
+                    return (
+                      <div key={req.id} className="p-2.5 rounded-xl border bg-card">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            {getRequestTypeIcon(req.contribution_type)}
+                            <span className="text-xs font-medium">{getRequestTypeLabel(req.contribution_type)}</span>
+                            <span className="text-[10px] text-muted-foreground">{req.parcel_number}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] text-muted-foreground">{format(new Date(req.created_at), 'dd/MM/yy', { locale: fr })}</span>
+                            <StatusBadge status={getMortgageStatusType(req.status)} compact />
+                          </div>
                         </div>
-                        <StatusBadge status={getMortgageStatusType(req.status)} compact />
+                        {req.status === 'rejected' && req.rejection_reason && (
+                          <p className="text-[10px] text-destructive mt-1">Motif: {req.rejection_reason}</p>
+                        )}
                       </div>
-                      {req.status === 'rejected' && req.rejection_reason && (
-                        <p className="text-[10px] text-destructive mt-1">Motif: {req.rejection_reason}</p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+                {historyPagination.totalPages > 1 && (
+                  <div className="mt-4">
+                    <PaginationControls currentPage={historyPagination.currentPage} totalPages={historyPagination.totalPages} pageSize={historyPagination.pageSize} totalItems={historyPagination.totalItems} hasPreviousPage={historyPagination.hasPreviousPage} hasNextPage={historyPagination.hasNextPage} onPageChange={historyPagination.goToPage} onPageSizeChange={historyPagination.changePageSize} onNextPage={historyPagination.goToNextPage} onPreviousPage={historyPagination.goToPreviousPage} />
+                  </div>
+                )}
+              </>
             )}
           </Card>
         </TabsContent>
@@ -555,14 +623,21 @@ const AdminMortgages = () => {
 
               {selectedRequest.mortgage_history.map((mortgage: any, idx: number) => (
                 <div key={idx} className="p-3 rounded-lg border space-y-2">
+                  {mortgage.request_reference_number && <div className="text-xs"><span className="text-muted-foreground">Réf demande:</span> <span className="font-mono">{mortgage.request_reference_number}</span></div>}
                   {mortgage.creditor_name && <div className="text-xs"><span className="text-muted-foreground">Créancier:</span> <span className="font-medium">{mortgage.creditor_name}</span></div>}
                   {(mortgage.mortgage_amount_usd || mortgage.mortgageAmountUsd) && <div className="text-xs"><span className="text-muted-foreground">Montant:</span> <span className="font-semibold">{formatCurrency(mortgage.mortgage_amount_usd || mortgage.mortgageAmountUsd)}</span></div>}
                   {mortgage.mortgage_reference_number && <div className="text-xs"><span className="text-muted-foreground">Réf hypothèque:</span> <span className="font-mono">{mortgage.mortgage_reference_number}</span></div>}
-                  {mortgage.request_reference_number && <div className="text-xs"><span className="text-muted-foreground">Réf demande:</span> <span className="font-mono">{mortgage.request_reference_number}</span></div>}
-                  {mortgage.cancellation_reason && <div className="text-xs"><span className="text-muted-foreground">Motif:</span> <span>{mortgage.cancellation_reason}</span></div>}
+                  {mortgage.mortgage_status && <div className="text-xs"><span className="text-muted-foreground">Statut déclaré:</span> <span>{mortgage.mortgage_status}</span></div>}
+                  {mortgage.cancellation_reason_label && <div className="text-xs"><span className="text-muted-foreground">Motif:</span> <span>{mortgage.cancellation_reason_label}</span></div>}
                   {mortgage.requester_name && <div className="text-xs"><span className="text-muted-foreground">Demandeur:</span> <span>{mortgage.requester_name}</span></div>}
-                  {mortgage.total_amount_paid && <div className="text-xs"><span className="text-muted-foreground">Frais payés:</span> <span className="font-semibold text-green-600">{formatCurrency(mortgage.total_amount_paid)}</span></div>}
+                  {mortgage.total_amount_paid > 0 && <div className="text-xs"><span className="text-muted-foreground">Frais payés:</span> <span className="font-semibold text-green-600">{formatCurrency(mortgage.total_amount_paid)}</span></div>}
                   {mortgage.payment_transaction_id && <div className="text-xs"><span className="text-muted-foreground">ID Transaction:</span> <span className="font-mono text-[10px]">{mortgage.payment_transaction_id}</span></div>}
+                  {mortgage.document_url && (
+                    <div className="text-xs">
+                      <span className="text-muted-foreground">Justificatif:</span>
+                      <a href={mortgage.document_url} target="_blank" rel="noopener noreferrer" className="ml-1 text-primary hover:underline text-[10px]">Voir le document</a>
+                    </div>
+                  )}
                   {mortgage.supporting_documents?.length > 0 && (
                     <div className="text-xs">
                       <span className="text-muted-foreground">Documents ({mortgage.supporting_documents.length}):</span>
@@ -585,7 +660,7 @@ const AdminMortgages = () => {
 
               {selectedRequest.status === 'pending' && (
                 <div className="flex gap-2 pt-2">
-                  <Button className="flex-1 h-9 text-xs bg-green-600 hover:bg-green-700" onClick={() => handleApprove(selectedRequest)} disabled={processingAction}>
+                  <Button className="flex-1 h-9 text-xs bg-green-600 hover:bg-green-700" onClick={() => handleApproveClick(selectedRequest)} disabled={processingAction}>
                     <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Approuver
                   </Button>
                   <Button variant="destructive" className="flex-1 h-9 text-xs" onClick={() => setRejectDialogOpen(true)} disabled={processingAction}>
@@ -595,6 +670,36 @@ const AdminMortgages = () => {
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Fix #14: Approval Confirmation Dialog */}
+      <Dialog open={approveConfirmOpen} onOpenChange={setApproveConfirmOpen}>
+        <DialogContent className="max-w-[340px] rounded-2xl">
+          <DialogHeader><DialogTitle className="text-sm">Confirmer l'approbation</DialogTitle></DialogHeader>
+          {pendingApproveRequest && (
+            <div className="space-y-3 py-2">
+              <Alert className="bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800 rounded-xl">
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <AlertDescription className="text-xs text-green-700 dark:text-green-300">
+                  <p className="font-medium mb-1">
+                    {pendingApproveRequest.contribution_type === 'mortgage_cancellation'
+                      ? "L'hypothèque sera marquée comme soldée et radiée du registre."
+                      : "Une nouvelle hypothèque sera créée dans le registre avec un numéro de référence."
+                    }
+                  </p>
+                  <p>Parcelle: <strong>{pendingApproveRequest.parcel_number}</strong></p>
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" size="sm" onClick={() => { setApproveConfirmOpen(false); setPendingApproveRequest(null); }}>Annuler</Button>
+            <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={handleApproveConfirmed} disabled={processingAction}>
+              {processingAction ? <RefreshCw className="h-3 w-3 animate-spin mr-1" /> : <CheckCircle2 className="h-3 w-3 mr-1" />}
+              Confirmer l'approbation
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

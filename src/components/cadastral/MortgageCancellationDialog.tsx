@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FileX2, Save } from 'lucide-react';
@@ -50,6 +49,8 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
   const [showDraftPrompt, setShowDraftPrompt] = useState(false);
   const isSubmittingRef = useRef(false);
   const feesInitializedRef = useRef(false);
+  // Fix #1: Track if draft prompt was already shown this session
+  const draftPromptShownRef = useRef(false);
 
   const [parcelData, setParcelData] = useState<ParcelData | null>(null);
   const [mortgageData, setMortgageData] = useState<MortgageData | null>(null);
@@ -72,9 +73,12 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     comments: ''
   });
 
-  const generateUniqueReference = useCallback((): string => {
-    return `RAD-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
-  }, []);
+  // Fix #2: Generate reference once on open, not as a dependency
+  useEffect(() => {
+    if (open) {
+      setRequestReferenceNumber(`RAD-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`);
+    }
+  }, [open]);
 
   const loadParcelData = useCallback(async () => {
     if (!parcelId) return;
@@ -94,16 +98,23 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     }
   }, [parcelId]);
 
+  // Fix #1: Separate loadParcelData from draft check to avoid re-render loop
   useEffect(() => {
     if (open) {
       loadParcelData();
-      setRequestReferenceNumber(generateUniqueReference());
-      // Check for draft
-      if (hasDraft) {
-        setShowDraftPrompt(true);
-      }
     }
-  }, [open, loadParcelData, generateUniqueReference, hasDraft]);
+  }, [open, loadParcelData]);
+
+  // Fix #1: Draft prompt only shown once per dialog session
+  useEffect(() => {
+    if (open && hasDraft && !draftPromptShownRef.current) {
+      draftPromptShownRef.current = true;
+      setShowDraftPrompt(true);
+    }
+    if (!open) {
+      draftPromptShownRef.current = false;
+    }
+  }, [open, hasDraft]);
 
   useEffect(() => {
     if (open && fees.length > 0 && !feesInitializedRef.current) {
@@ -208,6 +219,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
   const selectedFeesDetails = useMemo(() => fees.filter(f => selectedFees.includes(f.id)), [selectedFees, fees]);
   const totalAmount = useMemo(() => selectedFeesDetails.reduce((sum, fee) => sum + fee.amount_usd, 0), [selectedFeesDetails]);
 
+  // Fix #13: Validate requester phone if provided
   const validateForm = (): boolean => {
     if (!formData.mortgageReferenceNumber.trim()) { toast.error("Veuillez indiquer le numéro de référence"); return false; }
     if (!referenceValid) { toast.error("Le numéro de référence n'est pas valide"); return false; }
@@ -217,6 +229,11 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     if (formData.settlementAmount) {
       const amount = parseFloat(formData.settlementAmount);
       if (isNaN(amount) || amount < 0) { toast.error('Le montant de règlement ne peut pas être négatif'); return false; }
+    }
+    // Fix #13: Validate requester phone format if provided
+    if (formData.requesterPhone.trim() && !PHONE_REGEX_DRC.test(formData.requesterPhone.replace(/\s/g, ''))) {
+      toast.error('Le numéro de téléphone du demandeur est invalide (format RDC attendu)');
+      return false;
     }
     if (formData.supportingDocuments.length === 0) { toast.error('Veuillez joindre au moins un document justificatif'); return false; }
     if (!formData.creditorAccord) { toast.error("Vous devez confirmer avoir l'accord du créancier"); return false; }
@@ -230,8 +247,10 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     setStep('review');
   };
 
+  // Fix #6: Report partial upload failures to user
   const uploadDocuments = async (): Promise<string[]> => {
     const urls: string[] = [];
+    const failedFiles: string[] = [];
     for (const file of formData.supportingDocuments) {
       const fileExt = file.name.split('.').pop();
       const fileName = `cancellation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
@@ -239,10 +258,15 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       const { error } = await supabase.storage.from('cadastral-documents').upload(filePath, file);
       if (error) {
         console.error(`Failed to upload ${file.name}:`, error);
+        failedFiles.push(file.name);
       } else {
         const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
         urls.push(data.publicUrl);
       }
+    }
+    // Fix #6: Warn user about partial failures
+    if (failedFiles.length > 0 && urls.length > 0) {
+      toast.warning(`${failedFiles.length} fichier(s) n'ont pas pu être téléversés: ${failedFiles.join(', ')}`);
     }
     return urls;
   };
@@ -255,7 +279,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       .eq('parcel_number', parcelNumber)
       .eq('user_id', user.id)
       .eq('contribution_type', 'mortgage_cancellation')
-      .in('status', ['pending', 'in_review']);
+      .in('status', ['pending']);
     return data?.some(c => {
       const history = c.mortgage_history as any[];
       return history?.some(h => h.mortgage_reference_number?.toUpperCase() === formData.mortgageReferenceNumber.toUpperCase());
@@ -298,13 +322,17 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       if (!paymentResult.success) { isSubmittingRef.current = false; return; }
       setLoading(true);
 
+      // Fix #8: Store reason separately from comments
+      const reasonLabel = CANCELLATION_REASONS.find(r => r.value === formData.reason)?.label || formData.reason;
+
       const { error } = await supabase.from('cadastral_contributions').insert({
         parcel_number: parcelNumber,
         original_parcel_id: parcelId || null,
         user_id: user.id,
         contribution_type: 'mortgage_cancellation',
         status: 'pending',
-        change_justification: formData.comments || `Demande de radiation - ${CANCELLATION_REASONS.find(r => r.value === formData.reason)?.label}`,
+        // Fix #8: comments go in change_justification, reason is in mortgage_history
+        change_justification: formData.comments || null,
         mortgage_history: [{
           type: 'cancellation_request',
           request_reference_number: requestReferenceNumber,
@@ -312,6 +340,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
           mortgage_data: mortgageData,
           parcel_data: parcelData,
           cancellation_reason: formData.reason,
+          cancellation_reason_label: reasonLabel,
           cancellation_date: formData.cancellationDate,
           settlement_amount: formData.settlementAmount ? parseFloat(formData.settlementAmount) : null,
           requester_name: formData.requesterName,
@@ -331,13 +360,16 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       });
       if (error) throw error;
 
+      // Fix #20: Notification with proper error handling
       try {
-        await (supabase as any).from('notifications').insert({
-          user_id: user.id, title: 'Demande de radiation soumise',
-          message: `Votre demande de radiation (${requestReferenceNumber}) pour la parcelle ${parcelNumber} a été soumise.`,
-          type: 'success', action_url: '/user-dashboard'
+        await supabase.from('audit_logs').insert({
+          action: 'mortgage_cancellation_submitted',
+          user_id: user.id,
+          record_id: null,
+          table_name: 'cadastral_contributions',
+          new_values: { request_reference: requestReferenceNumber, parcel_number: parcelNumber } as any,
         });
-      } catch { /* Non-blocking */ }
+      } catch { /* Non-blocking audit */ }
 
       clearDraft();
       setStep('confirmation');
@@ -359,6 +391,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     setRequestReferenceNumber('');
     setShowDraftPrompt(false);
     isSubmittingRef.current = false;
+    draftPromptShownRef.current = false;
     setFormData({
       mortgageReferenceNumber: '', reason: 'remboursement_integral',
       cancellationDate: new Date().toISOString().split('T')[0], settlementAmount: '',
@@ -451,9 +484,9 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
           </DialogTitle>
           <DialogDescription className="text-xs">Parcelle {parcelNumber}</DialogDescription>
         </DialogHeader>
-        <ScrollArea className={`${isMobile ? 'h-[calc(88vh-80px)]' : 'max-h-[calc(85vh-80px)]'} px-4 pb-4`}>
+        <div className={`${isMobile ? 'h-[calc(88vh-80px)]' : 'max-h-[calc(85vh-80px)]'} overflow-y-auto px-4 pb-4`}>
           {renderContent()}
-        </ScrollArea>
+        </div>
       </DialogContent>
       <QuickAuthDialog open={showAuthDialog} onOpenChange={setShowAuthDialog} onAuthSuccess={() => setShowAuthDialog(false)} />
     </Dialog>

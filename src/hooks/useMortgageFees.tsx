@@ -1,20 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { MortgageFee } from '@/components/cadastral/mortgage-cancellation/types';
 
-/**
- * Fix #5: Configuration-driven mortgage cancellation fees.
- * Falls back to hardcoded defaults if no DB config found.
- */
+// Fix #21: Re-export MortgageFee from the canonical types file
+export type { MortgageFee };
 
-export interface MortgageCancellationFee {
-  id: string;
-  name: string;
-  amount_usd: number;
-  is_mandatory: boolean;
-  description?: string;
-}
-
-const DEFAULT_FEES: MortgageCancellationFee[] = [
+const DEFAULT_FEES: MortgageFee[] = [
   { id: 'dossier', name: "Frais d'ouverture de dossier", amount_usd: 50, is_mandatory: true, description: 'Frais administratifs de constitution du dossier' },
   { id: 'radiation', name: 'Droit de radiation', amount_usd: 100, is_mandatory: true, description: 'Droit de radiation au registre des titres fonciers' },
   { id: 'certificat', name: 'Certificat de radiation', amount_usd: 35, is_mandatory: true, description: 'Délivrance du certificat officiel de mainlevée' },
@@ -24,7 +15,7 @@ const DEFAULT_FEES: MortgageCancellationFee[] = [
 ];
 
 export const useMortgageFees = () => {
-  const [fees, setFees] = useState<MortgageCancellationFee[]>(DEFAULT_FEES);
+  const [fees, setFees] = useState<MortgageFee[]>(DEFAULT_FEES);
   const [loadingFees, setLoadingFees] = useState(true);
 
   useEffect(() => {
@@ -38,7 +29,7 @@ export const useMortgageFees = () => {
           .maybeSingle();
 
         if (!error && data?.config_value) {
-          const configFees = data.config_value as unknown as MortgageCancellationFee[];
+          const configFees = data.config_value as unknown as MortgageFee[];
           if (Array.isArray(configFees) && configFees.length > 0) {
             setFees(configFees);
           }

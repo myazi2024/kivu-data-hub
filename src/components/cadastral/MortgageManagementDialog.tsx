@@ -30,7 +30,7 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
   const [removeKey, setRemoveKey] = useState(0);
   const introCompletedRef = useRef(false);
 
-  // Fix #15: Check if parcel has active mortgages for the radiation tab
+  // Fix #24: Check if parcel has active mortgages for the radiation tab
   const [hasActiveMortgage, setHasActiveMortgage] = useState<boolean | null>(null);
   const [checkingMortgage, setCheckingMortgage] = useState(false);
 
@@ -81,10 +81,9 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
     onOpenChange(false);
   }, [onOpenChange]);
 
-  // Fix #24: Reset the tab being LEFT (not the one being entered)
+  // Fix #11: Only reset the tab being LEFT
   const handleTabChange = useCallback((tab: MortgageTab) => {
     if (tab === activeTab) return;
-    // Reset the component being left
     if (activeTab === 'add') setAddKey(k => k + 1);
     else setRemoveKey(k => k + 1);
     setActiveTab(tab);
@@ -167,7 +166,7 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
             />
           ) : (
             <>
-              {/* Fix #15: Show warning if no active mortgage found */}
+              {/* Warning if no active mortgage found */}
               {checkingMortgage && (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-5 w-5 animate-spin text-primary" />
@@ -198,7 +197,6 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
           )}
         </div>
 
-        {/* Fix #19: WhatsApp centralized in parent dialog */}
         {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec la gestion d'hypothèque." />}
       </DialogContent>
     </Dialog>

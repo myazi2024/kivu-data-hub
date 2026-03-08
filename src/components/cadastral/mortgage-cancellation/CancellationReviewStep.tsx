@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, FileCheck, MapPin, Building, User, FileText, Upload, DollarSign } from 'lucide-react';
+import { FileCheck, MapPin, Building, User, FileText, Upload, DollarSign } from 'lucide-react';
 import { formatCurrency, formatDateFr as formatDate } from '@/utils/formatters';
 import { CancellationRequest, ParcelData, MortgageData, MortgageFee, CANCELLATION_REASONS, REQUESTER_QUALITIES } from './types';
 
@@ -16,15 +16,12 @@ interface CancellationReviewStepProps {
   onProceedToPayment: () => void;
 }
 
+// Fix #19: Removed duplicate "Modifier" button at top — only bottom action bar remains
 const CancellationReviewStep: React.FC<CancellationReviewStepProps> = ({
   formData, parcelData, mortgageData, requestReferenceNumber,
   selectedFeesDetails, totalAmount, onBack, onProceedToPayment
 }) => (
   <div className="space-y-4">
-    <Button variant="ghost" size="sm" onClick={onBack} className="flex items-center gap-1 text-xs mb-2">
-      <ArrowLeft className="h-3.5 w-3.5" /> Modifier
-    </Button>
-
     <Card className="rounded-2xl border-destructive/30 bg-gradient-to-r from-destructive/5 to-destructive/10">
       <CardContent className="p-4">
         <div className="flex items-center gap-3">
@@ -81,6 +78,9 @@ const CancellationReviewStep: React.FC<CancellationReviewStepProps> = ({
         <p className="text-sm">{CANCELLATION_REASONS.find(r => r.value === formData.reason)?.label}</p>
         {formData.settlementAmount && (
           <p className="text-xs text-muted-foreground">Montant de règlement: {formatCurrency(parseFloat(formData.settlementAmount))}</p>
+        )}
+        {formData.comments && (
+          <p className="text-xs text-muted-foreground mt-1">Commentaire: {formData.comments}</p>
         )}
       </CardContent>
     </Card>
