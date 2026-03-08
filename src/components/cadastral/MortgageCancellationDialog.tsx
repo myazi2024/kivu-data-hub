@@ -1345,9 +1345,19 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
         </AlertDescription>
       </Alert>
 
-      <Button onClick={handleClose} className="w-full h-11 rounded-xl">
-        Fermer
-      </Button>
+      <div className="flex flex-col gap-2">
+        <Button
+          variant="outline"
+          onClick={() => window.location.href = '/user-dashboard'}
+          className="w-full h-11 rounded-xl gap-2"
+        >
+          <ExternalLink className="h-4 w-4" />
+          Voir mes demandes
+        </Button>
+        <Button onClick={handleClose} className="w-full h-11 rounded-xl">
+          Fermer
+        </Button>
+      </div>
     </div>
   );
 
