@@ -1681,12 +1681,16 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               <Input
                                 type="file"
                                 accept=".pdf,.jpg,.jpeg,.png"
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file && file.size <= 10 * 1024 * 1024) {
-                                    setOwnerIdFile(file);
+                            onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  if (file.size > 10 * 1024 * 1024) {
+                                    toast({ title: "Fichier trop volumineux", description: "La taille maximale est de 10 MB", variant: "destructive" });
+                                    return;
                                   }
-                                }}
+                                  setOwnerIdFile(file);
+                                }
+                              }}
                                 className="h-9 text-sm rounded-lg border"
                               />
                             ) : (
