@@ -2861,7 +2861,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         <Button 
           variant="seloger"
           onClick={handlePayment}
-          disabled={processingPayment || (paymentMethod === 'mobile_money' && (!paymentProvider || !paymentPhone))}
+          disabled={processingPayment || !isPaymentValid() || (paymentMethod === 'mobile_money' && (!paymentProvider || !paymentPhone))}
           className="flex-1 h-10 rounded-2xl text-sm font-semibold"
         >
           {processingPayment ? (
