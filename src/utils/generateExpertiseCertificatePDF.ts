@@ -40,7 +40,7 @@ export interface ExpertiseCertificateData {
   extendedData?: Record<string, any>;
 }
 
-import { QUALITY_LABELS, CONDITION_LABELS, ROAD_LABELS } from '@/constants/expertiseLabels';
+import { QUALITY_LABELS, CONDITION_LABELS, ROAD_LABELS, WALL_LABELS, ROOF_LABELS, FLOOR_LABELS, WINDOW_LABELS, SOUND_LABELS, FACADE_ORIENTATION_LABELS, BUILDING_POSITION_LABELS, CONSTRUCTION_TYPE_LABELS } from '@/constants/expertiseLabels';
 
 function drawTextStamp(doc: jsPDF, sigY: number) {
   doc.setDrawColor(0, 120, 60);
