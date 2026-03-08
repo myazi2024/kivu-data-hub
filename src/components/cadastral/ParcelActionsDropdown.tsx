@@ -126,15 +126,18 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
     <>
       {/* Expandable services panel */}
       {expanded && (
-        <div className="bg-muted/20">
-          <div className="px-3 py-2 flex items-center justify-between">
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Services disponibles</p>
-            <span className="text-[9px] text-muted-foreground">{visibleActions.length} services</span>
+        <div className="bg-gradient-to-b from-muted/30 to-muted/10">
+          <div className="px-3.5 py-2.5 flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <div className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-pulse" />
+              <p className="text-[10px] font-semibold text-foreground/70 uppercase tracking-wider">Services disponibles</p>
+            </div>
+            <span className="text-[9px] text-muted-foreground font-medium bg-muted/50 px-1.5 py-0.5 rounded-full">{visibleActions.length}</span>
           </div>
-          <div className="overflow-y-auto max-h-[220px] sm:max-h-[280px]">
-            <div className="px-2 pb-2 space-y-0.5">
+          <div className="overflow-y-auto max-h-[200px] sm:max-h-[260px] scrollbar-thin">
+            <div className="px-2.5 pb-2 space-y-0.5">
               {groupedActions.map((item, index) => {
-                if (item === 'separator') return <Separator key={`sep-${index}`} className="my-1" />;
+                if (item === 'separator') return <Separator key={`sep-${index}`} className="my-1 opacity-30" />;
                 const action = item;
                 return (
                   <button
@@ -142,23 +145,23 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
                     onClick={() => handleActionClick(action)}
                     onFocus={() => handleMenuItemFocus(index)}
                     disabled={!action.isActive}
-                    className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-left transition-colors
-                      ${action.isActive ? 'hover:bg-accent/50 active:bg-accent cursor-pointer' : 'opacity-40 cursor-not-allowed'}`}
+                    className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-left transition-all duration-150
+                      ${action.isActive ? 'hover:bg-primary/5 hover:shadow-sm active:scale-[0.98] cursor-pointer' : 'opacity-35 cursor-not-allowed'}`}
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm text-foreground truncate">{getDisplayLabel(action)}</span>
+                        <span className="font-medium text-[13px] text-foreground truncate">{getDisplayLabel(action)}</span>
                         <ActionBadge badge={action.badge} />
                       </div>
-                      <p className="text-[10px] text-muted-foreground truncate">{getDisplayDescription(action)}</p>
+                      <p className="text-[10px] text-muted-foreground truncate mt-0.5">{getDisplayDescription(action)}</p>
                     </div>
                   </button>
                 );
               })}
             </div>
           </div>
-          {/* Séparateur visuel entre services et données parcelle */}
-          <div className="border-b-2 border-primary/20" />
+          {/* Visual separator */}
+          <div className="h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
         </div>
       )}
 
