@@ -33,8 +33,9 @@ interface PermitRecord {
   permitFile: File | null;
 }
 
-// Permit number format validation: PC-YYYY-XXXXX or similar
-const PERMIT_NUMBER_REGEX = /^[A-Z]{2,4}[-/]\d{4}[-/]\d{3,6}$/i;
+// Permit number format validation: flexible for DRC formats
+// Supports: PC-2024-001, AB/2024/00123, PC.2024.001, URB-2024-001234, etc.
+const PERMIT_NUMBER_REGEX = /^[A-Z]{2,6}[-/.]\d{4}[-/.]\d{2,6}$/i;
 
 const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
   parcelNumber,
