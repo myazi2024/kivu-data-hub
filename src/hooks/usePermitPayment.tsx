@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -36,6 +36,12 @@ export const usePermitPayment = () => {
   const [fees, setFees] = useState<PermitFee[]>([]);
   const { user } = useAuth();
   const { toast } = useToast();
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Cleanup on unmount — consumers should call this in useEffect cleanup
+  const cancelPolling = useCallback(() => {
+    abortControllerRef.current?.abort();
+  }, []);
 
   const fetchFees = async (permitType: 'construction' | 'regularization') => {
     try {
@@ -54,7 +60,7 @@ export const usePermitPayment = () => {
       console.error('Error fetching fees:', error);
       toast({
         title: "Erreur",
-        description: "Impossible de charger les frais de permis",
+        description: "Impossible de charger les frais d'autorisation",
         variant: "destructive"
       });
       return [];
@@ -97,6 +103,37 @@ export const usePermitPayment = () => {
     }
   };
 
+  const pollTransactionStatus = async (transactionId: string, signal: AbortSignal) => {
+    let attempts = 0;
+    const maxAttempts = 25;
+
+    while (attempts < maxAttempts) {
+      if (signal.aborted) throw new Error('Paiement annulé');
+
+      await new Promise<void>((resolve) => {
+        const timer = setTimeout(resolve, 2000);
+        const onAbort = () => { clearTimeout(timer); resolve(); };
+        signal.addEventListener('abort', onAbort, { once: true });
+      });
+
+      if (signal.aborted) throw new Error('Paiement annulé');
+
+      const { data: txData, error } = await supabase
+        .from('payment_transactions')
+        .select('status, transaction_reference')
+        .eq('id', transactionId)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (txData?.status === 'completed') return txData;
+      if (txData?.status === 'failed') throw new Error('Le paiement a échoué');
+
+      attempts++;
+    }
+
+    throw new Error('Délai de paiement dépassé');
+  };
+
   const createPayment = async (
     contributionId: string,
     permitType: 'construction' | 'regularization',
@@ -116,6 +153,11 @@ export const usePermitPayment = () => {
       return null;
     }
 
+    // Cancel any existing polling
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setLoading(true);
     try {
       const totalAmount = selectedFees.reduce((sum, fee) => sum + fee.amount_usd, 0);
@@ -125,7 +167,7 @@ export const usePermitPayment = () => {
         amount_usd: fee.amount_usd
       }));
 
-      // Créer le paiement
+      // Create payment record
       const { data: paymentRecord, error: paymentError } = await supabase
         .from('permit_payments')
         .insert({
@@ -144,10 +186,9 @@ export const usePermitPayment = () => {
 
       if (paymentError) throw paymentError;
 
-      // Traiter le paiement selon le moyen de paiement
+      // Process payment — NO PIN sent (security fix)
       if (paymentData.payment_method === 'mobile_money' && paymentData.payment_provider && paymentData.phone_number) {
-        // Appeler l'edge function pour Mobile Money
-        const { data: paymentResult, error: paymentError } = await supabase.functions.invoke(
+        const { data: paymentResult, error: invokeError } = await supabase.functions.invoke(
           'process-mobile-money-payment',
           {
             body: {
@@ -160,47 +201,23 @@ export const usePermitPayment = () => {
           }
         );
 
-        if (paymentError) throw paymentError;
+        if (invokeError) throw invokeError;
 
-        // Attendre la confirmation du paiement (polling)
-        let attempts = 0;
-        const maxAttempts = 30;
-        while (attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          
-          const { data: txData } = await supabase
-            .from('payment_transactions')
-            .select('status')
-            .eq('invoice_id', paymentRecord.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
+        // Poll with AbortController
+        const txResult = await pollTransactionStatus(paymentResult.transaction_id, controller.signal);
 
-          if (txData?.status === 'completed') {
-            // Mettre à jour le statut du paiement de permis
-            const { error: updateError } = await supabase
-              .from('permit_payments')
-              .update({
-                status: 'completed',
-                paid_at: new Date().toISOString(),
-                transaction_id: paymentResult.transaction_id
-              })
-              .eq('id', paymentRecord.id);
+        // Update permit payment status
+        const { error: updateError } = await supabase
+          .from('permit_payments')
+          .update({
+            status: 'completed',
+            paid_at: new Date().toISOString(),
+            transaction_id: paymentResult.transaction_id
+          })
+          .eq('id', paymentRecord.id);
 
-            if (updateError) throw updateError;
-            break;
-          } else if (txData?.status === 'failed') {
-            throw new Error('Le paiement a échoué');
-          }
-          
-          attempts++;
-        }
-
-        if (attempts >= maxAttempts) {
-          throw new Error('Délai de paiement dépassé');
-        }
+        if (updateError) throw updateError;
       } else if (paymentData.payment_method === 'bank_card') {
-        // Pour Stripe, créer une session de paiement
         const { data: stripeSession, error: stripeError } = await supabase.functions.invoke(
           'create-payment',
           {
@@ -215,36 +232,37 @@ export const usePermitPayment = () => {
         if (stripeError) throw stripeError;
 
         if (stripeSession?.url) {
-          // Rediriger vers Stripe
           window.location.href = stripeSession.url;
-          return null; // Le paiement sera complété après redirection
+          return null;
         }
       } else {
         throw new Error('Moyen de paiement non supporté');
       }
 
-      // Créer notification
+      // Create notification
       await supabase.from('notifications').insert({
         user_id: user.id,
         type: 'success',
         title: 'Paiement reçu',
-        message: `Votre paiement de ${totalAmount}$ pour la demande de permis a été reçu. Votre dossier est en cours d'examen.`,
+        message: `Votre paiement de ${totalAmount}$ pour la demande d'autorisation a été reçu. Votre dossier est en cours d'examen.`,
         action_url: '/user-dashboard?tab=building-permits'
       });
 
       toast({
         title: "Paiement réussi",
-        description: "Votre demande de permis sera traitée sous peu"
+        description: "Votre demande d'autorisation sera traitée sous peu"
       });
 
       return paymentRecord;
     } catch (error: any) {
-      console.error('Payment error:', error);
-      toast({
-        title: "Erreur de paiement",
-        description: error.message || "Une erreur est survenue lors du paiement",
-        variant: "destructive"
-      });
+      if (error.message !== 'Paiement annulé') {
+        console.error('Payment error:', error);
+        toast({
+          title: "Erreur de paiement",
+          description: error.message || "Une erreur est survenue lors du paiement",
+          variant: "destructive"
+        });
+      }
       return null;
     } finally {
       setLoading(false);
@@ -257,6 +275,7 @@ export const usePermitPayment = () => {
     fetchFees,
     getPaymentForContribution,
     checkPaymentStatus,
-    createPayment
+    createPayment,
+    cancelPolling
   };
 };
