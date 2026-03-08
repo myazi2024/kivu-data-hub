@@ -405,17 +405,26 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     return urls;
   };
 
-  // Fix #8: Check for existing pending cancellation request
+  // Fix #9: Check for existing pending cancellation for the SAME mortgage reference
   const checkExistingCancellationRequest = async (): Promise<boolean> => {
     if (!user || !formData.mortgageReferenceNumber) return false;
     const { data } = await supabase
       .from('cadastral_contributions')
-      .select('id')
+      .select('id, mortgage_history')
       .eq('parcel_number', parcelNumber)
       .eq('user_id', user.id)
       .eq('contribution_type', 'mortgage_cancellation')
       .in('status', ['pending', 'in_review']);
-    return (data?.length ?? 0) > 0;
+
+    // Only block if a pending cancellation targets the same mortgage reference
+    const hasSameMortgage = data?.some(c => {
+      const history = c.mortgage_history as any[];
+      return history?.some(h =>
+        h.mortgage_reference_number?.toUpperCase() === formData.mortgageReferenceNumber.toUpperCase()
+      );
+    }) ?? false;
+
+    return hasSameMortgage;
   };
 
   // Fix #1: Real payment via Edge Function + polling
