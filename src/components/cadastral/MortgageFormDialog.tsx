@@ -284,6 +284,18 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
 
   const renderFormStep = () => (
     <div className="space-y-4">
+      {showDraftPrompt && (
+        <Alert className="bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 rounded-xl">
+          <Save className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-xs text-amber-700 dark:text-amber-300">
+            <p className="font-medium mb-2">Un brouillon a été trouvé.</p>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={handleRestoreDraft} className="h-7 text-xs rounded-lg">Restaurer</Button>
+              <Button size="sm" variant="ghost" onClick={handleDiscardDraft} className="h-7 text-xs rounded-lg">Ignorer</Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
       <Card className="rounded-2xl shadow-md border-border/50 overflow-hidden">
         <CardContent className="p-4 space-y-4">
           {/* Header */}
