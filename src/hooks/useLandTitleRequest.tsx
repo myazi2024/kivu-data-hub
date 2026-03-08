@@ -13,6 +13,10 @@ export interface LandTitleFee {
 }
 
 export interface LandTitleRequestData {
+  // Type de demande
+  requestType?: 'initial' | 'renouvellement' | 'definitif' | '';
+  selectedParcelNumber?: string;
+  
   // Demandeur
   requesterType: 'owner' | 'representative';
   requesterLastName: string;
@@ -50,12 +54,20 @@ export interface LandTitleRequestData {
   parcelSides?: Array<{ name: string; length: string }>;
   roadBorderingSides?: Array<{ side: string; roadName: string }>;
   
+  // Valorisation
+  constructionType?: string;
+  declaredUsage?: string;
+  deducedTitleType?: string;
+  
   // Documents
   proofOfOwnershipFile?: File | null;
   additionalDocuments?: File[];
   
   // Frais sélectionnés
   selectedFees: string[];
+  
+  // Total calculé dynamiquement
+  totalAmountOverride?: number;
 }
 
 export const useLandTitleRequest = () => {
@@ -153,7 +165,9 @@ export const useLandTitleRequest = () => {
         proofOfOwnershipUrl = await uploadDocument(data.proofOfOwnershipFile, 'proof-of-ownership');
       }
 
-      // Build fee items
+      // Build fee items - use dynamic fees if available
+      const totalAmount = data.totalAmountOverride ?? calculateTotal(data.selectedFees);
+      
       const feeItems = fees
         .filter(fee => fee.is_mandatory || data.selectedFees.includes(fee.id))
         .map(fee => ({
@@ -162,8 +176,6 @@ export const useLandTitleRequest = () => {
           amount: fee.amount_usd,
           is_mandatory: fee.is_mandatory
         }));
-
-      const totalAmount = calculateTotal(data.selectedFees);
 
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();

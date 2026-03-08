@@ -330,11 +330,15 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   // Pre-fill with user info
   useEffect(() => {
     if (profile) {
-      const nameParts = (profile.full_name || '').split(' ');
+      const fullName = (profile.full_name || '').trim();
+      const nameParts = fullName.split(/\s+/);
+      // Convention: last token = first name, rest = last name
+      const lastName = nameParts.length > 1 ? nameParts.slice(0, -1).join(' ') : nameParts[0] || '';
+      const firstName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
       setFormData(prev => ({
         ...prev,
-        requesterLastName: nameParts[0] || '',
-        requesterFirstName: nameParts.slice(1).join(' ') || '',
+        requesterLastName: lastName,
+        requesterFirstName: firstName,
         requesterEmail: profile.email || ''
       }));
     }
@@ -435,6 +439,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
         return false;
       }
     }
+
+    // Check valorisation validated
+    if (!valorisationValidated) return false;
     
     return true;
   };
@@ -460,11 +467,17 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const handlePaymentSuccess = async () => {
     const result = await submitRequest({
       ...formData,
+      requestType,
+      selectedParcelNumber,
+      constructionType,
+      declaredUsage,
+      deducedTitleType: deducedTitleType?.type || '',
       requesterIdDocumentFile: requesterIdFile,
       ownerIdDocumentFile: ownerIdFile,
       proofOfOwnershipFile: proofOfOwnershipFile,
       gpsCoordinates: gpsCoordinates,
-      parcelSides: parcelSides
+      parcelSides: parcelSides,
+      totalAmountOverride: totalAmount
     });
     
     if (result.success) {
@@ -636,7 +649,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={open} onOpenChange={handleCloseRequest}>
       <Dialog open={open} onOpenChange={handleCloseRequest}>
           <DialogContent className={`z-[1200] ${isMobile ? 'w-[92vw] max-w-[360px] max-h-[88vh] rounded-2xl' : 'max-w-md rounded-2xl'} p-4 overflow-hidden`}>
             <DialogHeader className="pb-2">
@@ -1640,9 +1652,13 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                             <Input
                               type="file"
                               accept=".pdf,.jpg,.jpeg,.png"
-                              onChange={(e) => {
+                            onChange={(e) => {
                                 const file = e.target.files?.[0];
-                                if (file && file.size <= 10 * 1024 * 1024) {
+                                if (file) {
+                                  if (file.size > 10 * 1024 * 1024) {
+                                    toast({ title: "Fichier trop volumineux", description: "La taille maximale est de 10 MB", variant: "destructive" });
+                                    return;
+                                  }
                                   setRequesterIdFile(file);
                                 }
                               }}
@@ -1671,12 +1687,16 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               <Input
                                 type="file"
                                 accept=".pdf,.jpg,.jpeg,.png"
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file && file.size <= 10 * 1024 * 1024) {
-                                    setOwnerIdFile(file);
+                            onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  if (file.size > 10 * 1024 * 1024) {
+                                    toast({ title: "Fichier trop volumineux", description: "La taille maximale est de 10 MB", variant: "destructive" });
+                                    return;
                                   }
-                                }}
+                                  setOwnerIdFile(file);
+                                }
+                              }}
                                 className="h-9 text-sm rounded-lg border"
                               />
                             ) : (
@@ -1702,9 +1722,13 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                             <Input
                               type="file"
                               accept=".pdf,.jpg,.jpeg,.png"
-                              onChange={(e) => {
+                            onChange={(e) => {
                                 const file = e.target.files?.[0];
-                                if (file && file.size <= 10 * 1024 * 1024) {
+                                if (file) {
+                                  if (file.size > 10 * 1024 * 1024) {
+                                    toast({ title: "Fichier trop volumineux", description: "La taille maximale est de 10 MB", variant: "destructive" });
+                                    return;
+                                  }
                                   setProofOfOwnershipFile(file);
                                 }
                               }}
@@ -1730,7 +1754,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                   </Card>
 
                   <div className="flex gap-2 pt-4">
-                    <Button variant="outline" onClick={() => setActiveTab('location')} className="flex-1 h-8 text-xs rounded-xl">
+                    <Button variant="outline" onClick={() => setActiveTab('valorisation')} className="flex-1 h-8 text-xs rounded-xl">
                       Précédent
                     </Button>
                     <Button onClick={() => setActiveTab('payment')} className="flex-1 h-8 text-xs rounded-xl gap-2">
@@ -1910,7 +1934,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
               </div>
             </ScrollArea>
           </DialogContent>
-      </Dialog>
       </Dialog>
 
       {/* Quick Auth Dialog */}
