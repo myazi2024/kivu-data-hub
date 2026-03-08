@@ -129,25 +129,16 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
     let uploadedFilePath: string | null = null;
 
     try {
-      // Check for duplicate: same parcel, same type, same year
-      const { data: existingContributions } = await supabase
+      // Check for duplicate: single optimized query
+      const { data: existingContribs } = await supabase
         .from('cadastral_contributions')
-        .select('id')
+        .select('id, tax_history')
         .eq('parcel_number', parcelNumber)
         .eq('user_id', user.id)
         .neq('status', 'rejected');
 
-      // Filter by tax_history content (type + year) client-side
-      if (existingContributions && existingContributions.length > 0) {
-        // Fetch full data to check tax_history
-        const { data: fullContribs } = await supabase
-          .from('cadastral_contributions')
-          .select('id, tax_history')
-          .eq('parcel_number', parcelNumber)
-          .eq('user_id', user.id)
-          .neq('status', 'rejected');
-
-        const isDuplicate = fullContribs?.some(c => {
+      if (existingContribs && existingContribs.length > 0) {
+        const isDuplicate = existingContribs.some(c => {
           const history = c.tax_history as any[];
           return history?.some((h: any) =>
             h.tax_type === taxRecord.taxType &&
