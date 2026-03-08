@@ -21,6 +21,8 @@ import {
   sendDisputeNotification,
   validateEmail,
   validatePhone,
+  validateFileCount,
+  validateFile,
   getDisputeLiftingDraftKey,
 } from '@/utils/disputeUploadUtils';
 
