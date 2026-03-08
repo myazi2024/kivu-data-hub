@@ -131,6 +131,10 @@ export const AdminExpertiseRequests: React.FC = () => {
   const [marketValue, setMarketValue] = useState('');
   const [processingNotes, setProcessingNotes] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
+  const [expertName, setExpertName] = useState('');
+  const [expertTitle, setExpertTitle] = useState('L\'Expert Évaluateur Agréé');
+  const [stampImageUrl, setStampImageUrl] = useState('');
+  const [uploadingStamp, setUploadingStamp] = useState(false);
 
   const fetchRequests = useCallback(async () => {
     setLoading(true);
