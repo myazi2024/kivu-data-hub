@@ -778,7 +778,9 @@ const AdminMutationRequests: React.FC = () => {
           <DialogHeader>
             <DialogTitle className="text-sm">Détails de la demande</DialogTitle>
           </DialogHeader>
-          {selectedRequest && (
+          {selectedRequest && (() => {
+            const changes = safeProposedChanges(selectedRequest);
+            return (
             <ScrollArea className="max-h-[60vh]">
               <div className="space-y-4 pr-4">
                 <div className="grid grid-cols-2 gap-3">
