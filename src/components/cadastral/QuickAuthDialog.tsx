@@ -87,7 +87,7 @@ export const QuickAuthDialog: React.FC<QuickAuthDialogProps> = ({
       return;
     }
 
-    if (password.length < 6) {
+    if (password.length < 8) {
       toast({
         title: "Mot de passe trop court",
         description: "Le mot de passe doit contenir au moins 6 caractères",
