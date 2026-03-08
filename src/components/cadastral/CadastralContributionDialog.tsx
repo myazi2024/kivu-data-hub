@@ -1566,6 +1566,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       paymentDate: '',
       receiptFile: null
     }]);
+    markDirty();
   };
 
   const removeTaxRecord = (index: number) => {
