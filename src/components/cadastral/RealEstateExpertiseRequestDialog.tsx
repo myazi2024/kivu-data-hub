@@ -527,9 +527,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setParcelDocuments(prev => prev.filter((_, i) => i !== index));
   };
 
-  const removeConstructionImage = (index: number) => {
-    setConstructionImages(prev => prev.filter((_, i) => i !== index));
-  };
+   const removeConstructionImage = (index: number) => {
+     // Revoke object URL to prevent memory leak
+     if (constructionImageUrls[index]) {
+       URL.revokeObjectURL(constructionImageUrls[index]);
+     }
+     setConstructionImages(prev => prev.filter((_, i) => i !== index));
+     setConstructionImageUrls(prev => prev.filter((_, i) => i !== index));
+   };
 
   const uploadFiles = async (): Promise<{ parcelDocs: string[], constructionImages: string[] }> => {
     const result = { parcelDocs: [] as string[], constructionImages: [] as string[] };
