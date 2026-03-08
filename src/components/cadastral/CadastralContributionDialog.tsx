@@ -1958,7 +1958,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
 
   // Calculer la valeur CCC estimée (similaire au backend calculate_ccc_value)
-  const calculateCCCValue = () => {
+  const calculateCCCValue = useMemo(() => {
     let totalFields = 0;
     let filledFields = 0;
     
