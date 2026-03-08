@@ -311,13 +311,17 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     );
   };
 
-  const getSelectedFeesDetails = () => {
+  const selectedFeesDetails = useMemo(() => {
     return CANCELLATION_FEES.filter(f => selectedFees.includes(f.id));
-  };
+  }, [selectedFees]);
 
-  const getTotalAmount = () => {
-    return getSelectedFeesDetails().reduce((sum, fee) => sum + fee.amount_usd, 0);
-  };
+  const totalAmount = useMemo(() => {
+    return selectedFeesDetails.reduce((sum, fee) => sum + fee.amount_usd, 0);
+  }, [selectedFeesDetails]);
+
+  // Keep backward-compatible function names for inline usage
+  const getSelectedFeesDetails = () => selectedFeesDetails;
+  const getTotalAmount = () => totalAmount;
 
   const validateForm = (): boolean => {
     if (!formData.mortgageReferenceNumber.trim()) {
