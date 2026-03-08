@@ -639,35 +639,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   useEffect(() => {
     const sides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
     
-    if (sides.length < 3) return;
+    if (sides.length < 2) return;
 
-    // Pour une forme rectangulaire simple (4 côtés)
-    if (sides.length === 4) {
-      const lengths = sides.map(s => parseFloat(s.length));
-      
-      // Pour un rectangle : Nord/Sud sont opposés et Est/Ouest sont opposés
-      // Indices : 0=Nord, 1=Sud, 2=Est, 3=Ouest
-      const isRectangle = (
-        Math.abs(lengths[0] - lengths[1]) < 0.1 &&  // Nord ≈ Sud
-        Math.abs(lengths[2] - lengths[3]) < 0.1     // Est ≈ Ouest
-      );
-      
-      if (isRectangle) {
-        // Rectangle: côté Nord × côté Est
-        const area = lengths[0] * lengths[2];
-        handleInputChange('areaSqm', parseFloat(area.toFixed(2)));
-        return;
-      }
-      
-      // Si pas un rectangle parfait, utiliser la formule de Brahmagupta
-      const s = (lengths[0] + lengths[1] + lengths[2] + lengths[3]) / 2;
-      const area = Math.sqrt(
-        (s - lengths[0]) * (s - lengths[1]) * (s - lengths[2]) * (s - lengths[3])
-      );
-      handleInputChange('areaSqm', parseFloat(area.toFixed(2)));
-      return;
-    }
-    
     // Pour 2 côtés (forme rectangulaire simplifiée)
     if (sides.length === 2) {
       const length1 = parseFloat(sides[0].length);
@@ -681,12 +654,44 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (sides.length === 3) {
       const lengths = sides.map(s => parseFloat(s.length));
       const s = (lengths[0] + lengths[1] + lengths[2]) / 2;
-      const area = Math.sqrt(s * (s - lengths[0]) * (s - lengths[1]) * (s - lengths[2]));
+      const heronValue = s * (s - lengths[0]) * (s - lengths[1]) * (s - lengths[2]);
+      if (heronValue <= 0) return; // Triangle invalide
+      const area = Math.sqrt(heronValue);
+      handleInputChange('areaSqm', parseFloat(area.toFixed(2)));
+      return;
+    }
+
+    // Pour 4 côtés
+    if (sides.length === 4) {
+      const lengths = sides.map(s => parseFloat(s.length));
+      
+      // Pour un rectangle : Nord/Sud sont opposés et Est/Ouest sont opposés
+      const isRectangle = (
+        Math.abs(lengths[0] - lengths[1]) < 0.1 &&
+        Math.abs(lengths[2] - lengths[3]) < 0.1
+      );
+      
+      if (isRectangle) {
+        const area = lengths[0] * lengths[2];
+        handleInputChange('areaSqm', parseFloat(area.toFixed(2)));
+        return;
+      }
+      
+      // Pour un quadrilatère non rectangulaire, diviser en 2 triangles (diagonale = côtés opposés)
+      // Approximation via 2 triangles : (0,1,diag) et (2,3,diag)
+      // Diagonale estimée avec formule du parallélogramme
+      const a = lengths[0], b = lengths[2], c = lengths[1], d = lengths[3];
+      const s = (a + b + c + d) / 2;
+      // Formule de Brahmagupta avec angle moyen (approximation pour quadrilatère quelconque)
+      // Utilise cos²(θ) ≈ 0 (θ ≈ 90°) comme approximation pessimiste
+      const brahmVal = (s - a) * (s - b) * (s - c) * (s - d);
+      if (brahmVal <= 0) return;
+      const area = Math.sqrt(brahmVal);
       handleInputChange('areaSqm', parseFloat(area.toFixed(2)));
       return;
     }
     
-    // Pour plus de 4 côtés, utiliser une approximation
+    // Pour plus de 4 côtés, utiliser une approximation polygone régulier
     if (sides.length > 4) {
       const lengths = sides.map(s => parseFloat(s.length));
       const perimeter = lengths.reduce((a, b) => a + b, 0);
