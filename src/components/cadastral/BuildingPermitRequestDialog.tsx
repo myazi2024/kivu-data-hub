@@ -394,7 +394,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
       case 'preview': return 'Aperçu de la demande';
       case 'payment': return 'Paiement';
       case 'confirmation': return 'Confirmation';
-      default: return requestType === 'new' ? 'Permis de construire' : 'Permis de régularisation';
+      default: return requestType === 'new' ? 'Autorisation de bâtir' : 'Autorisation de régularisation';
     }
   };
 
