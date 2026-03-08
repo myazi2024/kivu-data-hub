@@ -17,7 +17,7 @@ const ISSUING_SERVICES: BuildingPermitIssuingService[] = [
     value: "Ministère de l'Urbanisme et Habitat - Direction Générale de l'Urbanisme",
     label: "Ministère de l'Urbanisme et Habitat - DGU",
     level: "National",
-    description: "Service national responsable de la délivrance des permis de construire pour les grands projets d'envergure nationale"
+    description: "Service national responsable de la délivrance des autorisations de bâtir pour les grands projets d'envergure nationale"
   },
   {
     value: "Agence Congolaise des Grands Travaux (ACGT)",
