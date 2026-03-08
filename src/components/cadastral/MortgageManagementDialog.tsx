@@ -38,10 +38,10 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
     }
   }, [open]);
 
-  // Check for active mortgages when dialog opens or parcelId changes
+  // Check for active mortgages only when the "Radiation" tab is active
   useEffect(() => {
     const checkActiveMortgages = async () => {
-      if (!open || !parcelId) {
+      if (!open || !parcelId || activeTab !== 'remove') {
         setHasActiveMortgage(null);
         return;
       }
@@ -63,7 +63,7 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
       }
     };
     checkActiveMortgages();
-  }, [open, parcelId]);
+  }, [open, parcelId, activeTab]);
 
   const handleIntroComplete = () => {
     introCompletedRef.current = true;
