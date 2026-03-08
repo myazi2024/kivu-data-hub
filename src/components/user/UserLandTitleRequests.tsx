@@ -117,7 +117,7 @@ export const UserLandTitleRequests: React.FC = () => {
   };
 
   const getSectionLabel = (type: string) => {
-    return type === 'urban' ? 'Urbaine' : 'Rurale';
+    return type === 'urbaine' || type === 'urban' ? 'Urbaine' : 'Rurale';
   };
 
   const getStats = () => {
