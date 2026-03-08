@@ -970,6 +970,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   }, [permitMode, currentOwners]);
 
   const handleInputChange = (field: keyof CadastralContributionData, value: any) => {
+    formDirtyRef.current = true;
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
