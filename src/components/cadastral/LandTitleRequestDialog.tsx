@@ -374,7 +374,14 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   }, [formData.territoire, formData.province]);
 
   const handleInputChange = (field: keyof LandTitleRequestData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+      // Derive isOwnerSameAsRequester from requesterType
+      if (field === 'requesterType') {
+        updated.isOwnerSameAsRequester = value === 'owner';
+      }
+      return updated;
+    });
     
     // Reset dependent fields
     if (field === 'sectionType') {
