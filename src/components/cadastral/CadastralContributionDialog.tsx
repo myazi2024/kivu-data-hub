@@ -308,7 +308,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   // État pour le mode d'autorisation de bâtir
   const [permitMode, setPermitMode] = useState<'existing' | 'request'>('existing');
   
-  // État pour gérer les permis de construire existants
+  // État pour gérer les autorisations de bâtir existantes
   const [buildingPermits, setBuildingPermits] = useState<Array<{
     permitType: 'construction' | 'regularization';
     permitNumber: string;
