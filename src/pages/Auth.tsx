@@ -99,10 +99,10 @@ const Auth = () => {
       return;
     }
 
-    if (password.length < 6) {
+    if (password.length < 8) {
       toast({
         title: "Erreur",
-        description: "Le mot de passe doit contenir au moins 6 caractères",
+        description: "Le mot de passe doit contenir au moins 8 caractères",
         variant: "destructive",
       });
       return;
@@ -110,13 +110,6 @@ const Auth = () => {
 
     setIsLoading(true);
     try {
-      cleanupAuthState();
-      
-      try {
-        await supabase.auth.signOut({ scope: 'global' });
-      } catch (err) {
-        // Continue even if this fails
-      }
 
       const redirectUrl = localStorage.getItem('auth_redirect_url') || '/';
       const finalRedirectUrl = redirectUrl.startsWith('/') 
