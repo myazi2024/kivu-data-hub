@@ -258,7 +258,7 @@ export const UserLandDisputes: React.FC = () => {
                       </Badge>
                     </div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Nature :</span><span>{DISPUTE_NATURES_MAP[selectedDispute.dispute_nature] || selectedDispute.dispute_nature}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Statut :</span>{getStatusBadge(selectedDispute.current_status)}</div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Statut :</span><DisputeStatusBadge status={selectedDispute.current_status} /></div>
                     {selectedDispute.dispute_start_date && (
                       <div className="flex justify-between"><span className="text-muted-foreground">Début :</span><span>{new Date(selectedDispute.dispute_start_date).toLocaleDateString('fr-FR')}</span></div>
                     )}
