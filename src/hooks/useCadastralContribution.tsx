@@ -544,7 +544,7 @@ export const useCadastralContribution = () => {
         .update(contributionPayload)
         .eq('id', contributionId)
         .eq('user_id', authenticatedUserId)
-        .eq('status', 'pending'); // Only allow updating pending contributions
+        .in('status', ['pending', 'returned']); // Allow updating pending AND returned contributions
 
       if (updateError) {
         console.error('Erreur lors de la mise à jour:', updateError);
