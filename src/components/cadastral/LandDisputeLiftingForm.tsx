@@ -32,7 +32,7 @@ import {
   LIFTING_REASONS,
   REQUESTER_QUALITIES,
   DISPUTE_NATURES_MAP,
-  DISPUTE_STATUS_CONFIG,
+  getStatusLabel,
 } from '@/utils/disputeSharedTypes';
 
 interface LandDisputeLiftingFormProps {
