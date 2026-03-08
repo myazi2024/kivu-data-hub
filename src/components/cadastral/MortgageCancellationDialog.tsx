@@ -467,33 +467,25 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     </>
   );
 
-  if (embedded) {
-    return (
-      <>
-        <div className="overflow-y-auto h-full px-4 pb-4">
-          {renderContent()}
-        </div>
-        <QuickAuthDialog open={showAuthDialog} onOpenChange={setShowAuthDialog} onAuthSuccess={() => setShowAuthDialog(false)} />
-      </>
-    );
-  }
-
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className={`z-[1200] ${isMobile ? 'w-[92vw] max-w-[380px] max-h-[88vh]' : 'max-w-lg max-h-[85vh]'} rounded-2xl p-0 overflow-hidden`}>
-        <DialogHeader className="p-4 pb-2">
-          <DialogTitle className="flex items-center gap-2 text-base font-bold">
+    <>
+      <MortgageFlowContainer
+        open={open}
+        embedded={embedded}
+        isMobile={isMobile}
+        onClose={handleClose}
+        title={(
+          <>
             <div className="p-1.5 bg-destructive/10 rounded-lg"><FileX2 className="h-4 w-4 text-destructive" /></div>
             Radiation d'hypothèque
-          </DialogTitle>
-          <DialogDescription className="text-xs">Parcelle {parcelNumber}</DialogDescription>
-        </DialogHeader>
-        <div className={`${isMobile ? 'h-[calc(88vh-80px)]' : 'max-h-[calc(85vh-80px)]'} overflow-y-auto px-4 pb-4`}>
-          {renderContent()}
-        </div>
-      </DialogContent>
+          </>
+        )}
+        description={`Parcelle ${parcelNumber}`}
+      >
+        {renderContent()}
+      </MortgageFlowContainer>
       <QuickAuthDialog open={showAuthDialog} onOpenChange={setShowAuthDialog} onAuthSuccess={() => setShowAuthDialog(false)} />
-    </Dialog>
+    </>
   );
 };
 
