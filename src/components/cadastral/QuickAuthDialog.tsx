@@ -98,13 +98,6 @@ export const QuickAuthDialog: React.FC<QuickAuthDialogProps> = ({
 
     setIsLoading(true);
     try {
-      cleanupAuthState();
-      
-      try {
-        await supabase.auth.signOut({ scope: 'global' });
-      } catch (err) {
-        // Ignore errors
-      }
 
       const { data, error } = await supabase.auth.signUp({
         email,
