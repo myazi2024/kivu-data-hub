@@ -72,7 +72,7 @@ export const UserMutationRequests: React.FC = () => {
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <Hash className="h-3 w-3" />
-                        <span className="font-mono font-bold">{request.reference_number}</span>
+                        <span className="font-mono font-bold">{request.reference_number || 'Référence en cours de génération'}</span>
                       </div>
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
                         <Calendar className="h-3 w-3" />

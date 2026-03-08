@@ -14,6 +14,13 @@ export const useMutationRequest = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
+  const generateMutationReference = () => {
+    const year = new Date().getFullYear();
+    const timestamp = Date.now().toString().slice(-6);
+    const random = Math.random().toString(36).slice(2, 6).toUpperCase();
+    return `MUT-${year}-${timestamp}-${random}`;
+  };
+
   const fetchFees = async () => {
     try {
       const { data, error } = await supabase
