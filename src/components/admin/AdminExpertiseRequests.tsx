@@ -865,10 +865,51 @@ export const AdminExpertiseRequests: React.FC = () => {
                     placeholder="Ex: 50000"
                   />
                 </div>
+
+                <Separator />
+                <p className="text-xs font-semibold text-muted-foreground">Informations de l'expert</p>
+
+                <div className="space-y-2">
+                  <Label>Nom de l'expert immobilier</Label>
+                  <Input
+                    value={expertName}
+                    onChange={(e) => setExpertName(e.target.value)}
+                    placeholder="Ex: Jean-Paul MUKENDI"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Titre / Fonction</Label>
+                  <Input
+                    value={expertTitle}
+                    onChange={(e) => setExpertTitle(e.target.value)}
+                    placeholder="Ex: L'Expert Évaluateur Agréé"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Sceau / Cachet (image)</Label>
+                  <div className="flex gap-2 items-center">
+                    {stampImageUrl && (
+                      <img src={stampImageUrl} alt="Sceau" className="h-10 w-10 object-contain border rounded" />
+                    )}
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      disabled={uploadingStamp}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleUploadStamp(file);
+                      }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    Format PNG recommandé avec fond transparent. Apparaîtra à côté de la signature sur le certificat.
+                  </p>
+                </div>
+
                 <Alert className="bg-primary/5 border-primary/20">
                   <Award className="h-4 w-4 text-primary" />
                   <AlertDescription className="text-xs">
-                    Le certificat PDF sera <strong>généré automatiquement</strong> avec toutes les informations du bien et uploadé dans le stockage sécurisé.
+                    Le certificat PDF sera <strong>généré automatiquement</strong> avec le nom de l'expert, le sceau et toutes les informations du bien.
                   </AlertDescription>
                 </Alert>
                 <div className="space-y-2">
