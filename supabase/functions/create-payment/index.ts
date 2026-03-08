@@ -252,7 +252,7 @@ serve(async (req) => {
     let cancelUrl: string;
     const origin = req.headers.get("origin") || "";
 
-    if (payment_type === 'expertise_fee' || payment_type === 'certificate_access') {
+    if (payment_type === 'expertise_fee' || payment_type === 'certificate_access' || payment_type === 'mutation_request') {
       successUrl = `${origin}/cadastral-map?payment=success&type=${payment_type}&session_id={CHECKOUT_SESSION_ID}`;
       cancelUrl = `${origin}/cadastral-map?payment=cancelled`;
     } else if (payment_type === 'cadastral_service') {
