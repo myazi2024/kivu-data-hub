@@ -86,6 +86,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   const isMobile = useIsMobile();
   const { user, profile } = useAuth();
   const { loading, fees, createMutationRequest, updatePaymentStatus } = useMutationRequest();
+  const { availableMethods } = usePaymentConfig();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [showIntro, setShowIntro] = useState(true);
