@@ -1,11 +1,14 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { FileEdit, Clock, MapPin, Hash, DollarSign, Loader2, Calendar, AlertCircle } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { FileEdit, Clock, MapPin, Hash, DollarSign, Loader2, Calendar, AlertCircle, XCircle } from 'lucide-react';
 import { useMutationRequest } from '@/hooks/useMutationRequest';
+import { getMutationTypeLabel } from '@/components/cadastral/mutation/MutationConstants';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -15,6 +18,7 @@ const STATUS_MAP: Record<string, { label: string; variant: 'default' | 'secondar
   approved: { label: 'Approuvée', variant: 'default' },
   rejected: { label: 'Rejetée', variant: 'destructive' },
   on_hold: { label: 'En suspens', variant: 'outline' },
+  cancelled: { label: 'Annulée', variant: 'destructive' },
 };
 
 const PAYMENT_STATUS_MAP: Record<string, { label: string; color: string }> = {
@@ -24,7 +28,24 @@ const PAYMENT_STATUS_MAP: Record<string, { label: string; color: string }> = {
 };
 
 export const UserMutationRequests: React.FC = () => {
-  const { loading, userRequests } = useMutationRequest();
+  const { loading, userRequests, cancelMutationRequest } = useMutationRequest();
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
+
+  const handleCancelClick = (requestId: string) => {
+    setSelectedRequestId(requestId);
+    setShowCancelDialog(true);
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!selectedRequestId) return;
+    setCancellingId(selectedRequestId);
+    await cancelMutationRequest(selectedRequestId);
+    setCancellingId(null);
+    setShowCancelDialog(false);
+    setSelectedRequestId(null);
+  };
 
   if (loading) {
     return (
@@ -62,7 +83,6 @@ export const UserMutationRequests: React.FC = () => {
           {userRequests.map((request) => {
             const status = STATUS_MAP[request.status] || { label: request.status, variant: 'outline' as const };
             const paymentStatus = PAYMENT_STATUS_MAP[request.payment_status] || { label: request.payment_status, color: 'text-muted-foreground' };
-            const proposedChanges = request.proposed_changes as Record<string, any> || {};
 
             return (
               <Card key={request.id} className="rounded-xl border">
@@ -96,7 +116,7 @@ export const UserMutationRequests: React.FC = () => {
                     </div>
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-muted-foreground">Type</span>
-                      <span className="font-medium capitalize">{request.mutation_type.replace(/_/g, ' ')}</span>
+                      <span className="font-medium">{getMutationTypeLabel(request.mutation_type)}</span>
                     </div>
                     {request.beneficiary_name && (
                       <div className="flex items-center justify-between text-xs">
@@ -140,12 +160,51 @@ export const UserMutationRequests: React.FC = () => {
                       Délai estimé : {request.estimated_processing_days || 14} jours ouvrables
                     </div>
                   )}
+
+                  {/* Cancel button for pending requests */}
+                  {request.status === 'pending' && request.payment_status === 'pending' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full h-7 text-xs text-destructive border-destructive/30 hover:bg-destructive/10"
+                      onClick={() => handleCancelClick(request.id)}
+                      disabled={cancellingId === request.id}
+                    >
+                      {cancellingId === request.id ? (
+                        <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                      ) : (
+                        <XCircle className="h-3 w-3 mr-1" />
+                      )}
+                      Annuler la demande
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             );
           })}
         </div>
       </ScrollArea>
+
+      {/* Cancel confirmation dialog */}
+      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-sm">Annuler la demande ?</DialogTitle>
+            <DialogDescription className="text-xs">
+              Cette action est irréversible. Votre demande sera définitivement annulée.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" size="sm" onClick={() => setShowCancelDialog(false)}>
+              Non, garder
+            </Button>
+            <Button variant="destructive" size="sm" onClick={handleConfirmCancel} disabled={!!cancellingId}>
+              {cancellingId ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
+              Oui, annuler
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

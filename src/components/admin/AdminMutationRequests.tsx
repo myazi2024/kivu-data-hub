@@ -33,6 +33,7 @@ import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/shared/PaginationControls';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { exportToCSV } from '@/utils/csvExport';
+import { getMutationTypeLabel } from '@/components/cadastral/mutation/MutationConstants';
 
 import type { MutationFee, MutationRequest } from '@/types/mutation';
 
@@ -336,11 +337,11 @@ const AdminMutationRequests: React.FC = () => {
       )
     },
     {
-      key: 'requester_name',
-      header: 'Demandeur',
+      key: 'mutation_type',
+      header: 'Type',
       priority: 3,
       render: (request: MutationRequest) => (
-        <span className="text-xs">{request.requester_name}</span>
+        <span className="text-xs">{getMutationTypeLabel(request.mutation_type)}</span>
       )
     },
     {
@@ -348,7 +349,7 @@ const AdminMutationRequests: React.FC = () => {
       header: 'Montant',
       priority: 4,
       render: (request: MutationRequest) => (
-        <span className="text-xs font-semibold">${request.total_amount_usd}</span>
+        <span className="text-xs font-semibold">${Number(request.total_amount_usd).toFixed(2)}</span>
       )
     },
     {
@@ -396,7 +397,7 @@ const AdminMutationRequests: React.FC = () => {
           >
             <Eye className="h-3.5 w-3.5" />
           </Button>
-          {request.payment_status === 'paid' && request.status === 'in_review' && (
+           {(request.payment_status === 'paid' && ['in_review', 'on_hold'].includes(request.status)) && (
             <Button
               variant="ghost"
               size="sm"
@@ -471,7 +472,7 @@ const AdminMutationRequests: React.FC = () => {
             <Card>
               <CardContent className="p-3">
                 <div className="text-xs text-muted-foreground">Revenus</div>
-                <div className="text-xl font-bold text-primary">${stats.revenue}</div>
+                <div className="text-xl font-bold text-primary">${stats.revenue.toFixed(2)}</div>
               </CardContent>
             </Card>
           </div>
@@ -591,7 +592,7 @@ const AdminMutationRequests: React.FC = () => {
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-primary">${fee.amount_usd}</span>
+                      <span className="font-bold text-primary">${Number(fee.amount_usd).toFixed(2)}</span>
                       <Button
                         variant="ghost"
                         size="sm"
