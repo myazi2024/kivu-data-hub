@@ -31,6 +31,8 @@ const LandDisputeManagementDialog: React.FC<LandDisputeManagementDialogProps> = 
   const [showIntro, setShowIntro] = useState(true);
   const [activeTab, setActiveTab] = useState<DisputeTab>('report');
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [showTabSwitchConfirm, setShowTabSwitchConfirm] = useState(false);
+  const [pendingTab, setPendingTab] = useState<DisputeTab | null>(null);
 
   const handleIntroComplete = () => {
     setShowIntro(false);
@@ -51,6 +53,24 @@ const LandDisputeManagementDialog: React.FC<LandDisputeManagementDialogProps> = 
     } else {
       handleClose();
     }
+  };
+
+  const handleTabSwitch = (tab: DisputeTab) => {
+    if (tab === activeTab) return;
+    if (checkUnsavedChanges()) {
+      setPendingTab(tab);
+      setShowTabSwitchConfirm(true);
+    } else {
+      setActiveTab(tab);
+    }
+  };
+
+  const confirmTabSwitch = () => {
+    if (pendingTab) {
+      setActiveTab(pendingTab);
+      setPendingTab(null);
+    }
+    setShowTabSwitchConfirm(false);
   };
 
   const handleClose = () => {
