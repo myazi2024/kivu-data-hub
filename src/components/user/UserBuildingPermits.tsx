@@ -124,9 +124,9 @@ export function UserBuildingPermits() {
             <FileEdit className="h-8 w-8 text-muted-foreground" />
           </div>
           <div>
-            <p className="text-sm font-medium text-foreground">Aucune demande de permis</p>
+          <p className="text-sm font-medium text-foreground">Aucune demande d'autorisation</p>
             <p className="text-xs text-muted-foreground mt-1">
-              Demandez un permis depuis la Carte cadastrale
+              Demandez une autorisation depuis la Carte cadastrale
             </p>
             <a href="/carte-cadastrale">
               <Button size="sm" className="mt-3 gap-2 rounded-xl">
