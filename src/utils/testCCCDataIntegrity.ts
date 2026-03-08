@@ -128,12 +128,12 @@ export const testCCCDataIntegrity = async (): Promise<TestResult[]> => {
           message: `${contributionsWithOwners.length}/${contributions.length} contributions avec détails propriétaires complets`
         });
 
-        // Test 5: Vérifier les permis de construire
+        // Test 5: Vérifier les autorisations de bâtir
         const contributionsWithPermits = contributions.filter(c => 
           c.building_permits && Array.isArray(c.building_permits) && c.building_permits.length > 0
         );
         results.push({
-          test: 'Permis de construire',
+          test: 'Autorisation de bâtir',
           status: 'success',
           message: `${contributionsWithPermits.length}/${contributions.length} contributions avec permis enregistrés`
         });

@@ -54,7 +54,7 @@ export interface CadastralContributionData {
     numberOfFloors?: string;
     buildingMaterials?: string;
     architecturalPlanImages?: string[]; // URLs après upload
-    // Champs spécifiques permis de régularisation
+    // Champs spécifiques autorisation de régularisation
     constructionYear?: string;
     regularizationReason?: string; // ✅ Correction orthographe pour matcher le Dialog
     originalPermitNumber?: string;

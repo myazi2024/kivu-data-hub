@@ -165,7 +165,7 @@ export const useCadastralSearch = () => {
 
       if (boundaryError) throw boundaryError;
 
-      // Recherche des permis de construire
+      // Recherche des autorisations de bâtir
       const { data: buildingPermitsData, error: buildingPermitsError } = await supabase
         .from('cadastral_building_permits')
         .select('*')

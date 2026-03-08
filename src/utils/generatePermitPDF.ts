@@ -46,8 +46,8 @@ export async function generatePermitPDF(permitData: PermitData): Promise<Blob> {
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(200, 0, 0);
   const title = permitData.permitType === 'construction' 
-    ? 'PERMIS DE CONSTRUIRE' 
-    : 'PERMIS DE RÉGULARISATION';
+    ? 'AUTORISATION DE BÂTIR' 
+    : 'AUTORISATION DE RÉGULARISATION';
   doc.text(title, pageWidth / 2, 55, { align: 'center' });
 
   // Numéro de permis

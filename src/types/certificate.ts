@@ -33,7 +33,7 @@ export type CertificateType =
 export const CERTIFICATE_TYPE_LABELS: Record<CertificateType, string> = {
   expertise_immobiliere: 'Expertise Immobilière',
   titre_foncier: 'Titre Foncier',
-  permis_construire: 'Permis de Construire',
+  permis_construire: 'Autorisation de Bâtir',
   mutation_fonciere: 'Mutation Foncière',
   lotissement: 'Lotissement',
 };

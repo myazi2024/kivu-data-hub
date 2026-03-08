@@ -1138,7 +1138,7 @@ const AdminCCCContributions: React.FC = () => {
                 <TabsContent value="permits" className="space-y-2 md:space-y-3 mt-2">
                   {selectedContribution.building_permits && Array.isArray(selectedContribution.building_permits) && selectedContribution.building_permits.length > 0 ? (
                     <div>
-                      <Label className="text-xs text-muted-foreground">Permis de construire existants</Label>
+                      <Label className="text-xs text-muted-foreground">Autorisations de bâtir existantes</Label>
                       <div className="space-y-1 md:space-y-2 mt-1">
                         {selectedContribution.building_permits.map((permit: any, idx: number) => (
                           <div key={idx} className="p-2 md:p-3 bg-secondary rounded space-y-0.5 md:space-y-1 text-xs md:text-sm">

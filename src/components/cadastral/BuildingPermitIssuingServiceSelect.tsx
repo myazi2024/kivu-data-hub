@@ -262,9 +262,9 @@ const BuildingPermitIssuingServiceSelect: React.FC<BuildingPermitIssuingServiceS
           </PopoverTrigger>
           <PopoverContent className="w-[calc(100vw-2rem)] sm:w-96" side="top">
             <div className="space-y-2">
-              <h4 className="font-semibold text-sm">Services émetteurs de permis de construire</h4>
+              <h4 className="font-semibold text-sm">Services émetteurs d'autorisations de bâtir</h4>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                En RDC, les permis de construire sont délivrés par différents niveaux de services selon l'ampleur du projet :
+                En RDC, les autorisations de bâtir sont délivrées par différents niveaux de services selon l'ampleur du projet :
               </p>
               <ul className="text-xs space-y-1 text-muted-foreground">
                 <li>• <strong>National</strong> : Ministère de l'Urbanisme et Habitat pour les grands projets</li>

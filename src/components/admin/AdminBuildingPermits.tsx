@@ -227,7 +227,7 @@ const AdminBuildingPermits = () => {
             <div>
               <CardTitle>Gestion des Demandes de Permis</CardTitle>
               <CardDescription>
-                Examinez et traitez les demandes de permis de construire et de régularisation
+                Examinez et traitez les demandes d'autorisation de bâtir et de régularisation
               </CardDescription>
             </div>
             <Button variant="outline" onClick={handleExportCSV} className="gap-2">

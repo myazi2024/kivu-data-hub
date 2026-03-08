@@ -448,7 +448,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
           {formContent}
         </div>
       </DialogContent>
-      {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec le formulaire de permis de construire." />}
+      {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec le formulaire d'autorisation de bâtir." />}
     </Dialog>
   );
 };

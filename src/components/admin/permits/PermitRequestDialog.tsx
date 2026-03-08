@@ -210,8 +210,8 @@ export const PermitRequestDialog: React.FC<PermitRequestDialogProps> = ({
   };
 
   const permitTypeBadge = permitRequestData.permitType === 'construction' 
-    ? <Badge variant="outline" className="bg-blue-50">Permis de construire</Badge>
-    : <Badge variant="outline" className="bg-orange-50">Permis de régularisation</Badge>;
+    ? <Badge variant="outline" className="bg-blue-50">Autorisation de bâtir</Badge>
+    : <Badge variant="outline" className="bg-orange-50">Autorisation de régularisation</Badge>;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

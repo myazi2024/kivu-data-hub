@@ -310,7 +310,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
                             )}
                             {result.building_permits?.some(permit => permit.is_current) && (
                               <p className="text-xs text-muted-foreground">
-                                • Permis de construire actuel
+                                • Autorisation de bâtir actuelle
                               </p>
                             )}
                             {result.building_permits?.some(permit => !permit.is_current) && (

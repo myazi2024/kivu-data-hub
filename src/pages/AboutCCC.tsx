@@ -226,7 +226,7 @@ const AboutCCC = () => {
                     <ul className="text-xs text-muted-foreground space-y-1 ml-4 list-disc">
                       <li><strong>Informations générales</strong> (9 champs) : type de titre, propriétaire, superficie, construction, usage...</li>
                       <li><strong>Localisation</strong> (11 champs) : province, ville, commune, quartier, coordonnées GPS...</li>
-                      <li><strong>Permis de construire</strong> (1 champ) : détails des autorisations de construction</li>
+                      <li><strong>Autorisation de bâtir</strong> (1 champ) : détails des autorisations de construction</li>
                       <li><strong>Historiques</strong> (3 champs) : propriétaires précédents, bornages, taxes</li>
                       <li><strong>Obligations</strong> (1 champ) : hypothèques éventuelles</li>
                       <li><strong>Pièces jointes</strong> (2 champs) : document du propriétaire et document du titre de propriété</li>

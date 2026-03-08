@@ -83,7 +83,7 @@ export function PermitRequestCard({ parcelNumber }: PermitRequestCardProps) {
                 <FileEdit className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               </div>
               <div className="flex-1 text-left">
-                <h4 className="text-sm font-medium text-foreground">Permis de régularisation</h4>
+                <h4 className="text-sm font-medium text-foreground">Autorisation de régularisation</h4>
                 <p className="text-[10px] text-muted-foreground leading-tight">
                   Construction existante à régulariser
                 </p>
