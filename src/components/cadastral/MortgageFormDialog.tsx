@@ -252,6 +252,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
         });
       } catch { /* Non-blocking */ }
 
+      clearDraft();
       setStep('confirmation');
       toast.success('Hypothèque enregistrée avec succès');
     } catch (error: any) {
