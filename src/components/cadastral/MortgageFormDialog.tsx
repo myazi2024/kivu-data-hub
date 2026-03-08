@@ -210,7 +210,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
       .eq('parcel_number', parcelNumber)
       .eq('user_id', user.id)
       .eq('contribution_type', 'mortgage_registration')
-      .in('status', ['pending', 'returned']);
+      .in('status', ['pending']);
 
     return (data?.length ?? 0) > 0;
   };
