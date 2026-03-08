@@ -8,37 +8,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Scale, Search, Eye, Clock, CheckCircle, AlertTriangle, FileText, ChevronLeft, ChevronRight, User, ExternalLink, Image, Copy, RefreshCw } from 'lucide-react';
+import { Scale, Search, Eye, FileText, ChevronLeft, ChevronRight, User, Copy, RefreshCw } from 'lucide-react';
 import {
   DISPUTE_NATURES_MAP,
   DISPUTE_STATUS_CONFIG,
   LIFTING_REASONS_MAP,
 } from '@/utils/disputeUploadUtils';
-
-interface LandDispute {
-  id: string;
-  parcel_number: string;
-  reference_number: string;
-  dispute_type: string;
-  dispute_nature: string;
-  dispute_description: string | null;
-  current_status: string;
-  resolution_level: string | null;
-  resolution_details: string | null;
-  declarant_name: string;
-  declarant_quality: string;
-  declarant_phone: string | null;
-  declarant_email: string | null;
-  dispute_start_date: string | null;
-  lifting_status: string | null;
-  lifting_reason: string | null;
-  lifting_request_reference: string | null;
-  supporting_documents: any;
-  lifting_documents: any;
-  parties_involved: any;
-  created_at: string;
-  updated_at: string;
-}
+import { LandDispute } from '@/utils/disputeSharedTypes';
+import DisputeDocumentLinks from '@/components/cadastral/DisputeDocumentLinks';
 
 export const UserLandDisputes: React.FC = () => {
   const { user } = useAuth();
@@ -105,33 +82,6 @@ export const UserLandDisputes: React.FC = () => {
   const copyReference = (ref: string) => {
     navigator.clipboard.writeText(ref);
     toast.success('Référence copiée');
-  };
-
-  const renderDocumentLinks = (docs: any, label: string) => {
-    if (!docs || (Array.isArray(docs) && docs.length === 0)) return null;
-    const docList = Array.isArray(docs) ? docs : [docs];
-    if (docList.length === 0) return null;
-
-    return (
-      <div className="pt-2 border-t">
-        <span className="text-xs text-muted-foreground">{label} ({docList.length})</span>
-        <div className="flex flex-wrap gap-1.5 mt-1">
-          {docList.map((url: string, i: number) => (
-            <a
-              key={i}
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-primary hover:underline bg-primary/5 px-2 py-1 rounded-lg"
-            >
-              {url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? <Image className="h-3 w-3" /> : <FileText className="h-3 w-3" />}
-              Doc {i + 1}
-              <ExternalLink className="h-2.5 w-2.5" />
-            </a>
-          ))}
-        </div>
-      </div>
-    );
   };
 
   const stats = {
@@ -363,8 +313,8 @@ export const UserLandDisputes: React.FC = () => {
                 <Card className="rounded-xl shadow-sm">
                   <CardContent className="p-3 space-y-2">
                     <div className="text-sm font-semibold text-primary">Documents</div>
-                    {renderDocumentLinks(selectedDispute.supporting_documents, 'Documents justificatifs')}
-                    {renderDocumentLinks(selectedDispute.lifting_documents, 'Documents de levée')}
+                    <DisputeDocumentLinks docs={selectedDispute.supporting_documents} label="Documents justificatifs" />
+                    <DisputeDocumentLinks docs={selectedDispute.lifting_documents} label="Documents de levée" />
                   </CardContent>
                 </Card>
               )}

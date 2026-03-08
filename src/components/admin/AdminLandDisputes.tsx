@@ -1,47 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Scale, Search, Eye, Clock, CheckCircle, AlertTriangle, FileText, ChevronLeft, ChevronRight, User, RefreshCw, Filter, ExternalLink, Image } from 'lucide-react';
+import { Scale, Search, Eye, FileText, ChevronLeft, ChevronRight, User, RefreshCw } from 'lucide-react';
 import {
   DISPUTE_NATURES_MAP,
   DISPUTE_STATUS_CONFIG,
   LIFTING_REASONS_MAP,
 } from '@/utils/disputeUploadUtils';
-
-interface LandDispute {
-  id: string;
-  parcel_number: string;
-  reference_number: string;
-  dispute_type: string;
-  dispute_nature: string;
-  dispute_description: string | null;
-  current_status: string;
-  resolution_level: string | null;
-  resolution_details: string | null;
-  declarant_name: string;
-  declarant_phone: string | null;
-  declarant_email: string | null;
-  declarant_id_number: string | null;
-  declarant_quality: string;
-  dispute_start_date: string | null;
-  parties_involved: any;
-  supporting_documents: any;
-  lifting_status: string | null;
-  lifting_reason: string | null;
-  lifting_request_reference: string | null;
-  lifting_documents: any;
-  reported_by: string | null;
-  created_at: string;
-  updated_at: string;
-}
+import { LandDispute } from '@/utils/disputeSharedTypes';
+import DisputeDocumentLinks from '@/components/cadastral/DisputeDocumentLinks';
 
 const STATUS_OPTIONS = [
   { value: 'all', label: 'Tous les statuts' },
@@ -81,6 +57,7 @@ const AdminLandDisputes: React.FC = () => {
   const [adminNotes, setAdminNotes] = useState('');
   const [newStatus, setNewStatus] = useState('');
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [showStatusConfirm, setShowStatusConfirm] = useState(false);
   const itemsPerPage = 15;
 
   useEffect(() => {
@@ -114,7 +91,6 @@ const AdminLandDisputes: React.FC = () => {
         updated_at: new Date().toISOString(),
       };
 
-      // Store admin notes separately — don't overwrite resolution_details
       if (adminNotes.trim()) {
         const existing = selectedDispute?.resolution_details || '';
         const timestamp = new Date().toLocaleDateString('fr-FR');
@@ -129,16 +105,20 @@ const AdminLandDisputes: React.FC = () => {
         .eq('id', disputeId);
 
       if (error) throw error;
+
+      // Refresh selectedDispute with updated data
+      setSelectedDispute(prev => prev ? { ...prev, ...updateData } : prev);
+
       toast.success('Statut mis à jour');
       setAdminNotes('');
       setNewStatus('');
       fetchDisputes();
-      setIsDetailsOpen(false);
     } catch (error: any) {
       toast.error('Erreur lors de la mise à jour');
       console.error('Error:', error);
     } finally {
       setUpdatingStatus(false);
+      setShowStatusConfirm(false);
     }
   };
 
@@ -167,33 +147,6 @@ const AdminLandDisputes: React.FC = () => {
   const getStatusBadge = (status: string) => {
     const s = DISPUTE_STATUS_CONFIG[status] || { label: status, variant: 'secondary' as const };
     return <Badge variant={s.variant} className="text-[10px]">{s.label}</Badge>;
-  };
-
-  const renderDocumentLinks = (docs: any, label: string) => {
-    if (!docs || (Array.isArray(docs) && docs.length === 0)) return null;
-    const docList = Array.isArray(docs) ? docs : [docs];
-    if (docList.length === 0) return null;
-
-    return (
-      <div className="pt-2 border-t">
-        <span className="text-xs text-muted-foreground">{label} ({docList.length})</span>
-        <div className="flex flex-wrap gap-1.5 mt-1">
-          {docList.map((url: string, i: number) => (
-            <a
-              key={i}
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-primary hover:underline bg-primary/5 px-2 py-1 rounded-lg"
-            >
-              {url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? <Image className="h-3 w-3" /> : <FileText className="h-3 w-3" />}
-              Doc {i + 1}
-              <ExternalLink className="h-2.5 w-2.5" />
-            </a>
-          ))}
-        </div>
-      </div>
-    );
   };
 
   const stats = {
@@ -353,7 +306,7 @@ const AdminLandDisputes: React.FC = () => {
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div><span className="text-muted-foreground text-xs">Parcelle</span><p className="font-mono font-bold">{selectedDispute.parcel_number}</p></div>
                     <div><span className="text-muted-foreground text-xs">Type</span><p>{selectedDispute.dispute_type === 'report' ? 'Signalement' : 'Levée'}</p></div>
-                    <div><span className="text-muted-foreground text-xs">Nature</span><p>{DISPUTE_NATURES_MAP[selectedDispute.dispute_nature]}</p></div>
+                    <div><span className="text-muted-foreground text-xs">Nature</span><p>{DISPUTE_NATURES_MAP[selectedDispute.dispute_nature] || selectedDispute.dispute_nature}</p></div>
                     <div><span className="text-muted-foreground text-xs">Statut</span><div>{getStatusBadge(selectedDispute.current_status)}</div></div>
                     {selectedDispute.dispute_start_date && <div><span className="text-muted-foreground text-xs">Début litige</span><p>{new Date(selectedDispute.dispute_start_date).toLocaleDateString('fr-FR')}</p></div>}
                     {selectedDispute.resolution_level && <div><span className="text-muted-foreground text-xs">Niveau résolution</span><p className="capitalize">{selectedDispute.resolution_level.replace(/_/g, ' ')}</p></div>}
@@ -364,10 +317,8 @@ const AdminLandDisputes: React.FC = () => {
                       <p className="text-sm mt-1">{selectedDispute.dispute_description}</p>
                     </div>
                   )}
-                  {/* Supporting documents */}
-                  {renderDocumentLinks(selectedDispute.supporting_documents, 'Documents justificatifs')}
-                  {/* Lifting documents */}
-                  {renderDocumentLinks(selectedDispute.lifting_documents, 'Documents de levée')}
+                  <DisputeDocumentLinks docs={selectedDispute.supporting_documents} label="Documents justificatifs" />
+                  <DisputeDocumentLinks docs={selectedDispute.lifting_documents} label="Documents de levée" />
                 </CardContent>
               </Card>
 
@@ -379,7 +330,6 @@ const AdminLandDisputes: React.FC = () => {
                     <div><span className="text-muted-foreground text-xs">Qualité</span><p className="capitalize">{selectedDispute.declarant_quality}</p></div>
                     {selectedDispute.declarant_phone && <div><span className="text-muted-foreground text-xs">Téléphone</span><p>{selectedDispute.declarant_phone}</p></div>}
                     {selectedDispute.declarant_email && <div><span className="text-muted-foreground text-xs">Email</span><p className="truncate">{selectedDispute.declarant_email}</p></div>}
-                    {selectedDispute.declarant_id_number && <div><span className="text-muted-foreground text-xs">N° Identité</span><p>{selectedDispute.declarant_id_number}</p></div>}
                   </div>
                 </CardContent>
               </Card>
@@ -412,7 +362,7 @@ const AdminLandDisputes: React.FC = () => {
                 </Card>
               )}
 
-              {/* Resolution details (user's original + admin notes) */}
+              {/* Resolution details */}
               {selectedDispute.resolution_details && (
                 <Card className="rounded-xl shadow-sm">
                   <CardContent className="p-3 space-y-2">
@@ -450,15 +400,11 @@ const AdminLandDisputes: React.FC = () => {
                       className="text-sm rounded-xl min-h-[60px]"
                     />
                   </div>
-              <Button
+                  <Button
                     size="sm"
                     className="w-full rounded-xl"
                     disabled={updatingStatus || newStatus === selectedDispute.current_status}
-                    onClick={() => {
-                      if (window.confirm(`Confirmer le changement de statut vers "${ADMIN_STATUS_TRANSITIONS.find(s => s.value === newStatus)?.label || newStatus}" ?`)) {
-                        handleUpdateStatus(selectedDispute.id);
-                      }
-                    }}
+                    onClick={() => setShowStatusConfirm(true)}
                   >
                     {updatingStatus ? 'Mise à jour...' : 'Mettre à jour le statut'}
                   </Button>
@@ -468,6 +414,29 @@ const AdminLandDisputes: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Status update confirmation */}
+      <AlertDialog open={showStatusConfirm} onOpenChange={setShowStatusConfirm}>
+        <AlertDialogContent className="rounded-2xl z-[99999]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer le changement de statut</AlertDialogTitle>
+            <AlertDialogDescription>
+              Voulez-vous vraiment changer le statut vers « {ADMIN_STATUS_TRANSITIONS.find(s => s.value === newStatus)?.label || newStatus} » ?
+              {adminNotes.trim() && <span className="block mt-1">Une note administrative sera ajoutée.</span>}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => selectedDispute && handleUpdateStatus(selectedDispute.id)}
+              className="rounded-xl"
+              disabled={updatingStatus}
+            >
+              {updatingStatus ? 'Mise à jour...' : 'Confirmer'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

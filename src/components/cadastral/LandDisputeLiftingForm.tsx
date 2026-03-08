@@ -270,10 +270,20 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
           lifting_request_reference: disputeReference.toUpperCase(),
           lifting_reason: liftingReason,
           lifting_documents: documentUrls,
-          lifting_status: 'pending',
-          supporting_documents: documentUrls,
           reported_by: user.id,
         } as any);
+
+      // Update original dispute status to 'demande_levee' (non-blocking)
+      if (disputeData?.id) {
+        try {
+          await supabase
+            .from('cadastral_land_disputes' as any)
+            .update({ current_status: 'demande_levee', updated_at: new Date().toISOString() } as any)
+            .eq('id', disputeData.id);
+        } catch (e) {
+          console.warn('Erreur mise à jour statut litige original:', e);
+        }
+      }
 
       if (error) {
         // Cleanup uploaded files on DB failure

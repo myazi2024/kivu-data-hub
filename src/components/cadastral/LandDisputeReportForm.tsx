@@ -515,7 +515,10 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
       {/* Description */}
       <div className="space-y-2">
         <Label className="text-sm font-semibold">Description du litige</Label>
-        <Textarea value={disputeDescription} onChange={(e) => setDisputeDescription(e.target.value)} placeholder="Décrivez brièvement les circonstances du litige..." className="text-sm min-h-[80px] rounded-xl border-2 focus:border-primary" />
+        <Textarea value={disputeDescription} onChange={(e) => { if (e.target.value.length <= MAX_DESCRIPTION_LENGTH) setDisputeDescription(e.target.value); }} placeholder="Décrivez brièvement les circonstances du litige..." className="text-sm min-h-[80px] rounded-xl border-2 focus:border-primary" maxLength={MAX_DESCRIPTION_LENGTH} />
+        {disputeDescription.length > MAX_DESCRIPTION_LENGTH * 0.8 && (
+          <p className="text-[10px] text-muted-foreground text-right">{disputeDescription.length}/{MAX_DESCRIPTION_LENGTH}</p>
+        )}
       </div>
 
       <Separator />
