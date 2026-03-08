@@ -968,6 +968,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // ✅ FIX P1-1: Helper to mark form as dirty for sub-array changes
+  const markDirty = useCallback(() => {
+    formDirtyRef.current = true;
+  }, []);
+
   const handleSectionTypeChange = (type: 'urbaine' | 'rurale') => {
     setSectionType(type);
     
@@ -1441,18 +1446,19 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     }
     
     setPreviousOwners([...previousOwners, newOwner]);
-  };
+    markDirty();
 
   const removePreviousOwner = (index: number) => {
     setPreviousOwners(previousOwners.filter((_, i) => i !== index));
+    markDirty();
   };
 
   const updatePreviousOwner = (index: number, field: string | Record<string, string>, value?: string) => {
+    markDirty();
     setPreviousOwners(prev => {
       const updated = [...prev];
       if (typeof field === 'string') {
         updated[index] = { ...updated[index], [field]: value };
-        // Auto-remplir la date de fin du propriétaire suivant (plus ancien) quand on change la date de début
         if (field === 'startDate' && value && index < updated.length - 1) {
           updated[index + 1] = { ...updated[index + 1], endDate: value };
         }
@@ -1502,15 +1508,18 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       rightType: '',
       since: ''
     }]);
+    markDirty();
   };
 
   const removeCurrentOwner = (index: number) => {
     if (currentOwners.length > 1) {
       setCurrentOwners(currentOwners.filter((_, i) => i !== index));
+      markDirty();
     }
   };
 
   const updateCurrentOwner = (index: number, field: string | Record<string, string>, value?: string) => {
+    markDirty();
     setCurrentOwners(prev => {
       const updated = [...prev];
       if (typeof field === 'string') {
@@ -1557,16 +1566,19 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       paymentDate: '',
       receiptFile: null
     }]);
+    markDirty();
   };
 
   const removeTaxRecord = (index: number) => {
     setTaxRecords(taxRecords.filter((_, i) => i !== index));
+    markDirty();
   };
 
   const updateTaxRecord = (index: number, field: string, value: string) => {
     const updated = [...taxRecords];
     updated[index] = { ...updated[index], [field]: value };
     setTaxRecords(updated);
+    markDirty();
   };
 
   const handleTaxFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1632,12 +1644,14 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
   const removeMortgageRecord = (index: number) => {
     setMortgageRecords(mortgageRecords.filter((_, i) => i !== index));
+    markDirty();
   };
 
   const updateMortgageRecord = (index: number, field: string, value: string) => {
     const updated = [...mortgageRecords];
     updated[index] = { ...updated[index], [field]: value };
     setMortgageRecords(updated);
+    markDirty();
   };
 
   const handleMortgageFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1704,24 +1718,28 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   
   const removeBuildingPermit = (index: number) => {
     setBuildingPermits(buildingPermits.filter((_, i) => i !== index));
+    markDirty();
   };
   
   const updateBuildingPermit = (index: number, field: string, value: string) => {
     const updated = [...buildingPermits];
     updated[index] = { ...updated[index], [field]: value };
     setBuildingPermits(updated);
+    markDirty();
   };
 
   const updateBuildingPermitFile = (index: number, file: File | null) => {
     const updated = [...buildingPermits];
     updated[index] = { ...updated[index], attachmentFile: file };
     setBuildingPermits(updated);
+    markDirty();
   };
 
   const removeBuildingPermitFile = (index: number) => {
     const updated = [...buildingPermits];
     updated[index] = { ...updated[index], attachmentFile: null };
     setBuildingPermits(updated);
+    markDirty();
   };
 
   // Logiques dépendantes pour les autorisations de bâtir
@@ -1810,6 +1828,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       detected: false,
       detecting: false
     }]);
+    markDirty();
   };
   
   const removeGPSCoordinate = (index: number) => {
@@ -1819,12 +1838,14 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (parcelSides.length > 2 && index < parcelSides.length) {
       setParcelSides(parcelSides.filter((_, i) => i !== index));
     }
+    markDirty();
   };
   
   const updateGPSCoordinate = (index: number, field: string, value: any) => {
     const updated = [...gpsCoordinates];
     updated[index] = { ...updated[index], [field]: value };
     setGpsCoordinates(updated);
+    markDirty();
   };
   
   const captureCurrentLocation = (index: number) => {
@@ -1937,6 +1958,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       lat: '',
       lng: ''
     }]);
+    markDirty();
   };
 
   const removeParcelSide = (index: number) => {
@@ -1947,6 +1969,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       if (gpsCoordinates.length > 0) {
         setGpsCoordinates(gpsCoordinates.slice(0, -1));
       }
+      markDirty();
     }
   };
 
@@ -1954,6 +1977,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     const updated = [...parcelSides];
     updated[index] = { ...updated[index], [field]: value };
     setParcelSides(updated);
+    markDirty();
   };
 
 
