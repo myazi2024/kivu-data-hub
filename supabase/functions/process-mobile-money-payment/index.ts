@@ -44,6 +44,25 @@ serve(async (req) => {
     const body: PaymentRequest = await req.json();
     const { payment_provider, phone_number, amount_usd, payment_type, invoice_id, test_mode } = body;
 
+    // Rate limiting: Check recent payment attempts
+    const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
+    const { count: recentAttempts } = await supabase
+      .from("rate_limit_attempts")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("endpoint", "process-mobile-money-payment")
+      .gte("created_at", oneHourAgo);
+
+    if (recentAttempts && recentAttempts >= 10) {
+      throw new Error("Rate limit exceeded. Please try again later.");
+    }
+
+    await supabase.from("rate_limit_attempts").insert({
+      user_id: user.id,
+      endpoint: "process-mobile-money-payment",
+      ip_address: req.headers.get("x-forwarded-for") || null,
+    });
+
     const syncExpertisePaymentState = async (
       status: 'completed' | 'failed',
       transactionId?: string,

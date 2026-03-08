@@ -34,13 +34,7 @@ const Auth = () => {
     checkUser();
   }, [navigate]);
 
-  const cleanupAuthState = () => {
-    Object.keys(localStorage).forEach((key) => {
-      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
-        localStorage.removeItem(key);
-      }
-    });
-  };
+  // Auth state cleanup is handled by useAuth provider
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,14 +49,6 @@ const Auth = () => {
 
     setIsLoading(true);
     try {
-      cleanupAuthState();
-      
-      try {
-        await supabase.auth.signOut({ scope: 'global' });
-      } catch (err) {
-        // Continue even if this fails
-      }
-
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -107,10 +93,10 @@ const Auth = () => {
       return;
     }
 
-    if (password.length < 6) {
+    if (password.length < 8) {
       toast({
         title: "Erreur",
-        description: "Le mot de passe doit contenir au moins 6 caractères",
+        description: "Le mot de passe doit contenir au moins 8 caractères",
         variant: "destructive",
       });
       return;
@@ -118,13 +104,6 @@ const Auth = () => {
 
     setIsLoading(true);
     try {
-      cleanupAuthState();
-      
-      try {
-        await supabase.auth.signOut({ scope: 'global' });
-      } catch (err) {
-        // Continue even if this fails
-      }
 
       const redirectUrl = localStorage.getItem('auth_redirect_url') || '/';
       const finalRedirectUrl = redirectUrl.startsWith('/') 
@@ -189,6 +168,39 @@ const Auth = () => {
         description: error.message || "Impossible de se connecter avec ce fournisseur",
         variant: "destructive",
       });
+      setIsLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast({
+        title: "Email requis",
+        description: "Veuillez entrer votre adresse email pour réinitialiser votre mot de passe",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Email envoyé",
+        description: "Vérifiez votre boîte de réception pour réinitialiser votre mot de passe",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible d'envoyer l'email de réinitialisation",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
     }
   };
@@ -338,7 +350,17 @@ const Auth = () => {
                       </div>
                       
                       <div className="space-y-2">
-                        <Label htmlFor="signin-password">Mot de passe</Label>
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="signin-password">Mot de passe</Label>
+                          <Button
+                            type="button"
+                            variant="link"
+                            className="px-0 h-auto text-xs text-primary"
+                            onClick={handleForgotPassword}
+                          >
+                            Mot de passe oublié ?
+                          </Button>
+                        </div>
                         <Input
                           id="signin-password"
                           type="password"
@@ -489,11 +511,11 @@ const Auth = () => {
                     <Input
                       id="signup-password"
                       type="password"
-                      placeholder="Au moins 6 caractères"
+                      placeholder="Au moins 8 caractères"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      minLength={6}
+                      minLength={8}
                     />
                   </div>
                   

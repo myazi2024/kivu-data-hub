@@ -31,13 +31,7 @@ export const QuickAuthDialog: React.FC<QuickAuthDialogProps> = ({
   const [fullName, setFullName] = useState('');
   const { toast } = useToast();
 
-  const cleanupAuthState = () => {
-    Object.keys(localStorage).forEach((key) => {
-      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
-        localStorage.removeItem(key);
-      }
-    });
-  };
+  // No destructive cleanup before sign-in to avoid race conditions
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,14 +46,6 @@ export const QuickAuthDialog: React.FC<QuickAuthDialogProps> = ({
 
     setIsLoading(true);
     try {
-      cleanupAuthState();
-      
-      try {
-        await supabase.auth.signOut({ scope: 'global' });
-      } catch (err) {
-        // Ignore errors
-      }
-
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -101,10 +87,10 @@ export const QuickAuthDialog: React.FC<QuickAuthDialogProps> = ({
       return;
     }
 
-    if (password.length < 6) {
+    if (password.length < 8) {
       toast({
         title: "Mot de passe trop court",
-        description: "Le mot de passe doit contenir au moins 6 caractères",
+        description: "Le mot de passe doit contenir au moins 8 caractères",
         variant: "destructive",
       });
       return;
@@ -112,13 +98,6 @@ export const QuickAuthDialog: React.FC<QuickAuthDialogProps> = ({
 
     setIsLoading(true);
     try {
-      cleanupAuthState();
-      
-      try {
-        await supabase.auth.signOut({ scope: 'global' });
-      } catch (err) {
-        // Ignore errors
-      }
 
       const { data, error } = await supabase.auth.signUp({
         email,
