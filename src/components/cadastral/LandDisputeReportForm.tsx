@@ -19,13 +19,22 @@ import {
   cleanupUploadedFiles,
   checkDuplicateDispute,
   sendDisputeNotification,
+  notifyAdminsAboutDispute,
   validateEmail,
   validatePhone,
   validateFileCount,
   validateFile,
   getDisputeReportDraftKey,
+  generateDisputeReference,
 } from '@/utils/disputeUploadUtils';
-import { MAX_PARTIES, MAX_DESCRIPTION_LENGTH } from '@/utils/disputeSharedTypes';
+import {
+  MAX_PARTIES,
+  MAX_DESCRIPTION_LENGTH,
+  DISPUTE_NATURES,
+  RESOLUTION_LEVELS,
+  DECLARANT_QUALITIES,
+  PARTY_ROLES,
+} from '@/utils/disputeSharedTypes';
 
 interface LandDisputeReportFormProps {
   parcelNumber: string;
@@ -34,45 +43,6 @@ interface LandDisputeReportFormProps {
   onOpenChange: (open: boolean) => void;
   embedded?: boolean;
 }
-
-const DISPUTE_NATURES = [
-  { value: 'succession', label: 'Litige successoral', description: 'Conflit lié à l\'héritage ou à la transmission du bien' },
-  { value: 'delimitation', label: 'Conflit de délimitation', description: 'Contestation des limites de la parcelle avec un voisin' },
-  { value: 'construction_anarchique', label: 'Construction anarchique', description: 'Empiétement ou construction non autorisée sur la parcelle' },
-  { value: 'expropriation', label: 'Expropriation', description: 'Procédure d\'expropriation initiée par une autorité publique' },
-  { value: 'double_vente', label: 'Double vente', description: 'La parcelle a été vendue à plusieurs acquéreurs' },
-  { value: 'occupation_illegale', label: 'Occupation illégale', description: 'Occupation de la parcelle par un tiers sans droit' },
-  { value: 'contestation_titre', label: 'Contestation de titre', description: 'Remise en cause de la validité du titre foncier' },
-  { value: 'servitude', label: 'Litige de servitude', description: 'Conflit lié à un droit de passage ou une servitude' },
-  { value: 'autre', label: 'Autre', description: 'Autre type de litige foncier' }
-];
-
-const RESOLUTION_LEVELS = [
-  { value: 'non_entame', label: 'Non entamé', description: 'Aucune procédure de résolution n\'a été engagée' },
-  { value: 'familial', label: 'Niveau familial', description: 'Tentative de résolution au sein de la famille' },
-  { value: 'conciliation_amiable', label: 'Conciliation amiable', description: 'Médiation ou arbitrage entre les parties' },
-  { value: 'autorite_locale', label: 'Autorité locale', description: 'Le litige est soumis au chef de quartier ou de localité' },
-  { value: 'arbitrage', label: 'Instance d\'arbitrage', description: 'Le litige est devant une commission d\'arbitrage' },
-  { value: 'tribunal', label: 'Devant les tribunaux', description: 'Le litige fait l\'objet d\'une procédure judiciaire' },
-  { value: 'appel', label: 'En appel', description: 'Le jugement a fait l\'objet d\'un appel' }
-];
-
-const DECLARANT_QUALITIES = [
-  { value: 'proprietaire', label: 'Propriétaire' },
-  { value: 'coproprietaire', label: 'Copropriétaire' },
-  { value: 'heritier', label: 'Héritier' },
-  { value: 'mandataire', label: 'Mandataire / Représentant légal' },
-  { value: 'occupant', label: 'Occupant' },
-  { value: 'voisin', label: 'Voisin' },
-  { value: 'autre', label: 'Autre' }
-];
-
-const PARTY_ROLES = [
-  { value: 'demandeur', label: 'Demandeur' },
-  { value: 'defendeur', label: 'Défendeur' },
-  { value: 'tiers', label: 'Tiers concerné' },
-  { value: 'temoin', label: 'Témoin' }
-];
 
 interface Party {
   name: string;
@@ -96,10 +66,13 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
   const [referenceNumber, setReferenceNumber] = useState('');
   const [draftRestored, setDraftRestored] = useState(false);
   
+  // Track whether reference has been generated for this session
+  const referenceGenerated = useRef(false);
+  
   const [disputeNature, setDisputeNature] = useState('');
   const [disputeDescription, setDisputeDescription] = useState('');
   const [disputeStartDate, setDisputeStartDate] = useState('');
-  const [currentStatus, setCurrentStatus] = useState('en_cours');
+  const [hasResolutionStarted, setHasResolutionStarted] = useState(false);
   const [resolutionLevel, setResolutionLevel] = useState('');
   const [resolutionDetails, setResolutionDetails] = useState('');
   
@@ -133,20 +106,20 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
   useEffect(() => {
     if (step !== 'form') return;
     const draftData = {
-      disputeNature, disputeDescription, disputeStartDate, currentStatus,
+      disputeNature, disputeDescription, disputeStartDate, hasResolutionStarted,
       resolutionLevel, resolutionDetails, declarantName, declarantPhone,
       declarantEmail, declarantQuality, parties,
     };
     if (disputeNature || disputeDescription || disputeStartDate) {
       localStorage.setItem(draftKey, JSON.stringify(draftData));
     }
-  }, [disputeNature, disputeDescription, disputeStartDate, currentStatus, resolutionLevel, resolutionDetails, declarantName, declarantPhone, declarantEmail, declarantQuality, parties, step, draftKey]);
+  }, [disputeNature, disputeDescription, disputeStartDate, hasResolutionStarted, resolutionLevel, resolutionDetails, declarantName, declarantPhone, declarantEmail, declarantQuality, parties, step, draftKey]);
 
-  // Restore draft on mount
+  // Generate reference ONCE per session and restore draft
   useEffect(() => {
-    if (open) {
-      const ref = `LIT-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
-      setReferenceNumber(ref);
+    if (open && !referenceGenerated.current) {
+      setReferenceNumber(generateDisputeReference('LIT'));
+      referenceGenerated.current = true;
 
       try {
         const savedDraft = localStorage.getItem(draftKey);
@@ -155,7 +128,7 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
           setDisputeNature(draft.disputeNature || '');
           setDisputeDescription(draft.disputeDescription || '');
           setDisputeStartDate(draft.disputeStartDate || '');
-          setCurrentStatus(draft.currentStatus || 'en_cours');
+          setHasResolutionStarted(draft.hasResolutionStarted || false);
           setResolutionLevel(draft.resolutionLevel || '');
           setResolutionDetails(draft.resolutionDetails || '');
           setDeclarantName(draft.declarantName || '');
@@ -169,6 +142,9 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
       } catch (e) {
         console.warn('Erreur restauration brouillon:', e);
       }
+    }
+    if (!open) {
+      referenceGenerated.current = false;
     }
   }, [open, draftKey]);
 
@@ -211,10 +187,9 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
   const validateForm = (): boolean => {
     if (!disputeNature) { toast.error('Veuillez sélectionner la nature du litige'); return false; }
     if (!disputeStartDate) { toast.error('Veuillez indiquer la date de début du litige'); return false; }
-    // Programmatic future date validation
     const today = new Date().toISOString().split('T')[0];
     if (disputeStartDate > today) { toast.error('La date de début ne peut pas être dans le futur'); return false; }
-    if (currentStatus === 'en_resolution' && !resolutionLevel) { toast.error('Veuillez indiquer le niveau de résolution'); return false; }
+    if (hasResolutionStarted && !resolutionLevel) { toast.error('Veuillez indiquer le niveau de résolution'); return false; }
     if (!declarantName.trim() || declarantName.trim().length < 3) { toast.error('Le nom du déclarant doit contenir au moins 3 caractères'); return false; }
     if (!declarantQuality) { toast.error('Veuillez indiquer votre qualité'); return false; }
     if (declarantEmail && !validateEmail(declarantEmail)) { toast.error('Adresse e-mail invalide'); return false; }
@@ -231,13 +206,12 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
 
   const handleSubmit = async () => {
     if (!user) { toast.error('Vous devez être connecté'); return; }
-    if (loading) return; // Guard against double-click
+    if (loading) return;
     setLoading(true);
     
     let uploadedPaths: string[] = [];
     
     try {
-      // Check for duplicate disputes (scoped to current user)
       const isDuplicate = await checkDuplicateDispute(parcelNumber, disputeNature, user.id);
       if (isDuplicate) {
         toast.error('Un litige de même nature est déjà en cours sur cette parcelle.');
@@ -245,13 +219,15 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
         return;
       }
 
-      // Upload files — throws on failure
       let documentUrls: string[] = [];
       if (documents.length > 0) {
         const uploadResult = await uploadDisputeFiles(documents, user.id, 'dispute');
         documentUrls = uploadResult.urls;
         uploadedPaths = uploadResult.paths;
       }
+
+      // Determine the status to persist
+      const persistedStatus = hasResolutionStarted && resolutionLevel ? resolutionLevel : 'en_cours';
 
       const { error } = await supabase
         .from('cadastral_land_disputes' as any)
@@ -263,7 +239,7 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
           dispute_nature: disputeNature,
           dispute_description: disputeDescription,
           parties_involved: parties.filter(p => p.name.trim()),
-          current_status: currentStatus === 'en_resolution' ? resolutionLevel : 'en_cours',
+          current_status: persistedStatus,
           resolution_level: resolutionLevel || null,
           resolution_details: resolutionDetails || null,
           declarant_name: declarantName,
@@ -276,7 +252,6 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
         } as any);
 
       if (error) {
-        // Cleanup uploaded files on DB failure
         await cleanupUploadedFiles(uploadedPaths);
         throw error;
       }
@@ -299,7 +274,7 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
         console.warn('Erreur contribution CCC:', contributionError);
       }
 
-      // Non-blocking notification
+      // Notification to submitter
       await sendDisputeNotification(
         user.id,
         'Litige foncier signalé',
@@ -307,9 +282,13 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
         '/user-dashboard?tab=disputes'
       );
 
-      // Clear draft
-      localStorage.removeItem(draftKey);
+      // Notify admins
+      await notifyAdminsAboutDispute(
+        'Nouveau signalement de litige',
+        `Un nouveau litige foncier (${referenceNumber}) a été signalé sur la parcelle ${parcelNumber} par ${declarantName}.`
+      );
 
+      localStorage.removeItem(draftKey);
       setStep('confirmation');
       toast.success('Litige foncier signalé avec succès');
     } catch (error: any) {
@@ -325,7 +304,7 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
     setDisputeNature('');
     setDisputeDescription('');
     setDisputeStartDate('');
-    setCurrentStatus('en_cours');
+    setHasResolutionStarted(false);
     setResolutionLevel('');
     setResolutionDetails('');
     setParties([{ name: '', phone: '', role: 'defendeur', relationship: '' }]);
@@ -395,7 +374,7 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
               <div className="flex justify-between"><span className="text-muted-foreground">Référence :</span><span className="font-mono font-bold">{referenceNumber}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Nature :</span><span>{DISPUTE_NATURES.find(n => n.value === disputeNature)?.label}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Début :</span><span>{disputeStartDate}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Statut :</span><span>{currentStatus === 'en_resolution' ? RESOLUTION_LEVELS.find(r => r.value === resolutionLevel)?.label : 'En cours'}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Statut :</span><span>{hasResolutionStarted ? RESOLUTION_LEVELS.find(r => r.value === resolutionLevel)?.label : 'En cours'}</span></div>
               {disputeDescription && <div className="pt-1"><span className="text-muted-foreground">Description :</span><p className="mt-0.5">{disputeDescription}</p></div>}
               {resolutionDetails && <div className="pt-1"><span className="text-muted-foreground">Détails résolution :</span><p className="mt-0.5">{resolutionDetails}</p></div>}
             </div>
@@ -523,22 +502,33 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
 
       <Separator />
 
-      {/* Statut actuel */}
+      {/* Résolution entamée ? (boolean toggle instead of ghost status) */}
       <div className="space-y-2">
         <Label className="text-sm font-semibold flex items-center gap-2">
-          Statut actuel du litige *
-          <SectionHelpPopover title="Statut" description="Indiquez si le litige est en cours sans résolution ou si une procédure de résolution a déjà été engagée." />
+          Une procédure de résolution a-t-elle été entamée ?
+          <SectionHelpPopover title="Résolution" description="Indiquez si une tentative de résolution (familiale, amiable, judiciaire...) a déjà été engagée pour ce litige." />
         </Label>
-        <Select value={currentStatus} onValueChange={setCurrentStatus}>
-          <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary"><SelectValue /></SelectTrigger>
-          <SelectContent className="rounded-xl">
-            <SelectItem value="en_cours" className="text-sm py-2">En cours (non résolu)</SelectItem>
-            <SelectItem value="en_resolution" className="text-sm py-2">En cours de résolution</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex gap-2">
+          <Button
+            variant={!hasResolutionStarted ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => { setHasResolutionStarted(false); setResolutionLevel(''); }}
+            className="flex-1 h-10 rounded-xl text-sm"
+          >
+            Non
+          </Button>
+          <Button
+            variant={hasResolutionStarted ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setHasResolutionStarted(true)}
+            className="flex-1 h-10 rounded-xl text-sm"
+          >
+            Oui
+          </Button>
+        </div>
       </div>
 
-      {currentStatus === 'en_resolution' && (
+      {hasResolutionStarted && (
         <>
           <div className="space-y-2">
             <Label className="text-sm font-semibold">Niveau de résolution *</Label>
@@ -560,7 +550,10 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
           </div>
           <div className="space-y-2">
             <Label className="text-sm font-semibold">Détails sur la résolution</Label>
-            <Textarea value={resolutionDetails} onChange={(e) => setResolutionDetails(e.target.value)} placeholder="Numéro de dossier judiciaire, nom du médiateur, etc." className="text-sm min-h-[60px] rounded-xl border-2 focus:border-primary" />
+            <Textarea value={resolutionDetails} onChange={(e) => { if (e.target.value.length <= MAX_DESCRIPTION_LENGTH) setResolutionDetails(e.target.value); }} placeholder="Numéro de dossier judiciaire, nom du médiateur, etc." className="text-sm min-h-[60px] rounded-xl border-2 focus:border-primary" maxLength={MAX_DESCRIPTION_LENGTH} />
+            {resolutionDetails.length > MAX_DESCRIPTION_LENGTH * 0.8 && (
+              <p className="text-[10px] text-muted-foreground text-right">{resolutionDetails.length}/{MAX_DESCRIPTION_LENGTH}</p>
+            )}
           </div>
         </>
       )}
@@ -574,7 +567,7 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
             Parties concernées
             <SectionHelpPopover title="Parties" description="Renseignez les personnes ou entités impliquées dans le litige : voisin, héritier, institution, etc." />
           </Label>
-          <Button variant="outline" size="sm" onClick={addParty} className="h-9 text-xs gap-1 rounded-xl">
+          <Button variant="outline" size="sm" onClick={addParty} className="h-9 text-xs gap-1 rounded-xl" disabled={parties.length >= MAX_PARTIES}>
             <Plus className="h-3.5 w-3.5" /> Ajouter
           </Button>
         </div>

@@ -19,14 +19,21 @@ import {
   cleanupUploadedFiles,
   checkDisputeAlreadyResolved,
   sendDisputeNotification,
+  notifyAdminsAboutDispute,
   validateEmail,
   validatePhone,
   validateFileCount,
   validateFile,
   getDisputeLiftingDraftKey,
+  generateDisputeReference,
+} from '@/utils/disputeUploadUtils';
+import {
+  MAX_DESCRIPTION_LENGTH,
+  LIFTING_REASONS,
+  REQUESTER_QUALITIES,
   DISPUTE_NATURES_MAP,
   DISPUTE_STATUS_CONFIG,
-} from '@/utils/disputeUploadUtils';
+} from '@/utils/disputeSharedTypes';
 
 interface LandDisputeLiftingFormProps {
   parcelNumber: string;
@@ -36,26 +43,6 @@ interface LandDisputeLiftingFormProps {
   embedded?: boolean;
   onOpenServiceCatalog?: () => void;
 }
-
-const LIFTING_REASONS = [
-  { value: 'jugement_definitif', label: 'Jugement définitif', description: 'Le tribunal a rendu un jugement définitif et exécutoire' },
-  { value: 'conciliation_reussie', label: 'Conciliation réussie', description: 'Les parties ont trouvé un accord amiable' },
-  { value: 'desistement', label: 'Désistement', description: 'Le demandeur s\'est désisté de sa réclamation' },
-  { value: 'prescription', label: 'Prescription', description: 'Le délai légal pour agir est expiré' },
-  { value: 'transaction', label: 'Transaction / Accord transactionnel', description: 'Un accord financier ou compensatoire a été conclu' },
-  { value: 'reconnaissance_droits', label: 'Reconnaissance de droits', description: 'Les droits du propriétaire ont été reconnus officiellement' },
-  { value: 'erreur_materielle', label: 'Erreur matérielle', description: 'Le litige a été enregistré par erreur' },
-  { value: 'autre', label: 'Autre motif', description: 'Précisez dans les commentaires' }
-];
-
-const REQUESTER_QUALITIES = [
-  { value: 'proprietaire', label: 'Propriétaire' },
-  { value: 'coproprietaire', label: 'Copropriétaire' },
-  { value: 'heritier', label: 'Héritier' },
-  { value: 'mandataire', label: 'Mandataire / Représentant légal' },
-  { value: 'avocat', label: 'Avocat' },
-  { value: 'notaire', label: 'Notaire' }
-];
 
 type Step = 'form' | 'review' | 'confirmation';
 
@@ -72,6 +59,8 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
   const [loading, setLoading] = useState(false);
   const [requestReference, setRequestReference] = useState('');
   const [draftRestored, setDraftRestored] = useState(false);
+  
+  const referenceGenerated = useRef(false);
   
   const [disputeReference, setDisputeReference] = useState('');
   const [validatingReference, setValidatingReference] = useState(false);
@@ -94,12 +83,10 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const draftKey = getDisputeLiftingDraftKey(parcelNumber);
 
-  // Check if form has unsaved changes
   const hasUnsavedChanges = useCallback(() => {
     return disputeReference !== '' || liftingReason !== '' || liftingDetails !== '' || documents.length > 0;
   }, [disputeReference, liftingReason, liftingDetails, documents]);
 
-  // Expose hasUnsavedChanges to parent
   useEffect(() => {
     const handler = (e: CustomEvent) => {
       e.detail.hasChanges = hasUnsavedChanges();
@@ -120,10 +107,11 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
     }
   }, [disputeReference, liftingReason, liftingDetails, requesterName, requesterPhone, requesterEmail, requesterQuality, step, draftKey]);
 
+  // Generate reference ONCE and restore draft
   useEffect(() => {
-    if (open) {
-      const ref = `LEV-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
-      setRequestReference(ref);
+    if (open && !referenceGenerated.current) {
+      setRequestReference(generateDisputeReference('LEV'));
+      referenceGenerated.current = true;
 
       try {
         const savedDraft = localStorage.getItem(draftKey);
@@ -142,6 +130,9 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
       } catch (e) {
         console.warn('Erreur restauration brouillon:', e);
       }
+    }
+    if (!open) {
+      referenceGenerated.current = false;
     }
   }, [open, draftKey]);
 
@@ -179,10 +170,9 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
 
       if (error) throw error;
       if (data) {
-        // Check if dispute is already resolved
         if (checkDisputeAlreadyResolved(data)) {
           setReferenceValid(false);
-          setReferenceError('Ce litige a déjà été résolu ou levé. Aucune demande de levée n\'est nécessaire.');
+          setReferenceError('Ce litige a déjà été résolu, levé, ou fait déjà l\'objet d\'une demande de levée.');
           setDisputeData(null);
         } else {
           setReferenceValid(true);
@@ -242,17 +232,18 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
 
   const handleSubmit = async () => {
     if (!user) { toast.error('Vous devez être connecté'); return; }
-    if (loading) return; // Guard against double-click
+    if (loading) return;
     setLoading(true);
 
     let uploadedPaths: string[] = [];
 
     try {
-      // Upload files — throws on failure
+      // Upload files first
       const uploadResult = await uploadDisputeFiles(documents, user.id, 'lifting');
       const documentUrls = uploadResult.urls;
       uploadedPaths = uploadResult.paths;
 
+      // Insert lifting request
       const { error } = await supabase
         .from('cadastral_land_disputes' as any)
         .insert({
@@ -273,7 +264,12 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
           reported_by: user.id,
         } as any);
 
-      // Update original dispute status to 'demande_levee' (non-blocking)
+      if (error) {
+        await cleanupUploadedFiles(uploadedPaths);
+        throw error;
+      }
+
+      // AFTER successful insert, update original dispute status (non-blocking)
       if (disputeData?.id) {
         try {
           await supabase
@@ -285,13 +281,7 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
         }
       }
 
-      if (error) {
-        // Cleanup uploaded files on DB failure
-        await cleanupUploadedFiles(uploadedPaths);
-        throw error;
-      }
-
-      // Non-blocking notification
+      // Notify submitter
       await sendDisputeNotification(
         user.id,
         'Demande de levée de litige soumise',
@@ -299,9 +289,13 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
         '/user-dashboard?tab=disputes'
       );
 
-      // Clear draft
-      localStorage.removeItem(draftKey);
+      // Notify admins
+      await notifyAdminsAboutDispute(
+        'Nouvelle demande de levée de litige',
+        `Une demande de levée (${requestReference}) a été soumise pour la parcelle ${parcelNumber} par ${requesterName}.`
+      );
 
+      localStorage.removeItem(draftKey);
       setStep('confirmation');
       toast.success('Demande de levée soumise avec succès');
     } catch (error: any) {
@@ -423,7 +417,6 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
   // Form
   return (
     <div className="px-4 py-4 space-y-4">
-      {/* Draft restored indicator */}
       {draftRestored && (
         <Alert className="bg-blue-50 border-blue-200 rounded-xl">
           <Info className="h-4 w-4 text-blue-600" />
@@ -433,7 +426,6 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
         </Alert>
       )}
 
-      {/* Avertissement important */}
       <Alert className="bg-amber-50 border-amber-300 rounded-xl">
         <AlertTriangle className="h-4 w-4 text-amber-600" />
         <AlertDescription className="text-xs text-amber-900 leading-relaxed">
@@ -441,7 +433,6 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
         </AlertDescription>
       </Alert>
 
-      {/* Référence de la demande */}
       <Card className="bg-primary/5 border-primary/20 rounded-xl shadow-sm">
         <CardContent className="p-3">
           <div className="flex items-center gap-2">
@@ -456,7 +447,6 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
         </CardContent>
       </Card>
 
-      {/* Numéro de référence du litige */}
       <div className="space-y-2">
         <Label className="text-sm font-semibold flex items-center gap-2">
           Numéro de référence du litige *
@@ -478,12 +468,9 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
             {referenceValid === false && <AlertTriangle className="h-4 w-4 text-destructive" />}
           </div>
         </div>
-        {referenceError && (
-          <p className="text-xs text-destructive">{referenceError}</p>
-        )}
+        {referenceError && <p className="text-xs text-destructive">{referenceError}</p>}
       </div>
 
-      {/* Info notification — only show when reference is NOT valid */}
       {referenceValid !== true && (
         <>
           <Alert className="bg-blue-50 border-blue-200 rounded-xl">
@@ -500,7 +487,6 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
         </>
       )}
 
-      {/* Show dispute info if found */}
       {referenceValid && disputeData && (
         <Card className="bg-green-50 border-green-200 rounded-xl shadow-sm">
           <CardContent className="p-3 space-y-1">
@@ -520,7 +506,6 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
         <>
           <Separator />
 
-          {/* Motif */}
           <div className="space-y-2">
             <Label className="text-sm font-semibold flex items-center gap-2">
               Motif de la demande de levée *
@@ -543,15 +528,22 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
             )}
           </div>
 
-          {/* Détails complémentaires */}
           <div className="space-y-2">
             <Label className="text-sm font-semibold">Détails complémentaires</Label>
-            <Textarea value={liftingDetails} onChange={(e) => setLiftingDetails(e.target.value)} placeholder="Précisions sur la résolution du litige, numéro de jugement, etc." className="text-sm min-h-[70px] rounded-xl border-2 focus:border-primary" />
+            <Textarea
+              value={liftingDetails}
+              onChange={(e) => { if (e.target.value.length <= MAX_DESCRIPTION_LENGTH) setLiftingDetails(e.target.value); }}
+              placeholder="Précisions sur la résolution du litige, numéro de jugement, etc."
+              className="text-sm min-h-[70px] rounded-xl border-2 focus:border-primary"
+              maxLength={MAX_DESCRIPTION_LENGTH}
+            />
+            {liftingDetails.length > MAX_DESCRIPTION_LENGTH * 0.8 && (
+              <p className="text-[10px] text-muted-foreground text-right">{liftingDetails.length}/{MAX_DESCRIPTION_LENGTH}</p>
+            )}
           </div>
 
           <Separator />
 
-          {/* Informations du demandeur */}
           <Card className="border-2 border-dashed rounded-xl">
             <CardContent className="p-3 space-y-3">
               <h4 className="text-sm font-semibold text-primary flex items-center gap-2">
@@ -588,7 +580,6 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
 
           <Separator />
 
-          {/* Documents */}
           <Card className="border rounded-xl">
             <CardContent className="p-3 space-y-3">
               <h4 className="text-sm font-semibold flex items-center gap-2">
@@ -634,7 +625,6 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
 
           <Separator />
 
-          {/* Certifications */}
           <div className="space-y-3">
             <div className="flex items-start gap-2.5">
               <Checkbox checked={allPartiesAgree} onCheckedChange={(c) => setAllPartiesAgree(c === true)} id="parties-agree" className="mt-0.5" />

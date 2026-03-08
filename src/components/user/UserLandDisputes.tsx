@@ -10,11 +10,15 @@ import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Scale, Search, Eye, FileText, ChevronLeft, ChevronRight, User, Copy, RefreshCw } from 'lucide-react';
 import {
+  LandDispute,
   DISPUTE_NATURES_MAP,
   DISPUTE_STATUS_CONFIG,
   LIFTING_REASONS_MAP,
-} from '@/utils/disputeUploadUtils';
-import { LandDispute } from '@/utils/disputeSharedTypes';
+  DECLARANT_QUALITIES_MAP,
+  PARTY_ROLES_MAP,
+  getStatusVariant,
+  getStatusLabel,
+} from '@/utils/disputeSharedTypes';
 import DisputeDocumentLinks from '@/components/cadastral/DisputeDocumentLinks';
 
 export const UserLandDisputes: React.FC = () => {
@@ -30,7 +34,24 @@ export const UserLandDisputes: React.FC = () => {
   const itemsPerPage = 10;
 
   useEffect(() => {
-    if (user) fetchDisputes();
+    if (user) {
+      fetchDisputes();
+
+      // Realtime subscription for user's own disputes
+      const channel = supabase
+        .channel('user-land-disputes')
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'cadastral_land_disputes',
+          filter: `reported_by=eq.${user.id}`,
+        }, () => {
+          fetchDisputes();
+        })
+        .subscribe();
+
+      return () => { supabase.removeChannel(channel); };
+    }
   }, [user]);
 
   const fetchDisputes = async () => {
@@ -75,8 +96,7 @@ export const UserLandDisputes: React.FC = () => {
   const paginatedDisputes = filteredDisputes.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const getStatusBadge = (status: string) => {
-    const s = DISPUTE_STATUS_CONFIG[status] || { label: status, variant: 'secondary' as const };
-    return <Badge variant={s.variant} className="text-[10px]">{s.label}</Badge>;
+    return <Badge variant={getStatusVariant(status)} className="text-[10px]">{getStatusLabel(status)}</Badge>;
   };
 
   const copyReference = (ref: string) => {
@@ -201,7 +221,6 @@ export const UserLandDisputes: React.FC = () => {
             </div>
           )}
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-3 pt-3 border-t">
               <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="h-7 text-xs rounded-lg">
@@ -286,7 +305,7 @@ export const UserLandDisputes: React.FC = () => {
                   <div className="flex items-center gap-2 text-sm font-semibold text-primary"><User className="h-4 w-4" /> Déclarant</div>
                   <div className="space-y-1.5 text-sm">
                     <div className="flex justify-between"><span className="text-muted-foreground">Nom :</span><span>{selectedDispute.declarant_name}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Qualité :</span><span className="capitalize">{selectedDispute.declarant_quality}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Qualité :</span><span>{DECLARANT_QUALITIES_MAP[selectedDispute.declarant_quality] || selectedDispute.declarant_quality}</span></div>
                     {selectedDispute.declarant_phone && <div className="flex justify-between"><span className="text-muted-foreground">Téléphone :</span><span>{selectedDispute.declarant_phone}</span></div>}
                     {selectedDispute.declarant_email && <div className="flex justify-between"><span className="text-muted-foreground">Email :</span><span className="truncate">{selectedDispute.declarant_email}</span></div>}
                   </div>
@@ -300,7 +319,7 @@ export const UserLandDisputes: React.FC = () => {
                     <div className="text-sm font-semibold text-primary">Parties concernées</div>
                     {selectedDispute.parties_involved.map((party: any, i: number) => (
                       <div key={i} className="text-sm flex justify-between border-b last:border-0 pb-1">
-                        <span className="text-muted-foreground capitalize">{party.role}</span>
+                        <span className="text-muted-foreground">{PARTY_ROLES_MAP[party.role] || party.role}</span>
                         <span>{party.name}</span>
                       </div>
                     ))}

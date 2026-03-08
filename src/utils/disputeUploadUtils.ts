@@ -89,7 +89,7 @@ export const cleanupUploadedFiles = async (filePaths: string[]): Promise<void> =
 
 /**
  * Check for existing active disputes on a parcel to prevent duplicates.
- * Now scoped to the reporting user to avoid blocking other users.
+ * Scoped to the reporting user to avoid blocking other users.
  */
 export const checkDuplicateDispute = async (
   parcelNumber: string,
@@ -110,15 +110,16 @@ export const checkDuplicateDispute = async (
 };
 
 /**
- * Check if a dispute is already resolved before allowing lifting
+ * Check if a dispute is already resolved before allowing lifting.
+ * Also blocks if a lifting request is already pending.
  */
 export const checkDisputeAlreadyResolved = (disputeData: any): boolean => {
-  const resolvedStatuses = ['resolu', 'resolved', 'leve', 'lifted', 'clos', 'closed'];
-  return resolvedStatuses.includes(disputeData?.current_status?.toLowerCase());
+  const terminalStatuses = ['resolu', 'resolved', 'leve', 'lifted', 'clos', 'closed', 'demande_levee'];
+  return terminalStatuses.includes(disputeData?.current_status?.toLowerCase());
 };
 
 /**
- * Send a non-blocking notification
+ * Send a non-blocking notification to a specific user
  */
 export const sendDisputeNotification = async (
   userId: string,
@@ -140,6 +141,37 @@ export const sendDisputeNotification = async (
 };
 
 /**
+ * Notify all admins about a dispute event (non-blocking).
+ * Fetches admin user_ids from user_roles table.
+ */
+export const notifyAdminsAboutDispute = async (
+  title: string,
+  message: string,
+  actionUrl: string = '/admin?tab=land-disputes'
+): Promise<void> => {
+  try {
+    const { data: adminRoles } = await supabase
+      .from('user_roles' as any)
+      .select('user_id')
+      .in('role', ['admin', 'super_admin']);
+
+    if (!adminRoles || adminRoles.length === 0) return;
+
+    const notifications = (adminRoles as any[]).map((r: any) => ({
+      user_id: r.user_id,
+      title,
+      message,
+      type: 'info',
+      action_url: actionUrl,
+    }));
+
+    await supabase.from('notifications' as any).insert(notifications);
+  } catch (e) {
+    console.warn('Notifications admin non envoyées:', e);
+  }
+};
+
+/**
  * Draft key generators
  */
 export const getDisputeReportDraftKey = (parcelNumber: string) =>
@@ -149,47 +181,7 @@ export const getDisputeLiftingDraftKey = (parcelNumber: string) =>
   `dispute_lifting_draft_${parcelNumber}`;
 
 /**
- * Shared dispute natures map (centralized)
+ * Generate a stable dispute reference (called once per form session)
  */
-export const DISPUTE_NATURES_MAP: Record<string, string> = {
-  succession: 'Litige successoral',
-  delimitation: 'Conflit de délimitation',
-  construction_anarchique: 'Construction anarchique',
-  expropriation: 'Expropriation',
-  double_vente: 'Double vente',
-  occupation_illegale: 'Occupation illégale',
-  contestation_titre: 'Contestation de titre',
-  servitude: 'Litige de servitude',
-  autre: 'Autre',
-};
-
-/**
- * Shared status config (centralized)
- */
-export const DISPUTE_STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-  en_cours: { label: 'En cours', variant: 'secondary' },
-  resolu: { label: 'Résolu', variant: 'default' },
-  non_entame: { label: 'Non entamé', variant: 'outline' },
-  familial: { label: 'Familial', variant: 'secondary' },
-  conciliation_amiable: { label: 'Conciliation', variant: 'secondary' },
-  autorite_locale: { label: 'Autorité locale', variant: 'secondary' },
-  arbitrage: { label: 'Arbitrage', variant: 'outline' },
-  tribunal: { label: 'Tribunal', variant: 'destructive' },
-  appel: { label: 'En appel', variant: 'destructive' },
-  demande_levee: { label: 'Demande de levée', variant: 'outline' },
-  leve: { label: 'Levé', variant: 'default' },
-};
-
-/**
- * Lifting reasons map
- */
-export const LIFTING_REASONS_MAP: Record<string, string> = {
-  jugement_definitif: 'Jugement définitif',
-  conciliation_reussie: 'Conciliation réussie',
-  desistement: 'Désistement',
-  prescription: 'Prescription',
-  transaction: 'Transaction',
-  reconnaissance_droits: 'Reconnaissance de droits',
-  erreur_materielle: 'Erreur matérielle',
-  autre: 'Autre motif',
-};
+export const generateDisputeReference = (prefix: string): string =>
+  `${prefix}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
