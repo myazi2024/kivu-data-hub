@@ -1208,8 +1208,8 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                 </h4>
                 
                 <div className="space-y-2">
-                  {/* Frais de dossier - 83$ obligatoire */}
-                  {fees.filter(f => f.fee_name === 'Frais de dossier').map((fee) => (
+                  {/* Frais obligatoires */}
+                  {fees.filter(f => f.is_mandatory).map((fee) => (
                     <div 
                       key={fee.id}
                       className="flex items-start gap-3 p-3 rounded-xl transition-colors bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-200 dark:border-amber-700"
@@ -1237,8 +1237,8 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                     </div>
                   ))}
 
-                  {/* Frais de vérification */}
-                  {fees.filter(f => f.fee_name === 'Frais de vérification').map((fee) => (
+                  {/* Frais optionnels */}
+                  {fees.filter(f => !f.is_mandatory).map((fee) => (
                     <div 
                       key={fee.id}
                       className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${
