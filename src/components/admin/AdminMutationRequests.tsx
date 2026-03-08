@@ -694,6 +694,7 @@ const AdminMutationRequests: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
+                {/* Active fees */}
                 {fees.filter(f => f.is_active).map((fee) => (
                   <div 
                     key={fee.id}
@@ -724,13 +725,47 @@ const AdminMutationRequests: React.FC = () => {
                         variant="ghost"
                         size="sm"
                         className="h-7 w-7 p-0 text-destructive"
-                        onClick={() => handleDeleteFee(fee.id)}
+                        onClick={() => handleToggleFeeActive(fee.id, true)}
+                        title="Désactiver"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </div>
                 ))}
+
+                {/* Inactive fees — reactivation */}
+                {fees.filter(f => !f.is_active).length > 0 && (
+                  <>
+                    <Separator className="my-3" />
+                    <p className="text-xs font-medium text-muted-foreground">Frais désactivés</p>
+                    {fees.filter(f => !f.is_active).map((fee) => (
+                      <div 
+                        key={fee.id}
+                        className="flex items-center justify-between p-3 border rounded-lg opacity-60"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-sm line-through">{fee.fee_name}</span>
+                            <Badge variant="outline" className="text-[10px]">Inactif</Badge>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground text-sm">${Number(fee.amount_usd).toFixed(2)}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 text-green-600"
+                            onClick={() => handleToggleFeeActive(fee.id, false)}
+                            title="Réactiver"
+                          >
+                            <RotateCcw className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
