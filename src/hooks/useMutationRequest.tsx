@@ -91,8 +91,8 @@ export const useMutationRequest = () => {
   const createMutationRequest = async (data: {
     parcel_number: string;
     parcel_id?: string;
-    mutation_type: 'update' | 'transfer' | 'correction';
-    requester_type: 'owner' | 'representative' | 'third_party';
+    mutation_type: string;
+    requester_type: string;
     requester_name: string;
     requester_phone?: string;
     requester_email?: string;
@@ -101,6 +101,7 @@ export const useMutationRequest = () => {
     proposed_changes: Record<string, any>;
     justification?: string;
     selected_fees: MutationFee[];
+    total_amount_override?: number; // Total calculé côté formulaire (inclut frais mutation + retard)
   }) => {
     if (!user) {
       toast({
@@ -113,7 +114,8 @@ export const useMutationRequest = () => {
 
     setLoading(true);
     try {
-      const totalAmount = data.selected_fees.reduce((sum, fee) => sum + fee.amount_usd, 0);
+      const baseFees = data.selected_fees.reduce((sum, fee) => sum + fee.amount_usd, 0);
+      const totalAmount = data.total_amount_override ?? baseFees;
       const feeItems = data.selected_fees.map(fee => ({
         fee_id: fee.id,
         fee_name: fee.fee_name,
