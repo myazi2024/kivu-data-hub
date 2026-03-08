@@ -303,6 +303,17 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
         });
       } catch { /* Non-blocking */ }
 
+      // Fix #11: Create notification for registration
+      try {
+        await supabase.from('notifications').insert({
+          user_id: user.id,
+          title: 'Demande d\'enregistrement soumise',
+          message: `Votre demande d'enregistrement d'hypothèque (Réf: ${regReference}) pour la parcelle ${parcelNumber} a été soumise avec succès.`,
+          type: 'mortgage',
+          action_url: '/user-dashboard',
+        });
+      } catch { /* Non-blocking */ }
+
       clearDraft();
       setSubmissionReference(regReference);
       setStep('confirmation');
@@ -310,6 +321,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
     } catch (error: any) {
       console.error('Error:', error);
       toast.error('Erreur lors de l\'enregistrement');
+      setShowSubmitConfirm(false);
     } finally {
       setLoading(false);
       isSubmittingRef.current = false;
