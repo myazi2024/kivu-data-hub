@@ -1,0 +1,1 @@
+UPDATE parcel_actions_config SET label = 'Obtenir une autorisation', description = 'Autorisation de bâtir ou de régularisation' WHERE action_key = 'permit_request';
