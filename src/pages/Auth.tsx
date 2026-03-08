@@ -34,13 +34,7 @@ const Auth = () => {
     checkUser();
   }, [navigate]);
 
-  const cleanupAuthState = () => {
-    Object.keys(localStorage).forEach((key) => {
-      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
-        localStorage.removeItem(key);
-      }
-    });
-  };
+  // Auth state cleanup is handled by useAuth provider
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
