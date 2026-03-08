@@ -114,7 +114,15 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
   const [showIntro, setShowIntro] = useState(true);
   const [step, setStep] = useState<'form' | 'summary' | 'payment' | 'confirmation'>('form');
-  const [activeTab, setActiveTab] = useState('general');
+  const [activeTab, setActiveTabRaw] = useState('general');
+  const scrollAreaRef = React.useRef<HTMLDivElement>(null);
+  const setActiveTab = (tab: string) => {
+    setActiveTabRaw(tab);
+    setTimeout(() => {
+      const viewport = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+      if (viewport) viewport.scrollTop = 0;
+    }, 50);
+  };
   const [createdRequest, setCreatedRequest] = useState<any>(null);
 
   // Existing valid certificate state
@@ -3076,7 +3084,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
           )}
         </DialogHeader>
 
-        <ScrollArea className="h-[calc(90vh-120px)]">
+        <ScrollArea className="h-[calc(90vh-120px)]" ref={scrollAreaRef}>
           {step === 'form' && existingCertificate ? renderExistingCertificateBlock() : (
             <>
               {step === 'form' && (
