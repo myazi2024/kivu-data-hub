@@ -2108,7 +2108,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     // Use centralized labels (no local duplicate)
 
     return (
-      <div className="flex flex-col" style={{ maxHeight: isMobile ? '75vh' : '70vh' }}>
+      <div className="space-y-2">
         {/* En-tête compact */}
         <div className="shrink-0 space-y-2 pb-2">
           <div className="bg-gradient-to-br from-primary/15 to-primary/5 rounded-xl p-2.5 border border-primary/20">
