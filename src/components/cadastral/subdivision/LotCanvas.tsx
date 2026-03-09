@@ -1,11 +1,18 @@
 import React, { useRef, useState, useCallback } from 'react';
 import { SubdivisionLot, SubdivisionRoad, LOT_COLORS, USAGE_LABELS, Point2D } from './types';
 
+interface ParcelSide {
+  length?: number | string;
+  orientation?: string;
+  [key: string]: any;
+}
+
 interface LotCanvasProps {
   lots: SubdivisionLot[];
   roads: SubdivisionRoad[];
   parentAreaSqm: number;
   parentVertices?: Point2D[]; // Actual parcel shape in normalized 0-1 coords
+  parentSides?: ParcelSide[]; // Exact measurements from parcel_sides
   selectedLotId: string | null;
   onSelectLot: (id: string | null) => void;
   onUpdateLot: (id: string, vertices: Point2D[]) => void;
