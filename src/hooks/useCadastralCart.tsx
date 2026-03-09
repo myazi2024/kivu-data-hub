@@ -61,9 +61,11 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
     const consent = getConsentStatus();
     if (consent === false) return;
     
+    // Fix #15: Inclure un timestamp pour le TTL
     const cartData = JSON.stringify({
       services: selectedServices,
-      parcelNumber
+      parcelNumber,
+      savedAt: Date.now()
     });
     
     try {
