@@ -2101,7 +2101,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       hasWaterSupply && 'Eau courante',
       hasElectricity && 'Électricité',
       hasSewageSystem && 'Assainissement',
-      hasInternet && 'Internet',
+      hasInternet && `Internet${internetProvider ? ` (${internetProvider === 'vsat' ? 'V-Sat' : internetProvider.charAt(0).toUpperCase() + internetProvider.slice(1)})` : ''}`,
       hasSecuritySystem && 'Système de sécurité',
       hasParking && `Parking${parkingSpaces ? ` (${parkingSpaces} places)` : ''}`,
       hasGarden && `Jardin${gardenAreaSqm ? ` (${gardenAreaSqm} m²)` : ''}`,
