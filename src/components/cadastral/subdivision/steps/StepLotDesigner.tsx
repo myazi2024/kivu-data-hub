@@ -58,6 +58,24 @@ function convexHull(points: Point2D[]): Point2D[] {
   return hull;
 }
 
+// Line segment intersection helper
+function lineSegmentIntersection(
+  p1: Point2D, p2: Point2D, p3: Point2D, p4: Point2D
+): { point: Point2D; t: number } | null {
+  const d1x = p2.x - p1.x, d1y = p2.y - p1.y;
+  const d2x = p4.x - p3.x, d2y = p4.y - p3.y;
+  const denom = d1x * d2y - d1y * d2x;
+  if (Math.abs(denom) < 1e-10) return null;
+  const t = ((p3.x - p1.x) * d2y - (p3.y - p1.y) * d2x) / denom;
+  const u = ((p3.x - p1.x) * d1y - (p3.y - p1.y) * d1x) / denom;
+  if (u < 0 || u > 1) return null; // Must hit the edge segment
+  // t can be any value (we extend the cut line)
+  return {
+    point: { x: p1.x + t * d1x, y: p1.y + t * d1y },
+    t: u,
+  };
+}
+
 const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   parentParcel, parentVertices, parentSides, lots, setLots, roads, setRoads,
   onAutoSubdivide, validation, canUndo, canRedo, onUndo, onRedo
