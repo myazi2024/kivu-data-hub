@@ -19,6 +19,7 @@ interface CadastralCartContextType {
   getServiceCount: () => number;
   isSelected: (serviceId: string) => boolean;
   toggleService: (service: CadastralCartService) => void;
+  updateServicePrices: (updates: { id: string; price: number }[]) => void;
   parcelNumber: string | null;
   setParcelNumber: (parcelNumber: string) => void;
 }
@@ -42,7 +43,6 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
       const savedCart = localStorage.getItem('bic-cadastral-cart');
       if (savedCart) {
         const parsed = JSON.parse(savedCart);
-        // Fix #15: Vérifier le TTL du panier (24h max)
         const CART_TTL_MS = 24 * 60 * 60 * 1000;
         const savedAt = parsed.savedAt || 0;
         if (Date.now() - savedAt > CART_TTL_MS) {
@@ -61,7 +61,6 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
     const consent = getConsentStatus();
     if (consent === false) return;
     
-    // Fix #15: Inclure un timestamp pour le TTL
     const cartData = JSON.stringify({
       services: selectedServices,
       parcelNumber,
@@ -75,29 +74,29 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
     }
   }, [selectedServices, parcelNumber]);
 
-  // Fix #11: Vider le panier quand la parcelle change
+  // Fix #7: Ne vider le panier que si prev est non-null ET différent (pas sur remontage)
   const setParcelNumber = useCallback((newParcelNumber: string) => {
     setParcelNumberState(prev => {
-      if (prev && prev !== newParcelNumber) {
+      if (prev !== null && prev !== newParcelNumber) {
         setSelectedServices([]);
       }
       return newParcelNumber;
     });
   }, []);
 
-  const addService = (service: CadastralCartService) => {
+  const addService = useCallback((service: CadastralCartService) => {
     setSelectedServices(prev => {
       const exists = prev.some(s => s.id === service.id);
       if (exists) return prev;
       return [...prev, service];
     });
-  };
+  }, []);
 
-  const removeService = (serviceId: string) => {
+  const removeService = useCallback((serviceId: string) => {
     setSelectedServices(prev => prev.filter(s => s.id !== serviceId));
-  };
+  }, []);
 
-  const toggleService = (service: CadastralCartService) => {
+  const toggleService = useCallback((service: CadastralCartService) => {
     setSelectedServices(prev => {
       const exists = prev.some(s => s.id === service.id);
       if (exists) {
@@ -105,12 +104,29 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
       }
       return [...prev, service];
     });
-  };
+  }, []);
 
-  const clearServices = () => {
+  // Fix #18: Mise à jour batch des prix sans re-render multiples
+  const updateServicePrices = useCallback((updates: { id: string; price: number }[]) => {
+    setSelectedServices(prev => {
+      const priceMap = new Map(updates.map(u => [u.id, u.price]));
+      let changed = false;
+      const next = prev.map(s => {
+        const newPrice = priceMap.get(s.id);
+        if (newPrice !== undefined && newPrice !== s.price) {
+          changed = true;
+          return { ...s, price: newPrice };
+        }
+        return s;
+      });
+      return changed ? next : prev;
+    });
+  }, []);
+
+  const clearServices = useCallback(() => {
     setSelectedServices([]);
     setParcelNumberState(null);
-  };
+  }, []);
 
   const getTotalAmount = () => selectedServices.reduce((total, s) => total + s.price, 0);
   const getServiceCount = () => selectedServices.length;
@@ -126,6 +142,7 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
       getServiceCount,
       isSelected,
       toggleService,
+      updateServicePrices,
       parcelNumber,
       setParcelNumber
     }}>

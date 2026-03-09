@@ -252,7 +252,7 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
               placeholder={placeholderText || "Ex: BIC-RV001"}
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
-              onKeyPress={handleKeyPress}
+              onKeyDown={(e) => e.key === 'Enter' && handleValidateCode()}
               className="uppercase text-sm"
               disabled={validating}
             />
@@ -291,7 +291,7 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
               placeholder="CCC-XXXXX"
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
-              onKeyPress={handleKeyPress}
+              onKeyDown={(e) => e.key === 'Enter' && handleValidateCode()}
               className="uppercase text-sm"
               disabled={validating}
             />
