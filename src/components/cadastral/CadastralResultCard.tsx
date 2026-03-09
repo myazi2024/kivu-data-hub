@@ -210,48 +210,63 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
     return paidServices.includes(serviceType);
   };
 
-  // Fix #1 & #4: Utilise catalogServices réactifs + localisation dynamique
+  // Fix #3: Utiliser le vrai invoice_number de la DB si disponible au lieu de fabriquer un faux
   const handleDownloadPDF = () => {
     const selectedServicesList = catalogServices.filter(s => paidServices.includes(s.id));
     const subtotal = selectedServicesList.reduce((sum, service) => sum + Number(service.price), 0);
-    
-    const parcelId = result.parcel.parcel_number.replace(/[^0-9]/g, '').slice(-4);
-    const stableHash = result.parcel.parcel_number.split('').reduce((a: number, b: string) => {
-      a = ((a << 5) - a) + b.charCodeAt(0);
-      return a & a;
-    }, 0);
-    const stableTimestamp = Math.abs(stableHash).toString().slice(-6);
-    const locationCode = (result.parcel.ville || result.parcel.commune || 'RDC').substring(0, 4).toUpperCase();
-    const invoiceNumber = `INV-${result.parcel.parcel_type}-${locationCode}-${parcelId}-${stableTimestamp}`;
     
     const discountAmount = 0;
     const netAmount = subtotal - discountAmount;
     const tvaAmount = netAmount * TVA_RATE;
     const total = netAmount + tvaAmount;
     
-    const invoice = {
-      id: `temp-${Date.now()}`,
-      user_id: user?.id || null,
-      invoice_number: invoiceNumber,
-      parcel_number: result.parcel.parcel_number,
-      selected_services: paidServices,
-      search_date: new Date().toISOString(),
-      total_amount_usd: total,
-      status: 'paid',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      client_name: user?.user_metadata?.full_name || null,
-      client_email: user?.email || null,
-      client_organization: user?.user_metadata?.organization || null,
-      geographical_zone: `${result.parcel.commune}, ${result.parcel.quartier}`,
-      discount_amount_usd: discountAmount,
-      original_amount_usd: subtotal,
-      payment_method: 'visa'
-    };
+    // Chercher la facture réelle en DB pour récupérer le vrai invoice_number
+    const fetchAndGeneratePDF = async () => {
+      let invoiceNumber = `TEMP-${Date.now()}`;
+      
+      try {
+        const { data: dbInvoice } = await supabase
+          .from('cadastral_invoices')
+          .select('invoice_number')
+          .eq('parcel_number', result.parcel.parcel_number)
+          .eq('user_id', user?.id || '')
+          .eq('status', 'paid')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        if (dbInvoice?.invoice_number) {
+          invoiceNumber = dbInvoice.invoice_number;
+        }
+      } catch (e) {
+        console.warn('Could not fetch invoice number from DB:', e);
+      }
 
-    import('@/lib/pdf').then(({ generateInvoicePDF }) => {
+      const invoice = {
+        id: `pdf-${Date.now()}`,
+        user_id: user?.id || null,
+        invoice_number: invoiceNumber,
+        parcel_number: result.parcel.parcel_number,
+        selected_services: paidServices,
+        search_date: new Date().toISOString(),
+        total_amount_usd: total,
+        status: 'paid',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        client_name: user?.user_metadata?.full_name || null,
+        client_email: user?.email || null,
+        client_organization: user?.user_metadata?.organization || null,
+        geographical_zone: `${result.parcel.commune}, ${result.parcel.quartier}`,
+        discount_amount_usd: discountAmount,
+        original_amount_usd: subtotal,
+        payment_method: null
+      };
+
+      const { generateInvoicePDF } = await import('@/lib/pdf');
       generateInvoicePDF(invoice, catalogServices, invoiceFormat);
-    });
+    };
+    
+    fetchAndGeneratePDF();
   };
 
   // Fix #1: Utilise catalogServices réactifs au lieu de la variable globale deprecated
