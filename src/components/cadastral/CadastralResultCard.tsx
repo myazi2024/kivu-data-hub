@@ -104,7 +104,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   const [showContributionDialog, setShowContributionDialog] = useState(false);
   const lastScrollYRef = useRef(0);
   const { parcel, ownership_history, tax_history, mortgage_history, boundary_history, building_permits } = result;
-  const { checkServiceAccess } = useCadastralBilling();
+  const { services: catalogServices } = useCadastralServices();
   const { user } = useAuth();
 
   // Logique de scroll pour masquer/afficher l'en-tête
