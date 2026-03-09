@@ -31,6 +31,32 @@ interface StepLotDesignerProps {
   onRedo: () => void;
 }
 
+// Simple convex hull (gift wrapping / Jarvis march)
+function convexHull(points: Point2D[]): Point2D[] {
+  if (points.length < 3) return points;
+  const pts = [...points];
+  let leftmost = 0;
+  for (let i = 1; i < pts.length; i++) {
+    if (pts[i].x < pts[leftmost].x || (pts[i].x === pts[leftmost].x && pts[i].y < pts[leftmost].y)) {
+      leftmost = i;
+    }
+  }
+  const hull: Point2D[] = [];
+  let current = leftmost;
+  do {
+    hull.push(pts[current]);
+    let next = 0;
+    for (let i = 1; i < pts.length; i++) {
+      if (next === current) { next = i; continue; }
+      const cross = (pts[i].x - pts[current].x) * (pts[next].y - pts[current].y) -
+                    (pts[i].y - pts[current].y) * (pts[next].x - pts[current].x);
+      if (cross > 0) next = i;
+    }
+    current = next;
+  } while (current !== leftmost && hull.length < pts.length);
+  return hull;
+}
+
 const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   parentParcel, parentVertices, parentSides, lots, setLots, roads, setRoads,
   onAutoSubdivide, validation, canUndo, canRedo, onUndo, onRedo
@@ -40,6 +66,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   const [includeRoad, setIncludeRoad] = useState(true);
   const [roadWidth, setRoadWidth] = useState(6);
   const [selectedLotId, setSelectedLotId] = useState<string | null>(null);
+  const [selectedLotIds, setSelectedLotIds] = useState<string[]>([]);
   const [showAutoPanel, setShowAutoPanel] = useState(lots.length === 0);
   const [editingRoadId, setEditingRoadId] = useState<string | null>(null);
 
@@ -191,6 +218,40 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     setSelectedLotId(newLot1.id);
   }, [lots, setLots]);
 
+  const handleToggleLotSelection = useCallback((lotId: string) => {
+    setSelectedLotIds(prev =>
+      prev.includes(lotId) ? prev.filter(id => id !== lotId) : [...prev, lotId]
+    );
+    setSelectedLotId(null);
+  }, []);
+
+  const handleMergeLots = useCallback((ids: string[]) => {
+    if (ids.length < 2) return;
+    const lotsToMerge = lots.filter(l => ids.includes(l.id));
+    if (lotsToMerge.length < 2) return;
+
+    // Combine all vertices into a convex hull approximation
+    const allPoints = lotsToMerge.flatMap(l => l.vertices);
+    // Simple convex hull (gift wrapping)
+    const hull = convexHull(allPoints);
+
+    const totalArea = lotsToMerge.reduce((s, l) => s + l.areaSqm, 0);
+    const keepLot = lotsToMerge[0];
+    const maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0);
+
+    const mergedLot: SubdivisionLot = {
+      ...keepLot,
+      id: `lot-${Date.now()}-merged`,
+      lotNumber: String(maxLotNum + 1),
+      vertices: hull,
+      areaSqm: totalArea,
+    };
+
+    setLots([...lots.filter(l => !ids.includes(l.id)), mergedLot]);
+    setSelectedLotIds([]);
+    setSelectedLotId(mergedLot.id);
+  }, [lots, setLots]);
+
   const totalArea = lots.reduce((s, l) => s + l.areaSqm, 0);
   const parentArea = parentParcel?.areaSqm || 0;
   const coveragePercent = parentArea > 0 ? Math.round(totalArea / parentArea * 100) : 0;
@@ -320,15 +381,23 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 parentVertices={parentVertices}
                 parentSides={parentSides}
                 selectedLotId={selectedLotId}
-                onSelectLot={setSelectedLotId}
+                selectedLotIds={selectedLotIds}
+                onSelectLot={id => { setSelectedLotId(id); setSelectedLotIds([]); }}
+                onToggleLotSelection={handleToggleLotSelection}
                 selectedRoadId={editingRoadId}
                 onSelectRoad={setEditingRoadId}
                 onDeleteRoad={handleDeleteRoad}
                 onSplitLot={handleSplitLot}
+                onMergeLots={handleMergeLots}
                 onUpdateLot={(id, vertices) => {
                   setLots(lots.map(l => l.id === id ? { ...l, vertices } : l));
                 }}
               />
+              {lots.length > 1 && selectedLotIds.length === 0 && (
+                <p className="text-[10px] text-muted-foreground text-center py-1">
+                  💡 Ctrl+clic (⌘+clic sur Mac) pour sélectionner plusieurs lots et les fusionner
+                </p>
+              )}
             </CardContent>
           </Card>
         </div>

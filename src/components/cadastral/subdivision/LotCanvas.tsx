@@ -14,12 +14,15 @@ interface LotCanvasProps {
   parentVertices?: Point2D[];
   parentSides?: ParcelSide[];
   selectedLotId: string | null;
+  selectedLotIds?: string[];
   onSelectLot: (id: string | null) => void;
+  onToggleLotSelection?: (id: string) => void;
   onUpdateLot: (id: string, vertices: Point2D[]) => void;
   selectedRoadId?: string | null;
   onSelectRoad?: (id: string | null) => void;
   onDeleteRoad?: (id: string) => void;
   onSplitLot?: (id: string) => void;
+  onMergeLots?: (ids: string[]) => void;
   showGrid?: boolean;
   showDimensions?: boolean;
   showLotNumbers?: boolean;
@@ -37,8 +40,8 @@ const CANVAS_H = 400;
 const PADDING = 30;
 
 const LotCanvas: React.FC<LotCanvasProps> = ({
-  lots, roads, parentAreaSqm, parentVertices, parentSides, selectedLotId, onSelectLot, onUpdateLot,
-  selectedRoadId, onSelectRoad, onDeleteRoad, onSplitLot,
+  lots, roads, parentAreaSqm, parentVertices, parentSides, selectedLotId, selectedLotIds = [], onSelectLot, onToggleLotSelection, onUpdateLot,
+  selectedRoadId, onSelectRoad, onDeleteRoad, onSplitLot, onMergeLots,
   showGrid = true, showDimensions = true, showLotNumbers = true,
   showAreas = true, showRoads = true, showNorth = true,
   showLegend = false, showScale = true, showOwnerNames = false,
@@ -92,10 +95,16 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     setDraggingVertex(null);
   }, []);
 
-  const handleLotClick = useCallback((lotId: string) => {
+  const handleLotClick = useCallback((lotId: string, e: React.MouseEvent) => {
+    // Ctrl/Cmd+click for multi-select
+    if ((e.ctrlKey || e.metaKey) && onToggleLotSelection) {
+      onToggleLotSelection(lotId);
+      setSplitLotId(null);
+      return;
+    }
     onSelectLot(lotId === selectedLotId ? null : lotId);
     onSelectRoad?.(null);
-  }, [selectedLotId, onSelectLot, onSelectRoad]);
+  }, [selectedLotId, onSelectLot, onSelectRoad, onToggleLotSelection]);
 
   const handleLotDoubleClick = useCallback((lotId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -405,6 +414,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         const screenVertices = lot.vertices.map(v => toScreen(v));
         const pointsStr = screenVertices.map(p => `${p.x},${p.y}`).join(' ');
         const isSelected = lot.id === selectedLotId;
+        const isMultiSelected = selectedLotIds.includes(lot.id);
         const color = lot.color || LOT_COLORS[lot.intendedUse];
 
         // Centroid for labels
@@ -416,17 +426,26 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
             {/* Lot polygon */}
             <polygon
               points={pointsStr}
-              fill={color}
-              fillOpacity={isSelected ? 0.35 : 0.2}
-              stroke={isSelected ? 'hsl(var(--primary))' : color}
-              strokeWidth={isSelected ? 2.5 : 1.5}
+              fill={isMultiSelected ? 'hsl(var(--primary))' : color}
+              fillOpacity={isMultiSelected ? 0.3 : isSelected ? 0.35 : 0.2}
+              stroke={isMultiSelected ? 'hsl(var(--primary))' : isSelected ? 'hsl(var(--primary))' : color}
+              strokeWidth={isMultiSelected ? 2.5 : isSelected ? 2.5 : 1.5}
+              strokeDasharray={isMultiSelected ? '4 2' : 'none'}
               className={readOnly ? '' : 'cursor-pointer'}
-              onClick={() => handleLotClick(lot.id)}
+              onClick={e => handleLotClick(lot.id, e)}
               onDoubleClick={e => handleLotDoubleClick(lot.id, e)}
               onTouchStart={() => handleLotTouchStart(lot.id)}
               onTouchEnd={handleLotTouchEnd}
               onTouchCancel={handleLotTouchEnd}
             />
+
+            {/* Multi-select checkmark */}
+            {isMultiSelected && (
+              <g className="pointer-events-none select-none">
+                <circle cx={cx + 30} cy={cy - 20} r={8} fill="hsl(var(--primary))" fillOpacity={0.9} />
+                <text x={cx + 30} y={cy - 19} textAnchor="middle" dominantBaseline="middle" fontSize={10} fill="white" fontWeight="bold">✓</text>
+              </g>
+            )}
 
             {/* Lot number */}
             {showLotNumbers && (
@@ -584,6 +603,53 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
           </g>
         );
       })}
+
+      {/* Merge button when multiple lots selected */}
+      {selectedLotIds.length >= 2 && !readOnly && onMergeLots && (() => {
+        const selectedLotsData = lots.filter(l => selectedLotIds.includes(l.id));
+        const allCentroids = selectedLotsData.map(lot => {
+          const sv = lot.vertices.map(v => toScreen(v));
+          return {
+            x: sv.reduce((s, p) => s + p.x, 0) / sv.length,
+            y: sv.reduce((s, p) => s + p.y, 0) / sv.length,
+          };
+        });
+        const mcx = allCentroids.reduce((s, p) => s + p.x, 0) / allCentroids.length;
+        const mcy = Math.min(...allCentroids.map(p => p.y)) - 20;
+        return (
+          <g
+            className="cursor-pointer"
+            onClick={e => {
+              e.stopPropagation();
+              onMergeLots(selectedLotIds);
+            }}
+          >
+            <rect
+              x={mcx - 52}
+              y={mcy - 12}
+              width={104}
+              height={24}
+              rx={6}
+              fill="hsl(var(--accent))"
+              fillOpacity={0.95}
+              stroke="hsl(var(--primary))"
+              strokeWidth={1.5}
+            />
+            <text
+              x={mcx}
+              y={mcy}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fontSize={10}
+              fontWeight="bold"
+              fill="hsl(var(--primary))"
+              className="pointer-events-none select-none"
+            >
+              🔗 Fusionner ({selectedLotIds.length})
+            </text>
+          </g>
+        );
+      })()}
 
       {/* North indicator */}
       {showNorth && (
