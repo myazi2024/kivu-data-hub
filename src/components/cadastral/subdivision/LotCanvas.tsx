@@ -151,6 +151,79 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         />
       )}
 
+      {/* Parent parcel side measurements */}
+      {parentVertices && parentVertices.length >= 3 && (
+        <g>
+          {parentVertices.map((v, i) => {
+            const next = parentVertices[(i + 1) % parentVertices.length];
+            const sv = toScreen(v);
+            const sn = toScreen(next);
+            const mx = (sv.x + sn.x) / 2;
+            const my = (sv.y + sn.y) / 2;
+
+            let label = '';
+            if (parentSides && parentSides[i] && parentSides[i].length) {
+              const len = parseFloat(String(parentSides[i].length));
+              label = `${len.toFixed(1)}m`;
+            } else {
+              const dx = Math.abs(next.x - v.x) * sideLength;
+              const dy = Math.abs(next.y - v.y) * sideLength;
+              label = `${Math.round(Math.sqrt(dx * dx + dy * dy))}m`;
+            }
+
+            const orientationLabel = parentSides?.[i]?.orientation || '';
+
+            const edgeDx = sn.y - sv.y;
+            const edgeDy = sv.x - sn.x;
+            const edgeLen = Math.sqrt(edgeDx * edgeDx + edgeDy * edgeDy) || 1;
+            const offsetX = (edgeDx / edgeLen) * 16;
+            const offsetY = (edgeDy / edgeLen) * 16;
+
+            return (
+              <g key={`parent-dim-${i}`}>
+                <rect
+                  x={mx + offsetX - 22}
+                  y={my + offsetY - 8}
+                  width={44}
+                  height={orientationLabel ? 22 : 14}
+                  rx={3}
+                  fill="hsl(var(--background))"
+                  fillOpacity={0.85}
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={0.5}
+                  strokeOpacity={0.4}
+                />
+                <text
+                  x={mx + offsetX}
+                  y={my + offsetY + (orientationLabel ? -1 : 2)}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fontSize={9}
+                  fontWeight="bold"
+                  fill="hsl(var(--primary))"
+                  className="select-none pointer-events-none"
+                >
+                  {label}
+                </text>
+                {orientationLabel && (
+                  <text
+                    x={mx + offsetX}
+                    y={my + offsetY + 10}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize={7}
+                    fill="hsl(var(--muted-foreground))"
+                    className="select-none pointer-events-none"
+                  >
+                    {orientationLabel}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+        </g>
+      )}
+
       {/* Roads */}
       {showRoads && roads.map(road => {
         if (road.path.length < 2) return null;
