@@ -32,7 +32,7 @@ interface StepLotDesignerProps {
 }
 
 const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
-  parentParcel, parentVertices, lots, setLots, roads, setRoads,
+  parentParcel, parentVertices, parentSides, lots, setLots, roads, setRoads,
   onAutoSubdivide, validation, canUndo, canRedo, onUndo, onRedo
 }) => {
   const [numberOfLots, setNumberOfLots] = useState(4);
