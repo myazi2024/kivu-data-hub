@@ -324,6 +324,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 selectedRoadId={editingRoadId}
                 onSelectRoad={setEditingRoadId}
                 onDeleteRoad={handleDeleteRoad}
+                onSplitLot={handleSplitLot}
                 onUpdateLot={(id, vertices) => {
                   setLots(lots.map(l => l.id === id ? { ...l, vertices } : l));
                 }}
