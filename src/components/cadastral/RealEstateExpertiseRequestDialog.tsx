@@ -2633,7 +2633,6 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
               </CardContent>
             </Card>
           </div>
-        </ScrollArea>
 
         {/* Pied fixe compact */}
         <div className="shrink-0 pt-2 space-y-2 border-t border-border/50 mt-1">
