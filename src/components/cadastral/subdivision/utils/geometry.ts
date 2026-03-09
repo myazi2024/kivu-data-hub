@@ -135,42 +135,142 @@ export function polygonCentroid(vertices: Point2D[]): Point2D {
 }
 
 /**
- * Auto-subdivide parent parcel into lots
- * Returns normalized vertices for each lot (0-1 coordinate space)
+ * Interpolate a point along a polygon edge at parameter t (0-1)
+ * between vertex indices i and i+1
  */
-export function autoSubdivide(options: AutoSubdivideOptions, parentAreaSqm: number): SubdivisionLot[] {
+function lerpPoint(a: Point2D, b: Point2D, t: number): Point2D {
+  return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+}
+
+/**
+ * Find intersection of a horizontal/vertical slice line with polygon edges.
+ * Returns sorted intersection x or y values.
+ */
+function slicePolygon(
+  polygon: Point2D[],
+  axis: 'x' | 'y',
+  value: number
+): number[] {
+  const intersections: number[] = [];
+  const n = polygon.length;
+  const other = axis === 'x' ? 'y' : 'x';
+
+  for (let i = 0; i < n; i++) {
+    const a = polygon[i];
+    const b = polygon[(i + 1) % n];
+    const aVal = a[axis];
+    const bVal = b[axis];
+
+    if ((aVal <= value && bVal > value) || (bVal <= value && aVal > value)) {
+      const t = (value - aVal) / (bVal - aVal);
+      intersections.push(a[other] + (b[other] - a[other]) * t);
+    }
+  }
+  return intersections.sort((a, b) => a - b);
+}
+
+/**
+ * Clip a polygon by a half-plane defined by axis >= min and axis <= max.
+ * Uses Sutherland-Hodgman algorithm for two parallel clip edges.
+ */
+function clipPolygonByBand(
+  polygon: Point2D[],
+  axis: 'x' | 'y',
+  min: number,
+  max: number
+): Point2D[] {
+  let result = clipByEdge(polygon, axis, min, true);
+  result = clipByEdge(result, axis, max, false);
+  return result;
+}
+
+function clipByEdge(
+  polygon: Point2D[],
+  axis: 'x' | 'y',
+  threshold: number,
+  keepAbove: boolean
+): Point2D[] {
+  if (polygon.length === 0) return [];
+  const output: Point2D[] = [];
+  const n = polygon.length;
+
+  const isInside = (p: Point2D) => keepAbove ? p[axis] >= threshold - 1e-9 : p[axis] <= threshold + 1e-9;
+
+  for (let i = 0; i < n; i++) {
+    const current = polygon[i];
+    const next = polygon[(i + 1) % n];
+    const currIn = isInside(current);
+    const nextIn = isInside(next);
+
+    if (currIn) output.push(current);
+
+    if (currIn !== nextIn) {
+      // Compute intersection
+      const t = (threshold - current[axis]) / (next[axis] - current[axis]);
+      output.push(lerpPoint(current, next, t));
+    }
+  }
+  return output;
+}
+
+/**
+ * Get bounding box of a polygon
+ */
+function polyBounds(poly: Point2D[]) {
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const p of poly) {
+    if (p.x < minX) minX = p.x;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.y > maxY) maxY = p.y;
+  }
+  return { minX, maxX, minY, maxY };
+}
+
+/**
+ * Auto-subdivide parent parcel into lots respecting actual polygon shape.
+ * Slices the parent polygon along the chosen axis.
+ */
+export function autoSubdivide(
+  options: AutoSubdivideOptions,
+  parentAreaSqm: number,
+  parentVertices?: Point2D[]
+): SubdivisionLot[] {
   const { numberOfLots, direction, includeRoad, roadWidthM, equalSize } = options;
-  const lots: SubdivisionLot[] = [];
-  
-  // Calculate road width as proportion of total area
-  // Estimate: road is roughly sqrt(parentArea) long and roadWidthM wide
   const sideLength = Math.sqrt(parentAreaSqm);
   const roadProportion = includeRoad ? (roadWidthM / sideLength) : 0;
-  
+
+  // Use actual polygon or fallback to unit square
+  const parentPoly: Point2D[] = parentVertices && parentVertices.length >= 3
+    ? parentVertices
+    : [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }];
+
+  const bounds = polyBounds(parentPoly);
+  const parentNormArea = polygonArea(parentPoly);
+
+  const lots: SubdivisionLot[] = [];
+
   if (direction === 'horizontal') {
-    // Split horizontally (left to right)
-    const availableWidth = 1 - (includeRoad && numberOfLots > 1 ? roadProportion : 0);
+    // Slice along X axis (vertical cuts → left-to-right lots)
+    const totalWidth = bounds.maxX - bounds.minX;
+    const totalRoadWidth = includeRoad && numberOfLots > 1 ? roadProportion * (numberOfLots - 1) : 0;
+    const availableWidth = totalWidth - totalRoadWidth;
     const lotWidth = availableWidth / numberOfLots;
-    
+    const gapWidth = includeRoad ? roadProportion : 0;
+
     for (let i = 0; i < numberOfLots; i++) {
-      const x0 = i * lotWidth + (includeRoad && i > 0 ? roadProportion : 0);
-      const x1 = x0 + lotWidth;
-      
-      const vertices: Point2D[] = [
-        { x: x0, y: 0 },
-        { x: x1, y: 0 },
-        { x: x1, y: 1 },
-        { x: x0, y: 1 },
-      ];
-      
-      const normalizedArea = polygonArea(vertices);
-      
+      const xMin = bounds.minX + i * (lotWidth + gapWidth);
+      const xMax = xMin + lotWidth;
+      const clipped = clipPolygonByBand(parentPoly, 'x', xMin, xMax);
+      if (clipped.length < 3) continue;
+
+      const normArea = polygonArea(clipped);
       lots.push({
         id: `lot-${i + 1}`,
         lotNumber: `${i + 1}`,
-        vertices,
-        areaSqm: Math.round(normalizedArea * parentAreaSqm),
-        perimeterM: 0, // Will be computed later
+        vertices: clipped,
+        areaSqm: Math.round((normArea / parentNormArea) * parentAreaSqm),
+        perimeterM: Math.round(polygonPerimeter(clipped, sideLength)),
         intendedUse: 'residential',
         isBuilt: false,
         hasFence: false,
@@ -178,29 +278,26 @@ export function autoSubdivide(options: AutoSubdivideOptions, parentAreaSqm: numb
       });
     }
   } else if (direction === 'vertical') {
-    // Split vertically (top to bottom)
-    const availableHeight = 1 - (includeRoad && numberOfLots > 1 ? roadProportion : 0);
+    // Slice along Y axis (horizontal cuts → top-to-bottom lots)
+    const totalHeight = bounds.maxY - bounds.minY;
+    const totalRoadWidth = includeRoad && numberOfLots > 1 ? roadProportion * (numberOfLots - 1) : 0;
+    const availableHeight = totalHeight - totalRoadWidth;
     const lotHeight = availableHeight / numberOfLots;
-    
+    const gapHeight = includeRoad ? roadProportion : 0;
+
     for (let i = 0; i < numberOfLots; i++) {
-      const y0 = i * lotHeight + (includeRoad && i > 0 ? roadProportion : 0);
-      const y1 = y0 + lotHeight;
-      
-      const vertices: Point2D[] = [
-        { x: 0, y: y0 },
-        { x: 1, y: y0 },
-        { x: 1, y: y1 },
-        { x: 0, y: y1 },
-      ];
-      
-      const normalizedArea = polygonArea(vertices);
-      
+      const yMin = bounds.minY + i * (lotHeight + gapHeight);
+      const yMax = yMin + lotHeight;
+      const clipped = clipPolygonByBand(parentPoly, 'y', yMin, yMax);
+      if (clipped.length < 3) continue;
+
+      const normArea = polygonArea(clipped);
       lots.push({
         id: `lot-${i + 1}`,
         lotNumber: `${i + 1}`,
-        vertices,
-        areaSqm: Math.round(normalizedArea * parentAreaSqm),
-        perimeterM: 0,
+        vertices: clipped,
+        areaSqm: Math.round((normArea / parentNormArea) * parentAreaSqm),
+        perimeterM: Math.round(polygonPerimeter(clipped, sideLength)),
         intendedUse: 'residential',
         isBuilt: false,
         hasFence: false,
@@ -211,66 +308,70 @@ export function autoSubdivide(options: AutoSubdivideOptions, parentAreaSqm: numb
     // Grid layout
     const cols = Math.ceil(Math.sqrt(numberOfLots));
     const rows = Math.ceil(numberOfLots / cols);
-    const lotWidth = (1 - (includeRoad ? roadProportion * (cols - 1) : 0)) / cols;
-    const lotHeight = (1 - (includeRoad ? roadProportion * (rows - 1) : 0)) / rows;
-    
+    const totalHGap = includeRoad ? roadProportion * (cols - 1) : 0;
+    const totalVGap = includeRoad ? roadProportion * (rows - 1) : 0;
+    const cellW = ((bounds.maxX - bounds.minX) - totalHGap) / cols;
+    const cellH = ((bounds.maxY - bounds.minY) - totalVGap) / rows;
+    const hGap = includeRoad ? roadProportion : 0;
+    const vGap = includeRoad ? roadProportion : 0;
+
     let lotIndex = 0;
     for (let row = 0; row < rows && lotIndex < numberOfLots; row++) {
       for (let col = 0; col < cols && lotIndex < numberOfLots; col++) {
-        const x0 = col * (lotWidth + (includeRoad ? roadProportion : 0));
-        const y0 = row * (lotHeight + (includeRoad ? roadProportion : 0));
-        
-        const vertices: Point2D[] = [
-          { x: x0, y: y0 },
-          { x: x0 + lotWidth, y: y0 },
-          { x: x0 + lotWidth, y: y0 + lotHeight },
-          { x: x0, y: y0 + lotHeight },
-        ];
-        
-        const normalizedArea = polygonArea(vertices);
-        
+        const xMin = bounds.minX + col * (cellW + hGap);
+        const xMax = xMin + cellW;
+        const yMin = bounds.minY + row * (cellH + vGap);
+        const yMax = yMin + cellH;
+
+        // Clip by both axes
+        let clipped = clipPolygonByBand(parentPoly, 'x', xMin, xMax);
+        clipped = clipPolygonByBand(clipped, 'y', yMin, yMax);
+        if (clipped.length < 3) { lotIndex++; continue; }
+
+        const normArea = polygonArea(clipped);
         lots.push({
           id: `lot-${lotIndex + 1}`,
           lotNumber: `${lotIndex + 1}`,
-          vertices,
-          areaSqm: Math.round(normalizedArea * parentAreaSqm),
-          perimeterM: 0,
+          vertices: clipped,
+          areaSqm: Math.round((normArea / parentNormArea) * parentAreaSqm),
+          perimeterM: Math.round(polygonPerimeter(clipped, sideLength)),
           intendedUse: 'residential',
           isBuilt: false,
           hasFence: false,
           color: '#22c55e',
         });
-        
         lotIndex++;
       }
     }
   }
-  
-  // Compute perimeters
-  for (const lot of lots) {
-    lot.perimeterM = Math.round(polygonPerimeter(lot.vertices, sideLength));
-  }
-  
+
   return lots;
 }
 
 /**
- * Generate auto roads between lots
+ * Generate auto roads between lots (in gaps between sliced lots)
  */
 export function generateRoads(
   lots: SubdivisionLot[], 
   direction: 'horizontal' | 'vertical' | 'grid',
   roadWidthM: number,
-  parentAreaSqm: number
+  parentAreaSqm: number,
+  parentVertices?: Point2D[]
 ): { id: string; name: string; widthM: number; surfaceType: 'planned'; isExisting: false; path: Point2D[] }[] {
   const roads: any[] = [];
-  const sideLength = Math.sqrt(parentAreaSqm);
-  const roadProportion = roadWidthM / sideLength;
-  
-  if (direction === 'horizontal' && lots.length > 1) {
-    // Vertical roads between horizontal lots
+  if (lots.length < 2) return roads;
+
+  const parentPoly = parentVertices && parentVertices.length >= 3
+    ? parentVertices
+    : [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }];
+  const bounds = polyBounds(parentPoly);
+
+  if (direction === 'horizontal') {
+    // Roads run vertically between horizontally-arranged lots
     for (let i = 0; i < lots.length - 1; i++) {
-      const rightEdge = lots[i].vertices[1].x;
+      // Find the right-most x of lot i
+      const lotBounds = polyBounds(lots[i].vertices);
+      const midX = lotBounds.maxX; // Road sits at right edge of this lot
       roads.push({
         id: `road-${i + 1}`,
         name: `Voie ${i + 1}`,
@@ -278,14 +379,15 @@ export function generateRoads(
         surfaceType: 'planned' as const,
         isExisting: false,
         path: [
-          { x: rightEdge + roadProportion / 2, y: 0 },
-          { x: rightEdge + roadProportion / 2, y: 1 },
+          { x: midX, y: bounds.minY },
+          { x: midX, y: bounds.maxY },
         ],
       });
     }
-  } else if (direction === 'vertical' && lots.length > 1) {
+  } else if (direction === 'vertical') {
     for (let i = 0; i < lots.length - 1; i++) {
-      const bottomEdge = lots[i].vertices[2].y;
+      const lotBounds = polyBounds(lots[i].vertices);
+      const midY = lotBounds.maxY;
       roads.push({
         id: `road-${i + 1}`,
         name: `Voie ${i + 1}`,
@@ -293,8 +395,8 @@ export function generateRoads(
         surfaceType: 'planned' as const,
         isExisting: false,
         path: [
-          { x: 0, y: bottomEdge + roadProportion / 2 },
-          { x: 1, y: bottomEdge + roadProportion / 2 },
+          { x: bounds.minX, y: midY },
+          { x: bounds.maxX, y: midY },
         ],
       });
     }

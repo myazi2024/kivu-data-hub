@@ -108,15 +108,15 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any) {
   const handleAutoSubdivide = useCallback((options: AutoSubdivideOptions) => {
     if (!parentParcel) return;
     
-    const newLots = autoSubdivide(options, parentParcel.areaSqm);
+    const newLots = autoSubdivide(options, parentParcel.areaSqm, parentVertices);
     pushHistory(newLots);
     setLots(newLots);
     
     if (options.includeRoad) {
-      const newRoads = generateRoads(newLots, options.direction, options.roadWidthM, parentParcel.areaSqm);
+      const newRoads = generateRoads(newLots, options.direction, options.roadWidthM, parentParcel.areaSqm, parentVertices);
       setRoads(newRoads as SubdivisionRoad[]);
     }
-  }, [parentParcel]);
+  }, [parentParcel, parentVertices]);
   
   // History management
   const pushHistory = useCallback((newLots: SubdivisionLot[]) => {
