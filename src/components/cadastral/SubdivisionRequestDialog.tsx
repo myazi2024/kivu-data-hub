@@ -145,6 +145,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
             {form.currentStep === 'designer' && (
               <StepLotDesigner
                 parentParcel={form.parentParcel}
+                parentVertices={form.parentVertices}
                 lots={form.lots}
                 setLots={form.setLots}
                 roads={form.roads}
@@ -160,6 +161,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
             {form.currentStep === 'plan' && (
               <StepPlanView
                 parentParcel={form.parentParcel}
+                parentVertices={form.parentVertices}
                 lots={form.lots}
                 roads={form.roads}
                 commonSpaces={form.commonSpaces}

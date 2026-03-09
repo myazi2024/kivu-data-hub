@@ -5,6 +5,7 @@ interface LotCanvasProps {
   lots: SubdivisionLot[];
   roads: SubdivisionRoad[];
   parentAreaSqm: number;
+  parentVertices?: Point2D[]; // Actual parcel shape in normalized 0-1 coords
   selectedLotId: string | null;
   onSelectLot: (id: string | null) => void;
   onUpdateLot: (id: string, vertices: Point2D[]) => void;
@@ -25,7 +26,7 @@ const CANVAS_H = 400;
 const PADDING = 30;
 
 const LotCanvas: React.FC<LotCanvasProps> = ({
-  lots, roads, parentAreaSqm, selectedLotId, onSelectLot, onUpdateLot,
+  lots, roads, parentAreaSqm, parentVertices, selectedLotId, onSelectLot, onUpdateLot,
   showGrid = true, showDimensions = true, showLotNumbers = true,
   showAreas = true, showRoads = true, showNorth = true,
   showLegend = false, showScale = true, showOwnerNames = false,
@@ -116,18 +117,32 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         </g>
       )}
 
-      {/* Parent parcel outline */}
-      <rect
-        x={PADDING}
-        y={PADDING}
-        width={CANVAS_W - 2 * PADDING}
-        height={CANVAS_H - 2 * PADDING}
-        fill="none"
-        stroke="hsl(var(--primary))"
-        strokeWidth={2}
-        strokeDasharray="6 3"
-        opacity={0.5}
-      />
+      {/* Parent parcel outline — actual shape or fallback rectangle */}
+      {parentVertices && parentVertices.length >= 3 ? (
+        <polygon
+          points={parentVertices.map(v => {
+            const s = toScreen(v);
+            return `${s.x},${s.y}`;
+          }).join(' ')}
+          fill="none"
+          stroke="hsl(var(--primary))"
+          strokeWidth={2}
+          strokeDasharray="6 3"
+          opacity={0.5}
+        />
+      ) : (
+        <rect
+          x={PADDING}
+          y={PADDING}
+          width={CANVAS_W - 2 * PADDING}
+          height={CANVAS_H - 2 * PADDING}
+          fill="none"
+          stroke="hsl(var(--primary))"
+          strokeWidth={2}
+          strokeDasharray="6 3"
+          opacity={0.5}
+        />
+      )}
 
       {/* Roads */}
       {showRoads && roads.map(road => {

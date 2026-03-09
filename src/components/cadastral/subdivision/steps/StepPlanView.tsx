@@ -8,12 +8,13 @@ import { Eye, Download, Compass, Ruler, Hash, SquareStack, Route } from 'lucide-
 import { Button } from '@/components/ui/button';
 import {
   SubdivisionLot, SubdivisionRoad, SubdivisionCommonSpace, SubdivisionServitude,
-  PlanElements, ParentParcelInfo, LOT_COLORS, USAGE_LABELS
+  PlanElements, ParentParcelInfo, LOT_COLORS, USAGE_LABELS, Point2D
 } from '../types';
 import LotCanvas from '../LotCanvas';
 
 interface StepPlanViewProps {
   parentParcel: ParentParcelInfo | null;
+  parentVertices?: Point2D[];
   lots: SubdivisionLot[];
   roads: SubdivisionRoad[];
   commonSpaces: SubdivisionCommonSpace[];
@@ -35,7 +36,7 @@ const ELEMENT_TOGGLES: { key: keyof PlanElements; label: string; icon: React.Rea
 ];
 
 const StepPlanView: React.FC<StepPlanViewProps> = ({
-  parentParcel, lots, roads, commonSpaces, servitudes, planElements, onPlanElementsChange
+  parentParcel, parentVertices, lots, roads, commonSpaces, servitudes, planElements, onPlanElementsChange
 }) => {
   const handleToggle = (key: keyof PlanElements) => {
     onPlanElementsChange({ ...planElements, [key]: !planElements[key] });
@@ -87,6 +88,7 @@ const StepPlanView: React.FC<StepPlanViewProps> = ({
                 lots={lots}
                 roads={roads}
                 parentAreaSqm={parentParcel?.areaSqm || 0}
+                parentVertices={parentVertices}
                 selectedLotId={null}
                 onSelectLot={() => {}}
                 onUpdateLot={() => {}}

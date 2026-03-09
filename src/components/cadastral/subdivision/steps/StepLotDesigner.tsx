@@ -11,12 +11,13 @@ import {
   Wand2, Plus, Trash2, Undo2, Redo2, AlertTriangle, CheckCircle,
   Grid3X3, ArrowLeftRight, ArrowUpDown, Info, Settings2
 } from 'lucide-react';
-import { SubdivisionLot, SubdivisionRoad, AutoSubdivideOptions, ParentParcelInfo, LOT_COLORS, USAGE_LABELS } from '../types';
+import { SubdivisionLot, SubdivisionRoad, AutoSubdivideOptions, ParentParcelInfo, LOT_COLORS, USAGE_LABELS, Point2D } from '../types';
 import { ValidationResult } from '../utils/geometry';
 import LotCanvas from '../LotCanvas';
 
 interface StepLotDesignerProps {
   parentParcel: ParentParcelInfo | null;
+  parentVertices?: Point2D[];
   lots: SubdivisionLot[];
   setLots: (lots: SubdivisionLot[]) => void;
   roads: SubdivisionRoad[];
@@ -30,7 +31,7 @@ interface StepLotDesignerProps {
 }
 
 const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
-  parentParcel, lots, setLots, roads, setRoads,
+  parentParcel, parentVertices, lots, setLots, roads, setRoads,
   onAutoSubdivide, validation, canUndo, canRedo, onUndo, onRedo
 }) => {
   const [numberOfLots, setNumberOfLots] = useState(4);
@@ -178,6 +179,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 lots={lots}
                 roads={roads}
                 parentAreaSqm={parentArea}
+                parentVertices={parentVertices}
                 selectedLotId={selectedLotId}
                 onSelectLot={setSelectedLotId}
                 onUpdateLot={(id, vertices) => {

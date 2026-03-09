@@ -1,11 +1,11 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
   SubdivisionLot, SubdivisionRoad, SubdivisionCommonSpace, SubdivisionServitude,
   PlanElements, DEFAULT_PLAN_ELEMENTS, ParentParcelInfo, RequesterInfo,
-  SubdivisionStep, AutoSubdivideOptions, SubdivisionPlanData
+  SubdivisionStep, AutoSubdivideOptions, SubdivisionPlanData, Point2D
 } from '../types';
-import { autoSubdivide, generateRoads, validateSubdivision, ValidationResult } from '../utils/geometry';
+import { autoSubdivide, generateRoads, validateSubdivision, ValidationResult, gpsToNormalized } from '../utils/geometry';
 
 export function useSubdivisionForm(parcelNumber: string, parcelData?: any) {
   // Steps
@@ -270,11 +270,19 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any) {
     }
   }, [parentParcel, requester, lots, roads, commonSpaces, servitudes, planElements, purpose, parcelNumber]);
   
+  // Compute normalized parent vertices from GPS coordinates
+  const parentVertices = useMemo<Point2D[] | undefined>(() => {
+    if (!parentParcel || parentParcel.gpsCoordinates.length < 3) return undefined;
+    return parentParcel.gpsCoordinates.map(gps => gpsToNormalized(gps, parentParcel.gpsCoordinates));
+  }, [parentParcel]);
+
   return {
     // Steps
     currentStep, setCurrentStep, steps, goNext, goPrev, isStepValid,
     // Parent parcel
     parentParcel, loadingParcel, setParentParcel,
+    // Parent vertices (normalized shape)
+    parentVertices,
     // Requester
     requester, setRequester,
     // Plan data
