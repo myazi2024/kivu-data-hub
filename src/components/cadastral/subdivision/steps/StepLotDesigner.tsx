@@ -17,6 +17,7 @@ import LotCanvas from '../LotCanvas';
 
 interface StepLotDesignerProps {
   parentParcel: ParentParcelInfo | null;
+  parentVertices?: Point2D[];
   lots: SubdivisionLot[];
   setLots: (lots: SubdivisionLot[]) => void;
   roads: SubdivisionRoad[];
