@@ -21,8 +21,6 @@ import {
   Printer,
   Settings,
   FileCheck,
-  ExternalLink,
-  Info,
   Hash,
   Scale
 } from 'lucide-react';
@@ -32,7 +30,6 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
 import { useCadastralServices } from '@/hooks/useCadastralServices';
@@ -45,6 +42,8 @@ import CadastralInvoice from './CadastralInvoice';
 import DocumentAttachment from './DocumentAttachment';
 import { PROPERTY_TITLE_TYPES } from './PropertyTitleTypeSelect';
 import CadastralContributionDialog from './CadastralContributionDialog';
+import LockedServiceOverlay from './LockedServiceOverlay';
+import VerificationButton from './VerificationButton';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
