@@ -541,6 +541,57 @@ export function generateRoads(
 }
 
 /**
+ * When a road is deleted, merge adjacent lots to fill the gap.
+ */
+export function mergeLotsThroughDeletedRoad(
+  road: { path: Point2D[]; widthM: number },
+  lots: SubdivisionLot[],
+  parentAreaSqm: number,
+  parentVertices?: Point2D[]
+): SubdivisionLot[] {
+  if (road.path.length < 2 || lots.length < 2) return lots;
+
+  const sideLength = Math.sqrt(parentAreaSqm);
+  const parentPoly = parentVertices && parentVertices.length >= 3
+    ? parentVertices
+    : [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }];
+  const parentNormArea = polygonArea(parentPoly);
+
+  const p0 = road.path[0];
+  const p1 = road.path[road.path.length - 1];
+  const dx = Math.abs(p1.x - p0.x);
+  const dy = Math.abs(p1.y - p0.y);
+  const isVerticalRoad = dy > dx;
+  const axis: 'x' | 'y' = isVerticalRoad ? 'x' : 'y';
+  const roadCenter = isVerticalRoad ? (p0.x + p1.x) / 2 : (p0.y + p1.y) / 2;
+  const halfRoadNorm = (road.widthM / sideLength) / 2;
+
+  return lots.map(lot => {
+    const centroid = polygonCentroid(lot.vertices);
+    const lotCenter = centroid[axis];
+    const lotBnds = polyBounds(lot.vertices);
+    const lotMin = axis === 'x' ? lotBnds.minX : lotBnds.minY;
+    const lotMax = axis === 'x' ? lotBnds.maxX : lotBnds.maxY;
+    const tolerance = halfRoadNorm * 2.5;
+
+    if (lotCenter < roadCenter && Math.abs(lotMax - (roadCenter - halfRoadNorm)) < tolerance) {
+      const newVertices = lot.vertices.map(v =>
+        Math.abs(v[axis] - lotMax) < tolerance ? { ...v, [axis]: roadCenter } : v
+      );
+      const normArea = polygonArea(newVertices);
+      return { ...lot, vertices: newVertices, areaSqm: Math.round((normArea / parentNormArea) * parentAreaSqm), perimeterM: Math.round(polygonPerimeter(newVertices, sideLength)) };
+    } else if (lotCenter > roadCenter && Math.abs(lotMin - (roadCenter + halfRoadNorm)) < tolerance) {
+      const newVertices = lot.vertices.map(v =>
+        Math.abs(v[axis] - lotMin) < tolerance ? { ...v, [axis]: roadCenter } : v
+      );
+      const normArea = polygonArea(newVertices);
+      return { ...lot, vertices: newVertices, areaSqm: Math.round((normArea / parentNormArea) * parentAreaSqm), perimeterM: Math.round(polygonPerimeter(newVertices, sideLength)) };
+    }
+    return lot;
+  });
+}
+
+/**
  * Validate subdivision plan
  */
 export interface ValidationResult {
