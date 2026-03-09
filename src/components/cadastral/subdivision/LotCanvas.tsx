@@ -91,7 +91,14 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
 
   const handleLotClick = useCallback((lotId: string) => {
     onSelectLot(lotId === selectedLotId ? null : lotId);
-  }, [selectedLotId, onSelectLot]);
+    onSelectRoad?.(null);
+  }, [selectedLotId, onSelectLot, onSelectRoad]);
+
+  const handleRoadClick = useCallback((roadId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSelectRoad?.(roadId === selectedRoadId ? null : roadId);
+    onSelectLot(null);
+  }, [selectedRoadId, onSelectRoad, onSelectLot]);
 
   const sideLength = Math.sqrt(parentAreaSqm);
 
