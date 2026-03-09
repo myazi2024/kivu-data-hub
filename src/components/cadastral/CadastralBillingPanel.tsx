@@ -577,6 +577,10 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
           onClose={() => setShowPaymentDialog(false)}
           onPaymentSuccess={handlePaymentSuccess}
           availableMethods={availableMethods}
+          paymentStep={paymentStep}
+          processMobileMoneyPayment={processMobileMoneyPayment}
+          processStripePayment={processStripePayment}
+          resetPaymentState={resetPaymentState}
         />
       )}
     </TooltipProvider>
