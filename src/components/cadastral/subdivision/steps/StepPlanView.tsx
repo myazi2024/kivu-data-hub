@@ -8,7 +8,7 @@ import { Eye, Download, Compass, Ruler, Hash, SquareStack, Route } from 'lucide-
 import { Button } from '@/components/ui/button';
 import {
   SubdivisionLot, SubdivisionRoad, SubdivisionCommonSpace, SubdivisionServitude,
-  PlanElements, ParentParcelInfo, LOT_COLORS, USAGE_LABELS
+  PlanElements, ParentParcelInfo, LOT_COLORS, USAGE_LABELS, Point2D
 } from '../types';
 import LotCanvas from '../LotCanvas';
 
