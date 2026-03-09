@@ -1,149 +1,173 @@
-// Types pour le formulaire de lotissement amélioré
+// Types pour le module de lotissement v2
 
-export interface PolygonPoint {
-  x: number;
-  y: number;
-  lat?: number;
-  lng?: number;
-}
-
-export interface SideDimension {
-  id: string;
-  length: number;
-  angle: number; // Angle au début de ce côté
-  isShared: boolean;
-  adjacentLotNumber?: string;
-  isRoadBordering: boolean;
-  roadType: 'existing' | 'created' | 'none';
-  roadName?: string;
-  roadWidth?: number;
-  surfaceType?: 'asphalt' | 'gravel' | 'earth' | 'paved';
-  notes?: string;
-}
-
-export interface LotData {
+export interface SubdivisionLot {
   id: string;
   lotNumber: string;
-  // Géométrie polygonale (3-8 côtés)
-  sides: SideDimension[];
-  numberOfSides: number;
-  // Position pour le croquis
-  position: { x: number; y: number };
-  rotation: number; // Rotation en degrés
-  // Calculs automatiques
+  // Polygon vertices relative to parent parcel (0-1 normalized coordinates)
+  vertices: Point2D[];
+  // Computed values
   areaSqm: number;
-  perimeter: number;
-  // Caractéristiques
+  perimeterM: number;
+  // Properties
+  intendedUse: 'residential' | 'commercial' | 'industrial' | 'agricultural' | 'mixed';
+  ownerName?: string;
   isBuilt: boolean;
   hasFence: boolean;
   fenceType?: 'wall' | 'wire' | 'hedge' | 'mixed';
   constructionType?: 'house' | 'building' | 'warehouse' | 'other';
-  intendedUse: 'residential' | 'commercial' | 'industrial' | 'agricultural' | 'mixed';
   notes?: string;
-  // Points GPS pour chaque coin (optionnel)
-  gpsPoints?: PolygonPoint[];
-  // Couleur pour le croquis
-  color?: string;
+  // Display
+  color: string;
+  // GPS coordinates (computed from parent parcel)
+  gpsCoordinates?: GpsPoint[];
 }
 
-export interface InternalRoad {
+export interface Point2D {
+  x: number;
+  y: number;
+}
+
+export interface GpsPoint {
+  lat: number;
+  lng: number;
+}
+
+export interface SubdivisionRoad {
   id: string;
   name: string;
-  width: number;
+  widthM: number;
   surfaceType: 'asphalt' | 'gravel' | 'earth' | 'paved' | 'planned';
   isExisting: boolean;
-  // Points du tracé
-  points: { x: number; y: number }[];
-  // Lots bordés
-  borderingLots: string[];
+  // Path as series of points (normalized 0-1)
+  path: Point2D[];
 }
 
-export interface EnvironmentFeature {
+export interface SubdivisionCommonSpace {
   id: string;
-  type: 'lake' | 'river' | 'mountain' | 'forest' | 'marsh' | 'cliff' | 'building' | 'road' | 'powerline' | 'other';
-  name?: string;
-  position: { x: number; y: number };
-  size: { width: number; height: number };
-  direction?: 'north' | 'south' | 'east' | 'west' | 'northeast' | 'northwest' | 'southeast' | 'southwest';
-  distance?: number; // Distance par rapport à la parcelle
-  notes?: string;
-  color?: string;
+  type: 'green_space' | 'parking' | 'playground' | 'market' | 'drainage' | 'other';
+  name: string;
+  vertices: Point2D[];
+  areaSqm: number;
+  color: string;
 }
 
-export interface ParentParcelData {
-  area: number;
-  location: string;
-  owner: string;
-  titleRef: string;
-  titleType: string;
-  titleIssueDate: string;
-  gps: { lat: string; lng: string };
-  sides: SideDimension[];
-  numberOfSides: number;
+export interface SubdivisionServitude {
+  id: string;
+  type: 'passage' | 'drainage' | 'utility' | 'view' | 'other';
+  description: string;
+  affectedLots: string[];
+  widthM?: number;
+  path?: Point2D[];
 }
 
-export interface SketchSettings {
+export interface PlanElements {
   showGrid: boolean;
-  gridSize: number;
-  showScale: boolean;
   showNorthIndicator: boolean;
   showLegend: boolean;
   showDimensions: boolean;
+  showLotNumbers: boolean;
+  showAreas: boolean;
   showRoads: boolean;
-  showEnvironment: boolean;
-  backgroundColor: string;
-  lotColors: {
-    residential: string;
-    commercial: string;
-    industrial: string;
-    agricultural: string;
-    mixed: string;
-  };
+  showCommonSpaces: boolean;
+  showServitudes: boolean;
+  showOwnerNames: boolean;
+  showScale: boolean;
 }
 
-export const DEFAULT_SKETCH_SETTINGS: SketchSettings = {
+export const DEFAULT_PLAN_ELEMENTS: PlanElements = {
   showGrid: true,
-  gridSize: 10,
-  showScale: true,
   showNorthIndicator: true,
   showLegend: true,
   showDimensions: true,
+  showLotNumbers: true,
+  showAreas: true,
   showRoads: true,
-  showEnvironment: true,
-  backgroundColor: '#ffffff',
-  lotColors: {
-    residential: '#22c55e',
-    commercial: '#3b82f6',
-    industrial: '#f59e0b',
-    agricultural: '#84cc16',
-    mixed: '#8b5cf6'
-  }
+  showCommonSpaces: true,
+  showServitudes: true,
+  showOwnerNames: false,
+  showScale: true,
 };
 
-export const ENVIRONMENT_ICONS: Record<EnvironmentFeature['type'], string> = {
-  lake: '🌊',
-  river: '🏞️',
-  mountain: '⛰️',
-  forest: '🌲',
-  marsh: '🌿',
-  cliff: '🪨',
-  building: '🏢',
-  road: '🛤️',
-  powerline: '⚡',
-  other: '📍'
+export interface SubdivisionPlanData {
+  lots: SubdivisionLot[];
+  roads: SubdivisionRoad[];
+  commonSpaces: SubdivisionCommonSpace[];
+  servitudes: SubdivisionServitude[];
+  planElements: PlanElements;
+}
+
+export interface ParentParcelInfo {
+  parcelNumber: string;
+  areaSqm: number;
+  location: string;
+  ownerName: string;
+  titleReference: string;
+  titleType: string;
+  titleIssueDate: string;
+  gpsCoordinates: GpsPoint[];
+  parcelSides?: any;
+}
+
+export interface RequesterInfo {
+  firstName: string;
+  lastName: string;
+  middleName?: string;
+  phone: string;
+  email?: string;
+  type: 'owner' | 'mandatary' | 'notary' | 'other';
+  isOwner: boolean;
+}
+
+export type SubdivisionStep = 'parcel' | 'designer' | 'plan' | 'summary';
+
+// Auto-subdivision options
+export interface AutoSubdivideOptions {
+  numberOfLots: number;
+  direction: 'horizontal' | 'vertical' | 'grid';
+  includeRoad: boolean;
+  roadWidthM: number;
+  equalSize: boolean;
+}
+
+// Colors for lot usage types
+export const LOT_COLORS: Record<SubdivisionLot['intendedUse'], string> = {
+  residential: '#22c55e',
+  commercial: '#3b82f6',
+  industrial: '#f59e0b',
+  agricultural: '#84cc16',
+  mixed: '#8b5cf6',
 };
 
-export const FENCE_TYPES = [
-  { value: 'wall', label: 'Mur', icon: '🧱' },
-  { value: 'wire', label: 'Grillage', icon: '🔗' },
-  { value: 'hedge', label: 'Haie', icon: '🌿' },
-  { value: 'mixed', label: 'Mixte', icon: '🏗️' }
-];
+export const USAGE_LABELS: Record<SubdivisionLot['intendedUse'], string> = {
+  residential: 'Résidentiel',
+  commercial: 'Commercial',
+  industrial: 'Industriel',
+  agricultural: 'Agricole',
+  mixed: 'Mixte',
+};
 
-export const SURFACE_TYPES = [
-  { value: 'asphalt', label: 'Asphalte', color: '#374151' },
-  { value: 'gravel', label: 'Gravier', color: '#9ca3af' },
-  { value: 'earth', label: 'Terre', color: '#92400e' },
-  { value: 'paved', label: 'Pavé', color: '#6b7280' },
-  { value: 'planned', label: 'Planifié', color: '#ddd' }
-];
+export const ROAD_SURFACE_LABELS: Record<SubdivisionRoad['surfaceType'], string> = {
+  asphalt: 'Asphalte',
+  gravel: 'Gravier',
+  earth: 'Terre',
+  paved: 'Pavé',
+  planned: 'Planifié',
+};
+
+export const COMMON_SPACE_LABELS: Record<SubdivisionCommonSpace['type'], string> = {
+  green_space: 'Espace vert',
+  parking: 'Parking',
+  playground: 'Aire de jeux',
+  market: 'Marché',
+  drainage: 'Drainage',
+  other: 'Autre',
+};
+
+export const COMMON_SPACE_COLORS: Record<SubdivisionCommonSpace['type'], string> = {
+  green_space: '#16a34a',
+  parking: '#6b7280',
+  playground: '#f97316',
+  market: '#ef4444',
+  drainage: '#06b6d4',
+  other: '#a855f7',
+};
