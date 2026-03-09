@@ -38,7 +38,7 @@ const PADDING = 30;
 
 const LotCanvas: React.FC<LotCanvasProps> = ({
   lots, roads, parentAreaSqm, parentVertices, parentSides, selectedLotId, onSelectLot, onUpdateLot,
-  selectedRoadId, onSelectRoad, onDeleteRoad,
+  selectedRoadId, onSelectRoad, onDeleteRoad, onSplitLot,
   showGrid = true, showDimensions = true, showLotNumbers = true,
   showAreas = true, showRoads = true, showNorth = true,
   showLegend = false, showScale = true, showOwnerNames = false,
@@ -46,6 +46,8 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [draggingVertex, setDraggingVertex] = useState<{ lotId: string; vertexIdx: number } | null>(null);
+  const [splitLotId, setSplitLotId] = useState<string | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const toScreen = useCallback((p: Point2D) => ({
     x: PADDING + p.x * (CANVAS_W - 2 * PADDING),
