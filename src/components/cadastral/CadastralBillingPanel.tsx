@@ -400,6 +400,8 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
               })}
             </div>
           </div>
+          )}
+
 
           {selectedServiceIds.length > 0 && (
             <div className="rounded-xl border bg-muted/20 p-2.5">
