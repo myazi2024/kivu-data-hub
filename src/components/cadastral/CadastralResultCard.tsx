@@ -1509,29 +1509,13 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
           {/* Onglet Litiges */}
           <TabsContent value="disputes" className="mt-3 space-y-3 animate-fade-in">
             {!hasServiceAccess('land_disputes') ? (
-              <div className="p-4 text-center border-2 border-dashed border-primary/20 rounded-lg bg-gradient-to-br from-primary/5 to-secondary/5">
-                <div className="space-y-3">
-                  <div className="mx-auto w-12 h-12 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-xl flex items-center justify-center">
-                    <Scale className="h-6 w-6 text-primary" />
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="text-sm font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                      Service Premium
-                    </h3>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      Accédez aux informations sur les litiges fonciers
-                    </p>
-                  </div>
-                  <Button 
-                    onClick={() => { setPreselectServiceId('land_disputes'); setShowBillingPanel(true); }} 
-                    size="sm"
-                    className="text-xs bg-gradient-to-r from-primary to-primary/80"
-                  >
-                    <CreditCard className="h-3 w-3 mr-1" />
-                    Débloquer
-                  </Button>
-                </div>
-              </div>
+              <LockedServiceOverlay
+                icon={<Scale className="h-6 w-6 text-primary" />}
+                title="Service Premium"
+                description="Accédez aux informations sur les litiges fonciers"
+                onUnlock={() => { setPreselectServiceId('land_disputes'); setShowBillingPanel(true); }}
+                premium
+              />
             ) : (
               <DisputesContent parcelNumber={parcel.parcel_number} />
             )}
