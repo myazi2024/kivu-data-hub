@@ -1162,47 +1162,11 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                                  </div>
                                )}
                                <div className="mt-2 pt-2 border-t border-muted/30">
-                                 <div className="flex items-center gap-1">
-                                   <Button
-                                     variant="ghost"
-                                     size="sm"
-                                     className="flex-1 h-6 text-[10px] font-medium group relative overflow-hidden bg-gradient-to-r from-primary/5 to-primary/8 hover:from-primary/10 hover:to-primary/15 border border-primary/15 hover:border-primary/25 text-primary hover:text-primary transition-all duration-300 hover:scale-[1.02] hover:shadow-sm rounded-md px-2 py-0.5"
-                                     onClick={() => {
-                                       const taxVerificationUrl = `https://impots.cd/verification-taxe-fonciere/${parcel.parcel_number}?annee=${tax.tax_year}`;
-                                       window.open(taxVerificationUrl, '_blank');
-                                     }}
-                                   >
-                                     <ExternalLink className="h-2.5 w-2.5 mr-1 group-hover:scale-110 transition-transform duration-200" />
-                                     <span className="hidden xs:inline">Vérifier</span>
-                                     <span className="xs:hidden">Vérif.</span>
-                                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 ease-out" />
-                                   </Button>
-                                   
-                                   <Popover>
-                                     <PopoverTrigger asChild>
-                                       <Button
-                                         variant="ghost"
-                                         size="sm"
-                                         className="h-6 w-6 p-0 text-primary/70 hover:text-primary hover:bg-primary/10 transition-all duration-200 rounded-md"
-                                       >
-                                         <Info className="h-3 w-3" />
-                                       </Button>
-                                     </PopoverTrigger>
-                                      <PopoverContent side="top" className="w-72 p-3" align="end">
-                                        <div className="space-y-2">
-                                          <div className="flex items-center gap-2">
-                                            <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
-                                            <p className="font-medium text-sm text-blue-600">Vérification d'authenticité</p>
-                                          </div>
-                                          <p className="text-xs text-muted-foreground leading-relaxed">
-                                            Vérifie et consulte l'authenticité du document fiscal signé 
-                                            auprès du bureau de la circonscription foncière.
-                                          </p>
-                                        </div>
-                                      </PopoverContent>
-                                    </Popover>
-                                  </div>
-                                </div>
+                                 <VerificationButton
+                                   verificationUrl={`https://impots.cd/verification-taxe-fonciere/${parcel.parcel_number}?annee=${tax.tax_year}`}
+                                   documentType="du document fiscal"
+                                 />
+                               </div>
                                 
                                 {/* Pièce jointe: Reçu fiscal */}
                                 {tax.receipt_document_url && (
