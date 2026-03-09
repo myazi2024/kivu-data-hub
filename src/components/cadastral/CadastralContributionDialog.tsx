@@ -5519,7 +5519,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
     {/* Dialog de confirmation de fermeture */}
     <AlertDialog open={showExitConfirmation} onOpenChange={setShowExitConfirmation}>
-      <AlertDialogContent className="z-[10001]">
+      <AlertDialogContent className="z-[100000]">
         <AlertDialogHeader>
           <AlertDialogTitle>Modifications non enregistrées</AlertDialogTitle>
           <AlertDialogDescription>
