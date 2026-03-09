@@ -87,7 +87,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   const [expandedServices, setExpandedServices] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const { paymentMode, isPaymentRequired } = usePaymentConfig();
-  const { services: catalogServices } = useCadastralServices();
+  const { services: catalogServices, loading: catalogLoading, error: catalogError } = useCadastralServices();
   const { selectedServices, toggleService, getTotalAmount, setParcelNumber } = useCadastralCart();
   const { loading, createInvoice } = useCadastralPayment();
 
