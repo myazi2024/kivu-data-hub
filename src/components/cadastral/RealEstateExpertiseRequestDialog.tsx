@@ -2634,8 +2634,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
             </Card>
           </div>
 
-        {/* Pied fixe compact */}
-        <div className="shrink-0 pt-2 space-y-2 border-t border-border/50 mt-1">
+        {/* Pied */}
+        <div className="pt-2 space-y-2 border-t border-border/50 mt-1">
           {/* Montant total */}
           <div className="flex items-center justify-between px-2 py-1.5 bg-primary/5 rounded-lg border border-primary/20">
             <div className="flex items-center gap-1.5">
