@@ -192,6 +192,40 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     setSelectedLotId(newLot1.id);
   }, [lots, setLots]);
 
+  const handleToggleLotSelection = useCallback((lotId: string) => {
+    setSelectedLotIds(prev =>
+      prev.includes(lotId) ? prev.filter(id => id !== lotId) : [...prev, lotId]
+    );
+    setSelectedLotId(null);
+  }, []);
+
+  const handleMergeLots = useCallback((ids: string[]) => {
+    if (ids.length < 2) return;
+    const lotsToMerge = lots.filter(l => ids.includes(l.id));
+    if (lotsToMerge.length < 2) return;
+
+    // Combine all vertices into a convex hull approximation
+    const allPoints = lotsToMerge.flatMap(l => l.vertices);
+    // Simple convex hull (gift wrapping)
+    const hull = convexHull(allPoints);
+
+    const totalArea = lotsToMerge.reduce((s, l) => s + l.areaSqm, 0);
+    const keepLot = lotsToMerge[0];
+    const maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0);
+
+    const mergedLot: SubdivisionLot = {
+      ...keepLot,
+      id: `lot-${Date.now()}-merged`,
+      lotNumber: String(maxLotNum + 1),
+      vertices: hull,
+      areaSqm: totalArea,
+    };
+
+    setLots([...lots.filter(l => !ids.includes(l.id)), mergedLot]);
+    setSelectedLotIds([]);
+    setSelectedLotId(mergedLot.id);
+  }, [lots, setLots]);
+
   const totalArea = lots.reduce((s, l) => s + l.areaSqm, 0);
   const parentArea = parentParcel?.areaSqm || 0;
   const coveragePercent = parentArea > 0 ? Math.round(totalArea / parentArea * 100) : 0;
