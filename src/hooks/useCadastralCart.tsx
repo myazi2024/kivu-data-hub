@@ -57,21 +57,26 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
     }
   }, []);
 
+  // Fix #20: Debounce localStorage pour éviter les écritures rapides (ex: "Tout sélectionner")
   useEffect(() => {
     const consent = getConsentStatus();
     if (consent === false) return;
     
-    const cartData = JSON.stringify({
-      services: selectedServices,
-      parcelNumber,
-      savedAt: Date.now()
-    });
-    
-    try {
-      localStorage.setItem('bic-cadastral-cart', cartData);
-    } catch (error) {
-      console.warn('localStorage unavailable:', error);
-    }
+    const timer = setTimeout(() => {
+      const cartData = JSON.stringify({
+        services: selectedServices,
+        parcelNumber,
+        savedAt: Date.now()
+      });
+      
+      try {
+        localStorage.setItem('bic-cadastral-cart', cartData);
+      } catch (error) {
+        console.warn('localStorage unavailable:', error);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
   }, [selectedServices, parcelNumber]);
 
   // Fix #7: Ne vider le panier que si prev est non-null ET différent (pas sur remontage)
