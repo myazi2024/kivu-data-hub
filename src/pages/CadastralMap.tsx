@@ -707,6 +707,63 @@ const CadastralMap = () => {
           }
         });
 
+        // Afficher les lots de lotissement approuvés
+        try {
+          const { data: subdivisionLots } = await supabase
+            .from('subdivision_lots' as any)
+            .select('*');
+          
+          if (subdivisionLots && subdivisionLots.length > 0) {
+            (subdivisionLots as any[]).forEach((lot: any) => {
+              if (lot.gps_coordinates && Array.isArray(lot.gps_coordinates) && lot.gps_coordinates.length >= 3) {
+                const lotPoints: [number, number][] = lot.gps_coordinates.map((c: any) => [c.lat, c.lng]);
+                const lotColor = lot.color || '#22c55e';
+                
+                const lotPolygon = L.polygon(lotPoints, {
+                  color: lotColor,
+                  weight: 2,
+                  fillColor: lotColor,
+                  fillOpacity: 0.3,
+                  dashArray: '4 4',
+                }).addTo(map);
+                
+                // Popup with lot info
+                lotPolygon.bindPopup(`
+                  <div style="font-size:12px;min-width:120px">
+                    <strong>Lot ${lot.lot_number}</strong><br/>
+                    <span style="color:#666">Parcelle: ${lot.parcel_number}</span><br/>
+                    <span>Surface: ${lot.area_sqm?.toLocaleString()} m²</span><br/>
+                    <span>Usage: ${lot.intended_use || 'résidentiel'}</span>
+                    ${lot.owner_name ? `<br/><span>Propriétaire: ${lot.owner_name}</span>` : ''}
+                  </div>
+                `);
+                
+                // Lot number marker at centroid
+                const centLat = lotPoints.reduce((s, p) => s + p[0], 0) / lotPoints.length;
+                const centLng = lotPoints.reduce((s, p) => s + p[1], 0) / lotPoints.length;
+                
+                const lotIcon = L.divIcon({
+                  className: 'lot-label',
+                  html: `<div style="
+                    background:${lotColor};color:white;
+                    padding:2px 6px;border-radius:4px;
+                    font-size:10px;font-weight:700;
+                    white-space:nowrap;text-align:center;
+                    box-shadow:0 1px 3px rgba(0,0,0,0.3);
+                  ">Lot ${lot.lot_number}</div>`,
+                  iconSize: [50, 18],
+                  iconAnchor: [25, 9],
+                });
+                L.marker([centLat, centLng], { icon: lotIcon }).addTo(map);
+                
+                bounds.extend(lotPolygon.getBounds());
+              }
+            });
+          }
+        } catch (e) {
+          console.error('Error loading subdivision lots:', e);
+        }
+
         // Ajuster la vue pour inclure toutes les parcelles
         if (bounds.isValid()) {
           map.fitBounds(bounds, { padding: [50, 50] });

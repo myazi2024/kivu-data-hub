@@ -3067,6 +3067,80 @@ export type Database = {
           },
         ]
       }
+      subdivision_lots: {
+        Row: {
+          area_sqm: number
+          color: string | null
+          construction_type: string | null
+          created_at: string
+          fence_type: string | null
+          gps_coordinates: Json | null
+          has_fence: boolean | null
+          id: string
+          intended_use: string | null
+          is_built: boolean | null
+          lot_label: string | null
+          lot_number: string
+          notes: string | null
+          owner_name: string | null
+          parcel_number: string
+          perimeter_m: number
+          plan_coordinates: Json | null
+          subdivision_request_id: string
+          updated_at: string
+        }
+        Insert: {
+          area_sqm?: number
+          color?: string | null
+          construction_type?: string | null
+          created_at?: string
+          fence_type?: string | null
+          gps_coordinates?: Json | null
+          has_fence?: boolean | null
+          id?: string
+          intended_use?: string | null
+          is_built?: boolean | null
+          lot_label?: string | null
+          lot_number: string
+          notes?: string | null
+          owner_name?: string | null
+          parcel_number: string
+          perimeter_m?: number
+          plan_coordinates?: Json | null
+          subdivision_request_id: string
+          updated_at?: string
+        }
+        Update: {
+          area_sqm?: number
+          color?: string | null
+          construction_type?: string | null
+          created_at?: string
+          fence_type?: string | null
+          gps_coordinates?: Json | null
+          has_fence?: boolean | null
+          id?: string
+          intended_use?: string | null
+          is_built?: boolean | null
+          lot_label?: string | null
+          lot_number?: string
+          notes?: string | null
+          owner_name?: string | null
+          parcel_number?: string
+          perimeter_m?: number
+          plan_coordinates?: Json | null
+          subdivision_request_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subdivision_lots_subdivision_request_id_fkey"
+            columns: ["subdivision_request_id"]
+            isOneToOne: false
+            referencedRelation: "subdivision_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subdivision_requests: {
         Row: {
           additional_documents: Json | null
@@ -3212,6 +3286,50 @@ export type Database = {
             columns: ["parcel_id"]
             isOneToOne: false
             referencedRelation: "cadastral_parcels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subdivision_roads: {
+        Row: {
+          created_at: string
+          gps_coordinates: Json | null
+          id: string
+          is_existing: boolean | null
+          plan_coordinates: Json | null
+          road_name: string | null
+          subdivision_request_id: string
+          surface_type: string | null
+          width_m: number | null
+        }
+        Insert: {
+          created_at?: string
+          gps_coordinates?: Json | null
+          id?: string
+          is_existing?: boolean | null
+          plan_coordinates?: Json | null
+          road_name?: string | null
+          subdivision_request_id: string
+          surface_type?: string | null
+          width_m?: number | null
+        }
+        Update: {
+          created_at?: string
+          gps_coordinates?: Json | null
+          id?: string
+          is_existing?: boolean | null
+          plan_coordinates?: Json | null
+          road_name?: string | null
+          subdivision_request_id?: string
+          surface_type?: string | null
+          width_m?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subdivision_roads_subdivision_request_id_fkey"
+            columns: ["subdivision_request_id"]
+            isOneToOne: false
+            referencedRelation: "subdivision_requests"
             referencedColumns: ["id"]
           },
         ]
