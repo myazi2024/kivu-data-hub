@@ -144,21 +144,29 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
 
   // Fix #3: Utiliser les IDs dynamiques du catalogue au lieu de hardcoder
   // Fix #9: Écouter l'événement cadastralPaymentCompleted pour re-vérifier
+  // Fix #19: Stabiliser le callback pour ne pas re-vérifier à chaque changement Realtime
+  // On utilise les IDs du catalogue seulement une fois au montage ou quand la parcelle change
+  const catalogServiceIdsRef = useRef<string[]>([]);
+  React.useEffect(() => {
+    if (catalogServices.length > 0) {
+      catalogServiceIdsRef.current = catalogServices.map(s => s.id);
+    }
+  }, [catalogServices]);
+
   const checkAllServices = React.useCallback(async () => {
-    if (!user || catalogServices.length === 0) return;
+    if (!user || catalogServiceIdsRef.current.length === 0) return;
     
-    const serviceIds = catalogServices.map(s => s.id);
     const paidServicesList = await checkMultipleServiceAccess(
       user.id,
       parcel.parcel_number,
-      serviceIds
+      catalogServiceIdsRef.current
     );
     
     if (paidServicesList.length > 0) {
       setPaidServices(paidServicesList);
       setShowBillingPanel(false);
     }
-  }, [user, parcel.parcel_number, catalogServices]);
+  }, [user, parcel.parcel_number]); // Fix #19: Ne dépend plus de catalogServices
 
   React.useEffect(() => {
     checkAllServices();
