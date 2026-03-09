@@ -104,6 +104,12 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any) {
     loadParcelData();
   }, [loadParcelData]);
   
+  // Compute normalized parent vertices from GPS coordinates
+  const parentVertices = useMemo<Point2D[] | undefined>(() => {
+    if (!parentParcel || parentParcel.gpsCoordinates.length < 3) return undefined;
+    return parentParcel.gpsCoordinates.map(gps => gpsToNormalized(gps, parentParcel.gpsCoordinates));
+  }, [parentParcel]);
+
   // Auto-subdivide
   const handleAutoSubdivide = useCallback((options: AutoSubdivideOptions) => {
     if (!parentParcel) return;
