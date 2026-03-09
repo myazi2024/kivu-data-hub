@@ -422,6 +422,10 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
               strokeWidth={isSelected ? 2.5 : 1.5}
               className={readOnly ? '' : 'cursor-pointer'}
               onClick={() => handleLotClick(lot.id)}
+              onDoubleClick={e => handleLotDoubleClick(lot.id, e)}
+              onTouchStart={() => handleLotTouchStart(lot.id)}
+              onTouchEnd={handleLotTouchEnd}
+              onTouchCancel={handleLotTouchEnd}
             />
 
             {/* Lot number */}
