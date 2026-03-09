@@ -19,6 +19,7 @@ interface LotCanvasProps {
   selectedRoadId?: string | null;
   onSelectRoad?: (id: string | null) => void;
   onDeleteRoad?: (id: string) => void;
+  onSplitLot?: (id: string) => void;
   showGrid?: boolean;
   showDimensions?: boolean;
   showLotNumbers?: boolean;
