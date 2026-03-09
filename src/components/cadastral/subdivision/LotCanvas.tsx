@@ -40,8 +40,8 @@ const CANVAS_H = 400;
 const PADDING = 30;
 
 const LotCanvas: React.FC<LotCanvasProps> = ({
-  lots, roads, parentAreaSqm, parentVertices, parentSides, selectedLotId, onSelectLot, onUpdateLot,
-  selectedRoadId, onSelectRoad, onDeleteRoad, onSplitLot,
+  lots, roads, parentAreaSqm, parentVertices, parentSides, selectedLotId, selectedLotIds = [], onSelectLot, onToggleLotSelection, onUpdateLot,
+  selectedRoadId, onSelectRoad, onDeleteRoad, onSplitLot, onMergeLots,
   showGrid = true, showDimensions = true, showLotNumbers = true,
   showAreas = true, showRoads = true, showNorth = true,
   showLegend = false, showScale = true, showOwnerNames = false,
