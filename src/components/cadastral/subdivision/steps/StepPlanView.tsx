@@ -36,7 +36,7 @@ const ELEMENT_TOGGLES: { key: keyof PlanElements; label: string; icon: React.Rea
 ];
 
 const StepPlanView: React.FC<StepPlanViewProps> = ({
-  parentParcel, lots, roads, commonSpaces, servitudes, planElements, onPlanElementsChange
+  parentParcel, parentVertices, lots, roads, commonSpaces, servitudes, planElements, onPlanElementsChange
 }) => {
   const handleToggle = (key: keyof PlanElements) => {
     onPlanElementsChange({ ...planElements, [key]: !planElements[key] });
