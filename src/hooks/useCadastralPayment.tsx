@@ -105,7 +105,7 @@ export const useCadastralPayment = () => {
           .insert({
             user_id: user.id,
             parcel_number: parcelNumber,
-            invoice_number: '',
+            invoice_number: null as any,
             selected_services: serviceIds,
             total_amount_usd: 0,
             original_amount_usd: 0,

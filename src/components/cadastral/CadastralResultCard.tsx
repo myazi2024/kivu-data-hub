@@ -45,6 +45,8 @@ import CadastralInvoice from './CadastralInvoice';
 import DocumentAttachment from './DocumentAttachment';
 import { PROPERTY_TITLE_TYPES } from './PropertyTitleTypeSelect';
 import CadastralContributionDialog from './CadastralContributionDialog';
+import LockedServiceOverlay from './LockedServiceOverlay';
+import VerificationButton from './VerificationButton';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -222,60 +224,54 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
     return paidServices.includes(serviceType);
   };
 
-  // Fix #3: Utiliser le vrai invoice_number de la DB si disponible au lieu de fabriquer un faux
+  // Fix: Utiliser les données réelles de la facture DB au lieu de recalculer localement
   const handleDownloadPDF = () => {
-    const selectedServicesList = catalogServices.filter(s => paidServices.includes(s.id));
-    const subtotal = selectedServicesList.reduce((sum, service) => sum + Number(service.price), 0);
-    
-    const discountAmount = 0;
-    const netAmount = subtotal - discountAmount;
-    const tvaAmount = netAmount * TVA_RATE;
-    const total = netAmount + tvaAmount;
-    
-    // Chercher la facture réelle en DB pour récupérer le vrai invoice_number
     const fetchAndGeneratePDF = async () => {
-      let invoiceNumber = `TEMP-${Date.now()}`;
-      
       try {
         const { data: dbInvoice } = await supabase
           .from('cadastral_invoices')
-          .select('invoice_number')
+          .select('*')
           .eq('parcel_number', result.parcel.parcel_number)
           .eq('user_id', user?.id || '')
           .eq('status', 'paid')
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
-        
-        if (dbInvoice?.invoice_number) {
-          invoiceNumber = dbInvoice.invoice_number;
+
+        if (!dbInvoice) {
+          console.warn('No paid invoice found in DB, generating with local data');
+          return;
         }
+
+        const invoice = {
+          id: dbInvoice.id,
+          user_id: dbInvoice.user_id,
+          invoice_number: dbInvoice.invoice_number,
+          parcel_number: dbInvoice.parcel_number,
+          selected_services: Array.isArray(dbInvoice.selected_services) 
+            ? dbInvoice.selected_services as string[]
+            : typeof dbInvoice.selected_services === 'string' 
+              ? JSON.parse(dbInvoice.selected_services as string) 
+              : [],
+          search_date: dbInvoice.search_date || dbInvoice.created_at,
+          total_amount_usd: Number(dbInvoice.total_amount_usd),
+          status: dbInvoice.status,
+          created_at: dbInvoice.created_at,
+          updated_at: dbInvoice.updated_at,
+          client_name: dbInvoice.client_name,
+          client_email: dbInvoice.client_email,
+          client_organization: dbInvoice.client_organization || null,
+          geographical_zone: dbInvoice.geographical_zone || `${result.parcel.commune}, ${result.parcel.quartier}`,
+          discount_amount_usd: Number(dbInvoice.discount_amount_usd || 0),
+          original_amount_usd: Number(dbInvoice.original_amount_usd || dbInvoice.total_amount_usd),
+          payment_method: dbInvoice.payment_method
+        };
+
+        const { generateInvoicePDF } = await import('@/lib/pdf');
+        generateInvoicePDF(invoice, catalogServices, invoiceFormat);
       } catch (e) {
-        console.warn('Could not fetch invoice number from DB:', e);
+        console.error('Error generating PDF from DB invoice:', e);
       }
-
-      const invoice = {
-        id: `pdf-${Date.now()}`,
-        user_id: user?.id || null,
-        invoice_number: invoiceNumber,
-        parcel_number: result.parcel.parcel_number,
-        selected_services: paidServices,
-        search_date: new Date().toISOString(),
-        total_amount_usd: total,
-        status: 'paid',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        client_name: user?.user_metadata?.full_name || null,
-        client_email: user?.email || null,
-        client_organization: user?.user_metadata?.organization || null,
-        geographical_zone: `${result.parcel.commune}, ${result.parcel.quartier}`,
-        discount_amount_usd: discountAmount,
-        original_amount_usd: subtotal,
-        payment_method: null
-      };
-
-      const { generateInvoicePDF } = await import('@/lib/pdf');
-      generateInvoicePDF(invoice, catalogServices, invoiceFormat);
     };
     
     fetchAndGeneratePDF();
@@ -512,56 +508,27 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
           {/* Fix #8: Inclure land_disputes dans la vérification du bloc Premium */}
           {!hasServiceAccess('information') && !hasServiceAccess('location_history') && 
            !hasServiceAccess('history') && !hasServiceAccess('obligations') && !hasServiceAccess('land_disputes') && (
-            <div className="mt-4 p-6 text-center border-2 border-dashed border-primary/20 rounded-xl bg-gradient-to-br from-primary/5 to-secondary/5 shadow-lg">
-              <div className="space-y-4 animate-fade-in">
-                <div className="mx-auto w-16 h-16 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl flex items-center justify-center shadow-md">
-                  <FileText className="h-8 w-8 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-lg font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                    Contenu Premium
-                  </h3>
-                  <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                    Accédez aux données détaillées avec nos services cadastraux professionnels
-                  </p>
-                </div>
-                <Button 
-                  onClick={() => setShowBillingPanel(true)} 
-                  className="mt-4 px-6 py-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-r from-primary to-primary/80"
-                >
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Débloquer l'accès
-                </Button>
-              </div>
+            <div className="mt-4">
+              <LockedServiceOverlay
+                icon={<FileText className="h-8 w-8 text-primary" />}
+                title="Contenu Premium"
+                description="Accédez aux données détaillées avec nos services cadastraux professionnels"
+                onUnlock={() => setShowBillingPanel(true)}
+                premium
+              />
             </div>
           )}
 
           {/* Onglet Informations générales - Mobile First */}
           <TabsContent value="general" className="mt-3 space-y-3 animate-fade-in">
             {!hasServiceAccess('information') ? (
-              <div className="p-4 text-center border-2 border-dashed border-primary/20 rounded-lg bg-gradient-to-br from-primary/5 to-secondary/5">
-                <div className="space-y-3">
-                  <div className="mx-auto w-12 h-12 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-xl flex items-center justify-center">
-                    <Building className="h-6 w-6 text-primary" />
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="text-sm font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                      Service Premium
-                    </h3>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      Accédez aux informations détaillées
-                    </p>
-                  </div>
-                  <Button 
-                    onClick={() => { setPreselectServiceId('information'); setShowBillingPanel(true); }} 
-                    size="sm"
-                    className="text-xs bg-gradient-to-r from-primary to-primary/80"
-                  >
-                    <CreditCard className="h-3 w-3 mr-1" />
-                    Débloquer
-                  </Button>
-                </div>
-              </div>
+              <LockedServiceOverlay
+                icon={<Building className="h-6 w-6 text-primary" />}
+                title="Service Premium"
+                description="Accédez aux informations détaillées"
+                onUnlock={() => { setPreselectServiceId('information'); setShowBillingPanel(true); }}
+                premium
+              />
             ) : (
               <div className="space-y-3">
                 {/* Informations de propriété - Mobile First */}
@@ -831,23 +798,12 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
           {/* Onglet Localisation - Mobile First */}
           <TabsContent value="location" className="mt-3 space-y-3">
             {!hasServiceAccess('location_history') ? (
-              <div className="p-4 text-center border-2 border-dashed border-muted-foreground/30 rounded-lg">
-                <div className="space-y-3">
-                  <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center">
-                    <MapPin className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold mb-1">Contenu verrouillé</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Informations de localisation détaillées
-                    </p>
-                  </div>
-                  <Button onClick={() => { setPreselectServiceId('location_history'); setShowBillingPanel(true); }} size="sm" className="text-xs">
-                    <CreditCard className="h-3 w-3 mr-1" />
-                    Débloquer
-                  </Button>
-                </div>
-              </div>
+              <LockedServiceOverlay
+                icon={<MapPin className="h-6 w-6 text-muted-foreground" />}
+                title="Contenu verrouillé"
+                description="Informations de localisation détaillées"
+                onUnlock={() => { setPreselectServiceId('location_history'); setShowBillingPanel(true); }}
+              />
             ) : (
               <>
                 {/* Informations de localisation - Mobile First */}
@@ -989,47 +945,11 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                                  <span className="text-xs font-medium text-primary">{formatDate(boundary.survey_date)}</span>
                                </div>
                                 <div className="mt-2 pt-2 border-t border-muted/30">
-                                  <div className="flex items-center gap-1">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="flex-1 h-6 text-[10px] font-medium group relative overflow-hidden bg-gradient-to-r from-primary/5 to-primary/8 hover:from-primary/10 hover:to-primary/15 border border-primary/15 hover:border-primary/25 text-primary hover:text-primary transition-all duration-300 hover:scale-[1.02] hover:shadow-sm rounded-md px-2 py-0.5"
-                                      onClick={() => {
-                                        // Redirection vers le bureau de la circonscription foncière
-                                        const landRegistryUrl = `https://circonscription-fonciere.cd/verification-pv/${boundary.pv_reference_number}?parcelle=${parcel.parcel_number}&location=${encodeURIComponent(parcel.location)}`;
-                                        window.open(landRegistryUrl, '_blank');
-                                      }}
-                                    >
-                                      <ExternalLink className="h-2.5 w-2.5 mr-1 group-hover:scale-110 transition-transform duration-200" />
-                                      <span className="hidden xs:inline">Vérifier PV</span>
-                                      <span className="xs:hidden">Vérifier</span>
-                                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 ease-out" />
-                                    </Button>
-                                    
-                                    <Popover>
-                                      <PopoverTrigger asChild>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-6 w-6 p-0 text-primary/70 hover:text-primary hover:bg-primary/10 transition-all duration-200 rounded-md"
-                                        >
-                                          <Info className="h-3 w-3" />
-                                        </Button>
-                                      </PopoverTrigger>
-                                       <PopoverContent side="top" className="w-72 p-3" align="end">
-                                         <div className="space-y-2">
-                                           <div className="flex items-center gap-2">
-                                             <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
-                                             <p className="font-medium text-sm text-blue-600">Vérification d'authenticité</p>
-                                           </div>
-                                           <p className="text-xs text-muted-foreground leading-relaxed">
-                                             Vérifie et consulte l'authenticité du titre ou document signé 
-                                             auprès du bureau de la circonscription foncière.
-                                           </p>
-                                         </div>
-                                       </PopoverContent>
-                                    </Popover>
-                                  </div>
+                                  <VerificationButton
+                                    verificationUrl={`https://circonscription-fonciere.cd/verification-pv/${boundary.pv_reference_number}?parcelle=${parcel.parcel_number}&location=${encodeURIComponent(parcel.location)}`}
+                                    documentType="du titre ou document"
+                                    label="Vérifier PV"
+                                  />
                                 </div>
                               </div>
                             
@@ -1060,23 +980,12 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
           {/* Onglet Historique - Mobile First */}
           <TabsContent value="history" className="mt-3 space-y-3">
             {!hasServiceAccess('history') ? (
-              <div className="p-4 text-center border-2 border-dashed border-muted-foreground/30 rounded-lg">
-                <div className="space-y-3">
-                  <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center">
-                    <Clock className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold mb-1">Contenu verrouillé</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Historique des propriétaires
-                    </p>
-                  </div>
-                  <Button onClick={() => { setPreselectServiceId('history'); setShowBillingPanel(true); }} size="sm" className="text-xs">
-                    <CreditCard className="h-3 w-3 mr-1" />
-                    Débloquer
-                  </Button>
-                </div>
-              </div>
+              <LockedServiceOverlay
+                icon={<Clock className="h-6 w-6 text-muted-foreground" />}
+                title="Contenu verrouillé"
+                description="Historique des propriétaires"
+                onUnlock={() => { setPreselectServiceId('history'); setShowBillingPanel(true); }}
+              />
             ) : (
               <Card className="border-0 bg-gradient-to-br from-background to-primary/5">
                 <CardContent className="p-3">
@@ -1100,47 +1009,11 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                            Depuis {formatDate(parcel.current_owner_since)}
                          </div>
                          <div className="mt-2 pt-2 border-t border-muted/30">
-                           <div className="flex items-center gap-1">
-                             <Button
-                               variant="ghost"
-                               size="sm"
-                               className="flex-1 h-6 text-[10px] font-medium group relative overflow-hidden bg-gradient-to-r from-primary/5 to-primary/8 hover:from-primary/10 hover:to-primary/15 border border-primary/15 hover:border-primary/25 text-primary hover:text-primary transition-all duration-300 hover:scale-[1.02] hover:shadow-sm rounded-md px-2 py-0.5"
-                               onClick={() => {
-                                 const ownerVerificationUrl = `https://cadastre.cd/verification-proprietaire/${encodeURIComponent(parcel.current_owner_name)}?parcelle=${parcel.parcel_number}`;
-                                 window.open(ownerVerificationUrl, '_blank');
-                               }}
-                             >
-                               <ExternalLink className="h-2.5 w-2.5 mr-1 group-hover:scale-110 transition-transform duration-200" />
-                               <span className="hidden xs:inline">Vérifier</span>
-                               <span className="xs:hidden">Vérif.</span>
-                               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 ease-out" />
-                             </Button>
-                             
-                             <Popover>
-                               <PopoverTrigger asChild>
-                                 <Button
-                                   variant="ghost"
-                                   size="sm"
-                                   className="h-6 w-6 p-0 text-primary/70 hover:text-primary hover:bg-primary/10 transition-all duration-200 rounded-md"
-                                 >
-                                   <Info className="h-3 w-3" />
-                                 </Button>
-                               </PopoverTrigger>
-                                <PopoverContent side="top" className="w-72 p-3" align="end">
-                                  <div className="space-y-2">
-                                    <div className="flex items-center gap-2">
-                                      <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
-                                      <p className="font-medium text-sm text-blue-600">Vérification d'authenticité</p>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground leading-relaxed">
-                                      Vérifie et consulte l'authenticité du document de propriété signé 
-                                      auprès du bureau de la circonscription foncière.
-                                    </p>
-                                  </div>
-                                </PopoverContent>
-                              </Popover>
-                            </div>
-                          </div>
+                           <VerificationButton
+                             verificationUrl={`https://cadastre.cd/verification-proprietaire/${encodeURIComponent(parcel.current_owner_name)}?parcelle=${parcel.parcel_number}`}
+                             documentType="du document de propriété"
+                           />
+                         </div>
                           
                           {/* Pièces jointes: Documents du propriétaire actuel */}
                           {(parcel.owner_document_url || parcel.property_title_document_url) && (
@@ -1185,47 +1058,11 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                                  Du {formatDate(owner.ownership_start_date)} au {formatDate(owner.ownership_end_date)}
                                </div>
                                <div className="mt-2 pt-2 border-t border-muted/30">
-                                 <div className="flex items-center gap-1">
-                                   <Button
-                                     variant="ghost"
-                                     size="sm"
-                                     className="flex-1 h-6 text-[10px] font-medium group relative overflow-hidden bg-gradient-to-r from-primary/5 to-primary/8 hover:from-primary/10 hover:to-primary/15 border border-primary/15 hover:border-primary/25 text-primary hover:text-primary transition-all duration-300 hover:scale-[1.02] hover:shadow-sm rounded-md px-2 py-0.5"
-                                     onClick={() => {
-                                       const ownerVerificationUrl = `https://cadastre.cd/verification-proprietaire/${encodeURIComponent(owner.owner_name)}?parcelle=${parcel.parcel_number}&periode=${owner.ownership_start_date}-${owner.ownership_end_date}`;
-                                       window.open(ownerVerificationUrl, '_blank');
-                                     }}
-                                   >
-                                     <ExternalLink className="h-2.5 w-2.5 mr-1 group-hover:scale-110 transition-transform duration-200" />
-                                     <span className="hidden xs:inline">Vérifier</span>
-                                     <span className="xs:hidden">Vérif.</span>
-                                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 ease-out" />
-                                   </Button>
-                                   
-                                   <Popover>
-                                     <PopoverTrigger asChild>
-                                       <Button
-                                         variant="ghost"
-                                         size="sm"
-                                         className="h-6 w-6 p-0 text-primary/70 hover:text-primary hover:bg-primary/10 transition-all duration-200 rounded-md"
-                                       >
-                                         <Info className="h-3 w-3" />
-                                       </Button>
-                                     </PopoverTrigger>
-                                      <PopoverContent side="top" className="w-72 p-3" align="end">
-                                        <div className="space-y-2">
-                                          <div className="flex items-center gap-2">
-                                            <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
-                                            <p className="font-medium text-sm text-blue-600">Vérification d'authenticité</p>
-                                          </div>
-                                          <p className="text-xs text-muted-foreground leading-relaxed">
-                                            Vérifie et consulte l'authenticité du document de propriété signé 
-                                            auprès du bureau de la circonscription foncière.
-                                          </p>
-                                        </div>
-                                      </PopoverContent>
-                                   </Popover>
-                                  </div>
-                                </div>
+                                 <VerificationButton
+                                   verificationUrl={`https://cadastre.cd/verification-proprietaire/${encodeURIComponent(owner.owner_name)}?parcelle=${parcel.parcel_number}&periode=${owner.ownership_start_date}-${owner.ownership_end_date}`}
+                                   documentType="du document de propriété"
+                                 />
+                               </div>
                                 
                                 {/* Pièce jointe: Titre de propriété historique */}
                                 {owner.ownership_document_url && (
@@ -1257,23 +1094,12 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
           {/* Onglet Obligations - Mobile First */}
           <TabsContent value="obligations" className="mt-3 space-y-3">
             {!hasServiceAccess('obligations') ? (
-              <div className="p-4 text-center border-2 border-dashed border-muted-foreground/30 rounded-lg">
-                <div className="space-y-3">
-                  <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center">
-                    <Calculator className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold mb-1">Contenu verrouillé</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Obligations fiscales et hypothécaires
-                    </p>
-                  </div>
-                  <Button onClick={() => { setPreselectServiceId('obligations'); setShowBillingPanel(true); }} size="sm" className="text-xs">
-                    <CreditCard className="h-3 w-3 mr-1" />
-                    Débloquer
-                  </Button>
-                </div>
-              </div>
+              <LockedServiceOverlay
+                icon={<Calculator className="h-6 w-6 text-muted-foreground" />}
+                title="Contenu verrouillé"
+                description="Obligations fiscales et hypothécaires"
+                onUnlock={() => { setPreselectServiceId('obligations'); setShowBillingPanel(true); }}
+              />
             ) : (
               <div className="space-y-3">
                 {/* Navigation des sous-sections - Mobile First */}
@@ -1330,47 +1156,11 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                                  </div>
                                )}
                                <div className="mt-2 pt-2 border-t border-muted/30">
-                                 <div className="flex items-center gap-1">
-                                   <Button
-                                     variant="ghost"
-                                     size="sm"
-                                     className="flex-1 h-6 text-[10px] font-medium group relative overflow-hidden bg-gradient-to-r from-primary/5 to-primary/8 hover:from-primary/10 hover:to-primary/15 border border-primary/15 hover:border-primary/25 text-primary hover:text-primary transition-all duration-300 hover:scale-[1.02] hover:shadow-sm rounded-md px-2 py-0.5"
-                                     onClick={() => {
-                                       const taxVerificationUrl = `https://impots.cd/verification-taxe-fonciere/${parcel.parcel_number}?annee=${tax.tax_year}`;
-                                       window.open(taxVerificationUrl, '_blank');
-                                     }}
-                                   >
-                                     <ExternalLink className="h-2.5 w-2.5 mr-1 group-hover:scale-110 transition-transform duration-200" />
-                                     <span className="hidden xs:inline">Vérifier</span>
-                                     <span className="xs:hidden">Vérif.</span>
-                                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 ease-out" />
-                                   </Button>
-                                   
-                                   <Popover>
-                                     <PopoverTrigger asChild>
-                                       <Button
-                                         variant="ghost"
-                                         size="sm"
-                                         className="h-6 w-6 p-0 text-primary/70 hover:text-primary hover:bg-primary/10 transition-all duration-200 rounded-md"
-                                       >
-                                         <Info className="h-3 w-3" />
-                                       </Button>
-                                     </PopoverTrigger>
-                                      <PopoverContent side="top" className="w-72 p-3" align="end">
-                                        <div className="space-y-2">
-                                          <div className="flex items-center gap-2">
-                                            <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
-                                            <p className="font-medium text-sm text-blue-600">Vérification d'authenticité</p>
-                                          </div>
-                                          <p className="text-xs text-muted-foreground leading-relaxed">
-                                            Vérifie et consulte l'authenticité du document fiscal signé 
-                                            auprès du bureau de la circonscription foncière.
-                                          </p>
-                                        </div>
-                                      </PopoverContent>
-                                    </Popover>
-                                  </div>
-                                </div>
+                                 <VerificationButton
+                                   verificationUrl={`https://impots.cd/verification-taxe-fonciere/${parcel.parcel_number}?annee=${tax.tax_year}`}
+                                   documentType="du document fiscal"
+                                 />
+                               </div>
                                 
                                 {/* Pièce jointe: Reçu fiscal */}
                                 {tax.receipt_document_url && (
@@ -1501,46 +1291,10 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                                  )}
 
                                  <div className="mt-2 pt-2 border-t border-muted/30">
-                                   <div className="flex items-center gap-1">
-                                     <Button
-                                       variant="ghost"
-                                       size="sm"
-                                       className="flex-1 h-6 text-[10px] font-medium group relative overflow-hidden bg-gradient-to-r from-primary/5 to-primary/8 hover:from-primary/10 hover:to-primary/15 border border-primary/15 hover:border-primary/25 text-primary hover:text-primary transition-all duration-300 hover:scale-[1.02] hover:shadow-sm rounded-md px-2 py-0.5"
-                                       onClick={() => {
-                                         const mortgageVerificationUrl = `https://hypotheques.cd/verification-hypotheque/${parcel.parcel_number}?creancier=${encodeURIComponent(mortgage.creditor_name)}&contrat=${mortgage.contract_date}`;
-                                         window.open(mortgageVerificationUrl, '_blank');
-                                       }}
-                                     >
-                                       <ExternalLink className="h-2.5 w-2.5 mr-1 group-hover:scale-110 transition-transform duration-200" />
-                                       <span className="hidden xs:inline">Vérifier</span>
-                                       <span className="xs:hidden">Vérif.</span>
-                                       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 ease-out" />
-                                     </Button>
-                                     
-                                     <Popover>
-                                       <PopoverTrigger asChild>
-                                         <Button
-                                           variant="ghost"
-                                           size="sm"
-                                           className="h-6 w-6 p-0 text-primary/70 hover:text-primary hover:bg-primary/10 transition-all duration-200 rounded-md"
-                                         >
-                                           <Info className="h-3 w-3" />
-                                         </Button>
-                                       </PopoverTrigger>
-                                        <PopoverContent side="top" className="w-72 p-3" align="end">
-                                          <div className="space-y-2">
-                                            <div className="flex items-center gap-2">
-                                              <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
-                                              <p className="font-medium text-sm text-blue-600">Vérification d'authenticité</p>
-                                            </div>
-                                            <p className="text-xs text-muted-foreground leading-relaxed">
-                                              Vérifie et consulte l'authenticité du document d'hypothèque signé 
-                                              auprès du bureau de la circonscription foncière.
-                                            </p>
-                                          </div>
-                                        </PopoverContent>
-                                     </Popover>
-                                   </div>
+                                   <VerificationButton
+                                     verificationUrl={`https://hypotheques.cd/verification-hypotheque/${parcel.parcel_number}?creancier=${encodeURIComponent(mortgage.creditor_name)}&contrat=${mortgage.contract_date}`}
+                                     documentType="du document d'hypothèque"
+                                   />
                                  </div>
                                </div>
                              );
@@ -1569,29 +1323,13 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
           {/* Onglet Litiges */}
           <TabsContent value="disputes" className="mt-3 space-y-3 animate-fade-in">
             {!hasServiceAccess('land_disputes') ? (
-              <div className="p-4 text-center border-2 border-dashed border-primary/20 rounded-lg bg-gradient-to-br from-primary/5 to-secondary/5">
-                <div className="space-y-3">
-                  <div className="mx-auto w-12 h-12 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-xl flex items-center justify-center">
-                    <Scale className="h-6 w-6 text-primary" />
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="text-sm font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                      Service Premium
-                    </h3>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      Accédez aux informations sur les litiges fonciers
-                    </p>
-                  </div>
-                  <Button 
-                    onClick={() => { setPreselectServiceId('land_disputes'); setShowBillingPanel(true); }} 
-                    size="sm"
-                    className="text-xs bg-gradient-to-r from-primary to-primary/80"
-                  >
-                    <CreditCard className="h-3 w-3 mr-1" />
-                    Débloquer
-                  </Button>
-                </div>
-              </div>
+              <LockedServiceOverlay
+                icon={<Scale className="h-6 w-6 text-primary" />}
+                title="Service Premium"
+                description="Accédez aux informations sur les litiges fonciers"
+                onUnlock={() => { setPreselectServiceId('land_disputes'); setShowBillingPanel(true); }}
+                premium
+              />
             ) : (
               <DisputesContent parcelNumber={parcel.parcel_number} />
             )}
