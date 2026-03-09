@@ -11,7 +11,7 @@ import {
   Wand2, Plus, Trash2, Undo2, Redo2, AlertTriangle, CheckCircle,
   Grid3X3, ArrowLeftRight, ArrowUpDown, Info, Settings2
 } from 'lucide-react';
-import { SubdivisionLot, SubdivisionRoad, AutoSubdivideOptions, ParentParcelInfo, LOT_COLORS, USAGE_LABELS } from '../types';
+import { SubdivisionLot, SubdivisionRoad, AutoSubdivideOptions, ParentParcelInfo, LOT_COLORS, USAGE_LABELS, Point2D } from '../types';
 import { ValidationResult } from '../utils/geometry';
 import LotCanvas from '../LotCanvas';
 
