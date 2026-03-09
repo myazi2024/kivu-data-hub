@@ -11,11 +11,14 @@ interface LotCanvasProps {
   lots: SubdivisionLot[];
   roads: SubdivisionRoad[];
   parentAreaSqm: number;
-  parentVertices?: Point2D[]; // Actual parcel shape in normalized 0-1 coords
-  parentSides?: ParcelSide[]; // Exact measurements from parcel_sides
+  parentVertices?: Point2D[];
+  parentSides?: ParcelSide[];
   selectedLotId: string | null;
   onSelectLot: (id: string | null) => void;
   onUpdateLot: (id: string, vertices: Point2D[]) => void;
+  selectedRoadId?: string | null;
+  onSelectRoad?: (id: string | null) => void;
+  onDeleteRoad?: (id: string) => void;
   showGrid?: boolean;
   showDimensions?: boolean;
   showLotNumbers?: boolean;
