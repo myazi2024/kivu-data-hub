@@ -89,7 +89,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   // Fix #10: Une seule instanciation de usePaymentConfig, passée au dialog
   const { paymentMode, isPaymentRequired, availableMethods } = usePaymentConfig();
   const { services: catalogServices, loading: catalogLoading, error: catalogError } = useCadastralServices();
-  const { selectedServices, addService, removeService, toggleService, getTotalAmount, setParcelNumber, isSelected } = useCadastralCart();
+  const { selectedServices, addService, removeService, toggleService, getTotalAmount, setParcelNumber, isSelected, updateServicePrices } = useCadastralCart();
   const { loading, createInvoice } = useCadastralPayment();
 
   const serviceAvailability = React.useMemo(() => 
@@ -97,24 +97,22 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     [searchResult]
   );
 
-  // Fix #14: Synchroniser les prix du panier avec le catalogue en temps réel
+  // Fix #18: Synchroniser les prix du panier via batch update (1 seul re-render)
   React.useEffect(() => {
-    if (catalogServices.length === 0) return;
-    selectedServices.forEach(cartItem => {
-      const catalogItem = catalogServices.find(s => s.id === cartItem.id);
-      if (catalogItem && catalogItem.price !== cartItem.price) {
-        // Re-toggle pour mettre à jour le prix
-        removeService(cartItem.id);
-        addService({
-          id: catalogItem.id,
-          name: catalogItem.name,
-          price: catalogItem.price,
-          description: catalogItem.description,
-          parcel_number: searchResult.parcel.parcel_number,
-          parcel_location: searchResult.parcel.location
-        });
-      }
-    });
+    if (catalogServices.length === 0 || selectedServices.length === 0) return;
+    const updates = selectedServices
+      .map(cartItem => {
+        const catalogItem = catalogServices.find(s => s.id === cartItem.id);
+        if (catalogItem && catalogItem.price !== cartItem.price) {
+          return { id: catalogItem.id, price: catalogItem.price };
+        }
+        return null;
+      })
+      .filter((u): u is { id: string; price: number } => u !== null);
+    
+    if (updates.length > 0) {
+      updateServicePrices(updates);
+    }
   }, [catalogServices]);
 
   React.useEffect(() => {
@@ -471,14 +469,14 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
               </div>
               
               <div className="flex items-center justify-between p-2.5 bg-primary/5 rounded-xl border border-primary/20">
-                <span className="text-sm font-semibold">Total</span>
+                <span className="text-sm font-semibold">Total TTC</span>
                 <div className="text-right">
                   <div className="text-lg font-bold text-primary">
                     ${(discountedAmount * (1 + TVA_RATE)).toFixed(2)} USD
                   </div>
                   {appliedDiscount && (
                     <div className="text-[10px] text-green-600 dark:text-green-400">
-                      Économie: ${appliedDiscount.amount.toFixed(2)}
+                      Économie: ${(appliedDiscount.amount * (1 + TVA_RATE)).toFixed(2)} TTC
                     </div>
                   )}
                 </div>

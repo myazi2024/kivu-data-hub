@@ -5,7 +5,8 @@ import {
   Download,
   Loader2,
   CreditCard,
-  Smartphone
+  Smartphone,
+  RefreshCw
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -26,14 +27,13 @@ interface CadastralInvoice {
   total_amount_usd: number;
   selected_services: string[] | string;
   status: string;
+  parcel_number?: string;
 }
 
-// Fix #4: Signature corrigée — onPaymentSuccess reçoit les services sélectionnés
 interface CadastralPaymentDialogProps {
   invoice: CadastralInvoice;
   onClose: () => void;
   onPaymentSuccess: (services: string[]) => void;
-  // Fix #10: Recevoir les méthodes de paiement depuis le parent au lieu de ré-instancier usePaymentConfig
   availableMethods: {
     hasMobileMoney: boolean;
     hasBankCard: boolean;
@@ -46,7 +46,6 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
   onPaymentSuccess,
   availableMethods
 }) => {
-  // Fix #11: Utiliser paymentStep et resetPaymentState de useCadastralPayment au lieu de dupliquer
   const { processMobileMoneyPayment, processStripePayment, paymentStep, resetPaymentState } = useCadastralPayment();
   const [isAnimating, setIsAnimating] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'mobile_money' | 'bank_card'>('mobile_money');
@@ -55,7 +54,6 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
 
   useEffect(() => {
     setIsAnimating(true);
-    // Auto-select best payment method
     if (availableMethods.hasBankCard) {
       setSelectedPaymentMethod('bank_card');
     } else if (availableMethods.hasMobileMoney) {
@@ -84,7 +82,6 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
     });
 
     if (result) {
-      // Fix #4: Transmettre les services au callback parent
       onPaymentSuccess(getSelectedServices());
     }
   };
@@ -106,10 +103,9 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
     onClose();
   };
 
-  // Fix #5: Vrai téléchargement de PDF
+  // Fix #3: Inclure parcel_number dans les données PDF
   const handleDownloadReceipt = () => {
     import('@/lib/pdf').then(({ generateInvoicePDF }) => {
-      // On passe un objet compatible avec l'interface de generateInvoicePDF
       const invoiceData = {
         id: invoice.id,
         invoice_number: invoice.invoice_number,
@@ -118,7 +114,7 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
         status: 'paid',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        parcel_number: '',
+        parcel_number: invoice.parcel_number || '',
         client_email: '',
         client_name: null,
         search_date: new Date().toISOString(),
@@ -127,6 +123,12 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
     }).catch(() => {
       toast({ title: "Erreur", description: "Impossible de générer le reçu PDF", variant: "destructive" });
     });
+  };
+
+  // Fix #15: Bouton de retry pour re-vérifier le paiement
+  const handleRetryCheck = () => {
+    resetPaymentState();
+    toast({ title: "Réessayer", description: "Vous pouvez relancer le paiement" });
   };
 
   return (
@@ -171,7 +173,6 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
                   Facture #{invoice.invoice_number}
                 </div>
               </div>
-              {/* Fix #5: Vrai téléchargement */}
               <Button 
                 onClick={handleDownloadReceipt} 
                 variant="outline" 

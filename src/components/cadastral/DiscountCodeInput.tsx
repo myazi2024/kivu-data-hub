@@ -184,12 +184,6 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
     });
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleValidateCode();
-    }
-  };
-
   if (appliedDiscount) {
     return (
       <div className={`space-y-3 ${className}`}>
@@ -252,7 +246,7 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
               placeholder={placeholderText || "Ex: BIC-RV001"}
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
-              onKeyPress={handleKeyPress}
+              onKeyDown={(e) => e.key === 'Enter' && handleValidateCode()}
               className="uppercase text-sm"
               disabled={validating}
             />
@@ -291,7 +285,7 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
               placeholder="CCC-XXXXX"
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
-              onKeyPress={handleKeyPress}
+              onKeyDown={(e) => e.key === 'Enter' && handleValidateCode()}
               className="uppercase text-sm"
               disabled={validating}
             />

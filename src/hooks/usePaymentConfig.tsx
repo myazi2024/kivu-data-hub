@@ -101,9 +101,9 @@ export const usePaymentConfig = () => {
   useEffect(() => {
     loadPaymentConfiguration();
 
-    // Écouter les changements de configuration en temps réel
-    const modeChannel = supabase
-      .channel('payment-mode-changes')
+    // Fix #19: Un seul canal Realtime avec 2 listeners
+    const channel = supabase
+      .channel('payment-config-changes')
       .on(
         'postgres_changes',
         {
@@ -114,10 +114,6 @@ export const usePaymentConfig = () => {
         },
         () => loadPaymentConfiguration()
       )
-      .subscribe();
-
-    const methodsChannel = supabase
-      .channel('payment-methods-changes')
       .on(
         'postgres_changes',
         {
@@ -130,8 +126,7 @@ export const usePaymentConfig = () => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(modeChannel);
-      supabase.removeChannel(methodsChannel);
+      supabase.removeChannel(channel);
     };
   }, []);
 

@@ -13,7 +13,6 @@ export interface CadastralPaymentData {
 
 /**
  * Insère les accès services en batch avec ON CONFLICT (upsert)
- * Fix #4 & #15: batch insert + protection doublons
  */
 const grantServiceAccess = async (
   userId: string,
@@ -46,6 +45,10 @@ export const useCadastralPayment = () => {
   const { selectedServices, parcelNumber, clearServices } = useCadastralCart();
   const { paymentMode, availableMethods, isPaymentRequired } = usePaymentConfig();
 
+  /**
+   * Fix #1: Utilise create_cadastral_invoice_secure (RPC) pour valider les prix côté serveur.
+   * En mode bypass, crée directement une facture gratuite + accès.
+   */
   const createInvoice = async (discountData?: {
     code: string;
     amount: number;
@@ -53,64 +56,41 @@ export const useCadastralPayment = () => {
     code_id: string;
   }) => {
     if (!user) {
-      toast({
-        title: "Authentification requise",
-        description: "Vous devez être connecté pour créer une facture",
-        variant: "destructive"
-      });
+      toast({ title: "Authentification requise", description: "Vous devez être connecté pour créer une facture", variant: "destructive" });
       return null;
     }
 
     if (selectedServices.length === 0) {
-      toast({
-        title: "Aucun service sélectionné",
-        description: "Veuillez sélectionner au moins un service",
-        variant: "destructive"
-      });
+      toast({ title: "Aucun service sélectionné", description: "Veuillez sélectionner au moins un service", variant: "destructive" });
       return null;
     }
 
     if (!parcelNumber) {
-      toast({
-        title: "Numéro de parcelle manquant",
-        description: "Le numéro de parcelle est requis",
-        variant: "destructive"
-      });
+      toast({ title: "Numéro de parcelle manquant", description: "Le numéro de parcelle est requis", variant: "destructive" });
       return null;
     }
 
     try {
       setLoading(true);
 
-      const originalAmount = selectedServices.reduce((sum, s) => sum + s.price, 0);
-      const discountAmount = discountData?.amount || 0;
-      const finalAmount = Math.max(0, originalAmount - discountAmount);
-      // Fix #2: Inclure la TVA dans le montant stocké en DB pour cohérence avec l'affichage
-      const TVA_RATE = 0.16;
-      const finalAmountTTC = finalAmount * (1 + TVA_RATE);
-      const originalAmountTTC = originalAmount * (1 + TVA_RATE);
-      
-      const geographicalZone = selectedServices[0]?.parcel_location || '';
       const serviceIds = selectedServices.map(s => s.id);
-      
-      // Fix #5: Laisser le trigger DB generate_invoice_number() gérer le numéro
-      // On passe une valeur vide, le trigger set_invoice_number() la remplacera
+
+      // Mode bypass (développement) — accès gratuit, insert direct
       if (!isPaymentRequired()) {
-        // Mode développement (bypass) - accès gratuit
         const { data: invoice, error } = await supabase
           .from('cadastral_invoices')
           .insert({
             user_id: user.id,
             parcel_number: parcelNumber,
-            invoice_number: '', // Sera remplacé par le trigger DB
+            invoice_number: '',
             selected_services: serviceIds,
             total_amount_usd: 0,
-            original_amount_usd: originalAmountTTC,
-            discount_amount_usd: originalAmountTTC,
+            original_amount_usd: 0,
+            discount_amount_usd: 0,
             discount_code_used: 'MODE_DEV',
             client_email: user.email || '',
             client_name: user.user_metadata?.full_name || null,
-            geographical_zone: geographicalZone,
+            geographical_zone: selectedServices[0]?.parcel_location || '',
             status: 'paid'
           })
           .select()
@@ -118,55 +98,52 @@ export const useCadastralPayment = () => {
 
         if (error) throw error;
 
-        // Fix #15: batch insert avec upsert
         await grantServiceAccess(user.id, invoice.id, parcelNumber, serviceIds);
 
-        toast({
-          title: "Accès accordé (mode développement)",
-          description: "Services accessibles gratuitement"
-        });
-
+        toast({ title: "Accès accordé (mode développement)", description: "Services accessibles gratuitement" });
         clearServices();
         window.dispatchEvent(new CustomEvent('cadastralPaymentCompleted'));
-
         return invoice;
       }
 
-      // Fix #2: Stocker le montant TTC en DB pour cohérence avec l'affichage
-      const { data: invoice, error } = await supabase
-        .from('cadastral_invoices')
-        .insert({
-          user_id: user.id,
-          parcel_number: parcelNumber,
-          invoice_number: '', // Sera remplacé par le trigger DB
-          selected_services: serviceIds,
-          total_amount_usd: parseFloat(finalAmountTTC.toFixed(2)),
-          original_amount_usd: parseFloat(originalAmountTTC.toFixed(2)),
-          discount_amount_usd: parseFloat((discountAmount * (1 + TVA_RATE)).toFixed(2)),
-          discount_code_used: discountData?.code || null,
-          client_email: user.email || '',
-          client_name: user.user_metadata?.full_name || null,
-          geographical_zone: geographicalZone,
-          status: 'pending'
-        })
-        .select()
-        .single();
+      // Fix #1: Appel RPC sécurisé — les prix sont calculés côté serveur
+      const { data: rpcResult, error: rpcError } = await supabase.rpc(
+        'create_cadastral_invoice_secure',
+        {
+          parcel_number_param: parcelNumber,
+          selected_services_param: serviceIds,
+          discount_code_param: discountData?.code || null,
+        }
+      );
 
-      if (error) throw error;
+      if (rpcError) throw rpcError;
+
+      const result = Array.isArray(rpcResult) ? rpcResult[0] : rpcResult;
+
+      if (result.error_message) {
+        toast({ title: "Erreur", description: result.error_message, variant: "destructive" });
+        return null;
+      }
 
       toast({
         title: "Facture créée",
-        description: `Facture ${invoice.invoice_number} créée avec succès`
+        description: `Facture ${result.invoice_number} créée avec succès`
       });
 
-      return invoice;
+      // Retourner un objet compatible avec CadastralPaymentDialog
+      return {
+        id: result.invoice_id,
+        invoice_number: result.invoice_number,
+        total_amount_usd: result.total_amount_usd,
+        original_amount_usd: result.original_amount_usd,
+        discount_amount_usd: result.discount_amount_usd,
+        selected_services: serviceIds,
+        status: 'pending',
+        parcel_number: parcelNumber
+      };
     } catch (error) {
       console.error('Error creating invoice:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de créer la facture",
-        variant: "destructive"
-      });
+      toast({ title: "Erreur", description: "Impossible de créer la facture", variant: "destructive" });
       return null;
     } finally {
       setLoading(false);
@@ -175,11 +152,7 @@ export const useCadastralPayment = () => {
 
   const processMobileMoneyPayment = async (invoiceId: string, paymentData: CadastralPaymentData) => {
     if (!user) {
-      toast({
-        title: "Authentification requise",
-        description: "Vous devez être connecté pour effectuer un paiement",
-        variant: "destructive"
-      });
+      toast({ title: "Authentification requise", description: "Vous devez être connecté pour effectuer un paiement", variant: "destructive" });
       return null;
     }
 
@@ -242,15 +215,11 @@ export const useCadastralPayment = () => {
             })
             .eq('id', invoiceId);
 
-          // Fix #15: batch insert avec upsert
           const serviceIds = selectedServices.map(s => s.id);
           await grantServiceAccess(user.id, invoiceId, parcelNumber!, serviceIds);
 
           setPaymentStep('success');
-          toast({
-            title: "Paiement réussi",
-            description: "Vos services sont maintenant accessibles"
-          });
+          toast({ title: "Paiement réussi", description: "Vos services sont maintenant accessibles" });
 
           clearServices();
           window.dispatchEvent(new CustomEvent('cadastralPaymentCompleted'));
@@ -263,7 +232,8 @@ export const useCadastralPayment = () => {
         attempts++;
       }
 
-      throw new Error('Payment timeout - please check your transaction status');
+      // Fix #15: Afficher l'ID de transaction pour le support
+      throw new Error(`Délai d'attente dépassé. ID transaction: ${transactionId}. Contactez le support si le montant a été débité.`);
 
     } catch (error: any) {
       console.error('Payment error:', error);
@@ -310,8 +280,6 @@ export const useCadastralPayment = () => {
       setLoading(false);
     }
   };
-
-  // Fix #1: Supprimé checkServiceAccess — utiliser checkSingleServiceAccess de utils/checkServiceAccess.ts
 
   const resetPaymentState = () => {
     setPaymentStep('form');
