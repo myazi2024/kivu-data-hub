@@ -40,6 +40,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   const [includeRoad, setIncludeRoad] = useState(true);
   const [roadWidth, setRoadWidth] = useState(6);
   const [selectedLotId, setSelectedLotId] = useState<string | null>(null);
+  const [selectedLotIds, setSelectedLotIds] = useState<string[]>([]);
   const [showAutoPanel, setShowAutoPanel] = useState(lots.length === 0);
   const [editingRoadId, setEditingRoadId] = useState<string | null>(null);
 
