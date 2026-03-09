@@ -437,7 +437,10 @@ export const ParcelMapPreview = ({
         zoomControl: false,
         attributionControl: true,
         center: mapCenter,
-        zoom: 19penstreetmap.org/{z}/{x}/{y}.png', {
+        zoom: 19,
+      });
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap',
         maxZoom: 19,
       }).addTo(map);
