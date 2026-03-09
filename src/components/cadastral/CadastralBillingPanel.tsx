@@ -327,9 +327,11 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                         `}>
                           {service.name}
                         </h4>
-                        {isDisabled && (
+                        {isAlreadyPaid ? (
+                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">✓ Déjà acheté</span>
+                        ) : !hasData ? (
                           <span className="text-[10px] text-muted-foreground/60">Données manquantes</span>
-                        )}
+                        ) : null}
                       </div>
 
                       <Button
