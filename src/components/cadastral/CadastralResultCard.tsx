@@ -1208,23 +1208,12 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
           {/* Onglet Obligations - Mobile First */}
           <TabsContent value="obligations" className="mt-3 space-y-3">
             {!hasServiceAccess('obligations') ? (
-              <div className="p-4 text-center border-2 border-dashed border-muted-foreground/30 rounded-lg">
-                <div className="space-y-3">
-                  <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center">
-                    <Calculator className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold mb-1">Contenu verrouillé</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Obligations fiscales et hypothécaires
-                    </p>
-                  </div>
-                  <Button onClick={() => { setPreselectServiceId('obligations'); setShowBillingPanel(true); }} size="sm" className="text-xs">
-                    <CreditCard className="h-3 w-3 mr-1" />
-                    Débloquer
-                  </Button>
-                </div>
-              </div>
+              <LockedServiceOverlay
+                icon={<Calculator className="h-6 w-6 text-muted-foreground" />}
+                title="Contenu verrouillé"
+                description="Obligations fiscales et hypothécaires"
+                onUnlock={() => { setPreselectServiceId('obligations'); setShowBillingPanel(true); }}
+              />
             ) : (
               <div className="space-y-3">
                 {/* Navigation des sous-sections - Mobile First */}
