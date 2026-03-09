@@ -190,53 +190,47 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
     return paidServices.includes(serviceType);
   };
 
-  // Gérer le téléchargement PDF de la facture
+  // Fix #1 & #4: Utilise catalogServices réactifs + localisation dynamique
   const handleDownloadPDF = () => {
-    // Calculer le total correct basé sur les services sélectionnés
-    import('@/hooks/useCadastralBilling').then(({ CADASTRAL_SERVICES }) => {
-      const selectedServicesList = CADASTRAL_SERVICES.filter(s => paidServices.includes(s.id));
-      const subtotal = selectedServicesList.reduce((sum, service) => sum + Number(service.price), 0);
-      
-      // Générer le même numéro de facture que dans l'affichage à l'écran (stable)
-      const parcelId = result.parcel.parcel_number.replace(/[^0-9]/g, '').slice(-4);
-      const stableHash = result.parcel.parcel_number.split('').reduce((a, b) => {
-        a = ((a << 5) - a) + b.charCodeAt(0);
-        return a & a;
-      }, 0);
-      const stableTimestamp = Math.abs(stableHash).toString().slice(-6);
-      const invoiceNumber = `INV-SU-GOMA-${parcelId}-${stableTimestamp}`;
-      
-      // Créer une facture avec les données identiques à l'écran
-      const discountAmount = 0; // Pas de remise pour l'instant
-      const tvaRate = 0.16; // 16% TVA en RDC
-      const netAmount = subtotal - discountAmount;
-      const tvaAmount = netAmount * tvaRate;
-      const total = netAmount + tvaAmount;
-      
-      const invoice = {
-        id: `temp-${Date.now()}`,
-        user_id: user?.id || null,
-        invoice_number: invoiceNumber,
-        parcel_number: result.parcel.parcel_number,
-        selected_services: paidServices,
-        search_date: new Date().toISOString(),
-        total_amount_usd: total, // Total avec TVA
-        status: 'paid',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        client_name: user?.user_metadata?.full_name || null,
-        client_email: user?.email || null,
-        client_organization: user?.user_metadata?.organization || null,
-        geographical_zone: `${result.parcel.commune}, ${result.parcel.quartier}`,
-        discount_amount_usd: discountAmount,
-        original_amount_usd: subtotal,
-        payment_method: 'visa' // Méthode de paiement par défaut
-      };
+    const selectedServicesList = catalogServices.filter(s => paidServices.includes(s.id));
+    const subtotal = selectedServicesList.reduce((sum, service) => sum + Number(service.price), 0);
+    
+    const parcelId = result.parcel.parcel_number.replace(/[^0-9]/g, '').slice(-4);
+    const stableHash = result.parcel.parcel_number.split('').reduce((a: number, b: string) => {
+      a = ((a << 5) - a) + b.charCodeAt(0);
+      return a & a;
+    }, 0);
+    const stableTimestamp = Math.abs(stableHash).toString().slice(-6);
+    const locationCode = (result.parcel.ville || result.parcel.commune || 'RDC').substring(0, 4).toUpperCase();
+    const invoiceNumber = `INV-${result.parcel.parcel_type}-${locationCode}-${parcelId}-${stableTimestamp}`;
+    
+    const discountAmount = 0;
+    const netAmount = subtotal - discountAmount;
+    const tvaAmount = netAmount * TVA_RATE;
+    const total = netAmount + tvaAmount;
+    
+    const invoice = {
+      id: `temp-${Date.now()}`,
+      user_id: user?.id || null,
+      invoice_number: invoiceNumber,
+      parcel_number: result.parcel.parcel_number,
+      selected_services: paidServices,
+      search_date: new Date().toISOString(),
+      total_amount_usd: total,
+      status: 'paid',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      client_name: user?.user_metadata?.full_name || null,
+      client_email: user?.email || null,
+      client_organization: user?.user_metadata?.organization || null,
+      geographical_zone: `${result.parcel.commune}, ${result.parcel.quartier}`,
+      discount_amount_usd: discountAmount,
+      original_amount_usd: subtotal,
+      payment_method: 'visa'
+    };
 
-      // Génère un PDF selon le format sélectionné
-      import('@/lib/pdf').then(({ generateInvoicePDF }) => {
-        generateInvoicePDF(invoice, CADASTRAL_SERVICES, invoiceFormat);
-      });
+    import('@/lib/pdf').then(({ generateInvoicePDF }) => {
+      generateInvoicePDF(invoice, catalogServices, invoiceFormat);
     });
   };
 
