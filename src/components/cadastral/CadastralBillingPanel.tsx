@@ -89,7 +89,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   // Fix #10: Une seule instanciation de usePaymentConfig, passée au dialog
   const { paymentMode, isPaymentRequired, availableMethods } = usePaymentConfig();
   const { services: catalogServices, loading: catalogLoading, error: catalogError } = useCadastralServices();
-  const { selectedServices, addService, removeService, toggleService, getTotalAmount, setParcelNumber, isSelected } = useCadastralCart();
+  const { selectedServices, addService, removeService, toggleService, getTotalAmount, setParcelNumber, isSelected, updateServicePrices } = useCadastralCart();
   const { loading, createInvoice } = useCadastralPayment();
 
   const serviceAvailability = React.useMemo(() => 
