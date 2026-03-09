@@ -14,12 +14,15 @@ interface LotCanvasProps {
   parentVertices?: Point2D[];
   parentSides?: ParcelSide[];
   selectedLotId: string | null;
+  selectedLotIds?: string[];
   onSelectLot: (id: string | null) => void;
+  onToggleLotSelection?: (id: string) => void;
   onUpdateLot: (id: string, vertices: Point2D[]) => void;
   selectedRoadId?: string | null;
   onSelectRoad?: (id: string | null) => void;
   onDeleteRoad?: (id: string) => void;
   onSplitLot?: (id: string) => void;
+  onMergeLots?: (ids: string[]) => void;
   showGrid?: boolean;
   showDimensions?: boolean;
   showLotNumbers?: boolean;
