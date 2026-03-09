@@ -184,7 +184,7 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
     });
   };
 
-  const handleRemoveDiscount = () => {
+  if (appliedDiscount) {
     return (
       <div className={`space-y-3 ${className}`}>
         <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
