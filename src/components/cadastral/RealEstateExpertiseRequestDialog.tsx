@@ -843,6 +843,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setHasElectricity(false);
     setHasSewageSystem(false);
     setHasInternet(false);
+    setInternetProvider('');
     setHasSecuritySystem(false);
     setHasParking(false);
     setParkingSpaces('');
