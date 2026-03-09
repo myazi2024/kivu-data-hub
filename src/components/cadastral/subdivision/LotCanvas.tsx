@@ -97,11 +97,34 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     onSelectRoad?.(null);
   }, [selectedLotId, onSelectLot, onSelectRoad]);
 
-  const handleRoadClick = useCallback((roadId: string, e: React.MouseEvent) => {
+  const handleLotDoubleClick = useCallback((lotId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    onSelectRoad?.(roadId === selectedRoadId ? null : roadId);
-    onSelectLot(null);
-  }, [selectedRoadId, onSelectRoad, onSelectLot]);
+    if (readOnly || !onSplitLot) return;
+    onSelectLot(lotId);
+    onSelectRoad?.(null);
+    setSplitLotId(lotId);
+  }, [readOnly, onSplitLot, onSelectLot, onSelectRoad]);
+
+  const handleLotTouchStart = useCallback((lotId: string) => {
+    if (readOnly || !onSplitLot) return;
+    longPressTimerRef.current = setTimeout(() => {
+      onSelectLot(lotId);
+      onSelectRoad?.(null);
+      setSplitLotId(lotId);
+    }, 600);
+  }, [readOnly, onSplitLot, onSelectLot, onSelectRoad]);
+
+  const handleLotTouchEnd = useCallback(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
+
+  // Clear split button when selecting another lot or clicking elsewhere
+  useEffect(() => {
+    if (selectedLotId !== splitLotId) setSplitLotId(null);
+  }, [selectedLotId, splitLotId]);
 
   const sideLength = Math.sqrt(parentAreaSqm);
 
