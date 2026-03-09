@@ -699,7 +699,9 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                         {/* Informations de l'autorisation de bâtir actuelle intégrées */}
                         {building_permits.filter(permit => permit.is_current).map((permit) => {
                           const issueDate = new Date(permit.issue_date);
-                          const validityEndDate = new Date(issueDate.getTime() + permit.validity_period_months * 30 * 24 * 60 * 60 * 1000);
+                          // Fix #3: Calcul correct de la date de fin avec ajout de mois réels
+                          const validityEndDate = new Date(issueDate);
+                          validityEndDate.setMonth(validityEndDate.getMonth() + permit.validity_period_months);
                           const isValid = validityEndDate > new Date();
                           
                           return (
