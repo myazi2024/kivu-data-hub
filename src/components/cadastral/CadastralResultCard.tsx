@@ -107,15 +107,16 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   const { services: catalogServices } = useCadastralServices();
   const { user } = useAuth();
 
-  // Logique de scroll pour masquer/afficher l'en-tête
+  // Fix #17: Utiliser un ref callback au lieu de querySelector fragile
+  const scrollContainerRef = useRef<HTMLElement | null>(null);
+  
   useEffect(() => {
-    const handleScroll = (event: Event) => {
-      const scrollContainer = event.currentTarget as HTMLElement;
-      const currentScrollY = scrollContainer.scrollTop || 0;
-
+    const handleScroll = () => {
+      const el = scrollContainerRef.current;
+      if (!el) return;
+      const currentScrollY = el.scrollTop || 0;
       const scrollDirection = currentScrollY > lastScrollYRef.current ? 'down' : 'up';
       
-      // Masquer l'en-tête si on scroll vers le bas (plus de 50px) ou l'afficher si on remonte
       if (scrollDirection === 'down' && currentScrollY > 50) {
         setIsHeaderHidden(true);
       } else if (scrollDirection === 'up' && currentScrollY <= 30) {
@@ -125,20 +126,24 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
       lastScrollYRef.current = currentScrollY;
     };
 
-    // Trouver le conteneur scrollable parent - celui avec overflow-auto dans CadastralResultsDialog
+    // Trouver le conteneur scrollable le plus proche
     const findScrollContainer = () => {
-      // Chercher le div avec overflow-auto qui est le parent scrollable du dialogue
-      const scrollableDiv = document.querySelector('.overflow-auto') as HTMLElement;
-      return scrollableDiv;
+      const card = document.getElementById('cadastral-result-card');
+      if (!card) return null;
+      let parent = card.parentElement;
+      while (parent) {
+        const style = getComputedStyle(parent);
+        if (style.overflowY === 'auto' || style.overflowY === 'scroll') return parent;
+        parent = parent.parentElement;
+      }
+      return null;
     };
 
-    const scrollContainer = findScrollContainer();
-    if (scrollContainer) {
-      scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
-      
-      return () => {
-        scrollContainer.removeEventListener('scroll', handleScroll);
-      };
+    const container = findScrollContainer();
+    if (container) {
+      scrollContainerRef.current = container;
+      container.addEventListener('scroll', handleScroll, { passive: true });
+      return () => container.removeEventListener('scroll', handleScroll);
     }
   }, []);
 
