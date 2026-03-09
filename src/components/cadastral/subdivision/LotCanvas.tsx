@@ -117,18 +117,32 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         </g>
       )}
 
-      {/* Parent parcel outline */}
-      <rect
-        x={PADDING}
-        y={PADDING}
-        width={CANVAS_W - 2 * PADDING}
-        height={CANVAS_H - 2 * PADDING}
-        fill="none"
-        stroke="hsl(var(--primary))"
-        strokeWidth={2}
-        strokeDasharray="6 3"
-        opacity={0.5}
-      />
+      {/* Parent parcel outline — actual shape or fallback rectangle */}
+      {parentVertices && parentVertices.length >= 3 ? (
+        <polygon
+          points={parentVertices.map(v => {
+            const s = toScreen(v);
+            return `${s.x},${s.y}`;
+          }).join(' ')}
+          fill="none"
+          stroke="hsl(var(--primary))"
+          strokeWidth={2}
+          strokeDasharray="6 3"
+          opacity={0.5}
+        />
+      ) : (
+        <rect
+          x={PADDING}
+          y={PADDING}
+          width={CANVAS_W - 2 * PADDING}
+          height={CANVAS_H - 2 * PADDING}
+          fill="none"
+          stroke="hsl(var(--primary))"
+          strokeWidth={2}
+          strokeDasharray="6 3"
+          opacity={0.5}
+        />
+      )}
 
       {/* Roads */}
       {showRoads && roads.map(road => {
