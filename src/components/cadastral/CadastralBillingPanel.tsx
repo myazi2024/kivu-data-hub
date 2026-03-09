@@ -250,9 +250,9 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             <div className="flex items-center justify-between p-2 bg-muted/30 rounded-xl border border-dashed">
               <div className="flex items-center gap-2">
                 <Checkbox 
-                  checked={selectedServiceIds.length === catalogServices.filter(s => serviceAvailability[s.id] ?? true).length && selectedServiceIds.length > 0}
+                  checked={selectedServiceIds.length === catalogServices.filter(s => (serviceAvailability[s.id] ?? true) && !alreadyPaidServices.includes(s.id)).length && selectedServiceIds.length > 0}
                   onCheckedChange={(checked) => {
-                    const availableServices = catalogServices.filter(s => serviceAvailability[s.id] ?? true);
+                    const availableServices = catalogServices.filter(s => (serviceAvailability[s.id] ?? true) && !alreadyPaidServices.includes(s.id));
                     if (checked) {
                       availableServices.forEach(service => {
                         if (!selectedServiceIds.includes(service.id)) {
@@ -270,7 +270,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                 <span className="text-xs font-medium">Tout sélectionner</span>
               </div>
               <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
-                {catalogServices.filter(s => serviceAvailability[s.id] ?? true).length} dispo.
+                {catalogServices.filter(s => (serviceAvailability[s.id] ?? true) && !alreadyPaidServices.includes(s.id)).length} dispo.
               </Badge>
             </div>
             
