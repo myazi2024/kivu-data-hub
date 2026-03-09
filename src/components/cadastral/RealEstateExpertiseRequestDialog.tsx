@@ -2110,7 +2110,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     return (
       <div className="space-y-2">
         {/* En-tête compact */}
-        <div className="shrink-0 space-y-2 pb-2">
+        <div className="space-y-2 pb-2">
           <div className="bg-gradient-to-br from-primary/15 to-primary/5 rounded-xl p-2.5 border border-primary/20">
             <div className="flex items-center gap-2">
               <div className="h-8 w-8 bg-primary/20 rounded-lg flex items-center justify-center shrink-0">
