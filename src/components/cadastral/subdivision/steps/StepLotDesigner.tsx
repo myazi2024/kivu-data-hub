@@ -381,15 +381,23 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 parentVertices={parentVertices}
                 parentSides={parentSides}
                 selectedLotId={selectedLotId}
-                onSelectLot={setSelectedLotId}
+                selectedLotIds={selectedLotIds}
+                onSelectLot={id => { setSelectedLotId(id); setSelectedLotIds([]); }}
+                onToggleLotSelection={handleToggleLotSelection}
                 selectedRoadId={editingRoadId}
                 onSelectRoad={setEditingRoadId}
                 onDeleteRoad={handleDeleteRoad}
                 onSplitLot={handleSplitLot}
+                onMergeLots={handleMergeLots}
                 onUpdateLot={(id, vertices) => {
                   setLots(lots.map(l => l.id === id ? { ...l, vertices } : l));
                 }}
               />
+              {lots.length > 1 && selectedLotIds.length === 0 && (
+                <p className="text-[10px] text-muted-foreground text-center py-1">
+                  💡 Ctrl+clic (⌘+clic sur Mac) pour sélectionner plusieurs lots et les fusionner
+                </p>
+              )}
             </CardContent>
           </Card>
         </div>
