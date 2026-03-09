@@ -469,14 +469,14 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
               </div>
               
               <div className="flex items-center justify-between p-2.5 bg-primary/5 rounded-xl border border-primary/20">
-                <span className="text-sm font-semibold">Total</span>
+                <span className="text-sm font-semibold">Total TTC</span>
                 <div className="text-right">
                   <div className="text-lg font-bold text-primary">
                     ${(discountedAmount * (1 + TVA_RATE)).toFixed(2)} USD
                   </div>
                   {appliedDiscount && (
                     <div className="text-[10px] text-green-600 dark:text-green-400">
-                      Économie: ${appliedDiscount.amount.toFixed(2)}
+                      Économie: ${(appliedDiscount.amount * (1 + TVA_RATE)).toFixed(2)} TTC
                     </div>
                   )}
                 </div>
