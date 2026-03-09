@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
-import { CADASTRAL_SERVICES } from '@/hooks/useCadastralBilling';
+import { useCadastralServices, CadastralService } from '@/hooks/useCadastralServices';
+import { TVA_RATE } from '@/constants/billing';
 
 interface CadastralInvoiceProps {
   isOpen: boolean;
@@ -26,6 +27,8 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
 }) => {
   const [showCloseWarning, setShowCloseWarning] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  // Fix #2: Utiliser le hook réactif au lieu de la variable globale deprecated
+  const { services: catalogServices } = useCadastralServices();
 
   const handleClose = () => {
     setShowCloseWarning(true);
@@ -42,7 +45,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
 
   // Générer les données de facture de manière stable
   const invoiceData = useMemo(() => {
-    const selectedServices = CADASTRAL_SERVICES.filter(s => paidServices.includes(s.id));
+    const selectedServices = catalogServices.filter(s => paidServices.includes(s.id));
     const originalSubtotal = selectedServices.reduce((sum, service) => sum + Number(service.price), 0);
     
     // Récupérer les informations de remise depuis le localStorage ou les props
@@ -60,19 +63,19 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
       }
     }
     
-    const tvaRate = 0.16; // 16% TVA en RDC
     const netAmount = Math.max(0, originalSubtotal - discountAmount);
-    const tvaAmount = netAmount * tvaRate;
+    const tvaAmount = netAmount * TVA_RATE;
     const total = netAmount + tvaAmount;
     
-    // Générer un timestamp stable basé sur la parcelle pour que le numéro soit identique
+    // Fix #5: Générer un numéro stable basé sur la parcelle
     const parcelId = result.parcel.parcel_number.replace(/[^0-9]/g, '').slice(-4);
     const stableHash = result.parcel.parcel_number.split('').reduce((a, b) => {
       a = ((a << 5) - a) + b.charCodeAt(0);
       return a & a;
     }, 0);
     const stableTimestamp = Math.abs(stableHash).toString().slice(-6);
-    const invoiceNumber = `INV-SU-GOMA-${parcelId}-${stableTimestamp}`;
+    const locationCode = (result.parcel.ville || result.parcel.commune || 'RDC').substring(0, 4).toUpperCase();
+    const invoiceNumber = `INV-${result.parcel.parcel_type}-${locationCode}-${parcelId}-${stableTimestamp}`;
     
     return {
       invoiceNumber,
@@ -85,7 +88,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
       currentDate: new Date().toLocaleDateString('fr-FR'),
       currentTime: new Date().toLocaleTimeString('fr-FR')
     };
-  }, [result.parcel.parcel_number, paidServices]);
+  }, [result.parcel.parcel_number, result.parcel.ville, result.parcel.commune, result.parcel.parcel_type, paidServices, catalogServices]);
 
   // Informations légales de BIC
   const BIC_COMPANY_INFO = {
@@ -98,6 +101,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
     email: "contact@bic-congo.cd",
     phone: "+243 997 123 456"
   };
+
   // Générer QR code pour accès aux données
   useEffect(() => {
     const generateQR = async () => {
@@ -226,7 +230,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
 
               <Separator />
 
-              {/* Informations de facturation - Mobile optimized */}
+              {/* Informations de facturation */}
               <div className="space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
                 <div className="space-y-1">
                   <h3 className="font-semibold text-xs uppercase tracking-wide">
@@ -284,7 +288,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
 
               <Separator />
 
-              {/* Détails des services - Mobile optimized */}
+              {/* Détails des services */}
               <div className="space-y-2">
                 <h3 className="font-semibold text-xs uppercase tracking-wide">
                   Prestations acquises
@@ -297,7 +301,6 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
                         <p className="text-xs font-medium leading-tight">{service.name}</p>
                         <p className="text-xs text-muted-foreground line-clamp-1">{service.description || 'Service cadastral professionnel'}</p>
                         
-                        {/* Détails supplémentaires selon le service */}
                         {service.id === 'information' && (
                           <div className="mt-1 pt-1 border-t border-muted/30">
                             <p className="text-xs text-muted-foreground">
@@ -331,7 +334,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
 
               <Separator />
 
-              {/* Total avec TVA - Mobile optimized */}
+              {/* Total avec TVA */}
               <div className="space-y-1 bg-muted/30 p-3 rounded-lg">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-muted-foreground">Sous-total</span>
@@ -344,7 +347,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
                   </div>
                 )}
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">TVA (16%)</span>
+                  <span className="text-xs text-muted-foreground">{`TVA (${(TVA_RATE * 100).toFixed(0)}%)`}</span>
                   <span className="text-xs">${invoiceData.tvaAmount.toFixed(2)} USD</span>
                 </div>
                 <Separator className="my-1" />
@@ -356,7 +359,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
 
               <Separator />
 
-              {/* QR Code d'accès aux données - Mobile optimized */}
+              {/* QR Code d'accès aux données */}
               {qrCodeUrl && (
                 <div className="flex flex-col sm:flex-row items-center gap-2 p-2 bg-muted/30 rounded-lg">
                   <div className="shrink-0">
@@ -376,7 +379,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
 
               <Separator />
 
-              {/* Actions - Mobile optimized */}
+              {/* Actions */}
               <div className="flex flex-col gap-2 pt-1 md:pt-2 md:flex-row">
                 <Button 
                   onClick={() => window.print()}
@@ -402,7 +405,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
                 </Button>
               </div>
 
-              {/* Mentions légales - Mobile optimized */}
+              {/* Mentions légales */}
               <div className="pt-1 text-xs text-muted-foreground bg-muted/50 p-2 rounded-lg">
                 <p className="font-medium mb-0.5">Mentions légales</p>
                 <p className="mb-0.5">

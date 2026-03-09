@@ -22,18 +22,68 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
-import { useCadastralBilling, CadastralInvoice } from '@/hooks/useCadastralBilling';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useCadastralServices } from '@/hooks/useCadastralServices';
 import CadastralInvoiceDetailsDialog from './CadastralInvoiceDetailsDialog';
+
+// Fix #2: Type local au lieu d'importer depuis useCadastralBilling
+export interface CadastralInvoice {
+  id: string;
+  parcel_number: string;
+  search_date: string;
+  selected_services: any;
+  total_amount_usd: number;
+  status: string;
+  invoice_number: string;
+  client_name?: string | null;
+  client_email: string;
+  client_organization?: string | null;
+  geographical_zone?: string | null;
+  payment_method?: string | null;
+  created_at: string;
+  updated_at: string;
+  discount_code_used?: string | null;
+  discount_amount_usd?: number;
+  original_amount_usd?: number;
+}
 
 const CadastralClientDashboard: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedInvoice, setSelectedInvoice] = useState<CadastralInvoice | null>(null);
   const [showInvoiceDetails, setShowInvoiceDetails] = useState(false);
+  const [invoices, setInvoices] = useState<CadastralInvoice[]>([]);
+  const [loading, setLoading] = useState(false);
   
-  const { invoices, loading, fetchUserInvoices } = useCadastralBilling();
   const { user } = useAuth();
+  // Fix #2: Utiliser le hook réactif au lieu de CADASTRAL_SERVICES
+  const { services: catalogServices } = useCadastralServices();
+
+  const fetchUserInvoices = async () => {
+    if (!user) return;
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('cadastral_invoices')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      const transformedData = (data || []).map(invoice => ({
+        ...invoice,
+        selected_services: Array.isArray(invoice.selected_services) 
+          ? invoice.selected_services 
+          : JSON.parse(invoice.selected_services as string || '[]')
+      })) as CadastralInvoice[];
+      setInvoices(transformedData);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des factures:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -68,11 +118,10 @@ const CadastralClientDashboard: React.FC = () => {
     .filter(inv => inv.status === 'paid')
     .reduce((sum, inv) => sum + parseFloat(inv.total_amount_usd.toString()), 0);
 
+  // Fix #2: Utiliser catalogServices réactifs
   const generatePDFInvoice = (invoice: CadastralInvoice) => {
     import('@/lib/pdf').then(({ generateInvoicePDF }) => {
-      import('@/hooks/useCadastralBilling').then(({ CADASTRAL_SERVICES }) => {
-        generateInvoicePDF(invoice, CADASTRAL_SERVICES);
-      });
+      generateInvoicePDF(invoice as any, catalogServices);
     });
   };
 
@@ -230,7 +279,7 @@ const CadastralClientDashboard: React.FC = () => {
                         </div>
                       </TableCell>
                       <TableCell className="font-medium">
-                        ${invoice.total_amount_usd} USD
+                        ${Number(invoice.total_amount_usd).toFixed(2)} USD
                       </TableCell>
                       <TableCell>
                         {getStatusBadge(invoice.status)}

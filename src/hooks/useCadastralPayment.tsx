@@ -11,6 +11,33 @@ export interface CadastralPaymentData {
   name: string;
 }
 
+/**
+ * Insère les accès services en batch avec ON CONFLICT (upsert)
+ * Fix #4 & #15: batch insert + protection doublons
+ */
+const grantServiceAccess = async (
+  userId: string,
+  invoiceId: string,
+  parcelNumber: string,
+  serviceIds: string[]
+) => {
+  const rows = serviceIds.map(serviceId => ({
+    user_id: userId,
+    invoice_id: invoiceId,
+    parcel_number: parcelNumber,
+    service_type: serviceId
+  }));
+
+  const { error } = await supabase
+    .from('cadastral_service_access')
+    .upsert(rows, { onConflict: 'user_id,parcel_number,service_type' });
+
+  if (error) {
+    console.error('Erreur lors de l\'attribution des accès:', error);
+    throw error;
+  }
+};
+
 export const useCadastralPayment = () => {
   const [loading, setLoading] = useState(false);
   const [paymentStep, setPaymentStep] = useState<'form' | 'processing' | 'success'>('form');
@@ -62,7 +89,8 @@ export const useCadastralPayment = () => {
       const geographicalZone = selectedServices[0]?.parcel_location || '';
       const serviceIds = selectedServices.map(s => s.id);
       
-      // Vérifier le mode de paiement
+      // Fix #5: Laisser le trigger DB generate_invoice_number() gérer le numéro
+      // On passe une valeur vide, le trigger set_invoice_number() la remplacera
       if (!isPaymentRequired()) {
         // Mode développement (bypass) - accès gratuit
         const { data: invoice, error } = await supabase
@@ -70,35 +98,24 @@ export const useCadastralPayment = () => {
           .insert({
             user_id: user.id,
             parcel_number: parcelNumber,
-            invoice_number: `INV-CAD-${Date.now()}`,
+            invoice_number: '', // Sera remplacé par le trigger DB
             selected_services: serviceIds,
-            total_amount_usd: 0, // Gratuit en mode bypass
+            total_amount_usd: 0,
             original_amount_usd: originalAmount,
-            discount_amount_usd: originalAmount, // 100% de remise
+            discount_amount_usd: originalAmount,
             discount_code_used: 'MODE_DEV',
             client_email: user.email || '',
             client_name: user.user_metadata?.full_name || null,
             geographical_zone: geographicalZone,
-            status: 'paid' // Directement payé
+            status: 'paid'
           })
           .select()
           .single();
 
         if (error) throw error;
 
-        // Créer l'accès aux services directement
-        const accessPromises = serviceIds.map(serviceId =>
-          supabase
-            .from('cadastral_service_access')
-            .insert({
-              user_id: user.id,
-              invoice_id: invoice.id,
-              parcel_number: parcelNumber!,
-              service_type: serviceId
-            })
-        );
-
-        await Promise.all(accessPromises);
+        // Fix #15: batch insert avec upsert
+        await grantServiceAccess(user.id, invoice.id, parcelNumber, serviceIds);
 
         toast({
           title: "Accès accordé (mode développement)",
@@ -111,14 +128,12 @@ export const useCadastralPayment = () => {
         return invoice;
       }
 
-      const invoiceNumber = `INV-CAD-${Date.now()}`;
-
       const { data: invoice, error } = await supabase
         .from('cadastral_invoices')
         .insert({
           user_id: user.id,
           parcel_number: parcelNumber,
-          invoice_number: invoiceNumber,
+          invoice_number: '', // Sera remplacé par le trigger DB
           selected_services: serviceIds,
           total_amount_usd: finalAmount,
           original_amount_usd: originalAmount,
@@ -136,7 +151,7 @@ export const useCadastralPayment = () => {
 
       toast({
         title: "Facture créée",
-        description: `Facture ${invoiceNumber} créée avec succès`
+        description: `Facture ${invoice.invoice_number} créée avec succès`
       });
 
       return invoice;
@@ -175,7 +190,6 @@ export const useCadastralPayment = () => {
 
       if (invoice.error) throw invoice.error;
 
-      // Vérifier si des moyens de paiement sont configurés
       if (!availableMethods.hasMobileMoney) {
         throw new Error('Aucun moyen de paiement Mobile Money configuré');
       }
@@ -189,7 +203,7 @@ export const useCadastralPayment = () => {
             phone_number: paymentData.phoneNumber,
             amount_usd: invoice.data.total_amount_usd,
             payment_type: 'cadastral_service',
-            test_mode: paymentMode.test_mode // Utiliser la config admin
+            test_mode: paymentMode.test_mode
           }
         }
       );
@@ -223,19 +237,9 @@ export const useCadastralPayment = () => {
             })
             .eq('id', invoiceId);
 
+          // Fix #15: batch insert avec upsert
           const serviceIds = selectedServices.map(s => s.id);
-          const accessPromises = serviceIds.map(serviceId =>
-            supabase
-              .from('cadastral_service_access')
-              .insert({
-                user_id: user.id,
-                invoice_id: invoiceId,
-                parcel_number: parcelNumber!,
-                service_type: serviceId
-              })
-          );
-
-          await Promise.all(accessPromises);
+          await grantServiceAccess(user.id, invoiceId, parcelNumber!, serviceIds);
 
           setPaymentStep('success');
           toast({
@@ -274,7 +278,6 @@ export const useCadastralPayment = () => {
     try {
       setLoading(true);
 
-      // Vérifier si Stripe est configuré
       if (!availableMethods.hasBankCard) {
         throw new Error('Aucun moyen de paiement par carte bancaire configuré');
       }
@@ -283,7 +286,7 @@ export const useCadastralPayment = () => {
         body: {
           items: [invoiceId],
           payment_type: 'cadastral_service',
-          test_mode: paymentMode.test_mode // Utiliser la config admin
+          test_mode: paymentMode.test_mode
         }
       });
 
@@ -303,30 +306,7 @@ export const useCadastralPayment = () => {
     }
   };
 
-  const checkServiceAccess = async (parcelNumber: string, serviceType: string): Promise<boolean> => {
-    if (!user) return false;
-
-    try {
-      const { data, error } = await supabase
-        .from('cadastral_service_access')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('parcel_number', parcelNumber)
-        .eq('service_type', serviceType)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (data?.expires_at) {
-        return new Date(data.expires_at) > new Date();
-      }
-
-      return !!data;
-    } catch (error) {
-      console.error('Error checking service access:', error);
-      return false;
-    }
-  };
+  // Fix #1: Supprimé checkServiceAccess — utiliser checkSingleServiceAccess de utils/checkServiceAccess.ts
 
   const resetPaymentState = () => {
     setPaymentStep('form');
@@ -339,7 +319,6 @@ export const useCadastralPayment = () => {
     createInvoice,
     processMobileMoneyPayment,
     processStripePayment,
-    checkServiceAccess,
     resetPaymentState
   };
 };

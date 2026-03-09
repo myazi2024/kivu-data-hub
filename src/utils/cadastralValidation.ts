@@ -1,10 +1,9 @@
 /**
  * Script de validation de la cohérence des indicateurs cadastraux
- * Vérifie la cohérence entre le front-end et le back-end
+ * Fix #2: Utilise directement la DB au lieu de la variable globale deprecated
  */
 
 import { supabase } from '@/integrations/supabase/client';
-import { CADASTRAL_SERVICES, loadCadastralServices } from '@/hooks/useCadastralBilling';
 
 export interface ValidationResult {
   indicator: string;
@@ -16,9 +15,8 @@ export interface ValidationResult {
 export const validateCadastralSystem = async (): Promise<ValidationResult[]> => {
   const results: ValidationResult[] = [];
 
-  // 1. Validation du catalogue de services
+  // 1. Validation du catalogue de services — directement depuis la DB
   try {
-    await loadCadastralServices();
     const { data: servicesDB, error } = await supabase
       .from('cadastral_services_config')
       .select('*')
@@ -33,29 +31,12 @@ export const validateCadastralSystem = async (): Promise<ValidationResult[]> => 
         message: 'Aucun service actif dans la base de données',
       });
     } else {
-      // Vérifier la cohérence avec le front-end
-      const frontServices = CADASTRAL_SERVICES;
-      const dbServiceIds = new Set(servicesDB.map(s => s.service_id));
-      const frontServiceIds = new Set(frontServices.map(s => s.id));
-
-      const missingInDB = frontServices.filter(s => !dbServiceIds.has(s.id));
-      const missingInFront = servicesDB.filter(s => !frontServiceIds.has(s.service_id));
-
-      if (missingInDB.length > 0 || missingInFront.length > 0) {
-        results.push({
-          indicator: 'Catalogue de services',
-          status: 'warning',
-          message: `Incohérence détectée: ${missingInDB.length} service(s) manquant(s) en DB, ${missingInFront.length} en trop`,
-          details: { missingInDB, missingInFront }
-        });
-      } else {
-        results.push({
-          indicator: 'Catalogue de services',
-          status: 'success',
-          message: `${servicesDB.length} services actifs, cohérence validée`,
-          details: { services: servicesDB }
-        });
-      }
+      results.push({
+        indicator: 'Catalogue de services',
+        status: 'success',
+        message: `${servicesDB.length} services actifs dans la base de données`,
+        details: { services: servicesDB }
+      });
     }
   } catch (error: any) {
     results.push({
@@ -73,7 +54,6 @@ export const validateCadastralSystem = async (): Promise<ValidationResult[]> => 
 
     if (error) throw error;
 
-    // Vérifier l'intégrité des données
     const { data: invalidParcels, error: validationError } = await supabase
       .from('cadastral_parcels')
       .select('id, parcel_number, area_sqm, property_title_type')
@@ -132,7 +112,6 @@ export const validateCadastralSystem = async (): Promise<ValidationResult[]> => 
       total_value: codes?.reduce((sum, c) => sum + Number(c.value_usd), 0) || 0,
     };
 
-    // Vérifier la cohérence: une contribution approuvée doit avoir un code
     const { data: approvedWithoutCode, error: checkError } = await supabase
       .from('cadastral_contributions')
       .select(`
@@ -172,7 +151,6 @@ export const validateCadastralSystem = async (): Promise<ValidationResult[]> => 
 
   // 4. Validation des RLS policies
   try {
-    // Tester l'accès aux tables principales
     const tables = [
       'cadastral_services_config',
       'cadastral_parcels',
@@ -221,7 +199,6 @@ export const validateCadastralSystem = async (): Promise<ValidationResult[]> => 
 
   // 5. Validation du système de notifications
   try {
-    // Vérifier l'intégrité des notifications
     const { data: notificationStats, error: notifError } = await supabase
       .from('notifications')
       .select('type, is_read, created_at')
@@ -241,7 +218,6 @@ export const validateCadastralSystem = async (): Promise<ValidationResult[]> => 
       }
     };
 
-    // Vérifier les notifications orphelines (utilisateurs supprimés)
     const { data: orphanNotifications, error: orphanError } = await supabase
       .from('notifications')
       .select(`
@@ -281,7 +257,6 @@ export const validateCadastralSystem = async (): Promise<ValidationResult[]> => 
 
   // 6. Validation des alerts/toasts cohérence
   try {
-    // Vérifier la cohérence des notifications système avec les événements cadastraux
     const { data: recentContributions, error: contribError } = await supabase
       .from('cadastral_contributions')
       .select('id, user_id, status, created_at')
@@ -292,7 +267,6 @@ export const validateCadastralSystem = async (): Promise<ValidationResult[]> => 
 
     const approvedContribs = recentContributions?.filter(c => c.status === 'approved') || [];
     
-    // Vérifier que chaque contribution approuvée a déclenché une notification
     let missingNotifications = 0;
     for (const contrib of approvedContribs) {
       const { data: notif } = await supabase

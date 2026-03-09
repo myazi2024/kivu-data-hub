@@ -1,7 +1,30 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import QRCode from 'qrcode';
-import type { CadastralInvoice, CadastralService } from '@/hooks/useCadastralBilling';
+import type { CadastralService } from '@/hooks/useCadastralServices';
+
+// Type minimal pour les factures dans le PDF
+interface CadastralInvoice {
+  id: string;
+  parcel_number: string;
+  search_date: string;
+  selected_services: any;
+  total_amount_usd: number;
+  status: string;
+  invoice_number: string;
+  client_name?: string | null;
+  client_email: string;
+  client_organization?: string | null;
+  geographical_zone?: string | null;
+  payment_method?: string | null;
+  created_at: string;
+  updated_at: string;
+  discount_code_used?: string | null;
+  discount_amount_usd?: number;
+  original_amount_usd?: number;
+}
+
+export type { CadastralInvoice };
 
 // Informations légales complètes de BIC
 const BIC_COMPANY_INFO = {

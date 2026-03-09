@@ -1,10 +1,11 @@
 /**
  * Script de test pour valider la génération du rapport cadastral
- * Ce test vérifie que les données de contribution validées sont correctement utilisées
+ * Fix #2: Charge les services depuis la DB au lieu de la variable globale deprecated
  */
 
 import { generateCadastralReport } from '@/lib/pdf';
-import { CADASTRAL_SERVICES } from '@/hooks/useCadastralBilling';
+import { supabase } from '@/integrations/supabase/client';
+import type { CadastralService } from '@/hooks/useCadastralServices';
 
 // Données de test simulant un résultat cadastral avec contribution validée
 const mockCadastralResult = {
@@ -109,6 +110,25 @@ const mockCadastralResult = {
 const mockPaidServices = ['service-1', 'service-2'];
 
 /**
+ * Charge les services depuis la DB pour les tests
+ */
+async function loadServicesFromDB(): Promise<CadastralService[]> {
+  const { data, error } = await supabase
+    .from('cadastral_services_config')
+    .select('*')
+    .eq('is_active', true);
+  
+  if (error) throw error;
+  
+  return (data || []).map(s => ({
+    id: s.service_id,
+    name: s.name,
+    price: Number(s.price_usd),
+    description: s.description || ''
+  }));
+}
+
+/**
  * Test de génération du rapport cadastral
  * Note: Ce test ne peut être exécuté qu'en environnement navigateur
  */
@@ -116,18 +136,20 @@ export async function testCadastralReportGeneration() {
   console.log('🧪 Test de génération du rapport cadastral...');
   
   try {
-    // Vérifier que les services existent
-    if (!CADASTRAL_SERVICES || CADASTRAL_SERVICES.length === 0) {
+    // Charger les services depuis la DB
+    const services = await loadServicesFromDB();
+    
+    if (services.length === 0) {
       throw new Error('Le catalogue de services est vide');
     }
     
-    console.log('✅ Catalogue de services chargé:', CADASTRAL_SERVICES.length, 'services');
+    console.log('✅ Catalogue de services chargé:', services.length, 'services');
     
     // Générer le rapport
     await generateCadastralReport(
       mockCadastralResult,
       mockPaidServices,
-      CADASTRAL_SERVICES,
+      services,
       'TEST_Rapport_Cadastral.pdf'
     );
     
