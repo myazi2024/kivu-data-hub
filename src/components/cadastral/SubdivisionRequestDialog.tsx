@@ -38,7 +38,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
   const [showIntro, setShowIntro] = useState(true);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   
-  const form = useSubdivisionForm(parcelNumber, parcelData);
+  const form = useSubdivisionForm(parcelNumber, parcelData, user);
   
   const handleClose = () => {
     if (form.lots.length > 0 && !form.submitted) {

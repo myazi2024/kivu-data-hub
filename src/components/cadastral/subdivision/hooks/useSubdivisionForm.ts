@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { User } from '@supabase/supabase-js';
 import {
   SubdivisionLot, SubdivisionRoad, SubdivisionCommonSpace, SubdivisionServitude,
   PlanElements, DEFAULT_PLAN_ELEMENTS, ParentParcelInfo, RequesterInfo,
@@ -7,7 +8,7 @@ import {
 } from '../types';
 import { autoSubdivide, generateRoads, validateSubdivision, ValidationResult, gpsToNormalized } from '../utils/geometry';
 
-export function useSubdivisionForm(parcelNumber: string, parcelData?: any) {
+export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authUser?: User | null) {
   // Steps
   const [currentStep, setCurrentStep] = useState<SubdivisionStep>('parcel');
   
@@ -15,10 +16,29 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any) {
   const [parentParcel, setParentParcel] = useState<ParentParcelInfo | null>(null);
   const [loadingParcel, setLoadingParcel] = useState(false);
   
-  // Requester
+  // Requester - auto-populated from auth user
   const [requester, setRequester] = useState<RequesterInfo>({
     firstName: '', lastName: '', phone: '', type: 'owner', isOwner: true,
   });
+  
+  // Auto-fill requester from authenticated user
+  useEffect(() => {
+    if (authUser) {
+      const meta = authUser.user_metadata || {};
+      const fullName = meta.full_name || meta.name || '';
+      const nameParts = fullName.split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
+      setRequester(prev => ({
+        ...prev,
+        firstName: firstName || prev.firstName,
+        lastName: lastName || prev.lastName,
+        phone: authUser.phone || meta.phone || prev.phone,
+        email: authUser.email || prev.email,
+      }));
+    }
+  }, [authUser]);
   
   // Plan data
   const [lots, setLots] = useState<SubdivisionLot[]>([]);
@@ -193,7 +213,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any) {
   const isStepValid = useCallback((step: SubdivisionStep): boolean => {
     switch (step) {
       case 'parcel':
-        return !!(parentParcel && requester.firstName && requester.lastName && requester.phone);
+        return !!(parentParcel);
       case 'designer':
         return lots.length >= 2 && validation.isValid;
       case 'plan':
