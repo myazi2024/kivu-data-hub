@@ -281,7 +281,8 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                 const isSelected = selectedServiceIds.includes(service.id);
                 const isExpanded = expandedServices.has(service.id);
                 const hasData = serviceAvailability[service.id] ?? true;
-                const isDisabled = !hasData;
+                const isAlreadyPaid = alreadyPaidServices.includes(service.id);
+                const isDisabled = !hasData || isAlreadyPaid;
                 
                 return (
                   <div 
