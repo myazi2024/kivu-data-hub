@@ -1,11 +1,11 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
   SubdivisionLot, SubdivisionRoad, SubdivisionCommonSpace, SubdivisionServitude,
   PlanElements, DEFAULT_PLAN_ELEMENTS, ParentParcelInfo, RequesterInfo,
-  SubdivisionStep, AutoSubdivideOptions, SubdivisionPlanData
+  SubdivisionStep, AutoSubdivideOptions, SubdivisionPlanData, Point2D
 } from '../types';
-import { autoSubdivide, generateRoads, validateSubdivision, ValidationResult } from '../utils/geometry';
+import { autoSubdivide, generateRoads, validateSubdivision, ValidationResult, gpsToNormalized } from '../utils/geometry';
 
 export function useSubdivisionForm(parcelNumber: string, parcelData?: any) {
   // Steps
