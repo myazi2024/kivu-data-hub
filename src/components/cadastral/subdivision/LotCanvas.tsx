@@ -7,6 +7,8 @@ interface ParcelSide {
   [key: string]: any;
 }
 
+export type CanvasMode = 'select' | 'cut' | 'drawRoad';
+
 interface LotCanvasProps {
   lots: SubdivisionLot[];
   roads: SubdivisionRoad[];
@@ -23,6 +25,9 @@ interface LotCanvasProps {
   onDeleteRoad?: (id: string) => void;
   onSplitLot?: (id: string) => void;
   onMergeLots?: (ids: string[]) => void;
+  onCutLot?: (lotId: string, cutStart: Point2D, cutEnd: Point2D) => void;
+  onFinishRoadDraw?: (path: Point2D[]) => void;
+  mode?: CanvasMode;
   showGrid?: boolean;
   showDimensions?: boolean;
   showLotNumbers?: boolean;
@@ -42,6 +47,7 @@ const PADDING = 30;
 const LotCanvas: React.FC<LotCanvasProps> = ({
   lots, roads, parentAreaSqm, parentVertices, parentSides, selectedLotId, selectedLotIds = [], onSelectLot, onToggleLotSelection, onUpdateLot,
   selectedRoadId, onSelectRoad, onDeleteRoad, onSplitLot, onMergeLots,
+  onCutLot, onFinishRoadDraw, mode = 'select',
   showGrid = true, showDimensions = true, showLotNumbers = true,
   showAreas = true, showRoads = true, showNorth = true,
   showLegend = false, showScale = true, showOwnerNames = false,
@@ -52,9 +58,25 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   const [splitLotId, setSplitLotId] = useState<string | null>(null);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Cut mode state
+  const [cutPoints, setCutPoints] = useState<Point2D[]>([]);
+  const [cutMousePos, setCutMousePos] = useState<Point2D | null>(null);
+
+  // Draw road mode state
+  const [roadDrawPoints, setRoadDrawPoints] = useState<Point2D[]>([]);
+  const [roadDrawMousePos, setRoadDrawMousePos] = useState<Point2D | null>(null);
+
+  // Reset drawing states when mode changes
+  useEffect(() => {
+    setCutPoints([]);
+    setCutMousePos(null);
+    setRoadDrawPoints([]);
+    setRoadDrawMousePos(null);
+  }, [mode]);
+
   const toScreen = useCallback((p: Point2D) => ({
     x: PADDING + p.x * (CANVAS_W - 2 * PADDING),
-    y: PADDING + (1 - p.y) * (CANVAS_H - 2 * PADDING), // Flip Y
+    y: PADDING + (1 - p.y) * (CANVAS_H - 2 * PADDING),
   }), []);
 
   const fromScreen = useCallback((sx: number, sy: number): Point2D => ({
@@ -75,28 +97,87 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   }, []);
 
   const handleMouseDown = useCallback((lotId: string, vertexIdx: number, e: React.MouseEvent) => {
-    if (readOnly) return;
+    if (readOnly || mode !== 'select') return;
     e.stopPropagation();
     setDraggingVertex({ lotId, vertexIdx });
-  }, [readOnly]);
+  }, [readOnly, mode]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!draggingVertex) return;
     const pos = getMousePos(e);
+
+    if (mode === 'cut' && cutPoints.length === 1) {
+      setCutMousePos({ x: pos.x, y: pos.y });
+    }
+    if (mode === 'drawRoad' && roadDrawPoints.length > 0) {
+      setRoadDrawMousePos({ x: pos.x, y: pos.y });
+    }
+
+    if (!draggingVertex) return;
     const normalized = fromScreen(pos.x, pos.y);
     const lot = lots.find(l => l.id === draggingVertex.lotId);
     if (!lot) return;
     const newVertices = [...lot.vertices];
     newVertices[draggingVertex.vertexIdx] = normalized;
     onUpdateLot(draggingVertex.lotId, newVertices);
-  }, [draggingVertex, lots, getMousePos, fromScreen, onUpdateLot]);
+  }, [draggingVertex, lots, getMousePos, fromScreen, onUpdateLot, mode, cutPoints, roadDrawPoints]);
 
   const handleMouseUp = useCallback(() => {
     setDraggingVertex(null);
   }, []);
 
+  // Canvas click for cut / drawRoad modes
+  const handleCanvasClick = useCallback((e: React.MouseEvent) => {
+    if (readOnly) return;
+    const pos = getMousePos(e);
+    const normalized = fromScreen(pos.x, pos.y);
+
+    if (mode === 'cut') {
+      if (cutPoints.length === 0) {
+        setCutPoints([normalized]);
+        setCutMousePos(null);
+      } else if (cutPoints.length === 1) {
+        // Find which lot is under the cut line
+        const cutStart = cutPoints[0];
+        const cutEnd = normalized;
+        // Find lot that contains the midpoint of the cut line
+        const mid = { x: (cutStart.x + cutEnd.x) / 2, y: (cutStart.y + cutEnd.y) / 2 };
+        const targetLot = lots.find(lot => pointInPolygon(mid, lot.vertices));
+        if (targetLot && onCutLot) {
+          onCutLot(targetLot.id, cutStart, cutEnd);
+        }
+        setCutPoints([]);
+        setCutMousePos(null);
+      }
+      return;
+    }
+
+    if (mode === 'drawRoad') {
+      setRoadDrawPoints(prev => [...prev, normalized]);
+      return;
+    }
+
+    // Default select mode: deselect
+    if (mode === 'select') {
+      onSelectLot(null);
+      onSelectRoad?.(null);
+      setSplitLotId(null);
+    }
+  }, [readOnly, mode, getMousePos, fromScreen, cutPoints, lots, onCutLot, onSelectLot, onSelectRoad]);
+
+  // Double-click to finish road drawing
+  const handleCanvasDoubleClick = useCallback((e: React.MouseEvent) => {
+    if (mode === 'drawRoad' && roadDrawPoints.length >= 2 && onFinishRoadDraw) {
+      e.preventDefault();
+      e.stopPropagation();
+      onFinishRoadDraw(roadDrawPoints);
+      setRoadDrawPoints([]);
+      setRoadDrawMousePos(null);
+    }
+  }, [mode, roadDrawPoints, onFinishRoadDraw]);
+
   const handleLotClick = useCallback((lotId: string, e: React.MouseEvent) => {
-    // Ctrl/Cmd+click for multi-select
+    if (mode !== 'select') return; // Don't handle lot clicks in other modes
+    e.stopPropagation();
     if ((e.ctrlKey || e.metaKey) && onToggleLotSelection) {
       onToggleLotSelection(lotId);
       setSplitLotId(null);
@@ -104,24 +185,24 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     }
     onSelectLot(lotId === selectedLotId ? null : lotId);
     onSelectRoad?.(null);
-  }, [selectedLotId, onSelectLot, onSelectRoad, onToggleLotSelection]);
+  }, [selectedLotId, onSelectLot, onSelectRoad, onToggleLotSelection, mode]);
 
   const handleLotDoubleClick = useCallback((lotId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (readOnly || !onSplitLot) return;
+    if (readOnly || !onSplitLot || mode !== 'select') return;
     onSelectLot(lotId);
     onSelectRoad?.(null);
     setSplitLotId(lotId);
-  }, [readOnly, onSplitLot, onSelectLot, onSelectRoad]);
+  }, [readOnly, onSplitLot, onSelectLot, onSelectRoad, mode]);
 
   const handleLotTouchStart = useCallback((lotId: string) => {
-    if (readOnly || !onSplitLot) return;
+    if (readOnly || !onSplitLot || mode !== 'select') return;
     longPressTimerRef.current = setTimeout(() => {
       onSelectLot(lotId);
       onSelectRoad?.(null);
       setSplitLotId(lotId);
     }, 600);
-  }, [readOnly, onSplitLot, onSelectLot, onSelectRoad]);
+  }, [readOnly, onSplitLot, onSelectLot, onSelectRoad, mode]);
 
   const handleLotTouchEnd = useCallback(() => {
     if (longPressTimerRef.current) {
@@ -130,17 +211,17 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     }
   }, []);
 
-  // Clear split button when selecting another lot or clicking elsewhere
   useEffect(() => {
     if (selectedLotId !== splitLotId) setSplitLotId(null);
   }, [selectedLotId, splitLotId]);
 
   const handleRoadClick = useCallback((roadId: string, e: React.MouseEvent) => {
+    if (mode !== 'select') return;
     e.stopPropagation();
     onSelectRoad?.(roadId === selectedRoadId ? null : roadId);
     onSelectLot(null);
     setSplitLotId(null);
-  }, [selectedRoadId, onSelectRoad, onSelectLot]);
+  }, [selectedRoadId, onSelectRoad, onSelectLot, mode]);
 
   const sideLength = Math.sqrt(parentAreaSqm);
 
@@ -151,15 +232,20 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     return `${Math.round(dist)}m`;
   };
 
+  // Cursor for the SVG based on mode
+  const svgCursor = mode === 'cut' ? 'crosshair' : mode === 'drawRoad' ? 'crosshair' : 'default';
+
   return (
     <svg
       ref={svgRef}
       viewBox={`0 0 ${CANVAS_W} ${CANVAS_H}`}
       className="w-full h-auto bg-white dark:bg-gray-950 rounded-lg"
-      style={{ minHeight: 280 }}
+      style={{ minHeight: 280, cursor: svgCursor }}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
+      onClick={handleCanvasClick}
+      onDoubleClick={handleCanvasDoubleClick}
     >
       {/* Grid */}
       {showGrid && (
@@ -177,7 +263,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         </g>
       )}
 
-      {/* Parent parcel outline — actual shape or fallback rectangle */}
+      {/* Parent parcel outline */}
       {parentVertices && parentVertices.length >= 3 ? (
         <polygon
           points={parentVertices.map(v => {
@@ -287,7 +373,6 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         
         return (
           <g key={road.id}>
-            {/* Invisible wider hit area for easier clicking */}
             <line
               x1={pathPoints[0].x}
               y1={pathPoints[0].y}
@@ -295,10 +380,9 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
               y2={pathPoints[pathPoints.length - 1].y}
               stroke="transparent"
               strokeWidth={Math.max(20, roadWidthPx + 10)}
-              className={readOnly ? '' : 'cursor-pointer'}
+              className={readOnly || mode !== 'select' ? '' : 'cursor-pointer'}
               onClick={e => !readOnly && handleRoadClick(road.id, e)}
             />
-            {/* Visible road line */}
             <line
               x1={pathPoints[0].x}
               y1={pathPoints[0].y}
@@ -309,10 +393,9 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
               strokeLinecap="round"
               strokeDasharray={isExisting ? 'none' : '6 3'}
               opacity={isRoadSelected ? 0.8 : isExisting ? 0.6 : 0.4}
-              className={readOnly ? '' : 'cursor-pointer'}
+              className={readOnly || mode !== 'select' ? '' : 'cursor-pointer'}
               onClick={e => !readOnly && handleRoadClick(road.id, e)}
             />
-            {/* Selection highlight */}
             {isRoadSelected && (
               <line
                 x1={pathPoints[0].x}
@@ -417,13 +500,11 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         const isMultiSelected = selectedLotIds.includes(lot.id);
         const color = lot.color || LOT_COLORS[lot.intendedUse];
 
-        // Centroid for labels
         const cx = screenVertices.reduce((s, p) => s + p.x, 0) / screenVertices.length;
         const cy = screenVertices.reduce((s, p) => s + p.y, 0) / screenVertices.length;
 
         return (
           <g key={lot.id}>
-            {/* Lot polygon */}
             <polygon
               points={pointsStr}
               fill={isMultiSelected ? 'hsl(var(--primary))' : color}
@@ -431,7 +512,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
               stroke={isMultiSelected ? 'hsl(var(--primary))' : isSelected ? 'hsl(var(--primary))' : color}
               strokeWidth={isMultiSelected ? 2.5 : isSelected ? 2.5 : 1.5}
               strokeDasharray={isMultiSelected ? '4 2' : 'none'}
-              className={readOnly ? '' : 'cursor-pointer'}
+              className={readOnly ? '' : mode === 'select' ? 'cursor-pointer' : 'cursor-crosshair'}
               onClick={e => handleLotClick(lot.id, e)}
               onDoubleClick={e => handleLotDoubleClick(lot.id, e)}
               onTouchStart={() => handleLotTouchStart(lot.id)}
@@ -439,7 +520,6 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
               onTouchCancel={handleLotTouchEnd}
             />
 
-            {/* Multi-select checkmark */}
             {isMultiSelected && (
               <g className="pointer-events-none select-none">
                 <circle cx={cx + 30} cy={cy - 20} r={8} fill="hsl(var(--primary))" fillOpacity={0.9} />
@@ -447,7 +527,6 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
               </g>
             )}
 
-            {/* Lot number */}
             {showLotNumbers && (
               <text
                 x={cx}
@@ -463,7 +542,6 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
               </text>
             )}
 
-            {/* Area */}
             {showAreas && (
               <text
                 x={cx}
@@ -478,7 +556,6 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
               </text>
             )}
 
-            {/* Owner name */}
             {showOwnerNames && lot.ownerName && (
               <text
                 x={cx}
@@ -493,7 +570,6 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
               </text>
             )}
 
-            {/* Road-served indicator */}
             {lot.notes?.includes('route existante') && (
               <g className="select-none pointer-events-none">
                 <rect
@@ -523,7 +599,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
             )}
 
             {/* Edge hit targets with resize cursor */}
-            {!readOnly && lot.vertices.map((v, i) => {
+            {!readOnly && mode === 'select' && lot.vertices.map((v, i) => {
               const next = lot.vertices[(i + 1) % lot.vertices.length];
               const sv = toScreen(v);
               const sn = toScreen(next);
@@ -557,7 +633,6 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
               const mx = (sv.x + sn.x) / 2;
               const my = (sv.y + sn.y) / 2;
               const label = getDimensionLabel(v, next);
-              // Offset label outward slightly
               const dx = sn.y - sv.y;
               const dy = sv.x - sn.x;
               const len = Math.sqrt(dx * dx + dy * dy) || 1;
@@ -580,7 +655,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
             })}
 
             {/* Draggable vertices */}
-            {!readOnly && isSelected && screenVertices.map((sv, i) => (
+            {!readOnly && mode === 'select' && isSelected && screenVertices.map((sv, i) => (
               <circle
                 key={i}
                 cx={sv.x}
@@ -595,7 +670,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
             ))}
 
             {/* Split lot button */}
-            {splitLotId === lot.id && !readOnly && onSplitLot && (
+            {splitLotId === lot.id && !readOnly && onSplitLot && mode === 'select' && (
               <g
                 className="cursor-pointer"
                 onClick={e => {
@@ -632,7 +707,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       })}
 
       {/* Merge button when multiple lots selected */}
-      {selectedLotIds.length >= 2 && !readOnly && onMergeLots && (() => {
+      {selectedLotIds.length >= 2 && !readOnly && onMergeLots && mode === 'select' && (() => {
         const selectedLotsData = lots.filter(l => selectedLotIds.includes(l.id));
         const allCentroids = selectedLotsData.map(lot => {
           const sv = lot.vertices.map(v => toScreen(v));
@@ -678,6 +753,118 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         );
       })()}
 
+      {/* Cut line preview */}
+      {mode === 'cut' && cutPoints.length === 1 && cutMousePos && (
+        <g className="pointer-events-none">
+          <line
+            x1={toScreen(cutPoints[0]).x}
+            y1={toScreen(cutPoints[0]).y}
+            x2={cutMousePos.x}
+            y2={cutMousePos.y}
+            stroke="hsl(var(--destructive))"
+            strokeWidth={2}
+            strokeDasharray="6 4"
+            opacity={0.8}
+          />
+          <circle
+            cx={toScreen(cutPoints[0]).x}
+            cy={toScreen(cutPoints[0]).y}
+            r={5}
+            fill="hsl(var(--destructive))"
+            opacity={0.9}
+          />
+          <circle
+            cx={cutMousePos.x}
+            cy={cutMousePos.y}
+            r={4}
+            fill="hsl(var(--destructive))"
+            opacity={0.5}
+          />
+        </g>
+      )}
+      {mode === 'cut' && cutPoints.length === 1 && !cutMousePos && (
+        <circle
+          cx={toScreen(cutPoints[0]).x}
+          cy={toScreen(cutPoints[0]).y}
+          r={5}
+          fill="hsl(var(--destructive))"
+          opacity={0.9}
+          className="pointer-events-none"
+        />
+      )}
+
+      {/* Road drawing preview */}
+      {mode === 'drawRoad' && roadDrawPoints.length > 0 && (
+        <g className="pointer-events-none">
+          {/* Drawn segments */}
+          {roadDrawPoints.map((p, i) => {
+            if (i === 0) return null;
+            const prev = toScreen(roadDrawPoints[i - 1]);
+            const curr = toScreen(p);
+            return (
+              <line
+                key={`road-draw-seg-${i}`}
+                x1={prev.x}
+                y1={prev.y}
+                x2={curr.x}
+                y2={curr.y}
+                stroke="hsl(var(--primary))"
+                strokeWidth={4}
+                strokeLinecap="round"
+                opacity={0.7}
+              />
+            );
+          })}
+          {/* Preview line to mouse */}
+          {roadDrawMousePos && (
+            <line
+              x1={toScreen(roadDrawPoints[roadDrawPoints.length - 1]).x}
+              y1={toScreen(roadDrawPoints[roadDrawPoints.length - 1]).y}
+              x2={roadDrawMousePos.x}
+              y2={roadDrawMousePos.y}
+              stroke="hsl(var(--primary))"
+              strokeWidth={3}
+              strokeLinecap="round"
+              strokeDasharray="6 4"
+              opacity={0.5}
+            />
+          )}
+          {/* Vertices */}
+          {roadDrawPoints.map((p, i) => {
+            const s = toScreen(p);
+            return (
+              <circle
+                key={`road-draw-pt-${i}`}
+                cx={s.x}
+                cy={s.y}
+                r={4}
+                fill="white"
+                stroke="hsl(var(--primary))"
+                strokeWidth={2}
+              />
+            );
+          })}
+        </g>
+      )}
+
+      {/* Mode instruction overlay */}
+      {mode === 'cut' && (
+        <g className="pointer-events-none">
+          <rect x={CANVAS_W / 2 - 120} y={CANVAS_H - 24} width={240} height={20} rx={4} fill="hsl(var(--destructive))" fillOpacity={0.1} />
+          <text x={CANVAS_W / 2} y={CANVAS_H - 14} textAnchor="middle" dominantBaseline="middle" fontSize={9} fill="hsl(var(--destructive))" fontWeight="600">
+            ✂ Cliquez 2 points pour tracer la ligne de découpe
+          </text>
+        </g>
+      )}
+      {mode === 'drawRoad' && (
+        <g className="pointer-events-none">
+          <rect x={CANVAS_W / 2 - 140} y={CANVAS_H - 24} width={280} height={20} rx={4} fill="hsl(var(--primary))" fillOpacity={0.1} />
+          <text x={CANVAS_W / 2} y={CANVAS_H - 14} textAnchor="middle" dominantBaseline="middle" fontSize={9} fill="hsl(var(--primary))" fontWeight="600">
+            🛣 Cliquez pour tracer la voie • Double-clic pour terminer
+          </text>
+        </g>
+      )}
+
       {/* North indicator */}
       {showNorth && (
         <g transform={`translate(${CANVAS_W - 20}, ${PADDING + 15})`}>
@@ -700,5 +887,19 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     </svg>
   );
 };
+
+// Point-in-polygon test (ray casting)
+function pointInPolygon(point: Point2D, polygon: Point2D[]): boolean {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i].x, yi = polygon[i].y;
+    const xj = polygon[j].x, yj = polygon[j].y;
+    if (((yi > point.y) !== (yj > point.y)) &&
+        (point.x < (xj - xi) * (point.y - yi) / (yj - yi) + xi)) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
 
 export default LotCanvas;
