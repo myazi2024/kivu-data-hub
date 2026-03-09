@@ -35,7 +35,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
-import { useCadastralBilling } from '@/hooks/useCadastralBilling';
+import { useCadastralServices } from '@/hooks/useCadastralServices';
+import { TVA_RATE } from '@/constants/billing';
+import { checkMultipleServiceAccess } from '@/utils/checkServiceAccess';
 import { useAuth } from '@/hooks/useAuth';
 import CadastralMap from './CadastralMap';
 import CadastralBillingPanel from './CadastralBillingPanel';
@@ -102,7 +104,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   const [showContributionDialog, setShowContributionDialog] = useState(false);
   const lastScrollYRef = useRef(0);
   const { parcel, ownership_history, tax_history, mortgage_history, boundary_history, building_permits } = result;
-  const { checkServiceAccess } = useCadastralBilling();
+  const { services: catalogServices } = useCadastralServices();
   const { user } = useAuth();
 
   // Logique de scroll pour masquer/afficher l'en-tête
@@ -141,17 +143,16 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   }, []);
 
   // Check user access to different services on mount
+  // Fix #15: Une seule requête batch au lieu de 5 séquentielles
   React.useEffect(() => {
     const checkAllServices = async () => {
       if (!user) return;
       
-      const services = ['information', 'location_history', 'history', 'obligations', 'land_disputes'];
-      const accessPromises = services.map(service => 
-        checkServiceAccess(parcel.parcel_number, service)
+      const paidServicesList = await checkMultipleServiceAccess(
+        user.id,
+        parcel.parcel_number,
+        ['information', 'location_history', 'history', 'obligations', 'land_disputes']
       );
-      
-      const accessResults = await Promise.all(accessPromises);
-      const paidServicesList = services.filter((_, index) => accessResults[index]);
       
       if (paidServicesList.length > 0) {
         setPaidServices(paidServicesList);
@@ -160,7 +161,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
     };
 
     checkAllServices();
-  }, [user, parcel.parcel_number, checkServiceAccess]);
+  }, [user, parcel.parcel_number]);
 
   const handlePaymentSuccess = (services: string[]) => {
     // En mode test: ajouter les nouveaux services aux services déjà payés
@@ -189,63 +190,54 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
     return paidServices.includes(serviceType);
   };
 
-  // Gérer le téléchargement PDF de la facture
+  // Fix #1 & #4: Utilise catalogServices réactifs + localisation dynamique
   const handleDownloadPDF = () => {
-    // Calculer le total correct basé sur les services sélectionnés
-    import('@/hooks/useCadastralBilling').then(({ CADASTRAL_SERVICES }) => {
-      const selectedServicesList = CADASTRAL_SERVICES.filter(s => paidServices.includes(s.id));
-      const subtotal = selectedServicesList.reduce((sum, service) => sum + Number(service.price), 0);
-      
-      // Générer le même numéro de facture que dans l'affichage à l'écran (stable)
-      const parcelId = result.parcel.parcel_number.replace(/[^0-9]/g, '').slice(-4);
-      const stableHash = result.parcel.parcel_number.split('').reduce((a, b) => {
-        a = ((a << 5) - a) + b.charCodeAt(0);
-        return a & a;
-      }, 0);
-      const stableTimestamp = Math.abs(stableHash).toString().slice(-6);
-      const invoiceNumber = `INV-SU-GOMA-${parcelId}-${stableTimestamp}`;
-      
-      // Créer une facture avec les données identiques à l'écran
-      const discountAmount = 0; // Pas de remise pour l'instant
-      const tvaRate = 0.16; // 16% TVA en RDC
-      const netAmount = subtotal - discountAmount;
-      const tvaAmount = netAmount * tvaRate;
-      const total = netAmount + tvaAmount;
-      
-      const invoice = {
-        id: `temp-${Date.now()}`,
-        user_id: user?.id || null,
-        invoice_number: invoiceNumber,
-        parcel_number: result.parcel.parcel_number,
-        selected_services: paidServices,
-        search_date: new Date().toISOString(),
-        total_amount_usd: total, // Total avec TVA
-        status: 'paid',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        client_name: user?.user_metadata?.full_name || null,
-        client_email: user?.email || null,
-        client_organization: user?.user_metadata?.organization || null,
-        geographical_zone: `${result.parcel.commune}, ${result.parcel.quartier}`,
-        discount_amount_usd: discountAmount,
-        original_amount_usd: subtotal,
-        payment_method: 'visa' // Méthode de paiement par défaut
-      };
+    const selectedServicesList = catalogServices.filter(s => paidServices.includes(s.id));
+    const subtotal = selectedServicesList.reduce((sum, service) => sum + Number(service.price), 0);
+    
+    const parcelId = result.parcel.parcel_number.replace(/[^0-9]/g, '').slice(-4);
+    const stableHash = result.parcel.parcel_number.split('').reduce((a: number, b: string) => {
+      a = ((a << 5) - a) + b.charCodeAt(0);
+      return a & a;
+    }, 0);
+    const stableTimestamp = Math.abs(stableHash).toString().slice(-6);
+    const locationCode = (result.parcel.ville || result.parcel.commune || 'RDC').substring(0, 4).toUpperCase();
+    const invoiceNumber = `INV-${result.parcel.parcel_type}-${locationCode}-${parcelId}-${stableTimestamp}`;
+    
+    const discountAmount = 0;
+    const netAmount = subtotal - discountAmount;
+    const tvaAmount = netAmount * TVA_RATE;
+    const total = netAmount + tvaAmount;
+    
+    const invoice = {
+      id: `temp-${Date.now()}`,
+      user_id: user?.id || null,
+      invoice_number: invoiceNumber,
+      parcel_number: result.parcel.parcel_number,
+      selected_services: paidServices,
+      search_date: new Date().toISOString(),
+      total_amount_usd: total,
+      status: 'paid',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      client_name: user?.user_metadata?.full_name || null,
+      client_email: user?.email || null,
+      client_organization: user?.user_metadata?.organization || null,
+      geographical_zone: `${result.parcel.commune}, ${result.parcel.quartier}`,
+      discount_amount_usd: discountAmount,
+      original_amount_usd: subtotal,
+      payment_method: 'visa'
+    };
 
-      // Génère un PDF selon le format sélectionné
-      import('@/lib/pdf').then(({ generateInvoicePDF }) => {
-        generateInvoicePDF(invoice, CADASTRAL_SERVICES, invoiceFormat);
-      });
+    import('@/lib/pdf').then(({ generateInvoicePDF }) => {
+      generateInvoicePDF(invoice, catalogServices, invoiceFormat);
     });
   };
 
-  // Gérer le téléchargement du rapport cadastral complet
+  // Fix #1: Utilise catalogServices réactifs au lieu de la variable globale deprecated
   const handleDownloadReport = () => {
-    // Génère un rapport cadastral PDF A4 complet avec toutes les données
     import('@/lib/pdf').then(({ generateCadastralReport }) => {
-      import('@/hooks/useCadastralBilling').then(({ CADASTRAL_SERVICES }) => {
-        generateCadastralReport(result, paidServices, CADASTRAL_SERVICES);
-      });
+      generateCadastralReport(result, paidServices, catalogServices);
     });
   };
 
@@ -343,6 +335,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
           preselectServiceId={preselectServiceId}
           onClose={onClose}
           onRequestContribution={() => setShowContributionDialog(true)}
+          alreadyPaidServices={paidServices}
         />
         <CadastralContributionDialog
           open={showContributionDialog}
@@ -389,9 +382,9 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
             <Button 
               variant="ghost" 
               size="icon" 
-              onClick={handleDownloadReport}
+              onClick={() => window.print()}
               className="h-8 w-8 hover:bg-primary/10 hover:text-primary transition-all duration-200"
-              title="Imprimer le rapport (génère un PDF identique au téléchargement)"
+              title="Imprimer le rapport"
             >
               <Printer className="h-4 w-4" />
             </Button>

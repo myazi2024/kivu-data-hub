@@ -12,6 +12,7 @@ export interface CadastralService {
 /**
  * Hook réactif pour gérer le catalogue de services cadastraux
  * avec synchronisation en temps réel via Supabase Realtime
+ * Fix #13: Ajout du callback d'erreur sur subscribe()
  */
 export const useCadastralServices = () => {
   const [services, setServices] = useState<CadastralService[]>([]);
@@ -48,26 +49,21 @@ export const useCadastralServices = () => {
   };
 
   useEffect(() => {
-    // Chargement initial
     loadServices();
 
-    // Configuration du canal Realtime pour les mises à jour en temps réel
     const channel = supabase
       .channel('cadastral-services-changes')
       .on(
         'postgres_changes',
         {
-          event: '*', // Écoute INSERT, UPDATE, DELETE
+          event: '*',
           schema: 'public',
           table: 'cadastral_services_config'
         },
         (payload) => {
           console.log('📡 Changement détecté dans cadastral_services_config:', payload);
-          
-          // Rechargement des services après tout changement
           loadServices();
 
-          // Notification visuelle pour l'utilisateur
           if (payload.eventType === 'INSERT') {
             toast.success('Un nouveau service a été ajouté au catalogue', {
               description: 'Le catalogue a été mis à jour automatiquement'
@@ -83,9 +79,16 @@ export const useCadastralServices = () => {
           }
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (err) {
+          console.error('❌ Erreur Realtime cadastral_services_config:', err);
+        }
+        if (status === 'CHANNEL_ERROR') {
+          console.warn('⚠️ Canal Realtime en erreur, rechargement des services...');
+          loadServices();
+        }
+      });
 
-    // Nettoyage à la désinscription
     return () => {
       supabase.removeChannel(channel);
     };

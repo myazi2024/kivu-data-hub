@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { CookieManager } from '@/lib/cookies';
 
 export interface CadastralCartService {
@@ -27,7 +27,7 @@ const CadastralCartContext = createContext<CadastralCartContextType | undefined>
 
 export const CadastralCartProvider = ({ children }: { children: ReactNode }) => {
   const [selectedServices, setSelectedServices] = useState<CadastralCartService[]>([]);
-  const [parcelNumber, setParcelNumber] = useState<string | null>(null);
+  const [parcelNumber, setParcelNumberState] = useState<string | null>(null);
 
   const getConsentStatus = (): boolean | null => {
     const consent = CookieManager.get('bic-consent');
@@ -43,7 +43,7 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
       if (savedCart) {
         const parsed = JSON.parse(savedCart);
         setSelectedServices(parsed.services || []);
-        setParcelNumber(parsed.parcelNumber || null);
+        setParcelNumberState(parsed.parcelNumber || null);
       }
     } catch (error) {
       console.error('Error loading cadastral cart:', error);
@@ -65,6 +65,16 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
       console.warn('localStorage unavailable:', error);
     }
   }, [selectedServices, parcelNumber]);
+
+  // Fix #11: Vider le panier quand la parcelle change
+  const setParcelNumber = useCallback((newParcelNumber: string) => {
+    setParcelNumberState(prev => {
+      if (prev && prev !== newParcelNumber) {
+        setSelectedServices([]);
+      }
+      return newParcelNumber;
+    });
+  }, []);
 
   const addService = (service: CadastralCartService) => {
     setSelectedServices(prev => {
@@ -90,7 +100,7 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
 
   const clearServices = () => {
     setSelectedServices([]);
-    setParcelNumber(null);
+    setParcelNumberState(null);
   };
 
   const getTotalAmount = () => selectedServices.reduce((total, s) => total + s.price, 0);

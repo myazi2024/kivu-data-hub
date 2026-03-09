@@ -13,7 +13,8 @@ import {
   Building2,
   ChevronDown,
   ChevronRight,
-  Info
+  Info,
+  Scale
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,7 @@ import { useToast } from '@/hooks/use-toast';
 import { usePaymentConfig } from '@/hooks/usePaymentConfig';
 import CadastralPaymentDialog from './CadastralPaymentDialog';
 import DiscountCodeInput from './DiscountCodeInput';
+import { TVA_RATE } from '@/constants/billing';
 
 interface CadastralBillingPanelProps {
   searchResult: CadastralSearchResult;
@@ -37,6 +39,7 @@ interface CadastralBillingPanelProps {
   preselectServiceId?: string;
   onClose?: () => void;
   onRequestContribution?: () => void;
+  alreadyPaidServices?: string[];
 }
 
 const getServiceDataAvailability = (searchResult: CadastralSearchResult) => {
@@ -58,8 +61,9 @@ const getServiceDataAvailability = (searchResult: CadastralSearchResult) => {
     'information': hasInformation,
     'location_history': hasLocationHistory,
     'history': hasHistory,
-    'obligations': hasObligations
-  };
+    'obligations': hasObligations,
+    'land_disputes': true
+  } as Record<string, boolean>;
 };
 
 const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({ 
@@ -67,7 +71,8 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   onPaymentSuccess,
   preselectServiceId,
   onClose,
-  onRequestContribution
+  onRequestContribution,
+  alreadyPaidServices = []
 }) => {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [currentInvoice, setCurrentInvoice] = useState<any>(null);
@@ -193,13 +198,15 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   };
 
   const getServiceIcon = (serviceId: string) => {
-    const iconMap = {
+    const iconMap: Record<string, any> = {
       'information': FileText,
       'location_history': MapPin,
       'history': History,
-      'legal_verification': Shield
+      'legal_verification': Shield,
+      'obligations': Receipt,
+      'land_disputes': Scale
     };
-    return iconMap[serviceId as keyof typeof iconMap] || Building2;
+    return iconMap[serviceId] || Building2;
   };
 
   const totalAmount = getTotalAmount();
@@ -243,9 +250,9 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             <div className="flex items-center justify-between p-2 bg-muted/30 rounded-xl border border-dashed">
               <div className="flex items-center gap-2">
                 <Checkbox 
-                  checked={selectedServiceIds.length === catalogServices.filter(s => serviceAvailability[s.id] ?? true).length && selectedServiceIds.length > 0}
+                  checked={selectedServiceIds.length === catalogServices.filter(s => (serviceAvailability[s.id] ?? true) && !alreadyPaidServices.includes(s.id)).length && selectedServiceIds.length > 0}
                   onCheckedChange={(checked) => {
-                    const availableServices = catalogServices.filter(s => serviceAvailability[s.id] ?? true);
+                    const availableServices = catalogServices.filter(s => (serviceAvailability[s.id] ?? true) && !alreadyPaidServices.includes(s.id));
                     if (checked) {
                       availableServices.forEach(service => {
                         if (!selectedServiceIds.includes(service.id)) {
@@ -263,7 +270,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                 <span className="text-xs font-medium">Tout sélectionner</span>
               </div>
               <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
-                {catalogServices.filter(s => serviceAvailability[s.id] ?? true).length} dispo.
+                {catalogServices.filter(s => (serviceAvailability[s.id] ?? true) && !alreadyPaidServices.includes(s.id)).length} dispo.
               </Badge>
             </div>
             
@@ -274,7 +281,8 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                 const isSelected = selectedServiceIds.includes(service.id);
                 const isExpanded = expandedServices.has(service.id);
                 const hasData = serviceAvailability[service.id] ?? true;
-                const isDisabled = !hasData;
+                const isAlreadyPaid = alreadyPaidServices.includes(service.id);
+                const isDisabled = !hasData || isAlreadyPaid;
                 
                 return (
                   <div 
@@ -319,9 +327,11 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                         `}>
                           {service.name}
                         </h4>
-                        {isDisabled && (
+                        {isAlreadyPaid ? (
+                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">✓ Déjà acheté</span>
+                        ) : !hasData ? (
                           <span className="text-[10px] text-muted-foreground/60">Données manquantes</span>
-                        )}
+                        ) : null}
                       </div>
 
                       <Button
@@ -397,16 +407,18 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             <div className="space-y-2">
               <div className="space-y-1 px-2.5 py-2 bg-muted/20 rounded-xl text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Sous-total</span>
-                  <span className="font-medium">
-                    ${(appliedDiscount ? Math.max(0, totalAmount - appliedDiscount.amount) : totalAmount).toFixed(2)}
-                  </span>
+                  <span className="text-muted-foreground">Sous-total ({selectedServiceIds.length} service{selectedServiceIds.length > 1 ? 's' : ''})</span>
+                  <span className="font-medium">${totalAmount.toFixed(2)}</span>
                 </div>
+                {appliedDiscount && (
+                  <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400">
+                    <span>Remise ({appliedDiscount.code})</span>
+                    <span>-${appliedDiscount.amount.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between text-muted-foreground">
-                  <span>TVA (16%)</span>
-                  <span>
-                    ${((appliedDiscount ? Math.max(0, totalAmount - appliedDiscount.amount) : totalAmount) * 0.16).toFixed(2)}
-                  </span>
+                  <span>{`TVA (${(TVA_RATE * 100).toFixed(0)}%)`}</span>
+                  <span>${(discountedAmount * TVA_RATE).toFixed(2)}</span>
                 </div>
               </div>
               
@@ -414,7 +426,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                 <span className="text-sm font-semibold">Total</span>
                 <div className="text-right">
                   <div className="text-lg font-bold text-primary">
-                    ${((appliedDiscount ? Math.max(0, totalAmount - appliedDiscount.amount) : totalAmount) * 1.16).toFixed(2)} USD
+                    ${(discountedAmount * (1 + TVA_RATE)).toFixed(2)} USD
                   </div>
                   {appliedDiscount && (
                     <div className="text-[10px] text-green-600 dark:text-green-400">
