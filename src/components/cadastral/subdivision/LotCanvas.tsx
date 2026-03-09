@@ -229,6 +229,8 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         if (road.path.length < 2) return null;
         const pathPoints = road.path.map(p => toScreen(p));
         const roadWidthPx = (road.widthM / sideLength) * (CANVAS_W - 2 * PADDING);
+        const isExisting = (road as any).isExisting;
+        
         return (
           <g key={road.id}>
             <line
@@ -236,21 +238,52 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
               y1={pathPoints[0].y}
               x2={pathPoints[pathPoints.length - 1].x}
               y2={pathPoints[pathPoints.length - 1].y}
-              stroke="#9ca3af"
-              strokeWidth={Math.max(4, roadWidthPx)}
+              stroke={isExisting ? '#92400e' : '#9ca3af'}
+              strokeWidth={Math.max(isExisting ? 6 : 4, roadWidthPx)}
               strokeLinecap="round"
-              opacity={0.4}
+              strokeDasharray={isExisting ? 'none' : '6 3'}
+              opacity={isExisting ? 0.6 : 0.4}
             />
             {/* Road label */}
-            <text
-              x={(pathPoints[0].x + pathPoints[pathPoints.length - 1].x) / 2}
-              y={(pathPoints[0].y + pathPoints[pathPoints.length - 1].y) / 2 - 6}
-              textAnchor="middle"
-              fontSize={8}
-              fill="#6b7280"
-            >
-              {road.name} ({road.widthM}m)
-            </text>
+            {(() => {
+              const mx = (pathPoints[0].x + pathPoints[pathPoints.length - 1].x) / 2;
+              const my = (pathPoints[0].y + pathPoints[pathPoints.length - 1].y) / 2;
+              // Offset label outward from the edge
+              const dx = pathPoints[pathPoints.length - 1].y - pathPoints[0].y;
+              const dy = pathPoints[0].x - pathPoints[pathPoints.length - 1].x;
+              const len = Math.sqrt(dx * dx + dy * dy) || 1;
+              const off = isExisting ? 14 : 8;
+              const ox = (dx / len) * off;
+              const oy = (dy / len) * off;
+              
+              return (
+                <g>
+                  <rect
+                    x={mx + ox - 35}
+                    y={my + oy - 7}
+                    width={70}
+                    height={14}
+                    rx={3}
+                    fill={isExisting ? 'hsl(30, 70%, 95%)' : 'hsl(var(--background))'}
+                    fillOpacity={0.9}
+                    stroke={isExisting ? '#92400e' : '#9ca3af'}
+                    strokeWidth={0.5}
+                    strokeOpacity={0.5}
+                  />
+                  <text
+                    x={mx + ox}
+                    y={my + oy}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize={7}
+                    fontWeight={isExisting ? 'bold' : 'normal'}
+                    fill={isExisting ? '#92400e' : '#6b7280'}
+                  >
+                    {road.name} ({road.widthM}m)
+                  </text>
+                </g>
+              );
+            })()}
           </g>
         );
       })}
