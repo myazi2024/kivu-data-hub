@@ -179,6 +179,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 lots={lots}
                 roads={roads}
                 parentAreaSqm={parentArea}
+                parentVertices={parentVertices}
                 selectedLotId={selectedLotId}
                 onSelectLot={setSelectedLotId}
                 onUpdateLot={(id, vertices) => {
