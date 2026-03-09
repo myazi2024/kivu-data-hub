@@ -71,7 +71,8 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   onPaymentSuccess,
   preselectServiceId,
   onClose,
-  onRequestContribution
+  onRequestContribution,
+  alreadyPaidServices = []
 }) => {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [currentInvoice, setCurrentInvoice] = useState<any>(null);
