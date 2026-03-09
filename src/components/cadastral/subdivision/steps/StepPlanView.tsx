@@ -15,6 +15,7 @@ import LotCanvas from '../LotCanvas';
 interface StepPlanViewProps {
   parentParcel: ParentParcelInfo | null;
   parentVertices?: Point2D[];
+  parentSides?: any[];
   lots: SubdivisionLot[];
   roads: SubdivisionRoad[];
   commonSpaces: SubdivisionCommonSpace[];
@@ -36,7 +37,7 @@ const ELEMENT_TOGGLES: { key: keyof PlanElements; label: string; icon: React.Rea
 ];
 
 const StepPlanView: React.FC<StepPlanViewProps> = ({
-  parentParcel, parentVertices, lots, roads, commonSpaces, servitudes, planElements, onPlanElementsChange
+  parentParcel, parentVertices, parentSides, lots, roads, commonSpaces, servitudes, planElements, onPlanElementsChange
 }) => {
   const handleToggle = (key: keyof PlanElements) => {
     onPlanElementsChange({ ...planElements, [key]: !planElements[key] });
@@ -89,6 +90,7 @@ const StepPlanView: React.FC<StepPlanViewProps> = ({
                 roads={roads}
                 parentAreaSqm={parentParcel?.areaSqm || 0}
                 parentVertices={parentVertices}
+                parentSides={parentSides}
                 selectedLotId={null}
                 onSelectLot={() => {}}
                 onUpdateLot={() => {}}

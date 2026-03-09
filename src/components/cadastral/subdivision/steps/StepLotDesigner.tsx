@@ -18,6 +18,7 @@ import LotCanvas from '../LotCanvas';
 interface StepLotDesignerProps {
   parentParcel: ParentParcelInfo | null;
   parentVertices?: Point2D[];
+  parentSides?: any[];
   lots: SubdivisionLot[];
   setLots: (lots: SubdivisionLot[]) => void;
   roads: SubdivisionRoad[];
@@ -31,7 +32,7 @@ interface StepLotDesignerProps {
 }
 
 const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
-  parentParcel, parentVertices, lots, setLots, roads, setRoads,
+  parentParcel, parentVertices, parentSides, lots, setLots, roads, setRoads,
   onAutoSubdivide, validation, canUndo, canRedo, onUndo, onRedo
 }) => {
   const [numberOfLots, setNumberOfLots] = useState(4);
@@ -180,6 +181,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 roads={roads}
                 parentAreaSqm={parentArea}
                 parentVertices={parentVertices}
+                parentSides={parentSides}
                 selectedLotId={selectedLotId}
                 onSelectLot={setSelectedLotId}
                 onUpdateLot={(id, vertices) => {
