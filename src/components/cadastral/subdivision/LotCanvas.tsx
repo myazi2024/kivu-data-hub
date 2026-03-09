@@ -126,6 +126,13 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     if (selectedLotId !== splitLotId) setSplitLotId(null);
   }, [selectedLotId, splitLotId]);
 
+  const handleRoadClick = useCallback((roadId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSelectRoad?.(roadId === selectedRoadId ? null : roadId);
+    onSelectLot(null);
+    setSplitLotId(null);
+  }, [selectedRoadId, onSelectRoad, onSelectLot]);
+
   const sideLength = Math.sqrt(parentAreaSqm);
 
   const getDimensionLabel = (p1: Point2D, p2: Point2D): string => {
