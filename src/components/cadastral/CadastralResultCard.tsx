@@ -224,60 +224,54 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
     return paidServices.includes(serviceType);
   };
 
-  // Fix #3: Utiliser le vrai invoice_number de la DB si disponible au lieu de fabriquer un faux
+  // Fix: Utiliser les données réelles de la facture DB au lieu de recalculer localement
   const handleDownloadPDF = () => {
-    const selectedServicesList = catalogServices.filter(s => paidServices.includes(s.id));
-    const subtotal = selectedServicesList.reduce((sum, service) => sum + Number(service.price), 0);
-    
-    const discountAmount = 0;
-    const netAmount = subtotal - discountAmount;
-    const tvaAmount = netAmount * TVA_RATE;
-    const total = netAmount + tvaAmount;
-    
-    // Chercher la facture réelle en DB pour récupérer le vrai invoice_number
     const fetchAndGeneratePDF = async () => {
-      let invoiceNumber = `TEMP-${Date.now()}`;
-      
       try {
         const { data: dbInvoice } = await supabase
           .from('cadastral_invoices')
-          .select('invoice_number')
+          .select('*')
           .eq('parcel_number', result.parcel.parcel_number)
           .eq('user_id', user?.id || '')
           .eq('status', 'paid')
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
-        
-        if (dbInvoice?.invoice_number) {
-          invoiceNumber = dbInvoice.invoice_number;
+
+        if (!dbInvoice) {
+          console.warn('No paid invoice found in DB, generating with local data');
+          return;
         }
+
+        const invoice = {
+          id: dbInvoice.id,
+          user_id: dbInvoice.user_id,
+          invoice_number: dbInvoice.invoice_number,
+          parcel_number: dbInvoice.parcel_number,
+          selected_services: Array.isArray(dbInvoice.selected_services) 
+            ? dbInvoice.selected_services as string[]
+            : typeof dbInvoice.selected_services === 'string' 
+              ? JSON.parse(dbInvoice.selected_services as string) 
+              : [],
+          search_date: dbInvoice.search_date || dbInvoice.created_at,
+          total_amount_usd: Number(dbInvoice.total_amount_usd),
+          status: dbInvoice.status,
+          created_at: dbInvoice.created_at,
+          updated_at: dbInvoice.updated_at,
+          client_name: dbInvoice.client_name,
+          client_email: dbInvoice.client_email,
+          client_organization: dbInvoice.client_organization || null,
+          geographical_zone: dbInvoice.geographical_zone || `${result.parcel.commune}, ${result.parcel.quartier}`,
+          discount_amount_usd: Number(dbInvoice.discount_amount_usd || 0),
+          original_amount_usd: Number(dbInvoice.original_amount_usd || dbInvoice.total_amount_usd),
+          payment_method: dbInvoice.payment_method
+        };
+
+        const { generateInvoicePDF } = await import('@/lib/pdf');
+        generateInvoicePDF(invoice, catalogServices, invoiceFormat);
       } catch (e) {
-        console.warn('Could not fetch invoice number from DB:', e);
+        console.error('Error generating PDF from DB invoice:', e);
       }
-
-      const invoice = {
-        id: `pdf-${Date.now()}`,
-        user_id: user?.id || null,
-        invoice_number: invoiceNumber,
-        parcel_number: result.parcel.parcel_number,
-        selected_services: paidServices,
-        search_date: new Date().toISOString(),
-        total_amount_usd: total,
-        status: 'paid',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        client_name: user?.user_metadata?.full_name || null,
-        client_email: user?.email || null,
-        client_organization: user?.user_metadata?.organization || null,
-        geographical_zone: `${result.parcel.commune}, ${result.parcel.quartier}`,
-        discount_amount_usd: discountAmount,
-        original_amount_usd: subtotal,
-        payment_method: null
-      };
-
-      const { generateInvoicePDF } = await import('@/lib/pdf');
-      generateInvoicePDF(invoice, catalogServices, invoiceFormat);
     };
     
     fetchAndGeneratePDF();
