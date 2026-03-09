@@ -12,7 +12,7 @@ import {
   Grid3X3, ArrowLeftRight, ArrowUpDown, Info, Settings2, Route
 } from 'lucide-react';
 import { SubdivisionLot, SubdivisionRoad, AutoSubdivideOptions, ParentParcelInfo, LOT_COLORS, USAGE_LABELS, ROAD_SURFACE_LABELS, Point2D } from '../types';
-import { ValidationResult } from '../utils/geometry';
+import { ValidationResult, mergeLotsThroughDeletedRoad } from '../utils/geometry';
 import LotCanvas from '../LotCanvas';
 
 interface StepLotDesignerProps {
@@ -71,9 +71,15 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   }, [roads, setRoads, parentVertices]);
 
   const handleDeleteRoad = useCallback((roadId: string) => {
+    const road = roads.find(r => r.id === roadId);
+    if (road) {
+      const parentArea = parentParcel?.areaSqm || 0;
+      const mergedLots = mergeLotsThroughDeletedRoad(road, lots, parentArea, parentVertices);
+      setLots(mergedLots);
+    }
     setRoads(roads.filter(r => r.id !== roadId));
     if (editingRoadId === roadId) setEditingRoadId(null);
-  }, [roads, setRoads, editingRoadId]);
+  }, [roads, setRoads, editingRoadId, lots, setLots, parentParcel, parentVertices]);
 
   const updateRoad = useCallback((roadId: string, updates: Partial<SubdivisionRoad>) => {
     setRoads(roads.map(r => r.id === roadId ? { ...r, ...updates } : r));
