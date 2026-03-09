@@ -437,7 +437,7 @@ export const ParcelMapPreview = ({
         zoomControl: false,
         attributionControl: true,
         center: mapCenter,
-        zoom: mapConfig.defaultZoom || 15,
+        zoom: 19,
       });
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -486,7 +486,7 @@ export const ParcelMapPreview = ({
             // Centrer la carte sur la position de l'utilisateur
             map.setView([latitude, longitude], 18);
             
-            // Nettoyer les anciens marqueurs de position
+        9   // Nettoyer les ancie9s marqueurs de position
             userLocationLayersRef.current.forEach(layer => {
               try {
                 if (map.hasLayer(layer)) map.removeLayer(layer);
@@ -1005,7 +1005,7 @@ export const ParcelMapPreview = ({
           }
         } else if (latLngs.length > 0) {
           if (shouldAutoCenter) {
-            map.setView(latLngs[0], mapConfig.defaultZoom || 15);
+            map.setView(latLngs[0], 19);
           }
           setSurfaceArea(0);
           setPerimeterLength(0);
