@@ -445,7 +445,7 @@ const CadastralMap = () => {
     if (mapInstanceRef.current && parcel.latitude && parcel.longitude) {
       const L = (window as any).L;
       if (L) {
-        mapInstanceRef.current.setView([parcel.latitude, parcel.longitude], 16);
+        mapInstanceRef.current.setView([parcel.latitude, parcel.longitude], 19);
       }
     }
   };
