@@ -2108,9 +2108,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     // Use centralized labels (no local duplicate)
 
     return (
-      <div className="flex flex-col" style={{ maxHeight: isMobile ? '75vh' : '70vh' }}>
+      <div className="space-y-2">
         {/* En-tête compact */}
-        <div className="shrink-0 space-y-2 pb-2">
+        <div className="space-y-2 pb-2">
           <div className="bg-gradient-to-br from-primary/15 to-primary/5 rounded-xl p-2.5 border border-primary/20">
             <div className="flex items-center gap-2">
               <div className="h-8 w-8 bg-primary/20 rounded-lg flex items-center justify-center shrink-0">
@@ -2198,9 +2198,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
           )}
         </div>
 
-        {/* Contenu scrollable */}
-        <ScrollArea className="flex-1 min-h-0">
-          <div className="space-y-2 pr-3 pb-4">
+        {/* Contenu */}
+          <div className="space-y-2 pb-4">
             {/* Section Parcelle */}
             <Card className="rounded-xl border-border/50 shadow-sm">
               <CardContent className="p-3 space-y-2">
@@ -2634,10 +2633,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
               </CardContent>
             </Card>
           </div>
-        </ScrollArea>
 
-        {/* Pied fixe compact */}
-        <div className="shrink-0 pt-2 space-y-2 border-t border-border/50 mt-1">
+        {/* Pied */}
+        <div className="pt-2 space-y-2 border-t border-border/50 mt-1">
           {/* Montant total */}
           <div className="flex items-center justify-between px-2 py-1.5 bg-primary/5 rounded-lg border border-primary/20">
             <div className="flex items-center gap-1.5">
