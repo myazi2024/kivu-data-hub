@@ -556,6 +556,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       sound_environment: soundEnvironment,
       nearby_noise_sources: nearbyNoiseSources.length > 0 ? nearbyNoiseSources.join(', ') : undefined,
       has_double_glazing: hasDoubleGlazing,
+      internet_provider: hasInternet && internetProvider ? internetProvider : undefined,
       has_pool: hasPool,
       has_air_conditioning: hasAirConditioning,
       has_solar_panels: hasSolarPanels,
