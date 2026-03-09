@@ -201,6 +201,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const [hasElectricity, setHasElectricity] = useState(false);
   const [hasSewageSystem, setHasSewageSystem] = useState(false);
   const [hasInternet, setHasInternet] = useState(false);
+  const [internetProvider, setInternetProvider] = useState('');
   const [hasSecuritySystem, setHasSecuritySystem] = useState(false);
   const [hasParking, setHasParking] = useState(false);
   const [parkingSpaces, setParkingSpaces] = useState('');
@@ -555,6 +556,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       sound_environment: soundEnvironment,
       nearby_noise_sources: nearbyNoiseSources.length > 0 ? nearbyNoiseSources.join(', ') : undefined,
       has_double_glazing: hasDoubleGlazing,
+      internet_provider: hasInternet && internetProvider ? internetProvider : undefined,
       has_pool: hasPool,
       has_air_conditioning: hasAirConditioning,
       has_solar_panels: hasSolarPanels,
@@ -842,6 +844,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setHasElectricity(false);
     setHasSewageSystem(false);
     setHasInternet(false);
+    setInternetProvider('');
     setHasSecuritySystem(false);
     setHasParking(false);
     setParkingSpaces('');
@@ -1271,12 +1274,36 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                       Assainissement
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
-                    <Checkbox checked={hasInternet} onCheckedChange={(c) => setHasInternet(c === true)} />
-                    <div className="flex items-center gap-1.5 text-sm">
-                      <Wifi className="h-3.5 w-3.5 text-green-500" />
-                      Internet
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
+                      <Checkbox checked={hasInternet} onCheckedChange={(c) => {
+                        setHasInternet(c === true);
+                        if (c !== true) setInternetProvider('');
+                      }} />
+                      <div className="flex items-center gap-1.5 text-sm">
+                        <Wifi className="h-3.5 w-3.5 text-green-500" />
+                        Internet
+                      </div>
                     </div>
+                    {hasInternet && (
+                      <div className="ml-8">
+                        <Select value={internetProvider} onValueChange={setInternetProvider}>
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue placeholder="Fournisseur d'accès internet" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="canalbox">Canalbox</SelectItem>
+                            <SelectItem value="starlink">Starlink</SelectItem>
+                            <SelectItem value="vodacom">Vodacom</SelectItem>
+                            <SelectItem value="airtel">Airtel</SelectItem>
+                            <SelectItem value="orange">Orange</SelectItem>
+                            <SelectItem value="vsat">V-Sat</SelectItem>
+                            <SelectItem value="microcom">Microcom</SelectItem>
+                            <SelectItem value="autre">Autre</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
                     <Checkbox checked={hasSecuritySystem} onCheckedChange={(c) => setHasSecuritySystem(c === true)} />
@@ -2075,7 +2102,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       hasWaterSupply && 'Eau courante',
       hasElectricity && 'Électricité',
       hasSewageSystem && 'Assainissement',
-      hasInternet && 'Internet',
+      hasInternet && `Internet${internetProvider ? ` (${internetProvider === 'vsat' ? 'V-Sat' : internetProvider.charAt(0).toUpperCase() + internetProvider.slice(1)})` : ''}`,
       hasSecuritySystem && 'Système de sécurité',
       hasParking && `Parking${parkingSpaces ? ` (${parkingSpaces} places)` : ''}`,
       hasGarden && `Jardin${gardenAreaSqm ? ` (${gardenAreaSqm} m²)` : ''}`,
