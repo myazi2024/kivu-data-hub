@@ -88,6 +88,7 @@ const StepPlanView: React.FC<StepPlanViewProps> = ({
                 lots={lots}
                 roads={roads}
                 parentAreaSqm={parentParcel?.areaSqm || 0}
+                parentVertices={parentVertices}
                 selectedLotId={null}
                 onSelectLot={() => {}}
                 onUpdateLot={() => {}}
