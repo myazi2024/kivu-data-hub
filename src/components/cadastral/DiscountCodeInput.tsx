@@ -217,7 +217,7 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
   }
 
   return (
-    <div className={`space-y-4 p-4 border border-dashed border-primary/30 rounded-lg ${className}`}>
+    <div ref={containerRef} className={`space-y-4 p-4 border border-dashed border-primary/30 rounded-lg ${className}`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Tag className="h-4 w-4 text-muted-foreground" />

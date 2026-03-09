@@ -497,8 +497,9 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
           </TabsList>
 
           {/* Contenu masqué - Design premium */}
+          {/* Fix #8: Inclure land_disputes dans la vérification du bloc Premium */}
           {!hasServiceAccess('information') && !hasServiceAccess('location_history') && 
-           !hasServiceAccess('history') && !hasServiceAccess('obligations') && (
+           !hasServiceAccess('history') && !hasServiceAccess('obligations') && !hasServiceAccess('land_disputes') && (
             <div className="mt-4 p-6 text-center border-2 border-dashed border-primary/20 rounded-xl bg-gradient-to-br from-primary/5 to-secondary/5 shadow-lg">
               <div className="space-y-4 animate-fade-in">
                 <div className="mx-auto w-16 h-16 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl flex items-center justify-center shadow-md">
