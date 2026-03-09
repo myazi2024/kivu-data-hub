@@ -15,6 +15,7 @@ import LotCanvas from '../LotCanvas';
 interface StepPlanViewProps {
   parentParcel: ParentParcelInfo | null;
   parentVertices?: Point2D[];
+  parentSides?: any[];
   lots: SubdivisionLot[];
   roads: SubdivisionRoad[];
   commonSpaces: SubdivisionCommonSpace[];

@@ -163,6 +163,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
               <StepPlanView
                 parentParcel={form.parentParcel}
                 parentVertices={form.parentVertices}
+                parentSides={form.parentParcel?.parcelSides}
                 lots={form.lots}
                 roads={form.roads}
                 commonSpaces={form.commonSpaces}
