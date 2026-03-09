@@ -407,16 +407,18 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             <div className="space-y-2">
               <div className="space-y-1 px-2.5 py-2 bg-muted/20 rounded-xl text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Sous-total</span>
-                  <span className="font-medium">
-                    ${(appliedDiscount ? Math.max(0, totalAmount - appliedDiscount.amount) : totalAmount).toFixed(2)}
-                  </span>
+                  <span className="text-muted-foreground">Sous-total ({selectedServiceIds.length} service{selectedServiceIds.length > 1 ? 's' : ''})</span>
+                  <span className="font-medium">${totalAmount.toFixed(2)}</span>
                 </div>
+                {appliedDiscount && (
+                  <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400">
+                    <span>Remise ({appliedDiscount.code})</span>
+                    <span>-${appliedDiscount.amount.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between text-muted-foreground">
-                  <span>TVA (16%)</span>
-                  <span>
-                    ${((appliedDiscount ? Math.max(0, totalAmount - appliedDiscount.amount) : totalAmount) * 0.16).toFixed(2)}
-                  </span>
+                  <span>{`TVA (${(TVA_RATE * 100).toFixed(0)}%)`}</span>
+                  <span>${(discountedAmount * TVA_RATE).toFixed(2)}</span>
                 </div>
               </div>
               
@@ -424,7 +426,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                 <span className="text-sm font-semibold">Total</span>
                 <div className="text-right">
                   <div className="text-lg font-bold text-primary">
-                    ${((appliedDiscount ? Math.max(0, totalAmount - appliedDiscount.amount) : totalAmount) * 1.16).toFixed(2)} USD
+                    ${(discountedAmount * (1 + TVA_RATE)).toFixed(2)} USD
                   </div>
                   {appliedDiscount && (
                     <div className="text-[10px] text-green-600 dark:text-green-400">
