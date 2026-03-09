@@ -201,6 +201,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const [hasElectricity, setHasElectricity] = useState(false);
   const [hasSewageSystem, setHasSewageSystem] = useState(false);
   const [hasInternet, setHasInternet] = useState(false);
+  const [internetProvider, setInternetProvider] = useState('');
   const [hasSecuritySystem, setHasSecuritySystem] = useState(false);
   const [hasParking, setHasParking] = useState(false);
   const [parkingSpaces, setParkingSpaces] = useState('');
