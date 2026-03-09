@@ -527,7 +527,6 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
               const next = lot.vertices[(i + 1) % lot.vertices.length];
               const sv = toScreen(v);
               const sn = toScreen(next);
-              // Determine cursor direction based on edge angle
               const angle = Math.atan2(sn.y - sv.y, sn.x - sv.x) * (180 / Math.PI);
               const normalizedAngle = ((angle % 180) + 180) % 180;
               let cursorStyle = 'ew-resize';
@@ -541,10 +540,11 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                   y1={sv.y}
                   x2={sn.x}
                   y2={sn.y}
-                  stroke="transparent"
-                  strokeWidth={12}
+                  stroke="rgba(0,0,0,0.001)"
+                  strokeWidth={14}
+                  strokeLinecap="round"
+                  pointerEvents="stroke"
                   style={{ cursor: cursorStyle }}
-                  className="pointer-events-auto"
                 />
               );
             })}
