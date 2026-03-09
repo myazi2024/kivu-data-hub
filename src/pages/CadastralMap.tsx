@@ -552,6 +552,77 @@ const CadastralMap = () => {
         // Redessiner la carte après initialisation
         setTimeout(() => map.invalidateSize(), 100);
 
+        // Géolocalisation de l'utilisateur avec marqueur "Vous êtes ici"
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const { latitude, longitude } = position.coords;
+              
+              // Centrer la carte sur la position de l'utilisateur au zoom max
+              map.setView([latitude, longitude], 19);
+
+              // Marqueur de position utilisateur (cercle bleu)
+              const userMarker = L.circleMarker([latitude, longitude], {
+                radius: 10,
+                fillColor: '#3b82f6',
+                color: '#1d4ed8',
+                weight: 3,
+                opacity: 1,
+                fillOpacity: 0.8
+              }).addTo(map);
+
+              // Cercle de précision
+              if (position.coords.accuracy) {
+                L.circle([latitude, longitude], {
+                  radius: position.coords.accuracy,
+                  fillColor: '#3b82f6',
+                  color: '#3b82f6',
+                  weight: 1,
+                  opacity: 0.2,
+                  fillOpacity: 0.07
+                }).addTo(map);
+              }
+
+              // Popup rouge "Vous êtes ici" qui disparaît après 3 secondes
+              const popupContent = `
+                <div style="
+                  background-color: #dc2626;
+                  color: white;
+                  padding: 6px 14px;
+                  border-radius: 8px;
+                  font-size: 13px;
+                  font-weight: 600;
+                  font-family: system-ui, sans-serif;
+                  white-space: nowrap;
+                  text-align: center;
+                ">
+                  📍 Vous êtes ici
+                </div>
+              `;
+
+              const popup = L.popup({
+                closeButton: false,
+                autoClose: false,
+                closeOnClick: false,
+                className: 'user-location-popup',
+                offset: [0, -12]
+              })
+                .setLatLng([latitude, longitude])
+                .setContent(popupContent)
+                .openOn(map);
+
+              // Fermer la popup après 3 secondes
+              setTimeout(() => {
+                map.closePopup(popup);
+              }, 3000);
+            },
+            (error) => {
+              console.log('Géolocalisation non disponible:', error.message);
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+          );
+        }
+
       } catch (error) {
         console.error('Erreur initialisation carte:', error);
         toast.error('Erreur lors de l\'initialisation de la carte');
