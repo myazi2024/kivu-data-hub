@@ -39,6 +39,7 @@ interface CadastralBillingPanelProps {
   preselectServiceId?: string;
   onClose?: () => void;
   onRequestContribution?: () => void;
+  alreadyPaidServices?: string[];
 }
 
 const getServiceDataAvailability = (searchResult: CadastralSearchResult) => {
