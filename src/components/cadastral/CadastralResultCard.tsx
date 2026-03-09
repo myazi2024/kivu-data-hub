@@ -164,9 +164,12 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
     
     if (paidServicesList.length > 0) {
       setPaidServices(paidServicesList);
-      setShowBillingPanel(false);
+      // Fix #9: Ne masquer le billing panel que si TOUS les services sont payés
+      if (paidServicesList.length >= catalogServiceIdsRef.current.length) {
+        setShowBillingPanel(false);
+      }
     }
-  }, [user, parcel.parcel_number]); // Fix #19: Ne dépend plus de catalogServices
+  }, [user, parcel.parcel_number]);
 
   React.useEffect(() => {
     checkAllServices();
