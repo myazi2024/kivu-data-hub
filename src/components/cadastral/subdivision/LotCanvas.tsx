@@ -414,6 +414,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         const screenVertices = lot.vertices.map(v => toScreen(v));
         const pointsStr = screenVertices.map(p => `${p.x},${p.y}`).join(' ');
         const isSelected = lot.id === selectedLotId;
+        const isMultiSelected = selectedLotIds.includes(lot.id);
         const color = lot.color || LOT_COLORS[lot.intendedUse];
 
         // Centroid for labels
@@ -425,17 +426,26 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
             {/* Lot polygon */}
             <polygon
               points={pointsStr}
-              fill={color}
-              fillOpacity={isSelected ? 0.35 : 0.2}
-              stroke={isSelected ? 'hsl(var(--primary))' : color}
-              strokeWidth={isSelected ? 2.5 : 1.5}
+              fill={isMultiSelected ? 'hsl(var(--primary))' : color}
+              fillOpacity={isMultiSelected ? 0.3 : isSelected ? 0.35 : 0.2}
+              stroke={isMultiSelected ? 'hsl(var(--primary))' : isSelected ? 'hsl(var(--primary))' : color}
+              strokeWidth={isMultiSelected ? 2.5 : isSelected ? 2.5 : 1.5}
+              strokeDasharray={isMultiSelected ? '4 2' : 'none'}
               className={readOnly ? '' : 'cursor-pointer'}
-              onClick={() => handleLotClick(lot.id)}
+              onClick={e => handleLotClick(lot.id, e)}
               onDoubleClick={e => handleLotDoubleClick(lot.id, e)}
               onTouchStart={() => handleLotTouchStart(lot.id)}
               onTouchEnd={handleLotTouchEnd}
               onTouchCancel={handleLotTouchEnd}
             />
+
+            {/* Multi-select checkmark */}
+            {isMultiSelected && (
+              <g className="pointer-events-none select-none">
+                <circle cx={cx + 30} cy={cy - 20} r={8} fill="hsl(var(--primary))" fillOpacity={0.9} />
+                <text x={cx + 30} y={cy - 19} textAnchor="middle" dominantBaseline="middle" fontSize={10} fill="white" fontWeight="bold">✓</text>
+              </g>
+            )}
 
             {/* Lot number */}
             {showLotNumbers && (
