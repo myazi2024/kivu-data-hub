@@ -437,10 +437,7 @@ export const ParcelMapPreview = ({
         zoomControl: false,
         attributionControl: true,
         center: mapCenter,
-        zoom: 19,
-      });
-
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        zoom: 19Layer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap',
         maxZoom: 19,
       }).addTo(map);
@@ -486,7 +483,7 @@ export const ParcelMapPreview = ({
             // Centrer la carte sur la position de l'utilisateur
             map.setView([latitude, longitude], 18);
             
-            // Nettoyer les anciens marqueurs de position
+        9   // Nettoyer les anciens marqueurs de position
             userLocationLayersRef.current.forEach(layer => {
               try {
                 if (map.hasLayer(layer)) map.removeLayer(layer);
