@@ -61,8 +61,9 @@ const getServiceDataAvailability = (searchResult: CadastralSearchResult) => {
     'information': hasInformation,
     'location_history': hasLocationHistory,
     'history': hasHistory,
-    'obligations': hasObligations
-  };
+    'obligations': hasObligations,
+    'land_disputes': true
+  } as Record<string, boolean>;
 };
 
 const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({ 
