@@ -198,13 +198,15 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   };
 
   const getServiceIcon = (serviceId: string) => {
-    const iconMap = {
+    const iconMap: Record<string, any> = {
       'information': FileText,
       'location_history': MapPin,
       'history': History,
-      'legal_verification': Shield
+      'legal_verification': Shield,
+      'obligations': Receipt,
+      'land_disputes': Scale
     };
-    return iconMap[serviceId as keyof typeof iconMap] || Building2;
+    return iconMap[serviceId] || Building2;
   };
 
   const totalAmount = getTotalAmount();
