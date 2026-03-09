@@ -1273,12 +1273,36 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                       Assainissement
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
-                    <Checkbox checked={hasInternet} onCheckedChange={(c) => setHasInternet(c === true)} />
-                    <div className="flex items-center gap-1.5 text-sm">
-                      <Wifi className="h-3.5 w-3.5 text-green-500" />
-                      Internet
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
+                      <Checkbox checked={hasInternet} onCheckedChange={(c) => {
+                        setHasInternet(c === true);
+                        if (c !== true) setInternetProvider('');
+                      }} />
+                      <div className="flex items-center gap-1.5 text-sm">
+                        <Wifi className="h-3.5 w-3.5 text-green-500" />
+                        Internet
+                      </div>
                     </div>
+                    {hasInternet && (
+                      <div className="ml-8">
+                        <Select value={internetProvider} onValueChange={setInternetProvider}>
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue placeholder="Fournisseur d'accès internet" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="canalbox">Canalbox</SelectItem>
+                            <SelectItem value="starlink">Starlink</SelectItem>
+                            <SelectItem value="vodacom">Vodacom</SelectItem>
+                            <SelectItem value="airtel">Airtel</SelectItem>
+                            <SelectItem value="orange">Orange</SelectItem>
+                            <SelectItem value="vsat">V-Sat</SelectItem>
+                            <SelectItem value="microcom">Microcom</SelectItem>
+                            <SelectItem value="autre">Autre</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
                     <Checkbox checked={hasSecuritySystem} onCheckedChange={(c) => setHasSecuritySystem(c === true)} />
