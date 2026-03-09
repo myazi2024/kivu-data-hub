@@ -97,24 +97,22 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     [searchResult]
   );
 
-  // Fix #14: Synchroniser les prix du panier avec le catalogue en temps réel
+  // Fix #18: Synchroniser les prix du panier via batch update (1 seul re-render)
   React.useEffect(() => {
-    if (catalogServices.length === 0) return;
-    selectedServices.forEach(cartItem => {
-      const catalogItem = catalogServices.find(s => s.id === cartItem.id);
-      if (catalogItem && catalogItem.price !== cartItem.price) {
-        // Re-toggle pour mettre à jour le prix
-        removeService(cartItem.id);
-        addService({
-          id: catalogItem.id,
-          name: catalogItem.name,
-          price: catalogItem.price,
-          description: catalogItem.description,
-          parcel_number: searchResult.parcel.parcel_number,
-          parcel_location: searchResult.parcel.location
-        });
-      }
-    });
+    if (catalogServices.length === 0 || selectedServices.length === 0) return;
+    const updates = selectedServices
+      .map(cartItem => {
+        const catalogItem = catalogServices.find(s => s.id === cartItem.id);
+        if (catalogItem && catalogItem.price !== cartItem.price) {
+          return { id: catalogItem.id, price: catalogItem.price };
+        }
+        return null;
+      })
+      .filter((u): u is { id: string; price: number } => u !== null);
+    
+    if (updates.length > 0) {
+      updateServicePrices(updates);
+    }
   }, [catalogServices]);
 
   React.useEffect(() => {
