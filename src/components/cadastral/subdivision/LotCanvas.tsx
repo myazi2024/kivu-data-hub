@@ -11,11 +11,14 @@ interface LotCanvasProps {
   lots: SubdivisionLot[];
   roads: SubdivisionRoad[];
   parentAreaSqm: number;
-  parentVertices?: Point2D[]; // Actual parcel shape in normalized 0-1 coords
-  parentSides?: ParcelSide[]; // Exact measurements from parcel_sides
+  parentVertices?: Point2D[];
+  parentSides?: ParcelSide[];
   selectedLotId: string | null;
   onSelectLot: (id: string | null) => void;
   onUpdateLot: (id: string, vertices: Point2D[]) => void;
+  selectedRoadId?: string | null;
+  onSelectRoad?: (id: string | null) => void;
+  onDeleteRoad?: (id: string) => void;
   showGrid?: boolean;
   showDimensions?: boolean;
   showLotNumbers?: boolean;
@@ -34,6 +37,7 @@ const PADDING = 30;
 
 const LotCanvas: React.FC<LotCanvasProps> = ({
   lots, roads, parentAreaSqm, parentVertices, parentSides, selectedLotId, onSelectLot, onUpdateLot,
+  selectedRoadId, onSelectRoad, onDeleteRoad,
   showGrid = true, showDimensions = true, showLotNumbers = true,
   showAreas = true, showRoads = true, showNorth = true,
   showLegend = false, showScale = true, showOwnerNames = false,
@@ -87,7 +91,14 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
 
   const handleLotClick = useCallback((lotId: string) => {
     onSelectLot(lotId === selectedLotId ? null : lotId);
-  }, [selectedLotId, onSelectLot]);
+    onSelectRoad?.(null);
+  }, [selectedLotId, onSelectLot, onSelectRoad]);
+
+  const handleRoadClick = useCallback((roadId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSelectRoad?.(roadId === selectedRoadId ? null : roadId);
+    onSelectLot(null);
+  }, [selectedRoadId, onSelectRoad, onSelectLot]);
 
   const sideLength = Math.sqrt(parentAreaSqm);
 
@@ -230,25 +241,54 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         const pathPoints = road.path.map(p => toScreen(p));
         const roadWidthPx = (road.widthM / sideLength) * (CANVAS_W - 2 * PADDING);
         const isExisting = (road as any).isExisting;
+        const isRoadSelected = road.id === selectedRoadId;
         
         return (
           <g key={road.id}>
+            {/* Invisible wider hit area for easier clicking */}
             <line
               x1={pathPoints[0].x}
               y1={pathPoints[0].y}
               x2={pathPoints[pathPoints.length - 1].x}
               y2={pathPoints[pathPoints.length - 1].y}
-              stroke={isExisting ? '#92400e' : '#9ca3af'}
+              stroke="transparent"
+              strokeWidth={Math.max(20, roadWidthPx + 10)}
+              className={readOnly ? '' : 'cursor-pointer'}
+              onClick={e => !readOnly && handleRoadClick(road.id, e)}
+            />
+            {/* Visible road line */}
+            <line
+              x1={pathPoints[0].x}
+              y1={pathPoints[0].y}
+              x2={pathPoints[pathPoints.length - 1].x}
+              y2={pathPoints[pathPoints.length - 1].y}
+              stroke={isRoadSelected ? 'hsl(var(--primary))' : isExisting ? '#92400e' : '#9ca3af'}
               strokeWidth={Math.max(isExisting ? 6 : 4, roadWidthPx)}
               strokeLinecap="round"
               strokeDasharray={isExisting ? 'none' : '6 3'}
-              opacity={isExisting ? 0.6 : 0.4}
+              opacity={isRoadSelected ? 0.8 : isExisting ? 0.6 : 0.4}
+              className={readOnly ? '' : 'cursor-pointer'}
+              onClick={e => !readOnly && handleRoadClick(road.id, e)}
             />
+            {/* Selection highlight */}
+            {isRoadSelected && (
+              <line
+                x1={pathPoints[0].x}
+                y1={pathPoints[0].y}
+                x2={pathPoints[pathPoints.length - 1].x}
+                y2={pathPoints[pathPoints.length - 1].y}
+                stroke="hsl(var(--primary))"
+                strokeWidth={Math.max(isExisting ? 8 : 6, roadWidthPx + 4)}
+                strokeLinecap="round"
+                strokeDasharray="none"
+                opacity={0.2}
+                className="pointer-events-none"
+              />
+            )}
             {/* Road label */}
             {(() => {
               const mx = (pathPoints[0].x + pathPoints[pathPoints.length - 1].x) / 2;
               const my = (pathPoints[0].y + pathPoints[pathPoints.length - 1].y) / 2;
-              // Offset label outward from the edge
               const dx = pathPoints[pathPoints.length - 1].y - pathPoints[0].y;
               const dy = pathPoints[0].x - pathPoints[pathPoints.length - 1].x;
               const len = Math.sqrt(dx * dx + dy * dy) || 1;
@@ -264,11 +304,11 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                     width={70}
                     height={14}
                     rx={3}
-                    fill={isExisting ? 'hsl(30, 70%, 95%)' : 'hsl(var(--background))'}
-                    fillOpacity={0.9}
-                    stroke={isExisting ? '#92400e' : '#9ca3af'}
-                    strokeWidth={0.5}
-                    strokeOpacity={0.5}
+                    fill={isRoadSelected ? 'hsl(var(--primary))' : isExisting ? 'hsl(30, 70%, 95%)' : 'hsl(var(--background))'}
+                    fillOpacity={isRoadSelected ? 0.15 : 0.9}
+                    stroke={isRoadSelected ? 'hsl(var(--primary))' : isExisting ? '#92400e' : '#9ca3af'}
+                    strokeWidth={isRoadSelected ? 1.5 : 0.5}
+                    strokeOpacity={isRoadSelected ? 0.8 : 0.5}
                   />
                   <text
                     x={mx + ox}
@@ -276,10 +316,47 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                     textAnchor="middle"
                     dominantBaseline="middle"
                     fontSize={7}
-                    fontWeight={isExisting ? 'bold' : 'normal'}
-                    fill={isExisting ? '#92400e' : '#6b7280'}
+                    fontWeight={isRoadSelected || isExisting ? 'bold' : 'normal'}
+                    fill={isRoadSelected ? 'hsl(var(--primary))' : isExisting ? '#92400e' : '#6b7280'}
                   >
                     {road.name} ({road.widthM}m)
+                  </text>
+                </g>
+              );
+            })()}
+            {/* Delete button on selected non-existing road */}
+            {isRoadSelected && !isExisting && !readOnly && onDeleteRoad && (() => {
+              const mx = (pathPoints[0].x + pathPoints[pathPoints.length - 1].x) / 2;
+              const my = (pathPoints[0].y + pathPoints[pathPoints.length - 1].y) / 2;
+              const dx = pathPoints[pathPoints.length - 1].y - pathPoints[0].y;
+              const dy = pathPoints[0].x - pathPoints[pathPoints.length - 1].x;
+              const len = Math.sqrt(dx * dx + dy * dy) || 1;
+              const off = isExisting ? 14 : 8;
+              const ox = -(dx / len) * (off + 14);
+              const oy = -(dy / len) * (off + 14);
+              return (
+                <g
+                  className="cursor-pointer"
+                  onClick={e => { e.stopPropagation(); onDeleteRoad(road.id); }}
+                >
+                  <circle
+                    cx={mx + ox}
+                    cy={my + oy}
+                    r={10}
+                    fill="hsl(var(--destructive))"
+                    fillOpacity={0.9}
+                  />
+                  <text
+                    x={mx + ox}
+                    y={my + oy + 1}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize={11}
+                    fill="white"
+                    fontWeight="bold"
+                    className="pointer-events-none select-none"
+                  >
+                    ✕
                   </text>
                 </g>
               );
