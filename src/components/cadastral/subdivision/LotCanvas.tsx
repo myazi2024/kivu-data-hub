@@ -325,42 +325,44 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
               );
             })()}
             {/* Delete button on selected non-existing road */}
-            {isRoadSelected && !isExisting && !readOnly && onDeleteRoad && (() => {
-              const mx = (pathPoints[0].x + pathPoints[pathPoints.length - 1].x) / 2;
-              const my = (pathPoints[0].y + pathPoints[pathPoints.length - 1].y) / 2;
-              const dx = pathPoints[pathPoints.length - 1].y - pathPoints[0].y;
-              const dy = pathPoints[0].x - pathPoints[pathPoints.length - 1].x;
-              const len = Math.sqrt(dx * dx + dy * dy) || 1;
-              const off = isExisting ? 14 : 8;
-              const ox = -(dx / len) * (off + 14);
-              const oy = -(dy / len) * (off + 14);
-              return (
-                <g
-                  className="cursor-pointer"
-                  onClick={e => { e.stopPropagation(); onDeleteRoad(road.id); }}
-                >
-                  <circle
-                    cx={mx + ox}
-                    cy={my + oy}
-                    r={10}
-                    fill="hsl(var(--destructive))"
-                    fillOpacity={0.9}
-                  />
-                  <text
-                    x={mx + ox}
-                    y={my + oy + 1}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    fontSize={11}
-                    fill="white"
-                    fontWeight="bold"
-                    className="pointer-events-none select-none"
+            {isRoadSelected && !isExisting && !readOnly && onDeleteRoad && (
+              (() => {
+                const mx = (pathPoints[0].x + pathPoints[pathPoints.length - 1].x) / 2;
+                const my = (pathPoints[0].y + pathPoints[pathPoints.length - 1].y) / 2;
+                const dx = pathPoints[pathPoints.length - 1].y - pathPoints[0].y;
+                const dy = pathPoints[0].x - pathPoints[pathPoints.length - 1].x;
+                const len = Math.sqrt(dx * dx + dy * dy) || 1;
+                const off = 8;
+                const ox = -(dx / len) * (off + 14);
+                const oy = -(dy / len) * (off + 14);
+                return (
+                  <g
+                    className="cursor-pointer"
+                    onClick={e => { e.stopPropagation(); onDeleteRoad(road.id); }}
                   >
-                    ✕
-                  </text>
-                </g>
-              );
-            })()}
+                    <circle
+                      cx={mx + ox}
+                      cy={my + oy}
+                      r={10}
+                      fill="hsl(var(--destructive))"
+                      fillOpacity={0.9}
+                    />
+                    <text
+                      x={mx + ox}
+                      y={my + oy + 1}
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      fontSize={11}
+                      fill="white"
+                      fontWeight="bold"
+                      className="pointer-events-none select-none"
+                    >
+                      ✕
+                    </text>
+                  </g>
+                );
+              })()
+            )}
           </g>
         );
       })}
