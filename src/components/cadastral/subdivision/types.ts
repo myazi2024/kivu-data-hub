@@ -121,12 +121,25 @@ export interface RequesterInfo {
 export type SubdivisionStep = 'parcel' | 'designer' | 'plan' | 'summary';
 
 // Auto-subdivision options
+export interface ParcelSideInfo {
+  borderType?: 'route' | 'mur_mitoyen';
+  bordersRoad?: boolean;
+  isConfirmed?: boolean;
+  roadType?: string;
+  roadName?: string;
+  roadWidth?: number | string;
+  orientation?: string;
+  length?: number | string;
+  [key: string]: any;
+}
+
 export interface AutoSubdivideOptions {
   numberOfLots: number;
   direction: 'horizontal' | 'vertical' | 'grid';
   includeRoad: boolean;
   roadWidthM: number;
   equalSize: boolean;
+  parcelSides?: ParcelSideInfo[];
 }
 
 // Colors for lot usage types

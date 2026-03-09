@@ -102,8 +102,19 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
               <Wand2 className="h-4 w-4 text-primary" />
               <h4 className="font-semibold text-sm">Découpage automatique</h4>
             </div>
+            
+            {/* Road-bordering info */}
+            {parentSides && parentSides.some((s: any) => s?.borderType === 'route') && (
+              <Alert className="border-amber-500/30 bg-amber-50/50 py-2">
+                <AlertDescription className="text-[11px] text-amber-800 flex items-center gap-1.5">
+                  <Info className="h-3.5 w-3.5 flex-shrink-0" />
+                  La parcelle borde une route — les lots adjacents seront automatiquement desservis par celle-ci.
+                </AlertDescription>
+              </Alert>
+            )}
+
             <p className="text-xs text-muted-foreground">
-              Le système découpera automatiquement la parcelle. Vous pourrez ensuite ajuster manuellement chaque lot.
+              Le système découpera automatiquement la parcelle en tenant compte des routes existantes. Vous pourrez ensuite ajuster manuellement chaque lot.
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div>

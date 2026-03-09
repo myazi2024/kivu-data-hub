@@ -1,4 +1,4 @@
-import { Point2D, GpsPoint, SubdivisionLot, AutoSubdivideOptions } from '../types';
+import { Point2D, GpsPoint, SubdivisionLot, AutoSubdivideOptions, ParcelSideInfo } from '../types';
 
 /**
  * Calculate polygon area using Shoelace formula
@@ -228,15 +228,83 @@ function polyBounds(poly: Point2D[]) {
 }
 
 /**
+ * Determine which edges of the parent polygon border a road.
+ * Returns an array of edge indices and their dominant direction.
+ */
+function findRoadBorderingEdges(
+  parentVertices: Point2D[],
+  parcelSides?: ParcelSideInfo[]
+): { edgeIndex: number; direction: 'top' | 'bottom' | 'left' | 'right' }[] {
+  if (!parcelSides || !parentVertices || parentVertices.length < 3) return [];
+  
+  const roadEdges: { edgeIndex: number; direction: 'top' | 'bottom' | 'left' | 'right' }[] = [];
+  const bounds = polyBounds(parentVertices);
+  const cx = (bounds.minX + bounds.maxX) / 2;
+  const cy = (bounds.minY + bounds.maxY) / 2;
+  
+  for (let i = 0; i < parentVertices.length; i++) {
+    const side = parcelSides[i];
+    if (!side || side.borderType !== 'route') continue;
+    
+    const a = parentVertices[i];
+    const b = parentVertices[(i + 1) % parentVertices.length];
+    const midX = (a.x + b.x) / 2;
+    const midY = (a.y + b.y) / 2;
+    
+    // Determine edge direction relative to polygon center
+    const dx = Math.abs(b.x - a.x);
+    const dy = Math.abs(b.y - a.y);
+    
+    let dir: 'top' | 'bottom' | 'left' | 'right';
+    if (dx > dy) {
+      // Horizontal edge
+      dir = midY > cy ? 'top' : 'bottom';
+    } else {
+      // Vertical edge
+      dir = midX > cx ? 'right' : 'left';
+    }
+    
+    roadEdges.push({ edgeIndex: i, direction: dir });
+  }
+  
+  return roadEdges;
+}
+
+/**
+ * Determine optimal subdivision direction based on road-bordering edges.
+ * Lots should be sliced perpendicular to the road so each lot gets road frontage.
+ */
+function getOptimalDirection(
+  roadEdges: { edgeIndex: number; direction: 'top' | 'bottom' | 'left' | 'right' }[],
+  requestedDirection: 'horizontal' | 'vertical' | 'grid'
+): 'horizontal' | 'vertical' | 'grid' {
+  if (roadEdges.length === 0) return requestedDirection;
+  
+  // Count road edges by orientation
+  const horizontalRoads = roadEdges.filter(e => e.direction === 'top' || e.direction === 'bottom').length;
+  const verticalRoads = roadEdges.filter(e => e.direction === 'left' || e.direction === 'right').length;
+  
+  if (requestedDirection === 'grid') return 'grid';
+  
+  // If road is on top/bottom → slice horizontally (vertical cuts) so lots face the road
+  // If road is on left/right → slice vertically (horizontal cuts) so lots face the road
+  if (horizontalRoads > verticalRoads) return 'horizontal';
+  if (verticalRoads > horizontalRoads) return 'vertical';
+  
+  return requestedDirection;
+}
+
+/**
  * Auto-subdivide parent parcel into lots respecting actual polygon shape.
- * Slices the parent polygon along the chosen axis.
+ * Takes into account road-bordering sides for realistic lot layout.
+ * Lots adjacent to a road will be served by that existing road.
  */
 export function autoSubdivide(
   options: AutoSubdivideOptions,
   parentAreaSqm: number,
   parentVertices?: Point2D[]
 ): SubdivisionLot[] {
-  const { numberOfLots, direction, includeRoad, roadWidthM, equalSize } = options;
+  const { numberOfLots, direction, includeRoad, roadWidthM, equalSize, parcelSides } = options;
   const sideLength = Math.sqrt(parentAreaSqm);
   const roadProportion = includeRoad ? (roadWidthM / sideLength) : 0;
 
@@ -248,12 +316,28 @@ export function autoSubdivide(
   const bounds = polyBounds(parentPoly);
   const parentNormArea = polygonArea(parentPoly);
 
+  // Detect road-bordering edges
+  const roadEdges = findRoadBorderingEdges(parentPoly, parcelSides);
+  const effectiveDirection = getOptimalDirection(roadEdges, direction);
+
   const lots: SubdivisionLot[] = [];
 
-  if (direction === 'horizontal') {
+  // Determine which sides have roads for labeling
+  const roadDirections = new Set(roadEdges.map(e => e.direction));
+
+  if (effectiveDirection === 'horizontal') {
     // Slice along X axis (vertical cuts → left-to-right lots)
     const totalWidth = bounds.maxX - bounds.minX;
-    const totalRoadWidth = includeRoad && numberOfLots > 1 ? roadProportion * (numberOfLots - 1) : 0;
+    
+    // Only add internal roads between lots that DON'T border an existing road
+    // If road is on left → first lot is served by road, no need for road before it
+    // If road is on right → last lot is served by road, no need for road after it
+    const hasLeftRoad = roadDirections.has('left');
+    const hasRightRoad = roadDirections.has('right');
+    
+    // Count internal roads needed (between lots, excluding those served by existing roads)
+    const internalRoadCount = includeRoad && numberOfLots > 1 ? numberOfLots - 1 : 0;
+    const totalRoadWidth = internalRoadCount * roadProportion;
     const availableWidth = totalWidth - totalRoadWidth;
     const lotWidth = availableWidth / numberOfLots;
     const gapWidth = includeRoad ? roadProportion : 0;
@@ -265,6 +349,10 @@ export function autoSubdivide(
       if (clipped.length < 3) continue;
 
       const normArea = polygonArea(clipped);
+      
+      // Determine if this lot borders an existing road
+      const bordersExistingRoad = (i === 0 && hasLeftRoad) || (i === numberOfLots - 1 && hasRightRoad);
+      
       lots.push({
         id: `lot-${i + 1}`,
         lotNumber: `${i + 1}`,
@@ -275,12 +363,17 @@ export function autoSubdivide(
         isBuilt: false,
         hasFence: false,
         color: '#22c55e',
+        notes: bordersExistingRoad ? 'Desservi par la route existante' : undefined,
       });
     }
-  } else if (direction === 'vertical') {
+  } else if (effectiveDirection === 'vertical') {
     // Slice along Y axis (horizontal cuts → top-to-bottom lots)
     const totalHeight = bounds.maxY - bounds.minY;
-    const totalRoadWidth = includeRoad && numberOfLots > 1 ? roadProportion * (numberOfLots - 1) : 0;
+    const hasTopRoad = roadDirections.has('top');
+    const hasBottomRoad = roadDirections.has('bottom');
+    
+    const internalRoadCount = includeRoad && numberOfLots > 1 ? numberOfLots - 1 : 0;
+    const totalRoadWidth = internalRoadCount * roadProportion;
     const availableHeight = totalHeight - totalRoadWidth;
     const lotHeight = availableHeight / numberOfLots;
     const gapHeight = includeRoad ? roadProportion : 0;
@@ -292,6 +385,8 @@ export function autoSubdivide(
       if (clipped.length < 3) continue;
 
       const normArea = polygonArea(clipped);
+      const bordersExistingRoad = (i === 0 && hasBottomRoad) || (i === numberOfLots - 1 && hasTopRoad);
+      
       lots.push({
         id: `lot-${i + 1}`,
         lotNumber: `${i + 1}`,
@@ -302,6 +397,7 @@ export function autoSubdivide(
         isBuilt: false,
         hasFence: false,
         color: '#22c55e',
+        notes: bordersExistingRoad ? 'Desservi par la route existante' : undefined,
       });
     }
   } else {
@@ -323,12 +419,19 @@ export function autoSubdivide(
         const yMin = bounds.minY + row * (cellH + vGap);
         const yMax = yMin + cellH;
 
-        // Clip by both axes
         let clipped = clipPolygonByBand(parentPoly, 'x', xMin, xMax);
         clipped = clipPolygonByBand(clipped, 'y', yMin, yMax);
         if (clipped.length < 3) { lotIndex++; continue; }
 
         const normArea = polygonArea(clipped);
+        
+        // Check if this grid cell borders any existing road
+        const bordersExistingRoad = 
+          (col === 0 && roadDirections.has('left')) ||
+          (col === cols - 1 && roadDirections.has('right')) ||
+          (row === 0 && roadDirections.has('bottom')) ||
+          (row === rows - 1 && roadDirections.has('top'));
+        
         lots.push({
           id: `lot-${lotIndex + 1}`,
           lotNumber: `${lotIndex + 1}`,
@@ -339,6 +442,7 @@ export function autoSubdivide(
           isBuilt: false,
           hasFence: false,
           color: '#22c55e',
+          notes: bordersExistingRoad ? 'Desservi par la route existante' : undefined,
         });
         lotIndex++;
       }
@@ -349,32 +453,63 @@ export function autoSubdivide(
 }
 
 /**
- * Generate auto roads between lots (in gaps between sliced lots)
+ * Generate auto roads between lots (in gaps between sliced lots).
+ * Adds existing roads on road-bordering edges.
  */
 export function generateRoads(
   lots: SubdivisionLot[], 
   direction: 'horizontal' | 'vertical' | 'grid',
   roadWidthM: number,
   parentAreaSqm: number,
-  parentVertices?: Point2D[]
-): { id: string; name: string; widthM: number; surfaceType: 'planned'; isExisting: false; path: Point2D[] }[] {
+  parentVertices?: Point2D[],
+  parcelSides?: ParcelSideInfo[]
+): { id: string; name: string; widthM: number; surfaceType: 'planned' | 'asphalt' | 'gravel' | 'earth' | 'paved'; isExisting: boolean; path: Point2D[] }[] {
   const roads: any[] = [];
-  if (lots.length < 2) return roads;
-
+  
   const parentPoly = parentVertices && parentVertices.length >= 3
     ? parentVertices
     : [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }];
   const bounds = polyBounds(parentPoly);
 
+  // First, add existing roads from parcel sides
+  if (parcelSides && parentVertices && parentVertices.length >= 3) {
+    let existingRoadIndex = 0;
+    for (let i = 0; i < parentVertices.length; i++) {
+      const side = parcelSides[i];
+      if (!side || side.borderType !== 'route') continue;
+      
+      existingRoadIndex++;
+      const a = parentVertices[i];
+      const b = parentVertices[(i + 1) % parentVertices.length];
+      
+      const surfaceMap: Record<string, string> = {
+        'asphalte': 'asphalt', 'goudron': 'asphalt', 'bitume': 'asphalt',
+        'gravier': 'gravel', 'terre': 'earth', 'pavé': 'paved',
+      };
+      const surfaceType = (side.roadType && surfaceMap[side.roadType.toLowerCase()]) || 'asphalt';
+      const existingWidth = side.roadWidth ? parseFloat(String(side.roadWidth)) : roadWidthM;
+      
+      roads.push({
+        id: `existing-road-${existingRoadIndex}`,
+        name: side.roadName || `Route existante ${existingRoadIndex}`,
+        widthM: existingWidth,
+        surfaceType,
+        isExisting: true,
+        path: [a, b],
+      });
+    }
+  }
+
+  // Then add internal (planned) roads between lots
+  if (lots.length < 2) return roads;
+
   if (direction === 'horizontal') {
-    // Roads run vertically between horizontally-arranged lots
     for (let i = 0; i < lots.length - 1; i++) {
-      // Find the right-most x of lot i
       const lotBounds = polyBounds(lots[i].vertices);
-      const midX = lotBounds.maxX; // Road sits at right edge of this lot
+      const midX = lotBounds.maxX;
       roads.push({
         id: `road-${i + 1}`,
-        name: `Voie ${i + 1}`,
+        name: `Voie interne ${i + 1}`,
         widthM: roadWidthM,
         surfaceType: 'planned' as const,
         isExisting: false,
@@ -390,7 +525,7 @@ export function generateRoads(
       const midY = lotBounds.maxY;
       roads.push({
         id: `road-${i + 1}`,
-        name: `Voie ${i + 1}`,
+        name: `Voie interne ${i + 1}`,
         widthM: roadWidthM,
         surfaceType: 'planned' as const,
         isExisting: false,
