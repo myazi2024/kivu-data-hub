@@ -132,6 +132,7 @@ export const useCadastralPayment = () => {
         return invoice;
       }
 
+      // Fix #2: Stocker le montant TTC en DB pour cohérence avec l'affichage
       const { data: invoice, error } = await supabase
         .from('cadastral_invoices')
         .insert({
@@ -139,9 +140,9 @@ export const useCadastralPayment = () => {
           parcel_number: parcelNumber,
           invoice_number: '', // Sera remplacé par le trigger DB
           selected_services: serviceIds,
-          total_amount_usd: finalAmount,
-          original_amount_usd: originalAmount,
-          discount_amount_usd: discountAmount,
+          total_amount_usd: parseFloat(finalAmountTTC.toFixed(2)),
+          original_amount_usd: parseFloat(originalAmountTTC.toFixed(2)),
+          discount_amount_usd: parseFloat((discountAmount * (1 + TVA_RATE)).toFixed(2)),
           discount_code_used: discountData?.code || null,
           client_email: user.email || '',
           client_name: user.user_metadata?.full_name || null,
