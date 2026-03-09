@@ -41,6 +41,43 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   const [roadWidth, setRoadWidth] = useState(6);
   const [selectedLotId, setSelectedLotId] = useState<string | null>(null);
   const [showAutoPanel, setShowAutoPanel] = useState(lots.length === 0);
+  const [editingRoadId, setEditingRoadId] = useState<string | null>(null);
+
+  const editingRoad = roads.find(r => r.id === editingRoadId) || null;
+
+  const handleAddRoad = useCallback(() => {
+    const parentPoly = parentVertices && parentVertices.length >= 3 ? parentVertices : null;
+    const bounds = parentPoly
+      ? parentPoly.reduce((b, p) => ({
+          minX: Math.min(b.minX, p.x), maxX: Math.max(b.maxX, p.x),
+          minY: Math.min(b.minY, p.y), maxY: Math.max(b.maxY, p.y),
+        }), { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity })
+      : { minX: 0, maxX: 1, minY: 0, maxY: 1 };
+
+    const cx = (bounds.minX + bounds.maxX) / 2;
+    const newRoad: SubdivisionRoad = {
+      id: `road-new-${Date.now()}`,
+      name: `Voie ${roads.length + 1}`,
+      widthM: 6,
+      surfaceType: 'planned',
+      isExisting: false,
+      path: [
+        { x: cx, y: bounds.minY },
+        { x: cx, y: bounds.maxY },
+      ],
+    };
+    setRoads([...roads, newRoad]);
+    setEditingRoadId(newRoad.id);
+  }, [roads, setRoads, parentVertices]);
+
+  const handleDeleteRoad = useCallback((roadId: string) => {
+    setRoads(roads.filter(r => r.id !== roadId));
+    if (editingRoadId === roadId) setEditingRoadId(null);
+  }, [roads, setRoads, editingRoadId]);
+
+  const updateRoad = useCallback((roadId: string, updates: Partial<SubdivisionRoad>) => {
+    setRoads(roads.map(r => r.id === roadId ? { ...r, ...updates } : r));
+  }, [roads, setRoads]);
 
   const handleAutoGenerate = () => {
     onAutoSubdivide({
