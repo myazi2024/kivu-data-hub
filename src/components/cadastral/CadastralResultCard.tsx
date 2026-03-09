@@ -234,13 +234,10 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
     });
   };
 
-  // Gérer le téléchargement du rapport cadastral complet
+  // Fix #1: Utilise catalogServices réactifs au lieu de la variable globale deprecated
   const handleDownloadReport = () => {
-    // Génère un rapport cadastral PDF A4 complet avec toutes les données
     import('@/lib/pdf').then(({ generateCadastralReport }) => {
-      import('@/hooks/useCadastralBilling').then(({ CADASTRAL_SERVICES }) => {
-        generateCadastralReport(result, paidServices, CADASTRAL_SERVICES);
-      });
+      generateCadastralReport(result, paidServices, catalogServices);
     });
   };
 
