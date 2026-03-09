@@ -921,7 +921,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 h-9 rounded-xl">
+        <TabsList className="grid w-full grid-cols-4 h-9 rounded-xl sticky top-0 z-10 bg-background/95 backdrop-blur-sm">
           <TabsTrigger value="general" className="text-xs rounded-lg">Général</TabsTrigger>
           <TabsTrigger value="materiaux" className="text-xs rounded-lg">Matériaux</TabsTrigger>
           <TabsTrigger value="environnement" className="text-xs rounded-lg">Environ.</TabsTrigger>
