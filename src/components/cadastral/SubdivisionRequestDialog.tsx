@@ -233,7 +233,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
             </div>
           )}
           
-          <WhatsAppFloatingButton context="subdivision" parcelNumber={parcelNumber} />
+          <WhatsAppFloatingButton message={`Bonjour, j'ai besoin d'aide pour ma demande de lotissement (parcelle ${parcelNumber}).`} />
         </DialogContent>
       </Dialog>
       
