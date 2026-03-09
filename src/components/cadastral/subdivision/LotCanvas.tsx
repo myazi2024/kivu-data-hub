@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { SubdivisionLot, SubdivisionRoad, LOT_COLORS, USAGE_LABELS, Point2D } from './types';
 
 interface ParcelSide {
