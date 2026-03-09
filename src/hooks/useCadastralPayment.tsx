@@ -105,8 +105,8 @@ export const useCadastralPayment = () => {
             invoice_number: '', // Sera remplacé par le trigger DB
             selected_services: serviceIds,
             total_amount_usd: 0,
-            original_amount_usd: originalAmount,
-            discount_amount_usd: originalAmount,
+            original_amount_usd: originalAmountTTC,
+            discount_amount_usd: originalAmountTTC,
             discount_code_used: 'MODE_DEV',
             client_email: user.email || '',
             client_name: user.user_metadata?.full_name || null,
