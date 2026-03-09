@@ -1005,7 +1005,9 @@ export const ParcelMapPreview = ({
           }
         } else if (latLngs.length > 0) {
           if (shouldAutoCenter) {
-            map.setView(latLngs[0], mapConfig.defaultZoom || 19setSurfaceArea(0);
+            map.setView(latLngs[0], 19);
+          }
+          setSurfaceArea(0);
           setPerimeterLength(0);
           stableSurfaceRef.current = 0;
           stablePerimeterRef.current = 0;
