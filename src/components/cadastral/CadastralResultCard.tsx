@@ -35,7 +35,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
-import { useCadastralBilling } from '@/hooks/useCadastralBilling';
+import { useCadastralServices } from '@/hooks/useCadastralServices';
+import { TVA_RATE } from '@/constants/billing';
+import { checkMultipleServiceAccess } from '@/utils/checkServiceAccess';
 import { useAuth } from '@/hooks/useAuth';
 import CadastralMap from './CadastralMap';
 import CadastralBillingPanel from './CadastralBillingPanel';
