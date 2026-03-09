@@ -42,6 +42,13 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
       const savedCart = localStorage.getItem('bic-cadastral-cart');
       if (savedCart) {
         const parsed = JSON.parse(savedCart);
+        // Fix #15: Vérifier le TTL du panier (24h max)
+        const CART_TTL_MS = 24 * 60 * 60 * 1000;
+        const savedAt = parsed.savedAt || 0;
+        if (Date.now() - savedAt > CART_TTL_MS) {
+          localStorage.removeItem('bic-cadastral-cart');
+          return;
+        }
         setSelectedServices(parsed.services || []);
         setParcelNumberState(parsed.parcelNumber || null);
       }
@@ -54,9 +61,11 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
     const consent = getConsentStatus();
     if (consent === false) return;
     
+    // Fix #15: Inclure un timestamp pour le TTL
     const cartData = JSON.stringify({
       services: selectedServices,
-      parcelNumber
+      parcelNumber,
+      savedAt: Date.now()
     });
     
     try {

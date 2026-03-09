@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -49,9 +49,25 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
   
   const PLACEHOLDER_EXAMPLES = catalogConfig.discount_code_placeholders;
 
-  // Animation du placeholder
+  // Fix #18: Animation placeholder conditionnelle — ne tourne que si le composant est visible (pas de code saisi)
+  const [isVisible, setIsVisible] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Observer la visibilité pour stopper l'animation quand le composant n'est pas affiché
   useEffect(() => {
-    if (code.length > 0) {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsVisible(entry.isIntersecting),
+      { threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    // Ne pas animer si invisible ou si l'utilisateur tape
+    if (code.length > 0 || !isVisible) {
       setPlaceholderText('');
       return;
     }
@@ -84,7 +100,7 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
         return () => clearTimeout(timeout);
       }
     }
-  }, [placeholderText, isTyping, currentExampleIndex, code]);
+  }, [placeholderText, isTyping, currentExampleIndex, code, isVisible]);
 
   const handleValidateCode = async () => {
     if (!code.trim()) return;
@@ -201,7 +217,7 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
   }
 
   return (
-    <div className={`space-y-4 p-4 border border-dashed border-primary/30 rounded-lg ${className}`}>
+    <div ref={containerRef} className={`space-y-4 p-4 border border-dashed border-primary/30 rounded-lg ${className}`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Tag className="h-4 w-4 text-muted-foreground" />

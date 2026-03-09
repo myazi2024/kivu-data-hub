@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   CreditCard, 
   CheckCircle, 
@@ -86,15 +86,36 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   const [highlightTerms, setHighlightTerms] = useState(false);
   const [expandedServices, setExpandedServices] = useState<Set<string>>(new Set());
   const { toast } = useToast();
-  const { paymentMode, isPaymentRequired } = usePaymentConfig();
+  // Fix #10: Une seule instanciation de usePaymentConfig, passée au dialog
+  const { paymentMode, isPaymentRequired, availableMethods } = usePaymentConfig();
   const { services: catalogServices, loading: catalogLoading, error: catalogError } = useCadastralServices();
-  const { selectedServices, toggleService, getTotalAmount, setParcelNumber } = useCadastralCart();
+  const { selectedServices, addService, removeService, toggleService, getTotalAmount, setParcelNumber, isSelected } = useCadastralCart();
   const { loading, createInvoice } = useCadastralPayment();
 
   const serviceAvailability = React.useMemo(() => 
     getServiceDataAvailability(searchResult), 
     [searchResult]
   );
+
+  // Fix #14: Synchroniser les prix du panier avec le catalogue en temps réel
+  React.useEffect(() => {
+    if (catalogServices.length === 0) return;
+    selectedServices.forEach(cartItem => {
+      const catalogItem = catalogServices.find(s => s.id === cartItem.id);
+      if (catalogItem && catalogItem.price !== cartItem.price) {
+        // Re-toggle pour mettre à jour le prix
+        removeService(cartItem.id);
+        addService({
+          id: catalogItem.id,
+          name: catalogItem.name,
+          price: catalogItem.price,
+          description: catalogItem.description,
+          parcel_number: searchResult.parcel.parcel_number,
+          parcel_location: searchResult.parcel.location
+        });
+      }
+    });
+  }, [catalogServices]);
 
   React.useEffect(() => {
     setParcelNumber(searchResult.parcel.parcel_number);
@@ -112,7 +133,6 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     }
   }, [catalogServices, serviceAvailability]);
 
-  // Fix #14: Ajouter catalogServices et selectedServices aux deps
   React.useEffect(() => {
     if (preselectServiceId && catalogServices.length > 0 && !selectedServices.some(s => s.id === preselectServiceId)) {
       const service = catalogServices.find(s => s.id === preselectServiceId);
@@ -166,7 +186,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     }
     
     if (paymentMode.bypass_payment) {
-      const invoice = await createInvoice(appliedDiscount);
+      const invoice = await createInvoice(appliedDiscount ?? undefined);
       if (invoice) {
         toast({
           title: "Accès accordé",
@@ -179,7 +199,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     }
     
     if (isPaymentRequired()) {
-      const invoice = await createInvoice(appliedDiscount);
+      const invoice = await createInvoice(appliedDiscount ?? undefined);
       if (invoice) {
         setCurrentInvoice(invoice);
         setShowPaymentDialog(true);
@@ -193,9 +213,9 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     }
   };
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = (services: string[]) => {
     setShowPaymentDialog(false);
-    onPaymentSuccess(selectedServices.map(s => s.id));
+    onPaymentSuccess(services.length > 0 ? services : selectedServices.map(s => s.id));
   };
 
   const getServiceIcon = (serviceId: string) => {
@@ -203,9 +223,9 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
       'information': FileText,
       'location_history': MapPin,
       'history': History,
-      'legal_verification': Shield,
       'obligations': Receipt,
       'land_disputes': Scale
+      // Fix #16: Supprimé 'legal_verification' qui n'existe pas dans le catalogue
     };
     return iconMap[serviceId] || Building2;
   };
@@ -213,6 +233,13 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   const totalAmount = getTotalAmount();
   const discountedAmount = appliedDiscount ? Math.max(0, totalAmount - appliedDiscount.amount) : totalAmount;
   const selectedServiceIds = selectedServices.map(s => s.id);
+
+  // Fix #6: Calculer les services sélectionnables (non payés, avec données)
+  const selectableServices = catalogServices.filter(
+    s => (serviceAvailability[s.id] ?? true) && !alreadyPaidServices.includes(s.id)
+  );
+  const allSelectableSelected = selectableServices.length > 0 && 
+    selectableServices.every(s => selectedServiceIds.includes(s.id));
 
   return (
     <TooltipProvider>
@@ -245,7 +272,6 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             </p>
           </div>
 
-          {/* Fix #10 & #11: États de chargement et d'erreur du catalogue */}
           {catalogLoading ? (
             <div className="flex items-center justify-center p-6">
               <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent" />
@@ -259,23 +285,29 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             </Alert>
           ) : (
           <div className="space-y-2">
-            {/* Tout sélectionner - compact */}
+            {/* Fix #6: "Tout sélectionner" corrigé — utilise addService/removeService au lieu de toggle */}
             <div className="flex items-center justify-between p-2 bg-muted/30 rounded-xl border border-dashed">
               <div className="flex items-center gap-2">
                 <Checkbox 
-                  checked={selectedServiceIds.length === catalogServices.filter(s => (serviceAvailability[s.id] ?? true) && !alreadyPaidServices.includes(s.id)).length && selectedServiceIds.length > 0}
+                  checked={allSelectableSelected}
                   onCheckedChange={(checked) => {
-                    const availableServices = catalogServices.filter(s => (serviceAvailability[s.id] ?? true) && !alreadyPaidServices.includes(s.id));
                     if (checked) {
-                      availableServices.forEach(service => {
+                      // Ajouter tous les services sélectionnables non encore sélectionnés
+                      selectableServices.forEach(service => {
                         if (!selectedServiceIds.includes(service.id)) {
-                          handleServiceToggle(service.id);
+                          addService({
+                            id: service.id,
+                            name: service.name,
+                            price: service.price,
+                            description: service.description,
+                            parcel_number: searchResult.parcel.parcel_number,
+                            parcel_location: searchResult.parcel.location
+                          });
                         }
                       });
                     } else {
-                      selectedServices.forEach(s => {
-                        handleServiceToggle(s.id);
-                      });
+                      // Retirer tous les services sélectionnés
+                      selectedServiceIds.forEach(id => removeService(id));
                     }
                   }}
                   className="h-3.5 w-3.5"
@@ -283,15 +315,15 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                 <span className="text-xs font-medium">Tout sélectionner</span>
               </div>
               <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
-                {catalogServices.filter(s => (serviceAvailability[s.id] ?? true) && !alreadyPaidServices.includes(s.id)).length} dispo.
+                {selectableServices.length} dispo.
               </Badge>
             </div>
             
-            {/* Liste des services - compact avec mise en avant des données disponibles */}
+            {/* Liste des services */}
             <div className="space-y-2">
               {catalogServices.map((service) => {
                 const IconComponent = getServiceIcon(service.id);
-                const isSelected = selectedServiceIds.includes(service.id);
+                const isServiceSelected = selectedServiceIds.includes(service.id);
                 const isExpanded = expandedServices.has(service.id);
                 const hasData = serviceAvailability[service.id] ?? true;
                 const isAlreadyPaid = alreadyPaidServices.includes(service.id);
@@ -307,7 +339,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                         ? 'rounded-2xl border-2 shadow-md hover:shadow-lg' 
                         : 'rounded-xl border'
                       }
-                      ${isSelected 
+                      ${isServiceSelected 
                         ? 'border-primary bg-primary/5' 
                         : hasData 
                           ? 'border-primary/40 bg-background hover:border-primary/60' 
@@ -320,7 +352,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                       <div className={`
                         shrink-0 transition-colors
                         ${hasData ? 'p-2 rounded-xl' : 'p-1.5 rounded-lg'}
-                        ${isSelected 
+                        ${isServiceSelected 
                           ? 'bg-primary text-primary-foreground' 
                           : hasData 
                             ? 'bg-primary/10 text-primary' 
@@ -363,11 +395,11 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                         variant={hasData ? "default" : "secondary"} 
                         className={`shrink-0 ${hasData ? 'text-sm px-2 py-0.5 font-semibold' : 'text-xs px-1.5 py-0.5 opacity-60'}`}
                       >
-                        ${service.price}
+                        ${service.price.toFixed(2)}
                       </Badge>
                       
                       <Checkbox 
-                        checked={isSelected}
+                        checked={isServiceSelected}
                         disabled={isDisabled}
                         className={`pointer-events-none ${hasData ? 'h-5 w-5' : 'h-4 w-4 opacity-50'}`}
                       />
@@ -379,7 +411,8 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                           <p className={`leading-relaxed ${hasData ? 'text-sm text-muted-foreground' : 'text-xs text-muted-foreground/70'}`}>
                             {service.description}
                           </p>
-                          {isDisabled && onRequestContribution && (
+                          {/* Fix #7: N'afficher "Compléter les données" que si le service N'EST PAS déjà payé */}
+                          {!hasData && !isAlreadyPaid && onRequestContribution && (
                             <Button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -482,7 +515,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             </div>
           )}
 
-          {/* Bouton de paiement compact */}
+          {/* Bouton de paiement */}
           <Button 
             onClick={handleProceedToPayment}
             disabled={selectedServiceIds.length === 0 || loading}
@@ -525,7 +558,6 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             )}
           </Button>
           
-          {/* Status messages compact */}
           {selectedServiceIds.length === 0 && (
             <p className="text-center text-xs text-muted-foreground">
               Sélectionnez les services souhaités
@@ -540,11 +572,13 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
         </CardContent>
       </Card>
 
+      {/* Fix #10: Passer availableMethods au dialog au lieu de le ré-instancier */}
       {showPaymentDialog && currentInvoice && (
         <CadastralPaymentDialog
           invoice={currentInvoice}
           onClose={() => setShowPaymentDialog(false)}
           onPaymentSuccess={handlePaymentSuccess}
+          availableMethods={availableMethods}
         />
       )}
     </TooltipProvider>

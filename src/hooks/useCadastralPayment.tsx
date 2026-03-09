@@ -85,6 +85,10 @@ export const useCadastralPayment = () => {
       const originalAmount = selectedServices.reduce((sum, s) => sum + s.price, 0);
       const discountAmount = discountData?.amount || 0;
       const finalAmount = Math.max(0, originalAmount - discountAmount);
+      // Fix #2: Inclure la TVA dans le montant stocké en DB pour cohérence avec l'affichage
+      const TVA_RATE = 0.16;
+      const finalAmountTTC = finalAmount * (1 + TVA_RATE);
+      const originalAmountTTC = originalAmount * (1 + TVA_RATE);
       
       const geographicalZone = selectedServices[0]?.parcel_location || '';
       const serviceIds = selectedServices.map(s => s.id);
@@ -101,8 +105,8 @@ export const useCadastralPayment = () => {
             invoice_number: '', // Sera remplacé par le trigger DB
             selected_services: serviceIds,
             total_amount_usd: 0,
-            original_amount_usd: originalAmount,
-            discount_amount_usd: originalAmount,
+            original_amount_usd: originalAmountTTC,
+            discount_amount_usd: originalAmountTTC,
             discount_code_used: 'MODE_DEV',
             client_email: user.email || '',
             client_name: user.user_metadata?.full_name || null,
@@ -128,6 +132,7 @@ export const useCadastralPayment = () => {
         return invoice;
       }
 
+      // Fix #2: Stocker le montant TTC en DB pour cohérence avec l'affichage
       const { data: invoice, error } = await supabase
         .from('cadastral_invoices')
         .insert({
@@ -135,9 +140,9 @@ export const useCadastralPayment = () => {
           parcel_number: parcelNumber,
           invoice_number: '', // Sera remplacé par le trigger DB
           selected_services: serviceIds,
-          total_amount_usd: finalAmount,
-          original_amount_usd: originalAmount,
-          discount_amount_usd: discountAmount,
+          total_amount_usd: parseFloat(finalAmountTTC.toFixed(2)),
+          original_amount_usd: parseFloat(originalAmountTTC.toFixed(2)),
+          discount_amount_usd: parseFloat((discountAmount * (1 + TVA_RATE)).toFixed(2)),
           discount_code_used: discountData?.code || null,
           client_email: user.email || '',
           client_name: user.user_metadata?.full_name || null,
