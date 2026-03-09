@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { User } from '@supabase/supabase-js';
 import {
   SubdivisionLot, SubdivisionRoad, SubdivisionCommonSpace, SubdivisionServitude,
   PlanElements, DEFAULT_PLAN_ELEMENTS, ParentParcelInfo, RequesterInfo,
@@ -7,7 +8,7 @@ import {
 } from '../types';
 import { autoSubdivide, generateRoads, validateSubdivision, ValidationResult, gpsToNormalized } from '../utils/geometry';
 
-export function useSubdivisionForm(parcelNumber: string, parcelData?: any) {
+export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authUser?: User | null) {
   // Steps
   const [currentStep, setCurrentStep] = useState<SubdivisionStep>('parcel');
   
