@@ -547,6 +547,40 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 onMouseDown={e => handleMouseDown(lot.id, i, e)}
               />
             ))}
+
+            {/* Split lot button */}
+            {splitLotId === lot.id && !readOnly && onSplitLot && (
+              <g
+                className="cursor-pointer"
+                onClick={e => {
+                  e.stopPropagation();
+                  onSplitLot(lot.id);
+                  setSplitLotId(null);
+                }}
+              >
+                <rect
+                  x={cx - 42}
+                  y={cy - 32}
+                  width={84}
+                  height={22}
+                  rx={6}
+                  fill="hsl(var(--primary))"
+                  fillOpacity={0.95}
+                />
+                <text
+                  x={cx}
+                  y={cy - 21}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fontSize={9}
+                  fontWeight="bold"
+                  fill="white"
+                  className="pointer-events-none select-none"
+                >
+                  ✂ Diviser en 2
+                </text>
+              </g>
+            )}
           </g>
         );
       })}
