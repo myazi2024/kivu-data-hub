@@ -270,11 +270,19 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any) {
     }
   }, [parentParcel, requester, lots, roads, commonSpaces, servitudes, planElements, purpose, parcelNumber]);
   
+  // Compute normalized parent vertices from GPS coordinates
+  const parentVertices = useMemo<Point2D[] | undefined>(() => {
+    if (!parentParcel || parentParcel.gpsCoordinates.length < 3) return undefined;
+    return parentParcel.gpsCoordinates.map(gps => gpsToNormalized(gps, parentParcel.gpsCoordinates));
+  }, [parentParcel]);
+
   return {
     // Steps
     currentStep, setCurrentStep, steps, goNext, goPrev, isStepValid,
     // Parent parcel
     parentParcel, loadingParcel, setParentParcel,
+    // Parent vertices (normalized shape)
+    parentVertices,
     // Requester
     requester, setRequester,
     // Plan data
