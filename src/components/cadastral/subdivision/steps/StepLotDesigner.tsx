@@ -9,11 +9,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import {
   Wand2, Plus, Trash2, Undo2, Redo2, AlertTriangle, CheckCircle,
-  Grid3X3, ArrowLeftRight, ArrowUpDown, Info, Settings2, Route
+  Grid3X3, ArrowLeftRight, ArrowUpDown, Info, Settings2, Route,
+  Scissors, MousePointer, Pencil
 } from 'lucide-react';
 import { SubdivisionLot, SubdivisionRoad, AutoSubdivideOptions, ParentParcelInfo, LOT_COLORS, USAGE_LABELS, ROAD_SURFACE_LABELS, Point2D } from '../types';
-import { ValidationResult, mergeLotsThroughDeletedRoad } from '../utils/geometry';
-import LotCanvas from '../LotCanvas';
+import { ValidationResult, mergeLotsThroughDeletedRoad, polygonArea } from '../utils/geometry';
+import LotCanvas, { CanvasMode } from '../LotCanvas';
 
 interface StepLotDesignerProps {
   parentParcel: ParentParcelInfo | null;
@@ -57,6 +58,24 @@ function convexHull(points: Point2D[]): Point2D[] {
   return hull;
 }
 
+// Line segment intersection helper
+function lineSegmentIntersection(
+  p1: Point2D, p2: Point2D, p3: Point2D, p4: Point2D
+): { point: Point2D; t: number } | null {
+  const d1x = p2.x - p1.x, d1y = p2.y - p1.y;
+  const d2x = p4.x - p3.x, d2y = p4.y - p3.y;
+  const denom = d1x * d2y - d1y * d2x;
+  if (Math.abs(denom) < 1e-10) return null;
+  const t = ((p3.x - p1.x) * d2y - (p3.y - p1.y) * d2x) / denom;
+  const u = ((p3.x - p1.x) * d1y - (p3.y - p1.y) * d1x) / denom;
+  if (u < 0 || u > 1) return null; // Must hit the edge segment
+  // t can be any value (we extend the cut line)
+  return {
+    point: { x: p1.x + t * d1x, y: p1.y + t * d1y },
+    t: u,
+  };
+}
+
 const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   parentParcel, parentVertices, parentSides, lots, setLots, roads, setRoads,
   onAutoSubdivide, validation, canUndo, canRedo, onUndo, onRedo
@@ -69,6 +88,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   const [selectedLotIds, setSelectedLotIds] = useState<string[]>([]);
   const [showAutoPanel, setShowAutoPanel] = useState(lots.length === 0);
   const [editingRoadId, setEditingRoadId] = useState<string | null>(null);
+  const [canvasMode, setCanvasMode] = useState<CanvasMode>('select');
 
   const editingRoad = roads.find(r => r.id === editingRoadId) || null;
 
@@ -252,6 +272,83 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     setSelectedLotId(mergedLot.id);
   }, [lots, setLots]);
 
+  // Handle manual cut through a lot
+  const handleCutLot = useCallback((lotId: string, cutStart: Point2D, cutEnd: Point2D) => {
+    const lot = lots.find(l => l.id === lotId);
+    if (!lot || lot.vertices.length < 3) return;
+
+    // Find intersections of cut line with lot edges
+    const verts = lot.vertices;
+    const intersections: { point: Point2D; edgeIdx: number; t: number }[] = [];
+    
+    for (let i = 0; i < verts.length; i++) {
+      const j = (i + 1) % verts.length;
+      const inter = lineSegmentIntersection(cutStart, cutEnd, verts[i], verts[j]);
+      if (inter) {
+        intersections.push({ point: inter.point, edgeIdx: i, t: inter.t });
+      }
+    }
+
+    if (intersections.length < 2) return; // Need at least 2 intersections
+    
+    // Take first two intersections (sorted by edge index)
+    intersections.sort((a, b) => a.edgeIdx - b.edgeIdx || a.t - b.t);
+    const int1 = intersections[0];
+    const int2 = intersections[1];
+
+    // Build two polygons
+    const poly1: Point2D[] = [int1.point];
+    for (let i = (int1.edgeIdx + 1) % verts.length; i !== (int2.edgeIdx + 1) % verts.length; i = (i + 1) % verts.length) {
+      poly1.push(verts[i]);
+    }
+    poly1.push(int2.point);
+
+    const poly2: Point2D[] = [int2.point];
+    for (let i = (int2.edgeIdx + 1) % verts.length; i !== (int1.edgeIdx + 1) % verts.length; i = (i + 1) % verts.length) {
+      poly2.push(verts[i]);
+    }
+    poly2.push(int1.point);
+
+    if (poly1.length < 3 || poly2.length < 3) return;
+
+    const totalNormArea = polygonArea(verts);
+    const norm1 = polygonArea(poly1);
+    const norm2 = polygonArea(poly2);
+    const area1 = totalNormArea > 0 ? Math.round(lot.areaSqm * norm1 / totalNormArea) : Math.round(lot.areaSqm / 2);
+    const area2 = lot.areaSqm - area1;
+
+    const maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0);
+
+    const newLot1: SubdivisionLot = {
+      ...lot, id: `lot-${Date.now()}-a`, lotNumber: String(maxLotNum + 1),
+      vertices: poly1, areaSqm: Math.max(1, area1),
+    };
+    const newLot2: SubdivisionLot = {
+      ...lot, id: `lot-${Date.now()}-b`, lotNumber: String(maxLotNum + 2),
+      vertices: poly2, areaSqm: Math.max(1, area2),
+    };
+
+    setLots(lots.map(l => l.id === lotId ? newLot1 : l).concat(newLot2));
+    setSelectedLotId(newLot1.id);
+    setCanvasMode('select');
+  }, [lots, setLots]);
+
+  // Handle finished road drawing
+  const handleFinishRoadDraw = useCallback((path: Point2D[]) => {
+    if (path.length < 2) return;
+    const newRoad: SubdivisionRoad = {
+      id: `road-draw-${Date.now()}`,
+      name: `Voie ${roads.length + 1}`,
+      widthM: 6,
+      surfaceType: 'planned',
+      isExisting: false,
+      path,
+    };
+    setRoads([...roads, newRoad]);
+    setEditingRoadId(newRoad.id);
+    setCanvasMode('select');
+  }, [roads, setRoads]);
+
   const totalArea = lots.reduce((s, l) => s + l.areaSqm, 0);
   const parentArea = parentParcel?.areaSqm || 0;
   const coveragePercent = parentArea > 0 ? Math.round(totalArea / parentArea * 100) : 0;
@@ -269,6 +366,44 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
           <Wand2 className="h-3.5 w-3.5" />
           Auto-découpage
         </Button>
+        
+        <Separator orientation="vertical" className="h-6" />
+        
+        {/* Mode buttons */}
+        <Button
+          variant={canvasMode === 'select' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setCanvasMode('select')}
+          className="gap-1 text-xs"
+          title="Sélectionner et déplacer"
+        >
+          <MousePointer className="h-3.5 w-3.5" />
+          Sélection
+        </Button>
+        <Button
+          variant={canvasMode === 'cut' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setCanvasMode(canvasMode === 'cut' ? 'select' : 'cut')}
+          className="gap-1 text-xs"
+          disabled={lots.length === 0}
+          title="Découper un lot en traçant une ligne"
+        >
+          <Scissors className="h-3.5 w-3.5" />
+          Découper
+        </Button>
+        <Button
+          variant={canvasMode === 'drawRoad' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setCanvasMode(canvasMode === 'drawRoad' ? 'select' : 'drawRoad')}
+          className="gap-1 text-xs"
+          title="Tracer une voie manuellement"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+          Tracer voie
+        </Button>
+        
+        <Separator orientation="vertical" className="h-6" />
+
         <Button variant="outline" size="sm" onClick={onUndo} disabled={!canUndo} className="gap-1 text-xs">
           <Undo2 className="h-3.5 w-3.5" /> Annuler
         </Button>
@@ -389,6 +524,9 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 onDeleteRoad={handleDeleteRoad}
                 onSplitLot={handleSplitLot}
                 onMergeLots={handleMergeLots}
+                onCutLot={handleCutLot}
+                onFinishRoadDraw={handleFinishRoadDraw}
+                mode={canvasMode}
                 onUpdateLot={(id, vertices) => {
                   setLots(lots.map(l => l.id === id ? { ...l, vertices } : l));
                 }}
