@@ -31,6 +31,7 @@ import { useToast } from '@/hooks/use-toast';
 import { usePaymentConfig } from '@/hooks/usePaymentConfig';
 import CadastralPaymentDialog from './CadastralPaymentDialog';
 import DiscountCodeInput from './DiscountCodeInput';
+import { TVA_RATE } from '@/constants/billing';
 
 interface CadastralBillingPanelProps {
   searchResult: CadastralSearchResult;
