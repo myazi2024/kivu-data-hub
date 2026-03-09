@@ -12,7 +12,7 @@ import {
   Grid3X3, ArrowLeftRight, ArrowUpDown, Info, Settings2, Route
 } from 'lucide-react';
 import { SubdivisionLot, SubdivisionRoad, AutoSubdivideOptions, ParentParcelInfo, LOT_COLORS, USAGE_LABELS, ROAD_SURFACE_LABELS, Point2D } from '../types';
-import { ValidationResult } from '../utils/geometry';
+import { ValidationResult, mergeLotsThroughDeletedRoad } from '../utils/geometry';
 import LotCanvas from '../LotCanvas';
 
 interface StepLotDesignerProps {
