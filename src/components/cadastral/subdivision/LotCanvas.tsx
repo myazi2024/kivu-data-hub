@@ -95,10 +95,16 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     setDraggingVertex(null);
   }, []);
 
-  const handleLotClick = useCallback((lotId: string) => {
+  const handleLotClick = useCallback((lotId: string, e: React.MouseEvent) => {
+    // Ctrl/Cmd+click for multi-select
+    if ((e.ctrlKey || e.metaKey) && onToggleLotSelection) {
+      onToggleLotSelection(lotId);
+      setSplitLotId(null);
+      return;
+    }
     onSelectLot(lotId === selectedLotId ? null : lotId);
     onSelectRoad?.(null);
-  }, [selectedLotId, onSelectLot, onSelectRoad]);
+  }, [selectedLotId, onSelectLot, onSelectRoad, onToggleLotSelection]);
 
   const handleLotDoubleClick = useCallback((lotId: string, e: React.MouseEvent) => {
     e.stopPropagation();
