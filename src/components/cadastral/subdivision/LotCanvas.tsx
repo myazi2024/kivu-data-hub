@@ -37,6 +37,7 @@ const PADDING = 30;
 
 const LotCanvas: React.FC<LotCanvasProps> = ({
   lots, roads, parentAreaSqm, parentVertices, parentSides, selectedLotId, onSelectLot, onUpdateLot,
+  selectedRoadId, onSelectRoad, onDeleteRoad,
   showGrid = true, showDimensions = true, showLotNumbers = true,
   showAreas = true, showRoads = true, showNorth = true,
   showLegend = false, showScale = true, showOwnerNames = false,
