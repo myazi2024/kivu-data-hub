@@ -335,6 +335,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
           preselectServiceId={preselectServiceId}
           onClose={onClose}
           onRequestContribution={() => setShowContributionDialog(true)}
+          alreadyPaidServices={paidServices}
         />
         <CadastralContributionDialog
           open={showContributionDialog}
