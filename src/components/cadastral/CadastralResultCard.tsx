@@ -142,26 +142,38 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
     }
   }, []);
 
-  // Check user access to different services on mount
-  // Fix #15: Une seule requête batch au lieu de 5 séquentielles
-  React.useEffect(() => {
-    const checkAllServices = async () => {
-      if (!user) return;
-      
-      const paidServicesList = await checkMultipleServiceAccess(
-        user.id,
-        parcel.parcel_number,
-        ['information', 'location_history', 'history', 'obligations', 'land_disputes']
-      );
-      
-      if (paidServicesList.length > 0) {
-        setPaidServices(paidServicesList);
-        setShowBillingPanel(false);
-      }
-    };
+  // Fix #3: Utiliser les IDs dynamiques du catalogue au lieu de hardcoder
+  // Fix #9: Écouter l'événement cadastralPaymentCompleted pour re-vérifier
+  const checkAllServices = React.useCallback(async () => {
+    if (!user || catalogServices.length === 0) return;
+    
+    const serviceIds = catalogServices.map(s => s.id);
+    const paidServicesList = await checkMultipleServiceAccess(
+      user.id,
+      parcel.parcel_number,
+      serviceIds
+    );
+    
+    if (paidServicesList.length > 0) {
+      setPaidServices(paidServicesList);
+      setShowBillingPanel(false);
+    }
+  }, [user, parcel.parcel_number, catalogServices]);
 
+  React.useEffect(() => {
     checkAllServices();
-  }, [user, parcel.parcel_number]);
+  }, [checkAllServices]);
+
+  // Fix #9: Re-vérifier les accès après un paiement réussi
+  React.useEffect(() => {
+    const handlePaymentCompleted = () => {
+      checkAllServices();
+    };
+    window.addEventListener('cadastralPaymentCompleted', handlePaymentCompleted);
+    return () => {
+      window.removeEventListener('cadastralPaymentCompleted', handlePaymentCompleted);
+    };
+  }, [checkAllServices]);
 
   const handlePaymentSuccess = (services: string[]) => {
     // En mode test: ajouter les nouveaux services aux services déjà payés
