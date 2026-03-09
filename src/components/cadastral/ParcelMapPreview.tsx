@@ -445,8 +445,39 @@ export const ParcelMapPreview = ({
         maxZoom: 19,
       }).addTo(map);
 
-      // Contrôle de zoom en bas à droite
-      L.control.zoom({ position: 'bottomright' }).addTo(map);
+      // Contrôle de zoom personnalisé : + = zoom max, - = zoom min
+      const ZoomMaxControl = L.Control.extend({
+        options: { position: 'bottomright' },
+        onAdd: function(map: any) {
+          const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-zoom');
+          
+          const zoomIn = L.DomUtil.create('a', 'leaflet-control-zoom-in', container);
+          zoomIn.innerHTML = '+';
+          zoomIn.title = 'Zoom max';
+          zoomIn.href = '#';
+          zoomIn.role = 'button';
+          zoomIn.setAttribute('aria-label', 'Zoom max');
+          L.DomEvent.on(zoomIn, 'click', function(e: any) {
+            L.DomEvent.preventDefault(e);
+            map.setZoom(map.getMaxZoom());
+          });
+          
+          const zoomOut = L.DomUtil.create('a', 'leaflet-control-zoom-out', container);
+          zoomOut.innerHTML = '\u2212';
+          zoomOut.title = 'Zoom min';
+          zoomOut.href = '#';
+          zoomOut.role = 'button';
+          zoomOut.setAttribute('aria-label', 'Zoom min');
+          L.DomEvent.on(zoomOut, 'click', function(e: any) {
+            L.DomEvent.preventDefault(e);
+            map.setZoom(map.getMinZoom());
+          });
+          
+          L.DomEvent.disableClickPropagation(container);
+          return container;
+        }
+      });
+      new ZoomMaxControl().addTo(map);
 
       // Échelle
       L.control.scale({
