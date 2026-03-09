@@ -85,6 +85,10 @@ export const useCadastralPayment = () => {
       const originalAmount = selectedServices.reduce((sum, s) => sum + s.price, 0);
       const discountAmount = discountData?.amount || 0;
       const finalAmount = Math.max(0, originalAmount - discountAmount);
+      // Fix #2: Inclure la TVA dans le montant stocké en DB pour cohérence avec l'affichage
+      const TVA_RATE = 0.16;
+      const finalAmountTTC = finalAmount * (1 + TVA_RATE);
+      const originalAmountTTC = originalAmount * (1 + TVA_RATE);
       
       const geographicalZone = selectedServices[0]?.parcel_location || '';
       const serviceIds = selectedServices.map(s => s.id);
