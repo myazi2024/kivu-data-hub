@@ -112,8 +112,9 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     }
   }, [catalogServices, serviceAvailability]);
 
+  // Fix #14: Ajouter catalogServices et selectedServices aux deps
   React.useEffect(() => {
-    if (preselectServiceId && !selectedServices.some(s => s.id === preselectServiceId)) {
+    if (preselectServiceId && catalogServices.length > 0 && !selectedServices.some(s => s.id === preselectServiceId)) {
       const service = catalogServices.find(s => s.id === preselectServiceId);
       if (service) {
         toggleService({
@@ -126,7 +127,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
         });
       }
     }
-  }, [preselectServiceId]);
+  }, [preselectServiceId, catalogServices]);
 
   const handleServiceToggle = (serviceId: string) => {
     const service = catalogServices.find(s => s.id === serviceId);
