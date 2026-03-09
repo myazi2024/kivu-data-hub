@@ -16,10 +16,29 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   const [parentParcel, setParentParcel] = useState<ParentParcelInfo | null>(null);
   const [loadingParcel, setLoadingParcel] = useState(false);
   
-  // Requester
+  // Requester - auto-populated from auth user
   const [requester, setRequester] = useState<RequesterInfo>({
     firstName: '', lastName: '', phone: '', type: 'owner', isOwner: true,
   });
+  
+  // Auto-fill requester from authenticated user
+  useEffect(() => {
+    if (authUser) {
+      const meta = authUser.user_metadata || {};
+      const fullName = meta.full_name || meta.name || '';
+      const nameParts = fullName.split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
+      setRequester(prev => ({
+        ...prev,
+        firstName: firstName || prev.firstName,
+        lastName: lastName || prev.lastName,
+        phone: authUser.phone || meta.phone || prev.phone,
+        email: authUser.email || prev.email,
+      }));
+    }
+  }, [authUser]);
   
   // Plan data
   const [lots, setLots] = useState<SubdivisionLot[]>([]);

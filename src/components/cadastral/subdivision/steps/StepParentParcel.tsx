@@ -95,61 +95,54 @@ const StepParentParcel: React.FC<StepParentParcelProps> = ({
       
       <Separator />
       
-      {/* Requester info */}
+      {/* Requester info - auto-filled from connected account */}
       <Card>
         <CardContent className="pt-4 space-y-3">
           <div className="flex items-center gap-2 mb-2">
             <User className="h-4 w-4 text-primary" />
-            <h3 className="font-semibold text-sm">Informations du demandeur</h3>
+            <h3 className="font-semibold text-sm">Demandeur</h3>
+            <Badge variant="secondary" className="text-[10px]">
+              <CheckCircle className="h-3 w-3 mr-1" /> Compte connecté
+            </Badge>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs">Nom <span className="text-destructive">*</span></Label>
-              <Input
-                placeholder="Nom de famille"
-                value={requester.lastName}
-                onChange={e => onRequesterChange({ ...requester, lastName: e.target.value })}
-                className="h-9 text-sm"
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Prénom <span className="text-destructive">*</span></Label>
-              <Input
-                placeholder="Prénom"
-                value={requester.firstName}
-                onChange={e => onRequesterChange({ ...requester, firstName: e.target.value })}
-                className="h-9 text-sm"
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Post-nom</Label>
-              <Input
-                placeholder="Post-nom (optionnel)"
-                value={requester.middleName || ''}
-                onChange={e => onRequesterChange({ ...requester, middleName: e.target.value })}
-                className="h-9 text-sm"
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Téléphone <span className="text-destructive">*</span></Label>
-              <Input
-                placeholder="+243..."
-                value={requester.phone}
-                onChange={e => onRequesterChange({ ...requester, phone: e.target.value })}
-                className="h-9 text-sm"
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Email</Label>
-              <Input
-                placeholder="email@exemple.com"
-                type="email"
-                value={requester.email || ''}
-                onChange={e => onRequesterChange({ ...requester, email: e.target.value })}
-                className="h-9 text-sm"
-              />
-            </div>
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            {requester.firstName && (
+              <div>
+                <span className="text-muted-foreground text-xs">Prénom</span>
+                <p className="font-medium">{requester.firstName}</p>
+              </div>
+            )}
+            {requester.lastName && (
+              <div>
+                <span className="text-muted-foreground text-xs">Nom</span>
+                <p className="font-medium">{requester.lastName}</p>
+              </div>
+            )}
+            {requester.email && (
+              <div>
+                <span className="text-muted-foreground text-xs">Email</span>
+                <p className="font-medium">{requester.email}</p>
+              </div>
+            )}
+            {requester.phone && (
+              <div>
+                <span className="text-muted-foreground text-xs">Téléphone</span>
+                <p className="font-medium">{requester.phone}</p>
+              </div>
+            )}
+          </div>
+
+          {!requester.firstName && !requester.lastName && (
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription className="text-xs">
+                Les informations du demandeur seront récupérées depuis votre compte utilisateur.
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
             <div>
               <Label className="text-xs">Qualité du demandeur</Label>
               <Select value={requester.type} onValueChange={(v: any) => onRequesterChange({ ...requester, type: v })}>
