@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { SubdivisionLot, SubdivisionRoad, LOT_COLORS, USAGE_LABELS, Point2D } from './types';
 
 interface ParcelSide {
@@ -19,6 +19,7 @@ interface LotCanvasProps {
   selectedRoadId?: string | null;
   onSelectRoad?: (id: string | null) => void;
   onDeleteRoad?: (id: string) => void;
+  onSplitLot?: (id: string) => void;
   showGrid?: boolean;
   showDimensions?: boolean;
   showLotNumbers?: boolean;
@@ -37,7 +38,7 @@ const PADDING = 30;
 
 const LotCanvas: React.FC<LotCanvasProps> = ({
   lots, roads, parentAreaSqm, parentVertices, parentSides, selectedLotId, onSelectLot, onUpdateLot,
-  selectedRoadId, onSelectRoad, onDeleteRoad,
+  selectedRoadId, onSelectRoad, onDeleteRoad, onSplitLot,
   showGrid = true, showDimensions = true, showLotNumbers = true,
   showAreas = true, showRoads = true, showNorth = true,
   showLegend = false, showScale = true, showOwnerNames = false,
@@ -45,6 +46,8 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [draggingVertex, setDraggingVertex] = useState<{ lotId: string; vertexIdx: number } | null>(null);
+  const [splitLotId, setSplitLotId] = useState<string | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const toScreen = useCallback((p: Point2D) => ({
     x: PADDING + p.x * (CANVAS_W - 2 * PADDING),
@@ -94,10 +97,40 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     onSelectRoad?.(null);
   }, [selectedLotId, onSelectLot, onSelectRoad]);
 
+  const handleLotDoubleClick = useCallback((lotId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (readOnly || !onSplitLot) return;
+    onSelectLot(lotId);
+    onSelectRoad?.(null);
+    setSplitLotId(lotId);
+  }, [readOnly, onSplitLot, onSelectLot, onSelectRoad]);
+
+  const handleLotTouchStart = useCallback((lotId: string) => {
+    if (readOnly || !onSplitLot) return;
+    longPressTimerRef.current = setTimeout(() => {
+      onSelectLot(lotId);
+      onSelectRoad?.(null);
+      setSplitLotId(lotId);
+    }, 600);
+  }, [readOnly, onSplitLot, onSelectLot, onSelectRoad]);
+
+  const handleLotTouchEnd = useCallback(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
+
+  // Clear split button when selecting another lot or clicking elsewhere
+  useEffect(() => {
+    if (selectedLotId !== splitLotId) setSplitLotId(null);
+  }, [selectedLotId, splitLotId]);
+
   const handleRoadClick = useCallback((roadId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     onSelectRoad?.(roadId === selectedRoadId ? null : roadId);
     onSelectLot(null);
+    setSplitLotId(null);
   }, [selectedRoadId, onSelectRoad, onSelectLot]);
 
   const sideLength = Math.sqrt(parentAreaSqm);
@@ -389,6 +422,10 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
               strokeWidth={isSelected ? 2.5 : 1.5}
               className={readOnly ? '' : 'cursor-pointer'}
               onClick={() => handleLotClick(lot.id)}
+              onDoubleClick={e => handleLotDoubleClick(lot.id, e)}
+              onTouchStart={() => handleLotTouchStart(lot.id)}
+              onTouchEnd={handleLotTouchEnd}
+              onTouchCancel={handleLotTouchEnd}
             />
 
             {/* Lot number */}
@@ -510,6 +547,40 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 onMouseDown={e => handleMouseDown(lot.id, i, e)}
               />
             ))}
+
+            {/* Split lot button */}
+            {splitLotId === lot.id && !readOnly && onSplitLot && (
+              <g
+                className="cursor-pointer"
+                onClick={e => {
+                  e.stopPropagation();
+                  onSplitLot(lot.id);
+                  setSplitLotId(null);
+                }}
+              >
+                <rect
+                  x={cx - 42}
+                  y={cy - 32}
+                  width={84}
+                  height={22}
+                  rx={6}
+                  fill="hsl(var(--primary))"
+                  fillOpacity={0.95}
+                />
+                <text
+                  x={cx}
+                  y={cy - 21}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fontSize={9}
+                  fontWeight="bold"
+                  fill="white"
+                  className="pointer-events-none select-none"
+                >
+                  ✂ Diviser en 2
+                </text>
+              </g>
+            )}
           </g>
         );
       })}

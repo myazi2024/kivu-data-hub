@@ -108,6 +108,89 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     if (selectedLotId === id) setSelectedLotId(null);
   }, [lots, setLots, selectedLotId]);
 
+  const handleSplitLot = useCallback((lotId: string) => {
+    const lot = lots.find(l => l.id === lotId);
+    if (!lot || lot.vertices.length < 3) return;
+
+    // Find the longest edge to split along
+    const verts = lot.vertices;
+    let longestIdx = 0;
+    let longestDist = 0;
+    for (let i = 0; i < verts.length; i++) {
+      const next = verts[(i + 1) % verts.length];
+      const dx = next.x - verts[i].x;
+      const dy = next.y - verts[i].y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist > longestDist) {
+        longestDist = dist;
+        longestIdx = i;
+      }
+    }
+
+    // Find the opposite edge (approximately halfway around the polygon)
+    const oppositeIdx = (longestIdx + Math.floor(verts.length / 2)) % verts.length;
+
+    // Midpoints of the two edges
+    const mid1 = {
+      x: (verts[longestIdx].x + verts[(longestIdx + 1) % verts.length].x) / 2,
+      y: (verts[longestIdx].y + verts[(longestIdx + 1) % verts.length].y) / 2,
+    };
+    const mid2 = {
+      x: (verts[oppositeIdx].x + verts[(oppositeIdx + 1) % verts.length].x) / 2,
+      y: (verts[oppositeIdx].y + verts[(oppositeIdx + 1) % verts.length].y) / 2,
+    };
+
+    // Build two sub-polygons by splitting the vertex ring
+    const buildSubPoly = (startIdx: number, endIdx: number, midStart: Point2D, midEnd: Point2D): Point2D[] => {
+      const poly: Point2D[] = [midStart];
+      let i = (startIdx + 1) % verts.length;
+      while (i !== (endIdx + 1) % verts.length) {
+        poly.push(verts[i]);
+        i = (i + 1) % verts.length;
+      }
+      poly.push(midEnd);
+      return poly;
+    };
+
+    const poly1 = buildSubPoly(longestIdx, oppositeIdx, mid1, mid2);
+    const poly2 = buildSubPoly(oppositeIdx, longestIdx, mid2, mid1);
+
+    const calcArea = (poly: Point2D[]) => {
+      let a = 0;
+      for (let i = 0; i < poly.length; i++) {
+        const j = (i + 1) % poly.length;
+        a += poly[i].x * poly[j].y - poly[j].x * poly[i].y;
+      }
+      return Math.abs(a) / 2;
+    };
+
+    const totalNormArea = calcArea(verts);
+    const norm1 = calcArea(poly1);
+    const norm2 = calcArea(poly2);
+    const area1 = totalNormArea > 0 ? Math.round(lot.areaSqm * norm1 / totalNormArea) : Math.round(lot.areaSqm / 2);
+    const area2 = lot.areaSqm - area1;
+
+    const maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0);
+
+    const newLot1: SubdivisionLot = {
+      ...lot,
+      id: `lot-${Date.now()}-a`,
+      lotNumber: String(maxLotNum + 1),
+      vertices: poly1,
+      areaSqm: area1,
+    };
+    const newLot2: SubdivisionLot = {
+      ...lot,
+      id: `lot-${Date.now()}-b`,
+      lotNumber: String(maxLotNum + 2),
+      vertices: poly2,
+      areaSqm: area2,
+    };
+
+    setLots(lots.map(l => l.id === lotId ? newLot1 : l).concat(newLot2));
+    setSelectedLotId(newLot1.id);
+  }, [lots, setLots]);
+
   const totalArea = lots.reduce((s, l) => s + l.areaSqm, 0);
   const parentArea = parentParcel?.areaSqm || 0;
   const coveragePercent = parentArea > 0 ? Math.round(totalArea / parentArea * 100) : 0;
@@ -241,6 +324,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 selectedRoadId={editingRoadId}
                 onSelectRoad={setEditingRoadId}
                 onDeleteRoad={handleDeleteRoad}
+                onSplitLot={handleSplitLot}
                 onUpdateLot={(id, vertices) => {
                   setLots(lots.map(l => l.id === id ? { ...l, vertices } : l));
                 }}
