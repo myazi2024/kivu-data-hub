@@ -1,4 +1,4 @@
-import { Point2D, GpsPoint, SubdivisionLot, AutoSubdivideOptions } from '../types';
+import { Point2D, GpsPoint, SubdivisionLot, AutoSubdivideOptions, ParcelSideInfo } from '../types';
 
 /**
  * Calculate polygon area using Shoelace formula
