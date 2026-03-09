@@ -358,6 +358,35 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
               </text>
             )}
 
+            {/* Road-served indicator */}
+            {lot.notes?.includes('route existante') && (
+              <g className="select-none pointer-events-none">
+                <rect
+                  x={cx - 28}
+                  y={cy + (showAreas ? 18 : 10)}
+                  width={56}
+                  height={12}
+                  rx={2}
+                  fill="#92400e"
+                  fillOpacity={0.15}
+                  stroke="#92400e"
+                  strokeWidth={0.5}
+                  strokeOpacity={0.4}
+                />
+                <text
+                  x={cx}
+                  y={cy + (showAreas ? 24 : 16)}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fontSize={6}
+                  fill="#92400e"
+                  fontWeight="600"
+                >
+                  🛣 Route existante
+                </text>
+              </g>
+            )}
+
             {/* Dimensions on edges */}
             {showDimensions && lot.vertices.map((v, i) => {
               const next = lot.vertices[(i + 1) % lot.vertices.length];
