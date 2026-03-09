@@ -21,6 +21,8 @@ import {
   Printer,
   Settings,
   FileCheck,
+  ExternalLink,
+  Info,
   Hash,
   Scale
 } from 'lucide-react';
@@ -30,6 +32,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
 import { useCadastralServices } from '@/hooks/useCadastralServices';
