@@ -87,7 +87,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   const [expandedServices, setExpandedServices] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const { paymentMode, isPaymentRequired } = usePaymentConfig();
-  const { services: catalogServices } = useCadastralServices();
+  const { services: catalogServices, loading: catalogLoading, error: catalogError } = useCadastralServices();
   const { selectedServices, toggleService, getTotalAmount, setParcelNumber } = useCadastralCart();
   const { loading, createInvoice } = useCadastralPayment();
 
@@ -112,8 +112,9 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     }
   }, [catalogServices, serviceAvailability]);
 
+  // Fix #14: Ajouter catalogServices et selectedServices aux deps
   React.useEffect(() => {
-    if (preselectServiceId && !selectedServices.some(s => s.id === preselectServiceId)) {
+    if (preselectServiceId && catalogServices.length > 0 && !selectedServices.some(s => s.id === preselectServiceId)) {
       const service = catalogServices.find(s => s.id === preselectServiceId);
       if (service) {
         toggleService({
@@ -126,7 +127,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
         });
       }
     }
-  }, [preselectServiceId]);
+  }, [preselectServiceId, catalogServices]);
 
   const handleServiceToggle = (serviceId: string) => {
     const service = catalogServices.find(s => s.id === serviceId);
@@ -244,7 +245,19 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             </p>
           </div>
 
-          {/* Header catalogue compact */}
+          {/* Fix #10 & #11: États de chargement et d'erreur du catalogue */}
+          {catalogLoading ? (
+            <div className="flex items-center justify-center p-6">
+              <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent" />
+              <span className="ml-2 text-xs text-muted-foreground">Chargement du catalogue...</span>
+            </div>
+          ) : catalogError ? (
+            <Alert variant="destructive" className="text-xs">
+              <AlertDescription>
+                Impossible de charger le catalogue de services. Veuillez réessayer.
+              </AlertDescription>
+            </Alert>
+          ) : (
           <div className="space-y-2">
             {/* Tout sélectionner - compact */}
             <div className="flex items-center justify-between p-2 bg-muted/30 rounded-xl border border-dashed">
@@ -387,6 +400,8 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
               })}
             </div>
           </div>
+          )}
+
 
           {selectedServiceIds.length > 0 && (
             <div className="rounded-xl border bg-muted/20 p-2.5">

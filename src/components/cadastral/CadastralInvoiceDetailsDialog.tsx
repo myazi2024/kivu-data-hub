@@ -4,13 +4,33 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Calendar, FileText, MapPin, User, Building, CreditCard, Download } from 'lucide-react';
-import { CadastralInvoice, CADASTRAL_SERVICES } from '@/hooks/useCadastralBilling';
+// Fix #2: Types locaux, plus de dépendance sur useCadastralBilling
+
+interface CadastralInvoiceForDialog {
+  id: string;
+  parcel_number: string;
+  search_date: string;
+  selected_services: any;
+  total_amount_usd: number;
+  status: string;
+  invoice_number: string;
+  client_name?: string | null;
+  client_email: string;
+  client_organization?: string | null;
+  geographical_zone?: string | null;
+  payment_method?: string | null;
+  created_at: string;
+  updated_at: string;
+  discount_code_used?: string | null;
+  discount_amount_usd?: number;
+  original_amount_usd?: number;
+}
 
 interface CadastralInvoiceDetailsDialogProps {
-  invoice: CadastralInvoice | null;
+  invoice: CadastralInvoiceForDialog | null;
   isOpen: boolean;
   onClose: () => void;
-  onDownloadPDF: (invoice: CadastralInvoice) => void;
+  onDownloadPDF: (invoice: CadastralInvoiceForDialog) => void;
 }
 
 const CadastralInvoiceDetailsDialog: React.FC<CadastralInvoiceDetailsDialogProps> = ({
@@ -151,10 +171,10 @@ const CadastralInvoiceDetailsDialog: React.FC<CadastralInvoiceDetailsDialogProps
           <div className="space-y-3">
             <h3 className="text-lg font-semibold">Services demandés</h3>
             <div className="space-y-2">
-              {selectedServices.map((service) => (
+              {Array.isArray(selectedServices) && selectedServices.map((service) => (
                 <div key={service.id} className="flex justify-between items-center py-2 px-3 bg-muted/30 rounded-md">
-                  <span className="text-sm">{service.name}</span>
-                  <span className="text-sm font-medium">${service.price}</span>
+                  <span className="text-sm">{service.name || service.id}</span>
+                  <span className="text-sm font-medium">${Number(service.price || 0).toFixed(2)}</span>
                 </div>
               ))}
             </div>
@@ -169,14 +189,14 @@ const CadastralInvoiceDetailsDialog: React.FC<CadastralInvoiceDetailsDialogProps
               {invoice.original_amount_usd && (
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Montant original</span>
-                  <span className="text-sm">${invoice.original_amount_usd}</span>
+                  <span className="text-sm">${Number(invoice.original_amount_usd).toFixed(2)}</span>
                 </div>
               )}
               
-              {invoice.discount_amount_usd > 0 && (
+              {(invoice.discount_amount_usd ?? 0) > 0 && (
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Remise appliquée</span>
-                  <span className="text-sm text-green-600">-${invoice.discount_amount_usd}</span>
+                  <span className="text-sm text-green-600">-${Number(invoice.discount_amount_usd).toFixed(2)}</span>
                 </div>
               )}
 
@@ -192,7 +212,7 @@ const CadastralInvoiceDetailsDialog: React.FC<CadastralInvoiceDetailsDialogProps
               <div className="border-t pt-2">
                 <div className="flex justify-between items-center font-semibold">
                   <span>Total à payer</span>
-                  <span className="text-primary text-lg">${invoice.total_amount_usd}</span>
+                  <span className="text-primary text-lg">${Number(invoice.total_amount_usd).toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -208,7 +228,7 @@ const CadastralInvoiceDetailsDialog: React.FC<CadastralInvoiceDetailsDialogProps
               <span className="text-sm font-medium">Méthode de paiement</span>
             </div>
             <p className="text-sm text-muted-foreground pl-6">
-              {getPaymentMethodDisplay(invoice.payment_method)}
+              {getPaymentMethodDisplay(invoice.payment_method ?? null)}
             </p>
             
             {invoice.geographical_zone && (
