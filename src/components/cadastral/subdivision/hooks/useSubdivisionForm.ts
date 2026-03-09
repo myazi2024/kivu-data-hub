@@ -114,12 +114,21 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any) {
   const handleAutoSubdivide = useCallback((options: AutoSubdivideOptions) => {
     if (!parentParcel) return;
     
-    const newLots = autoSubdivide(options, parentParcel.areaSqm, parentVertices);
+    // Inject parcelSides into options for road-aware subdivision
+    const optionsWithSides: AutoSubdivideOptions = {
+      ...options,
+      parcelSides: parentParcel.parcelSides as any[] | undefined,
+    };
+    
+    const newLots = autoSubdivide(optionsWithSides, parentParcel.areaSqm, parentVertices);
     pushHistory(newLots);
     setLots(newLots);
     
-    if (options.includeRoad) {
-      const newRoads = generateRoads(newLots, options.direction, options.roadWidthM, parentParcel.areaSqm, parentVertices);
+    if (options.includeRoad || (parentParcel.parcelSides && parentParcel.parcelSides.some((s: any) => s.borderType === 'route'))) {
+      const newRoads = generateRoads(
+        newLots, options.direction, options.roadWidthM, parentParcel.areaSqm,
+        parentVertices, parentParcel.parcelSides as any[] | undefined
+      );
       setRoads(newRoads as SubdivisionRoad[]);
     }
   }, [parentParcel, parentVertices]);
