@@ -522,6 +522,33 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
               </g>
             )}
 
+            {/* Edge hit targets with resize cursor */}
+            {!readOnly && lot.vertices.map((v, i) => {
+              const next = lot.vertices[(i + 1) % lot.vertices.length];
+              const sv = toScreen(v);
+              const sn = toScreen(next);
+              // Determine cursor direction based on edge angle
+              const angle = Math.atan2(sn.y - sv.y, sn.x - sv.x) * (180 / Math.PI);
+              const normalizedAngle = ((angle % 180) + 180) % 180;
+              let cursorStyle = 'ew-resize';
+              if (normalizedAngle >= 22.5 && normalizedAngle < 67.5) cursorStyle = 'nwse-resize';
+              else if (normalizedAngle >= 67.5 && normalizedAngle < 112.5) cursorStyle = 'ns-resize';
+              else if (normalizedAngle >= 112.5 && normalizedAngle < 157.5) cursorStyle = 'nesw-resize';
+              return (
+                <line
+                  key={`edge-hit-${i}`}
+                  x1={sv.x}
+                  y1={sv.y}
+                  x2={sn.x}
+                  y2={sn.y}
+                  stroke="transparent"
+                  strokeWidth={12}
+                  style={{ cursor: cursorStyle }}
+                  className="pointer-events-auto"
+                />
+              );
+            })}
+
             {/* Dimensions on edges */}
             {showDimensions && lot.vertices.map((v, i) => {
               const next = lot.vertices[(i + 1) % lot.vertices.length];
