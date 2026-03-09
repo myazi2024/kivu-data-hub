@@ -245,7 +245,19 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             </p>
           </div>
 
-          {/* Header catalogue compact */}
+          {/* Fix #10 & #11: États de chargement et d'erreur du catalogue */}
+          {catalogLoading ? (
+            <div className="flex items-center justify-center p-6">
+              <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent" />
+              <span className="ml-2 text-xs text-muted-foreground">Chargement du catalogue...</span>
+            </div>
+          ) : catalogError ? (
+            <Alert variant="destructive" className="text-xs">
+              <AlertDescription>
+                Impossible de charger le catalogue de services. Veuillez réessayer.
+              </AlertDescription>
+            </Alert>
+          ) : (
           <div className="space-y-2">
             {/* Tout sélectionner - compact */}
             <div className="flex items-center justify-between p-2 bg-muted/30 rounded-xl border border-dashed">
