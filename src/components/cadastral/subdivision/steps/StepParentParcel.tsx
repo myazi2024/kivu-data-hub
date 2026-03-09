@@ -58,20 +58,8 @@ const StepParentParcel: React.FC<StepParentParcelProps> = ({
                 <p className="font-medium">{parentParcel.areaSqm.toLocaleString()} m²</p>
               </div>
               <div>
-                <span className="text-muted-foreground text-xs">Propriétaire</span>
-                <p className="font-medium">{parentParcel.ownerName || '—'}</p>
-              </div>
-              <div>
                 <span className="text-muted-foreground text-xs">Localisation</span>
                 <p className="font-medium">{parentParcel.location || '—'}</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground text-xs">Type de titre</span>
-                <p className="font-medium">{parentParcel.titleType || '—'}</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground text-xs">Référence titre</span>
-                <p className="font-medium">{parentParcel.titleReference || '—'}</p>
               </div>
               {parentParcel.gpsCoordinates.length > 0 && (
                 <div className="col-span-2">
