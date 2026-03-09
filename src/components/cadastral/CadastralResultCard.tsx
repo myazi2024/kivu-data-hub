@@ -514,27 +514,14 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
           {/* Fix #8: Inclure land_disputes dans la vérification du bloc Premium */}
           {!hasServiceAccess('information') && !hasServiceAccess('location_history') && 
            !hasServiceAccess('history') && !hasServiceAccess('obligations') && !hasServiceAccess('land_disputes') && (
-            <div className="mt-4 p-6 text-center border-2 border-dashed border-primary/20 rounded-xl bg-gradient-to-br from-primary/5 to-secondary/5 shadow-lg">
-              <div className="space-y-4 animate-fade-in">
-                <div className="mx-auto w-16 h-16 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl flex items-center justify-center shadow-md">
-                  <FileText className="h-8 w-8 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-lg font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                    Contenu Premium
-                  </h3>
-                  <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                    Accédez aux données détaillées avec nos services cadastraux professionnels
-                  </p>
-                </div>
-                <Button 
-                  onClick={() => setShowBillingPanel(true)} 
-                  className="mt-4 px-6 py-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-r from-primary to-primary/80"
-                >
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Débloquer l'accès
-                </Button>
-              </div>
+            <div className="mt-4">
+              <LockedServiceOverlay
+                icon={<FileText className="h-8 w-8 text-primary" />}
+                title="Contenu Premium"
+                description="Accédez aux données détaillées avec nos services cadastraux professionnels"
+                onUnlock={() => setShowBillingPanel(true)}
+                premium
+              />
             </div>
           )}
 
