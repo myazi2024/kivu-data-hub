@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -37,6 +37,26 @@ const grantServiceAccess = async (
   }
 };
 
+/**
+ * Récupère les selected_services depuis la facture DB pour éviter les données stale du contexte
+ */
+const getInvoiceServices = async (invoiceId: string): Promise<string[]> => {
+  const { data, error } = await supabase
+    .from('cadastral_invoices')
+    .select('selected_services')
+    .eq('id', invoiceId)
+    .single();
+
+  if (error) throw error;
+
+  const services = data?.selected_services;
+  if (Array.isArray(services)) return services as string[];
+  if (typeof services === 'string') {
+    try { return JSON.parse(services); } catch { return []; }
+  }
+  return [];
+};
+
 export const useCadastralPayment = () => {
   const [loading, setLoading] = useState(false);
   const [paymentStep, setPaymentStep] = useState<'form' | 'processing' | 'success'>('form');
@@ -45,11 +65,14 @@ export const useCadastralPayment = () => {
   const { selectedServices, parcelNumber, clearServices } = useCadastralCart();
   const { paymentMode, availableMethods, isPaymentRequired } = usePaymentConfig();
 
+  // Fix #13: AbortController pour annuler le polling à la fermeture du dialog
+  const pollingAbortRef = useRef<AbortController | null>(null);
+
   /**
    * Fix #1: Utilise create_cadastral_invoice_secure (RPC) pour valider les prix côté serveur.
    * En mode bypass, crée directement une facture gratuite + accès.
    */
-  const createInvoice = async (discountData?: {
+  const createInvoice = useCallback(async (discountData?: {
     code: string;
     amount: number;
     reseller_id: string;
@@ -130,7 +153,6 @@ export const useCadastralPayment = () => {
         description: `Facture ${result.invoice_number} créée avec succès`
       });
 
-      // Retourner un objet compatible avec CadastralPaymentDialog
       return {
         id: result.invoice_id,
         invoice_number: result.invoice_number,
@@ -139,7 +161,8 @@ export const useCadastralPayment = () => {
         discount_amount_usd: result.discount_amount_usd,
         selected_services: serviceIds,
         status: 'pending',
-        parcel_number: parcelNumber
+        parcel_number: parcelNumber,
+        created_at: new Date().toISOString()
       };
     } catch (error) {
       console.error('Error creating invoice:', error);
@@ -148,13 +171,18 @@ export const useCadastralPayment = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, selectedServices, parcelNumber, isPaymentRequired, clearServices, toast]);
 
-  const processMobileMoneyPayment = async (invoiceId: string, paymentData: CadastralPaymentData) => {
+  const processMobileMoneyPayment = useCallback(async (invoiceId: string, paymentData: CadastralPaymentData) => {
     if (!user) {
       toast({ title: "Authentification requise", description: "Vous devez être connecté pour effectuer un paiement", variant: "destructive" });
       return null;
     }
+
+    // Annuler un éventuel polling précédent
+    pollingAbortRef.current?.abort();
+    const abortController = new AbortController();
+    pollingAbortRef.current = abortController;
 
     try {
       setLoading(true);
@@ -197,7 +225,19 @@ export const useCadastralPayment = () => {
       const maxAttempts = 20;
 
       while (attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Fix #13: Vérifier si le polling a été annulé
+        if (abortController.signal.aborted) {
+          console.log('Polling annulé par AbortController');
+          return null;
+        }
+
+        await new Promise((resolve, reject) => {
+          const timer = setTimeout(resolve, 2000);
+          abortController.signal.addEventListener('abort', () => {
+            clearTimeout(timer);
+            reject(new DOMException('Polling aborted', 'AbortError'));
+          }, { once: true });
+        });
 
         const { data: transaction } = await supabase
           .from('payment_transactions')
@@ -215,8 +255,9 @@ export const useCadastralPayment = () => {
             })
             .eq('id', invoiceId);
 
-          const serviceIds = selectedServices.map(s => s.id);
-          await grantServiceAccess(user.id, invoiceId, parcelNumber!, serviceIds);
+          // Fix #6: Utiliser les services de la facture DB, pas du contexte cart (potentiellement stale)
+          const invoiceServiceIds = await getInvoiceServices(invoiceId);
+          await grantServiceAccess(user.id, invoiceId, invoice.data.parcel_number, invoiceServiceIds);
 
           setPaymentStep('success');
           toast({ title: "Paiement réussi", description: "Vos services sont maintenant accessibles" });
@@ -236,6 +277,10 @@ export const useCadastralPayment = () => {
       throw new Error(`Délai d'attente dépassé. ID transaction: ${transactionId}. Contactez le support si le montant a été débité.`);
 
     } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.log('Polling interrompu proprement');
+        return null;
+      }
       console.error('Payment error:', error);
       toast({
         title: "Erreur de paiement",
@@ -247,9 +292,9 @@ export const useCadastralPayment = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, availableMethods, paymentMode, clearServices, toast]);
 
-  const processStripePayment = async (invoiceId: string) => {
+  const processStripePayment = useCallback(async (invoiceId: string) => {
     try {
       setLoading(true);
 
@@ -279,12 +324,15 @@ export const useCadastralPayment = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [availableMethods, paymentMode, toast]);
 
-  const resetPaymentState = () => {
+  const resetPaymentState = useCallback(() => {
+    // Annuler le polling en cours si existant
+    pollingAbortRef.current?.abort();
+    pollingAbortRef.current = null;
     setPaymentStep('form');
     setLoading(false);
-  };
+  }, []);
 
   return {
     loading,
