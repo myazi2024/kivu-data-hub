@@ -9,9 +9,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import {
   Wand2, Plus, Trash2, Undo2, Redo2, AlertTriangle, CheckCircle,
-  Grid3X3, ArrowLeftRight, ArrowUpDown, Info, Settings2
+  Grid3X3, ArrowLeftRight, ArrowUpDown, Info, Settings2, Route
 } from 'lucide-react';
-import { SubdivisionLot, SubdivisionRoad, AutoSubdivideOptions, ParentParcelInfo, LOT_COLORS, USAGE_LABELS, Point2D } from '../types';
+import { SubdivisionLot, SubdivisionRoad, AutoSubdivideOptions, ParentParcelInfo, LOT_COLORS, USAGE_LABELS, ROAD_SURFACE_LABELS, Point2D } from '../types';
 import { ValidationResult } from '../utils/geometry';
 import LotCanvas from '../LotCanvas';
 
@@ -41,6 +41,43 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   const [roadWidth, setRoadWidth] = useState(6);
   const [selectedLotId, setSelectedLotId] = useState<string | null>(null);
   const [showAutoPanel, setShowAutoPanel] = useState(lots.length === 0);
+  const [editingRoadId, setEditingRoadId] = useState<string | null>(null);
+
+  const editingRoad = roads.find(r => r.id === editingRoadId) || null;
+
+  const handleAddRoad = useCallback(() => {
+    const parentPoly = parentVertices && parentVertices.length >= 3 ? parentVertices : null;
+    const bounds = parentPoly
+      ? parentPoly.reduce((b, p) => ({
+          minX: Math.min(b.minX, p.x), maxX: Math.max(b.maxX, p.x),
+          minY: Math.min(b.minY, p.y), maxY: Math.max(b.maxY, p.y),
+        }), { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity })
+      : { minX: 0, maxX: 1, minY: 0, maxY: 1 };
+
+    const cx = (bounds.minX + bounds.maxX) / 2;
+    const newRoad: SubdivisionRoad = {
+      id: `road-new-${Date.now()}`,
+      name: `Voie ${roads.length + 1}`,
+      widthM: 6,
+      surfaceType: 'planned',
+      isExisting: false,
+      path: [
+        { x: cx, y: bounds.minY },
+        { x: cx, y: bounds.maxY },
+      ],
+    };
+    setRoads([...roads, newRoad]);
+    setEditingRoadId(newRoad.id);
+  }, [roads, setRoads, parentVertices]);
+
+  const handleDeleteRoad = useCallback((roadId: string) => {
+    setRoads(roads.filter(r => r.id !== roadId));
+    if (editingRoadId === roadId) setEditingRoadId(null);
+  }, [roads, setRoads, editingRoadId]);
+
+  const updateRoad = useCallback((roadId: string, updates: Partial<SubdivisionRoad>) => {
+    setRoads(roads.map(r => r.id === roadId ? { ...r, ...updates } : r));
+  }, [roads, setRoads]);
 
   const handleAutoGenerate = () => {
     onAutoSubdivide({
@@ -305,6 +342,111 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                   </p>
                 )}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Roads management */}
+          <Card>
+            <CardContent className="pt-3">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-semibold text-xs flex items-center gap-1">
+                  <Route className="h-3.5 w-3.5" />
+                  Voies ({roads.length})
+                </h4>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={handleAddRoad}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              <div className="space-y-1 max-h-[180px] overflow-y-auto">
+                {roads.map(road => {
+                  const isExisting = (road as any).isExisting;
+                  const isEditing = editingRoadId === road.id;
+                  return (
+                    <div
+                      key={road.id}
+                      className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs transition-colors
+                        ${isEditing ? 'bg-primary/10 ring-1 ring-primary/30' : 'hover:bg-muted/50'}
+                      `}
+                    >
+                      <span className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${isExisting ? 'bg-amber-600' : 'bg-muted-foreground'}`} />
+                      <button
+                        className="flex-1 text-left truncate"
+                        onClick={() => setEditingRoadId(isEditing ? null : road.id)}
+                      >
+                        <span className="font-medium">{road.name}</span>
+                        <span className="text-muted-foreground ml-1">({road.widthM}m)</span>
+                      </button>
+                      {!isExisting && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5 text-destructive hover:text-destructive"
+                          onClick={() => handleDeleteRoad(road.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })}
+                {roads.length === 0 && (
+                  <p className="text-center text-muted-foreground text-[10px] py-2">
+                    Aucune voie
+                  </p>
+                )}
+              </div>
+
+              {/* Road editor */}
+              {editingRoad && (
+                <>
+                  <Separator className="my-2" />
+                  <div className="space-y-2">
+                    <div>
+                      <Label className="text-xs">Nom</Label>
+                      <Input
+                        value={editingRoad.name}
+                        onChange={e => updateRoad(editingRoad.id, { name: e.target.value })}
+                        className="h-7 text-xs"
+                        disabled={(editingRoad as any).isExisting}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-xs">Largeur (m)</Label>
+                        <Input
+                          type="number"
+                          min={2}
+                          max={30}
+                          value={editingRoad.widthM}
+                          onChange={e => updateRoad(editingRoad.id, { widthM: parseFloat(e.target.value) || 6 })}
+                          className="h-7 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Revêtement</Label>
+                        <Select
+                          value={editingRoad.surfaceType}
+                          onValueChange={(v: any) => updateRoad(editingRoad.id, { surfaceType: v })}
+                        >
+                          <SelectTrigger className="h-7 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(ROAD_SURFACE_LABELS).map(([key, label]) => (
+                              <SelectItem key={key} value={key}>{label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
 
