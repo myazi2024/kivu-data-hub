@@ -90,7 +90,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   const { paymentMode, isPaymentRequired, availableMethods } = usePaymentConfig();
   const { services: catalogServices, loading: catalogLoading, error: catalogError } = useCadastralServices();
   const { selectedServices, addService, removeService, toggleService, getTotalAmount, setParcelNumber, isSelected, updateServicePrices } = useCadastralCart();
-  const { loading, createInvoice } = useCadastralPayment();
+  const { loading, createInvoice, processMobileMoneyPayment, processStripePayment, paymentStep, resetPaymentState } = useCadastralPayment();
 
   const serviceAvailability = React.useMemo(() => 
     getServiceDataAvailability(searchResult), 
@@ -577,6 +577,10 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
           onClose={() => setShowPaymentDialog(false)}
           onPaymentSuccess={handlePaymentSuccess}
           availableMethods={availableMethods}
+          paymentStep={paymentStep}
+          processMobileMoneyPayment={processMobileMoneyPayment}
+          processStripePayment={processStripePayment}
+          resetPaymentState={resetPaymentState}
         />
       )}
     </TooltipProvider>

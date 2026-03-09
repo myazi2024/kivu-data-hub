@@ -16,10 +16,10 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useCadastralPayment } from '@/hooks/useCadastralPayment';
 import MobileMoneyPayment from '@/components/payment/MobileMoneyPayment';
 import BankCardPayment from '@/components/payment/BankCardPayment';
 import { useToast } from '@/hooks/use-toast';
+import type { CadastralPaymentData } from '@/hooks/useCadastralPayment';
 
 interface CadastralInvoice {
   id: string;
@@ -28,6 +28,7 @@ interface CadastralInvoice {
   selected_services: string[] | string;
   status: string;
   parcel_number?: string;
+  created_at?: string;
 }
 
 interface CadastralPaymentDialogProps {
@@ -38,15 +39,23 @@ interface CadastralPaymentDialogProps {
     hasMobileMoney: boolean;
     hasBankCard: boolean;
   };
+  // Fix #1/#12: Recevoir les fonctions du hook parent au lieu de créer une nouvelle instance
+  paymentStep: 'form' | 'processing' | 'success';
+  processMobileMoneyPayment: (invoiceId: string, data: CadastralPaymentData) => Promise<any>;
+  processStripePayment: (invoiceId: string) => Promise<any>;
+  resetPaymentState: () => void;
 }
 
 const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
   invoice,
   onClose,
   onPaymentSuccess,
-  availableMethods
+  availableMethods,
+  paymentStep,
+  processMobileMoneyPayment,
+  processStripePayment,
+  resetPaymentState
 }) => {
-  const { processMobileMoneyPayment, processStripePayment, paymentStep, resetPaymentState } = useCadastralPayment();
   const [isAnimating, setIsAnimating] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'mobile_money' | 'bank_card'>('mobile_money');
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -103,7 +112,7 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
     onClose();
   };
 
-  // Fix #3: Inclure parcel_number dans les données PDF
+  // Fix #7: Utiliser created_at de la facture, pas la date courante
   const handleDownloadReceipt = () => {
     import('@/lib/pdf').then(({ generateInvoicePDF }) => {
       const invoiceData = {
@@ -112,23 +121,17 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
         total_amount_usd: invoice.total_amount_usd,
         selected_services: getSelectedServices(),
         status: 'paid',
-        created_at: new Date().toISOString(),
+        created_at: invoice.created_at || new Date().toISOString(),
         updated_at: new Date().toISOString(),
         parcel_number: invoice.parcel_number || '',
         client_email: '',
         client_name: null,
-        search_date: new Date().toISOString(),
+        search_date: invoice.created_at || new Date().toISOString(),
       };
       generateInvoicePDF(invoiceData, [], 'a4');
     }).catch(() => {
       toast({ title: "Erreur", description: "Impossible de générer le reçu PDF", variant: "destructive" });
     });
-  };
-
-  // Fix #15: Bouton de retry pour re-vérifier le paiement
-  const handleRetryCheck = () => {
-    resetPaymentState();
-    toast({ title: "Réessayer", description: "Vous pouvez relancer le paiement" });
   };
 
   return (

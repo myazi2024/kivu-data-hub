@@ -107,15 +107,16 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   const { services: catalogServices } = useCadastralServices();
   const { user } = useAuth();
 
-  // Logique de scroll pour masquer/afficher l'en-tête
+  // Fix #17: Utiliser un ref callback au lieu de querySelector fragile
+  const scrollContainerRef = useRef<HTMLElement | null>(null);
+  
   useEffect(() => {
-    const handleScroll = (event: Event) => {
-      const scrollContainer = event.currentTarget as HTMLElement;
-      const currentScrollY = scrollContainer.scrollTop || 0;
-
+    const handleScroll = () => {
+      const el = scrollContainerRef.current;
+      if (!el) return;
+      const currentScrollY = el.scrollTop || 0;
       const scrollDirection = currentScrollY > lastScrollYRef.current ? 'down' : 'up';
       
-      // Masquer l'en-tête si on scroll vers le bas (plus de 50px) ou l'afficher si on remonte
       if (scrollDirection === 'down' && currentScrollY > 50) {
         setIsHeaderHidden(true);
       } else if (scrollDirection === 'up' && currentScrollY <= 30) {
@@ -125,20 +126,24 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
       lastScrollYRef.current = currentScrollY;
     };
 
-    // Trouver le conteneur scrollable parent - celui avec overflow-auto dans CadastralResultsDialog
+    // Trouver le conteneur scrollable le plus proche
     const findScrollContainer = () => {
-      // Chercher le div avec overflow-auto qui est le parent scrollable du dialogue
-      const scrollableDiv = document.querySelector('.overflow-auto') as HTMLElement;
-      return scrollableDiv;
+      const card = document.getElementById('cadastral-result-card');
+      if (!card) return null;
+      let parent = card.parentElement;
+      while (parent) {
+        const style = getComputedStyle(parent);
+        if (style.overflowY === 'auto' || style.overflowY === 'scroll') return parent;
+        parent = parent.parentElement;
+      }
+      return null;
     };
 
-    const scrollContainer = findScrollContainer();
-    if (scrollContainer) {
-      scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
-      
-      return () => {
-        scrollContainer.removeEventListener('scroll', handleScroll);
-      };
+    const container = findScrollContainer();
+    if (container) {
+      scrollContainerRef.current = container;
+      container.addEventListener('scroll', handleScroll, { passive: true });
+      return () => container.removeEventListener('scroll', handleScroll);
     }
   }, []);
 
@@ -190,7 +195,11 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
     // En mode test: ajouter les nouveaux services aux services déjà payés
     const updatedServices = [...new Set([...paidServices, ...services])];
     setPaidServices(updatedServices);
-    setShowBillingPanel(false);
+    
+    // Fix #2: Ne masquer le billing panel que si TOUS les services du catalogue sont payés
+    if (updatedServices.length >= catalogServiceIdsRef.current.length) {
+      setShowBillingPanel(false);
+    }
     
     // Afficher automatiquement la facture
     setShowInvoice(true);
@@ -390,7 +399,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
 
   return (
     <TooltipProvider>
-      <Card className="w-full shadow-2xl border-0 bg-gradient-to-br from-background via-background to-primary/5 overflow-visible">
+      <Card id="cadastral-result-card" className="w-full shadow-2xl border-0 bg-gradient-to-br from-background via-background to-primary/5 overflow-visible">
       <CardHeader className={`sticky top-0 z-20 pb-3 p-4 md:p-5 bg-gradient-to-r from-primary/5 to-secondary/5 border-b border-border/50 backdrop-blur-md bg-background/95 transition-all duration-500 ease-out ${isHeaderHidden ? 'transform -translate-y-full opacity-0' : 'transform translate-y-0 opacity-100'}`}>
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
@@ -695,7 +704,9 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                         {/* Informations de l'autorisation de bâtir actuelle intégrées */}
                         {building_permits.filter(permit => permit.is_current).map((permit) => {
                           const issueDate = new Date(permit.issue_date);
-                          const validityEndDate = new Date(issueDate.getTime() + permit.validity_period_months * 30 * 24 * 60 * 60 * 1000);
+                          // Fix #3: Calcul correct de la date de fin avec ajout de mois réels
+                          const validityEndDate = new Date(issueDate);
+                          validityEndDate.setMonth(validityEndDate.getMonth() + permit.validity_period_months);
                           const isValid = validityEndDate > new Date();
                           
                           return (
