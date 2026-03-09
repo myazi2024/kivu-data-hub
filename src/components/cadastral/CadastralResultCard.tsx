@@ -190,7 +190,11 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
     // En mode test: ajouter les nouveaux services aux services déjà payés
     const updatedServices = [...new Set([...paidServices, ...services])];
     setPaidServices(updatedServices);
-    setShowBillingPanel(false);
+    
+    // Fix #2: Ne masquer le billing panel que si TOUS les services du catalogue sont payés
+    if (updatedServices.length >= catalogServiceIdsRef.current.length) {
+      setShowBillingPanel(false);
+    }
     
     // Afficher automatiquement la facture
     setShowInvoice(true);
