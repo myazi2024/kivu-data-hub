@@ -604,6 +604,53 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         );
       })}
 
+      {/* Merge button when multiple lots selected */}
+      {selectedLotIds.length >= 2 && !readOnly && onMergeLots && (() => {
+        const selectedLotsData = lots.filter(l => selectedLotIds.includes(l.id));
+        const allCentroids = selectedLotsData.map(lot => {
+          const sv = lot.vertices.map(v => toScreen(v));
+          return {
+            x: sv.reduce((s, p) => s + p.x, 0) / sv.length,
+            y: sv.reduce((s, p) => s + p.y, 0) / sv.length,
+          };
+        });
+        const mcx = allCentroids.reduce((s, p) => s + p.x, 0) / allCentroids.length;
+        const mcy = Math.min(...allCentroids.map(p => p.y)) - 20;
+        return (
+          <g
+            className="cursor-pointer"
+            onClick={e => {
+              e.stopPropagation();
+              onMergeLots(selectedLotIds);
+            }}
+          >
+            <rect
+              x={mcx - 52}
+              y={mcy - 12}
+              width={104}
+              height={24}
+              rx={6}
+              fill="hsl(var(--accent))"
+              fillOpacity={0.95}
+              stroke="hsl(var(--primary))"
+              strokeWidth={1.5}
+            />
+            <text
+              x={mcx}
+              y={mcy}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fontSize={10}
+              fontWeight="bold"
+              fill="hsl(var(--primary))"
+              className="pointer-events-none select-none"
+            >
+              🔗 Fusionner ({selectedLotIds.length})
+            </text>
+          </g>
+        );
+      })()}
+
       {/* North indicator */}
       {showNorth && (
         <g transform={`translate(${CANVAS_W - 20}, ${PADDING + 15})`}>
