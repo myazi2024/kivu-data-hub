@@ -445,7 +445,7 @@ const CadastralMap = () => {
     if (mapInstanceRef.current && parcel.latitude && parcel.longitude) {
       const L = (window as any).L;
       if (L) {
-        mapInstanceRef.current.setView([parcel.latitude, parcel.longitude], 16);
+        mapInstanceRef.current.setView([parcel.latitude, parcel.longitude], 19);
       }
     }
   };
@@ -536,7 +536,7 @@ const CadastralMap = () => {
           scrollWheelZoom: !isMobile,
           doubleClickZoom: !isMobile,
           dragging: true
-        }).setView([-1.6794, 29.2273], 12);
+        }).setView([-1.6794, 29.2273], 19);
 
         // Add zoom control positioned bottom-right for both mobile and desktop
         L.control.zoom({ position: 'bottomright' }).addTo(map);
