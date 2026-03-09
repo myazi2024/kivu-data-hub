@@ -184,13 +184,7 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
     });
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleValidateCode();
-    }
-  };
-
-  if (appliedDiscount) {
+  const handleRemoveDiscount = () => {
     return (
       <div className={`space-y-3 ${className}`}>
         <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
