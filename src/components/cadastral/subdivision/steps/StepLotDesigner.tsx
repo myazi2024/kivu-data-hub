@@ -308,6 +308,111 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
             </CardContent>
           </Card>
 
+          {/* Roads management */}
+          <Card>
+            <CardContent className="pt-3">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-semibold text-xs flex items-center gap-1">
+                  <Route className="h-3.5 w-3.5" />
+                  Voies ({roads.length})
+                </h4>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={handleAddRoad}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              <div className="space-y-1 max-h-[180px] overflow-y-auto">
+                {roads.map(road => {
+                  const isExisting = (road as any).isExisting;
+                  const isEditing = editingRoadId === road.id;
+                  return (
+                    <div
+                      key={road.id}
+                      className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs transition-colors
+                        ${isEditing ? 'bg-primary/10 ring-1 ring-primary/30' : 'hover:bg-muted/50'}
+                      `}
+                    >
+                      <span className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${isExisting ? 'bg-amber-600' : 'bg-muted-foreground'}`} />
+                      <button
+                        className="flex-1 text-left truncate"
+                        onClick={() => setEditingRoadId(isEditing ? null : road.id)}
+                      >
+                        <span className="font-medium">{road.name}</span>
+                        <span className="text-muted-foreground ml-1">({road.widthM}m)</span>
+                      </button>
+                      {!isExisting && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5 text-destructive hover:text-destructive"
+                          onClick={() => handleDeleteRoad(road.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })}
+                {roads.length === 0 && (
+                  <p className="text-center text-muted-foreground text-[10px] py-2">
+                    Aucune voie
+                  </p>
+                )}
+              </div>
+
+              {/* Road editor */}
+              {editingRoad && (
+                <>
+                  <Separator className="my-2" />
+                  <div className="space-y-2">
+                    <div>
+                      <Label className="text-xs">Nom</Label>
+                      <Input
+                        value={editingRoad.name}
+                        onChange={e => updateRoad(editingRoad.id, { name: e.target.value })}
+                        className="h-7 text-xs"
+                        disabled={(editingRoad as any).isExisting}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-xs">Largeur (m)</Label>
+                        <Input
+                          type="number"
+                          min={2}
+                          max={30}
+                          value={editingRoad.widthM}
+                          onChange={e => updateRoad(editingRoad.id, { widthM: parseFloat(e.target.value) || 6 })}
+                          className="h-7 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Revêtement</Label>
+                        <Select
+                          value={editingRoad.surfaceType}
+                          onValueChange={(v: any) => updateRoad(editingRoad.id, { surfaceType: v })}
+                        >
+                          <SelectTrigger className="h-7 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(ROAD_SURFACE_LABELS).map(([key, label]) => (
+                              <SelectItem key={key} value={key}>{label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Validation */}
           {(validation.errors.length > 0 || validation.warnings.length > 0) && (
             <Card className={validation.errors.length > 0 ? 'border-destructive/30' : 'border-amber-500/30'}>
