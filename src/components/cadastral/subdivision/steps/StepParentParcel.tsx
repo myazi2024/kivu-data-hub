@@ -3,7 +3,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
@@ -153,12 +152,22 @@ const StepParentParcel: React.FC<StepParentParcelProps> = ({
       <Card>
         <CardContent className="pt-4">
           <Label className="text-xs">Motif du lotissement</Label>
-          <Textarea
-            placeholder="Décrivez brièvement l'objectif du lotissement (vente, succession, investissement...)"
-            value={purpose}
-            onChange={e => onPurposeChange(e.target.value)}
-            className="mt-1 text-sm min-h-[60px]"
-          />
+          <Select value={purpose || '_none'} onValueChange={(v) => onPurposeChange(v === '_none' ? '' : v)}>
+            <SelectTrigger className="mt-1 h-9 text-sm">
+              <SelectValue placeholder="Sélectionnez le motif" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_none" disabled>Sélectionnez le motif</SelectItem>
+              <SelectItem value="Vente">Vente</SelectItem>
+              <SelectItem value="Succession / Héritage">Succession / Héritage</SelectItem>
+              <SelectItem value="Investissement immobilier">Investissement immobilier</SelectItem>
+              <SelectItem value="Construction de logements">Construction de logements</SelectItem>
+              <SelectItem value="Donation">Donation</SelectItem>
+              <SelectItem value="Partage familial">Partage familial</SelectItem>
+              <SelectItem value="Projet commercial">Projet commercial</SelectItem>
+              <SelectItem value="Autre">Autre</SelectItem>
+            </SelectContent>
+          </Select>
         </CardContent>
       </Card>
     </div>
