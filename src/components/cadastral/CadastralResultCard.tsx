@@ -143,17 +143,16 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   }, []);
 
   // Check user access to different services on mount
+  // Fix #15: Une seule requête batch au lieu de 5 séquentielles
   React.useEffect(() => {
     const checkAllServices = async () => {
       if (!user) return;
       
-      const services = ['information', 'location_history', 'history', 'obligations', 'land_disputes'];
-      const accessPromises = services.map(service => 
-        checkServiceAccess(parcel.parcel_number, service)
+      const paidServicesList = await checkMultipleServiceAccess(
+        user.id,
+        parcel.parcel_number,
+        ['information', 'location_history', 'history', 'obligations', 'land_disputes']
       );
-      
-      const accessResults = await Promise.all(accessPromises);
-      const paidServicesList = services.filter((_, index) => accessResults[index]);
       
       if (paidServicesList.length > 0) {
         setPaidServices(paidServicesList);
@@ -162,7 +161,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
     };
 
     checkAllServices();
-  }, [user, parcel.parcel_number, checkServiceAccess]);
+  }, [user, parcel.parcel_number]);
 
   const handlePaymentSuccess = (services: string[]) => {
     // En mode test: ajouter les nouveaux services aux services déjà payés
