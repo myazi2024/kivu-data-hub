@@ -399,7 +399,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
 
   return (
     <TooltipProvider>
-      <Card className="w-full shadow-2xl border-0 bg-gradient-to-br from-background via-background to-primary/5 overflow-visible">
+      <Card id="cadastral-result-card" className="w-full shadow-2xl border-0 bg-gradient-to-br from-background via-background to-primary/5 overflow-visible">
       <CardHeader className={`sticky top-0 z-20 pb-3 p-4 md:p-5 bg-gradient-to-r from-primary/5 to-secondary/5 border-b border-border/50 backdrop-blur-md bg-background/95 transition-all duration-500 ease-out ${isHeaderHidden ? 'transform -translate-y-full opacity-0' : 'transform translate-y-0 opacity-100'}`}>
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
