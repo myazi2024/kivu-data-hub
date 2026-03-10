@@ -239,7 +239,8 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
           .maybeSingle();
 
         if (!dbInvoice) {
-          console.warn('No paid invoice found in DB, generating with local data');
+          const { toast } = await import('sonner');
+          toast.error('Aucune facture payée trouvée pour cette parcelle');
           return;
         }
 

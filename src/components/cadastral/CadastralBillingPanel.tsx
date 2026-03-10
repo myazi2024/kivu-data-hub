@@ -89,8 +89,9 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   // Fix #10: Une seule instanciation de usePaymentConfig, passée au dialog
   const { paymentMode, isPaymentRequired, availableMethods } = usePaymentConfig();
   const { services: catalogServices, loading: catalogLoading, error: catalogError } = useCadastralServices();
-  const { selectedServices, addService, removeService, toggleService, getTotalAmount, setParcelNumber, isSelected, updateServicePrices } = useCadastralCart();
+  const { selectedServices, addService, addServices, removeService, toggleService, getTotalAmount, setParcelNumber, isSelected, updateServicePrices } = useCadastralCart();
   const { loading, createInvoice, processMobileMoneyPayment, processStripePayment, paymentStep, resetPaymentState } = useCadastralPayment();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const serviceAvailability = React.useMemo(() => 
     getServiceDataAvailability(searchResult), 
@@ -172,6 +173,8 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   };
 
   const handleProceedToPayment = async () => {
+    if (isSubmitting || loading) return; // Fix: double-click prevention
+    
     if (!acceptedTerms) {
       setHighlightTerms(true);
       setTimeout(() => setHighlightTerms(false), 2000);
@@ -183,31 +186,36 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
       return;
     }
     
-    if (paymentMode.bypass_payment) {
-      const invoice = await createInvoice(appliedDiscount ?? undefined);
-      if (invoice) {
+    setIsSubmitting(true);
+    try {
+      if (paymentMode.bypass_payment) {
+        const invoice = await createInvoice(appliedDiscount ?? undefined);
+        if (invoice) {
+          toast({
+            title: "Accès accordé",
+            description: "Services débloqués avec succès (mode développement)",
+            duration: 3000
+          });
+          onPaymentSuccess(selectedServices.map(s => s.id));
+        }
+        return;
+      }
+      
+      if (isPaymentRequired()) {
+        const invoice = await createInvoice(appliedDiscount ?? undefined);
+        if (invoice) {
+          setCurrentInvoice(invoice);
+          setShowPaymentDialog(true);
+        }
+      } else {
         toast({
-          title: "Accès accordé",
-          description: "Services débloqués avec succès (mode développement)",
-          duration: 3000
+          title: "Paiement non configuré",
+          description: "Le système de paiement n'est pas encore configuré. Contactez l'administrateur.",
+          variant: "destructive"
         });
-        onPaymentSuccess(selectedServices.map(s => s.id));
       }
-      return;
-    }
-    
-    if (isPaymentRequired()) {
-      const invoice = await createInvoice(appliedDiscount ?? undefined);
-      if (invoice) {
-        setCurrentInvoice(invoice);
-        setShowPaymentDialog(true);
-      }
-    } else {
-      toast({
-        title: "Paiement non configuré",
-        description: "Le système de paiement n'est pas encore configuré. Contactez l'administrateur.",
-        variant: "destructive"
-      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -516,7 +524,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
           {/* Bouton de paiement */}
           <Button 
             onClick={handleProceedToPayment}
-            disabled={selectedServiceIds.length === 0 || loading}
+            disabled={selectedServiceIds.length === 0 || loading || isSubmitting}
             className={`
               w-full h-10 text-sm font-semibold rounded-xl
               ${selectedServiceIds.length > 0 && acceptedTerms 

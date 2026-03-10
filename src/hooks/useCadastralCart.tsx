@@ -13,8 +13,10 @@ export interface CadastralCartService {
 interface CadastralCartContextType {
   selectedServices: CadastralCartService[];
   addService: (service: CadastralCartService) => void;
+  addServices: (services: CadastralCartService[]) => void;
   removeService: (serviceId: string) => void;
   clearServices: () => void;
+  resetCart: () => void;
   getTotalAmount: () => number;
   getServiceCount: () => number;
   isSelected: (serviceId: string) => boolean;
@@ -97,6 +99,16 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
     });
   }, []);
 
+  // Fix: Ajout batch pour "Tout sélectionner" — un seul setState au lieu de N
+  const addServices = useCallback((services: CadastralCartService[]) => {
+    setSelectedServices(prev => {
+      const existingIds = new Set(prev.map(s => s.id));
+      const newServices = services.filter(s => !existingIds.has(s.id));
+      if (newServices.length === 0) return prev;
+      return [...prev, ...newServices];
+    });
+  }, []);
+
   const removeService = useCallback((serviceId: string) => {
     setSelectedServices(prev => prev.filter(s => s.id !== serviceId));
   }, []);
@@ -128,7 +140,13 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
     });
   }, []);
 
+  // Fix: clearServices ne reset plus parcelNumber (nécessaire après paiement)
   const clearServices = useCallback(() => {
+    setSelectedServices([]);
+  }, []);
+
+  // Méthode séparée pour tout réinitialiser (changement de parcelle, etc.)
+  const resetCart = useCallback(() => {
     setSelectedServices([]);
     setParcelNumberState(null);
   }, []);
@@ -141,8 +159,10 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
     <CadastralCartContext.Provider value={{
       selectedServices,
       addService,
+      addServices,
       removeService,
       clearServices,
+      resetCart,
       getTotalAmount,
       getServiceCount,
       isSelected,
