@@ -13,8 +13,10 @@ export interface CadastralCartService {
 interface CadastralCartContextType {
   selectedServices: CadastralCartService[];
   addService: (service: CadastralCartService) => void;
+  addServices: (services: CadastralCartService[]) => void;
   removeService: (serviceId: string) => void;
   clearServices: () => void;
+  resetCart: () => void;
   getTotalAmount: () => number;
   getServiceCount: () => number;
   isSelected: (serviceId: string) => boolean;
