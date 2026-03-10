@@ -222,59 +222,50 @@ export const useCadastralPayment = () => {
       }
 
       const transactionId = paymentResult.transaction_id;
-      let attempts = 0;
-      const maxAttempts = 20;
+      
+      // Fix: Utiliser pollTransactionStatus centralisé au lieu du polling inline
+      const status = await pollTransactionStatus(transactionId, 20, 2000, abortController.signal);
 
-      while (attempts < maxAttempts) {
-        // Fix #13: Vérifier si le polling a été annulé
-        if (abortController.signal.aborted) {
-          console.log('Polling annulé par AbortController');
-          return null;
-        }
-
-        await new Promise((resolve, reject) => {
-          const timer = setTimeout(resolve, 2000);
-          abortController.signal.addEventListener('abort', () => {
-            clearTimeout(timer);
-            reject(new DOMException('Polling aborted', 'AbortError'));
-          }, { once: true });
-        });
-
-        const { data: transaction } = await supabase
-          .from('payment_transactions')
-          .select('status, transaction_reference')
-          .eq('id', transactionId)
-          .single();
-
-        if (transaction?.status === 'completed') {
-          await supabase
-            .from('cadastral_invoices')
-            .update({
-              status: 'paid',
-              payment_method: paymentData.provider,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', invoiceId);
-
-          // Fix #6: Utiliser les services de la facture DB, pas du contexte cart (potentiellement stale)
-          const invoiceServiceIds = await getInvoiceServices(invoiceId);
-          await grantServiceAccess(user.id, invoiceId, invoice.data.parcel_number, invoiceServiceIds);
-
-          setPaymentStep('success');
-          toast({ title: "Paiement réussi", description: "Vos services sont maintenant accessibles" });
-
-          clearServices();
-          window.dispatchEvent(new CustomEvent('cadastralPaymentCompleted'));
-
-          return invoice.data;
-        } else if (transaction?.status === 'failed') {
-          throw new Error('Payment failed');
-        }
-
-        attempts++;
+      if (status === 'aborted') {
+        console.log('Polling annulé par AbortController');
+        return null;
       }
 
-      // Fix #15: Afficher l'ID de transaction pour le support
+      if (status === 'completed') {
+        await supabase
+          .from('cadastral_invoices')
+          .update({
+            status: 'paid',
+            payment_method: paymentData.provider,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', invoiceId);
+
+        // Fix: Utiliser les services de la facture DB, pas du contexte cart
+        const invoiceServiceIds = await getInvoiceServices(invoiceId);
+
+        // Fix: Retry grantServiceAccess avec feedback utilisateur
+        try {
+          await grantServiceAccess(user.id, invoiceId, invoice.data.parcel_number, invoiceServiceIds);
+        } catch (accessError) {
+          console.error('Première tentative grantServiceAccess échouée, retry...', accessError);
+          // Retry une fois
+          await new Promise(r => setTimeout(r, 1000));
+          await grantServiceAccess(user.id, invoiceId, invoice.data.parcel_number, invoiceServiceIds);
+        }
+
+        setPaymentStep('success');
+        toast({ title: "Paiement réussi", description: "Vos services sont maintenant accessibles" });
+
+        clearServices();
+        window.dispatchEvent(new CustomEvent('cadastralPaymentCompleted'));
+
+        return invoice.data;
+      } else if (status === 'failed') {
+        throw new Error('Payment failed');
+      }
+
+      // timeout
       throw new Error(`Délai d'attente dépassé. ID transaction: ${transactionId}. Contactez le support si le montant a été débité.`);
 
     } catch (error: any) {
