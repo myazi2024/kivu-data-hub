@@ -159,8 +159,10 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
     <CadastralCartContext.Provider value={{
       selectedServices,
       addService,
+      addServices,
       removeService,
       clearServices,
+      resetCart,
       getTotalAmount,
       getServiceCount,
       isSelected,
