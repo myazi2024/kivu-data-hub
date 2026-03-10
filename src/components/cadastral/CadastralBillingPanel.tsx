@@ -524,7 +524,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
           {/* Bouton de paiement */}
           <Button 
             onClick={handleProceedToPayment}
-            disabled={selectedServiceIds.length === 0 || loading}
+            disabled={selectedServiceIds.length === 0 || loading || isSubmitting}
             className={`
               w-full h-10 text-sm font-semibold rounded-xl
               ${selectedServiceIds.length > 0 && acceptedTerms 
