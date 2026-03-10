@@ -138,7 +138,13 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
     });
   }, []);
 
+  // Fix: clearServices ne reset plus parcelNumber (nécessaire après paiement)
   const clearServices = useCallback(() => {
+    setSelectedServices([]);
+  }, []);
+
+  // Méthode séparée pour tout réinitialiser (changement de parcelle, etc.)
+  const resetCart = useCallback(() => {
     setSelectedServices([]);
     setParcelNumberState(null);
   }, []);
