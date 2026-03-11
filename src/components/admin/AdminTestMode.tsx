@@ -251,6 +251,7 @@ const AdminTestMode: React.FC = () => {
       const testInvoices = [
         {
           parcel_number: 'TEST-001',
+          invoice_number: null as any,
           selected_services: ['carte_cadastrale', 'fiche_identification'] as any,
           total_amount_usd: 10,
           client_email: 'test@example.com',
@@ -260,6 +261,7 @@ const AdminTestMode: React.FC = () => {
         },
         {
           parcel_number: 'TEST-002',
+          invoice_number: null as any,
           selected_services: ['carte_cadastrale'] as any,
           total_amount_usd: 5,
           client_email: 'test2@example.com',
