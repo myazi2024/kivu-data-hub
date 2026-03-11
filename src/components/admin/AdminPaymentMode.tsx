@@ -6,8 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, CreditCard, ShieldAlert, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { usePaymentConfig } from '@/hooks/usePaymentConfig';
+import { upsertSearchConfig, logAuditAction } from '@/utils/supabaseConfigUtils';
 import { toast } from 'sonner';
 
 interface PaymentModeConfig {
@@ -37,43 +37,28 @@ const AdminPaymentMode: React.FC = () => {
     try {
       setSaving(true);
 
-      // Vérifier d'abord si l'enregistrement existe
-      const { data: existingConfig } = await supabase
-        .from('cadastral_search_config')
-        .select('id')
-        .eq('config_key', 'payment_mode')
-        .maybeSingle();
+      const oldConfig = { ...loadedConfig };
 
-      let result;
-      if (existingConfig) {
-        // Mettre à jour l'enregistrement existant
-        result = await supabase
-          .from('cadastral_search_config')
-          .update({
-            config_value: config as any,
-            updated_at: new Date().toISOString(),
-            is_active: true
-          })
-          .eq('config_key', 'payment_mode');
-      } else {
-        // Créer un nouvel enregistrement si inexistant
-        result = await supabase
-          .from('cadastral_search_config')
-          .insert({
-            config_key: 'payment_mode',
-            config_value: config as any,
-            is_active: true,
-            description: 'Configuration du mode de paiement pour les services cadastraux'
-          });
-      }
+      // Fix #14: Utilisation de l'utilitaire partagé
+      await upsertSearchConfig(
+        'payment_mode',
+        config as unknown as Record<string, unknown>,
+        'Configuration du mode de paiement pour les services cadastraux'
+      );
 
-      if (result.error) throw result.error;
+      // Audit logging
+      await logAuditAction(
+        'PAYMENT_MODE_UPDATED',
+        'cadastral_search_config',
+        undefined,
+        oldConfig as unknown as Record<string, unknown>,
+        config as unknown as Record<string, unknown>
+      );
 
       toast.success('Configuration enregistrée avec succès', {
         description: 'Les changements sont effectifs immédiatement pour tous les utilisateurs'
       });
 
-      // Recharger la configuration pour confirmer
       await refreshConfiguration();
     } catch (error: any) {
       console.error('Erreur lors de l\'enregistrement:', error);
