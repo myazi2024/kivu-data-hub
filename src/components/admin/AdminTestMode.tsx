@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -15,25 +15,20 @@ import {
   Database,
   Trash2,
   Upload,
-  Download,
   RefreshCw
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useTestMode } from '@/hooks/useTestMode';
+import { useTestMode, TestModeConfig } from '@/hooks/useTestMode';
+import { useAuth } from '@/hooks/useAuth';
+import { upsertSearchConfig, logAuditAction } from '@/utils/supabaseConfigUtils';
 import { toast } from 'sonner';
 
-interface TestModeConfig {
-  enabled: boolean;
-  auto_cleanup: boolean;
-  test_data_retention_days: number;
-}
-
 const AdminTestMode: React.FC = () => {
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [cleaningUp, setCleaningUp] = useState(false);
   const [generatingData, setGeneratingData] = useState(false);
-  const { testMode: loadedConfig, refreshConfiguration } = useTestMode();
+  const { testMode: loadedConfig, loading, refreshConfiguration } = useTestMode();
+  const { user } = useAuth();
   const [config, setConfig] = useState<TestModeConfig>({
     enabled: false,
     auto_cleanup: false,
@@ -49,7 +44,6 @@ const AdminTestMode: React.FC = () => {
   useEffect(() => {
     if (loadedConfig) {
       setConfig(loadedConfig);
-      setLoading(false);
     }
   }, [loadedConfig]);
 
@@ -59,63 +53,67 @@ const AdminTestMode: React.FC = () => {
     }
   }, [loading]);
 
-  const loadTestDataStats = async () => {
+  const loadTestDataStats = useCallback(async () => {
     try {
-      const [contributions, invoices, payments, cccCodes] = await Promise.all([
+      // Fix #16: Promise.allSettled pour stats partielles
+      const results = await Promise.allSettled([
         supabase.from('cadastral_contributions').select('id', { count: 'exact', head: true }).ilike('parcel_number', 'TEST-%'),
         supabase.from('cadastral_invoices').select('id', { count: 'exact', head: true }).ilike('parcel_number', 'TEST-%'),
-        supabase.from('payment_transactions').select('id', { count: 'exact', head: true }).eq('status', 'completed').ilike('metadata->>test_mode', 'true'),
+        supabase.from('payment_transactions').select('id', { count: 'exact', head: true }).eq('metadata->>test_mode', 'true'),
         supabase.from('cadastral_contributor_codes').select('id', { count: 'exact', head: true }).ilike('parcel_number', 'TEST-%')
       ]);
 
       setTestDataStats({
-        contributions: contributions.count || 0,
-        invoices: invoices.count || 0,
-        payments: payments.count || 0,
-        cccCodes: cccCodes.count || 0
+        contributions: results[0].status === 'fulfilled' ? (results[0].value.count || 0) : 0,
+        invoices: results[1].status === 'fulfilled' ? (results[1].value.count || 0) : 0,
+        payments: results[2].status === 'fulfilled' ? (results[2].value.count || 0) : 0,
+        cccCodes: results[3].status === 'fulfilled' ? (results[3].value.count || 0) : 0
       });
     } catch (error) {
       console.error('Error loading test data stats:', error);
     }
-  };
+  }, []);
 
   const saveConfiguration = async () => {
+    // Fix #8: Validation côté sauvegarde
+    const validatedConfig = {
+      ...config,
+      test_data_retention_days: Math.min(30, Math.max(1, config.test_data_retention_days))
+    };
+
+    // Fix #10: Confirmation renforcée pour désactivation du mode test
+    if (loadedConfig.enabled && !validatedConfig.enabled) {
+      if (!confirm('⚠️ Vous êtes sur le point de DÉSACTIVER le mode test. Toutes les opérations affecteront les données de production. Confirmer ?')) {
+        return;
+      }
+    }
+
     try {
       setSaving(true);
 
-      const { data: existingConfig } = await supabase
-        .from('cadastral_search_config')
-        .select('id')
-        .eq('config_key', 'test_mode')
-        .maybeSingle();
+      const oldConfig = { ...loadedConfig };
 
-      let result;
-      if (existingConfig) {
-        result = await supabase
-          .from('cadastral_search_config')
-          .update({
-            config_value: config as any,
-            updated_at: new Date().toISOString(),
-            is_active: true
-          })
-          .eq('config_key', 'test_mode');
-      } else {
-        result = await supabase
-          .from('cadastral_search_config')
-          .insert({
-            config_key: 'test_mode',
-            config_value: config as any,
-            is_active: true,
-            description: 'Configuration du mode test global pour l\'admin'
-          });
-      }
+      // Fix #14: Utilisation de l'utilitaire partagé
+      await upsertSearchConfig(
+        'test_mode',
+        validatedConfig as unknown as Record<string, unknown>,
+        'Configuration du mode test global pour l\'admin'
+      );
 
-      if (result.error) throw result.error;
+      // Fix #9: Journal d'audit
+      await logAuditAction(
+        validatedConfig.enabled ? 'TEST_MODE_ENABLED' : 'TEST_MODE_DISABLED',
+        'cadastral_search_config',
+        undefined,
+        oldConfig as unknown as Record<string, unknown>,
+        validatedConfig as unknown as Record<string, unknown>
+      );
 
       toast.success('Configuration enregistrée', {
         description: 'Le mode test a été mis à jour'
       });
 
+      setConfig(validatedConfig);
       await refreshConfiguration();
     } catch (error: any) {
       console.error('Erreur lors de l\'enregistrement:', error);
@@ -135,23 +133,50 @@ const AdminTestMode: React.FC = () => {
     try {
       setCleaningUp(true);
 
-      // Supprimer les contributions de test
-      await supabase
-        .from('cadastral_contributions')
-        .delete()
-        .ilike('parcel_number', 'TEST-%');
-
-      // Supprimer les factures de test
-      await supabase
-        .from('cadastral_invoices')
-        .delete()
-        .ilike('parcel_number', 'TEST-%');
-
-      // Supprimer les codes CCC de test
-      await supabase
+      // Fix #5: Ordre respectant les FK — d'abord les tables enfants
+      // 1. Codes CCC (référence contributions)
+      const { error: cccError } = await supabase
         .from('cadastral_contributor_codes')
         .delete()
         .ilike('parcel_number', 'TEST-%');
+      if (cccError) console.error('Erreur suppression codes CCC:', cccError);
+
+      // 2. Service access (référence invoices)
+      const { error: accessError } = await supabase
+        .from('cadastral_service_access')
+        .delete()
+        .ilike('parcel_number', 'TEST-%');
+      if (accessError) console.error('Erreur suppression accès services:', accessError);
+
+      // 3. Factures
+      const { error: invoiceError } = await supabase
+        .from('cadastral_invoices')
+        .delete()
+        .ilike('parcel_number', 'TEST-%');
+      if (invoiceError) console.error('Erreur suppression factures:', invoiceError);
+
+      // 4. Contributions (table parent)
+      const { error: contribError } = await supabase
+        .from('cadastral_contributions')
+        .delete()
+        .ilike('parcel_number', 'TEST-%');
+      if (contribError) console.error('Erreur suppression contributions:', contribError);
+
+      // Fix #4: Supprimer aussi les payment_transactions de test
+      const { error: paymentError } = await supabase
+        .from('payment_transactions')
+        .delete()
+        .eq('metadata->>test_mode', 'true');
+      if (paymentError) console.error('Erreur suppression paiements:', paymentError);
+
+      // Fix #9: Audit de l'action de nettoyage
+      await logAuditAction(
+        'TEST_DATA_CLEANUP',
+        'cadastral_contributions',
+        undefined,
+        { stats_before: testDataStats } as unknown as Record<string, unknown>,
+        { cleaned: true } as unknown as Record<string, unknown>
+      );
 
       toast.success('Données de test supprimées', {
         description: 'Toutes les données de test ont été nettoyées'
@@ -169,9 +194,16 @@ const AdminTestMode: React.FC = () => {
   };
 
   const generateTestData = async () => {
+    // Fix #3: Vérification user_id
+    if (!user?.id) {
+      toast.error('Erreur', { description: 'Vous devez être connecté pour générer des données de test' });
+      return;
+    }
+
     try {
       setGeneratingData(true);
 
+      // Fix #11: Données de test plus complètes
       const testContributions = [
         {
           parcel_number: 'TEST-001',
@@ -179,8 +211,11 @@ const AdminTestMode: React.FC = () => {
           current_owner_name: 'Test User 1',
           area_sqm: 500,
           province: 'Kinshasa',
+          ville: 'Kinshasa',
+          commune: 'Gombe',
           status: 'approved',
-          contribution_type: 'creation'
+          contribution_type: 'creation',
+          user_id: user.id
         },
         {
           parcel_number: 'TEST-002',
@@ -188,8 +223,10 @@ const AdminTestMode: React.FC = () => {
           current_owner_name: 'Test User 2',
           area_sqm: 1000,
           province: 'Nord-Kivu',
+          ville: 'Goma',
           status: 'pending',
-          contribution_type: 'creation'
+          contribution_type: 'creation',
+          user_id: user.id
         },
         {
           parcel_number: 'TEST-003',
@@ -197,19 +234,60 @@ const AdminTestMode: React.FC = () => {
           current_owner_name: 'Test User 3',
           area_sqm: 750,
           province: 'Sud-Kivu',
+          ville: 'Bukavu',
           status: 'rejected',
-          contribution_type: 'update'
+          contribution_type: 'update',
+          user_id: user.id
         }
       ];
 
-      const { error } = await supabase
+      const { error: contribError } = await supabase
         .from('cadastral_contributions')
         .insert(testContributions);
 
-      if (error) throw error;
+      if (contribError) throw contribError;
+
+      // Générer aussi des factures de test
+      const testInvoices = [
+        {
+          parcel_number: 'TEST-001',
+          invoice_number: null as any,
+          selected_services: ['carte_cadastrale', 'fiche_identification'] as any,
+          total_amount_usd: 10,
+          client_email: 'test@example.com',
+          client_name: 'Test User 1',
+          status: 'paid',
+          user_id: user.id
+        },
+        {
+          parcel_number: 'TEST-002',
+          invoice_number: null as any,
+          selected_services: ['carte_cadastrale'] as any,
+          total_amount_usd: 5,
+          client_email: 'test2@example.com',
+          client_name: 'Test User 2',
+          status: 'pending',
+          user_id: user.id
+        }
+      ];
+
+      const { error: invoiceError } = await supabase
+        .from('cadastral_invoices')
+        .insert(testInvoices);
+
+      if (invoiceError) console.error('Erreur génération factures test:', invoiceError);
+
+      // Fix #9: Audit
+      await logAuditAction(
+        'TEST_DATA_GENERATED',
+        'cadastral_contributions',
+        undefined,
+        undefined,
+        { contributions: testContributions.length, invoices: testInvoices.length } as unknown as Record<string, unknown>
+      );
 
       toast.success('Données de test générées', {
-        description: `${testContributions.length} contributions de test créées`
+        description: `${testContributions.length} contributions et ${testInvoices.length} factures de test créées`
       });
 
       await loadTestDataStats();
@@ -230,6 +308,8 @@ const AdminTestMode: React.FC = () => {
       </div>
     );
   }
+
+  const totalTestData = testDataStats.contributions + testDataStats.invoices + testDataStats.payments + testDataStats.cccCodes;
 
   return (
     <div className="space-y-4">
@@ -320,19 +400,23 @@ const AdminTestMode: React.FC = () => {
               <Input
                 id="retention-days"
                 type="number"
-                min="1"
-                max="30"
+                min={1}
+                max={30}
                 value={config.test_data_retention_days}
-                onChange={(e) => 
-                  setConfig(prev => ({ 
-                    ...prev, 
-                    test_data_retention_days: parseInt(e.target.value) || 7 
-                  }))
-                }
+                onChange={(e) => {
+                  // Fix #8: Validation stricte
+                  const value = parseInt(e.target.value);
+                  if (!isNaN(value)) {
+                    setConfig(prev => ({ 
+                      ...prev, 
+                      test_data_retention_days: Math.min(30, Math.max(1, value))
+                    }));
+                  }
+                }}
                 className="w-32"
               />
               <p className="text-sm text-muted-foreground">
-                Les données de test seront automatiquement supprimées après ce délai
+                Les données de test seront automatiquement supprimées après ce délai (1-30 jours)
               </p>
             </div>
           )}
@@ -428,7 +512,7 @@ const AdminTestMode: React.FC = () => {
             <Button
               variant="destructive"
               onClick={cleanupTestData}
-              disabled={cleaningUp || (testDataStats.contributions + testDataStats.invoices + testDataStats.payments + testDataStats.cccCodes === 0)}
+              disabled={cleaningUp || totalTestData === 0}
             >
               {cleaningUp ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

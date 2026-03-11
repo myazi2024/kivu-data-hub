@@ -8,15 +8,17 @@ export interface TestModeConfig {
   test_data_retention_days: number;
 }
 
+export const DEFAULT_TEST_MODE_CONFIG: TestModeConfig = {
+  enabled: false,
+  auto_cleanup: false,
+  test_data_retention_days: 7
+};
+
 /**
  * Hook pour gérer le mode test global de l'admin
  */
 export const useTestMode = () => {
-  const [testMode, setTestMode] = useState<TestModeConfig>({
-    enabled: false,
-    auto_cleanup: false,
-    test_data_retention_days: 7
-  });
+  const [testMode, setTestMode] = useState<TestModeConfig>(DEFAULT_TEST_MODE_CONFIG);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -54,7 +56,6 @@ export const useTestMode = () => {
   useEffect(() => {
     loadTestModeConfig();
 
-    // Écouter les changements de configuration en temps réel
     const channel = supabase
       .channel('test-mode-changes')
       .on(
