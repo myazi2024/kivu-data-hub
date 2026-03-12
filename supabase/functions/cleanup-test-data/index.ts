@@ -2,12 +2,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
@@ -15,7 +16,7 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Charger la config du mode test
+    // Load test mode config
     const { data: configData } = await supabase
       .from("cadastral_search_config")
       .select("config_value")
@@ -44,11 +45,17 @@ Deno.serve(async (req) => {
     cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
     const cutoffISO = cutoffDate.toISOString();
 
-    let deletedCounts = { cccCodes: 0, serviceAccess: 0, invoices: 0, contributions: 0, payments: 0 };
+    const deletedCounts = {
+      cccCodes: 0,
+      serviceAccess: 0,
+      invoices: 0,
+      contributions: 0,
+      payments: 0,
+    };
 
-    // Supprimer dans l'ordre FK: enfants → parents
+    // FK-safe deletion order: children → parents
 
-    // 1. Codes CCC expirés
+    // 1. CCC codes
     const { data: ccc } = await supabase
       .from("cadastral_contributor_codes")
       .delete()
@@ -66,7 +73,7 @@ Deno.serve(async (req) => {
       .select("id");
     deletedCounts.serviceAccess = access?.length || 0;
 
-    // 3. Factures
+    // 3. Invoices
     const { data: invoices } = await supabase
       .from("cadastral_invoices")
       .delete()
@@ -84,16 +91,16 @@ Deno.serve(async (req) => {
       .select("id");
     deletedCounts.contributions = contributions?.length || 0;
 
-    // 5. Payment transactions
+    // 5. Payment transactions — Fix #2: correct JSONB filter
     const { data: payments } = await supabase
       .from("payment_transactions")
       .delete()
-      .eq("metadata->>test_mode", "true")
+      .filter("metadata->>test_mode", "eq", "true")
       .lt("created_at", cutoffISO)
       .select("id");
     deletedCounts.payments = payments?.length || 0;
 
-    // Log audit
+    // Audit log
     await supabase.rpc("log_audit_action", {
       action_param: "AUTO_TEST_DATA_CLEANUP",
       table_name_param: "cadastral_contributions",
@@ -111,8 +118,11 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error("Auto-cleanup error:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ error: (error as Error).message }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
     );
   }
 });
