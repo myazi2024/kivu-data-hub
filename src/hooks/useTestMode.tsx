@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 
 export interface TestModeConfig {
   enabled: boolean;
@@ -11,18 +10,19 @@ export interface TestModeConfig {
 export const DEFAULT_TEST_MODE_CONFIG: TestModeConfig = {
   enabled: false,
   auto_cleanup: false,
-  test_data_retention_days: 7
+  test_data_retention_days: 7,
 };
 
 /**
- * Hook pour gérer le mode test global de l'admin
+ * Hook pour gérer le mode test global de l'admin.
+ * Fix #3/#4: Stable callback refs, proper useEffect deps.
+ * Fix #16: Uses console.error only — toast handled by callers.
  */
 export const useTestMode = () => {
   const [testMode, setTestMode] = useState<TestModeConfig>(DEFAULT_TEST_MODE_CONFIG);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
 
-  const loadTestModeConfig = async () => {
+  const loadTestModeConfig = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -38,20 +38,15 @@ export const useTestMode = () => {
         setTestMode({
           enabled: mode.enabled ?? false,
           auto_cleanup: mode.auto_cleanup ?? false,
-          test_data_retention_days: mode.test_data_retention_days ?? 7
+          test_data_retention_days: mode.test_data_retention_days ?? 7,
         });
       }
     } catch (error) {
       console.error('Error loading test mode configuration:', error);
-      toast({
-        title: "Erreur de configuration",
-        description: "Impossible de charger le mode test",
-        variant: "destructive"
-      });
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadTestModeConfig();
@@ -64,7 +59,7 @@ export const useTestMode = () => {
           event: '*',
           schema: 'public',
           table: 'cadastral_search_config',
-          filter: 'config_key=eq.test_mode'
+          filter: 'config_key=eq.test_mode',
         },
         () => loadTestModeConfig()
       )
@@ -73,16 +68,12 @@ export const useTestMode = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
-
-  const isTestModeActive = (): boolean => {
-    return testMode.enabled;
-  };
+  }, [loadTestModeConfig]);
 
   return {
     testMode,
     loading,
-    isTestModeActive,
-    refreshConfiguration: loadTestModeConfig
+    isTestModeActive: testMode.enabled,
+    refreshConfiguration: loadTestModeConfig,
   };
 };
