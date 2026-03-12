@@ -146,6 +146,7 @@ export const useTestDataActions = ({
         },
         {
           parcel_number: 'TEST-002',
+          invoice_number: '',
           selected_services: ['carte_cadastrale'] as any,
           total_amount_usd: 5,
           client_email: 'test2@example.com',
