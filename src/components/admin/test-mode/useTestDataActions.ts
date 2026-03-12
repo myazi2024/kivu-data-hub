@@ -132,10 +132,11 @@ export const useTestDataActions = ({
 
       if (contribError) throw contribError;
 
-      // Fix #1: Don't pass invoice_number — the DB trigger generates it
+      // Fix #1: Pass empty invoice_number — the DB trigger will auto-generate it
       const testInvoices = [
         {
           parcel_number: 'TEST-001',
+          invoice_number: '',
           selected_services: ['carte_cadastrale', 'fiche_identification'] as any,
           total_amount_usd: 10,
           client_email: 'test@example.com',
