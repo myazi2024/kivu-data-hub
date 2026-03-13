@@ -21,6 +21,7 @@ interface TestDataStatsCardProps {
   isTestModeActive: boolean;
   cleaningUp: boolean;
   generatingData: boolean;
+  statsLoading: boolean;
   onGenerate: () => void;
   onCleanup: () => void;
   onRefresh: () => void;
@@ -32,6 +33,7 @@ const TestDataStatsCard: React.FC<TestDataStatsCardProps> = ({
   isTestModeActive,
   cleaningUp,
   generatingData,
+  statsLoading,
   onGenerate,
   onCleanup,
   onRefresh,
@@ -48,15 +50,15 @@ const TestDataStatsCard: React.FC<TestDataStatsCardProps> = ({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatItem label="Contributions" value={stats.contributions} />
-          <StatItem label="Factures" value={stats.invoices} />
-          <StatItem label="Paiements" value={stats.payments} />
-          <StatItem label="Codes CCC" value={stats.cccCodes} />
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <StatItem label="Contributions" value={stats.contributions} loading={statsLoading} />
+          <StatItem label="Factures" value={stats.invoices} loading={statsLoading} />
+          <StatItem label="Paiements" value={stats.payments} loading={statsLoading} />
+          <StatItem label="Codes CCC" value={stats.cccCodes} loading={statsLoading} />
+          <StatItem label="Accès services" value={stats.serviceAccess} loading={statsLoading} />
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {/* Fix #5: Disable generate button when test mode not saved as active on server */}
           <Button
             variant="outline"
             onClick={onGenerate}
@@ -70,12 +72,15 @@ const TestDataStatsCard: React.FC<TestDataStatsCardProps> = ({
             Générer données de test
           </Button>
 
-          <Button variant="outline" onClick={onRefresh}>
-            <RefreshCw className="mr-2 h-4 w-4" />
+          <Button variant="outline" onClick={onRefresh} disabled={statsLoading}>
+            {statsLoading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-2 h-4 w-4" />
+            )}
             Actualiser
           </Button>
 
-          {/* Fix #8: Replace confirm() with AlertDialog for cleanup */}
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
@@ -96,7 +101,8 @@ const TestDataStatsCard: React.FC<TestDataStatsCardProps> = ({
                 <AlertDialogDescription>
                   Cette action supprimera <strong>{total}</strong> enregistrement(s) de test
                   ({stats.contributions} contributions, {stats.invoices} factures,{' '}
-                  {stats.payments} paiements, {stats.cccCodes} codes CCC).
+                  {stats.payments} paiements, {stats.cccCodes} codes CCC,{' '}
+                  {stats.serviceAccess} accès services).
                   <br />
                   <strong>Cette action est irréversible.</strong>
                 </AlertDialogDescription>
@@ -118,10 +124,18 @@ const TestDataStatsCard: React.FC<TestDataStatsCardProps> = ({
   );
 };
 
-const StatItem: React.FC<{ label: string; value: number }> = ({ label, value }) => (
+const StatItem: React.FC<{ label: string; value: number; loading?: boolean }> = ({
+  label,
+  value,
+  loading,
+}) => (
   <div className="p-3 rounded-lg border bg-card">
     <p className="text-sm text-muted-foreground">{label}</p>
-    <p className="text-2xl font-bold">{value}</p>
+    {loading ? (
+      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground mt-1" />
+    ) : (
+      <p className="text-2xl font-bold">{value}</p>
+    )}
   </div>
 );
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, TestTube } from 'lucide-react';
@@ -18,15 +18,13 @@ const AdminTestMode: React.FC = () => {
   const { testMode: savedConfig, loading, isTestModeActive, refreshConfiguration } = useTestMode();
   const { user } = useAuth();
 
-  // Fix #13: Local config derived from saved, only diverges during editing
   const [config, setConfig] = useState<TestModeConfig>(savedConfig);
 
   useEffect(() => {
     setConfig(savedConfig);
   }, [savedConfig]);
 
-  // Fix #3: Extracted stats into dedicated hook with proper deps
-  const { stats, total, refresh: refreshStats } = useTestDataStats();
+  const { stats, total, loading: statsLoading, refresh: refreshStats } = useTestDataStats();
 
   useEffect(() => {
     if (!loading) {
@@ -42,13 +40,26 @@ const AdminTestMode: React.FC = () => {
       onComplete: refreshStats,
     });
 
+  // Dirty-check: only enable save when config differs from server state
+  const isDirty = useMemo(
+    () =>
+      config.enabled !== savedConfig.enabled ||
+      config.auto_cleanup !== savedConfig.auto_cleanup ||
+      config.test_data_retention_days !== savedConfig.test_data_retention_days,
+    [config, savedConfig]
+  );
+
   const handleConfigChange = (update: Partial<TestModeConfig>) => {
     setConfig((prev) => ({ ...prev, ...update }));
   };
 
   const saveConfiguration = async () => {
+    if (!isDirty) return;
+
     const validatedConfig = {
       ...config,
+      // Force auto_cleanup off when disabling test mode
+      auto_cleanup: config.enabled ? config.auto_cleanup : false,
       test_data_retention_days: Math.min(30, Math.max(1, config.test_data_retention_days)),
     };
 
@@ -75,14 +86,9 @@ const AdminTestMode: React.FC = () => {
         description: 'Le mode test a été mis à jour',
       });
 
-      setConfig(validatedConfig);
-
-      // Fix #14: refreshConfiguration triggers realtime reload; avoid double-fetch
-      // by only calling it once (realtime listener will also pick it up, but
-      // we call explicitly for immediate UI update)
+      // Refresh server state — realtime will also fire but refreshConfiguration
+      // deduplicates via setLoading guard
       await refreshConfiguration();
-
-      // Fix #7: Refresh stats after config change
       await refreshStats();
     } catch (error: any) {
       console.error("Erreur lors de l'enregistrement:", error);
@@ -141,6 +147,7 @@ const AdminTestMode: React.FC = () => {
         config={config}
         savedConfig={savedConfig}
         saving={saving}
+        isDirty={isDirty}
         onConfigChange={handleConfigChange}
         onSave={saveConfiguration}
       />
@@ -152,6 +159,7 @@ const AdminTestMode: React.FC = () => {
         isTestModeActive={isTestModeActive}
         cleaningUp={cleaningUp}
         generatingData={generatingData}
+        statsLoading={statsLoading}
         onGenerate={generateTestData}
         onCleanup={cleanupTestData}
         onRefresh={refreshStats}

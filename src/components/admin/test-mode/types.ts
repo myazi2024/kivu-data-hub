@@ -3,6 +3,7 @@ export interface TestDataStats {
   invoices: number;
   payments: number;
   cccCodes: number;
+  serviceAccess: number;
 }
 
 /** Safely cast config objects for audit logging */

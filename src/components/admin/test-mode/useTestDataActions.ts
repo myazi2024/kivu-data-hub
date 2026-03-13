@@ -11,6 +11,13 @@ interface UseTestDataActionsProps {
   onComplete: () => Promise<void>;
 }
 
+/** Generate a unique suffix to avoid duplicate parcel_number on repeated clicks */
+const uniqueSuffix = () => {
+  const ts = Date.now().toString(36).toUpperCase();
+  const rand = Math.random().toString(36).substring(2, 5).toUpperCase();
+  return `${ts}-${rand}`;
+};
+
 export const useTestDataActions = ({
   userId,
   stats,
@@ -23,7 +30,7 @@ export const useTestDataActions = ({
     try {
       setCleaningUp(true);
 
-      // Fix #5: FK-safe deletion order — children first
+      // FK-safe deletion order — children first
       const { error: cccError } = await supabase
         .from('cadastral_contributor_codes')
         .delete()
@@ -48,7 +55,6 @@ export const useTestDataActions = ({
         .ilike('parcel_number', 'TEST-%');
       if (contribError) console.error('Erreur suppression contributions:', contribError);
 
-      // Fix #2: Correct JSONB filter syntax
       const { error: paymentError } = await supabase
         .from('payment_transactions')
         .delete()
@@ -89,9 +95,17 @@ export const useTestDataActions = ({
     try {
       setGeneratingData(true);
 
+      const suffix = uniqueSuffix();
+
+      const parcelNumbers = [
+        `TEST-001-${suffix}`,
+        `TEST-002-${suffix}`,
+        `TEST-003-${suffix}`,
+      ];
+
       const testContributions = [
         {
-          parcel_number: 'TEST-001',
+          parcel_number: parcelNumbers[0],
           property_title_type: 'Titre foncier',
           current_owner_name: 'Test User 1',
           area_sqm: 500,
@@ -103,7 +117,7 @@ export const useTestDataActions = ({
           user_id: userId,
         },
         {
-          parcel_number: 'TEST-002',
+          parcel_number: parcelNumbers[1],
           property_title_type: 'Concession',
           current_owner_name: 'Test User 2',
           area_sqm: 1000,
@@ -114,7 +128,7 @@ export const useTestDataActions = ({
           user_id: userId,
         },
         {
-          parcel_number: 'TEST-003',
+          parcel_number: parcelNumbers[2],
           property_title_type: 'Titre foncier',
           current_owner_name: 'Test User 3',
           area_sqm: 750,
@@ -132,10 +146,10 @@ export const useTestDataActions = ({
 
       if (contribError) throw contribError;
 
-      // Fix #1: Pass empty invoice_number — the DB trigger will auto-generate it
+      // Pass empty invoice_number — the DB trigger will auto-generate it
       const testInvoices = [
         {
-          parcel_number: 'TEST-001',
+          parcel_number: parcelNumbers[0],
           invoice_number: '',
           selected_services: ['carte_cadastrale', 'fiche_identification'] as any,
           total_amount_usd: 10,
@@ -145,7 +159,7 @@ export const useTestDataActions = ({
           user_id: userId,
         },
         {
-          parcel_number: 'TEST-002',
+          parcel_number: parcelNumbers[1],
           invoice_number: '',
           selected_services: ['carte_cadastrale'] as any,
           total_amount_usd: 5,
@@ -156,21 +170,53 @@ export const useTestDataActions = ({
         },
       ];
 
-      const { error: invoiceError } = await supabase
+      const { data: invoiceData, error: invoiceError } = await supabase
         .from('cadastral_invoices')
-        .insert(testInvoices);
+        .insert(testInvoices)
+        .select('id, parcel_number');
 
       if (invoiceError) {
-        // Fix #12: Partial rollback — cleanup contributions if invoices fail
+        // Partial rollback — cleanup contributions if invoices fail
         console.error('Erreur génération factures test, rollback contributions:', invoiceError);
         await supabase
           .from('cadastral_contributions')
           .delete()
-          .in('parcel_number', ['TEST-001', 'TEST-002', 'TEST-003']);
+          .in('parcel_number', parcelNumbers);
 
         throw new Error(
           `Échec de génération des factures (contributions annulées): ${invoiceError.message}`
         );
+      }
+
+      // Generate service_access records for paid invoices
+      if (invoiceData && invoiceData.length > 0) {
+        const paidInvoice = invoiceData.find(
+          (inv) => inv.parcel_number === parcelNumbers[0]
+        );
+        if (paidInvoice) {
+          const serviceAccessRecords = [
+            {
+              parcel_number: parcelNumbers[0],
+              invoice_id: paidInvoice.id,
+              service_type: 'carte_cadastrale',
+              user_id: userId,
+            },
+            {
+              parcel_number: parcelNumbers[0],
+              invoice_id: paidInvoice.id,
+              service_type: 'fiche_identification',
+              user_id: userId,
+            },
+          ];
+
+          const { error: accessError } = await supabase
+            .from('cadastral_service_access')
+            .insert(serviceAccessRecords);
+
+          if (accessError) {
+            console.error('Erreur génération accès services test (non bloquant):', accessError);
+          }
+        }
       }
 
       await logAuditAction(
@@ -181,6 +227,7 @@ export const useTestDataActions = ({
         toRecord({
           contributions: testContributions.length,
           invoices: testInvoices.length,
+          suffix,
         })
       );
 
