@@ -23,6 +23,7 @@ interface TestModeConfigCardProps {
   config: TestModeConfig;
   savedConfig: TestModeConfig;
   saving: boolean;
+  isDirty: boolean;
   onConfigChange: (update: Partial<TestModeConfig>) => void;
   onSave: () => void;
 }
@@ -31,6 +32,7 @@ const TestModeConfigCard: React.FC<TestModeConfigCardProps> = ({
   config,
   savedConfig,
   saving,
+  isDirty,
   onConfigChange,
   onSave,
 }) => {
@@ -61,7 +63,13 @@ const TestModeConfigCard: React.FC<TestModeConfigCardProps> = ({
           <Switch
             id="test-mode-enabled"
             checked={config.enabled}
-            onCheckedChange={(checked) => onConfigChange({ enabled: checked })}
+            onCheckedChange={(checked) =>
+              onConfigChange({
+                enabled: checked,
+                // Reset auto_cleanup when disabling test mode
+                ...(checked ? {} : { auto_cleanup: false }),
+              })
+            }
           />
         </div>
 
@@ -84,7 +92,7 @@ const TestModeConfigCard: React.FC<TestModeConfigCardProps> = ({
         </div>
 
         {/* Durée de rétention */}
-        {config.auto_cleanup && (
+        {config.auto_cleanup && config.enabled && (
           <div className="p-4 rounded-lg border bg-card space-y-2">
             <Label htmlFor="retention-days" className="text-base font-medium">
               Durée de rétention (jours)
@@ -132,12 +140,12 @@ const TestModeConfigCard: React.FC<TestModeConfigCardProps> = ({
           </Alert>
         )}
 
-        {/* Fix #8: Replace confirm() with AlertDialog for disabling test mode */}
+        {/* Save button with dirty-check */}
         <div className="flex justify-end pt-4">
           {isDisablingTestMode ? (
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button size="lg" variant="destructive" disabled={saving}>
+                <Button size="lg" variant="destructive" disabled={saving || !isDirty}>
                   {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Désactiver le mode test
                 </Button>
@@ -163,7 +171,7 @@ const TestModeConfigCard: React.FC<TestModeConfigCardProps> = ({
               </AlertDialogContent>
             </AlertDialog>
           ) : (
-            <Button onClick={onSave} disabled={saving} size="lg">
+            <Button onClick={onSave} disabled={saving || !isDirty} size="lg">
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Enregistrer la configuration
             </Button>

@@ -7,6 +7,7 @@ const EMPTY_STATS: TestDataStats = {
   invoices: 0,
   payments: 0,
   cccCodes: 0,
+  serviceAccess: 0,
 };
 
 export const useTestDataStats = () => {
@@ -16,7 +17,6 @@ export const useTestDataStats = () => {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      // Fix #2: Use Promise.allSettled for resilient stats + correct JSONB filter
       const results = await Promise.allSettled([
         supabase
           .from('cadastral_contributions')
@@ -34,25 +34,23 @@ export const useTestDataStats = () => {
           .from('cadastral_contributor_codes')
           .select('id', { count: 'exact', head: true })
           .ilike('parcel_number', 'TEST-%'),
+        supabase
+          .from('cadastral_service_access')
+          .select('id', { count: 'exact', head: true })
+          .ilike('parcel_number', 'TEST-%'),
       ]);
 
       setStats({
         contributions:
-          results[0].status === 'fulfilled'
-            ? results[0].value.count || 0
-            : 0,
+          results[0].status === 'fulfilled' ? results[0].value.count || 0 : 0,
         invoices:
-          results[1].status === 'fulfilled'
-            ? results[1].value.count || 0
-            : 0,
+          results[1].status === 'fulfilled' ? results[1].value.count || 0 : 0,
         payments:
-          results[2].status === 'fulfilled'
-            ? results[2].value.count || 0
-            : 0,
+          results[2].status === 'fulfilled' ? results[2].value.count || 0 : 0,
         cccCodes:
-          results[3].status === 'fulfilled'
-            ? results[3].value.count || 0
-            : 0,
+          results[3].status === 'fulfilled' ? results[3].value.count || 0 : 0,
+        serviceAccess:
+          results[4].status === 'fulfilled' ? results[4].value.count || 0 : 0,
       });
     } catch (error) {
       console.error('Error loading test data stats:', error);
@@ -62,7 +60,7 @@ export const useTestDataStats = () => {
   }, []);
 
   const total =
-    stats.contributions + stats.invoices + stats.payments + stats.cccCodes;
+    stats.contributions + stats.invoices + stats.payments + stats.cccCodes + stats.serviceAccess;
 
   return { stats, total, loading, refresh };
 };
