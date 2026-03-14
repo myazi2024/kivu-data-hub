@@ -1,10 +1,9 @@
 import React, { useState, useMemo, memo, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
 import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, surfaceDistribution, CHART_COLORS } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { FileText, Users, Building, Shield, Landmark, TrendingUp, DollarSign, Ruler, Home } from 'lucide-react';
+import { FileText, Users, Building, Shield, Landmark, TrendingUp, Ruler, Home } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, ColorMappedPieCard, StackedBarCard } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
@@ -14,7 +13,7 @@ interface Props { data: LandAnalyticsData; }
 
 const GENDER_COLORS: Record<string, string> = {
   'Masculin': '#3b82f6', 'Féminin': '#ec4899', 'M': '#3b82f6', 'F': '#ec4899',
-  'Autre': '#8b5cf6', 'Non spécifié': '#9ca3af',
+  'Autre': '#8b5cf6', '(Non renseigné)': '#9ca3af',
 };
 
 export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
@@ -25,7 +24,6 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
   const filteredTaxes = useMemo(() => applyFilters(data.taxHistory, filter), [data.taxHistory, filter]);
   const filteredMortgages = useMemo(() => applyFilters(data.mortgages, filter), [data.mortgages, filter]);
 
-  // Grouped countBy computations
   const charts = useMemo(() => ({
     byTitleType: countBy(filteredParcels, 'property_title_type'),
     byLegalStatus: countBy(filteredParcels, 'current_owner_legal_status'),
@@ -36,8 +34,11 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     surfaceDist: surfaceDistribution(filteredParcels),
   }), [filteredParcels]);
 
+  // #9 fix: Extract gender from parcels (current_owners_details is on contributions but may not cover all parcels)
+  // Combine both sources for completeness
   const genderData = useMemo(() => {
     const map = new Map<string, number>();
+    // From contributions (approved)
     filteredContribs.forEach(c => {
       if (c.current_owners_details && Array.isArray(c.current_owners_details)) {
         c.current_owners_details.forEach((o: any) => { if (o?.gender) map.set(o.gender, (map.get(o.gender) || 0) + 1); });
@@ -55,7 +56,6 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
   const urbanCount = useMemo(() => filteredParcels.filter(p => p.parcel_type === 'SU').length, [filteredParcels]);
   const ruralCount = useMemo(() => filteredParcels.filter(p => p.parcel_type === 'SR').length, [filteredParcels]);
 
-  // Tax computations
   const taxData = useMemo(() => {
     const byPayment = countBy(filteredTaxes, 'payment_status');
     const byYear = new Map<number, { paid: number; pending: number }>();
@@ -67,10 +67,15 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
       else { e.pending++; pendingAmount += t.amount_usd || 0; }
     });
     const yearData = Array.from(byYear.entries()).sort(([a], [b]) => a - b).map(([year, d]) => ({ name: String(year), paid: d.paid, pending: d.pending }));
-    return { byPayment, yearData, paidAmount, pendingAmount };
+    // #25: Amount trend by year
+    const yearAmountData = Array.from(byYear.entries()).sort(([a], [b]) => a - b).map(([year]) => {
+      const yearTaxes = filteredTaxes.filter(t => t.tax_year === year);
+      const total = yearTaxes.reduce((s, t) => s + (t.amount_usd || 0), 0);
+      return { name: String(year), value: Math.round(total) };
+    });
+    return { byPayment, yearData, yearAmountData, paidAmount, pendingAmount };
   }, [filteredTaxes]);
 
-  // Mortgage computations
   const mortgageData = useMemo(() => {
     const parcelIdsWithMortgage = new Set(filteredMortgages.map(m => m.parcel_id));
     const w = filteredParcels.filter(p => parcelIdsWithMortgage.has(p.id)).length;
@@ -117,6 +122,8 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
           { dataKey: 'paid', name: 'Payées', color: CHART_COLORS[2] },
           { dataKey: 'pending', name: 'Impayées', color: CHART_COLORS[4] },
         ]} hidden={taxData.yearData.length === 0} />
+        {/* #25: Tax amount trend by year */}
+        <ChartCard title="Montants taxes/an" icon={TrendingUp} data={taxData.yearAmountData} type="area" colorIndex={2} hidden={taxData.yearAmountData.length < 2} />
         <ChartCard title="Hypothèques" data={mortgageData.distribution} type="pie" colorIndex={4} />
         <ChartCard title="Créanciers" data={mortgageData.byCreditorType} type="bar-h" colorIndex={8} labelWidth={80} />
         <ChartCard title="Statut hyp." data={mortgageData.byStatus} type="donut" colorIndex={3} />
