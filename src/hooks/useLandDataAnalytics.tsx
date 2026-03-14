@@ -14,40 +14,65 @@ export interface LandAnalyticsData {
   disputes: any[];
 }
 
+/** Fetch all rows with pagination to bypass 1000-row limit */
+async function fetchAll(
+  table: string,
+  select: string,
+  filters?: (q: any) => any
+): Promise<any[]> {
+  const PAGE = 1000;
+  let from = 0;
+  const allRows: any[] = [];
+
+  while (true) {
+    let query = (supabase.from as any)(table).select(select);
+    if (filters) query = filters(query);
+    const { data, error } = await query.range(from, from + PAGE - 1);
+    if (error) {
+      console.error(`[Analytics] Error fetching ${table}:`, error.message);
+      return allRows; // return what we have so far
+    }
+    if (!data || data.length === 0) break;
+    allRows.push(...data);
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+
+  return allRows;
+}
+
 export const useLandDataAnalytics = () => {
   return useQuery({
-    queryKey: ['land-analytics-v3'],
+    queryKey: ['land-analytics-v4'],
     queryFn: async (): Promise<LandAnalyticsData> => {
       const [
-        parcelsRes, contribRes, titleReqRes, permitsRes,
-        taxRes, mortgagesRes, expertiseRes, mutationRes,
-        subdivisionRes, disputesRes,
+        parcels, contribs, titleReqs, permits,
+        taxes, mortgages, expertise, mutations,
+        subdivisions, disputes,
       ] = await Promise.all([
-        supabase.from('cadastral_parcels')
-          .select('id, parcel_number, parcel_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, property_title_type, current_owner_legal_status, declared_usage, construction_type, construction_nature, area_sqm, gps_coordinates, lease_type, created_at')
-          .is('deleted_at', null),
-        supabase.from('cadastral_contributions')
-          .select('id, parcel_number, parcel_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, property_title_type, current_owner_legal_status, current_owners_details, declared_usage, construction_type, construction_nature, building_permits, mortgage_history, tax_history, status, created_at')
-          .eq('status', 'approved'),
-        supabase.from('land_title_requests')
-          .select('id, request_type, requester_type, section_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, declared_usage, construction_type, construction_nature, owner_legal_status, status, payment_status, total_amount_usd, created_at'),
-        supabase.from('cadastral_building_permits')
-          .select('id, parcel_id, administrative_status, issue_date, created_at'),
-        supabase.from('cadastral_tax_history')
-          .select('id, parcel_id, tax_year, payment_status, amount_usd, created_at'),
-        supabase.from('cadastral_mortgages')
-          .select('id, parcel_id, creditor_type, duration_months, mortgage_status, mortgage_amount_usd, contract_date, created_at'),
-        supabase.from('real_estate_expertise_requests')
-          .select('id, parcel_number, parcel_id, status, created_at'),
-        supabase.from('mutation_requests')
-          .select('id, parcel_number, parcel_id, mutation_type, status, created_at'),
-        supabase.from('subdivision_requests')
-          .select('id, parcel_number, parcel_id, status, number_of_lots, created_at'),
-        supabase.from('cadastral_land_disputes')
-          .select('id, parcel_number, parcel_id, dispute_nature, dispute_type, current_status, resolution_level, lifting_status, lifting_request_reference, created_at'),
+        fetchAll('cadastral_parcels',
+          'id, parcel_number, parcel_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, property_title_type, current_owner_legal_status, declared_usage, construction_type, construction_nature, area_sqm, gps_coordinates, lease_type, created_at',
+          q => q.is('deleted_at', null)),
+        fetchAll('cadastral_contributions',
+          'id, parcel_number, parcel_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, property_title_type, current_owner_legal_status, current_owners_details, declared_usage, construction_type, construction_nature, building_permits, mortgage_history, tax_history, status, created_at',
+          q => q.eq('status', 'approved')),
+        fetchAll('land_title_requests',
+          'id, request_type, requester_type, section_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, declared_usage, construction_type, construction_nature, owner_legal_status, status, payment_status, total_amount_usd, created_at'),
+        fetchAll('cadastral_building_permits',
+          'id, parcel_id, administrative_status, issue_date, created_at'),
+        fetchAll('cadastral_tax_history',
+          'id, parcel_id, tax_year, payment_status, amount_usd, created_at'),
+        fetchAll('cadastral_mortgages',
+          'id, parcel_id, creditor_type, duration_months, mortgage_status, mortgage_amount_usd, contract_date, created_at'),
+        fetchAll('real_estate_expertise_requests',
+          'id, parcel_number, parcel_id, status, created_at'),
+        fetchAll('mutation_requests',
+          'id, parcel_number, parcel_id, mutation_type, status, created_at'),
+        fetchAll('subdivision_requests',
+          'id, parcel_number, parcel_id, status, number_of_lots, created_at'),
+        fetchAll('cadastral_land_disputes',
+          'id, parcel_number, parcel_id, dispute_nature, dispute_type, current_status, resolution_level, lifting_status, lifting_request_reference, created_at'),
       ]);
-
-      const parcels = parcelsRes.data || [];
 
       // Lookup maps for enrichment
       const byId = new Map<string, any>();
@@ -78,17 +103,19 @@ export const useLandDataAnalytics = () => {
         });
 
       return {
-        titleRequests: titleReqRes.data || [],
+        titleRequests: titleReqs,
         parcels,
-        contributions: contribRes.data || [],
-        buildingPermits: enrich(permitsRes.data || []),
-        taxHistory: enrich(taxRes.data || []),
-        mortgages: enrich(mortgagesRes.data || []),
-        expertiseRequests: enrich(expertiseRes.data || []),
-        mutationRequests: enrich(mutationRes.data || []),
-        subdivisionRequests: enrich(subdivisionRes.data || []),
-        disputes: enrich(disputesRes.data || []),
+        contributions: contribs,
+        buildingPermits: enrich(permits),
+        taxHistory: enrich(taxes),
+        mortgages: enrich(mortgages),
+        expertiseRequests: enrich(expertise),
+        mutationRequests: enrich(mutations),
+        subdivisionRequests: enrich(subdivisions),
+        disputes: enrich(disputes),
       };
     },
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
   });
 };

@@ -1,15 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, AreaChart, Area } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
 import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, CHART_COLORS } from '@/utils/analyticsHelpers';
+import { CHART_HEIGHT as CH, NoData } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { FileText, Users, MapPin, Building, TrendingUp } from 'lucide-react';
+import { FileText, Users, MapPin, Building, TrendingUp, DollarSign } from 'lucide-react';
 
 interface Props { data: LandAnalyticsData; }
-
-const CH = 160;
-const NoData = () => <div className="flex items-center justify-center h-[100px] text-muted-foreground text-xs">Aucune donnée</div>;
 
 export const TitleRequestsBlock: React.FC<Props> = ({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
@@ -26,22 +24,26 @@ export const TitleRequestsBlock: React.FC<Props> = ({ data }) => {
   const ruralRecords = useMemo(() => filtered.filter(r => r.section_type === 'rurale'), [filtered]);
   const byVille = useMemo(() => countBy(urbanRecords, 'ville'), [urbanRecords]);
   const byCommune = useMemo(() => countBy(urbanRecords, 'commune'), [urbanRecords]);
+  const byQuartier = useMemo(() => countBy(urbanRecords, 'quartier'), [urbanRecords]);
   const byTerritoire = useMemo(() => countBy(ruralRecords, 'territoire'), [ruralRecords]);
   const byCollectivite = useMemo(() => countBy(ruralRecords, 'collectivite'), [ruralRecords]);
+  const byGroupement = useMemo(() => countBy(ruralRecords, 'groupement'), [ruralRecords]);
   const bySectionType = useMemo(() => countBy(filtered, 'section_type'), [filtered]);
-  const personnesPhysiques = useMemo(() => filtered.filter(r => r.requester_type === 'Personne physique'), [filtered]);
   const byOwnerLegalStatus = useMemo(() => countBy(filtered, 'owner_legal_status'), [filtered]);
+  const totalRevenue = useMemo(() => filtered.reduce((s, r) => s + (r.total_amount_usd || 0), 0), [filtered]);
+  const paidRevenue = useMemo(() => filtered.filter(r => r.payment_status === 'paid').reduce((s, r) => s + (r.total_amount_usd || 0), 0), [filtered]);
 
   return (
     <div className="space-y-2">
       <AnalyticsFilters data={data.titleRequests} filter={filter} onChange={setFilter} />
       
-      <div className="grid grid-cols-4 gap-1.5">
+      <div className="grid grid-cols-5 gap-1.5">
         {[
           { label: 'Total', value: filtered.length, cls: 'text-primary' },
           { label: 'Urbaine', value: urbanRecords.length, cls: 'text-emerald-600' },
           { label: 'Rurale', value: ruralRecords.length, cls: 'text-amber-600' },
-          { label: 'Pers. phys.', value: personnesPhysiques.length, cls: 'text-rose-600' },
+          { label: 'Revenus', value: `$${paidRevenue.toLocaleString()}`, cls: 'text-blue-600' },
+          { label: 'Total facturé', value: `$${totalRevenue.toLocaleString()}`, cls: 'text-rose-600' },
         ].map((kpi, i) => (
           <Card key={i} className="border-border/30">
             <CardContent className="p-2">
@@ -93,7 +95,7 @@ export const TitleRequestsBlock: React.FC<Props> = ({ data }) => {
         </Card>
 
         <Card className="border-border/30">
-          <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-xs font-semibold">Paiement</CardTitle></CardHeader>
+          <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-xs font-semibold flex items-center gap-1"><DollarSign className="h-3 w-3 text-primary" /> Paiement</CardTitle></CardHeader>
           <CardContent className="px-2 pb-2">{byPayment.length === 0 ? <NoData /> : (
             <ResponsiveContainer width="100%" height={CH}>
               <PieChart>
@@ -187,6 +189,21 @@ export const TitleRequestsBlock: React.FC<Props> = ({ data }) => {
           </Card>
         )}
 
+        {byQuartier.length > 0 && (
+          <Card className="border-border/30">
+            <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-xs font-semibold">Par quartier</CardTitle></CardHeader>
+            <CardContent className="px-2 pb-2">
+              <ResponsiveContainer width="100%" height={CH}>
+                <BarChart data={byQuartier.slice(0, 8)}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="name" tick={{ fontSize: 8 }} angle={-25} textAnchor="end" height={40} /><YAxis tick={{ fontSize: 9 }} />
+                  <Tooltip contentStyle={{ fontSize: 10 }} /><Bar dataKey="value" fill={CHART_COLORS[10]} radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
+
         {byTerritoire.length > 0 && (
           <Card className="border-border/30">
             <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-xs font-semibold">Par territoire</CardTitle></CardHeader>
@@ -211,6 +228,21 @@ export const TitleRequestsBlock: React.FC<Props> = ({ data }) => {
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="name" tick={{ fontSize: 8 }} angle={-25} textAnchor="end" height={40} /><YAxis tick={{ fontSize: 9 }} />
                   <Tooltip contentStyle={{ fontSize: 10 }} /><Bar dataKey="value" fill={CHART_COLORS[8]} radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
+
+        {byGroupement.length > 0 && (
+          <Card className="border-border/30">
+            <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-xs font-semibold">Par groupement</CardTitle></CardHeader>
+            <CardContent className="px-2 pb-2">
+              <ResponsiveContainer width="100%" height={CH}>
+                <BarChart data={byGroupement.slice(0, 8)}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="name" tick={{ fontSize: 8 }} angle={-25} textAnchor="end" height={40} /><YAxis tick={{ fontSize: 9 }} />
+                  <Tooltip contentStyle={{ fontSize: 10 }} /><Bar dataKey="value" fill={CHART_COLORS[11]} radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
