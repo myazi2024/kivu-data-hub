@@ -1,6 +1,6 @@
 import React, { useState, useMemo, memo, useCallback } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
-import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth } from '@/utils/analyticsHelpers';
+import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, VALID_LIFTING_STATUSES } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { ShieldCheck, Scale, TrendingUp } from 'lucide-react';
@@ -14,8 +14,11 @@ interface Props { data: LandAnalyticsData; }
 export const DisputeLiftingBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
 
-  // Only include disputes that have an explicit lifting_status (not just a reference)
-  const liftingDisputes = useMemo(() => data.disputes.filter(d => d.lifting_status), [data.disputes]);
+  // #7 fix: Only include disputes with explicit valid lifting statuses
+  const liftingDisputes = useMemo(() =>
+    data.disputes.filter(d => d.lifting_status && VALID_LIFTING_STATUSES.includes(d.lifting_status)),
+    [data.disputes]
+  );
   const filtered = useMemo(() => applyFilters(liftingDisputes, filter), [liftingDisputes, filter]);
 
   const byLiftingStatus = useMemo(() => countBy(filtered, 'lifting_status'), [filtered]);
@@ -25,9 +28,28 @@ export const DisputeLiftingBlock: React.FC<Props> = memo(({ data }) => {
 
   const stats = useMemo(() => {
     const approved = filtered.filter(d => d.lifting_status === 'approved').length;
-    const pending = filtered.filter(d => d.lifting_status === 'pending' || d.lifting_status === 'demande_levee').length;
+    const pending = filtered.filter(d => ['pending', 'demande_levee', 'in_review'].includes(d.lifting_status)).length;
     const rejected = filtered.filter(d => d.lifting_status === 'rejected').length;
     return { approved, pending, rejected };
+  }, [filtered]);
+
+  // #26: Lifting success rate trend
+  const liftingSuccessTrend = useMemo(() => {
+    const map = new Map<string, { total: number; approved: number }>();
+    filtered.forEach(d => {
+      if (!d.created_at) return;
+      const dt = new Date(d.created_at);
+      const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`;
+      if (!map.has(key)) map.set(key, { total: 0, approved: 0 });
+      const e = map.get(key)!;
+      e.total++;
+      if (d.lifting_status === 'approved') e.approved++;
+    });
+    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([key, d]) => {
+      const [y, m] = key.split('-');
+      const name = new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('fr-FR', { year: '2-digit', month: 'short' });
+      return { name, value: d.total > 0 ? Math.round((d.approved / d.total) * 100) : 0 };
+    });
   }, [filtered]);
 
   const handleExport = useCallback(() => {
@@ -45,12 +67,15 @@ export const DisputeLiftingBlock: React.FC<Props> = memo(({ data }) => {
         { label: 'Approuvées', value: stats.approved, cls: 'text-emerald-600', tooltip: pct(stats.approved, filtered.length) },
         { label: 'En attente', value: stats.pending, cls: 'text-amber-600', tooltip: pct(stats.pending, filtered.length) },
         { label: 'Rejetées', value: stats.rejected, cls: 'text-red-600', tooltip: pct(stats.rejected, filtered.length) },
+        { label: 'Taux réussite', value: pct(stats.approved, filtered.length), cls: 'text-purple-600', tooltip: 'Pourcentage de levées approuvées' },
       ]} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         <ChartCard title="Statut levée" icon={ShieldCheck} data={byLiftingStatus} type="pie" colorIndex={9} />
         <ChartCard title="Niveau résolution" icon={Scale} iconColor="text-purple-500" data={byResolutionLevel} type="bar-h" colorIndex={9} labelWidth={100} />
         <ChartCard title="Nature litige" data={byNature} type="bar-h" colorIndex={4} labelWidth={100} />
         <GeoCharts records={filtered} />
+        {/* #26: Lifting success rate trend */}
+        <ChartCard title="Taux réussite %" icon={TrendingUp} data={liftingSuccessTrend} type="area" colorIndex={2} colSpan={2} hidden={liftingSuccessTrend.length < 2} />
         <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={9} colSpan={2} />
       </div>
     </div>

@@ -16,21 +16,21 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
   const filtered = useMemo(() => applyFilters(data.disputes, filter), [data.disputes, filter]);
 
   const { enCours, resolus, byNature, byType, byStatus, byResolutionLevel, trend, natureStatusCross, resolutionStatus } = useMemo(() => {
-    const enCours = filtered.filter(d => d.current_status !== 'resolved' && d.current_status !== 'closed');
-    const resolus = filtered.filter(d => d.current_status === 'resolved' || d.current_status === 'closed');
+    const enCours = filtered.filter(d => !['resolved', 'closed', 'resolu', 'leve'].includes(d.current_status));
+    const resolus = filtered.filter(d => ['resolved', 'closed', 'resolu', 'leve'].includes(d.current_status));
     const byNature = countBy(filtered, 'dispute_nature');
     const byType = countBy(filtered, 'dispute_type');
     const byStatus = countBy(filtered, 'current_status');
-    const byResolutionLevel = countBy(enCours, 'resolution_level');
+    // #4 fix: Show resolution level for ALL disputes, not just enCours
+    const byResolutionLevel = countBy(filtered, 'resolution_level');
     const trend = trendByMonth(filtered);
 
-    // Cross nature × status
     const map = new Map<string, { enCours: number; resolu: number }>();
     filtered.forEach(d => {
-      const n = d.dispute_nature || 'Non spécifié';
+      const n = d.dispute_nature || '(Non renseigné)';
       if (!map.has(n)) map.set(n, { enCours: 0, resolu: 0 });
       const e = map.get(n)!;
-      if (d.current_status === 'resolved' || d.current_status === 'closed') e.resolu++; else e.enCours++;
+      if (['resolved', 'closed', 'resolu', 'leve'].includes(d.current_status)) e.resolu++; else e.enCours++;
     });
     const natureStatusCross = Array.from(map.entries()).map(([name, d]) => ({ name, ...d })).sort((a, b) => (b.enCours + b.resolu) - (a.enCours + a.resolu));
 
@@ -38,7 +38,6 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
     return { enCours, resolus, byNature, byType, byStatus, byResolutionLevel, trend, natureStatusCross, resolutionStatus };
   }, [filtered]);
 
-  // Resolution rate trend
   const resolutionTrend = useMemo(() => {
     const map = new Map<string, { total: number; resolved: number }>();
     filtered.forEach(d => {
@@ -48,7 +47,7 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
       if (!map.has(key)) map.set(key, { total: 0, resolved: 0 });
       const e = map.get(key)!;
       e.total++;
-      if (d.current_status === 'resolved' || d.current_status === 'closed') e.resolved++;
+      if (['resolved', 'closed', 'resolu', 'leve'].includes(d.current_status)) e.resolved++;
     });
     return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([key, d]) => {
       const [y, m] = key.split('-');
@@ -78,7 +77,8 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
         <ChartCard title="En cours vs Résolus" data={resolutionStatus} type="pie" colorIndex={3} />
         <ChartCard title="Statut détaillé" data={byStatus} type="bar-v" colorIndex={8} />
         <ChartCard title="Type litige" data={byType} type="donut" colorIndex={0} />
-        <ChartCard title="Résolution (en cours)" icon={Scale} iconColor="text-purple-500" data={byResolutionLevel} type="bar-h" colorIndex={5} labelWidth={100} />
+        {/* #4 fix: Resolution level for ALL disputes */}
+        <ChartCard title="Niveau résolution" icon={Scale} iconColor="text-purple-500" data={byResolutionLevel} type="bar-h" colorIndex={5} labelWidth={100} />
         <StackedBarCard title="Nature × Résolution" data={natureStatusCross} bars={[
           { dataKey: 'enCours', name: 'En cours', color: CHART_COLORS[3] },
           { dataKey: 'resolu', name: 'Résolus', color: CHART_COLORS[2] },

@@ -15,14 +15,24 @@ interface Props {
   cols?: number;
 }
 
+/**
+ * #2 fix: Use responsive Tailwind grid classes instead of inline style.
+ * On mobile (< md), show 2 or 3 cols; on md+, show up to items.length (max 6).
+ */
+const gridClass: Record<number, string> = {
+  2: 'grid-cols-2',
+  3: 'grid-cols-3',
+  4: 'grid-cols-2 md:grid-cols-4',
+  5: 'grid-cols-3 md:grid-cols-5',
+  6: 'grid-cols-3 md:grid-cols-6',
+};
+
 export const KpiGrid: React.FC<Props> = memo(({ items, cols }) => {
-  const gridCols = cols || items.length;
+  const n = cols || items.length;
+  const cls = gridClass[Math.min(n, 6)] || 'grid-cols-2 md:grid-cols-4';
   return (
     <TooltipProvider>
-      <div
-        className="grid gap-1.5"
-        style={{ gridTemplateColumns: `repeat(${Math.min(gridCols, 5)}, minmax(0, 1fr))` }}
-      >
+      <div className={`grid gap-1.5 ${cls}`}>
         {items.map((kpi, i) => (
           <Tooltip key={i}>
             <TooltipTrigger asChild>

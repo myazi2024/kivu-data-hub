@@ -2,7 +2,7 @@ import React, { useMemo, useCallback } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Filter, MapPin, Calendar, X, Download } from 'lucide-react';
+import { Filter, MapPin, Calendar, X, Download, AlertCircle } from 'lucide-react';
 import { AnalyticsFilter, defaultFilter, extractUnique, getAvailableYears, getSectionType } from '@/utils/analyticsHelpers';
 
 interface Props {
@@ -10,7 +10,6 @@ interface Props {
   filter: AnalyticsFilter;
   onChange: (f: AnalyticsFilter) => void;
   dateField?: string;
-  /** If provided, shows an export button */
   onExport?: () => void;
 }
 
@@ -19,22 +18,13 @@ const MONTHS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','N
 export const AnalyticsFilters: React.FC<Props> = ({ data, filter, onChange, dateField = 'created_at', onExport }) => {
   const years = useMemo(() => getAvailableYears(data, dateField), [data, dateField]);
 
-  // Apply sectionType + location filters for cascading dropdowns
-  const filteredData = useMemo(() => {
-    let d = data;
-    // Apply sectionType filter first
-    if (filter.sectionType !== 'all') {
-      d = d.filter(r => getSectionType(r) === filter.sectionType);
-    }
-    if (filter.province) d = d.filter(r => r.province === filter.province);
-    if (filter.ville) d = d.filter(r => r.ville === filter.ville);
-    if (filter.commune) d = d.filter(r => r.commune === filter.commune);
-    if (filter.quartier) d = d.filter(r => r.quartier === filter.quartier);
-    if (filter.territoire) d = d.filter(r => r.territoire === filter.territoire);
-    if (filter.collectivite) d = d.filter(r => r.collectivite === filter.collectivite);
-    if (filter.groupement) d = d.filter(r => r.groupement === filter.groupement);
-    return d;
-  }, [data, filter]);
+  // #8 fix: Detect conflicting urban+rural filters and warn
+  const hasConflictingFilters = useMemo(() => {
+    if (filter.sectionType !== 'all') return false;
+    const hasUrban = !!(filter.ville || filter.commune || filter.quartier || filter.avenue);
+    const hasRural = !!(filter.territoire || filter.collectivite || filter.groupement || filter.villageFilter);
+    return hasUrban && hasRural;
+  }, [filter]);
 
   // Base dataset scoped by sectionType for dropdown options
   const sectionScoped = useMemo(() => {
@@ -70,6 +60,14 @@ export const AnalyticsFilters: React.FC<Props> = ({ data, filter, onChange, date
 
   return (
     <div className="space-y-1 bg-muted/30 rounded-md p-1.5 border border-border/30">
+      {/* #8: Warning for conflicting filters */}
+      {hasConflictingFilters && (
+        <div className="flex items-center gap-1 text-[10px] text-amber-600 bg-amber-50 dark:bg-amber-950/30 rounded px-2 py-0.5">
+          <AlertCircle className="h-3 w-3 shrink-0" />
+          <span>Filtres urbains et ruraux actifs simultanément — les résultats peuvent être vides. Sélectionnez une section.</span>
+        </div>
+      )}
+
       <div className="flex items-center gap-1 flex-wrap">
         <Badge variant="outline" className="gap-0.5 text-[10px] px-1.5 py-0"><Filter className="h-2.5 w-2.5" /> Filtres</Badge>
 
@@ -122,6 +120,7 @@ export const AnalyticsFilters: React.FC<Props> = ({ data, filter, onChange, date
 
         <div className="w-px h-4 bg-border/50" />
 
+        {/* #8 fix: When switching sectionType, clear conflicting location filters */}
         <Select value={filter.sectionType} onValueChange={v => onChange({ ...filter, sectionType: v as any, ville: undefined, commune: undefined, quartier: undefined, avenue: undefined, territoire: undefined, collectivite: undefined, groupement: undefined, villageFilter: undefined })}>
           <SelectTrigger className={selectCls}><MapPin className="h-2.5 w-2.5 mr-0.5" /><SelectValue /></SelectTrigger>
           <SelectContent>

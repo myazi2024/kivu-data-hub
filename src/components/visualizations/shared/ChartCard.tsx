@@ -43,18 +43,20 @@ interface MultiDataPieProps {
 const tooltipStyle = { fontSize: 10 };
 const gridStroke = 'hsl(var(--border))';
 
-// Tailwind needs full class names at build time — map colSpan to static classes
-const colSpanClass: Record<number, string> = { 2: 'col-span-2', 3: 'col-span-3' };
+// #3 fix: Use responsive col-span with md: prefix
+const colSpanClass: Record<number, string> = { 2: 'md:col-span-2', 3: 'md:col-span-3' };
 
 /** Truncate long pie/donut labels */
 const truncLabel = (s: string, max = 12) => s.length > max ? s.slice(0, max) + '…' : s;
 
 export const ChartCard: React.FC<ChartCardProps> = memo(({
-  title, icon: Icon, iconColor, colSpan, data, type, color, colorIndex = 0, labelWidth = 90, maxItems = 8, hidden = false
+  title, icon: Icon, iconColor, colSpan, data, type, color, colorIndex = 0, labelWidth = 90, maxItems = 10, hidden = false
 }) => {
   if (hidden) return null;
   const fill = color || CHART_COLORS[colorIndex % CHART_COLORS.length];
   const displayData = type === 'area' ? data : data.slice(0, maxItems);
+  // #30: Show truncation notice
+  const truncated = type !== 'area' && data.length > maxItems;
 
   return (
     <Card className={`border-border/30 ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
@@ -62,6 +64,7 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
         <CardTitle className="text-xs font-semibold flex items-center gap-1">
           {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'}`} />}
           {title}
+          {truncated && <span className="text-[8px] text-muted-foreground ml-auto">Top {maxItems}/{data.length}</span>}
         </CardTitle>
       </CardHeader>
       <CardContent className="px-2 pb-2">
