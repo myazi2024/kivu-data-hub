@@ -790,7 +790,9 @@ const DRCInteractiveMap = () => {
         {/* Layout responsive optimisé avec padding pour les boutons flottants */}
         <div className="flex flex-col lg:grid lg:grid-cols-12 gap-3 sm:gap-4 h-full min-h-0 pb-20 lg:pb-0">
         {/* Carte interactive + Données province - Responsive layout */}
-        <div className={`${activeMobilePanel !== 'map' ? 'hidden lg:flex' : 'flex'} lg:col-span-4 order-1 lg:order-1 flex-col min-h-0 h-full`}>
+        <div className={`${activeMobilePanel !== 'map' ? 'hidden lg:flex' : 'flex'} lg:col-span-4 order-1 lg:order-1 flex-col min-h-0 h-full overflow-hidden`}>
+          {/* Partie haute : Carte */}
+          <div className="flex-[3] min-h-0">
           <Card className="card-compact overflow-hidden h-full flex flex-col">
             <CardContent className="p-0 flex-1 flex flex-col">
               {/* En-tête responsive */}
