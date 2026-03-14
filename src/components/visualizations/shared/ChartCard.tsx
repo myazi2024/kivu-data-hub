@@ -29,6 +29,7 @@ interface StackedBarCardProps {
   layout?: 'horizontal' | 'vertical';
   labelWidth?: number;
   maxItems?: number;
+  hidden?: boolean;
 }
 
 interface MultiDataPieProps {
