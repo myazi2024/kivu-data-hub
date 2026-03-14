@@ -58,6 +58,7 @@ export interface LandTitleRequestData {
   
   // Documents
   proofOfOwnershipFile?: File | null;
+  procurationDocumentFile?: File | null;
   additionalDocuments?: File[];
   
   // Frais sélectionnés
@@ -124,6 +125,7 @@ export const useLandTitleRequest = () => {
       let requesterIdDocUrl: string | null = null;
       let ownerIdDocUrl: string | null = null;
       let proofOfOwnershipUrl: string | null = null;
+      let procurationDocUrl: string | null = null;
 
       if (data.requesterIdDocumentFile) {
         requesterIdDocUrl = await uploadDocument(data.requesterIdDocumentFile, 'requester-id');
@@ -149,6 +151,14 @@ export const useLandTitleRequest = () => {
         }
       }
 
+      if (data.procurationDocumentFile && data.requesterType === 'representative') {
+        procurationDocUrl = await uploadDocument(data.procurationDocumentFile, 'procuration');
+        if (!procurationDocUrl) {
+          toast.error("Échec de l'upload de la procuration");
+          return { success: false };
+        }
+      }
+
       // 2. Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -158,7 +168,7 @@ export const useLandTitleRequest = () => {
 
       const totalAmount = data.totalAmountOverride ?? 0;
 
-      // 3. Insert with payment_status = 'pending_payment'
+      // 3. Insert with payment_status = 'pending'
       const { data: insertedData, error } = await supabase
         .from('land_title_requests')
         .insert([{
@@ -171,12 +181,15 @@ export const useLandTitleRequest = () => {
           requester_middle_name: data.requesterMiddleName || null,
           requester_phone: data.requesterPhone,
           requester_email: data.requesterEmail || null,
+          requester_legal_status: data.requesterLegalStatus || null,
+          requester_gender: data.requesterGender || null,
           requester_id_document_url: requesterIdDocUrl,
           is_owner_same_as_requester: data.isOwnerSameAsRequester,
           owner_last_name: data.isOwnerSameAsRequester ? null : data.ownerLastName,
           owner_first_name: data.isOwnerSameAsRequester ? null : data.ownerFirstName,
           owner_middle_name: data.isOwnerSameAsRequester ? null : data.ownerMiddleName,
           owner_legal_status: data.isOwnerSameAsRequester ? null : data.ownerLegalStatus,
+          owner_gender: data.isOwnerSameAsRequester ? null : data.ownerGender,
           owner_phone: data.isOwnerSameAsRequester ? null : data.ownerPhone,
           owner_id_document_url: ownerIdDocUrl,
           section_type: data.sectionType,
@@ -202,6 +215,7 @@ export const useLandTitleRequest = () => {
           nationality: data.nationality || null,
           occupation_duration: data.occupationDuration || null,
           proof_of_ownership_url: proofOfOwnershipUrl,
+          procuration_document_url: procurationDocUrl,
           fee_items: feeItems,
           total_amount_usd: totalAmount,
           payment_status: 'pending'
@@ -244,15 +258,33 @@ export const useLandTitleRequest = () => {
       return true;
     } catch (error: any) {
       console.error('Error updating payment status:', error);
-      // Payment succeeded but DB update failed — show transaction info
       toast.error(`Le paiement a été effectué mais la mise à jour a échoué. ID demande: ${requestId}. Contactez le support.`);
       return false;
+    }
+  }, []);
+
+  /**
+   * Cancel orphaned pending request (e.g. user cancelled payment).
+   */
+  const cancelPendingRequest = useCallback(async (requestId: string): Promise<void> => {
+    try {
+      await supabase
+        .from('land_title_requests')
+        .update({ 
+          status: 'cancelled',
+          payment_status: 'cancelled'
+        })
+        .eq('id', requestId)
+        .eq('payment_status', 'pending');
+    } catch (error) {
+      console.error('Error cancelling pending request:', error);
     }
   }, []);
 
   return {
     loading,
     createPendingRequest,
-    markRequestPaid
+    markRequestPaid,
+    cancelPendingRequest
   };
 };

@@ -38,6 +38,8 @@ import { useMapConfig } from '@/hooks/useMapConfig';
 import LandTitleReviewTab from './LandTitleReviewTab';
 import SectionHelpPopover from './SectionHelpPopover';
 import { supabase } from '@/integrations/supabase/client';
+import { validateLandTitleFile } from '@/types/landTitleRequest';
+import { saveDraft, loadDraft, clearDraft, hasDraft } from '@/utils/landTitleDraftStorage';
 
 interface LandTitleRequestDialogProps {
   open: boolean;
@@ -55,7 +57,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const { 
     loading, 
     createPendingRequest,
-    markRequestPaid 
+    markRequestPaid,
+    cancelPendingRequest
   } = useLandTitleRequest();
   
   // Frais dynamiques
@@ -101,6 +104,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [requesterIdFile, setRequesterIdFile] = useState<File | null>(null);
   const [ownerIdFile, setOwnerIdFile] = useState<File | null>(null);
   const [proofOfOwnershipFile, setProofOfOwnershipFile] = useState<File | null>(null);
+  const [procurationFile, setProcurationFile] = useState<File | null>(null);
+  
+  // Draft restore prompt
+  const [showDraftPrompt, setShowDraftPrompt] = useState(false);
   
   // Location options
   const [availableVilles, setAvailableVilles] = useState<string[]>([]);
@@ -347,6 +354,55 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     }
   }, [profile, open]);
 
+  // Check for saved draft when dialog opens
+  useEffect(() => {
+    if (open && hasDraft()) {
+      setShowDraftPrompt(true);
+    }
+  }, [open]);
+
+  const restoreDraft = useCallback(() => {
+    const draft = loadDraft();
+    if (draft) {
+      setFormData(prev => ({ ...prev, ...draft.formData }));
+      setConstructionType(draft.constructionType || '');
+      setConstructionNature(draft.constructionNature || '');
+      setConstructionMaterials(draft.constructionMaterials || '');
+      setDeclaredUsage(draft.declaredUsage || '');
+      setNationality(draft.nationality as any || '');
+      setOccupationDuration(draft.occupationDuration as any || '');
+      setRequestType(draft.requestType as any || '');
+      setSelectedParcelNumber(draft.selectedParcelNumber || '');
+      if (draft.gpsCoordinates?.length) setGpsCoordinates(draft.gpsCoordinates);
+      if (draft.parcelSides?.length) setParcelSides(draft.parcelSides);
+    }
+    setShowDraftPrompt(false);
+  }, []);
+
+  // Auto-save draft every 10 seconds when dialog is open and has data
+  useEffect(() => {
+    if (!open) return;
+    const interval = setInterval(() => {
+      const hasData = formData.requesterLastName || formData.province || constructionType || requestType;
+      if (hasData) {
+        saveDraft({
+          formData,
+          constructionType,
+          constructionNature,
+          constructionMaterials,
+          declaredUsage,
+          nationality,
+          occupationDuration,
+          requestType,
+          selectedParcelNumber,
+          gpsCoordinates,
+          parcelSides
+        });
+      }
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [open, formData, constructionType, constructionNature, constructionMaterials, declaredUsage, nationality, occupationDuration, requestType, selectedParcelNumber, gpsCoordinates, parcelSides]);
+
   // Update location options
   useEffect(() => {
     if (formData.province) {
@@ -425,10 +481,20 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     if (!validatePhone(formData.requesterPhone)) {
       return false;
     }
+
+    // Validate requester legal status & gender for personne physique
+    const rLegalStatus = formData.requesterLegalStatus || 'Personne physique';
+    if (rLegalStatus === 'Personne physique' && !formData.requesterGender) {
+      return false;
+    }
     
     // Check owner info if different
     if (!formData.isOwnerSameAsRequester) {
       if (!formData.ownerLastName || !formData.ownerFirstName) {
+        return false;
+      }
+      // Procuration document required for representatives
+      if (formData.requesterType === 'representative' && !procurationFile) {
         return false;
       }
     }
@@ -466,17 +532,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     if (!isFormValid()) {
       toast({
         title: "Formulaire incomplet",
-        description: "Veuillez remplir tous les champs obligatoires",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Phone validation feedback
-    if (!validatePhone(formData.requesterPhone)) {
-      toast({
-        title: "Numéro de téléphone invalide",
-        description: "Le numéro doit être au format +243 suivi de 9 chiffres",
+        description: "Veuillez remplir tous les champs obligatoires (y compris genre, procuration si mandataire)",
         variant: "destructive",
       });
       return;
@@ -517,6 +573,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       requesterIdDocumentFile: requesterIdFile,
       ownerIdDocumentFile: ownerIdFile,
       proofOfOwnershipFile: proofOfOwnershipFile,
+      procurationDocumentFile: procurationFile,
       gpsCoordinates: gpsCoordinates,
       parcelSides: parcelSides,
       roadBorderingSides: roadSides,
@@ -529,6 +586,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       setSavedRequestId(result.requestId);
       setSavedReferenceNumber(result.referenceNumber || '');
       setShowPayment(true);
+      // Clear draft on successful creation
+      clearDraft();
     }
   };
 
@@ -540,6 +599,16 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setShowPayment(false);
     setShowSuccess(true);
   };
+
+  const handlePaymentCancel = useCallback(() => {
+    // Cancel orphaned pending record when user cancels payment
+    if (savedRequestId) {
+      cancelPendingRequest(savedRequestId);
+    }
+    setShowPayment(false);
+    setSavedRequestId('');
+    setSavedReferenceNumber('');
+  }, [savedRequestId, cancelPendingRequest]);
 
   const handleCloseRequest = () => {
     // Comprehensive check for any user-entered data
@@ -553,6 +622,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                    requesterIdFile || 
                    ownerIdFile || 
                    proofOfOwnershipFile ||
+                   procurationFile ||
                    gpsCoordinates.some(c => c.lat || c.lng) ||
                    requestType;
     
@@ -565,6 +635,12 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
   const handleConfirmClose = () => {
     setShowCloseConfirmation(false);
+    // Cancel orphaned pending record if payment was in progress
+    if (savedRequestId && !showSuccess) {
+      cancelPendingRequest(savedRequestId);
+    }
+    // Clear draft
+    clearDraft();
     // Reset ALL form state
     setFormData({
       requesterType: 'owner',
@@ -581,11 +657,13 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setRequesterIdFile(null);
     setOwnerIdFile(null);
     setProofOfOwnershipFile(null);
+    setProcurationFile(null);
     setActiveTab('requester');
     setShowPayment(false);
     setShowSuccess(false);
     setSavedRequestId('');
     setIsSubmitting(false);
+    setShowDraftPrompt(false);
     // Reset request type & parcel
     setRequestType('');
     setParcelNumberSearch('');
@@ -656,7 +734,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
             />
             <Button 
               variant="outline" 
-              onClick={() => setShowPayment(false)} 
+              onClick={handlePaymentCancel} 
               className="w-full h-8 text-xs rounded-xl mt-2"
             >
               Annuler
