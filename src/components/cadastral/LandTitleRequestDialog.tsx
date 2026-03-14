@@ -460,6 +460,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       return;
     }
 
+    // Prevent double submission
+    if (isSubmitting) return;
+
     if (!isFormValid()) {
       toast({
         title: "Formulaire incomplet",
@@ -468,6 +471,28 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       });
       return;
     }
+
+    // Phone validation feedback
+    if (!validatePhone(formData.requesterPhone)) {
+      toast({
+        title: "Numéro de téléphone invalide",
+        description: "Le numéro doit être au format +243 suivi de 9 chiffres",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Guard against $0 total
+    if (totalAmount <= 0) {
+      toast({
+        title: "Erreur de frais",
+        description: "Le montant total doit être supérieur à 0. Aucun frais configuré pour ce type de titre.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
 
     // SECURE FLOW: Create DB record FIRST, then show payment
     const feeItems = calculatedFeesResult.fees.map(fee => ({
@@ -497,6 +522,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       roadBorderingSides: roadSides,
       totalAmountOverride: totalAmount
     }, feeItems);
+
+    setIsSubmitting(false);
 
     if (result.success && result.requestId) {
       setSavedRequestId(result.requestId);
