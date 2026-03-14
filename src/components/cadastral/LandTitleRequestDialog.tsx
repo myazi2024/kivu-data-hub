@@ -421,6 +421,11 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       return false;
     }
     
+    // Validate phone number format
+    if (!validatePhone(formData.requesterPhone)) {
+      return false;
+    }
+    
     // Check owner info if different
     if (!formData.isOwnerSameAsRequester) {
       if (!formData.ownerLastName || !formData.ownerFirstName) {
