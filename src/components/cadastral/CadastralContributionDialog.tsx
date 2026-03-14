@@ -34,7 +34,8 @@ import { InputWithPopover } from './InputWithPopover';
 import { PropertyTitleTypeSelect, PROPERTY_TITLE_TYPES } from './PropertyTitleTypeSelect';
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
 import { useIsMobile } from '@/hooks/use-mobile';
-import confetti from 'canvas-confetti';
+// FIX #27: Lazy import confetti to avoid loading it for every session
+const lazyConfetti = () => import('canvas-confetti').then(m => m.default);
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { QuickAuthDialog } from './QuickAuthDialog';
 import { useContributionConfig } from '@/hooks/useContributionConfig';
