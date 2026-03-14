@@ -12,7 +12,7 @@ const Map = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-dvh flex flex-col">
       <Navigation />
       
       {/* Bouton Retour mobile */}
