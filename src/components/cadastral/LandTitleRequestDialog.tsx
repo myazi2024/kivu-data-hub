@@ -1040,8 +1040,14 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                             value={formData.requesterPhone}
                             onChange={(e) => handleInputChange('requesterPhone', e.target.value)}
                             placeholder="+243..."
-                            className="h-9 text-sm rounded-lg border"
+                            className={cn(
+                              "h-9 text-sm rounded-lg border",
+                              formData.requesterPhone && !validatePhone(formData.requesterPhone) && "border-destructive"
+                            )}
                           />
+                          {formData.requesterPhone && !validatePhone(formData.requesterPhone) && (
+                            <p className="text-[10px] text-destructive">Format: +243 suivi de 9 chiffres</p>
+                          )}
                         </div>
                       </div>
 

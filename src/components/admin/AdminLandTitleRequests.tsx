@@ -654,7 +654,7 @@ const AdminLandTitleRequests: React.FC = () => {
                   <div className="space-y-2">
                     {Array.isArray(selectedRequest.fee_items) && selectedRequest.fee_items.map((fee: any, index: number) => (
                       <div key={index} className="flex justify-between items-center p-2 bg-muted/50 rounded-lg">
-                        <span className="text-xs">{fee.fee_name}</span>
+                        <span className="text-xs">{fee.name || fee.fee_name}</span>
                         <span className="text-xs font-semibold">${fee.amount}</span>
                       </div>
                     ))}
