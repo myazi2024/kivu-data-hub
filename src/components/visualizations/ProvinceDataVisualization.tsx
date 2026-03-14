@@ -1,31 +1,16 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  LayoutDashboard,
-  Map,
-  FileText,
-  Building,
-  Users,
-  DollarSign,
-  AlertTriangle,
-  ScrollText,
-  TrendingUp,
-  Loader2,
-  Info,
-} from 'lucide-react';
+import { FileText, Map, Search, ArrowRightLeft, Scissors, AlertTriangle, ShieldCheck, Loader2 } from 'lucide-react';
 import { useLandDataAnalytics } from '@/hooks/useLandDataAnalytics';
-import { OverviewDashboardViz } from './real/OverviewDashboardViz';
-import { ParcelAnalyticsViz } from './real/ParcelAnalyticsViz';
-import { PropertyOwnershipViz } from './real/PropertyOwnershipViz';
-import { ConstructionAnalyticsViz } from './real/ConstructionAnalyticsViz';
-import { ContributionAnalyticsViz } from './real/ContributionAnalyticsViz';
-import { FinancialAnalyticsViz } from './real/FinancialAnalyticsViz';
-import { DisputesMortgagesViz } from './real/DisputesMortgagesViz';
-import { RequestsAnalyticsViz } from './real/RequestsAnalyticsViz';
-import { TemporalTrendsViz } from './real/TemporalTrendsViz';
+import { TitleRequestsBlock } from './blocks/TitleRequestsBlock';
+import { ParcelsWithTitleBlock } from './blocks/ParcelsWithTitleBlock';
+import { ExpertiseBlock } from './blocks/ExpertiseBlock';
+import { MutationBlock } from './blocks/MutationBlock';
+import { SubdivisionBlock } from './blocks/SubdivisionBlock';
+import { DisputesBlock } from './blocks/DisputesBlock';
+import { DisputeLiftingBlock } from './blocks/DisputeLiftingBlock';
 
 import { ProvinceData } from '@/types/province';
 
@@ -34,20 +19,18 @@ interface ProvinceDataVisualizationProps {
   selectedProvince?: ProvinceData | null;
 }
 
-const indicators = [
-  { id: 'overview', name: 'Vue d\'ensemble', icon: LayoutDashboard, desc: 'KPIs globaux : parcelles, contributions, revenus, litiges, hypothèques, permis' },
-  { id: 'parcels', name: 'Parcelles', icon: Map, desc: 'Distribution des parcelles par province, type SU/SR et couverture GPS' },
-  { id: 'ownership', name: 'Propriété', icon: FileText, desc: 'Types de titres, statut juridique, genre des propriétaires, types de bail' },
-  { id: 'construction', name: 'Construction', icon: Building, desc: 'Qualité, types de bâtiments et usage déclaré des parcelles' },
-  { id: 'contributions', name: 'Contributions', icon: Users, desc: 'Contributions citoyennes CCC : statut, tendances, codes générés' },
-  { id: 'finances', name: 'Finances', icon: DollarSign, desc: 'Factures, revenus, fiscalité foncière et revenus mensuels' },
-  { id: 'disputes', name: 'Litiges & Hyp.', icon: AlertTriangle, desc: 'Litiges fonciers par type/statut et hypothèques' },
-  { id: 'requests', name: 'Demandes', icon: ScrollText, desc: 'Demandes de titres fonciers, permis de construire' },
-  { id: 'trends', name: 'Tendances', icon: TrendingUp, desc: 'Évolution temporelle : enregistrements, contributions, revenus' },
+const blocks = [
+  { id: 'title-requests', name: 'Demandes titres fonciers', icon: FileText, desc: 'Demandes introduites pour terrains non couverts par des titres fonciers' },
+  { id: 'parcels-titled', name: 'Parcelles titrées', icon: Map, desc: 'Parcelles délivrées ayant un titre foncier (données CCC)' },
+  { id: 'expertise', name: 'Expertise immobilière', icon: Search, desc: 'Demandes d\'expertise immobilière' },
+  { id: 'mutations', name: 'Demande de mutation', icon: ArrowRightLeft, desc: 'Demandes de mutation foncière' },
+  { id: 'subdivision', name: 'Demande de lotissement', icon: Scissors, desc: 'Demandes de lotissement' },
+  { id: 'disputes', name: 'Litiges fonciers', icon: AlertTriangle, desc: 'Litiges fonciers en cours et résolus' },
+  { id: 'lifting', name: 'Levée de litige', icon: ShieldCheck, desc: 'Demandes de levée de litige' },
 ];
 
 const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = () => {
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('title-requests');
   const { data: analytics, isLoading, error } = useLandDataAnalytics();
 
   if (isLoading) {
@@ -67,85 +50,61 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = () =
     );
   }
 
-  const renderViz = () => {
+  const renderBlock = () => {
     switch (activeTab) {
-      case 'overview': return <OverviewDashboardViz data={analytics} />;
-      case 'parcels': return <ParcelAnalyticsViz data={analytics} />;
-      case 'ownership': return <PropertyOwnershipViz data={analytics} />;
-      case 'construction': return <ConstructionAnalyticsViz data={analytics} />;
-      case 'contributions': return <ContributionAnalyticsViz data={analytics} />;
-      case 'finances': return <FinancialAnalyticsViz data={analytics} />;
-      case 'disputes': return <DisputesMortgagesViz data={analytics} />;
-      case 'requests': return <RequestsAnalyticsViz data={analytics} />;
-      case 'trends': return <TemporalTrendsViz data={analytics} />;
-      default: return <OverviewDashboardViz data={analytics} />;
+      case 'title-requests': return <TitleRequestsBlock data={analytics} />;
+      case 'parcels-titled': return <ParcelsWithTitleBlock data={analytics} />;
+      case 'expertise': return <ExpertiseBlock data={analytics} />;
+      case 'mutations': return <MutationBlock data={analytics} />;
+      case 'subdivision': return <SubdivisionBlock data={analytics} />;
+      case 'disputes': return <DisputesBlock data={analytics} />;
+      case 'lifting': return <DisputeLiftingBlock data={analytics} />;
+      default: return <TitleRequestsBlock data={analytics} />;
     }
   };
 
-  const active = indicators.find(i => i.id === activeTab) || indicators[0];
+  const active = blocks.find(b => b.id === activeTab) || blocks[0];
 
   return (
-    <TooltipProvider delayDuration={150} disableHoverableContent>
-      <div className="space-y-3 sm:space-y-4">
-        <Card className="border-0 shadow-none bg-background/50">
-          <CardContent className="px-0">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <div className="flex justify-center">
-                <TabsList className="inline-flex items-center gap-0.5 h-auto p-1 bg-background border border-border/50 rounded-xl shadow-sm flex-wrap">
-                  {indicators.map((ind) => (
-                    <Tooltip key={ind.id}>
-                      <TooltipTrigger asChild>
-                        <TabsTrigger
-                          value={ind.id}
-                          className="flex flex-col items-center gap-1 p-2 min-w-[48px] h-auto data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-muted/50 transition-all duration-200 rounded-lg border border-transparent data-[state=active]:border-primary/20 data-[state=active]:shadow-sm"
-                        >
-                          <ind.icon className="h-4 w-4 sm:h-5 sm:w-5" />
-                        </TabsTrigger>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" className="max-w-xs bg-popover border border-border/50 shadow-md z-50">
-                        <p className="text-sm font-medium">{ind.name}</p>
-                        <p className="text-xs text-muted-foreground mt-1">{ind.desc}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  ))}
-                </TabsList>
-              </div>
+    <div className="space-y-3">
+      <Card className="border-0 shadow-none bg-background/50">
+        <CardContent className="px-0">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <ScrollArea className="w-full">
+              <TabsList className="inline-flex items-center gap-1 h-auto p-1.5 bg-background border border-border/50 rounded-xl shadow-sm w-full justify-start overflow-x-auto">
+                {blocks.map((block) => (
+                  <TabsTrigger
+                    key={block.id}
+                    value={block.id}
+                    className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-muted/50 transition-all duration-200 rounded-lg"
+                  >
+                    <block.icon className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">{block.name}</span>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </ScrollArea>
 
-              {indicators.map((ind) => (
-                <TabsContent key={ind.id} value={ind.id} className="mt-2 sm:mt-3">
-                  <div className="space-y-2 sm:space-y-3">
-                    <div className="bg-primary/5 p-3 sm:p-4 rounded border-l-2 border-primary">
-                      <h3 className="font-medium text-sm text-foreground flex items-center gap-2">
-                        <ind.icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                        {ind.name}
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button className="ml-auto inline-flex items-center justify-center rounded-full p-1 text-muted-foreground hover:text-foreground">
-                              <Info className="h-4 w-4" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="left" className="max-w-xs">
-                            <p className="text-xs">{ind.desc}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </h3>
-                      <p className="text-xs text-muted-foreground mt-1 hidden md:block">{ind.desc}</p>
-                    </div>
-                    <div className="bg-card rounded border-border/30 border relative">
-                      <ScrollArea className="h-[420px] w-full">
-                        <div className="w-full overflow-visible p-4">
-                          {renderViz()}
-                        </div>
-                      </ScrollArea>
-                    </div>
+            {blocks.map((block) => (
+              <TabsContent key={block.id} value={block.id} className="mt-3">
+                <div className="space-y-3">
+                  <div className="bg-primary/5 p-3 rounded border-l-2 border-primary">
+                    <h3 className="font-medium text-sm text-foreground flex items-center gap-2">
+                      <block.icon className="h-4 w-4 text-primary" />
+                      {block.name}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">{block.desc}</p>
                   </div>
-                </TabsContent>
-              ))}
-            </Tabs>
-          </CardContent>
-        </Card>
-      </div>
-    </TooltipProvider>
+                  <div className="bg-card rounded border-border/30 border p-4">
+                    {renderBlock()}
+                  </div>
+                </div>
+              </TabsContent>
+            ))}
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
