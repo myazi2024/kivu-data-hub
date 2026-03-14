@@ -2270,8 +2270,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     return "bg-green-500";
   };
 
-  // Fonction pour déclencher les confettis
-  const triggerConfetti = () => {
+  // FIX #27: Lazy confetti trigger
+  const triggerConfetti = async () => {
+    const confetti = await lazyConfetti();
     const duration = 3 * 1000;
     const animationEnd = Date.now() + duration;
     const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
