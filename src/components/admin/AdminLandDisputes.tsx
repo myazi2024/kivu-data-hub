@@ -182,11 +182,13 @@ const AdminLandDisputes: React.FC = () => {
     );
   };
 
+  // #33 fix: Align resolved statuses with both admin values AND front-end values
+  const RESOLVED_STATUSES = ['resolu', 'leve', 'resolved', 'closed'];
   const stats = {
     total: disputes.length,
     reports: disputes.filter(d => d.dispute_type === 'report').length,
     liftings: disputes.filter(d => d.dispute_type === 'lifting').length,
-    enCours: disputes.filter(d => !['resolu', 'leve'].includes(d.current_status)).length,
+    enCours: disputes.filter(d => !RESOLVED_STATUSES.includes(d.current_status)).length,
   };
 
   if (loading) {
