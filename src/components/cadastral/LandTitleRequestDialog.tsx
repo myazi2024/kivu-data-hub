@@ -600,6 +600,16 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setShowSuccess(true);
   };
 
+  const handlePaymentCancel = useCallback(() => {
+    // Cancel orphaned pending record when user cancels payment
+    if (savedRequestId) {
+      cancelPendingRequest(savedRequestId);
+    }
+    setShowPayment(false);
+    setSavedRequestId('');
+    setSavedReferenceNumber('');
+  }, [savedRequestId, cancelPendingRequest]);
+
   const handleCloseRequest = () => {
     // Comprehensive check for any user-entered data
     const hasData = formData.requesterLastName || 
@@ -612,6 +622,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                    requesterIdFile || 
                    ownerIdFile || 
                    proofOfOwnershipFile ||
+                   procurationFile ||
                    gpsCoordinates.some(c => c.lat || c.lng) ||
                    requestType;
     
@@ -624,6 +635,12 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
   const handleConfirmClose = () => {
     setShowCloseConfirmation(false);
+    // Cancel orphaned pending record if payment was in progress
+    if (savedRequestId && !showSuccess) {
+      cancelPendingRequest(savedRequestId);
+    }
+    // Clear draft
+    clearDraft();
     // Reset ALL form state
     setFormData({
       requesterType: 'owner',
@@ -640,11 +657,13 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setRequesterIdFile(null);
     setOwnerIdFile(null);
     setProofOfOwnershipFile(null);
+    setProcurationFile(null);
     setActiveTab('requester');
     setShowPayment(false);
     setShowSuccess(false);
     setSavedRequestId('');
     setIsSubmitting(false);
+    setShowDraftPrompt(false);
     // Reset request type & parcel
     setRequestType('');
     setParcelNumberSearch('');
