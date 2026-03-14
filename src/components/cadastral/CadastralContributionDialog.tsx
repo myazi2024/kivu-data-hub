@@ -1657,18 +1657,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const handleMortgageFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: "Fichier trop volumineux",
-          description: "La taille maximale est de 5 MB",
-          variant: "destructive"
-        });
-        return;
-      }
+      if (!validateAttachmentFile(file)) return;
       const updated = [...mortgageRecords];
       updated[index] = { ...updated[index], receiptFile: file };
       setMortgageRecords(updated);
     }
+    e.target.value = '';
   };
 
   const removeMortgageFile = (index: number) => {
