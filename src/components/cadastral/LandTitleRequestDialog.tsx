@@ -104,6 +104,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [requesterIdFile, setRequesterIdFile] = useState<File | null>(null);
   const [ownerIdFile, setOwnerIdFile] = useState<File | null>(null);
   const [proofOfOwnershipFile, setProofOfOwnershipFile] = useState<File | null>(null);
+  const [procurationFile, setProcurationFile] = useState<File | null>(null);
+  
+  // Draft restore prompt
+  const [showDraftPrompt, setShowDraftPrompt] = useState(false);
   
   // Location options
   const [availableVilles, setAvailableVilles] = useState<string[]>([]);
