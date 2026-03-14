@@ -61,6 +61,7 @@ import AdminSubdivisionRequests from '@/components/admin/AdminSubdivisionRequest
 import AdminParcelActionsConfig from '@/components/admin/AdminParcelActionsConfig';
 import AdminLandDisputes from '@/components/admin/AdminLandDisputes';
 import AdminCertificates from '@/components/admin/AdminCertificates';
+import AdminMapProviders from '@/components/admin/AdminMapProviders';
 const Admin = () => {
   const { user, profile, loading } = useAuth();
   const [searchParams] = useSearchParams();
@@ -276,6 +277,8 @@ const Admin = () => {
         return <AdminCatalogConfig />;
       case 'cadastral-map':
         return <AdminCadastralMap />;
+      case 'map-providers':
+        return <AdminMapProviders />;
       case 'cadastral-tooltip':
         return <AdminCadastralTooltip />;
       case 'search-config':
