@@ -565,7 +565,7 @@ const AdminLandTitleRequests: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Type construction</p>
-                      <p className="text-sm font-medium">{(selectedRequest as any).construction_type || '-'}</p>
+                      <p className="text-sm font-medium">{selectedRequest.construction_type || '-'}</p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Usage déclaré</p>
