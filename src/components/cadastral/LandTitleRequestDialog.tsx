@@ -734,7 +734,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
             />
             <Button 
               variant="outline" 
-              onClick={() => setShowPayment(false)} 
+              onClick={handlePaymentCancel} 
               className="w-full h-8 text-xs rounded-xl mt-2"
             >
               Annuler

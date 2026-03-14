@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -7,6 +7,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { StatusBadge, StatusType } from '@/components/shared/StatusBadge';
+import { LandTitleRequestSummary, getRequestLocation } from '@/types/landTitleRequest';
 import { 
   ScrollText, 
   Clock, 
@@ -25,32 +27,11 @@ import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-interface LandTitleRequest {
-  id: string;
-  reference_number: string;
-  status: string;
-  payment_status: string;
-  section_type: string;
-  province: string;
-  ville: string | null;
-  commune: string | null;
-  quartier: string | null;
-  territoire: string | null;
-  total_amount_usd: number;
-  created_at: string;
-  reviewed_at: string | null;
-  rejection_reason: string | null;
-  requester_first_name: string;
-  requester_last_name: string;
-  area_sqm: number | null;
-  fee_items: any;
-}
-
 export const UserLandTitleRequests: React.FC = () => {
   const { user } = useAuth();
-  const [requests, setRequests] = useState<LandTitleRequest[]>([]);
+  const [requests, setRequests] = useState<LandTitleRequestSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedRequest, setSelectedRequest] = useState<LandTitleRequest | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<LandTitleRequestSummary | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -66,7 +47,7 @@ export const UserLandTitleRequests: React.FC = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('land_title_requests')
-        .select('*')
+        .select('id, reference_number, status, payment_status, section_type, province, ville, commune, quartier, territoire, total_amount_usd, created_at, reviewed_at, rejection_reason, requester_first_name, requester_last_name, area_sqm, fee_items')
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
 
@@ -80,36 +61,12 @@ export const UserLandTitleRequests: React.FC = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return <Badge className="bg-green-500 flex items-center gap-1">
-          <CheckCircle className="h-3 w-3" />
-          Approuvée
-        </Badge>;
-      case 'rejected':
-        return <Badge variant="destructive" className="flex items-center gap-1">
-          <XCircle className="h-3 w-3" />
-          Rejetée
-        </Badge>;
-      case 'in_progress':
-        return <Badge className="bg-blue-500 flex items-center gap-1">
-          <AlertCircle className="h-3 w-3" />
-          En cours
-        </Badge>;
-      case 'pending':
-      default:
-        return <Badge variant="secondary" className="flex items-center gap-1">
-          <Clock className="h-3 w-3" />
-          En attente
-        </Badge>;
-    }
-  };
-
   const getPaymentBadge = (status: string) => {
     switch (status) {
       case 'paid':
         return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">Payé</Badge>;
+      case 'cancelled':
+        return <Badge variant="outline">Annulé</Badge>;
       case 'pending':
       default:
         return <Badge variant="outline">Non payé</Badge>;
@@ -117,19 +74,15 @@ export const UserLandTitleRequests: React.FC = () => {
   };
 
   const getSectionLabel = (type: string) => {
-    return type === 'urbaine' || type === 'urban' ? 'Urbaine' : 'Rurale';
+    return type === 'urbaine' ? 'Urbaine' : 'Rurale';
   };
 
-  const getStats = () => {
-    return {
-      total: requests.length,
-      pending: requests.filter(r => r.status === 'pending').length,
-      approved: requests.filter(r => r.status === 'approved').length,
-      rejected: requests.filter(r => r.status === 'rejected').length,
-    };
-  };
-
-  const stats = getStats();
+  const stats = useMemo(() => ({
+    total: requests.length,
+    pending: requests.filter(r => r.status === 'pending').length,
+    approved: requests.filter(r => r.status === 'approved').length,
+    rejected: requests.filter(r => r.status === 'rejected').length,
+  }), [requests]);
 
   if (loading) {
     return (
@@ -208,7 +161,7 @@ export const UserLandTitleRequests: React.FC = () => {
                     </p>
                   </div>
                   <div className="text-right shrink-0 space-y-1">
-                    {getStatusBadge(request.status)}
+                    <StatusBadge status={request.status as StatusType} compact />
                     <p className="text-[9px] text-muted-foreground">
                       {format(new Date(request.created_at), 'dd/MM/yyyy', { locale: fr })}
                     </p>
@@ -268,7 +221,7 @@ export const UserLandTitleRequests: React.FC = () => {
                   <p className="font-mono font-bold">{selectedRequest.reference_number}</p>
                 </div>
                 <div className="text-right space-y-1">
-                  {getStatusBadge(selectedRequest.status)}
+                  <StatusBadge status={selectedRequest.status as StatusType} />
                   {getPaymentBadge(selectedRequest.payment_status)}
                 </div>
               </div>

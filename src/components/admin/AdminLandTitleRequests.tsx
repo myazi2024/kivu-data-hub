@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,78 +29,21 @@ import {
 } from 'lucide-react';
 import { PaginationControls } from '@/components/shared/PaginationControls';
 import { usePagination } from '@/hooks/usePagination';
+import { StatusBadge, StatusType } from '@/components/shared/StatusBadge';
 import { generateAndUploadCertificate } from '@/utils/certificateService';
-
-interface LandTitleRequest {
-  id: string;
-  reference_number: string;
-  user_id: string;
-  request_type: string | null;
-  province: string;
-  section_type: string;
-  ville: string | null;
-  commune: string | null;
-  quartier: string | null;
-  avenue: string | null;
-  territoire: string | null;
-  collectivite: string | null;
-  groupement: string | null;
-  village: string | null;
-  circonscription_fonciere: string | null;
-  area_sqm: number | null;
-  gps_coordinates: any;
-  parcel_sides: any;
-  road_bordering_sides: any;
-  requester_type: string;
-  requester_first_name: string;
-  requester_middle_name: string | null;
-  requester_last_name: string;
-  requester_phone: string;
-  requester_email: string | null;
-  requester_id_document_url: string | null;
-  is_owner_same_as_requester: boolean;
-  owner_first_name: string | null;
-  owner_middle_name: string | null;
-  owner_last_name: string | null;
-  owner_phone: string | null;
-  owner_legal_status: string | null;
-  owner_id_document_url: string | null;
-  proof_of_ownership_url: string | null;
-  additional_documents: any;
-  fee_items: any;
-  total_amount_usd: number;
-  payment_status: string;
-  payment_id: string | null;
-  paid_at: string | null;
-  status: string;
-  processing_notes: string | null;
-  rejection_reason: string | null;
-  estimated_processing_days: number;
-  reviewed_by: string | null;
-  reviewed_at: string | null;
-  created_at: string;
-  updated_at: string;
-  deduced_title_type: string | null;
-  construction_type: string | null;
-  construction_nature: string | null;
-  construction_materials: string | null;
-  declared_usage: string | null;
-  nationality: string | null;
-  occupation_duration: string | null;
-  selected_parcel_number: string | null;
-  profiles?: { full_name: string; email: string } | null;
-}
+import { exportToCSV } from '@/utils/csvExport';
+import { LandTitleRequestRow, getRequestFullName, getRequestLocation, ADMIN_LIST_COLUMNS } from '@/types/landTitleRequest';
 
 const AdminLandTitleRequests: React.FC = () => {
   const { user } = useAuth();
-  const [requests, setRequests] = useState<LandTitleRequest[]>([]);
+  const [requests, setRequests] = useState<LandTitleRequestRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('_all');
   const [paymentFilter, setPaymentFilter] = useState<string>('_all');
   
   // Dialog states
-  const [selectedRequest, setSelectedRequest] = useState<LandTitleRequest | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<LandTitleRequestRow | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showProcessDialog, setShowProcessDialog] = useState(false);
   
@@ -110,12 +53,16 @@ const AdminLandTitleRequests: React.FC = () => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [processing, setProcessing] = useState(false);
 
+  // Full detail for selected request (lazy loaded)
+  const [detailData, setDetailData] = useState<LandTitleRequestRow | null>(null);
+
   const fetchRequests = async () => {
     try {
       setLoading(true);
+      // Only fetch needed columns for list view
       const { data, error } = await supabase
         .from('land_title_requests')
-        .select('*')
+        .select(ADMIN_LIST_COLUMNS)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -137,7 +84,7 @@ const AdminLandTitleRequests: React.FC = () => {
         profiles: profilesData.find(p => p.user_id === request.user_id) || null
       }));
 
-      setRequests(combinedData as LandTitleRequest[]);
+      setRequests(combinedData as LandTitleRequestRow[]);
     } catch (error) {
       console.error('Error fetching requests:', error);
       toast.error('Erreur lors du chargement des demandes');
@@ -146,11 +93,21 @@ const AdminLandTitleRequests: React.FC = () => {
     }
   };
 
+  // Fetch full detail when viewing a request
+  const fetchDetail = async (id: string) => {
+    const { data, error } = await supabase
+      .from('land_title_requests')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (!error && data) setDetailData(data as LandTitleRequestRow);
+  };
+
   useEffect(() => {
     fetchRequests();
   }, []);
 
-  const filteredRequests = requests.filter(request => {
+  const filteredRequests = useMemo(() => requests.filter(request => {
     const matchesSearch = 
       request.reference_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
       request.requester_first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -161,12 +118,18 @@ const AdminLandTitleRequests: React.FC = () => {
     const matchesPayment = paymentFilter === '_all' || request.payment_status === paymentFilter;
     
     return matchesSearch && matchesStatus && matchesPayment;
-  });
+  }), [requests, searchQuery, statusFilter, paymentFilter]);
 
   const pagination = usePagination(filteredRequests, { initialPageSize: 15 });
 
   const handleProcessRequest = async () => {
     if (!selectedRequest || !user) return;
+
+    // Server-side guard: prevent approval if not paid
+    if (processAction === 'approve' && selectedRequest.payment_status !== 'paid') {
+      toast.error('Impossible d\'approuver une demande non payée');
+      return;
+    }
 
     setProcessing(true);
     try {
@@ -195,7 +158,7 @@ const AdminLandTitleRequests: React.FC = () => {
       // Auto-generate certificate on approval
       if (processAction === 'approve') {
         toast.info('Génération automatique du certificat...');
-        const fullName = getFullName(selectedRequest);
+        const fullName = getRequestFullName(selectedRequest);
         const certResult = await generateAndUploadCertificate(
           'titre_foncier',
           {
@@ -209,7 +172,7 @@ const AdminLandTitleRequests: React.FC = () => {
           },
           [
             { label: 'Province:', value: selectedRequest.province },
-            { label: 'Localisation:', value: getLocation(selectedRequest) },
+            { label: 'Localisation:', value: getRequestLocation(selectedRequest) },
             { label: 'Surface:', value: selectedRequest.area_sqm ? `${selectedRequest.area_sqm} m²` : 'N/A' },
             { label: 'Type:', value: selectedRequest.section_type === 'urbaine' ? 'Urbain' : 'Rural' },
             { label: 'Montant payé:', value: `$${selectedRequest.total_amount_usd}` },
@@ -245,36 +208,19 @@ const AdminLandTitleRequests: React.FC = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { variant: any; label: string; icon: any }> = {
-      pending: { variant: 'warning', label: 'En attente', icon: Clock },
-      in_review: { variant: 'info', label: 'En examen', icon: Eye },
-      approved: { variant: 'success', label: 'Approuvée', icon: CheckCircle },
-      rejected: { variant: 'destructive', label: 'Rejetée', icon: XCircle },
-      completed: { variant: 'default', label: 'Terminée', icon: FileCheck }
-    };
-    const config = statusMap[status] || { variant: 'default', label: status, icon: Clock };
-    const Icon = config.icon;
-    return (
-      <Badge variant={config.variant} className="text-[10px] gap-1">
-        <Icon className="h-3 w-3" />
-        {config.label}
-      </Badge>
-    );
-  };
-
   const getPaymentBadge = (status: string) => {
     const statusMap: Record<string, { variant: any; label: string }> = {
       pending: { variant: 'warning', label: 'Non payé' },
       paid: { variant: 'success', label: 'Payé' },
-      failed: { variant: 'destructive', label: 'Échoué' }
+      failed: { variant: 'destructive', label: 'Échoué' },
+      cancelled: { variant: 'outline', label: 'Annulé' }
     };
     const config = statusMap[status] || { variant: 'default', label: status };
     return <Badge variant={config.variant} className="text-[10px]">{config.label}</Badge>;
   };
 
-  // Stats
-  const stats = {
+  // Stats (memoized)
+  const stats = useMemo(() => ({
     total: requests.length,
     pending: requests.filter(r => r.status === 'pending').length,
     inReview: requests.filter(r => r.status === 'in_review').length,
@@ -282,17 +228,24 @@ const AdminLandTitleRequests: React.FC = () => {
     rejected: requests.filter(r => r.status === 'rejected').length,
     paid: requests.filter(r => r.payment_status === 'paid').length,
     revenue: requests.filter(r => r.payment_status === 'paid').reduce((sum, r) => sum + r.total_amount_usd, 0)
-  };
+  }), [requests]);
 
-  const getFullName = (request: LandTitleRequest) => {
-    return `${request.requester_first_name} ${request.requester_middle_name || ''} ${request.requester_last_name}`.trim();
-  };
-
-  const getLocation = (request: LandTitleRequest) => {
-    if (request.section_type === 'urbaine') {
-      return [request.quartier, request.commune, request.ville].filter(Boolean).join(', ');
-    }
-    return [request.village, request.groupement, request.collectivite, request.territoire].filter(Boolean).join(', ');
+  const handleExportCSV = () => {
+    exportToCSV({
+      filename: `titres-fonciers-${format(new Date(), 'yyyy-MM-dd')}.csv`,
+      headers: ['Référence', 'Demandeur', 'Province', 'Zone', 'Montant USD', 'Paiement', 'Statut', 'Date'],
+      data: filteredRequests.map(r => [
+        r.reference_number,
+        getRequestFullName(r),
+        r.province,
+        r.section_type === 'urbaine' ? 'Urbaine' : 'Rurale',
+        r.total_amount_usd,
+        r.payment_status,
+        r.status,
+        format(new Date(r.created_at), 'dd/MM/yyyy')
+      ])
+    });
+    toast.success('Export CSV réussi');
   };
 
   return (
@@ -302,56 +255,36 @@ const AdminLandTitleRequests: React.FC = () => {
           <FileText className="h-5 w-5 text-primary" />
           Demandes de Titres Fonciers
         </h2>
-        <Button variant="outline" size="sm" onClick={fetchRequests} className="text-xs">
-          <RefreshCw className="h-3.5 w-3.5 mr-1" />
-          Actualiser
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleExportCSV} className="text-xs">
+            <Download className="h-3.5 w-3.5 mr-1" />
+            CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={fetchRequests} className="text-xs">
+            <RefreshCw className="h-3.5 w-3.5 mr-1" />
+            Actualiser
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
-        <Card className="rounded-xl">
-          <CardContent className="p-3">
-            <div className="text-[10px] text-muted-foreground">Total</div>
-            <div className="text-xl font-bold">{stats.total}</div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-xl">
-          <CardContent className="p-3">
-            <div className="text-[10px] text-muted-foreground">En attente</div>
-            <div className="text-xl font-bold text-orange-600">{stats.pending}</div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-xl">
-          <CardContent className="p-3">
-            <div className="text-[10px] text-muted-foreground">En examen</div>
-            <div className="text-xl font-bold text-blue-600">{stats.inReview}</div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-xl">
-          <CardContent className="p-3">
-            <div className="text-[10px] text-muted-foreground">Approuvées</div>
-            <div className="text-xl font-bold text-green-600">{stats.approved}</div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-xl">
-          <CardContent className="p-3">
-            <div className="text-[10px] text-muted-foreground">Rejetées</div>
-            <div className="text-xl font-bold text-red-600">{stats.rejected}</div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-xl">
-          <CardContent className="p-3">
-            <div className="text-[10px] text-muted-foreground">Payées</div>
-            <div className="text-xl font-bold text-emerald-600">{stats.paid}</div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-xl">
-          <CardContent className="p-3">
-            <div className="text-[10px] text-muted-foreground">Revenus</div>
-            <div className="text-xl font-bold text-primary">${stats.revenue.toFixed(0)}</div>
-          </CardContent>
-        </Card>
+        {[
+          { label: 'Total', value: stats.total, color: '' },
+          { label: 'En attente', value: stats.pending, color: 'text-orange-600' },
+          { label: 'En examen', value: stats.inReview, color: 'text-blue-600' },
+          { label: 'Approuvées', value: stats.approved, color: 'text-green-600' },
+          { label: 'Rejetées', value: stats.rejected, color: 'text-red-600' },
+          { label: 'Payées', value: stats.paid, color: 'text-emerald-600' },
+          { label: 'Revenus', value: `$${stats.revenue.toFixed(0)}`, color: 'text-primary' },
+        ].map(s => (
+          <Card key={s.label} className="rounded-xl">
+            <CardContent className="p-3">
+              <div className="text-[10px] text-muted-foreground">{s.label}</div>
+              <div className={`text-xl font-bold ${s.color}`}>{s.value}</div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Filters */}
@@ -426,7 +359,7 @@ const AdminLandTitleRequests: React.FC = () => {
                       </ResponsiveTableCell>
                       <ResponsiveTableCell priority="medium" label="Demandeur">
                         <div>
-                          <div className="text-xs font-medium">{getFullName(request)}</div>
+                          <div className="text-xs font-medium">{getRequestFullName(request)}</div>
                           <div className="text-[10px] text-muted-foreground">{request.requester_phone}</div>
                         </div>
                       </ResponsiveTableCell>
@@ -437,7 +370,7 @@ const AdminLandTitleRequests: React.FC = () => {
                             {request.province}
                           </div>
                           <div className="text-[10px] text-muted-foreground truncate max-w-[150px]">
-                            {getLocation(request)}
+                            {getRequestLocation(request)}
                           </div>
                         </div>
                       </ResponsiveTableCell>
@@ -448,7 +381,7 @@ const AdminLandTitleRequests: React.FC = () => {
                         {getPaymentBadge(request.payment_status)}
                       </ResponsiveTableCell>
                       <ResponsiveTableCell priority="high" label="Statut">
-                        {getStatusBadge(request.status)}
+                        <StatusBadge status={request.status as StatusType} compact />
                       </ResponsiveTableCell>
                       <ResponsiveTableCell priority="low" label="Date">
                         <span className="text-xs text-muted-foreground">
@@ -463,6 +396,7 @@ const AdminLandTitleRequests: React.FC = () => {
                             className="h-7 w-7 p-0"
                             onClick={() => {
                               setSelectedRequest(request);
+                              fetchDetail(request.id);
                               setShowDetailsDialog(true);
                             }}
                           >
@@ -525,7 +459,7 @@ const AdminLandTitleRequests: React.FC = () => {
           {selectedRequest && (
             <div className="space-y-4">
               <div className="flex gap-2">
-                {getStatusBadge(selectedRequest.status)}
+                <StatusBadge status={selectedRequest.status as StatusType} />
                 {getPaymentBadge(selectedRequest.payment_status)}
               </div>
 
@@ -541,15 +475,15 @@ const AdminLandTitleRequests: React.FC = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <p className="text-xs text-muted-foreground">Type de demande</p>
-                      <p className="text-sm font-medium capitalize">{selectedRequest.request_type || 'initial'}</p>
+                      <p className="text-sm font-medium capitalize">{(detailData || selectedRequest).request_type || 'initial'}</p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Titre déduit</p>
-                      <p className="text-sm font-medium">{selectedRequest.deduced_title_type || '-'}</p>
+                      <p className="text-sm font-medium">{(detailData || selectedRequest).deduced_title_type || '-'}</p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Nom complet</p>
-                      <p className="text-sm font-medium">{getFullName(selectedRequest)}</p>
+                      <p className="text-sm font-medium">{getRequestFullName(selectedRequest)}</p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Type</p>
@@ -565,11 +499,27 @@ const AdminLandTitleRequests: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Type construction</p>
-                      <p className="text-sm font-medium">{selectedRequest.construction_type || '-'}</p>
+                      <p className="text-sm font-medium">{(detailData || selectedRequest).construction_type || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Nature construction</p>
+                      <p className="text-sm font-medium">{(detailData || selectedRequest).construction_nature || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Matériaux</p>
+                      <p className="text-sm font-medium">{(detailData || selectedRequest).construction_materials || '-'}</p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Usage déclaré</p>
-                      <p className="text-sm font-medium">{selectedRequest.declared_usage || '-'}</p>
+                      <p className="text-sm font-medium">{(detailData || selectedRequest).declared_usage || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Nationalité</p>
+                      <p className="text-sm font-medium">{(detailData || selectedRequest).nationality || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Durée d'occupation</p>
+                      <p className="text-sm font-medium">{(detailData || selectedRequest).occupation_duration || '-'}</p>
                     </div>
                   </div>
                   
@@ -581,16 +531,16 @@ const AdminLandTitleRequests: React.FC = () => {
                         <div>
                           <p className="text-xs text-muted-foreground">Nom</p>
                           <p className="text-sm font-medium">
-                            {[selectedRequest.owner_first_name, selectedRequest.owner_middle_name, selectedRequest.owner_last_name].filter(Boolean).join(' ')}
+                            {[(detailData || selectedRequest).owner_first_name, (detailData || selectedRequest).owner_middle_name, (detailData || selectedRequest).owner_last_name].filter(Boolean).join(' ')}
                           </p>
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Statut juridique</p>
-                          <p className="text-sm font-medium">{selectedRequest.owner_legal_status || '-'}</p>
+                          <p className="text-sm font-medium">{(detailData || selectedRequest).owner_legal_status || '-'}</p>
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Téléphone</p>
-                          <p className="text-sm font-medium">{selectedRequest.owner_phone || '-'}</p>
+                          <p className="text-sm font-medium">{(detailData || selectedRequest).owner_phone || '-'}</p>
                         </div>
                       </div>
                     </>
@@ -623,10 +573,6 @@ const AdminLandTitleRequests: React.FC = () => {
                           <p className="text-xs text-muted-foreground">Quartier</p>
                           <p className="text-sm font-medium">{selectedRequest.quartier || '-'}</p>
                         </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Avenue</p>
-                          <p className="text-sm font-medium">{selectedRequest.avenue || '-'}</p>
-                        </div>
                       </>
                     ) : (
                       <>
@@ -654,14 +600,14 @@ const AdminLandTitleRequests: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Circonscription</p>
-                      <p className="text-sm font-medium">{selectedRequest.circonscription_fonciere || '-'}</p>
+                      <p className="text-sm font-medium">{(detailData || selectedRequest).circonscription_fonciere || '-'}</p>
                     </div>
                   </div>
                 </TabsContent>
 
                 <TabsContent value="fees" className="space-y-3 mt-4">
                   <div className="space-y-2">
-                    {Array.isArray(selectedRequest.fee_items) && selectedRequest.fee_items.map((fee: any, index: number) => (
+                    {detailData && Array.isArray(detailData.fee_items) && detailData.fee_items.map((fee: any, index: number) => (
                       <div key={index} className="flex justify-between items-center p-2 bg-muted/50 rounded-lg">
                         <span className="text-xs">{fee.name || fee.fee_name}</span>
                         <span className="text-xs font-semibold">${fee.amount}</span>
@@ -677,57 +623,48 @@ const AdminLandTitleRequests: React.FC = () => {
 
                 <TabsContent value="docs" className="space-y-3 mt-4">
                   <div className="space-y-2">
-                    {selectedRequest.requester_id_document_url && (
-                      <a 
-                        href={selectedRequest.requester_id_document_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
-                      >
+                    {detailData?.requester_id_document_url && (
+                      <a href={detailData.requester_id_document_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
                         <Download className="h-4 w-4" />
                         <span className="text-xs">Pièce d'identité demandeur</span>
                       </a>
                     )}
-                    {selectedRequest.owner_id_document_url && (
-                      <a 
-                        href={selectedRequest.owner_id_document_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
-                      >
+                    {detailData?.owner_id_document_url && (
+                      <a href={detailData.owner_id_document_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
                         <Download className="h-4 w-4" />
                         <span className="text-xs">Pièce d'identité propriétaire</span>
                       </a>
                     )}
-                    {selectedRequest.proof_of_ownership_url && (
-                      <a 
-                        href={selectedRequest.proof_of_ownership_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
-                      >
+                    {detailData?.procuration_document_url && (
+                      <a href={detailData.procuration_document_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+                        <Download className="h-4 w-4" />
+                        <span className="text-xs">Procuration / Mandat</span>
+                      </a>
+                    )}
+                    {detailData?.proof_of_ownership_url && (
+                      <a href={detailData.proof_of_ownership_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
                         <Download className="h-4 w-4" />
                         <span className="text-xs">Preuve de propriété</span>
                       </a>
                     )}
-                    {(!selectedRequest.requester_id_document_url && !selectedRequest.owner_id_document_url && !selectedRequest.proof_of_ownership_url) && (
+                    {!detailData?.requester_id_document_url && !detailData?.owner_id_document_url && !detailData?.proof_of_ownership_url && !detailData?.procuration_document_url && (
                       <p className="text-xs text-muted-foreground text-center py-4">Aucun document joint</p>
                     )}
                   </div>
                 </TabsContent>
               </Tabs>
 
-              {selectedRequest.processing_notes && (
+              {(detailData || selectedRequest).processing_notes && (
                 <div className="p-3 bg-muted/50 rounded-lg">
                   <p className="text-xs text-muted-foreground mb-1">Notes de traitement</p>
-                  <p className="text-sm">{selectedRequest.processing_notes}</p>
+                  <p className="text-sm">{(detailData || selectedRequest).processing_notes}</p>
                 </div>
               )}
 
-              {selectedRequest.rejection_reason && (
+              {(detailData || selectedRequest).rejection_reason && (
                 <div className="p-3 bg-destructive/10 rounded-lg">
                   <p className="text-xs text-destructive mb-1">Motif de rejet</p>
-                  <p className="text-sm">{selectedRequest.rejection_reason}</p>
+                  <p className="text-sm">{(detailData || selectedRequest).rejection_reason}</p>
                 </div>
               )}
             </div>
@@ -760,6 +697,13 @@ const AdminLandTitleRequests: React.FC = () => {
               </Select>
             </div>
 
+            {processAction === 'approve' && selectedRequest?.payment_status !== 'paid' && (
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                <span>Cette demande n'est pas encore payée. L'approbation sera bloquée.</span>
+              </div>
+            )}
+
             <div className="space-y-2">
               <label className="text-sm font-medium">Notes de traitement</label>
               <Textarea
@@ -790,7 +734,7 @@ const AdminLandTitleRequests: React.FC = () => {
             </Button>
             <Button 
               onClick={handleProcessRequest} 
-              disabled={processing || (processAction === 'reject' && !rejectionReason)}
+              disabled={processing || (processAction === 'reject' && !rejectionReason) || (processAction === 'approve' && selectedRequest?.payment_status !== 'paid')}
               className="rounded-xl"
             >
               {processing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
