@@ -781,9 +781,6 @@ const DRCInteractiveMap = () => {
             <Button size="sm" variant={activeMobilePanel==='map' ? 'default' : 'outline'} onClick={() => setActiveMobilePanel('map')} aria-label="Carte" className="rounded-full">
               <MapPin className="w-4 h-4" />
             </Button>
-            <Button size="sm" variant={activeMobilePanel==='details' ? 'default' : 'outline'} onClick={() => setActiveMobilePanel('details')} aria-label="Détails" className="rounded-full">
-              <Building className="w-4 h-4" />
-            </Button>
             <Button size="sm" variant={activeMobilePanel==='analytics' ? 'default' : 'outline'} onClick={() => setActiveMobilePanel('analytics')} aria-label="Analytics" className="rounded-full">
               <BarChart3 className="w-4 h-4" />
             </Button>
