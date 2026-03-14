@@ -5,27 +5,28 @@ import { useAuth } from '@/hooks/useAuth';
 
 export interface CadastralContributionData {
   parcelNumber: string;
-  parcelType?: 'SU' | 'SR'; // Type de parcelle (Section Urbaine/Rurale)
+  parcelType?: 'SU' | 'SR';
   
   // Informations générales
   propertyTitleType?: string;
   leaseType?: 'initial' | 'renewal';
   titleReferenceNumber?: string;
-  titleIssueDate?: string; // Date de délivrance du titre foncier
-  isTitleInCurrentOwnerName?: boolean; // Le titre est-il au nom du propriétaire actuel depuis l'acquisition?
-  ownerAcquisitionDate?: string; // Date d'acquisition par le propriétaire actuel
+  titleIssueDate?: string;
+  isTitleInCurrentOwnerName?: boolean;
+  ownerAcquisitionDate?: string;
   currentOwners?: Array<{
-    lastName: string;  // Nom
-    middleName?: string;  // Post-nom
-    firstName: string;  // Prénom
+    lastName: string;
+    middleName?: string;
+    firstName: string;
     legalStatus: string;
+    gender?: string;
     since: string;
   }>;
   constructionType?: string;
   constructionNature?: string;
   constructionMaterials?: string;
   declaredUsage?: string;
-  constructionYear?: number; // Année de construction (si pas terrain nu)
+  constructionYear?: number;
   
   // Autorisation de bâtir
   buildingPermits?: Array<{
@@ -38,9 +39,9 @@ export interface CadastralContributionData {
     issuingServiceContact?: string;
     attachmentUrl?: string;
   }>;
-  previousPermitNumber?: string; // ✅ NOUVEAU: pour régularisation
+  previousPermitNumber?: string;
   
-  // Demande d'autorisation de bâtir (nouveau)
+  // Demande d'autorisation de bâtir
   permitRequest?: {
     permitType: 'construction' | 'regularization';
     hasExistingConstruction: boolean;
@@ -50,20 +51,18 @@ export interface CadastralContributionData {
     applicantName: string;
     applicantPhone: string;
     applicantEmail?: string;
-    // Champs spécifiques autorisation de bâtir
     numberOfFloors?: string;
     buildingMaterials?: string;
-    architecturalPlanImages?: string[]; // URLs après upload
-    // Champs spécifiques autorisation de régularisation
+    architecturalPlanImages?: string[];
     constructionYear?: string;
-    regularizationReason?: string; // ✅ Correction orthographe pour matcher le Dialog
+    regularizationReason?: string;
     originalPermitNumber?: string;
-    constructionPhotos?: string[]; // URLs après upload
+    constructionPhotos?: string[];
   };
   
   // Localisation
-  areaSqm?: number;  // Déplacé ici depuis informations générales
-  parcelSides?: Array<{ name: string; length: string }>; // Dimensions exactes des côtés
+  areaSqm?: number;
+  parcelSides?: Array<{ name: string; length: string }>;
   province?: string;
   ville?: string;
   commune?: string;
@@ -98,8 +97,8 @@ export interface CadastralContributionData {
     amountUsd: number;
     paymentStatus: string;
     paymentDate?: string;
-    receiptUrl?: string; // ✅ Ajouté
-    taxType?: string; // ✅ Ajouté
+    receiptUrl?: string;
+    taxType?: string;
   }>;
   mortgageHistory?: Array<{
     mortgageAmountUsd: number;
@@ -108,7 +107,7 @@ export interface CadastralContributionData {
     creditorType: string;
     contractDate: string;
     mortgageStatus: string;
-    receiptUrl?: string; // ✅ Ajouté
+    receiptUrl?: string;
   }>;
   
   // Pièces jointes
@@ -129,6 +128,11 @@ export interface ContributorCode {
   expires_at: string;
   created_at: string;
 }
+
+// Helper: strip SU/SR prefix to get raw parcel digits
+const extractRawParcelNumber = (parcelNumber: string): string => {
+  return parcelNumber.replace(/^(SU\/|SR\/|SU|SR)/i, '').trim();
+};
 
 export const useCadastralContribution = () => {
   const [loading, setLoading] = useState(false);
@@ -181,6 +185,14 @@ export const useCadastralContribution = () => {
       is_current: true
     })) || null;
 
+    // Convert boundary history to snake_case for DB trigger
+    const boundaryHistorySnake = data.boundaryHistory?.map(b => ({
+      pv_reference_number: b.pvReferenceNumber,
+      boundary_purpose: b.boundaryPurpose,
+      surveyor_name: b.surveyorName,
+      survey_date: b.surveyDate
+    })) || null;
+
     const payload: any = {
       parcel_number: data.parcelNumber,
       parcel_type: data.parcelType,
@@ -220,7 +232,7 @@ export const useCadastralContribution = () => {
       circonscription_fonciere: data.circonscriptionFonciere,
       gps_coordinates: data.gpsCoordinates,
       ownership_history: ownershipHistorySnake,
-      boundary_history: data.boundaryHistory,
+      boundary_history: boundaryHistorySnake,
       tax_history: taxHistorySnake,
       mortgage_history: mortgageHistorySnake,
       whatsapp_number: data.whatsappNumber,
@@ -235,8 +247,110 @@ export const useCadastralContribution = () => {
     return payload;
   };
 
+  // Shared validation logic used by both submit and update
+  const validateContributionData = (data: CadastralContributionData): { valid: boolean; message?: string } => {
+    // FIX #4: Validate raw parcel number (digits only) after stripping SU/SR prefix
+    const rawNumber = extractRawParcelNumber(data.parcelNumber);
+    if (!/^\d+$/.test(rawNumber)) {
+      return { valid: false, message: "Le numéro de parcelle doit contenir uniquement des chiffres (hors préfixe SU/SR)" };
+    }
+
+    // Validate GPS coordinates
+    if (data.gpsCoordinates && data.gpsCoordinates.length > 0) {
+      const invalidCoord = data.gpsCoordinates.find(coord => {
+        const lat = Number(coord.lat);
+        const lng = Number(coord.lng);
+        return isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180;
+      });
+      
+      if (invalidCoord) {
+        return { valid: false, message: "Les coordonnées doivent être dans les plages valides (lat: -90 à 90, lng: -180 à 180)" };
+      }
+
+      if (data.gpsCoordinates.length < 3) {
+        return { valid: false, message: "Veuillez fournir au moins 3 points GPS pour définir la parcelle" };
+      }
+    }
+
+    // Validate positive area
+    if (data.areaSqm && Number(data.areaSqm) <= 0) {
+      return { valid: false, message: "La superficie doit être supérieure à 0" };
+    }
+
+    return { valid: true };
+  };
+
+  // Shared user validation: check blocked status and fraud
+  const validateUserSecurity = async (authenticatedUserId: string, data: CadastralContributionData): Promise<{
+    allowed: boolean;
+    isSuspicious: boolean;
+    fraudScore: number;
+    fraudReasons: string[];
+  }> => {
+    // Check if user is blocked
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('is_blocked, blocked_reason, fraud_strikes')
+      .eq('user_id', authenticatedUserId)
+      .maybeSingle();
+
+    if (profileError) {
+      console.error('Erreur lors de la vérification du profil:', profileError);
+      toast({
+        title: "Erreur de vérification",
+        description: "Impossible de vérifier votre profil. Veuillez réessayer.",
+        variant: "destructive",
+      });
+      return { allowed: false, isSuspicious: false, fraudScore: 0, fraudReasons: [] };
+    }
+
+    if (profile?.is_blocked) {
+      toast({
+        title: "Compte bloqué",
+        description: `Votre compte a été bloqué pour fraude : ${profile.blocked_reason || 'Violations répétées'}`,
+        variant: "destructive",
+      });
+      return { allowed: false, isSuspicious: false, fraudScore: 0, fraudReasons: [] };
+    }
+
+    // Fraud detection
+    const { data: fraudCheck, error: fraudError } = await supabase
+      .rpc('detect_suspicious_contribution', {
+        p_user_id: authenticatedUserId,
+        p_parcel_number: data.parcelNumber
+      });
+
+    if (fraudError) {
+      console.error('Erreur détection fraude:', fraudError);
+    }
+
+    const suspicionData = Array.isArray(fraudCheck) && fraudCheck.length > 0 ? fraudCheck[0] : null;
+    const isSuspicious = suspicionData?.is_suspicious || false;
+    const fraudScore = suspicionData?.fraud_score || 0;
+    const fraudReasons = suspicionData?.reasons || [];
+
+    // Block if critical fraud score
+    if (isSuspicious && fraudScore >= 80) {
+      toast({
+        title: "Contribution suspecte",
+        description: "Cette contribution a été signalée pour vérification. Un administrateur vous contactera.",
+        variant: "destructive",
+      });
+      
+      await supabase.from('fraud_attempts').insert({
+        user_id: authenticatedUserId,
+        fraud_type: 'suspicious_contribution',
+        severity: 'high',
+        description: Array.isArray(fraudReasons) ? fraudReasons.join(', ') : 'Score de fraude élevé'
+      });
+      
+      return { allowed: false, isSuspicious, fraudScore, fraudReasons };
+    }
+
+    return { allowed: true, isSuspicious, fraudScore, fraudReasons };
+  };
+
   const submitContribution = async (data: CadastralContributionData) => {
-    // Vérifier l'authentification via session Supabase pour plus de fiabilité
     const { data: { session } } = await supabase.auth.getSession();
     
     if (!user && !session) {
@@ -258,48 +372,12 @@ export const useCadastralContribution = () => {
       return { success: false };
     }
 
-    // 🔒 VALIDATION: Format numéro parcelle (chiffres uniquement)
-    if (!/^\d+$/.test(data.parcelNumber)) {
+    // FIX #4: Use shared validation
+    const validation = validateContributionData(data);
+    if (!validation.valid) {
       toast({
-        title: "Format invalide",
-        description: "Le numéro de parcelle doit contenir uniquement des chiffres",
-        variant: "destructive",
-      });
-      return { success: false };
-    }
-
-    // 🔒 VALIDATION: Coordonnées GPS valides
-    if (data.gpsCoordinates && data.gpsCoordinates.length > 0) {
-      const invalidCoord = data.gpsCoordinates.find(coord => {
-        const lat = Number(coord.lat); // Utiliser 'lat' au lieu de 'latitude'
-        const lng = Number(coord.lng); // Utiliser 'lng' au lieu de 'longitude'
-        return isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180;
-      });
-      
-      if (invalidCoord) {
-        toast({
-          title: "Coordonnées GPS invalides",
-          description: "Les coordonnées doivent être dans les plages valides (lat: -90 à 90, lng: -180 à 180)",
-          variant: "destructive",
-        });
-        return { success: false };
-      }
-
-      if (data.gpsCoordinates.length < 3) {
-        toast({
-          title: "Coordonnées insuffisantes",
-          description: "Veuillez fournir au moins 3 points GPS pour définir la parcelle",
-          variant: "destructive",
-        });
-        return { success: false };
-      }
-    }
-
-    // 🔒 VALIDATION: Superficie positive
-    if (data.areaSqm && Number(data.areaSqm) <= 0) {
-      toast({
-        title: "Superficie invalide",
-        description: "La superficie doit être supérieure à 0",
+        title: "Données invalides",
+        description: validation.message,
         variant: "destructive",
       });
       return { success: false };
@@ -308,76 +386,20 @@ export const useCadastralContribution = () => {
     setLoading(true);
 
     try {
-      // 🔒 Vérifier si l'utilisateur est bloqué AVANT détection fraude
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('is_blocked, blocked_reason, fraud_strikes')
-        .eq('user_id', authenticatedUserId)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error('Erreur lors de la vérification du profil:', profileError);
-        toast({
-          title: "Erreur de vérification",
-          description: "Impossible de vérifier votre profil. Veuillez réessayer.",
-          variant: "destructive",
-        });
+      // FIX #5: Use shared security validation
+      const security = await validateUserSecurity(authenticatedUserId, data);
+      if (!security.allowed) {
         return { success: false };
       }
 
-      if (profile?.is_blocked) {
-        toast({
-          title: "Compte bloqué",
-          description: `Votre compte a été bloqué pour fraude : ${profile.blocked_reason || 'Violations répétées'}`,
-          variant: "destructive",
-        });
-        return { success: false };
-      }
-
-      // 🔒 Détection de fraude - Utiliser l'ancienne fonction en attendant migration types
-      const { data: fraudCheck, error: fraudError } = await supabase
-        .rpc('detect_suspicious_contribution', {
-          p_user_id: authenticatedUserId,
-          p_parcel_number: data.parcelNumber
-        });
-
-      if (fraudError) {
-        console.error('Erreur détection fraude:', fraudError);
-        // Ne pas bloquer la soumission si la détection de fraude échoue
-      }
-
-      const suspicionData = Array.isArray(fraudCheck) && fraudCheck.length > 0 ? fraudCheck[0] : null;
-      const isSuspicious = suspicionData?.is_suspicious || false;
-      const fraudScore = suspicionData?.fraud_score || 0;
-      const fraudReasons = suspicionData?.reasons || [];
-
-      // Si détection fraude positive critique, bloquer immédiatement
-      if (isSuspicious && fraudScore >= 80) {
-        toast({
-          title: "Contribution suspecte",
-          description: "Cette contribution a été signalée pour vérification. Un administrateur vous contactera.",
-          variant: "destructive",
-        });
-        
-        // Enregistrer la tentative de fraude
-        await supabase.from('fraud_attempts').insert({
-          user_id: authenticatedUserId,
-          fraud_type: 'suspicious_contribution',
-          severity: 'high',
-          description: Array.isArray(fraudReasons) ? fraudReasons.join(', ') : 'Score de fraude élevé'
-        });
-        
-        return { success: false };
-      }
-
-      // Soumettre la contribution - utilise le payload partagé
+      // Submit the contribution
       const contributionPayload = {
         ...buildContributionPayload(data),
         user_id: authenticatedUserId,
         status: 'pending',
-        is_suspicious: isSuspicious,
-        fraud_score: fraudScore,
-        fraud_reason: fraudReasons.length > 0 ? fraudReasons.join('; ') : null
+        is_suspicious: security.isSuspicious,
+        fraud_score: security.fraudScore,
+        fraud_reason: security.fraudReasons.length > 0 ? security.fraudReasons.join('; ') : null
       };
 
       const { data: contributionData, error: contributionError } = await supabase
@@ -405,39 +427,32 @@ export const useCadastralContribution = () => {
         return { success: false };
       }
 
-      // Enregistrer une tentative de fraude si détectée
-      if (isSuspicious) {
+      // Record fraud attempt if suspicious
+      if (security.isSuspicious) {
         await supabase
           .from('fraud_attempts')
           .insert({
             user_id: authenticatedUserId,
             contribution_id: contributionData.id,
             fraud_type: 'suspicious_contribution',
-            description: fraudReasons.join('; '),
-            severity: fraudScore >= 80 ? 'critical' : fraudScore >= 50 ? 'high' : 'medium'
+            description: security.fraudReasons.join('; '),
+            severity: security.fraudScore >= 80 ? 'critical' : security.fraudScore >= 50 ? 'high' : 'medium'
           });
       }
 
-      // Message différent selon si la contribution est suspecte ou non
-      if (isSuspicious) {
-        toast({
-          title: "Contribution enregistrée",
-          description: "Votre contribution a été reçue et sera examinée par notre équipe. Vous recevrez votre code CCC après validation.",
-        });
-      } else {
-        toast({
-          title: "Contribution enregistrée !",
-          description: "Merci pour votre contribution. Elle sera vérifiée et vous recevrez votre code CCC après validation par notre équipe.",
-        });
-      }
+      toast({
+        title: "Contribution enregistrée !",
+        description: security.isSuspicious 
+          ? "Votre contribution a été reçue et sera examinée par notre équipe."
+          : "Merci pour votre contribution. Elle sera vérifiée et vous recevrez votre code CCC après validation.",
+      });
 
-      // Recharger les codes CCC
       await fetchUserCodes();
 
-      // ✅ Nettoyer le localStorage avec la clé correcte (même format que le Dialog)
+      // Clean localStorage
       try {
         localStorage.removeItem(`cadastral_contribution_${data.parcelNumber}`);
-        localStorage.removeItem('ccc_form_draft'); // Legacy key cleanup
+        localStorage.removeItem('ccc_form_draft');
       } catch (storageError) {
         console.warn('Impossible de nettoyer le localStorage:', storageError);
       }
@@ -506,7 +521,7 @@ export const useCadastralContribution = () => {
     }
   };
 
-  // Update an existing contribution (only if pending)
+  // FIX #5: Update now includes full validation (blocked user, fraud, data validation)
   const updateContribution = async (contributionId: string, data: CadastralContributionData) => {
     const { data: { session } } = await supabase.auth.getSession();
     
@@ -529,9 +544,36 @@ export const useCadastralContribution = () => {
       return { success: false };
     }
 
+    // FIX #5: Validate data before update (was missing!)
+    const validation = validateContributionData(data);
+    if (!validation.valid) {
+      toast({
+        title: "Données invalides",
+        description: validation.message,
+        variant: "destructive",
+      });
+      return { success: false };
+    }
+
     setLoading(true);
 
     try {
+      // FIX #5: Check blocked status before allowing update
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_blocked, blocked_reason')
+        .eq('user_id', authenticatedUserId)
+        .maybeSingle();
+
+      if (profile?.is_blocked) {
+        toast({
+          title: "Compte bloqué",
+          description: `Votre compte a été bloqué : ${profile.blocked_reason || 'Violations répétées'}`,
+          variant: "destructive",
+        });
+        return { success: false };
+      }
+
       // Build update payload using shared builder
       const contributionPayload = {
         ...buildContributionPayload(data),
@@ -543,7 +585,7 @@ export const useCadastralContribution = () => {
         .update(contributionPayload)
         .eq('id', contributionId)
         .eq('user_id', authenticatedUserId)
-        .in('status', ['pending', 'returned']) // Allow updating pending AND returned contributions
+        .in('status', ['pending', 'returned'])
         .select('id');
 
       if (updateError) {
@@ -556,7 +598,6 @@ export const useCadastralContribution = () => {
         return { success: false };
       }
 
-      // Vérifier qu'au moins une ligne a été affectée
       if (!updateData || updateData.length === 0) {
         toast({
           title: "Mise à jour impossible",
@@ -571,10 +612,10 @@ export const useCadastralContribution = () => {
         description: "Vos modifications ont été enregistrées avec succès.",
       });
 
-      // Clean localStorage with correct key
+      // Clean localStorage
       try {
         localStorage.removeItem(`cadastral_contribution_${data.parcelNumber}`);
-        localStorage.removeItem(`ccc_form_draft_${data.parcelNumber}`); // Legacy key cleanup
+        localStorage.removeItem(`ccc_form_draft_${data.parcelNumber}`);
       } catch (storageError) {
         console.warn('Impossible de nettoyer le localStorage:', storageError);
       }

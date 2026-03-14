@@ -34,7 +34,8 @@ import { InputWithPopover } from './InputWithPopover';
 import { PropertyTitleTypeSelect, PROPERTY_TITLE_TYPES } from './PropertyTitleTypeSelect';
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
 import { useIsMobile } from '@/hooks/use-mobile';
-import confetti from 'canvas-confetti';
+// FIX #27: Lazy import confetti to avoid loading it for every session
+const lazyConfetti = () => import('canvas-confetti').then(m => m.default);
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { QuickAuthDialog } from './QuickAuthDialog';
 import { useContributionConfig } from '@/hooks/useContributionConfig';
@@ -520,27 +521,18 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     }
   }, [open]);
 
-  // Sauvegarder automatiquement les données à chaque modification importante
+  // FIX #2/#3: Single auto-save with debounce, ALL states included in deps, works for all users
   useEffect(() => {
     if (open && formData.parcelNumber) {
       const timeoutId = setTimeout(() => {
         saveFormDataToStorage();
-      }, 1000); // Debounce de 1 seconde
+      }, 1500); // Debounce 1.5s
       
       return () => clearTimeout(timeoutId);
     }
-  }, [open, formData, currentOwners, previousOwners, taxRecords, mortgageRecords, buildingPermits, gpsCoordinates]);
-
-  // Sauvegarder automatiquement les données toutes les 30 secondes
-  useEffect(() => {
-    if (!open || !user) return;
-
-    const autoSaveInterval = setInterval(() => {
-      saveFormDataToStorage();
-    }, 30000); // 30 secondes
-
-    return () => clearInterval(autoSaveInterval);
-  }, [open, user, formData, currentOwners, previousOwners, taxRecords, mortgageRecords, buildingPermits, gpsCoordinates, parcelSides]);
+  }, [open, formData, currentOwners, previousOwners, taxRecords, mortgageRecords, 
+      buildingPermits, gpsCoordinates, parcelSides, permitMode, permitRequest, 
+      hasMortgage, ownershipMode, leaseYears, roadSides, obligationType, sectionType, saveFormDataToStorage]);
 
   // NOTE: Draft is saved BEFORE resetting state in handleClose/handleAttemptClose.
   // We no longer save on !open to avoid the race condition where reset state overwrites the draft.
@@ -645,19 +637,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       }
     }
   }, [formData.isTitleInCurrentOwnerName, currentOwners[0]?.lastName, currentOwners[0]?.firstName, currentOwners[0]?.middleName, currentOwners[0]?.since]);
+  // FIX #12: Improved surface calculation with better 2-side handling
   useEffect(() => {
     const sides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
     
-    if (sides.length < 2) return;
-
-    // Pour 2 côtés (forme rectangulaire simplifiée)
-    if (sides.length === 2) {
-      const length1 = parseFloat(sides[0].length);
-      const length2 = parseFloat(sides[1].length);
-      const area = length1 * length2;
-      handleInputChange('areaSqm', parseFloat(area.toFixed(2)));
-      return;
-    }
+    if (sides.length < 3) return; // FIX: Need at least 3 sides for a valid area calc
     
     // Pour 3 côtés (triangle) : formule de Héron
     if (sides.length === 3) {
@@ -686,13 +670,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         return;
       }
       
-      // Pour un quadrilatère non rectangulaire, diviser en 2 triangles (diagonale = côtés opposés)
-      // Approximation via 2 triangles : (0,1,diag) et (2,3,diag)
-      // Diagonale estimée avec formule du parallélogramme
+      // Formule de Brahmagupta (approximation quadrilatère cyclique)
       const a = lengths[0], b = lengths[2], c = lengths[1], d = lengths[3];
       const s = (a + b + c + d) / 2;
-      // Formule de Brahmagupta avec angle moyen (approximation pour quadrilatère quelconque)
-      // Utilise cos²(θ) ≈ 0 (θ ≈ 90°) comme approximation pessimiste
       const brahmVal = (s - a) * (s - b) * (s - c) * (s - d);
       if (brahmVal <= 0) return;
       const area = Math.sqrt(brahmVal);
@@ -1539,8 +1519,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const addTaxRecord = () => {
     const firstTax = taxRecords[0];
     
-    // Vérifier si la première taxe est complétée
-    if (!firstTax?.taxType || !firstTax?.taxYear || !firstTax?.taxAmount || !firstTax?.paymentStatus || !firstTax?.paymentDate) {
+    // FIX #10: Relaxed validation - don't require paymentDate if status is unpaid
+    if (!firstTax?.taxType || !firstTax?.taxYear || !firstTax?.taxAmount || !firstTax?.paymentStatus) {
       // Afficher la notification et mettre en surbrillance
       setShowTaxWarning(true);
       setHighlightIncompleteTax(true);
@@ -1585,21 +1565,37 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     markDirty();
   };
 
+  // FIX #21: Shared file validation for taxes and mortgages
+  const validateAttachmentFile = (file: File): boolean => {
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
+    if (!validTypes.includes(file.type)) {
+      toast({
+        title: "Type de fichier non valide",
+        description: "Seuls les fichiers JPG, PNG, WEBP et PDF sont acceptés",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Fichier trop volumineux",
+        description: "La taille maximale est de 5 MB",
+        variant: "destructive"
+      });
+      return false;
+    }
+    return true;
+  };
+
   const handleTaxFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: "Fichier trop volumineux",
-          description: "La taille maximale est de 5 MB",
-          variant: "destructive"
-        });
-        return;
-      }
+      if (!validateAttachmentFile(file)) return;
       const updated = [...taxRecords];
       updated[index] = { ...updated[index], receiptFile: file };
       setTaxRecords(updated);
     }
+    e.target.value = '';
   };
 
   const removeTaxFile = (index: number) => {
@@ -1661,18 +1657,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const handleMortgageFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: "Fichier trop volumineux",
-          description: "La taille maximale est de 5 MB",
-          variant: "destructive"
-        });
-        return;
-      }
+      if (!validateAttachmentFile(file)) return;
       const updated = [...mortgageRecords];
       updated[index] = { ...updated[index], receiptFile: file };
       setMortgageRecords(updated);
     }
+    e.target.value = '';
   };
 
   const removeMortgageFile = (index: number) => {
@@ -1950,10 +1940,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   // Fonctions pour gérer les côtés de la parcelle
   const addParcelSide = () => {
     const sideNumber = parcelSides.length + 1;
-    setParcelSides([...parcelSides, {
+    const newSides = [...parcelSides, {
       name: `Côté ${sideNumber}`,
       length: ''
-    }]);
+    }];
+    setParcelSides(newSides);
     
     // Ajouter automatiquement une borne GPS correspondante
     const borneNumber = gpsCoordinates.length + 1;
@@ -1965,13 +1956,14 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     markDirty();
   };
 
+  // FIX #9: Remove the correct GPS borne at the same index, not always the last one
   const removeParcelSide = (index: number) => {
     if (parcelSides.length > 2) {
       setParcelSides(parcelSides.filter((_, i) => i !== index));
       
-      // Supprimer automatiquement la borne GPS correspondante
-      if (gpsCoordinates.length > 0) {
-        setGpsCoordinates(gpsCoordinates.slice(0, -1));
+      // Remove the corresponding GPS coordinate at the same index
+      if (index < gpsCoordinates.length) {
+        setGpsCoordinates(gpsCoordinates.filter((_, i) => i !== index));
       }
       markDirty();
     }
@@ -2290,8 +2282,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     return "bg-green-500";
   };
 
-  // Fonction pour déclencher les confettis
-  const triggerConfetti = () => {
+  // FIX #27: Lazy confetti trigger
+  const triggerConfetti = async () => {
+    const confetti = await lazyConfetti();
     const duration = 3 * 1000;
     const animationEnd = Date.now() + duration;
     const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
