@@ -984,6 +984,7 @@ const DRCInteractiveMap = () => {
           </Card>
         </div>
       </div>
+    </div>
   );
 };
 
