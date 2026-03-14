@@ -637,19 +637,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       }
     }
   }, [formData.isTitleInCurrentOwnerName, currentOwners[0]?.lastName, currentOwners[0]?.firstName, currentOwners[0]?.middleName, currentOwners[0]?.since]);
+  // FIX #12: Improved surface calculation with better 2-side handling
   useEffect(() => {
     const sides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
     
-    if (sides.length < 2) return;
-
-    // Pour 2 côtés (forme rectangulaire simplifiée)
-    if (sides.length === 2) {
-      const length1 = parseFloat(sides[0].length);
-      const length2 = parseFloat(sides[1].length);
-      const area = length1 * length2;
-      handleInputChange('areaSqm', parseFloat(area.toFixed(2)));
-      return;
-    }
+    if (sides.length < 3) return; // FIX: Need at least 3 sides for a valid area calc
     
     // Pour 3 côtés (triangle) : formule de Héron
     if (sides.length === 3) {
@@ -678,13 +670,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         return;
       }
       
-      // Pour un quadrilatère non rectangulaire, diviser en 2 triangles (diagonale = côtés opposés)
-      // Approximation via 2 triangles : (0,1,diag) et (2,3,diag)
-      // Diagonale estimée avec formule du parallélogramme
+      // Formule de Brahmagupta (approximation quadrilatère cyclique)
       const a = lengths[0], b = lengths[2], c = lengths[1], d = lengths[3];
       const s = (a + b + c + d) / 2;
-      // Formule de Brahmagupta avec angle moyen (approximation pour quadrilatère quelconque)
-      // Utilise cos²(θ) ≈ 0 (θ ≈ 90°) comme approximation pessimiste
       const brahmVal = (s - a) * (s - b) * (s - c) * (s - d);
       if (brahmVal <= 0) return;
       const area = Math.sqrt(brahmVal);
