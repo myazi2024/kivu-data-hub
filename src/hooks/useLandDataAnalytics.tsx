@@ -15,7 +15,7 @@ export interface LandAnalyticsData {
 }
 
 /** Fetch all rows with pagination to bypass 1000-row limit */
-async function fetchAll<T extends keyof (typeof supabase extends { from: (t: infer U) => any } ? never : never) | string>(
+async function fetchAll(
   table: string,
   select: string,
   filters?: (q: any) => any
@@ -25,7 +25,7 @@ async function fetchAll<T extends keyof (typeof supabase extends { from: (t: inf
   const allRows: any[] = [];
 
   while (true) {
-    let query = supabase.from(table).select(select);
+    let query = (supabase.from as any)(table).select(select);
     if (filters) query = filters(query);
     const { data, error } = await query.range(from, from + PAGE - 1);
     if (error) {
