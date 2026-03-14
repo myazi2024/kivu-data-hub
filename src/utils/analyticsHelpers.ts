@@ -1,0 +1,118 @@
+export const CHART_COLORS = [
+  '#6366f1', '#06b6d4', '#10b981', '#f59e0b', '#ef4444',
+  '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#3b82f6',
+  '#84cc16', '#e879f9',
+];
+
+export interface AnalyticsFilter {
+  sectionType: 'all' | 'urbaine' | 'rurale';
+  periodType: 'all' | 'year' | 'semester' | 'quarter' | 'month';
+  year?: number;
+  subPeriod?: number;
+  ville?: string;
+  commune?: string;
+  quartier?: string;
+  avenue?: string;
+  territoire?: string;
+  collectivite?: string;
+  groupement?: string;
+  villageFilter?: string;
+}
+
+export const defaultFilter: AnalyticsFilter = { sectionType: 'all', periodType: 'all' };
+
+export function getSectionType(record: any): 'urbaine' | 'rurale' | null {
+  if (record.section_type === 'urbaine' || record.parcel_type === 'SU') return 'urbaine';
+  if (record.section_type === 'rurale' || record.parcel_type === 'SR') return 'rurale';
+  return null;
+}
+
+export function matchesPeriod(dateStr: string | null | undefined, filter: AnalyticsFilter): boolean {
+  if (!dateStr || filter.periodType === 'all') return true;
+  const d = new Date(dateStr);
+  const year = d.getFullYear();
+  const month = d.getMonth() + 1;
+  if (filter.year && year !== filter.year) return false;
+  if (filter.periodType === 'year') return true;
+  if (filter.periodType === 'semester' && filter.subPeriod) return (month <= 6 ? 1 : 2) === filter.subPeriod;
+  if (filter.periodType === 'quarter' && filter.subPeriod) return Math.ceil(month / 3) === filter.subPeriod;
+  if (filter.periodType === 'month' && filter.subPeriod) return month === filter.subPeriod;
+  return true;
+}
+
+export function matchesLocation(r: any, f: AnalyticsFilter): boolean {
+  if (f.sectionType !== 'all') {
+    const st = getSectionType(r);
+    if (st && st !== f.sectionType) return false;
+  }
+  if (f.ville && r.ville !== f.ville) return false;
+  if (f.commune && r.commune !== f.commune) return false;
+  if (f.quartier && r.quartier !== f.quartier) return false;
+  if (f.avenue && r.avenue !== f.avenue) return false;
+  if (f.territoire && r.territoire !== f.territoire) return false;
+  if (f.collectivite && r.collectivite !== f.collectivite) return false;
+  if (f.groupement && r.groupement !== f.groupement) return false;
+  if (f.villageFilter && r.village !== f.villageFilter) return false;
+  return true;
+}
+
+export function applyFilters(records: any[], filter: AnalyticsFilter, dateField = 'created_at'): any[] {
+  return records.filter(r => matchesPeriod(r[dateField], filter) && matchesLocation(r, filter));
+}
+
+export function countBy(records: any[], field: string): { name: string; value: number }[] {
+  const map = new Map<string, number>();
+  records.forEach(r => {
+    const val = r[field] || 'Non spécifié';
+    map.set(val, (map.get(val) || 0) + 1);
+  });
+  return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+}
+
+export function crossCount(records: any[], field1: string, field2: string): { name: string; [key: string]: string | number }[] {
+  const outer = new Map<string, Map<string, number>>();
+  const allInner = new Set<string>();
+  records.forEach(r => {
+    const k1 = r[field1] || 'Non spécifié';
+    const k2 = r[field2] || 'Non spécifié';
+    allInner.add(k2);
+    if (!outer.has(k1)) outer.set(k1, new Map());
+    const inner = outer.get(k1)!;
+    inner.set(k2, (inner.get(k2) || 0) + 1);
+  });
+  return Array.from(outer.entries()).map(([name, inner]) => {
+    const row: any = { name };
+    allInner.forEach(k => { row[k] = inner.get(k) || 0; });
+    return row;
+  });
+}
+
+export function extractUnique(records: any[], field: string): string[] {
+  const set = new Set<string>();
+  records.forEach(r => { if (r[field]) set.add(r[field]); });
+  return Array.from(set).sort();
+}
+
+export function getAvailableYears(records: any[], dateField = 'created_at'): number[] {
+  const set = new Set<number>();
+  records.forEach(r => { if (r[dateField]) set.add(new Date(r[dateField]).getFullYear()); });
+  return Array.from(set).sort((a, b) => b - a);
+}
+
+export function trendByMonth(records: any[], dateField = 'created_at'): { name: string; value: number; sortKey: string }[] {
+  const map = new Map<string, number>();
+  records.forEach(r => {
+    if (r[dateField]) {
+      const d = new Date(r[dateField]);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      map.set(key, (map.get(key) || 0) + 1);
+    }
+  });
+  return Array.from(map.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([sortKey, value]) => {
+      const [y, m] = sortKey.split('-');
+      const name = new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('fr-FR', { year: '2-digit', month: 'short' });
+      return { name, value, sortKey };
+    });
+}
