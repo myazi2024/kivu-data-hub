@@ -1946,13 +1946,14 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     markDirty();
   };
 
+  // FIX #9: Remove the correct GPS borne at the same index, not always the last one
   const removeParcelSide = (index: number) => {
     if (parcelSides.length > 2) {
       setParcelSides(parcelSides.filter((_, i) => i !== index));
       
-      // Supprimer automatiquement la borne GPS correspondante
-      if (gpsCoordinates.length > 0) {
-        setGpsCoordinates(gpsCoordinates.slice(0, -1));
+      // Remove the corresponding GPS coordinate at the same index
+      if (index < gpsCoordinates.length) {
+        setGpsCoordinates(gpsCoordinates.filter((_, i) => i !== index));
       }
       markDirty();
     }
