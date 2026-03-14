@@ -277,6 +277,8 @@ const Admin = () => {
         return <AdminCatalogConfig />;
       case 'cadastral-map':
         return <AdminCadastralMap />;
+      case 'map-providers':
+        return <AdminMapProviders />;
       case 'cadastral-tooltip':
         return <AdminCadastralTooltip />;
       case 'search-config':

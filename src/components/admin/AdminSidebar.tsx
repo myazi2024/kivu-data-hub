@@ -95,6 +95,7 @@ const menuItems = [
     category: 'Cadastre & Services',
     items: [
       { icon: MapIcon, label: 'Carte Cadastrale', value: 'cadastral-map', badge: null },
+      { icon: Globe, label: 'Fournisseurs Carte', value: 'map-providers', badge: null },
       { icon: Database, label: 'Services Cadastraux', value: 'services', badge: null },
       { icon: Settings, label: 'Config Catalogue', value: 'catalog-config', badge: null },
       { icon: Settings, label: 'Infobulle Carte', value: 'cadastral-tooltip', badge: null },
