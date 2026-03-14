@@ -25,7 +25,7 @@ export const MutationBlock: React.FC<Props> = memo(({ data }) => {
   }, [filtered]);
 
   const handleExport = useCallback(() => {
-    exportToCSV(filtered, `mutations-${new Date().toISOString().slice(0,10)}`, [
+    exportRecordsToCSV(filtered, `mutations-${new Date().toISOString().slice(0,10)}`, [
       'id', 'parcel_number', 'mutation_type', 'status', 'province', 'ville', 'commune', 'created_at'
     ]);
   }, [filtered]);

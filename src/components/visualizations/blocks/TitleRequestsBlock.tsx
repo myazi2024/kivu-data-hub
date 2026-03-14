@@ -39,7 +39,7 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
   }, [filtered]);
 
   const handleExport = useCallback(() => {
-    exportToCSV(filtered, `titres-fonciers-${new Date().toISOString().slice(0,10)}`, [
+    exportRecordsToCSV(filtered, `titres-fonciers-${new Date().toISOString().slice(0,10)}`, [
       'id', 'reference_number', 'request_type', 'requester_type', 'section_type', 'province', 'ville', 'commune',
       'status', 'payment_status', 'total_amount_usd', 'created_at'
     ]);

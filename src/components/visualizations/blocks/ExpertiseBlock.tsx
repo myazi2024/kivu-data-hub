@@ -24,7 +24,7 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
   }, [filtered]);
 
   const handleExport = useCallback(() => {
-    exportToCSV(filtered, `expertise-${new Date().toISOString().slice(0,10)}`, [
+    exportRecordsToCSV(filtered, `expertise-${new Date().toISOString().slice(0,10)}`, [
       'id', 'parcel_number', 'status', 'province', 'ville', 'commune', 'created_at'
     ]);
   }, [filtered]);

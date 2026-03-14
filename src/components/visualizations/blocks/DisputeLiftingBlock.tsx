@@ -31,7 +31,7 @@ export const DisputeLiftingBlock: React.FC<Props> = memo(({ data }) => {
   }, [filtered]);
 
   const handleExport = useCallback(() => {
-    exportToCSV(filtered, `levees-litiges-${new Date().toISOString().slice(0,10)}`, [
+    exportRecordsToCSV(filtered, `levees-litiges-${new Date().toISOString().slice(0,10)}`, [
       'id', 'parcel_number', 'dispute_nature', 'lifting_status', 'resolution_level',
       'lifting_request_reference', 'province', 'ville', 'commune', 'created_at'
     ]);

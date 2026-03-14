@@ -24,7 +24,7 @@ export const SubdivisionBlock: React.FC<Props> = memo(({ data }) => {
   }, [filtered]);
 
   const handleExport = useCallback(() => {
-    exportToCSV(filtered, `lotissements-${new Date().toISOString().slice(0,10)}`, [
+    exportRecordsToCSV(filtered, `lotissements-${new Date().toISOString().slice(0,10)}`, [
       'id', 'parcel_number', 'status', 'number_of_lots', 'province', 'ville', 'commune', 'created_at'
     ]);
   }, [filtered]);
