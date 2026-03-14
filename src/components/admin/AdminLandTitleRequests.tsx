@@ -577,7 +577,7 @@ const AdminLandTitleRequests: React.FC = () => {
                     <div>
                       <p className="text-xs text-muted-foreground">Type de zone</p>
                       <Badge variant="outline" className="text-xs">
-                        {selectedRequest.section_type === 'urban' ? 'Urbaine' : 'Rurale'}
+                        {selectedRequest.section_type === 'urbaine' ? 'Urbaine' : 'Rurale'}
                       </Badge>
                     </div>
                     {selectedRequest.section_type === 'urban' ? (
