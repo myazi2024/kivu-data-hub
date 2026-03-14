@@ -21,7 +21,7 @@ import {
   getQuartiersForCommune
 } from '@/lib/geographicData';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useLandTitleRequest, LandTitleRequestData } from '@/hooks/useLandTitleRequest';
+import { useLandTitleRequest, LandTitleRequestData, validatePhone } from '@/hooks/useLandTitleRequest';
 import { useLandTitleDynamicFees } from '@/hooks/useLandTitleDynamicFees';
 import { 
   deduceLandTitleType as deduceLandTitle, 
