@@ -19,6 +19,7 @@ export const AnalyticsFilters: React.FC<Props> = ({ data, filter, onChange, date
 
   const filteredData = useMemo(() => {
     let d = data;
+    if (filter.province) d = d.filter(r => r.province === filter.province);
     if (filter.ville) d = d.filter(r => r.ville === filter.ville);
     if (filter.commune) d = d.filter(r => r.commune === filter.commune);
     if (filter.quartier) d = d.filter(r => r.quartier === filter.quartier);
@@ -28,16 +29,17 @@ export const AnalyticsFilters: React.FC<Props> = ({ data, filter, onChange, date
     return d;
   }, [data, filter]);
 
-  const villes = useMemo(() => extractUnique(data, 'ville'), [data]);
+  const provinces = useMemo(() => extractUnique(data, 'province'), [data]);
+  const villes = useMemo(() => extractUnique(filter.province ? data.filter(r => r.province === filter.province) : data, 'ville'), [data, filter.province]);
   const communes = useMemo(() => extractUnique(filter.ville ? data.filter(r => r.ville === filter.ville) : data, 'commune'), [data, filter.ville]);
   const quartiers = useMemo(() => extractUnique(filteredData, 'quartier'), [filteredData]);
   const avenues = useMemo(() => extractUnique(filteredData, 'avenue'), [filteredData]);
-  const territoires = useMemo(() => extractUnique(data, 'territoire'), [data]);
+  const territoires = useMemo(() => extractUnique(filter.province ? data.filter(r => r.province === filter.province) : data, 'territoire'), [data, filter.province]);
   const collectivites = useMemo(() => extractUnique(filter.territoire ? data.filter(r => r.territoire === filter.territoire) : data, 'collectivite'), [data, filter.territoire]);
   const groupements = useMemo(() => extractUnique(filteredData, 'groupement'), [filteredData]);
   const villages = useMemo(() => extractUnique(filteredData, 'village'), [filteredData]);
 
-  const hasActiveFilters = filter.periodType !== 'all' || filter.sectionType !== 'all' || filter.ville || filter.territoire;
+  const hasActiveFilters = filter.periodType !== 'all' || filter.sectionType !== 'all' || filter.ville || filter.territoire || filter.province;
   const reset = () => onChange({ ...defaultFilter });
 
   const selectCls = "h-6 text-[10px] w-auto min-w-[70px]";
@@ -104,6 +106,13 @@ export const AnalyticsFilters: React.FC<Props> = ({ data, filter, onChange, date
             <SelectItem value="rurale">Rurale</SelectItem>
           </SelectContent>
         </Select>
+
+        {provinces.length > 0 && (
+          <Select value={filter.province || '__all__'} onValueChange={v => onChange({ ...filter, province: v === '__all__' ? undefined : v, ville: undefined, commune: undefined, quartier: undefined, avenue: undefined, territoire: undefined, collectivite: undefined, groupement: undefined, villageFilter: undefined })}>
+            <SelectTrigger className={selectCls}><SelectValue placeholder="Province" /></SelectTrigger>
+            <SelectContent><SelectItem value="__all__">Toutes prov.</SelectItem>{provinces.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+          </Select>
+        )}
 
         {hasActiveFilters && (
           <Button variant="ghost" size="sm" className="h-5 text-[10px] px-1.5" onClick={reset}><X className="h-2.5 w-2.5" /></Button>
