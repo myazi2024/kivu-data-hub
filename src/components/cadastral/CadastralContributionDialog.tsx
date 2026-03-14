@@ -250,6 +250,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     middleName: string;
     firstName: string;
     legalStatus: string;
+    gender: string;
     entityType: string;
     entitySubType: string;
     entitySubTypeOther: string;
@@ -261,6 +262,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     middleName: '',
     firstName: '',
     legalStatus: 'Personne physique',
+    gender: '',
     entityType: '',
     entitySubType: '',
     entitySubTypeOther: '',

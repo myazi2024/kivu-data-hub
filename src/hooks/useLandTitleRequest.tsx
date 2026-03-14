@@ -22,6 +22,7 @@ export interface LandTitleRequestData {
   ownerFirstName?: string;
   ownerMiddleName?: string;
   ownerLegalStatus?: string;
+  ownerGender?: string;
   ownerPhone?: string;
   ownerIdDocumentFile?: File | null;
   

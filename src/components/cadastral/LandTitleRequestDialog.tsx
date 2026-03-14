@@ -1041,7 +1041,12 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           <Label className="text-sm">Statut juridique</Label>
                           <Select
                             value={formData.ownerLegalStatus || 'Personne physique'}
-                            onValueChange={(value) => handleInputChange('ownerLegalStatus', value)}
+                            onValueChange={(value) => {
+                              handleInputChange('ownerLegalStatus', value);
+                              if (value !== 'Personne physique') {
+                                handleInputChange('ownerGender', '');
+                              }
+                            }}
                           >
                             <SelectTrigger className="h-9 text-sm rounded-lg border">
                               <SelectValue />
@@ -1053,6 +1058,24 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                             </SelectContent>
                           </Select>
                         </div>
+
+                        {(formData.ownerLegalStatus || 'Personne physique') === 'Personne physique' && (
+                          <div className="space-y-1.5 animate-fade-in">
+                            <Label className="text-sm">Genre *</Label>
+                            <Select
+                              value={formData.ownerGender || ''}
+                              onValueChange={(value) => handleInputChange('ownerGender', value)}
+                            >
+                              <SelectTrigger className="h-9 text-sm rounded-lg border">
+                                <SelectValue placeholder="Sélectionner le genre" />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-lg">
+                                <SelectItem value="Masculin" className="text-sm py-2">Masculin</SelectItem>
+                                <SelectItem value="Féminin" className="text-sm py-2">Féminin</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   )}
