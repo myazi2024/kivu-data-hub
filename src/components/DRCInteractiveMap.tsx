@@ -814,24 +814,6 @@ const DRCInteractiveMap = () => {
                   </h2>
                 </div>
                 
-                {/* Filtre de visualisation responsive */}
-                <div className="mt-2">
-                  <Select value={activeView} onValueChange={setActiveView}>
-                    <SelectTrigger className="w-full h-7 px-2 text-[10px]">
-                      <SelectValue placeholder="Vue" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="provinces" className="text-xs">
-                        <span className="hidden md:inline">Cartographie RDC par Province</span>
-                        <span className="md:hidden">Provinces RDC</span>
-                      </SelectItem>
-                      <SelectItem value="territorial" className="text-xs">
-                        <span className="hidden md:inline">Cartographie Territoriale</span>
-                        <span className="md:hidden">Territorial</span>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
               
               {/* Carte responsive optimisée */}
