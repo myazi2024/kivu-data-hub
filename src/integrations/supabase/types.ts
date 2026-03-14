@@ -1872,6 +1872,69 @@ export type Database = {
         }
         Relationships: []
       }
+      map_providers: {
+        Row: {
+          api_key_env_name: string | null
+          api_key_placeholder: string | null
+          attribution: string
+          created_at: string
+          description: string | null
+          display_order: number
+          extra_config: Json | null
+          icon_name: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          max_zoom: number
+          min_zoom: number
+          provider_key: string
+          provider_name: string
+          requires_api_key: boolean
+          tile_url_template: string
+          updated_at: string
+        }
+        Insert: {
+          api_key_env_name?: string | null
+          api_key_placeholder?: string | null
+          attribution?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          extra_config?: Json | null
+          icon_name?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          max_zoom?: number
+          min_zoom?: number
+          provider_key: string
+          provider_name: string
+          requires_api_key?: boolean
+          tile_url_template: string
+          updated_at?: string
+        }
+        Update: {
+          api_key_env_name?: string | null
+          api_key_placeholder?: string | null
+          attribution?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          extra_config?: Json | null
+          icon_name?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          max_zoom?: number
+          min_zoom?: number
+          provider_key?: string
+          provider_name?: string
+          requires_api_key?: boolean
+          tile_url_template?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       market_trends: {
         Row: {
           average_rent_price: number
