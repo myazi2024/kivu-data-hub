@@ -569,7 +569,7 @@ const AdminLandTitleRequests: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Usage déclaré</p>
-                      <p className="text-sm font-medium">{(selectedRequest as any).declared_usage || '-'}</p>
+                      <p className="text-sm font-medium">{selectedRequest.declared_usage || '-'}</p>
                     </div>
                   </div>
                   
