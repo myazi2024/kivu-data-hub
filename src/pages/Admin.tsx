@@ -343,7 +343,7 @@ const Admin = () => {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-dvh overflow-hidden bg-background">
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex w-52 lg:w-60 flex-col border-r bg-card/50 backdrop-blur-sm">
         <div className="p-3 lg:p-4 border-b bg-background/80">
