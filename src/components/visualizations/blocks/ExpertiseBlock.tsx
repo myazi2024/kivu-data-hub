@@ -8,7 +8,7 @@ import { Search, TrendingUp } from 'lucide-react';
 
 interface Props { data: LandAnalyticsData; }
 const CH = 160;
-const NoData = () => <div className="flex items-center justify-center h-[100px] text-muted-foreground text-[10px]">Aucune donnée</div>;
+const NoData = () => <div className="flex items-center justify-center h-[100px] text-muted-foreground text-xs">Aucune donnée</div>;
 
 export const ExpertiseBlock: React.FC<Props> = ({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
@@ -35,17 +35,17 @@ export const ExpertiseBlock: React.FC<Props> = ({ data }) => {
         ))}
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <Card className="border-border/30"><CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-[10px] flex items-center gap-1"><Search className="h-3 w-3 text-primary" /> Statut</CardTitle></CardHeader>
+        <Card className="border-border/30"><CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-xs font-semibold flex items-center gap-1"><Search className="h-3 w-3 text-primary" /> Statut</CardTitle></CardHeader>
           <CardContent className="px-2 pb-2">{byStatus.length === 0 ? <NoData /> : (<ResponsiveContainer width="100%" height={CH}><PieChart><Pie data={byStatus} cx="50%" cy="50%" outerRadius={60} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>{byStatus.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}</Pie><Tooltip contentStyle={{ fontSize: 10 }} /></PieChart></ResponsiveContainer>)}</CardContent></Card>
 
-        <Card className="border-border/30"><CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-[10px]">Par province</CardTitle></CardHeader>
+        <Card className="border-border/30"><CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-xs font-semibold">Par province</CardTitle></CardHeader>
           <CardContent className="px-2 pb-2">{byProvince.length === 0 ? <NoData /> : (<ResponsiveContainer width="100%" height={CH}><BarChart data={byProvince.slice(0, 8)} layout="vertical" margin={{ left: 5 }}><CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /><XAxis type="number" tick={{ fontSize: 9 }} /><YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 9 }} /><Tooltip contentStyle={{ fontSize: 10 }} /><Bar dataKey="value" fill={CHART_COLORS[5]} radius={[0, 3, 3, 0]} /></BarChart></ResponsiveContainer>)}</CardContent></Card>
 
-        {byVille.length > 0 && <Card className="border-border/30"><CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-[10px]">Urbaine</CardTitle></CardHeader><CardContent className="px-2 pb-2"><ResponsiveContainer width="100%" height={CH}><BarChart data={byVille.slice(0, 8)}><CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /><XAxis dataKey="name" tick={{ fontSize: 8 }} angle={-25} textAnchor="end" height={40} /><YAxis tick={{ fontSize: 9 }} /><Tooltip contentStyle={{ fontSize: 10 }} /><Bar dataKey="value" fill={CHART_COLORS[1]} radius={[3, 3, 0, 0]} /></BarChart></ResponsiveContainer></CardContent></Card>}
+        {byVille.length > 0 && <Card className="border-border/30"><CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-xs font-semibold">Urbaine</CardTitle></CardHeader><CardContent className="px-2 pb-2"><ResponsiveContainer width="100%" height={CH}><BarChart data={byVille.slice(0, 8)}><CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /><XAxis dataKey="name" tick={{ fontSize: 8 }} angle={-25} textAnchor="end" height={40} /><YAxis tick={{ fontSize: 9 }} /><Tooltip contentStyle={{ fontSize: 10 }} /><Bar dataKey="value" fill={CHART_COLORS[1]} radius={[3, 3, 0, 0]} /></BarChart></ResponsiveContainer></CardContent></Card>}
 
-        {byTerritoire.length > 0 && <Card className="border-border/30"><CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-[10px]">Rurale</CardTitle></CardHeader><CardContent className="px-2 pb-2"><ResponsiveContainer width="100%" height={CH}><BarChart data={byTerritoire.slice(0, 8)}><CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /><XAxis dataKey="name" tick={{ fontSize: 8 }} angle={-25} textAnchor="end" height={40} /><YAxis tick={{ fontSize: 9 }} /><Tooltip contentStyle={{ fontSize: 10 }} /><Bar dataKey="value" fill={CHART_COLORS[7]} radius={[3, 3, 0, 0]} /></BarChart></ResponsiveContainer></CardContent></Card>}
+        {byTerritoire.length > 0 && <Card className="border-border/30"><CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-xs font-semibold">Rurale</CardTitle></CardHeader><CardContent className="px-2 pb-2"><ResponsiveContainer width="100%" height={CH}><BarChart data={byTerritoire.slice(0, 8)}><CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /><XAxis dataKey="name" tick={{ fontSize: 8 }} angle={-25} textAnchor="end" height={40} /><YAxis tick={{ fontSize: 9 }} /><Tooltip contentStyle={{ fontSize: 10 }} /><Bar dataKey="value" fill={CHART_COLORS[7]} radius={[3, 3, 0, 0]} /></BarChart></ResponsiveContainer></CardContent></Card>}
 
-        <Card className="col-span-2 border-border/30"><CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-[10px] flex items-center gap-1"><TrendingUp className="h-3 w-3 text-primary" /> Évolution</CardTitle></CardHeader>
+        <Card className="col-span-2 border-border/30"><CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-xs font-semibold flex items-center gap-1"><TrendingUp className="h-3 w-3 text-primary" /> Évolution</CardTitle></CardHeader>
           <CardContent className="px-2 pb-2">{trend.length === 0 ? <NoData /> : (<ResponsiveContainer width="100%" height={CH}><AreaChart data={trend}><CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /><XAxis dataKey="name" tick={{ fontSize: 8 }} /><YAxis tick={{ fontSize: 9 }} /><Tooltip contentStyle={{ fontSize: 10 }} /><Area type="monotone" dataKey="value" stroke={CHART_COLORS[5]} fill={CHART_COLORS[5]} fillOpacity={0.15} /></AreaChart></ResponsiveContainer>)}</CardContent></Card>
       </div>
     </div>

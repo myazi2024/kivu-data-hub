@@ -9,7 +9,7 @@ import { FileText, Users, MapPin, Building, TrendingUp } from 'lucide-react';
 interface Props { data: LandAnalyticsData; }
 
 const CH = 160;
-const NoData = () => <div className="flex items-center justify-center h-[100px] text-muted-foreground text-[10px]">Aucune donnée</div>;
+const NoData = () => <div className="flex items-center justify-center h-[100px] text-muted-foreground text-xs">Aucune donnée</div>;
 
 export const TitleRequestsBlock: React.FC<Props> = ({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
@@ -54,7 +54,7 @@ export const TitleRequestsBlock: React.FC<Props> = ({ data }) => {
 
       <div className="grid grid-cols-2 gap-2">
         <Card className="border-border/30">
-          <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-[10px] flex items-center gap-1"><FileText className="h-3 w-3 text-primary" /> Type de demande</CardTitle></CardHeader>
+          <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-xs font-semibold flex items-center gap-1"><FileText className="h-3 w-3 text-primary" /> Type de demande</CardTitle></CardHeader>
           <CardContent className="px-2 pb-2">{byRequestType.length === 0 ? <NoData /> : (
             <ResponsiveContainer width="100%" height={CH}>
               <BarChart data={byRequestType} layout="vertical" margin={{ left: 5 }}>
@@ -67,7 +67,7 @@ export const TitleRequestsBlock: React.FC<Props> = ({ data }) => {
         </Card>
 
         <Card className="border-border/30">
-          <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-[10px] flex items-center gap-1"><Users className="h-3 w-3 text-primary" /> Demandeur</CardTitle></CardHeader>
+          <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-xs font-semibold flex items-center gap-1"><Users className="h-3 w-3 text-primary" /> Demandeur</CardTitle></CardHeader>
           <CardContent className="px-2 pb-2">{byRequesterType.length === 0 ? <NoData /> : (
             <ResponsiveContainer width="100%" height={CH}>
               <PieChart>
@@ -80,7 +80,7 @@ export const TitleRequestsBlock: React.FC<Props> = ({ data }) => {
         </Card>
 
         <Card className="border-border/30">
-          <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-[10px]">Statut</CardTitle></CardHeader>
+          <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-xs font-semibold">Statut</CardTitle></CardHeader>
           <CardContent className="px-2 pb-2">{byStatus.length === 0 ? <NoData /> : (
             <ResponsiveContainer width="100%" height={CH}>
               <BarChart data={byStatus}>
@@ -93,7 +93,7 @@ export const TitleRequestsBlock: React.FC<Props> = ({ data }) => {
         </Card>
 
         <Card className="border-border/30">
-          <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-[10px]">Paiement</CardTitle></CardHeader>
+          <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-xs font-semibold">Paiement</CardTitle></CardHeader>
           <CardContent className="px-2 pb-2">{byPayment.length === 0 ? <NoData /> : (
             <ResponsiveContainer width="100%" height={CH}>
               <PieChart>
@@ -106,7 +106,7 @@ export const TitleRequestsBlock: React.FC<Props> = ({ data }) => {
         </Card>
 
         <Card className="border-border/30">
-          <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-[10px] flex items-center gap-1"><MapPin className="h-3 w-3 text-primary" /> Urbaine vs Rurale</CardTitle></CardHeader>
+          <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-xs font-semibold flex items-center gap-1"><MapPin className="h-3 w-3 text-primary" /> Urbaine vs Rurale</CardTitle></CardHeader>
           <CardContent className="px-2 pb-2">{bySectionType.length === 0 ? <NoData /> : (
             <ResponsiveContainer width="100%" height={CH}>
               <PieChart>
@@ -119,7 +119,7 @@ export const TitleRequestsBlock: React.FC<Props> = ({ data }) => {
         </Card>
 
         <Card className="border-border/30">
-          <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-[10px] flex items-center gap-1"><Building className="h-3 w-3 text-primary" /> Construction</CardTitle></CardHeader>
+          <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-xs font-semibold flex items-center gap-1"><Building className="h-3 w-3 text-primary" /> Construction</CardTitle></CardHeader>
           <CardContent className="px-2 pb-2">{byConstructionType.length === 0 ? <NoData /> : (
             <ResponsiveContainer width="100%" height={CH}>
               <BarChart data={byConstructionType} layout="vertical" margin={{ left: 5 }}>
@@ -132,7 +132,7 @@ export const TitleRequestsBlock: React.FC<Props> = ({ data }) => {
         </Card>
 
         <Card className="border-border/30">
-          <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-[10px]">Usage déclaré</CardTitle></CardHeader>
+          <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-xs font-semibold">Usage déclaré</CardTitle></CardHeader>
           <CardContent className="px-2 pb-2">{byDeclaredUsage.length === 0 ? <NoData /> : (
             <ResponsiveContainer width="100%" height={CH}>
               <BarChart data={byDeclaredUsage} layout="vertical" margin={{ left: 5 }}>
@@ -145,7 +145,7 @@ export const TitleRequestsBlock: React.FC<Props> = ({ data }) => {
         </Card>
 
         <Card className="border-border/30">
-          <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-[10px]">Statut juridique</CardTitle></CardHeader>
+          <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-xs font-semibold">Statut juridique</CardTitle></CardHeader>
           <CardContent className="px-2 pb-2">{byOwnerLegalStatus.length === 0 ? <NoData /> : (
             <ResponsiveContainer width="100%" height={CH}>
               <PieChart>
@@ -159,7 +159,7 @@ export const TitleRequestsBlock: React.FC<Props> = ({ data }) => {
 
         {byVille.length > 0 && (
           <Card className="border-border/30">
-            <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-[10px]">Par ville</CardTitle></CardHeader>
+            <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-xs font-semibold">Par ville</CardTitle></CardHeader>
             <CardContent className="px-2 pb-2">
               <ResponsiveContainer width="100%" height={CH}>
                 <BarChart data={byVille.slice(0, 8)}>
@@ -174,7 +174,7 @@ export const TitleRequestsBlock: React.FC<Props> = ({ data }) => {
 
         {byCommune.length > 0 && (
           <Card className="border-border/30">
-            <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-[10px]">Par commune</CardTitle></CardHeader>
+            <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-xs font-semibold">Par commune</CardTitle></CardHeader>
             <CardContent className="px-2 pb-2">
               <ResponsiveContainer width="100%" height={CH}>
                 <BarChart data={byCommune.slice(0, 8)}>
@@ -189,7 +189,7 @@ export const TitleRequestsBlock: React.FC<Props> = ({ data }) => {
 
         {byTerritoire.length > 0 && (
           <Card className="border-border/30">
-            <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-[10px]">Par territoire</CardTitle></CardHeader>
+            <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-xs font-semibold">Par territoire</CardTitle></CardHeader>
             <CardContent className="px-2 pb-2">
               <ResponsiveContainer width="100%" height={CH}>
                 <BarChart data={byTerritoire.slice(0, 8)}>
@@ -204,7 +204,7 @@ export const TitleRequestsBlock: React.FC<Props> = ({ data }) => {
 
         {byCollectivite.length > 0 && (
           <Card className="border-border/30">
-            <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-[10px]">Par collectivité</CardTitle></CardHeader>
+            <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-xs font-semibold">Par collectivité</CardTitle></CardHeader>
             <CardContent className="px-2 pb-2">
               <ResponsiveContainer width="100%" height={CH}>
                 <BarChart data={byCollectivite.slice(0, 8)}>
@@ -218,7 +218,7 @@ export const TitleRequestsBlock: React.FC<Props> = ({ data }) => {
         )}
 
         <Card className="col-span-2 border-border/30">
-          <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-[10px] flex items-center gap-1"><TrendingUp className="h-3 w-3 text-primary" /> Évolution</CardTitle></CardHeader>
+          <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-xs font-semibold flex items-center gap-1"><TrendingUp className="h-3 w-3 text-primary" /> Évolution</CardTitle></CardHeader>
           <CardContent className="px-2 pb-2">{trend.length === 0 ? <NoData /> : (
             <ResponsiveContainer width="100%" height={CH}>
               <AreaChart data={trend}>
