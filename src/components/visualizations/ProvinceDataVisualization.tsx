@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileText, Map, Search, ArrowRightLeft, Scissors, AlertTriangle, ShieldCheck, Loader2 } from 'lucide-react';
 import { useLandDataAnalytics } from '@/hooks/useLandDataAnalytics';
 import { TitleRequestsBlock } from './blocks/TitleRequestsBlock';
@@ -11,7 +9,6 @@ import { MutationBlock } from './blocks/MutationBlock';
 import { SubdivisionBlock } from './blocks/SubdivisionBlock';
 import { DisputesBlock } from './blocks/DisputesBlock';
 import { DisputeLiftingBlock } from './blocks/DisputeLiftingBlock';
-
 import { ProvinceData } from '@/types/province';
 
 interface ProvinceDataVisualizationProps {
@@ -20,13 +17,13 @@ interface ProvinceDataVisualizationProps {
 }
 
 const blocks = [
-  { id: 'title-requests', name: 'Demandes titres fonciers', icon: FileText, desc: 'Demandes introduites pour terrains non couverts par des titres fonciers' },
-  { id: 'parcels-titled', name: 'Parcelles titrées', icon: Map, desc: 'Parcelles délivrées ayant un titre foncier (données CCC)' },
-  { id: 'expertise', name: 'Expertise immobilière', icon: Search, desc: 'Demandes d\'expertise immobilière' },
-  { id: 'mutations', name: 'Demande de mutation', icon: ArrowRightLeft, desc: 'Demandes de mutation foncière' },
-  { id: 'subdivision', name: 'Demande de lotissement', icon: Scissors, desc: 'Demandes de lotissement' },
-  { id: 'disputes', name: 'Litiges fonciers', icon: AlertTriangle, desc: 'Litiges fonciers en cours et résolus' },
-  { id: 'lifting', name: 'Levée de litige', icon: ShieldCheck, desc: 'Demandes de levée de litige' },
+  { id: 'title-requests', name: 'Titres fonciers', icon: FileText },
+  { id: 'parcels-titled', name: 'Parcelles titrées', icon: Map },
+  { id: 'expertise', name: 'Expertise', icon: Search },
+  { id: 'mutations', name: 'Mutations', icon: ArrowRightLeft },
+  { id: 'subdivision', name: 'Lotissement', icon: Scissors },
+  { id: 'disputes', name: 'Litiges', icon: AlertTriangle },
+  { id: 'lifting', name: 'Levée litige', icon: ShieldCheck },
 ];
 
 const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = () => {
@@ -35,16 +32,16 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = () =
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        <span className="ml-2 text-sm text-muted-foreground">Chargement des données foncières...</span>
+      <div className="flex items-center justify-center p-4">
+        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+        <span className="ml-2 text-xs text-muted-foreground">Chargement...</span>
       </div>
     );
   }
 
   if (error || !analytics) {
     return (
-      <div className="text-center p-6 text-muted-foreground text-sm">
+      <div className="text-center p-3 text-muted-foreground text-xs">
         Impossible de charger les données foncières.
       </div>
     );
@@ -63,48 +60,29 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = () =
     }
   };
 
-  const active = blocks.find(b => b.id === activeTab) || blocks[0];
-
   return (
-    <div className="space-y-3">
-      <Card className="border-0 shadow-none bg-background/50">
-        <CardContent className="px-0">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <ScrollArea className="w-full">
-              <TabsList className="inline-flex items-center gap-1 h-auto p-1.5 bg-background border border-border/50 rounded-xl shadow-sm w-full justify-start overflow-x-auto">
-                {blocks.map((block) => (
-                  <TabsTrigger
-                    key={block.id}
-                    value={block.id}
-                    className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-muted/50 transition-all duration-200 rounded-lg"
-                  >
-                    <block.icon className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">{block.name}</span>
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </ScrollArea>
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <div className="overflow-x-auto pb-1">
+        <TabsList className="inline-flex items-center gap-0.5 h-auto p-1 bg-muted/50 border border-border/40 rounded-lg w-max min-w-full">
+          {blocks.map((block) => (
+            <TabsTrigger
+              key={block.id}
+              value={block.id}
+              className="flex items-center gap-1 px-2 py-1.5 text-[10px] whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-muted/80 transition-all rounded-md"
+            >
+              <block.icon className="h-3 w-3" />
+              {block.name}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </div>
 
-            {blocks.map((block) => (
-              <TabsContent key={block.id} value={block.id} className="mt-3">
-                <div className="space-y-3">
-                  <div className="bg-primary/5 p-3 rounded border-l-2 border-primary">
-                    <h3 className="font-medium text-sm text-foreground flex items-center gap-2">
-                      <block.icon className="h-4 w-4 text-primary" />
-                      {block.name}
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-1">{block.desc}</p>
-                  </div>
-                  <div className="bg-card rounded border-border/30 border p-4">
-                    {renderBlock()}
-                  </div>
-                </div>
-              </TabsContent>
-            ))}
-          </Tabs>
-        </CardContent>
-      </Card>
-    </div>
+      {blocks.map((block) => (
+        <TabsContent key={block.id} value={block.id} className="mt-1.5">
+          {renderBlock()}
+        </TabsContent>
+      ))}
+    </Tabs>
   );
 };
 
