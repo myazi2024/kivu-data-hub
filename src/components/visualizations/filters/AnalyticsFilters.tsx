@@ -1,24 +1,31 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Filter, MapPin, Calendar, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { AnalyticsFilter, defaultFilter, extractUnique, getAvailableYears } from '@/utils/analyticsHelpers';
+import { Filter, MapPin, Calendar, X, Download } from 'lucide-react';
+import { AnalyticsFilter, defaultFilter, extractUnique, getAvailableYears, getSectionType } from '@/utils/analyticsHelpers';
 
 interface Props {
   data: any[];
   filter: AnalyticsFilter;
   onChange: (f: AnalyticsFilter) => void;
   dateField?: string;
+  /** If provided, shows an export button */
+  onExport?: () => void;
 }
 
 const MONTHS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
 
-export const AnalyticsFilters: React.FC<Props> = ({ data, filter, onChange, dateField = 'created_at' }) => {
+export const AnalyticsFilters: React.FC<Props> = ({ data, filter, onChange, dateField = 'created_at', onExport }) => {
   const years = useMemo(() => getAvailableYears(data, dateField), [data, dateField]);
 
+  // Apply sectionType + location filters for cascading dropdowns
   const filteredData = useMemo(() => {
     let d = data;
+    // Apply sectionType filter first
+    if (filter.sectionType !== 'all') {
+      d = d.filter(r => getSectionType(r) === filter.sectionType);
+    }
     if (filter.province) d = d.filter(r => r.province === filter.province);
     if (filter.ville) d = d.filter(r => r.ville === filter.ville);
     if (filter.commune) d = d.filter(r => r.commune === filter.commune);
@@ -29,18 +36,35 @@ export const AnalyticsFilters: React.FC<Props> = ({ data, filter, onChange, date
     return d;
   }, [data, filter]);
 
-  const provinces = useMemo(() => extractUnique(data, 'province'), [data]);
-  const villes = useMemo(() => extractUnique(filter.province ? data.filter(r => r.province === filter.province) : data, 'ville'), [data, filter.province]);
-  const communes = useMemo(() => extractUnique(filter.ville ? data.filter(r => r.ville === filter.ville) : data, 'commune'), [data, filter.ville]);
-  const quartiers = useMemo(() => extractUnique(filteredData, 'quartier'), [filteredData]);
-  const avenues = useMemo(() => extractUnique(filteredData, 'avenue'), [filteredData]);
-  const territoires = useMemo(() => extractUnique(filter.province ? data.filter(r => r.province === filter.province) : data, 'territoire'), [data, filter.province]);
-  const collectivites = useMemo(() => extractUnique(filter.territoire ? data.filter(r => r.territoire === filter.territoire) : data, 'collectivite'), [data, filter.territoire]);
-  const groupements = useMemo(() => extractUnique(filteredData, 'groupement'), [filteredData]);
-  const villages = useMemo(() => extractUnique(filteredData, 'village'), [filteredData]);
+  // Base dataset scoped by sectionType for dropdown options
+  const sectionScoped = useMemo(() => {
+    if (filter.sectionType === 'all') return data;
+    return data.filter(r => getSectionType(r) === filter.sectionType);
+  }, [data, filter.sectionType]);
 
-  const hasActiveFilters = filter.periodType !== 'all' || filter.sectionType !== 'all' || filter.ville || filter.territoire || filter.province;
-  const reset = () => onChange({ ...defaultFilter });
+  const provinces = useMemo(() => extractUnique(sectionScoped, 'province'), [sectionScoped]);
+  const provinceScoped = useMemo(() => filter.province ? sectionScoped.filter(r => r.province === filter.province) : sectionScoped, [sectionScoped, filter.province]);
+  const villes = useMemo(() => extractUnique(provinceScoped, 'ville'), [provinceScoped]);
+  const villeScoped = useMemo(() => filter.ville ? provinceScoped.filter(r => r.ville === filter.ville) : provinceScoped, [provinceScoped, filter.ville]);
+  const communes = useMemo(() => extractUnique(villeScoped, 'commune'), [villeScoped]);
+  const communeScoped = useMemo(() => filter.commune ? villeScoped.filter(r => r.commune === filter.commune) : villeScoped, [villeScoped, filter.commune]);
+  const quartiers = useMemo(() => extractUnique(communeScoped, 'quartier'), [communeScoped]);
+  const quartierScoped = useMemo(() => filter.quartier ? communeScoped.filter(r => r.quartier === filter.quartier) : communeScoped, [communeScoped, filter.quartier]);
+  const avenues = useMemo(() => extractUnique(quartierScoped, 'avenue'), [quartierScoped]);
+
+  const territoires = useMemo(() => extractUnique(provinceScoped, 'territoire'), [provinceScoped]);
+  const territoireScoped = useMemo(() => filter.territoire ? provinceScoped.filter(r => r.territoire === filter.territoire) : provinceScoped, [provinceScoped, filter.territoire]);
+  const collectivites = useMemo(() => extractUnique(territoireScoped, 'collectivite'), [territoireScoped]);
+  const collectiviteScoped = useMemo(() => filter.collectivite ? territoireScoped.filter(r => r.collectivite === filter.collectivite) : territoireScoped, [territoireScoped, filter.collectivite]);
+  const groupements = useMemo(() => extractUnique(collectiviteScoped, 'groupement'), [collectiviteScoped]);
+  const groupementScoped = useMemo(() => filter.groupement ? collectiviteScoped.filter(r => r.groupement === filter.groupement) : collectiviteScoped, [collectiviteScoped, filter.groupement]);
+  const villages = useMemo(() => extractUnique(groupementScoped, 'village'), [groupementScoped]);
+
+  const hasActiveFilters = filter.periodType !== 'all' || filter.sectionType !== 'all' ||
+    filter.province || filter.ville || filter.commune || filter.quartier || filter.avenue ||
+    filter.territoire || filter.collectivite || filter.groupement || filter.villageFilter;
+
+  const reset = useCallback(() => onChange({ ...defaultFilter }), [onChange]);
 
   const selectCls = "h-6 text-[10px] w-auto min-w-[70px]";
 
@@ -116,6 +140,12 @@ export const AnalyticsFilters: React.FC<Props> = ({ data, filter, onChange, date
 
         {hasActiveFilters && (
           <Button variant="ghost" size="sm" className="h-5 text-[10px] px-1.5" onClick={reset}><X className="h-2.5 w-2.5" /></Button>
+        )}
+
+        {onExport && (
+          <Button variant="outline" size="sm" className="h-5 text-[10px] px-1.5 ml-auto gap-0.5" onClick={onExport}>
+            <Download className="h-2.5 w-2.5" /> CSV
+          </Button>
         )}
       </div>
 

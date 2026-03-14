@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, AreaChart, Area, Legend } from 'recharts';
 import { CHART_HEIGHT as CH, NoData } from '@/utils/analyticsConstants';
@@ -43,7 +43,13 @@ interface MultiDataPieProps {
 const tooltipStyle = { fontSize: 10 };
 const gridStroke = 'hsl(var(--border))';
 
-export const ChartCard: React.FC<ChartCardProps> = ({
+// Tailwind needs full class names at build time — map colSpan to static classes
+const colSpanClass: Record<number, string> = { 2: 'col-span-2', 3: 'col-span-3' };
+
+/** Truncate long pie/donut labels */
+const truncLabel = (s: string, max = 12) => s.length > max ? s.slice(0, max) + '…' : s;
+
+export const ChartCard: React.FC<ChartCardProps> = memo(({
   title, icon: Icon, iconColor, colSpan, data, type, color, colorIndex = 0, labelWidth = 90, maxItems = 8, hidden = false
 }) => {
   if (hidden) return null;
@@ -51,7 +57,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({
   const displayData = type === 'area' ? data : data.slice(0, maxItems);
 
   return (
-    <Card className={`border-border/30 ${colSpan ? `col-span-${colSpan}` : ''}`}>
+    <Card className={`border-border/30 ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
       <CardHeader className="pb-1 px-2 pt-2">
         <CardTitle className="text-xs font-semibold flex items-center gap-1">
           {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'}`} />}
@@ -79,8 +85,9 @@ export const ChartCard: React.FC<ChartCardProps> = ({
               </BarChart>
             ) : type === 'pie' ? (
               <PieChart>
-                <Pie data={displayData} cx="50%" cy="50%" outerRadius={60} dataKey="value"
-                  label={({ name, value }) => `${name}: ${value}`}>
+                <Pie data={displayData} cx="50%" cy="50%" outerRadius={55} dataKey="value"
+                  label={({ name, value }) => `${truncLabel(name)}: ${value}`}
+                  labelLine={{ strokeWidth: 0.5 }}>
                   {displayData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
                 </Pie>
                 <Tooltip contentStyle={tooltipStyle} />
@@ -88,10 +95,11 @@ export const ChartCard: React.FC<ChartCardProps> = ({
             ) : type === 'donut' ? (
               <PieChart>
                 <Pie data={displayData} cx="50%" cy="50%" outerRadius={55} innerRadius={30} dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                  label={({ name, percent }) => `${truncLabel(name)} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
                   {displayData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
                 </Pie>
                 <Tooltip contentStyle={tooltipStyle} />
+                <Legend wrapperStyle={{ fontSize: 9 }} />
               </PieChart>
             ) : (
               <AreaChart data={displayData}>
@@ -107,15 +115,15 @@ export const ChartCard: React.FC<ChartCardProps> = ({
       </CardContent>
     </Card>
   );
-};
+});
 
-export const StackedBarCard: React.FC<StackedBarCardProps> = ({
+export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
   title, icon: Icon, iconColor, colSpan, data, bars, layout = 'horizontal', labelWidth = 90, maxItems = 8, hidden = false,
 }) => {
   if (hidden) return null;
   const displayData = data.slice(0, maxItems);
   return (
-    <Card className={`border-border/30 ${colSpan ? `col-span-${colSpan}` : ''}`}>
+    <Card className={`border-border/30 ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
       <CardHeader className="pb-1 px-2 pt-2">
         <CardTitle className="text-xs font-semibold flex items-center gap-1">
           {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'}`} />}
@@ -140,16 +148,16 @@ export const StackedBarCard: React.FC<StackedBarCardProps> = ({
               )}
               <Tooltip contentStyle={tooltipStyle} />
               <Legend wrapperStyle={{ fontSize: 9 }} />
-              {bars.map(b => <Bar key={b.dataKey} dataKey={b.dataKey} fill={b.color} name={b.name} stackId="a" />)}
+              {bars.map(b => <Bar key={b.dataKey} dataKey={b.dataKey} fill={b.color} name={b.name} stackId="a" radius={[3, 3, 0, 0]} />)}
             </BarChart>
           </ResponsiveContainer>
         )}
       </CardContent>
     </Card>
   );
-};
+});
 
-export const ColorMappedPieCard: React.FC<MultiDataPieProps> = ({
+export const ColorMappedPieCard: React.FC<MultiDataPieProps> = memo(({
   title, icon: Icon, iconColor, data, colorMap = {},
 }) => {
   return (
@@ -164,8 +172,9 @@ export const ColorMappedPieCard: React.FC<MultiDataPieProps> = ({
         {data.length === 0 ? <NoData /> : (
           <ResponsiveContainer width="100%" height={CH}>
             <PieChart>
-              <Pie data={data} cx="50%" cy="50%" outerRadius={60} dataKey="value"
-                label={({ name, value }) => `${name}: ${value}`}>
+              <Pie data={data} cx="50%" cy="50%" outerRadius={55} dataKey="value"
+                label={({ name, value }) => `${truncLabel(name)}: ${value}`}
+                labelLine={{ strokeWidth: 0.5 }}>
                 {data.map((entry, i) => (
                   <Cell key={i} fill={colorMap[entry.name] || CHART_COLORS[i % CHART_COLORS.length]} />
                 ))}
@@ -177,4 +186,4 @@ export const ColorMappedPieCard: React.FC<MultiDataPieProps> = ({
       </CardContent>
     </Card>
   );
-};
+});

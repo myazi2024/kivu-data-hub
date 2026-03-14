@@ -1,23 +1,20 @@
-import React, { useState, useMemo, memo } from 'react';
+import React, { useState, useMemo, memo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
-import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, surfaceDistribution } from '@/utils/analyticsHelpers';
+import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, surfaceDistribution, CHART_COLORS } from '@/utils/analyticsHelpers';
+import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { FileText, Users, Building, Shield, Landmark, TrendingUp, DollarSign, Ruler } from 'lucide-react';
+import { FileText, Users, Building, Shield, Landmark, TrendingUp, DollarSign, Ruler, Home } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, ColorMappedPieCard, StackedBarCard } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
-import { CHART_COLORS } from '@/utils/analyticsHelpers';
+import { exportRecordsToCSV } from '@/utils/csvExport';
 
 interface Props { data: LandAnalyticsData; }
 
 const GENDER_COLORS: Record<string, string> = {
-  'Masculin': '#3b82f6',
-  'Féminin': '#ec4899',
-  'M': '#3b82f6',
-  'F': '#ec4899',
-  'Autre': '#8b5cf6',
-  'Non spécifié': '#9ca3af',
+  'Masculin': '#3b82f6', 'Féminin': '#ec4899', 'M': '#3b82f6', 'F': '#ec4899',
+  'Autre': '#8b5cf6', 'Non spécifié': '#9ca3af',
 };
 
 export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
@@ -28,8 +25,17 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
   const filteredTaxes = useMemo(() => applyFilters(data.taxHistory, filter), [data.taxHistory, filter]);
   const filteredMortgages = useMemo(() => applyFilters(data.mortgages, filter), [data.mortgages, filter]);
 
-  const byTitleType = useMemo(() => countBy(filteredParcels, 'property_title_type'), [filteredParcels]);
-  const byLegalStatus = useMemo(() => countBy(filteredParcels, 'current_owner_legal_status'), [filteredParcels]);
+  // Grouped countBy computations
+  const charts = useMemo(() => ({
+    byTitleType: countBy(filteredParcels, 'property_title_type'),
+    byLegalStatus: countBy(filteredParcels, 'current_owner_legal_status'),
+    byConstructionType: countBy(filteredParcels, 'construction_type'),
+    byConstructionNature: countBy(filteredParcels, 'construction_nature'),
+    byDeclaredUsage: countBy(filteredParcels, 'declared_usage'),
+    byLeaseType: countBy(filteredParcels, 'lease_type'),
+    surfaceDist: surfaceDistribution(filteredParcels),
+  }), [filteredParcels]);
+
   const genderData = useMemo(() => {
     const map = new Map<string, number>();
     filteredContribs.forEach(c => {
@@ -39,84 +45,81 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     });
     return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
   }, [filteredContribs]);
-  const byConstructionType = useMemo(() => countBy(filteredParcels, 'construction_type'), [filteredParcels]);
-  const byConstructionNature = useMemo(() => countBy(filteredParcels, 'construction_nature'), [filteredParcels]);
-  const byDeclaredUsage = useMemo(() => countBy(filteredParcels, 'declared_usage'), [filteredParcels]);
-  const surfaceDist = useMemo(() => surfaceDistribution(filteredParcels), [filteredParcels]);
-  const parcelIdsWithPermit = useMemo(() => new Set(filteredPermits.map(p => p.parcel_id)), [filteredPermits]);
+
   const permitDistribution = useMemo(() => {
+    const parcelIdsWithPermit = new Set(filteredPermits.map(p => p.parcel_id));
     const w = filteredParcels.filter(p => parcelIdsWithPermit.has(p.id)).length;
     return [{ name: 'Avec', value: w }, { name: 'Sans', value: filteredParcels.length - w }];
-  }, [filteredParcels, parcelIdsWithPermit]);
-  const urbanParcels = useMemo(() => filteredParcels.filter(p => p.parcel_type === 'SU'), [filteredParcels]);
-  const ruralParcels = useMemo(() => filteredParcels.filter(p => p.parcel_type === 'SR'), [filteredParcels]);
-  const byTaxPayment = useMemo(() => countBy(filteredTaxes, 'payment_status'), [filteredTaxes]);
-  const byTaxYear = useMemo(() => {
-    const map = new Map<number, { paid: number; pending: number }>();
+  }, [filteredParcels, filteredPermits]);
+
+  const urbanCount = useMemo(() => filteredParcels.filter(p => p.parcel_type === 'SU').length, [filteredParcels]);
+  const ruralCount = useMemo(() => filteredParcels.filter(p => p.parcel_type === 'SR').length, [filteredParcels]);
+
+  // Tax computations
+  const taxData = useMemo(() => {
+    const byPayment = countBy(filteredTaxes, 'payment_status');
+    const byYear = new Map<number, { paid: number; pending: number }>();
+    let paidAmount = 0, pendingAmount = 0;
     filteredTaxes.forEach(t => {
-      if (!map.has(t.tax_year)) map.set(t.tax_year, { paid: 0, pending: 0 });
-      const e = map.get(t.tax_year)!;
-      if (t.payment_status === 'paid') e.paid++; else e.pending++;
+      if (!byYear.has(t.tax_year)) byYear.set(t.tax_year, { paid: 0, pending: 0 });
+      const e = byYear.get(t.tax_year)!;
+      if (t.payment_status === 'paid') { e.paid++; paidAmount += t.amount_usd || 0; }
+      else { e.pending++; pendingAmount += t.amount_usd || 0; }
     });
-    return Array.from(map.entries()).sort(([a], [b]) => a - b).map(([year, d]) => ({ name: String(year), paid: d.paid, pending: d.pending }));
+    const yearData = Array.from(byYear.entries()).sort(([a], [b]) => a - b).map(([year, d]) => ({ name: String(year), paid: d.paid, pending: d.pending }));
+    return { byPayment, yearData, paidAmount, pendingAmount };
   }, [filteredTaxes]);
-  const taxRevenue = useMemo(() => {
-    const paid = filteredTaxes.filter(t => t.payment_status === 'paid').reduce((s, t) => s + (t.amount_usd || 0), 0);
-    const pending = filteredTaxes.filter(t => t.payment_status !== 'paid').reduce((s, t) => s + (t.amount_usd || 0), 0);
-    return { paid, pending };
-  }, [filteredTaxes]);
-  const parcelIdsWithMortgage = useMemo(() => new Set(filteredMortgages.map(m => m.parcel_id)), [filteredMortgages]);
-  const mortgageDistribution = useMemo(() => {
+
+  // Mortgage computations
+  const mortgageData = useMemo(() => {
+    const parcelIdsWithMortgage = new Set(filteredMortgages.map(m => m.parcel_id));
     const w = filteredParcels.filter(p => parcelIdsWithMortgage.has(p.id)).length;
-    return [{ name: 'Avec hyp.', value: w }, { name: 'Sans hyp.', value: filteredParcels.length - w }];
-  }, [filteredParcels, parcelIdsWithMortgage]);
-  const avgMortgageDuration = useMemo(() => {
-    if (filteredMortgages.length === 0) return 0;
-    return Math.round(filteredMortgages.reduce((s, m) => s + (m.duration_months || 0), 0) / filteredMortgages.length);
-  }, [filteredMortgages]);
-  const totalMortgageAmount = useMemo(() => filteredMortgages.reduce((s, m) => s + (m.mortgage_amount_usd || 0), 0), [filteredMortgages]);
-  const byCreditorType = useMemo(() => countBy(filteredMortgages, 'creditor_type'), [filteredMortgages]);
-  const byMortgageStatus = useMemo(() => countBy(filteredMortgages, 'mortgage_status'), [filteredMortgages]);
+    const distribution = [{ name: 'Avec hyp.', value: w }, { name: 'Sans hyp.', value: filteredParcels.length - w }];
+    const totalAmount = filteredMortgages.reduce((s, m) => s + (m.mortgage_amount_usd || 0), 0);
+    const avgDuration = filteredMortgages.length > 0 ? Math.round(filteredMortgages.reduce((s, m) => s + (m.duration_months || 0), 0) / filteredMortgages.length) : 0;
+    const byCreditorType = countBy(filteredMortgages, 'creditor_type');
+    const byStatus = countBy(filteredMortgages, 'mortgage_status');
+    return { distribution, totalAmount, avgDuration, byCreditorType, byStatus, count: filteredMortgages.length };
+  }, [filteredParcels, filteredMortgages]);
+
   const trend = useMemo(() => trendByMonth(filteredParcels), [filteredParcels]);
+
+  const handleExport = useCallback(() => {
+    exportRecordsToCSV(filteredParcels, `parcelles-titrees-${new Date().toISOString().slice(0,10)}`, [
+      'id', 'parcel_number', 'parcel_type', 'property_title_type', 'province', 'ville', 'commune',
+      'current_owner_name', 'area_sqm', 'declared_usage', 'created_at'
+    ]);
+  }, [filteredParcels]);
 
   return (
     <div className="space-y-2">
-      <AnalyticsFilters data={data.parcels} filter={filter} onChange={setFilter} />
+      <AnalyticsFilters data={data.parcels} filter={filter} onChange={setFilter} onExport={handleExport} />
       <KpiGrid items={[
         { label: 'Parcelles', value: filteredParcels.length, cls: 'text-primary' },
-        { label: 'Urbaines', value: urbanParcels.length, cls: 'text-emerald-600' },
-        { label: 'Rurales', value: ruralParcels.length, cls: 'text-amber-600' },
-        { label: 'Montant hyp.', value: `$${totalMortgageAmount.toLocaleString()}`, cls: 'text-rose-600' },
-        { label: 'Taxes payées', value: `$${taxRevenue.paid.toLocaleString()}`, cls: 'text-blue-600' },
+        { label: 'Urbaines', value: urbanCount, cls: 'text-emerald-600', tooltip: pct(urbanCount, filteredParcels.length) },
+        { label: 'Rurales', value: ruralCount, cls: 'text-amber-600', tooltip: pct(ruralCount, filteredParcels.length) },
+        { label: 'Taxes payées', value: `$${taxData.paidAmount.toLocaleString()}`, cls: 'text-blue-600', tooltip: `Impayées: $${taxData.pendingAmount.toLocaleString()}` },
+        { label: 'Hypothèques', value: `$${mortgageData.totalAmount.toLocaleString()}`, cls: 'text-rose-600', tooltip: `${mortgageData.count} contrats, durée moy. ${mortgageData.avgDuration} mois` },
       ]} />
-      <div className="grid grid-cols-2 gap-2">
-        <ChartCard title="Type titre" icon={FileText} data={byTitleType} type="bar-h" colorIndex={0} labelWidth={110} />
-        <ChartCard title="Propriétaires" icon={Users} data={byLegalStatus} type="donut" colorIndex={1} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <ChartCard title="Type titre" icon={FileText} data={charts.byTitleType} type="bar-h" colorIndex={0} labelWidth={110} />
+        <ChartCard title="Propriétaires" icon={Users} data={charts.byLegalStatus} type="donut" colorIndex={1} />
         <ColorMappedPieCard title="Genre" icon={Users} iconColor="text-pink-500" data={genderData} colorMap={GENDER_COLORS} />
-        <ChartCard title="Construction" icon={Building} data={byConstructionType} type="bar-h" colorIndex={3} />
-        <ChartCard title="Nature construction" data={byConstructionNature} type="bar-h" colorIndex={7} />
+        <ChartCard title="Construction" icon={Building} data={charts.byConstructionType} type="bar-h" colorIndex={3} />
+        <ChartCard title="Nature construction" data={charts.byConstructionNature} type="bar-h" colorIndex={7} />
         <ChartCard title="Autorisation bâtir" icon={Shield} data={permitDistribution} type="pie" colorIndex={2} />
-        <ChartCard title="Usage déclaré" data={byDeclaredUsage} type="bar-h" colorIndex={5} />
-        <ChartCard title="Superficie" icon={Ruler} data={surfaceDist} type="bar-v" colorIndex={9} />
+        <ChartCard title="Usage déclaré" data={charts.byDeclaredUsage} type="bar-h" colorIndex={5} />
+        <ChartCard title="Type bail" icon={Home} data={charts.byLeaseType} type="donut" colorIndex={9} hidden={charts.byLeaseType.length === 0} />
+        <ChartCard title="Superficie" icon={Ruler} data={charts.surfaceDist} type="bar-v" colorIndex={9} />
         <GeoCharts records={filteredParcels} />
-        <ChartCard title="Taxes" icon={Landmark} data={byTaxPayment} type="donut" colorIndex={0} />
-        <StackedBarCard title="Taxes/année" data={byTaxYear} bars={[
+        <ChartCard title="Taxes" icon={Landmark} data={taxData.byPayment} type="donut" colorIndex={0} />
+        <StackedBarCard title="Taxes/année" data={taxData.yearData} bars={[
           { dataKey: 'paid', name: 'Payées', color: CHART_COLORS[2] },
           { dataKey: 'pending', name: 'Impayées', color: CHART_COLORS[4] },
-        ]} hidden={byTaxYear.length === 0} />
-        <ChartCard title="Hypothèques" data={mortgageDistribution} type="pie" colorIndex={4} />
-        <Card className="border-border/30">
-          <CardHeader className="pb-1 px-2 pt-2"><CardTitle className="text-xs font-semibold flex items-center gap-1"><DollarSign className="h-3 w-3 text-primary" /> Montants hyp.</CardTitle></CardHeader>
-          <CardContent className="px-2 pb-2">
-            <div className="space-y-1 text-xs">
-              <div className="flex justify-between"><span className="text-muted-foreground">Total</span><span className="font-bold">${totalMortgageAmount.toLocaleString()}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Durée moy.</span><span className="font-bold">{avgMortgageDuration} mois</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Nombre</span><span className="font-bold">{filteredMortgages.length}</span></div>
-            </div>
-          </CardContent>
-        </Card>
-        <ChartCard title="Créanciers" data={byCreditorType} type="bar-h" colorIndex={8} labelWidth={80} />
-        <ChartCard title="Statut hyp." data={byMortgageStatus} type="donut" colorIndex={3} />
+        ]} hidden={taxData.yearData.length === 0} />
+        <ChartCard title="Hypothèques" data={mortgageData.distribution} type="pie" colorIndex={4} />
+        <ChartCard title="Créanciers" data={mortgageData.byCreditorType} type="bar-h" colorIndex={8} labelWidth={80} />
+        <ChartCard title="Statut hyp." data={mortgageData.byStatus} type="donut" colorIndex={3} />
         <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={0} colSpan={2} />
       </div>
     </div>
