@@ -20,7 +20,7 @@ const DRCInteractiveMap = () => {
   const [selectedProvince, setSelectedProvince] = useState<ProvinceData | null>(null);
   const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
   const [mapInstance, setMapInstance] = useState<any>(null);
-  const [activeView, setActiveView] = useState<string>('provinces');
+  
   const [activeMobilePanel, setActiveMobilePanel] = useState<'map' | 'details' | 'analytics'>('map');
 
   // Complete data for all 26 provinces of DRC with correct SVG IDs
