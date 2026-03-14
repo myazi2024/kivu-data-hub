@@ -9,7 +9,7 @@ import { TrendingUp, TrendingDown, MapPin, Users, DollarSign, Building, Clock, B
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area } from 'recharts';
 import DRCMapWithTooltip from './DRCMapWithTooltip';
 import { ProvinceAnalytics } from './charts/ProvinceAnalytics';
-import TerritorialMap from './TerritorialMap';
+
 import { useMapEvents } from 'react-leaflet';
 import { ProvinceData } from '@/types/province';
 import ProvinceDataVisualization from './visualizations/ProvinceDataVisualization';
