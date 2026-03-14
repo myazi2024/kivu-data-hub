@@ -1565,21 +1565,37 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     markDirty();
   };
 
+  // FIX #21: Shared file validation for taxes and mortgages
+  const validateAttachmentFile = (file: File): boolean => {
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
+    if (!validTypes.includes(file.type)) {
+      toast({
+        title: "Type de fichier non valide",
+        description: "Seuls les fichiers JPG, PNG, WEBP et PDF sont acceptés",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Fichier trop volumineux",
+        description: "La taille maximale est de 5 MB",
+        variant: "destructive"
+      });
+      return false;
+    }
+    return true;
+  };
+
   const handleTaxFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: "Fichier trop volumineux",
-          description: "La taille maximale est de 5 MB",
-          variant: "destructive"
-        });
-        return;
-      }
+      if (!validateAttachmentFile(file)) return;
       const updated = [...taxRecords];
       updated[index] = { ...updated[index], receiptFile: file };
       setTaxRecords(updated);
     }
+    e.target.value = '';
   };
 
   const removeTaxFile = (index: number) => {
