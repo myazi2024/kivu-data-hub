@@ -35,6 +35,7 @@ interface LandTitleRequest {
   id: string;
   reference_number: string;
   user_id: string;
+  request_type: string | null;
   province: string;
   section_type: string;
   ville: string | null;
@@ -79,6 +80,14 @@ interface LandTitleRequest {
   reviewed_at: string | null;
   created_at: string;
   updated_at: string;
+  deduced_title_type: string | null;
+  construction_type: string | null;
+  construction_nature: string | null;
+  construction_materials: string | null;
+  declared_usage: string | null;
+  nationality: string | null;
+  occupation_duration: string | null;
+  selected_parcel_number: string | null;
   profiles?: { full_name: string; email: string } | null;
 }
 
