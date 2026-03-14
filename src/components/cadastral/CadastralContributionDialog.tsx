@@ -1930,10 +1930,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   // Fonctions pour gérer les côtés de la parcelle
   const addParcelSide = () => {
     const sideNumber = parcelSides.length + 1;
-    setParcelSides([...parcelSides, {
+    const newSides = [...parcelSides, {
       name: `Côté ${sideNumber}`,
       length: ''
-    }]);
+    }];
+    setParcelSides(newSides);
     
     // Ajouter automatiquement une borne GPS correspondante
     const borneNumber = gpsCoordinates.length + 1;
