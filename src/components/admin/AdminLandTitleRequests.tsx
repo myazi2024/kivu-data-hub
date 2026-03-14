@@ -202,7 +202,7 @@ const AdminLandTitleRequests: React.FC = () => {
             { label: 'Province:', value: selectedRequest.province },
             { label: 'Localisation:', value: getLocation(selectedRequest) },
             { label: 'Surface:', value: selectedRequest.area_sqm ? `${selectedRequest.area_sqm} m²` : 'N/A' },
-            { label: 'Type:', value: selectedRequest.section_type === 'urban' ? 'Urbain' : 'Rural' },
+            { label: 'Type:', value: selectedRequest.section_type === 'urbaine' ? 'Urbain' : 'Rural' },
             { label: 'Montant payé:', value: `$${selectedRequest.total_amount_usd}` },
           ],
           user.id
