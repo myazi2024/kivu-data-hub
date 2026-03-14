@@ -354,6 +354,55 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     }
   }, [profile, open]);
 
+  // Check for saved draft when dialog opens
+  useEffect(() => {
+    if (open && hasDraft()) {
+      setShowDraftPrompt(true);
+    }
+  }, [open]);
+
+  const restoreDraft = useCallback(() => {
+    const draft = loadDraft();
+    if (draft) {
+      setFormData(prev => ({ ...prev, ...draft.formData }));
+      setConstructionType(draft.constructionType || '');
+      setConstructionNature(draft.constructionNature || '');
+      setConstructionMaterials(draft.constructionMaterials || '');
+      setDeclaredUsage(draft.declaredUsage || '');
+      setNationality(draft.nationality as any || '');
+      setOccupationDuration(draft.occupationDuration as any || '');
+      setRequestType(draft.requestType as any || '');
+      setSelectedParcelNumber(draft.selectedParcelNumber || '');
+      if (draft.gpsCoordinates?.length) setGpsCoordinates(draft.gpsCoordinates);
+      if (draft.parcelSides?.length) setParcelSides(draft.parcelSides);
+    }
+    setShowDraftPrompt(false);
+  }, []);
+
+  // Auto-save draft every 10 seconds when dialog is open and has data
+  useEffect(() => {
+    if (!open) return;
+    const interval = setInterval(() => {
+      const hasData = formData.requesterLastName || formData.province || constructionType || requestType;
+      if (hasData) {
+        saveDraft({
+          formData,
+          constructionType,
+          constructionNature,
+          constructionMaterials,
+          declaredUsage,
+          nationality,
+          occupationDuration,
+          requestType,
+          selectedParcelNumber,
+          gpsCoordinates,
+          parcelSides
+        });
+      }
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [open, formData, constructionType, constructionNature, constructionMaterials, declaredUsage, nationality, occupationDuration, requestType, selectedParcelNumber, gpsCoordinates, parcelSides]);
+
   // Update location options
   useEffect(() => {
     if (formData.province) {
