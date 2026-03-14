@@ -1519,8 +1519,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const addTaxRecord = () => {
     const firstTax = taxRecords[0];
     
-    // Vérifier si la première taxe est complétée
-    if (!firstTax?.taxType || !firstTax?.taxYear || !firstTax?.taxAmount || !firstTax?.paymentStatus || !firstTax?.paymentDate) {
+    // FIX #10: Relaxed validation - don't require paymentDate if status is unpaid
+    if (!firstTax?.taxType || !firstTax?.taxYear || !firstTax?.taxAmount || !firstTax?.paymentStatus) {
       // Afficher la notification et mettre en surbrillance
       setShowTaxWarning(true);
       setHighlightIncompleteTax(true);
