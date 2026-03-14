@@ -1,26 +1,30 @@
-import React, { useState, useMemo, memo } from 'react';
+import React, { useState, useMemo, memo, useCallback } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
 import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, CHART_COLORS } from '@/utils/analyticsHelpers';
+import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { AlertTriangle, Scale, TrendingUp } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, StackedBarCard } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
+import { exportToCSV } from '@/utils/csvExport';
 
 interface Props { data: LandAnalyticsData; }
 
 export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
   const filtered = useMemo(() => applyFilters(data.disputes, filter), [data.disputes, filter]);
-  const enCours = useMemo(() => filtered.filter(d => d.current_status !== 'resolved' && d.current_status !== 'closed'), [filtered]);
-  const resolus = useMemo(() => filtered.filter(d => d.current_status === 'resolved' || d.current_status === 'closed'), [filtered]);
-  const byNature = useMemo(() => countBy(filtered, 'dispute_nature'), [filtered]);
-  const byType = useMemo(() => countBy(filtered, 'dispute_type'), [filtered]);
-  const byStatus = useMemo(() => countBy(filtered, 'current_status'), [filtered]);
-  const byResolutionLevel = useMemo(() => countBy(enCours, 'resolution_level'), [enCours]);
-  const byProvince = useMemo(() => countBy(filtered, 'province'), [filtered]);
-  const trend = useMemo(() => trendByMonth(filtered), [filtered]);
-  const natureStatusCross = useMemo(() => {
+
+  const { enCours, resolus, byNature, byType, byStatus, byResolutionLevel, trend, natureStatusCross, resolutionStatus } = useMemo(() => {
+    const enCours = filtered.filter(d => d.current_status !== 'resolved' && d.current_status !== 'closed');
+    const resolus = filtered.filter(d => d.current_status === 'resolved' || d.current_status === 'closed');
+    const byNature = countBy(filtered, 'dispute_nature');
+    const byType = countBy(filtered, 'dispute_type');
+    const byStatus = countBy(filtered, 'current_status');
+    const byResolutionLevel = countBy(enCours, 'resolution_level');
+    const trend = trendByMonth(filtered);
+
+    // Cross nature × status
     const map = new Map<string, { enCours: number; resolu: number }>();
     filtered.forEach(d => {
       const n = d.dispute_nature || 'Non spécifié';
@@ -28,20 +32,48 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
       const e = map.get(n)!;
       if (d.current_status === 'resolved' || d.current_status === 'closed') e.resolu++; else e.enCours++;
     });
-    return Array.from(map.entries()).map(([name, d]) => ({ name, ...d })).sort((a, b) => (b.enCours + b.resolu) - (a.enCours + a.resolu));
+    const natureStatusCross = Array.from(map.entries()).map(([name, d]) => ({ name, ...d })).sort((a, b) => (b.enCours + b.resolu) - (a.enCours + a.resolu));
+
+    const resolutionStatus = [{ name: 'En cours', value: enCours.length }, { name: 'Résolus', value: resolus.length }];
+    return { enCours, resolus, byNature, byType, byStatus, byResolutionLevel, trend, natureStatusCross, resolutionStatus };
   }, [filtered]);
-  const resolutionStatus = useMemo(() => [{ name: 'En cours', value: enCours.length }, { name: 'Résolus', value: resolus.length }], [enCours, resolus]);
+
+  // Resolution rate trend
+  const resolutionTrend = useMemo(() => {
+    const map = new Map<string, { total: number; resolved: number }>();
+    filtered.forEach(d => {
+      if (!d.created_at) return;
+      const dt = new Date(d.created_at);
+      const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`;
+      if (!map.has(key)) map.set(key, { total: 0, resolved: 0 });
+      const e = map.get(key)!;
+      e.total++;
+      if (d.current_status === 'resolved' || d.current_status === 'closed') e.resolved++;
+    });
+    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([key, d]) => {
+      const [y, m] = key.split('-');
+      const name = new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('fr-FR', { year: '2-digit', month: 'short' });
+      return { name, value: d.total > 0 ? Math.round((d.resolved / d.total) * 100) : 0 };
+    });
+  }, [filtered]);
+
+  const handleExport = useCallback(() => {
+    exportToCSV(filtered, `litiges-${new Date().toISOString().slice(0,10)}`, [
+      'id', 'parcel_number', 'dispute_nature', 'dispute_type', 'current_status', 'resolution_level',
+      'lifting_status', 'province', 'ville', 'commune', 'created_at'
+    ]);
+  }, [filtered]);
 
   return (
     <div className="space-y-2">
-      <AnalyticsFilters data={data.disputes} filter={filter} onChange={setFilter} />
+      <AnalyticsFilters data={data.disputes} filter={filter} onChange={setFilter} onExport={handleExport} />
       <KpiGrid items={[
         { label: 'Total', value: filtered.length, cls: 'text-red-600' },
-        { label: 'En cours', value: enCours.length, cls: 'text-amber-600' },
-        { label: 'Résolus', value: resolus.length, cls: 'text-emerald-600' },
-        { label: 'Natures', value: byNature.length, cls: 'text-purple-600' },
+        { label: 'En cours', value: enCours.length, cls: 'text-amber-600', tooltip: pct(enCours.length, filtered.length) },
+        { label: 'Résolus', value: resolus.length, cls: 'text-emerald-600', tooltip: pct(resolus.length, filtered.length) },
+        { label: 'Taux résolution', value: pct(resolus.length, filtered.length), cls: 'text-purple-600' },
       ]} />
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         <ChartCard title="Nature" icon={AlertTriangle} iconColor="text-red-500" data={byNature} type="bar-h" colorIndex={4} labelWidth={110} />
         <ChartCard title="En cours vs Résolus" data={resolutionStatus} type="pie" colorIndex={3} />
         <ChartCard title="Statut détaillé" data={byStatus} type="bar-v" colorIndex={8} />
@@ -51,8 +83,8 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
           { dataKey: 'enCours', name: 'En cours', color: CHART_COLORS[3] },
           { dataKey: 'resolu', name: 'Résolus', color: CHART_COLORS[2] },
         ]} layout="vertical" labelWidth={90} maxItems={6} />
-        <ChartCard title="Par province" data={byProvince} type="bar-v" colorIndex={4} hidden={byProvince.length === 0} />
         <GeoCharts records={filtered} />
+        <ChartCard title="Taux résolution %" icon={TrendingUp} data={resolutionTrend} type="area" colorIndex={2} colSpan={2} hidden={resolutionTrend.length < 2} />
         <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={4} colSpan={2} />
       </div>
     </div>
