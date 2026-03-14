@@ -134,7 +134,7 @@ export const useLandTitleDynamicFees = () => {
     const titleTypeKey = TITLE_TYPE_MAPPING[deducedTitle.type] || 'concession_ordinaire';
     
     // Filtrer les frais pour ce type de titre
-    const applicableFees = allFees.filter(fee => {
+    const feesToCalculate = allFees.filter(fee => {
       // Vérifier le type de titre
       if (fee.title_type !== titleTypeKey) return false;
       
@@ -143,32 +143,15 @@ export const useLandTitleDynamicFees = () => {
       if (isRural && !fee.applies_to_rural) return false;
       
       // Pour les frais de superficie, vérifier la tranche
-      if (fee.fee_category === 'superficie' && areaSqm !== undefined) {
+      if (fee.fee_category === 'superficie') {
+        if (areaSqm === undefined) return false;
         const minOk = fee.min_area_sqm === null || areaSqm >= fee.min_area_sqm;
         const maxOk = fee.max_area_sqm === null || areaSqm < fee.max_area_sqm;
         return minOk && maxOk;
       }
       
-      // Exclure les autres tranches de superficie
-      if (fee.fee_category === 'superficie') return false;
-      
       return true;
     });
-
-    // Ajouter le frais de superficie applicable
-    const areaFee = allFees.find(fee => {
-      if (fee.title_type !== titleTypeKey) return false;
-      if (fee.fee_category !== 'superficie') return false;
-      if (areaSqm === undefined) return false;
-      
-      const minOk = fee.min_area_sqm === null || areaSqm >= fee.min_area_sqm;
-      const maxOk = fee.max_area_sqm === null || areaSqm < fee.max_area_sqm;
-      return minOk && maxOk;
-    });
-
-    const feesToCalculate = areaFee 
-      ? [...applicableFees, areaFee]
-      : applicableFees;
 
     // Calculer les montants finaux
     let baseFees = 0;

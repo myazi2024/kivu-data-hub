@@ -21,7 +21,7 @@ import {
   getQuartiersForCommune
 } from '@/lib/geographicData';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useLandTitleRequest, LandTitleRequestData } from '@/hooks/useLandTitleRequest';
+import { useLandTitleRequest, LandTitleRequestData, validatePhone } from '@/hooks/useLandTitleRequest';
 import { useLandTitleDynamicFees } from '@/hooks/useLandTitleDynamicFees';
 import { 
   deduceLandTitleType as deduceLandTitle, 
@@ -68,6 +68,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [showQuickAuth, setShowQuickAuth] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [savedReferenceNumber, setSavedReferenceNumber] = useState<string>('');
   const [savedRequestId, setSavedRequestId] = useState<string>('');
   const [showCloseConfirmation, setShowCloseConfirmation] = useState(false);
@@ -420,6 +421,11 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       return false;
     }
     
+    // Validate phone number format
+    if (!validatePhone(formData.requesterPhone)) {
+      return false;
+    }
+    
     // Check owner info if different
     if (!formData.isOwnerSameAsRequester) {
       if (!formData.ownerLastName || !formData.ownerFirstName) {
@@ -454,6 +460,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       return;
     }
 
+    // Prevent double submission
+    if (isSubmitting) return;
+
     if (!isFormValid()) {
       toast({
         title: "Formulaire incomplet",
@@ -462,6 +471,28 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       });
       return;
     }
+
+    // Phone validation feedback
+    if (!validatePhone(formData.requesterPhone)) {
+      toast({
+        title: "Numéro de téléphone invalide",
+        description: "Le numéro doit être au format +243 suivi de 9 chiffres",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Guard against $0 total
+    if (totalAmount <= 0) {
+      toast({
+        title: "Erreur de frais",
+        description: "Le montant total doit être supérieur à 0. Aucun frais configuré pour ce type de titre.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
 
     // SECURE FLOW: Create DB record FIRST, then show payment
     const feeItems = calculatedFeesResult.fees.map(fee => ({
@@ -491,6 +522,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       roadBorderingSides: roadSides,
       totalAmountOverride: totalAmount
     }, feeItems);
+
+    setIsSubmitting(false);
 
     if (result.success && result.requestId) {
       setSavedRequestId(result.requestId);
@@ -552,6 +585,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setShowPayment(false);
     setShowSuccess(false);
     setSavedRequestId('');
+    setIsSubmitting(false);
     // Reset request type & parcel
     setRequestType('');
     setParcelNumberSearch('');
@@ -1007,8 +1041,14 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                             value={formData.requesterPhone}
                             onChange={(e) => handleInputChange('requesterPhone', e.target.value)}
                             placeholder="+243..."
-                            className="h-9 text-sm rounded-lg border"
+                            className={cn(
+                              "h-9 text-sm rounded-lg border",
+                              formData.requesterPhone && !validatePhone(formData.requesterPhone) && "border-destructive"
+                            )}
                           />
+                          {formData.requesterPhone && !validatePhone(formData.requesterPhone) && (
+                            <p className="text-[10px] text-destructive">Format: +243 suivi de 9 chiffres</p>
+                          )}
                         </div>
                       </div>
 

@@ -35,6 +35,7 @@ interface LandTitleRequest {
   id: string;
   reference_number: string;
   user_id: string;
+  request_type: string | null;
   province: string;
   section_type: string;
   ville: string | null;
@@ -79,6 +80,14 @@ interface LandTitleRequest {
   reviewed_at: string | null;
   created_at: string;
   updated_at: string;
+  deduced_title_type: string | null;
+  construction_type: string | null;
+  construction_nature: string | null;
+  construction_materials: string | null;
+  declared_usage: string | null;
+  nationality: string | null;
+  occupation_duration: string | null;
+  selected_parcel_number: string | null;
   profiles?: { full_name: string; email: string } | null;
 }
 
@@ -202,7 +211,7 @@ const AdminLandTitleRequests: React.FC = () => {
             { label: 'Province:', value: selectedRequest.province },
             { label: 'Localisation:', value: getLocation(selectedRequest) },
             { label: 'Surface:', value: selectedRequest.area_sqm ? `${selectedRequest.area_sqm} m²` : 'N/A' },
-            { label: 'Type:', value: selectedRequest.section_type === 'urban' ? 'Urbain' : 'Rural' },
+            { label: 'Type:', value: selectedRequest.section_type === 'urbaine' ? 'Urbain' : 'Rural' },
             { label: 'Montant payé:', value: `$${selectedRequest.total_amount_usd}` },
           ],
           user.id
@@ -280,7 +289,7 @@ const AdminLandTitleRequests: React.FC = () => {
   };
 
   const getLocation = (request: LandTitleRequest) => {
-    if (request.section_type === 'urban') {
+    if (request.section_type === 'urbaine') {
       return [request.quartier, request.commune, request.ville].filter(Boolean).join(', ');
     }
     return [request.village, request.groupement, request.collectivite, request.territoire].filter(Boolean).join(', ');
@@ -531,6 +540,14 @@ const AdminLandTitleRequests: React.FC = () => {
                 <TabsContent value="requester" className="space-y-3 mt-4">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
+                      <p className="text-xs text-muted-foreground">Type de demande</p>
+                      <p className="text-sm font-medium capitalize">{selectedRequest.request_type || 'initial'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Titre déduit</p>
+                      <p className="text-sm font-medium">{selectedRequest.deduced_title_type || '-'}</p>
+                    </div>
+                    <div>
                       <p className="text-xs text-muted-foreground">Nom complet</p>
                       <p className="text-sm font-medium">{getFullName(selectedRequest)}</p>
                     </div>
@@ -545,6 +562,14 @@ const AdminLandTitleRequests: React.FC = () => {
                     <div>
                       <p className="text-xs text-muted-foreground">Email</p>
                       <p className="text-sm font-medium">{selectedRequest.requester_email || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Type construction</p>
+                      <p className="text-sm font-medium">{selectedRequest.construction_type || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Usage déclaré</p>
+                      <p className="text-sm font-medium">{selectedRequest.declared_usage || '-'}</p>
                     </div>
                   </div>
                   
@@ -563,6 +588,10 @@ const AdminLandTitleRequests: React.FC = () => {
                           <p className="text-xs text-muted-foreground">Statut juridique</p>
                           <p className="text-sm font-medium">{selectedRequest.owner_legal_status || '-'}</p>
                         </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Téléphone</p>
+                          <p className="text-sm font-medium">{selectedRequest.owner_phone || '-'}</p>
+                        </div>
                       </div>
                     </>
                   )}
@@ -577,10 +606,10 @@ const AdminLandTitleRequests: React.FC = () => {
                     <div>
                       <p className="text-xs text-muted-foreground">Type de zone</p>
                       <Badge variant="outline" className="text-xs">
-                        {selectedRequest.section_type === 'urban' ? 'Urbaine' : 'Rurale'}
+                        {selectedRequest.section_type === 'urbaine' ? 'Urbaine' : 'Rurale'}
                       </Badge>
                     </div>
-                    {selectedRequest.section_type === 'urban' ? (
+                    {selectedRequest.section_type === 'urbaine' ? (
                       <>
                         <div>
                           <p className="text-xs text-muted-foreground">Ville</p>
@@ -634,7 +663,7 @@ const AdminLandTitleRequests: React.FC = () => {
                   <div className="space-y-2">
                     {Array.isArray(selectedRequest.fee_items) && selectedRequest.fee_items.map((fee: any, index: number) => (
                       <div key={index} className="flex justify-between items-center p-2 bg-muted/50 rounded-lg">
-                        <span className="text-xs">{fee.fee_name}</span>
+                        <span className="text-xs">{fee.name || fee.fee_name}</span>
                         <span className="text-xs font-semibold">${fee.amount}</span>
                       </div>
                     ))}
