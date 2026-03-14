@@ -110,8 +110,9 @@ export const ChartCard: React.FC<ChartCardProps> = ({
 };
 
 export const StackedBarCard: React.FC<StackedBarCardProps> = ({
-  title, icon: Icon, iconColor, colSpan, data, bars, layout = 'horizontal', labelWidth = 90, maxItems = 8,
+  title, icon: Icon, iconColor, colSpan, data, bars, layout = 'horizontal', labelWidth = 90, maxItems = 8, hidden = false,
 }) => {
+  if (hidden) return null;
   const displayData = data.slice(0, maxItems);
   return (
     <Card className={`border-border/30 ${colSpan ? `col-span-${colSpan}` : ''}`}>
