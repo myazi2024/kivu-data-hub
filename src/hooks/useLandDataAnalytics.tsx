@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchAllRows } from '@/utils/analyticsConstants';
 
 export interface LandAnalyticsData {
   titleRequests: any[];
@@ -14,40 +15,47 @@ export interface LandAnalyticsData {
   disputes: any[];
 }
 
+async function safeFetch<T = any>(queryBuilder: any): Promise<T[]> {
+  try {
+    return await fetchAllRows<T>(queryBuilder);
+  } catch (err) {
+    console.error('[Analytics] fetch error:', err);
+    return [];
+  }
+}
+
 export const useLandDataAnalytics = () => {
   return useQuery({
-    queryKey: ['land-analytics-v3'],
+    queryKey: ['land-analytics-v4'],
     queryFn: async (): Promise<LandAnalyticsData> => {
       const [
-        parcelsRes, contribRes, titleReqRes, permitsRes,
-        taxRes, mortgagesRes, expertiseRes, mutationRes,
-        subdivisionRes, disputesRes,
+        parcels, contribs, titleReqs, permits,
+        taxes, mortgages, expertise, mutations,
+        subdivisions, disputes,
       ] = await Promise.all([
-        supabase.from('cadastral_parcels')
+        safeFetch(supabase.from('cadastral_parcels')
           .select('id, parcel_number, parcel_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, property_title_type, current_owner_legal_status, declared_usage, construction_type, construction_nature, area_sqm, gps_coordinates, lease_type, created_at')
-          .is('deleted_at', null),
-        supabase.from('cadastral_contributions')
+          .is('deleted_at', null)),
+        safeFetch(supabase.from('cadastral_contributions')
           .select('id, parcel_number, parcel_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, property_title_type, current_owner_legal_status, current_owners_details, declared_usage, construction_type, construction_nature, building_permits, mortgage_history, tax_history, status, created_at')
-          .eq('status', 'approved'),
-        supabase.from('land_title_requests')
-          .select('id, request_type, requester_type, section_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, declared_usage, construction_type, construction_nature, owner_legal_status, status, payment_status, total_amount_usd, created_at'),
-        supabase.from('cadastral_building_permits')
-          .select('id, parcel_id, administrative_status, issue_date, created_at'),
-        supabase.from('cadastral_tax_history')
-          .select('id, parcel_id, tax_year, payment_status, amount_usd, created_at'),
-        supabase.from('cadastral_mortgages')
-          .select('id, parcel_id, creditor_type, duration_months, mortgage_status, mortgage_amount_usd, contract_date, created_at'),
-        supabase.from('real_estate_expertise_requests')
-          .select('id, parcel_number, parcel_id, status, created_at'),
-        supabase.from('mutation_requests')
-          .select('id, parcel_number, parcel_id, mutation_type, status, created_at'),
-        supabase.from('subdivision_requests')
-          .select('id, parcel_number, parcel_id, status, number_of_lots, created_at'),
-        supabase.from('cadastral_land_disputes')
-          .select('id, parcel_number, parcel_id, dispute_nature, dispute_type, current_status, resolution_level, lifting_status, lifting_request_reference, created_at'),
+          .eq('status', 'approved')),
+        safeFetch(supabase.from('land_title_requests')
+          .select('id, request_type, requester_type, section_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, declared_usage, construction_type, construction_nature, owner_legal_status, status, payment_status, total_amount_usd, created_at')),
+        safeFetch(supabase.from('cadastral_building_permits')
+          .select('id, parcel_id, administrative_status, issue_date, created_at')),
+        safeFetch(supabase.from('cadastral_tax_history')
+          .select('id, parcel_id, tax_year, payment_status, amount_usd, created_at')),
+        safeFetch(supabase.from('cadastral_mortgages')
+          .select('id, parcel_id, creditor_type, duration_months, mortgage_status, mortgage_amount_usd, contract_date, created_at')),
+        safeFetch(supabase.from('real_estate_expertise_requests')
+          .select('id, parcel_number, parcel_id, status, created_at')),
+        safeFetch(supabase.from('mutation_requests')
+          .select('id, parcel_number, parcel_id, mutation_type, status, created_at')),
+        safeFetch(supabase.from('subdivision_requests')
+          .select('id, parcel_number, parcel_id, status, number_of_lots, created_at')),
+        safeFetch(supabase.from('cadastral_land_disputes')
+          .select('id, parcel_number, parcel_id, dispute_nature, dispute_type, current_status, resolution_level, lifting_status, lifting_request_reference, created_at')),
       ]);
-
-      const parcels = parcelsRes.data || [];
 
       // Lookup maps for enrichment
       const byId = new Map<string, any>();
@@ -78,17 +86,19 @@ export const useLandDataAnalytics = () => {
         });
 
       return {
-        titleRequests: titleReqRes.data || [],
+        titleRequests: titleReqs,
         parcels,
-        contributions: contribRes.data || [],
-        buildingPermits: enrich(permitsRes.data || []),
-        taxHistory: enrich(taxRes.data || []),
-        mortgages: enrich(mortgagesRes.data || []),
-        expertiseRequests: enrich(expertiseRes.data || []),
-        mutationRequests: enrich(mutationRes.data || []),
-        subdivisionRequests: enrich(subdivisionRes.data || []),
-        disputes: enrich(disputesRes.data || []),
+        contributions: contribs,
+        buildingPermits: enrich(permits),
+        taxHistory: enrich(taxes),
+        mortgages: enrich(mortgages),
+        expertiseRequests: enrich(expertise),
+        mutationRequests: enrich(mutations),
+        subdivisionRequests: enrich(subdivisions),
+        disputes: enrich(disputes),
       };
     },
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
   });
 };
