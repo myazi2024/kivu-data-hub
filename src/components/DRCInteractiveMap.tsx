@@ -818,8 +818,7 @@ const DRCInteractiveMap = () => {
               
               {/* Carte responsive optimisée */}
               <div className="flex-1 min-h-0 p-2 sm:p-3 md:p-4 overflow-hidden">
-                {activeView === 'provinces' ? (
-                  <DRCMapWithTooltip
+                <DRCMapWithTooltip
                     provincesData={provincesData}
                     selectedProvince={selectedProvince?.id || null}
                     onProvinceSelect={setSelectedProvince}
@@ -828,9 +827,6 @@ const DRCInteractiveMap = () => {
                     getProvinceColor={getProvinceColor}
                     onMapReady={setMapInstance}
                   />
-                ) : (
-                  <TerritorialMap />
-                )}
               </div>
               
               {/* Note explicative en bas - Compacte et bien visible */}
