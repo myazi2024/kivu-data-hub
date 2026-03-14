@@ -521,27 +521,18 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     }
   }, [open]);
 
-  // Sauvegarder automatiquement les données à chaque modification importante
+  // FIX #2/#3: Single auto-save with debounce, ALL states included in deps, works for all users
   useEffect(() => {
     if (open && formData.parcelNumber) {
       const timeoutId = setTimeout(() => {
         saveFormDataToStorage();
-      }, 1000); // Debounce de 1 seconde
+      }, 1500); // Debounce 1.5s
       
       return () => clearTimeout(timeoutId);
     }
-  }, [open, formData, currentOwners, previousOwners, taxRecords, mortgageRecords, buildingPermits, gpsCoordinates]);
-
-  // Sauvegarder automatiquement les données toutes les 30 secondes
-  useEffect(() => {
-    if (!open || !user) return;
-
-    const autoSaveInterval = setInterval(() => {
-      saveFormDataToStorage();
-    }, 30000); // 30 secondes
-
-    return () => clearInterval(autoSaveInterval);
-  }, [open, user, formData, currentOwners, previousOwners, taxRecords, mortgageRecords, buildingPermits, gpsCoordinates, parcelSides]);
+  }, [open, formData, currentOwners, previousOwners, taxRecords, mortgageRecords, 
+      buildingPermits, gpsCoordinates, parcelSides, permitMode, permitRequest, 
+      hasMortgage, ownershipMode, leaseYears, roadSides, obligationType, sectionType, saveFormDataToStorage]);
 
   // NOTE: Draft is saved BEFORE resetting state in handleClose/handleAttemptClose.
   // We no longer save on !open to avoid the race condition where reset state overwrites the draft.
