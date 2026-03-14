@@ -531,6 +531,14 @@ const AdminLandTitleRequests: React.FC = () => {
                 <TabsContent value="requester" className="space-y-3 mt-4">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
+                      <p className="text-xs text-muted-foreground">Type de demande</p>
+                      <p className="text-sm font-medium capitalize">{selectedRequest.request_type || 'initial'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Titre déduit</p>
+                      <p className="text-sm font-medium">{(selectedRequest as any).deduced_title_type || '-'}</p>
+                    </div>
+                    <div>
                       <p className="text-xs text-muted-foreground">Nom complet</p>
                       <p className="text-sm font-medium">{getFullName(selectedRequest)}</p>
                     </div>
@@ -545,6 +553,14 @@ const AdminLandTitleRequests: React.FC = () => {
                     <div>
                       <p className="text-xs text-muted-foreground">Email</p>
                       <p className="text-sm font-medium">{selectedRequest.requester_email || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Type construction</p>
+                      <p className="text-sm font-medium">{(selectedRequest as any).construction_type || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Usage déclaré</p>
+                      <p className="text-sm font-medium">{(selectedRequest as any).declared_usage || '-'}</p>
                     </div>
                   </div>
                   
@@ -562,6 +578,10 @@ const AdminLandTitleRequests: React.FC = () => {
                         <div>
                           <p className="text-xs text-muted-foreground">Statut juridique</p>
                           <p className="text-sm font-medium">{selectedRequest.owner_legal_status || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Téléphone</p>
+                          <p className="text-sm font-medium">{selectedRequest.owner_phone || '-'}</p>
                         </div>
                       </div>
                     </>
