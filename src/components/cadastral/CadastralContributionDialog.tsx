@@ -2900,6 +2900,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                               entitySubTypeOther: '',
                               stateExploitedBy: '',
                               rightType: '',
+                              gender: '',
                               ...(value !== 'Personne physique' ? { middleName: '' } : {}),
                             });
                             // Reset ownership mode if not personne physique
