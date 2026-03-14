@@ -32,3 +32,14 @@ export const exportToCSV = ({ filename, headers, data }: CSVExportOptions): void
   document.body.removeChild(link);
   window.URL.revokeObjectURL(url);
 };
+
+/**
+ * Export an array of records to CSV by extracting specified fields.
+ */
+export const exportRecordsToCSV = (records: any[], filename: string, fields: string[]): void => {
+  exportToCSV({
+    filename: `${filename}.csv`,
+    headers: fields,
+    data: records.map(r => fields.map(f => r[f] ?? '')),
+  });
+};
