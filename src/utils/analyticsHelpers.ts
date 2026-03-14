@@ -62,10 +62,12 @@ export function applyFilters(records: any[], filter: AnalyticsFilter, dateField 
   return records.filter(r => matchesPeriod(r[dateField], filter) && matchesLocation(r, filter));
 }
 
+/** #10 fix: Distinguish null/undefined from actual 'Non spécifié' values */
 export function countBy(records: any[], field: string): { name: string; value: number }[] {
   const map = new Map<string, number>();
   records.forEach(r => {
-    const val = r[field] || 'Non spécifié';
+    const raw = r[field];
+    const val = (raw === null || raw === undefined || raw === '') ? '(Non renseigné)' : String(raw);
     map.set(val, (map.get(val) || 0) + 1);
   });
   return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
@@ -75,8 +77,8 @@ export function crossCount(records: any[], field1: string, field2: string): { na
   const outer = new Map<string, Map<string, number>>();
   const allInner = new Set<string>();
   records.forEach(r => {
-    const k1 = r[field1] || 'Non spécifié';
-    const k2 = r[field2] || 'Non spécifié';
+    const k1 = r[field1] || '(Non renseigné)';
+    const k2 = r[field2] || '(Non renseigné)';
     allInner.add(k2);
     if (!outer.has(k1)) outer.set(k1, new Map());
     const inner = outer.get(k1)!;
@@ -138,3 +140,17 @@ export function surfaceDistribution(records: any[]): { name: string; value: numb
   });
   return buckets.map((b, i) => ({ name: b.name, value: counts[i] })).filter(b => b.value > 0);
 }
+
+/** #19: Compute average processing days between two date fields */
+export function avgProcessingDays(records: any[], startField = 'created_at', endField = 'reviewed_at'): number {
+  const valid = records.filter(r => r[startField] && r[endField]);
+  if (valid.length === 0) return 0;
+  const total = valid.reduce((s, r) => {
+    const diff = new Date(r[endField]).getTime() - new Date(r[startField]).getTime();
+    return s + diff / (1000 * 60 * 60 * 24);
+  }, 0);
+  return Math.round(total / valid.length);
+}
+
+/** Valid lifting statuses for explicit filtering (#7) */
+export const VALID_LIFTING_STATUSES = ['pending', 'demande_levee', 'approved', 'rejected', 'in_review'];
