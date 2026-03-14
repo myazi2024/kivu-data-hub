@@ -38,6 +38,8 @@ import { useMapConfig } from '@/hooks/useMapConfig';
 import LandTitleReviewTab from './LandTitleReviewTab';
 import SectionHelpPopover from './SectionHelpPopover';
 import { supabase } from '@/integrations/supabase/client';
+import { validateLandTitleFile } from '@/types/landTitleRequest';
+import { saveDraft, loadDraft, clearDraft, hasDraft } from '@/utils/landTitleDraftStorage';
 
 interface LandTitleRequestDialogProps {
   open: boolean;
