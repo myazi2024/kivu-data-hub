@@ -166,7 +166,7 @@ const LandDisputeManagementDialog: React.FC<LandDisputeManagementDialogProps> = 
 
       {/* Exit confirmation dialog */}
       <AlertDialog open={showExitConfirm} onOpenChange={setShowExitConfirm}>
-        <AlertDialogContent className="rounded-2xl z-[1300]">
+        <AlertDialogContent className="rounded-2xl z-[100000]">
           <AlertDialogHeader>
             <AlertDialogTitle>Quitter le formulaire ?</AlertDialogTitle>
             <AlertDialogDescription>
