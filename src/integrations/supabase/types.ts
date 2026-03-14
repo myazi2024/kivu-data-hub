@@ -1718,6 +1718,7 @@ export type Database = {
           nationality: string | null
           occupation_duration: string | null
           owner_first_name: string | null
+          owner_gender: string | null
           owner_id_document_url: string | null
           owner_last_name: string | null
           owner_legal_status: string | null
@@ -1728,6 +1729,7 @@ export type Database = {
           payment_id: string | null
           payment_status: string
           processing_notes: string | null
+          procuration_document_url: string | null
           proof_of_ownership_url: string | null
           province: string
           quartier: string | null
@@ -1736,8 +1738,10 @@ export type Database = {
           request_type: string | null
           requester_email: string | null
           requester_first_name: string
+          requester_gender: string | null
           requester_id_document_url: string | null
           requester_last_name: string
+          requester_legal_status: string | null
           requester_middle_name: string | null
           requester_phone: string
           requester_type: string
@@ -1776,6 +1780,7 @@ export type Database = {
           nationality?: string | null
           occupation_duration?: string | null
           owner_first_name?: string | null
+          owner_gender?: string | null
           owner_id_document_url?: string | null
           owner_last_name?: string | null
           owner_legal_status?: string | null
@@ -1786,6 +1791,7 @@ export type Database = {
           payment_id?: string | null
           payment_status?: string
           processing_notes?: string | null
+          procuration_document_url?: string | null
           proof_of_ownership_url?: string | null
           province: string
           quartier?: string | null
@@ -1794,8 +1800,10 @@ export type Database = {
           request_type?: string | null
           requester_email?: string | null
           requester_first_name: string
+          requester_gender?: string | null
           requester_id_document_url?: string | null
           requester_last_name: string
+          requester_legal_status?: string | null
           requester_middle_name?: string | null
           requester_phone: string
           requester_type?: string
@@ -1834,6 +1842,7 @@ export type Database = {
           nationality?: string | null
           occupation_duration?: string | null
           owner_first_name?: string | null
+          owner_gender?: string | null
           owner_id_document_url?: string | null
           owner_last_name?: string | null
           owner_legal_status?: string | null
@@ -1844,6 +1853,7 @@ export type Database = {
           payment_id?: string | null
           payment_status?: string
           processing_notes?: string | null
+          procuration_document_url?: string | null
           proof_of_ownership_url?: string | null
           province?: string
           quartier?: string | null
@@ -1852,8 +1862,10 @@ export type Database = {
           request_type?: string | null
           requester_email?: string | null
           requester_first_name?: string
+          requester_gender?: string | null
           requester_id_document_url?: string | null
           requester_last_name?: string
+          requester_legal_status?: string | null
           requester_middle_name?: string | null
           requester_phone?: string
           requester_type?: string
