@@ -280,7 +280,7 @@ const AdminLandTitleRequests: React.FC = () => {
   };
 
   const getLocation = (request: LandTitleRequest) => {
-    if (request.section_type === 'urban') {
+    if (request.section_type === 'urbaine') {
       return [request.quartier, request.commune, request.ville].filter(Boolean).join(', ');
     }
     return [request.village, request.groupement, request.collectivite, request.territoire].filter(Boolean).join(', ');
