@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { FileText, Map, Search, ArrowRightLeft, Scissors, AlertTriangle, ShieldCheck, Loader2 } from 'lucide-react';
 import { useLandDataAnalytics } from '@/hooks/useLandDataAnalytics';
@@ -47,19 +47,6 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = () =
     );
   }
 
-  const renderBlock = () => {
-    switch (activeTab) {
-      case 'title-requests': return <TitleRequestsBlock data={analytics} />;
-      case 'parcels-titled': return <ParcelsWithTitleBlock data={analytics} />;
-      case 'expertise': return <ExpertiseBlock data={analytics} />;
-      case 'mutations': return <MutationBlock data={analytics} />;
-      case 'subdivision': return <SubdivisionBlock data={analytics} />;
-      case 'disputes': return <DisputesBlock data={analytics} />;
-      case 'lifting': return <DisputeLiftingBlock data={analytics} />;
-      default: return <TitleRequestsBlock data={analytics} />;
-    }
-  };
-
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
       <div className="overflow-x-auto pb-1">
@@ -77,13 +64,29 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = () =
         </TabsList>
       </div>
 
-      {blocks.map((block) => (
-        <TabsContent key={block.id} value={block.id} className="mt-1.5">
-          {renderBlock()}
-        </TabsContent>
-      ))}
+      <TabsContent value="title-requests" className="mt-1.5">
+        <TitleRequestsBlock data={analytics} />
+      </TabsContent>
+      <TabsContent value="parcels-titled" className="mt-1.5">
+        <ParcelsWithTitleBlock data={analytics} />
+      </TabsContent>
+      <TabsContent value="expertise" className="mt-1.5">
+        <ExpertiseBlock data={analytics} />
+      </TabsContent>
+      <TabsContent value="mutations" className="mt-1.5">
+        <MutationBlock data={analytics} />
+      </TabsContent>
+      <TabsContent value="subdivision" className="mt-1.5">
+        <SubdivisionBlock data={analytics} />
+      </TabsContent>
+      <TabsContent value="disputes" className="mt-1.5">
+        <DisputesBlock data={analytics} />
+      </TabsContent>
+      <TabsContent value="lifting" className="mt-1.5">
+        <DisputeLiftingBlock data={analytics} />
+      </TabsContent>
     </Tabs>
   );
 };
 
-export default ProvinceDataVisualization;
+export default memo(ProvinceDataVisualization);

@@ -9,6 +9,7 @@ export interface AnalyticsFilter {
   periodType: 'all' | 'year' | 'semester' | 'quarter' | 'month';
   year?: number;
   subPeriod?: number;
+  province?: string;
   ville?: string;
   commune?: string;
   quartier?: string;
@@ -45,6 +46,7 @@ export function matchesLocation(r: any, f: AnalyticsFilter): boolean {
     const st = getSectionType(r);
     if (st && st !== f.sectionType) return false;
   }
+  if (f.province && r.province !== f.province) return false;
   if (f.ville && r.ville !== f.ville) return false;
   if (f.commune && r.commune !== f.commune) return false;
   if (f.quartier && r.quartier !== f.quartier) return false;
@@ -115,4 +117,24 @@ export function trendByMonth(records: any[], dateField = 'created_at'): { name: 
       const name = new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('fr-FR', { year: '2-digit', month: 'short' });
       return { name, value, sortKey };
     });
+}
+
+/** Distribution of area_sqm into buckets */
+export function surfaceDistribution(records: any[]): { name: string; value: number }[] {
+  const buckets = [
+    { name: '< 100 m²', max: 100 },
+    { name: '100-500 m²', max: 500 },
+    { name: '500-1000 m²', max: 1000 },
+    { name: '1000-5000 m²', max: 5000 },
+    { name: '> 5000 m²', max: Infinity },
+  ];
+  const counts = new Array(buckets.length).fill(0);
+  records.forEach(r => {
+    const area = r.area_sqm;
+    if (area == null || area <= 0) return;
+    for (let i = 0; i < buckets.length; i++) {
+      if (area <= buckets[i].max) { counts[i]++; break; }
+    }
+  });
+  return buckets.map((b, i) => ({ name: b.name, value: counts[i] })).filter(b => b.value > 0);
 }
