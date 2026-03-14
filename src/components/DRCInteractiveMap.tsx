@@ -9,7 +9,7 @@ import { TrendingUp, TrendingDown, MapPin, Users, DollarSign, Building, Clock, B
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area } from 'recharts';
 import DRCMapWithTooltip from './DRCMapWithTooltip';
 import { ProvinceAnalytics } from './charts/ProvinceAnalytics';
-import TerritorialMap from './TerritorialMap';
+
 import { useMapEvents } from 'react-leaflet';
 import { ProvinceData } from '@/types/province';
 import ProvinceDataVisualization from './visualizations/ProvinceDataVisualization';
@@ -20,7 +20,7 @@ const DRCInteractiveMap = () => {
   const [selectedProvince, setSelectedProvince] = useState<ProvinceData | null>(null);
   const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
   const [mapInstance, setMapInstance] = useState<any>(null);
-  const [activeView, setActiveView] = useState<string>('provinces');
+  
   const [activeMobilePanel, setActiveMobilePanel] = useState<'map' | 'details' | 'analytics'>('map');
 
   // Complete data for all 26 provinces of DRC with correct SVG IDs
@@ -814,30 +814,11 @@ const DRCInteractiveMap = () => {
                   </h2>
                 </div>
                 
-                {/* Filtre de visualisation responsive */}
-                <div className="mt-2">
-                  <Select value={activeView} onValueChange={setActiveView}>
-                    <SelectTrigger className="w-full h-7 px-2 text-[10px]">
-                      <SelectValue placeholder="Vue" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="provinces" className="text-xs">
-                        <span className="hidden md:inline">Cartographie RDC par Province</span>
-                        <span className="md:hidden">Provinces RDC</span>
-                      </SelectItem>
-                      <SelectItem value="territorial" className="text-xs">
-                        <span className="hidden md:inline">Cartographie Territoriale</span>
-                        <span className="md:hidden">Territorial</span>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
               
               {/* Carte responsive optimisée */}
               <div className="flex-1 min-h-0 p-2 sm:p-3 md:p-4 overflow-hidden">
-                {activeView === 'provinces' ? (
-                  <DRCMapWithTooltip
+                <DRCMapWithTooltip
                     provincesData={provincesData}
                     selectedProvince={selectedProvince?.id || null}
                     onProvinceSelect={setSelectedProvince}
@@ -846,9 +827,6 @@ const DRCInteractiveMap = () => {
                     getProvinceColor={getProvinceColor}
                     onMapReady={setMapInstance}
                   />
-                ) : (
-                  <TerritorialMap />
-                )}
               </div>
               
               {/* Note explicative en bas - Compacte et bien visible */}
