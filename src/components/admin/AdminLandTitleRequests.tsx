@@ -545,7 +545,7 @@ const AdminLandTitleRequests: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Titre déduit</p>
-                      <p className="text-sm font-medium">{(selectedRequest as any).deduced_title_type || '-'}</p>
+                      <p className="text-sm font-medium">{selectedRequest.deduced_title_type || '-'}</p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Nom complet</p>
