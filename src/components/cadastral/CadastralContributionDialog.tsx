@@ -250,6 +250,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     middleName: string;
     firstName: string;
     legalStatus: string;
+    gender: string;
     entityType: string;
     entitySubType: string;
     entitySubTypeOther: string;
@@ -261,6 +262,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     middleName: '',
     firstName: '',
     legalStatus: 'Personne physique',
+    gender: '',
     entityType: '',
     entitySubType: '',
     entitySubTypeOther: '',
@@ -1502,6 +1504,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       middleName: '',
       firstName: '',
       legalStatus: 'Personne physique',
+      gender: '',
       entityType: '',
       entitySubType: '',
       entitySubTypeOther: '',
@@ -2383,6 +2386,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       middleName: '',
       firstName: '',
       legalStatus: 'Personne physique',
+      gender: '',
       entityType: '',
       entitySubType: '',
       entitySubTypeOther: '',
@@ -2896,6 +2900,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                               entitySubTypeOther: '',
                               stateExploitedBy: '',
                               rightType: '',
+                              gender: '',
                               ...(value !== 'Personne physique' ? { middleName: '' } : {}),
                             });
                             // Reset ownership mode if not personne physique
@@ -2919,6 +2924,24 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         </Select>
                       )}
                     </div>
+
+                    {owner.legalStatus === 'Personne physique' && (
+                      <div className="space-y-1 animate-fade-in">
+                        <Label className="text-sm font-medium">Genre *</Label>
+                        <Select
+                          value={owner.gender || ''}
+                          onValueChange={(value) => updateCurrentOwner(index, { gender: value })}
+                        >
+                          <SelectTrigger className="h-10 text-sm rounded-xl">
+                            <SelectValue placeholder="Sélectionner le genre" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            <SelectItem value="Masculin">Masculin</SelectItem>
+                            <SelectItem value="Féminin">Féminin</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
 
                     {owner.legalStatus === 'Personne morale' ? (
                       <div className="space-y-2">
