@@ -7,7 +7,7 @@ import { ShieldCheck, Scale, TrendingUp } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
-import { exportToCSV } from '@/utils/csvExport';
+import { exportRecordsToCSV } from '@/utils/csvExport';
 
 interface Props { data: LandAnalyticsData; }
 

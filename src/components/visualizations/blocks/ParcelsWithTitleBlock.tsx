@@ -8,7 +8,7 @@ import { FileText, Users, Building, Shield, Landmark, TrendingUp, DollarSign, Ru
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, ColorMappedPieCard, StackedBarCard } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
-import { exportToCSV } from '@/utils/csvExport';
+import { exportRecordsToCSV } from '@/utils/csvExport';
 
 interface Props { data: LandAnalyticsData; }
 
