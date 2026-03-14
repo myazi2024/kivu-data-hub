@@ -14,6 +14,8 @@ export interface LandTitleRequestData {
   requesterMiddleName?: string;
   requesterPhone: string;
   requesterEmail?: string;
+  requesterLegalStatus?: string;
+  requesterGender?: string;
   requesterIdDocumentFile?: File | null;
   
   // Propriétaire

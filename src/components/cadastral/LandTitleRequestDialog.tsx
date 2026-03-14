@@ -930,6 +930,48 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1.5">
+                          <Label className="text-sm">Statut juridique *</Label>
+                          <Select
+                            value={formData.requesterLegalStatus || 'Personne physique'}
+                            onValueChange={(value) => {
+                              handleInputChange('requesterLegalStatus', value);
+                              if (value !== 'Personne physique') {
+                                handleInputChange('requesterGender', '');
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="h-9 text-sm rounded-lg border">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Personne physique">Personne physique</SelectItem>
+                              <SelectItem value="Société">Société</SelectItem>
+                              <SelectItem value="Association">Association</SelectItem>
+                              <SelectItem value="État">État</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {(formData.requesterLegalStatus || 'Personne physique') === 'Personne physique' && (
+                          <div className="space-y-1.5">
+                            <Label className="text-sm">Genre *</Label>
+                            <Select
+                              value={formData.requesterGender || ''}
+                              onValueChange={(value) => handleInputChange('requesterGender', value)}
+                            >
+                              <SelectTrigger className="h-9 text-sm rounded-lg border">
+                                <SelectValue placeholder="Sélectionner" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Masculin">Masculin</SelectItem>
+                                <SelectItem value="Féminin">Féminin</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1.5">
                           <Label className="text-sm">Nom *</Label>
                           <Input
                             value={formData.requesterLastName}
