@@ -6,6 +6,18 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+/** FK-safe deletion order: children → parents */
+const DELETION_ORDER = [
+  { table: "cadastral_contributor_codes", filter: "ilike", column: "parcel_number", value: "TEST-%" },
+  { table: "cadastral_service_access", filter: "ilike", column: "parcel_number", value: "TEST-%" },
+  { table: "cadastral_invoices", filter: "ilike", column: "parcel_number", value: "TEST-%" },
+  { table: "cadastral_contributions", filter: "ilike", column: "parcel_number", value: "TEST-%" },
+  { table: "payment_transactions", filter: "jsonb", column: "metadata->>test_mode", value: "true" },
+  { table: "real_estate_expertise_requests", filter: "ilike", column: "parcel_number", value: "TEST-%" },
+  { table: "cadastral_land_disputes", filter: "ilike", column: "parcel_number", value: "TEST-%" },
+  { table: "land_title_requests", filter: "ilike", column: "reference_number", value: "TEST-%" },
+] as const;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -31,7 +43,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const config = configData.config_value as any;
+    const config = configData.config_value as Record<string, unknown>;
 
     if (!config.enabled || !config.auto_cleanup) {
       return new Response(
@@ -40,65 +52,27 @@ Deno.serve(async (req) => {
       );
     }
 
-    const retentionDays = config.test_data_retention_days || 7;
+    const retentionDays = (config.test_data_retention_days as number) || 7;
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
     const cutoffISO = cutoffDate.toISOString();
 
-    const deletedCounts = {
-      cccCodes: 0,
-      serviceAccess: 0,
-      invoices: 0,
-      contributions: 0,
-      payments: 0,
-    };
+    const deletedCounts: Record<string, number> = {};
 
-    // FK-safe deletion order: children → parents
+    for (const entry of DELETION_ORDER) {
+      let query = supabase
+        .from(entry.table)
+        .delete();
 
-    // 1. CCC codes
-    const { data: ccc } = await supabase
-      .from("cadastral_contributor_codes")
-      .delete()
-      .ilike("parcel_number", "TEST-%")
-      .lt("created_at", cutoffISO)
-      .select("id");
-    deletedCounts.cccCodes = ccc?.length || 0;
+      if (entry.filter === "ilike") {
+        query = (query as any).ilike(entry.column, entry.value);
+      } else {
+        query = (query as any).filter(entry.column, "eq", entry.value);
+      }
 
-    // 2. Service access
-    const { data: access } = await supabase
-      .from("cadastral_service_access")
-      .delete()
-      .ilike("parcel_number", "TEST-%")
-      .lt("created_at", cutoffISO)
-      .select("id");
-    deletedCounts.serviceAccess = access?.length || 0;
-
-    // 3. Invoices
-    const { data: invoices } = await supabase
-      .from("cadastral_invoices")
-      .delete()
-      .ilike("parcel_number", "TEST-%")
-      .lt("created_at", cutoffISO)
-      .select("id");
-    deletedCounts.invoices = invoices?.length || 0;
-
-    // 4. Contributions
-    const { data: contributions } = await supabase
-      .from("cadastral_contributions")
-      .delete()
-      .ilike("parcel_number", "TEST-%")
-      .lt("created_at", cutoffISO)
-      .select("id");
-    deletedCounts.contributions = contributions?.length || 0;
-
-    // 5. Payment transactions — Fix #2: correct JSONB filter
-    const { data: payments } = await supabase
-      .from("payment_transactions")
-      .delete()
-      .filter("metadata->>test_mode", "eq", "true")
-      .lt("created_at", cutoffISO)
-      .select("id");
-    deletedCounts.payments = payments?.length || 0;
+      const { data } = await (query as any).lt("created_at", cutoffISO).select("id");
+      deletedCounts[entry.table] = data?.length || 0;
+    }
 
     // Audit log
     await supabase.rpc("log_audit_action", {

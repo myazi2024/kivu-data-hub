@@ -33,12 +33,18 @@ const AdminTestMode: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
 
-  const { cleaningUp, generatingData, cleanupTestData, generateTestData } =
-    useTestDataActions({
-      userId: user?.id,
-      stats,
-      onComplete: refreshStats,
-    });
+  const {
+    cleaningUp,
+    generatingData,
+    generationSteps,
+    currentStep,
+    cleanupTestData,
+    generateTestData,
+  } = useTestDataActions({
+    userId: user?.id,
+    stats,
+    onComplete: refreshStats,
+  });
 
   // Dirty-check: only enable save when config differs from server state
   const isDirty = useMemo(
@@ -58,7 +64,6 @@ const AdminTestMode: React.FC = () => {
 
     const validatedConfig = {
       ...config,
-      // Force auto_cleanup off when disabling test mode
       auto_cleanup: config.enabled ? config.auto_cleanup : false,
       test_data_retention_days: Math.min(30, Math.max(1, config.test_data_retention_days)),
     };
@@ -86,15 +91,12 @@ const AdminTestMode: React.FC = () => {
         description: 'Le mode test a été mis à jour',
       });
 
-      // Refresh server state — realtime will also fire but refreshConfiguration
-      // deduplicates via setLoading guard
       await refreshConfiguration();
       await refreshStats();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Veuillez réessayer';
       console.error("Erreur lors de l'enregistrement:", error);
-      toast.error("Erreur lors de l'enregistrement", {
-        description: error.message || 'Veuillez réessayer',
-      });
+      toast.error("Erreur lors de l'enregistrement", { description: message });
     } finally {
       setSaving(false);
     }
@@ -160,6 +162,8 @@ const AdminTestMode: React.FC = () => {
         cleaningUp={cleaningUp}
         generatingData={generatingData}
         statsLoading={statsLoading}
+        generationSteps={generationSteps}
+        currentStep={currentStep}
         onGenerate={generateTestData}
         onCleanup={cleanupTestData}
         onRefresh={refreshStats}

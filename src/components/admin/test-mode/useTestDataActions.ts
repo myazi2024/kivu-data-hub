@@ -1,9 +1,21 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { logAuditAction } from '@/utils/supabaseConfigUtils';
 import { toast } from 'sonner';
-import type { TestDataStats } from './types';
-import { toRecord } from './types';
+import type { TestDataStats, GenerationStep } from './types';
+import { TEST_TABLES_DELETION_ORDER, toRecord } from './types';
+import {
+  uniqueSuffix,
+  verifyTestModeEnabled,
+  generateContributions,
+  generateInvoices,
+  generatePayments,
+  generateServiceAccess,
+  generateTitleRequests,
+  generateExpertiseRequests,
+  generateDisputes,
+  rollbackTestData,
+} from './testDataGenerators';
 
 interface UseTestDataActionsProps {
   userId?: string;
@@ -11,12 +23,16 @@ interface UseTestDataActionsProps {
   onComplete: () => Promise<void>;
 }
 
-/** Generate a unique suffix to avoid duplicate parcel_number on repeated clicks */
-const uniqueSuffix = () => {
-  const ts = Date.now().toString(36).toUpperCase();
-  const rand = Math.random().toString(36).substring(2, 5).toUpperCase();
-  return `${ts}-${rand}`;
-};
+const GENERATION_STEPS: GenerationStep[] = [
+  { label: 'Vérification du mode test', status: 'pending' },
+  { label: 'Contributions cadastrales', status: 'pending' },
+  { label: 'Factures', status: 'pending' },
+  { label: 'Transactions de paiement', status: 'pending' },
+  { label: 'Accès aux services', status: 'pending' },
+  { label: 'Demandes de titres fonciers', status: 'pending' },
+  { label: 'Demandes d\'expertise', status: 'pending' },
+  { label: 'Litiges fonciers', status: 'pending' },
+];
 
 export const useTestDataActions = ({
   userId,
@@ -25,41 +41,36 @@ export const useTestDataActions = ({
 }: UseTestDataActionsProps) => {
   const [cleaningUp, setCleaningUp] = useState(false);
   const [generatingData, setGeneratingData] = useState(false);
+  const [generationSteps, setGenerationSteps] = useState<GenerationStep[]>(GENERATION_STEPS);
+  const [currentStep, setCurrentStep] = useState(-1);
 
-  const cleanupTestData = async () => {
+  const updateStep = (index: number, status: GenerationStep['status']) => {
+    setGenerationSteps((prev) =>
+      prev.map((s, i) => (i === index ? { ...s, status } : s))
+    );
+    setCurrentStep(index);
+  };
+
+  const resetSteps = () => {
+    setGenerationSteps(GENERATION_STEPS.map((s) => ({ ...s, status: 'pending' })));
+    setCurrentStep(-1);
+  };
+
+  const cleanupTestData = useCallback(async () => {
     try {
       setCleaningUp(true);
 
-      // FK-safe deletion order — children first
-      const { error: cccError } = await supabase
-        .from('cadastral_contributor_codes')
-        .delete()
-        .ilike('parcel_number', 'TEST-%');
-      if (cccError) console.error('Erreur suppression codes CCC:', cccError);
-
-      const { error: accessError } = await supabase
-        .from('cadastral_service_access')
-        .delete()
-        .ilike('parcel_number', 'TEST-%');
-      if (accessError) console.error('Erreur suppression accès services:', accessError);
-
-      const { error: invoiceError } = await supabase
-        .from('cadastral_invoices')
-        .delete()
-        .ilike('parcel_number', 'TEST-%');
-      if (invoiceError) console.error('Erreur suppression factures:', invoiceError);
-
-      const { error: contribError } = await supabase
-        .from('cadastral_contributions')
-        .delete()
-        .ilike('parcel_number', 'TEST-%');
-      if (contribError) console.error('Erreur suppression contributions:', contribError);
-
-      const { error: paymentError } = await supabase
-        .from('payment_transactions')
-        .delete()
-        .filter('metadata->>test_mode', 'eq', 'true');
-      if (paymentError) console.error('Erreur suppression paiements:', paymentError);
+      // Use shared deletion order
+      for (const entry of TEST_TABLES_DELETION_ORDER) {
+        const query = supabase.from(entry.table).delete();
+        if (entry.filter === 'ilike') {
+          const { error } = await (query as any).ilike(entry.column, entry.value);
+          if (error) console.error(`Erreur suppression ${entry.table}:`, error);
+        } else {
+          const { error } = await (query as any).filter(entry.column, 'eq', entry.value);
+          if (error) console.error(`Erreur suppression ${entry.table}:`, error);
+        }
+      }
 
       await logAuditAction(
         'TEST_DATA_CLEANUP',
@@ -74,17 +85,16 @@ export const useTestDataActions = ({
       });
 
       await onComplete();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Veuillez réessayer';
       console.error('Erreur lors du nettoyage:', error);
-      toast.error('Erreur lors du nettoyage', {
-        description: error.message || 'Veuillez réessayer',
-      });
+      toast.error('Erreur lors du nettoyage', { description: message });
     } finally {
       setCleaningUp(false);
     }
-  };
+  }, [stats, onComplete]);
 
-  const generateTestData = async () => {
+  const generateTestData = useCallback(async () => {
     if (!userId) {
       toast.error('Erreur', {
         description: 'Vous devez être connecté pour générer des données de test',
@@ -92,131 +102,95 @@ export const useTestDataActions = ({
       return;
     }
 
+    const suffix = uniqueSuffix();
+    const parcelNumbers = [
+      `TEST-001-${suffix}`,
+      `TEST-002-${suffix}`,
+      `TEST-003-${suffix}`,
+      `TEST-004-${suffix}`,
+      `TEST-005-${suffix}`,
+    ];
+
     try {
       setGeneratingData(true);
+      resetSteps();
 
-      const suffix = uniqueSuffix();
+      // Step 0: Verify test mode on server
+      updateStep(0, 'running');
+      const isEnabled = await verifyTestModeEnabled();
+      if (!isEnabled) {
+        updateStep(0, 'error');
+        toast.error('Mode test non actif', {
+          description: 'Activez le mode test avant de générer des données.',
+        });
+        return;
+      }
+      updateStep(0, 'done');
 
-      const parcelNumbers = [
-        `TEST-001-${suffix}`,
-        `TEST-002-${suffix}`,
-        `TEST-003-${suffix}`,
-      ];
+      // Step 1: Contributions
+      updateStep(1, 'running');
+      const contributions = await generateContributions(userId, parcelNumbers);
+      updateStep(1, 'done');
 
-      const testContributions = [
-        {
-          parcel_number: parcelNumbers[0],
-          property_title_type: 'Titre foncier',
-          current_owner_name: 'Test User 1',
-          area_sqm: 500,
-          province: 'Kinshasa',
-          ville: 'Kinshasa',
-          commune: 'Gombe',
-          status: 'approved',
-          contribution_type: 'creation',
-          user_id: userId,
-        },
-        {
-          parcel_number: parcelNumbers[1],
-          property_title_type: 'Concession',
-          current_owner_name: 'Test User 2',
-          area_sqm: 1000,
-          province: 'Nord-Kivu',
-          ville: 'Goma',
-          status: 'pending',
-          contribution_type: 'creation',
-          user_id: userId,
-        },
-        {
-          parcel_number: parcelNumbers[2],
-          property_title_type: 'Titre foncier',
-          current_owner_name: 'Test User 3',
-          area_sqm: 750,
-          province: 'Sud-Kivu',
-          ville: 'Bukavu',
-          status: 'rejected',
-          contribution_type: 'update',
-          user_id: userId,
-        },
-      ];
-
-      const { error: contribError } = await supabase
-        .from('cadastral_contributions')
-        .insert(testContributions);
-
-      if (contribError) throw contribError;
-
-      // Pass empty invoice_number — the DB trigger will auto-generate it
-      const testInvoices = [
-        {
-          parcel_number: parcelNumbers[0],
-          invoice_number: '',
-          selected_services: ['carte_cadastrale', 'fiche_identification'] as any,
-          total_amount_usd: 10,
-          client_email: 'test@example.com',
-          client_name: 'Test User 1',
-          status: 'paid',
-          user_id: userId,
-        },
-        {
-          parcel_number: parcelNumbers[1],
-          invoice_number: '',
-          selected_services: ['carte_cadastrale'] as any,
-          total_amount_usd: 5,
-          client_email: 'test2@example.com',
-          client_name: 'Test User 2',
-          status: 'pending',
-          user_id: userId,
-        },
-      ];
-
-      const { data: invoiceData, error: invoiceError } = await supabase
-        .from('cadastral_invoices')
-        .insert(testInvoices)
-        .select('id, parcel_number');
-
-      if (invoiceError) {
-        // Partial rollback — cleanup contributions if invoices fail
-        console.error('Erreur génération factures test, rollback contributions:', invoiceError);
-        await supabase
-          .from('cadastral_contributions')
-          .delete()
-          .in('parcel_number', parcelNumbers);
-
-        throw new Error(
-          `Échec de génération des factures (contributions annulées): ${invoiceError.message}`
-        );
+      // Step 2: Invoices
+      updateStep(2, 'running');
+      let invoices: Array<{ id: string; parcel_number: string; status: string }>;
+      try {
+        invoices = await generateInvoices(userId, parcelNumbers);
+        updateStep(2, 'done');
+      } catch (invoiceError) {
+        updateStep(2, 'error');
+        console.error('Rollback contributions after invoice failure:', invoiceError);
+        await rollbackTestData(parcelNumbers, suffix);
+        throw invoiceError;
       }
 
-      // Generate service_access records for paid invoices
-      if (invoiceData && invoiceData.length > 0) {
-        const paidInvoice = invoiceData.find(
-          (inv) => inv.parcel_number === parcelNumbers[0]
-        );
-        if (paidInvoice) {
-          const serviceAccessRecords = [
-            {
-              parcel_number: parcelNumbers[0],
-              invoice_id: paidInvoice.id,
-              service_type: 'carte_cadastrale',
-              user_id: userId,
-            },
-            {
-              parcel_number: parcelNumbers[0],
-              invoice_id: paidInvoice.id,
-              service_type: 'fiche_identification',
-              user_id: userId,
-            },
-          ];
+      // Step 3: Payment transactions
+      updateStep(3, 'running');
+      try {
+        await generatePayments(userId, invoices);
+        updateStep(3, 'done');
+      } catch (paymentError) {
+        updateStep(3, 'error');
+        console.error('Rollback after payment failure:', paymentError);
+        await rollbackTestData(parcelNumbers, suffix);
+        throw paymentError;
+      }
 
-          const { error: accessError } = await supabase
-            .from('cadastral_service_access')
-            .insert(serviceAccessRecords);
+      // Step 4: Service access (non-blocking)
+      updateStep(4, 'running');
+      await generateServiceAccess(userId, invoices);
+      updateStep(4, 'done');
 
-          if (accessError) {
-            console.error('Erreur génération accès services test (non bloquant):', accessError);
-          }
-        }
+      // Step 5: Title requests
+      updateStep(5, 'running');
+      try {
+        await generateTitleRequests(userId, suffix);
+        updateStep(5, 'done');
+      } catch (titleError) {
+        updateStep(5, 'error');
+        console.error('Title requests failed (non-blocking):', titleError);
+        // Non-blocking: continue
+      }
+
+      // Step 6: Expertise requests
+      updateStep(6, 'running');
+      try {
+        await generateExpertiseRequests(userId, parcelNumbers, suffix);
+        updateStep(6, 'done');
+      } catch (expError) {
+        updateStep(6, 'error');
+        console.error('Expertise requests failed (non-blocking):', expError);
+      }
+
+      // Step 7: Disputes
+      updateStep(7, 'running');
+      try {
+        await generateDisputes(parcelNumbers, suffix, userId);
+        updateStep(7, 'done');
+      } catch (dispError) {
+        updateStep(7, 'error');
+        console.error('Disputes failed (non-blocking):', dispError);
       }
 
       await logAuditAction(
@@ -225,26 +199,33 @@ export const useTestDataActions = ({
         undefined,
         undefined,
         toRecord({
-          contributions: testContributions.length,
-          invoices: testInvoices.length,
+          contributions: contributions.length,
+          invoices: invoices.length,
           suffix,
+          entities: ['contributions', 'invoices', 'payments', 'service_access', 'title_requests', 'expertise', 'disputes'],
         })
       );
 
       toast.success('Données de test générées', {
-        description: `${testContributions.length} contributions et ${testInvoices.length} factures de test créées`,
+        description: `${contributions.length} contributions, ${invoices.length} factures, demandes de titres, expertises et litiges créés`,
       });
 
       await onComplete();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Veuillez réessayer';
       console.error('Erreur lors de la génération:', error);
-      toast.error('Erreur lors de la génération', {
-        description: error.message || 'Veuillez réessayer',
-      });
+      toast.error('Erreur lors de la génération', { description: message });
     } finally {
       setGeneratingData(false);
     }
-  };
+  }, [userId, onComplete]);
 
-  return { cleaningUp, generatingData, cleanupTestData, generateTestData };
+  return {
+    cleaningUp,
+    generatingData,
+    generationSteps,
+    currentStep,
+    cleanupTestData,
+    generateTestData,
+  };
 };
