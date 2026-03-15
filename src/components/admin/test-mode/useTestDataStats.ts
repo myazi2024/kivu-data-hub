@@ -1,14 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { TestDataStats } from './types';
-
-const EMPTY_STATS: TestDataStats = {
-  contributions: 0,
-  invoices: 0,
-  payments: 0,
-  cccCodes: 0,
-  serviceAccess: 0,
-};
+import { EMPTY_STATS } from './types';
 
 export const useTestDataStats = () => {
   const [stats, setStats] = useState<TestDataStats>(EMPTY_STATS);
@@ -38,19 +31,32 @@ export const useTestDataStats = () => {
           .from('cadastral_service_access')
           .select('id', { count: 'exact', head: true })
           .ilike('parcel_number', 'TEST-%'),
+        supabase
+          .from('land_title_requests')
+          .select('id', { count: 'exact', head: true })
+          .ilike('reference_number', 'TEST-%'),
+        supabase
+          .from('real_estate_expertise_requests')
+          .select('id', { count: 'exact', head: true })
+          .ilike('parcel_number', 'TEST-%'),
+        supabase
+          .from('cadastral_land_disputes')
+          .select('id', { count: 'exact', head: true })
+          .ilike('parcel_number', 'TEST-%'),
       ]);
 
+      const count = (i: number) =>
+        results[i].status === 'fulfilled' ? results[i].value.count || 0 : 0;
+
       setStats({
-        contributions:
-          results[0].status === 'fulfilled' ? results[0].value.count || 0 : 0,
-        invoices:
-          results[1].status === 'fulfilled' ? results[1].value.count || 0 : 0,
-        payments:
-          results[2].status === 'fulfilled' ? results[2].value.count || 0 : 0,
-        cccCodes:
-          results[3].status === 'fulfilled' ? results[3].value.count || 0 : 0,
-        serviceAccess:
-          results[4].status === 'fulfilled' ? results[4].value.count || 0 : 0,
+        contributions: count(0),
+        invoices: count(1),
+        payments: count(2),
+        cccCodes: count(3),
+        serviceAccess: count(4),
+        titleRequests: count(5),
+        expertiseRequests: count(6),
+        disputes: count(7),
       });
     } catch (error) {
       console.error('Error loading test data stats:', error);
@@ -59,8 +65,7 @@ export const useTestDataStats = () => {
     }
   }, []);
 
-  const total =
-    stats.contributions + stats.invoices + stats.payments + stats.cccCodes + stats.serviceAccess;
+  const total = Object.values(stats).reduce((sum, v) => sum + v, 0);
 
   return { stats, total, loading, refresh };
 };
