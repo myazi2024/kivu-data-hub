@@ -12,7 +12,7 @@ interface GenerationProgressProps {
 const statusIcon: Record<GenerationStep['status'], React.ReactNode> = {
   pending: <Circle className="h-4 w-4 text-muted-foreground" />,
   running: <Loader2 className="h-4 w-4 animate-spin text-primary" />,
-  done: <CheckCircle2 className="h-4 w-4 text-green-500" />,
+  done: <CheckCircle2 className="h-4 w-4 text-primary" />,
   error: <XCircle className="h-4 w-4 text-destructive" />,
 };
 
