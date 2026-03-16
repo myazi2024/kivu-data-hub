@@ -10,7 +10,6 @@ interface Props {
   filter: AnalyticsFilter;
   onChange: (f: AnalyticsFilter) => void;
   dateField?: string;
-  onExport?: () => void;
   statusField?: string;
   paymentStatusField?: string;
   hideStatus?: boolean;
