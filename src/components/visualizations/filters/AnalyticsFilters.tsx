@@ -80,7 +80,7 @@ export const AnalyticsFilters: React.FC<Props> = ({
   const selectCls = "h-6 text-[10px] w-auto min-w-[70px]";
 
   return (
-    <div className="space-y-1 bg-muted/30 rounded-md p-1.5 border border-border/30">
+    <div className="sticky top-0 lg:top-12 z-10 space-y-1 bg-background/95 backdrop-blur-sm rounded-md p-1.5 border border-border/30 shadow-sm">
       {hasConflictingFilters && (
         <div className="flex items-center gap-1 text-[10px] text-amber-600 bg-amber-50 dark:bg-amber-950/30 rounded px-2 py-0.5">
           <AlertCircle className="h-3 w-3 shrink-0" />
