@@ -58,5 +58,6 @@ export const BoundaryConflictsBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(trend, 'area', 'les conflits de limites')} />}
       </div>
     </div>
+    </FilterLabelContext.Provider>
   );
 });

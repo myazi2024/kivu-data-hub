@@ -59,5 +59,6 @@ export const FraudAttemptsBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(trend, 'area', 'les tentatives de fraude')} />}
       </div>
     </div>
+    </FilterLabelContext.Provider>
   );
 });

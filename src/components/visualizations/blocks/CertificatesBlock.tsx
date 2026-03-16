@@ -55,5 +55,6 @@ export const CertificatesBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(trend, 'area', 'la génération de certificats')} />}
       </div>
     </div>
+    </FilterLabelContext.Provider>
   );
 });

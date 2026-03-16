@@ -158,5 +158,6 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(trend, 'area', 'les demandes d\'expertise')} />
       </div>
     </div>
+    </FilterLabelContext.Provider>
   );
 });

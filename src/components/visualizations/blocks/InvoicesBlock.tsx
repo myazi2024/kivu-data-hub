@@ -81,5 +81,6 @@ export const InvoicesBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(trend, 'area', 'les factures')} />}
       </div>
     </div>
+    </FilterLabelContext.Provider>
   );
 });

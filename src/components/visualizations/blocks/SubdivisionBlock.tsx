@@ -129,5 +129,6 @@ export const SubdivisionBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(trend, 'area', 'les demandes de lotissement')} />}
       </div>
     </div>
+    </FilterLabelContext.Provider>
   );
 });

@@ -200,5 +200,6 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(trend, 'area', 'les parcelles titrées')} />
       </div>
     </div>
+    </FilterLabelContext.Provider>
   );
 });

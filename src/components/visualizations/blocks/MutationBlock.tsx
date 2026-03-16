@@ -113,5 +113,6 @@ export const MutationBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(trend, 'area', 'les demandes de mutation')} />}
       </div>
     </div>
+    </FilterLabelContext.Provider>
   );
 });

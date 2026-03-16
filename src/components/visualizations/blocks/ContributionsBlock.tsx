@@ -106,5 +106,6 @@ export const ContributionsBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(trend, 'area', 'les contributions')} />}
       </div>
     </div>
+    </FilterLabelContext.Provider>
   );
 });

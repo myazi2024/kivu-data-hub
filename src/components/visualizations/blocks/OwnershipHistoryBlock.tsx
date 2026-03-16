@@ -67,5 +67,6 @@ export const OwnershipHistoryBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(trend, 'area', 'les transferts de propriété')} />}
       </div>
     </div>
+    </FilterLabelContext.Provider>
   );
 });

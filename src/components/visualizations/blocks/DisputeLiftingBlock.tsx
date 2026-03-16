@@ -91,5 +91,6 @@ export const DisputeLiftingBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(trend, 'area', 'les levées de litige')} />}
       </div>
     </div>
+    </FilterLabelContext.Provider>
   );
 });
