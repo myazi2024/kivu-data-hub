@@ -69,6 +69,34 @@ const ChartFilterSubtitle: React.FC<{ filterLabel: string }> = ({ filterLabel })
   <p className="block text-[9px] italic leading-tight text-muted-foreground mt-0.5 break-words">({filterLabel})</p>
 );
 
+const roundCorners = (dataUrl: string, radius: number): Promise<Blob> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return reject(new Error('No canvas context'));
+      ctx.beginPath();
+      const r = radius;
+      const w = img.width;
+      const h = img.height;
+      ctx.moveTo(r, 0);
+      ctx.arcTo(w, 0, w, h, r);
+      ctx.arcTo(w, h, 0, h, r);
+      ctx.arcTo(0, h, 0, 0, r);
+      ctx.arcTo(0, 0, w, 0, r);
+      ctx.closePath();
+      ctx.clip();
+      ctx.drawImage(img, 0, 0);
+      canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('toBlob failed')), 'image/png');
+    };
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
+};
+
 const useCopyAsImage = () => {
   const ref = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = React.useState(false);
@@ -76,21 +104,22 @@ const useCopyAsImage = () => {
   const copy = useCallback(async () => {
     if (!ref.current) return;
     try {
-      const dataUrl = await toPng(ref.current, { backgroundColor: 'white', pixelRatio: 2, style: { borderRadius: '12px', overflow: 'hidden' } });
-      const res = await fetch(dataUrl);
-      const blob = await res.blob();
+      const dataUrl = await toPng(ref.current, { backgroundColor: 'white', pixelRatio: 2 });
+      const blob = await roundCorners(dataUrl, 24); // 12px * pixelRatio(2)
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
       setCopied(true);
       toast.success('Image copiée dans le presse-papiers');
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback: download
       try {
-        const dataUrl = await toPng(ref.current!, { backgroundColor: 'white', pixelRatio: 2, style: { borderRadius: '12px', overflow: 'hidden' } });
+        const dataUrl = await toPng(ref.current!, { backgroundColor: 'white', pixelRatio: 2 });
+        const blob = await roundCorners(dataUrl, 24);
+        const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.download = 'chart.png';
-        link.href = dataUrl;
+        link.href = url;
         link.click();
+        URL.revokeObjectURL(url);
         toast.success('Image téléchargée');
       } catch {
         toast.error('Impossible de copier l\'image');
