@@ -220,17 +220,23 @@ const MONTH_LABELS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','O
 /** Build a human-readable label from active filters (time + location) */
 export function buildFilterLabel(filter: AnalyticsFilter): string {
   const parts: string[] = [];
-  // Time
+  // Time — always show year if set, otherwise "Toute période"
   if (filter.periodType !== 'all' && filter.year) {
     let t = String(filter.year);
     if (filter.periodType === 'semester' && filter.subPeriod) t += ` S${filter.subPeriod}`;
     else if (filter.periodType === 'quarter' && filter.subPeriod) t += ` T${filter.subPeriod}`;
     else if (filter.periodType === 'month' && filter.subPeriod) t += ` ${MONTH_LABELS[filter.subPeriod - 1]}`;
     parts.push(t);
+  } else {
+    parts.push('Toute période');
   }
-  // Location
+  // Location — always show at least the country
   const loc: string[] = [];
-  if (filter.province) loc.push(filter.province);
+  if (filter.province) {
+    loc.push(filter.province);
+  } else {
+    loc.push('Rép. Dém. du Congo');
+  }
   if (filter.sectionType !== 'all') loc.push(filter.sectionType === 'urbaine' ? 'Urbaine' : 'Rurale');
   if (filter.ville) loc.push(filter.ville);
   if (filter.commune) loc.push(filter.commune);
@@ -240,6 +246,6 @@ export function buildFilterLabel(filter: AnalyticsFilter): string {
   if (filter.collectivite) loc.push(filter.collectivite);
   if (filter.groupement) loc.push(filter.groupement);
   if (filter.villageFilter) loc.push(filter.villageFilter);
-  if (loc.length > 0) parts.push(loc.join(' › '));
+  parts.push(loc.join(' › '));
   return parts.join(' · ');
 }

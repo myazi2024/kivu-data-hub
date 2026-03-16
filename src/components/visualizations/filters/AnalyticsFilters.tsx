@@ -182,7 +182,7 @@ export const AnalyticsFilters: React.FC<Props> = ({
         })}>
           <SelectTrigger className={selectCls}><SelectValue placeholder="Province" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="__all__">Toutes provinces</SelectItem>
+            <SelectItem value="__all__">Rép. Dém. du Congo</SelectItem>
             {provinces.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
           </SelectContent>
         </Select>
