@@ -199,7 +199,6 @@ export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
   if (hidden) return null;
 
   const displayData = data.slice(0, maxItems);
-  const fullTitle = filterLabel ? `${title} — ${filterLabel}` : title;
 
   return (
     <Card ref={ref} className={`border-border/30 ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
