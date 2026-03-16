@@ -3,7 +3,7 @@ import { AnalyticsFilters } from '../filters/AnalyticsFilters';
 import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, VALID_LIFTING_STATUSES } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { ShieldCheck, Scale, TrendingUp } from 'lucide-react';
+import { ShieldCheck, Scale, TrendingUp, MessageSquare } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
@@ -14,7 +14,6 @@ interface Props { data: LandAnalyticsData; }
 export const DisputeLiftingBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
 
-  // #7 fix: Only include disputes with explicit valid lifting statuses
   const liftingDisputes = useMemo(() =>
     data.disputes.filter(d => d.lifting_status && VALID_LIFTING_STATUSES.includes(d.lifting_status)),
     [data.disputes]
@@ -24,6 +23,7 @@ export const DisputeLiftingBlock: React.FC<Props> = memo(({ data }) => {
   const byLiftingStatus = useMemo(() => countBy(filtered, 'lifting_status'), [filtered]);
   const byResolutionLevel = useMemo(() => countBy(filtered, 'resolution_level'), [filtered]);
   const byNature = useMemo(() => countBy(filtered, 'dispute_nature'), [filtered]);
+  const byLiftingReason = useMemo(() => countBy(filtered.filter(r => r.lifting_reason), 'lifting_reason'), [filtered]);
   const trend = useMemo(() => trendByMonth(filtered), [filtered]);
 
   const stats = useMemo(() => {
@@ -33,7 +33,6 @@ export const DisputeLiftingBlock: React.FC<Props> = memo(({ data }) => {
     return { approved, pending, rejected };
   }, [filtered]);
 
-  // #26: Lifting success rate trend
   const liftingSuccessTrend = useMemo(() => {
     const map = new Map<string, { total: number; approved: number }>();
     filtered.forEach(d => {
@@ -54,7 +53,7 @@ export const DisputeLiftingBlock: React.FC<Props> = memo(({ data }) => {
 
   const handleExport = useCallback(() => {
     exportRecordsToCSV(filtered, `levees-litiges-${new Date().toISOString().slice(0,10)}`, [
-      'id', 'parcel_number', 'dispute_nature', 'lifting_status', 'resolution_level',
+      'id', 'parcel_number', 'dispute_nature', 'lifting_status', 'lifting_reason', 'resolution_level',
       'lifting_request_reference', 'province', 'ville', 'commune', 'created_at'
     ]);
   }, [filtered]);
@@ -73,8 +72,8 @@ export const DisputeLiftingBlock: React.FC<Props> = memo(({ data }) => {
         <ChartCard title="Statut levée" icon={ShieldCheck} data={byLiftingStatus} type="pie" colorIndex={9} />
         <ChartCard title="Niveau résolution" icon={Scale} iconColor="text-purple-500" data={byResolutionLevel} type="bar-h" colorIndex={9} labelWidth={100} />
         <ChartCard title="Nature litige" data={byNature} type="bar-h" colorIndex={4} labelWidth={100} />
+        <ChartCard title="Motif de levée" icon={MessageSquare} data={byLiftingReason} type="bar-h" colorIndex={6} labelWidth={120} hidden={byLiftingReason.length === 0} />
         <GeoCharts records={filtered} />
-        {/* #26: Lifting success rate trend */}
         <ChartCard title="Taux réussite %" icon={TrendingUp} data={liftingSuccessTrend} type="area" colorIndex={2} colSpan={2} hidden={liftingSuccessTrend.length < 2} />
         <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={9} colSpan={2} />
       </div>
