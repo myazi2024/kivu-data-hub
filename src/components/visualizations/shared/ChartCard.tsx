@@ -86,7 +86,7 @@ const useCopyAsImage = () => {
     } catch {
       // Fallback: download
       try {
-        const dataUrl = await toPng(ref.current!, { backgroundColor: 'white', pixelRatio: 2 });
+        const dataUrl = await toPng(ref.current!, { backgroundColor: 'white', pixelRatio: 2, style: { borderRadius: '12px', overflow: 'hidden' } });
         const link = document.createElement('a');
         link.download = 'chart.png';
         link.href = dataUrl;
