@@ -9,8 +9,12 @@ import { ChartCard, ColorMappedPieCard } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
 import { exportRecordsToCSV } from '@/utils/csvExport';
 import { generateInsight } from '@/utils/chartInsights';
+import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 
 interface Props { data: LandAnalyticsData; }
+
+const TAB_KEY = 'title-requests';
+const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TABS_REGISTRY[TAB_KEY].charts];
 
 const GENDER_COLORS: Record<string, string> = {
   'Masculin': '#3b82f6', 'Féminin': '#ec4899', 'M': '#3b82f6', 'F': '#ec4899',
@@ -19,6 +23,7 @@ const GENDER_COLORS: Record<string, string> = {
 
 export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
+  const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
   const filtered = useMemo(() => applyFilters(data.titleRequests, filter), [data.titleRequests, filter]);
 
   const byRequestType = useMemo(() => countBy(filtered, 'request_type'), [filtered]);
@@ -91,7 +96,6 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
     ]);
   }, [filtered]);
 
-  // Insights
   const processingInsight = useMemo(() => {
     if (processingComparison.length < 2) return '';
     const diff = stats.avgDays - stats.avgEstimated;
@@ -108,53 +112,64 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
     return generateInsight(genderData, 'pie', 'les demandeurs');
   }, [genderData]);
 
+  // Helper to get configured title
+  const t = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
+
+  // Build visible KPI items
+  const kpiItems = useMemo(() => {
+    const all = [
+      { key: 'kpi-total', label: t('kpi-total', 'Total'), value: filtered.length, cls: 'text-primary' },
+      { key: 'kpi-urbaine', label: t('kpi-urbaine', 'Urbaine'), value: stats.urbanCount, cls: 'text-emerald-600', tooltip: pct(stats.urbanCount, filtered.length) },
+      { key: 'kpi-rurale', label: t('kpi-rurale', 'Rurale'), value: stats.ruralCount, cls: 'text-amber-600', tooltip: pct(stats.ruralCount, filtered.length) },
+      { key: 'kpi-approval', label: t('kpi-approval', 'Taux approbation'), value: pct(stats.approved, filtered.length), cls: 'text-blue-600', tooltip: `${stats.approved} approuvées` },
+      { key: 'kpi-revenue', label: t('kpi-revenue', 'Revenus payés'), value: `$${stats.paidRevenue.toLocaleString()}`, cls: 'text-rose-600', tooltip: `Facturé: $${stats.totalRevenue.toLocaleString()}` },
+      { key: 'kpi-delay', label: t('kpi-delay', 'Délai moy.'), value: stats.avgDays > 0 ? `${stats.avgDays}j` : 'N/A', cls: 'text-violet-600', tooltip: stats.avgEstimated > 0 ? `Estimé: ${stats.avgEstimated}j` : 'Délai moyen de traitement' },
+    ];
+    return all.filter(k => isChartVisible(k.key));
+  }, [filtered, stats, isChartVisible, getChartConfig]);
+
+  const v = isChartVisible;
+
   return (
     <div className="space-y-2">
       <AnalyticsFilters data={data.titleRequests} filter={filter} onChange={setFilter} onExport={handleExport} />
-      <KpiGrid items={[
-        { label: 'Total', value: filtered.length, cls: 'text-primary' },
-        { label: 'Urbaine', value: stats.urbanCount, cls: 'text-emerald-600', tooltip: pct(stats.urbanCount, filtered.length) },
-        { label: 'Rurale', value: stats.ruralCount, cls: 'text-amber-600', tooltip: pct(stats.ruralCount, filtered.length) },
-        { label: 'Taux approbation', value: pct(stats.approved, filtered.length), cls: 'text-blue-600', tooltip: `${stats.approved} approuvées` },
-        { label: 'Revenus payés', value: `$${stats.paidRevenue.toLocaleString()}`, cls: 'text-rose-600', tooltip: `Facturé: $${stats.totalRevenue.toLocaleString()}` },
-        { label: 'Délai moy.', value: stats.avgDays > 0 ? `${stats.avgDays}j` : 'N/A', cls: 'text-violet-600', tooltip: stats.avgEstimated > 0 ? `Estimé: ${stats.avgEstimated}j` : 'Délai moyen de traitement' },
-      ]} />
+      <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        <ChartCard title="Type de demande" icon={FileText} data={byRequestType} type="bar-h" colorIndex={0} labelWidth={100}
-          insight={generateInsight(byRequestType, 'bar-h', 'les types de demande')} />
-        <ChartCard title="Demandeur" icon={Users} data={byRequesterType} type="donut" colorIndex={1}
-          insight={generateInsight(byRequesterType, 'donut', 'les demandeurs')} />
-        <ChartCard title="Statut" data={byStatus} type="bar-v" colorIndex={1}
-          insight={generateInsight(byStatus, 'bar-v', 'les statuts')} />
-        <ChartCard title="Paiement" icon={DollarSign} data={byPayment} type="donut" colorIndex={2}
-          insight={generateInsight(byPayment, 'donut', 'les paiements')} />
-        <ChartCard title="Statut juridique" data={byOwnerLegalStatus} type="donut" colorIndex={4}
-          insight={generateInsight(byOwnerLegalStatus, 'donut', 'les statuts juridiques')} />
-        <ChartCard title="Usage déclaré" data={byDeclaredUsage} type="bar-h" colorIndex={5}
-          insight={generateInsight(byDeclaredUsage, 'bar-h', 'les usages')} />
-        <ColorMappedPieCard title="Genre" icon={Users} iconColor="text-pink-500" data={genderData} colorMap={GENDER_COLORS}
-          insight={genderInsight} />
-        <ChartCard title="Nationalité" icon={Globe} data={byNationality} type="bar-h" colorIndex={9} labelWidth={80} hidden={byNationality.length === 0}
-          insight={generateInsight(byNationality, 'bar-h', 'les nationalités')} />
-        <ChartCard title="Titre déduit" data={byDeducedTitleType} type="bar-h" colorIndex={3} labelWidth={100} hidden={byDeducedTitleType.length === 0}
-          insight={generateInsight(byDeducedTitleType, 'bar-h', 'les types de titre')} />
-        <ChartCard title="Demandeur = Proprio" icon={UserCheck} data={ownerSameData} type="pie" colorIndex={0} hidden={ownerSameData.length === 0}
-          insight={generateInsight(ownerSameData, 'pie', 'propriétaire vs mandataire')} />
-        <ChartCard title="Superficie demandée" icon={Ruler} data={surfaceDist} type="bar-v" colorIndex={10} hidden={surfaceDist.length === 0}
-          insight={generateInsight(surfaceDist, 'bar-v', 'les superficies')} />
-        <ChartCard title="Circonscription" data={byCirconscription} type="bar-h" colorIndex={8} labelWidth={100} hidden={byCirconscription.length === 0}
-          insight={generateInsight(byCirconscription, 'bar-h', 'les circonscriptions')} />
-        <ChartCard title="Type construction" icon={Building} data={byConstructionType} type="bar-h" colorIndex={3} hidden={byConstructionType.length === 0}
-          insight={generateInsight(byConstructionType, 'bar-h', 'les types de construction')} />
-        <ChartCard title="Nature construction" data={byConstructionNature} type="bar-h" colorIndex={7} labelWidth={100}
-          insight="Mesure l'évolution des matériaux de construction d'une zone à l'autre." />
-        <ChartCard title="Revenus/mois" icon={DollarSign} data={revenueTrend} type="area" colorIndex={2} hidden={revenueTrend.length < 2}
-          insight={generateInsight(revenueTrend, 'area', 'les revenus mensuels')} />
-        <ChartCard title="Délai estimé vs réel" icon={Clock} data={processingComparison} type="bar-v" colorIndex={5} hidden={processingComparison.length === 0}
-          insight={processingInsight} />
-        <GeoCharts records={filtered} />
-        <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={0} colSpan={2}
-          insight={generateInsight(trend, 'area', 'les demandes de titres')} />
+        {v('request-type') && <ChartCard title={t('request-type', 'Type de demande')} icon={FileText} data={byRequestType} type="bar-h" colorIndex={0} labelWidth={100}
+          insight={generateInsight(byRequestType, 'bar-h', 'les types de demande')} />}
+        {v('requester-type') && <ChartCard title={t('requester-type', 'Demandeur')} icon={Users} data={byRequesterType} type="donut" colorIndex={1}
+          insight={generateInsight(byRequesterType, 'donut', 'les demandeurs')} />}
+        {v('status') && <ChartCard title={t('status', 'Statut')} data={byStatus} type="bar-v" colorIndex={1}
+          insight={generateInsight(byStatus, 'bar-v', 'les statuts')} />}
+        {v('payment') && <ChartCard title={t('payment', 'Paiement')} icon={DollarSign} data={byPayment} type="donut" colorIndex={2}
+          insight={generateInsight(byPayment, 'donut', 'les paiements')} />}
+        {v('legal-status') && <ChartCard title={t('legal-status', 'Statut juridique')} data={byOwnerLegalStatus} type="donut" colorIndex={4}
+          insight={generateInsight(byOwnerLegalStatus, 'donut', 'les statuts juridiques')} />}
+        {v('declared-usage') && <ChartCard title={t('declared-usage', 'Usage déclaré')} data={byDeclaredUsage} type="bar-h" colorIndex={5}
+          insight={generateInsight(byDeclaredUsage, 'bar-h', 'les usages')} />}
+        {v('gender') && <ColorMappedPieCard title={t('gender', 'Genre')} icon={Users} iconColor="text-pink-500" data={genderData} colorMap={GENDER_COLORS}
+          insight={genderInsight} />}
+        {v('nationality') && <ChartCard title={t('nationality', 'Nationalité')} icon={Globe} data={byNationality} type="bar-h" colorIndex={9} labelWidth={80} hidden={byNationality.length === 0}
+          insight={generateInsight(byNationality, 'bar-h', 'les nationalités')} />}
+        {v('deduced-title') && <ChartCard title={t('deduced-title', 'Titre déduit')} data={byDeducedTitleType} type="bar-h" colorIndex={3} labelWidth={100} hidden={byDeducedTitleType.length === 0}
+          insight={generateInsight(byDeducedTitleType, 'bar-h', 'les types de titre')} />}
+        {v('owner-same') && <ChartCard title={t('owner-same', 'Demandeur = Proprio')} icon={UserCheck} data={ownerSameData} type="pie" colorIndex={0} hidden={ownerSameData.length === 0}
+          insight={generateInsight(ownerSameData, 'pie', 'propriétaire vs mandataire')} />}
+        {v('surface') && <ChartCard title={t('surface', 'Superficie demandée')} icon={Ruler} data={surfaceDist} type="bar-v" colorIndex={10} hidden={surfaceDist.length === 0}
+          insight={generateInsight(surfaceDist, 'bar-v', 'les superficies')} />}
+        {v('circonscription') && <ChartCard title={t('circonscription', 'Circonscription')} data={byCirconscription} type="bar-h" colorIndex={8} labelWidth={100} hidden={byCirconscription.length === 0}
+          insight={generateInsight(byCirconscription, 'bar-h', 'les circonscriptions')} />}
+        {v('construction-type') && <ChartCard title={t('construction-type', 'Type construction')} icon={Building} data={byConstructionType} type="bar-h" colorIndex={3} hidden={byConstructionType.length === 0}
+          insight={generateInsight(byConstructionType, 'bar-h', 'les types de construction')} />}
+        {v('construction-nature') && <ChartCard title={t('construction-nature', 'Nature construction')} data={byConstructionNature} type="bar-h" colorIndex={7} labelWidth={100}
+          insight="Mesure l'évolution des matériaux de construction d'une zone à l'autre." />}
+        {v('revenue-trend') && <ChartCard title={t('revenue-trend', 'Revenus/mois')} icon={DollarSign} data={revenueTrend} type="area" colorIndex={2} hidden={revenueTrend.length < 2}
+          insight={generateInsight(revenueTrend, 'area', 'les revenus mensuels')} />}
+        {v('processing-comparison') && <ChartCard title={t('processing-comparison', 'Délai estimé vs réel')} icon={Clock} data={processingComparison} type="bar-v" colorIndex={5} hidden={processingComparison.length === 0}
+          insight={processingInsight} />}
+        {v('geo') && <GeoCharts records={filtered} />}
+        {v('evolution') && <ChartCard title={t('evolution', 'Évolution')} icon={TrendingUp} data={trend} type="area" colorIndex={0} colSpan={2}
+          insight={generateInsight(trend, 'area', 'les demandes de titres')} />}
       </div>
     </div>
   );
