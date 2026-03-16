@@ -59,63 +59,56 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = () =
     );
   }
 
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'title-requests': return <TitleRequestsBlock data={analytics} />;
+      case 'parcels-titled': return <ParcelsWithTitleBlock data={analytics} />;
+      case 'contributions': return <ContributionsBlock data={analytics} />;
+      case 'expertise': return <ExpertiseBlock data={analytics} />;
+      case 'mutations': return <MutationBlock data={analytics} />;
+      case 'subdivision': return <SubdivisionBlock data={analytics} />;
+      case 'disputes': return <DisputesBlock data={analytics} />;
+      case 'lifting': return <DisputeLiftingBlock data={analytics} />;
+      case 'boundary': return <BoundaryConflictsBlock data={analytics} />;
+      case 'ownership': return <OwnershipHistoryBlock data={analytics} />;
+      case 'fraud': return <FraudAttemptsBlock data={analytics} />;
+      case 'certificates': return <CertificatesBlock data={analytics} />;
+      case 'invoices': return <InvoicesBlock data={analytics} />;
+      default: return null;
+    }
+  };
+
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <div className="overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1">
-        <TabsList className="inline-flex items-center gap-0.5 h-auto p-0.5 bg-muted/50 border border-border/40 rounded-lg w-max">
-          {blocks.map((block) => (
-            <TabsTrigger
-              key={block.id}
-              value={block.id}
-              className="flex items-center gap-0.5 px-1.5 sm:px-2 py-1 sm:py-1.5 text-[9px] sm:text-[10px] whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-muted/80 transition-all rounded-md"
-            >
-              <block.icon className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-              <span className="hidden xs:inline sm:inline">{block.name}</span>
-            </TabsTrigger>
-          ))}
-        </TabsList>
+    <div className="flex flex-row lg:flex-col h-full w-full">
+      {/* Tabs - vertical on mobile, horizontal on desktop */}
+      <div className="w-10 sm:w-12 lg:w-full shrink-0 overflow-y-auto overflow-x-hidden lg:overflow-y-hidden lg:overflow-x-auto scrollbar-hide border-r lg:border-r-0 lg:border-b border-border/40 bg-muted/30">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-0.5 p-0.5 lg:w-max">
+          {blocks.map((block) => {
+            const isActive = activeTab === block.id;
+            return (
+              <button
+                key={block.id}
+                onClick={() => setActiveTab(block.id)}
+                className={`flex items-center justify-center lg:justify-start gap-1 px-1 py-1.5 lg:px-2 lg:py-1.5 text-[9px] sm:text-[10px] whitespace-nowrap rounded-md transition-all ${
+                  isActive
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/80'
+                }`}
+                title={block.name}
+              >
+                <block.icon className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+                <span className="hidden lg:inline">{block.name}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      <TabsContent value="title-requests" className="mt-1.5">
-        <TitleRequestsBlock data={analytics} />
-      </TabsContent>
-      <TabsContent value="parcels-titled" className="mt-1.5">
-        <ParcelsWithTitleBlock data={analytics} />
-      </TabsContent>
-      <TabsContent value="contributions" className="mt-1.5">
-        <ContributionsBlock data={analytics} />
-      </TabsContent>
-      <TabsContent value="expertise" className="mt-1.5">
-        <ExpertiseBlock data={analytics} />
-      </TabsContent>
-      <TabsContent value="mutations" className="mt-1.5">
-        <MutationBlock data={analytics} />
-      </TabsContent>
-      <TabsContent value="subdivision" className="mt-1.5">
-        <SubdivisionBlock data={analytics} />
-      </TabsContent>
-      <TabsContent value="disputes" className="mt-1.5">
-        <DisputesBlock data={analytics} />
-      </TabsContent>
-      <TabsContent value="lifting" className="mt-1.5">
-        <DisputeLiftingBlock data={analytics} />
-      </TabsContent>
-      <TabsContent value="boundary" className="mt-1.5">
-        <BoundaryConflictsBlock data={analytics} />
-      </TabsContent>
-      <TabsContent value="ownership" className="mt-1.5">
-        <OwnershipHistoryBlock data={analytics} />
-      </TabsContent>
-      <TabsContent value="fraud" className="mt-1.5">
-        <FraudAttemptsBlock data={analytics} />
-      </TabsContent>
-      <TabsContent value="certificates" className="mt-1.5">
-        <CertificatesBlock data={analytics} />
-      </TabsContent>
-      <TabsContent value="invoices" className="mt-1.5">
-        <InvoicesBlock data={analytics} />
-      </TabsContent>
-    </Tabs>
+      {/* Content */}
+      <div className="flex-1 min-w-0 overflow-auto p-1 lg:p-0 lg:mt-1.5">
+        {renderContent()}
+      </div>
+    </div>
   );
 };
 
