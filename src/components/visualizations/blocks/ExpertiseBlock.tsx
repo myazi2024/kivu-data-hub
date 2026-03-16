@@ -112,12 +112,6 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
     return { completed, pending, inProgress, avgDays, assignDelay, totalValue, avgValue };
   }, [filtered]);
 
-  const handleExport = useCallback(() => {
-    exportRecordsToCSV(filtered, `expertise-${new Date().toISOString().slice(0,10)}`, [
-      'id', 'parcel_number', 'status', 'payment_status', 'property_condition', 'construction_quality',
-      'market_value_usd', 'road_access_type', 'province', 'ville', 'commune', 'created_at'
-    ]);
-  }, [filtered]);
 
   return (
     <div className="space-y-2">
