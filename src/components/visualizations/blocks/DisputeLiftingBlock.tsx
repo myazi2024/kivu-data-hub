@@ -1,11 +1,11 @@
 import React, { useState, useMemo, memo, useCallback } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
-import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, VALID_LIFTING_STATUSES } from '@/utils/analyticsHelpers';
+import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, VALID_LIFTING_STATUSES, buildFilterLabel } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { ShieldCheck, Scale, TrendingUp, MessageSquare } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
-import { ChartCard } from '../shared/ChartCard';
+import { ChartCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
 
 import { generateInsight } from '@/utils/chartInsights';
@@ -18,6 +18,7 @@ const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TAB
 
 export const DisputeLiftingBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
+  const filterLabel = useMemo(() => buildFilterLabel(filter), [filter]);
   const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
 
   const liftingDisputes = useMemo(() =>
@@ -70,6 +71,7 @@ export const DisputeLiftingBlock: React.FC<Props> = memo(({ data }) => {
   ].filter(k => v(k.key)), [filtered, stats, v, getChartConfig]);
 
   return (
+    <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
       <AnalyticsFilters data={liftingDisputes} filter={filter} onChange={setFilter} hidePaymentStatus />
       <KpiGrid items={kpiItems} />
@@ -89,5 +91,6 @@ export const DisputeLiftingBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(trend, 'area', 'les levées de litige')} />}
       </div>
     </div>
+    </FilterLabelContext.Provider>
   );
 });

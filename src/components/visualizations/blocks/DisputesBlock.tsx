@@ -1,11 +1,11 @@
 import React, { useState, useMemo, memo, useCallback } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
-import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, CHART_COLORS } from '@/utils/analyticsHelpers';
+import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, CHART_COLORS, buildFilterLabel } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { AlertTriangle, Scale, TrendingUp, Users } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
-import { ChartCard, StackedBarCard } from '../shared/ChartCard';
+import { ChartCard, StackedBarCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
 
 import { generateInsight, generateStackedInsight } from '@/utils/chartInsights';
@@ -18,6 +18,7 @@ const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TAB
 
 export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
+  const filterLabel = useMemo(() => buildFilterLabel(filter), [filter]);
   const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
   const filtered = useMemo(() => applyFilters(data.disputes, filter), [data.disputes, filter]);
 
@@ -85,6 +86,7 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
   ].filter(k => v(k.key)), [filtered, enCours, resolus, avgDuration, v, getChartConfig]);
 
   return (
+    <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
       <AnalyticsFilters data={data.disputes} filter={filter} onChange={setFilter}
         statusField="current_status" hidePaymentStatus
@@ -115,5 +117,6 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(trend, 'area', 'les litiges')} />}
       </div>
     </div>
+    </FilterLabelContext.Provider>
   );
 });

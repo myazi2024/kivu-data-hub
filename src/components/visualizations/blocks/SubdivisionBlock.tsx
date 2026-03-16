@@ -1,11 +1,11 @@
 import React, { useState, useMemo, memo, useCallback } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
-import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, avgProcessingDays } from '@/utils/analyticsHelpers';
+import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, avgProcessingDays, buildFilterLabel } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { Scissors, TrendingUp, BarChart3, Users, DollarSign, Target, Ruler } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
-import { ChartCard } from '../shared/ChartCard';
+import { ChartCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
 
 import { generateInsight } from '@/utils/chartInsights';
@@ -18,6 +18,7 @@ const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TAB
 
 export const SubdivisionBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
+  const filterLabel = useMemo(() => buildFilterLabel(filter), [filter]);
   const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
   const filtered = useMemo(() => applyFilters(data.subdivisionRequests, filter), [data.subdivisionRequests, filter]);
   const byStatus = useMemo(() => countBy(filtered, 'status'), [filtered]);
@@ -104,6 +105,7 @@ export const SubdivisionBlock: React.FC<Props> = memo(({ data }) => {
   ].filter(k => v(k.key)), [filtered, stats, v, getChartConfig]);
 
   return (
+    <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
       <AnalyticsFilters data={data.subdivisionRequests} filter={filter} onChange={setFilter} paymentStatusField="submission_payment_status" />
       <KpiGrid items={kpiItems} />
@@ -127,5 +129,6 @@ export const SubdivisionBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(trend, 'area', 'les demandes de lotissement')} />}
       </div>
     </div>
+    </FilterLabelContext.Provider>
   );
 });

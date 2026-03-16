@@ -1,11 +1,11 @@
 import React, { useState, useMemo, memo, useCallback } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
-import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth } from '@/utils/analyticsHelpers';
+import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, buildFilterLabel } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { Receipt, TrendingUp, DollarSign, CreditCard, MapPin } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
-import { ChartCard } from '../shared/ChartCard';
+import { ChartCard, FilterLabelContext } from '../shared/ChartCard';
 
 import { generateInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
@@ -17,6 +17,7 @@ const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TAB
 
 export const InvoicesBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
+  const filterLabel = useMemo(() => buildFilterLabel(filter), [filter]);
   const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
   const filtered = useMemo(() => applyFilters(data.invoices, filter), [data.invoices, filter]);
 
@@ -63,6 +64,7 @@ export const InvoicesBlock: React.FC<Props> = memo(({ data }) => {
   ].filter(k => v(k.key)), [filtered, stats, v, getChartConfig]);
 
   return (
+    <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
       <AnalyticsFilters data={data.invoices} filter={filter} onChange={setFilter} />
       <KpiGrid items={kpiItems} />
@@ -79,5 +81,6 @@ export const InvoicesBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(trend, 'area', 'les factures')} />}
       </div>
     </div>
+    </FilterLabelContext.Provider>
   );
 });

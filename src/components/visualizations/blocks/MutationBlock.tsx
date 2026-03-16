@@ -1,11 +1,11 @@
 import React, { useState, useMemo, memo, useCallback } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
-import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, CHART_COLORS, avgProcessingDays } from '@/utils/analyticsHelpers';
+import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, CHART_COLORS, avgProcessingDays, buildFilterLabel } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { ArrowRightLeft, TrendingUp, Users, DollarSign } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
-import { ChartCard, StackedBarCard } from '../shared/ChartCard';
+import { ChartCard, StackedBarCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
 
 import { generateInsight, generateStackedInsight } from '@/utils/chartInsights';
@@ -18,6 +18,7 @@ const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TAB
 
 export const MutationBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
+  const filterLabel = useMemo(() => buildFilterLabel(filter), [filter]);
   const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
   const filtered = useMemo(() => applyFilters(data.mutationRequests, filter), [data.mutationRequests, filter]);
   const byStatus = useMemo(() => countBy(filtered, 'status'), [filtered]);
@@ -82,6 +83,7 @@ export const MutationBlock: React.FC<Props> = memo(({ data }) => {
   ].filter(k => v(k.key)), [filtered, stats, v, getChartConfig]);
 
   return (
+    <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
       <AnalyticsFilters data={data.mutationRequests} filter={filter} onChange={setFilter} />
       <KpiGrid items={kpiItems} />
@@ -111,5 +113,6 @@ export const MutationBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(trend, 'area', 'les demandes de mutation')} />}
       </div>
     </div>
+    </FilterLabelContext.Provider>
   );
 });

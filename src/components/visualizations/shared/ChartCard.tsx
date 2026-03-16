@@ -117,18 +117,19 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
   const truncated = type !== 'area' && data.length > maxItems;
 
   const filterLabel = useContext(FilterLabelContext);
-  const fullTitle = filterLabel ? `${title} — ${filterLabel}` : title;
 
   return (
     <Card ref={ref} className={`border-border/30 ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
       <CardHeader className="pb-1 px-2 pt-2">
-        <CardTitle className="text-xs font-semibold flex items-center gap-1">
-          {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'}`} />}
-          <span className="truncate">{title}</span>
-          {filterLabel && <span className="text-[8px] font-normal text-muted-foreground truncate">— {filterLabel}</span>}
-          {truncated && <span className="text-[8px] text-muted-foreground ml-auto mr-1 shrink-0">Top {maxItems}/{data.length}</span>}
-          <CopyButton onClick={copy} copied={copied} />
-        </CardTitle>
+        <div>
+          <CardTitle className="text-xs font-semibold flex items-center gap-1">
+            {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'}`} />}
+            <span className="truncate">{title}</span>
+            {truncated && <span className="text-[8px] text-muted-foreground ml-auto mr-1 shrink-0">Top {maxItems}/{data.length}</span>}
+            <CopyButton onClick={copy} copied={copied} />
+          </CardTitle>
+          {filterLabel && <p className="text-[8px] italic text-muted-foreground mt-0.5 pl-4">({filterLabel})</p>}
+        </div>
       </CardHeader>
       <CardContent className="px-2 pb-2">
         {displayData.length === 0 ? <NoData /> : (
@@ -196,12 +197,14 @@ export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
   return (
     <Card ref={ref} className={`border-border/30 ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
       <CardHeader className="pb-1 px-2 pt-2">
-        <CardTitle className="text-xs font-semibold flex items-center gap-1">
-          {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'}`} />}
-          <span className="truncate">{title}</span>
-          {filterLabel && <span className="text-[8px] font-normal text-muted-foreground truncate">— {filterLabel}</span>}
-          <CopyButton onClick={copy} copied={copied} />
-        </CardTitle>
+        <div>
+          <CardTitle className="text-xs font-semibold flex items-center gap-1">
+            {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'}`} />}
+            <span className="truncate">{title}</span>
+            <CopyButton onClick={copy} copied={copied} />
+          </CardTitle>
+          {filterLabel && <p className="text-[8px] italic text-muted-foreground mt-0.5 pl-4">({filterLabel})</p>}
+        </div>
       </CardHeader>
       <CardContent className="px-2 pb-2">
         {displayData.length === 0 ? <NoData /> : (
@@ -241,12 +244,14 @@ export const ColorMappedPieCard: React.FC<MultiDataPieProps> = memo(({
   return (
     <Card ref={ref} className="border-border/30">
       <CardHeader className="pb-1 px-2 pt-2">
-        <CardTitle className="text-xs font-semibold flex items-center gap-1">
-          {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'}`} />}
-          <span className="truncate">{title}</span>
-          {filterLabel && <span className="text-[8px] font-normal text-muted-foreground truncate">— {filterLabel}</span>}
-          <CopyButton onClick={copy} copied={copied} />
-        </CardTitle>
+        <div>
+          <CardTitle className="text-xs font-semibold flex items-center gap-1">
+            {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'}`} />}
+            <span className="truncate">{title}</span>
+            <CopyButton onClick={copy} copied={copied} />
+          </CardTitle>
+          {filterLabel && <p className="text-[8px] italic text-muted-foreground mt-0.5 pl-4">({filterLabel})</p>}
+        </div>
       </CardHeader>
       <CardContent className="px-2 pb-2">
         {data.length === 0 ? <NoData /> : (

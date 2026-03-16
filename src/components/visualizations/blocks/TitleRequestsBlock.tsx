@@ -126,6 +126,7 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
   const v = isChartVisible;
 
   return (
+    <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
       <AnalyticsFilters data={data.titleRequests} filter={filter} onChange={setFilter} />
       <KpiGrid items={kpiItems} />
@@ -167,5 +168,6 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(trend, 'area', 'les demandes de titres')} />}
       </div>
     </div>
+    </FilterLabelContext.Provider>
   );
 });

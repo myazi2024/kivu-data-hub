@@ -1,11 +1,11 @@
 import React, { useState, useMemo, memo, useCallback } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
-import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, surfaceDistribution, yearDecadeDistribution, CHART_COLORS } from '@/utils/analyticsHelpers';
+import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, surfaceDistribution, yearDecadeDistribution, CHART_COLORS, buildFilterLabel } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { FileText, Users, Building, Shield, Landmark, TrendingUp, Ruler, Home, Clock, CheckCircle } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
-import { ChartCard, ColorMappedPieCard, StackedBarCard } from '../shared/ChartCard';
+import { ChartCard, ColorMappedPieCard, StackedBarCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
 
 import { generateInsight, generateStackedInsight } from '@/utils/chartInsights';
@@ -23,6 +23,7 @@ const GENDER_COLORS: Record<string, string> = {
 
 export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
+  const filterLabel = useMemo(() => buildFilterLabel(filter), [filter]);
   const filteredParcels = useMemo(() => applyFilters(data.parcels, filter), [data.parcels, filter]);
   const filteredContribs = useMemo(() => applyFilters(data.contributions, filter), [data.contributions, filter]);
   const filteredPermits = useMemo(() => applyFilters(data.buildingPermits, filter), [data.buildingPermits, filter]);
@@ -137,6 +138,7 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
 
 
   return (
+    <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
       <AnalyticsFilters data={data.parcels} filter={filter} onChange={setFilter} hidePaymentStatus />
       <KpiGrid items={[
@@ -198,5 +200,6 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(trend, 'area', 'les parcelles titrées')} />
       </div>
     </div>
+    </FilterLabelContext.Provider>
   );
 });
