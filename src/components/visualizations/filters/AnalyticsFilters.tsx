@@ -4,6 +4,15 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Filter, MapPin, Calendar, X, CheckCircle, CreditCard } from 'lucide-react';
 import { AnalyticsFilter, defaultFilter, extractUnique, getAvailableYears, getSectionType } from '@/utils/analyticsHelpers';
+import {
+  getAllProvinces,
+  getVillesForProvince,
+  getCommunesForVille,
+  getTerritoiresForProvince,
+  getCollectivitesForTerritoire,
+  getQuartiersForCommune,
+  getAvenuesForQuartier,
+} from '@/lib/geographicData';
 
 interface Props {
   data: any[];
@@ -24,41 +33,39 @@ export const AnalyticsFilters: React.FC<Props> = ({
 }) => {
   const years = useMemo(() => getAvailableYears(data, dateField), [data, dateField]);
 
-  // === Spatial funnel: Province → Section → sub-levels ===
-  const provinces = useMemo(() => extractUnique(data, 'province'), [data]);
+  // === Geographic hierarchy from geographicData (same as forms) ===
+  const provinces = useMemo(() => getAllProvinces(), []);
 
+  // After province, detect which sections have data
   const provinceScoped = useMemo(
     () => filter.province ? data.filter(r => r.province === filter.province) : data,
     [data, filter.province]
   );
-
-  // After province, detect available sections
   const hasUrbanData = useMemo(() => provinceScoped.some(r => getSectionType(r) === 'urbaine'), [provinceScoped]);
   const hasRuralData = useMemo(() => provinceScoped.some(r => getSectionType(r) === 'rurale'), [provinceScoped]);
 
-  // Section-scoped data
+  // Urban cascade from geographicData
+  const villes = useMemo(() => filter.province ? getVillesForProvince(filter.province) : [], [filter.province]);
+  const communes = useMemo(() => (filter.province && filter.ville) ? getCommunesForVille(filter.province, filter.ville) : [], [filter.province, filter.ville]);
+  const quartiers = useMemo(() => (filter.province && filter.ville && filter.commune) ? getQuartiersForCommune(filter.province, filter.ville, filter.commune) : [], [filter.province, filter.ville, filter.commune]);
+  const avenues = useMemo(() => (filter.province && filter.ville && filter.commune && filter.quartier) ? getAvenuesForQuartier(filter.province, filter.ville, filter.commune, filter.quartier) : [], [filter.province, filter.ville, filter.commune, filter.quartier]);
+
+  // Rural cascade from geographicData
+  const territoires = useMemo(() => filter.province ? getTerritoiresForProvince(filter.province) : [], [filter.province]);
+  const collectivites = useMemo(() => (filter.province && filter.territoire) ? getCollectivitesForTerritoire(filter.province, filter.territoire) : [], [filter.province, filter.territoire]);
+
+  // Groupements & villages: not in geographicData, fall back to data extraction
   const sectionScoped = useMemo(() => {
-    if (filter.sectionType === 'all') return provinceScoped;
-    return provinceScoped.filter(r => getSectionType(r) === filter.sectionType);
-  }, [provinceScoped, filter.sectionType]);
+    let scoped = provinceScoped;
+    if (filter.sectionType !== 'all') scoped = scoped.filter(r => getSectionType(r) === filter.sectionType);
+    if (filter.territoire) scoped = scoped.filter(r => r.territoire === filter.territoire);
+    if (filter.collectivite) scoped = scoped.filter(r => r.collectivite === filter.collectivite);
+    return scoped;
+  }, [provinceScoped, filter.sectionType, filter.territoire, filter.collectivite]);
 
-  // Urban cascade: Ville → Commune → Quartier → Avenue
-  const villes = useMemo(() => extractUnique(sectionScoped, 'ville'), [sectionScoped]);
-  const villeScoped = useMemo(() => filter.ville ? sectionScoped.filter(r => r.ville === filter.ville) : sectionScoped, [sectionScoped, filter.ville]);
-  const communes = useMemo(() => extractUnique(villeScoped, 'commune'), [villeScoped]);
-  const communeScoped = useMemo(() => filter.commune ? villeScoped.filter(r => r.commune === filter.commune) : villeScoped, [villeScoped, filter.commune]);
-  const quartiers = useMemo(() => extractUnique(communeScoped, 'quartier'), [communeScoped]);
-  const quartierScoped = useMemo(() => filter.quartier ? communeScoped.filter(r => r.quartier === filter.quartier) : communeScoped, [communeScoped, filter.quartier]);
-  const avenues = useMemo(() => extractUnique(quartierScoped, 'avenue'), [quartierScoped]);
-
-  // Rural cascade: Territoire → Collectivité → Groupement → Village
-  const territoires = useMemo(() => extractUnique(sectionScoped, 'territoire'), [sectionScoped]);
-  const territoireScoped = useMemo(() => filter.territoire ? sectionScoped.filter(r => r.territoire === filter.territoire) : sectionScoped, [sectionScoped, filter.territoire]);
-  const collectivites = useMemo(() => extractUnique(territoireScoped, 'collectivite'), [territoireScoped]);
-  const collectiviteScoped = useMemo(() => filter.collectivite ? territoireScoped.filter(r => r.collectivite === filter.collectivite) : territoireScoped, [territoireScoped, filter.collectivite]);
-  const groupements = useMemo(() => extractUnique(collectiviteScoped, 'groupement'), [collectiviteScoped]);
-  const groupementScoped = useMemo(() => filter.groupement ? collectiviteScoped.filter(r => r.groupement === filter.groupement) : collectiviteScoped, [collectiviteScoped, filter.groupement]);
-  const villages = useMemo(() => extractUnique(groupementScoped, 'village'), [groupementScoped]);
+  const groupements = useMemo(() => filter.collectivite ? extractUnique(sectionScoped, 'groupement') : [], [sectionScoped, filter.collectivite]);
+  const groupementScoped = useMemo(() => filter.groupement ? sectionScoped.filter(r => r.groupement === filter.groupement) : sectionScoped, [sectionScoped, filter.groupement]);
+  const villages = useMemo(() => filter.groupement ? extractUnique(groupementScoped, 'village') : [], [groupementScoped, filter.groupement]);
 
   // Status & payment filters
   const detectedStatusField = statusField || (data.length > 0 && data[0]?.current_status !== undefined ? 'current_status' : 'status');
@@ -166,24 +173,22 @@ export const AnalyticsFilters: React.FC<Props> = ({
         <Badge variant="outline" className="gap-0.5 text-[10px] px-1.5 py-0"><MapPin className="h-2.5 w-2.5" /> Lieu</Badge>
 
         {/* Province */}
-        {provinces.length > 0 && (
-          <Select value={filter.province || '__all__'} onValueChange={v => onChange({
-            ...filter,
-            province: v === '__all__' ? undefined : v,
-            sectionType: 'all',
-            ville: undefined, commune: undefined, quartier: undefined, avenue: undefined,
-            territoire: undefined, collectivite: undefined, groupement: undefined, villageFilter: undefined,
-          })}>
-            <SelectTrigger className={selectCls}><SelectValue placeholder="Province" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">Toutes provinces</SelectItem>
-              {provinces.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        )}
+        <Select value={filter.province || '__all__'} onValueChange={v => onChange({
+          ...filter,
+          province: v === '__all__' ? undefined : v,
+          sectionType: 'all',
+          ville: undefined, commune: undefined, quartier: undefined, avenue: undefined,
+          territoire: undefined, collectivite: undefined, groupement: undefined, villageFilter: undefined,
+        })}>
+          <SelectTrigger className={selectCls}><SelectValue placeholder="Province" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">Toutes provinces</SelectItem>
+            {provinces.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+          </SelectContent>
+        </Select>
 
-        {/* Section — show when both urban & rural exist */}
-        {(hasUrbanData || hasRuralData) && (
+        {/* Section — show when province selected and both sections have data */}
+        {filter.province && (hasUrbanData || hasRuralData) && (
           <>
             <span className="text-[10px] text-muted-foreground">›</span>
             <Select value={filter.sectionType} onValueChange={v => onChange({
