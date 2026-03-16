@@ -5,7 +5,7 @@ import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { FileText, Users, Building, Shield, Landmark, TrendingUp, Ruler, Home, Clock, CheckCircle } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
-import { ChartCard, ColorMappedPieCard, StackedBarCard } from '../shared/ChartCard';
+import { ChartCard, ColorMappedPieCard, StackedBarCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
 
 import { generateInsight, generateStackedInsight } from '@/utils/chartInsights';
