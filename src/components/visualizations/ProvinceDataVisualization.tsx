@@ -81,7 +81,7 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = () =
   return (
     <div className="flex flex-row lg:flex-col h-full w-full">
       {/* Tabs - vertical on mobile, horizontal on desktop */}
-      <div className="w-10 sm:w-12 lg:w-full shrink-0 overflow-y-auto overflow-x-hidden lg:overflow-y-hidden lg:overflow-x-auto scrollbar-hide border-r lg:border-r-0 lg:border-b border-border/40 bg-muted/30">
+      <div className="w-10 sm:w-12 lg:w-full shrink-0 overflow-y-auto overflow-x-hidden lg:overflow-y-hidden lg:overflow-x-auto scrollbar-hide border-r lg:border-r-0 lg:border-b border-border/40 bg-muted/30 sticky top-0 left-0 z-10 backdrop-blur-sm">
         <div className="flex flex-col lg:flex-row lg:items-center gap-0.5 p-0.5 lg:w-max">
           {blocks.map((block) => {
             const isActive = activeTab === block.id;
