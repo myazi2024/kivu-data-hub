@@ -42,6 +42,7 @@ export const CertificatesBlock: React.FC<Props> = memo(({ data }) => {
   ].filter(k => v(k.key)), [filtered, stats, v, getChartConfig]);
 
   return (
+    <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
       <AnalyticsFilters data={data.certificates} filter={filter} onChange={setFilter} hidePaymentStatus hideStatus dateField="generated_at" />
       <KpiGrid items={kpiItems} />
