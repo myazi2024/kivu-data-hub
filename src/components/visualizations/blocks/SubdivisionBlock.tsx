@@ -90,12 +90,6 @@ export const SubdivisionBlock: React.FC<Props> = memo(({ data }) => {
     return { totalLots, approved, avgLots, avgDays, totalSurface, totalRevenue };
   }, [filtered]);
 
-  const handleExport = useCallback(() => {
-    exportRecordsToCSV(filtered, `lotissements-${new Date().toISOString().slice(0,10)}`, [
-      'id', 'parcel_number', 'status', 'number_of_lots', 'purpose_of_subdivision', 'requester_type',
-      'submission_payment_status', 'total_amount_usd', 'parent_parcel_area_sqm', 'province', 'ville', 'commune', 'created_at'
-    ]);
-  }, [filtered]);
 
   const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
   const v = isChartVisible;
