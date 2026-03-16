@@ -74,7 +74,8 @@ export const AnalyticsFilters: React.FC<Props> = ({
   const detectedPaymentField = paymentStatusField || (data.length > 0 && data[0]?.submission_payment_status !== undefined ? 'submission_payment_status' : 'payment_status');
   const paymentStatusOptions = useMemo(() => hidePaymentStatus ? [] : extractUnique(data, detectedPaymentField), [data, detectedPaymentField, hidePaymentStatus]);
 
-  const hasActiveFilters = filter.periodType !== 'all' || filter.sectionType !== 'all' ||
+  const hasActiveFilters = (filter.periodType !== defaultFilter.periodType) || (filter.year !== defaultFilter.year) ||
+    filter.subPeriod || filter.sectionType !== 'all' ||
     filter.province || filter.ville || filter.commune || filter.quartier || filter.avenue ||
     filter.territoire || filter.collectivite || filter.groupement || filter.villageFilter ||
     filter.status || filter.paymentStatus;
@@ -182,7 +183,7 @@ export const AnalyticsFilters: React.FC<Props> = ({
         })}>
           <SelectTrigger className={selectCls}><SelectValue placeholder="Province" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="__all__">Toutes provinces</SelectItem>
+            <SelectItem value="__all__">Rép. Dém. du Congo</SelectItem>
             {provinces.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
           </SelectContent>
         </Select>
