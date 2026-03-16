@@ -317,7 +317,10 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
     charts: [
       { tab_key: 'boundary', item_key: 'conflict-type', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Type conflit', chart_type: 'bar-h' },
       { tab_key: 'boundary', item_key: 'status', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Statut', chart_type: 'pie' },
-      { tab_key: 'boundary', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
+      { tab_key: 'boundary', item_key: 'type-status-cross', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Type × Statut' },
+      { tab_key: 'boundary', item_key: 'resolution-rate', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Taux résolution %', chart_type: 'area' },
+      { tab_key: 'boundary', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Géographie' },
+      { tab_key: 'boundary', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
     ],
     kpis: [
       { tab_key: 'boundary', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Total' },
