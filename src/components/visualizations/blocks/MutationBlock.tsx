@@ -83,6 +83,7 @@ export const MutationBlock: React.FC<Props> = memo(({ data }) => {
   ].filter(k => v(k.key)), [filtered, stats, v, getChartConfig]);
 
   return (
+    <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
       <AnalyticsFilters data={data.mutationRequests} filter={filter} onChange={setFilter} />
       <KpiGrid items={kpiItems} />
