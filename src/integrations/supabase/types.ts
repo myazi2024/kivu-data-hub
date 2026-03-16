@@ -47,6 +47,54 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_charts_config: {
+        Row: {
+          chart_type: string | null
+          col_span: number | null
+          created_at: string
+          custom_color: string | null
+          custom_icon: string | null
+          custom_title: string | null
+          display_order: number
+          id: string
+          is_visible: boolean
+          item_key: string
+          item_type: string
+          tab_key: string
+          updated_at: string
+        }
+        Insert: {
+          chart_type?: string | null
+          col_span?: number | null
+          created_at?: string
+          custom_color?: string | null
+          custom_icon?: string | null
+          custom_title?: string | null
+          display_order?: number
+          id?: string
+          is_visible?: boolean
+          item_key: string
+          item_type?: string
+          tab_key: string
+          updated_at?: string
+        }
+        Update: {
+          chart_type?: string | null
+          col_span?: number | null
+          created_at?: string
+          custom_color?: string | null
+          custom_icon?: string | null
+          custom_title?: string | null
+          display_order?: number
+          id?: string
+          is_visible?: boolean
+          item_key?: string
+          item_type?: string
+          tab_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       article_favorites: {
         Row: {
           article_id: string
