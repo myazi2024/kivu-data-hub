@@ -61,7 +61,7 @@ export const DisputeLiftingBlock: React.FC<Props> = memo(({ data }) => {
 
   return (
     <div className="space-y-2">
-      <AnalyticsFilters data={liftingDisputes} filter={filter} onChange={setFilter} onExport={handleExport} />
+      <AnalyticsFilters data={liftingDisputes} filter={filter} onChange={setFilter} onExport={handleExport} hidePaymentStatus />
       <KpiGrid items={[
         { label: 'Total levées', value: filtered.length, cls: 'text-sky-600' },
         { label: 'Approuvées', value: stats.approved, cls: 'text-emerald-600', tooltip: pct(stats.approved, filtered.length) },
