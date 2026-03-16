@@ -231,16 +231,13 @@ const MONTH_LABELS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','O
 /** Build a human-readable label from active filters (time + location) */
 export function buildFilterLabel(filter: AnalyticsFilter): string {
   const parts: string[] = [];
-  // Time — always show year if set, otherwise "Toute période"
-  if (filter.periodType !== 'all' && filter.year) {
-    let t = String(filter.year);
-    if (filter.periodType === 'semester' && filter.subPeriod) t += ` S${filter.subPeriod}`;
-    else if (filter.periodType === 'quarter' && filter.subPeriod) t += ` T${filter.subPeriod}`;
-    else if (filter.periodType === 'month' && filter.subPeriod) t += ` ${MONTH_LABELS[filter.subPeriod - 1]}`;
-    parts.push(t);
-  } else {
-    parts.push('Toute période');
-  }
+  // Time — cascading
+  let t = String(filter.year);
+  if (filter.semester) t += ` S${filter.semester}`;
+  if (filter.quarter) t += ` T${filter.quarter}`;
+  if (filter.month) t += ` ${MONTH_LABELS[filter.month - 1]}`;
+  if (filter.week) t += ` Sem.${filter.week}`;
+  parts.push(t);
   // Location — always show at least the country
   const loc: string[] = [];
   if (filter.province) {
