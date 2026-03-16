@@ -2,7 +2,7 @@ import React, { useMemo, useCallback } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Filter, MapPin, Calendar, X, Download, AlertCircle, CheckCircle, CreditCard, Building2 } from 'lucide-react';
+import { Filter, MapPin, Calendar, X, AlertCircle, CheckCircle, CreditCard, Building2 } from 'lucide-react';
 import { AnalyticsFilter, defaultFilter, extractUnique, getAvailableYears, getSectionType } from '@/utils/analyticsHelpers';
 
 interface Props {
