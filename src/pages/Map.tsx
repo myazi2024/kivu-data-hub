@@ -3,7 +3,6 @@ import Navigation from '@/components/ui/navigation';
 import DRCInteractiveMap from '@/components/DRCInteractiveMap';
 
 const Map = () => {
-  const navigate = useNavigate();
 
   return (
     <div className="h-dvh flex flex-col overflow-hidden">
