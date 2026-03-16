@@ -93,7 +93,7 @@ export const AnalyticsFilters: React.FC<Props> = ({
       <div className="flex items-center gap-1 flex-wrap">
         <Badge variant="outline" className="gap-0.5 text-[10px] px-1.5 py-0"><Calendar className="h-2.5 w-2.5" /> Temps</Badge>
 
-        <Select value={filter.periodType} onValueChange={v => onChange({ ...filter, periodType: v as any, year: undefined, subPeriod: undefined })}>
+        <Select value={filter.periodType} onValueChange={v => onChange({ ...filter, periodType: v as any, year: v === 'all' ? undefined : (filter.year || defaultFilter.year), subPeriod: undefined })}>
           <SelectTrigger className={selectCls}><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Toute période</SelectItem>
