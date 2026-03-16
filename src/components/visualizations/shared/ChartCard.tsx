@@ -247,7 +247,7 @@ export const ColorMappedPieCard: React.FC<MultiDataPieProps> = memo(({
 }) => {
   const { ref, copied, copy } = useCopyAsImage();
   const filterLabel = useContext(FilterLabelContext);
-  const fullTitle = filterLabel ? `${title} — ${filterLabel}` : title;
+  
   return (
     <Card ref={ref} className="border-border/30">
       <CardHeader className="pb-1 px-2 pt-2">
