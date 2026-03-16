@@ -808,7 +808,7 @@ const DRCInteractiveMap = () => {
               </div>
               
               {/* Carte responsive optimisée */}
-              <div className="flex-1 min-h-0 p-1 sm:p-2 md:p-3 overflow-hidden flex items-center justify-center">
+              <div className="flex-1 min-h-0 p-1 sm:p-2 md:p-3 overflow-hidden flex items-center justify-center" style={{ transform: 'scale(0.9)', transformOrigin: 'center center' }}>
                 <DRCMapWithTooltip
                     provincesData={provincesData}
                     selectedProvince={selectedProvince?.id || null}
