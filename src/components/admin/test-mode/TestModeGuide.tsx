@@ -3,10 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const guidelines = [
   <>Activez le <strong>mode test</strong> avant de tester les flux critiques (paiements, contributions, etc.)</>,
-  <>Toutes les données créées en mode test auront le préfixe <strong>TEST-</strong> dans leur numéro de parcelle</>,
-  <>Utilisez <strong>"Générer données de test"</strong> pour créer rapidement des jeux de données de test</>,
-  <>Le <strong>nettoyage automatique</strong> supprimera les données de test après le délai configuré (cron quotidien)</>,
-  <>Utilisez <strong>"Nettoyer tout"</strong> pour supprimer manuellement toutes les données de test</>,
+  <>Toutes les données créées en mode test auront le préfixe <strong>TEST-</strong> dans leur numéro de parcelle ou référence</>,
+  <>Utilisez <strong>"Générer données de test"</strong> pour créer un jeu complet : parcelles, contributions, factures, paiements, codes CCC, titres, expertises, litiges, conflits, historique et certificats</>,
+  <>Le <strong>nettoyage automatique</strong> supprimera les données de test après le délai configuré (via cron quotidien)</>,
+  <>Utilisez <strong>"Nettoyer tout"</strong> pour supprimer manuellement toutes les données de test (respecte l'ordre FK)</>,
   <><strong>Important :</strong> Désactivez le mode test en production pour éviter la pollution des données</>,
 ];
 
