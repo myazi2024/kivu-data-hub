@@ -955,7 +955,7 @@ const DRCInteractiveMap = () => {
                   <span>Analytics</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="flex-1 p-0 overflow-y-auto overflow-x-hidden charts-compact text-[10px] min-h-0">
+              <CardContent className="flex-1 p-0 overflow-hidden charts-compact text-[10px] min-h-0">
                 <div className="h-full p-1.5 sm:p-2">
                   <ProvinceDataVisualization 
                     provinces={provincesData} 
