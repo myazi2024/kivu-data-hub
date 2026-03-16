@@ -79,11 +79,11 @@ export const FraudAttemptsBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(byFraudType, 'bar-h', 'les types de fraude')} />}
         {v('severity') && <ChartCard title={ct('severity', 'Sévérité')} icon={AlertTriangle} data={bySeverity} type="pie" colorIndex={4}
           insight={stats.critical > 0 ? `${stats.critical} tentative${stats.critical > 1 ? 's' : ''} de sévérité critique ou élevée nécessitant une attention immédiate.` : generateInsight(bySeverity, 'pie', 'les niveaux de sévérité')} />}
-        {v('type-severity-cross') && <StackedBarCard title={ct('type-severity-cross', 'Type × Sévérité')} icon={BarChart3} data={typeSeverityCross} series={[
-          { dataKey: 'critical', name: 'Critique' },
-          { dataKey: 'high', name: 'Élevée' },
-          { dataKey: 'medium', name: 'Moyenne' },
-          { dataKey: 'low', name: 'Faible' },
+        {v('type-severity-cross') && <StackedBarCard title={ct('type-severity-cross', 'Type × Sévérité')} data={typeSeverityCross} bars={[
+          { dataKey: 'critical', name: 'Critique', color: CHART_COLORS[4] },
+          { dataKey: 'high', name: 'Élevée', color: CHART_COLORS[6] },
+          { dataKey: 'medium', name: 'Moyenne', color: CHART_COLORS[3] },
+          { dataKey: 'low', name: 'Faible', color: CHART_COLORS[2] },
         ]} layout="vertical" labelWidth={100} maxItems={6}
           insight={generateStackedInsight(typeSeverityCross, [{ dataKey: 'critical', name: 'Critique' }, { dataKey: 'high', name: 'Élevée' }], 'croisement type/sévérité')} />}
         {v('linked') && <ChartCard title={ct('linked', 'Liées à contrib.')} icon={Link2} data={linkedData} type="donut" colorIndex={0} hidden={linkedData.length === 0}

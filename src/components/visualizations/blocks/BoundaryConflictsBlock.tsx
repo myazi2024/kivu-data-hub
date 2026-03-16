@@ -88,10 +88,10 @@ export const BoundaryConflictsBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(byType, 'bar-h', 'les types de conflit de limites')} />}
         {v('status') && <ChartCard title={ct('status', 'Statut')} icon={CheckCircle} data={byStatus} type="pie" colorIndex={2}
           insight={generateInsight(byStatus, 'pie', 'les statuts de conflit')} />}
-        {v('type-status-cross') && <StackedBarCard title={ct('type-status-cross', 'Type × Statut')} icon={BarChart3} data={typeStatusCross} series={[
-          { dataKey: 'resolved', name: 'Résolus' },
-          { dataKey: 'pending', name: 'En attente' },
-          { dataKey: 'open', name: 'Ouverts' },
+        {v('type-status-cross') && <StackedBarCard title={ct('type-status-cross', 'Type × Statut')} data={typeStatusCross} bars={[
+          { dataKey: 'resolved', name: 'Résolus', color: CHART_COLORS[2] },
+          { dataKey: 'pending', name: 'En attente', color: CHART_COLORS[3] },
+          { dataKey: 'open', name: 'Ouverts', color: CHART_COLORS[4] },
         ]} layout="vertical" labelWidth={90} maxItems={6}
           insight={generateStackedInsight(typeStatusCross, [{ dataKey: 'resolved', name: 'Résolus' }, { dataKey: 'pending', name: 'En attente' }], 'croisement type/statut')} />}
         {v('resolution-rate') && <ChartCard title={ct('resolution-rate', 'Taux résolution %')} icon={TrendingUp} data={resolutionTrend} type="area" colorIndex={2} hidden={resolutionTrend.length < 2}
