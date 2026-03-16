@@ -76,6 +76,7 @@ export const ContributionsBlock: React.FC<Props> = memo(({ data }) => {
   ].filter(k => v(k.key)), [filtered, stats, fraudData, appealData, v, getChartConfig]);
 
   return (
+    <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
       <AnalyticsFilters data={data.contributions} filter={filter} onChange={setFilter} hidePaymentStatus />
       <KpiGrid items={kpiItems} />
