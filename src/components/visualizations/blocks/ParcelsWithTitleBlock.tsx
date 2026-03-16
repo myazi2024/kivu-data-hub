@@ -138,6 +138,7 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
 
 
   return (
+    <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
       <AnalyticsFilters data={data.parcels} filter={filter} onChange={setFilter} hidePaymentStatus />
       <KpiGrid items={[
