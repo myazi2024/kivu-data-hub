@@ -1,5 +1,6 @@
 import React, { useMemo, memo } from 'react';
 import { countBy, getSectionType } from '@/utils/analyticsHelpers';
+import { generateInsight } from '@/utils/chartInsights';
 import { ChartCard } from './ChartCard';
 
 interface Props {
