@@ -3,7 +3,7 @@ import { AnalyticsFilters } from '../filters/AnalyticsFilters';
 import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, CHART_COLORS } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { AlertTriangle, Scale, TrendingUp } from 'lucide-react';
+import { AlertTriangle, Scale, TrendingUp, Clock, Users } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, StackedBarCard } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
@@ -15,14 +15,14 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
   const filtered = useMemo(() => applyFilters(data.disputes, filter), [data.disputes, filter]);
 
-  const { enCours, resolus, byNature, byType, byStatus, byResolutionLevel, trend, natureStatusCross, resolutionStatus } = useMemo(() => {
+  const { enCours, resolus, byNature, byType, byStatus, byResolutionLevel, byDeclarantQuality, trend, natureStatusCross, resolutionStatus } = useMemo(() => {
     const enCours = filtered.filter(d => !['resolved', 'closed', 'resolu', 'leve'].includes(d.current_status));
     const resolus = filtered.filter(d => ['resolved', 'closed', 'resolu', 'leve'].includes(d.current_status));
     const byNature = countBy(filtered, 'dispute_nature');
     const byType = countBy(filtered, 'dispute_type');
     const byStatus = countBy(filtered, 'current_status');
-    // #4 fix: Show resolution level for ALL disputes, not just enCours
     const byResolutionLevel = countBy(filtered, 'resolution_level');
+    const byDeclarantQuality = countBy(filtered, 'declarant_quality');
     const trend = trendByMonth(filtered);
 
     const map = new Map<string, { enCours: number; resolu: number }>();
@@ -35,7 +35,19 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
     const natureStatusCross = Array.from(map.entries()).map(([name, d]) => ({ name, ...d })).sort((a, b) => (b.enCours + b.resolu) - (a.enCours + a.resolu));
 
     const resolutionStatus = [{ name: 'En cours', value: enCours.length }, { name: 'Résolus', value: resolus.length }];
-    return { enCours, resolus, byNature, byType, byStatus, byResolutionLevel, trend, natureStatusCross, resolutionStatus };
+    return { enCours, resolus, byNature, byType, byStatus, byResolutionLevel, byDeclarantQuality, trend, natureStatusCross, resolutionStatus };
+  }, [filtered]);
+
+  // Average dispute duration (days)
+  const avgDuration = useMemo(() => {
+    const withStart = filtered.filter(d => d.dispute_start_date);
+    if (withStart.length === 0) return 0;
+    const now = Date.now();
+    const total = withStart.reduce((s, d) => {
+      const start = new Date(d.dispute_start_date).getTime();
+      return s + (now - start) / (1000 * 60 * 60 * 24);
+    }, 0);
+    return Math.round(total / withStart.length);
   }, [filtered]);
 
   const resolutionTrend = useMemo(() => {
@@ -59,26 +71,29 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
   const handleExport = useCallback(() => {
     exportRecordsToCSV(filtered, `litiges-${new Date().toISOString().slice(0,10)}`, [
       'id', 'parcel_number', 'dispute_nature', 'dispute_type', 'current_status', 'resolution_level',
-      'lifting_status', 'province', 'ville', 'commune', 'created_at'
+      'declarant_quality', 'dispute_start_date', 'lifting_status', 'province', 'ville', 'commune', 'created_at'
     ]);
   }, [filtered]);
 
   return (
     <div className="space-y-2">
-      <AnalyticsFilters data={data.disputes} filter={filter} onChange={setFilter} onExport={handleExport} />
+      <AnalyticsFilters data={data.disputes} filter={filter} onChange={setFilter} onExport={handleExport}
+        statusField="current_status" hidePaymentStatus
+      />
       <KpiGrid items={[
         { label: 'Total', value: filtered.length, cls: 'text-red-600' },
         { label: 'En cours', value: enCours.length, cls: 'text-amber-600', tooltip: pct(enCours.length, filtered.length) },
         { label: 'Résolus', value: resolus.length, cls: 'text-emerald-600', tooltip: pct(resolus.length, filtered.length) },
         { label: 'Taux résolution', value: pct(resolus.length, filtered.length), cls: 'text-purple-600' },
+        { label: 'Durée moy.', value: avgDuration > 0 ? `${avgDuration}j` : 'N/A', cls: 'text-blue-600', tooltip: 'Durée moyenne des litiges (jours)' },
       ]} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         <ChartCard title="Nature" icon={AlertTriangle} iconColor="text-red-500" data={byNature} type="bar-h" colorIndex={4} labelWidth={110} />
         <ChartCard title="En cours vs Résolus" data={resolutionStatus} type="pie" colorIndex={3} />
         <ChartCard title="Statut détaillé" data={byStatus} type="bar-v" colorIndex={8} />
         <ChartCard title="Type litige" data={byType} type="donut" colorIndex={0} />
-        {/* #4 fix: Resolution level for ALL disputes */}
         <ChartCard title="Niveau résolution" icon={Scale} iconColor="text-purple-500" data={byResolutionLevel} type="bar-h" colorIndex={5} labelWidth={100} />
+        <ChartCard title="Qualité déclarant" icon={Users} data={byDeclarantQuality} type="donut" colorIndex={1} hidden={byDeclarantQuality.length === 0} />
         <StackedBarCard title="Nature × Résolution" data={natureStatusCross} bars={[
           { dataKey: 'enCours', name: 'En cours', color: CHART_COLORS[3] },
           { dataKey: 'resolu', name: 'Résolus', color: CHART_COLORS[2] },
