@@ -3,7 +3,7 @@ import { AnalyticsFilters } from '../filters/AnalyticsFilters';
 import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, buildFilterLabel, CHART_COLORS } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { ShieldAlert, TrendingUp, AlertTriangle, Link2, BarChart3 } from 'lucide-react';
+import { ShieldAlert, TrendingUp, AlertTriangle, Link2 } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, StackedBarCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';

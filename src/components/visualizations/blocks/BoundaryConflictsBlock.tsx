@@ -4,7 +4,7 @@ import { CHART_COLORS } from '@/utils/analyticsHelpers';
 import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, avgProcessingDays, buildFilterLabel } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { MapPin, TrendingUp, CheckCircle, BarChart3 } from 'lucide-react';
+import { MapPin, TrendingUp, CheckCircle } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, StackedBarCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
