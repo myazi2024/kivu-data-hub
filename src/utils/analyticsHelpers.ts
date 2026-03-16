@@ -6,9 +6,11 @@ export const CHART_COLORS = [
 
 export interface AnalyticsFilter {
   sectionType: 'all' | 'urbaine' | 'rurale';
-  periodType: 'all' | 'year' | 'semester' | 'quarter' | 'month';
-  year?: number;
-  subPeriod?: number;
+  year: number;
+  semester?: number;   // 1 | 2
+  quarter?: number;    // 1..4
+  month?: number;      // 1..12
+  week?: number;       // 1..5 (week within month)
   province?: string;
   ville?: string;
   commune?: string;
@@ -22,7 +24,7 @@ export interface AnalyticsFilter {
   paymentStatus?: string;
 }
 
-export const defaultFilter: AnalyticsFilter = { sectionType: 'all', periodType: 'year', year: new Date().getFullYear() };
+export const defaultFilter: AnalyticsFilter = { sectionType: 'all', year: new Date().getFullYear() };
 
 export function getSectionType(record: any): 'urbaine' | 'rurale' | null {
   if (record.section_type === 'urbaine' || record.parcel_type === 'SU') return 'urbaine';
@@ -31,15 +33,24 @@ export function getSectionType(record: any): 'urbaine' | 'rurale' | null {
 }
 
 export function matchesPeriod(dateStr: string | null | undefined, filter: AnalyticsFilter): boolean {
-  if (!dateStr || filter.periodType === 'all') return true;
+  if (!dateStr) return true;
   const d = new Date(dateStr);
-  const year = d.getFullYear();
-  const month = d.getMonth() + 1;
-  if (filter.year && year !== filter.year) return false;
-  if (filter.periodType === 'year') return true;
-  if (filter.periodType === 'semester' && filter.subPeriod) return (month <= 6 ? 1 : 2) === filter.subPeriod;
-  if (filter.periodType === 'quarter' && filter.subPeriod) return Math.ceil(month / 3) === filter.subPeriod;
-  if (filter.periodType === 'month' && filter.subPeriod) return month === filter.subPeriod;
+  if (d.getFullYear() !== filter.year) return false;
+  if (filter.semester) {
+    const sem = d.getMonth() < 6 ? 1 : 2;
+    if (sem !== filter.semester) return false;
+  }
+  if (filter.quarter) {
+    const q = Math.ceil((d.getMonth() + 1) / 3);
+    if (q !== filter.quarter) return false;
+  }
+  if (filter.month) {
+    if (d.getMonth() + 1 !== filter.month) return false;
+  }
+  if (filter.week) {
+    const weekOfMonth = Math.ceil(d.getDate() / 7);
+    if (weekOfMonth !== filter.week) return false;
+  }
   return true;
 }
 
@@ -220,16 +231,13 @@ const MONTH_LABELS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','O
 /** Build a human-readable label from active filters (time + location) */
 export function buildFilterLabel(filter: AnalyticsFilter): string {
   const parts: string[] = [];
-  // Time — always show year if set, otherwise "Toute période"
-  if (filter.periodType !== 'all' && filter.year) {
-    let t = String(filter.year);
-    if (filter.periodType === 'semester' && filter.subPeriod) t += ` S${filter.subPeriod}`;
-    else if (filter.periodType === 'quarter' && filter.subPeriod) t += ` T${filter.subPeriod}`;
-    else if (filter.periodType === 'month' && filter.subPeriod) t += ` ${MONTH_LABELS[filter.subPeriod - 1]}`;
-    parts.push(t);
-  } else {
-    parts.push('Toute période');
-  }
+  // Time — cascading
+  let t = String(filter.year);
+  if (filter.semester) t += ` S${filter.semester}`;
+  if (filter.quarter) t += ` T${filter.quarter}`;
+  if (filter.month) t += ` ${MONTH_LABELS[filter.month - 1]}`;
+  if (filter.week) t += ` Sem.${filter.week}`;
+  parts.push(t);
   // Location — always show at least the country
   const loc: string[] = [];
   if (filter.province) {
