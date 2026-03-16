@@ -46,15 +46,24 @@ export const GeoCharts: React.FC<Props> = memo(({ records, colorIndices = [2, 6,
 
   return (
     <>
-      <ChartCard title="Par province" data={byProvince} type="bar-h" colorIndex={colorIndices[0]} labelWidth={100} hidden={byProvince.length === 0} />
-      <ChartCard title="Par ville" data={byVille} type="bar-v" colorIndex={colorIndices[0]} hidden={byVille.length === 0} />
-      <ChartCard title="Par commune" data={byCommune} type="bar-v" colorIndex={colorIndices[1]} hidden={byCommune.length === 0} />
-      <ChartCard title="Par quartier" data={byQuartier} type="bar-v" colorIndex={colorIndices[2]} hidden={byQuartier.length === 0} />
-      <ChartCard title="Par avenue" data={byAvenue} type="bar-v" colorIndex={colorIndices[0]} hidden={byAvenue.length === 0} />
-      <ChartCard title="Par territoire" data={byTerritoire} type="bar-v" colorIndex={colorIndices[3]} hidden={byTerritoire.length === 0} />
-      <ChartCard title="Par collectivité" data={byCollectivite} type="bar-v" colorIndex={colorIndices[4]} hidden={byCollectivite.length === 0} />
-      <ChartCard title="Par groupement" data={byGroupement} type="bar-v" colorIndex={colorIndices[5]} hidden={byGroupement.length === 0} />
-      <ChartCard title="Par village" data={byVillage} type="bar-v" colorIndex={colorIndices[3]} hidden={byVillage.length === 0} />
+      <ChartCard title="Par province" data={byProvince} type="bar-h" colorIndex={colorIndices[0]} labelWidth={100} hidden={byProvince.length === 0}
+        insight={generateInsight(byProvince, 'bar-h', 'les provinces')} />
+      <ChartCard title="Par ville" data={byVille} type="bar-v" colorIndex={colorIndices[0]} hidden={byVille.length === 0}
+        insight={generateInsight(byVille, 'bar-v', 'les villes')} />
+      <ChartCard title="Par commune" data={byCommune} type="bar-v" colorIndex={colorIndices[1]} hidden={byCommune.length === 0}
+        insight={generateInsight(byCommune, 'bar-v', 'les communes')} />
+      <ChartCard title="Par quartier" data={byQuartier} type="bar-v" colorIndex={colorIndices[2]} hidden={byQuartier.length === 0}
+        insight={generateInsight(byQuartier, 'bar-v', 'les quartiers')} />
+      <ChartCard title="Par avenue" data={byAvenue} type="bar-v" colorIndex={colorIndices[0]} hidden={byAvenue.length === 0}
+        insight={generateInsight(byAvenue, 'bar-v', 'les avenues')} />
+      <ChartCard title="Par territoire" data={byTerritoire} type="bar-v" colorIndex={colorIndices[3]} hidden={byTerritoire.length === 0}
+        insight={generateInsight(byTerritoire, 'bar-v', 'les territoires')} />
+      <ChartCard title="Par collectivité" data={byCollectivite} type="bar-v" colorIndex={colorIndices[4]} hidden={byCollectivite.length === 0}
+        insight={generateInsight(byCollectivite, 'bar-v', 'les collectivités')} />
+      <ChartCard title="Par groupement" data={byGroupement} type="bar-v" colorIndex={colorIndices[5]} hidden={byGroupement.length === 0}
+        insight={generateInsight(byGroupement, 'bar-v', 'les groupements')} />
+      <ChartCard title="Par village" data={byVillage} type="bar-v" colorIndex={colorIndices[3]} hidden={byVillage.length === 0}
+        insight={generateInsight(byVillage, 'bar-v', 'les villages')} />
     </>
   );
 });
