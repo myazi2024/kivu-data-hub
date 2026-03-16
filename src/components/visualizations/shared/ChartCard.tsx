@@ -205,15 +205,13 @@ export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
   return (
     <Card ref={ref} className={`border-border/30 ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
       <CardHeader className="pb-1 px-2 pt-2">
-        <div className="space-y-0.5">
-          <div className="flex items-start gap-1">
-            {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'} shrink-0 mt-0.5`} />}
-            <div className="min-w-0 flex-1">
-              <CardTitle className="text-xs font-semibold leading-tight break-words">{fullTitle}</CardTitle>
-              {filterLabel && <ChartFilterSubtitle filterLabel={filterLabel} />}
-            </div>
-            <CopyButton onClick={copy} copied={copied} />
+        <div className="flex items-start gap-1">
+          {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'} shrink-0 mt-0.5`} />}
+          <div className="min-w-0 flex-1">
+            <CardTitle className="text-xs font-semibold leading-tight break-words">{title}</CardTitle>
+            {filterLabel && <ChartFilterSubtitle filterLabel={filterLabel} />}
           </div>
+          <CopyButton onClick={copy} copied={copied} />
         </div>
       </CardHeader>
       <CardContent className="px-2 pb-2">
