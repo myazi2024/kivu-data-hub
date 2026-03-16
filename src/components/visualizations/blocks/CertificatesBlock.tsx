@@ -30,11 +30,6 @@ export const CertificatesBlock: React.FC<Props> = memo(({ data }) => {
     return { generated, pending };
   }, [filtered]);
 
-  const handleExport = useCallback(() => {
-    exportRecordsToCSV(filtered, `certificats-${new Date().toISOString().slice(0,10)}`, [
-      'id', 'certificate_type', 'parcel_number', 'recipient_name', 'reference_number', 'status', 'generated_at'
-    ]);
-  }, [filtered]);
 
   const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
   const v = isChartVisible;
