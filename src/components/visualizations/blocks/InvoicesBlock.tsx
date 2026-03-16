@@ -1,4 +1,4 @@
-import React, { useState, useMemo, memo, useCallback } from 'react';
+import React, { useState, useMemo, memo } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
 import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, buildFilterLabel } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
@@ -6,6 +6,7 @@ import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { Receipt, TrendingUp, DollarSign, CreditCard, MapPin } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, FilterLabelContext } from '../shared/ChartCard';
+import { GeoCharts } from '../shared/GeoCharts';
 
 import { generateInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
@@ -51,7 +52,6 @@ export const InvoicesBlock: React.FC<Props> = memo(({ data }) => {
     return { paidRevenue, totalRevenue, totalDiscount, avgAmount, paidCount: paid.length };
   }, [filtered]);
 
-
   const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
   const v = isChartVisible;
 
@@ -77,6 +77,7 @@ export const InvoicesBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(byGeoZone, 'bar-h', 'les zones géographiques')} />}
         {v('revenue-trend') && <ChartCard title={ct('revenue-trend', 'Revenus/mois')} icon={DollarSign} data={revenueTrend} type="area" colorIndex={2} hidden={revenueTrend.length < 2}
           insight={generateInsight(revenueTrend, 'area', 'les revenus mensuels')} />}
+        {v('geo') && <GeoCharts records={filtered} />}
         {v('evolution') && <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type="area" colorIndex={0} colSpan={2}
           insight={generateInsight(trend, 'area', 'les factures')} />}
       </div>
