@@ -777,29 +777,28 @@ const DRCInteractiveMap = () => {
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden relative">
-        {/* Contrôles mobiles flottants */}
+        {/* Contrôle mobile: bascule Analytics */}
         <div className="lg:hidden fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
           <div className="flex items-center justify-center gap-1.5 bg-background/95 backdrop-blur-sm border border-border/50 rounded-full px-2.5 py-1.5 shadow-lg">
-            <Button size="sm" variant={activeMobilePanel==='map' ? 'default' : 'outline'} onClick={() => setActiveMobilePanel('map')} aria-label="Carte" className="rounded-full h-8 w-8 p-0">
-              <MapPin className="w-3.5 h-3.5" />
+            <Button size="sm" variant={activeMobilePanel !== 'analytics' ? 'default' : 'outline'} onClick={() => setActiveMobilePanel('map')} aria-label="Carte & Données" className="rounded-full h-7 px-3 text-[10px] gap-1">
+              <MapPin className="w-3 h-3" />
+              Carte
             </Button>
-            <Button size="sm" variant={activeMobilePanel==='details' ? 'default' : 'outline'} onClick={() => setActiveMobilePanel('details')} aria-label="Détails" className="rounded-full h-8 w-8 p-0">
-              <Users className="w-3.5 h-3.5" />
-            </Button>
-            <Button size="sm" variant={activeMobilePanel==='analytics' ? 'default' : 'outline'} onClick={() => setActiveMobilePanel('analytics')} aria-label="Analytics" className="rounded-full h-8 w-8 p-0">
-              <BarChart3 className="w-3.5 h-3.5" />
+            <Button size="sm" variant={activeMobilePanel === 'analytics' ? 'default' : 'outline'} onClick={() => setActiveMobilePanel('analytics')} aria-label="Analytics" className="rounded-full h-7 px-3 text-[10px] gap-1">
+              <BarChart3 className="w-3 h-3" />
+              Analytics
             </Button>
           </div>
         </div>
 
-        {/* Desktop: grille 2 colonnes | Mobile: panneau unique switché */}
-        <div className="flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-12 gap-2 p-1 sm:p-2 pb-16 lg:pb-2">
+        {/* Desktop: grille 2 colonnes | Mobile: 2 panneaux côte à côte (carte + détails) */}
+        <div className="flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-12 gap-1 sm:gap-2 p-1 sm:p-2 pb-14 lg:pb-2">
           
           {/* Colonne gauche: Carte + Détails province */}
-          <div className={`${activeMobilePanel === 'analytics' ? 'hidden lg:flex' : 'flex'} lg:col-span-4 flex-col min-h-0 h-full gap-2`}>
+          <div className={`${activeMobilePanel === 'analytics' ? 'hidden lg:flex' : 'flex'} lg:col-span-4 flex-row lg:flex-col min-h-0 h-full gap-1 sm:gap-2`}>
             
-            {/* Carte RDC */}
-            <div className={`${activeMobilePanel === 'details' ? 'hidden lg:flex' : 'flex'} flex-col min-h-0 ${activeMobilePanel === 'map' ? 'flex-1' : 'lg:flex-[3]'} lg:flex-[3]`}>
+            {/* Carte RDC - sur mobile: 50% quand province sélectionnée, 100% sinon */}
+            <div className={`flex flex-col min-h-0 transition-all duration-300 ${selectedProvince ? 'w-1/2 lg:w-auto' : 'w-full lg:w-auto'} lg:flex-[3]`}>
               <Card className="flex-1 overflow-hidden flex flex-col border-border/30">
                 <CardContent className="p-0 flex-1 flex flex-col relative min-h-0">
                   {/* En-tête */}
