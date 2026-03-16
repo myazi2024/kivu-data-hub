@@ -1,9 +1,6 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import Navigation from '@/components/ui/navigation';
 import DRCInteractiveMap from '@/components/DRCInteractiveMap';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
 
 const Map = () => {
   const navigate = useNavigate();
