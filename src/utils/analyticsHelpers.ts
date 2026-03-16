@@ -20,6 +20,7 @@ export interface AnalyticsFilter {
   villageFilter?: string;
   status?: string;
   paymentStatus?: string;
+  circonscription?: string;
 }
 
 export const defaultFilter: AnalyticsFilter = { sectionType: 'all', periodType: 'all' };
@@ -57,17 +58,16 @@ export function matchesLocation(r: any, f: AnalyticsFilter): boolean {
   if (f.collectivite && r.collectivite !== f.collectivite) return false;
   if (f.groupement && r.groupement !== f.groupement) return false;
   if (f.villageFilter && r.village !== f.villageFilter) return false;
+  if (f.circonscription && r.circonscription_fonciere !== f.circonscription) return false;
   return true;
 }
 
-/** Match status filter — supports current_status (disputes) and status fields */
 function matchesStatus(r: any, f: AnalyticsFilter): boolean {
   if (!f.status) return true;
   const recordStatus = r.status || r.current_status;
   return recordStatus === f.status;
 }
 
-/** Match payment status filter */
 function matchesPaymentStatus(r: any, f: AnalyticsFilter): boolean {
   if (!f.paymentStatus) return true;
   const ps = r.payment_status || r.submission_payment_status;
@@ -83,7 +83,6 @@ export function applyFilters(records: any[], filter: AnalyticsFilter, dateField 
   );
 }
 
-/** #10 fix: Distinguish null/undefined from actual 'Non spécifié' values */
 export function countBy(records: any[], field: string): { name: string; value: number }[] {
   const map = new Map<string, number>();
   records.forEach(r => {
@@ -94,7 +93,6 @@ export function countBy(records: any[], field: string): { name: string; value: n
   return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
 }
 
-/** Count boolean field occurrences */
 export function countBoolean(records: any[], field: string, trueLabel = 'Oui', falseLabel = 'Non'): { name: string; value: number }[] {
   let t = 0, f = 0, na = 0;
   records.forEach(r => {
@@ -157,7 +155,6 @@ export function trendByMonth(records: any[], dateField = 'created_at'): { name: 
     });
 }
 
-/** Distribution of area_sqm into buckets */
 export function surfaceDistribution(records: any[]): { name: string; value: number }[] {
   const buckets = [
     { name: '< 100 m²', max: 100 },
@@ -177,7 +174,6 @@ export function surfaceDistribution(records: any[]): { name: string; value: numb
   return buckets.map((b, i) => ({ name: b.name, value: counts[i] })).filter(b => b.value > 0);
 }
 
-/** #19: Compute average processing days between two date fields */
 export function avgProcessingDays(records: any[], startField = 'created_at', endField = 'reviewed_at'): number {
   const valid = records.filter(r => r[startField] && r[endField]);
   if (valid.length === 0) return 0;
@@ -188,7 +184,6 @@ export function avgProcessingDays(records: any[], startField = 'created_at', end
   return Math.round(total / valid.length);
 }
 
-/** Distribution of numeric values into custom buckets */
 export function numericDistribution(records: any[], field: string, buckets: { name: string; min: number; max: number }[]): { name: string; value: number }[] {
   const counts = new Array(buckets.length).fill(0);
   records.forEach(r => {
@@ -201,5 +196,23 @@ export function numericDistribution(records: any[], field: string, buckets: { na
   return buckets.map((b, i) => ({ name: b.name, value: counts[i] })).filter(b => b.value > 0);
 }
 
-/** Valid lifting statuses for explicit filtering (#7) */
+/** Distribution by decade for construction_year */
+export function yearDecadeDistribution(records: any[], field = 'construction_year'): { name: string; value: number }[] {
+  const map = new Map<string, number>();
+  records.forEach(r => {
+    const y = r[field];
+    if (!y || y <= 0) return;
+    const decade = `${Math.floor(y / 10) * 10}s`;
+    map.set(decade, (map.get(decade) || 0) + 1);
+  });
+  return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([name, value]) => ({ name, value }));
+}
+
+/** Compute average of a numeric field */
+export function avgField(records: any[], field: string): number {
+  const valid = records.filter(r => r[field] != null && r[field] > 0);
+  if (valid.length === 0) return 0;
+  return Math.round(valid.reduce((s, r) => s + r[field], 0) / valid.length);
+}
+
 export const VALID_LIFTING_STATUSES = ['pending', 'demande_levee', 'approved', 'rejected', 'in_review'];

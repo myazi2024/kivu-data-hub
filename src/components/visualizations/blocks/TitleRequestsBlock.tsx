@@ -1,15 +1,20 @@
 import React, { useState, useMemo, memo, useCallback } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
-import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, getSectionType, avgProcessingDays } from '@/utils/analyticsHelpers';
+import { AnalyticsFilter, defaultFilter, applyFilters, countBy, countBoolean, trendByMonth, getSectionType, avgProcessingDays, surfaceDistribution, numericDistribution } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { FileText, Users, DollarSign, TrendingUp, Building } from 'lucide-react';
+import { FileText, Users, DollarSign, TrendingUp, Building, Globe, Ruler, Clock, UserCheck } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
-import { ChartCard } from '../shared/ChartCard';
+import { ChartCard, ColorMappedPieCard } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
 import { exportRecordsToCSV } from '@/utils/csvExport';
 
 interface Props { data: LandAnalyticsData; }
+
+const GENDER_COLORS: Record<string, string> = {
+  'Masculin': '#3b82f6', 'Féminin': '#ec4899', 'M': '#3b82f6', 'F': '#ec4899',
+  'Autre': '#8b5cf6', '(Non renseigné)': '#9ca3af',
+};
 
 export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
@@ -23,7 +28,26 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
   const byOwnerLegalStatus = useMemo(() => countBy(filtered, 'owner_legal_status'), [filtered]);
   const byConstructionType = useMemo(() => countBy(filtered, 'construction_type'), [filtered]);
   const byConstructionNature = useMemo(() => countBy(filtered, 'construction_nature'), [filtered]);
+  const byDeducedTitleType = useMemo(() => countBy(filtered, 'deduced_title_type'), [filtered]);
+  const byNationality = useMemo(() => countBy(filtered, 'nationality'), [filtered]);
+  const byCirconscription = useMemo(() => countBy(filtered, 'circonscription_fonciere'), [filtered]);
   const trend = useMemo(() => trendByMonth(filtered), [filtered]);
+
+  // Gender data (requester + owner)
+  const genderData = useMemo(() => {
+    const map = new Map<string, number>();
+    filtered.forEach(r => {
+      const g = r.requester_gender || r.owner_gender;
+      if (g) map.set(g, (map.get(g) || 0) + 1);
+    });
+    return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  }, [filtered]);
+
+  // Surface distribution
+  const surfaceDist = useMemo(() => surfaceDistribution(filtered), [filtered]);
+
+  // Owner = requester stats
+  const ownerSameData = useMemo(() => countBoolean(filtered, 'is_owner_same_as_requester', 'Propriétaire', 'Mandataire'), [filtered]);
 
   // Revenue trend by month
   const revenueTrend = useMemo(() => {
@@ -50,7 +74,12 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
     const totalRevenue = filtered.reduce((s, r) => s + (r.total_amount_usd || 0), 0);
     const approved = filtered.filter(r => r.status === 'approved').length;
     const avgDays = avgProcessingDays(filtered, 'created_at', 'reviewed_at');
-    return { urbanCount, ruralCount, paidRevenue, totalRevenue, approved, avgDays };
+    // Estimated vs actual processing
+    const withEstimate = filtered.filter(r => r.estimated_processing_days && r.reviewed_at && r.created_at);
+    const avgEstimated = withEstimate.length > 0
+      ? Math.round(withEstimate.reduce((s, r) => s + r.estimated_processing_days, 0) / withEstimate.length)
+      : 0;
+    return { urbanCount, ruralCount, paidRevenue, totalRevenue, approved, avgDays, avgEstimated };
   }, [filtered]);
 
   const handleExport = useCallback(() => {
@@ -69,7 +98,7 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
         { label: 'Rurale', value: stats.ruralCount, cls: 'text-amber-600', tooltip: pct(stats.ruralCount, filtered.length) },
         { label: 'Taux approbation', value: pct(stats.approved, filtered.length), cls: 'text-blue-600', tooltip: `${stats.approved} approuvées` },
         { label: 'Revenus payés', value: `$${stats.paidRevenue.toLocaleString()}`, cls: 'text-rose-600', tooltip: `Facturé: $${stats.totalRevenue.toLocaleString()}` },
-        { label: 'Délai moy.', value: stats.avgDays > 0 ? `${stats.avgDays}j` : 'N/A', cls: 'text-violet-600', tooltip: 'Délai moyen de traitement (jours)' },
+        { label: 'Délai moy.', value: stats.avgDays > 0 ? `${stats.avgDays}j` : 'N/A', cls: 'text-violet-600', tooltip: stats.avgEstimated > 0 ? `Estimé: ${stats.avgEstimated}j` : 'Délai moyen de traitement' },
       ]} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         <ChartCard title="Type de demande" icon={FileText} data={byRequestType} type="bar-h" colorIndex={0} labelWidth={100} />
@@ -78,6 +107,12 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
         <ChartCard title="Paiement" icon={DollarSign} data={byPayment} type="donut" colorIndex={2} />
         <ChartCard title="Statut juridique" data={byOwnerLegalStatus} type="donut" colorIndex={4} />
         <ChartCard title="Usage déclaré" data={byDeclaredUsage} type="bar-h" colorIndex={5} />
+        <ColorMappedPieCard title="Genre" icon={Users} iconColor="text-pink-500" data={genderData} colorMap={GENDER_COLORS} />
+        <ChartCard title="Nationalité" icon={Globe} data={byNationality} type="bar-h" colorIndex={9} labelWidth={80} hidden={byNationality.length === 0} />
+        <ChartCard title="Titre déduit" data={byDeducedTitleType} type="bar-h" colorIndex={3} labelWidth={100} hidden={byDeducedTitleType.length === 0} />
+        <ChartCard title="Demandeur = Proprio" icon={UserCheck} data={ownerSameData} type="pie" colorIndex={0} hidden={ownerSameData.length === 0} />
+        <ChartCard title="Superficie demandée" icon={Ruler} data={surfaceDist} type="bar-v" colorIndex={10} hidden={surfaceDist.length === 0} />
+        <ChartCard title="Circonscription" data={byCirconscription} type="bar-h" colorIndex={8} labelWidth={100} hidden={byCirconscription.length === 0} />
         <ChartCard title="Type construction" icon={Building} data={byConstructionType} type="bar-h" colorIndex={3} hidden={byConstructionType.length === 0} />
         <ChartCard title="Nature construction" data={byConstructionNature} type="donut" colorIndex={7} hidden={byConstructionNature.length === 0} />
         <ChartCard title="Revenus/mois" icon={DollarSign} data={revenueTrend} type="area" colorIndex={2} hidden={revenueTrend.length < 2} />

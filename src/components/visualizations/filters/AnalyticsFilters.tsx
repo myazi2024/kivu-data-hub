@@ -2,7 +2,7 @@ import React, { useMemo, useCallback } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Filter, MapPin, Calendar, X, Download, AlertCircle, CheckCircle, CreditCard } from 'lucide-react';
+import { Filter, MapPin, Calendar, X, Download, AlertCircle, CheckCircle, CreditCard, Building2 } from 'lucide-react';
 import { AnalyticsFilter, defaultFilter, extractUnique, getAvailableYears, getSectionType } from '@/utils/analyticsHelpers';
 
 interface Props {
@@ -11,13 +11,9 @@ interface Props {
   onChange: (f: AnalyticsFilter) => void;
   dateField?: string;
   onExport?: () => void;
-  /** Field name for status filter (default: auto-detect 'status' or 'current_status') */
   statusField?: string;
-  /** Field name for payment status filter */
   paymentStatusField?: string;
-  /** Hide status filter */
   hideStatus?: boolean;
-  /** Hide payment status filter */
   hidePaymentStatus?: boolean;
 }
 
@@ -29,7 +25,6 @@ export const AnalyticsFilters: React.FC<Props> = ({
 }) => {
   const years = useMemo(() => getAvailableYears(data, dateField), [data, dateField]);
 
-  // #8 fix: Detect conflicting urban+rural filters and warn
   const hasConflictingFilters = useMemo(() => {
     if (filter.sectionType !== 'all') return false;
     const hasUrban = !!(filter.ville || filter.commune || filter.quartier || filter.avenue);
@@ -37,7 +32,6 @@ export const AnalyticsFilters: React.FC<Props> = ({
     return hasUrban && hasRural;
   }, [filter]);
 
-  // Base dataset scoped by sectionType for dropdown options
   const sectionScoped = useMemo(() => {
     if (filter.sectionType === 'all') return data;
     return data.filter(r => getSectionType(r) === filter.sectionType);
@@ -61,14 +55,15 @@ export const AnalyticsFilters: React.FC<Props> = ({
   const groupementScoped = useMemo(() => filter.groupement ? collectiviteScoped.filter(r => r.groupement === filter.groupement) : collectiviteScoped, [collectiviteScoped, filter.groupement]);
   const villages = useMemo(() => extractUnique(groupementScoped, 'village'), [groupementScoped]);
 
-  // Status options (auto-detect field)
+  // Circonscription foncière options
+  const circonscriptions = useMemo(() => extractUnique(data, 'circonscription_fonciere'), [data]);
+
   const detectedStatusField = statusField || (data.length > 0 && data[0]?.current_status !== undefined ? 'current_status' : 'status');
   const statusOptions = useMemo(() => {
     if (hideStatus) return [];
     return extractUnique(data, detectedStatusField);
   }, [data, detectedStatusField, hideStatus]);
 
-  // Payment status options
   const detectedPaymentField = paymentStatusField || (data.length > 0 && data[0]?.submission_payment_status !== undefined ? 'submission_payment_status' : 'payment_status');
   const paymentStatusOptions = useMemo(() => {
     if (hidePaymentStatus) return [];
@@ -78,7 +73,7 @@ export const AnalyticsFilters: React.FC<Props> = ({
   const hasActiveFilters = filter.periodType !== 'all' || filter.sectionType !== 'all' ||
     filter.province || filter.ville || filter.commune || filter.quartier || filter.avenue ||
     filter.territoire || filter.collectivite || filter.groupement || filter.villageFilter ||
-    filter.status || filter.paymentStatus;
+    filter.status || filter.paymentStatus || filter.circonscription;
 
   const reset = useCallback(() => onChange({ ...defaultFilter }), [onChange]);
 
@@ -86,7 +81,6 @@ export const AnalyticsFilters: React.FC<Props> = ({
 
   return (
     <div className="space-y-1 bg-muted/30 rounded-md p-1.5 border border-border/30">
-      {/* #8: Warning for conflicting filters */}
       {hasConflictingFilters && (
         <div className="flex items-center gap-1 text-[10px] text-amber-600 bg-amber-50 dark:bg-amber-950/30 rounded px-2 py-0.5">
           <AlertCircle className="h-3 w-3 shrink-0" />
@@ -168,9 +162,19 @@ export const AnalyticsFilters: React.FC<Props> = ({
           </Select>
         )}
 
+        {/* Circonscription foncière filter */}
+        {circonscriptions.length > 0 && (
+          <Select value={filter.circonscription || '__all__'} onValueChange={v => onChange({ ...filter, circonscription: v === '__all__' ? undefined : v })}>
+            <SelectTrigger className={selectCls}><Building2 className="h-2.5 w-2.5 mr-0.5" /><SelectValue placeholder="Circ." /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">Toutes circ.</SelectItem>
+              {circonscriptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        )}
+
         <div className="w-px h-4 bg-border/50" />
 
-        {/* #8 fix: When switching sectionType, clear conflicting location filters */}
         <Select value={filter.sectionType} onValueChange={v => onChange({ ...filter, sectionType: v as any, ville: undefined, commune: undefined, quartier: undefined, avenue: undefined, territoire: undefined, collectivite: undefined, groupement: undefined, villageFilter: undefined })}>
           <SelectTrigger className={selectCls}><MapPin className="h-2.5 w-2.5 mr-0.5" /><SelectValue /></SelectTrigger>
           <SelectContent>

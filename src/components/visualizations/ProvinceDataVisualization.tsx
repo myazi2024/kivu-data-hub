@@ -1,9 +1,10 @@
 import React, { useState, memo } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { FileText, Map, Search, ArrowRightLeft, Scissors, AlertTriangle, ShieldCheck, Loader2 } from 'lucide-react';
+import { FileText, Map, Search, ArrowRightLeft, Scissors, AlertTriangle, ShieldCheck, Loader2, Database } from 'lucide-react';
 import { useLandDataAnalytics } from '@/hooks/useLandDataAnalytics';
 import { TitleRequestsBlock } from './blocks/TitleRequestsBlock';
 import { ParcelsWithTitleBlock } from './blocks/ParcelsWithTitleBlock';
+import { ContributionsBlock } from './blocks/ContributionsBlock';
 import { ExpertiseBlock } from './blocks/ExpertiseBlock';
 import { MutationBlock } from './blocks/MutationBlock';
 import { SubdivisionBlock } from './blocks/SubdivisionBlock';
@@ -19,6 +20,7 @@ interface ProvinceDataVisualizationProps {
 const blocks = [
   { id: 'title-requests', name: 'Titres fonciers', icon: FileText },
   { id: 'parcels-titled', name: 'Parcelles titrées', icon: Map },
+  { id: 'contributions', name: 'Contributions', icon: Database },
   { id: 'expertise', name: 'Expertise', icon: Search },
   { id: 'mutations', name: 'Mutations', icon: ArrowRightLeft },
   { id: 'subdivision', name: 'Lotissement', icon: Scissors },
@@ -69,6 +71,9 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = () =
       </TabsContent>
       <TabsContent value="parcels-titled" className="mt-1.5">
         <ParcelsWithTitleBlock data={analytics} />
+      </TabsContent>
+      <TabsContent value="contributions" className="mt-1.5">
+        <ContributionsBlock data={analytics} />
       </TabsContent>
       <TabsContent value="expertise" className="mt-1.5">
         <ExpertiseBlock data={analytics} />
