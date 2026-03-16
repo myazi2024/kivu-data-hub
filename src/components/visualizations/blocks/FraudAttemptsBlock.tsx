@@ -7,6 +7,7 @@ import { ShieldAlert, TrendingUp, AlertTriangle } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard } from '../shared/ChartCard';
 import { exportRecordsToCSV } from '@/utils/csvExport';
+import { generateInsight } from '@/utils/chartInsights';
 
 interface Props { data: LandAnalyticsData; }
 
@@ -43,9 +44,12 @@ export const FraudAttemptsBlock: React.FC<Props> = memo(({ data }) => {
         { label: 'Liées contrib.', value: stats.withContribution, cls: 'text-blue-600', tooltip: 'Tentatives liées à une contribution' },
       ]} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        <ChartCard title="Type de fraude" icon={ShieldAlert} data={byFraudType} type="bar-h" colorIndex={4} labelWidth={120} />
-        <ChartCard title="Sévérité" icon={AlertTriangle} data={bySeverity} type="pie" colorIndex={4} />
-        <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={4} colSpan={2} />
+        <ChartCard title="Type de fraude" icon={ShieldAlert} data={byFraudType} type="bar-h" colorIndex={4} labelWidth={120}
+          insight={generateInsight(byFraudType, 'bar-h', 'les types de fraude')} />
+        <ChartCard title="Sévérité" icon={AlertTriangle} data={bySeverity} type="pie" colorIndex={4}
+          insight={stats.critical > 0 ? `${stats.critical} tentative${stats.critical > 1 ? 's' : ''} de sévérité critique ou élevée nécessitant une attention immédiate.` : generateInsight(bySeverity, 'pie', 'les niveaux de sévérité')} />
+        <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={4} colSpan={2}
+          insight={generateInsight(trend, 'area', 'les tentatives de fraude')} />
       </div>
     </div>
   );

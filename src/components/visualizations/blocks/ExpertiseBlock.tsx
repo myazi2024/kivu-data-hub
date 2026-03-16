@@ -1,13 +1,14 @@
 import React, { useState, useMemo, memo, useCallback } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
-import { AnalyticsFilter, defaultFilter, applyFilters, countBy, countBoolean, trendByMonth, avgProcessingDays, numericDistribution, yearDecadeDistribution, avgField } from '@/utils/analyticsHelpers';
+import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, avgProcessingDays, numericDistribution, yearDecadeDistribution, avgField } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { Search, TrendingUp, DollarSign, Building, Zap, Droplets, ShieldAlert, MapPin, Ruler, Clock, Trees } from 'lucide-react';
+import { Search, TrendingUp, DollarSign, Building, Zap, ShieldAlert, MapPin, Ruler, Clock, Trees } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
 import { exportRecordsToCSV } from '@/utils/csvExport';
+import { generateInsight } from '@/utils/chartInsights';
 
 interface Props { data: LandAnalyticsData; }
 
@@ -22,10 +23,8 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
   const byRoadAccess = useMemo(() => countBy(filtered, 'road_access_type'), [filtered]);
   const trend = useMemo(() => trendByMonth(filtered), [filtered]);
 
-  // Construction year by decade
   const byDecade = useMemo(() => yearDecadeDistribution(filtered, 'construction_year'), [filtered]);
 
-  // Built area distribution
   const builtAreaDist = useMemo(() => numericDistribution(filtered, 'total_built_area_sqm', [
     { name: '< 50 m²', min: 0, max: 50 },
     { name: '50-100', min: 51, max: 100 },
@@ -34,7 +33,6 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
     { name: '> 500 m²', min: 501, max: Infinity },
   ]), [filtered]);
 
-  // Garden area distribution
   const gardenDist = useMemo(() => numericDistribution(
     filtered.filter(r => r.has_garden === true), 'garden_area_sqm', [
     { name: '< 50 m²', min: 0, max: 50 },
@@ -43,7 +41,6 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
     { name: '> 500 m²', min: 501, max: Infinity },
   ]), [filtered]);
 
-  // Equipment distribution
   const equipmentData = useMemo(() => {
     const items = [
       { field: 'has_electricity', label: 'Électricité' },
@@ -60,7 +57,6 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
     })).filter(d => d.value > 0).sort((a, b) => b.value - a.value);
   }, [filtered]);
 
-  // Risk zones
   const riskData = useMemo(() => {
     const flood = filtered.filter(r => r.flood_risk_zone === true).length;
     const erosion = filtered.filter(r => r.erosion_risk_zone === true).length;
@@ -73,7 +69,6 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
     return result;
   }, [filtered]);
 
-  // Market value distribution
   const valueDist = useMemo(() => numericDistribution(filtered, 'market_value_usd', [
     { name: '< $5K', min: 0, max: 5000 },
     { name: '$5K-$20K', min: 5001, max: 20000 },
@@ -82,19 +77,17 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
     { name: '> $100K', min: 100001, max: Infinity },
   ]), [filtered]);
 
-  // Floors distribution
   const floorsDist = useMemo(() => countBy(
     filtered.filter(r => r.number_of_floors != null),
     'number_of_floors'
   ), [filtered]);
 
-  // Proximity averages
   const proximityData = useMemo(() => {
     const items = [
-      { field: 'distance_to_main_road_m', label: 'Route princ. (m)', unit: 'm' },
-      { field: 'distance_to_market_km', label: 'Marché (km)', unit: 'km' },
-      { field: 'distance_to_school_km', label: 'École (km)', unit: 'km' },
-      { field: 'distance_to_hospital_km', label: 'Hôpital (km)', unit: 'km' },
+      { field: 'distance_to_main_road_m', label: 'Route princ. (m)' },
+      { field: 'distance_to_market_km', label: 'Marché (km)' },
+      { field: 'distance_to_school_km', label: 'École (km)' },
+      { field: 'distance_to_hospital_km', label: 'Hôpital (km)' },
     ];
     return items.map(i => ({
       name: i.label,
@@ -134,21 +127,35 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
         { label: 'Valeur moy.', value: stats.avgValue > 0 ? `$${stats.avgValue.toLocaleString()}` : 'N/A', cls: 'text-primary', tooltip: `Total: $${stats.totalValue.toLocaleString()}` },
       ]} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        <ChartCard title="Statut détaillé" icon={Search} data={byStatus} type="bar-v" colorIndex={5} />
-        <ChartCard title="Paiement" icon={DollarSign} data={byPaymentStatus} type="donut" colorIndex={2} />
-        <ChartCard title="État du bien" icon={Building} data={byPropertyCondition} type="bar-h" colorIndex={7} labelWidth={100} hidden={byPropertyCondition.length === 0} />
-        <ChartCard title="Qualité construction" data={byConstructionQuality} type="donut" colorIndex={3} hidden={byConstructionQuality.length === 0} />
-        <ChartCard title="Année construction" icon={Clock} data={byDecade} type="bar-v" colorIndex={0} hidden={byDecade.length === 0} />
-        <ChartCard title="Surface bâtie" icon={Ruler} data={builtAreaDist} type="bar-v" colorIndex={1} hidden={builtAreaDist.length === 0} />
-        <ChartCard title="Équipements" icon={Zap} data={equipmentData} type="bar-h" colorIndex={9} labelWidth={100} hidden={equipmentData.length === 0} />
-        <ChartCard title="Accès routier" icon={MapPin} data={byRoadAccess} type="pie" colorIndex={0} hidden={byRoadAccess.length === 0} />
-        <ChartCard title="Proximité moy." icon={MapPin} data={proximityData} type="bar-h" colorIndex={6} labelWidth={110} hidden={proximityData.length === 0} />
-        <ChartCard title="Zones à risque" icon={ShieldAlert} data={riskData} type="pie" colorIndex={4} hidden={riskData.length === 0} />
-        <ChartCard title="Valeur marchande" icon={DollarSign} data={valueDist} type="bar-v" colorIndex={2} hidden={valueDist.length === 0} />
-        <ChartCard title="Nbre d'étages" icon={Building} data={floorsDist} type="bar-v" colorIndex={1} hidden={floorsDist.length === 0} />
-        <ChartCard title="Surface jardin" icon={Trees} data={gardenDist} type="bar-v" colorIndex={10} hidden={gardenDist.length === 0} />
+        <ChartCard title="Statut détaillé" icon={Search} data={byStatus} type="bar-v" colorIndex={5}
+          insight={generateInsight(byStatus, 'bar-v', 'les statuts d\'expertise')} />
+        <ChartCard title="Paiement" icon={DollarSign} data={byPaymentStatus} type="donut" colorIndex={2}
+          insight={generateInsight(byPaymentStatus, 'donut', 'les paiements')} />
+        <ChartCard title="État du bien" icon={Building} data={byPropertyCondition} type="bar-h" colorIndex={7} labelWidth={100} hidden={byPropertyCondition.length === 0}
+          insight={generateInsight(byPropertyCondition, 'bar-h', 'l\'état des biens')} />
+        <ChartCard title="Qualité construction" data={byConstructionQuality} type="donut" colorIndex={3} hidden={byConstructionQuality.length === 0}
+          insight={generateInsight(byConstructionQuality, 'donut', 'la qualité de construction')} />
+        <ChartCard title="Année construction" icon={Clock} data={byDecade} type="bar-v" colorIndex={0} hidden={byDecade.length === 0}
+          insight={generateInsight(byDecade, 'bar-v', 'les périodes de construction')} />
+        <ChartCard title="Surface bâtie" icon={Ruler} data={builtAreaDist} type="bar-v" colorIndex={1} hidden={builtAreaDist.length === 0}
+          insight={generateInsight(builtAreaDist, 'bar-v', 'les surfaces bâties')} />
+        <ChartCard title="Équipements" icon={Zap} data={equipmentData} type="bar-h" colorIndex={9} labelWidth={100} hidden={equipmentData.length === 0}
+          insight="Répartition des équipements disponibles dans les biens expertisés." />
+        <ChartCard title="Accès routier" icon={MapPin} data={byRoadAccess} type="pie" colorIndex={0} hidden={byRoadAccess.length === 0}
+          insight={generateInsight(byRoadAccess, 'pie', 'les types d\'accès routier')} />
+        <ChartCard title="Proximité moy." icon={MapPin} data={proximityData} type="bar-h" colorIndex={6} labelWidth={110} hidden={proximityData.length === 0}
+          insight="Distance moyenne aux infrastructures clés (routes, marchés, écoles, hôpitaux)." />
+        <ChartCard title="Zones à risque" icon={ShieldAlert} data={riskData} type="pie" colorIndex={4} hidden={riskData.length === 0}
+          insight={riskData.length > 0 ? `${riskData.filter(r => r.name !== 'Hors risque').reduce((s, r) => s + r.value, 0)} bien(s) situé(s) en zone à risque.` : ''} />
+        <ChartCard title="Valeur marchande" icon={DollarSign} data={valueDist} type="bar-v" colorIndex={2} hidden={valueDist.length === 0}
+          insight={generateInsight(valueDist, 'bar-v', 'les tranches de valeur')} />
+        <ChartCard title="Nbre d'étages" icon={Building} data={floorsDist} type="bar-v" colorIndex={1} hidden={floorsDist.length === 0}
+          insight={generateInsight(floorsDist, 'bar-v', 'le nombre d\'étages')} />
+        <ChartCard title="Surface jardin" icon={Trees} data={gardenDist} type="bar-v" colorIndex={10} hidden={gardenDist.length === 0}
+          insight={generateInsight(gardenDist, 'bar-v', 'les surfaces de jardin')} />
         <GeoCharts records={filtered} />
-        <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={5} colSpan={2} />
+        <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={5} colSpan={2}
+          insight={generateInsight(trend, 'area', 'les demandes d\'expertise')} />
       </div>
     </div>
   );

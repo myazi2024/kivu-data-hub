@@ -8,6 +8,7 @@ import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
 import { exportRecordsToCSV } from '@/utils/csvExport';
+import { generateInsight } from '@/utils/chartInsights';
 
 interface Props { data: LandAnalyticsData; }
 
@@ -69,13 +70,19 @@ export const DisputeLiftingBlock: React.FC<Props> = memo(({ data }) => {
         { label: 'Taux réussite', value: pct(stats.approved, filtered.length), cls: 'text-purple-600', tooltip: 'Pourcentage de levées approuvées' },
       ]} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        <ChartCard title="Statut levée" icon={ShieldCheck} data={byLiftingStatus} type="pie" colorIndex={9} />
-        <ChartCard title="Niveau résolution" icon={Scale} iconColor="text-purple-500" data={byResolutionLevel} type="bar-h" colorIndex={9} labelWidth={100} />
-        <ChartCard title="Nature litige" data={byNature} type="bar-h" colorIndex={4} labelWidth={100} />
-        <ChartCard title="Motif de levée" icon={MessageSquare} data={byLiftingReason} type="bar-h" colorIndex={6} labelWidth={120} hidden={byLiftingReason.length === 0} />
+        <ChartCard title="Statut levée" icon={ShieldCheck} data={byLiftingStatus} type="pie" colorIndex={9}
+          insight={generateInsight(byLiftingStatus, 'pie', 'les statuts de levée')} />
+        <ChartCard title="Niveau résolution" icon={Scale} iconColor="text-purple-500" data={byResolutionLevel} type="bar-h" colorIndex={9} labelWidth={100}
+          insight={generateInsight(byResolutionLevel, 'bar-h', 'les niveaux de résolution')} />
+        <ChartCard title="Nature litige" data={byNature} type="bar-h" colorIndex={4} labelWidth={100}
+          insight={generateInsight(byNature, 'bar-h', 'les natures de litige concernées')} />
+        <ChartCard title="Motif de levée" icon={MessageSquare} data={byLiftingReason} type="bar-h" colorIndex={6} labelWidth={120} hidden={byLiftingReason.length === 0}
+          insight={generateInsight(byLiftingReason, 'bar-h', 'les motifs de levée')} />
         <GeoCharts records={filtered} />
-        <ChartCard title="Taux réussite %" icon={TrendingUp} data={liftingSuccessTrend} type="area" colorIndex={2} colSpan={2} hidden={liftingSuccessTrend.length < 2} />
-        <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={9} colSpan={2} />
+        <ChartCard title="Taux réussite %" icon={TrendingUp} data={liftingSuccessTrend} type="area" colorIndex={2} colSpan={2} hidden={liftingSuccessTrend.length < 2}
+          insight={generateInsight(liftingSuccessTrend, 'area', 'le taux de réussite des levées')} />
+        <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={9} colSpan={2}
+          insight={generateInsight(trend, 'area', 'les levées de litige')} />
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, ColorMappedPieCard, StackedBarCard } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
 import { exportRecordsToCSV } from '@/utils/csvExport';
+import { generateInsight, generateStackedInsight } from '@/utils/chartInsights';
 
 interface Props { data: LandAnalyticsData; }
 
@@ -36,10 +37,8 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     byDecade: yearDecadeDistribution(filteredParcels, 'construction_year'),
   }), [filteredParcels]);
 
-  // Gender from contributions (current_owners_details) AND from parcels (current_owner_legal_status based proxy not available — use contributions)
   const genderData = useMemo(() => {
     const map = new Map<string, number>();
-    // Primary source: contributions with owner details
     filteredContribs.forEach(c => {
       if (c.current_owners_details && Array.isArray(c.current_owners_details)) {
         c.current_owners_details.forEach((o: any) => { if (o?.gender) map.set(o.gender, (map.get(o.gender) || 0) + 1); });
@@ -48,14 +47,21 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
   }, [filteredContribs]);
 
-  // Building permits — administrative_status, validity, issuing_service
+  const genderInsight = useMemo(() => {
+    if (genderData.length === 0) return '';
+    const total = genderData.reduce((s, d) => s + d.value, 0);
+    const fem = genderData.find(d => d.name === 'Féminin' || d.name === 'F');
+    const masc = genderData.find(d => d.name === 'Masculin' || d.name === 'M');
+    if (fem && masc) return `${Math.round((fem.value / total) * 100)}% de femmes propriétaires contre ${Math.round((masc.value / total) * 100)}% d'hommes.`;
+    return generateInsight(genderData, 'pie', 'le genre des propriétaires');
+  }, [genderData]);
+
   const permitData = useMemo(() => {
     const parcelIdsWithPermit = new Set(filteredPermits.map(p => p.parcel_id));
     const w = filteredParcels.filter(p => parcelIdsWithPermit.has(p.id)).length;
     const distribution = [{ name: 'Avec', value: w }, { name: 'Sans', value: filteredParcels.length - w }];
     const byAdminStatus = countBy(filteredPermits, 'administrative_status');
     const byIssuingService = countBy(filteredPermits, 'issuing_service');
-    // Validity analysis
     const now = new Date();
     let valid = 0, expired = 0;
     filteredPermits.forEach(p => {
@@ -93,7 +99,6 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
       const total = yearTaxes.reduce((s, t) => s + (t.amount_usd || 0), 0);
       return { name: String(year), value: Math.round(total) };
     });
-    // Payment delay analysis
     const delayData = filteredTaxes
       .filter(t => t.payment_date && t.payment_status === 'paid')
       .map(t => {
@@ -113,7 +118,6 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     const avgDuration = filteredMortgages.length > 0 ? Math.round(filteredMortgages.reduce((s, m) => s + (m.duration_months || 0), 0) / filteredMortgages.length) : 0;
     const byCreditorType = countBy(filteredMortgages, 'creditor_type');
     const byStatus = countBy(filteredMortgages, 'mortgage_status');
-    // Contract date trend by year
     const contractYearMap = new Map<string, number>();
     filteredMortgages.forEach(m => {
       if (m.contract_date) {
@@ -146,32 +150,54 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
         { label: 'Hypothèques', value: `$${mortgageData.totalAmount.toLocaleString()}`, cls: 'text-rose-600', tooltip: `${mortgageData.count} contrats, durée moy. ${mortgageData.avgDuration} mois` },
       ]} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        <ChartCard title="Type titre" icon={FileText} data={charts.byTitleType} type="bar-h" colorIndex={0} labelWidth={110} />
-        <ChartCard title="Propriétaires" icon={Users} data={charts.byLegalStatus} type="donut" colorIndex={1} />
-        <ColorMappedPieCard title="Genre" icon={Users} iconColor="text-pink-500" data={genderData} colorMap={GENDER_COLORS} />
-        <ChartCard title="Construction" icon={Building} data={charts.byConstructionType} type="bar-h" colorIndex={3} />
-        <ChartCard title="Nature construction" data={charts.byConstructionNature} type="bar-h" colorIndex={7} />
-        <ChartCard title="Année construction" icon={Clock} data={charts.byDecade} type="bar-v" colorIndex={0} hidden={charts.byDecade.length === 0} />
-        <ChartCard title="Autorisation bâtir" icon={Shield} data={permitData.distribution} type="pie" colorIndex={2} />
-        <ChartCard title="Statut autoris." icon={CheckCircle} data={permitData.byAdminStatus} type="bar-v" colorIndex={8} hidden={permitData.byAdminStatus.length === 0} />
-        <ChartCard title="Validité autoris." data={permitData.validityDist} type="pie" colorIndex={2} hidden={permitData.validityDist.length === 0} />
-        <ChartCard title="Service émetteur" data={permitData.byIssuingService} type="bar-h" colorIndex={6} labelWidth={100} hidden={permitData.byIssuingService.length === 0} />
-        <ChartCard title="Usage déclaré" data={charts.byDeclaredUsage} type="bar-h" colorIndex={5} />
-        <ChartCard title="Type bail" icon={Home} data={charts.byLeaseType} type="donut" colorIndex={9} hidden={charts.byLeaseType.length === 0} />
-        <ChartCard title="Circonscription" data={charts.byCirconscription} type="bar-h" colorIndex={8} labelWidth={100} hidden={charts.byCirconscription.length === 0} />
-        <ChartCard title="Superficie" icon={Ruler} data={charts.surfaceDist} type="bar-v" colorIndex={9} />
+        <ChartCard title="Type titre" icon={FileText} data={charts.byTitleType} type="bar-h" colorIndex={0} labelWidth={110}
+          insight={generateInsight(charts.byTitleType, 'bar-h', 'les types de titre')} />
+        <ChartCard title="Propriétaires" icon={Users} data={charts.byLegalStatus} type="donut" colorIndex={1}
+          insight={generateInsight(charts.byLegalStatus, 'donut', 'les statuts juridiques')} />
+        <ColorMappedPieCard title="Genre propriétaires" icon={Users} iconColor="text-pink-500" data={genderData} colorMap={GENDER_COLORS}
+          insight={genderInsight} />
+        <ChartCard title="Construction" icon={Building} data={charts.byConstructionType} type="bar-h" colorIndex={3}
+          insight={generateInsight(charts.byConstructionType, 'bar-h', 'les constructions')} />
+        <ChartCard title="Nature construction" data={charts.byConstructionNature} type="bar-h" colorIndex={7}
+          insight="Répartition des matériaux et natures de construction par localisation." />
+        <ChartCard title="Année construction" icon={Clock} data={charts.byDecade} type="bar-v" colorIndex={0} hidden={charts.byDecade.length === 0}
+          insight={generateInsight(charts.byDecade, 'bar-v', 'les décennies de construction')} />
+        <ChartCard title="Autorisation bâtir" icon={Shield} data={permitData.distribution} type="pie" colorIndex={2}
+          insight={generateInsight(permitData.distribution, 'pie', 'les autorisations de bâtir')} />
+        <ChartCard title="Statut autoris." icon={CheckCircle} data={permitData.byAdminStatus} type="bar-v" colorIndex={8} hidden={permitData.byAdminStatus.length === 0}
+          insight={generateInsight(permitData.byAdminStatus, 'bar-v', 'les statuts administratifs')} />
+        <ChartCard title="Validité autoris." data={permitData.validityDist} type="pie" colorIndex={2} hidden={permitData.validityDist.length === 0}
+          insight={generateInsight(permitData.validityDist, 'pie', 'la validité des autorisations')} />
+        <ChartCard title="Service émetteur" data={permitData.byIssuingService} type="bar-h" colorIndex={6} labelWidth={100} hidden={permitData.byIssuingService.length === 0}
+          insight={generateInsight(permitData.byIssuingService, 'bar-h', 'les services émetteurs')} />
+        <ChartCard title="Usage déclaré" data={charts.byDeclaredUsage} type="bar-h" colorIndex={5}
+          insight={generateInsight(charts.byDeclaredUsage, 'bar-h', 'les usages déclarés')} />
+        <ChartCard title="Type bail" icon={Home} data={charts.byLeaseType} type="donut" colorIndex={9} hidden={charts.byLeaseType.length === 0}
+          insight={generateInsight(charts.byLeaseType, 'donut', 'les types de bail')} />
+        <ChartCard title="Circonscription" data={charts.byCirconscription} type="bar-h" colorIndex={8} labelWidth={100} hidden={charts.byCirconscription.length === 0}
+          insight={generateInsight(charts.byCirconscription, 'bar-h', 'les circonscriptions')} />
+        <ChartCard title="Superficie" icon={Ruler} data={charts.surfaceDist} type="bar-v" colorIndex={9}
+          insight={generateInsight(charts.surfaceDist, 'bar-v', 'les tranches de superficie')} />
         <GeoCharts records={filteredParcels} />
-        <ChartCard title="Taxes" icon={Landmark} data={taxData.byPayment} type="donut" colorIndex={0} />
+        <ChartCard title="Taxes" icon={Landmark} data={taxData.byPayment} type="donut" colorIndex={0}
+          insight={generateInsight(taxData.byPayment, 'donut', 'le statut des taxes')} />
         <StackedBarCard title="Taxes/année" data={taxData.yearData} bars={[
           { dataKey: 'paid', name: 'Payées', color: CHART_COLORS[2] },
           { dataKey: 'pending', name: 'Impayées', color: CHART_COLORS[4] },
-        ]} hidden={taxData.yearData.length === 0} />
-        <ChartCard title="Montants taxes/an" icon={TrendingUp} data={taxData.yearAmountData} type="area" colorIndex={2} hidden={taxData.yearAmountData.length < 2} />
-        <ChartCard title="Hypothèques" data={mortgageData.distribution} type="pie" colorIndex={4} />
-        <ChartCard title="Créanciers" data={mortgageData.byCreditorType} type="bar-h" colorIndex={8} labelWidth={80} />
-        <ChartCard title="Statut hyp." data={mortgageData.byStatus} type="donut" colorIndex={3} />
-        <ChartCard title="Contrats hyp./an" icon={TrendingUp} data={mortgageData.contractTrend} type="area" colorIndex={4} hidden={mortgageData.contractTrend.length < 2} />
-        <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={0} colSpan={2} />
+        ]} hidden={taxData.yearData.length === 0}
+          insight={generateStackedInsight(taxData.yearData, [{ dataKey: 'paid', name: 'Payées' }, { dataKey: 'pending', name: 'Impayées' }])} />
+        <ChartCard title="Montants taxes/an" icon={TrendingUp} data={taxData.yearAmountData} type="area" colorIndex={2} hidden={taxData.yearAmountData.length < 2}
+          insight={generateInsight(taxData.yearAmountData, 'area', 'les montants de taxes')} />
+        <ChartCard title="Hypothèques" data={mortgageData.distribution} type="pie" colorIndex={4}
+          insight={generateInsight(mortgageData.distribution, 'pie', 'les hypothèques')} />
+        <ChartCard title="Créanciers" data={mortgageData.byCreditorType} type="bar-h" colorIndex={8} labelWidth={80}
+          insight={generateInsight(mortgageData.byCreditorType, 'bar-h', 'les créanciers')} />
+        <ChartCard title="Statut hyp." data={mortgageData.byStatus} type="donut" colorIndex={3}
+          insight={generateInsight(mortgageData.byStatus, 'donut', 'les statuts d\'hypothèque')} />
+        <ChartCard title="Contrats hyp./an" icon={TrendingUp} data={mortgageData.contractTrend} type="area" colorIndex={4} hidden={mortgageData.contractTrend.length < 2}
+          insight={generateInsight(mortgageData.contractTrend, 'area', 'les contrats hypothécaires')} />
+        <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={0} colSpan={2}
+          insight={generateInsight(trend, 'area', 'les parcelles titrées')} />
       </div>
     </div>
   );

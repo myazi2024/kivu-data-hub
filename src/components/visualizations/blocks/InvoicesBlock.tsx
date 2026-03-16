@@ -7,6 +7,7 @@ import { Receipt, TrendingUp, DollarSign, CreditCard, MapPin } from 'lucide-reac
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard } from '../shared/ChartCard';
 import { exportRecordsToCSV } from '@/utils/csvExport';
+import { generateInsight } from '@/utils/chartInsights';
 
 interface Props { data: LandAnalyticsData; }
 
@@ -19,7 +20,6 @@ export const InvoicesBlock: React.FC<Props> = memo(({ data }) => {
   const byGeoZone = useMemo(() => countBy(filtered, 'geographical_zone'), [filtered]);
   const trend = useMemo(() => trendByMonth(filtered), [filtered]);
 
-  // Revenue trend
   const revenueTrend = useMemo(() => {
     const map = new Map<string, number>();
     filtered.forEach(r => {
@@ -62,11 +62,16 @@ export const InvoicesBlock: React.FC<Props> = memo(({ data }) => {
         { label: 'Remises', value: `$${stats.totalDiscount.toLocaleString()}`, cls: 'text-rose-600', tooltip: 'Total des remises accordées' },
       ]} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        <ChartCard title="Statut" icon={Receipt} data={byStatus} type="pie" colorIndex={2} />
-        <ChartCard title="Moyen paiement" icon={CreditCard} data={byPaymentMethod} type="donut" colorIndex={0} hidden={byPaymentMethod.length === 0} />
-        <ChartCard title="Zone géographique" icon={MapPin} data={byGeoZone} type="bar-h" colorIndex={6} labelWidth={100} hidden={byGeoZone.length === 0} />
-        <ChartCard title="Revenus/mois" icon={DollarSign} data={revenueTrend} type="area" colorIndex={2} hidden={revenueTrend.length < 2} />
-        <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={0} colSpan={2} />
+        <ChartCard title="Statut" icon={Receipt} data={byStatus} type="pie" colorIndex={2}
+          insight={generateInsight(byStatus, 'pie', 'les statuts de facture')} />
+        <ChartCard title="Moyen paiement" icon={CreditCard} data={byPaymentMethod} type="donut" colorIndex={0} hidden={byPaymentMethod.length === 0}
+          insight={generateInsight(byPaymentMethod, 'donut', 'les moyens de paiement')} />
+        <ChartCard title="Zone géographique" icon={MapPin} data={byGeoZone} type="bar-h" colorIndex={6} labelWidth={100} hidden={byGeoZone.length === 0}
+          insight={generateInsight(byGeoZone, 'bar-h', 'les zones géographiques')} />
+        <ChartCard title="Revenus/mois" icon={DollarSign} data={revenueTrend} type="area" colorIndex={2} hidden={revenueTrend.length < 2}
+          insight={generateInsight(revenueTrend, 'area', 'les revenus mensuels')} />
+        <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={0} colSpan={2}
+          insight={generateInsight(trend, 'area', 'les factures')} />
       </div>
     </div>
   );
