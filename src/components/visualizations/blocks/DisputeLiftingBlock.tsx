@@ -7,7 +7,7 @@ import { ShieldCheck, Scale, TrendingUp, MessageSquare } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
-import { exportRecordsToCSV } from '@/utils/csvExport';
+
 import { generateInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 
