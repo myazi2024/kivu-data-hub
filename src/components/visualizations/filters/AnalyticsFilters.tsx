@@ -31,7 +31,12 @@ export const AnalyticsFilters: React.FC<Props> = ({
   data, filter, onChange, dateField = 'created_at',
   statusField, paymentStatusField, hideStatus = false, hidePaymentStatus = false,
 }) => {
-  const years = useMemo(() => getAvailableYears(data, dateField), [data, dateField]);
+  const years = useMemo(() => {
+    const dataYears = getAvailableYears(data, dateField);
+    const currentYear = new Date().getFullYear();
+    if (!dataYears.includes(currentYear)) dataYears.unshift(currentYear);
+    return dataYears.sort((a, b) => b - a);
+  }, [data, dateField]);
 
   // === Geographic hierarchy from geographicData (same as forms) ===
   const provinces = useMemo(() => getAllProvinces(), []);
