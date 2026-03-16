@@ -20,7 +20,6 @@ export interface AnalyticsFilter {
   villageFilter?: string;
   status?: string;
   paymentStatus?: string;
-  circonscription?: string;
 }
 
 export const defaultFilter: AnalyticsFilter = { sectionType: 'all', periodType: 'all' };
