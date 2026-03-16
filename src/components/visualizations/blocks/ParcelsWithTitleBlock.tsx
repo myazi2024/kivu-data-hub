@@ -23,6 +23,7 @@ const GENDER_COLORS: Record<string, string> = {
 
 export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
+  const filterLabel = useMemo(() => buildFilterLabel(filter), [filter]);
   const filteredParcels = useMemo(() => applyFilters(data.parcels, filter), [data.parcels, filter]);
   const filteredContribs = useMemo(() => applyFilters(data.contributions, filter), [data.contributions, filter]);
   const filteredPermits = useMemo(() => applyFilters(data.buildingPermits, filter), [data.buildingPermits, filter]);
