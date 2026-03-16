@@ -33,15 +33,24 @@ export function getSectionType(record: any): 'urbaine' | 'rurale' | null {
 }
 
 export function matchesPeriod(dateStr: string | null | undefined, filter: AnalyticsFilter): boolean {
-  if (!dateStr || filter.periodType === 'all') return true;
+  if (!dateStr) return true;
   const d = new Date(dateStr);
-  const year = d.getFullYear();
-  const month = d.getMonth() + 1;
-  if (filter.year && year !== filter.year) return false;
-  if (filter.periodType === 'year') return true;
-  if (filter.periodType === 'semester' && filter.subPeriod) return (month <= 6 ? 1 : 2) === filter.subPeriod;
-  if (filter.periodType === 'quarter' && filter.subPeriod) return Math.ceil(month / 3) === filter.subPeriod;
-  if (filter.periodType === 'month' && filter.subPeriod) return month === filter.subPeriod;
+  if (d.getFullYear() !== filter.year) return false;
+  if (filter.semester) {
+    const sem = d.getMonth() < 6 ? 1 : 2;
+    if (sem !== filter.semester) return false;
+  }
+  if (filter.quarter) {
+    const q = Math.ceil((d.getMonth() + 1) / 3);
+    if (q !== filter.quarter) return false;
+  }
+  if (filter.month) {
+    if (d.getMonth() + 1 !== filter.month) return false;
+  }
+  if (filter.week) {
+    const weekOfMonth = Math.ceil(d.getDate() / 7);
+    if (weekOfMonth !== filter.week) return false;
+  }
   return true;
 }
 
