@@ -1,5 +1,4 @@
 import React, { useState, memo } from 'react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { FileText, Map, Search, ArrowRightLeft, Scissors, AlertTriangle, ShieldCheck, Loader2, Database, MapPin, History, ShieldAlert, Award, Receipt } from 'lucide-react';
 import { useLandDataAnalytics } from '@/hooks/useLandDataAnalytics';
 import { TitleRequestsBlock } from './blocks/TitleRequestsBlock';
@@ -79,33 +78,35 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = () =
   };
 
   return (
-    <div className="flex flex-row lg:flex-col h-full w-full">
+    <div className="flex flex-row lg:flex-col h-full w-full min-h-0">
       {/* Tabs - vertical on mobile, horizontal on desktop */}
-      <div className="w-10 sm:w-12 lg:w-full shrink-0 overflow-y-auto overflow-x-hidden lg:overflow-y-hidden lg:overflow-x-auto scrollbar-hide border-r lg:border-r-0 lg:border-b border-border/40 bg-muted/30 sticky top-0 left-0 z-10 backdrop-blur-sm">
-        <div className="flex flex-col lg:flex-row lg:items-center gap-0.5 p-0.5 lg:w-max">
-          {blocks.map((block) => {
-            const isActive = activeTab === block.id;
-            return (
-              <button
-                key={block.id}
-                onClick={() => setActiveTab(block.id)}
-                className={`flex items-center justify-center lg:justify-start gap-1 px-1 py-1.5 lg:px-2 lg:py-1.5 text-[9px] sm:text-[10px] whitespace-nowrap rounded-md transition-all ${
-                  isActive
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/80'
-                }`}
-                title={block.name}
-              >
-                <block.icon className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
-                <span className="hidden lg:inline">{block.name}</span>
-              </button>
-            );
-          })}
+      <div className="w-10 sm:w-12 lg:w-full shrink-0 self-start sticky top-0 left-0 z-20 border-r lg:border-r-0 lg:border-b border-border/40 bg-background/95 backdrop-blur-sm">
+        <div className="max-h-full overflow-y-auto overflow-x-hidden lg:overflow-y-hidden lg:overflow-x-auto scrollbar-hide">
+          <div className="flex flex-col lg:flex-row lg:items-center gap-0.5 p-0.5 lg:w-max">
+            {blocks.map((block) => {
+              const isActive = activeTab === block.id;
+              return (
+                <button
+                  key={block.id}
+                  onClick={() => setActiveTab(block.id)}
+                  className={`flex items-center justify-center lg:justify-start gap-1 px-1 py-1.5 lg:px-2 lg:py-1.5 text-[9px] sm:text-[10px] whitespace-nowrap rounded-md transition-all ${
+                    isActive
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/80'
+                  }`}
+                  title={block.name}
+                >
+                  <block.icon className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+                  <span className="hidden lg:inline">{block.name}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-w-0 overflow-auto p-1 lg:p-0 lg:mt-1.5">
+      <div className="flex-1 min-w-0 p-1 lg:p-0 lg:mt-1.5">
         {renderContent()}
       </div>
     </div>

@@ -955,15 +955,13 @@ const DRCInteractiveMap = () => {
                   <span>Analytics</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="flex-1 p-0 overflow-hidden charts-compact text-[10px] min-h-0">
-                <ScrollArea className="h-full [&>[data-radix-scroll-area-viewport]]:max-h-full">
-                  <div className="p-1.5 sm:p-2">
-                    <ProvinceDataVisualization 
-                      provinces={provincesData} 
-                      selectedProvince={selectedProvince}
-                    />
-                  </div>
-                </ScrollArea>
+              <CardContent className="flex-1 p-0 overflow-y-auto overflow-x-hidden charts-compact text-[10px] min-h-0">
+                <div className="h-full p-1.5 sm:p-2">
+                  <ProvinceDataVisualization 
+                    provinces={provincesData} 
+                    selectedProvince={selectedProvince}
+                  />
+                </div>
               </CardContent>
             </Card>
           </div>
