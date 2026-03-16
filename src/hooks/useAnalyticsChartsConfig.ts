@@ -385,7 +385,8 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'invoices', item_key: 'payment-method', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Moyen paiement', chart_type: 'donut' },
       { tab_key: 'invoices', item_key: 'geo-zone', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Zone géographique', chart_type: 'bar-h' },
       { tab_key: 'invoices', item_key: 'revenue-trend', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Revenus/mois', chart_type: 'area' },
-      { tab_key: 'invoices', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
+      { tab_key: 'invoices', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Géographie' },
+      { tab_key: 'invoices', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
     ],
     kpis: [
       { tab_key: 'invoices', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Total' },
