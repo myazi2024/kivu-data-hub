@@ -115,6 +115,7 @@ export const SubdivisionBlock: React.FC<Props> = memo(({ data }) => {
         <ChartCard title="Type demandeur" icon={Users} data={byRequesterType} type="donut" colorIndex={1} hidden={byRequesterType.length === 0} />
         <ChartCard title="Paiement" icon={DollarSign} data={byPaymentStatus} type="donut" colorIndex={2} hidden={byPaymentStatus.length === 0} />
         <ChartCard title="Surface parcelle mère" icon={Ruler} data={surfaceDist} type="bar-v" colorIndex={5} hidden={surfaceDist.length === 0} />
+        <ChartCard title="Revenus/mois" icon={DollarSign} data={revenueTrend} type="area" colorIndex={2} hidden={revenueTrend.length < 2} />
         <GeoCharts records={filtered} />
         <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={7} colSpan={2} />
       </div>

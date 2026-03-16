@@ -1,6 +1,6 @@
 import React, { useState, memo } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { FileText, Map, Search, ArrowRightLeft, Scissors, AlertTriangle, ShieldCheck, Loader2, Database } from 'lucide-react';
+import { FileText, Map, Search, ArrowRightLeft, Scissors, AlertTriangle, ShieldCheck, Loader2, Database, MapPin, History, ShieldAlert, Award, Receipt } from 'lucide-react';
 import { useLandDataAnalytics } from '@/hooks/useLandDataAnalytics';
 import { TitleRequestsBlock } from './blocks/TitleRequestsBlock';
 import { ParcelsWithTitleBlock } from './blocks/ParcelsWithTitleBlock';
@@ -10,6 +10,11 @@ import { MutationBlock } from './blocks/MutationBlock';
 import { SubdivisionBlock } from './blocks/SubdivisionBlock';
 import { DisputesBlock } from './blocks/DisputesBlock';
 import { DisputeLiftingBlock } from './blocks/DisputeLiftingBlock';
+import { BoundaryConflictsBlock } from './blocks/BoundaryConflictsBlock';
+import { OwnershipHistoryBlock } from './blocks/OwnershipHistoryBlock';
+import { FraudAttemptsBlock } from './blocks/FraudAttemptsBlock';
+import { CertificatesBlock } from './blocks/CertificatesBlock';
+import { InvoicesBlock } from './blocks/InvoicesBlock';
 import { ProvinceData } from '@/types/province';
 
 interface ProvinceDataVisualizationProps {
@@ -26,6 +31,11 @@ const blocks = [
   { id: 'subdivision', name: 'Lotissement', icon: Scissors },
   { id: 'disputes', name: 'Litiges', icon: AlertTriangle },
   { id: 'lifting', name: 'Levée litige', icon: ShieldCheck },
+  { id: 'boundary', name: 'Conflits limites', icon: MapPin },
+  { id: 'ownership', name: 'Historique prop.', icon: History },
+  { id: 'fraud', name: 'Fraude', icon: ShieldAlert },
+  { id: 'certificates', name: 'Certificats', icon: Award },
+  { id: 'invoices', name: 'Factures', icon: Receipt },
 ];
 
 const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = () => {
@@ -89,6 +99,21 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = () =
       </TabsContent>
       <TabsContent value="lifting" className="mt-1.5">
         <DisputeLiftingBlock data={analytics} />
+      </TabsContent>
+      <TabsContent value="boundary" className="mt-1.5">
+        <BoundaryConflictsBlock data={analytics} />
+      </TabsContent>
+      <TabsContent value="ownership" className="mt-1.5">
+        <OwnershipHistoryBlock data={analytics} />
+      </TabsContent>
+      <TabsContent value="fraud" className="mt-1.5">
+        <FraudAttemptsBlock data={analytics} />
+      </TabsContent>
+      <TabsContent value="certificates" className="mt-1.5">
+        <CertificatesBlock data={analytics} />
+      </TabsContent>
+      <TabsContent value="invoices" className="mt-1.5">
+        <InvoicesBlock data={analytics} />
       </TabsContent>
     </Tabs>
   );
