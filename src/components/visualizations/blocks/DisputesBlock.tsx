@@ -72,12 +72,6 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
     });
   }, [filtered]);
 
-  const handleExport = useCallback(() => {
-    exportRecordsToCSV(filtered, `litiges-${new Date().toISOString().slice(0,10)}`, [
-      'id', 'parcel_number', 'dispute_nature', 'dispute_type', 'current_status', 'resolution_level',
-      'declarant_quality', 'dispute_start_date', 'lifting_status', 'province', 'ville', 'commune', 'created_at'
-    ]);
-  }, [filtered]);
 
   const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
   const v = isChartVisible;
