@@ -1,4 +1,4 @@
-import React, { memo, useRef, useCallback } from 'react';
+import React, { memo, useRef, useCallback, useContext, createContext } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, AreaChart, Area, Legend } from 'recharts';
 import { CHART_HEIGHT as CH, NoData } from '@/utils/analyticsConstants';
@@ -6,6 +6,9 @@ import { CHART_COLORS } from '@/utils/analyticsHelpers';
 import { LucideIcon, Info, Copy, Check } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { toast } from 'sonner';
+
+/** Context providing the active filter label string to all chart cards */
+export const FilterLabelContext = createContext<string>('');
 
 interface ChartCardProps {
   title: string;
