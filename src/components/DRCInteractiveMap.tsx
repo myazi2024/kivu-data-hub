@@ -5,6 +5,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { TrendingUp, TrendingDown, MapPin, Users, DollarSign, Building, Clock, BarChart3, Info, AlertTriangle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area } from 'recharts';
 import DRCMapWithTooltip from './DRCMapWithTooltip';
@@ -948,8 +949,8 @@ const DRCInteractiveMap = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 p-0 overflow-hidden charts-compact text-[10px]">
-              <div className="h-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-primary/10 scrollbar-track-transparent">
-                <div className="p-1 sm:p-2 min-h-full">
+              <ScrollArea className="h-full">
+                <div className="p-1 sm:p-2">
                   <div className="w-full">
                     <ProvinceDataVisualization 
                       provinces={provincesData} 
@@ -957,7 +958,7 @@ const DRCInteractiveMap = () => {
                     />
                   </div>
                 </div>
-              </div>
+              </ScrollArea>
             </CardContent>
           </Card>
         </div>
