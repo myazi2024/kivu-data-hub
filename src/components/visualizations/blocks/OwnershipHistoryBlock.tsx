@@ -53,6 +53,7 @@ export const OwnershipHistoryBlock: React.FC<Props> = memo(({ data }) => {
   ].filter(k => v(k.key)), [filtered, stats, v, getChartConfig]);
 
   return (
+    <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
       <AnalyticsFilters data={data.ownershipHistory} filter={filter} onChange={setFilter} hidePaymentStatus hideStatus dateField="ownership_start_date" />
       <KpiGrid items={kpiItems} />
