@@ -61,16 +61,16 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = () =
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <div className="overflow-x-auto pb-1">
-        <TabsList className="inline-flex items-center gap-0.5 h-auto p-1 bg-muted/50 border border-border/40 rounded-lg w-max min-w-full">
+      <div className="overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1">
+        <TabsList className="inline-flex items-center gap-0.5 h-auto p-0.5 bg-muted/50 border border-border/40 rounded-lg w-max">
           {blocks.map((block) => (
             <TabsTrigger
               key={block.id}
               value={block.id}
-              className="flex items-center gap-1 px-2 py-1.5 text-[10px] whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-muted/80 transition-all rounded-md"
+              className="flex items-center gap-0.5 px-1.5 sm:px-2 py-1 sm:py-1.5 text-[9px] sm:text-[10px] whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-muted/80 transition-all rounded-md"
             >
-              <block.icon className="h-3 w-3" />
-              {block.name}
+              <block.icon className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+              <span className="hidden xs:inline sm:inline">{block.name}</span>
             </TabsTrigger>
           ))}
         </TabsList>

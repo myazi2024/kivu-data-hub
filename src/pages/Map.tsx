@@ -1,10 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navigation from '@/components/ui/navigation';
-import Footer from '@/components/Footer';
-import TerritorialMap from '@/components/TerritorialMap';
 import DRCInteractiveMap from '@/components/DRCInteractiveMap';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 
@@ -12,26 +9,24 @@ const Map = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="h-dvh flex flex-col">
+    <div className="h-dvh flex flex-col overflow-hidden">
       <Navigation />
       
       {/* Bouton Retour mobile */}
-      <div className="lg:hidden px-4 py-2 bg-background border-b">
+      <div className="lg:hidden px-3 py-1.5 bg-background border-b flex-shrink-0">
         <Button 
           variant="ghost" 
           size="sm" 
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+          className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground h-7 text-xs"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-3.5 w-3.5" />
           Retour
         </Button>
       </div>
       
-      <main className="flex-1 bg-background overflow-hidden">
-        <div className="h-full">
-          <DRCInteractiveMap />
-        </div>
+      <main className="flex-1 min-h-0 bg-background overflow-hidden">
+        <DRCInteractiveMap />
       </main>
     </div>
   );
