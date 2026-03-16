@@ -58,7 +58,6 @@ export function matchesLocation(r: any, f: AnalyticsFilter): boolean {
   if (f.collectivite && r.collectivite !== f.collectivite) return false;
   if (f.groupement && r.groupement !== f.groupement) return false;
   if (f.villageFilter && r.village !== f.villageFilter) return false;
-  if (f.circonscription && r.circonscription_fonciere !== f.circonscription) return false;
   return true;
 }
 
