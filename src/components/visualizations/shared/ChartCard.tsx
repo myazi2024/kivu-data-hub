@@ -116,13 +116,17 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
   const displayData = type === 'area' ? data : data.slice(0, maxItems);
   const truncated = type !== 'area' && data.length > maxItems;
 
+  const filterLabel = useContext(FilterLabelContext);
+  const fullTitle = filterLabel ? `${title} — ${filterLabel}` : title;
+
   return (
     <Card ref={ref} className={`border-border/30 ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
       <CardHeader className="pb-1 px-2 pt-2">
         <CardTitle className="text-xs font-semibold flex items-center gap-1">
           {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'}`} />}
-          {title}
-          {truncated && <span className="text-[8px] text-muted-foreground ml-auto mr-1">Top {maxItems}/{data.length}</span>}
+          <span className="truncate">{title}</span>
+          {filterLabel && <span className="text-[8px] font-normal text-muted-foreground truncate">— {filterLabel}</span>}
+          {truncated && <span className="text-[8px] text-muted-foreground ml-auto mr-1 shrink-0">Top {maxItems}/{data.length}</span>}
           <CopyButton onClick={copy} copied={copied} />
         </CardTitle>
       </CardHeader>
