@@ -82,6 +82,14 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
     return { urbanCount, ruralCount, paidRevenue, totalRevenue, approved, avgDays, avgEstimated };
   }, [filtered]);
 
+  // Estimated vs actual processing comparison
+  const processingComparison = useMemo(() => {
+    const result: { name: string; value: number }[] = [];
+    if (stats.avgEstimated > 0) result.push({ name: 'Estimé (j)', value: stats.avgEstimated });
+    if (stats.avgDays > 0) result.push({ name: 'Réel (j)', value: stats.avgDays });
+    return result;
+  }, [stats]);
+
   const handleExport = useCallback(() => {
     exportRecordsToCSV(filtered, `titres-fonciers-${new Date().toISOString().slice(0,10)}`, [
       'id', 'reference_number', 'request_type', 'requester_type', 'section_type', 'province', 'ville', 'commune',
