@@ -51,6 +51,7 @@ const menuItems = [
     items: [
       { icon: LayoutDashboard, label: 'Dashboard', value: 'dashboard', badge: null },
       { icon: BarChart, label: 'Analytics', value: 'analytics', badge: null },
+      { icon: BarChart, label: 'Config Graphiques', value: 'analytics-charts-config', badge: null },
     ]
   },
   {

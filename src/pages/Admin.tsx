@@ -336,6 +336,8 @@ const Admin = () => {
         return <AdminLandDisputes />;
       case 'certificates':
         return <AdminCertificates />;
+      case 'analytics-charts-config':
+        return <AdminAnalyticsChartsConfig />;
       case 'audit-logs':
         return <AdminAuditLogs />;
       default:
