@@ -3,10 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { logAuditAction } from '@/utils/supabaseConfigUtils';
 import { toast } from 'sonner';
 import type { TestDataStats, GenerationStep } from './types';
-import { TEST_TABLES_DELETION_ORDER, toRecord } from './types';
+import { toRecord } from './types';
 import {
   uniqueSuffix,
   verifyTestModeEnabled,
+  generateParcels,
   generateContributions,
   generateInvoices,
   generatePayments,
@@ -14,6 +15,12 @@ import {
   generateTitleRequests,
   generateExpertiseRequests,
   generateDisputes,
+  generateContributorCodes,
+  generateFraudAttempts,
+  generateBoundaryConflicts,
+  generateOwnershipHistory,
+  generateTaxHistory,
+  generateCertificates,
   rollbackTestData,
 } from './testDataGenerators';
 
@@ -25,13 +32,18 @@ interface UseTestDataActionsProps {
 
 const GENERATION_STEPS: GenerationStep[] = [
   { label: 'Vérification du mode test', status: 'pending' },
+  { label: 'Parcelles cadastrales', status: 'pending' },
   { label: 'Contributions cadastrales', status: 'pending' },
   { label: 'Factures', status: 'pending' },
   { label: 'Transactions de paiement', status: 'pending' },
   { label: 'Accès aux services', status: 'pending' },
+  { label: 'Codes contributeurs (CCC)', status: 'pending' },
   { label: 'Demandes de titres fonciers', status: 'pending' },
   { label: 'Demandes d\'expertise', status: 'pending' },
   { label: 'Litiges fonciers', status: 'pending' },
+  { label: 'Conflits de limites', status: 'pending' },
+  { label: 'Historique propriété & taxes', status: 'pending' },
+  { label: 'Fraudes & certificats', status: 'pending' },
 ];
 
 export const useTestDataActions = ({
@@ -52,7 +64,7 @@ export const useTestDataActions = ({
   };
 
   const resetSteps = () => {
-    setGenerationSteps(GENERATION_STEPS.map((s) => ({ ...s, status: 'pending' })));
+    setGenerationSteps(GENERATION_STEPS.map((s) => ({ ...s, status: 'pending' as const })));
     setCurrentStep(-1);
   };
 
@@ -60,17 +72,46 @@ export const useTestDataActions = ({
     try {
       setCleaningUp(true);
 
-      // Use shared deletion order
-      for (const entry of TEST_TABLES_DELETION_ORDER) {
-        const query = supabase.from(entry.table).delete();
-        if (entry.filter === 'ilike') {
-          const { error } = await (query as any).ilike(entry.column, entry.value);
-          if (error) console.error(`Erreur suppression ${entry.table}:`, error);
-        } else {
-          const { error } = await (query as any).filter(entry.column, 'eq', entry.value);
-          if (error) console.error(`Erreur suppression ${entry.table}:`, error);
-        }
+      // FK-safe cleanup: use proper order with join-based deletions
+      // 1. Fraud attempts (FK → contributions)
+      const contribIds = (await supabase.from('cadastral_contributions').select('id').ilike('parcel_number', 'TEST-%')).data?.map(r => r.id) ?? [];
+      if (contribIds.length > 0) {
+        await supabase.from('fraud_attempts').delete().in('contribution_id', contribIds);
       }
+
+      // 2. Contributor codes
+      await supabase.from('cadastral_contributor_codes').delete().ilike('parcel_number', 'TEST-%');
+
+      // 3. Service access (FK → invoices)
+      await supabase.from('cadastral_service_access').delete().ilike('parcel_number', 'TEST-%');
+
+      // 4. Payments (before invoices)
+      await supabase.from('payment_transactions').delete().filter('metadata->>test_mode', 'eq', 'true');
+
+      // 5. Invoices
+      await supabase.from('cadastral_invoices').delete().ilike('parcel_number', 'TEST-%');
+
+      // 6. Contributions
+      await supabase.from('cadastral_contributions').delete().ilike('parcel_number', 'TEST-%');
+
+      // 7. Parcel children
+      const parcelIds = (await supabase.from('cadastral_parcels').select('id').ilike('parcel_number', 'TEST-%')).data?.map(r => r.id) ?? [];
+      if (parcelIds.length > 0) {
+        await supabase.from('cadastral_ownership_history').delete().in('parcel_id', parcelIds);
+        await supabase.from('cadastral_tax_history').delete().in('parcel_id', parcelIds);
+        await supabase.from('cadastral_boundary_history').delete().in('parcel_id', parcelIds);
+        await supabase.from('cadastral_mortgages').delete().in('parcel_id', parcelIds);
+      }
+
+      // 8. Parcels
+      await supabase.from('cadastral_parcels').delete().ilike('parcel_number', 'TEST-%');
+
+      // 9. Independent tables
+      await supabase.from('real_estate_expertise_requests').delete().ilike('parcel_number', 'TEST-%');
+      await supabase.from('cadastral_land_disputes').delete().ilike('parcel_number', 'TEST-%');
+      await supabase.from('land_title_requests').delete().ilike('reference_number', 'TEST-%');
+      await supabase.from('cadastral_boundary_conflicts').delete().ilike('reporting_parcel_number', 'TEST-%');
+      await supabase.from('generated_certificates').delete().ilike('reference_number', 'TEST-%');
 
       await logAuditAction(
         'TEST_DATA_CLEANUP',
@@ -127,70 +168,127 @@ export const useTestDataActions = ({
       }
       updateStep(0, 'done');
 
-      // Step 1: Contributions
+      // Step 1: Parcels (needed for FK joins in analytics)
       updateStep(1, 'running');
-      const contributions = await generateContributions(userId, parcelNumbers);
-      updateStep(1, 'done');
+      let parcels: Array<{ id: string; parcel_number: string }>;
+      try {
+        parcels = await generateParcels(parcelNumbers);
+        updateStep(1, 'done');
+      } catch (parcelError) {
+        updateStep(1, 'error');
+        throw parcelError;
+      }
 
-      // Step 2: Invoices
+      // Step 2: Contributions
       updateStep(2, 'running');
+      let contributions: Array<{ id: string; parcel_number: string }>;
+      try {
+        contributions = await generateContributions(userId, parcelNumbers);
+        updateStep(2, 'done');
+      } catch (contribError) {
+        updateStep(2, 'error');
+        await rollbackTestData(parcelNumbers, suffix);
+        throw contribError;
+      }
+
+      // Step 3: Invoices
+      updateStep(3, 'running');
       let invoices: Array<{ id: string; parcel_number: string; status: string }>;
       try {
         invoices = await generateInvoices(userId, parcelNumbers);
-        updateStep(2, 'done');
+        updateStep(3, 'done');
       } catch (invoiceError) {
-        updateStep(2, 'error');
-        console.error('Rollback contributions after invoice failure:', invoiceError);
+        updateStep(3, 'error');
         await rollbackTestData(parcelNumbers, suffix);
         throw invoiceError;
       }
 
-      // Step 3: Payment transactions
-      updateStep(3, 'running');
+      // Step 4: Payment transactions
+      updateStep(4, 'running');
       try {
         await generatePayments(userId, invoices);
-        updateStep(3, 'done');
+        updateStep(4, 'done');
       } catch (paymentError) {
-        updateStep(3, 'error');
-        console.error('Rollback after payment failure:', paymentError);
+        updateStep(4, 'error');
         await rollbackTestData(parcelNumbers, suffix);
         throw paymentError;
       }
 
-      // Step 4: Service access (non-blocking)
-      updateStep(4, 'running');
-      await generateServiceAccess(userId, invoices);
-      updateStep(4, 'done');
-
-      // Step 5: Title requests
+      // Step 5: Service access (non-blocking)
       updateStep(5, 'running');
-      try {
-        await generateTitleRequests(userId, suffix);
-        updateStep(5, 'done');
-      } catch (titleError) {
-        updateStep(5, 'error');
-        console.error('Title requests failed (non-blocking):', titleError);
-        // Non-blocking: continue
-      }
+      await generateServiceAccess(userId, invoices);
+      updateStep(5, 'done');
 
-      // Step 6: Expertise requests
+      // Step 6: Contributor codes
       updateStep(6, 'running');
       try {
-        await generateExpertiseRequests(userId, parcelNumbers, suffix);
+        await generateContributorCodes(userId, contributions);
         updateStep(6, 'done');
-      } catch (expError) {
+      } catch (cccError) {
         updateStep(6, 'error');
+        console.error('Codes CCC (non-bloquant):', cccError);
+      }
+
+      // Step 7: Title requests
+      updateStep(7, 'running');
+      try {
+        await generateTitleRequests(userId, suffix);
+        updateStep(7, 'done');
+      } catch (titleError) {
+        updateStep(7, 'error');
+        console.error('Title requests failed (non-blocking):', titleError);
+      }
+
+      // Step 8: Expertise requests
+      updateStep(8, 'running');
+      try {
+        await generateExpertiseRequests(userId, parcelNumbers, suffix);
+        updateStep(8, 'done');
+      } catch (expError) {
+        updateStep(8, 'error');
         console.error('Expertise requests failed (non-blocking):', expError);
       }
 
-      // Step 7: Disputes
-      updateStep(7, 'running');
+      // Step 9: Disputes (with lifting data)
+      updateStep(9, 'running');
       try {
         await generateDisputes(parcelNumbers, suffix, userId);
-        updateStep(7, 'done');
+        updateStep(9, 'done');
       } catch (dispError) {
-        updateStep(7, 'error');
+        updateStep(9, 'error');
         console.error('Disputes failed (non-blocking):', dispError);
+      }
+
+      // Step 10: Boundary conflicts (non-blocking)
+      updateStep(10, 'running');
+      try {
+        await generateBoundaryConflicts(parcelNumbers, userId);
+        updateStep(10, 'done');
+      } catch (bcError) {
+        updateStep(10, 'error');
+        console.error('Boundary conflicts (non-blocking):', bcError);
+      }
+
+      // Step 11: Ownership history + tax history (non-blocking)
+      updateStep(11, 'running');
+      try {
+        await generateOwnershipHistory(parcels);
+        await generateTaxHistory(parcels);
+        updateStep(11, 'done');
+      } catch (histError) {
+        updateStep(11, 'error');
+        console.error('History (non-blocking):', histError);
+      }
+
+      // Step 12: Fraud attempts + certificates (non-blocking)
+      updateStep(12, 'running');
+      try {
+        await generateFraudAttempts(userId, contributions);
+        await generateCertificates(parcelNumbers, suffix, userId);
+        updateStep(12, 'done');
+      } catch (fcError) {
+        updateStep(12, 'error');
+        console.error('Fraud/certificates (non-blocking):', fcError);
       }
 
       await logAuditAction(
@@ -201,13 +299,19 @@ export const useTestDataActions = ({
         toRecord({
           contributions: contributions.length,
           invoices: invoices.length,
+          parcels: parcels.length,
           suffix,
-          entities: ['contributions', 'invoices', 'payments', 'service_access', 'title_requests', 'expertise', 'disputes'],
+          entities: [
+            'parcels', 'contributions', 'invoices', 'payments', 'service_access',
+            'contributor_codes', 'title_requests', 'expertise', 'disputes',
+            'boundary_conflicts', 'ownership_history', 'tax_history',
+            'fraud_attempts', 'certificates',
+          ],
         })
       );
 
       toast.success('Données de test générées', {
-        description: `${contributions.length} contributions, ${invoices.length} factures, demandes de titres, expertises et litiges créés`,
+        description: `${parcels.length} parcelles, ${contributions.length} contributions, ${invoices.length} factures et 10+ entités associées`,
       });
 
       await onComplete();

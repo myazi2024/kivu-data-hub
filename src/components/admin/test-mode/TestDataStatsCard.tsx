@@ -30,6 +30,23 @@ interface TestDataStatsCardProps {
   onRefresh: () => void;
 }
 
+const STAT_ITEMS: { key: keyof TestDataStats; label: string }[] = [
+  { key: 'parcels', label: 'Parcelles' },
+  { key: 'contributions', label: 'Contributions' },
+  { key: 'invoices', label: 'Factures' },
+  { key: 'payments', label: 'Paiements' },
+  { key: 'cccCodes', label: 'Codes CCC' },
+  { key: 'serviceAccess', label: 'Accès services' },
+  { key: 'titleRequests', label: 'Demandes titres' },
+  { key: 'expertiseRequests', label: 'Expertises' },
+  { key: 'disputes', label: 'Litiges' },
+  { key: 'boundaryConflicts', label: 'Conflits limites' },
+  { key: 'ownershipHistory', label: 'Hist. propriété' },
+  { key: 'taxHistory', label: 'Hist. taxes' },
+  { key: 'fraudAttempts', label: 'Fraudes' },
+  { key: 'certificates', label: 'Certificats' },
+];
+
 const TestDataStatsCard: React.FC<TestDataStatsCardProps> = ({
   stats,
   total,
@@ -55,15 +72,10 @@ const TestDataStatsCard: React.FC<TestDataStatsCardProps> = ({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-4 gap-3">
-          <StatItem label="Contributions" value={stats.contributions} loading={statsLoading} />
-          <StatItem label="Factures" value={stats.invoices} loading={statsLoading} />
-          <StatItem label="Paiements" value={stats.payments} loading={statsLoading} />
-          <StatItem label="Codes CCC" value={stats.cccCodes} loading={statsLoading} />
-          <StatItem label="Accès services" value={stats.serviceAccess} loading={statsLoading} />
-          <StatItem label="Demandes titres" value={stats.titleRequests} loading={statsLoading} />
-          <StatItem label="Expertises" value={stats.expertiseRequests} loading={statsLoading} />
-          <StatItem label="Litiges" value={stats.disputes} loading={statsLoading} />
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
+          {STAT_ITEMS.map(({ key, label }) => (
+            <StatItem key={key} label={label} value={stats[key]} loading={statsLoading} />
+          ))}
         </div>
 
         {/* Generation progress */}
@@ -74,7 +86,7 @@ const TestDataStatsCard: React.FC<TestDataStatsCardProps> = ({
         />
 
         <div className="flex flex-wrap gap-2">
-          {/* Generate button with confirmation */}
+          {/* Generate button */}
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
@@ -95,9 +107,12 @@ const TestDataStatsCard: React.FC<TestDataStatsCardProps> = ({
                 <AlertDialogDescription>
                   Cette action créera un jeu complet de données de test incluant :
                   <br />
-                  <strong>5 contributions</strong>, <strong>3 factures</strong>,{' '}
-                  <strong>transactions de paiement</strong>, <strong>2 demandes de titres</strong>,{' '}
-                  <strong>2 expertises</strong> et <strong>2 litiges fonciers</strong>.
+                  <strong>5 parcelles</strong>, <strong>5 contributions</strong>,{' '}
+                  <strong>3 factures</strong>, <strong>paiements</strong>,{' '}
+                  <strong>3 codes CCC</strong>, <strong>3 demandes de titres</strong>,{' '}
+                  <strong>3 expertises</strong>, <strong>3 litiges</strong>,{' '}
+                  <strong>2 conflits de limites</strong>, <strong>historique de propriété et taxes</strong>,{' '}
+                  <strong>tentatives de fraude</strong> et <strong>certificats</strong>.
                   <br /><br />
                   Toutes les données seront préfixées <strong>TEST-</strong> et pourront être
                   nettoyées facilement.
@@ -140,10 +155,7 @@ const TestDataStatsCard: React.FC<TestDataStatsCardProps> = ({
                 <AlertDialogTitle>Supprimer toutes les données de test ?</AlertDialogTitle>
                 <AlertDialogDescription>
                   Cette action supprimera <strong>{total}</strong> enregistrement(s) de test
-                  ({stats.contributions} contributions, {stats.invoices} factures,{' '}
-                  {stats.payments} paiements, {stats.cccCodes} codes CCC,{' '}
-                  {stats.serviceAccess} accès services, {stats.titleRequests} demandes de titres,{' '}
-                  {stats.expertiseRequests} expertises, {stats.disputes} litiges).
+                  répartis sur 14 tables (parcelles, contributions, factures, paiements, etc.).
                   <br />
                   <strong>Cette action est irréversible.</strong>
                 </AlertDialogDescription>

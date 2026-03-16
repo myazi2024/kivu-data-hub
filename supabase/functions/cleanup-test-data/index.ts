@@ -6,18 +6,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-/** FK-safe deletion order: children → parents */
-const DELETION_ORDER = [
-  { table: "cadastral_contributor_codes", filter: "ilike", column: "parcel_number", value: "TEST-%" },
-  { table: "cadastral_service_access", filter: "ilike", column: "parcel_number", value: "TEST-%" },
-  { table: "cadastral_invoices", filter: "ilike", column: "parcel_number", value: "TEST-%" },
-  { table: "cadastral_contributions", filter: "ilike", column: "parcel_number", value: "TEST-%" },
-  { table: "payment_transactions", filter: "jsonb", column: "metadata->>test_mode", value: "true" },
-  { table: "real_estate_expertise_requests", filter: "ilike", column: "parcel_number", value: "TEST-%" },
-  { table: "cadastral_land_disputes", filter: "ilike", column: "parcel_number", value: "TEST-%" },
-  { table: "land_title_requests", filter: "ilike", column: "reference_number", value: "TEST-%" },
-] as const;
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -59,18 +47,70 @@ Deno.serve(async (req) => {
 
     const deletedCounts: Record<string, number> = {};
 
-    for (const entry of DELETION_ORDER) {
-      let query = supabase
+    // FK-safe deletion order (children → parents)
+
+    // 1. Fraud attempts (FK → contributions)
+    const { data: contribRows } = await supabase
+      .from("cadastral_contributions")
+      .select("id")
+      .ilike("parcel_number", "TEST-%")
+      .lt("created_at", cutoffISO);
+    const contribIds = contribRows?.map((r: any) => r.id) ?? [];
+    if (contribIds.length > 0) {
+      const { data: faData } = await supabase.from("fraud_attempts").delete().in("contribution_id", contribIds).select("id");
+      deletedCounts["fraud_attempts"] = faData?.length || 0;
+    }
+
+    // 2. Contributor codes
+    const { data: cccData } = await supabase.from("cadastral_contributor_codes").delete().ilike("parcel_number", "TEST-%").lt("created_at", cutoffISO).select("id");
+    deletedCounts["cadastral_contributor_codes"] = cccData?.length || 0;
+
+    // 3. Service access (FK → invoices)
+    const { data: saData } = await supabase.from("cadastral_service_access").delete().ilike("parcel_number", "TEST-%").lt("created_at", cutoffISO).select("id");
+    deletedCounts["cadastral_service_access"] = saData?.length || 0;
+
+    // 4. Payment transactions (before invoices)
+    const { data: ptData } = await supabase.from("payment_transactions").delete().filter("metadata->>test_mode", "eq", "true").lt("created_at", cutoffISO).select("id");
+    deletedCounts["payment_transactions"] = ptData?.length || 0;
+
+    // 5. Invoices
+    const { data: invData } = await supabase.from("cadastral_invoices").delete().ilike("parcel_number", "TEST-%").lt("created_at", cutoffISO).select("id");
+    deletedCounts["cadastral_invoices"] = invData?.length || 0;
+
+    // 6. Contributions
+    const { data: conData } = await supabase.from("cadastral_contributions").delete().ilike("parcel_number", "TEST-%").lt("created_at", cutoffISO).select("id");
+    deletedCounts["cadastral_contributions"] = conData?.length || 0;
+
+    // 7. Parcel children
+    const { data: parcelRows } = await supabase.from("cadastral_parcels").select("id").ilike("parcel_number", "TEST-%").lt("created_at", cutoffISO);
+    const parcelIds = parcelRows?.map((r: any) => r.id) ?? [];
+    if (parcelIds.length > 0) {
+      const { data: ohData } = await supabase.from("cadastral_ownership_history").delete().in("parcel_id", parcelIds).select("id");
+      deletedCounts["cadastral_ownership_history"] = ohData?.length || 0;
+      const { data: thData } = await supabase.from("cadastral_tax_history").delete().in("parcel_id", parcelIds).select("id");
+      deletedCounts["cadastral_tax_history"] = thData?.length || 0;
+    }
+
+    // 8. Parcels
+    const { data: pData } = await supabase.from("cadastral_parcels").delete().ilike("parcel_number", "TEST-%").lt("created_at", cutoffISO).select("id");
+    deletedCounts["cadastral_parcels"] = pData?.length || 0;
+
+    // 9. Independent tables
+    const independentTables = [
+      { table: "real_estate_expertise_requests", column: "parcel_number", value: "TEST-%" },
+      { table: "cadastral_land_disputes", column: "parcel_number", value: "TEST-%" },
+      { table: "land_title_requests", column: "reference_number", value: "TEST-%" },
+      { table: "cadastral_boundary_conflicts", column: "reporting_parcel_number", value: "TEST-%" },
+      { table: "generated_certificates", column: "reference_number", value: "TEST-%" },
+    ];
+
+    for (const entry of independentTables) {
+      const { data } = await supabase
         .from(entry.table)
-        .delete();
-
-      if (entry.filter === "ilike") {
-        query = (query as any).ilike(entry.column, entry.value);
-      } else {
-        query = (query as any).filter(entry.column, "eq", entry.value);
-      }
-
-      const { data } = await (query as any).lt("created_at", cutoffISO).select("id");
+        .delete()
+        .ilike(entry.column, entry.value)
+        .lt("created_at", cutoffISO)
+        .select("id");
       deletedCounts[entry.table] = data?.length || 0;
     }
 
