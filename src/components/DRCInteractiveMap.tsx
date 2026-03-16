@@ -796,7 +796,7 @@ const DRCInteractiveMap = () => {
           {/* Partie haute : Carte */}
           <div className="flex-[3] min-h-0">
           <Card className="card-compact overflow-hidden h-full flex flex-col">
-            <CardContent className="p-0 flex-1 flex flex-col">
+            <CardContent className="p-0 flex-1 flex flex-col relative">
               {/* En-tête responsive */}
               <div className="bg-muted/20 px-1 sm:px-2 py-0.5 border-b border-border/30">
                 <div className="flex items-center justify-between">
