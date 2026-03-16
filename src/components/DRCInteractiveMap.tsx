@@ -797,24 +797,13 @@ const DRCInteractiveMap = () => {
           <Card className="card-compact overflow-hidden h-full flex flex-col">
             <CardContent className="p-0 flex-1 flex flex-col">
               {/* En-tête responsive */}
-              <div className="bg-muted/20 p-1 sm:p-2 border-b border-border/30">
-                {/* Note explicative en haut - Compacte */}
-                <div className="mb-1 p-1 bg-blue-50/50 dark:bg-blue-950/10 rounded border border-blue-200/50 dark:border-blue-800/50">
-                  <div className="flex items-center gap-1">
-                    <Info className="h-3 w-3 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                    <div className="text-[10px] text-blue-700 dark:text-blue-300">
-                      <span className="font-medium">Usage :</span> Survolez/cliquez les provinces • Utilisez les filtres
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between mb-1">
+              <div className="bg-muted/20 px-1 sm:px-2 py-0.5 border-b border-border/30">
+                <div className="flex items-center justify-between">
                   <h2 className="text-[10px] sm:text-xs font-medium text-foreground flex items-center gap-1">
                     <MapPin className="h-3 w-3 text-primary" />
                     <span>RDC</span>
                   </h2>
                 </div>
-                
               </div>
               
               {/* Carte responsive optimisée */}
