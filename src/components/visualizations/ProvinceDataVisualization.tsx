@@ -88,7 +88,7 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = () =
               <button
                 key={block.id}
                 onClick={() => setActiveTab(block.id)}
-                className={`flex items-center gap-1 px-1.5 py-1.5 lg:px-2 lg:py-1.5 text-[8px] sm:text-[9px] lg:text-[10px] whitespace-nowrap rounded-md transition-all ${
+                className={`flex items-center gap-1 px-1.5 py-1.5 lg:px-2 lg:py-1.5 text-[12px] sm:text-[13px] lg:text-[10px] whitespace-nowrap rounded-md transition-all ${
                   isActive
                     ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/80'
