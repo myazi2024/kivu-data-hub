@@ -121,7 +121,6 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
   const fill = color || CHART_COLORS[colorIndex % CHART_COLORS.length];
   const displayData = type === 'area' ? data : data.slice(0, maxItems);
   const truncated = type !== 'area' && data.length > maxItems;
-  const fullTitle = filterLabel ? `${title} — ${filterLabel}` : title;
 
   return (
     <Card ref={ref} className={`border-border/30 ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
