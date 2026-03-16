@@ -1,4 +1,4 @@
-import React, { memo, useRef, useCallback } from 'react';
+import React, { memo, useRef, useCallback, useContext, createContext } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, AreaChart, Area, Legend } from 'recharts';
 import { CHART_HEIGHT as CH, NoData } from '@/utils/analyticsConstants';
@@ -6,6 +6,9 @@ import { CHART_COLORS } from '@/utils/analyticsHelpers';
 import { LucideIcon, Info, Copy, Check } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { toast } from 'sonner';
+
+/** Context providing the active filter label string to all chart cards */
+export const FilterLabelContext = createContext<string>('');
 
 interface ChartCardProps {
   title: string;
@@ -113,13 +116,17 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
   const displayData = type === 'area' ? data : data.slice(0, maxItems);
   const truncated = type !== 'area' && data.length > maxItems;
 
+  const filterLabel = useContext(FilterLabelContext);
+  const fullTitle = filterLabel ? `${title} — ${filterLabel}` : title;
+
   return (
     <Card ref={ref} className={`border-border/30 ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
       <CardHeader className="pb-1 px-2 pt-2">
         <CardTitle className="text-xs font-semibold flex items-center gap-1">
           {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'}`} />}
-          {title}
-          {truncated && <span className="text-[8px] text-muted-foreground ml-auto mr-1">Top {maxItems}/{data.length}</span>}
+          <span className="truncate">{title}</span>
+          {filterLabel && <span className="text-[8px] font-normal text-muted-foreground truncate">— {filterLabel}</span>}
+          {truncated && <span className="text-[8px] text-muted-foreground ml-auto mr-1 shrink-0">Top {maxItems}/{data.length}</span>}
           <CopyButton onClick={copy} copied={copied} />
         </CardTitle>
       </CardHeader>
@@ -185,12 +192,14 @@ export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
   if (hidden) return null;
   const { ref, copied, copy } = useCopyAsImage();
   const displayData = data.slice(0, maxItems);
+  const filterLabel = useContext(FilterLabelContext);
   return (
     <Card ref={ref} className={`border-border/30 ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
       <CardHeader className="pb-1 px-2 pt-2">
         <CardTitle className="text-xs font-semibold flex items-center gap-1">
           {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'}`} />}
-          {title}
+          <span className="truncate">{title}</span>
+          {filterLabel && <span className="text-[8px] font-normal text-muted-foreground truncate">— {filterLabel}</span>}
           <CopyButton onClick={copy} copied={copied} />
         </CardTitle>
       </CardHeader>
@@ -228,12 +237,14 @@ export const ColorMappedPieCard: React.FC<MultiDataPieProps> = memo(({
   title, icon: Icon, iconColor, data, colorMap = {}, insight,
 }) => {
   const { ref, copied, copy } = useCopyAsImage();
+  const filterLabel = useContext(FilterLabelContext);
   return (
     <Card ref={ref} className="border-border/30">
       <CardHeader className="pb-1 px-2 pt-2">
         <CardTitle className="text-xs font-semibold flex items-center gap-1">
           {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'}`} />}
-          {title}
+          <span className="truncate">{title}</span>
+          {filterLabel && <span className="text-[8px] font-normal text-muted-foreground truncate">— {filterLabel}</span>}
           <CopyButton onClick={copy} copied={copied} />
         </CardTitle>
       </CardHeader>

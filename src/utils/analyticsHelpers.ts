@@ -214,3 +214,32 @@ export function avgField(records: any[], field: string): number {
 }
 
 export const VALID_LIFTING_STATUSES = ['pending', 'demande_levee', 'approved', 'rejected', 'in_review'];
+
+const MONTH_LABELS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+
+/** Build a human-readable label from active filters (time + location) */
+export function buildFilterLabel(filter: AnalyticsFilter): string {
+  const parts: string[] = [];
+  // Time
+  if (filter.periodType !== 'all' && filter.year) {
+    let t = String(filter.year);
+    if (filter.periodType === 'semester' && filter.subPeriod) t += ` S${filter.subPeriod}`;
+    else if (filter.periodType === 'quarter' && filter.subPeriod) t += ` T${filter.subPeriod}`;
+    else if (filter.periodType === 'month' && filter.subPeriod) t += ` ${MONTH_LABELS[filter.subPeriod - 1]}`;
+    parts.push(t);
+  }
+  // Location
+  const loc: string[] = [];
+  if (filter.province) loc.push(filter.province);
+  if (filter.sectionType !== 'all') loc.push(filter.sectionType === 'urbaine' ? 'Urbaine' : 'Rurale');
+  if (filter.ville) loc.push(filter.ville);
+  if (filter.commune) loc.push(filter.commune);
+  if (filter.quartier) loc.push(filter.quartier);
+  if (filter.avenue) loc.push(filter.avenue);
+  if (filter.territoire) loc.push(filter.territoire);
+  if (filter.collectivite) loc.push(filter.collectivite);
+  if (filter.groupement) loc.push(filter.groupement);
+  if (filter.villageFilter) loc.push(filter.villageFilter);
+  if (loc.length > 0) parts.push(loc.join(' › '));
+  return parts.join(' · ');
+}

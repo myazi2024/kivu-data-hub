@@ -1,11 +1,11 @@
 import React, { useState, useMemo, memo, useCallback } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
-import { AnalyticsFilter, defaultFilter, applyFilters, countBy, countBoolean, trendByMonth, getSectionType, avgProcessingDays, surfaceDistribution, numericDistribution } from '@/utils/analyticsHelpers';
+import { AnalyticsFilter, defaultFilter, applyFilters, countBy, countBoolean, trendByMonth, getSectionType, avgProcessingDays, surfaceDistribution, numericDistribution, buildFilterLabel } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { FileText, Users, DollarSign, TrendingUp, Building, Globe, Ruler, Clock, UserCheck } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
-import { ChartCard, ColorMappedPieCard } from '../shared/ChartCard';
+import { ChartCard, ColorMappedPieCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
 
 import { generateInsight } from '@/utils/chartInsights';
@@ -23,6 +23,7 @@ const GENDER_COLORS: Record<string, string> = {
 
 export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
+  const filterLabel = useMemo(() => buildFilterLabel(filter), [filter]);
   const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
   const filtered = useMemo(() => applyFilters(data.titleRequests, filter), [data.titleRequests, filter]);
 
