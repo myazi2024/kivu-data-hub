@@ -856,9 +856,18 @@ const DRCInteractiveMap = () => {
                 <ScrollArea className="flex-1">
                   {selectedProvince ? (
                     <div className="p-2 space-y-2">
-                      <div className="flex items-center gap-1 mb-1">
-                        <MapPin className="h-3 w-3 text-primary flex-shrink-0" />
-                        <span className="text-[11px] sm:text-xs font-medium text-foreground truncate">{selectedProvince.name}</span>
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <div className="flex items-center gap-1 min-w-0">
+                          <MapPin className="h-3 w-3 text-primary flex-shrink-0" />
+                          <span className="text-[11px] sm:text-xs font-medium text-foreground truncate">{selectedProvince.name}</span>
+                        </div>
+                        <button
+                          onClick={() => setSelectedProvince(null)}
+                          className="lg:hidden flex-shrink-0 h-5 w-5 flex items-center justify-center rounded-full bg-muted hover:bg-destructive hover:text-destructive-foreground transition-colors text-muted-foreground"
+                          aria-label="Fermer"
+                        >
+                          <span className="text-xs font-medium leading-none">✕</span>
+                        </button>
                       </div>
                       
                       {/* Prix & Valeur */}
