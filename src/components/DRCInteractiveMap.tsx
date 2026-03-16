@@ -776,197 +776,190 @@ const DRCInteractiveMap = () => {
   };
 
   return (
-    <div className="w-full h-full max-w-full overflow-hidden relative">
-        {/* Contrôles mobiles flottants - déplacés vers le bas */}
+    <div className="w-full h-full flex flex-col overflow-hidden relative">
+        {/* Contrôles mobiles flottants */}
         <div className="lg:hidden fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
-          <div className="flex items-center justify-center gap-2 bg-background/95 backdrop-blur-sm border border-border/50 rounded-full px-3 py-2 shadow-lg">
-            <Button size="sm" variant={activeMobilePanel==='map' ? 'default' : 'outline'} onClick={() => setActiveMobilePanel('map')} aria-label="Carte" className="rounded-full">
-              <MapPin className="w-4 h-4" />
+          <div className="flex items-center justify-center gap-1.5 bg-background/95 backdrop-blur-sm border border-border/50 rounded-full px-2.5 py-1.5 shadow-lg">
+            <Button size="sm" variant={activeMobilePanel==='map' ? 'default' : 'outline'} onClick={() => setActiveMobilePanel('map')} aria-label="Carte" className="rounded-full h-8 w-8 p-0">
+              <MapPin className="w-3.5 h-3.5" />
             </Button>
-            <Button size="sm" variant={activeMobilePanel==='analytics' ? 'default' : 'outline'} onClick={() => setActiveMobilePanel('analytics')} aria-label="Analytics" className="rounded-full">
-              <BarChart3 className="w-4 h-4" />
+            <Button size="sm" variant={activeMobilePanel==='details' ? 'default' : 'outline'} onClick={() => setActiveMobilePanel('details')} aria-label="Détails" className="rounded-full h-8 w-8 p-0">
+              <Users className="w-3.5 h-3.5" />
+            </Button>
+            <Button size="sm" variant={activeMobilePanel==='analytics' ? 'default' : 'outline'} onClick={() => setActiveMobilePanel('analytics')} aria-label="Analytics" className="rounded-full h-8 w-8 p-0">
+              <BarChart3 className="w-3.5 h-3.5" />
             </Button>
           </div>
         </div>
 
-        {/* Layout responsive optimisé avec padding pour les boutons flottants */}
-        <div className="flex flex-col lg:grid lg:grid-cols-12 gap-3 sm:gap-4 h-full min-h-0 pb-20 lg:pb-0">
-        {/* Carte interactive + Données province - Responsive layout */}
-        <div className={`${activeMobilePanel !== 'map' ? 'hidden lg:flex' : 'flex'} lg:col-span-4 order-1 lg:order-1 flex-col min-h-0 h-full overflow-hidden`}>
-          {/* Partie haute : Carte */}
-          <div className="flex-[3] min-h-0">
-          <Card className="card-compact overflow-hidden h-full flex flex-col">
-            <CardContent className="p-0 flex-1 flex flex-col relative">
-              {/* En-tête responsive */}
-              <div className="bg-muted/20 px-1 sm:px-2 py-0.5 border-b border-border/30">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-[10px] sm:text-xs font-medium text-foreground flex items-center gap-1">
-                    <MapPin className="h-3 w-3 text-primary" />
-                    <span>RDC</span>
-                  </h2>
-                </div>
-              </div>
-              
-              {/* Carte responsive optimisée */}
-              <div className="flex-1 min-h-0 p-1 sm:p-2 md:p-3 overflow-hidden flex items-center justify-center" style={{ transform: 'scale(0.8)', transformOrigin: 'center center' }}>
-                <DRCMapWithTooltip
-                    provincesData={provincesData}
-                    selectedProvince={selectedProvince?.id || null}
-                    onProvinceSelect={setSelectedProvince}
-                    onProvinceHover={setHoveredProvince}
-                    hoveredProvince={hoveredProvince}
-                    getProvinceColor={getProvinceColor}
-                    onMapReady={setMapInstance}
-                  />
-              </div>
-              
-              {/* Popover d'info en bas à droite */}
-              <div className="absolute bottom-2 right-2 z-10">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-6 w-6 rounded-full bg-background/80 backdrop-blur-sm border-border/50 shadow-sm">
-                      <Info className="h-3 w-3 text-muted-foreground" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent side="top" align="end" className="w-64 p-2 text-[10px]">
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-1">
-                        <Info className="h-3 w-3 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                        <span className="font-medium text-blue-700 dark:text-blue-300">Usage :</span>
-                        <span className="text-blue-700 dark:text-blue-300">Survolez/cliquez les provinces • Utilisez les filtres</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Info className="h-3 w-3 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-                        <span className="font-medium text-amber-700 dark:text-amber-300">À propos :</span>
-                        <span className="text-amber-700 dark:text-amber-300">Données immobilières RDC par province</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <AlertTriangle className="h-3 w-3 text-red-600 dark:text-red-400 flex-shrink-0" />
-                        <span className="font-medium text-red-700 dark:text-red-300">Précaution :</span>
-                        <span className="text-red-700 dark:text-red-300">Estimations indicatives, données variables selon sources</span>
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </CardContent>
-           </Card>
-          </div>
-
-          {/* Partie basse : Données province */}
-          <div className="flex-[2] min-h-0 overflow-y-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent border-t border-border/30">
-            {selectedProvince ? (
-              <div className="p-2 sm:p-3 space-y-2">
-                <Card className="card-compact shadow-none border-border/30">
-                  <CardHeader className="pb-1 px-2 pt-2 sm:pb-2 sm:px-3 sm:pt-3">
-                    <CardTitle className="text-[11px] sm:text-xs font-medium text-foreground flex items-center gap-1">
+        {/* Desktop: grille 2 colonnes | Mobile: panneau unique switché */}
+        <div className="flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-12 gap-2 p-1 sm:p-2 pb-16 lg:pb-2">
+          
+          {/* Colonne gauche: Carte + Détails province */}
+          <div className={`${activeMobilePanel === 'analytics' ? 'hidden lg:flex' : 'flex'} lg:col-span-4 flex-col min-h-0 h-full gap-2`}>
+            
+            {/* Carte RDC */}
+            <div className={`${activeMobilePanel === 'details' ? 'hidden lg:flex' : 'flex'} flex-col min-h-0 ${activeMobilePanel === 'map' ? 'flex-1' : 'lg:flex-[3]'} lg:flex-[3]`}>
+              <Card className="flex-1 overflow-hidden flex flex-col border-border/30">
+                <CardContent className="p-0 flex-1 flex flex-col relative min-h-0">
+                  {/* En-tête */}
+                  <div className="bg-muted/20 px-2 py-0.5 border-b border-border/30 flex-shrink-0">
+                    <h2 className="text-[10px] sm:text-xs font-medium text-foreground flex items-center gap-1">
                       <MapPin className="h-3 w-3 text-primary" />
-                      <span>{selectedProvince.name}</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2 p-2 sm:p-3">
-                    {/* Prix & Valeur */}
-                    <div className="space-y-1">
-                      <h5 className="text-[10px] font-medium text-foreground flex items-center gap-1">
-                        <DollarSign className="h-3 w-3 text-primary" />
-                        Prix & val.
-                        <Badge variant="outline" className="text-[9px] px-1 py-0">USD/m²</Badge>
-                      </h5>
+                      <span>RDC</span>
+                    </h2>
+                  </div>
+                  
+                  {/* Carte responsive - utilise toute la hauteur disponible */}
+                  <div className="flex-1 min-h-0 overflow-hidden flex items-center justify-center p-1">
+                    <div className="w-full h-full flex items-center justify-center" style={{ transform: 'scale(0.8)', transformOrigin: 'center center' }}>
+                      <DRCMapWithTooltip
+                        provincesData={provincesData}
+                        selectedProvince={selectedProvince?.id || null}
+                        onProvinceSelect={setSelectedProvince}
+                        onProvinceHover={setHoveredProvince}
+                        hoveredProvince={hoveredProvince}
+                        getProvinceColor={getProvinceColor}
+                        onMapReady={setMapInstance}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Popover info */}
+                  <div className="absolute bottom-2 right-2 z-10">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="icon" className="h-6 w-6 rounded-full bg-background/80 backdrop-blur-sm border-border/50 shadow-sm">
+                          <Info className="h-3 w-3 text-muted-foreground" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent side="top" align="end" className="w-64 p-2 text-[10px]">
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-1">
+                            <Info className="h-3 w-3 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                            <span className="text-blue-700 dark:text-blue-300">Survolez/cliquez les provinces</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <AlertTriangle className="h-3 w-3 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                            <span className="text-amber-700 dark:text-amber-300">Estimations indicatives</span>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Données province */}
+            <div className={`${activeMobilePanel === 'map' ? 'hidden lg:block' : activeMobilePanel === 'details' ? 'flex-1' : 'hidden lg:block'} lg:flex-[2] min-h-0 overflow-hidden`}>
+              <Card className="h-full flex flex-col border-border/30 overflow-hidden">
+                <ScrollArea className="flex-1">
+                  {selectedProvince ? (
+                    <div className="p-2 space-y-2">
+                      <div className="flex items-center gap-1 mb-1">
+                        <MapPin className="h-3 w-3 text-primary flex-shrink-0" />
+                        <span className="text-[11px] sm:text-xs font-medium text-foreground truncate">{selectedProvince.name}</span>
+                      </div>
+                      
+                      {/* Prix & Valeur */}
+                      <div className="space-y-1">
+                        <h5 className="text-[10px] font-medium text-foreground flex items-center gap-1">
+                          <DollarSign className="h-3 w-3 text-primary" />
+                          Prix & val.
+                        </h5>
+                        <div className="grid grid-cols-3 gap-1">
+                          <Card className="p-1 border-border/30">
+                            <div className="text-[9px] text-muted-foreground truncate">Loyer moy.</div>
+                            <div className="text-[11px] font-bold text-primary">${selectedProvince.prixMoyenLoyer}</div>
+                          </Card>
+                          <Card className="p-1 border-border/30">
+                            <div className="text-[9px] text-muted-foreground truncate">Prix vente</div>
+                            <div className="text-[11px] font-bold text-primary">${selectedProvince.prixMoyenVenteM2}</div>
+                          </Card>
+                          <Card className="p-1 border-border/30 bg-accent/5">
+                            <div className="text-[9px] text-muted-foreground truncate">Val. foncière</div>
+                            <div className="text-[11px] font-bold text-accent">{formatCurrency(selectedProvince.valeurFonciereParcelleUsd)}</div>
+                          </Card>
+                        </div>
+                      </div>
+
+                      {/* Performance locative */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1">
+                        <Card className="p-1 border-border/30">
+                          <div className="text-[9px] text-muted-foreground truncate">Occupation</div>
+                          <div className="text-[11px] font-bold text-green-600">{selectedProvince.tauxOccupationLocatif}%</div>
+                        </Card>
+                        <Card className="p-1 border-border/30">
+                          <div className="text-[9px] text-muted-foreground truncate">Vacance</div>
+                          <div className="text-[11px] font-bold text-orange-500">{selectedProvince.tauxVacanceLocative}%</div>
+                        </Card>
+                        <Card className="p-1 border-border/30">
+                          <div className="text-[9px] text-muted-foreground truncate">Rendement</div>
+                          <div className="text-[11px] font-bold text-emerald-600">{selectedProvince.rendementLocatifBrut || 0}%</div>
+                        </Card>
+                        <Card className="p-1 border-border/30">
+                          <div className="text-[9px] text-muted-foreground truncate">Pression</div>
+                          <Badge 
+                            variant={
+                              selectedProvince.indicePresionLocative === 'Très élevé' ? 'destructive' :
+                              selectedProvince.indicePresionLocative === 'Élevé' ? 'secondary' : 'outline'
+                            }
+                            className="text-[8px] px-1 py-0"
+                          >
+                            {selectedProvince.indicePresionLocative}
+                          </Badge>
+                        </Card>
+                      </div>
+
+                      {/* Marché */}
                       <div className="grid grid-cols-3 gap-1">
-                        <Card className="p-1">
-                          <div className="text-[10px] text-muted-foreground">Loyer moyen</div>
-                          <div className="text-xs font-bold text-primary">${selectedProvince.prixMoyenLoyer}/m²</div>
+                        <Card className="p-1 border-border/30">
+                          <div className="text-[9px] text-muted-foreground truncate">Pop. locative</div>
+                          <div className="text-[11px] font-bold text-blue-600">{(selectedProvince.populationLocativeEstimee / 1000).toFixed(0)}k</div>
                         </Card>
-                        <Card className="p-1">
-                          <div className="text-[10px] text-muted-foreground">Prix vente</div>
-                          <div className="text-xs font-bold text-primary">${selectedProvince.prixMoyenVenteM2}/m²</div>
+                        <Card className="p-1 border-border/30">
+                          <div className="text-[9px] text-muted-foreground truncate">Transactions</div>
+                          <div className="text-[11px] font-bold text-accent">{formatNumber(selectedProvince.nombreTransactionsEstimees)}</div>
                         </Card>
-                        <Card className="p-1 bg-accent/5">
-                          <div className="text-[10px] text-muted-foreground">Val. foncière</div>
-                          <div className="text-xs font-bold text-accent">{formatCurrency(selectedProvince.valeurFonciereParcelleUsd)}</div>
+                        <Card className="p-1 border-border/30">
+                          <div className="text-[9px] text-muted-foreground truncate">Durée loc.</div>
+                          <div className="text-[11px] font-bold text-primary">{selectedProvince.dureeMoyenneMiseLocationJours}j</div>
                         </Card>
                       </div>
                     </div>
-
-                    {/* Performance locative */}
-                    <div className="grid grid-cols-4 gap-1">
-                      <Card className="p-1">
-                        <div className="text-[10px] text-muted-foreground">Occupation</div>
-                        <div className="text-xs font-bold text-green-600">{selectedProvince.tauxOccupationLocatif}%</div>
-                      </Card>
-                      <Card className="p-1">
-                        <div className="text-[10px] text-muted-foreground">Vacance</div>
-                        <div className="text-xs font-bold text-orange-500">{selectedProvince.tauxVacanceLocative}%</div>
-                      </Card>
-                      <Card className="p-1">
-                        <div className="text-[10px] text-muted-foreground">Rendement</div>
-                        <div className="text-xs font-bold text-emerald-600">{selectedProvince.rendementLocatifBrut || 0}%</div>
-                      </Card>
-                      <Card className="p-1">
-                        <div className="text-[10px] text-muted-foreground">Pression</div>
-                        <Badge 
-                          variant={
-                            selectedProvince.indicePresionLocative === 'Très élevé' ? 'destructive' :
-                            selectedProvince.indicePresionLocative === 'Élevé' ? 'secondary' :
-                            selectedProvince.indicePresionLocative === 'Modéré' ? 'outline' : 'default'
-                          }
-                          className="text-[9px] px-1 py-0"
-                        >
-                          {selectedProvince.indicePresionLocative}
-                        </Badge>
-                      </Card>
+                  ) : (
+                    <div className="flex items-center justify-center h-full p-4">
+                      <p className="text-[10px] text-muted-foreground text-center">Cliquez sur une province</p>
                     </div>
-
-                    {/* Marché */}
-                    <div className="grid grid-cols-3 gap-1">
-                      <Card className="p-1">
-                        <div className="text-[10px] text-muted-foreground">Pop. locative</div>
-                        <div className="text-xs font-bold text-blue-600">{(selectedProvince.populationLocativeEstimee / 1000).toFixed(0)}k</div>
-                      </Card>
-                      <Card className="p-1">
-                        <div className="text-[10px] text-muted-foreground">Transactions</div>
-                        <div className="text-xs font-bold text-accent">{formatNumber(selectedProvince.nombreTransactionsEstimees)}</div>
-                      </Card>
-                      <Card className="p-1">
-                        <div className="text-[10px] text-muted-foreground">Durée location</div>
-                        <div className="text-xs font-bold text-primary">{selectedProvince.dureeMoyenneMiseLocationJours}j</div>
-                      </Card>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-full p-4">
-                <p className="text-[10px] text-muted-foreground text-center">Cliquez sur une province pour voir ses données</p>
-              </div>
-            )}
+                  )}
+                </ScrollArea>
+              </Card>
+            </div>
           </div>
-        </div>
 
-        {/* Panneau Analytics - Plus d'espace */}
-        <div className={`${activeMobilePanel !== 'analytics' ? 'hidden lg:flex' : 'flex'} lg:col-span-8 order-2 lg:order-2 flex-col min-h-0 h-full overflow-hidden`}>
-          <Card className="flex-1 flex flex-col overflow-hidden card-compact shadow-none min-h-0">
-            <CardHeader className="px-2 py-1 sm:px-3 sm:py-2 border-b border-border/20 flex-shrink-0">
-              <CardTitle className="text-[11px] sm:text-xs font-medium text-foreground flex items-center gap-1">
-                <BarChart3 className="h-4 w-4 text-primary" />
-                <span>Analytics</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1 p-0 overflow-hidden charts-compact text-[10px] min-h-0">
-              <ScrollArea className="h-full [&>[data-radix-scroll-area-viewport]]:max-h-full">
-                <div className="p-1 sm:p-2">
-                  <div className="w-full">
+          {/* Colonne droite: Analytics */}
+          <div className={`${activeMobilePanel !== 'analytics' ? 'hidden lg:flex' : 'flex'} lg:col-span-8 flex-col min-h-0 h-full`}>
+            <Card className="flex-1 flex flex-col overflow-hidden border-border/30 min-h-0">
+              <CardHeader className="px-2 py-1 border-b border-border/20 flex-shrink-0">
+                <CardTitle className="text-[11px] sm:text-xs font-medium text-foreground flex items-center gap-1">
+                  <BarChart3 className="h-3.5 w-3.5 text-primary" />
+                  <span>Analytics</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex-1 p-0 overflow-hidden charts-compact text-[10px] min-h-0">
+                <ScrollArea className="h-full [&>[data-radix-scroll-area-viewport]]:max-h-full">
+                  <div className="p-1.5 sm:p-2">
                     <ProvinceDataVisualization 
                       provinces={provincesData} 
                       selectedProvince={selectedProvince}
                     />
                   </div>
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </div>
     </div>
   );
 };
