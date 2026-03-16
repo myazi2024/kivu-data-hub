@@ -17,6 +17,7 @@ const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TAB
 
 export const FraudAttemptsBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
+  const filterLabel = useMemo(() => buildFilterLabel(filter), [filter]);
   const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
   const filtered = useMemo(() => applyFilters(data.fraudAttempts, filter), [data.fraudAttempts, filter]);
 
