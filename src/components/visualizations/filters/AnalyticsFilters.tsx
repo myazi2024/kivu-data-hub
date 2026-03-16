@@ -154,8 +154,8 @@ export const AnalyticsFilters: React.FC<Props> = ({
           </>
         )}
 
-        {/* Mois — shown when semester or quarter selected */}
-        {(filter.semester || filter.quarter) && (
+        {/* Mois — shown when quarter selected */}
+        {filter.quarter && (
           <>
             {sep}
             <Select value={filter.month ? String(filter.month) : '__all__'} onValueChange={v => onChange({ ...filter, month: v === '__all__' ? undefined : Number(v), week: undefined })}>
