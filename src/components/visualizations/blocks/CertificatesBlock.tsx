@@ -1,4 +1,4 @@
-import React, { useState, useMemo, memo, useCallback } from 'react';
+import React, { useState, useMemo, memo } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
 import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, buildFilterLabel } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
@@ -6,6 +6,7 @@ import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { Award, TrendingUp, CheckCircle } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, FilterLabelContext } from '../shared/ChartCard';
+import { GeoCharts } from '../shared/GeoCharts';
 
 import { generateInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
@@ -25,12 +26,38 @@ export const CertificatesBlock: React.FC<Props> = memo(({ data }) => {
   const byStatus = useMemo(() => countBy(filtered, 'status'), [filtered]);
   const trend = useMemo(() => trendByMonth(filtered, 'generated_at'), [filtered]);
 
+  // Type trend per month
+  const typeTrend = useMemo(() => {
+    const map = new Map<string, Map<string, number>>();
+    const types = new Set<string>();
+    filtered.forEach(r => {
+      if (!r.generated_at) return;
+      const d = new Date(r.generated_at);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const t = r.certificate_type || '(Non renseigné)';
+      types.add(t);
+      if (!map.has(key)) map.set(key, new Map());
+      const inner = map.get(key)!;
+      inner.set(t, (inner.get(t) || 0) + 1);
+    });
+    return { 
+      data: Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => {
+        const [y, m] = k.split('-');
+        const name = new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('fr-FR', { year: '2-digit', month: 'short' });
+        const obj: any = { name };
+        types.forEach(t => obj[t] = v.get(t) || 0);
+        return obj;
+      }),
+      types: Array.from(types),
+    };
+  }, [filtered]);
+
   const stats = useMemo(() => {
     const generated = filtered.filter(r => r.status === 'generated' || r.status === 'completed').length;
     const pending = filtered.filter(r => r.status === 'pending').length;
-    return { generated, pending };
+    const uniqueTypes = new Set(filtered.map(r => r.certificate_type)).size;
+    return { generated, pending, uniqueTypes };
   }, [filtered]);
-
 
   const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
   const v = isChartVisible;
@@ -39,18 +66,20 @@ export const CertificatesBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'kpi-total', label: ct('kpi-total', 'Total'), value: filtered.length, cls: 'text-primary' },
     { key: 'kpi-generated', label: ct('kpi-generated', 'Générés'), value: stats.generated, cls: 'text-emerald-600', tooltip: pct(stats.generated, filtered.length) },
     { key: 'kpi-pending', label: ct('kpi-pending', 'En attente'), value: stats.pending, cls: 'text-amber-600', tooltip: pct(stats.pending, filtered.length) },
+    { key: 'kpi-types', label: ct('kpi-types', 'Types distincts'), value: stats.uniqueTypes, cls: 'text-blue-600' },
   ].filter(k => v(k.key)), [filtered, stats, v, getChartConfig]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
-      <AnalyticsFilters data={data.certificates} filter={filter} onChange={setFilter} hidePaymentStatus hideStatus dateField="generated_at" />
+      <AnalyticsFilters data={data.certificates} filter={filter} onChange={setFilter} hidePaymentStatus dateField="generated_at" />
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {v('cert-type') && <ChartCard title={ct('cert-type', 'Type certificat')} icon={Award} data={byType} type="bar-h" colorIndex={0} labelWidth={120}
           insight={generateInsight(byType, 'bar-h', 'les types de certificat')} />}
         {v('status') && <ChartCard title={ct('status', 'Statut')} icon={CheckCircle} data={byStatus} type="pie" colorIndex={2}
           insight={generateInsight(byStatus, 'pie', 'les statuts de certificat')} />}
+        {v('geo') && <GeoCharts records={filtered} />}
         {v('evolution') && <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type="area" colorIndex={0} colSpan={2}
           insight={generateInsight(trend, 'area', 'la génération de certificats')} />}
       </div>

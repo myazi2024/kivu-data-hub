@@ -125,6 +125,57 @@ export const useLandDataAnalytics = () => {
           };
         });
 
+      // Enrich boundary conflicts by parcel_number lookup
+      const enrichByParcelNumber = (records: any[]) =>
+        records.map(r => {
+          const p1 = r.reporting_parcel_number && byNum.get(r.reporting_parcel_number);
+          const p2 = r.parcel_number && byNum.get(r.parcel_number);
+          const p = p1 || p2;
+          if (!p) return r;
+          return {
+            ...r,
+            province: r.province || p.province,
+            ville: r.ville || p.ville,
+            commune: r.commune || p.commune,
+            quartier: r.quartier || p.quartier,
+            avenue: r.avenue || p.avenue,
+            territoire: r.territoire || p.territoire,
+            collectivite: r.collectivite || p.collectivite,
+            groupement: r.groupement || p.groupement,
+            village: r.village || p.village,
+            parcel_type: r.parcel_type || p.parcel_type,
+            section_type: r.section_type || (p.parcel_type === 'SU' ? 'urbaine' : 'rurale'),
+          };
+        });
+
+      // Enrich fraud attempts via contribution_id → contribution → parcel
+      const enrichFraud = (records: any[]) =>
+        records.map(r => {
+          if (r.province) return r; // already has geo
+          // Try to find via contribution
+          if (r.contribution_id) {
+            const contrib = contribs.find((c: any) => c.id === r.contribution_id);
+            if (contrib) {
+              const p = byNum.get(contrib.parcel_number);
+              const src = p || contrib;
+              return {
+                ...r,
+                province: src.province,
+                ville: src.ville,
+                commune: src.commune,
+                quartier: src.quartier,
+                territoire: src.territoire,
+                collectivite: src.collectivite,
+                groupement: src.groupement,
+                village: src.village,
+                parcel_type: src.parcel_type,
+                section_type: src.parcel_type === 'SU' ? 'urbaine' : 'rurale',
+              };
+            }
+          }
+          return r;
+        });
+
       return {
         titleRequests: titleReqs,
         parcels,
@@ -136,11 +187,11 @@ export const useLandDataAnalytics = () => {
         mutationRequests: enrich(mutations),
         subdivisionRequests: enrich(subdivisions),
         disputes: enrich(disputes),
-        boundaryConflicts,
+        boundaryConflicts: enrichByParcelNumber(boundaryConflicts),
         ownershipHistory: enrich(ownershipHistory),
-        fraudAttempts,
-        certificates,
-        invoices,
+        fraudAttempts: enrichFraud(fraudAttempts),
+        certificates: enrichByParcelNumber(certificates),
+        invoices: enrichByParcelNumber(invoices),
       };
     },
     staleTime: 5 * 60 * 1000,
