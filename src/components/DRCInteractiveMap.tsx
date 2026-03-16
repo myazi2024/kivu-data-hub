@@ -940,16 +940,16 @@ const DRCInteractiveMap = () => {
         </div>
 
         {/* Panneau Analytics - Plus d'espace */}
-        <div className={`${activeMobilePanel !== 'analytics' ? 'hidden lg:flex' : 'flex'} lg:col-span-8 order-2 lg:order-2 flex-col min-h-0 h-full`}>
-          <Card className="flex-1 overflow-hidden card-compact shadow-none">
-            <CardHeader className="px-2 py-1 sm:px-3 sm:py-2 border-b border-border/20">
+        <div className={`${activeMobilePanel !== 'analytics' ? 'hidden lg:flex' : 'flex'} lg:col-span-8 order-2 lg:order-2 flex-col min-h-0 h-full overflow-hidden`}>
+          <Card className="flex-1 flex flex-col overflow-hidden card-compact shadow-none min-h-0">
+            <CardHeader className="px-2 py-1 sm:px-3 sm:py-2 border-b border-border/20 flex-shrink-0">
               <CardTitle className="text-[11px] sm:text-xs font-medium text-foreground flex items-center gap-1">
                 <BarChart3 className="h-4 w-4 text-primary" />
                 <span>Analytics</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 p-0 overflow-hidden charts-compact text-[10px]">
-              <ScrollArea className="h-full">
+            <CardContent className="flex-1 p-0 overflow-hidden charts-compact text-[10px] min-h-0">
+              <ScrollArea className="h-full [&>[data-radix-scroll-area-viewport]]:max-h-full">
                 <div className="p-1 sm:p-2">
                   <div className="w-full">
                     <ProvinceDataVisualization 
