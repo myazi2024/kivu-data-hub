@@ -194,11 +194,6 @@ export const AnalyticsFilters: React.FC<Props> = ({
           <Button variant="ghost" size="sm" className="h-5 text-[10px] px-1.5" onClick={reset}><X className="h-2.5 w-2.5" /></Button>
         )}
 
-        {onExport && (
-          <Button variant="outline" size="sm" className="h-5 text-[10px] px-1.5 ml-auto gap-0.5" onClick={onExport}>
-            <Download className="h-2.5 w-2.5" /> CSV
-          </Button>
-        )}
       </div>
 
       {(filter.sectionType === 'urbaine' || filter.sectionType === 'all') && (villes.length > 0 || communes.length > 0) && (
