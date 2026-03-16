@@ -79,7 +79,7 @@ const Services = () => {
   ];
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-dvh">
       <Navigation />
       <main className="pt-16 sm:pt-20 pb-12 sm:pb-16">
         <div className="max-w-[360px] sm:max-w-2xl lg:max-w-5xl mx-auto px-3 sm:px-6 lg:px-8">

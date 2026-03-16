@@ -33,7 +33,7 @@ const JoinUs = () => {
   ];
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-dvh">
       <Navigation />
       <main className="pt-16 pb-8">
         <div className="max-w-4xl mx-auto px-3 sm:px-4">

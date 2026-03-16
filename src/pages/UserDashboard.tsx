@@ -34,7 +34,7 @@ const UserDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-muted/30">
+    <div className="min-h-dvh flex flex-col bg-muted/30">
       <Navigation />
       
       <main className="flex-grow px-3 py-4">
