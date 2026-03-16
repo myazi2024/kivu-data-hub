@@ -7,7 +7,7 @@ import { ArrowRightLeft, TrendingUp, Users, DollarSign } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, StackedBarCard } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
-import { exportRecordsToCSV } from '@/utils/csvExport';
+
 import { generateInsight, generateStackedInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 
@@ -68,11 +68,6 @@ export const MutationBlock: React.FC<Props> = memo(({ data }) => {
     return { approved, pending, rejected, avgDays, totalRevenue, paidRevenue };
   }, [filtered]);
 
-  const handleExport = useCallback(() => {
-    exportRecordsToCSV(filtered, `mutations-${new Date().toISOString().slice(0,10)}`, [
-      'id', 'parcel_number', 'mutation_type', 'requester_type', 'status', 'payment_status', 'total_amount_usd', 'province', 'ville', 'commune', 'created_at'
-    ]);
-  }, [filtered]);
 
   const t = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
   const v = isChartVisible;
@@ -88,7 +83,7 @@ export const MutationBlock: React.FC<Props> = memo(({ data }) => {
 
   return (
     <div className="space-y-2">
-      <AnalyticsFilters data={data.mutationRequests} filter={filter} onChange={setFilter} onExport={handleExport} />
+      <AnalyticsFilters data={data.mutationRequests} filter={filter} onChange={setFilter} />
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {v('status') && <ChartCard title={t('status', 'Statut')} icon={ArrowRightLeft} data={byStatus} type="pie" colorIndex={6}

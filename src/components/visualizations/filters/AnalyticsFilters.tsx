@@ -2,7 +2,7 @@ import React, { useMemo, useCallback } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Filter, MapPin, Calendar, X, Download, AlertCircle, CheckCircle, CreditCard, Building2 } from 'lucide-react';
+import { Filter, MapPin, Calendar, X, AlertCircle, CheckCircle, CreditCard, Building2 } from 'lucide-react';
 import { AnalyticsFilter, defaultFilter, extractUnique, getAvailableYears, getSectionType } from '@/utils/analyticsHelpers';
 
 interface Props {
@@ -10,7 +10,6 @@ interface Props {
   filter: AnalyticsFilter;
   onChange: (f: AnalyticsFilter) => void;
   dateField?: string;
-  onExport?: () => void;
   statusField?: string;
   paymentStatusField?: string;
   hideStatus?: boolean;
@@ -20,7 +19,7 @@ interface Props {
 const MONTHS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
 
 export const AnalyticsFilters: React.FC<Props> = ({
-  data, filter, onChange, dateField = 'created_at', onExport,
+  data, filter, onChange, dateField = 'created_at',
   statusField, paymentStatusField, hideStatus = false, hidePaymentStatus = false,
 }) => {
   const years = useMemo(() => getAvailableYears(data, dateField), [data, dateField]);
@@ -195,11 +194,6 @@ export const AnalyticsFilters: React.FC<Props> = ({
           <Button variant="ghost" size="sm" className="h-5 text-[10px] px-1.5" onClick={reset}><X className="h-2.5 w-2.5" /></Button>
         )}
 
-        {onExport && (
-          <Button variant="outline" size="sm" className="h-5 text-[10px] px-1.5 ml-auto gap-0.5" onClick={onExport}>
-            <Download className="h-2.5 w-2.5" /> CSV
-          </Button>
-        )}
       </div>
 
       {(filter.sectionType === 'urbaine' || filter.sectionType === 'all') && (villes.length > 0 || communes.length > 0) && (

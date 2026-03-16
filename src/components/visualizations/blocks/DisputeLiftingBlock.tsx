@@ -7,7 +7,7 @@ import { ShieldCheck, Scale, TrendingUp, MessageSquare } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
-import { exportRecordsToCSV } from '@/utils/csvExport';
+
 import { generateInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 
@@ -57,12 +57,6 @@ export const DisputeLiftingBlock: React.FC<Props> = memo(({ data }) => {
     });
   }, [filtered]);
 
-  const handleExport = useCallback(() => {
-    exportRecordsToCSV(filtered, `levees-litiges-${new Date().toISOString().slice(0,10)}`, [
-      'id', 'parcel_number', 'dispute_nature', 'lifting_status', 'lifting_reason', 'resolution_level',
-      'lifting_request_reference', 'province', 'ville', 'commune', 'created_at'
-    ]);
-  }, [filtered]);
 
   const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
   const v = isChartVisible;
@@ -77,7 +71,7 @@ export const DisputeLiftingBlock: React.FC<Props> = memo(({ data }) => {
 
   return (
     <div className="space-y-2">
-      <AnalyticsFilters data={liftingDisputes} filter={filter} onChange={setFilter} onExport={handleExport} hidePaymentStatus />
+      <AnalyticsFilters data={liftingDisputes} filter={filter} onChange={setFilter} hidePaymentStatus />
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {v('lifting-status') && <ChartCard title={ct('lifting-status', 'Statut levée')} icon={ShieldCheck} data={byLiftingStatus} type="pie" colorIndex={9}

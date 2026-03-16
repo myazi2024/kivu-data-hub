@@ -7,7 +7,7 @@ import { AlertTriangle, Scale, TrendingUp, Users } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, StackedBarCard } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
-import { exportRecordsToCSV } from '@/utils/csvExport';
+
 import { generateInsight, generateStackedInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 
@@ -72,12 +72,6 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
     });
   }, [filtered]);
 
-  const handleExport = useCallback(() => {
-    exportRecordsToCSV(filtered, `litiges-${new Date().toISOString().slice(0,10)}`, [
-      'id', 'parcel_number', 'dispute_nature', 'dispute_type', 'current_status', 'resolution_level',
-      'declarant_quality', 'dispute_start_date', 'lifting_status', 'province', 'ville', 'commune', 'created_at'
-    ]);
-  }, [filtered]);
 
   const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
   const v = isChartVisible;
@@ -92,7 +86,7 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
 
   return (
     <div className="space-y-2">
-      <AnalyticsFilters data={data.disputes} filter={filter} onChange={setFilter} onExport={handleExport}
+      <AnalyticsFilters data={data.disputes} filter={filter} onChange={setFilter}
         statusField="current_status" hidePaymentStatus
       />
       <KpiGrid items={kpiItems} />

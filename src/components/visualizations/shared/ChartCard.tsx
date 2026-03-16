@@ -1,9 +1,11 @@
-import React, { memo } from 'react';
+import React, { memo, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, AreaChart, Area, Legend } from 'recharts';
 import { CHART_HEIGHT as CH, NoData } from '@/utils/analyticsConstants';
 import { CHART_COLORS } from '@/utils/analyticsHelpers';
-import { LucideIcon, Info } from 'lucide-react';
+import { LucideIcon, Info, Copy, Check } from 'lucide-react';
+import { toPng } from 'html-to-image';
+import { toast } from 'sonner';
 
 interface ChartCardProps {
   title: string;
@@ -60,21 +62,65 @@ const InsightText: React.FC<{ text?: string }> = ({ text }) => {
   );
 };
 
+const useCopyAsImage = () => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [copied, setCopied] = React.useState(false);
+
+  const copy = useCallback(async () => {
+    if (!ref.current) return;
+    try {
+      const dataUrl = await toPng(ref.current, { backgroundColor: 'white', pixelRatio: 2 });
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      setCopied(true);
+      toast.success('Image copiée dans le presse-papiers');
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback: download
+      try {
+        const dataUrl = await toPng(ref.current!, { backgroundColor: 'white', pixelRatio: 2 });
+        const link = document.createElement('a');
+        link.download = 'chart.png';
+        link.href = dataUrl;
+        link.click();
+        toast.success('Image téléchargée');
+      } catch {
+        toast.error('Impossible de copier l\'image');
+      }
+    }
+  }, []);
+
+  return { ref, copied, copy };
+};
+
+const CopyButton: React.FC<{ onClick: () => void; copied: boolean }> = ({ onClick, copied }) => (
+  <button
+    onClick={onClick}
+    className="ml-auto p-0.5 rounded hover:bg-muted/80 transition-colors text-muted-foreground hover:text-foreground"
+    title="Copier en image"
+  >
+    {copied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
+  </button>
+);
+
 export const ChartCard: React.FC<ChartCardProps> = memo(({
   title, icon: Icon, iconColor, colSpan, data, type, color, colorIndex = 0, labelWidth = 90, maxItems = 10, hidden = false, insight
 }) => {
   if (hidden) return null;
+  const { ref, copied, copy } = useCopyAsImage();
   const fill = color || CHART_COLORS[colorIndex % CHART_COLORS.length];
   const displayData = type === 'area' ? data : data.slice(0, maxItems);
   const truncated = type !== 'area' && data.length > maxItems;
 
   return (
-    <Card className={`border-border/30 ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
+    <Card ref={ref} className={`border-border/30 ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
       <CardHeader className="pb-1 px-2 pt-2">
         <CardTitle className="text-xs font-semibold flex items-center gap-1">
           {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'}`} />}
           {title}
-          {truncated && <span className="text-[8px] text-muted-foreground ml-auto">Top {maxItems}/{data.length}</span>}
+          {truncated && <span className="text-[8px] text-muted-foreground ml-auto mr-1">Top {maxItems}/{data.length}</span>}
+          <CopyButton onClick={copy} copied={copied} />
         </CardTitle>
       </CardHeader>
       <CardContent className="px-2 pb-2">
@@ -137,13 +183,15 @@ export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
   title, icon: Icon, iconColor, colSpan, data, bars, layout = 'horizontal', labelWidth = 90, maxItems = 8, hidden = false, insight,
 }) => {
   if (hidden) return null;
+  const { ref, copied, copy } = useCopyAsImage();
   const displayData = data.slice(0, maxItems);
   return (
-    <Card className={`border-border/30 ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
+    <Card ref={ref} className={`border-border/30 ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
       <CardHeader className="pb-1 px-2 pt-2">
         <CardTitle className="text-xs font-semibold flex items-center gap-1">
           {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'}`} />}
           {title}
+          <CopyButton onClick={copy} copied={copied} />
         </CardTitle>
       </CardHeader>
       <CardContent className="px-2 pb-2">
@@ -179,12 +227,14 @@ export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
 export const ColorMappedPieCard: React.FC<MultiDataPieProps> = memo(({
   title, icon: Icon, iconColor, data, colorMap = {}, insight,
 }) => {
+  const { ref, copied, copy } = useCopyAsImage();
   return (
-    <Card className="border-border/30">
+    <Card ref={ref} className="border-border/30">
       <CardHeader className="pb-1 px-2 pt-2">
         <CardTitle className="text-xs font-semibold flex items-center gap-1">
           {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'}`} />}
           {title}
+          <CopyButton onClick={copy} copied={copied} />
         </CardTitle>
       </CardHeader>
       <CardContent className="px-2 pb-2">

@@ -6,7 +6,7 @@ import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { ShieldAlert, TrendingUp, AlertTriangle } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard } from '../shared/ChartCard';
-import { exportRecordsToCSV } from '@/utils/csvExport';
+
 import { generateInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 
@@ -32,11 +32,6 @@ export const FraudAttemptsBlock: React.FC<Props> = memo(({ data }) => {
     return { critical, medium, low, withContribution };
   }, [filtered]);
 
-  const handleExport = useCallback(() => {
-    exportRecordsToCSV(filtered, `fraudes-${new Date().toISOString().slice(0,10)}`, [
-      'id', 'fraud_type', 'severity', 'description', 'contribution_id', 'user_id', 'created_at'
-    ]);
-  }, [filtered]);
 
   const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
   const v = isChartVisible;
@@ -51,7 +46,7 @@ export const FraudAttemptsBlock: React.FC<Props> = memo(({ data }) => {
 
   return (
     <div className="space-y-2">
-      <AnalyticsFilters data={data.fraudAttempts} filter={filter} onChange={setFilter} onExport={handleExport} hidePaymentStatus hideStatus />
+      <AnalyticsFilters data={data.fraudAttempts} filter={filter} onChange={setFilter} hidePaymentStatus hideStatus />
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {v('fraud-type') && <ChartCard title={ct('fraud-type', 'Type de fraude')} icon={ShieldAlert} data={byFraudType} type="bar-h" colorIndex={4} labelWidth={120}

@@ -7,7 +7,7 @@ import { FileText, Users, DollarSign, TrendingUp, Building, Globe, Ruler, Clock,
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, ColorMappedPieCard } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
-import { exportRecordsToCSV } from '@/utils/csvExport';
+
 import { generateInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 
@@ -89,12 +89,6 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
     return result;
   }, [stats]);
 
-  const handleExport = useCallback(() => {
-    exportRecordsToCSV(filtered, `titres-fonciers-${new Date().toISOString().slice(0,10)}`, [
-      'id', 'reference_number', 'request_type', 'requester_type', 'section_type', 'province', 'ville', 'commune',
-      'status', 'payment_status', 'total_amount_usd', 'created_at'
-    ]);
-  }, [filtered]);
 
   const processingInsight = useMemo(() => {
     if (processingComparison.length < 2) return '';
@@ -132,7 +126,7 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
 
   return (
     <div className="space-y-2">
-      <AnalyticsFilters data={data.titleRequests} filter={filter} onChange={setFilter} onExport={handleExport} />
+      <AnalyticsFilters data={data.titleRequests} filter={filter} onChange={setFilter} />
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {v('request-type') && <ChartCard title={t('request-type', 'Type de demande')} icon={FileText} data={byRequestType} type="bar-h" colorIndex={0} labelWidth={100}

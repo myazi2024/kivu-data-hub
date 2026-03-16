@@ -7,7 +7,7 @@ import { FileText, TrendingUp, AlertTriangle, ShieldAlert, Users, Gavel } from '
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
-import { exportRecordsToCSV } from '@/utils/csvExport';
+
 import { generateInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 
@@ -61,12 +61,6 @@ export const ContributionsBlock: React.FC<Props> = memo(({ data }) => {
     return { approved, pending, rejected, avgDays };
   }, [filtered]);
 
-  const handleExport = useCallback(() => {
-    exportRecordsToCSV(filtered, `contributions-${new Date().toISOString().slice(0,10)}`, [
-      'id', 'parcel_number', 'contribution_type', 'status', 'is_suspicious', 'fraud_score',
-      'appeal_submitted', 'appeal_status', 'province', 'ville', 'commune', 'created_at'
-    ]);
-  }, [filtered]);
 
   const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
   const v = isChartVisible;
@@ -82,7 +76,7 @@ export const ContributionsBlock: React.FC<Props> = memo(({ data }) => {
 
   return (
     <div className="space-y-2">
-      <AnalyticsFilters data={data.contributions} filter={filter} onChange={setFilter} onExport={handleExport} hidePaymentStatus />
+      <AnalyticsFilters data={data.contributions} filter={filter} onChange={setFilter} hidePaymentStatus />
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {v('contribution-type') && <ChartCard title={ct('contribution-type', 'Type contribution')} icon={FileText} data={byContributionType} type="bar-h" colorIndex={0} labelWidth={100}

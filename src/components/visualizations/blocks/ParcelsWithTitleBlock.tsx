@@ -7,7 +7,7 @@ import { FileText, Users, Building, Shield, Landmark, TrendingUp, Ruler, Home, C
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, ColorMappedPieCard, StackedBarCard } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
-import { exportRecordsToCSV } from '@/utils/csvExport';
+
 import { generateInsight, generateStackedInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 
@@ -135,16 +135,10 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
 
   const trend = useMemo(() => trendByMonth(filteredParcels), [filteredParcels]);
 
-  const handleExport = useCallback(() => {
-    exportRecordsToCSV(filteredParcels, `parcelles-titrees-${new Date().toISOString().slice(0,10)}`, [
-      'id', 'parcel_number', 'parcel_type', 'property_title_type', 'province', 'ville', 'commune',
-      'current_owner_name', 'area_sqm', 'declared_usage', 'created_at'
-    ]);
-  }, [filteredParcels]);
 
   return (
     <div className="space-y-2">
-      <AnalyticsFilters data={data.parcels} filter={filter} onChange={setFilter} onExport={handleExport} hidePaymentStatus />
+      <AnalyticsFilters data={data.parcels} filter={filter} onChange={setFilter} hidePaymentStatus />
       <KpiGrid items={[
         { label: 'Parcelles', value: filteredParcels.length, cls: 'text-primary' },
         { label: 'Urbaines', value: urbanCount, cls: 'text-emerald-600', tooltip: pct(urbanCount, filteredParcels.length) },

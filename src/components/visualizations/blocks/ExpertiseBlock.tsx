@@ -7,7 +7,7 @@ import { Search, TrendingUp, DollarSign, Building, Zap, ShieldAlert, MapPin, Rul
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
-import { exportRecordsToCSV } from '@/utils/csvExport';
+
 import { generateInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 
@@ -112,16 +112,10 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
     return { completed, pending, inProgress, avgDays, assignDelay, totalValue, avgValue };
   }, [filtered]);
 
-  const handleExport = useCallback(() => {
-    exportRecordsToCSV(filtered, `expertise-${new Date().toISOString().slice(0,10)}`, [
-      'id', 'parcel_number', 'status', 'payment_status', 'property_condition', 'construction_quality',
-      'market_value_usd', 'road_access_type', 'province', 'ville', 'commune', 'created_at'
-    ]);
-  }, [filtered]);
 
   return (
     <div className="space-y-2">
-      <AnalyticsFilters data={data.expertiseRequests} filter={filter} onChange={setFilter} onExport={handleExport} />
+      <AnalyticsFilters data={data.expertiseRequests} filter={filter} onChange={setFilter} />
       <KpiGrid items={[
         { label: 'Total', value: filtered.length, cls: 'text-violet-600' },
         { label: 'Complétées', value: stats.completed, cls: 'text-emerald-600', tooltip: pct(stats.completed, filtered.length) },

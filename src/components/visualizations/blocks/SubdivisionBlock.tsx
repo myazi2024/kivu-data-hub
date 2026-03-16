@@ -7,7 +7,7 @@ import { Scissors, TrendingUp, BarChart3, Users, DollarSign, Target, Ruler } fro
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
-import { exportRecordsToCSV } from '@/utils/csvExport';
+
 import { generateInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 
@@ -90,12 +90,6 @@ export const SubdivisionBlock: React.FC<Props> = memo(({ data }) => {
     return { totalLots, approved, avgLots, avgDays, totalSurface, totalRevenue };
   }, [filtered]);
 
-  const handleExport = useCallback(() => {
-    exportRecordsToCSV(filtered, `lotissements-${new Date().toISOString().slice(0,10)}`, [
-      'id', 'parcel_number', 'status', 'number_of_lots', 'purpose_of_subdivision', 'requester_type',
-      'submission_payment_status', 'total_amount_usd', 'parent_parcel_area_sqm', 'province', 'ville', 'commune', 'created_at'
-    ]);
-  }, [filtered]);
 
   const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
   const v = isChartVisible;
@@ -111,7 +105,7 @@ export const SubdivisionBlock: React.FC<Props> = memo(({ data }) => {
 
   return (
     <div className="space-y-2">
-      <AnalyticsFilters data={data.subdivisionRequests} filter={filter} onChange={setFilter} onExport={handleExport} paymentStatusField="submission_payment_status" />
+      <AnalyticsFilters data={data.subdivisionRequests} filter={filter} onChange={setFilter} paymentStatusField="submission_payment_status" />
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {v('status') && <ChartCard title={ct('status', 'Statut')} icon={Scissors} data={byStatus} type="pie" colorIndex={7}

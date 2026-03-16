@@ -7,7 +7,7 @@ import { Users, TrendingUp, ArrowRightLeft } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
-import { exportRecordsToCSV } from '@/utils/csvExport';
+
 import { generateInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 
@@ -40,11 +40,6 @@ export const OwnershipHistoryBlock: React.FC<Props> = memo(({ data }) => {
     return { avgYears, activeOwners, transfers: withDates.length };
   }, [filtered]);
 
-  const handleExport = useCallback(() => {
-    exportRecordsToCSV(filtered, `historique-propriete-${new Date().toISOString().slice(0,10)}`, [
-      'id', 'parcel_id', 'owner_name', 'legal_status', 'mutation_type', 'ownership_start_date', 'ownership_end_date'
-    ]);
-  }, [filtered]);
 
   const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
   const v = isChartVisible;
@@ -58,7 +53,7 @@ export const OwnershipHistoryBlock: React.FC<Props> = memo(({ data }) => {
 
   return (
     <div className="space-y-2">
-      <AnalyticsFilters data={data.ownershipHistory} filter={filter} onChange={setFilter} onExport={handleExport} hidePaymentStatus hideStatus dateField="ownership_start_date" />
+      <AnalyticsFilters data={data.ownershipHistory} filter={filter} onChange={setFilter} hidePaymentStatus hideStatus dateField="ownership_start_date" />
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {v('legal-status') && <ChartCard title={ct('legal-status', 'Statut juridique')} icon={Users} data={byLegalStatus} type="donut" colorIndex={1}
