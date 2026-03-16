@@ -1,6 +1,6 @@
 import React, { useState, useMemo, memo, useCallback } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
-import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, surfaceDistribution, yearDecadeDistribution, CHART_COLORS } from '@/utils/analyticsHelpers';
+import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, surfaceDistribution, yearDecadeDistribution, CHART_COLORS, buildFilterLabel } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { FileText, Users, Building, Shield, Landmark, TrendingUp, Ruler, Home, Clock, CheckCircle } from 'lucide-react';
