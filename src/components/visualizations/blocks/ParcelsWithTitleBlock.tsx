@@ -34,11 +34,8 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     surfaceDist: surfaceDistribution(filteredParcels),
   }), [filteredParcels]);
 
-  // #9 fix: Extract gender from parcels (current_owners_details is on contributions but may not cover all parcels)
-  // Combine both sources for completeness
   const genderData = useMemo(() => {
     const map = new Map<string, number>();
-    // From contributions (approved)
     filteredContribs.forEach(c => {
       if (c.current_owners_details && Array.isArray(c.current_owners_details)) {
         c.current_owners_details.forEach((o: any) => { if (o?.gender) map.set(o.gender, (map.get(o.gender) || 0) + 1); });
@@ -55,6 +52,7 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
 
   const urbanCount = useMemo(() => filteredParcels.filter(p => p.parcel_type === 'SU').length, [filteredParcels]);
   const ruralCount = useMemo(() => filteredParcels.filter(p => p.parcel_type === 'SR').length, [filteredParcels]);
+  const totalSurface = useMemo(() => filteredParcels.reduce((s, p) => s + (p.area_sqm || 0), 0), [filteredParcels]);
 
   const taxData = useMemo(() => {
     const byPayment = countBy(filteredTaxes, 'payment_status');
@@ -67,7 +65,6 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
       else { e.pending++; pendingAmount += t.amount_usd || 0; }
     });
     const yearData = Array.from(byYear.entries()).sort(([a], [b]) => a - b).map(([year, d]) => ({ name: String(year), paid: d.paid, pending: d.pending }));
-    // #25: Amount trend by year
     const yearAmountData = Array.from(byYear.entries()).sort(([a], [b]) => a - b).map(([year]) => {
       const yearTaxes = filteredTaxes.filter(t => t.tax_year === year);
       const total = yearTaxes.reduce((s, t) => s + (t.amount_usd || 0), 0);
@@ -98,11 +95,12 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
 
   return (
     <div className="space-y-2">
-      <AnalyticsFilters data={data.parcels} filter={filter} onChange={setFilter} onExport={handleExport} />
+      <AnalyticsFilters data={data.parcels} filter={filter} onChange={setFilter} onExport={handleExport} hidePaymentStatus />
       <KpiGrid items={[
         { label: 'Parcelles', value: filteredParcels.length, cls: 'text-primary' },
         { label: 'Urbaines', value: urbanCount, cls: 'text-emerald-600', tooltip: pct(urbanCount, filteredParcels.length) },
         { label: 'Rurales', value: ruralCount, cls: 'text-amber-600', tooltip: pct(ruralCount, filteredParcels.length) },
+        { label: 'Surface tot.', value: totalSurface > 0 ? `${(totalSurface / 10000).toFixed(1)} ha` : 'N/A', cls: 'text-violet-600', tooltip: `${totalSurface.toLocaleString()} m²` },
         { label: 'Taxes payées', value: `$${taxData.paidAmount.toLocaleString()}`, cls: 'text-blue-600', tooltip: `Impayées: $${taxData.pendingAmount.toLocaleString()}` },
         { label: 'Hypothèques', value: `$${mortgageData.totalAmount.toLocaleString()}`, cls: 'text-rose-600', tooltip: `${mortgageData.count} contrats, durée moy. ${mortgageData.avgDuration} mois` },
       ]} />
@@ -122,7 +120,6 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
           { dataKey: 'paid', name: 'Payées', color: CHART_COLORS[2] },
           { dataKey: 'pending', name: 'Impayées', color: CHART_COLORS[4] },
         ]} hidden={taxData.yearData.length === 0} />
-        {/* #25: Tax amount trend by year */}
         <ChartCard title="Montants taxes/an" icon={TrendingUp} data={taxData.yearAmountData} type="area" colorIndex={2} hidden={taxData.yearAmountData.length < 2} />
         <ChartCard title="Hypothèques" data={mortgageData.distribution} type="pie" colorIndex={4} />
         <ChartCard title="Créanciers" data={mortgageData.byCreditorType} type="bar-h" colorIndex={8} labelWidth={80} />

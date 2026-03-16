@@ -18,6 +18,8 @@ export interface AnalyticsFilter {
   collectivite?: string;
   groupement?: string;
   villageFilter?: string;
+  status?: string;
+  paymentStatus?: string;
 }
 
 export const defaultFilter: AnalyticsFilter = { sectionType: 'all', periodType: 'all' };
@@ -58,8 +60,27 @@ export function matchesLocation(r: any, f: AnalyticsFilter): boolean {
   return true;
 }
 
+/** Match status filter — supports current_status (disputes) and status fields */
+function matchesStatus(r: any, f: AnalyticsFilter): boolean {
+  if (!f.status) return true;
+  const recordStatus = r.status || r.current_status;
+  return recordStatus === f.status;
+}
+
+/** Match payment status filter */
+function matchesPaymentStatus(r: any, f: AnalyticsFilter): boolean {
+  if (!f.paymentStatus) return true;
+  const ps = r.payment_status || r.submission_payment_status;
+  return ps === f.paymentStatus;
+}
+
 export function applyFilters(records: any[], filter: AnalyticsFilter, dateField = 'created_at'): any[] {
-  return records.filter(r => matchesPeriod(r[dateField], filter) && matchesLocation(r, filter));
+  return records.filter(r =>
+    matchesPeriod(r[dateField], filter) &&
+    matchesLocation(r, filter) &&
+    matchesStatus(r, filter) &&
+    matchesPaymentStatus(r, filter)
+  );
 }
 
 /** #10 fix: Distinguish null/undefined from actual 'Non spécifié' values */
@@ -71,6 +92,21 @@ export function countBy(records: any[], field: string): { name: string; value: n
     map.set(val, (map.get(val) || 0) + 1);
   });
   return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+}
+
+/** Count boolean field occurrences */
+export function countBoolean(records: any[], field: string, trueLabel = 'Oui', falseLabel = 'Non'): { name: string; value: number }[] {
+  let t = 0, f = 0, na = 0;
+  records.forEach(r => {
+    if (r[field] === true) t++;
+    else if (r[field] === false) f++;
+    else na++;
+  });
+  const result: { name: string; value: number }[] = [];
+  if (t > 0) result.push({ name: trueLabel, value: t });
+  if (f > 0) result.push({ name: falseLabel, value: f });
+  if (na > 0) result.push({ name: '(Non renseigné)', value: na });
+  return result;
 }
 
 export function crossCount(records: any[], field1: string, field2: string): { name: string; [key: string]: string | number }[] {
@@ -150,6 +186,19 @@ export function avgProcessingDays(records: any[], startField = 'created_at', end
     return s + diff / (1000 * 60 * 60 * 24);
   }, 0);
   return Math.round(total / valid.length);
+}
+
+/** Distribution of numeric values into custom buckets */
+export function numericDistribution(records: any[], field: string, buckets: { name: string; min: number; max: number }[]): { name: string; value: number }[] {
+  const counts = new Array(buckets.length).fill(0);
+  records.forEach(r => {
+    const v = r[field];
+    if (v == null || v <= 0) return;
+    for (let i = 0; i < buckets.length; i++) {
+      if (v >= buckets[i].min && v <= buckets[i].max) { counts[i]++; break; }
+    }
+  });
+  return buckets.map((b, i) => ({ name: b.name, value: counts[i] })).filter(b => b.value > 0);
 }
 
 /** Valid lifting statuses for explicit filtering (#7) */
