@@ -9,11 +9,16 @@ import { ChartCard } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
 import { exportRecordsToCSV } from '@/utils/csvExport';
 import { generateInsight } from '@/utils/chartInsights';
+import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 
 interface Props { data: LandAnalyticsData; }
 
+const TAB_KEY = 'subdivision';
+const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TABS_REGISTRY[TAB_KEY].charts];
+
 export const SubdivisionBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
+  const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
   const filtered = useMemo(() => applyFilters(data.subdivisionRequests, filter), [data.subdivisionRequests, filter]);
   const byStatus = useMemo(() => countBy(filtered, 'status'), [filtered]);
   const byPurpose = useMemo(() => countBy(filtered, 'purpose_of_subdivision'), [filtered]);
@@ -92,38 +97,40 @@ export const SubdivisionBlock: React.FC<Props> = memo(({ data }) => {
     ]);
   }, [filtered]);
 
+  const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
+  const v = isChartVisible;
+
+  const kpiItems = useMemo(() => [
+    { key: 'kpi-total', label: ct('kpi-total', 'Total'), value: filtered.length, cls: 'text-teal-600' },
+    { key: 'kpi-lots', label: ct('kpi-lots', 'Lots prévus'), value: stats.totalLots, cls: 'text-blue-600' },
+    { key: 'kpi-avg-lots', label: ct('kpi-avg-lots', 'Moy. lots/dem.'), value: stats.avgLots, cls: 'text-violet-600', tooltip: 'Nombre moyen de lots par demande' },
+    { key: 'kpi-approved', label: ct('kpi-approved', 'Approuvées'), value: stats.approved, cls: 'text-emerald-600', tooltip: pct(stats.approved, filtered.length) },
+    { key: 'kpi-delay', label: ct('kpi-delay', 'Délai moy.'), value: stats.avgDays > 0 ? `${stats.avgDays}j` : 'N/A', cls: 'text-rose-600', tooltip: 'Délai moyen de traitement' },
+    { key: 'kpi-surface', label: ct('kpi-surface', 'Surface tot.'), value: stats.totalSurface > 0 ? `${(stats.totalSurface / 10000).toFixed(1)} ha` : 'N/A', cls: 'text-primary', tooltip: `${stats.totalSurface.toLocaleString()} m²` },
+  ].filter(k => v(k.key)), [filtered, stats, v, getChartConfig]);
+
   return (
     <div className="space-y-2">
-      <AnalyticsFilters
-        data={data.subdivisionRequests} filter={filter} onChange={setFilter} onExport={handleExport}
-        paymentStatusField="submission_payment_status"
-      />
-      <KpiGrid items={[
-        { label: 'Total', value: filtered.length, cls: 'text-teal-600' },
-        { label: 'Lots prévus', value: stats.totalLots, cls: 'text-blue-600' },
-        { label: 'Moy. lots/dem.', value: stats.avgLots, cls: 'text-violet-600', tooltip: 'Nombre moyen de lots par demande' },
-        { label: 'Approuvées', value: stats.approved, cls: 'text-emerald-600', tooltip: pct(stats.approved, filtered.length) },
-        { label: 'Délai moy.', value: stats.avgDays > 0 ? `${stats.avgDays}j` : 'N/A', cls: 'text-rose-600', tooltip: 'Délai moyen de traitement' },
-        { label: 'Surface tot.', value: stats.totalSurface > 0 ? `${(stats.totalSurface / 10000).toFixed(1)} ha` : 'N/A', cls: 'text-primary', tooltip: `${stats.totalSurface.toLocaleString()} m²` },
-      ]} />
+      <AnalyticsFilters data={data.subdivisionRequests} filter={filter} onChange={setFilter} onExport={handleExport} paymentStatusField="submission_payment_status" />
+      <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        <ChartCard title="Statut" icon={Scissors} data={byStatus} type="pie" colorIndex={7}
-          insight={generateInsight(byStatus, 'pie', 'les statuts de lotissement')} />
-        <ChartCard title="Distribution lots" icon={BarChart3} data={lotsDistribution} type="bar-v" colorIndex={9} hidden={lotsDistribution.length === 0}
-          insight={generateInsight(lotsDistribution, 'bar-v', 'la distribution des lots')} />
-        <ChartCard title="Objet lotissement" icon={Target} data={byPurpose} type="bar-h" colorIndex={0} labelWidth={100} hidden={byPurpose.length === 0}
-          insight={generateInsight(byPurpose, 'bar-h', 'les objets de lotissement')} />
-        <ChartCard title="Type demandeur" icon={Users} data={byRequesterType} type="donut" colorIndex={1} hidden={byRequesterType.length === 0}
-          insight={generateInsight(byRequesterType, 'donut', 'les demandeurs')} />
-        <ChartCard title="Paiement" icon={DollarSign} data={byPaymentStatus} type="donut" colorIndex={2} hidden={byPaymentStatus.length === 0}
-          insight={generateInsight(byPaymentStatus, 'donut', 'les paiements')} />
-        <ChartCard title="Surface parcelle mère" icon={Ruler} data={surfaceDist} type="bar-v" colorIndex={5} hidden={surfaceDist.length === 0}
-          insight={generateInsight(surfaceDist, 'bar-v', 'les surfaces des parcelles mères')} />
-        <ChartCard title="Revenus/mois" icon={DollarSign} data={revenueTrend} type="area" colorIndex={2} hidden={revenueTrend.length < 2}
-          insight={generateInsight(revenueTrend, 'area', 'les revenus de lotissement')} />
-        <GeoCharts records={filtered} />
-        <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={7} colSpan={2}
-          insight={generateInsight(trend, 'area', 'les demandes de lotissement')} />
+        {v('status') && <ChartCard title={ct('status', 'Statut')} icon={Scissors} data={byStatus} type="pie" colorIndex={7}
+          insight={generateInsight(byStatus, 'pie', 'les statuts de lotissement')} />}
+        {v('lots-distribution') && <ChartCard title={ct('lots-distribution', 'Distribution lots')} icon={BarChart3} data={lotsDistribution} type="bar-v" colorIndex={9} hidden={lotsDistribution.length === 0}
+          insight={generateInsight(lotsDistribution, 'bar-v', 'la distribution des lots')} />}
+        {v('purpose') && <ChartCard title={ct('purpose', 'Objet lotissement')} icon={Target} data={byPurpose} type="bar-h" colorIndex={0} labelWidth={100} hidden={byPurpose.length === 0}
+          insight={generateInsight(byPurpose, 'bar-h', 'les objets de lotissement')} />}
+        {v('requester-type') && <ChartCard title={ct('requester-type', 'Type demandeur')} icon={Users} data={byRequesterType} type="donut" colorIndex={1} hidden={byRequesterType.length === 0}
+          insight={generateInsight(byRequesterType, 'donut', 'les demandeurs')} />}
+        {v('payment') && <ChartCard title={ct('payment', 'Paiement')} icon={DollarSign} data={byPaymentStatus} type="donut" colorIndex={2} hidden={byPaymentStatus.length === 0}
+          insight={generateInsight(byPaymentStatus, 'donut', 'les paiements')} />}
+        {v('surface') && <ChartCard title={ct('surface', 'Surface parcelle mère')} icon={Ruler} data={surfaceDist} type="bar-v" colorIndex={5} hidden={surfaceDist.length === 0}
+          insight={generateInsight(surfaceDist, 'bar-v', 'les surfaces des parcelles mères')} />}
+        {v('revenue-trend') && <ChartCard title={ct('revenue-trend', 'Revenus/mois')} icon={DollarSign} data={revenueTrend} type="area" colorIndex={2} hidden={revenueTrend.length < 2}
+          insight={generateInsight(revenueTrend, 'area', 'les revenus de lotissement')} />}
+        {v('geo') && <GeoCharts records={filtered} />}
+        {v('evolution') && <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type="area" colorIndex={7} colSpan={2}
+          insight={generateInsight(trend, 'area', 'les demandes de lotissement')} />}
       </div>
     </div>
   );
