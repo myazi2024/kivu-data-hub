@@ -6,6 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { TrendingUp, TrendingDown, MapPin, Users, DollarSign, Building, Clock, BarChart3, Info, AlertTriangle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area } from 'recharts';
 import DRCMapWithTooltip from './DRCMapWithTooltip';
@@ -795,26 +796,15 @@ const DRCInteractiveMap = () => {
           {/* Partie haute : Carte */}
           <div className="flex-[3] min-h-0">
           <Card className="card-compact overflow-hidden h-full flex flex-col">
-            <CardContent className="p-0 flex-1 flex flex-col">
+            <CardContent className="p-0 flex-1 flex flex-col relative">
               {/* En-tête responsive */}
-              <div className="bg-muted/20 p-1 sm:p-2 border-b border-border/30">
-                {/* Note explicative en haut - Compacte */}
-                <div className="mb-1 p-1 bg-blue-50/50 dark:bg-blue-950/10 rounded border border-blue-200/50 dark:border-blue-800/50">
-                  <div className="flex items-center gap-1">
-                    <Info className="h-3 w-3 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                    <div className="text-[10px] text-blue-700 dark:text-blue-300">
-                      <span className="font-medium">Usage :</span> Survolez/cliquez les provinces • Utilisez les filtres
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between mb-1">
+              <div className="bg-muted/20 px-1 sm:px-2 py-0.5 border-b border-border/30">
+                <div className="flex items-center justify-between">
                   <h2 className="text-[10px] sm:text-xs font-medium text-foreground flex items-center gap-1">
                     <MapPin className="h-3 w-3 text-primary" />
                     <span>RDC</span>
                   </h2>
                 </div>
-                
               </div>
               
               {/* Carte responsive optimisée */}
@@ -830,20 +820,34 @@ const DRCInteractiveMap = () => {
                   />
               </div>
               
-              {/* Note explicative en bas - Compacte et bien visible */}
-              <div className="p-1 bg-amber-50/70 dark:bg-amber-950/15 border-t border-amber-200/70 dark:border-amber-800/50 flex-shrink-0">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1">
-                    <Info className="h-3 w-3 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-                    <span className="text-[10px] font-medium text-amber-700 dark:text-amber-300">À propos :</span>
-                    <span className="text-[10px] text-amber-700 dark:text-amber-300">Données immobilières RDC par province</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3 text-red-600 dark:text-red-400 flex-shrink-0" />
-                    <span className="text-[10px] font-medium text-red-700 dark:text-red-300">Précaution :</span>
-                    <span className="text-[10px] text-red-700 dark:text-red-300">Estimations indicatives, données variables selon sources</span>
-                  </div>
-                </div>
+              {/* Popover d'info en bas à droite */}
+              <div className="absolute bottom-2 right-2 z-10">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="icon" className="h-6 w-6 rounded-full bg-background/80 backdrop-blur-sm border-border/50 shadow-sm">
+                      <Info className="h-3 w-3 text-muted-foreground" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent side="top" align="end" className="w-64 p-2 text-[10px]">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-1">
+                        <Info className="h-3 w-3 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                        <span className="font-medium text-blue-700 dark:text-blue-300">Usage :</span>
+                        <span className="text-blue-700 dark:text-blue-300">Survolez/cliquez les provinces • Utilisez les filtres</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Info className="h-3 w-3 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                        <span className="font-medium text-amber-700 dark:text-amber-300">À propos :</span>
+                        <span className="text-amber-700 dark:text-amber-300">Données immobilières RDC par province</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3 text-red-600 dark:text-red-400 flex-shrink-0" />
+                        <span className="font-medium text-red-700 dark:text-red-300">Précaution :</span>
+                        <span className="text-red-700 dark:text-red-300">Estimations indicatives, données variables selon sources</span>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
             </CardContent>
            </Card>
