@@ -40,11 +40,6 @@ export const OwnershipHistoryBlock: React.FC<Props> = memo(({ data }) => {
     return { avgYears, activeOwners, transfers: withDates.length };
   }, [filtered]);
 
-  const handleExport = useCallback(() => {
-    exportRecordsToCSV(filtered, `historique-propriete-${new Date().toISOString().slice(0,10)}`, [
-      'id', 'parcel_id', 'owner_name', 'legal_status', 'mutation_type', 'ownership_start_date', 'ownership_end_date'
-    ]);
-  }, [filtered]);
 
   const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
   const v = isChartVisible;
