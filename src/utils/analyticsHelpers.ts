@@ -6,9 +6,11 @@ export const CHART_COLORS = [
 
 export interface AnalyticsFilter {
   sectionType: 'all' | 'urbaine' | 'rurale';
-  periodType: 'all' | 'year' | 'semester' | 'quarter' | 'month';
-  year?: number;
-  subPeriod?: number;
+  year: number;
+  semester?: number;   // 1 | 2
+  quarter?: number;    // 1..4
+  month?: number;      // 1..12
+  week?: number;       // 1..5 (week within month)
   province?: string;
   ville?: string;
   commune?: string;
@@ -22,7 +24,7 @@ export interface AnalyticsFilter {
   paymentStatus?: string;
 }
 
-export const defaultFilter: AnalyticsFilter = { sectionType: 'all', periodType: 'year', year: new Date().getFullYear() };
+export const defaultFilter: AnalyticsFilter = { sectionType: 'all', year: new Date().getFullYear() };
 
 export function getSectionType(record: any): 'urbaine' | 'rurale' | null {
   if (record.section_type === 'urbaine' || record.parcel_type === 'SU') return 'urbaine';
