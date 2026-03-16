@@ -62,6 +62,7 @@ import AdminParcelActionsConfig from '@/components/admin/AdminParcelActionsConfi
 import AdminLandDisputes from '@/components/admin/AdminLandDisputes';
 import AdminCertificates from '@/components/admin/AdminCertificates';
 import AdminMapProviders from '@/components/admin/AdminMapProviders';
+import AdminAnalyticsChartsConfig from '@/components/admin/AdminAnalyticsChartsConfig';
 const Admin = () => {
   const { user, profile, loading } = useAuth();
   const [searchParams] = useSearchParams();
