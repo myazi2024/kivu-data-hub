@@ -115,6 +115,7 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
 
 
   return (
+    <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
       <AnalyticsFilters data={data.expertiseRequests} filter={filter} onChange={setFilter} />
       <KpiGrid items={[
