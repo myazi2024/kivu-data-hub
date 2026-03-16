@@ -9,11 +9,16 @@ import { ChartCard } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
 import { exportRecordsToCSV } from '@/utils/csvExport';
 import { generateInsight } from '@/utils/chartInsights';
+import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 
 interface Props { data: LandAnalyticsData; }
 
+const TAB_KEY = 'contributions';
+const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TABS_REGISTRY[TAB_KEY].charts];
+
 export const ContributionsBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
+  const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
   const filtered = useMemo(() => applyFilters(data.contributions, filter), [data.contributions, filter]);
 
   const byContributionType = useMemo(() => countBy(filtered, 'contribution_type'), [filtered]);
@@ -63,41 +68,46 @@ export const ContributionsBlock: React.FC<Props> = memo(({ data }) => {
     ]);
   }, [filtered]);
 
+  const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
+  const v = isChartVisible;
+
+  const kpiItems = useMemo(() => [
+    { key: 'kpi-total', label: ct('kpi-total', 'Total'), value: filtered.length, cls: 'text-primary' },
+    { key: 'kpi-approved', label: ct('kpi-approved', 'Approuvées'), value: stats.approved, cls: 'text-emerald-600', tooltip: pct(stats.approved, filtered.length) },
+    { key: 'kpi-pending', label: ct('kpi-pending', 'En attente'), value: stats.pending, cls: 'text-amber-600', tooltip: pct(stats.pending, filtered.length) },
+    { key: 'kpi-suspicious', label: ct('kpi-suspicious', 'Suspectes'), value: fraudData.suspicious, cls: 'text-red-600', tooltip: pct(fraudData.suspicious, filtered.length) },
+    { key: 'kpi-appeals', label: ct('kpi-appeals', 'Appels'), value: appealData.submitted, cls: 'text-blue-600', tooltip: pct(appealData.submitted, filtered.length) },
+    { key: 'kpi-delay', label: ct('kpi-delay', 'Délai moy.'), value: stats.avgDays > 0 ? `${stats.avgDays}j` : 'N/A', cls: 'text-violet-600', tooltip: 'Délai moyen de traitement' },
+  ].filter(k => v(k.key)), [filtered, stats, fraudData, appealData, v, getChartConfig]);
+
   return (
     <div className="space-y-2">
       <AnalyticsFilters data={data.contributions} filter={filter} onChange={setFilter} onExport={handleExport} hidePaymentStatus />
-      <KpiGrid items={[
-        { label: 'Total', value: filtered.length, cls: 'text-primary' },
-        { label: 'Approuvées', value: stats.approved, cls: 'text-emerald-600', tooltip: pct(stats.approved, filtered.length) },
-        { label: 'En attente', value: stats.pending, cls: 'text-amber-600', tooltip: pct(stats.pending, filtered.length) },
-        { label: 'Suspectes', value: fraudData.suspicious, cls: 'text-red-600', tooltip: pct(fraudData.suspicious, filtered.length) },
-        { label: 'Appels', value: appealData.submitted, cls: 'text-blue-600', tooltip: pct(appealData.submitted, filtered.length) },
-        { label: 'Délai moy.', value: stats.avgDays > 0 ? `${stats.avgDays}j` : 'N/A', cls: 'text-violet-600', tooltip: 'Délai moyen de traitement' },
-      ]} />
+      <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        <ChartCard title="Type contribution" icon={FileText} data={byContributionType} type="bar-h" colorIndex={0} labelWidth={100}
-          insight={generateInsight(byContributionType, 'bar-h', 'les types de contribution')} />
-        <ChartCard title="Statut" data={byStatus} type="pie" colorIndex={1}
-          insight={generateInsight(byStatus, 'pie', 'les statuts')} />
-        <ChartCard title="Type titre" data={byPropertyTitleType} type="bar-h" colorIndex={3} labelWidth={100} hidden={byPropertyTitleType.length === 0}
-          insight={generateInsight(byPropertyTitleType, 'bar-h', 'les types de titre')} />
-        <ChartCard title="Statut juridique" icon={Users} data={byLegalStatus} type="donut" colorIndex={4}
-          insight={generateInsight(byLegalStatus, 'donut', 'les statuts juridiques')} />
-        <ChartCard title="Usage déclaré" data={byDeclaredUsage} type="bar-h" colorIndex={5} hidden={byDeclaredUsage.length === 0}
-          insight={generateInsight(byDeclaredUsage, 'bar-h', 'les usages déclarés')} />
-        <ChartCard title="Type construction" data={byConstructionType} type="bar-h" colorIndex={7} hidden={byConstructionType.length === 0}
-          insight={generateInsight(byConstructionType, 'bar-h', 'les types de construction')} />
-        <ChartCard title="Détection fraude" icon={ShieldAlert} data={fraudData.distribution} type="pie" colorIndex={4}
-          insight={fraudData.suspicious > 0 ? `${fraudData.suspicious} contribution${fraudData.suspicious > 1 ? 's' : ''} signalée${fraudData.suspicious > 1 ? 's' : ''} comme suspecte${fraudData.suspicious > 1 ? 's' : ''}.` : 'Aucune contribution suspecte détectée.'} />
-        <ChartCard title="Score fraude" icon={AlertTriangle} data={fraudData.byScore} type="bar-v" colorIndex={4} hidden={fraudData.byScore.length === 0}
-          insight={generateInsight(fraudData.byScore, 'bar-v', 'les niveaux de risque')} />
-        <ChartCard title="Motif fraude" data={fraudData.byFraudReason} type="bar-h" colorIndex={4} labelWidth={120} hidden={fraudData.byFraudReason.length === 0}
-          insight={generateInsight(fraudData.byFraudReason, 'bar-h', 'les motifs de fraude')} />
-        <ChartCard title="Statut appel" icon={Gavel} data={appealData.byAppealStatus} type="donut" colorIndex={9} hidden={appealData.byAppealStatus.length === 0}
-          insight={generateInsight(appealData.byAppealStatus, 'donut', 'les appels')} />
-        <GeoCharts records={filtered} />
-        <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={0} colSpan={2}
-          insight={generateInsight(trend, 'area', 'les contributions')} />
+        {v('contribution-type') && <ChartCard title={ct('contribution-type', 'Type contribution')} icon={FileText} data={byContributionType} type="bar-h" colorIndex={0} labelWidth={100}
+          insight={generateInsight(byContributionType, 'bar-h', 'les types de contribution')} />}
+        {v('status') && <ChartCard title={ct('status', 'Statut')} data={byStatus} type="pie" colorIndex={1}
+          insight={generateInsight(byStatus, 'pie', 'les statuts')} />}
+        {v('title-type') && <ChartCard title={ct('title-type', 'Type titre')} data={byPropertyTitleType} type="bar-h" colorIndex={3} labelWidth={100} hidden={byPropertyTitleType.length === 0}
+          insight={generateInsight(byPropertyTitleType, 'bar-h', 'les types de titre')} />}
+        {v('legal-status') && <ChartCard title={ct('legal-status', 'Statut juridique')} icon={Users} data={byLegalStatus} type="donut" colorIndex={4}
+          insight={generateInsight(byLegalStatus, 'donut', 'les statuts juridiques')} />}
+        {v('usage') && <ChartCard title={ct('usage', 'Usage déclaré')} data={byDeclaredUsage} type="bar-h" colorIndex={5} hidden={byDeclaredUsage.length === 0}
+          insight={generateInsight(byDeclaredUsage, 'bar-h', 'les usages déclarés')} />}
+        {v('construction-type') && <ChartCard title={ct('construction-type', 'Type construction')} data={byConstructionType} type="bar-h" colorIndex={7} hidden={byConstructionType.length === 0}
+          insight={generateInsight(byConstructionType, 'bar-h', 'les types de construction')} />}
+        {v('fraud-detection') && <ChartCard title={ct('fraud-detection', 'Détection fraude')} icon={ShieldAlert} data={fraudData.distribution} type="pie" colorIndex={4}
+          insight={fraudData.suspicious > 0 ? `${fraudData.suspicious} contribution${fraudData.suspicious > 1 ? 's' : ''} signalée${fraudData.suspicious > 1 ? 's' : ''} comme suspecte${fraudData.suspicious > 1 ? 's' : ''}.` : 'Aucune contribution suspecte détectée.'} />}
+        {v('fraud-score') && <ChartCard title={ct('fraud-score', 'Score fraude')} icon={AlertTriangle} data={fraudData.byScore} type="bar-v" colorIndex={4} hidden={fraudData.byScore.length === 0}
+          insight={generateInsight(fraudData.byScore, 'bar-v', 'les niveaux de risque')} />}
+        {v('fraud-reason') && <ChartCard title={ct('fraud-reason', 'Motif fraude')} data={fraudData.byFraudReason} type="bar-h" colorIndex={4} labelWidth={120} hidden={fraudData.byFraudReason.length === 0}
+          insight={generateInsight(fraudData.byFraudReason, 'bar-h', 'les motifs de fraude')} />}
+        {v('appeal-status') && <ChartCard title={ct('appeal-status', 'Statut appel')} icon={Gavel} data={appealData.byAppealStatus} type="donut" colorIndex={9} hidden={appealData.byAppealStatus.length === 0}
+          insight={generateInsight(appealData.byAppealStatus, 'donut', 'les appels')} />}
+        {v('geo') && <GeoCharts records={filtered} />}
+        {v('evolution') && <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type="area" colorIndex={0} colSpan={2}
+          insight={generateInsight(trend, 'area', 'les contributions')} />}
       </div>
     </div>
   );

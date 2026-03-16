@@ -9,11 +9,16 @@ import { ChartCard } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
 import { exportRecordsToCSV } from '@/utils/csvExport';
 import { generateInsight } from '@/utils/chartInsights';
+import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 
 interface Props { data: LandAnalyticsData; }
 
+const TAB_KEY = 'lifting';
+const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TABS_REGISTRY[TAB_KEY].charts];
+
 export const DisputeLiftingBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
+  const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
 
   const liftingDisputes = useMemo(() =>
     data.disputes.filter(d => d.lifting_status && VALID_LIFTING_STATUSES.includes(d.lifting_status)),
@@ -59,30 +64,35 @@ export const DisputeLiftingBlock: React.FC<Props> = memo(({ data }) => {
     ]);
   }, [filtered]);
 
+  const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
+  const v = isChartVisible;
+
+  const kpiItems = useMemo(() => [
+    { key: 'kpi-total', label: ct('kpi-total', 'Total levées'), value: filtered.length, cls: 'text-sky-600' },
+    { key: 'kpi-approved', label: ct('kpi-approved', 'Approuvées'), value: stats.approved, cls: 'text-emerald-600', tooltip: pct(stats.approved, filtered.length) },
+    { key: 'kpi-pending', label: ct('kpi-pending', 'En attente'), value: stats.pending, cls: 'text-amber-600', tooltip: pct(stats.pending, filtered.length) },
+    { key: 'kpi-rejected', label: ct('kpi-rejected', 'Rejetées'), value: stats.rejected, cls: 'text-red-600', tooltip: pct(stats.rejected, filtered.length) },
+    { key: 'kpi-success', label: ct('kpi-success', 'Taux réussite'), value: pct(stats.approved, filtered.length), cls: 'text-purple-600', tooltip: 'Pourcentage de levées approuvées' },
+  ].filter(k => v(k.key)), [filtered, stats, v, getChartConfig]);
+
   return (
     <div className="space-y-2">
       <AnalyticsFilters data={liftingDisputes} filter={filter} onChange={setFilter} onExport={handleExport} hidePaymentStatus />
-      <KpiGrid items={[
-        { label: 'Total levées', value: filtered.length, cls: 'text-sky-600' },
-        { label: 'Approuvées', value: stats.approved, cls: 'text-emerald-600', tooltip: pct(stats.approved, filtered.length) },
-        { label: 'En attente', value: stats.pending, cls: 'text-amber-600', tooltip: pct(stats.pending, filtered.length) },
-        { label: 'Rejetées', value: stats.rejected, cls: 'text-red-600', tooltip: pct(stats.rejected, filtered.length) },
-        { label: 'Taux réussite', value: pct(stats.approved, filtered.length), cls: 'text-purple-600', tooltip: 'Pourcentage de levées approuvées' },
-      ]} />
+      <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        <ChartCard title="Statut levée" icon={ShieldCheck} data={byLiftingStatus} type="pie" colorIndex={9}
-          insight={generateInsight(byLiftingStatus, 'pie', 'les statuts de levée')} />
-        <ChartCard title="Niveau résolution" icon={Scale} iconColor="text-purple-500" data={byResolutionLevel} type="bar-h" colorIndex={9} labelWidth={100}
-          insight={generateInsight(byResolutionLevel, 'bar-h', 'les niveaux de résolution')} />
-        <ChartCard title="Nature litige" data={byNature} type="bar-h" colorIndex={4} labelWidth={100}
-          insight={generateInsight(byNature, 'bar-h', 'les natures de litige concernées')} />
-        <ChartCard title="Motif de levée" icon={MessageSquare} data={byLiftingReason} type="bar-h" colorIndex={6} labelWidth={120} hidden={byLiftingReason.length === 0}
-          insight={generateInsight(byLiftingReason, 'bar-h', 'les motifs de levée')} />
-        <GeoCharts records={filtered} />
-        <ChartCard title="Taux réussite %" icon={TrendingUp} data={liftingSuccessTrend} type="area" colorIndex={2} colSpan={2} hidden={liftingSuccessTrend.length < 2}
-          insight={generateInsight(liftingSuccessTrend, 'area', 'le taux de réussite des levées')} />
-        <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={9} colSpan={2}
-          insight={generateInsight(trend, 'area', 'les levées de litige')} />
+        {v('lifting-status') && <ChartCard title={ct('lifting-status', 'Statut levée')} icon={ShieldCheck} data={byLiftingStatus} type="pie" colorIndex={9}
+          insight={generateInsight(byLiftingStatus, 'pie', 'les statuts de levée')} />}
+        {v('resolution-level') && <ChartCard title={ct('resolution-level', 'Niveau résolution')} icon={Scale} iconColor="text-purple-500" data={byResolutionLevel} type="bar-h" colorIndex={9} labelWidth={100}
+          insight={generateInsight(byResolutionLevel, 'bar-h', 'les niveaux de résolution')} />}
+        {v('nature') && <ChartCard title={ct('nature', 'Nature litige')} data={byNature} type="bar-h" colorIndex={4} labelWidth={100}
+          insight={generateInsight(byNature, 'bar-h', 'les natures de litige concernées')} />}
+        {v('reason') && <ChartCard title={ct('reason', 'Motif de levée')} icon={MessageSquare} data={byLiftingReason} type="bar-h" colorIndex={6} labelWidth={120} hidden={byLiftingReason.length === 0}
+          insight={generateInsight(byLiftingReason, 'bar-h', 'les motifs de levée')} />}
+        {v('geo') && <GeoCharts records={filtered} />}
+        {v('success-rate') && <ChartCard title={ct('success-rate', 'Taux réussite %')} icon={TrendingUp} data={liftingSuccessTrend} type="area" colorIndex={2} colSpan={2} hidden={liftingSuccessTrend.length < 2}
+          insight={generateInsight(liftingSuccessTrend, 'area', 'le taux de réussite des levées')} />}
+        {v('evolution') && <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type="area" colorIndex={9} colSpan={2}
+          insight={generateInsight(trend, 'area', 'les levées de litige')} />}
       </div>
     </div>
   );

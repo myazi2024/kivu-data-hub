@@ -8,11 +8,16 @@ import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard } from '../shared/ChartCard';
 import { exportRecordsToCSV } from '@/utils/csvExport';
 import { generateInsight } from '@/utils/chartInsights';
+import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 
 interface Props { data: LandAnalyticsData; }
 
+const TAB_KEY = 'invoices';
+const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TABS_REGISTRY[TAB_KEY].charts];
+
 export const InvoicesBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
+  const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
   const filtered = useMemo(() => applyFilters(data.invoices, filter), [data.invoices, filter]);
 
   const byStatus = useMemo(() => countBy(filtered, 'status'), [filtered]);
@@ -51,27 +56,32 @@ export const InvoicesBlock: React.FC<Props> = memo(({ data }) => {
     ]);
   }, [filtered]);
 
+  const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
+  const v = isChartVisible;
+
+  const kpiItems = useMemo(() => [
+    { key: 'kpi-total', label: ct('kpi-total', 'Total'), value: filtered.length, cls: 'text-primary' },
+    { key: 'kpi-paid', label: ct('kpi-paid', 'Payées'), value: stats.paidCount, cls: 'text-emerald-600', tooltip: pct(stats.paidCount, filtered.length) },
+    { key: 'kpi-revenue', label: ct('kpi-revenue', 'Revenus payés'), value: `$${stats.paidRevenue.toLocaleString()}`, cls: 'text-blue-600', tooltip: `Facturé: $${stats.totalRevenue.toLocaleString()}` },
+    { key: 'kpi-avg', label: ct('kpi-avg', 'Montant moy.'), value: `$${stats.avgAmount}`, cls: 'text-violet-600' },
+    { key: 'kpi-discounts', label: ct('kpi-discounts', 'Remises'), value: `$${stats.totalDiscount.toLocaleString()}`, cls: 'text-rose-600', tooltip: 'Total des remises accordées' },
+  ].filter(k => v(k.key)), [filtered, stats, v, getChartConfig]);
+
   return (
     <div className="space-y-2">
       <AnalyticsFilters data={data.invoices} filter={filter} onChange={setFilter} onExport={handleExport} />
-      <KpiGrid items={[
-        { label: 'Total', value: filtered.length, cls: 'text-primary' },
-        { label: 'Payées', value: stats.paidCount, cls: 'text-emerald-600', tooltip: pct(stats.paidCount, filtered.length) },
-        { label: 'Revenus payés', value: `$${stats.paidRevenue.toLocaleString()}`, cls: 'text-blue-600', tooltip: `Facturé: $${stats.totalRevenue.toLocaleString()}` },
-        { label: 'Montant moy.', value: `$${stats.avgAmount}`, cls: 'text-violet-600' },
-        { label: 'Remises', value: `$${stats.totalDiscount.toLocaleString()}`, cls: 'text-rose-600', tooltip: 'Total des remises accordées' },
-      ]} />
+      <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        <ChartCard title="Statut" icon={Receipt} data={byStatus} type="pie" colorIndex={2}
-          insight={generateInsight(byStatus, 'pie', 'les statuts de facture')} />
-        <ChartCard title="Moyen paiement" icon={CreditCard} data={byPaymentMethod} type="donut" colorIndex={0} hidden={byPaymentMethod.length === 0}
-          insight={generateInsight(byPaymentMethod, 'donut', 'les moyens de paiement')} />
-        <ChartCard title="Zone géographique" icon={MapPin} data={byGeoZone} type="bar-h" colorIndex={6} labelWidth={100} hidden={byGeoZone.length === 0}
-          insight={generateInsight(byGeoZone, 'bar-h', 'les zones géographiques')} />
-        <ChartCard title="Revenus/mois" icon={DollarSign} data={revenueTrend} type="area" colorIndex={2} hidden={revenueTrend.length < 2}
-          insight={generateInsight(revenueTrend, 'area', 'les revenus mensuels')} />
-        <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={0} colSpan={2}
-          insight={generateInsight(trend, 'area', 'les factures')} />
+        {v('status') && <ChartCard title={ct('status', 'Statut')} icon={Receipt} data={byStatus} type="pie" colorIndex={2}
+          insight={generateInsight(byStatus, 'pie', 'les statuts de facture')} />}
+        {v('payment-method') && <ChartCard title={ct('payment-method', 'Moyen paiement')} icon={CreditCard} data={byPaymentMethod} type="donut" colorIndex={0} hidden={byPaymentMethod.length === 0}
+          insight={generateInsight(byPaymentMethod, 'donut', 'les moyens de paiement')} />}
+        {v('geo-zone') && <ChartCard title={ct('geo-zone', 'Zone géographique')} icon={MapPin} data={byGeoZone} type="bar-h" colorIndex={6} labelWidth={100} hidden={byGeoZone.length === 0}
+          insight={generateInsight(byGeoZone, 'bar-h', 'les zones géographiques')} />}
+        {v('revenue-trend') && <ChartCard title={ct('revenue-trend', 'Revenus/mois')} icon={DollarSign} data={revenueTrend} type="area" colorIndex={2} hidden={revenueTrend.length < 2}
+          insight={generateInsight(revenueTrend, 'area', 'les revenus mensuels')} />}
+        {v('evolution') && <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type="area" colorIndex={0} colSpan={2}
+          insight={generateInsight(trend, 'area', 'les factures')} />}
       </div>
     </div>
   );

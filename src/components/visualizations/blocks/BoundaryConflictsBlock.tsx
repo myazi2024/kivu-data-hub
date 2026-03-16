@@ -8,11 +8,16 @@ import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard } from '../shared/ChartCard';
 import { exportRecordsToCSV } from '@/utils/csvExport';
 import { generateInsight } from '@/utils/chartInsights';
+import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 
 interface Props { data: LandAnalyticsData; }
 
+const TAB_KEY = 'boundary';
+const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TABS_REGISTRY[TAB_KEY].charts];
+
 export const BoundaryConflictsBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
+  const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
   const filtered = useMemo(() => applyFilters(data.boundaryConflicts, filter), [data.boundaryConflicts, filter]);
 
   const byType = useMemo(() => countBy(filtered, 'conflict_type'), [filtered]);
@@ -32,23 +37,28 @@ export const BoundaryConflictsBlock: React.FC<Props> = memo(({ data }) => {
     ]);
   }, [filtered]);
 
+  const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
+  const v = isChartVisible;
+
+  const kpiItems = useMemo(() => [
+    { key: 'kpi-total', label: ct('kpi-total', 'Total'), value: filtered.length, cls: 'text-primary' },
+    { key: 'kpi-resolved', label: ct('kpi-resolved', 'Résolus'), value: stats.resolved, cls: 'text-emerald-600', tooltip: pct(stats.resolved, filtered.length) },
+    { key: 'kpi-pending', label: ct('kpi-pending', 'En cours'), value: stats.pending, cls: 'text-amber-600', tooltip: pct(stats.pending, filtered.length) },
+    { key: 'kpi-rate', label: ct('kpi-rate', 'Taux résolution'), value: pct(stats.resolved, filtered.length), cls: 'text-blue-600' },
+    { key: 'kpi-delay', label: ct('kpi-delay', 'Délai moy.'), value: stats.avgDays > 0 ? `${stats.avgDays}j` : 'N/A', cls: 'text-violet-600', tooltip: 'Délai moyen de résolution' },
+  ].filter(k => v(k.key)), [filtered, stats, v, getChartConfig]);
+
   return (
     <div className="space-y-2">
       <AnalyticsFilters data={data.boundaryConflicts} filter={filter} onChange={setFilter} onExport={handleExport} hidePaymentStatus hideStatus />
-      <KpiGrid items={[
-        { label: 'Total', value: filtered.length, cls: 'text-primary' },
-        { label: 'Résolus', value: stats.resolved, cls: 'text-emerald-600', tooltip: pct(stats.resolved, filtered.length) },
-        { label: 'En cours', value: stats.pending, cls: 'text-amber-600', tooltip: pct(stats.pending, filtered.length) },
-        { label: 'Taux résolution', value: pct(stats.resolved, filtered.length), cls: 'text-blue-600' },
-        { label: 'Délai moy.', value: stats.avgDays > 0 ? `${stats.avgDays}j` : 'N/A', cls: 'text-violet-600', tooltip: 'Délai moyen de résolution' },
-      ]} />
+      <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        <ChartCard title="Type conflit" icon={MapPin} data={byType} type="bar-h" colorIndex={4} labelWidth={110}
-          insight={generateInsight(byType, 'bar-h', 'les types de conflit de limites')} />
-        <ChartCard title="Statut" icon={CheckCircle} data={byStatus} type="pie" colorIndex={2}
-          insight={generateInsight(byStatus, 'pie', 'les statuts de conflit')} />
-        <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={4} colSpan={2}
-          insight={generateInsight(trend, 'area', 'les conflits de limites')} />
+        {v('conflict-type') && <ChartCard title={ct('conflict-type', 'Type conflit')} icon={MapPin} data={byType} type="bar-h" colorIndex={4} labelWidth={110}
+          insight={generateInsight(byType, 'bar-h', 'les types de conflit de limites')} />}
+        {v('status') && <ChartCard title={ct('status', 'Statut')} icon={CheckCircle} data={byStatus} type="pie" colorIndex={2}
+          insight={generateInsight(byStatus, 'pie', 'les statuts de conflit')} />}
+        {v('evolution') && <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type="area" colorIndex={4} colSpan={2}
+          insight={generateInsight(trend, 'area', 'les conflits de limites')} />}
       </div>
     </div>
   );

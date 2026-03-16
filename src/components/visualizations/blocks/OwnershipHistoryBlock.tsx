@@ -9,11 +9,16 @@ import { ChartCard } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
 import { exportRecordsToCSV } from '@/utils/csvExport';
 import { generateInsight } from '@/utils/chartInsights';
+import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 
 interface Props { data: LandAnalyticsData; }
 
+const TAB_KEY = 'ownership';
+const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TABS_REGISTRY[TAB_KEY].charts];
+
 export const OwnershipHistoryBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
+  const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
   const filtered = useMemo(() => applyFilters(data.ownershipHistory, filter, 'ownership_start_date'), [data.ownershipHistory, filter]);
 
   const byLegalStatus = useMemo(() => countBy(filtered, 'legal_status'), [filtered]);
@@ -41,23 +46,28 @@ export const OwnershipHistoryBlock: React.FC<Props> = memo(({ data }) => {
     ]);
   }, [filtered]);
 
+  const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
+  const v = isChartVisible;
+
+  const kpiItems = useMemo(() => [
+    { key: 'kpi-total', label: ct('kpi-total', 'Total transferts'), value: filtered.length, cls: 'text-primary' },
+    { key: 'kpi-active', label: ct('kpi-active', 'Propriétaires actifs'), value: stats.activeOwners, cls: 'text-emerald-600', tooltip: pct(stats.activeOwners, filtered.length) },
+    { key: 'kpi-closed', label: ct('kpi-closed', 'Transferts clos'), value: stats.transfers, cls: 'text-amber-600' },
+    { key: 'kpi-duration', label: ct('kpi-duration', 'Durée moy.'), value: stats.avgYears > 0 ? `${stats.avgYears} ans` : 'N/A', cls: 'text-violet-600', tooltip: 'Durée moyenne de détention' },
+  ].filter(k => v(k.key)), [filtered, stats, v, getChartConfig]);
+
   return (
     <div className="space-y-2">
       <AnalyticsFilters data={data.ownershipHistory} filter={filter} onChange={setFilter} onExport={handleExport} hidePaymentStatus hideStatus dateField="ownership_start_date" />
-      <KpiGrid items={[
-        { label: 'Total transferts', value: filtered.length, cls: 'text-primary' },
-        { label: 'Propriétaires actifs', value: stats.activeOwners, cls: 'text-emerald-600', tooltip: pct(stats.activeOwners, filtered.length) },
-        { label: 'Transferts clos', value: stats.transfers, cls: 'text-amber-600' },
-        { label: 'Durée moy.', value: stats.avgYears > 0 ? `${stats.avgYears} ans` : 'N/A', cls: 'text-violet-600', tooltip: 'Durée moyenne de détention' },
-      ]} />
+      <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        <ChartCard title="Statut juridique" icon={Users} data={byLegalStatus} type="donut" colorIndex={1}
-          insight={generateInsight(byLegalStatus, 'donut', 'les statuts juridiques des propriétaires')} />
-        <ChartCard title="Type mutation" icon={ArrowRightLeft} data={byMutationType} type="bar-h" colorIndex={6} labelWidth={100}
-          insight={generateInsight(byMutationType, 'bar-h', 'les types de mutation')} />
-        <GeoCharts records={filtered} />
-        <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={0} colSpan={2}
-          insight={generateInsight(trend, 'area', 'les transferts de propriété')} />
+        {v('legal-status') && <ChartCard title={ct('legal-status', 'Statut juridique')} icon={Users} data={byLegalStatus} type="donut" colorIndex={1}
+          insight={generateInsight(byLegalStatus, 'donut', 'les statuts juridiques des propriétaires')} />}
+        {v('mutation-type') && <ChartCard title={ct('mutation-type', 'Type mutation')} icon={ArrowRightLeft} data={byMutationType} type="bar-h" colorIndex={6} labelWidth={100}
+          insight={generateInsight(byMutationType, 'bar-h', 'les types de mutation')} />}
+        {v('geo') && <GeoCharts records={filtered} />}
+        {v('evolution') && <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type="area" colorIndex={0} colSpan={2}
+          insight={generateInsight(trend, 'area', 'les transferts de propriété')} />}
       </div>
     </div>
   );
