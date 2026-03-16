@@ -61,12 +61,6 @@ export const ContributionsBlock: React.FC<Props> = memo(({ data }) => {
     return { approved, pending, rejected, avgDays };
   }, [filtered]);
 
-  const handleExport = useCallback(() => {
-    exportRecordsToCSV(filtered, `contributions-${new Date().toISOString().slice(0,10)}`, [
-      'id', 'parcel_number', 'contribution_type', 'status', 'is_suspicious', 'fraud_score',
-      'appeal_submitted', 'appeal_status', 'province', 'ville', 'commune', 'created_at'
-    ]);
-  }, [filtered]);
 
   const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
   const v = isChartVisible;
