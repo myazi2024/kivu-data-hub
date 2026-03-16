@@ -105,6 +105,7 @@ export const SubdivisionBlock: React.FC<Props> = memo(({ data }) => {
   ].filter(k => v(k.key)), [filtered, stats, v, getChartConfig]);
 
   return (
+    <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
       <AnalyticsFilters data={data.subdivisionRequests} filter={filter} onChange={setFilter} paymentStatusField="submission_payment_status" />
       <KpiGrid items={kpiItems} />
