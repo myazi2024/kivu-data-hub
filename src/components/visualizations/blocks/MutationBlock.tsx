@@ -83,7 +83,7 @@ export const MutationBlock: React.FC<Props> = memo(({ data }) => {
 
   return (
     <div className="space-y-2">
-      <AnalyticsFilters data={data.mutationRequests} filter={filter} onChange={setFilter} onExport={handleExport} />
+      <AnalyticsFilters data={data.mutationRequests} filter={filter} onChange={setFilter} />
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {v('status') && <ChartCard title={t('status', 'Statut')} icon={ArrowRightLeft} data={byStatus} type="pie" colorIndex={6}

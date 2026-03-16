@@ -45,7 +45,7 @@ export const BoundaryConflictsBlock: React.FC<Props> = memo(({ data }) => {
 
   return (
     <div className="space-y-2">
-      <AnalyticsFilters data={data.boundaryConflicts} filter={filter} onChange={setFilter} onExport={handleExport} hidePaymentStatus hideStatus />
+      <AnalyticsFilters data={data.boundaryConflicts} filter={filter} onChange={setFilter} hidePaymentStatus hideStatus />
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {v('conflict-type') && <ChartCard title={ct('conflict-type', 'Type conflit')} icon={MapPin} data={byType} type="bar-h" colorIndex={4} labelWidth={110}

@@ -71,7 +71,7 @@ export const DisputeLiftingBlock: React.FC<Props> = memo(({ data }) => {
 
   return (
     <div className="space-y-2">
-      <AnalyticsFilters data={liftingDisputes} filter={filter} onChange={setFilter} onExport={handleExport} hidePaymentStatus />
+      <AnalyticsFilters data={liftingDisputes} filter={filter} onChange={setFilter} hidePaymentStatus />
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {v('lifting-status') && <ChartCard title={ct('lifting-status', 'Statut levée')} icon={ShieldCheck} data={byLiftingStatus} type="pie" colorIndex={9}

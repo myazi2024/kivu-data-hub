@@ -86,7 +86,7 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
 
   return (
     <div className="space-y-2">
-      <AnalyticsFilters data={data.disputes} filter={filter} onChange={setFilter} onExport={handleExport}
+      <AnalyticsFilters data={data.disputes} filter={filter} onChange={setFilter}
         statusField="current_status" hidePaymentStatus
       />
       <KpiGrid items={kpiItems} />

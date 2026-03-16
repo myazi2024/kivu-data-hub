@@ -138,7 +138,7 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
 
   return (
     <div className="space-y-2">
-      <AnalyticsFilters data={data.parcels} filter={filter} onChange={setFilter} onExport={handleExport} hidePaymentStatus />
+      <AnalyticsFilters data={data.parcels} filter={filter} onChange={setFilter} hidePaymentStatus />
       <KpiGrid items={[
         { label: 'Parcelles', value: filteredParcels.length, cls: 'text-primary' },
         { label: 'Urbaines', value: urbanCount, cls: 'text-emerald-600', tooltip: pct(urbanCount, filteredParcels.length) },

@@ -115,7 +115,7 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
 
   return (
     <div className="space-y-2">
-      <AnalyticsFilters data={data.expertiseRequests} filter={filter} onChange={setFilter} onExport={handleExport} />
+      <AnalyticsFilters data={data.expertiseRequests} filter={filter} onChange={setFilter} />
       <KpiGrid items={[
         { label: 'Total', value: filtered.length, cls: 'text-violet-600' },
         { label: 'Complétées', value: stats.completed, cls: 'text-emerald-600', tooltip: pct(stats.completed, filtered.length) },
