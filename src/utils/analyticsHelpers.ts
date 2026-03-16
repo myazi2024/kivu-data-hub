@@ -22,7 +22,7 @@ export interface AnalyticsFilter {
   paymentStatus?: string;
 }
 
-export const defaultFilter: AnalyticsFilter = { sectionType: 'all', periodType: 'all' };
+export const defaultFilter: AnalyticsFilter = { sectionType: 'all', periodType: 'year', year: new Date().getFullYear() };
 
 export function getSectionType(record: any): 'urbaine' | 'rurale' | null {
   if (record.section_type === 'urbaine' || record.parcel_type === 'SU') return 'urbaine';
