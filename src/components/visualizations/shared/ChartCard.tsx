@@ -192,12 +192,14 @@ export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
   if (hidden) return null;
   const { ref, copied, copy } = useCopyAsImage();
   const displayData = data.slice(0, maxItems);
+  const filterLabel = useContext(FilterLabelContext);
   return (
     <Card ref={ref} className={`border-border/30 ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
       <CardHeader className="pb-1 px-2 pt-2">
         <CardTitle className="text-xs font-semibold flex items-center gap-1">
           {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'}`} />}
-          {title}
+          <span className="truncate">{title}</span>
+          {filterLabel && <span className="text-[8px] font-normal text-muted-foreground truncate">— {filterLabel}</span>}
           <CopyButton onClick={copy} copied={copied} />
         </CardTitle>
       </CardHeader>
