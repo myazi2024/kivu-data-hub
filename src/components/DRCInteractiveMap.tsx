@@ -794,11 +794,11 @@ const DRCInteractiveMap = () => {
         {/* Desktop: grille 2 colonnes | Mobile: 2 panneaux côte à côte (carte + détails) */}
         <div className="flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-12 gap-1 sm:gap-2 p-1 sm:p-2 pb-14 lg:pb-2">
           
-          {/* Colonne gauche: Carte + Détails province */}
-          <div className={`${activeMobilePanel === 'analytics' ? 'hidden lg:flex' : 'flex'} lg:col-span-4 flex-row lg:flex-col min-h-0 h-full gap-1 sm:gap-2`}>
+          {/* Colonne gauche: Carte (haut) + Détails province (bas) sur mobile */}
+          <div className={`${activeMobilePanel === 'analytics' ? 'hidden lg:flex' : 'flex'} lg:col-span-4 flex-col min-h-0 h-full gap-1 sm:gap-2`}>
             
-            {/* Carte RDC - sur mobile: 50% quand province sélectionnée, 100% sinon */}
-            <div className={`flex flex-col min-h-0 transition-all duration-300 ${selectedProvince ? 'w-1/2 lg:w-auto' : 'w-full lg:w-auto'} lg:flex-[3]`}>
+            {/* Carte RDC - sur mobile: 50% hauteur quand province sélectionnée, 100% sinon */}
+            <div className={`flex flex-col min-h-0 transition-all duration-300 w-full ${selectedProvince ? 'h-1/2 lg:h-auto' : 'h-full lg:h-auto'} lg:flex-[3]`}>
               <Card className="flex-1 overflow-hidden flex flex-col border-border/30">
                 <CardContent className="p-0 flex-1 flex flex-col relative min-h-0">
                   {/* En-tête */}
