@@ -8,6 +8,7 @@ import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, StackedBarCard } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
 import { exportRecordsToCSV } from '@/utils/csvExport';
+import { generateInsight, generateStackedInsight } from '@/utils/chartInsights';
 
 interface Props { data: LandAnalyticsData; }
 
@@ -20,7 +21,6 @@ export const MutationBlock: React.FC<Props> = memo(({ data }) => {
   const byPaymentStatus = useMemo(() => countBy(filtered, 'payment_status'), [filtered]);
   const trend = useMemo(() => trendByMonth(filtered), [filtered]);
 
-  // Cross mutation_type × status
   const typeStatusCross = useMemo(() => {
     const map = new Map<string, { approved: number; pending: number; rejected: number; other: number }>();
     filtered.forEach(r => {
@@ -37,7 +37,6 @@ export const MutationBlock: React.FC<Props> = memo(({ data }) => {
       .sort((a, b) => (b.approved + b.pending + b.rejected + b.other) - (a.approved + a.pending + a.rejected + a.other));
   }, [filtered]);
 
-  // Revenue trend by month
   const revenueTrend = useMemo(() => {
     const map = new Map<string, number>();
     filtered.forEach(r => {
@@ -82,19 +81,29 @@ export const MutationBlock: React.FC<Props> = memo(({ data }) => {
         { label: 'Revenus', value: `$${stats.paidRevenue.toLocaleString()}`, cls: 'text-blue-600', tooltip: `Total facturé: $${stats.totalRevenue.toLocaleString()}` },
       ]} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        <ChartCard title="Statut" icon={ArrowRightLeft} data={byStatus} type="pie" colorIndex={6} />
-        <ChartCard title="Type mutation" data={byType} type="bar-h" colorIndex={6} labelWidth={100} />
-        <ChartCard title="Type demandeur" icon={Users} data={byRequesterType} type="donut" colorIndex={1} />
-        <ChartCard title="Paiement" icon={DollarSign} data={byPaymentStatus} type="donut" colorIndex={2} />
-        {/* Cross mutation_type × status */}
+        <ChartCard title="Statut" icon={ArrowRightLeft} data={byStatus} type="pie" colorIndex={6}
+          insight={generateInsight(byStatus, 'pie', 'les statuts de mutation')} />
+        <ChartCard title="Type mutation" data={byType} type="bar-h" colorIndex={6} labelWidth={100}
+          insight={generateInsight(byType, 'bar-h', 'les types de mutation')} />
+        <ChartCard title="Type demandeur" icon={Users} data={byRequesterType} type="donut" colorIndex={1}
+          insight={generateInsight(byRequesterType, 'donut', 'les demandeurs')} />
+        <ChartCard title="Paiement" icon={DollarSign} data={byPaymentStatus} type="donut" colorIndex={2}
+          insight={generateInsight(byPaymentStatus, 'donut', 'les paiements')} />
         <StackedBarCard title="Type × Statut" data={typeStatusCross} bars={[
           { dataKey: 'approved', name: 'Approuvées', color: CHART_COLORS[2] },
           { dataKey: 'pending', name: 'En attente', color: CHART_COLORS[3] },
           { dataKey: 'rejected', name: 'Rejetées', color: CHART_COLORS[4] },
-        ]} layout="vertical" labelWidth={90} hidden={typeStatusCross.length === 0} />
-        <ChartCard title="Revenus/mois" icon={TrendingUp} data={revenueTrend} type="area" colorIndex={2} hidden={revenueTrend.length < 2} />
+        ]} layout="vertical" labelWidth={90} hidden={typeStatusCross.length === 0}
+          insight={generateStackedInsight(typeStatusCross, [
+            { dataKey: 'approved', name: 'Approuvées' },
+            { dataKey: 'pending', name: 'En attente' },
+            { dataKey: 'rejected', name: 'Rejetées' },
+          ], 'croisement type/statut')} />
+        <ChartCard title="Revenus/mois" icon={TrendingUp} data={revenueTrend} type="area" colorIndex={2} hidden={revenueTrend.length < 2}
+          insight={generateInsight(revenueTrend, 'area', 'les revenus de mutation')} />
         <GeoCharts records={filtered} />
-        <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={6} colSpan={2} />
+        <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={6} colSpan={2}
+          insight={generateInsight(trend, 'area', 'les demandes de mutation')} />
       </div>
     </div>
   );

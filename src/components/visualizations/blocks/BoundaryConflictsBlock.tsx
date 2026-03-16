@@ -3,10 +3,11 @@ import { AnalyticsFilters } from '../filters/AnalyticsFilters';
 import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, avgProcessingDays } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { MapPin, TrendingUp, CheckCircle, Clock } from 'lucide-react';
+import { MapPin, TrendingUp, CheckCircle } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard } from '../shared/ChartCard';
 import { exportRecordsToCSV } from '@/utils/csvExport';
+import { generateInsight } from '@/utils/chartInsights';
 
 interface Props { data: LandAnalyticsData; }
 
@@ -33,7 +34,7 @@ export const BoundaryConflictsBlock: React.FC<Props> = memo(({ data }) => {
 
   return (
     <div className="space-y-2">
-      <AnalyticsFilters data={data.boundaryConflicts} filter={filter} onChange={setFilter} onExport={handleExport} hidePaymentStatus />
+      <AnalyticsFilters data={data.boundaryConflicts} filter={filter} onChange={setFilter} onExport={handleExport} hidePaymentStatus hideStatus />
       <KpiGrid items={[
         { label: 'Total', value: filtered.length, cls: 'text-primary' },
         { label: 'Résolus', value: stats.resolved, cls: 'text-emerald-600', tooltip: pct(stats.resolved, filtered.length) },
@@ -42,9 +43,12 @@ export const BoundaryConflictsBlock: React.FC<Props> = memo(({ data }) => {
         { label: 'Délai moy.', value: stats.avgDays > 0 ? `${stats.avgDays}j` : 'N/A', cls: 'text-violet-600', tooltip: 'Délai moyen de résolution' },
       ]} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        <ChartCard title="Type conflit" icon={MapPin} data={byType} type="bar-h" colorIndex={4} labelWidth={110} />
-        <ChartCard title="Statut" icon={CheckCircle} data={byStatus} type="pie" colorIndex={2} />
-        <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={4} colSpan={2} />
+        <ChartCard title="Type conflit" icon={MapPin} data={byType} type="bar-h" colorIndex={4} labelWidth={110}
+          insight={generateInsight(byType, 'bar-h', 'les types de conflit de limites')} />
+        <ChartCard title="Statut" icon={CheckCircle} data={byStatus} type="pie" colorIndex={2}
+          insight={generateInsight(byStatus, 'pie', 'les statuts de conflit')} />
+        <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={4} colSpan={2}
+          insight={generateInsight(trend, 'area', 'les conflits de limites')} />
       </div>
     </div>
   );

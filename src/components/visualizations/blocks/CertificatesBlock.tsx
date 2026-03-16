@@ -7,6 +7,7 @@ import { Award, TrendingUp, CheckCircle } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard } from '../shared/ChartCard';
 import { exportRecordsToCSV } from '@/utils/csvExport';
+import { generateInsight } from '@/utils/chartInsights';
 
 interface Props { data: LandAnalyticsData; }
 
@@ -32,16 +33,19 @@ export const CertificatesBlock: React.FC<Props> = memo(({ data }) => {
 
   return (
     <div className="space-y-2">
-      <AnalyticsFilters data={data.certificates} filter={filter} onChange={setFilter} onExport={handleExport} hidePaymentStatus dateField="generated_at" />
+      <AnalyticsFilters data={data.certificates} filter={filter} onChange={setFilter} onExport={handleExport} hidePaymentStatus hideStatus dateField="generated_at" />
       <KpiGrid items={[
         { label: 'Total', value: filtered.length, cls: 'text-primary' },
         { label: 'Générés', value: stats.generated, cls: 'text-emerald-600', tooltip: pct(stats.generated, filtered.length) },
         { label: 'En attente', value: stats.pending, cls: 'text-amber-600', tooltip: pct(stats.pending, filtered.length) },
       ]} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        <ChartCard title="Type certificat" icon={Award} data={byType} type="bar-h" colorIndex={0} labelWidth={120} />
-        <ChartCard title="Statut" icon={CheckCircle} data={byStatus} type="pie" colorIndex={2} />
-        <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={0} colSpan={2} />
+        <ChartCard title="Type certificat" icon={Award} data={byType} type="bar-h" colorIndex={0} labelWidth={120}
+          insight={generateInsight(byType, 'bar-h', 'les types de certificat')} />
+        <ChartCard title="Statut" icon={CheckCircle} data={byStatus} type="pie" colorIndex={2}
+          insight={generateInsight(byStatus, 'pie', 'les statuts de certificat')} />
+        <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={0} colSpan={2}
+          insight={generateInsight(trend, 'area', 'la génération de certificats')} />
       </div>
     </div>
   );
