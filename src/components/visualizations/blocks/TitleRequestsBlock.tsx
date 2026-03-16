@@ -89,12 +89,6 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
     return result;
   }, [stats]);
 
-  const handleExport = useCallback(() => {
-    exportRecordsToCSV(filtered, `titres-fonciers-${new Date().toISOString().slice(0,10)}`, [
-      'id', 'reference_number', 'request_type', 'requester_type', 'section_type', 'province', 'ville', 'commune',
-      'status', 'payment_status', 'total_amount_usd', 'created_at'
-    ]);
-  }, [filtered]);
 
   const processingInsight = useMemo(() => {
     if (processingComparison.length < 2) return '';
