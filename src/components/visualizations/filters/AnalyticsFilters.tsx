@@ -19,7 +19,7 @@ interface Props {
 const MONTHS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
 
 export const AnalyticsFilters: React.FC<Props> = ({
-  data, filter, onChange, dateField = 'created_at', onExport,
+  data, filter, onChange, dateField = 'created_at',
   statusField, paymentStatusField, hideStatus = false, hidePaymentStatus = false,
 }) => {
   const years = useMemo(() => getAvailableYears(data, dateField), [data, dateField]);
