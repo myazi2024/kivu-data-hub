@@ -31,7 +31,7 @@ const Articles = () => {
         <meta name="twitter:description" content={pageDescription} />
       </Helmet>
 
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-dvh flex flex-col">
         <Navigation />
         
         <main className="flex-1">

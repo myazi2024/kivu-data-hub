@@ -34,7 +34,7 @@ const Publications = () => {
   }, [publications, searchTerm, categoryFilter]);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-dvh">
       <Navigation />
       <main className="pt-16 pb-8">
         <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6">

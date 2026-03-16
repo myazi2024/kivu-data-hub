@@ -848,7 +848,7 @@ const CadastralMap = () => {
   }, [filteredParcels]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-dvh flex flex-col bg-background">
       <Navigation />
       
       <main className="flex-1 relative" style={{ height: 'calc(100vh - 4rem)' }}>

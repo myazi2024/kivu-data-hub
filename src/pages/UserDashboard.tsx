@@ -23,7 +23,7 @@ const UserDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-dvh flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
       </div>
     );
@@ -34,7 +34,7 @@ const UserDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-muted/30">
+    <div className="min-h-dvh flex flex-col bg-muted/30">
       <Navigation />
       
       <main className="flex-grow px-3 py-4">

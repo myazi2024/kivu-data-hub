@@ -84,14 +84,14 @@ const ResetPassword = () => {
 
   if (checking) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/5 to-primary/10 flex items-center justify-center">
+      <div className="min-h-dvh bg-gradient-to-br from-primary/5 to-primary/10 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 to-primary/10 flex items-center justify-center p-4">
+    <div className="min-h-dvh bg-gradient-to-br from-primary/5 to-primary/10 flex items-center justify-center p-4">
       <Button
         variant="ghost"
         size="sm"

@@ -145,7 +145,7 @@ const ArticleDetail = () => {
         style={{ width: `${readProgress}%` }}
       />
 
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-dvh flex flex-col">
         <Navigation />
         
         <main className="flex-1">
