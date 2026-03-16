@@ -66,7 +66,7 @@ const InsightText: React.FC<{ text?: string }> = ({ text }) => {
 };
 
 const ChartFilterSubtitle: React.FC<{ filterLabel: string }> = ({ filterLabel }) => (
-  <p className="text-[8px] italic text-muted-foreground mt-0.5 break-words">({filterLabel})</p>
+  <p className="block text-[9px] italic leading-tight text-muted-foreground mt-0.5 break-words">({filterLabel})</p>
 );
 
 const useCopyAsImage = () => {
