@@ -32,11 +32,6 @@ export const FraudAttemptsBlock: React.FC<Props> = memo(({ data }) => {
     return { critical, medium, low, withContribution };
   }, [filtered]);
 
-  const handleExport = useCallback(() => {
-    exportRecordsToCSV(filtered, `fraudes-${new Date().toISOString().slice(0,10)}`, [
-      'id', 'fraud_type', 'severity', 'description', 'contribution_id', 'user_id', 'created_at'
-    ]);
-  }, [filtered]);
 
   const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
   const v = isChartVisible;
