@@ -31,11 +31,6 @@ export const BoundaryConflictsBlock: React.FC<Props> = memo(({ data }) => {
     return { resolved, pending, avgDays };
   }, [filtered]);
 
-  const handleExport = useCallback(() => {
-    exportRecordsToCSV(filtered, `conflits-limites-${new Date().toISOString().slice(0,10)}`, [
-      'id', 'conflict_type', 'status', 'reporting_parcel_number', 'conflicting_parcel_number', 'created_at', 'resolved_at'
-    ]);
-  }, [filtered]);
 
   const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
   const v = isChartVisible;
