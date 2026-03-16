@@ -135,12 +135,6 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
 
   const trend = useMemo(() => trendByMonth(filteredParcels), [filteredParcels]);
 
-  const handleExport = useCallback(() => {
-    exportRecordsToCSV(filteredParcels, `parcelles-titrees-${new Date().toISOString().slice(0,10)}`, [
-      'id', 'parcel_number', 'parcel_type', 'property_title_type', 'province', 'ville', 'commune',
-      'current_owner_name', 'area_sqm', 'declared_usage', 'created_at'
-    ]);
-  }, [filteredParcels]);
 
   return (
     <div className="space-y-2">
