@@ -368,12 +368,14 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
     charts: [
       { tab_key: 'certificates', item_key: 'cert-type', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Type certificat', chart_type: 'bar-h' },
       { tab_key: 'certificates', item_key: 'status', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Statut', chart_type: 'pie' },
-      { tab_key: 'certificates', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
+      { tab_key: 'certificates', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Géographie' },
+      { tab_key: 'certificates', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
     ],
     kpis: [
       { tab_key: 'certificates', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Total' },
       { tab_key: 'certificates', item_key: 'kpi-generated', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Générés' },
       { tab_key: 'certificates', item_key: 'kpi-pending', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'En attente' },
+      { tab_key: 'certificates', item_key: 'kpi-types', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Types distincts' },
     ],
   },
   'invoices': {
