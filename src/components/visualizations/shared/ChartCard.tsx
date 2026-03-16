@@ -76,7 +76,7 @@ const useCopyAsImage = () => {
   const copy = useCallback(async () => {
     if (!ref.current) return;
     try {
-      const dataUrl = await toPng(ref.current, { backgroundColor: 'white', pixelRatio: 2 });
+      const dataUrl = await toPng(ref.current, { backgroundColor: 'white', pixelRatio: 2, style: { borderRadius: '12px', overflow: 'hidden' } });
       const res = await fetch(dataUrl);
       const blob = await res.blob();
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
