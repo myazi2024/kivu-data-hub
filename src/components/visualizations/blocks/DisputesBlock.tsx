@@ -86,6 +86,7 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
   ].filter(k => v(k.key)), [filtered, enCours, resolus, avgDuration, v, getChartConfig]);
 
   return (
+    <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
       <AnalyticsFilters data={data.disputes} filter={filter} onChange={setFilter}
         statusField="current_status" hidePaymentStatus
