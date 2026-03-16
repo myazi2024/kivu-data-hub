@@ -20,6 +20,23 @@ export const SubdivisionBlock: React.FC<Props> = memo(({ data }) => {
   const byPaymentStatus = useMemo(() => countBy(filtered, 'submission_payment_status'), [filtered]);
   const trend = useMemo(() => trendByMonth(filtered), [filtered]);
 
+  // Revenue trend by month
+  const revenueTrend = useMemo(() => {
+    const map = new Map<string, number>();
+    filtered.forEach(r => {
+      if (r.created_at && r.total_amount_usd > 0) {
+        const d = new Date(r.created_at);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        map.set(key, (map.get(key) || 0) + r.total_amount_usd);
+      }
+    });
+    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([k, value]) => {
+      const [y, m] = k.split('-');
+      const name = new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('fr-FR', { year: '2-digit', month: 'short' });
+      return { name, value: Math.round(value) };
+    });
+  }, [filtered]);
+
   // Distribution of number_of_lots
   const lotsDistribution = useMemo(() => {
     const buckets = [
@@ -98,6 +115,7 @@ export const SubdivisionBlock: React.FC<Props> = memo(({ data }) => {
         <ChartCard title="Type demandeur" icon={Users} data={byRequesterType} type="donut" colorIndex={1} hidden={byRequesterType.length === 0} />
         <ChartCard title="Paiement" icon={DollarSign} data={byPaymentStatus} type="donut" colorIndex={2} hidden={byPaymentStatus.length === 0} />
         <ChartCard title="Surface parcelle mère" icon={Ruler} data={surfaceDist} type="bar-v" colorIndex={5} hidden={surfaceDist.length === 0} />
+        <ChartCard title="Revenus/mois" icon={DollarSign} data={revenueTrend} type="area" colorIndex={2} hidden={revenueTrend.length < 2} />
         <GeoCharts records={filtered} />
         <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={7} colSpan={2} />
       </div>

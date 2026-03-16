@@ -36,8 +36,10 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     byDecade: yearDecadeDistribution(filteredParcels, 'construction_year'),
   }), [filteredParcels]);
 
+  // Gender from contributions (current_owners_details) AND from parcels (current_owner_legal_status based proxy not available — use contributions)
   const genderData = useMemo(() => {
     const map = new Map<string, number>();
+    // Primary source: contributions with owner details
     filteredContribs.forEach(c => {
       if (c.current_owners_details && Array.isArray(c.current_owners_details)) {
         c.current_owners_details.forEach((o: any) => { if (o?.gender) map.set(o.gender, (map.get(o.gender) || 0) + 1); });

@@ -82,6 +82,14 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
     return { urbanCount, ruralCount, paidRevenue, totalRevenue, approved, avgDays, avgEstimated };
   }, [filtered]);
 
+  // Estimated vs actual processing comparison
+  const processingComparison = useMemo(() => {
+    const result: { name: string; value: number }[] = [];
+    if (stats.avgEstimated > 0) result.push({ name: 'Estimé (j)', value: stats.avgEstimated });
+    if (stats.avgDays > 0) result.push({ name: 'Réel (j)', value: stats.avgDays });
+    return result;
+  }, [stats]);
+
   const handleExport = useCallback(() => {
     exportRecordsToCSV(filtered, `titres-fonciers-${new Date().toISOString().slice(0,10)}`, [
       'id', 'reference_number', 'request_type', 'requester_type', 'section_type', 'province', 'ville', 'commune',
@@ -114,8 +122,9 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
         <ChartCard title="Superficie demandée" icon={Ruler} data={surfaceDist} type="bar-v" colorIndex={10} hidden={surfaceDist.length === 0} />
         <ChartCard title="Circonscription" data={byCirconscription} type="bar-h" colorIndex={8} labelWidth={100} hidden={byCirconscription.length === 0} />
         <ChartCard title="Type construction" icon={Building} data={byConstructionType} type="bar-h" colorIndex={3} hidden={byConstructionType.length === 0} />
-        <ChartCard title="Nature construction" data={byConstructionNature} type="donut" colorIndex={7} hidden={byConstructionNature.length === 0} />
+      <ChartCard title="Nature construction" data={byConstructionNature} type="bar-h" colorIndex={7} labelWidth={100} />
         <ChartCard title="Revenus/mois" icon={DollarSign} data={revenueTrend} type="area" colorIndex={2} hidden={revenueTrend.length < 2} />
+        <ChartCard title="Délai estimé vs réel" icon={Clock} data={processingComparison} type="bar-v" colorIndex={5} hidden={processingComparison.length === 0} />
         <GeoCharts records={filtered} />
         <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={0} colSpan={2} />
       </div>
