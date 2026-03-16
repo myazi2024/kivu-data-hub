@@ -68,11 +68,6 @@ export const MutationBlock: React.FC<Props> = memo(({ data }) => {
     return { approved, pending, rejected, avgDays, totalRevenue, paidRevenue };
   }, [filtered]);
 
-  const handleExport = useCallback(() => {
-    exportRecordsToCSV(filtered, `mutations-${new Date().toISOString().slice(0,10)}`, [
-      'id', 'parcel_number', 'mutation_type', 'requester_type', 'status', 'payment_status', 'total_amount_usd', 'province', 'ville', 'commune', 'created_at'
-    ]);
-  }, [filtered]);
 
   const t = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
   const v = isChartVisible;
