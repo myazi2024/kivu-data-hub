@@ -50,11 +50,6 @@ export const InvoicesBlock: React.FC<Props> = memo(({ data }) => {
     return { paidRevenue, totalRevenue, totalDiscount, avgAmount, paidCount: paid.length };
   }, [filtered]);
 
-  const handleExport = useCallback(() => {
-    exportRecordsToCSV(filtered, `factures-${new Date().toISOString().slice(0,10)}`, [
-      'id', 'invoice_number', 'parcel_number', 'client_email', 'total_amount_usd', 'status', 'payment_method', 'geographical_zone', 'created_at'
-    ]);
-  }, [filtered]);
 
   const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
   const v = isChartVisible;
