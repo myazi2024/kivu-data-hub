@@ -370,13 +370,13 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
         style={{ maxWidth: '100%', maxHeight: '100%', overflow: 'hidden' }}
       >
         <div 
-          className="w-full h-full"
           style={{ 
-            maxWidth: '100%', 
-            maxHeight: '100%',
+            width: '100%',
+            height: '100%',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            overflow: 'hidden'
           }}
           dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(svgContent, { USE_PROFILES: { svg: true, svgFilters: true }, ADD_TAGS: ['use'], ADD_ATTR: ['preserveAspectRatio', 'viewBox', 'data-province', 'data-name'] }) }}
         />
