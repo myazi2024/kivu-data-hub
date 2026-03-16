@@ -112,6 +112,76 @@ export const AnalyticsFilters: React.FC<Props> = ({
   // Week options (weeks within month, 1-5)
   const weekOptions = [1, 2, 3, 4, 5];
 
+  const showUrbanSub = (filter.sectionType === 'urbaine' || (filter.sectionType === 'all' && !hasRuralData)) && villes.length > 0;
+  const showRuralSub = (filter.sectionType === 'rurale' || (filter.sectionType === 'all' && !hasUrbanData)) && territoires.length > 0;
+
+  const selectCls = "h-6 text-[10px] w-auto min-w-[70px]";
+  const sep = <span className="text-[10px] text-muted-foreground">›</span>;
+
+  return (
+    <div className="space-y-1 bg-background/95 backdrop-blur-sm rounded-md p-1.5 border border-border/30 shadow-sm sticky top-0 z-10">
+      {/* Row 1: Temps cascading — Année › Semestre › Trimestre › Mois › Semaine */}
+      <div className="flex items-center gap-1 flex-wrap">
+        <Badge variant="outline" className="gap-0.5 text-[10px] px-1.5 py-0"><Calendar className="h-2.5 w-2.5" /> Temps</Badge>
+
+        {/* Année — always visible */}
+        <Select value={String(filter.year)} onValueChange={v => onChange({ ...filter, year: Number(v), semester: undefined, quarter: undefined, month: undefined, week: undefined })}>
+          <SelectTrigger className={selectCls}><SelectValue placeholder="Année" /></SelectTrigger>
+          <SelectContent>{years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
+        </Select>
+
+        {/* Semestre — always available after year */}
+        {sep}
+        <Select value={filter.semester ? String(filter.semester) : '__all__'} onValueChange={v => onChange({ ...filter, semester: v === '__all__' ? undefined : Number(v), quarter: undefined, month: undefined, week: undefined })}>
+          <SelectTrigger className={selectCls}><SelectValue placeholder="Sem." /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">Tous sem.</SelectItem>
+            {semesterOptions.map(s => <SelectItem key={s} value={String(s)}>S{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
+
+        {/* Trimestre — shown when semester selected */}
+        {filter.semester && (
+          <>
+            {sep}
+            <Select value={filter.quarter ? String(filter.quarter) : '__all__'} onValueChange={v => onChange({ ...filter, quarter: v === '__all__' ? undefined : Number(v), month: undefined, week: undefined })}>
+              <SelectTrigger className={selectCls}><SelectValue placeholder="Trim." /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">Tous trim.</SelectItem>
+                {quarterOptions.map(q => <SelectItem key={q} value={String(q)}>T{q}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </>
+        )}
+
+        {/* Mois — shown when quarter selected */}
+        {filter.quarter && (
+          <>
+            {sep}
+            <Select value={filter.month ? String(filter.month) : '__all__'} onValueChange={v => onChange({ ...filter, month: v === '__all__' ? undefined : Number(v), week: undefined })}>
+              <SelectTrigger className={selectCls}><SelectValue placeholder="Mois" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">Tous mois</SelectItem>
+                {monthOptions.map(m => <SelectItem key={m} value={String(m)}>{MONTHS[m - 1]}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </>
+        )}
+
+        {/* Semaine — shown when month selected */}
+        {filter.month && (
+          <>
+            {sep}
+            <Select value={filter.week ? String(filter.week) : '__all__'} onValueChange={v => onChange({ ...filter, week: v === '__all__' ? undefined : Number(v) })}>
+              <SelectTrigger className={selectCls}><SelectValue placeholder="Sem." /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">Toutes sem.</SelectItem>
+                {weekOptions.map(w => <SelectItem key={w} value={String(w)}>Sem. {w}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </>
+        )}
+
         {/* Status & payment inline */}
         {!hideStatus && statusOptions.length > 0 && (
           <>
@@ -163,7 +233,7 @@ export const AnalyticsFilters: React.FC<Props> = ({
         {/* Section — show when province selected and both sections have data */}
         {filter.province && (hasUrbanData || hasRuralData) && (
           <>
-            <span className="text-[10px] text-muted-foreground">›</span>
+            {sep}
             <Select value={filter.sectionType} onValueChange={v => onChange({
               ...filter,
               sectionType: v as any,
@@ -183,14 +253,14 @@ export const AnalyticsFilters: React.FC<Props> = ({
         {/* Urban cascade */}
         {showUrbanSub && (
           <>
-            <span className="text-[10px] text-muted-foreground">›</span>
+            {sep}
             <Select value={filter.ville || '__all__'} onValueChange={v => onChange({ ...filter, ville: v === '__all__' ? undefined : v, commune: undefined, quartier: undefined, avenue: undefined })}>
               <SelectTrigger className={selectCls}><SelectValue placeholder="Ville" /></SelectTrigger>
               <SelectContent><SelectItem value="__all__">Toutes villes</SelectItem>{villes.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
             </Select>
             {filter.ville && communes.length > 0 && (
               <>
-                <span className="text-[10px] text-muted-foreground">›</span>
+                {sep}
                 <Select value={filter.commune || '__all__'} onValueChange={v => onChange({ ...filter, commune: v === '__all__' ? undefined : v, quartier: undefined, avenue: undefined })}>
                   <SelectTrigger className={selectCls}><SelectValue placeholder="Commune" /></SelectTrigger>
                   <SelectContent><SelectItem value="__all__">Toutes</SelectItem>{communes.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
@@ -199,7 +269,7 @@ export const AnalyticsFilters: React.FC<Props> = ({
             )}
             {filter.commune && quartiers.length > 0 && (
               <>
-                <span className="text-[10px] text-muted-foreground">›</span>
+                {sep}
                 <Select value={filter.quartier || '__all__'} onValueChange={v => onChange({ ...filter, quartier: v === '__all__' ? undefined : v, avenue: undefined })}>
                   <SelectTrigger className={selectCls}><SelectValue placeholder="Quartier" /></SelectTrigger>
                   <SelectContent><SelectItem value="__all__">Tous</SelectItem>{quartiers.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
@@ -208,7 +278,7 @@ export const AnalyticsFilters: React.FC<Props> = ({
             )}
             {filter.quartier && avenues.length > 0 && (
               <>
-                <span className="text-[10px] text-muted-foreground">›</span>
+                {sep}
                 <Select value={filter.avenue || '__all__'} onValueChange={v => onChange({ ...filter, avenue: v === '__all__' ? undefined : v })}>
                   <SelectTrigger className={selectCls}><SelectValue placeholder="Avenue" /></SelectTrigger>
                   <SelectContent><SelectItem value="__all__">Toutes</SelectItem>{avenues.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
@@ -221,14 +291,14 @@ export const AnalyticsFilters: React.FC<Props> = ({
         {/* Rural cascade */}
         {showRuralSub && (
           <>
-            <span className="text-[10px] text-muted-foreground">›</span>
+            {sep}
             <Select value={filter.territoire || '__all__'} onValueChange={v => onChange({ ...filter, territoire: v === '__all__' ? undefined : v, collectivite: undefined, groupement: undefined, villageFilter: undefined })}>
               <SelectTrigger className={selectCls}><SelectValue placeholder="Territoire" /></SelectTrigger>
               <SelectContent><SelectItem value="__all__">Tous territoires</SelectItem>{territoires.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
             </Select>
             {filter.territoire && collectivites.length > 0 && (
               <>
-                <span className="text-[10px] text-muted-foreground">›</span>
+                {sep}
                 <Select value={filter.collectivite || '__all__'} onValueChange={v => onChange({ ...filter, collectivite: v === '__all__' ? undefined : v, groupement: undefined, villageFilter: undefined })}>
                   <SelectTrigger className={selectCls}><SelectValue placeholder="Collectivité" /></SelectTrigger>
                   <SelectContent><SelectItem value="__all__">Toutes</SelectItem>{collectivites.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
@@ -237,7 +307,7 @@ export const AnalyticsFilters: React.FC<Props> = ({
             )}
             {filter.collectivite && groupements.length > 0 && (
               <>
-                <span className="text-[10px] text-muted-foreground">›</span>
+                {sep}
                 <Select value={filter.groupement || '__all__'} onValueChange={v => onChange({ ...filter, groupement: v === '__all__' ? undefined : v, villageFilter: undefined })}>
                   <SelectTrigger className={selectCls}><SelectValue placeholder="Groupement" /></SelectTrigger>
                   <SelectContent><SelectItem value="__all__">Tous</SelectItem>{groupements.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
@@ -246,7 +316,7 @@ export const AnalyticsFilters: React.FC<Props> = ({
             )}
             {filter.groupement && villages.length > 0 && (
               <>
-                <span className="text-[10px] text-muted-foreground">›</span>
+                {sep}
                 <Select value={filter.villageFilter || '__all__'} onValueChange={v => onChange({ ...filter, villageFilter: v === '__all__' ? undefined : v })}>
                   <SelectTrigger className={selectCls}><SelectValue placeholder="Village" /></SelectTrigger>
                   <SelectContent><SelectItem value="__all__">Tous</SelectItem>{villages.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
