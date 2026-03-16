@@ -851,7 +851,7 @@ const DRCInteractiveMap = () => {
             </div>
 
             {/* Données province */}
-            <div className={`${activeMobilePanel === 'map' ? 'hidden lg:block' : activeMobilePanel === 'details' ? 'flex-1' : 'hidden lg:block'} lg:flex-[2] min-h-0 overflow-hidden`}>
+            <div className={`${activeMobilePanel === 'analytics' ? 'hidden lg:block' : selectedProvince ? 'w-1/2' : 'hidden lg:block'} lg:w-auto lg:flex-[2] min-h-0 overflow-hidden transition-all duration-300`}>
               <Card className="h-full flex flex-col border-border/30 overflow-hidden">
                 <ScrollArea className="flex-1">
                   {selectedProvince ? (
