@@ -107,20 +107,20 @@ const CopyButton: React.FC<{ onClick: () => void; copied: boolean }> = ({ onClic
     className="ml-auto p-0.5 rounded hover:bg-muted/80 transition-colors text-muted-foreground hover:text-foreground"
     title="Copier en image"
   >
-    {copied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
+    {copied ? <Check className="h-3 w-3 text-primary" /> : <Copy className="h-3 w-3" />}
   </button>
 );
 
 export const ChartCard: React.FC<ChartCardProps> = memo(({
   title, icon: Icon, iconColor, colSpan, data, type, color, colorIndex = 0, labelWidth = 90, maxItems = 10, hidden = false, insight
 }) => {
-  if (hidden) return null;
   const { ref, copied, copy } = useCopyAsImage();
+  const filterLabel = useContext(FilterLabelContext);
+  if (hidden) return null;
+
   const fill = color || CHART_COLORS[colorIndex % CHART_COLORS.length];
   const displayData = type === 'area' ? data : data.slice(0, maxItems);
   const truncated = type !== 'area' && data.length > maxItems;
-
-  const filterLabel = useContext(FilterLabelContext);
   const fullTitle = filterLabel ? `${title} — ${filterLabel}` : title;
 
   return (
@@ -197,11 +197,13 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
 export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
   title, icon: Icon, iconColor, colSpan, data, bars, layout = 'horizontal', labelWidth = 90, maxItems = 8, hidden = false, insight,
 }) => {
-  if (hidden) return null;
   const { ref, copied, copy } = useCopyAsImage();
-  const displayData = data.slice(0, maxItems);
   const filterLabel = useContext(FilterLabelContext);
+  if (hidden) return null;
+
+  const displayData = data.slice(0, maxItems);
   const fullTitle = filterLabel ? `${title} — ${filterLabel}` : title;
+
   return (
     <Card ref={ref} className={`border-border/30 ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
       <CardHeader className="pb-1 px-2 pt-2">
