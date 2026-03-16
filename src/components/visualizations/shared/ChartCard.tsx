@@ -66,7 +66,7 @@ const InsightText: React.FC<{ text?: string }> = ({ text }) => {
 };
 
 const ChartFilterSubtitle: React.FC<{ filterLabel: string }> = ({ filterLabel }) => (
-  <p className="text-[8px] italic text-muted-foreground mt-0.5 break-words">({filterLabel})</p>
+  <p className="block text-[9px] italic leading-tight text-muted-foreground mt-0.5 break-words">({filterLabel})</p>
 );
 
 const useCopyAsImage = () => {
@@ -121,21 +121,18 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
   const fill = color || CHART_COLORS[colorIndex % CHART_COLORS.length];
   const displayData = type === 'area' ? data : data.slice(0, maxItems);
   const truncated = type !== 'area' && data.length > maxItems;
-  const fullTitle = filterLabel ? `${title} — ${filterLabel}` : title;
 
   return (
     <Card ref={ref} className={`border-border/30 ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
       <CardHeader className="pb-1 px-2 pt-2">
-        <div className="space-y-0.5">
-          <div className="flex items-start gap-1">
-            {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'} shrink-0 mt-0.5`} />}
-            <div className="min-w-0 flex-1">
-              <CardTitle className="text-xs font-semibold leading-tight break-words">{fullTitle}</CardTitle>
-              {filterLabel && <ChartFilterSubtitle filterLabel={filterLabel} />}
-            </div>
-            {truncated && <span className="text-[8px] text-muted-foreground shrink-0 mt-0.5">Top {maxItems}/{data.length}</span>}
-            <CopyButton onClick={copy} copied={copied} />
+        <div className="flex items-start gap-1">
+          {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'} shrink-0 mt-0.5`} />}
+          <div className="min-w-0 flex-1">
+            <CardTitle className="text-xs font-semibold leading-tight break-words">{title}</CardTitle>
+            {filterLabel && <ChartFilterSubtitle filterLabel={filterLabel} />}
           </div>
+          {truncated && <span className="text-[8px] text-muted-foreground shrink-0 mt-0.5">Top {maxItems}/{data.length}</span>}
+          <CopyButton onClick={copy} copied={copied} />
         </div>
       </CardHeader>
       <CardContent className="px-2 pb-2">
@@ -202,20 +199,17 @@ export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
   if (hidden) return null;
 
   const displayData = data.slice(0, maxItems);
-  const fullTitle = filterLabel ? `${title} — ${filterLabel}` : title;
 
   return (
     <Card ref={ref} className={`border-border/30 ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
       <CardHeader className="pb-1 px-2 pt-2">
-        <div className="space-y-0.5">
-          <div className="flex items-start gap-1">
-            {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'} shrink-0 mt-0.5`} />}
-            <div className="min-w-0 flex-1">
-              <CardTitle className="text-xs font-semibold leading-tight break-words">{fullTitle}</CardTitle>
-              {filterLabel && <ChartFilterSubtitle filterLabel={filterLabel} />}
-            </div>
-            <CopyButton onClick={copy} copied={copied} />
+        <div className="flex items-start gap-1">
+          {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'} shrink-0 mt-0.5`} />}
+          <div className="min-w-0 flex-1">
+            <CardTitle className="text-xs font-semibold leading-tight break-words">{title}</CardTitle>
+            {filterLabel && <ChartFilterSubtitle filterLabel={filterLabel} />}
           </div>
+          <CopyButton onClick={copy} copied={copied} />
         </div>
       </CardHeader>
       <CardContent className="px-2 pb-2">
@@ -253,19 +247,17 @@ export const ColorMappedPieCard: React.FC<MultiDataPieProps> = memo(({
 }) => {
   const { ref, copied, copy } = useCopyAsImage();
   const filterLabel = useContext(FilterLabelContext);
-  const fullTitle = filterLabel ? `${title} — ${filterLabel}` : title;
+  
   return (
     <Card ref={ref} className="border-border/30">
       <CardHeader className="pb-1 px-2 pt-2">
-        <div className="space-y-0.5">
-          <div className="flex items-start gap-1">
-            {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'} shrink-0 mt-0.5`} />}
-            <div className="min-w-0 flex-1">
-              <CardTitle className="text-xs font-semibold leading-tight break-words">{fullTitle}</CardTitle>
-              {filterLabel && <ChartFilterSubtitle filterLabel={filterLabel} />}
-            </div>
-            <CopyButton onClick={copy} copied={copied} />
+        <div className="flex items-start gap-1">
+          {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'} shrink-0 mt-0.5`} />}
+          <div className="min-w-0 flex-1">
+            <CardTitle className="text-xs font-semibold leading-tight break-words">{title}</CardTitle>
+            {filterLabel && <ChartFilterSubtitle filterLabel={filterLabel} />}
           </div>
+          <CopyButton onClick={copy} copied={copied} />
         </div>
       </CardHeader>
       <CardContent className="px-2 pb-2">
