@@ -79,71 +79,38 @@ export const AnalyticsFilters: React.FC<Props> = ({
   const detectedPaymentField = paymentStatusField || (data.length > 0 && data[0]?.submission_payment_status !== undefined ? 'submission_payment_status' : 'payment_status');
   const paymentStatusOptions = useMemo(() => hidePaymentStatus ? [] : extractUnique(data, detectedPaymentField), [data, detectedPaymentField, hidePaymentStatus]);
 
-  const hasActiveFilters = (filter.periodType !== defaultFilter.periodType) || (filter.year !== defaultFilter.year) ||
-    filter.subPeriod || filter.sectionType !== 'all' ||
+  const hasActiveFilters = (filter.year !== defaultFilter.year) ||
+    filter.semester || filter.quarter || filter.month || filter.week ||
+    filter.sectionType !== 'all' ||
     filter.province || filter.ville || filter.commune || filter.quartier || filter.avenue ||
     filter.territoire || filter.collectivite || filter.groupement || filter.villageFilter ||
     filter.status || filter.paymentStatus;
 
   const reset = useCallback(() => onChange({ ...defaultFilter }), [onChange]);
 
-  const showUrbanSub = (filter.sectionType === 'urbaine' || (filter.sectionType === 'all' && !hasRuralData)) && villes.length > 0;
-  const showRuralSub = (filter.sectionType === 'rurale' || (filter.sectionType === 'all' && !hasUrbanData)) && territoires.length > 0;
+  // Semester options based on year
+  const semesterOptions = [1, 2];
 
-  const selectCls = "h-6 text-[10px] w-auto min-w-[70px]";
+  // Quarter options scoped to semester if selected
+  const quarterOptions = useMemo(() => {
+    if (filter.semester === 1) return [1, 2];
+    if (filter.semester === 2) return [3, 4];
+    return [1, 2, 3, 4];
+  }, [filter.semester]);
 
-  return (
-    <div className="space-y-1 bg-background/95 backdrop-blur-sm rounded-md p-1.5 border border-border/30 shadow-sm sticky top-0 z-10">
-      {/* Row 1: Temps + Statuts */}
-      <div className="flex items-center gap-1 flex-wrap">
-        <Badge variant="outline" className="gap-0.5 text-[10px] px-1.5 py-0"><Calendar className="h-2.5 w-2.5" /> Temps</Badge>
+  // Month options scoped to quarter if selected, else semester
+  const monthOptions = useMemo(() => {
+    if (filter.quarter) {
+      const start = (filter.quarter - 1) * 3 + 1;
+      return [start, start + 1, start + 2];
+    }
+    if (filter.semester === 1) return [1, 2, 3, 4, 5, 6];
+    if (filter.semester === 2) return [7, 8, 9, 10, 11, 12];
+    return Array.from({ length: 12 }, (_, i) => i + 1);
+  }, [filter.semester, filter.quarter]);
 
-        <Select value={filter.periodType} onValueChange={v => onChange({ ...filter, periodType: v as any, year: v === 'all' ? undefined : (filter.year || defaultFilter.year), subPeriod: undefined })}>
-          <SelectTrigger className={selectCls}><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Toute période</SelectItem>
-            <SelectItem value="year">Année</SelectItem>
-            <SelectItem value="semester">Semestre</SelectItem>
-            <SelectItem value="quarter">Trimestre</SelectItem>
-            <SelectItem value="month">Mois</SelectItem>
-          </SelectContent>
-        </Select>
-
-        {filter.periodType !== 'all' && years.length > 0 && (
-          <Select value={String(filter.year || '')} onValueChange={v => onChange({ ...filter, year: Number(v), subPeriod: undefined })}>
-            <SelectTrigger className={selectCls}><SelectValue placeholder="Année" /></SelectTrigger>
-            <SelectContent>{years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
-          </Select>
-        )}
-
-        {filter.periodType === 'semester' && filter.year && (
-          <Select value={String(filter.subPeriod || '')} onValueChange={v => onChange({ ...filter, subPeriod: Number(v) })}>
-            <SelectTrigger className={selectCls}><SelectValue placeholder="Sem." /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1">S1</SelectItem>
-              <SelectItem value="2">S2</SelectItem>
-            </SelectContent>
-          </Select>
-        )}
-
-        {filter.periodType === 'quarter' && filter.year && (
-          <Select value={String(filter.subPeriod || '')} onValueChange={v => onChange({ ...filter, subPeriod: Number(v) })}>
-            <SelectTrigger className={selectCls}><SelectValue placeholder="Trim." /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1">T1</SelectItem>
-              <SelectItem value="2">T2</SelectItem>
-              <SelectItem value="3">T3</SelectItem>
-              <SelectItem value="4">T4</SelectItem>
-            </SelectContent>
-          </Select>
-        )}
-
-        {filter.periodType === 'month' && filter.year && (
-          <Select value={String(filter.subPeriod || '')} onValueChange={v => onChange({ ...filter, subPeriod: Number(v) })}>
-            <SelectTrigger className={selectCls}><SelectValue placeholder="Mois" /></SelectTrigger>
-            <SelectContent>{MONTHS.map((m, i) => <SelectItem key={i} value={String(i + 1)}>{m}</SelectItem>)}</SelectContent>
-          </Select>
-        )}
+  // Week options (weeks within month, 1-5)
+  const weekOptions = [1, 2, 3, 4, 5];
 
         {/* Status & payment inline */}
         {!hideStatus && statusOptions.length > 0 && (
