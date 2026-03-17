@@ -281,7 +281,10 @@ export function AdminSubdivisionRequests() {
               <SelectTrigger className="w-[180px]"><SelectValue placeholder="Statut" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="_all">Tous</SelectItem>
-                {Object.entries(statusConfig).map(([v, c]) => <SelectItem key={v} value={v}>{c.label}</SelectItem>)}
+                {Object.entries(SUBDIVISION_STATUS_MAP).map(([v]) => {
+                  const labels: Record<string, string> = { pending: 'En attente', in_review: 'En examen', approved: 'Approuvé', rejected: 'Rejeté', awaiting_payment: 'Attente paiement', completed: 'Terminé' };
+                  return <SelectItem key={v} value={v}>{labels[v] || v}</SelectItem>;
+                })}
               </SelectContent>
             </Select>
           </div>
