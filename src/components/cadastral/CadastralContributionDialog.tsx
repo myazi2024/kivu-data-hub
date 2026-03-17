@@ -1270,6 +1270,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       // Add document URLs to form data
       const dataToSubmit = {
         ...formData,
+        // For "Autre", store the custom title name as the effective property_title_type
+        propertyTitleType: getEffectiveTitleName(formData.propertyTitleType, customTitleName) || formData.propertyTitleType,
         parcelType: sectionType === 'urbaine' ? 'SU' as const : sectionType === 'rurale' ? 'SR' as const : undefined, // Type de parcelle (Section Urbaine/Rurale)
         currentOwners: currentOwners.filter(o => o.lastName && o.firstName), // Ne garder que les propriétaires avec nom et prénom
         ownershipHistory: ownershipHistoryData.length > 0 ? ownershipHistoryData as any : undefined,
