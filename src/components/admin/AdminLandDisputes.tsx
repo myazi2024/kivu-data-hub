@@ -219,9 +219,9 @@ const AdminLandDisputes: React.FC = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         {[
           { label: "Total", value: stats.total, color: "text-foreground" },
-          { label: "Signalements", value: stats.reports, color: "text-orange-600" },
-          { label: "Levées", value: stats.liftings, color: "text-blue-600" },
-          { label: "En cours", value: stats.enCours, color: "text-amber-600" },
+          { label: "Signalements", value: stats.reports, color: "text-destructive" },
+          { label: "Levées", value: stats.liftings, color: "text-primary" },
+          { label: "En cours", value: stats.enCours, color: "text-warning" },
         ].map((stat) => (
           <Card key={stat.label} className="rounded-xl">
             <CardContent className="p-3 text-center">

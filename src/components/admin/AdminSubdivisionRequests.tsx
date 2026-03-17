@@ -56,13 +56,13 @@ interface SubdivisionRequest {
   updated_at: string;
 }
 
-const statusConfig: Record<string, { label: string; color: string }> = {
-  pending: { label: 'En attente', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' },
-  in_review: { label: 'En examen', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
-  approved: { label: 'Approuvé', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
-  rejected: { label: 'Rejeté', color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' },
-  awaiting_payment: { label: 'Attente paiement', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' },
-  completed: { label: 'Terminé', color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' },
+const SUBDIVISION_STATUS_MAP: Record<string, StatusType> = {
+  pending: 'pending',
+  in_review: 'in_review',
+  approved: 'approved',
+  rejected: 'rejected',
+  awaiting_payment: 'processing',
+  completed: 'completed',
 };
 
 export function AdminSubdivisionRequests() {

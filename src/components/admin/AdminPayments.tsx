@@ -164,7 +164,7 @@ const AdminPayments: React.FC<AdminPaymentsProps> = ({ onRefresh }) => {
                 <SelectValue placeholder="Filtrer par statut" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous les statuts</SelectItem>
+                <SelectItem value="_all">Tous les statuts</SelectItem>
                 <SelectItem value="pending">En attente</SelectItem>
                 <SelectItem value="completed">Complété</SelectItem>
                 <SelectItem value="failed">Échoué</SelectItem>
