@@ -382,7 +382,7 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
       ...prev,
       [activeTab]: (prev[activeTab] || []).map(i => i.item_type === type ? { ...i, is_visible: visible } : i),
     }));
-    setHasChanges(true);
+    setHasChartChanges(true);
   }, [activeTab]);
 
   const tabStats = useMemo(() => {
