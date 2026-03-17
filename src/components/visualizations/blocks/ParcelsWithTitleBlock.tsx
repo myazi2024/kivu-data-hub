@@ -10,6 +10,7 @@ import { GeoCharts } from '../shared/GeoCharts';
 
 import { generateInsight, generateStackedInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
+import { normalizeTitleType } from '@/utils/titleTypeNormalizer';
 
 interface Props { data: LandAnalyticsData; }
 
@@ -31,8 +32,12 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
   const filteredTaxes = useMemo(() => applyFilters(data.taxHistory, filter), [data.taxHistory, filter]);
   const filteredMortgages = useMemo(() => applyFilters(data.mortgages, filter), [data.mortgages, filter]);
 
+  const normalizedParcelsForTitle = useMemo(() =>
+    filteredParcels.map(p => ({ ...p, property_title_type: normalizeTitleType(p.property_title_type) })),
+    [filteredParcels]);
+
   const charts = useMemo(() => ({
-    byTitleType: countBy(filteredParcels, 'property_title_type'),
+    byTitleType: countBy(normalizedParcelsForTitle, 'property_title_type'),
     byLegalStatus: countBy(filteredParcels, 'current_owner_legal_status'),
     byConstructionType: countBy(filteredParcels, 'construction_type'),
     byConstructionNature: countBy(filteredParcels, 'construction_nature'),

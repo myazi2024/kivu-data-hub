@@ -10,6 +10,7 @@ import { GeoCharts } from '../shared/GeoCharts';
 
 import { generateInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
+import { normalizeTitleType } from '@/utils/titleTypeNormalizer';
 
 interface Props { data: LandAnalyticsData; }
 
@@ -24,7 +25,7 @@ export const ContributionsBlock: React.FC<Props> = memo(({ data }) => {
 
   const byContributionType = useMemo(() => countBy(filtered, 'contribution_type'), [filtered]);
   const byStatus = useMemo(() => countBy(filtered, 'status'), [filtered]);
-  const byPropertyTitleType = useMemo(() => countBy(filtered, 'property_title_type'), [filtered]);
+  const byPropertyTitleType = useMemo(() => countBy(filtered.map(r => ({ ...r, property_title_type: normalizeTitleType(r.property_title_type) })), 'property_title_type'), [filtered]);
   const byLegalStatus = useMemo(() => countBy(filtered, 'current_owner_legal_status'), [filtered]);
   const byDeclaredUsage = useMemo(() => countBy(filtered, 'declared_usage'), [filtered]);
   const byConstructionType = useMemo(() => countBy(filtered, 'construction_type'), [filtered]);
