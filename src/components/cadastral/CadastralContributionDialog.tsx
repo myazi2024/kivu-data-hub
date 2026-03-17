@@ -42,6 +42,7 @@ import { useContributionConfig } from '@/hooks/useContributionConfig';
 import { ParcelMapPreview } from './ParcelMapPreview';
 import { useMapConfig } from '@/hooks/useMapConfig';
 import SuggestivePicklist from './SuggestivePicklist';
+import { useCCCFormPicklists } from '@/hooks/useCCCFormPicklists';
 
 interface CadastralContributionDialogProps {
   open: boolean;
