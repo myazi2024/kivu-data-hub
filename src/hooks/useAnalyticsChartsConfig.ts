@@ -28,11 +28,11 @@ const QUERY_KEY = ['analytics-charts-config'];
 
 async function fetchConfig(): Promise<ChartConfigItem[]> {
   const { data, error } = await supabase
-    .from('analytics_charts_config' as any)
+    .from('analytics_charts_config')
     .select('*')
     .order('display_order', { ascending: true });
   if (error) throw error;
-  return (data as any[]) || [];
+  return (data as unknown as ChartConfigItem[]) || [];
 }
 
 export function useAnalyticsChartsConfig() {
@@ -115,9 +115,21 @@ export function useAnalyticsChartsConfigMutations() {
 
   const upsertConfig = useMutation({
     mutationFn: async (items: ChartConfigItem[]) => {
-      const toUpsert = items.map(({ id, ...rest }) => rest);
+      // Strip client-only id field; keep only DB-relevant columns
+      const toUpsert = items.map(({ id, ...rest }) => ({
+        tab_key: rest.tab_key,
+        item_key: rest.item_key,
+        item_type: rest.item_type,
+        is_visible: rest.is_visible,
+        display_order: rest.display_order,
+        custom_title: rest.custom_title || null,
+        custom_color: rest.custom_color || null,
+        chart_type: rest.item_type === 'tab' ? null : (rest.chart_type || null),
+        custom_icon: rest.custom_icon || null,
+        col_span: rest.col_span ?? 1,
+      }));
       const { error } = await supabase
-        .from('analytics_charts_config' as any)
+        .from('analytics_charts_config')
         .upsert(toUpsert as any, { onConflict: 'tab_key,item_key' });
       if (error) throw error;
     },
@@ -127,7 +139,7 @@ export function useAnalyticsChartsConfigMutations() {
   const deleteConfig = useMutation({
     mutationFn: async ({ tab_key, item_key }: { tab_key: string; item_key: string }) => {
       const { error } = await supabase
-        .from('analytics_charts_config' as any)
+        .from('analytics_charts_config')
         .delete()
         .eq('tab_key', tab_key)
         .eq('item_key', item_key);
@@ -136,7 +148,18 @@ export function useAnalyticsChartsConfigMutations() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
   });
 
-  return { upsertConfig, deleteConfig };
+  const deleteTabOverrides = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('analytics_charts_config')
+        .delete()
+        .eq('item_key', '__tab__');
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
+  });
+
+  return { upsertConfig, deleteConfig, deleteTabOverrides };
 }
 
 /** Registry of all analytics tabs with their default charts and KPIs */
