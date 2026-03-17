@@ -20,6 +20,9 @@ import {
   generateBoundaryConflicts,
   generateOwnershipHistory,
   generateTaxHistory,
+  generateBoundaryHistory,
+  generateMortgages,
+  generateBuildingPermits,
   generateCertificates,
   rollbackTestData,
 } from './testDataGenerators';
