@@ -721,6 +721,6 @@ export const rollbackTestData = async (parcelNumbers: string[], suffix: string) 
   await supabase.from('real_estate_expertise_requests').delete().ilike('reference_number', `TEST-EXP-%-${suffix}`);
   await supabase.from('cadastral_land_disputes').delete().ilike('reference_number', `TEST-DISP-%-${suffix}`);
   await supabase.from('land_title_requests').delete().ilike('reference_number', `TEST-LTR-%-${suffix}`);
-  await supabase.from('cadastral_boundary_conflicts').delete().ilike('reporting_parcel_number', 'TEST-%');
+  await supabase.from('cadastral_boundary_conflicts').delete().in('reporting_parcel_number', parcelNumbers);
   await supabase.from('generated_certificates').delete().ilike('reference_number', `TEST-CERT-%-${suffix}`);
 };

@@ -68,50 +68,56 @@ export const useTestDataActions = ({
     setCurrentStep(-1);
   };
 
+  /** Helper: delete with error logging */
+  const safeDelete = async (label: string, query: PromiseLike<{ error: any }>) => {
+    const { error } = await query;
+    if (error) console.error(`Cleanup ${label}:`, error.message);
+  };
+
   const cleanupTestData = useCallback(async () => {
     try {
       setCleaningUp(true);
 
-      // FK-safe cleanup: use proper order with join-based deletions
+      // FK-safe cleanup: proper order with join-based deletions
       // 1. Fraud attempts (FK → contributions)
       const contribIds = (await supabase.from('cadastral_contributions').select('id').ilike('parcel_number', 'TEST-%')).data?.map(r => r.id) ?? [];
       if (contribIds.length > 0) {
-        await supabase.from('fraud_attempts').delete().in('contribution_id', contribIds);
+        await safeDelete('fraud_attempts', supabase.from('fraud_attempts').delete().in('contribution_id', contribIds));
       }
 
       // 2. Contributor codes
-      await supabase.from('cadastral_contributor_codes').delete().ilike('parcel_number', 'TEST-%');
+      await safeDelete('contributor_codes', supabase.from('cadastral_contributor_codes').delete().ilike('parcel_number', 'TEST-%'));
 
       // 3. Service access (FK → invoices)
-      await supabase.from('cadastral_service_access').delete().ilike('parcel_number', 'TEST-%');
+      await safeDelete('service_access', supabase.from('cadastral_service_access').delete().ilike('parcel_number', 'TEST-%'));
 
       // 4. Payments (before invoices)
-      await supabase.from('payment_transactions').delete().filter('metadata->>test_mode', 'eq', 'true');
+      await safeDelete('payments', supabase.from('payment_transactions').delete().filter('metadata->>test_mode', 'eq', 'true'));
 
       // 5. Invoices
-      await supabase.from('cadastral_invoices').delete().ilike('parcel_number', 'TEST-%');
+      await safeDelete('invoices', supabase.from('cadastral_invoices').delete().ilike('parcel_number', 'TEST-%'));
 
       // 6. Contributions
-      await supabase.from('cadastral_contributions').delete().ilike('parcel_number', 'TEST-%');
+      await safeDelete('contributions', supabase.from('cadastral_contributions').delete().ilike('parcel_number', 'TEST-%'));
 
       // 7. Parcel children
       const parcelIds = (await supabase.from('cadastral_parcels').select('id').ilike('parcel_number', 'TEST-%')).data?.map(r => r.id) ?? [];
       if (parcelIds.length > 0) {
-        await supabase.from('cadastral_ownership_history').delete().in('parcel_id', parcelIds);
-        await supabase.from('cadastral_tax_history').delete().in('parcel_id', parcelIds);
-        await supabase.from('cadastral_boundary_history').delete().in('parcel_id', parcelIds);
-        await supabase.from('cadastral_mortgages').delete().in('parcel_id', parcelIds);
+        await safeDelete('ownership_history', supabase.from('cadastral_ownership_history').delete().in('parcel_id', parcelIds));
+        await safeDelete('tax_history', supabase.from('cadastral_tax_history').delete().in('parcel_id', parcelIds));
+        await safeDelete('boundary_history', supabase.from('cadastral_boundary_history').delete().in('parcel_id', parcelIds));
+        await safeDelete('mortgages', supabase.from('cadastral_mortgages').delete().in('parcel_id', parcelIds));
       }
 
       // 8. Parcels
-      await supabase.from('cadastral_parcels').delete().ilike('parcel_number', 'TEST-%');
+      await safeDelete('parcels', supabase.from('cadastral_parcels').delete().ilike('parcel_number', 'TEST-%'));
 
       // 9. Independent tables
-      await supabase.from('real_estate_expertise_requests').delete().ilike('parcel_number', 'TEST-%');
-      await supabase.from('cadastral_land_disputes').delete().ilike('parcel_number', 'TEST-%');
-      await supabase.from('land_title_requests').delete().ilike('reference_number', 'TEST-%');
-      await supabase.from('cadastral_boundary_conflicts').delete().ilike('reporting_parcel_number', 'TEST-%');
-      await supabase.from('generated_certificates').delete().ilike('reference_number', 'TEST-%');
+      await safeDelete('expertise_requests', supabase.from('real_estate_expertise_requests').delete().ilike('parcel_number', 'TEST-%'));
+      await safeDelete('disputes', supabase.from('cadastral_land_disputes').delete().ilike('parcel_number', 'TEST-%'));
+      await safeDelete('title_requests', supabase.from('land_title_requests').delete().ilike('reference_number', 'TEST-%'));
+      await safeDelete('boundary_conflicts', supabase.from('cadastral_boundary_conflicts').delete().ilike('reporting_parcel_number', 'TEST-%'));
+      await safeDelete('certificates', supabase.from('generated_certificates').delete().ilike('reference_number', 'TEST-%'));
 
       await logAuditAction(
         'TEST_DATA_CLEANUP',
