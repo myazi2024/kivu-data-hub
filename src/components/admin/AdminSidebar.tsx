@@ -42,6 +42,7 @@ interface AdminSidebarProps {
   pendingMutationsCount?: number;
   pendingExpertiseCount?: number;
   pendingSubdivisionsCount?: number;
+  pendingPaymentsCount?: number;
   onNavigate?: () => void;
 }
 
