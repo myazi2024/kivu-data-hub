@@ -46,6 +46,7 @@ const GENERATION_STEPS: GenerationStep[] = [
   { label: 'Litiges fonciers', status: 'pending' },
   { label: 'Conflits de limites', status: 'pending' },
   { label: 'Historique propriété & taxes', status: 'pending' },
+  { label: 'Bornages & hypothèques & permis', status: 'pending' },
   { label: 'Fraudes & certificats', status: 'pending' },
 ];
 
