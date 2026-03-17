@@ -27,7 +27,8 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
   onProvinceHover,
   hoveredProvince,
   getProvinceColor,
-  onMapReady
+  onMapReady,
+  tooltipLineConfigs
 }) => {
   const [svgContent, setSvgContent] = useState<string>('');
   const [hoveredProvinceData, setHoveredProvinceData] = useState<ProvinceData | null>(null);
