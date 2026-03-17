@@ -28,11 +28,11 @@ const QUERY_KEY = ['analytics-charts-config'];
 
 async function fetchConfig(): Promise<ChartConfigItem[]> {
   const { data, error } = await supabase
-    .from('analytics_charts_config' as any)
+    .from('analytics_charts_config')
     .select('*')
     .order('display_order', { ascending: true });
   if (error) throw error;
-  return (data as any[]) || [];
+  return (data as unknown as ChartConfigItem[]) || [];
 }
 
 export function useAnalyticsChartsConfig() {
