@@ -2946,9 +2946,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                                 <SelectValue placeholder="Sélectionner" />
                               </SelectTrigger>
                               <SelectContent className="rounded-xl">
-                                <SelectItem value="Association sans but lucratif (ASBL)">ASBL</SelectItem>
-                                <SelectItem value="Établissement d'Utilité Publique (EUP)">EUP</SelectItem>
-                                <SelectItem value="Autre">Autre</SelectItem>
+                                {getPicklistOptions('picklist_entity_subtype_association').map(opt => (
+                                  <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                             {owner.entitySubType === 'Autre' && (
