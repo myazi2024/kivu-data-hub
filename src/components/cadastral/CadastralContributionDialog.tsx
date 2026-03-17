@@ -2873,8 +2873,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             <SelectValue placeholder="Sélectionner le genre" />
                           </SelectTrigger>
                           <SelectContent className="rounded-xl">
-                            <SelectItem value="Masculin">Masculin</SelectItem>
-                            <SelectItem value="Féminin">Féminin</SelectItem>
+                            {getPicklistOptions('picklist_gender').map(opt => (
+                              <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
