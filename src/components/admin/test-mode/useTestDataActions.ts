@@ -113,7 +113,7 @@ export const useTestDataActions = ({
       await safeDelete('parcels', supabase.from('cadastral_parcels').delete().ilike('parcel_number', 'TEST-%'));
 
       // 9. Independent tables
-      await safeDelete('expertise_requests', supabase.from('real_estate_expertise_requests').delete().ilike('parcel_number', 'TEST-%'));
+      await safeDelete('expertise_requests', supabase.from('real_estate_expertise_requests').delete().ilike('reference_number', 'TEST-%'));
       await safeDelete('disputes', supabase.from('cadastral_land_disputes').delete().ilike('parcel_number', 'TEST-%'));
       await safeDelete('title_requests', supabase.from('land_title_requests').delete().ilike('reference_number', 'TEST-%'));
       await safeDelete('boundary_conflicts', supabase.from('cadastral_boundary_conflicts').delete().ilike('reporting_parcel_number', 'TEST-%'));

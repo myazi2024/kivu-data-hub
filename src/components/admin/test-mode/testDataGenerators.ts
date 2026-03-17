@@ -78,11 +78,11 @@ export const generateParcels = async (parcelNumbers: string[]) => {
     construction_year: [2010, 2018, null, 2005, 2015][i],
     lease_type: [null, 'bail_emphytéotique', null, null, 'bail_ordinaire'][i],
     gps_coordinates: [
-      { lat: -4.3250, lng: 15.3222 },
-      { lat: -1.6580, lng: 29.2205 },
-      { lat: -2.5083, lng: 28.8608 },
-      { lat: -11.6647, lng: 27.4794 },
-      { lat: -5.8243, lng: 13.4531 },
+      [{ lat: -4.3250, lng: 15.3222 }, { lat: -4.3240, lng: 15.3232 }, { lat: -4.3245, lng: 15.3240 }, { lat: -4.3255, lng: 15.3230 }],
+      [{ lat: -1.6580, lng: 29.2205 }, { lat: -1.6570, lng: 29.2215 }, { lat: -1.6575, lng: 29.2225 }, { lat: -1.6585, lng: 29.2210 }],
+      [{ lat: -2.5083, lng: 28.8608 }, { lat: -2.5073, lng: 28.8618 }, { lat: -2.5078, lng: 28.8628 }, { lat: -2.5088, lng: 28.8615 }],
+      [{ lat: -11.6647, lng: 27.4794 }, { lat: -11.6637, lng: 27.4804 }, { lat: -11.6642, lng: 27.4814 }, { lat: -11.6652, lng: 27.4800 }],
+      [{ lat: -5.8243, lng: 13.4531 }, { lat: -5.8233, lng: 13.4541 }, { lat: -5.8238, lng: 13.4551 }, { lat: -5.8248, lng: 13.4538 }],
     ][i] as unknown as Json,
   }));
 
@@ -97,7 +97,9 @@ export const generateParcels = async (parcelNumbers: string[]) => {
 
 /** Step 1: Generate contributions with diverse data */
 export const generateContributions = async (userId: string, parcelNumbers: string[]) => {
-  const statuses = ['approved', 'pending', 'rejected', 'pending', 'approved'];
+  // Bug 14 fix: Insert all as 'pending' first to avoid triggering auto_generate_ccc_code,
+  // then update specific ones to 'approved'/'rejected' afterward.
+  const finalStatuses = ['approved', 'pending', 'rejected', 'pending', 'approved'];
   const types: Array<'creation' | 'update'> = ['creation', 'creation', 'update', 'creation', 'creation'];
   const areas = [500, 1000, 750, 2000, 350];
   const titleTypes = ['Certificat d\'enregistrement', 'Contrat de location (Contrat d\'occupation provisoire)', 'Fiche parcellaire', 'Certificat d\'enregistrement', 'Contrat de location (Contrat d\'occupation provisoire)'];
@@ -115,7 +117,7 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
     territoire: i === 1 ? 'Nyiragongo' : null,
     village: i === 4 ? 'Test Village' : null,
     circonscription_fonciere: PROVINCES[i].circonscription_fonciere,
-    status: statuses[i],
+    status: 'pending', // All start pending to avoid CCC trigger
     contribution_type: types[i],
     user_id: userId,
     is_suspicious: i === 2,
@@ -134,7 +136,19 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
     .select('id, parcel_number');
 
   if (error) throw new Error(`Contributions: ${error.message}`);
-  return assertInserted(data, 'Contributions');
+  const inserted = assertInserted(data, 'Contributions');
+
+  // Now update non-pending statuses directly (bypasses the pending→approved trigger)
+  for (let i = 0; i < inserted.length; i++) {
+    if (finalStatuses[i] !== 'pending') {
+      await supabase
+        .from('cadastral_contributions')
+        .update({ status: finalStatuses[i] })
+        .eq('id', inserted[i].id);
+    }
+  }
+
+  return inserted;
 };
 
 /** Step 2: Generate invoices linked to contributions */
@@ -149,7 +163,7 @@ export const generateInvoices = async (userId: string, parcelNumbers: string[]) 
 
   const records = parcelNumbers.slice(0, 3).map((pn, i) => ({
     parcel_number: pn,
-    invoice_number: '', // DB trigger auto-generates
+    invoice_number: `TEST-INV-${Date.now().toString(36)}-${i}`, // Unique test invoice number
     selected_services: services[i] as unknown as Json,
     total_amount_usd: amounts[i],
     client_email: `test${i + 1}@example.com`,

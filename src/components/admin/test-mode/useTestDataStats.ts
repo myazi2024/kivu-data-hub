@@ -32,7 +32,8 @@ export const useTestDataStats = () => {
         /* 4  */ supabase.from('cadastral_contributor_codes').select('id', { count: 'exact', head: true }).ilike('parcel_number', 'TEST-%'),
         /* 5  */ supabase.from('cadastral_service_access').select('id', { count: 'exact', head: true }).ilike('parcel_number', 'TEST-%'),
         /* 6  */ supabase.from('land_title_requests').select('id', { count: 'exact', head: true }).ilike('reference_number', 'TEST-%'),
-        /* 7  */ supabase.from('real_estate_expertise_requests').select('id', { count: 'exact', head: true }).ilike('parcel_number', 'TEST-%'),
+        // Bug 16 fix: expertise requests use reference_number with TEST- prefix for reliable filtering
+        /* 7  */ supabase.from('real_estate_expertise_requests').select('id', { count: 'exact', head: true }).ilike('reference_number', 'TEST-%'),
         /* 8  */ supabase.from('cadastral_land_disputes').select('id', { count: 'exact', head: true }).ilike('parcel_number', 'TEST-%'),
         /* 9  */ supabase.from('cadastral_boundary_conflicts').select('id', { count: 'exact', head: true }).ilike('reporting_parcel_number', 'TEST-%'),
         /* 10 */ parcelIds.length > 0
