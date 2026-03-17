@@ -853,54 +853,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       return;
     }
 
-    let usages: string[] = [];
+    const usageMap = getPicklistDependentOptions('picklist_declared_usage');
     
-    // Pour les terrains non bâtis
-    if (formData.constructionNature === 'Non bâti') {
-      usages = ['Terrain vacant', 'Agriculture', 'Parking'];
-    }
-    // Pour les constructions résidentielles
-    else if (formData.constructionType === 'Résidentielle') {
-      if (formData.constructionNature === 'Durable') {
-        usages = ['Habitation', 'Usage mixte'];
-      } else if (formData.constructionNature === 'Semi-durable') {
-        usages = ['Habitation', 'Usage mixte'];
-      } else if (formData.constructionNature === 'Précaire') {
-        usages = ['Habitation'];
-      }
-    }
-    // Pour les constructions commerciales
-    else if (formData.constructionType === 'Commerciale') {
-      if (formData.constructionNature === 'Durable') {
-        usages = ['Commerce', 'Bureau', 'Usage mixte', 'Entrepôt'];
-      } else if (formData.constructionNature === 'Semi-durable') {
-        usages = ['Commerce', 'Bureau', 'Entrepôt'];
-      } else if (formData.constructionNature === 'Précaire') {
-        usages = ['Commerce'];
-      }
-    }
-    // Pour les constructions industrielles
-    else if (formData.constructionType === 'Industrielle') {
-      if (formData.constructionNature === 'Durable') {
-        usages = ['Industrie', 'Entrepôt'];
-      } else if (formData.constructionNature === 'Semi-durable') {
-        usages = ['Industrie', 'Entrepôt'];
-      } else if (formData.constructionNature === 'Précaire') {
-        usages = ['Industrie'];
-      }
-    }
-    // Pour l'usage agricole
-    else if (formData.constructionType === 'Agricole') {
-      if (formData.constructionNature === 'Non bâti') {
-        usages = ['Agriculture'];
-      } else {
-        usages = ['Agriculture', 'Habitation'];
-      }
-    }
-    // Pour les terrains nus (redondant avec le premier test, mais pour la clarté)
-    else if (formData.constructionType === 'Terrain nu') {
-      usages = ['Terrain vacant', 'Agriculture', 'Parking'];
-    }
+    // Try specific key first (e.g. "Résidentielle_Durable"), then nature-only key (e.g. "Non bâti")
+    const specificKey = `${formData.constructionType}_${formData.constructionNature}`;
+    const usages = usageMap[specificKey] || usageMap[formData.constructionNature] || [];
     
     setAvailableDeclaredUsages(usages);
     
@@ -908,7 +865,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (formData.declaredUsage && !usages.includes(formData.declaredUsage)) {
       handleInputChange('declaredUsage', undefined);
     }
-  }, [formData.constructionType, formData.constructionNature]);
+  }, [formData.constructionType, formData.constructionNature, getPicklistDependentOptions]);
 
   // Synchroniser "usage prévu" avec "usage déclaré" quand on passe en mode "Demander un permis"
   useEffect(() => {
