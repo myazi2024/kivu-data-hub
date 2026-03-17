@@ -72,11 +72,11 @@ export const generateParcels = async (parcelNumbers: string[]) => {
     quartier: PROVINCES[i].quartier,
     avenue: PROVINCES[i].avenue,
     circonscription_fonciere: PROVINCES[i].circonscription_fonciere,
-    declared_usage: ['Habitation', 'Commerce', 'Agriculture', 'Usage mixte', 'Industrie'][i],
+    declared_usage: ['Résidentiel', 'Commercial', 'Agricole', 'Mixte', 'Industriel'][i],
     construction_type: ['Résidentielle', 'Commerciale', 'Terrain nu', 'Résidentielle', 'Industrielle'][i],
-    construction_nature: ['Durable', 'Durable', 'Non bâti', 'Semi-durable', 'Durable'][i],
+    construction_nature: ['Durable', 'Durable', null, 'Semi-durable', 'Durable'][i] as string | null,
     construction_year: [2010, 2018, null, 2005, 2015][i],
-    lease_type: [null, 'bail_emphytéotique', null, null, 'bail_ordinaire'][i],
+    lease_type: [null, 'initial', null, null, 'renewal'][i],
     gps_coordinates: [
       [{ lat: -4.3250, lng: 15.3222 }, { lat: -4.3240, lng: 15.3232 }, { lat: -4.3245, lng: 15.3240 }, { lat: -4.3255, lng: 15.3230 }],
       [{ lat: -1.6580, lng: 29.2205 }, { lat: -1.6570, lng: 29.2215 }, { lat: -1.6575, lng: 29.2225 }, { lat: -1.6585, lng: 29.2210 }],
@@ -675,7 +675,7 @@ export const generateBoundaryHistory = async (
     pv_reference_number: `TEST-PV-${Date.now().toString(36)}-${i}`,
     surveyor_name: `Géomètre Test ${i + 1}`,
     survey_date: ['2020-03-15', '2021-06-20', '2022-09-10'][i],
-    boundary_purpose: ['Bornage initial', 'Renouvellement bornage', 'Vérification limites'][i],
+    boundary_purpose: ['Réajustement ou rectification', 'Morcellement ou fusion', 'Mise en valeur ou mutation'][i],
   }));
 
   const { data, error } = await supabase
@@ -721,7 +721,7 @@ export const generateBuildingPermits = async (
     issue_date: ['2023-01-10', '2024-03-15'][i],
     issuing_service: [`Service Urbanisme Kinshasa`, `Service Urbanisme Goma`][i],
     validity_period_months: [24, 12][i],
-    administrative_status: ['valide', 'expiré'][i],
+    administrative_status: ['Conforme', 'Non autorisé'][i],
     is_current: [true, false][i],
   }));
 
@@ -797,6 +797,7 @@ export const rollbackTestData = async (parcelNumbers: string[], suffix: string) 
     await supabase.from('cadastral_tax_history').delete().in('parcel_id', parcelIds);
     await supabase.from('cadastral_boundary_history').delete().in('parcel_id', parcelIds);
     await supabase.from('cadastral_mortgages').delete().in('parcel_id', parcelIds);
+    await supabase.from('cadastral_building_permits').delete().in('parcel_id', parcelIds);
   }
   await supabase.from('cadastral_parcels').delete().in('parcel_number', parcelNumbers);
 

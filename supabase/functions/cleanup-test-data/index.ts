@@ -146,7 +146,7 @@ Deno.serve(async (req) => {
     // 9. Independent tables
     await safeDelete(
       "real_estate_expertise_requests",
-      supabase.from("real_estate_expertise_requests").delete().ilike("parcel_number", "TEST-%").lt("created_at", cutoffISO).select("id")
+      supabase.from("real_estate_expertise_requests").delete().ilike("reference_number", "TEST-%").lt("created_at", cutoffISO).select("id")
     );
     await safeDelete(
       "cadastral_land_disputes",
