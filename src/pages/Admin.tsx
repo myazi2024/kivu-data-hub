@@ -110,12 +110,15 @@ const Admin = () => {
 
   useEffect(() => {
     if (hasAdminRole) {
-      fetchPendingCount();
-      fetchPendingLandTitleCount();
-      fetchPendingPermitsCount();
-      fetchPendingMutationsCount();
-      fetchPendingExpertiseCount();
-      fetchPendingSubdivisionsCount();
+      Promise.all([
+        fetchPendingCount(),
+        fetchPendingLandTitleCount(),
+        fetchPendingPermitsCount(),
+        fetchPendingMutationsCount(),
+        fetchPendingExpertiseCount(),
+        fetchPendingSubdivisionsCount(),
+        fetchPendingPaymentsCount(),
+      ]);
     }
   }, [hasAdminRole]);
 
