@@ -15,6 +15,11 @@ export const isZoneAutoDetected = (parcelNumber: string): boolean => {
   return parcelNumber?.startsWith('SR') || parcelNumber?.startsWith('SU');
 };
 
+/**
+ * Maps DB declared_usage values to internal tax usage categories.
+ * Source of truth for DB values: useCCCFormPicklists → picklist_declared_usage
+ * If CCC picklist labels change, update these switch cases accordingly.
+ */
 export const detectUsageType = (parcelData?: any): 'residential' | 'commercial' | 'industrial' | 'agricultural' | 'mixed' => {
   switch (parcelData?.declared_usage) {
     case 'Commercial': return 'commercial';
