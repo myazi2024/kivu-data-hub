@@ -2805,7 +2805,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     </div>
                     <Label className="text-sm font-semibold">
                       {formData.isTitleInCurrentOwnerName === true 
-                        ? `Ajouter le/la propriétaire figurant sur le ${formData.propertyTitleType || 'titre de propriété'}`
+                        ? `Ajouter le/la propriétaire figurant sur le ${getEffectiveTitleName(formData.propertyTitleType, customTitleName) || 'titre de propriété'}`
                         : formData.isTitleInCurrentOwnerName === false
                         ? "Alors, indiquer le nom du propriétaire actuel tel qu'il figure dans tout document prouvant son droit sur la parcelle."
                         : "Propriétaire(s) actuel(s)"}
