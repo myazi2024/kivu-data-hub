@@ -4567,13 +4567,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                               <SelectValue placeholder="Type" />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl">
-                              <SelectItem value="Impôt foncier annuel">Impôt foncier</SelectItem>
-                              <SelectItem value="Impôt sur les revenus locatifs">Revenus locatifs</SelectItem>
-                              <SelectItem value="Taxe de bâtisse">Taxe de bâtisse</SelectItem>
-                              <SelectItem value="Taxe de superficie">Superficie</SelectItem>
-                              <SelectItem value="Taxe de plus-value immobilière">Plus-value</SelectItem>
-                              <SelectItem value="Taxe d'habitation">Habitation</SelectItem>
-                              <SelectItem value="Autre taxe">Autre</SelectItem>
+                              {getPicklistOptions('picklist_tax_type').map(opt => (
+                                <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
