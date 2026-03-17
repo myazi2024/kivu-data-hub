@@ -54,7 +54,7 @@ const PROVINCES = [
 /** Step 0b: Generate cadastral parcels (required by FK joins) */
 export const generateParcels = async (parcelNumbers: string[]) => {
   const areas = [500, 1000, 750, 2000, 350];
-  const parcelTypes = ['résidentiel', 'commercial', 'agricole', 'résidentiel', 'industriel'];
+  const parcelTypes = ['SU', 'SU', 'SR', 'SU', 'SU'];
   const titleTypes = ['Certificat d\'enregistrement', 'Contrat de location (Contrat d\'occupation provisoire)', 'Fiche parcellaire', 'Certificat d\'enregistrement', 'Contrat de location (Contrat d\'occupation provisoire)'];
 
   const records = parcelNumbers.map((pn, i) => ({
@@ -72,9 +72,9 @@ export const generateParcels = async (parcelNumbers: string[]) => {
     quartier: PROVINCES[i].quartier,
     avenue: PROVINCES[i].avenue,
     circonscription_fonciere: PROVINCES[i].circonscription_fonciere,
-    declared_usage: ['habitation', 'commerce', 'agriculture', 'habitation', 'industrie'][i],
-    construction_type: ['dur', 'semi-dur', null, 'dur', 'dur'][i],
-    construction_nature: ['maison', 'immeuble', null, 'villa', 'entrepôt'][i],
+    declared_usage: ['Habitation', 'Commerce', 'Agriculture', 'Usage mixte', 'Industrie'][i],
+    construction_type: ['Résidentielle', 'Commerciale', 'Terrain nu', 'Résidentielle', 'Industrielle'][i],
+    construction_nature: ['Durable', 'Durable', 'Non bâti', 'Semi-durable', 'Durable'][i],
     construction_year: [2010, 2018, null, 2005, 2015][i],
     lease_type: [null, 'bail_emphytéotique', null, null, 'bail_ordinaire'][i],
     gps_coordinates: [
@@ -121,9 +121,9 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
     is_suspicious: i === 2,
     fraud_score: i === 2 ? 75 : 0,
     fraud_reason: i === 2 ? 'Test: score de fraude élevé simulé' : null,
-    declared_usage: ['habitation', 'commerce', 'agriculture', 'habitation', 'industrie'][i],
-    construction_type: ['dur', 'semi-dur', null, 'dur', 'dur'][i],
-    construction_nature: ['maison', 'immeuble', null, 'villa', 'entrepôt'][i],
+    declared_usage: ['Habitation', 'Commerce', 'Agriculture', 'Usage mixte', 'Industrie'][i],
+    construction_type: ['Résidentielle', 'Commerciale', 'Terrain nu', 'Résidentielle', 'Industrielle'][i],
+    construction_nature: ['Durable', 'Durable', 'Non bâti', 'Semi-durable', 'Durable'][i],
     construction_year: [2010, 2018, null, 2005, 2015][i],
     current_owner_legal_status: i % 2 === 0 ? 'personne_physique' : 'personne_morale',
   }));
