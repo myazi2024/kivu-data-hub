@@ -40,6 +40,8 @@ const AdminPayments: React.FC<AdminPaymentsProps> = ({ onRefresh }) => {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [dateFrom, setDateFrom] = useState<string>('');
+  const [dateTo, setDateTo] = useState<string>('');
 
   useEffect(() => {
     fetchPayments();
@@ -117,9 +119,13 @@ const AdminPayments: React.FC<AdminPaymentsProps> = ({ onRefresh }) => {
     );
   };
 
-  const filteredPayments = filterStatus === 'all' 
-    ? payments 
-    : payments.filter(payment => payment.status === filterStatus);
+  const filteredPayments = payments.filter(payment => {
+    const matchesStatus = filterStatus === 'all' || payment.status === filterStatus;
+    const paymentDate = new Date(payment.created_at);
+    const matchesFrom = !dateFrom || paymentDate >= new Date(dateFrom);
+    const matchesTo = !dateTo || paymentDate <= new Date(dateTo + 'T23:59:59');
+    return matchesStatus && matchesFrom && matchesTo;
+  });
 
   const pagination = usePagination(filteredPayments, { initialPageSize: 15 });
 
@@ -165,6 +171,20 @@ const AdminPayments: React.FC<AdminPaymentsProps> = ({ onRefresh }) => {
                 <SelectItem value="cancelled">Annulé</SelectItem>
               </SelectContent>
             </Select>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="h-8 text-xs border rounded-md px-2 bg-background w-32"
+              placeholder="Du"
+            />
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="h-8 text-xs border rounded-md px-2 bg-background w-32"
+              placeholder="Au"
+            />
             <Button onClick={handleExport} variant="outline" size="sm" className="gap-1 h-8 text-xs">
               <Download className="h-3 w-3" />
               <span className="hidden sm:inline">Exporter</span>

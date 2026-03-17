@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { CheckCircle, XCircle, AlertTriangle, Eye, Gift, Users, Play, FileText, Building2, MessageSquare, Route, BrickWall, Download, ExternalLink, RotateCcw } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Eye, Gift, Users, Play, FileText, Building2, MessageSquare, Route, BrickWall, Download, ExternalLink, RotateCcw, Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AppealManagementDialog } from './appeals/AppealManagementDialog';
 import { PermitRequestDialog } from './permits/PermitRequestDialog';
@@ -116,6 +117,7 @@ const AdminCCCContributions: React.FC = () => {
   const [isValidating, setIsValidating] = useState(false);
   const [showPermitDialog, setShowPermitDialog] = useState(false);
   const [showDocumentsDialog, setShowDocumentsDialog] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Pagination - sera initialisée après filteredContributions
 
@@ -148,22 +150,40 @@ const AdminCCCContributions: React.FC = () => {
   const fetchContributions = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('cadastral_contributions')
-        .select('*')
-        .order('created_at', { ascending: false });
+      
+      // Fetch all contributions using pagination to bypass 1000-row limit
+      let allData: any[] = [];
+      let from = 0;
+      const batchSize = 1000;
+      let hasMore = true;
 
-      if (error) throw error;
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('cadastral_contributions')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .range(from, from + batchSize - 1);
 
-      setContributions(data || []);
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          allData = [...allData, ...data];
+          from += batchSize;
+          hasMore = data.length === batchSize;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      setContributions(allData);
       
       // Calculer les statistiques
       const stats: ContributionStats = {
-        total: data?.length || 0,
-        pending: data?.filter(c => c.status === 'pending').length || 0,
-        approved: data?.filter(c => c.status === 'approved').length || 0,
-        rejected: data?.filter(c => c.status === 'rejected').length || 0,
-        suspicious: data?.filter(c => c.is_suspicious).length || 0
+        total: allData.length,
+        pending: allData.filter(c => c.status === 'pending').length,
+        approved: allData.filter(c => c.status === 'approved').length,
+        rejected: allData.filter(c => c.status === 'rejected').length,
+        suspicious: allData.filter(c => c.is_suspicious).length
       };
       setStats(stats);
     } catch (error: any) {
@@ -354,10 +374,12 @@ const AdminCCCContributions: React.FC = () => {
         targetParcelId = createdParcel.id;
 
         // Créer les historiques associés uniquement pour les nouvelles parcelles
+        const historyErrors: string[] = [];
+
         if (updatedContribution.ownership_history && Array.isArray(updatedContribution.ownership_history)) {
           for (const history of updatedContribution.ownership_history) {
             if (typeof history === 'object' && history !== null) {
-              await supabase.from('cadastral_ownership_history').insert({
+              const { error: ohError } = await supabase.from('cadastral_ownership_history').insert({
                 parcel_id: targetParcelId,
                 owner_name: (history as any).owner_name,
                 legal_status: (history as any).legal_status,
@@ -366,6 +388,10 @@ const AdminCCCContributions: React.FC = () => {
                 mutation_type: (history as any).mutation_type,
                 ownership_document_url: (history as any).ownership_document_url
               });
+              if (ohError) {
+                console.error('Erreur historique propriété:', ohError);
+                historyErrors.push('propriété');
+              }
             }
           }
         }
@@ -373,7 +399,7 @@ const AdminCCCContributions: React.FC = () => {
         if (updatedContribution.boundary_history && Array.isArray(updatedContribution.boundary_history)) {
           for (const history of updatedContribution.boundary_history) {
             if (typeof history === 'object' && history !== null) {
-              await supabase.from('cadastral_boundary_history').insert({
+              const { error: bhError } = await supabase.from('cadastral_boundary_history').insert({
                 parcel_id: targetParcelId,
                 pv_reference_number: (history as any).pv_reference_number,
                 boundary_purpose: (history as any).boundary_purpose,
@@ -381,6 +407,10 @@ const AdminCCCContributions: React.FC = () => {
                 survey_date: (history as any).survey_date,
                 boundary_document_url: (history as any).boundary_document_url
               });
+              if (bhError) {
+                console.error('Erreur historique bornage:', bhError);
+                historyErrors.push('bornage');
+              }
             }
           }
         }
@@ -388,7 +418,7 @@ const AdminCCCContributions: React.FC = () => {
         if (updatedContribution.tax_history && Array.isArray(updatedContribution.tax_history)) {
           for (const history of updatedContribution.tax_history) {
             if (typeof history === 'object' && history !== null) {
-              await supabase.from('cadastral_tax_history').insert({
+              const { error: thError } = await supabase.from('cadastral_tax_history').insert({
                 parcel_id: targetParcelId,
                 tax_year: (history as any).tax_year,
                 amount_usd: (history as any).amount_usd,
@@ -396,6 +426,10 @@ const AdminCCCContributions: React.FC = () => {
                 payment_date: (history as any).payment_date,
                 receipt_document_url: (history as any).receipt_document_url
               });
+              if (thError) {
+                console.error('Erreur historique taxes:', thError);
+                historyErrors.push('taxes');
+              }
             }
           }
         }
@@ -403,7 +437,7 @@ const AdminCCCContributions: React.FC = () => {
         if (updatedContribution.building_permits && Array.isArray(updatedContribution.building_permits)) {
           for (const permit of updatedContribution.building_permits) {
             if (typeof permit === 'object' && permit !== null) {
-              await supabase.from('cadastral_building_permits').insert({
+              const { error: bpError } = await supabase.from('cadastral_building_permits').insert({
                 parcel_id: targetParcelId,
                 permit_number: (permit as any).permit_number,
                 issuing_service: (permit as any).issuing_service,
@@ -414,8 +448,16 @@ const AdminCCCContributions: React.FC = () => {
                 issuing_service_contact: (permit as any).issuing_service_contact,
                 permit_document_url: (permit as any).permit_document_url
               });
+              if (bpError) {
+                console.error('Erreur permis de construire:', bpError);
+                historyErrors.push('permis');
+              }
             }
           }
+        }
+
+        if (historyErrors.length > 0) {
+          toast.warning(`Parcelle créée mais erreurs sur les historiques: ${historyErrors.join(', ')}`);
         }
       }
 
@@ -637,11 +679,26 @@ const AdminCCCContributions: React.FC = () => {
 
   const filteredContributions = useMemo(() => {
     return contributions.filter(c => {
-      if (activeTab === 'all') return true;
-      if (activeTab === 'suspicious') return c.is_suspicious;
-      return c.status === activeTab;
+      // Status/suspicious filter
+      const matchesTab = (() => {
+        if (activeTab === 'all') return true;
+        if (activeTab === 'suspicious') return c.is_suspicious;
+        return c.status === activeTab;
+      })();
+
+      // Search filter
+      const query = searchQuery.toLowerCase().trim();
+      const matchesSearch = !query || 
+        c.parcel_number?.toLowerCase().includes(query) ||
+        c.province?.toLowerCase().includes(query) ||
+        c.ville?.toLowerCase().includes(query) ||
+        c.commune?.toLowerCase().includes(query) ||
+        c.current_owner_name?.toLowerCase().includes(query) ||
+        c.user_id?.toLowerCase().includes(query);
+
+      return matchesTab && matchesSearch;
     });
-  }, [contributions, activeTab]);
+  }, [contributions, activeTab, searchQuery]);
 
   // Pagination avec usePagination
   const {
@@ -789,6 +846,17 @@ const AdminCCCContributions: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent className="p-2 md:p-6">
+          {/* Search */}
+          <div className="relative mb-3">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher par parcelle, province, ville, propriétaire..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8 h-9 text-sm"
+            />
+          </div>
+
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-5 h-8 md:h-10">
               <TabsTrigger value="pending" className="text-xs md:text-sm px-1 md:px-3">Attente</TabsTrigger>

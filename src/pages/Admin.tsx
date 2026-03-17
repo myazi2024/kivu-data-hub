@@ -74,6 +74,7 @@ const Admin = () => {
   const [pendingMutationsCount, setPendingMutationsCount] = useState(0);
   const [pendingExpertiseCount, setPendingExpertiseCount] = useState(0);
   const [pendingSubdivisionsCount, setPendingSubdivisionsCount] = useState(0);
+  const [pendingPaymentsCount, setPendingPaymentsCount] = useState(0);
   const [hasAdminRole, setHasAdminRole] = useState<boolean | null>(null);
 
   // Verify admin role from user_roles table
@@ -109,12 +110,15 @@ const Admin = () => {
 
   useEffect(() => {
     if (hasAdminRole) {
-      fetchPendingCount();
-      fetchPendingLandTitleCount();
-      fetchPendingPermitsCount();
-      fetchPendingMutationsCount();
-      fetchPendingExpertiseCount();
-      fetchPendingSubdivisionsCount();
+      Promise.all([
+        fetchPendingCount(),
+        fetchPendingLandTitleCount(),
+        fetchPendingPermitsCount(),
+        fetchPendingMutationsCount(),
+        fetchPendingExpertiseCount(),
+        fetchPendingSubdivisionsCount(),
+        fetchPendingPaymentsCount(),
+      ]);
     }
   }, [hasAdminRole]);
 
@@ -199,16 +203,35 @@ const Admin = () => {
 
   const fetchPendingSubdivisionsCount = async () => {
     try {
-      const { count, error } = await supabase
-        .from('subdivision_requests' as any)
+      // subdivision_requests may not exist yet - gracefully handle
+      const { count, error } = await (supabase as any)
+        .from('subdivision_requests')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending');
       
       if (!error) {
         setPendingSubdivisionsCount(count || 0);
+      } else {
+        // Table may not exist, silently ignore
+        setPendingSubdivisionsCount(0);
       }
     } catch (error) {
-      console.error('Erreur compteur lotissements:', error);
+      setPendingSubdivisionsCount(0);
+    }
+  };
+
+  const fetchPendingPaymentsCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('payments')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+      
+      if (!error) {
+        setPendingPaymentsCount(count || 0);
+      }
+    } catch (error) {
+      console.error('Erreur compteur paiements:', error);
     }
   };
 
@@ -360,6 +383,7 @@ const Admin = () => {
           pendingMutationsCount={pendingMutationsCount}
           pendingExpertiseCount={pendingExpertiseCount}
           pendingSubdivisionsCount={pendingSubdivisionsCount}
+          pendingPaymentsCount={pendingPaymentsCount}
         />
       </aside>
 
@@ -377,6 +401,7 @@ const Admin = () => {
             pendingMutationsCount={pendingMutationsCount}
             pendingExpertiseCount={pendingExpertiseCount}
             pendingSubdivisionsCount={pendingSubdivisionsCount}
+            pendingPaymentsCount={pendingPaymentsCount}
             onNavigate={() => setMobileMenuOpen(false)}
           />
         </SheetContent>

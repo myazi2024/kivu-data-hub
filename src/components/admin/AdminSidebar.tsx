@@ -42,6 +42,7 @@ interface AdminSidebarProps {
   pendingMutationsCount?: number;
   pendingExpertiseCount?: number;
   pendingSubdivisionsCount?: number;
+  pendingPaymentsCount?: number;
   onNavigate?: () => void;
 }
 
@@ -77,7 +78,7 @@ const menuItems = [
     category: 'Finances',
     items: [
       { icon: BarChart, label: 'Tableau de Bord', value: 'financial', badge: null },
-      { icon: CreditCard, label: 'Paiements', value: 'payments', badge: null },
+      { icon: CreditCard, label: 'Paiements', value: 'payments', badge: 'payments' },
       { icon: CheckSquare, label: 'Réconciliation', value: 'payment-reconciliation', badge: null },
       { icon: Smartphone, label: 'Moyens de Paiement', value: 'payment-methods', badge: null },
       { icon: Settings, label: 'Mode de Paiement', value: 'payment-mode', badge: null },
@@ -145,7 +146,7 @@ const menuItems = [
   },
 ];
 
-export function AdminSidebar({ pendingCount, pendingLandTitleCount, pendingPermitsCount, pendingMutationsCount, pendingExpertiseCount, pendingSubdivisionsCount, onNavigate }: AdminSidebarProps) {
+export function AdminSidebar({ pendingCount, pendingLandTitleCount, pendingPermitsCount, pendingMutationsCount, pendingExpertiseCount, pendingSubdivisionsCount, pendingPaymentsCount, onNavigate }: AdminSidebarProps) {
   const location = useLocation();
   const currentTab = new URLSearchParams(location.search).get('tab') || 'dashboard';
 
@@ -161,6 +162,7 @@ export function AdminSidebar({ pendingCount, pendingLandTitleCount, pendingPermi
       case 'mutations': return pendingMutationsCount || 0;
       case 'expertise': return pendingExpertiseCount || 0;
       case 'subdivisions': return pendingSubdivisionsCount || 0;
+      case 'payments': return pendingPaymentsCount || 0;
       default: return 0;
     }
   };
