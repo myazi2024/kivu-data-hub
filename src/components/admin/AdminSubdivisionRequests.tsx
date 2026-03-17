@@ -21,6 +21,7 @@ import {
   ChevronLeft, ChevronRight, Square
 } from 'lucide-react';
 import { generateAndUploadCertificate } from '@/utils/certificateService';
+import { StatusBadge, StatusType } from '@/components/shared/StatusBadge';
 
 interface SubdivisionRequest {
   id: string;
