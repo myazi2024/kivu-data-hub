@@ -834,23 +834,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       return;
     }
 
-    let natures: string[] = [];
-    
-    switch (formData.constructionType) {
-      case 'Résidentielle':
-      case 'Commerciale':
-      case 'Industrielle':
-        natures = ['Durable', 'Semi-durable', 'Précaire'];
-        break;
-      case 'Agricole':
-        natures = ['Durable', 'Semi-durable', 'Précaire', 'Non bâti'];
-        break;
-      case 'Terrain nu':
-        natures = ['Non bâti'];
-        break;
-      default:
-        natures = [];
-    }
+    const natureMap = getPicklistDependentOptions('picklist_construction_nature');
+    const natures = natureMap[formData.constructionType] || [];
     
     setAvailableConstructionNatures(natures);
     
@@ -858,7 +843,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (formData.constructionNature && !natures.includes(formData.constructionNature)) {
       handleInputChange('constructionNature', undefined);
     }
-  }, [formData.constructionType]);
+  }, [formData.constructionType, getPicklistDependentOptions]);
 
   // Logique de dépendance: Type + Nature -> Usage déclaré
   useEffect(() => {
