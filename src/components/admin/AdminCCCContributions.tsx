@@ -116,6 +116,7 @@ const AdminCCCContributions: React.FC = () => {
   const [isValidating, setIsValidating] = useState(false);
   const [showPermitDialog, setShowPermitDialog] = useState(false);
   const [showDocumentsDialog, setShowDocumentsDialog] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Pagination - sera initialisée après filteredContributions
 
