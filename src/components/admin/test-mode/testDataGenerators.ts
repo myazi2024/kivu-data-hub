@@ -121,9 +121,9 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
     is_suspicious: i === 2,
     fraud_score: i === 2 ? 75 : 0,
     fraud_reason: i === 2 ? 'Test: score de fraude élevé simulé' : null,
-    declared_usage: ['habitation', 'commerce', 'agriculture', 'habitation', 'industrie'][i],
-    construction_type: ['dur', 'semi-dur', null, 'dur', 'dur'][i],
-    construction_nature: ['maison', 'immeuble', null, 'villa', 'entrepôt'][i],
+    declared_usage: ['Habitation', 'Commerce', 'Agriculture', 'Usage mixte', 'Industrie'][i],
+    construction_type: ['Résidentielle', 'Commerciale', 'Terrain nu', 'Résidentielle', 'Industrielle'][i],
+    construction_nature: ['Durable', 'Durable', 'Non bâti', 'Semi-durable', 'Durable'][i],
     construction_year: [2010, 2018, null, 2005, 2015][i],
     current_owner_legal_status: i % 2 === 0 ? 'personne_physique' : 'personne_morale',
   }));
