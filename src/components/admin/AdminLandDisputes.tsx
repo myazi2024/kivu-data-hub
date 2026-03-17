@@ -85,7 +85,7 @@ const AdminLandDisputes: React.FC = () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('cadastral_land_disputes' as any)
+        .from('cadastral_land_disputes')
         .select('*')
         .order('created_at', { ascending: false });
 
