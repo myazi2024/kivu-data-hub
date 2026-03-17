@@ -151,7 +151,7 @@ export const generateInvoices = async (userId: string, parcelNumbers: string[]) 
 
   const records = parcelNumbers.slice(0, 3).map((pn, i) => ({
     parcel_number: pn,
-    // Bug 15 fix: omit invoice_number entirely so DB trigger always fires
+    invoice_number: `TEST-INV-${Date.now().toString(36)}-${i}`, // Unique test invoice number
     selected_services: services[i] as unknown as Json,
     total_amount_usd: amounts[i],
     client_email: `test${i + 1}@example.com`,
