@@ -151,7 +151,7 @@ export const generateInvoices = async (userId: string, parcelNumbers: string[]) 
 
   const records = parcelNumbers.slice(0, 3).map((pn, i) => ({
     parcel_number: pn,
-    invoice_number: '', // DB trigger auto-generates
+    // Bug 15 fix: omit invoice_number entirely so DB trigger always fires
     selected_services: services[i] as unknown as Json,
     total_amount_usd: amounts[i],
     client_email: `test${i + 1}@example.com`,
