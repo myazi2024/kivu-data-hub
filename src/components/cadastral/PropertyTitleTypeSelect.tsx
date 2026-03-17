@@ -27,64 +27,27 @@ const PROPERTY_TITLE_TYPES: PropertyTitleType[] = [
     reference: "Ex: CE-123456 ou CE/NK/2024/001"
   },
   {
-    value: "Titre foncier",
-    label: "Titre foncier (ancien système)",
-    description: "Ancien titre de propriété délivré avant la réforme foncière",
-    details: "Le titre foncier est l'ancien document de propriété délivré sous le régime colonial et dans les premières décennies de l'indépendance. Il atteste de la propriété définitive et incommutable d'un terrain. Bien que l'ancien système, ces titres restent valables et peuvent être convertis.",
-    reference: "Ex: TF-123456 ou TF/NK/2024/001"
-  },
-  {
-    value: "Concession perpétuelle",
-    label: "Concession perpétuelle",
-    description: "Droit d'usage perpétuel accordé par l'État sur un terrain du domaine privé",
-    details: "La concession perpétuelle confère à son titulaire un droit d'usage, de jouissance et de disposition perpétuel sur un terrain appartenant au domaine privé de l'État. Ce droit est transmissible par succession ou aliénation et constitue l'un des droits fonciers les plus sûrs en RDC.",
-    reference: "Ex: CP-123456 ou CP/2024/001"
-  },
-  {
-    value: "Concession ordinaire",
-    label: "Concession ordinaire",
-    description: "Droit d'usage temporaire accordé par l'État pour une durée déterminée",
-    details: "La concession ordinaire est un droit d'usage temporaire accordé par l'État pour une durée généralement de 25 ans renouvelable. Elle peut être transformée en concession perpétuelle après accomplissement des obligations de mise en valeur définies dans le contrat de concession.",
-    reference: "Ex: CO-123456 ou CO/2024/001",
-    isRenewable: true
-  },
-  {
-    value: "Bail emphytéotique",
-    label: "Bail emphytéotique",
-    description: "Bail de longue durée (18 à 99 ans) conférant des droits étendus",
-    details: "Le bail emphytéotique est un contrat de location de longue durée (minimum 18 ans, maximum 99 ans) qui confère à l'emphytéote des droits très étendus d'usage, de jouissance et de transformation du bien. L'emphytéote peut construire, planter et même hypothéquer ses droits.",
-    reference: "Ex: BE-123456 ou BE/2024/001",
-    isRenewable: true
-  },
-  {
-    value: "Contrat de location (Concession provisoire)",
-    label: "Contrat de location (Concession provisoire)",
+    value: "Contrat de location (Contrat d'occupation provisoire)",
+    label: "Contrat de location (Contrat d'occupation provisoire)",
     description: "Titre provisoire et précaire délivré par l'État pour une durée limitée",
-    details: "Le contrat de location est un titre provisoire et précaire, souvent appelé \"concession provisoire\", délivré par l'État congolais pour une durée limitée (généralement 3 à 5 ans).",
+    details: "Le contrat de location est un titre provisoire et précaire, souvent appelé \"contrat d'occupation provisoire\", délivré par l'État congolais pour une durée limitée (généralement 3 à 5 ans).",
     reference: "Ex: CL-123456 ou CL/2024/001",
     isRenewable: true
   },
   {
-    value: "Autorisation d'occupation provisoire",
-    label: "Autorisation d'occupation provisoire",
-    description: "Droit précaire d'occupation d'un terrain en attente de régularisation",
-    details: "L'autorisation d'occupation provisoire (AOP) est un droit précaire accordé temporairement en attendant la régularisation définitive du statut foncier. Elle n'est pas transmissible et peut être révoquée. Le titulaire doit entreprendre les démarches de régularisation dans les délais impartis.",
-    reference: "Ex: AOP-123456 ou AOP/2024/001"
+    value: "Fiche parcellaire",
+    label: "Fiche parcellaire",
+    description: "Document administratif décrivant les caractéristiques d'une parcelle",
+    details: "La fiche parcellaire est un document délivré par les services du cadastre qui décrit les caractéristiques principales d'une parcelle (localisation, superficie, propriétaire). Elle sert de référence administrative mais ne constitue pas un titre de propriété définitif.",
+    reference: "Ex: FP-123456 ou FP/2024/001"
   },
   {
-    value: "Permis d'occupation urbain",
-    label: "Permis d'occupation urbain",
-    description: "Autorisation d'occuper un terrain en zone urbaine",
-    details: "Le permis d'occupation urbain est délivré par les autorités communales pour l'occupation d'une parcelle en zone urbaine. Il précède généralement l'obtention d'un titre foncier définitif et impose au titulaire de respecter les règles d'urbanisme et de mise en valeur.",
-    reference: "Ex: POU-123456 ou POU/2024/001"
+    value: "Autre",
+    label: "Autre",
+    description: "Autre type de titre de propriété non listé",
+    details: "Si votre titre de propriété ne figure pas dans la liste ci-dessus, sélectionnez cette option et précisez le nom exact de votre titre dans le champ qui apparaîtra.",
+    reference: "Ex: Numéro figurant sur votre document"
   },
-  {
-    value: "Permis d'occupation rural",
-    label: "Permis d'occupation rural",
-    description: "Autorisation d'occuper un terrain en zone rurale",
-    details: "Le permis d'occupation rural permet l'occupation et l'exploitation agricole d'une terre en zone rurale. Il est délivré conformément aux règles coutumières locales et aux dispositions légales régissant les terres rurales. Il peut évoluer vers un titre plus stable.",
-    reference: "Ex: POR-123456 ou POR/2024/001"
-  }
 ];
 
 interface PropertyTitleTypeSelectProps {
@@ -95,6 +58,8 @@ interface PropertyTitleTypeSelectProps {
   leaseYears?: number;
   onLeaseYearsChange?: (years: number) => void;
   disabled?: boolean;
+  customTitleName?: string;
+  onCustomTitleNameChange?: (name: string) => void;
 }
 
 const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({ 
@@ -104,12 +69,15 @@ const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({
   onLeaseTypeChange,
   leaseYears,
   onLeaseYearsChange,
-  disabled = false
+  disabled = false,
+  customTitleName,
+  onCustomTitleNameChange,
 }) => {
   const [openPopoverId, setOpenPopoverId] = React.useState<string | null>(null);
   
   const selectedType = PROPERTY_TITLE_TYPES.find(t => t.value === value);
   const showLeaseTypeOption = selectedType?.isRenewable;
+  const isAutre = value === 'Autre';
 
   return (
     <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
@@ -194,10 +162,28 @@ const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({
           </SelectContent>
         </Select>
         
-        {value && (
+        {value && !isAutre && (
           <p className="text-xs text-muted-foreground">
             {selectedType?.description}
           </p>
+        )}
+
+        {/* Custom title name input for "Autre" */}
+        {isAutre && onCustomTitleNameChange && (
+          <div className="space-y-1 animate-fade-in">
+            <Label className="text-sm font-medium">
+              Nom du titre de propriété <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              placeholder="Ex: Livret de logeur, Attestation de propriété..."
+              value={customTitleName || ''}
+              onChange={(e) => onCustomTitleNameChange(e.target.value)}
+              className="h-9 text-sm rounded-xl"
+            />
+            <p className="text-xs text-muted-foreground">
+              Précisez le nom exact du titre que vous détenez
+            </p>
+          </div>
         )}
         
         {showLeaseTypeOption && onLeaseTypeChange && (
@@ -262,6 +248,14 @@ const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({
       </CardContent>
     </Card>
   );
+};
+
+/** Helper: get the effective display name for a title type (handles "Autre" with custom name) */
+export const getEffectiveTitleName = (titleType: string | undefined, customTitleName?: string): string => {
+  if (titleType === 'Autre' && customTitleName?.trim()) {
+    return customTitleName.trim();
+  }
+  return titleType || '';
 };
 
 export { PropertyTitleTypeSelect, PROPERTY_TITLE_TYPES };
