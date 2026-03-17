@@ -2709,6 +2709,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       />
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Le titre foncier est-il au nom du propriétaire actuel? - Affiché uniquement si N° Titre foncier est rempli */}
             {formData.titleReferenceNumber && formData.titleReferenceNumber.trim() !== '' && (
