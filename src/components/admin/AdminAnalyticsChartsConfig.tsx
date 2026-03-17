@@ -373,7 +373,7 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
       ...prev,
       [activeTab]: [...tab.kpis, ...tab.charts],
     }));
-    setHasChanges(true);
+    setHasChartChanges(true);
     toast.info('Configuration réinitialisée (non sauvegardée)');
   }, [activeTab]);
 
