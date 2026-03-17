@@ -2676,6 +2676,40 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </Card>
             )}
 
+            {/* Card for "Autre" title type - reference, date and document */}
+            {formData.propertyTitleType === 'Autre' && customTitleName?.trim() && (
+              <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden animate-fade-in">
+                <CardContent className="p-3 space-y-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label htmlFor="titleReference" className="text-sm font-medium">
+                        N° {customTitleName.length > 15 ? customTitleName.substring(0, 15) + '…' : customTitleName}
+                      </Label>
+                      <InputWithPopover
+                        id="titleReference"
+                        placeholder="Numéro de référence"
+                        value={formData.titleReferenceNumber || ''}
+                        onChange={(e) => handleInputChange('titleReferenceNumber', e.target.value)}
+                        helpTitle="Référence"
+                        helpText="Numéro figurant sur votre document"
+                        className="h-9 text-sm rounded-xl"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="titleIssueDate" className="text-sm font-medium">
+                        Date délivrance
+                      </Label>
+                      <Input
+                        id="titleIssueDate"
+                        type="date"
+                        max={new Date().toISOString().split('T')[0]}
+                        value={formData.titleIssueDate || ''}
+                        onChange={(e) => handleInputChange('titleIssueDate', e.target.value)}
+                        className="h-9 text-sm rounded-xl"
+                      />
+                    </div>
+                  </div>
+
             {/* Le titre foncier est-il au nom du propriétaire actuel? - Affiché uniquement si N° Titre foncier est rempli */}
             {formData.titleReferenceNumber && formData.titleReferenceNumber.trim() !== '' && (
               <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 overflow-hidden">
