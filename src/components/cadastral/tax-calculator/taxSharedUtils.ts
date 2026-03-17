@@ -15,6 +15,11 @@ export const isZoneAutoDetected = (parcelNumber: string): boolean => {
   return parcelNumber?.startsWith('SR') || parcelNumber?.startsWith('SU');
 };
 
+/**
+ * Maps DB declared_usage values to internal tax usage categories.
+ * Source of truth for DB values: useCCCFormPicklists → picklist_declared_usage
+ * If CCC picklist labels change, update these switch cases accordingly.
+ */
 export const detectUsageType = (parcelData?: any): 'residential' | 'commercial' | 'industrial' | 'agricultural' | 'mixed' => {
   switch (parcelData?.declared_usage) {
     case 'Commercial': return 'commercial';
@@ -24,6 +29,11 @@ export const detectUsageType = (parcelData?: any): 'residential' | 'commercial' 
   }
 };
 
+/**
+ * Maps DB construction_type values to internal tax construction categories.
+ * Source of truth for DB values: useCCCFormPicklists → picklist_construction_type
+ * If CCC picklist labels change, update these switch cases accordingly.
+ */
 export const detectConstructionType = (parcelData?: any): 'en_dur' | 'semi_dur' | 'en_paille' | null => {
   switch (parcelData?.construction_type) {
     case 'En dur': return 'en_dur';

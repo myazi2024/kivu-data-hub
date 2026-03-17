@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { PROPERTY_TITLE_TYPES } from '@/components/cadastral/PropertyTitleTypeSelect';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -425,9 +426,11 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="_all">Tous</SelectItem>
-                          <SelectItem value="Certificat d'enregistrement">Certificat</SelectItem>
-                          <SelectItem value="Titre foncier">Titre foncier</SelectItem>
-                          <SelectItem value="Concession">Concession</SelectItem>
+                          {PROPERTY_TITLE_TYPES.filter(t => t.value !== 'Autre').map((type) => (
+                            <SelectItem key={type.value} value={type.value}>
+                              {type.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
