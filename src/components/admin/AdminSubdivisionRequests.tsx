@@ -143,7 +143,7 @@ export function AdminSubdivisionRequests() {
         }));
       }
       
-      await supabase.from('subdivision_lots' as any).insert({
+      await supabase.from('subdivision_lots').insert({
         subdivision_request_id: request.id,
         parcel_number: request.parcel_number,
         lot_number: lot.lotNumber || lot.id,
