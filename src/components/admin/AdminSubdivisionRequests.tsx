@@ -87,11 +87,11 @@ export function AdminSubdivisionRequests() {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('subdivision_requests' as any)
+        .from('subdivision_requests')
         .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      setRequests((data as unknown as SubdivisionRequest[]) || []);
+      setRequests((data || []) as SubdivisionRequest[]);
     } catch (err: any) {
       toast({ title: 'Erreur', description: 'Impossible de charger les demandes.', variant: 'destructive' });
     } finally {
