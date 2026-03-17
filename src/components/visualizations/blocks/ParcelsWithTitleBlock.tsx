@@ -34,21 +34,26 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
   const filteredTaxes = useMemo(() => applyFilters(data.taxHistory, filter), [data.taxHistory, filter]);
   const filteredMortgages = useMemo(() => applyFilters(data.mortgages, filter), [data.mortgages, filter]);
 
-  const normalizedParcelsForTitle = useMemo(() =>
-    filteredParcels.map(p => ({ ...p, property_title_type: normalizeTitleType(p.property_title_type) })),
+  const normalizedParcels = useMemo(() =>
+    filteredParcels.map(p => ({
+      ...p,
+      property_title_type: normalizeTitleType(p.property_title_type),
+      construction_type: normalizeConstructionType(p.construction_type),
+      declared_usage: normalizeDeclaredUsage(p.declared_usage),
+    })),
     [filteredParcels]);
 
   const charts = useMemo(() => ({
-    byTitleType: countBy(normalizedParcelsForTitle, 'property_title_type'),
+    byTitleType: countBy(normalizedParcels, 'property_title_type'),
     byLegalStatus: countBy(filteredParcels, 'current_owner_legal_status'),
-    byConstructionType: countBy(filteredParcels, 'construction_type'),
+    byConstructionType: countBy(normalizedParcels, 'construction_type'),
     byConstructionNature: countBy(filteredParcels, 'construction_nature'),
-    byDeclaredUsage: countBy(filteredParcels, 'declared_usage'),
+    byDeclaredUsage: countBy(normalizedParcels, 'declared_usage'),
     byLeaseType: countBy(filteredParcels, 'lease_type'),
     byCirconscription: countBy(filteredParcels, 'circonscription_fonciere'),
     surfaceDist: surfaceDistribution(filteredParcels),
     byDecade: yearDecadeDistribution(filteredParcels, 'construction_year'),
-  }), [filteredParcels]);
+  }), [filteredParcels, normalizedParcels]);
 
   const genderData = useMemo(() => {
     const map = new Map<string, number>();

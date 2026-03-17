@@ -29,13 +29,18 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
   const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
   const filtered = useMemo(() => applyFilters(data.titleRequests, filter), [data.titleRequests, filter]);
 
+  const normalized = useMemo(() => filtered.map(r => ({
+    ...r,
+    construction_type: normalizeConstructionType(r.construction_type),
+    declared_usage: normalizeDeclaredUsage(r.declared_usage),
+  })), [filtered]);
   const byRequestType = useMemo(() => countBy(filtered, 'request_type'), [filtered]);
   const byRequesterType = useMemo(() => countBy(filtered, 'requester_type'), [filtered]);
   const byStatus = useMemo(() => countBy(filtered, 'status'), [filtered]);
   const byPayment = useMemo(() => countBy(filtered, 'payment_status'), [filtered]);
-  const byDeclaredUsage = useMemo(() => countBy(filtered, 'declared_usage'), [filtered]);
+  const byDeclaredUsage = useMemo(() => countBy(normalized, 'declared_usage'), [normalized]);
   const byOwnerLegalStatus = useMemo(() => countBy(filtered, 'owner_legal_status'), [filtered]);
-  const byConstructionType = useMemo(() => countBy(filtered, 'construction_type'), [filtered]);
+  const byConstructionType = useMemo(() => countBy(normalized, 'construction_type'), [normalized]);
   const byConstructionNature = useMemo(() => countBy(filtered, 'construction_nature'), [filtered]);
   const byDeducedTitleType = useMemo(() => countBy(filtered, 'deduced_title_type'), [filtered]);
   const byNationality = useMemo(() => countBy(filtered, 'nationality'), [filtered]);
