@@ -171,6 +171,20 @@ const AdminPayments: React.FC<AdminPaymentsProps> = ({ onRefresh }) => {
                 <SelectItem value="cancelled">Annulé</SelectItem>
               </SelectContent>
             </Select>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="h-8 text-xs border rounded-md px-2 bg-background w-32"
+              placeholder="Du"
+            />
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="h-8 text-xs border rounded-md px-2 bg-background w-32"
+              placeholder="Au"
+            />
             <Button onClick={handleExport} variant="outline" size="sm" className="gap-1 h-8 text-xs">
               <Download className="h-3 w-3" />
               <span className="hidden sm:inline">Exporter</span>
