@@ -108,6 +108,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (!formData.propertyTitleType || formData.propertyTitleType.trim() === '') {
       missing.push({ field: 'propertyTitleType', label: 'Type de titre de propriété', tab: 'general' });
     }
+    // Si "Autre" est sélectionné, le nom personnalisé est obligatoire
+    if (formData.propertyTitleType === 'Autre' && (!customTitleName || customTitleName.trim() === '')) {
+      missing.push({ field: 'customTitleName', label: 'Nom du titre de propriété (Autre)', tab: 'general' });
+    }
     
     // Vérifier qu'au moins un propriétaire actuel a lastName et firstName (obligatoire)
     const hasValidOwner = currentOwners.some(owner => 
