@@ -90,7 +90,7 @@ const AdminLandDisputes: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setDisputes((data as any[]) || []);
+      setDisputes((data || []) as LandDispute[]);
     } catch (error: any) {
       toast.error('Erreur lors du chargement des litiges');
       console.error('Error:', error);
