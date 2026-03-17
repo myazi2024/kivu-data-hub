@@ -721,7 +721,7 @@ export const generateBuildingPermits = async (
     issue_date: ['2023-01-10', '2024-03-15'][i],
     issuing_service: [`Service Urbanisme Kinshasa`, `Service Urbanisme Goma`][i],
     validity_period_months: [24, 12][i],
-    administrative_status: ['valide', 'expiré'][i],
+    administrative_status: ['Conforme', 'Non autorisé'][i],
     is_current: [true, false][i],
   }));
 
