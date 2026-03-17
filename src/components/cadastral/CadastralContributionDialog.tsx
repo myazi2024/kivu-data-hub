@@ -2563,11 +2563,16 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           <TabsContent value="general" className="space-y-4 sm:space-y-6 mt-4 sm:mt-6 animate-fade-in">
             <PropertyTitleTypeSelect 
               value={formData.propertyTitleType || ''}
-              onValueChange={(value) => handleInputChange('propertyTitleType', value)}
+              onValueChange={(value) => {
+                handleInputChange('propertyTitleType', value);
+                if (value !== 'Autre') setCustomTitleName('');
+              }}
               leaseType={formData.leaseType}
               onLeaseTypeChange={(type) => handleInputChange('leaseType', type)}
               leaseYears={leaseYears}
               onLeaseYearsChange={setLeaseYears}
+              customTitleName={customTitleName}
+              onCustomTitleNameChange={setCustomTitleName}
             />
 
             {formData.propertyTitleType && (
