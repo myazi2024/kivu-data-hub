@@ -97,7 +97,9 @@ export const generateParcels = async (parcelNumbers: string[]) => {
 
 /** Step 1: Generate contributions with diverse data */
 export const generateContributions = async (userId: string, parcelNumbers: string[]) => {
-  const statuses = ['approved', 'pending', 'rejected', 'pending', 'approved'];
+  // Bug 14 fix: All start as 'pending' to avoid triggering auto_generate_ccc_code on insert
+  // The CCC codes are generated manually in generateContributorCodes instead
+  const statuses = ['pending', 'pending', 'pending', 'pending', 'pending'];
   const types: Array<'creation' | 'update'> = ['creation', 'creation', 'update', 'creation', 'creation'];
   const areas = [500, 1000, 750, 2000, 350];
   const titleTypes = ['Certificat d\'enregistrement', 'Contrat de location (Contrat d\'occupation provisoire)', 'Fiche parcellaire', 'Certificat d\'enregistrement', 'Contrat de location (Contrat d\'occupation provisoire)'];
