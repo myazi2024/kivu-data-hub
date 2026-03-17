@@ -716,7 +716,12 @@ const AdminContributionConfig = () => {
               </Button>
             </TabsContent>
 
-            {/* Listes de valeurs (Picklists) */}
+            {/* Listes fixes (Select dropdowns) */}
+            <TabsContent value="static-picklists" className="space-y-4 mt-4">
+              <AdminStaticPicklistManager />
+            </TabsContent>
+
+            {/* Listes suggestives (Picklists) */}
             <TabsContent value="picklists" className="space-y-4 mt-4">
               <AdminPicklistManager />
             </TabsContent>
