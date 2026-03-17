@@ -4613,10 +4613,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl">
-                              <SelectItem value="Payé">Payé</SelectItem>
-                              <SelectItem value="Payé partiellement">Partiel</SelectItem>
-                              <SelectItem value="En attente">En attente</SelectItem>
-                              <SelectItem value="En retard">En retard</SelectItem>
+                              {getPicklistOptions('picklist_tax_payment_status').map(opt => (
+                                <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
