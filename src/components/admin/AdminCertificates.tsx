@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Award, FileText, Settings, Loader2, RefreshCw, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,6 +18,10 @@ import {
   ResponsiveTableHead,
 } from '@/components/ui/responsive-table';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { usePagination } from '@/hooks/usePagination';
+import { PaginationControls } from '@/components/shared/PaginationControls';
+import { exportToCSV } from '@/utils/csvExport';
+import { Badge } from '@/components/ui/badge';
 
 interface GeneratedCertificate {
   id: string;
@@ -44,15 +47,13 @@ const AdminCertificates: React.FC = () => {
 
   const fetchGeneratedCertificates = async () => {
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('generated_certificates')
         .select('*')
-        .order('generated_at', { ascending: false })
-        .limit(50);
+        .order('generated_at', { ascending: false });
       if (error) throw error;
       setGeneratedCerts((data || []) as GeneratedCertificate[]);
     } catch {
-      // Table may not exist yet, that's ok
       setGeneratedCerts([]);
     } finally {
       setLoading(false);
@@ -61,8 +62,7 @@ const AdminCertificates: React.FC = () => {
 
   const fetchStats = async () => {
     try {
-      // Count by type from generated_certificates
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('generated_certificates')
         .select('certificate_type');
       if (error) throw error;
@@ -74,6 +74,23 @@ const AdminCertificates: React.FC = () => {
     } catch {
       setStats({});
     }
+  };
+
+  const pagination = usePagination(generatedCerts, { initialPageSize: 15 });
+
+  const handleExport = () => {
+    exportToCSV({
+      filename: `certificats_${format(new Date(), 'yyyy-MM-dd')}.csv`,
+      headers: ['Référence', 'Type', 'Bénéficiaire', 'Parcelle', 'Statut', 'Date'],
+      data: generatedCerts.map(cert => [
+        cert.reference_number,
+        CERTIFICATE_TYPE_LABELS[cert.certificate_type as CertificateType] || cert.certificate_type,
+        cert.recipient_name,
+        cert.parcel_number,
+        cert.status,
+        format(new Date(cert.generated_at), 'dd/MM/yyyy HH:mm')
+      ])
+    });
   };
 
   return (
@@ -123,10 +140,16 @@ const AdminCertificates: React.FC = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-semibold">Certificats générés</h3>
-                <Button variant="outline" size="sm" onClick={fetchGeneratedCertificates}>
-                  <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                  Actualiser
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={handleExport} className="text-xs gap-1">
+                    <Download className="h-3 w-3" />
+                    CSV
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={fetchGeneratedCertificates}>
+                    <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                    Actualiser
+                  </Button>
+                </div>
               </div>
 
               {loading ? (
@@ -140,54 +163,71 @@ const AdminCertificates: React.FC = () => {
                   <p className="text-xs">Les certificats apparaîtront ici après génération</p>
                 </div>
               ) : (
-                <ResponsiveTable>
-                  <ResponsiveTableHeader>
-                    <ResponsiveTableRow>
-                      <ResponsiveTableHead priority="high">Référence</ResponsiveTableHead>
-                      <ResponsiveTableHead priority="high">Type</ResponsiveTableHead>
-                      <ResponsiveTableHead priority="medium">Bénéficiaire</ResponsiveTableHead>
-                      <ResponsiveTableHead priority="low">Parcelle</ResponsiveTableHead>
-                      <ResponsiveTableHead priority="medium">Date</ResponsiveTableHead>
-                      <ResponsiveTableHead priority="high">Actions</ResponsiveTableHead>
-                    </ResponsiveTableRow>
-                  </ResponsiveTableHeader>
-                  <ResponsiveTableBody>
-                    {generatedCerts.map(cert => (
-                      <ResponsiveTableRow key={cert.id}>
-                        <ResponsiveTableCell priority="high">
-                          <span className="font-mono text-xs">{cert.reference_number}</span>
-                        </ResponsiveTableCell>
-                        <ResponsiveTableCell priority="high">
-                          <Badge variant="secondary" className="text-[10px]">
-                            {CERTIFICATE_TYPE_LABELS[cert.certificate_type as CertificateType] || cert.certificate_type}
-                          </Badge>
-                        </ResponsiveTableCell>
-                        <ResponsiveTableCell priority="medium">
-                          <span className="text-xs">{cert.recipient_name}</span>
-                        </ResponsiveTableCell>
-                        <ResponsiveTableCell priority="low">
-                          <span className="text-xs">{cert.parcel_number}</span>
-                        </ResponsiveTableCell>
-                        <ResponsiveTableCell priority="medium">
-                          <span className="text-xs">{format(new Date(cert.generated_at), 'dd/MM/yyyy HH:mm')}</span>
-                        </ResponsiveTableCell>
-                        <ResponsiveTableCell priority="high">
-                          {cert.certificate_url && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 text-xs"
-                              onClick={() => window.open(cert.certificate_url!, '_blank')}
-                            >
-                              <Download className="h-3.5 w-3.5 mr-1" />
-                              PDF
-                            </Button>
-                          )}
-                        </ResponsiveTableCell>
+                <>
+                  <ResponsiveTable>
+                    <ResponsiveTableHeader>
+                      <ResponsiveTableRow>
+                        <ResponsiveTableHead priority="high">Référence</ResponsiveTableHead>
+                        <ResponsiveTableHead priority="high">Type</ResponsiveTableHead>
+                        <ResponsiveTableHead priority="medium">Bénéficiaire</ResponsiveTableHead>
+                        <ResponsiveTableHead priority="low">Parcelle</ResponsiveTableHead>
+                        <ResponsiveTableHead priority="medium">Date</ResponsiveTableHead>
+                        <ResponsiveTableHead priority="high">Actions</ResponsiveTableHead>
                       </ResponsiveTableRow>
-                    ))}
-                  </ResponsiveTableBody>
-                </ResponsiveTable>
+                    </ResponsiveTableHeader>
+                    <ResponsiveTableBody>
+                      {pagination.paginatedData.map(cert => (
+                        <ResponsiveTableRow key={cert.id}>
+                          <ResponsiveTableCell priority="high" label="Référence">
+                            <span className="font-mono text-xs">{cert.reference_number}</span>
+                          </ResponsiveTableCell>
+                          <ResponsiveTableCell priority="high" label="Type">
+                            <Badge variant="secondary" className="text-[10px]">
+                              {CERTIFICATE_TYPE_LABELS[cert.certificate_type as CertificateType] || cert.certificate_type}
+                            </Badge>
+                          </ResponsiveTableCell>
+                          <ResponsiveTableCell priority="medium" label="Bénéficiaire">
+                            <span className="text-xs">{cert.recipient_name}</span>
+                          </ResponsiveTableCell>
+                          <ResponsiveTableCell priority="low" label="Parcelle">
+                            <span className="text-xs">{cert.parcel_number}</span>
+                          </ResponsiveTableCell>
+                          <ResponsiveTableCell priority="medium" label="Date">
+                            <span className="text-xs">{format(new Date(cert.generated_at), 'dd/MM/yyyy HH:mm')}</span>
+                          </ResponsiveTableCell>
+                          <ResponsiveTableCell priority="high" label="Actions">
+                            {cert.certificate_url && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs"
+                                onClick={() => window.open(cert.certificate_url!, '_blank')}
+                              >
+                                <Download className="h-3.5 w-3.5 mr-1" />
+                                PDF
+                              </Button>
+                            )}
+                          </ResponsiveTableCell>
+                        </ResponsiveTableRow>
+                      ))}
+                    </ResponsiveTableBody>
+                  </ResponsiveTable>
+
+                  {pagination.totalItems > 0 && (
+                    <PaginationControls
+                      currentPage={pagination.currentPage}
+                      totalPages={pagination.totalPages}
+                      pageSize={pagination.pageSize}
+                      totalItems={pagination.totalItems}
+                      hasNextPage={pagination.hasNextPage}
+                      hasPreviousPage={pagination.hasPreviousPage}
+                      onPageChange={pagination.goToPage}
+                      onPageSizeChange={pagination.changePageSize}
+                      onNextPage={pagination.goToNextPage}
+                      onPreviousPage={pagination.goToPreviousPage}
+                    />
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
