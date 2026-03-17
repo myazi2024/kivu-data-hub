@@ -426,9 +426,11 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="_all">Tous</SelectItem>
-                          <SelectItem value="Certificat d'enregistrement">Certificat</SelectItem>
-                          <SelectItem value="Titre foncier">Titre foncier</SelectItem>
-                          <SelectItem value="Concession">Concession</SelectItem>
+                          {PROPERTY_TITLE_TYPES.filter(t => t.value !== 'Autre').map((type) => (
+                            <SelectItem key={type.value} value={type.value}>
+                              {type.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
