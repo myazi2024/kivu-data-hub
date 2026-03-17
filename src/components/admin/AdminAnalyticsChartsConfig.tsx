@@ -226,13 +226,16 @@ const TabManager: React.FC<TabManagerProps> = ({ localTabs, onUpdate }) => {
 const AdminAnalyticsChartsConfig: React.FC = () => {
   const { configs, isLoading } = useAnalyticsChartsConfig();
   const { tabs: dbTabs } = useAnalyticsTabsConfig();
-  const { upsertConfig } = useAnalyticsChartsConfigMutations();
+  const { upsertConfig, deleteTabOverrides } = useAnalyticsChartsConfigMutations();
   const [activeTab, setActiveTab] = useState(Object.keys(ANALYTICS_TABS_REGISTRY)[0]);
   const [localItems, setLocalItems] = useState<Record<string, ChartConfigItem[]>>({});
   const [localTabs, setLocalTabs] = useState<TabConfig[]>([]);
-  const [hasChanges, setHasChanges] = useState(false);
+  const [hasChartChanges, setHasChartChanges] = useState(false);
+  const [hasTabChanges, setHasTabChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [viewMode, setViewMode] = useState<'tabs' | 'charts'>('tabs');
+
+  const hasChanges = hasChartChanges || hasTabChanges;
 
   // Initialize local state from defaults + DB overrides
   useEffect(() => {
@@ -280,7 +283,7 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
       ...prev,
       [activeTab]: (prev[activeTab] || []).map(i => i.item_key === itemKey ? updated : i),
     }));
-    setHasChanges(true);
+    setHasChartChanges(true);
   }, [activeTab]);
 
   const moveItem = useCallback((itemKey: string, direction: 'up' | 'down', type: 'kpi' | 'chart') => {
@@ -302,7 +305,7 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
         return a.display_order - b.display_order;
       }) };
     });
-    setHasChanges(true);
+    setHasChartChanges(true);
   }, [activeTab]);
 
   const tabConfigToItems = useCallback((tabs: TabConfig[]): ChartConfigItem[] => {
@@ -322,9 +325,10 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
       const items = localItems[activeTab] || [];
       await upsertConfig.mutateAsync(items);
       toast.success(`Configuration "${ANALYTICS_TABS_REGISTRY[activeTab]?.label}" sauvegardée`);
-      setHasChanges(false);
-    } catch (error) {
-      toast.error('Erreur lors de la sauvegarde');
+      setHasChartChanges(false);
+    } catch (error: any) {
+      console.error('Save chart error:', error);
+      toast.error(`Erreur: ${error?.message || 'Sauvegarde impossible'}`);
     } finally {
       setIsSaving(false);
     }
@@ -337,9 +341,11 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
       const tabItems = tabConfigToItems(localTabs);
       await upsertConfig.mutateAsync([...allChartItems, ...tabItems]);
       toast.success('Toute la configuration Analytics a été sauvegardée');
-      setHasChanges(false);
-    } catch (error) {
-      toast.error('Erreur lors de la sauvegarde globale');
+      setHasChartChanges(false);
+      setHasTabChanges(false);
+    } catch (error: any) {
+      console.error('Save all error:', error);
+      toast.error(`Erreur: ${error?.message || 'Sauvegarde globale impossible'}`);
     } finally {
       setIsSaving(false);
     }
@@ -351,9 +357,10 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
       const tabItems = tabConfigToItems(localTabs);
       await upsertConfig.mutateAsync(tabItems);
       toast.success('Configuration des onglets sauvegardée');
-      setHasChanges(false);
-    } catch (error) {
-      toast.error('Erreur lors de la sauvegarde des onglets');
+      setHasTabChanges(false);
+    } catch (error: any) {
+      console.error('Save tabs error:', error);
+      toast.error(`Erreur: ${error?.message || 'Sauvegarde des onglets impossible'}`);
     } finally {
       setIsSaving(false);
     }
