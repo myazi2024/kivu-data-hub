@@ -111,6 +111,7 @@ export const useTestDataActions = ({
         await safeDelete('tax_history', supabase.from('cadastral_tax_history').delete().in('parcel_id', parcelIds));
         await safeDelete('boundary_history', supabase.from('cadastral_boundary_history').delete().in('parcel_id', parcelIds));
         await safeDelete('mortgages', supabase.from('cadastral_mortgages').delete().in('parcel_id', parcelIds));
+        await safeDelete('building_permits', supabase.from('cadastral_building_permits').delete().in('parcel_id', parcelIds));
       }
 
       // 8. Parcels
