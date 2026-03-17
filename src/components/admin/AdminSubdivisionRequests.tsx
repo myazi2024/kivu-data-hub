@@ -105,7 +105,7 @@ export function AdminSubdivisionRequests() {
     const matchesSearch = req.reference_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
       req.parcel_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
       req.requester_last_name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || req.status === statusFilter;
+    const matchesStatus = statusFilter === '_all' || req.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
