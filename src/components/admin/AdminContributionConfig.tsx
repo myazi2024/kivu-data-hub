@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useContributionConfig } from '@/hooks/useContributionConfig';
-import { Loader2, Save, Plus, Trash2, FileText, MapPin, Users, DollarSign } from 'lucide-react';
+import { Loader2, Save, Plus, Trash2, FileText, MapPin, Users, DollarSign, ListFilter } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { ConfigPreview } from './config/ConfigPreview';
