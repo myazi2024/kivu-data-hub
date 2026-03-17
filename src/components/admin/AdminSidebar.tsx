@@ -78,7 +78,7 @@ const menuItems = [
     category: 'Finances',
     items: [
       { icon: BarChart, label: 'Tableau de Bord', value: 'financial', badge: null },
-      { icon: CreditCard, label: 'Paiements', value: 'payments', badge: null },
+      { icon: CreditCard, label: 'Paiements', value: 'payments', badge: 'payments' },
       { icon: CheckSquare, label: 'Réconciliation', value: 'payment-reconciliation', badge: null },
       { icon: Smartphone, label: 'Moyens de Paiement', value: 'payment-methods', badge: null },
       { icon: Settings, label: 'Mode de Paiement', value: 'payment-mode', badge: null },
