@@ -42,6 +42,7 @@ import { useContributionConfig } from '@/hooks/useContributionConfig';
 import { ParcelMapPreview } from './ParcelMapPreview';
 import { useMapConfig } from '@/hooks/useMapConfig';
 import SuggestivePicklist from './SuggestivePicklist';
+import { useCCCFormPicklists } from '@/hooks/useCCCFormPicklists';
 
 interface CadastralContributionDialogProps {
   open: boolean;
@@ -59,6 +60,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const { submitContribution, updateContribution, loading } = useCadastralContribution();
   const { getConfig } = useContributionConfig();
   const { config: mapConfig, loading: mapConfigLoading } = useMapConfig();
+  const { getOptions: getPicklistOptions, getDependentOptions: getPicklistDependentOptions } = useCCCFormPicklists();
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -832,23 +834,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       return;
     }
 
-    let natures: string[] = [];
-    
-    switch (formData.constructionType) {
-      case 'Résidentielle':
-      case 'Commerciale':
-      case 'Industrielle':
-        natures = ['Durable', 'Semi-durable', 'Précaire'];
-        break;
-      case 'Agricole':
-        natures = ['Durable', 'Semi-durable', 'Précaire', 'Non bâti'];
-        break;
-      case 'Terrain nu':
-        natures = ['Non bâti'];
-        break;
-      default:
-        natures = [];
-    }
+    const natureMap = getPicklistDependentOptions('picklist_construction_nature');
+    const natures = natureMap[formData.constructionType] || [];
     
     setAvailableConstructionNatures(natures);
     
@@ -856,7 +843,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (formData.constructionNature && !natures.includes(formData.constructionNature)) {
       handleInputChange('constructionNature', undefined);
     }
-  }, [formData.constructionType]);
+  }, [formData.constructionType, getPicklistDependentOptions]);
 
   // Logique de dépendance: Type + Nature -> Usage déclaré
   useEffect(() => {
@@ -866,54 +853,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       return;
     }
 
-    let usages: string[] = [];
+    const usageMap = getPicklistDependentOptions('picklist_declared_usage');
     
-    // Pour les terrains non bâtis
-    if (formData.constructionNature === 'Non bâti') {
-      usages = ['Terrain vacant', 'Agriculture', 'Parking'];
-    }
-    // Pour les constructions résidentielles
-    else if (formData.constructionType === 'Résidentielle') {
-      if (formData.constructionNature === 'Durable') {
-        usages = ['Habitation', 'Usage mixte'];
-      } else if (formData.constructionNature === 'Semi-durable') {
-        usages = ['Habitation', 'Usage mixte'];
-      } else if (formData.constructionNature === 'Précaire') {
-        usages = ['Habitation'];
-      }
-    }
-    // Pour les constructions commerciales
-    else if (formData.constructionType === 'Commerciale') {
-      if (formData.constructionNature === 'Durable') {
-        usages = ['Commerce', 'Bureau', 'Usage mixte', 'Entrepôt'];
-      } else if (formData.constructionNature === 'Semi-durable') {
-        usages = ['Commerce', 'Bureau', 'Entrepôt'];
-      } else if (formData.constructionNature === 'Précaire') {
-        usages = ['Commerce'];
-      }
-    }
-    // Pour les constructions industrielles
-    else if (formData.constructionType === 'Industrielle') {
-      if (formData.constructionNature === 'Durable') {
-        usages = ['Industrie', 'Entrepôt'];
-      } else if (formData.constructionNature === 'Semi-durable') {
-        usages = ['Industrie', 'Entrepôt'];
-      } else if (formData.constructionNature === 'Précaire') {
-        usages = ['Industrie'];
-      }
-    }
-    // Pour l'usage agricole
-    else if (formData.constructionType === 'Agricole') {
-      if (formData.constructionNature === 'Non bâti') {
-        usages = ['Agriculture'];
-      } else {
-        usages = ['Agriculture', 'Habitation'];
-      }
-    }
-    // Pour les terrains nus (redondant avec le premier test, mais pour la clarté)
-    else if (formData.constructionType === 'Terrain nu') {
-      usages = ['Terrain vacant', 'Agriculture', 'Parking'];
-    }
+    // Try specific key first (e.g. "Résidentielle_Durable"), then nature-only key (e.g. "Non bâti")
+    const specificKey = `${formData.constructionType}_${formData.constructionNature}`;
+    const usages = usageMap[specificKey] || usageMap[formData.constructionNature] || [];
     
     setAvailableDeclaredUsages(usages);
     
@@ -921,7 +865,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (formData.declaredUsage && !usages.includes(formData.declaredUsage)) {
       handleInputChange('declaredUsage', undefined);
     }
-  }, [formData.constructionType, formData.constructionNature]);
+  }, [formData.constructionType, formData.constructionNature, getPicklistDependentOptions]);
 
   // Synchroniser "usage prévu" avec "usage déclaré" quand on passe en mode "Demander un permis"
   useEffect(() => {
@@ -2910,9 +2854,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="rounded-xl">
-                            <SelectItem value="Personne physique">Personne physique</SelectItem>
-                            <SelectItem value="Personne morale">Personne morale</SelectItem>
-                            <SelectItem value="État">État</SelectItem>
+                            {getPicklistOptions('picklist_legal_status').map(opt => (
+                              <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       )}
@@ -2929,8 +2873,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             <SelectValue placeholder="Sélectionner le genre" />
                           </SelectTrigger>
                           <SelectContent className="rounded-xl">
-                            <SelectItem value="Masculin">Masculin</SelectItem>
-                            <SelectItem value="Féminin">Féminin</SelectItem>
+                            {getPicklistOptions('picklist_gender').map(opt => (
+                              <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -2951,8 +2896,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                               <SelectValue placeholder="Sélectionner" />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl">
-                              <SelectItem value="Société">Société</SelectItem>
-                              <SelectItem value="Association">Association</SelectItem>
+                              {getPicklistOptions('picklist_entity_type').map(opt => (
+                                <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
@@ -2971,15 +2917,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                                 <SelectValue placeholder="Sélectionner" />
                               </SelectTrigger>
                               <SelectContent className="rounded-xl">
-                                <SelectItem value="Entreprise individuelle (Ets)">Entreprise individuelle (Ets)</SelectItem>
-                                <SelectItem value="Société en Participation (SEP)">Société en Participation (SEP)</SelectItem>
-                                <SelectItem value="Société à Responsabilité Limitée (SARL)">SARL</SelectItem>
-                                <SelectItem value="Société Anonyme (SA)">SA</SelectItem>
-                                <SelectItem value="Société par Actions Simplifiée (SAS)">SAS</SelectItem>
-                                <SelectItem value="Société en Nom Collectif (SNC)">SNC</SelectItem>
-                                <SelectItem value="Société en Commandite Simple (SCS)">SCS</SelectItem>
-                                <SelectItem value="Groupement d'Intérêt Économique (GIE)">GIE</SelectItem>
-                                <SelectItem value="Autre">Autre</SelectItem>
+                                {getPicklistOptions('picklist_entity_subtype_societe').map(opt => (
+                                  <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                             {owner.entitySubType === 'Autre' && (
@@ -3006,9 +2946,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                                 <SelectValue placeholder="Sélectionner" />
                               </SelectTrigger>
                               <SelectContent className="rounded-xl">
-                                <SelectItem value="Association sans but lucratif (ASBL)">ASBL</SelectItem>
-                                <SelectItem value="Établissement d'Utilité Publique (EUP)">EUP</SelectItem>
-                                <SelectItem value="Autre">Autre</SelectItem>
+                                {getPicklistOptions('picklist_entity_subtype_association').map(opt => (
+                                  <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                             {owner.entitySubType === 'Autre' && (
@@ -3079,8 +3019,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                               <SelectValue placeholder="Sélectionner" />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl">
-                              <SelectItem value="Concession">Concession</SelectItem>
-                              <SelectItem value="Affectation">Affectation</SelectItem>
+                              {getPicklistOptions('picklist_right_type').map(opt => (
+                                <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
@@ -3372,11 +3313,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         <SelectValue placeholder="Sélectionner" />
                       </SelectTrigger>
                       <SelectContent className="rounded-xl">
-                        <SelectItem value="Résidentielle">Résidentielle</SelectItem>
-                        <SelectItem value="Commerciale">Commerciale</SelectItem>
-                        <SelectItem value="Industrielle">Industrielle</SelectItem>
-                        <SelectItem value="Agricole">Agricole</SelectItem>
-                        <SelectItem value="Terrain nu">Terrain nu</SelectItem>
+                        {getPicklistOptions('picklist_construction_type').map(opt => (
+                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -3427,15 +3366,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           <SelectValue placeholder="Sélectionner" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl">
-                          <SelectItem value="Béton armé">Béton armé</SelectItem>
-                          <SelectItem value="Briques cuites">Briques cuites</SelectItem>
-                          <SelectItem value="Briques adobes">Briques adobes</SelectItem>
-                          <SelectItem value="Parpaings">Parpaings</SelectItem>
-                          <SelectItem value="Bois">Bois</SelectItem>
-                          <SelectItem value="Tôles">Tôles</SelectItem>
-                          <SelectItem value="Semi-dur">Semi-dur</SelectItem>
-                          <SelectItem value="Mixte">Mixte</SelectItem>
-                          <SelectItem value="Autre">Autre</SelectItem>
+                          {getPicklistOptions('picklist_construction_materials').map(opt => (
+                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -4238,9 +4171,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl">
-                          <SelectItem value="Personne physique">Personne physique</SelectItem>
-                          <SelectItem value="Personne morale">Personne morale</SelectItem>
-                          <SelectItem value="État">État</SelectItem>
+                          {getPicklistOptions('picklist_legal_status').map(opt => (
+                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -4318,9 +4251,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                                 <SelectValue placeholder="Sélectionner" />
                               </SelectTrigger>
                               <SelectContent className="rounded-xl">
-                                <SelectItem value="Association sans but lucratif (ASBL)">ASBL</SelectItem>
-                                <SelectItem value="Établissement d'Utilité Publique (EUP)">EUP</SelectItem>
-                                <SelectItem value="Autre">Autre</SelectItem>
+                                {getPicklistOptions('picklist_entity_subtype_association').map(opt => (
+                                  <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                             {owner.entitySubType === 'Autre' && (
@@ -4425,11 +4358,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl">
-                          <SelectItem value="Vente">Vente</SelectItem>
-                          <SelectItem value="Donation">Donation</SelectItem>
-                          <SelectItem value="Succession">Succession</SelectItem>
-                          <SelectItem value="Expropriation">Expropriation</SelectItem>
-                          <SelectItem value="Échange">Échange</SelectItem>
+                          {getPicklistOptions('picklist_mutation_type').map(opt => (
+                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -4636,13 +4567,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                               <SelectValue placeholder="Type" />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl">
-                              <SelectItem value="Impôt foncier annuel">Impôt foncier</SelectItem>
-                              <SelectItem value="Impôt sur les revenus locatifs">Revenus locatifs</SelectItem>
-                              <SelectItem value="Taxe de bâtisse">Taxe de bâtisse</SelectItem>
-                              <SelectItem value="Taxe de superficie">Superficie</SelectItem>
-                              <SelectItem value="Taxe de plus-value immobilière">Plus-value</SelectItem>
-                              <SelectItem value="Taxe d'habitation">Habitation</SelectItem>
-                              <SelectItem value="Autre taxe">Autre</SelectItem>
+                              {getPicklistOptions('picklist_tax_type').map(opt => (
+                                <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
@@ -4686,10 +4613,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl">
-                              <SelectItem value="Payé">Payé</SelectItem>
-                              <SelectItem value="Payé partiellement">Partiel</SelectItem>
-                              <SelectItem value="En attente">En attente</SelectItem>
-                              <SelectItem value="En retard">En retard</SelectItem>
+                              {getPicklistOptions('picklist_tax_payment_status').map(opt => (
+                                <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
@@ -4924,11 +4850,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                                   <SelectValue placeholder="Type" />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl">
-                                  <SelectItem value="Banque">Banque</SelectItem>
-                                  <SelectItem value="Microfinance">Microfinance</SelectItem>
-                                  <SelectItem value="Coopérative">Coopérative</SelectItem>
-                                  <SelectItem value="Particulier">Particulier</SelectItem>
-                                  <SelectItem value="Autre institution">Autre</SelectItem>
+                                  {getPicklistOptions('picklist_creditor_type').map(opt => (
+                                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                                  ))}
                                 </SelectContent>
                               </Select>
                             </div>
@@ -4956,9 +4880,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                                   <SelectValue placeholder="Statut" />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl">
-                                  <SelectItem value="Active">En cours</SelectItem>
-                                  <SelectItem value="En défaut">En défaut de paiement</SelectItem>
-                                  <SelectItem value="Renégociée">Renégociée</SelectItem>
+                                  {getPicklistOptions('picklist_mortgage_status').map(opt => (
+                                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                                  ))}
                                 </SelectContent>
                               </Select>
                             </div>

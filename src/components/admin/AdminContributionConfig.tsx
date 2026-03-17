@@ -19,6 +19,7 @@ import { ConfigTest } from './config/ConfigTest';
 import { useConfigHistory } from '@/hooks/useConfigHistory';
 import { useConfigValidation } from '@/hooks/useConfigValidation';
 import AdminPicklistManager from './config/AdminPicklistManager';
+import AdminStaticPicklistManager from './config/AdminStaticPicklistManager';
 
 const AdminContributionConfig = () => {
   const { configs, loading, updateConfig } = useContributionConfig();
@@ -353,7 +354,8 @@ const AdminContributionConfig = () => {
                   <TabsTrigger value="help" className="text-[10px] sm:text-xs px-1 sm:px-3">Aide</TabsTrigger>
                   <TabsTrigger value="validation" className="text-[10px] sm:text-xs px-1 sm:px-3">Valid.</TabsTrigger>
                   <TabsTrigger value="ccc" className="text-[10px] sm:text-xs px-1 sm:px-3">CCC</TabsTrigger>
-                  <TabsTrigger value="picklists" className="text-[10px] sm:text-xs px-1 sm:px-3">Listes</TabsTrigger>
+                  <TabsTrigger value="static-picklists" className="text-[10px] sm:text-xs px-1 sm:px-3">Listes fixes</TabsTrigger>
+                  <TabsTrigger value="picklists" className="text-[10px] sm:text-xs px-1 sm:px-3">Listes suggestives</TabsTrigger>
                   <TabsTrigger value="map" className="text-[10px] sm:text-xs px-1 sm:px-3">Carte</TabsTrigger>
                 </TabsList>
 
@@ -714,7 +716,12 @@ const AdminContributionConfig = () => {
               </Button>
             </TabsContent>
 
-            {/* Listes de valeurs (Picklists) */}
+            {/* Listes fixes (Select dropdowns) */}
+            <TabsContent value="static-picklists" className="space-y-4 mt-4">
+              <AdminStaticPicklistManager />
+            </TabsContent>
+
+            {/* Listes suggestives (Picklists) */}
             <TabsContent value="picklists" className="space-y-4 mt-4">
               <AdminPicklistManager />
             </TabsContent>
