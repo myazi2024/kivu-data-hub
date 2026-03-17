@@ -797,6 +797,7 @@ export const rollbackTestData = async (parcelNumbers: string[], suffix: string) 
     await supabase.from('cadastral_tax_history').delete().in('parcel_id', parcelIds);
     await supabase.from('cadastral_boundary_history').delete().in('parcel_id', parcelIds);
     await supabase.from('cadastral_mortgages').delete().in('parcel_id', parcelIds);
+    await supabase.from('cadastral_building_permits').delete().in('parcel_id', parcelIds);
   }
   await supabase.from('cadastral_parcels').delete().in('parcel_number', parcelNumbers);
 
