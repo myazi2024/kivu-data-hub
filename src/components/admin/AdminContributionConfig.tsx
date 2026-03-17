@@ -354,7 +354,8 @@ const AdminContributionConfig = () => {
                   <TabsTrigger value="help" className="text-[10px] sm:text-xs px-1 sm:px-3">Aide</TabsTrigger>
                   <TabsTrigger value="validation" className="text-[10px] sm:text-xs px-1 sm:px-3">Valid.</TabsTrigger>
                   <TabsTrigger value="ccc" className="text-[10px] sm:text-xs px-1 sm:px-3">CCC</TabsTrigger>
-                  <TabsTrigger value="picklists" className="text-[10px] sm:text-xs px-1 sm:px-3">Listes</TabsTrigger>
+                  <TabsTrigger value="static-picklists" className="text-[10px] sm:text-xs px-1 sm:px-3">Listes fixes</TabsTrigger>
+                  <TabsTrigger value="picklists" className="text-[10px] sm:text-xs px-1 sm:px-3">Listes suggestives</TabsTrigger>
                   <TabsTrigger value="map" className="text-[10px] sm:text-xs px-1 sm:px-3">Carte</TabsTrigger>
                 </TabsList>
 
