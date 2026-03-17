@@ -2623,7 +2623,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   <div className="space-y-2 pt-1 border-t border-border/50">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="titleDoc" className="text-sm font-medium">
-                        Images ou pdf du {formData.propertyTitleType ? formData.propertyTitleType.toLowerCase() : 'titre de propriété'} <span className="text-destructive">*</span>
+                        Images ou pdf du {getEffectiveTitleName(formData.propertyTitleType, customTitleName)?.toLowerCase() || 'titre de propriété'} <span className="text-destructive">*</span>
                       </Label>
                       <span className="text-xs text-muted-foreground">
                         {titleDocFiles.length}/5
