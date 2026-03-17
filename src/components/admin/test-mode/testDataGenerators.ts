@@ -97,9 +97,9 @@ export const generateParcels = async (parcelNumbers: string[]) => {
 
 /** Step 1: Generate contributions with diverse data */
 export const generateContributions = async (userId: string, parcelNumbers: string[]) => {
-  // Bug 14 fix: All start as 'pending' to avoid triggering auto_generate_ccc_code on insert
-  // The CCC codes are generated manually in generateContributorCodes instead
-  const statuses = ['pending', 'pending', 'pending', 'pending', 'pending'];
+  // Bug 14 fix: Insert all as 'pending' first to avoid triggering auto_generate_ccc_code,
+  // then update specific ones to 'approved'/'rejected' afterward.
+  const finalStatuses = ['approved', 'pending', 'rejected', 'pending', 'approved'];
   const types: Array<'creation' | 'update'> = ['creation', 'creation', 'update', 'creation', 'creation'];
   const areas = [500, 1000, 750, 2000, 350];
   const titleTypes = ['Certificat d\'enregistrement', 'Contrat de location (Contrat d\'occupation provisoire)', 'Fiche parcellaire', 'Certificat d\'enregistrement', 'Contrat de location (Contrat d\'occupation provisoire)'];
@@ -117,7 +117,7 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
     territoire: i === 1 ? 'Nyiragongo' : null,
     village: i === 4 ? 'Test Village' : null,
     circonscription_fonciere: PROVINCES[i].circonscription_fonciere,
-    status: statuses[i],
+    status: 'pending', // All start pending to avoid CCC trigger
     contribution_type: types[i],
     user_id: userId,
     is_suspicious: i === 2,
@@ -136,7 +136,19 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
     .select('id, parcel_number');
 
   if (error) throw new Error(`Contributions: ${error.message}`);
-  return assertInserted(data, 'Contributions');
+  const inserted = assertInserted(data, 'Contributions');
+
+  // Now update non-pending statuses directly (bypasses the pending→approved trigger)
+  for (let i = 0; i < inserted.length; i++) {
+    if (finalStatuses[i] !== 'pending') {
+      await supabase
+        .from('cadastral_contributions')
+        .update({ status: finalStatuses[i] })
+        .eq('id', inserted[i].id);
+    }
+  }
+
+  return inserted;
 };
 
 /** Step 2: Generate invoices linked to contributions */
