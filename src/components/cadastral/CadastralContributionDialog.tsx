@@ -4850,11 +4850,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                                   <SelectValue placeholder="Type" />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl">
-                                  <SelectItem value="Banque">Banque</SelectItem>
-                                  <SelectItem value="Microfinance">Microfinance</SelectItem>
-                                  <SelectItem value="Coopérative">Coopérative</SelectItem>
-                                  <SelectItem value="Particulier">Particulier</SelectItem>
-                                  <SelectItem value="Autre institution">Autre</SelectItem>
+                                  {getPicklistOptions('picklist_creditor_type').map(opt => (
+                                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                                  ))}
                                 </SelectContent>
                               </Select>
                             </div>
