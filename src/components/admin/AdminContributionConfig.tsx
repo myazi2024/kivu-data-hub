@@ -346,13 +346,14 @@ const AdminContributionConfig = () => {
             </CardHeader>
             <CardContent className="p-3 sm:p-6">
               <Tabs defaultValue="sections">
-                <TabsList className="grid w-full grid-cols-7 h-8 sm:h-10 text-[10px] sm:text-xs p-0.5 sm:p-1">
+                <TabsList className="grid w-full grid-cols-8 h-8 sm:h-10 text-[10px] sm:text-xs p-0.5 sm:p-1">
                   <TabsTrigger value="sections" className="text-[10px] sm:text-xs px-1 sm:px-3">Sections</TabsTrigger>
                   <TabsTrigger value="required" className="text-[10px] sm:text-xs px-1 sm:px-3">Requis</TabsTrigger>
                   <TabsTrigger value="labels" className="text-[10px] sm:text-xs px-1 sm:px-3">Labels</TabsTrigger>
                   <TabsTrigger value="help" className="text-[10px] sm:text-xs px-1 sm:px-3">Aide</TabsTrigger>
                   <TabsTrigger value="validation" className="text-[10px] sm:text-xs px-1 sm:px-3">Valid.</TabsTrigger>
                   <TabsTrigger value="ccc" className="text-[10px] sm:text-xs px-1 sm:px-3">CCC</TabsTrigger>
+                  <TabsTrigger value="picklists" className="text-[10px] sm:text-xs px-1 sm:px-3">Listes</TabsTrigger>
                   <TabsTrigger value="map" className="text-[10px] sm:text-xs px-1 sm:px-3">Carte</TabsTrigger>
                 </TabsList>
 
