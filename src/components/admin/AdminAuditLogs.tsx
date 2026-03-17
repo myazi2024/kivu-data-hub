@@ -3,24 +3,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { 
-  Shield, 
-  Search, 
-  Eye,
-  Edit,
-  Trash,
-  Plus,
-  FileText,
-  Download
+  Shield, Search, Eye, Edit, Trash, Plus, FileText, Download
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { ResponsiveTable } from '@/components/ui/responsive-table';
+import {
+  ResponsiveTable, ResponsiveTableHeader, ResponsiveTableBody,
+  ResponsiveTableRow, ResponsiveTableCell, ResponsiveTableHead
+} from '@/components/ui/responsive-table';
 import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/shared/PaginationControls';
 import { exportToCSV } from '@/utils/csvExport';
@@ -42,37 +37,23 @@ export default function AdminAuditLogs() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [actionFilter, setActionFilter] = useState('all');
-  const [tableFilter, setTableFilter] = useState('all');
+  const [actionFilter, setActionFilter] = useState('_all');
+  const [tableFilter, setTableFilter] = useState('_all');
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
 
-  // Filtered logs
   const filteredLogs = logs.filter(log => {
     const matchesSearch = !searchQuery || 
       log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
       log.table_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       log.record_id?.toLowerCase().includes(searchQuery.toLowerCase());
     
-    const matchesAction = actionFilter === 'all' || log.action === actionFilter;
-    const matchesTable = tableFilter === 'all' || log.table_name === tableFilter;
+    const matchesAction = actionFilter === '_all' || log.action === actionFilter;
+    const matchesTable = tableFilter === '_all' || log.table_name === tableFilter;
     
     return matchesSearch && matchesAction && matchesTable;
   });
 
-  // Pagination
-  const {
-    currentPage,
-    pageSize,
-    totalPages,
-    paginatedData,
-    goToPage,
-    goToNextPage,
-    goToPreviousPage,
-    changePageSize,
-    hasNextPage,
-    hasPreviousPage,
-    totalItems
-  } = usePagination(filteredLogs, { initialPageSize: 15 });
+  const pagination = usePagination(filteredLogs, { initialPageSize: 15 });
 
   useEffect(() => {
     fetchLogs();
@@ -149,33 +130,25 @@ export default function AdminAuditLogs() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total d'actions
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total d'actions</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{logs.length}</div>
             <p className="text-xs text-muted-foreground mt-1">Dernières 500 actions</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Tables affectées
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Tables affectées</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{uniqueTables.length}</div>
             <p className="text-xs text-muted-foreground mt-1">Tables différentes</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Types d'actions
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Types d'actions</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{uniqueActions.length}</div>
@@ -207,7 +180,7 @@ export default function AdminAuditLogs() {
                   <SelectValue placeholder="Action" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Toutes</SelectItem>
+                  <SelectItem value="_all">Toutes</SelectItem>
                   {uniqueActions.map(action => (
                     <SelectItem key={action} value={action}>{action}</SelectItem>
                   ))}
@@ -218,7 +191,7 @@ export default function AdminAuditLogs() {
                   <SelectValue placeholder="Table" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Toutes les tables</SelectItem>
+                  <SelectItem value="_all">Toutes les tables</SelectItem>
                   {uniqueTables.map(table => (
                     <SelectItem key={table} value={table!}>{table}</SelectItem>
                   ))}
@@ -233,136 +206,133 @@ export default function AdminAuditLogs() {
         </CardHeader>
         <CardContent>
           <ResponsiveTable>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="hidden lg:table-cell">Date/Heure</TableHead>
-                  <TableHead>Action</TableHead>
-                  <TableHead className="hidden md:table-cell">Table</TableHead>
-                  <TableHead className="hidden xl:table-cell">ID Enregistrement</TableHead>
-                  <TableHead className="hidden lg:table-cell">Utilisateur</TableHead>
-                  <TableHead>Détails</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedData.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      Aucun log trouvé
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  paginatedData.map((log) => (
-                    <TableRow key={log.id}>
-                      <TableCell className="hidden lg:table-cell text-sm">
+            <ResponsiveTableHeader>
+              <ResponsiveTableRow>
+                <ResponsiveTableHead priority="low">Date/Heure</ResponsiveTableHead>
+                <ResponsiveTableHead priority="high">Action</ResponsiveTableHead>
+                <ResponsiveTableHead priority="medium">Table</ResponsiveTableHead>
+                <ResponsiveTableHead priority="low">ID Enregistrement</ResponsiveTableHead>
+                <ResponsiveTableHead priority="low">Utilisateur</ResponsiveTableHead>
+                <ResponsiveTableHead priority="high">Détails</ResponsiveTableHead>
+              </ResponsiveTableRow>
+            </ResponsiveTableHeader>
+            <ResponsiveTableBody>
+              {pagination.paginatedData.length === 0 ? (
+                <ResponsiveTableRow>
+                  <ResponsiveTableCell priority="high" label="" colSpan={6}>
+                    <div className="text-center py-8 text-muted-foreground">Aucun log trouvé</div>
+                  </ResponsiveTableCell>
+                </ResponsiveTableRow>
+              ) : (
+                pagination.paginatedData.map((log) => (
+                  <ResponsiveTableRow key={log.id}>
+                    <ResponsiveTableCell priority="low" label="Date">
+                      <span className="text-sm">
                         {format(new Date(log.created_at), 'dd/MM/yyyy HH:mm:ss', { locale: fr })}
-                      </TableCell>
-                      <TableCell>{getActionBadge(log.action)}</TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        <code className="text-xs bg-muted px-2 py-1 rounded">{log.table_name}</code>
-                      </TableCell>
-                      <TableCell className="hidden xl:table-cell">
-                        <code className="text-xs text-muted-foreground">
-                          {log.record_id?.substring(0, 8)}...
-                        </code>
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell">
-                        <code className="text-xs text-muted-foreground">
-                          {log.user_id ? log.user_id.substring(0, 8) + '...' : 'System'}
-                        </code>
-                      </TableCell>
-                      <TableCell>
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => setSelectedLog(log)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                            <DialogHeader>
-                              <DialogTitle>Détails du log</DialogTitle>
-                            </DialogHeader>
-                            <div className="space-y-4">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <p className="text-sm text-muted-foreground">Action</p>
-                                  <p className="font-medium">{log.action}</p>
-                                </div>
-                                <div>
-                                  <p className="text-sm text-muted-foreground">Table</p>
-                                  <p className="font-medium">{log.table_name}</p>
-                                </div>
-                                <div>
-                                  <p className="text-sm text-muted-foreground">Date/Heure</p>
-                                  <p className="font-medium text-sm">
-                                    {format(new Date(log.created_at), 'PPP à HH:mm:ss', { locale: fr })}
-                                  </p>
-                                </div>
-                                <div>
-                                  <p className="text-sm text-muted-foreground">ID Utilisateur</p>
-                                  <code className="text-xs">{log.user_id || 'System'}</code>
-                                </div>
+                      </span>
+                    </ResponsiveTableCell>
+                    <ResponsiveTableCell priority="high" label="Action">
+                      {getActionBadge(log.action)}
+                    </ResponsiveTableCell>
+                    <ResponsiveTableCell priority="medium" label="Table">
+                      <code className="text-xs bg-muted px-2 py-1 rounded">{log.table_name}</code>
+                    </ResponsiveTableCell>
+                    <ResponsiveTableCell priority="low" label="ID">
+                      <code className="text-xs text-muted-foreground">
+                        {log.record_id?.substring(0, 8)}...
+                      </code>
+                    </ResponsiveTableCell>
+                    <ResponsiveTableCell priority="low" label="Utilisateur">
+                      <code className="text-xs text-muted-foreground">
+                        {log.user_id ? log.user_id.substring(0, 8) + '...' : 'System'}
+                      </code>
+                    </ResponsiveTableCell>
+                    <ResponsiveTableCell priority="high" label="Détails">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="ghost" size="sm" onClick={() => setSelectedLog(log)}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                          <DialogHeader>
+                            <DialogTitle>Détails du log</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <p className="text-sm text-muted-foreground">Action</p>
+                                <p className="font-medium">{log.action}</p>
                               </div>
-                              
-                              {log.ip_address && (
-                                <div>
-                                  <p className="text-sm text-muted-foreground">Adresse IP</p>
-                                  <code className="text-xs">{String(log.ip_address)}</code>
-                                </div>
-                              )}
-
-                              {log.old_values && (
-                                <div>
-                                  <p className="text-sm text-muted-foreground mb-2">Anciennes valeurs</p>
-                                  <pre className="text-xs bg-muted p-3 rounded overflow-auto max-h-40">
-                                    {JSON.stringify(log.old_values, null, 2)}
-                                  </pre>
-                                </div>
-                              )}
-
-                              {log.new_values && (
-                                <div>
-                                  <p className="text-sm text-muted-foreground mb-2">Nouvelles valeurs</p>
-                                  <pre className="text-xs bg-muted p-3 rounded overflow-auto max-h-40">
-                                    {JSON.stringify(log.new_values, null, 2)}
-                                  </pre>
-                                </div>
-                              )}
-
-                              {log.user_agent && (
-                                <div>
-                                  <p className="text-sm text-muted-foreground">User Agent</p>
-                                  <p className="text-xs text-muted-foreground break-all">{log.user_agent}</p>
-                                </div>
-                              )}
+                              <div>
+                                <p className="text-sm text-muted-foreground">Table</p>
+                                <p className="font-medium">{log.table_name}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-muted-foreground">Date/Heure</p>
+                                <p className="font-medium text-sm">
+                                  {format(new Date(log.created_at), 'PPP à HH:mm:ss', { locale: fr })}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-muted-foreground">ID Utilisateur</p>
+                                <code className="text-xs">{log.user_id || 'System'}</code>
+                              </div>
                             </div>
-                          </DialogContent>
-                        </Dialog>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                            
+                            {log.ip_address && (
+                              <div>
+                                <p className="text-sm text-muted-foreground">Adresse IP</p>
+                                <code className="text-xs">{String(log.ip_address)}</code>
+                              </div>
+                            )}
+
+                            {log.old_values && (
+                              <div>
+                                <p className="text-sm text-muted-foreground mb-2">Anciennes valeurs</p>
+                                <pre className="text-xs bg-muted p-3 rounded overflow-auto max-h-40">
+                                  {JSON.stringify(log.old_values, null, 2)}
+                                </pre>
+                              </div>
+                            )}
+
+                            {log.new_values && (
+                              <div>
+                                <p className="text-sm text-muted-foreground mb-2">Nouvelles valeurs</p>
+                                <pre className="text-xs bg-muted p-3 rounded overflow-auto max-h-40">
+                                  {JSON.stringify(log.new_values, null, 2)}
+                                </pre>
+                              </div>
+                            )}
+
+                            {log.user_agent && (
+                              <div>
+                                <p className="text-sm text-muted-foreground">User Agent</p>
+                                <p className="text-xs text-muted-foreground break-all">{log.user_agent}</p>
+                              </div>
+                            )}
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </ResponsiveTableCell>
+                  </ResponsiveTableRow>
+                ))
+              )}
+            </ResponsiveTableBody>
           </ResponsiveTable>
           
-          {/* Pagination */}
           <div className="mt-4">
             <PaginationControls
-              currentPage={currentPage}
-              totalPages={totalPages}
-              pageSize={pageSize}
-              totalItems={totalItems}
-              hasNextPage={hasNextPage}
-              hasPreviousPage={hasPreviousPage}
-              onPageChange={goToPage}
-              onPageSizeChange={changePageSize}
-              onNextPage={goToNextPage}
-              onPreviousPage={goToPreviousPage}
+              currentPage={pagination.currentPage}
+              totalPages={pagination.totalPages}
+              pageSize={pagination.pageSize}
+              totalItems={pagination.totalItems}
+              hasNextPage={pagination.hasNextPage}
+              hasPreviousPage={pagination.hasPreviousPage}
+              onPageChange={pagination.goToPage}
+              onPageSizeChange={pagination.changePageSize}
+              onNextPage={pagination.goToNextPage}
+              onPreviousPage={pagination.goToPreviousPage}
             />
           </div>
         </CardContent>

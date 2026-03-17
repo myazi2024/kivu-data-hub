@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { RefreshCw, AlertTriangle, CheckCircle2, Clock, Eye, MapPin } from 'lucide-react';
+import { RefreshCw, CheckCircle2, Eye, MapPin, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { ResponsiveTable, ResponsiveTableHeader, ResponsiveTableBody, ResponsiveTableRow, ResponsiveTableCell, ResponsiveTableHead } from '@/components/ui/responsive-table';
+import { StatusBadge, StatusType } from '@/components/shared/StatusBadge';
+import { usePagination } from '@/hooks/usePagination';
+import { PaginationControls } from '@/components/shared/PaginationControls';
+import { exportToCSV } from '@/utils/csvExport';
 
 interface BoundaryConflict {
   id: string;
@@ -24,13 +28,19 @@ interface BoundaryConflict {
   resolved_at: string | null;
 }
 
+const STATUS_MAP: Record<string, StatusType> = {
+  pending: 'pending',
+  investigating: 'in_review',
+  resolved: 'completed',
+};
+
 const AdminBoundaryConflicts = () => {
   const [conflicts, setConflicts] = useState<BoundaryConflict[]>([]);
   const [loading, setLoading] = useState(true);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedConflict, setSelectedConflict] = useState<BoundaryConflict | null>(null);
   const [resolutionNotes, setResolutionNotes] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('_all');
 
   useEffect(() => {
     fetchConflicts();
@@ -78,19 +88,6 @@ const AdminBoundaryConflicts = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return <Badge variant="outline" className="text-[9px] bg-amber-100 text-amber-700 border-amber-200">En attente</Badge>;
-      case 'investigating':
-        return <Badge variant="outline" className="text-[9px] bg-blue-100 text-blue-700 border-blue-200">Investigation</Badge>;
-      case 'resolved':
-        return <Badge variant="outline" className="text-[9px] bg-green-100 text-green-700 border-green-200">Résolu</Badge>;
-      default:
-        return <Badge variant="outline" className="text-[9px]">{status}</Badge>;
-    }
-  };
-
   const getConflictTypeLabel = (type: string) => {
     switch (type) {
       case 'overlap': return 'Chevauchement';
@@ -100,13 +97,30 @@ const AdminBoundaryConflicts = () => {
     }
   };
 
-  const filteredConflicts = filterStatus === 'all' 
+  const filteredConflicts = filterStatus === '_all' 
     ? conflicts 
     : conflicts.filter(c => c.status === filterStatus);
+
+  const pagination = usePagination(filteredConflicts, { initialPageSize: 15 });
 
   const pendingCount = conflicts.filter(c => c.status === 'pending').length;
   const investigatingCount = conflicts.filter(c => c.status === 'investigating').length;
   const resolvedCount = conflicts.filter(c => c.status === 'resolved').length;
+
+  const handleExport = () => {
+    exportToCSV({
+      filename: `conflits_limites_${format(new Date(), 'yyyy-MM-dd')}.csv`,
+      headers: ['Date', 'Parcelle déclarante', 'Parcelle en conflit', 'Type', 'Statut', 'Description'],
+      data: filteredConflicts.map(c => [
+        format(new Date(c.created_at), 'dd/MM/yyyy'),
+        c.reporting_parcel_number,
+        c.conflicting_parcel_number,
+        getConflictTypeLabel(c.conflict_type),
+        c.status,
+        c.description
+      ])
+    });
+  };
 
   return (
     <div className="space-y-3 md:space-y-4">
@@ -117,25 +131,31 @@ const AdminBoundaryConflicts = () => {
             <h2 className="text-sm md:text-base font-bold">Conflits de Limites</h2>
             <p className="text-[10px] md:text-xs text-muted-foreground">Gestion des conflits entre parcelles</p>
           </div>
-          <Button variant="outline" size="sm" onClick={fetchConflicts} disabled={loading} className="h-8 text-xs">
-            <RefreshCw className={`h-3 w-3 mr-1 ${loading ? 'animate-spin' : ''}`} />
-            Actualiser
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleExport} className="h-8 text-xs gap-1">
+              <Download className="h-3 w-3" />
+              CSV
+            </Button>
+            <Button variant="outline" size="sm" onClick={fetchConflicts} disabled={loading} className="h-8 text-xs">
+              <RefreshCw className={`h-3 w-3 mr-1 ${loading ? 'animate-spin' : ''}`} />
+              Actualiser
+            </Button>
+          </div>
         </div>
       </Card>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-2">
         <Card className="p-2.5 md:p-3 bg-background rounded-xl shadow-sm border text-center cursor-pointer hover:bg-accent/50" onClick={() => setFilterStatus('pending')}>
-          <p className="text-lg md:text-xl font-bold text-amber-500">{pendingCount}</p>
+          <p className="text-lg md:text-xl font-bold text-warning">{pendingCount}</p>
           <p className="text-[9px] md:text-[10px] text-muted-foreground">En attente</p>
         </Card>
         <Card className="p-2.5 md:p-3 bg-background rounded-xl shadow-sm border text-center cursor-pointer hover:bg-accent/50" onClick={() => setFilterStatus('investigating')}>
-          <p className="text-lg md:text-xl font-bold text-blue-500">{investigatingCount}</p>
+          <p className="text-lg md:text-xl font-bold text-primary">{investigatingCount}</p>
           <p className="text-[9px] md:text-[10px] text-muted-foreground">Investigation</p>
         </Card>
         <Card className="p-2.5 md:p-3 bg-background rounded-xl shadow-sm border text-center cursor-pointer hover:bg-accent/50" onClick={() => setFilterStatus('resolved')}>
-          <p className="text-lg md:text-xl font-bold text-green-500">{resolvedCount}</p>
+          <p className="text-lg md:text-xl font-bold text-success">{resolvedCount}</p>
           <p className="text-[9px] md:text-[10px] text-muted-foreground">Résolus</p>
         </Card>
       </div>
@@ -147,7 +167,7 @@ const AdminBoundaryConflicts = () => {
             <SelectValue placeholder="Filtrer par statut" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Tous les conflits</SelectItem>
+            <SelectItem value="_all">Tous les conflits</SelectItem>
             <SelectItem value="pending">En attente</SelectItem>
             <SelectItem value="investigating">En investigation</SelectItem>
             <SelectItem value="resolved">Résolus</SelectItem>
@@ -155,7 +175,7 @@ const AdminBoundaryConflicts = () => {
         </Select>
       </Card>
 
-      {/* Conflicts List */}
+      {/* Conflicts Table */}
       <Card className="p-3 md:p-4 bg-background rounded-2xl shadow-sm border">
         <h3 className="text-xs font-semibold mb-3">Liste des conflits ({filteredConflicts.length})</h3>
         {loading ? (
@@ -164,38 +184,70 @@ const AdminBoundaryConflicts = () => {
           </div>
         ) : filteredConflicts.length === 0 ? (
           <div className="text-center py-8">
-            <CheckCircle2 className="h-8 w-8 mx-auto text-green-500 mb-2" />
+            <CheckCircle2 className="h-8 w-8 mx-auto text-success mb-2" />
             <p className="text-xs text-muted-foreground">Aucun conflit</p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {filteredConflicts.map((conflict) => (
-              <div key={conflict.id} className="p-2.5 md:p-3 rounded-xl border bg-card">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+          <>
+            <ResponsiveTable>
+              <ResponsiveTableHeader>
+                <ResponsiveTableRow>
+                  <ResponsiveTableHead priority="high">Type</ResponsiveTableHead>
+                  <ResponsiveTableHead priority="high">Parcelles</ResponsiveTableHead>
+                  <ResponsiveTableHead priority="medium">Description</ResponsiveTableHead>
+                  <ResponsiveTableHead priority="high">Statut</ResponsiveTableHead>
+                  <ResponsiveTableHead priority="low">Date</ResponsiveTableHead>
+                  <ResponsiveTableHead priority="high">Actions</ResponsiveTableHead>
+                </ResponsiveTableRow>
+              </ResponsiveTableHeader>
+              <ResponsiveTableBody>
+                {pagination.paginatedData.map((conflict) => (
+                  <ResponsiveTableRow key={conflict.id}>
+                    <ResponsiveTableCell priority="high" label="Type">
                       <span className="text-xs font-medium">{getConflictTypeLabel(conflict.conflict_type)}</span>
-                      {getStatusBadge(conflict.status)}
-                    </div>
-                    <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                      <MapPin className="h-2.5 w-2.5" />
-                      <span className="truncate">{conflict.reporting_parcel_number} ↔ {conflict.conflicting_parcel_number}</span>
-                    </div>
-                    <p className="text-[10px] text-muted-foreground mt-1 line-clamp-2">{conflict.description}</p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1 shrink-0">
-                    <span className="text-[9px] text-muted-foreground">
-                      {format(new Date(conflict.created_at), 'dd/MM/yy', { locale: fr })}
-                    </span>
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setSelectedConflict(conflict); setDetailsOpen(true); }}>
-                      <Eye className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                    </ResponsiveTableCell>
+                    <ResponsiveTableCell priority="high" label="Parcelles">
+                      <div className="flex items-center gap-1 text-[10px]">
+                        <MapPin className="h-2.5 w-2.5 text-muted-foreground" />
+                        <span className="truncate">{conflict.reporting_parcel_number} ↔ {conflict.conflicting_parcel_number}</span>
+                      </div>
+                    </ResponsiveTableCell>
+                    <ResponsiveTableCell priority="medium" label="Description">
+                      <p className="text-[10px] text-muted-foreground line-clamp-2">{conflict.description}</p>
+                    </ResponsiveTableCell>
+                    <ResponsiveTableCell priority="high" label="Statut">
+                      <StatusBadge status={STATUS_MAP[conflict.status] || 'pending'} compact />
+                    </ResponsiveTableCell>
+                    <ResponsiveTableCell priority="low" label="Date">
+                      <span className="text-[9px] text-muted-foreground">
+                        {format(new Date(conflict.created_at), 'dd/MM/yy', { locale: fr })}
+                      </span>
+                    </ResponsiveTableCell>
+                    <ResponsiveTableCell priority="high" label="Actions">
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setSelectedConflict(conflict); setDetailsOpen(true); }}>
+                        <Eye className="h-3 w-3" />
+                      </Button>
+                    </ResponsiveTableCell>
+                  </ResponsiveTableRow>
+                ))}
+              </ResponsiveTableBody>
+            </ResponsiveTable>
+
+            {pagination.totalItems > 0 && (
+              <PaginationControls
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                pageSize={pagination.pageSize}
+                totalItems={pagination.totalItems}
+                hasNextPage={pagination.hasNextPage}
+                hasPreviousPage={pagination.hasPreviousPage}
+                onPageChange={pagination.goToPage}
+                onPageSizeChange={pagination.changePageSize}
+                onNextPage={pagination.goToNextPage}
+                onPreviousPage={pagination.goToPreviousPage}
+              />
+            )}
+          </>
         )}
       </Card>
 
@@ -232,8 +284,8 @@ const AdminBoundaryConflicts = () => {
                 </div>
               )}
               {selectedConflict.resolution_notes && (
-                <div className="p-2.5 rounded-lg bg-green-50 dark:bg-green-900/20">
-                  <p className="text-[10px] text-green-700 dark:text-green-400 mb-1">Résolution</p>
+                <div className="p-2.5 rounded-lg bg-muted">
+                  <p className="text-[10px] text-muted-foreground mb-1">Résolution</p>
                   <p className="text-xs">{selectedConflict.resolution_notes}</p>
                 </div>
               )}

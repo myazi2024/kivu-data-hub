@@ -39,7 +39,7 @@ interface AdminPaymentsProps {
 const AdminPayments: React.FC<AdminPaymentsProps> = ({ onRefresh }) => {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('_all');
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
 
@@ -120,7 +120,7 @@ const AdminPayments: React.FC<AdminPaymentsProps> = ({ onRefresh }) => {
   };
 
   const filteredPayments = payments.filter(payment => {
-    const matchesStatus = filterStatus === 'all' || payment.status === filterStatus;
+    const matchesStatus = filterStatus === '_all' || payment.status === filterStatus;
     const paymentDate = new Date(payment.created_at);
     const matchesFrom = !dateFrom || paymentDate >= new Date(dateFrom);
     const matchesTo = !dateTo || paymentDate <= new Date(dateTo + 'T23:59:59');
@@ -164,7 +164,7 @@ const AdminPayments: React.FC<AdminPaymentsProps> = ({ onRefresh }) => {
                 <SelectValue placeholder="Filtrer par statut" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous les statuts</SelectItem>
+                <SelectItem value="_all">Tous les statuts</SelectItem>
                 <SelectItem value="pending">En attente</SelectItem>
                 <SelectItem value="completed">Complété</SelectItem>
                 <SelectItem value="failed">Échoué</SelectItem>

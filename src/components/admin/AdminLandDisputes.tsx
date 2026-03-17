@@ -85,12 +85,12 @@ const AdminLandDisputes: React.FC = () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('cadastral_land_disputes' as any)
+        .from('cadastral_land_disputes')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setDisputes((data as any[]) || []);
+      setDisputes((data || []) as LandDispute[]);
     } catch (error: any) {
       toast.error('Erreur lors du chargement des litiges');
       console.error('Error:', error);
@@ -117,8 +117,8 @@ const AdminLandDisputes: React.FC = () => {
       }
 
       const { error } = await supabase
-        .from('cadastral_land_disputes' as any)
-        .update(updateData as any)
+        .from('cadastral_land_disputes')
+        .update(updateData)
         .eq('id', disputeId);
 
       if (error) throw error;
@@ -219,9 +219,9 @@ const AdminLandDisputes: React.FC = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         {[
           { label: "Total", value: stats.total, color: "text-foreground" },
-          { label: "Signalements", value: stats.reports, color: "text-orange-600" },
-          { label: "Levées", value: stats.liftings, color: "text-blue-600" },
-          { label: "En cours", value: stats.enCours, color: "text-amber-600" },
+          { label: "Signalements", value: stats.reports, color: "text-destructive" },
+          { label: "Levées", value: stats.liftings, color: "text-primary" },
+          { label: "En cours", value: stats.enCours, color: "text-warning" },
         ].map((stat) => (
           <Card key={stat.label} className="rounded-xl">
             <CardContent className="p-3 text-center">

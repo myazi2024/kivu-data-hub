@@ -21,6 +21,7 @@ import {
   ChevronLeft, ChevronRight, Square
 } from 'lucide-react';
 import { generateAndUploadCertificate } from '@/utils/certificateService';
+import { StatusBadge, StatusType } from '@/components/shared/StatusBadge';
 
 interface SubdivisionRequest {
   id: string;
@@ -56,13 +57,13 @@ interface SubdivisionRequest {
   updated_at: string;
 }
 
-const statusConfig: Record<string, { label: string; color: string }> = {
-  pending: { label: 'En attente', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' },
-  in_review: { label: 'En examen', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
-  approved: { label: 'Approuvé', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
-  rejected: { label: 'Rejeté', color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' },
-  awaiting_payment: { label: 'Attente paiement', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' },
-  completed: { label: 'Terminé', color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' },
+const SUBDIVISION_STATUS_MAP: Record<string, StatusType> = {
+  pending: 'pending',
+  in_review: 'in_review',
+  approved: 'approved',
+  rejected: 'rejected',
+  awaiting_payment: 'processing',
+  completed: 'completed',
 };
 
 export function AdminSubdivisionRequests() {
@@ -71,7 +72,7 @@ export function AdminSubdivisionRequests() {
   const [requests, setRequests] = useState<SubdivisionRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('_all');
   const [selectedRequest, setSelectedRequest] = useState<SubdivisionRequest | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showActionDialog, setShowActionDialog] = useState(false);
@@ -87,11 +88,11 @@ export function AdminSubdivisionRequests() {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('subdivision_requests' as any)
+        .from('subdivision_requests')
         .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      setRequests((data as unknown as SubdivisionRequest[]) || []);
+      setRequests((data || []) as SubdivisionRequest[]);
     } catch (err: any) {
       toast({ title: 'Erreur', description: 'Impossible de charger les demandes.', variant: 'destructive' });
     } finally {
@@ -105,7 +106,7 @@ export function AdminSubdivisionRequests() {
     const matchesSearch = req.reference_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
       req.parcel_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
       req.requester_last_name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || req.status === statusFilter;
+    const matchesStatus = statusFilter === '_all' || req.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -143,7 +144,7 @@ export function AdminSubdivisionRequests() {
         }));
       }
       
-      await supabase.from('subdivision_lots' as any).insert({
+      await supabase.from('subdivision_lots').insert({
         subdivision_request_id: request.id,
         parcel_number: request.parcel_number,
         lot_number: lot.lotNumber || lot.id,
@@ -157,7 +158,7 @@ export function AdminSubdivisionRequests() {
         gps_coordinates: gpsCoordinates,
         plan_coordinates: lot.vertices || null,
         color: lot.color || '#22c55e',
-      } as any);
+      } as any); // Dynamic lot data
     }
   };
 
@@ -193,7 +194,7 @@ export function AdminSubdivisionRequests() {
       }
 
       const { error } = await supabase
-        .from('subdivision_requests' as any)
+        .from('subdivision_requests')
         .update(updates)
         .eq('id', selectedRequest.id);
       if (error) throw error;
@@ -279,8 +280,11 @@ export function AdminSubdivisionRequests() {
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[180px]"><SelectValue placeholder="Statut" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous</SelectItem>
-                {Object.entries(statusConfig).map(([v, c]) => <SelectItem key={v} value={v}>{c.label}</SelectItem>)}
+                <SelectItem value="_all">Tous</SelectItem>
+                {Object.entries(SUBDIVISION_STATUS_MAP).map(([v]) => {
+                  const labels: Record<string, string> = { pending: 'En attente', in_review: 'En examen', approved: 'Approuvé', rejected: 'Rejeté', awaiting_payment: 'Attente paiement', completed: 'Terminé' };
+                  return <SelectItem key={v} value={v}>{labels[v] || v}</SelectItem>;
+                })}
               </SelectContent>
             </Select>
           </div>
@@ -305,7 +309,7 @@ export function AdminSubdivisionRequests() {
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center gap-3">
                         <Badge variant="outline" className="font-mono">{request.reference_number}</Badge>
-                        <Badge className={statusConfig[request.status]?.color || 'bg-muted'}>{statusConfig[request.status]?.label || request.status}</Badge>
+                        <StatusBadge status={SUBDIVISION_STATUS_MAP[request.status] || 'pending'} compact />
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
                         <div className="flex items-center gap-1 text-muted-foreground"><MapPin className="h-3.5 w-3.5" /><span className="font-mono">{request.parcel_number}</span></div>
@@ -353,7 +357,7 @@ export function AdminSubdivisionRequests() {
             <ScrollArea className="max-h-[calc(90vh-150px)]">
               <div className="space-y-4 p-1">
                 <div className="flex items-center justify-between">
-                  <Badge className={statusConfig[selectedRequest.status]?.color}>{statusConfig[selectedRequest.status]?.label}</Badge>
+                  <StatusBadge status={SUBDIVISION_STATUS_MAP[selectedRequest.status] || 'pending'} />
                   <span className="text-sm text-muted-foreground">{format(new Date(selectedRequest.created_at), 'PPP', { locale: fr })}</span>
                 </div>
                 <Card>
