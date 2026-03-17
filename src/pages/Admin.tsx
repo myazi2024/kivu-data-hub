@@ -74,6 +74,7 @@ const Admin = () => {
   const [pendingMutationsCount, setPendingMutationsCount] = useState(0);
   const [pendingExpertiseCount, setPendingExpertiseCount] = useState(0);
   const [pendingSubdivisionsCount, setPendingSubdivisionsCount] = useState(0);
+  const [pendingPaymentsCount, setPendingPaymentsCount] = useState(0);
   const [hasAdminRole, setHasAdminRole] = useState<boolean | null>(null);
 
   // Verify admin role from user_roles table
