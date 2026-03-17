@@ -46,6 +46,15 @@ export const useTestDataStats = () => {
           ? supabase.from('fraud_attempts').select('id', { count: 'exact', head: true }).in('contribution_id', contribIds)
           : Promise.resolve({ count: 0 }),
         /* 13 */ supabase.from('generated_certificates').select('id', { count: 'exact', head: true }).ilike('reference_number', 'TEST-%'),
+        /* 14 */ parcelIds.length > 0
+          ? supabase.from('cadastral_boundary_history').select('id', { count: 'exact', head: true }).in('parcel_id', parcelIds)
+          : Promise.resolve({ count: 0 }),
+        /* 15 */ parcelIds.length > 0
+          ? supabase.from('cadastral_mortgages').select('id', { count: 'exact', head: true }).in('parcel_id', parcelIds)
+          : Promise.resolve({ count: 0 }),
+        /* 16 */ parcelIds.length > 0
+          ? supabase.from('cadastral_building_permits').select('id', { count: 'exact', head: true }).in('parcel_id', parcelIds)
+          : Promise.resolve({ count: 0 }),
       ]);
 
       const count = (i: number) =>
@@ -66,6 +75,9 @@ export const useTestDataStats = () => {
         taxHistory: count(11),
         fraudAttempts: count(12),
         certificates: count(13),
+        boundaryHistory: count(14),
+        mortgages: count(15),
+        buildingPermits: count(16),
       });
     } catch (error) {
       console.error('Error loading test data stats:', error);

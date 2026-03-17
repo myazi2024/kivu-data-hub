@@ -43,6 +43,9 @@ const STAT_ITEMS: { key: keyof TestDataStats; label: string }[] = [
   { key: 'boundaryConflicts', label: 'Conflits limites' },
   { key: 'ownershipHistory', label: 'Hist. propriété' },
   { key: 'taxHistory', label: 'Hist. taxes' },
+  { key: 'boundaryHistory', label: 'Hist. bornages' },
+  { key: 'mortgages', label: 'Hypothèques' },
+  { key: 'buildingPermits', label: 'Permis bâtir' },
   { key: 'fraudAttempts', label: 'Fraudes' },
   { key: 'certificates', label: 'Certificats' },
 ];

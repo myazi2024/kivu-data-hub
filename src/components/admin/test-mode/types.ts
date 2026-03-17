@@ -13,6 +13,9 @@ export interface TestDataStats {
   taxHistory: number;
   fraudAttempts: number;
   certificates: number;
+  boundaryHistory: number;
+  mortgages: number;
+  buildingPermits: number;
 }
 
 export const EMPTY_STATS: TestDataStats = {
@@ -30,6 +33,9 @@ export const EMPTY_STATS: TestDataStats = {
   taxHistory: 0,
   fraudAttempts: 0,
   certificates: 0,
+  boundaryHistory: 0,
+  mortgages: 0,
+  buildingPermits: 0,
 };
 
 /** All TEST- prefixed tables in FK-safe deletion order (children → parents) */

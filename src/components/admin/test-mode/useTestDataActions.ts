@@ -20,6 +20,9 @@ import {
   generateBoundaryConflicts,
   generateOwnershipHistory,
   generateTaxHistory,
+  generateBoundaryHistory,
+  generateMortgages,
+  generateBuildingPermits,
   generateCertificates,
   rollbackTestData,
 } from './testDataGenerators';
@@ -43,6 +46,7 @@ const GENERATION_STEPS: GenerationStep[] = [
   { label: 'Litiges fonciers', status: 'pending' },
   { label: 'Conflits de limites', status: 'pending' },
   { label: 'Historique propriété & taxes', status: 'pending' },
+  { label: 'Bornages & hypothèques & permis', status: 'pending' },
   { label: 'Fraudes & certificats', status: 'pending' },
 ];
 
@@ -107,6 +111,7 @@ export const useTestDataActions = ({
         await safeDelete('tax_history', supabase.from('cadastral_tax_history').delete().in('parcel_id', parcelIds));
         await safeDelete('boundary_history', supabase.from('cadastral_boundary_history').delete().in('parcel_id', parcelIds));
         await safeDelete('mortgages', supabase.from('cadastral_mortgages').delete().in('parcel_id', parcelIds));
+        await safeDelete('building_permits', supabase.from('cadastral_building_permits').delete().in('parcel_id', parcelIds));
       }
 
       // 8. Parcels
@@ -286,14 +291,26 @@ export const useTestDataActions = ({
         console.error('History (non-blocking):', histError);
       }
 
-      // Step 12: Fraud attempts + certificates (non-blocking)
+      // Step 12: Boundary history + mortgages + building permits (Bug 17 fix)
       updateStep(12, 'running');
+      try {
+        await generateBoundaryHistory(parcels);
+        await generateMortgages(parcels);
+        await generateBuildingPermits(parcels);
+        updateStep(12, 'done');
+      } catch (bmError) {
+        updateStep(12, 'error');
+        console.error('Bornages/hypothèques/permis (non-blocking):', bmError);
+      }
+
+      // Step 13: Fraud attempts + certificates (non-blocking)
+      updateStep(13, 'running');
       try {
         await generateFraudAttempts(userId, contributions);
         await generateCertificates(parcelNumbers, suffix, userId);
-        updateStep(12, 'done');
+        updateStep(13, 'done');
       } catch (fcError) {
-        updateStep(12, 'error');
+        updateStep(13, 'error');
         console.error('Fraud/certificates (non-blocking):', fcError);
       }
 
@@ -311,6 +328,7 @@ export const useTestDataActions = ({
             'parcels', 'contributions', 'invoices', 'payments', 'service_access',
             'contributor_codes', 'title_requests', 'expertise', 'disputes',
             'boundary_conflicts', 'ownership_history', 'tax_history',
+            'boundary_history', 'mortgages', 'building_permits',
             'fraud_attempts', 'certificates',
           ],
         })

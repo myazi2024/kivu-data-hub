@@ -131,6 +131,10 @@ Deno.serve(async (req) => {
         "cadastral_mortgages",
         supabase.from("cadastral_mortgages").delete().in("parcel_id", parcelIds).select("id")
       );
+      await safeDelete(
+        "cadastral_building_permits",
+        supabase.from("cadastral_building_permits").delete().in("parcel_id", parcelIds).select("id")
+      );
     }
 
     // 8. Parcels
