@@ -157,7 +157,7 @@ export function AdminSubdivisionRequests() {
         gps_coordinates: gpsCoordinates,
         plan_coordinates: lot.vertices || null,
         color: lot.color || '#22c55e',
-      } as any);
+      } as any); // Dynamic lot data
     }
   };
 
