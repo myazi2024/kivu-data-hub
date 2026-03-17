@@ -3,6 +3,12 @@ import DOMPurify from 'dompurify';
 import ProvinceTooltip from './ProvinceTooltip';
 import { ProvinceData } from '@/types/province';
 
+interface TooltipLineConfig {
+  key: string;
+  visible: boolean;
+  title: string;
+}
+
 interface DRCMapWithTooltipProps {
   provincesData: ProvinceData[];
   selectedProvince: string | null;
@@ -11,6 +17,7 @@ interface DRCMapWithTooltipProps {
   hoveredProvince: string | null;
   getProvinceColor: (province: ProvinceData) => string;
   onMapReady?: (map: any) => void;
+  tooltipLineConfigs?: TooltipLineConfig[];
 }
 
 const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
@@ -20,7 +27,8 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
   onProvinceHover,
   hoveredProvince,
   getProvinceColor,
-  onMapReady
+  onMapReady,
+  tooltipLineConfigs
 }) => {
   const [svgContent, setSvgContent] = useState<string>('');
   const [hoveredProvinceData, setHoveredProvinceData] = useState<ProvinceData | null>(null);
@@ -426,7 +434,7 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
           <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-primary/20 hover:bg-primary/30 rounded-full px-3 py-1 text-xs text-primary cursor-grab hover:cursor-grabbing transition-colors">
             ⋮⋮⋮
           </div>
-          <ProvinceTooltip province={hoveredProvinceData} />
+          <ProvinceTooltip province={hoveredProvinceData} lineConfigs={tooltipLineConfigs} />
         </div>
       )}
     </div>
