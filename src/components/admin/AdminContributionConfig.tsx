@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useContributionConfig } from '@/hooks/useContributionConfig';
-import { Loader2, Save, Plus, Trash2, FileText, MapPin, Users, DollarSign } from 'lucide-react';
+import { Loader2, Save, Plus, Trash2, FileText, MapPin, Users, DollarSign, ListFilter } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { ConfigPreview } from './config/ConfigPreview';
@@ -18,6 +18,7 @@ import { ConfigHistory } from './config/ConfigHistory';
 import { ConfigTest } from './config/ConfigTest';
 import { useConfigHistory } from '@/hooks/useConfigHistory';
 import { useConfigValidation } from '@/hooks/useConfigValidation';
+import AdminPicklistManager from './config/AdminPicklistManager';
 
 const AdminContributionConfig = () => {
   const { configs, loading, updateConfig } = useContributionConfig();
@@ -151,19 +152,43 @@ const AdminContributionConfig = () => {
   const handleSaveFieldLabels = async () => {
     if (!fieldLabelsConfig) return;
     setSaving('field_labels');
-    await updateConfig(fieldLabelsConfig.id, {
-      config_value: fieldLabels
-    });
-    setSaving(null);
+    try {
+      const success = await updateConfig(fieldLabelsConfig.id, {
+        config_value: fieldLabels
+      });
+      if (success) {
+        await saveToHistory('field_labels', fieldLabels, 'Modification des labels des champs');
+        toast({
+          title: "Labels sauvegardés",
+          description: "Les labels des champs ont été mis à jour avec succès"
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+    } finally {
+      setSaving(null);
+    }
   };
 
   const handleSaveHelpTexts = async () => {
     if (!helpTextsConfig) return;
     setSaving('help_texts');
-    await updateConfig(helpTextsConfig.id, {
-      config_value: helpTexts
-    });
-    setSaving(null);
+    try {
+      const success = await updateConfig(helpTextsConfig.id, {
+        config_value: helpTexts
+      });
+      if (success) {
+        await saveToHistory('help_texts', helpTexts, 'Modification des textes d\'aide');
+        toast({
+          title: "Textes d'aide sauvegardés",
+          description: "Les textes d'aide ont été mis à jour avec succès"
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+    } finally {
+      setSaving(null);
+    }
   };
 
   const handleSaveValidationRules = async () => {
@@ -321,13 +346,14 @@ const AdminContributionConfig = () => {
             </CardHeader>
             <CardContent className="p-3 sm:p-6">
               <Tabs defaultValue="sections">
-                <TabsList className="grid w-full grid-cols-7 h-8 sm:h-10 text-[10px] sm:text-xs p-0.5 sm:p-1">
+                <TabsList className="grid w-full grid-cols-8 h-8 sm:h-10 text-[10px] sm:text-xs p-0.5 sm:p-1">
                   <TabsTrigger value="sections" className="text-[10px] sm:text-xs px-1 sm:px-3">Sections</TabsTrigger>
                   <TabsTrigger value="required" className="text-[10px] sm:text-xs px-1 sm:px-3">Requis</TabsTrigger>
                   <TabsTrigger value="labels" className="text-[10px] sm:text-xs px-1 sm:px-3">Labels</TabsTrigger>
                   <TabsTrigger value="help" className="text-[10px] sm:text-xs px-1 sm:px-3">Aide</TabsTrigger>
                   <TabsTrigger value="validation" className="text-[10px] sm:text-xs px-1 sm:px-3">Valid.</TabsTrigger>
                   <TabsTrigger value="ccc" className="text-[10px] sm:text-xs px-1 sm:px-3">CCC</TabsTrigger>
+                  <TabsTrigger value="picklists" className="text-[10px] sm:text-xs px-1 sm:px-3">Listes</TabsTrigger>
                   <TabsTrigger value="map" className="text-[10px] sm:text-xs px-1 sm:px-3">Carte</TabsTrigger>
                 </TabsList>
 
@@ -686,6 +712,11 @@ const AdminContributionConfig = () => {
                   </>
                 )}
               </Button>
+            </TabsContent>
+
+            {/* Listes de valeurs (Picklists) */}
+            <TabsContent value="picklists" className="space-y-4 mt-4">
+              <AdminPicklistManager />
             </TabsContent>
 
             {/* Aperçu de la Parcelle */}
