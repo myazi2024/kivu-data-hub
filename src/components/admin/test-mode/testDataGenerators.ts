@@ -55,7 +55,7 @@ const PROVINCES = [
 export const generateParcels = async (parcelNumbers: string[]) => {
   const areas = [500, 1000, 750, 2000, 350];
   const parcelTypes = ['résidentiel', 'commercial', 'agricole', 'résidentiel', 'industriel'];
-  const titleTypes = ['Titre foncier', 'Concession', 'Titre foncier', 'Certificat d\'enregistrement', 'Concession'];
+  const titleTypes = ['Certificat d\'enregistrement', 'Contrat de location (Contrat d\'occupation provisoire)', 'Fiche parcellaire', 'Certificat d\'enregistrement', 'Contrat de location (Contrat d\'occupation provisoire)'];
 
   const records = parcelNumbers.map((pn, i) => ({
     parcel_number: pn,
