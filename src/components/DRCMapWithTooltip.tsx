@@ -434,7 +434,7 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
           <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-primary/20 hover:bg-primary/30 rounded-full px-3 py-1 text-xs text-primary cursor-grab hover:cursor-grabbing transition-colors">
             ⋮⋮⋮
           </div>
-          <ProvinceTooltip province={hoveredProvinceData} />
+          <ProvinceTooltip province={hoveredProvinceData} lineConfigs={tooltipLineConfigs} />
         </div>
       )}
     </div>
