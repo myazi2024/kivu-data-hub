@@ -18,6 +18,7 @@ import { ConfigHistory } from './config/ConfigHistory';
 import { ConfigTest } from './config/ConfigTest';
 import { useConfigHistory } from '@/hooks/useConfigHistory';
 import { useConfigValidation } from '@/hooks/useConfigValidation';
+import AdminPicklistManager from './config/AdminPicklistManager';
 
 const AdminContributionConfig = () => {
   const { configs, loading, updateConfig } = useContributionConfig();
