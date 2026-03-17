@@ -31,7 +31,7 @@ import {
   getAvenuesForQuartier
 } from '@/lib/geographicData';
 import { InputWithPopover } from './InputWithPopover';
-import { PropertyTitleTypeSelect, PROPERTY_TITLE_TYPES } from './PropertyTitleTypeSelect';
+import { PropertyTitleTypeSelect, PROPERTY_TITLE_TYPES, getEffectiveTitleName } from './PropertyTitleTypeSelect';
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
 import { useIsMobile } from '@/hooks/use-mobile';
 // FIX #27: Lazy import confetti to avoid loading it for every session
