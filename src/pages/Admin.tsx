@@ -220,6 +220,21 @@ const Admin = () => {
     }
   };
 
+  const fetchPendingPaymentsCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('payments')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+      
+      if (!error) {
+        setPendingPaymentsCount(count || 0);
+      }
+    } catch (error) {
+      console.error('Erreur compteur paiements:', error);
+    }
+  };
+
   if (loading || hasAdminRole === null) {
     return (
       <div className="flex items-center justify-center min-h-dvh">
