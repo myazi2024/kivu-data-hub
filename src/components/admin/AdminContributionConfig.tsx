@@ -714,6 +714,11 @@ const AdminContributionConfig = () => {
               </Button>
             </TabsContent>
 
+            {/* Listes de valeurs (Picklists) */}
+            <TabsContent value="picklists" className="space-y-4 mt-4">
+              <AdminPicklistManager />
+            </TabsContent>
+
             {/* Aperçu de la Parcelle */}
             <TabsContent value="map" className="space-y-4">
               <Alert>
