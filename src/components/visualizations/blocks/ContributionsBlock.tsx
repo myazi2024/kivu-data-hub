@@ -11,6 +11,8 @@ import { GeoCharts } from '../shared/GeoCharts';
 import { generateInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { normalizeTitleType } from '@/utils/titleTypeNormalizer';
+import { normalizeConstructionType } from '@/utils/constructionTypeNormalizer';
+import { normalizeDeclaredUsage } from '@/utils/declaredUsageNormalizer';
 
 interface Props { data: LandAnalyticsData; }
 
@@ -25,10 +27,16 @@ export const ContributionsBlock: React.FC<Props> = memo(({ data }) => {
 
   const byContributionType = useMemo(() => countBy(filtered, 'contribution_type'), [filtered]);
   const byStatus = useMemo(() => countBy(filtered, 'status'), [filtered]);
-  const byPropertyTitleType = useMemo(() => countBy(filtered.map(r => ({ ...r, property_title_type: normalizeTitleType(r.property_title_type) })), 'property_title_type'), [filtered]);
+  const normalized = useMemo(() => filtered.map(r => ({
+    ...r,
+    property_title_type: normalizeTitleType(r.property_title_type),
+    construction_type: normalizeConstructionType(r.construction_type),
+    declared_usage: normalizeDeclaredUsage(r.declared_usage),
+  })), [filtered]);
+  const byPropertyTitleType = useMemo(() => countBy(normalized, 'property_title_type'), [normalized]);
   const byLegalStatus = useMemo(() => countBy(filtered, 'current_owner_legal_status'), [filtered]);
-  const byDeclaredUsage = useMemo(() => countBy(filtered, 'declared_usage'), [filtered]);
-  const byConstructionType = useMemo(() => countBy(filtered, 'construction_type'), [filtered]);
+  const byDeclaredUsage = useMemo(() => countBy(normalized, 'declared_usage'), [normalized]);
+  const byConstructionType = useMemo(() => countBy(normalized, 'construction_type'), [normalized]);
   const trend = useMemo(() => trendByMonth(filtered), [filtered]);
 
   const fraudData = useMemo(() => {
