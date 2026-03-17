@@ -87,6 +87,7 @@ export function AdminDashboardOverview() {
   );
 
   const calculateChange = (current: number, previous: number): string => {
+    if (previous === 0 && current === 0) return '0%';
     if (previous === 0) return '+100%';
     const change = ((current - previous) / previous) * 100;
     return `${change > 0 ? '+' : ''}${change.toFixed(1)}%`;
