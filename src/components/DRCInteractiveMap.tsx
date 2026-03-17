@@ -389,6 +389,7 @@ const DRCInteractiveMap = () => {
                           </Card>
                         )}
                       </div>
+                    </div>
                   ) : (
                     <div className="flex items-center justify-center h-full p-4">
                       <p className="text-[10px] text-muted-foreground text-center">Cliquez sur une province</p>
