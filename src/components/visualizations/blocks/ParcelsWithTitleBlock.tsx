@@ -11,6 +11,8 @@ import { GeoCharts } from '../shared/GeoCharts';
 import { generateInsight, generateStackedInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { normalizeTitleType } from '@/utils/titleTypeNormalizer';
+import { normalizeConstructionType } from '@/utils/constructionTypeNormalizer';
+import { normalizeDeclaredUsage } from '@/utils/declaredUsageNormalizer';
 
 interface Props { data: LandAnalyticsData; }
 

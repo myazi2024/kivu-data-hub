@@ -10,6 +10,8 @@ import { GeoCharts } from '../shared/GeoCharts';
 
 import { generateInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
+import { normalizeConstructionType } from '@/utils/constructionTypeNormalizer';
+import { normalizeDeclaredUsage } from '@/utils/declaredUsageNormalizer';
 
 interface Props { data: LandAnalyticsData; }
 
