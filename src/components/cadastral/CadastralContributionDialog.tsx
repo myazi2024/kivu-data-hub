@@ -97,6 +97,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [shouldBlinkSuperficie, setShouldBlinkSuperficie] = useState(false);
   const [showUsageLockedWarning, setShowUsageLockedWarning] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
+  const [customTitleName, setCustomTitleName] = useState('');
   
   // Fonction pour obtenir les champs manquants avec détails pour la navigation
   const getMissingFields = () => {
