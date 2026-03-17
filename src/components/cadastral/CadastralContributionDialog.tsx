@@ -3366,15 +3366,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           <SelectValue placeholder="Sélectionner" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl">
-                          <SelectItem value="Béton armé">Béton armé</SelectItem>
-                          <SelectItem value="Briques cuites">Briques cuites</SelectItem>
-                          <SelectItem value="Briques adobes">Briques adobes</SelectItem>
-                          <SelectItem value="Parpaings">Parpaings</SelectItem>
-                          <SelectItem value="Bois">Bois</SelectItem>
-                          <SelectItem value="Tôles">Tôles</SelectItem>
-                          <SelectItem value="Semi-dur">Semi-dur</SelectItem>
-                          <SelectItem value="Mixte">Mixte</SelectItem>
-                          <SelectItem value="Autre">Autre</SelectItem>
+                          {getPicklistOptions('picklist_construction_materials').map(opt => (
+                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
