@@ -60,6 +60,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const { submitContribution, updateContribution, loading } = useCadastralContribution();
   const { getConfig } = useContributionConfig();
   const { config: mapConfig, loading: mapConfigLoading } = useMapConfig();
+  const { getOptions: getPicklistOptions, getDependentOptions: getPicklistDependentOptions } = useCCCFormPicklists();
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
