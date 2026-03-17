@@ -459,9 +459,9 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
         <div className="space-y-4">
           <TabManager
             localTabs={localTabs}
-            onUpdate={(tabs) => { setLocalTabs(tabs); setHasChanges(true); }}
+            onUpdate={(tabs) => { setLocalTabs(tabs); setHasTabChanges(true); }}
           />
-          <Button onClick={handleSaveTabs} disabled={!hasChanges || isSaving} className="w-full">
+          <Button onClick={handleSaveTabs} disabled={!hasTabChanges || isSaving} className="w-full">
             {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Save className="h-3.5 w-3.5 mr-1" />}
             Sauvegarder la configuration des onglets
           </Button>
