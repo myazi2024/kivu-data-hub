@@ -10,6 +10,7 @@ import DRCMapWithTooltip from './DRCMapWithTooltip';
 import { ProvinceData } from '@/types/province';
 import ProvinceDataVisualization from './visualizations/ProvinceDataVisualization';
 import { useLandDataAnalytics } from '@/hooks/useLandDataAnalytics';
+import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 
 /** Province IDs and names for the 26 provinces */
 const PROVINCE_META: { id: string; name: string }[] = [
