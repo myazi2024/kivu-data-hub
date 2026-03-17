@@ -193,7 +193,7 @@ export function AdminSubdivisionRequests() {
       }
 
       const { error } = await supabase
-        .from('subdivision_requests' as any)
+        .from('subdivision_requests')
         .update(updates)
         .eq('id', selectedRequest.id);
       if (error) throw error;
