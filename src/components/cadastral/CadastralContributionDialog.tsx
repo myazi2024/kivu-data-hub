@@ -4880,9 +4880,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                                   <SelectValue placeholder="Statut" />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl">
-                                  <SelectItem value="Active">En cours</SelectItem>
-                                  <SelectItem value="En défaut">En défaut de paiement</SelectItem>
-                                  <SelectItem value="Renégociée">Renégociée</SelectItem>
+                                  {getPicklistOptions('picklist_mortgage_status').map(opt => (
+                                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                                  ))}
                                 </SelectContent>
                               </Select>
                             </div>
