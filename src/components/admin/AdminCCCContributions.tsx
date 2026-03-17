@@ -148,22 +148,40 @@ const AdminCCCContributions: React.FC = () => {
   const fetchContributions = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('cadastral_contributions')
-        .select('*')
-        .order('created_at', { ascending: false });
+      
+      // Fetch all contributions using pagination to bypass 1000-row limit
+      let allData: any[] = [];
+      let from = 0;
+      const batchSize = 1000;
+      let hasMore = true;
 
-      if (error) throw error;
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('cadastral_contributions')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .range(from, from + batchSize - 1);
 
-      setContributions(data || []);
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          allData = [...allData, ...data];
+          from += batchSize;
+          hasMore = data.length === batchSize;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      setContributions(allData);
       
       // Calculer les statistiques
       const stats: ContributionStats = {
-        total: data?.length || 0,
-        pending: data?.filter(c => c.status === 'pending').length || 0,
-        approved: data?.filter(c => c.status === 'approved').length || 0,
-        rejected: data?.filter(c => c.status === 'rejected').length || 0,
-        suspicious: data?.filter(c => c.is_suspicious).length || 0
+        total: allData.length,
+        pending: allData.filter(c => c.status === 'pending').length,
+        approved: allData.filter(c => c.status === 'approved').length,
+        rejected: allData.filter(c => c.status === 'rejected').length,
+        suspicious: allData.filter(c => c.is_suspicious).length
       };
       setStats(stats);
     } catch (error: any) {
