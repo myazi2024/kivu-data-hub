@@ -496,8 +496,9 @@ export const generateContributorCodes = async (
   userId: string,
   contributions: Array<{ id: string; parcel_number: string }>
 ) => {
+  const codeSuffix = Date.now().toString(36).toUpperCase();
   const records = contributions.slice(0, 3).map((c, i) => ({
-    code: `TEST-CCC-${String(i + 1).padStart(5, '0')}`,
+    code: `TEST-CCC-${codeSuffix}-${String(i + 1).padStart(3, '0')}`,
     contribution_id: c.id,
     parcel_number: c.parcel_number,
     user_id: userId,

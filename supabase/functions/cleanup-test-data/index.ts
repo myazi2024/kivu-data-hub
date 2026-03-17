@@ -46,6 +46,20 @@ Deno.serve(async (req) => {
     const cutoffISO = cutoffDate.toISOString();
 
     const deletedCounts: Record<string, number> = {};
+    const errors: Record<string, string> = {};
+
+    /** Helper: delete with error tracking */
+    const safeDelete = async (
+      label: string,
+      query: PromiseLike<{ data: any; error: any }>
+    ) => {
+      const { data, error } = await query;
+      if (error) {
+        errors[label] = error.message;
+        console.error(`Cleanup ${label}:`, error.message);
+      }
+      deletedCounts[label] = data?.length || 0;
+    };
 
     // FK-safe deletion order (children → parents)
 
@@ -57,76 +71,116 @@ Deno.serve(async (req) => {
       .lt("created_at", cutoffISO);
     const contribIds = contribRows?.map((r: any) => r.id) ?? [];
     if (contribIds.length > 0) {
-      const { data: faData } = await supabase.from("fraud_attempts").delete().in("contribution_id", contribIds).select("id");
-      deletedCounts["fraud_attempts"] = faData?.length || 0;
+      await safeDelete(
+        "fraud_attempts",
+        supabase.from("fraud_attempts").delete().in("contribution_id", contribIds).select("id")
+      );
     }
 
     // 2. Contributor codes
-    const { data: cccData } = await supabase.from("cadastral_contributor_codes").delete().ilike("parcel_number", "TEST-%").lt("created_at", cutoffISO).select("id");
-    deletedCounts["cadastral_contributor_codes"] = cccData?.length || 0;
+    await safeDelete(
+      "cadastral_contributor_codes",
+      supabase.from("cadastral_contributor_codes").delete().ilike("parcel_number", "TEST-%").lt("created_at", cutoffISO).select("id")
+    );
 
     // 3. Service access (FK → invoices)
-    const { data: saData } = await supabase.from("cadastral_service_access").delete().ilike("parcel_number", "TEST-%").lt("created_at", cutoffISO).select("id");
-    deletedCounts["cadastral_service_access"] = saData?.length || 0;
+    await safeDelete(
+      "cadastral_service_access",
+      supabase.from("cadastral_service_access").delete().ilike("parcel_number", "TEST-%").lt("created_at", cutoffISO).select("id")
+    );
 
     // 4. Payment transactions (before invoices)
-    const { data: ptData } = await supabase.from("payment_transactions").delete().filter("metadata->>test_mode", "eq", "true").lt("created_at", cutoffISO).select("id");
-    deletedCounts["payment_transactions"] = ptData?.length || 0;
+    await safeDelete(
+      "payment_transactions",
+      supabase.from("payment_transactions").delete().filter("metadata->>test_mode", "eq", "true").lt("created_at", cutoffISO).select("id")
+    );
 
     // 5. Invoices
-    const { data: invData } = await supabase.from("cadastral_invoices").delete().ilike("parcel_number", "TEST-%").lt("created_at", cutoffISO).select("id");
-    deletedCounts["cadastral_invoices"] = invData?.length || 0;
+    await safeDelete(
+      "cadastral_invoices",
+      supabase.from("cadastral_invoices").delete().ilike("parcel_number", "TEST-%").lt("created_at", cutoffISO).select("id")
+    );
 
     // 6. Contributions
-    const { data: conData } = await supabase.from("cadastral_contributions").delete().ilike("parcel_number", "TEST-%").lt("created_at", cutoffISO).select("id");
-    deletedCounts["cadastral_contributions"] = conData?.length || 0;
+    await safeDelete(
+      "cadastral_contributions",
+      supabase.from("cadastral_contributions").delete().ilike("parcel_number", "TEST-%").lt("created_at", cutoffISO).select("id")
+    );
 
-    // 7. Parcel children
-    const { data: parcelRows } = await supabase.from("cadastral_parcels").select("id").ilike("parcel_number", "TEST-%").lt("created_at", cutoffISO);
+    // 7. Parcel children (Bug 11 fix: include boundary_history and mortgages)
+    const { data: parcelRows } = await supabase
+      .from("cadastral_parcels")
+      .select("id")
+      .ilike("parcel_number", "TEST-%")
+      .lt("created_at", cutoffISO);
     const parcelIds = parcelRows?.map((r: any) => r.id) ?? [];
     if (parcelIds.length > 0) {
-      const { data: ohData } = await supabase.from("cadastral_ownership_history").delete().in("parcel_id", parcelIds).select("id");
-      deletedCounts["cadastral_ownership_history"] = ohData?.length || 0;
-      const { data: thData } = await supabase.from("cadastral_tax_history").delete().in("parcel_id", parcelIds).select("id");
-      deletedCounts["cadastral_tax_history"] = thData?.length || 0;
+      await safeDelete(
+        "cadastral_ownership_history",
+        supabase.from("cadastral_ownership_history").delete().in("parcel_id", parcelIds).select("id")
+      );
+      await safeDelete(
+        "cadastral_tax_history",
+        supabase.from("cadastral_tax_history").delete().in("parcel_id", parcelIds).select("id")
+      );
+      await safeDelete(
+        "cadastral_boundary_history",
+        supabase.from("cadastral_boundary_history").delete().in("parcel_id", parcelIds).select("id")
+      );
+      await safeDelete(
+        "cadastral_mortgages",
+        supabase.from("cadastral_mortgages").delete().in("parcel_id", parcelIds).select("id")
+      );
     }
 
     // 8. Parcels
-    const { data: pData } = await supabase.from("cadastral_parcels").delete().ilike("parcel_number", "TEST-%").lt("created_at", cutoffISO).select("id");
-    deletedCounts["cadastral_parcels"] = pData?.length || 0;
+    await safeDelete(
+      "cadastral_parcels",
+      supabase.from("cadastral_parcels").delete().ilike("parcel_number", "TEST-%").lt("created_at", cutoffISO).select("id")
+    );
 
     // 9. Independent tables
-    const independentTables = [
-      { table: "real_estate_expertise_requests", column: "parcel_number", value: "TEST-%" },
-      { table: "cadastral_land_disputes", column: "parcel_number", value: "TEST-%" },
-      { table: "land_title_requests", column: "reference_number", value: "TEST-%" },
-      { table: "cadastral_boundary_conflicts", column: "reporting_parcel_number", value: "TEST-%" },
-      { table: "generated_certificates", column: "reference_number", value: "TEST-%" },
-    ];
+    await safeDelete(
+      "real_estate_expertise_requests",
+      supabase.from("real_estate_expertise_requests").delete().ilike("parcel_number", "TEST-%").lt("created_at", cutoffISO).select("id")
+    );
+    await safeDelete(
+      "cadastral_land_disputes",
+      supabase.from("cadastral_land_disputes").delete().ilike("parcel_number", "TEST-%").lt("created_at", cutoffISO).select("id")
+    );
+    await safeDelete(
+      "land_title_requests",
+      supabase.from("land_title_requests").delete().ilike("reference_number", "TEST-%").lt("created_at", cutoffISO).select("id")
+    );
+    await safeDelete(
+      "cadastral_boundary_conflicts",
+      supabase.from("cadastral_boundary_conflicts").delete().ilike("reporting_parcel_number", "TEST-%").lt("created_at", cutoffISO).select("id")
+    );
+    // Bug 12 fix: generated_certificates uses generated_at, not created_at
+    await safeDelete(
+      "generated_certificates",
+      supabase.from("generated_certificates").delete().ilike("reference_number", "TEST-%").lt("generated_at", cutoffISO).select("id")
+    );
 
-    for (const entry of independentTables) {
-      const { data } = await supabase
-        .from(entry.table)
-        .delete()
-        .ilike(entry.column, entry.value)
-        .lt("created_at", cutoffISO)
-        .select("id");
-      deletedCounts[entry.table] = data?.length || 0;
-    }
-
-    // Audit log
+    // Audit log (Bug 19 fix: include errors in audit)
     await supabase.rpc("log_audit_action", {
       action_param: "AUTO_TEST_DATA_CLEANUP",
       table_name_param: "cadastral_contributions",
       record_id_param: null,
       old_values_param: { retention_days: retentionDays, cutoff: cutoffISO },
-      new_values_param: { deleted: deletedCounts },
+      new_values_param: {
+        deleted: deletedCounts,
+        ...(Object.keys(errors).length > 0 ? { errors } : {}),
+      },
     });
 
     console.log("Auto-cleanup completed:", deletedCounts);
+    if (Object.keys(errors).length > 0) {
+      console.warn("Auto-cleanup errors:", errors);
+    }
 
     return new Response(
-      JSON.stringify({ success: true, deleted: deletedCounts }),
+      JSON.stringify({ success: true, deleted: deletedCounts, errors }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
