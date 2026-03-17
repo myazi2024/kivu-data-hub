@@ -31,7 +31,7 @@ import {
   getAvenuesForQuartier
 } from '@/lib/geographicData';
 import { InputWithPopover } from './InputWithPopover';
-import { PropertyTitleTypeSelect, PROPERTY_TITLE_TYPES } from './PropertyTitleTypeSelect';
+import { PropertyTitleTypeSelect, PROPERTY_TITLE_TYPES, getEffectiveTitleName } from './PropertyTitleTypeSelect';
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
 import { useIsMobile } from '@/hooks/use-mobile';
 // FIX #27: Lazy import confetti to avoid loading it for every session
@@ -97,6 +97,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [shouldBlinkSuperficie, setShouldBlinkSuperficie] = useState(false);
   const [showUsageLockedWarning, setShowUsageLockedWarning] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
+  const [customTitleName, setCustomTitleName] = useState('');
   
   // Fonction pour obtenir les champs manquants avec détails pour la navigation
   const getMissingFields = () => {
@@ -106,6 +107,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     // Vérifier Type de titre de propriété (obligatoire)
     if (!formData.propertyTitleType || formData.propertyTitleType.trim() === '') {
       missing.push({ field: 'propertyTitleType', label: 'Type de titre de propriété', tab: 'general' });
+    }
+    // Si "Autre" est sélectionné, le nom personnalisé est obligatoire
+    if (formData.propertyTitleType === 'Autre' && (!customTitleName || customTitleName.trim() === '')) {
+      missing.push({ field: 'customTitleName', label: 'Nom du titre de propriété (Autre)', tab: 'general' });
     }
     
     // Vérifier qu'au moins un propriétaire actuel a lastName et firstName (obligatoire)
@@ -1265,6 +1270,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       // Add document URLs to form data
       const dataToSubmit = {
         ...formData,
+        // For "Autre", store the custom title name as the effective property_title_type
+        propertyTitleType: getEffectiveTitleName(formData.propertyTitleType, customTitleName) || formData.propertyTitleType,
         parcelType: sectionType === 'urbaine' ? 'SU' as const : sectionType === 'rurale' ? 'SR' as const : undefined, // Type de parcelle (Section Urbaine/Rurale)
         currentOwners: currentOwners.filter(o => o.lastName && o.firstName), // Ne garder que les propriétaires avec nom et prénom
         ownershipHistory: ownershipHistoryData.length > 0 ? ownershipHistoryData as any : undefined,
@@ -2558,14 +2565,19 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           <TabsContent value="general" className="space-y-4 sm:space-y-6 mt-4 sm:mt-6 animate-fade-in">
             <PropertyTitleTypeSelect 
               value={formData.propertyTitleType || ''}
-              onValueChange={(value) => handleInputChange('propertyTitleType', value)}
+              onValueChange={(value) => {
+                handleInputChange('propertyTitleType', value);
+                if (value !== 'Autre') setCustomTitleName('');
+              }}
               leaseType={formData.leaseType}
               onLeaseTypeChange={(type) => handleInputChange('leaseType', type)}
               leaseYears={leaseYears}
               onLeaseYearsChange={setLeaseYears}
+              customTitleName={customTitleName}
+              onCustomTitleNameChange={setCustomTitleName}
             />
 
-            {formData.propertyTitleType && (
+            {formData.propertyTitleType && formData.propertyTitleType !== 'Autre' && (
               <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden animate-fade-in">
                 <CardContent className="p-3 space-y-3">
                   {/* Numéro de référence et Date de délivrance - côte-à-côte */}
@@ -2574,18 +2586,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       <Label htmlFor="titleReference" className="text-sm font-medium">
                         N° {formData.propertyTitleType ? (() => {
                           const titleType = formData.propertyTitleType;
-                          // Abréviations pour les noms longs
                           const abbreviations: Record<string, string> = {
                             "Certificat d'enregistrement": "Cert. d'enreg.",
-                            "Titre foncier": "Titre foncier",
-                            "Concession perpétuelle": "Conc. perpét.",
-                            "Concession ordinaire": "Conc. ordin.",
-                            "Bail emphytéotique": "Bail emphyt.",
-                            "Contrat de location (Concession provisoire)": "Contr. de loc.",
-                            "Autorisation d'occupation provisoire": "AOP",
-                            "Permis d'occupation urbain": "POU",
-                            "Permis d'occupation rural": "POR",
-                            "Livret de logeur": "Livret logeur",
+                            "Contrat de location (Contrat d'occupation provisoire)": "Contr. de loc.",
                             "Fiche parcellaire": "Fiche parcel."
                           };
                           return abbreviations[titleType] || titleType;
@@ -2620,7 +2623,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   <div className="space-y-2 pt-1 border-t border-border/50">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="titleDoc" className="text-sm font-medium">
-                        Images ou pdf du {formData.propertyTitleType ? formData.propertyTitleType.toLowerCase() : 'titre de propriété'} <span className="text-destructive">*</span>
+                        Images ou pdf du {getEffectiveTitleName(formData.propertyTitleType, customTitleName)?.toLowerCase() || 'titre de propriété'} <span className="text-destructive">*</span>
                       </Label>
                       <span className="text-xs text-muted-foreground">
                         {titleDocFiles.length}/5
@@ -2675,13 +2678,50 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </Card>
             )}
 
+            {/* Card for "Autre" title type - reference, date and document */}
+            {formData.propertyTitleType === 'Autre' && customTitleName?.trim() && (
+              <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden animate-fade-in">
+                <CardContent className="p-3 space-y-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label htmlFor="titleReference" className="text-sm font-medium">
+                        N° {customTitleName.length > 15 ? customTitleName.substring(0, 15) + '…' : customTitleName}
+                      </Label>
+                      <InputWithPopover
+                        id="titleReference"
+                        placeholder="Numéro de référence"
+                        value={formData.titleReferenceNumber || ''}
+                        onChange={(e) => handleInputChange('titleReferenceNumber', e.target.value)}
+                        helpTitle="Référence"
+                        helpText="Numéro figurant sur votre document"
+                        className="h-9 text-sm rounded-xl"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="titleIssueDate" className="text-sm font-medium">
+                        Date délivrance
+                      </Label>
+                      <Input
+                        id="titleIssueDate"
+                        type="date"
+                        max={new Date().toISOString().split('T')[0]}
+                        value={formData.titleIssueDate || ''}
+                        onChange={(e) => handleInputChange('titleIssueDate', e.target.value)}
+                        className="h-9 text-sm rounded-xl"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Le titre foncier est-il au nom du propriétaire actuel? - Affiché uniquement si N° Titre foncier est rempli */}
             {formData.titleReferenceNumber && formData.titleReferenceNumber.trim() !== '' && (
               <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 overflow-hidden">
                 <CardContent className="p-3 space-y-3">
                   <div className="flex items-center justify-between">
                     <Label className="text-sm font-medium text-amber-900 dark:text-amber-100">
-                      Ce titre de type "{formData.propertyTitleType || 'non sélectionné'}" est-il au nom du propriétaire actuel ?
+                      Ce titre de type "{getEffectiveTitleName(formData.propertyTitleType, customTitleName) || 'non sélectionné'}" est-il au nom du propriétaire actuel ?
                     </Label>
                     <Popover>
                       <PopoverTrigger asChild>
@@ -2765,7 +2805,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     </div>
                     <Label className="text-sm font-semibold">
                       {formData.isTitleInCurrentOwnerName === true 
-                        ? `Ajouter le/la propriétaire figurant sur le ${formData.propertyTitleType || 'titre de propriété'}`
+                        ? `Ajouter le/la propriétaire figurant sur le ${getEffectiveTitleName(formData.propertyTitleType, customTitleName) || 'titre de propriété'}`
                         : formData.isTitleInCurrentOwnerName === false
                         ? "Alors, indiquer le nom du propriétaire actuel tel qu'il figure dans tout document prouvant son droit sur la parcelle."
                         : "Propriétaire(s) actuel(s)"}
