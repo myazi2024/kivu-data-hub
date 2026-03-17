@@ -2917,15 +2917,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                                 <SelectValue placeholder="Sélectionner" />
                               </SelectTrigger>
                               <SelectContent className="rounded-xl">
-                                <SelectItem value="Entreprise individuelle (Ets)">Entreprise individuelle (Ets)</SelectItem>
-                                <SelectItem value="Société en Participation (SEP)">Société en Participation (SEP)</SelectItem>
-                                <SelectItem value="Société à Responsabilité Limitée (SARL)">SARL</SelectItem>
-                                <SelectItem value="Société Anonyme (SA)">SA</SelectItem>
-                                <SelectItem value="Société par Actions Simplifiée (SAS)">SAS</SelectItem>
-                                <SelectItem value="Société en Nom Collectif (SNC)">SNC</SelectItem>
-                                <SelectItem value="Société en Commandite Simple (SCS)">SCS</SelectItem>
-                                <SelectItem value="Groupement d'Intérêt Économique (GIE)">GIE</SelectItem>
-                                <SelectItem value="Autre">Autre</SelectItem>
+                                {getPicklistOptions('picklist_entity_subtype_societe').map(opt => (
+                                  <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                             {owner.entitySubType === 'Autre' && (
