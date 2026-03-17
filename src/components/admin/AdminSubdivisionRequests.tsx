@@ -71,7 +71,7 @@ export function AdminSubdivisionRequests() {
   const [requests, setRequests] = useState<SubdivisionRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('_all');
   const [selectedRequest, setSelectedRequest] = useState<SubdivisionRequest | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showActionDialog, setShowActionDialog] = useState(false);
