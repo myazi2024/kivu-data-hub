@@ -309,7 +309,7 @@ export function AdminSubdivisionRequests() {
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center gap-3">
                         <Badge variant="outline" className="font-mono">{request.reference_number}</Badge>
-                        <Badge className={statusConfig[request.status]?.color || 'bg-muted'}>{statusConfig[request.status]?.label || request.status}</Badge>
+                        <StatusBadge status={SUBDIVISION_STATUS_MAP[request.status] || 'pending'} compact />
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
                         <div className="flex items-center gap-1 text-muted-foreground"><MapPin className="h-3.5 w-3.5" /><span className="font-mono">{request.parcel_number}</span></div>
