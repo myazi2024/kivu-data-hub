@@ -209,6 +209,7 @@ const DRCInteractiveMap = () => {
                         hoveredProvince={hoveredProvince}
                         getProvinceColor={getProvinceColor}
                         onMapReady={setMapInstance}
+                        tooltipLineConfigs={tooltipLineConfigs}
                       />
                     </div>
                   </div>
