@@ -4996,10 +4996,16 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             <div className="flex justify-end pt-4 sm:pt-6 mt-4 sm:mt-6 border-t">
               <Button
                 type="button"
-                onClick={() => handleTabChange('review')}
+                onClick={() => {
+                  if (obligationType === 'taxes') {
+                    setObligationType('mortgages');
+                  } else {
+                    handleTabChange('review');
+                  }
+                }}
                 className="gap-2 bg-gradient-to-r from-seloger-red to-seloger-red-dark hover:from-seloger-red-dark hover:to-red-700 transition-all hover:scale-105 shadow-lg hover:shadow-xl animate-fade-in text-white text-sm sm:text-base h-10 sm:h-11 rounded-xl"
               >
-                Reviser
+                {obligationType === 'taxes' ? 'Suivant' : 'Reviser'}
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
