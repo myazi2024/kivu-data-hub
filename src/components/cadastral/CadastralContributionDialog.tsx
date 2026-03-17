@@ -2575,7 +2575,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               onCustomTitleNameChange={setCustomTitleName}
             />
 
-            {formData.propertyTitleType && (
+            {formData.propertyTitleType && formData.propertyTitleType !== 'Autre' && (
               <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden animate-fade-in">
                 <CardContent className="p-3 space-y-3">
                   {/* Numéro de référence et Date de délivrance - côte-à-côte */}
@@ -2584,18 +2584,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       <Label htmlFor="titleReference" className="text-sm font-medium">
                         N° {formData.propertyTitleType ? (() => {
                           const titleType = formData.propertyTitleType;
-                          // Abréviations pour les noms longs
                           const abbreviations: Record<string, string> = {
                             "Certificat d'enregistrement": "Cert. d'enreg.",
-                            "Titre foncier": "Titre foncier",
-                            "Concession perpétuelle": "Conc. perpét.",
-                            "Concession ordinaire": "Conc. ordin.",
-                            "Bail emphytéotique": "Bail emphyt.",
-                            "Contrat de location (Concession provisoire)": "Contr. de loc.",
-                            "Autorisation d'occupation provisoire": "AOP",
-                            "Permis d'occupation urbain": "POU",
-                            "Permis d'occupation rural": "POR",
-                            "Livret de logeur": "Livret logeur",
+                            "Contrat de location (Contrat d'occupation provisoire)": "Contr. de loc.",
                             "Fiche parcellaire": "Fiche parcel."
                           };
                           return abbreviations[titleType] || titleType;
