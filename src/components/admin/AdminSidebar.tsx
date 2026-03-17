@@ -162,6 +162,7 @@ export function AdminSidebar({ pendingCount, pendingLandTitleCount, pendingPermi
       case 'mutations': return pendingMutationsCount || 0;
       case 'expertise': return pendingExpertiseCount || 0;
       case 'subdivisions': return pendingSubdivisionsCount || 0;
+      case 'payments': return pendingPaymentsCount || 0;
       default: return 0;
     }
   };
