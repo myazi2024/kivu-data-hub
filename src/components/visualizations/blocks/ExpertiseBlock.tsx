@@ -19,6 +19,7 @@ const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TAB
 export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
   const filterLabel = useMemo(() => buildFilterLabel(filter), [filter]);
+  const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
   const filtered = useMemo(() => applyFilters(data.expertiseRequests, filter), [data.expertiseRequests, filter]);
 
   const byStatus = useMemo(() => countBy(filtered, 'status'), [filtered]);
@@ -113,49 +114,53 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
     return { completed, pending, inProgress, avgDays, assignDelay, totalValue, avgValue };
   }, [filtered]);
 
+  const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
+  const v = isChartVisible;
+
+  const kpiItems = useMemo(() => [
+    { key: 'kpi-total', label: ct('kpi-total', 'Total'), value: filtered.length, cls: 'text-violet-600' },
+    { key: 'kpi-completed', label: ct('kpi-completed', 'Complétées'), value: stats.completed, cls: 'text-emerald-600', tooltip: pct(stats.completed, filtered.length) },
+    { key: 'kpi-in-progress', label: ct('kpi-in-progress', 'En cours'), value: stats.inProgress, cls: 'text-blue-600', tooltip: pct(stats.inProgress, filtered.length) },
+    { key: 'kpi-delay', label: ct('kpi-delay', 'Délai total'), value: stats.avgDays > 0 ? `${stats.avgDays}j` : 'N/A', cls: 'text-rose-600', tooltip: 'Délai moyen de traitement' },
+    { key: 'kpi-assign-delay', label: ct('kpi-assign-delay', 'Délai assign.'), value: stats.assignDelay > 0 ? `${stats.assignDelay}j` : 'N/A', cls: 'text-amber-600', tooltip: 'Délai moyen avant assignation' },
+    { key: 'kpi-avg-value', label: ct('kpi-avg-value', 'Valeur moy.'), value: stats.avgValue > 0 ? `$${stats.avgValue.toLocaleString()}` : 'N/A', cls: 'text-primary', tooltip: `Total: $${stats.totalValue.toLocaleString()}` },
+  ].filter(k => v(k.key)), [filtered, stats, v, getChartConfig]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
       <AnalyticsFilters data={data.expertiseRequests} filter={filter} onChange={setFilter} />
-      <KpiGrid items={[
-        { label: 'Total', value: filtered.length, cls: 'text-violet-600' },
-        { label: 'Complétées', value: stats.completed, cls: 'text-emerald-600', tooltip: pct(stats.completed, filtered.length) },
-        { label: 'En cours', value: stats.inProgress, cls: 'text-blue-600', tooltip: pct(stats.inProgress, filtered.length) },
-        { label: 'Délai total', value: stats.avgDays > 0 ? `${stats.avgDays}j` : 'N/A', cls: 'text-rose-600', tooltip: 'Délai moyen de traitement' },
-        { label: 'Délai assign.', value: stats.assignDelay > 0 ? `${stats.assignDelay}j` : 'N/A', cls: 'text-amber-600', tooltip: 'Délai moyen avant assignation' },
-        { label: 'Valeur moy.', value: stats.avgValue > 0 ? `$${stats.avgValue.toLocaleString()}` : 'N/A', cls: 'text-primary', tooltip: `Total: $${stats.totalValue.toLocaleString()}` },
-      ]} />
+      <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        <ChartCard title="Statut détaillé" icon={Search} data={byStatus} type="bar-v" colorIndex={5}
-          insight={generateInsight(byStatus, 'bar-v', 'les statuts d\'expertise')} />
-        <ChartCard title="Paiement" icon={DollarSign} data={byPaymentStatus} type="donut" colorIndex={2}
-          insight={generateInsight(byPaymentStatus, 'donut', 'les paiements')} />
-        <ChartCard title="État du bien" icon={Building} data={byPropertyCondition} type="bar-h" colorIndex={7} labelWidth={100} hidden={byPropertyCondition.length === 0}
-          insight={generateInsight(byPropertyCondition, 'bar-h', 'l\'état des biens')} />
-        <ChartCard title="Qualité construction" data={byConstructionQuality} type="donut" colorIndex={3} hidden={byConstructionQuality.length === 0}
-          insight={generateInsight(byConstructionQuality, 'donut', 'la qualité de construction')} />
-        <ChartCard title="Année construction" icon={Clock} data={byDecade} type="bar-v" colorIndex={0} hidden={byDecade.length === 0}
-          insight={generateInsight(byDecade, 'bar-v', 'les périodes de construction')} />
-        <ChartCard title="Surface bâtie" icon={Ruler} data={builtAreaDist} type="bar-v" colorIndex={1} hidden={builtAreaDist.length === 0}
-          insight={generateInsight(builtAreaDist, 'bar-v', 'les surfaces bâties')} />
-        <ChartCard title="Équipements" icon={Zap} data={equipmentData} type="bar-h" colorIndex={9} labelWidth={100} hidden={equipmentData.length === 0}
-          insight="Répartition des équipements disponibles dans les biens expertisés." />
-        <ChartCard title="Accès routier" icon={MapPin} data={byRoadAccess} type="pie" colorIndex={0} hidden={byRoadAccess.length === 0}
-          insight={generateInsight(byRoadAccess, 'pie', 'les types d\'accès routier')} />
-        <ChartCard title="Proximité moy." icon={MapPin} data={proximityData} type="bar-h" colorIndex={6} labelWidth={110} hidden={proximityData.length === 0}
-          insight="Distance moyenne aux infrastructures clés (routes, marchés, écoles, hôpitaux)." />
-        <ChartCard title="Zones à risque" icon={ShieldAlert} data={riskData} type="pie" colorIndex={4} hidden={riskData.length === 0}
-          insight={riskData.length > 0 ? `${riskData.filter(r => r.name !== 'Hors risque').reduce((s, r) => s + r.value, 0)} bien(s) situé(s) en zone à risque.` : ''} />
-        <ChartCard title="Valeur marchande" icon={DollarSign} data={valueDist} type="bar-v" colorIndex={2} hidden={valueDist.length === 0}
-          insight={generateInsight(valueDist, 'bar-v', 'les tranches de valeur')} />
-        <ChartCard title="Nbre d'étages" icon={Building} data={floorsDist} type="bar-v" colorIndex={1} hidden={floorsDist.length === 0}
-          insight={generateInsight(floorsDist, 'bar-v', 'le nombre d\'étages')} />
-        <ChartCard title="Surface jardin" icon={Trees} data={gardenDist} type="bar-v" colorIndex={10} hidden={gardenDist.length === 0}
-          insight={generateInsight(gardenDist, 'bar-v', 'les surfaces de jardin')} />
-        <GeoCharts records={filtered} />
-        <ChartCard title="Évolution" icon={TrendingUp} data={trend} type="area" colorIndex={5} colSpan={2}
-          insight={generateInsight(trend, 'area', 'les demandes d\'expertise')} />
+        {v('status') && <ChartCard title={ct('status', 'Statut détaillé')} icon={Search} data={byStatus} type="bar-v" colorIndex={5}
+          insight={generateInsight(byStatus, 'bar-v', 'les statuts d\'expertise')} />}
+        {v('payment') && <ChartCard title={ct('payment', 'Paiement')} icon={DollarSign} data={byPaymentStatus} type="donut" colorIndex={2}
+          insight={generateInsight(byPaymentStatus, 'donut', 'les paiements')} />}
+        {v('property-condition') && <ChartCard title={ct('property-condition', 'État du bien')} icon={Building} data={byPropertyCondition} type="bar-h" colorIndex={7} labelWidth={100} hidden={byPropertyCondition.length === 0}
+          insight={generateInsight(byPropertyCondition, 'bar-h', 'l\'état des biens')} />}
+        {v('construction-quality') && <ChartCard title={ct('construction-quality', 'Qualité construction')} data={byConstructionQuality} type="donut" colorIndex={3} hidden={byConstructionQuality.length === 0}
+          insight={generateInsight(byConstructionQuality, 'donut', 'la qualité de construction')} />}
+        {v('construction-decade') && <ChartCard title={ct('construction-decade', 'Année construction')} icon={Clock} data={byDecade} type="bar-v" colorIndex={0} hidden={byDecade.length === 0}
+          insight={generateInsight(byDecade, 'bar-v', 'les périodes de construction')} />}
+        {v('built-area') && <ChartCard title={ct('built-area', 'Surface bâtie')} icon={Ruler} data={builtAreaDist} type="bar-v" colorIndex={1} hidden={builtAreaDist.length === 0}
+          insight={generateInsight(builtAreaDist, 'bar-v', 'les surfaces bâties')} />}
+        {v('equipment') && <ChartCard title={ct('equipment', 'Équipements')} icon={Zap} data={equipmentData} type="bar-h" colorIndex={9} labelWidth={100} hidden={equipmentData.length === 0}
+          insight="Répartition des équipements disponibles dans les biens expertisés." />}
+        {v('road-access') && <ChartCard title={ct('road-access', 'Accès routier')} icon={MapPin} data={byRoadAccess} type="pie" colorIndex={0} hidden={byRoadAccess.length === 0}
+          insight={generateInsight(byRoadAccess, 'pie', 'les types d\'accès routier')} />}
+        {v('proximity') && <ChartCard title={ct('proximity', 'Proximité moy.')} icon={MapPin} data={proximityData} type="bar-h" colorIndex={6} labelWidth={110} hidden={proximityData.length === 0}
+          insight="Distance moyenne aux infrastructures clés (routes, marchés, écoles, hôpitaux)." />}
+        {v('risk-zones') && <ChartCard title={ct('risk-zones', 'Zones à risque')} icon={ShieldAlert} data={riskData} type="pie" colorIndex={4} hidden={riskData.length === 0}
+          insight={riskData.length > 0 ? `${riskData.filter(r => r.name !== 'Hors risque').reduce((s, r) => s + r.value, 0)} bien(s) situé(s) en zone à risque.` : ''} />}
+        {v('market-value') && <ChartCard title={ct('market-value', 'Valeur marchande')} icon={DollarSign} data={valueDist} type="bar-v" colorIndex={2} hidden={valueDist.length === 0}
+          insight={generateInsight(valueDist, 'bar-v', 'les tranches de valeur')} />}
+        {v('floors') && <ChartCard title={ct('floors', 'Nbre d\'étages')} icon={Building} data={floorsDist} type="bar-v" colorIndex={1} hidden={floorsDist.length === 0}
+          insight={generateInsight(floorsDist, 'bar-v', 'le nombre d\'étages')} />}
+        {v('garden-area') && <ChartCard title={ct('garden-area', 'Surface jardin')} icon={Trees} data={gardenDist} type="bar-v" colorIndex={10} hidden={gardenDist.length === 0}
+          insight={generateInsight(gardenDist, 'bar-v', 'les surfaces de jardin')} />}
+        {v('geo') && <GeoCharts records={filtered} />}
+        {v('evolution') && <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type="area" colorIndex={5} colSpan={2}
+          insight={generateInsight(trend, 'area', 'les demandes d\'expertise')} />}
       </div>
     </div>
     </FilterLabelContext.Provider>
