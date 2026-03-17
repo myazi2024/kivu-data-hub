@@ -2896,8 +2896,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                               <SelectValue placeholder="Sélectionner" />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl">
-                              <SelectItem value="Société">Société</SelectItem>
-                              <SelectItem value="Association">Association</SelectItem>
+                              {getPicklistOptions('picklist_entity_type').map(opt => (
+                                <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
