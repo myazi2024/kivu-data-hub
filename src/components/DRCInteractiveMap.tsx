@@ -62,6 +62,27 @@ const DRCInteractiveMap = () => {
 
   const { data: analytics, isLoading } = useLandDataAnalytics();
 
+  const rdcMapDefaults = ANALYTICS_TABS_REGISTRY['rdc-map']
+    ? [...ANALYTICS_TABS_REGISTRY['rdc-map'].kpis, ...ANALYTICS_TABS_REGISTRY['rdc-map'].charts]
+    : [];
+  const { isChartVisible, getChartConfig } = useTabChartsConfig('rdc-map', rdcMapDefaults);
+
+  /** Build tooltip line configs from admin config */
+  const tooltipLineConfigs = useMemo(() => {
+    const keys = [
+      'tooltip-parcels', 'tooltip-titles', 'tooltip-contributions', 'tooltip-mutations',
+      'tooltip-disputes', 'tooltip-expertises', 'tooltip-certificates', 'tooltip-invoices',
+      'tooltip-revenue', 'tooltip-fiscal', 'tooltip-density',
+    ];
+    return keys.map(key => ({
+      key,
+      visible: isChartVisible(key),
+      title: getChartConfig(key)?.custom_title || '',
+    }));
+  }, [isChartVisible, getChartConfig]);
+
+  const dt = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
+
   /** Build province data from real Supabase analytics */
   const provincesData: ProvinceData[] = useMemo(() => {
     if (!analytics) return PROVINCE_META.map(p => buildEmptyProvince(p));
