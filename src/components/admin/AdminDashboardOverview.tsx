@@ -373,15 +373,15 @@ export function AdminDashboardOverview() {
         </TabsContent>
 
         <TabsContent value="comparative">
-          <ComparativeAnalysis loading={enhancedLoading} data={enhancedData} />
+          <ComparativeAnalysis loading={enhancedLoading} />
         </TabsContent>
 
         <TabsContent value="cohort">
-          <CohortAnalysis loading={enhancedLoading} data={enhancedData} />
+          <CohortAnalysis loading={enhancedLoading} />
         </TabsContent>
 
         <TabsContent value="reports">
-          <AutomatedReports loading={enhancedLoading} data={enhancedData} />
+          <AutomatedReports />
         </TabsContent>
       </Tabs>
 
