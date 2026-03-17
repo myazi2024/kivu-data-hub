@@ -277,18 +277,24 @@ const DRCInteractiveMap = () => {
                           Cadastre
                         </h5>
                         <div className="grid grid-cols-3 gap-1">
-                          <Card className="p-1 border-border/30">
-                            <div className="text-[9px] text-muted-foreground truncate">Parcelles</div>
-                            <div className="text-[11px] font-bold text-primary">{formatNumber(selectedProvince.prixMoyenLoyer)}</div>
-                          </Card>
-                          <Card className="p-1 border-border/30">
-                            <div className="text-[9px] text-muted-foreground truncate">Titres dem.</div>
-                            <div className="text-[11px] font-bold text-blue-600">{formatNumber(selectedProvince.prixMoyenVenteM2)}</div>
-                          </Card>
-                          <Card className="p-1 border-border/30">
-                            <div className="text-[9px] text-muted-foreground truncate">Contributions</div>
-                            <div className="text-[11px] font-bold text-emerald-600">{formatNumber(selectedProvince.tauxOccupationLocatif)}</div>
-                          </Card>
+                          {isChartVisible('detail-parcels') && (
+                            <Card className="p-1 border-border/30">
+                              <div className="text-[9px] text-muted-foreground truncate">{dt('detail-parcels', 'Parcelles')}</div>
+                              <div className="text-[11px] font-bold text-primary">{formatNumber(selectedProvince.prixMoyenLoyer)}</div>
+                            </Card>
+                          )}
+                          {isChartVisible('detail-titles') && (
+                            <Card className="p-1 border-border/30">
+                              <div className="text-[9px] text-muted-foreground truncate">{dt('detail-titles', 'Titres dem.')}</div>
+                              <div className="text-[11px] font-bold text-blue-600">{formatNumber(selectedProvince.prixMoyenVenteM2)}</div>
+                            </Card>
+                          )}
+                          {isChartVisible('detail-contributions') && (
+                            <Card className="p-1 border-border/30">
+                              <div className="text-[9px] text-muted-foreground truncate">{dt('detail-contributions', 'Contributions')}</div>
+                              <div className="text-[11px] font-bold text-emerald-600">{formatNumber(selectedProvince.tauxOccupationLocatif)}</div>
+                            </Card>
+                          )}
                         </div>
                       </div>
 
@@ -299,22 +305,30 @@ const DRCInteractiveMap = () => {
                           Activité
                         </h5>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1">
-                          <Card className="p-1 border-border/30">
-                            <div className="text-[9px] text-muted-foreground truncate">Mutations</div>
-                            <div className="text-[11px] font-bold text-violet-600">{formatNumber(selectedProvince.dureeMoyenneMiseLocationJours)}</div>
-                          </Card>
-                          <Card className="p-1 border-border/30">
-                            <div className="text-[9px] text-muted-foreground truncate">Litiges</div>
-                            <div className="text-[11px] font-bold text-orange-500">{formatNumber(selectedProvince.tauxVacanceLocative)}</div>
-                          </Card>
-                          <Card className="p-1 border-border/30">
-                            <div className="text-[9px] text-muted-foreground truncate">Certificats</div>
-                            <div className="text-[11px] font-bold text-emerald-600">{formatNumber(selectedProvince.volumeAnnoncesImmobilieres)}</div>
-                          </Card>
-                          <Card className="p-1 border-border/30">
-                            <div className="text-[9px] text-muted-foreground truncate">Expertises</div>
-                            <div className="text-[11px] font-bold text-blue-600">{formatNumber(selectedProvince.populationLocativeEstimee)}</div>
-                          </Card>
+                          {isChartVisible('detail-mutations') && (
+                            <Card className="p-1 border-border/30">
+                              <div className="text-[9px] text-muted-foreground truncate">{dt('detail-mutations', 'Mutations')}</div>
+                              <div className="text-[11px] font-bold text-violet-600">{formatNumber(selectedProvince.dureeMoyenneMiseLocationJours)}</div>
+                            </Card>
+                          )}
+                          {isChartVisible('detail-disputes') && (
+                            <Card className="p-1 border-border/30">
+                              <div className="text-[9px] text-muted-foreground truncate">{dt('detail-disputes', 'Litiges')}</div>
+                              <div className="text-[11px] font-bold text-orange-500">{formatNumber(selectedProvince.tauxVacanceLocative)}</div>
+                            </Card>
+                          )}
+                          {isChartVisible('detail-certificates') && (
+                            <Card className="p-1 border-border/30">
+                              <div className="text-[9px] text-muted-foreground truncate">{dt('detail-certificates', 'Certificats')}</div>
+                              <div className="text-[11px] font-bold text-emerald-600">{formatNumber(selectedProvince.volumeAnnoncesImmobilieres)}</div>
+                            </Card>
+                          )}
+                          {isChartVisible('detail-expertises') && (
+                            <Card className="p-1 border-border/30">
+                              <div className="text-[9px] text-muted-foreground truncate">{dt('detail-expertises', 'Expertises')}</div>
+                              <div className="text-[11px] font-bold text-blue-600">{formatNumber(selectedProvince.populationLocativeEstimee)}</div>
+                            </Card>
+                          )}
                         </div>
                       </div>
 
@@ -325,45 +339,56 @@ const DRCInteractiveMap = () => {
                           Finances
                         </h5>
                         <div className="grid grid-cols-3 gap-1">
-                          <Card className="p-1 border-border/30">
-                            <div className="text-[9px] text-muted-foreground truncate">Revenus</div>
-                            <div className="text-[11px] font-bold text-primary">{formatCurrency(selectedProvince.recettesLocativesUsd)}</div>
-                          </Card>
-                          <Card className="p-1 border-border/30">
-                            <div className="text-[9px] text-muted-foreground truncate">Recettes fisc.</div>
-                            <div className="text-[11px] font-bold text-emerald-600">{formatCurrency(selectedProvince.recettesFiscalesUsd)}</div>
-                          </Card>
-                          <Card className="p-1 border-border/30">
-                            <div className="text-[9px] text-muted-foreground truncate">Factures</div>
-                            <div className="text-[11px] font-bold text-blue-600">{formatNumber(selectedProvince.nombreTransactionsEstimees)}</div>
-                          </Card>
+                          {isChartVisible('detail-revenue') && (
+                            <Card className="p-1 border-border/30">
+                              <div className="text-[9px] text-muted-foreground truncate">{dt('detail-revenue', 'Revenus')}</div>
+                              <div className="text-[11px] font-bold text-primary">{formatCurrency(selectedProvince.recettesLocativesUsd)}</div>
+                            </Card>
+                          )}
+                          {isChartVisible('detail-fiscal') && (
+                            <Card className="p-1 border-border/30">
+                              <div className="text-[9px] text-muted-foreground truncate">{dt('detail-fiscal', 'Recettes fisc.')}</div>
+                              <div className="text-[11px] font-bold text-emerald-600">{formatCurrency(selectedProvince.recettesFiscalesUsd)}</div>
+                            </Card>
+                          )}
+                          {isChartVisible('detail-invoices') && (
+                            <Card className="p-1 border-border/30">
+                              <div className="text-[9px] text-muted-foreground truncate">{dt('detail-invoices', 'Factures')}</div>
+                              <div className="text-[11px] font-bold text-blue-600">{formatNumber(selectedProvince.nombreTransactionsEstimees)}</div>
+                            </Card>
+                          )}
                         </div>
                       </div>
 
                       {/* Indicateurs */}
                       <div className="grid grid-cols-3 gap-1">
-                        <Card className="p-1 border-border/30">
-                          <div className="text-[9px] text-muted-foreground truncate">Densité</div>
-                          <Badge 
-                            variant={
-                              selectedProvince.indicePresionLocative === 'Très élevé' ? 'destructive' :
-                              selectedProvince.indicePresionLocative === 'Élevé' ? 'secondary' : 'outline'
-                            }
-                            className="text-[8px] px-1 py-0"
-                          >
-                            {selectedProvince.indicePresionLocative}
-                          </Badge>
-                        </Card>
-                        <Card className="p-1 border-border/30">
-                          <div className="text-[9px] text-muted-foreground truncate">Surface (ha)</div>
-                          <div className="text-[11px] font-bold text-accent">{formatNumber(selectedProvince.indicePresionFonciere || 0)}</div>
-                        </Card>
-                        <Card className="p-1 border-border/30">
-                          <div className="text-[9px] text-muted-foreground truncate">Résol. litiges</div>
-                          <div className="text-[11px] font-bold text-emerald-600">{selectedProvince.tauxPropriete || 0}%</div>
-                        </Card>
+                        {isChartVisible('detail-density') && (
+                          <Card className="p-1 border-border/30">
+                            <div className="text-[9px] text-muted-foreground truncate">{dt('detail-density', 'Densité')}</div>
+                            <Badge 
+                              variant={
+                                selectedProvince.indicePresionLocative === 'Très élevé' ? 'destructive' :
+                                selectedProvince.indicePresionLocative === 'Élevé' ? 'secondary' : 'outline'
+                              }
+                              className="text-[8px] px-1 py-0"
+                            >
+                              {selectedProvince.indicePresionLocative}
+                            </Badge>
+                          </Card>
+                        )}
+                        {isChartVisible('detail-surface') && (
+                          <Card className="p-1 border-border/30">
+                            <div className="text-[9px] text-muted-foreground truncate">{dt('detail-surface', 'Surface (ha)')}</div>
+                            <div className="text-[11px] font-bold text-accent">{formatNumber(selectedProvince.indicePresionFonciere || 0)}</div>
+                          </Card>
+                        )}
+                        {isChartVisible('detail-resolution') && (
+                          <Card className="p-1 border-border/30">
+                            <div className="text-[9px] text-muted-foreground truncate">{dt('detail-resolution', 'Résol. litiges')}</div>
+                            <div className="text-[11px] font-bold text-emerald-600">{selectedProvince.tauxPropriete || 0}%</div>
+                          </Card>
+                        )}
                       </div>
-                    </div>
                   ) : (
                     <div className="flex items-center justify-center h-full p-4">
                       <p className="text-[10px] text-muted-foreground text-center">Cliquez sur une province</p>
