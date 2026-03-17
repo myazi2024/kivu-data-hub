@@ -78,11 +78,11 @@ export const generateParcels = async (parcelNumbers: string[]) => {
     construction_year: [2010, 2018, null, 2005, 2015][i],
     lease_type: [null, 'bail_emphytéotique', null, null, 'bail_ordinaire'][i],
     gps_coordinates: [
-      { lat: -4.3250, lng: 15.3222 },
-      { lat: -1.6580, lng: 29.2205 },
-      { lat: -2.5083, lng: 28.8608 },
-      { lat: -11.6647, lng: 27.4794 },
-      { lat: -5.8243, lng: 13.4531 },
+      [{ lat: -4.3250, lng: 15.3222 }, { lat: -4.3240, lng: 15.3232 }, { lat: -4.3245, lng: 15.3240 }, { lat: -4.3255, lng: 15.3230 }],
+      [{ lat: -1.6580, lng: 29.2205 }, { lat: -1.6570, lng: 29.2215 }, { lat: -1.6575, lng: 29.2225 }, { lat: -1.6585, lng: 29.2210 }],
+      [{ lat: -2.5083, lng: 28.8608 }, { lat: -2.5073, lng: 28.8618 }, { lat: -2.5078, lng: 28.8628 }, { lat: -2.5088, lng: 28.8615 }],
+      [{ lat: -11.6647, lng: 27.4794 }, { lat: -11.6637, lng: 27.4804 }, { lat: -11.6642, lng: 27.4814 }, { lat: -11.6652, lng: 27.4800 }],
+      [{ lat: -5.8243, lng: 13.4531 }, { lat: -5.8233, lng: 13.4541 }, { lat: -5.8238, lng: 13.4551 }, { lat: -5.8248, lng: 13.4538 }],
     ][i] as unknown as Json,
   }));
 
