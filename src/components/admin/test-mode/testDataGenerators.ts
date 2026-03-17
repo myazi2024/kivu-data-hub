@@ -100,7 +100,7 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
   const statuses = ['approved', 'pending', 'rejected', 'pending', 'approved'];
   const types: Array<'creation' | 'update'> = ['creation', 'creation', 'update', 'creation', 'creation'];
   const areas = [500, 1000, 750, 2000, 350];
-  const titleTypes = ['Titre foncier', 'Concession', 'Titre foncier', 'Certificat d\'enregistrement', 'Concession'];
+  const titleTypes = ['Certificat d\'enregistrement', 'Contrat de location (Contrat d\'occupation provisoire)', 'Fiche parcellaire', 'Certificat d\'enregistrement', 'Contrat de location (Contrat d\'occupation provisoire)'];
 
   const records = parcelNumbers.map((pn, i) => ({
     parcel_number: pn,
