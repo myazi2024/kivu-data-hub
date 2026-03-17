@@ -152,19 +152,43 @@ const AdminContributionConfig = () => {
   const handleSaveFieldLabels = async () => {
     if (!fieldLabelsConfig) return;
     setSaving('field_labels');
-    await updateConfig(fieldLabelsConfig.id, {
-      config_value: fieldLabels
-    });
-    setSaving(null);
+    try {
+      const success = await updateConfig(fieldLabelsConfig.id, {
+        config_value: fieldLabels
+      });
+      if (success) {
+        await saveToHistory('field_labels', fieldLabels, 'Modification des labels des champs');
+        toast({
+          title: "Labels sauvegardés",
+          description: "Les labels des champs ont été mis à jour avec succès"
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+    } finally {
+      setSaving(null);
+    }
   };
 
   const handleSaveHelpTexts = async () => {
     if (!helpTextsConfig) return;
     setSaving('help_texts');
-    await updateConfig(helpTextsConfig.id, {
-      config_value: helpTexts
-    });
-    setSaving(null);
+    try {
+      const success = await updateConfig(helpTextsConfig.id, {
+        config_value: helpTexts
+      });
+      if (success) {
+        await saveToHistory('help_texts', helpTexts, 'Modification des textes d\'aide');
+        toast({
+          title: "Textes d'aide sauvegardés",
+          description: "Les textes d'aide ont été mis à jour avec succès"
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+    } finally {
+      setSaving(null);
+    }
   };
 
   const handleSaveValidationRules = async () => {
