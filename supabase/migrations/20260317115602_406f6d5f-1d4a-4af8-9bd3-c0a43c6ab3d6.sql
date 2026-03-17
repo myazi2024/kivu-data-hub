@@ -1,0 +1,1 @@
+ALTER TABLE public.analytics_charts_config ADD CONSTRAINT analytics_charts_config_tab_key_item_key_unique UNIQUE (tab_key, item_key);
