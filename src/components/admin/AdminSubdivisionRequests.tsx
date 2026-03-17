@@ -357,7 +357,7 @@ export function AdminSubdivisionRequests() {
             <ScrollArea className="max-h-[calc(90vh-150px)]">
               <div className="space-y-4 p-1">
                 <div className="flex items-center justify-between">
-                  <Badge className={statusConfig[selectedRequest.status]?.color}>{statusConfig[selectedRequest.status]?.label}</Badge>
+                  <StatusBadge status={SUBDIVISION_STATUS_MAP[selectedRequest.status] || 'pending'} />
                   <span className="text-sm text-muted-foreground">{format(new Date(selectedRequest.created_at), 'PPP', { locale: fr })}</span>
                 </div>
                 <Card>
