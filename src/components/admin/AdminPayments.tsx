@@ -119,9 +119,13 @@ const AdminPayments: React.FC<AdminPaymentsProps> = ({ onRefresh }) => {
     );
   };
 
-  const filteredPayments = filterStatus === 'all' 
-    ? payments 
-    : payments.filter(payment => payment.status === filterStatus);
+  const filteredPayments = payments.filter(payment => {
+    const matchesStatus = filterStatus === 'all' || payment.status === filterStatus;
+    const paymentDate = new Date(payment.created_at);
+    const matchesFrom = !dateFrom || paymentDate >= new Date(dateFrom);
+    const matchesTo = !dateTo || paymentDate <= new Date(dateTo + 'T23:59:59');
+    return matchesStatus && matchesFrom && matchesTo;
+  });
 
   const pagination = usePagination(filteredPayments, { initialPageSize: 15 });
 
