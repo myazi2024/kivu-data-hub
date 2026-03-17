@@ -117,8 +117,8 @@ const AdminLandDisputes: React.FC = () => {
       }
 
       const { error } = await supabase
-        .from('cadastral_land_disputes' as any)
-        .update(updateData as any)
+        .from('cadastral_land_disputes')
+        .update(updateData)
         .eq('id', disputeId);
 
       if (error) throw error;
