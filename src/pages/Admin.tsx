@@ -199,16 +199,20 @@ const Admin = () => {
 
   const fetchPendingSubdivisionsCount = async () => {
     try {
-      const { count, error } = await supabase
-        .from('subdivision_requests' as any)
+      // subdivision_requests may not exist yet - gracefully handle
+      const { count, error } = await (supabase as any)
+        .from('subdivision_requests')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending');
       
       if (!error) {
         setPendingSubdivisionsCount(count || 0);
+      } else {
+        // Table may not exist, silently ignore
+        setPendingSubdivisionsCount(0);
       }
     } catch (error) {
-      console.error('Erreur compteur lotissements:', error);
+      setPendingSubdivisionsCount(0);
     }
   };
 
