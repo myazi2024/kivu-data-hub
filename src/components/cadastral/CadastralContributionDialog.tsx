@@ -3313,11 +3313,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         <SelectValue placeholder="Sélectionner" />
                       </SelectTrigger>
                       <SelectContent className="rounded-xl">
-                        <SelectItem value="Résidentielle">Résidentielle</SelectItem>
-                        <SelectItem value="Commerciale">Commerciale</SelectItem>
-                        <SelectItem value="Industrielle">Industrielle</SelectItem>
-                        <SelectItem value="Agricole">Agricole</SelectItem>
-                        <SelectItem value="Terrain nu">Terrain nu</SelectItem>
+                        {getPicklistOptions('picklist_construction_type').map(opt => (
+                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
