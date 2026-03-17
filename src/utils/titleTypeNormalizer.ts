@@ -4,12 +4,16 @@
  */
 
 const LEGACY_MAP: Record<string, string> = {
-  // Old types → new mapping
+  // Old types → new mapping (source: DB audit on cadastral_parcels + cadastral_contributions)
   "Titre foncier (Ancien système)": "Certificat d'enregistrement",
   "Titre foncier": "Certificat d'enregistrement",
+  "Titre de propriété": "Certificat d'enregistrement",
   "Concession perpétuelle": "Certificat d'enregistrement",
   "Concession ordinaire": "Contrat de location (Contrat d'occupation provisoire)",
+  "Concession provisoire": "Contrat de location (Contrat d'occupation provisoire)",
+  "Concession": "Contrat de location (Contrat d'occupation provisoire)",
   "Contrat de location (Concession provisoire)": "Contrat de location (Contrat d'occupation provisoire)",
+  "Certificat de location": "Contrat de location (Contrat d'occupation provisoire)",
   "Bail emphytéotique": "Contrat de location (Contrat d'occupation provisoire)",
   "Permis d'occupation urbaine": "Fiche parcellaire",
   "Permis d'occupation rurale": "Fiche parcellaire",
