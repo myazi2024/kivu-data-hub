@@ -6,7 +6,7 @@ export interface ChartConfigItem {
   id?: string;
   tab_key: string;
   item_key: string;
-  item_type: 'chart' | 'kpi';
+  item_type: 'chart' | 'kpi' | 'tab';
   is_visible: boolean;
   display_order: number;
   custom_title?: string | null;
@@ -14,6 +14,14 @@ export interface ChartConfigItem {
   chart_type?: 'bar-h' | 'bar-v' | 'pie' | 'donut' | 'area' | null;
   custom_icon?: string | null;
   col_span?: number;
+}
+
+export interface TabConfig {
+  key: string;
+  label: string;
+  defaultLabel: string;
+  is_visible: boolean;
+  display_order: number;
 }
 
 const QUERY_KEY = ['analytics-charts-config'];
@@ -37,13 +45,38 @@ export function useAnalyticsChartsConfig() {
   return { configs, isLoading };
 }
 
+/** Returns tab-level config merged with defaults from ANALYTICS_TABS_REGISTRY */
+export function useAnalyticsTabsConfig() {
+  const { configs, isLoading } = useAnalyticsChartsConfig();
+
+  const tabs = useMemo(() => {
+    const dbTabMap = new Map<string, ChartConfigItem>();
+    configs.filter(c => c.item_type === 'tab' && c.item_key === '__tab__').forEach(c => dbTabMap.set(c.tab_key, c));
+
+    return Object.entries(ANALYTICS_TABS_REGISTRY).map(([key, reg], i) => {
+      const override = dbTabMap.get(key);
+      return {
+        key,
+        label: override?.custom_title || reg.label,
+        defaultLabel: reg.label,
+        is_visible: override ? override.is_visible : true,
+        display_order: override?.display_order ?? i,
+      } as TabConfig;
+    }).sort((a, b) => a.display_order - b.display_order);
+  }, [configs]);
+
+  const visibleTabs = useMemo(() => tabs.filter(t => t.is_visible), [tabs]);
+
+  return { tabs, visibleTabs, isLoading };
+}
+
 /** Returns a lookup for a specific tab — merges defaults with DB overrides */
 export function useTabChartsConfig(tabKey: string, defaults: ChartConfigItem[]) {
   const { configs, isLoading } = useAnalyticsChartsConfig();
 
   const merged = useMemo(() => {
     const dbMap = new Map<string, ChartConfigItem>();
-    configs.filter(c => c.tab_key === tabKey).forEach(c => dbMap.set(c.item_key, c));
+    configs.filter(c => c.tab_key === tabKey && c.item_type !== 'tab').forEach(c => dbMap.set(c.item_key, c));
 
     return defaults.map((d, i) => {
       const override = dbMap.get(d.item_key);
