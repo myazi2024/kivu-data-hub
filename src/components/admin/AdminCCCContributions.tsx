@@ -372,10 +372,12 @@ const AdminCCCContributions: React.FC = () => {
         targetParcelId = createdParcel.id;
 
         // Créer les historiques associés uniquement pour les nouvelles parcelles
+        const historyErrors: string[] = [];
+
         if (updatedContribution.ownership_history && Array.isArray(updatedContribution.ownership_history)) {
           for (const history of updatedContribution.ownership_history) {
             if (typeof history === 'object' && history !== null) {
-              await supabase.from('cadastral_ownership_history').insert({
+              const { error: ohError } = await supabase.from('cadastral_ownership_history').insert({
                 parcel_id: targetParcelId,
                 owner_name: (history as any).owner_name,
                 legal_status: (history as any).legal_status,
@@ -384,6 +386,10 @@ const AdminCCCContributions: React.FC = () => {
                 mutation_type: (history as any).mutation_type,
                 ownership_document_url: (history as any).ownership_document_url
               });
+              if (ohError) {
+                console.error('Erreur historique propriété:', ohError);
+                historyErrors.push('propriété');
+              }
             }
           }
         }
@@ -391,7 +397,7 @@ const AdminCCCContributions: React.FC = () => {
         if (updatedContribution.boundary_history && Array.isArray(updatedContribution.boundary_history)) {
           for (const history of updatedContribution.boundary_history) {
             if (typeof history === 'object' && history !== null) {
-              await supabase.from('cadastral_boundary_history').insert({
+              const { error: bhError } = await supabase.from('cadastral_boundary_history').insert({
                 parcel_id: targetParcelId,
                 pv_reference_number: (history as any).pv_reference_number,
                 boundary_purpose: (history as any).boundary_purpose,
@@ -399,6 +405,10 @@ const AdminCCCContributions: React.FC = () => {
                 survey_date: (history as any).survey_date,
                 boundary_document_url: (history as any).boundary_document_url
               });
+              if (bhError) {
+                console.error('Erreur historique bornage:', bhError);
+                historyErrors.push('bornage');
+              }
             }
           }
         }
@@ -406,7 +416,7 @@ const AdminCCCContributions: React.FC = () => {
         if (updatedContribution.tax_history && Array.isArray(updatedContribution.tax_history)) {
           for (const history of updatedContribution.tax_history) {
             if (typeof history === 'object' && history !== null) {
-              await supabase.from('cadastral_tax_history').insert({
+              const { error: thError } = await supabase.from('cadastral_tax_history').insert({
                 parcel_id: targetParcelId,
                 tax_year: (history as any).tax_year,
                 amount_usd: (history as any).amount_usd,
@@ -414,6 +424,10 @@ const AdminCCCContributions: React.FC = () => {
                 payment_date: (history as any).payment_date,
                 receipt_document_url: (history as any).receipt_document_url
               });
+              if (thError) {
+                console.error('Erreur historique taxes:', thError);
+                historyErrors.push('taxes');
+              }
             }
           }
         }
@@ -421,7 +435,7 @@ const AdminCCCContributions: React.FC = () => {
         if (updatedContribution.building_permits && Array.isArray(updatedContribution.building_permits)) {
           for (const permit of updatedContribution.building_permits) {
             if (typeof permit === 'object' && permit !== null) {
-              await supabase.from('cadastral_building_permits').insert({
+              const { error: bpError } = await supabase.from('cadastral_building_permits').insert({
                 parcel_id: targetParcelId,
                 permit_number: (permit as any).permit_number,
                 issuing_service: (permit as any).issuing_service,
@@ -432,8 +446,16 @@ const AdminCCCContributions: React.FC = () => {
                 issuing_service_contact: (permit as any).issuing_service_contact,
                 permit_document_url: (permit as any).permit_document_url
               });
+              if (bpError) {
+                console.error('Erreur permis de construire:', bpError);
+                historyErrors.push('permis');
+              }
             }
           }
+        }
+
+        if (historyErrors.length > 0) {
+          toast.warning(`Parcelle créée mais erreurs sur les historiques: ${historyErrors.join(', ')}`);
         }
       }
 
