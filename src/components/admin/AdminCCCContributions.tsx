@@ -678,11 +678,26 @@ const AdminCCCContributions: React.FC = () => {
 
   const filteredContributions = useMemo(() => {
     return contributions.filter(c => {
-      if (activeTab === 'all') return true;
-      if (activeTab === 'suspicious') return c.is_suspicious;
-      return c.status === activeTab;
+      // Status/suspicious filter
+      const matchesTab = (() => {
+        if (activeTab === 'all') return true;
+        if (activeTab === 'suspicious') return c.is_suspicious;
+        return c.status === activeTab;
+      })();
+
+      // Search filter
+      const query = searchQuery.toLowerCase().trim();
+      const matchesSearch = !query || 
+        c.parcel_number?.toLowerCase().includes(query) ||
+        c.province?.toLowerCase().includes(query) ||
+        c.ville?.toLowerCase().includes(query) ||
+        c.commune?.toLowerCase().includes(query) ||
+        c.current_owner_name?.toLowerCase().includes(query) ||
+        c.user_id?.toLowerCase().includes(query);
+
+      return matchesTab && matchesSearch;
     });
-  }, [contributions, activeTab]);
+  }, [contributions, activeTab, searchQuery]);
 
   // Pagination avec usePagination
   const {
