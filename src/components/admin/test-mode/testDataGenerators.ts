@@ -675,7 +675,7 @@ export const generateBoundaryHistory = async (
     pv_reference_number: `TEST-PV-${Date.now().toString(36)}-${i}`,
     surveyor_name: `Géomètre Test ${i + 1}`,
     survey_date: ['2020-03-15', '2021-06-20', '2022-09-10'][i],
-    boundary_purpose: ['Bornage initial', 'Renouvellement bornage', 'Vérification limites'][i],
+    boundary_purpose: ['Réajustement ou rectification', 'Morcellement ou fusion', 'Mise en valeur ou mutation'][i],
   }));
 
   const { data, error } = await supabase
