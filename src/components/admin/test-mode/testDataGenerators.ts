@@ -666,7 +666,75 @@ export const generateTaxHistory = async (
   return data ?? [];
 };
 
-/** Step 13: Generate certificates */
+/** Step 13: Generate boundary history for parcels (Bug 17) */
+export const generateBoundaryHistory = async (
+  parcels: Array<{ id: string; parcel_number: string }>
+) => {
+  const records = parcels.slice(0, 3).map((p, i) => ({
+    parcel_id: p.id,
+    pv_reference_number: `TEST-PV-${Date.now().toString(36)}-${i}`,
+    surveyor_name: `Géomètre Test ${i + 1}`,
+    survey_date: ['2020-03-15', '2021-06-20', '2022-09-10'][i],
+    boundary_purpose: ['Bornage initial', 'Renouvellement bornage', 'Vérification limites'][i],
+  }));
+
+  const { data, error } = await supabase
+    .from('cadastral_boundary_history')
+    .insert(records)
+    .select('id');
+
+  if (error) console.error('Historique bornages (non-bloquant):', error);
+  return data ?? [];
+};
+
+/** Step 14: Generate mortgages for parcels (Bug 17) */
+export const generateMortgages = async (
+  parcels: Array<{ id: string; parcel_number: string }>
+) => {
+  const records = parcels.slice(0, 2).map((p, i) => ({
+    parcel_id: p.id,
+    creditor_name: [`Banque Commerciale du Congo`, `Trust Merchant Bank`][i],
+    creditor_type: ['banque', 'institution_financiere'][i],
+    mortgage_amount_usd: [25000, 50000][i],
+    duration_months: [60, 120][i],
+    contract_date: ['2022-01-15', '2023-06-01'][i],
+    mortgage_status: ['active', 'completed'][i],
+    reference_number: `TEST-HYP-${Date.now().toString(36)}-${i}`,
+  }));
+
+  const { data, error } = await supabase
+    .from('cadastral_mortgages')
+    .insert(records)
+    .select('id');
+
+  if (error) console.error('Hypothèques (non-bloquant):', error);
+  return data ?? [];
+};
+
+/** Step 15: Generate building permits for parcels (Bug 17) */
+export const generateBuildingPermits = async (
+  parcels: Array<{ id: string; parcel_number: string }>
+) => {
+  const records = parcels.slice(0, 2).map((p, i) => ({
+    parcel_id: p.id,
+    permit_number: `TEST-PC-${Date.now().toString(36)}-${i}`,
+    issue_date: ['2023-01-10', '2024-03-15'][i],
+    issuing_service: [`Service Urbanisme Kinshasa`, `Service Urbanisme Goma`][i],
+    validity_period_months: [24, 12][i],
+    administrative_status: ['valide', 'expiré'][i],
+    is_current: [true, false][i],
+  }));
+
+  const { data, error } = await supabase
+    .from('cadastral_building_permits')
+    .insert(records)
+    .select('id');
+
+  if (error) console.error('Permis de construire (non-bloquant):', error);
+  return data ?? [];
+};
+
+/** Step 16: Generate certificates */
 export const generateCertificates = async (
   parcelNumbers: string[],
   suffix: string,
