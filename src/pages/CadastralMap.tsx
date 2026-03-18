@@ -1184,7 +1184,7 @@ const CadastralMap = () => {
           <div className={`absolute z-[890] animate-fade-in ${
             isMobile 
               ? 'left-1/2 -translate-x-1/2 bottom-[28rem]'
-              : 'left-3 top-[5.5rem]'
+              : 'left-3 top-[8.5rem]'
           }`}
             style={isMobile ? {} : { width: '24rem' }}
           >
