@@ -2213,6 +2213,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               setConstructionType(value);
                               if (value === 'Terrain nu') setConstructionMaterials('');
                             }}
+                            disabled={isParcelLinkedMode && parcelValidated && !!parcelValorisationData?.constructionType}
                           >
                             <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
                               <SelectValue placeholder="Choisir le type" />
