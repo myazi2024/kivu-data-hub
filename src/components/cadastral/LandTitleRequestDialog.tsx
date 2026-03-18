@@ -1209,6 +1209,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                             // Auto-fill construction states
                                             if (valoConstructionType) setConstructionType(valoConstructionType);
                                             if (valoConstructionNature) setConstructionNature(valoConstructionNature);
+                                            if (valoConstructionMaterials) setConstructionMaterials(valoConstructionMaterials);
                                             if (valoDeclaredUsage) setDeclaredUsage(valoDeclaredUsage);
                                           }
                                         } catch (err) {
