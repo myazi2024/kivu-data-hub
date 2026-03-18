@@ -871,7 +871,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           Informations sur la demande *
                           <SectionHelpPopover
                             title="Type de demande"
-                            description="Indiquez s'il s'agit d'une demande initiale de titre foncier, d'un renouvellement d'un titre existant, ou d'une demande de titre foncier définitif. Ce choix influence l'évaluation de votre dossier."
+                            description="Indiquez s'il s'agit d'une demande initiale de titre foncier ou d'un renouvellement d'un titre existant. Ce choix influence l'évaluation de votre dossier."
                           />
                         </Label>
                       </div>
