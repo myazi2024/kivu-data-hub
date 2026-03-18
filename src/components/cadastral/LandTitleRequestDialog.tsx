@@ -84,7 +84,17 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [parcelValidated, setParcelValidated] = useState(false);
   const [parcelSearchLoading, setParcelSearchLoading] = useState(false);
   const [showParcelDropdown, setShowParcelDropdown] = useState(false);
-  // showCCCDialog removed - unused
+  // Owner data loaded from parcel for renewal mode
+  const [parcelOwnerData, setParcelOwnerData] = useState<{
+    legalStatus?: string;
+    gender?: string;
+    lastName?: string;
+    firstName?: string;
+    middleName?: string;
+    phone?: string;
+    email?: string;
+  } | null>(null);
+  const [loadingOwnerData, setLoadingOwnerData] = useState(false);
   
   // Form data
   const [formData, setFormData] = useState<LandTitleRequestData>({
@@ -237,6 +247,11 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setSelectedParcelNumber('');
     setParcelValidated(false);
     setParcelSearchResults([]);
+    setParcelOwnerData(null);
+    // Reset requesterType when switching away from renewal
+    if (requestType !== 'renouvellement') {
+      setFormData(prev => ({ ...prev, requesterType: 'owner', isOwnerSameAsRequester: true }));
+    }
   }, [requestType]);
 
   // Reset validation when construction data changes
@@ -488,8 +503,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       return false;
     }
     
-    // Check owner info if different
-    if (!formData.isOwnerSameAsRequester) {
+    // Check owner info if different (skip for renewal with auto-loaded owner data)
+    const isRenewalWithAutoOwner = requestType === 'renouvellement' && parcelValidated && parcelOwnerData;
+    if (!formData.isOwnerSameAsRequester && !isRenewalWithAutoOwner) {
       if (!formData.ownerLastName || !formData.ownerFirstName) {
         return false;
       }
@@ -670,6 +686,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setSelectedParcelNumber('');
     setParcelValidated(false);
     setParcelSearchResults([]);
+    setParcelOwnerData(null);
+    setLoadingOwnerData(false);
     // Reset GPS & dimensions
     setGpsCoordinates([{ borne: 'Borne 1', lat: '', lng: '' }]);
     setParcelSides([
@@ -920,14 +938,87 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               <div className="absolute z-[1300] w-full mt-1 bg-background border rounded-xl shadow-lg max-h-[180px] overflow-y-auto">
                                 {parcelSearchResults.length > 0 ? (
                                   parcelSearchResults.map((parcel) => (
-                                    <button
+                                     <button
                                       key={parcel.id}
                                       type="button"
-                                      onClick={() => {
+                                      onClick={async () => {
                                         setSelectedParcelNumber(parcel.parcel_number);
                                         setParcelNumberSearch(parcel.parcel_number);
                                         setParcelValidated(true);
                                         setShowParcelDropdown(false);
+                                        
+                                        // Fetch owner data from parcel/contributions
+                                        setLoadingOwnerData(true);
+                                        try {
+                                          // First try contributions for richer owner details
+                                          const { data: contribData } = await supabase
+                                            .from('cadastral_contributions')
+                                            .select('current_owners_details, current_owner_name, current_owner_legal_status')
+                                            .eq('parcel_number', parcel.parcel_number)
+                                            .eq('status', 'approved')
+                                            .order('created_at', { ascending: false })
+                                            .limit(1)
+                                            .maybeSingle();
+                                          
+                                          if (contribData?.current_owners_details) {
+                                            const details = Array.isArray(contribData.current_owners_details) 
+                                              ? contribData.current_owners_details 
+                                              : [];
+                                            const firstOwner = details[0] as any;
+                                            if (firstOwner) {
+                                              const ownerInfo = {
+                                                legalStatus: firstOwner.legalStatus || '',
+                                                gender: firstOwner.gender || '',
+                                                lastName: firstOwner.lastName || '',
+                                                firstName: firstOwner.firstName || '',
+                                                middleName: firstOwner.middleName || '',
+                                                phone: firstOwner.phone || '',
+                                                email: firstOwner.email || '',
+                                              };
+                                              setParcelOwnerData(ownerInfo);
+                                              // Auto-fill owner fields in form
+                                              setFormData(prev => ({
+                                                ...prev,
+                                                requesterType: 'representative' as const,
+                                                isOwnerSameAsRequester: false,
+                                                ownerLastName: ownerInfo.lastName,
+                                                ownerFirstName: ownerInfo.firstName,
+                                                ownerMiddleName: ownerInfo.middleName,
+                                                ownerLegalStatus: ownerInfo.legalStatus || 'Personne physique',
+                                                ownerGender: ownerInfo.gender,
+                                                ownerPhone: ownerInfo.phone,
+                                              }));
+                                            }
+                                          } else {
+                                            // Fallback to parcel table
+                                            const { data: parcelDetail } = await supabase
+                                              .from('cadastral_parcels')
+                                              .select('current_owner_name, current_owner_legal_status')
+                                              .eq('id', parcel.id)
+                                              .single();
+                                            if (parcelDetail) {
+                                              const nameParts = (parcelDetail.current_owner_name || '').split(/\s+/);
+                                              const ownerInfo = {
+                                                legalStatus: parcelDetail.current_owner_legal_status || 'Personne physique',
+                                                lastName: nameParts[0] || '',
+                                                firstName: nameParts.slice(1).join(' ') || '',
+                                              };
+                                              setParcelOwnerData(ownerInfo);
+                                              setFormData(prev => ({
+                                                ...prev,
+                                                requesterType: 'representative' as const,
+                                                isOwnerSameAsRequester: false,
+                                                ownerLastName: ownerInfo.lastName,
+                                                ownerFirstName: ownerInfo.firstName,
+                                                ownerLegalStatus: ownerInfo.legalStatus || 'Personne physique',
+                                              }));
+                                            }
+                                          }
+                                        } catch (err) {
+                                          console.error('Error fetching owner data:', err);
+                                        } finally {
+                                          setLoadingOwnerData(false);
+                                        }
                                       }}
                                       className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 flex items-center gap-2"
                                     >
@@ -1009,35 +1100,75 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         </Label>
                       </div>
 
-                      <div className="space-y-2">
-                        <Label className="text-sm">Vous êtes *</Label>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleInputChange('requesterType', 'owner')}
-                            className={cn(
-                              "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
-                              formData.requesterType === 'owner'
-                                ? 'bg-primary text-primary-foreground shadow-md'
-                                : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                            )}
-                          >
-                            Propriétaire
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleInputChange('requesterType', 'representative')}
-                            className={cn(
-                              "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
-                              formData.requesterType === 'representative'
-                                ? 'bg-primary text-primary-foreground shadow-md'
-                                : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                            )}
-                          >
-                            Mandataire
-                          </button>
+                      {/* Hide toggle when renewal with validated parcel - owner is auto-loaded */}
+                      {!(requestType === 'renouvellement' && parcelValidated && parcelOwnerData) && (
+                        <div className="space-y-2">
+                          <Label className="text-sm">Vous êtes *</Label>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleInputChange('requesterType', 'owner')}
+                              className={cn(
+                                "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
+                                formData.requesterType === 'owner'
+                                  ? 'bg-primary text-primary-foreground shadow-md'
+                                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                              )}
+                            >
+                              Propriétaire
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleInputChange('requesterType', 'representative')}
+                              className={cn(
+                                "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
+                                formData.requesterType === 'representative'
+                                  ? 'bg-primary text-primary-foreground shadow-md'
+                                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                              )}
+                            >
+                              Mandataire
+                            </button>
+                          </div>
                         </div>
-                      </div>
+                      )}
+
+                      {/* Masked owner info for renewal mode */}
+                      {requestType === 'renouvellement' && parcelValidated && parcelOwnerData && (
+                        <div className="p-3 bg-muted/50 rounded-lg border border-border space-y-2 animate-fade-in">
+                          <div className="flex items-center gap-2">
+                            <div className="p-1 bg-primary/10 rounded">
+                              <Info className="h-3.5 w-3.5 text-primary" />
+                            </div>
+                            <span className="text-xs font-semibold text-foreground">Propriétaire identifié</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                            {parcelOwnerData.legalStatus && (
+                              <div><span className="text-muted-foreground">Statut :</span> <span className="font-medium">{parcelOwnerData.legalStatus}</span></div>
+                            )}
+                            {parcelOwnerData.gender && (
+                              <div><span className="text-muted-foreground">Genre :</span> <span className="font-medium">{parcelOwnerData.gender}</span></div>
+                            )}
+                            <div><span className="text-muted-foreground">Nom :</span> <span className="font-medium">{parcelOwnerData.lastName ? parcelOwnerData.lastName.charAt(0) + '***' : '—'}</span></div>
+                            <div><span className="text-muted-foreground">Prénom :</span> <span className="font-medium">{parcelOwnerData.firstName ? parcelOwnerData.firstName.charAt(0) + '***' : '—'}</span></div>
+                            {parcelOwnerData.middleName && (
+                              <div><span className="text-muted-foreground">Post-nom :</span> <span className="font-medium">{parcelOwnerData.middleName.charAt(0) + '***'}</span></div>
+                            )}
+                            {parcelOwnerData.phone && (
+                              <div><span className="text-muted-foreground">Tél :</span> <span className="font-medium">+243 ** *** {parcelOwnerData.phone.slice(-3)}</span></div>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-muted-foreground italic">
+                            Les informations du propriétaire sont chargées depuis la base cadastrale. L'accès complet est réservé aux services habilités.
+                          </p>
+                        </div>
+                      )}
+                      {loadingOwnerData && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground p-2">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Chargement des informations du propriétaire...
+                        </div>
+                      )}
 
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1.5">
@@ -1142,7 +1273,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                     </CardContent>
                   </Card>
 
-                  {formData.requesterType === 'representative' && (
+                  {formData.requesterType === 'representative' && !(requestType === 'renouvellement' && parcelValidated && parcelOwnerData) && (
                     <Card className="border-2 border-dashed rounded-lg">
                       <CardContent className="p-3 space-y-3">
                         <h4 className="text-sm font-semibold text-primary flex items-center gap-2">
