@@ -1774,9 +1774,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               <Label className="text-sm font-semibold">
                                 Croquis de la parcelle
                               </Label>
-                              <Badge variant="outline" className="text-[10px] border-green-300 text-green-700 bg-green-50">
-                                Gratuit
-                              </Badge>
                             </div>
 
                             <div className="bg-muted/30 rounded-lg p-3 flex items-center justify-center">
@@ -1789,9 +1786,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                 const maxLat = Math.max(...lats);
                                 const minLng = Math.min(...lngs);
                                 const maxLng = Math.max(...lngs);
-                                const padding = 20;
+                                const padding = 30;
                                 const svgW = 280;
-                                const svgH = 200;
+                                const svgH = 220;
                                 const rangeX = maxLng - minLng || 0.0001;
                                 const rangeY = maxLat - minLat || 0.0001;
                                 const scale = Math.min((svgW - padding * 2) / rangeX, (svgH - padding * 2) / rangeY);
@@ -1804,8 +1801,32 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                 
                                 const polygonPoints = points.map((p: any) => `${p.x},${p.y}`).join(' ');
                                 
+                                // Compass rose position (top-right)
+                                const compassX = svgW - 28;
+                                const compassY = 28;
+                                const compassR = 16;
+                                
                                 return (
                                   <svg width={svgW} height={svgH} className="border border-border rounded bg-background">
+                                    {/* Compass rose */}
+                                    <g>
+                                      {/* Circle */}
+                                      <circle cx={compassX} cy={compassY} r={compassR} fill="hsl(var(--muted) / 0.5)" stroke="hsl(var(--border))" strokeWidth="1" />
+                                      {/* North arrow */}
+                                      <polygon points={`${compassX},${compassY - compassR + 2} ${compassX - 4},${compassY - 2} ${compassX + 4},${compassY - 2}`} fill="hsl(var(--destructive))" />
+                                      {/* South arrow */}
+                                      <polygon points={`${compassX},${compassY + compassR - 2} ${compassX - 4},${compassY + 2} ${compassX + 4},${compassY + 2}`} fill="hsl(var(--muted-foreground) / 0.4)" />
+                                      {/* East arrow */}
+                                      <polygon points={`${compassX + compassR - 2},${compassY} ${compassX + 2},${compassY - 4} ${compassX + 2},${compassY + 4}`} fill="hsl(var(--muted-foreground) / 0.4)" />
+                                      {/* West arrow */}
+                                      <polygon points={`${compassX - compassR + 2},${compassY} ${compassX - 2},${compassY - 4} ${compassX - 2},${compassY + 4}`} fill="hsl(var(--muted-foreground) / 0.4)" />
+                                      {/* Labels */}
+                                      <text x={compassX} y={compassY - compassR - 3} fontSize="8" fill="hsl(var(--destructive))" textAnchor="middle" fontWeight="bold">N</text>
+                                      <text x={compassX} y={compassY + compassR + 9} fontSize="7" fill="hsl(var(--muted-foreground))" textAnchor="middle">S</text>
+                                      <text x={compassX + compassR + 6} y={compassY + 3} fontSize="7" fill="hsl(var(--muted-foreground))" textAnchor="middle">E</text>
+                                      <text x={compassX - compassR - 6} y={compassY + 3} fontSize="7" fill="hsl(var(--muted-foreground))" textAnchor="middle">O</text>
+                                    </g>
+                                    {/* Parcel polygon */}
                                     <polygon
                                       points={polygonPoints}
                                       fill="hsl(var(--primary) / 0.1)"
