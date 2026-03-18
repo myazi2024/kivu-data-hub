@@ -1096,7 +1096,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                     <p>
                                       {requestType === 'renouvellement'
                                         ? "Une demande de renouvellement d'un titre foncier doit concerner une parcelle déjà enregistrée dans notre base de données afin de faciliter un suivi rigoureux avec les services cadastraux."
-                                        : "Une demande de titre foncier définitif doit concerner une parcelle déjà enregistrée dans notre base de données afin de faciliter un suivi rigoureux avec les services cadastraux."}
+                                        : "Ce numéro de fiche parcellaire n'est pas trouvé dans notre base de données. Veuillez d'abord enregistrer votre parcelle via le formulaire CCC."}
                                     </p>
                                     <p>
                                       Nous vous invitons à commencer par ajouter cette parcelle au cadastre numérique, puis à revenir sur ce formulaire pour introduire votre demande.
