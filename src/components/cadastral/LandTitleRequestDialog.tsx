@@ -1143,8 +1143,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         </Label>
                       </div>
 
-                      {/* RENEWAL MODE: Owner identified + role selection */}
-                      {requestType === 'renouvellement' && parcelValidated && parcelOwnerData && (
+                      {/* PARCEL-LINKED MODE: Owner identified + role selection */}
+                      {isParcelLinkedMode && parcelValidated && parcelOwnerData && (
                         <>
                           {/* Masked owner info */}
                           <div className="p-3 bg-muted/50 rounded-lg border border-border space-y-2 animate-fade-in">
