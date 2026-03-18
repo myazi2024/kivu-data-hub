@@ -1567,7 +1567,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       </CardContent>
                     </Card>
                   )}
-                  )}
+                  </>)}
 
                   {!isFormBlocked && (
                     <div className="flex justify-end pt-4">
