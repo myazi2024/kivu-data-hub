@@ -488,20 +488,25 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     if (!requestType) return false;
     if (requestType === 'renouvellement' && !parcelValidated) return false;
     
-    // Check requester info
-    if (!formData.requesterLastName || !formData.requesterFirstName || !formData.requesterPhone) {
-      return false;
-    }
+    // Renewal mode with owner as requester: skip requester identity fields
+    const isRenewalAsOwner = requestType === 'renouvellement' && parcelValidated && parcelOwnerData && formData.requesterType === 'owner';
     
-    // Validate phone number format
-    if (!validatePhone(formData.requesterPhone)) {
-      return false;
-    }
+    if (!isRenewalAsOwner) {
+      // Check requester info
+      if (!formData.requesterLastName || !formData.requesterFirstName || !formData.requesterPhone) {
+        return false;
+      }
+      
+      // Validate phone number format
+      if (!validatePhone(formData.requesterPhone)) {
+        return false;
+      }
 
-    // Validate requester legal status & gender for personne physique
-    const rLegalStatus = formData.requesterLegalStatus || 'Personne physique';
-    if (rLegalStatus === 'Personne physique' && !formData.requesterGender) {
-      return false;
+      // Validate requester legal status & gender for personne physique
+      const rLegalStatus = formData.requesterLegalStatus || 'Personne physique';
+      if (rLegalStatus === 'Personne physique' && !formData.requesterGender) {
+        return false;
+      }
     }
     
     // Check owner info if different (skip for renewal with auto-loaded owner data)
@@ -514,6 +519,11 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       if (formData.requesterType === 'representative' && !procurationFile) {
         return false;
       }
+    }
+    
+    // Procuration required for renewal mandataire
+    if (isRenewalWithAutoOwner && formData.requesterType === 'representative' && !procurationFile) {
+      return false;
     }
     
     // Check location
