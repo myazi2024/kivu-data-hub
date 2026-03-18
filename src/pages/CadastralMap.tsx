@@ -1014,6 +1014,8 @@ const CadastralMap = () => {
                               setShowLandTitleNotification(false);
                               setShowLandTitleTermsDialog(true);
                               setHasUserInteracted(true);
+                              setSearchQuery('');
+                              setSearchSuggestions([]);
                             }}
                               disabled={!!selectedParcel}
                               className={`${selectedParcel && isMobile ? 'h-8 w-8' : 'h-9 w-9'} shrink-0 rounded-xl transition-colors relative`}
@@ -1071,6 +1073,8 @@ const CadastralMap = () => {
                           setShowLandTitleNotification(false);
                           setShowLandTitleTermsDialog(true);
                           setHasUserInteracted(true);
+                          setSearchQuery('');
+                          setSearchSuggestions([]);
                         }}
                         disabled={!!selectedParcel}
                         className={`h-9 w-9 shrink-0 rounded-xl transition-all duration-300 ease-in-out relative gap-1.5 text-xs font-medium overflow-hidden px-0 ${selectedParcel ? '' : 'hover:w-auto group hover:px-3'}`}
