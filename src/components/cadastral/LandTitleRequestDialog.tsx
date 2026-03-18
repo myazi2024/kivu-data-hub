@@ -977,6 +977,42 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         </div>
                       )}
 
+                      {/* Radio buttons for renewal: knows parcel number */}
+                      {requestType === 'renouvellement' && (
+                        <div className="space-y-2 animate-fade-in">
+                          <Label className="text-sm">Connaissez-vous le numéro (SU ou SR) de la parcelle ? *</Label>
+                          <RadioGroup
+                            value={knowsParcelNumber}
+                            onValueChange={(value: string) => setKnowsParcelNumber(value as 'yes' | 'no')}
+                            className="flex gap-4"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="yes" id="parcel-num-yes" />
+                              <Label htmlFor="parcel-num-yes" className="text-sm cursor-pointer">Je connais le numéro (SU ou SR) de la parcelle</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="no" id="parcel-num-no" />
+                              <Label htmlFor="parcel-num-no" className="text-sm cursor-pointer">Je ne connais pas le numéro (SU ou SR) de la parcelle</Label>
+                            </div>
+                          </RadioGroup>
+
+                          {knowsParcelNumber === 'no' && (
+                            <Alert variant="destructive" className="mt-3 animate-fade-in">
+                              <AlertTriangle className="h-4 w-4" />
+                              <AlertTitle>Numéro de parcelle requis</AlertTitle>
+                              <AlertDescription className="text-xs space-y-2">
+                                <p>
+                                  Le renouvellement d'un titre foncier nécessite le <strong>numéro (SU ou SR) de la parcelle</strong> concernée. Ce numéro figure sur votre <strong>titre de propriété</strong> ou sur la <strong>fiche parcellaire</strong> délivrée par les autorités compétentes.
+                                </p>
+                                <p>
+                                  Veuillez vérifier votre titre de propriété pour retrouver le numéro (SU ou SR) de la parcelle avant de soumettre votre demande de renouvellement.
+                                </p>
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                        </div>
+                      )}
+
                       {/* Parcel number search for renewal OR initial with fiche parcellaire */}
                       {isParcelLinkedMode && (
                         <div className="space-y-2 animate-fade-in">
