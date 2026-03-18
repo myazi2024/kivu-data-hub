@@ -228,6 +228,7 @@ export const useCadastralContribution = () => {
       commune: data.commune,
       quartier: data.quartier,
       avenue: data.avenue,
+      house_number: data.houseNumber || null,
       territoire: data.territoire,
       collectivite: data.collectivite,
       groupement: data.groupement,

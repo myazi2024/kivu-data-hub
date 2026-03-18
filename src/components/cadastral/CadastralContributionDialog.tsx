@@ -566,6 +566,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           commune: contrib.commune || undefined,
           quartier: contrib.quartier || undefined,
           avenue: contrib.avenue || undefined,
+          houseNumber: (contrib as any).house_number || undefined,
           territoire: contrib.territoire || undefined,
           collectivite: contrib.collectivite || undefined,
           groupement: contrib.groupement || undefined,
