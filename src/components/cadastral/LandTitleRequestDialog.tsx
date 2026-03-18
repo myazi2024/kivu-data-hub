@@ -1114,7 +1114,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                             // Fallback to parcel table
                                             const { data: parcelDetail } = await supabase
                                               .from('cadastral_parcels')
-                                              .select('current_owner_name, current_owner_legal_status')
+                                              .select('current_owner_name, current_owner_legal_status, province, parcel_type, ville, commune, quartier, avenue, territoire, collectivite, groupement, village')
                                               .eq('id', parcel.id)
                                               .single();
                                             if (parcelDetail) {
@@ -1134,6 +1134,43 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                                 ownerLegalStatus: ownerInfo.legalStatus || 'Personne physique',
                                               }));
                                             }
+                                          }
+
+                                          // Fetch location data from parcel for renewal mode
+                                          const { data: locData } = await supabase
+                                            .from('cadastral_parcels')
+                                            .select('province, parcel_type, ville, commune, quartier, avenue, territoire, collectivite, groupement, village')
+                                            .eq('id', parcel.id)
+                                            .single();
+                                          if (locData) {
+                                            const sType = locData.parcel_type === 'Urbain' || locData.parcel_type === 'urbaine' ? 'urbaine' : 'rurale';
+                                            const locationInfo = {
+                                              province: locData.province || '',
+                                              sectionType: sType,
+                                              ville: locData.ville || '',
+                                              commune: locData.commune || '',
+                                              quartier: locData.quartier || '',
+                                              avenue: locData.avenue || '',
+                                              territoire: locData.territoire || '',
+                                              collectivite: locData.collectivite || '',
+                                              groupement: locData.groupement || '',
+                                              village: locData.village || '',
+                                            };
+                                            setParcelLocationData(locationInfo);
+                                            // Auto-fill form with location data
+                                            setFormData(prev => ({
+                                              ...prev,
+                                              sectionType: sType as 'urbaine' | 'rurale',
+                                              province: locationInfo.province,
+                                              ville: locationInfo.ville,
+                                              commune: locationInfo.commune,
+                                              quartier: locationInfo.quartier,
+                                              avenue: locationInfo.avenue,
+                                              territoire: locationInfo.territoire,
+                                              collectivite: locationInfo.collectivite,
+                                              groupement: locationInfo.groupement,
+                                              village: locationInfo.village,
+                                            }));
                                           }
                                         } catch (err) {
                                           console.error('Error fetching owner data:', err);
