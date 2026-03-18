@@ -948,6 +948,7 @@ const CadastralMap = () => {
                     onFocus={() => {
                       setIsSearchBarActive(true);
                       setHasUserInteracted(true);
+                      if (showAdvancedSearch) setShowAdvancedSearch(false);
                     }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && searchQuery.trim()) {
