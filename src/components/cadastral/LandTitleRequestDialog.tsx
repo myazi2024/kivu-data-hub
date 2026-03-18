@@ -703,6 +703,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setShowDraftPrompt(false);
     // Reset request type & parcel
     setRequestType('');
+    setHasFicheParcellaire('');
     setParcelNumberSearch('');
     setSelectedParcelNumber('');
     setParcelValidated(false);
