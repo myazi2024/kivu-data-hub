@@ -1071,10 +1071,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                         // Fetch owner data from parcel/contributions
                                         setLoadingOwnerData(true);
                                         try {
-                                          // First try contributions for richer owner details
+                                          // First try contributions for richer owner + location details
                                           const { data: contribData } = await supabase
                                             .from('cadastral_contributions')
-                                            .select('current_owners_details, current_owner_name, current_owner_legal_status')
+                                            .select('current_owners_details, current_owner_name, current_owner_legal_status, province, parcel_type, ville, commune, quartier, avenue, territoire, collectivite, groupement, village')
                                             .eq('parcel_number', parcel.parcel_number)
                                             .eq('status', 'approved')
                                             .order('created_at', { ascending: false })
@@ -1097,7 +1097,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                                 email: firstOwner.email || '',
                                               };
                                               setParcelOwnerData(ownerInfo);
-                                              // Auto-fill owner fields in form
                                               setFormData(prev => ({
                                                 ...prev,
                                                 requesterType: 'representative' as const,
@@ -1114,7 +1113,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                             // Fallback to parcel table
                                             const { data: parcelDetail } = await supabase
                                               .from('cadastral_parcels')
-                                              .select('current_owner_name, current_owner_legal_status, province, parcel_type, ville, commune, quartier, avenue, territoire, collectivite, groupement, village')
+                                              .select('current_owner_name, current_owner_legal_status')
                                               .eq('id', parcel.id)
                                               .single();
                                             if (parcelDetail) {
@@ -1136,28 +1135,31 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                             }
                                           }
 
-                                          // Fetch location data from parcel for renewal mode
-                                          const { data: locData } = await supabase
+                                          // Fetch location data: prioritize parcel table (source of truth)
+                                          const { data: parcelLocData } = await supabase
                                             .from('cadastral_parcels')
                                             .select('province, parcel_type, ville, commune, quartier, avenue, territoire, collectivite, groupement, village')
                                             .eq('id', parcel.id)
                                             .single();
-                                          if (locData) {
-                                            const sType = locData.parcel_type === 'Urbain' || locData.parcel_type === 'urbaine' ? 'urbaine' : 'rurale';
+                                          
+                                          // Use parcel data as base, then enrich with contribution data if available
+                                          const locSource = parcelLocData || contribData;
+                                          if (locSource) {
+                                            const pType = locSource.parcel_type || '';
+                                            const sType = pType === 'Urbain' || pType === 'urbaine' || pType === 'SU' ? 'urbaine' : 'rurale';
                                             const locationInfo = {
-                                              province: locData.province || '',
+                                              province: parcelLocData?.province || contribData?.province || '',
                                               sectionType: sType,
-                                              ville: locData.ville || '',
-                                              commune: locData.commune || '',
-                                              quartier: locData.quartier || '',
-                                              avenue: locData.avenue || '',
-                                              territoire: locData.territoire || '',
-                                              collectivite: locData.collectivite || '',
-                                              groupement: locData.groupement || '',
-                                              village: locData.village || '',
+                                              ville: parcelLocData?.ville || contribData?.ville || '',
+                                              commune: parcelLocData?.commune || contribData?.commune || '',
+                                              quartier: parcelLocData?.quartier || contribData?.quartier || '',
+                                              avenue: parcelLocData?.avenue || contribData?.avenue || '',
+                                              territoire: parcelLocData?.territoire || contribData?.territoire || '',
+                                              collectivite: parcelLocData?.collectivite || contribData?.collectivite || '',
+                                              groupement: parcelLocData?.groupement || contribData?.groupement || '',
+                                              village: parcelLocData?.village || contribData?.village || '',
                                             };
                                             setParcelLocationData(locationInfo);
-                                            // Auto-fill form with location data
                                             setFormData(prev => ({
                                               ...prev,
                                               sectionType: sType as 'urbaine' | 'rurale',
