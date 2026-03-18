@@ -238,6 +238,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   // Computed: is the form in "parcel-linked" mode (renewal OR initial with fiche parcellaire)
   const isParcelLinkedMode = requestType === 'renouvellement' || (requestType === 'initial' && hasFicheParcellaire === 'yes');
 
+  // Computed: form is blocked when user has no fiche parcellaire for initial request
+  const isFormBlocked = requestType === 'initial' && hasFicheParcellaire === 'no';
+
   useEffect(() => {
     const timer = setTimeout(() => {
       if (parcelNumberSearch && isParcelLinkedMode) {
@@ -257,6 +260,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     // Reset requesterType when not in parcel-linked mode
     if (!isParcelLinkedMode) {
       setFormData(prev => ({ ...prev, requesterType: 'owner', isOwnerSameAsRequester: true }));
+    }
+    // Force back to requester tab when form is blocked
+    if (requestType === 'initial' && hasFicheParcellaire === 'no') {
+      setActiveTab('requester');
     }
   }, [requestType, hasFicheParcellaire]);
 
@@ -876,23 +883,23 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       <User className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Demandeur</span>
                     </TabsTrigger>
-                    <TabsTrigger value="location" className="text-xs gap-1.5">
+                    <TabsTrigger value="location" disabled={isFormBlocked} className="text-xs gap-1.5">
                       <MapPin className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Lieu</span>
                     </TabsTrigger>
-                    <TabsTrigger value="valorisation" className="text-xs gap-1.5">
+                    <TabsTrigger value="valorisation" disabled={isFormBlocked} className="text-xs gap-1.5">
                       <Home className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Mise en valeur</span>
                     </TabsTrigger>
-                    <TabsTrigger value="documents" className="text-xs gap-1.5">
+                    <TabsTrigger value="documents" disabled={isFormBlocked} className="text-xs gap-1.5">
                       <FileText className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Documents</span>
                     </TabsTrigger>
-                    <TabsTrigger value="payment" className="text-xs gap-1.5">
+                    <TabsTrigger value="payment" disabled={isFormBlocked} className="text-xs gap-1.5">
                       <CreditCard className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Frais</span>
                     </TabsTrigger>
-                    <TabsTrigger value="review" className="text-xs gap-1.5">
+                    <TabsTrigger value="review" disabled={isFormBlocked} className="text-xs gap-1.5">
                       <ClipboardCheck className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Envoi</span>
                     </TabsTrigger>
@@ -1144,6 +1151,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                     </CardContent>
                   </Card>
 
+                  {!isFormBlocked && (<>
                   <Card className="border-2 rounded-lg">
                     <CardContent className="p-3 space-y-3">
                       <div className="flex items-center gap-2 mb-2">
@@ -1563,12 +1571,15 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       </CardContent>
                     </Card>
                   )}
+                  </>)}
 
-                  <div className="flex justify-end pt-4">
-                    <Button onClick={() => setActiveTab('location')} className="h-8 text-xs rounded-xl gap-2">
-                      Suivant <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  {!isFormBlocked && (
+                    <div className="flex justify-end pt-4">
+                      <Button onClick={() => setActiveTab('location')} className="h-8 text-xs rounded-xl gap-2">
+                        Suivant <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </TabsContent>
 
                 {/* Tab: Location */}
