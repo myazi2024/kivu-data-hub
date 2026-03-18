@@ -463,6 +463,7 @@ export type Database = {
           circonscription_fonciere: string | null
           collectivite: string | null
           commune: string | null
+          construction_materials: string | null
           construction_nature: string | null
           construction_type: string | null
           construction_year: number | null
@@ -526,6 +527,7 @@ export type Database = {
           circonscription_fonciere?: string | null
           collectivite?: string | null
           commune?: string | null
+          construction_materials?: string | null
           construction_nature?: string | null
           construction_type?: string | null
           construction_year?: number | null
@@ -589,6 +591,7 @@ export type Database = {
           circonscription_fonciere?: string | null
           collectivite?: string | null
           commune?: string | null
+          construction_materials?: string | null
           construction_nature?: string | null
           construction_type?: string | null
           construction_year?: number | null
@@ -1020,6 +1023,7 @@ export type Database = {
           circonscription_fonciere: string | null
           collectivite: string | null
           commune: string | null
+          construction_materials: string | null
           construction_nature: string | null
           construction_type: string | null
           construction_year: number | null
@@ -1061,6 +1065,7 @@ export type Database = {
           circonscription_fonciere?: string | null
           collectivite?: string | null
           commune?: string | null
+          construction_materials?: string | null
           construction_nature?: string | null
           construction_type?: string | null
           construction_year?: number | null
@@ -1102,6 +1107,7 @@ export type Database = {
           circonscription_fonciere?: string | null
           collectivite?: string | null
           commune?: string | null
+          construction_materials?: string | null
           construction_nature?: string | null
           construction_type?: string | null
           construction_year?: number | null
