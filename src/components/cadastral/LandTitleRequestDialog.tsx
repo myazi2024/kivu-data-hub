@@ -2150,8 +2150,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
                 {/* Tab: Valorisation */}
                 <TabsContent value="valorisation" className="space-y-4">
-                  {/* RENEWAL MODE: Auto-loaded valorisation data displayed as read-only */}
-                  {isParcelLinkedMode && parcelValidated && parcelValorisationData && requestType === 'renouvellement' && (
+                  {/* PARCEL-LINKED MODE: Auto-loaded valorisation data displayed as read-only */}
+                  {isParcelLinkedMode && parcelValidated && parcelValorisationData && (
                     <Card className="border-2 border-primary/20 rounded-xl bg-primary/5">
                       <CardContent className="p-3 space-y-3">
                         <div className="flex items-center gap-2">
