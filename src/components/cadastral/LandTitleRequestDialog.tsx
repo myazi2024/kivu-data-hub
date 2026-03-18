@@ -532,7 +532,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     }
     
     // Procuration required for renewal mandataire
-    if (isRenewalWithAutoOwner && formData.requesterType === 'representative' && !procurationFile) {
+    if (isParcelWithAutoOwner && formData.requesterType === 'representative' && !procurationFile) {
       return false;
     }
     
