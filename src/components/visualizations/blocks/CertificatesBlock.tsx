@@ -79,6 +79,10 @@ export const CertificatesBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(byType, 'bar-h', 'les types de certificat')} />}
         {v('status') && <ChartCard title={ct('status', 'Statut')} icon={CheckCircle} data={byStatus} type="pie" colorIndex={2}
           insight={generateInsight(byStatus, 'pie', 'les statuts de certificat')} />}
+        {v('type-trend') && typeTrend.data.length > 1 && <StackedBarCard title={ct('type-trend', 'Type × Mois')} data={typeTrend.data}
+          bars={typeTrend.types.map((t, i) => ({ dataKey: t, name: t, color: CHART_COLORS[i % CHART_COLORS.length] }))}
+          maxItems={12}
+          insight={generateStackedInsight(typeTrend.data, typeTrend.types.map(t => ({ dataKey: t, name: t })), 'l\'évolution des types de certificat')} />}
         {v('geo') && <GeoCharts records={filtered} />}
         {v('evolution') && <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type="area" colorIndex={0} colSpan={2}
           insight={generateInsight(trend, 'area', 'la génération de certificats')} />}
