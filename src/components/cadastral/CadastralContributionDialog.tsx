@@ -578,16 +578,16 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         const ownersDetails = contrib.current_owners_details as any[];
         if (ownersDetails && Array.isArray(ownersDetails) && ownersDetails.length > 0) {
           setCurrentOwners(ownersDetails.map((o: any) => ({
-            lastName: o.lastName || o.last_name || '',
-            middleName: o.middleName || o.middle_name || '',
-            firstName: o.firstName || o.first_name || '',
-            legalStatus: o.legalStatus || o.legal_status || 'Personne physique',
+            lastName: o.last_name || o.lastName || '',
+            middleName: o.middle_name || o.middleName || '',
+            firstName: o.first_name || o.firstName || '',
+            legalStatus: o.legal_status || o.legalStatus || 'Personne physique',
             gender: o.gender || '',
-            entityType: o.entityType || o.entity_type || '',
-            entitySubType: o.entitySubType || o.entity_sub_type || '',
-            entitySubTypeOther: o.entitySubTypeOther || o.entity_sub_type_other || '',
-            stateExploitedBy: o.stateExploitedBy || o.state_exploited_by || '',
-            rightType: o.rightType || o.right_type || '',
+            entityType: o.entity_type || o.entityType || '',
+            entitySubType: o.entity_sub_type || o.entitySubType || '',
+            entitySubTypeOther: o.entity_sub_type_other || o.entitySubTypeOther || '',
+            stateExploitedBy: o.state_exploited_by || o.stateExploitedBy || '',
+            rightType: o.right_type || o.rightType || '',
             since: o.since || ''
           })));
           if (ownersDetails.length > 1) {
@@ -613,15 +613,15 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         const ownerHistory = contrib.ownership_history as any[];
         if (ownerHistory && Array.isArray(ownerHistory) && ownerHistory.length > 0) {
           setPreviousOwners(ownerHistory.map((o: any) => ({
-            name: o.owner_name || o.ownerName || '',
-            legalStatus: o.legal_status || o.legalStatus || 'Personne physique',
+            name: o.owner_name || '',
+            legalStatus: o.legal_status || 'Personne physique',
             entityType: '',
             entitySubType: '',
             entitySubTypeOther: '',
             stateExploitedBy: '',
-            startDate: o.ownership_start_date || o.startDate || '',
-            endDate: o.ownership_end_date || o.endDate || '',
-            mutationType: o.mutation_type || o.mutationType || 'Vente'
+            startDate: o.ownership_start_date || '',
+            endDate: o.ownership_end_date || '',
+            mutationType: o.mutation_type || 'Vente'
           })));
         }
 
@@ -652,13 +652,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         if (permits && Array.isArray(permits) && permits.length > 0) {
           setPermitMode('existing');
           setBuildingPermits(permits.map((p: any) => ({
-            permitType: p.permit_type || p.permitType || 'construction',
-            permitNumber: p.permit_number || p.permitNumber || '',
-            issuingService: p.issuing_service || p.issuingService || '',
-            issueDate: p.issue_date || p.issueDate || '',
-            validityMonths: String(p.validity_period_months || p.validityMonths || '36'),
-            administrativeStatus: p.administrative_status || p.administrativeStatus || 'En attente',
-            issuingServiceContact: p.issuing_service_contact || p.issuingServiceContact || '',
+            permitType: p.permit_type || 'construction',
+            permitNumber: p.permit_number || '',
+            issuingService: p.issuing_service || '',
+            issueDate: p.issue_date || '',
+            validityMonths: String(p.validity_period_months || '36'),
+            administrativeStatus: p.administrative_status || 'En attente',
+            issuingServiceContact: p.issuing_service_contact || '',
             attachmentFile: null
           })));
         } else if (contrib.permit_request_data) {
@@ -687,11 +687,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         const taxes = contrib.tax_history as any[];
         if (taxes && Array.isArray(taxes) && taxes.length > 0) {
           setTaxRecords(taxes.map((t: any) => ({
-            taxType: t.tax_type || t.taxType || 'Taxe foncière',
-            taxYear: String(t.tax_year || t.taxYear || ''),
-            taxAmount: String(t.amount_usd || t.amountUsd || ''),
-            paymentStatus: t.payment_status || t.paymentStatus || 'Non payée',
-            paymentDate: t.payment_date || t.paymentDate || '',
+            taxType: t.tax_type || 'Taxe foncière',
+            taxYear: String(t.tax_year || ''),
+            taxAmount: String(t.amount_usd || ''),
+            paymentStatus: t.payment_status || 'Non payée',
+            paymentDate: t.payment_date || '',
             receiptFile: null
           })));
         }
@@ -701,12 +701,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         if (mortgages && Array.isArray(mortgages) && mortgages.length > 0) {
           setHasMortgage(true);
           setMortgageRecords(mortgages.map((m: any) => ({
-            mortgageAmount: String(m.mortgage_amount_usd || m.mortgageAmountUsd || ''),
-            duration: String(m.duration_months || m.durationMonths || ''),
-            creditorName: m.creditor_name || m.creditorName || '',
-            creditorType: m.creditor_type || m.creditorType || 'Banque',
-            contractDate: m.contract_date || m.contractDate || '',
-            mortgageStatus: m.mortgage_status || m.mortgageStatus || 'Active',
+            mortgageAmount: String(m.mortgage_amount_usd || ''),
+            duration: String(m.duration_months || ''),
+            creditorName: m.creditor_name || '',
+            creditorType: m.creditor_type || 'Banque',
+            contractDate: m.contract_date || '',
+            mortgageStatus: m.mortgage_status || 'Active',
             receiptFile: null
           })));
         } else {
@@ -723,8 +723,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         // Historique de bornage
         const boundaries = contrib.boundary_history as any[];
         if (boundaries && Array.isArray(boundaries) && boundaries.length > 0) {
-          // boundaryHistory est géré via previousOwners/boundaryHistory state si applicable
-          // Pour l'instant on log, car le formulaire utilise des états séparés pour le bornage
           console.log('Boundary history loaded:', boundaries.length, 'records');
         }
 
