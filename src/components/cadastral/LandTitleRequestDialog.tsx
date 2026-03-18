@@ -498,7 +498,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     if (!requestType) return false;
     if (requestType === 'renouvellement' && !parcelValidated) return false;
     if (requestType === 'initial' && hasFicheParcellaire === 'yes' && !parcelValidated) return false;
-    
+    if (requestType === 'initial' && hasFicheParcellaire !== 'yes') return false;
     // Renewal mode with owner as requester: skip requester identity fields
     const isParcelAsOwner = isParcelLinkedMode && parcelValidated && parcelOwnerData && formData.requesterType === 'owner';
     
