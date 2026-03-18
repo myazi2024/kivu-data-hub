@@ -889,8 +889,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         </SelectContent>
                       </Select>
 
-                      {/* Parcel number search for renewal or definitive */}
-                      {(requestType === 'renouvellement' || requestType === 'definitif') && (
+                      {/* Parcel number search for renewal */}
+                      {requestType === 'renouvellement' && (
                         <div className="space-y-2 animate-fade-in">
                           <Label className="text-sm">
                             Numéro de la parcelle (SU ou SR) *
