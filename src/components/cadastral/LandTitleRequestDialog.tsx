@@ -98,6 +98,19 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     phone?: string;
     email?: string;
   } | null>(null);
+  // Location data loaded from parcel for renewal mode (masked display)
+  const [parcelLocationData, setParcelLocationData] = useState<{
+    province?: string;
+    sectionType?: string;
+    ville?: string;
+    commune?: string;
+    quartier?: string;
+    avenue?: string;
+    territoire?: string;
+    collectivite?: string;
+    groupement?: string;
+    village?: string;
+  } | null>(null);
   const [loadingOwnerData, setLoadingOwnerData] = useState(false);
   
   // Form data
@@ -258,6 +271,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setParcelValidated(false);
     setParcelSearchResults([]);
     setParcelOwnerData(null);
+    setParcelLocationData(null);
     // Reset requesterType when not in parcel-linked mode
     if (!isParcelLinkedMode) {
       setFormData(prev => ({ ...prev, requesterType: 'owner', isOwnerSameAsRequester: true }));
@@ -721,6 +735,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setParcelValidated(false);
     setParcelSearchResults([]);
     setParcelOwnerData(null);
+    setParcelLocationData(null);
     setLoadingOwnerData(false);
     // Reset GPS & dimensions
     setGpsCoordinates([{ borne: 'Borne 1', lat: '', lng: '' }]);
@@ -1099,7 +1114,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                             // Fallback to parcel table
                                             const { data: parcelDetail } = await supabase
                                               .from('cadastral_parcels')
-                                              .select('current_owner_name, current_owner_legal_status')
+                                              .select('current_owner_name, current_owner_legal_status, province, parcel_type, ville, commune, quartier, avenue, territoire, collectivite, groupement, village')
                                               .eq('id', parcel.id)
                                               .single();
                                             if (parcelDetail) {
@@ -1119,6 +1134,43 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                                 ownerLegalStatus: ownerInfo.legalStatus || 'Personne physique',
                                               }));
                                             }
+                                          }
+
+                                          // Fetch location data from parcel for renewal mode
+                                          const { data: locData } = await supabase
+                                            .from('cadastral_parcels')
+                                            .select('province, parcel_type, ville, commune, quartier, avenue, territoire, collectivite, groupement, village')
+                                            .eq('id', parcel.id)
+                                            .single();
+                                          if (locData) {
+                                            const sType = locData.parcel_type === 'Urbain' || locData.parcel_type === 'urbaine' ? 'urbaine' : 'rurale';
+                                            const locationInfo = {
+                                              province: locData.province || '',
+                                              sectionType: sType,
+                                              ville: locData.ville || '',
+                                              commune: locData.commune || '',
+                                              quartier: locData.quartier || '',
+                                              avenue: locData.avenue || '',
+                                              territoire: locData.territoire || '',
+                                              collectivite: locData.collectivite || '',
+                                              groupement: locData.groupement || '',
+                                              village: locData.village || '',
+                                            };
+                                            setParcelLocationData(locationInfo);
+                                            // Auto-fill form with location data
+                                            setFormData(prev => ({
+                                              ...prev,
+                                              sectionType: sType as 'urbaine' | 'rurale',
+                                              province: locationInfo.province,
+                                              ville: locationInfo.ville,
+                                              commune: locationInfo.commune,
+                                              quartier: locationInfo.quartier,
+                                              avenue: locationInfo.avenue,
+                                              territoire: locationInfo.territoire,
+                                              collectivite: locationInfo.collectivite,
+                                              groupement: locationInfo.groupement,
+                                              village: locationInfo.village,
+                                            }));
                                           }
                                         } catch (err) {
                                           console.error('Error fetching owner data:', err);
@@ -1624,6 +1676,97 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
                 {/* Tab: Location */}
                 <TabsContent value="location" className="space-y-4">
+                  {/* RENEWAL MODE WITH PARCEL LOCATION: Masked location display */}
+                  {isParcelLinkedMode && parcelValidated && parcelLocationData && requestType === 'renouvellement' ? (
+                    <>
+                      <Card className="border-2 rounded-lg">
+                        <CardContent className="p-3 space-y-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="p-1.5 bg-primary/10 rounded-lg">
+                              <MapPin className="h-4 w-4 text-primary" />
+                            </div>
+                            <Label className="text-sm font-semibold">
+                              Localisation de la parcelle
+                            </Label>
+                          </div>
+
+                          <Alert className="border-primary/20 bg-primary/5">
+                            <Info className="h-4 w-4 text-primary" />
+                            <AlertDescription className="text-xs text-muted-foreground">
+                              Les données de localisation ont été chargées depuis la base de données. Ces informations sont masquées car leur accès détaillé est un service payant.
+                            </AlertDescription>
+                          </Alert>
+
+                          <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+                            <div>
+                              <span className="text-muted-foreground text-xs">Province :</span>
+                              <p className="font-medium">{parcelLocationData.province || '—'}</p>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground text-xs">Zone :</span>
+                              <p className="font-medium">{parcelLocationData.sectionType === 'urbaine' ? 'SU - Urbaine' : 'SR - Rurale'}</p>
+                            </div>
+
+                            {parcelLocationData.sectionType === 'urbaine' ? (
+                              <>
+                                <div>
+                                  <span className="text-muted-foreground text-xs">Ville :</span>
+                                  <p className="font-medium">{parcelLocationData.ville ? parcelLocationData.ville.charAt(0) + '***' : '—'}</p>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground text-xs">Commune :</span>
+                                  <p className="font-medium">{parcelLocationData.commune ? parcelLocationData.commune.charAt(0) + '***' : '—'}</p>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground text-xs">Quartier :</span>
+                                  <p className="font-medium">{parcelLocationData.quartier ? parcelLocationData.quartier.charAt(0) + '***' : '—'}</p>
+                                </div>
+                                {parcelLocationData.avenue && (
+                                  <div>
+                                    <span className="text-muted-foreground text-xs">Avenue :</span>
+                                    <p className="font-medium">{parcelLocationData.avenue.charAt(0) + '***'}</p>
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                <div>
+                                  <span className="text-muted-foreground text-xs">Territoire :</span>
+                                  <p className="font-medium">{parcelLocationData.territoire ? parcelLocationData.territoire.charAt(0) + '***' : '—'}</p>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground text-xs">Collectivité :</span>
+                                  <p className="font-medium">{parcelLocationData.collectivite ? parcelLocationData.collectivite.charAt(0) + '***' : '—'}</p>
+                                </div>
+                                {parcelLocationData.groupement && (
+                                  <div>
+                                    <span className="text-muted-foreground text-xs">Groupement :</span>
+                                    <p className="font-medium">{parcelLocationData.groupement.charAt(0) + '***'}</p>
+                                  </div>
+                                )}
+                                {parcelLocationData.village && (
+                                  <div>
+                                    <span className="text-muted-foreground text-xs">Village :</span>
+                                    <p className="font-medium">{parcelLocationData.village.charAt(0) + '***'}</p>
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <div className="flex gap-2 pt-4">
+                        <Button variant="outline" onClick={() => setActiveTab('requester')} className="flex-1 h-8 text-xs rounded-xl">
+                          Précédent
+                        </Button>
+                        <Button onClick={() => setActiveTab('valorisation')} className="flex-1 h-8 text-xs rounded-xl gap-2">
+                          Suivant <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
                   <Card className="border-2 rounded-lg">
                     <CardContent className="p-3 space-y-3">
                       <div className="flex items-center gap-2 mb-2">
@@ -1856,6 +1999,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       Suivant <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
+                    </>
+                  )}
                 </TabsContent>
 
                 {/* Tab: Valorisation */}
