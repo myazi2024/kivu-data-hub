@@ -947,6 +947,21 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               <Label htmlFor="fiche-no" className="text-sm cursor-pointer">Je n'ai pas de fiche parcellaire</Label>
                             </div>
                           </RadioGroup>
+
+                          {hasFicheParcellaire === 'no' && (
+                            <Alert variant="destructive" className="mt-3 animate-fade-in">
+                              <AlertTriangle className="h-4 w-4" />
+                              <AlertTitle>Fiche parcellaire requise</AlertTitle>
+                              <AlertDescription className="text-xs space-y-2">
+                                <p>
+                                  La demande d'un titre foncier sur une parcelle nécessite au préalable une <strong>fiche parcellaire</strong> — un document administratif local délivré par les autorités compétentes qui atteste de l'occupation du terrain par la personne qui se déclare être le propriétaire.
+                                </p>
+                                <p>
+                                  Veuillez vous adresser au <strong>bureau de la commune ou du quartier</strong> si votre parcelle se trouve dans une <strong>section urbaine</strong>, ou au <strong>bureau de la chefferie</strong> si elle se trouve dans une <strong>section rurale</strong>, afin d'obtenir ce document avant de soumettre votre demande.
+                                </p>
+                              </AlertDescription>
+                            </Alert>
+                          )}
                         </div>
                       )}
 
