@@ -1313,8 +1313,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         </div>
                       )}
 
-                      {/* NON-RENEWAL MODE: Standard requester fields */}
-                      {!(requestType === 'renouvellement' && parcelValidated && parcelOwnerData) && (
+                      {/* STANDARD MODE: Standard requester fields (no parcel linked or parcel not yet validated) */}
+                      {!(isParcelLinkedMode && parcelValidated && parcelOwnerData) && (
                         <>
                           <div className="space-y-2">
                             <Label className="text-sm">Vous êtes *</Label>
