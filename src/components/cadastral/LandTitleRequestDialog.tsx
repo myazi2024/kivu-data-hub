@@ -263,10 +263,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       setFormData(prev => ({ ...prev, requesterType: 'owner', isOwnerSameAsRequester: true }));
     }
     // Force back to requester tab when form is blocked
-    if (requestType === 'initial' && hasFicheParcellaire === 'no') {
+    if ((requestType === 'initial' && hasFicheParcellaire === 'no') || (requestType === 'renouvellement' && knowsParcelNumber === 'no')) {
       setActiveTab('requester');
     }
-  }, [requestType, hasFicheParcellaire]);
+  }, [requestType, hasFicheParcellaire, knowsParcelNumber]);
 
   // Reset hasFicheParcellaire when requestType changes
   useEffect(() => {
