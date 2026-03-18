@@ -680,6 +680,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setSelectedParcelNumber('');
     setParcelValidated(false);
     setParcelSearchResults([]);
+    setParcelOwnerData(null);
+    setLoadingOwnerData(false);
     // Reset GPS & dimensions
     setGpsCoordinates([{ borne: 'Borne 1', lat: '', lng: '' }]);
     setParcelSides([
