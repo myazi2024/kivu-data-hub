@@ -478,6 +478,7 @@ export type Database = {
           fraud_score: number | null
           gps_coordinates: Json | null
           groupement: string | null
+          house_number: string | null
           id: string
           is_suspicious: boolean | null
           lease_type: string | null
@@ -542,6 +543,7 @@ export type Database = {
           fraud_score?: number | null
           gps_coordinates?: Json | null
           groupement?: string | null
+          house_number?: string | null
           id?: string
           is_suspicious?: boolean | null
           lease_type?: string | null
@@ -606,6 +608,7 @@ export type Database = {
           fraud_score?: number | null
           gps_coordinates?: Json | null
           groupement?: string | null
+          house_number?: string | null
           id?: string
           is_suspicious?: boolean | null
           lease_type?: string | null
@@ -1035,6 +1038,7 @@ export type Database = {
           deleted_at: string | null
           gps_coordinates: Json | null
           groupement: string | null
+          house_number: string | null
           id: string
           latitude: number | null
           lease_type: string | null
@@ -1077,6 +1081,7 @@ export type Database = {
           deleted_at?: string | null
           gps_coordinates?: Json | null
           groupement?: string | null
+          house_number?: string | null
           id?: string
           latitude?: number | null
           lease_type?: string | null
@@ -1119,6 +1124,7 @@ export type Database = {
           deleted_at?: string | null
           gps_coordinates?: Json | null
           groupement?: string | null
+          house_number?: string | null
           id?: string
           latitude?: number | null
           lease_type?: string | null
