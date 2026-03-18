@@ -1567,12 +1567,15 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       </CardContent>
                     </Card>
                   )}
+                  )}
 
-                  <div className="flex justify-end pt-4">
-                    <Button onClick={() => setActiveTab('location')} className="h-8 text-xs rounded-xl gap-2">
-                      Suivant <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  {!isFormBlocked && (
+                    <div className="flex justify-end pt-4">
+                      <Button onClick={() => setActiveTab('location')} className="h-8 text-xs rounded-xl gap-2">
+                        Suivant <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </TabsContent>
 
                 {/* Tab: Location */}
