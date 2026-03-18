@@ -366,6 +366,12 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
               <span className="font-medium">Preuve de propriété:</span>{" "}
               {proofOfOwnershipFile ? proofOfOwnershipFile.name : <span className="italic text-muted-foreground">Non jointe</span>}
             </div>
+            {formData.requesterType === "representative" && (
+              <div>
+                <span className="font-medium">Procuration:</span>{" "}
+                {procurationFile ? procurationFile.name : <span className="italic text-amber-600 dark:text-amber-400">Non jointe (requise)</span>}
+              </div>
+            )}
             {!documentsComplete && (
               <button
                 type="button"

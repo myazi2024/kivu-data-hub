@@ -2890,6 +2890,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       requesterIdFile={requesterIdFile}
                       ownerIdFile={ownerIdFile}
                       proofOfOwnershipFile={proofOfOwnershipFile}
+                      procurationFile={procurationFile}
                       gpsCoordinates={gpsCoordinates}
                       parcelSides={parcelSides}
                       totalAmount={totalAmount}
