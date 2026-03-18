@@ -252,6 +252,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     if (requestType !== 'renouvellement') {
       setFormData(prev => ({ ...prev, requesterType: 'owner', isOwnerSameAsRequester: true }));
     }
+  }, [requestType]);
 
   // Reset validation when construction data changes
   useEffect(() => {
