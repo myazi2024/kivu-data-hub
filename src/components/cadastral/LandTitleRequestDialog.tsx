@@ -238,6 +238,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   // Computed: is the form in "parcel-linked" mode (renewal OR initial with fiche parcellaire)
   const isParcelLinkedMode = requestType === 'renouvellement' || (requestType === 'initial' && hasFicheParcellaire === 'yes');
 
+  // Computed: form is blocked when user has no fiche parcellaire for initial request
+  const isFormBlocked = requestType === 'initial' && hasFicheParcellaire === 'no';
+
   useEffect(() => {
     const timer = setTimeout(() => {
       if (parcelNumberSearch && isParcelLinkedMode) {
