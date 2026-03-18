@@ -1,6 +1,6 @@
 import React, { useState, useMemo, memo, useCallback } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
-import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, CHART_COLORS, avgProcessingDays, buildFilterLabel } from '@/utils/analyticsHelpers';
+import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, CHART_COLORS, avgProcessingDays, buildFilterLabel, sumByMonth } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { ArrowRightLeft, TrendingUp, Users, DollarSign } from 'lucide-react';
@@ -43,21 +43,7 @@ export const MutationBlock: React.FC<Props> = memo(({ data }) => {
       .sort((a, b) => (b.approved + b.pending + b.rejected + b.other) - (a.approved + a.pending + a.rejected + a.other));
   }, [filtered]);
 
-  const revenueTrend = useMemo(() => {
-    const map = new Map<string, number>();
-    filtered.forEach(r => {
-      if (r.created_at && r.total_amount_usd > 0) {
-        const d = new Date(r.created_at);
-        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        map.set(key, (map.get(key) || 0) + r.total_amount_usd);
-      }
-    });
-    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([k, value]) => {
-      const [y, m] = k.split('-');
-      const name = new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('fr-FR', { year: '2-digit', month: 'short' });
-      return { name, value: Math.round(value) };
-    });
-  }, [filtered]);
+  const revenueTrend = useMemo(() => sumByMonth(filtered), [filtered]);
 
   const stats = useMemo(() => {
     const approved = filtered.filter(r => r.status === 'approved').length;

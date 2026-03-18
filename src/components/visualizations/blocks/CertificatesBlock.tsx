@@ -1,14 +1,14 @@
 import React, { useState, useMemo, memo } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
-import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, buildFilterLabel } from '@/utils/analyticsHelpers';
+import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, buildFilterLabel, CHART_COLORS } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { Award, TrendingUp, CheckCircle } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
-import { ChartCard, FilterLabelContext } from '../shared/ChartCard';
+import { ChartCard, StackedBarCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
 
-import { generateInsight } from '@/utils/chartInsights';
+import { generateInsight, generateStackedInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 
 interface Props { data: LandAnalyticsData; }
@@ -79,6 +79,10 @@ export const CertificatesBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(byType, 'bar-h', 'les types de certificat')} />}
         {v('status') && <ChartCard title={ct('status', 'Statut')} icon={CheckCircle} data={byStatus} type="pie" colorIndex={2}
           insight={generateInsight(byStatus, 'pie', 'les statuts de certificat')} />}
+        {v('type-trend') && typeTrend.data.length > 1 && <StackedBarCard title={ct('type-trend', 'Type × Mois')} data={typeTrend.data}
+          bars={typeTrend.types.map((t, i) => ({ dataKey: t, name: t, color: CHART_COLORS[i % CHART_COLORS.length] }))}
+          maxItems={12}
+          insight={generateStackedInsight(typeTrend.data, typeTrend.types.map(t => ({ dataKey: t, name: t })), 'l\'évolution des types de certificat')} />}
         {v('geo') && <GeoCharts records={filtered} />}
         {v('evolution') && <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type="area" colorIndex={0} colSpan={2}
           insight={generateInsight(trend, 'area', 'la génération de certificats')} />}

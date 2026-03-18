@@ -121,8 +121,8 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'kpi-total', label: ct('kpi-total', 'Total'), value: filtered.length, cls: 'text-violet-600' },
     { key: 'kpi-completed', label: ct('kpi-completed', 'Complétées'), value: stats.completed, cls: 'text-emerald-600', tooltip: pct(stats.completed, filtered.length) },
     { key: 'kpi-in-progress', label: ct('kpi-in-progress', 'En cours'), value: stats.inProgress, cls: 'text-blue-600', tooltip: pct(stats.inProgress, filtered.length) },
-    { key: 'kpi-delay', label: ct('kpi-delay', 'Délai total'), value: stats.avgDays > 0 ? `${stats.avgDays}j` : 'N/A', cls: 'text-rose-600', tooltip: 'Délai moyen de traitement' },
-    { key: 'kpi-assign-delay', label: ct('kpi-assign-delay', 'Délai assign.'), value: stats.assignDelay > 0 ? `${stats.assignDelay}j` : 'N/A', cls: 'text-amber-600', tooltip: 'Délai moyen avant assignation' },
+    { key: 'kpi-delay-total', label: ct('kpi-delay-total', 'Délai total'), value: stats.avgDays > 0 ? `${stats.avgDays}j` : 'N/A', cls: 'text-rose-600', tooltip: 'Délai moyen de traitement' },
+    { key: 'kpi-delay-assign', label: ct('kpi-delay-assign', 'Délai assign.'), value: stats.assignDelay > 0 ? `${stats.assignDelay}j` : 'N/A', cls: 'text-amber-600', tooltip: 'Délai moyen avant assignation' },
     { key: 'kpi-avg-value', label: ct('kpi-avg-value', 'Valeur moy.'), value: stats.avgValue > 0 ? `$${stats.avgValue.toLocaleString()}` : 'N/A', cls: 'text-primary', tooltip: `Total: $${stats.totalValue.toLocaleString()}` },
   ].filter(k => v(k.key)), [filtered, stats, v, getChartConfig]);
 
@@ -156,7 +156,7 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(valueDist, 'bar-v', 'les tranches de valeur')} />}
         {v('floors') && <ChartCard title={ct('floors', 'Nbre d\'étages')} icon={Building} data={floorsDist} type="bar-v" colorIndex={1} hidden={floorsDist.length === 0}
           insight={generateInsight(floorsDist, 'bar-v', 'le nombre d\'étages')} />}
-        {v('garden-area') && <ChartCard title={ct('garden-area', 'Surface jardin')} icon={Trees} data={gardenDist} type="bar-v" colorIndex={10} hidden={gardenDist.length === 0}
+        {v('garden') && <ChartCard title={ct('garden', 'Surface jardin')} icon={Trees} data={gardenDist} type="bar-v" colorIndex={10} hidden={gardenDist.length === 0}
           insight={generateInsight(gardenDist, 'bar-v', 'les surfaces de jardin')} />}
         {v('geo') && <GeoCharts records={filtered} />}
         {v('evolution') && <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type="area" colorIndex={5} colSpan={2}

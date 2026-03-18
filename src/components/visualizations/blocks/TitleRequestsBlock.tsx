@@ -1,6 +1,6 @@
 import React, { useState, useMemo, memo, useCallback } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
-import { AnalyticsFilter, defaultFilter, applyFilters, countBy, countBoolean, trendByMonth, getSectionType, avgProcessingDays, surfaceDistribution, numericDistribution, buildFilterLabel } from '@/utils/analyticsHelpers';
+import { AnalyticsFilter, defaultFilter, applyFilters, countBy, countBoolean, trendByMonth, getSectionType, avgProcessingDays, surfaceDistribution, numericDistribution, buildFilterLabel, sumByMonth } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { FileText, Users, DollarSign, TrendingUp, Building, Globe, Ruler, Clock, UserCheck } from 'lucide-react';
@@ -59,21 +59,7 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
   const surfaceDist = useMemo(() => surfaceDistribution(filtered), [filtered]);
   const ownerSameData = useMemo(() => countBoolean(filtered, 'is_owner_same_as_requester', 'Propriétaire', 'Mandataire'), [filtered]);
 
-  const revenueTrend = useMemo(() => {
-    const map = new Map<string, number>();
-    filtered.forEach(r => {
-      if (r.created_at && r.total_amount_usd > 0 && r.payment_status === 'paid') {
-        const d = new Date(r.created_at);
-        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        map.set(key, (map.get(key) || 0) + r.total_amount_usd);
-      }
-    });
-    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([k, value]) => {
-      const [y, m] = k.split('-');
-      const name = new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('fr-FR', { year: '2-digit', month: 'short' });
-      return { name, value: Math.round(value) };
-    });
-  }, [filtered]);
+  const revenueTrend = useMemo(() => sumByMonth(filtered.filter(r => r.payment_status === 'paid')), [filtered]);
 
   const stats = useMemo(() => {
     const urbanCount = filtered.filter(r => getSectionType(r) === 'urbaine').length;
