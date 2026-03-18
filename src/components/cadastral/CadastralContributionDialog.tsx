@@ -1241,6 +1241,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           .in('status', ['pending', 'returned'])
           .limit(1);
         
+        const existingContrib = existingContribs?.[0];
         if (existingContrib) {
           toast({
             title: "Contribution existante",
