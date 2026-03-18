@@ -121,8 +121,8 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'kpi-total', label: ct('kpi-total', 'Total'), value: filtered.length, cls: 'text-violet-600' },
     { key: 'kpi-completed', label: ct('kpi-completed', 'Complétées'), value: stats.completed, cls: 'text-emerald-600', tooltip: pct(stats.completed, filtered.length) },
     { key: 'kpi-in-progress', label: ct('kpi-in-progress', 'En cours'), value: stats.inProgress, cls: 'text-blue-600', tooltip: pct(stats.inProgress, filtered.length) },
-    { key: 'kpi-delay', label: ct('kpi-delay', 'Délai total'), value: stats.avgDays > 0 ? `${stats.avgDays}j` : 'N/A', cls: 'text-rose-600', tooltip: 'Délai moyen de traitement' },
-    { key: 'kpi-assign-delay', label: ct('kpi-assign-delay', 'Délai assign.'), value: stats.assignDelay > 0 ? `${stats.assignDelay}j` : 'N/A', cls: 'text-amber-600', tooltip: 'Délai moyen avant assignation' },
+    { key: 'kpi-delay-total', label: ct('kpi-delay-total', 'Délai total'), value: stats.avgDays > 0 ? `${stats.avgDays}j` : 'N/A', cls: 'text-rose-600', tooltip: 'Délai moyen de traitement' },
+    { key: 'kpi-delay-assign', label: ct('kpi-delay-assign', 'Délai assign.'), value: stats.assignDelay > 0 ? `${stats.assignDelay}j` : 'N/A', cls: 'text-amber-600', tooltip: 'Délai moyen avant assignation' },
     { key: 'kpi-avg-value', label: ct('kpi-avg-value', 'Valeur moy.'), value: stats.avgValue > 0 ? `$${stats.avgValue.toLocaleString()}` : 'N/A', cls: 'text-primary', tooltip: `Total: $${stats.totalValue.toLocaleString()}` },
   ].filter(k => v(k.key)), [filtered, stats, v, getChartConfig]);
 
