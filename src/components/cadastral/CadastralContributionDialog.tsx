@@ -1233,13 +1233,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (!editingContributionId) {
       const authenticatedUserId = user?.id || session?.user?.id;
       if (authenticatedUserId) {
-        const { data: existingContrib } = await supabase
+        const { data: existingContribs } = await supabase
           .from('cadastral_contributions')
           .select('id, status')
           .eq('parcel_number', formData.parcelNumber)
           .eq('user_id', authenticatedUserId)
           .in('status', ['pending', 'returned'])
-          .maybeSingle();
+          .limit(1);
         
         if (existingContrib) {
           toast({
