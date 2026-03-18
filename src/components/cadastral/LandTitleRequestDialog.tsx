@@ -929,8 +929,29 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         </SelectContent>
                       </Select>
 
-                      {/* Parcel number search for renewal */}
-                      {requestType === 'renouvellement' && (
+                      {/* Radio buttons for initial: fiche parcellaire */}
+                      {requestType === 'initial' && (
+                        <div className="space-y-2 animate-fade-in">
+                          <Label className="text-sm">Avez-vous une fiche parcellaire ? *</Label>
+                          <RadioGroup
+                            value={hasFicheParcellaire}
+                            onValueChange={(value: string) => setHasFicheParcellaire(value as 'yes' | 'no')}
+                            className="flex gap-4"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="yes" id="fiche-yes" />
+                              <Label htmlFor="fiche-yes" className="text-sm cursor-pointer">J'ai une fiche parcellaire</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="no" id="fiche-no" />
+                              <Label htmlFor="fiche-no" className="text-sm cursor-pointer">Je n'ai pas de fiche parcellaire</Label>
+                            </div>
+                          </RadioGroup>
+                        </div>
+                      )}
+
+                      {/* Parcel number search for renewal OR initial with fiche parcellaire */}
+                      {isParcelLinkedMode && (
                         <div className="space-y-2 animate-fade-in">
                           <Label className="text-sm">
                             Numéro de la parcelle (SU ou SR) *
