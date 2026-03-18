@@ -1781,16 +1781,12 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           )}>
                             {(() => {
                               const requestTypeLabel = requestType === 'initial' ? 'une demande initiale de titre foncier' 
-                                : requestType === 'renouvellement' ? 'un renouvellement de titre foncier' 
-                                : 'une demande de titre foncier définitif';
+                                : 'un renouvellement de titre foncier';
                               
-                              const isDefinitifRequest = requestType === 'definitif';
-                              const isDefinitifDeduced = deducedTitleType.type === "Certificat d'enregistrement";
                               const isRenewalRequest = requestType === 'renouvellement';
                               const isTemporaryDeduced = deducedTitleType.type === 'Concession ordinaire' || deducedTitleType.type === 'Bail emphytéotique' || deducedTitleType.type === 'Bail foncier';
                               
-                              const isAligned = (isDefinitifRequest && isDefinitifDeduced) || 
-                                (isRenewalRequest && isTemporaryDeduced) ||
+                              const isAligned = (isRenewalRequest && isTemporaryDeduced) ||
                                 requestType === 'initial';
 
                               if (isAligned) {
