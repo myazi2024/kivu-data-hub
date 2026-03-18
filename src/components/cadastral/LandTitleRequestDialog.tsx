@@ -521,7 +521,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     
     // Check owner info if different (skip for renewal with auto-loaded owner data)
     const isParcelWithAutoOwner = isParcelLinkedMode && parcelValidated && parcelOwnerData;
-    if (!formData.isOwnerSameAsRequester && !isRenewalWithAutoOwner) {
+    if (!formData.isOwnerSameAsRequester && !isParcelWithAutoOwner) {
       if (!formData.ownerLastName || !formData.ownerFirstName) {
         return false;
       }
