@@ -1148,7 +1148,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                           // Fetch location data: prioritize parcel table (source of truth)
                                           const { data: parcelLocData } = await supabase
                                             .from('cadastral_parcels')
-                                            .select('province, parcel_type, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, parcel_sides, gps_coordinates, construction_type, construction_nature, declared_usage, area_sqm, circonscription_fonciere')
+                                            .select('province, parcel_type, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, parcel_sides, gps_coordinates, construction_type, construction_nature, construction_materials, declared_usage, area_sqm, circonscription_fonciere')
                                             .eq('id', parcel.id)
                                             .single();
                                           
@@ -1195,19 +1195,21 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                           // Fetch valorisation data (construction info) from parcel/contribution
                                           const valoConstructionType = parcelLocData?.construction_type || contribData?.construction_type || '';
                                           const valoConstructionNature = parcelLocData?.construction_nature || contribData?.construction_nature || '';
+                                          const valoConstructionMaterials = parcelLocData?.construction_materials || (contribData as any)?.construction_materials || '';
                                           const valoDeclaredUsage = parcelLocData?.declared_usage || contribData?.declared_usage || '';
                                           
                                           if (valoConstructionType || valoConstructionNature || valoDeclaredUsage) {
                                             const valoData = {
                                               constructionType: valoConstructionType,
                                               constructionNature: valoConstructionNature,
-                                              constructionMaterials: '', // no construction_materials column in DB
+                                              constructionMaterials: valoConstructionMaterials,
                                               declaredUsage: valoDeclaredUsage,
                                             };
                                             setParcelValorisationData(valoData);
                                             // Auto-fill construction states
                                             if (valoConstructionType) setConstructionType(valoConstructionType);
                                             if (valoConstructionNature) setConstructionNature(valoConstructionNature);
+                                            if (valoConstructionMaterials) setConstructionMaterials(valoConstructionMaterials);
                                             if (valoDeclaredUsage) setDeclaredUsage(valoDeclaredUsage);
                                           }
                                         } catch (err) {
