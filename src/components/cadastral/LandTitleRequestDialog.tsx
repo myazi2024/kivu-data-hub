@@ -81,6 +81,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   // Request type state
   const [requestType, setRequestType] = useState<'initial' | 'renouvellement' | ''>('');
   const [hasFicheParcellaire, setHasFicheParcellaire] = useState<'yes' | 'no' | ''>('');
+  const [knowsParcelNumber, setKnowsParcelNumber] = useState<'yes' | 'no' | ''>('');
   const [parcelNumberSearch, setParcelNumberSearch] = useState('');
   const [parcelSearchResults, setParcelSearchResults] = useState<Array<{ parcel_number: string; id: string }>>([]);
   const [selectedParcelNumber, setSelectedParcelNumber] = useState('');
