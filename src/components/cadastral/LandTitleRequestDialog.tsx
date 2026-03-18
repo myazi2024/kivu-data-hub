@@ -1160,6 +1160,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                               collectivite: parcelLocData?.collectivite || contribData?.collectivite || '',
                                               groupement: parcelLocData?.groupement || contribData?.groupement || '',
                                               village: parcelLocData?.village || contribData?.village || '',
+                                              parcelSides: parcelLocData?.parcel_sides && Array.isArray(parcelLocData.parcel_sides) ? parcelLocData.parcel_sides : (contribData as any)?.parcel_sides && Array.isArray((contribData as any).parcel_sides) ? (contribData as any).parcel_sides : [],
+                                              gpsCoordinates: parcelLocData?.gps_coordinates && Array.isArray(parcelLocData.gps_coordinates) ? parcelLocData.gps_coordinates : (contribData as any)?.gps_coordinates && Array.isArray((contribData as any).gps_coordinates) ? (contribData as any).gps_coordinates : [],
                                             };
                                             setParcelLocationData(locationInfo);
                                             setFormData(prev => ({
