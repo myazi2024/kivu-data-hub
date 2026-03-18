@@ -879,23 +879,23 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       <User className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Demandeur</span>
                     </TabsTrigger>
-                    <TabsTrigger value="location" className="text-xs gap-1.5">
+                    <TabsTrigger value="location" disabled={isFormBlocked} className="text-xs gap-1.5">
                       <MapPin className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Lieu</span>
                     </TabsTrigger>
-                    <TabsTrigger value="valorisation" className="text-xs gap-1.5">
+                    <TabsTrigger value="valorisation" disabled={isFormBlocked} className="text-xs gap-1.5">
                       <Home className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Mise en valeur</span>
                     </TabsTrigger>
-                    <TabsTrigger value="documents" className="text-xs gap-1.5">
+                    <TabsTrigger value="documents" disabled={isFormBlocked} className="text-xs gap-1.5">
                       <FileText className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Documents</span>
                     </TabsTrigger>
-                    <TabsTrigger value="payment" className="text-xs gap-1.5">
+                    <TabsTrigger value="payment" disabled={isFormBlocked} className="text-xs gap-1.5">
                       <CreditCard className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Frais</span>
                     </TabsTrigger>
-                    <TabsTrigger value="review" className="text-xs gap-1.5">
+                    <TabsTrigger value="review" disabled={isFormBlocked} className="text-xs gap-1.5">
                       <ClipboardCheck className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Envoi</span>
                     </TabsTrigger>
