@@ -1001,12 +1001,12 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               <AlertTriangle className="h-4 w-4" />
                               <AlertTitle>Numéro de parcelle requis</AlertTitle>
                               <AlertDescription className="text-xs space-y-2">
-                                <p>
-                                  Le renouvellement d'un titre foncier nécessite le <strong>numéro (SU ou SR) de la parcelle</strong> concernée. Ce numéro figure sur votre <strong>titre de propriété</strong> ou sur la <strong>fiche parcellaire</strong> délivrée par les autorités compétentes.
-                                </p>
-                                <p>
-                                  Veuillez vérifier votre titre de propriété pour retrouver le numéro (SU ou SR) de la parcelle avant de soumettre votre demande de renouvellement.
-                                </p>
+                                 <p>
+                                   Le renouvellement d'un titre foncier nécessite le <strong>numéro (SU ou SR) de la parcelle</strong> concernée. Ce numéro figure sur votre <strong>titre de propriété</strong> délivrées par les autorités compétentes.
+                                 </p>
+                                 <p>
+                                   Veuillez vérifier votre titre de propriété pour retrouver ce numéro avant de soumettre votre demande de renouvellement.
+                                 </p>
                               </AlertDescription>
                             </Alert>
                           )}
