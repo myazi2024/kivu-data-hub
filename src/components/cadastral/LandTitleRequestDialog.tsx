@@ -77,7 +77,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [showCloseConfirmation, setShowCloseConfirmation] = useState(false);
   
   // Request type state
-  const [requestType, setRequestType] = useState<'initial' | 'renouvellement' | 'definitif' | ''>('');
+  const [requestType, setRequestType] = useState<'initial' | 'renouvellement' | ''>('');
   const [parcelNumberSearch, setParcelNumberSearch] = useState('');
   const [parcelSearchResults, setParcelSearchResults] = useState<Array<{ parcel_number: string; id: string }>>([]);
   const [selectedParcelNumber, setSelectedParcelNumber] = useState('');
@@ -224,7 +224,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (parcelNumberSearch && (requestType === 'renouvellement' || requestType === 'definitif')) {
+      if (parcelNumberSearch && requestType === 'renouvellement') {
         searchParcels(parcelNumberSearch);
       }
     }, 300);
@@ -470,7 +470,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const isFormValid = (): boolean => {
     // Check request type
     if (!requestType) return false;
-    if ((requestType === 'renouvellement' || requestType === 'definitif') && !parcelValidated) return false;
+    if (requestType === 'renouvellement' && !parcelValidated) return false;
     
     // Check requester info
     if (!formData.requesterLastName || !formData.requesterFirstName || !formData.requesterPhone) {
@@ -871,14 +871,14 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           Informations sur la demande *
                           <SectionHelpPopover
                             title="Type de demande"
-                            description="Indiquez s'il s'agit d'une demande initiale de titre foncier, d'un renouvellement d'un titre existant, ou d'une demande de titre foncier définitif. Ce choix influence l'évaluation de votre dossier."
+                            description="Indiquez s'il s'agit d'une demande initiale de titre foncier ou d'un renouvellement d'un titre existant. Ce choix influence l'évaluation de votre dossier."
                           />
                         </Label>
                       </div>
 
                       <Select
                         value={requestType}
-                        onValueChange={(value) => setRequestType(value as 'initial' | 'renouvellement' | 'definitif')}
+                        onValueChange={(value) => setRequestType(value as 'initial' | 'renouvellement')}
                       >
                         <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
                           <SelectValue placeholder="Sélectionnez le type de demande" />
@@ -886,12 +886,11 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         <SelectContent className="rounded-xl">
                           <SelectItem value="initial" className="text-sm py-2">Demande initiale</SelectItem>
                           <SelectItem value="renouvellement" className="text-sm py-2">Renouvellement d'un titre foncier</SelectItem>
-                          <SelectItem value="definitif" className="text-sm py-2">Titre foncier définitif</SelectItem>
                         </SelectContent>
                       </Select>
 
-                      {/* Parcel number search for renewal or definitive */}
-                      {(requestType === 'renouvellement' || requestType === 'definitif') && (
+                      {/* Parcel number search for renewal */}
+                      {requestType === 'renouvellement' && (
                         <div className="space-y-2 animate-fade-in">
                           <Label className="text-sm">
                             Numéro de la parcelle (SU ou SR) *
@@ -1766,17 +1765,13 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                             "p-3 rounded-lg text-sm leading-relaxed",
                             (() => {
                               const requestTypeLabel = requestType === 'initial' ? 'une demande initiale de titre foncier' 
-                                : requestType === 'renouvellement' ? 'un renouvellement de titre foncier' 
-                                : 'une demande de titre foncier définitif';
+                                : 'un renouvellement de titre foncier';
                               
                               // Check alignment
-                              const isDefinitifRequest = requestType === 'definitif';
-                              const isDefinitifDeduced = deducedTitleType.type === "Certificat d'enregistrement";
                               const isRenewalRequest = requestType === 'renouvellement';
                               const isTemporaryDeduced = deducedTitleType.type === 'Concession ordinaire' || deducedTitleType.type === 'Bail emphytéotique' || deducedTitleType.type === 'Bail foncier';
                               
-                              const isAligned = (isDefinitifRequest && isDefinitifDeduced) || 
-                                (isRenewalRequest && isTemporaryDeduced) ||
+                              const isAligned = (isRenewalRequest && isTemporaryDeduced) ||
                                 requestType === 'initial';
                               
                               return isAligned 
@@ -1786,16 +1781,12 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           )}>
                             {(() => {
                               const requestTypeLabel = requestType === 'initial' ? 'une demande initiale de titre foncier' 
-                                : requestType === 'renouvellement' ? 'un renouvellement de titre foncier' 
-                                : 'une demande de titre foncier définitif';
+                                : 'un renouvellement de titre foncier';
                               
-                              const isDefinitifRequest = requestType === 'definitif';
-                              const isDefinitifDeduced = deducedTitleType.type === "Certificat d'enregistrement";
                               const isRenewalRequest = requestType === 'renouvellement';
                               const isTemporaryDeduced = deducedTitleType.type === 'Concession ordinaire' || deducedTitleType.type === 'Bail emphytéotique' || deducedTitleType.type === 'Bail foncier';
                               
-                              const isAligned = (isDefinitifRequest && isDefinitifDeduced) || 
-                                (isRenewalRequest && isTemporaryDeduced) ||
+                              const isAligned = (isRenewalRequest && isTemporaryDeduced) ||
                                 requestType === 'initial';
 
                               if (isAligned) {
