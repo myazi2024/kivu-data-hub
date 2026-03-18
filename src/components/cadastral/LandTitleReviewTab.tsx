@@ -19,6 +19,7 @@ export interface LandTitleReviewTabProps {
   requesterIdFile: File | null;
   ownerIdFile: File | null;
   proofOfOwnershipFile: File | null;
+  procurationFile?: File | null;
   gpsCoordinates: Array<{ borne: string; lat: string; lng: string }>;
   parcelSides: Array<{ name: string; length: string }>;
   totalAmount: number;
