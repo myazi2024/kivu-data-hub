@@ -233,14 +233,17 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     }
   }, []);
 
+  // Computed: is the form in "parcel-linked" mode (renewal OR initial with fiche parcellaire)
+  const isParcelLinkedMode = requestType === 'renouvellement' || (requestType === 'initial' && hasFicheParcellaire === 'yes');
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (parcelNumberSearch && requestType === 'renouvellement') {
+      if (parcelNumberSearch && isParcelLinkedMode) {
         searchParcels(parcelNumberSearch);
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [parcelNumberSearch, requestType, searchParcels]);
+  }, [parcelNumberSearch, isParcelLinkedMode, searchParcels]);
 
   // Reset parcel validation when request type changes
   useEffect(() => {
