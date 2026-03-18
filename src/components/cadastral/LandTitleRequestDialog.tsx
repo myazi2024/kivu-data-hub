@@ -771,6 +771,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setOccupationDuration('');
     setValorisationValidated(false);
     setDeducedTitleType(null);
+    setParcelConstructionData(null);
+    setConstructionChanged(false);
     onOpenChange(false);
   };
 
