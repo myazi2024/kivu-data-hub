@@ -2650,7 +2650,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           {!proofOfOwnershipFile ? (
                             <Input
                               type="file"
-                              accept=".pdf,.jpg,.jpeg,.png"
+                              accept=".pdf,.jpg,.jpeg,.png,.webp"
                             onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
