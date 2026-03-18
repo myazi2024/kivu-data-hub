@@ -501,7 +501,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     // Renewal mode with owner as requester: skip requester identity fields
     const isParcelAsOwner = isParcelLinkedMode && parcelValidated && parcelOwnerData && formData.requesterType === 'owner';
     
-    if (!isRenewalAsOwner) {
+    if (!isParcelAsOwner) {
       // Check requester info
       if (!formData.requesterLastName || !formData.requesterFirstName || !formData.requesterPhone) {
         return false;
