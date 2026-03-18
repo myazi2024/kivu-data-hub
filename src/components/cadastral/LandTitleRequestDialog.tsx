@@ -1094,35 +1094,75 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         </Label>
                       </div>
 
-                      <div className="space-y-2">
-                        <Label className="text-sm">Vous êtes *</Label>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleInputChange('requesterType', 'owner')}
-                            className={cn(
-                              "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
-                              formData.requesterType === 'owner'
-                                ? 'bg-primary text-primary-foreground shadow-md'
-                                : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                            )}
-                          >
-                            Propriétaire
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleInputChange('requesterType', 'representative')}
-                            className={cn(
-                              "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
-                              formData.requesterType === 'representative'
-                                ? 'bg-primary text-primary-foreground shadow-md'
-                                : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                            )}
-                          >
-                            Mandataire
-                          </button>
+                      {/* Hide toggle when renewal with validated parcel - owner is auto-loaded */}
+                      {!(requestType === 'renouvellement' && parcelValidated && parcelOwnerData) && (
+                        <div className="space-y-2">
+                          <Label className="text-sm">Vous êtes *</Label>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleInputChange('requesterType', 'owner')}
+                              className={cn(
+                                "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
+                                formData.requesterType === 'owner'
+                                  ? 'bg-primary text-primary-foreground shadow-md'
+                                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                              )}
+                            >
+                              Propriétaire
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleInputChange('requesterType', 'representative')}
+                              className={cn(
+                                "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
+                                formData.requesterType === 'representative'
+                                  ? 'bg-primary text-primary-foreground shadow-md'
+                                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                              )}
+                            >
+                              Mandataire
+                            </button>
+                          </div>
                         </div>
-                      </div>
+                      )}
+
+                      {/* Masked owner info for renewal mode */}
+                      {requestType === 'renouvellement' && parcelValidated && parcelOwnerData && (
+                        <div className="p-3 bg-muted/50 rounded-lg border border-border space-y-2 animate-fade-in">
+                          <div className="flex items-center gap-2">
+                            <div className="p-1 bg-primary/10 rounded">
+                              <Info className="h-3.5 w-3.5 text-primary" />
+                            </div>
+                            <span className="text-xs font-semibold text-foreground">Propriétaire identifié</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                            {parcelOwnerData.legalStatus && (
+                              <div><span className="text-muted-foreground">Statut :</span> <span className="font-medium">{parcelOwnerData.legalStatus}</span></div>
+                            )}
+                            {parcelOwnerData.gender && (
+                              <div><span className="text-muted-foreground">Genre :</span> <span className="font-medium">{parcelOwnerData.gender}</span></div>
+                            )}
+                            <div><span className="text-muted-foreground">Nom :</span> <span className="font-medium">{parcelOwnerData.lastName ? parcelOwnerData.lastName.charAt(0) + '***' : '—'}</span></div>
+                            <div><span className="text-muted-foreground">Prénom :</span> <span className="font-medium">{parcelOwnerData.firstName ? parcelOwnerData.firstName.charAt(0) + '***' : '—'}</span></div>
+                            {parcelOwnerData.middleName && (
+                              <div><span className="text-muted-foreground">Post-nom :</span> <span className="font-medium">{parcelOwnerData.middleName.charAt(0) + '***'}</span></div>
+                            )}
+                            {parcelOwnerData.phone && (
+                              <div><span className="text-muted-foreground">Tél :</span> <span className="font-medium">+243 ** *** {parcelOwnerData.phone.slice(-3)}</span></div>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-muted-foreground italic">
+                            Les informations du propriétaire sont chargées depuis la base cadastrale. L'accès complet est réservé aux services habilités.
+                          </p>
+                        </div>
+                      )}
+                      {loadingOwnerData && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground p-2">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Chargement des informations du propriétaire...
+                        </div>
+                      )}
 
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1.5">
