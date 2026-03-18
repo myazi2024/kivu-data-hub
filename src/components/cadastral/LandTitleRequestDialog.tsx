@@ -1676,6 +1676,97 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
                 {/* Tab: Location */}
                 <TabsContent value="location" className="space-y-4">
+                  {/* RENEWAL MODE WITH PARCEL LOCATION: Masked location display */}
+                  {isParcelLinkedMode && parcelValidated && parcelLocationData && requestType === 'renouvellement' ? (
+                    <>
+                      <Card className="border-2 rounded-lg">
+                        <CardContent className="p-3 space-y-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="p-1.5 bg-primary/10 rounded-lg">
+                              <MapPin className="h-4 w-4 text-primary" />
+                            </div>
+                            <Label className="text-sm font-semibold">
+                              Localisation de la parcelle
+                            </Label>
+                          </div>
+
+                          <Alert className="border-primary/20 bg-primary/5">
+                            <Info className="h-4 w-4 text-primary" />
+                            <AlertDescription className="text-xs text-muted-foreground">
+                              Les données de localisation ont été chargées depuis la base de données. Ces informations sont masquées car leur accès détaillé est un service payant.
+                            </AlertDescription>
+                          </Alert>
+
+                          <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+                            <div>
+                              <span className="text-muted-foreground text-xs">Province :</span>
+                              <p className="font-medium">{parcelLocationData.province || '—'}</p>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground text-xs">Zone :</span>
+                              <p className="font-medium">{parcelLocationData.sectionType === 'urbaine' ? 'SU - Urbaine' : 'SR - Rurale'}</p>
+                            </div>
+
+                            {parcelLocationData.sectionType === 'urbaine' ? (
+                              <>
+                                <div>
+                                  <span className="text-muted-foreground text-xs">Ville :</span>
+                                  <p className="font-medium">{parcelLocationData.ville ? parcelLocationData.ville.charAt(0) + '***' : '—'}</p>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground text-xs">Commune :</span>
+                                  <p className="font-medium">{parcelLocationData.commune ? parcelLocationData.commune.charAt(0) + '***' : '—'}</p>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground text-xs">Quartier :</span>
+                                  <p className="font-medium">{parcelLocationData.quartier ? parcelLocationData.quartier.charAt(0) + '***' : '—'}</p>
+                                </div>
+                                {parcelLocationData.avenue && (
+                                  <div>
+                                    <span className="text-muted-foreground text-xs">Avenue :</span>
+                                    <p className="font-medium">{parcelLocationData.avenue.charAt(0) + '***'}</p>
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                <div>
+                                  <span className="text-muted-foreground text-xs">Territoire :</span>
+                                  <p className="font-medium">{parcelLocationData.territoire ? parcelLocationData.territoire.charAt(0) + '***' : '—'}</p>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground text-xs">Collectivité :</span>
+                                  <p className="font-medium">{parcelLocationData.collectivite ? parcelLocationData.collectivite.charAt(0) + '***' : '—'}</p>
+                                </div>
+                                {parcelLocationData.groupement && (
+                                  <div>
+                                    <span className="text-muted-foreground text-xs">Groupement :</span>
+                                    <p className="font-medium">{parcelLocationData.groupement.charAt(0) + '***'}</p>
+                                  </div>
+                                )}
+                                {parcelLocationData.village && (
+                                  <div>
+                                    <span className="text-muted-foreground text-xs">Village :</span>
+                                    <p className="font-medium">{parcelLocationData.village.charAt(0) + '***'}</p>
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <div className="flex gap-2 pt-4">
+                        <Button variant="outline" onClick={() => setActiveTab('requester')} className="flex-1 h-8 text-xs rounded-xl">
+                          Précédent
+                        </Button>
+                        <Button onClick={() => setActiveTab('valorisation')} className="flex-1 h-8 text-xs rounded-xl gap-2">
+                          Suivant <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
                   <Card className="border-2 rounded-lg">
                     <CardContent className="p-3 space-y-3">
                       <div className="flex items-center gap-2 mb-2">
@@ -1908,6 +1999,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       Suivant <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
+                    </>
+                  )}
                 </TabsContent>
 
                 {/* Tab: Valorisation */}
