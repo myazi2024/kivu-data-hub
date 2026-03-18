@@ -84,7 +84,17 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [parcelValidated, setParcelValidated] = useState(false);
   const [parcelSearchLoading, setParcelSearchLoading] = useState(false);
   const [showParcelDropdown, setShowParcelDropdown] = useState(false);
-  // showCCCDialog removed - unused
+  // Owner data loaded from parcel for renewal mode
+  const [parcelOwnerData, setParcelOwnerData] = useState<{
+    legalStatus?: string;
+    gender?: string;
+    lastName?: string;
+    firstName?: string;
+    middleName?: string;
+    phone?: string;
+    email?: string;
+  } | null>(null);
+  const [loadingOwnerData, setLoadingOwnerData] = useState(false);
   
   // Form data
   const [formData, setFormData] = useState<LandTitleRequestData>({
