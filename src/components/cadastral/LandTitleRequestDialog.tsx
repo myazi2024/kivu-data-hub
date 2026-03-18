@@ -114,6 +114,13 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     parcelSides?: any[];
     gpsCoordinates?: any[];
   } | null>(null);
+  // Valorisation data loaded from parcel for renewal mode (auto-display)
+  const [parcelValorisationData, setParcelValorisationData] = useState<{
+    constructionType?: string;
+    constructionNature?: string;
+    constructionMaterials?: string;
+    declaredUsage?: string;
+  } | null>(null);
   const [loadingOwnerData, setLoadingOwnerData] = useState(false);
   
   // Form data
