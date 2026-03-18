@@ -82,9 +82,12 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
 
   const requesterComplete =
     !!requestType &&
-    !!formData.requesterLastName &&
-    !!formData.requesterFirstName &&
-    !!formData.requesterPhone &&
+    (
+      // In parcel-linked owner mode, requester identity comes from the parcel data
+      (formData.requesterType === 'owner' && !!selectedParcelNumber) ||
+      // Otherwise need manual fields
+      (!!formData.requesterLastName && !!formData.requesterFirstName && !!formData.requesterPhone)
+    ) &&
     (formData.requesterType !== "representative" || (!!formData.ownerLastName && !!formData.ownerFirstName)) &&
     (requestType === 'initial' || !!selectedParcelNumber);
 
