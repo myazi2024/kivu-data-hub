@@ -159,7 +159,8 @@ export const useCadastralContribution = () => {
       amount_usd: t.amountUsd,
       payment_status: t.paymentStatus,
       payment_date: t.paymentDate || null,
-      receipt_document_url: t.receiptUrl || null
+      receipt_document_url: t.receiptUrl || null,
+      tax_type: t.taxType || null
     })) || null;
 
     // Convert mortgage history to snake_case for DB trigger
@@ -169,7 +170,8 @@ export const useCadastralContribution = () => {
       creditor_name: m.creditorName,
       creditor_type: m.creditorType,
       contract_date: m.contractDate,
-      mortgage_status: m.mortgageStatus
+      mortgage_status: m.mortgageStatus,
+      receipt_url: m.receiptUrl || null
     })) || null;
 
     // Convert building permits to snake_case for DB trigger

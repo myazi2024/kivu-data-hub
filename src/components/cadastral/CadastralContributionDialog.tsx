@@ -522,11 +522,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   };
 
   // Charger les données au montage, que l'utilisateur soit connecté ou non
+  // En mode édition, on skip le localStorage car les données viennent de Supabase
   useEffect(() => {
-    if (open) {
+    if (open && !editingContributionId) {
       loadFormDataFromStorage();
     }
-  }, [open]);
+  }, [open, editingContributionId]);
 
   // FIX #3: En mode édition, charger la contribution depuis Supabase si pas de données localStorage
   useEffect(() => {
@@ -1232,14 +1233,15 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (!editingContributionId) {
       const authenticatedUserId = user?.id || session?.user?.id;
       if (authenticatedUserId) {
-        const { data: existingContrib } = await supabase
+        const { data: existingContribs } = await supabase
           .from('cadastral_contributions')
           .select('id, status')
           .eq('parcel_number', formData.parcelNumber)
           .eq('user_id', authenticatedUserId)
           .in('status', ['pending', 'returned'])
-          .maybeSingle();
+          .limit(1);
         
+        const existingContrib = existingContribs?.[0];
         if (existingContrib) {
           toast({
             title: "Contribution existante",
