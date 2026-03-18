@@ -735,6 +735,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setShowPayment(false);
     setShowSuccess(false);
     setSavedRequestId('');
+    setSavedReferenceNumber('');
     setIsSubmitting(false);
     setShowDraftPrompt(false);
     // Reset request type & parcel
@@ -902,7 +903,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                 Demande de titre foncier
               </DialogTitle>
               <DialogDescription className="text-sm text-muted-foreground">
-                Obtenez votre certificat d'enregistrement
+                {deducedTitleType ? `Titre déduit : ${deducedTitleType.label}` : requestType === 'renouvellement' ? 'Renouvellement de votre titre foncier' : 'Obtenez votre titre foncier'}
               </DialogDescription>
             </DialogHeader>
 
@@ -1086,7 +1087,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                           // First try contributions for richer owner + location details
                                           const { data: contribData } = await supabase
                                             .from('cadastral_contributions')
-                                            .select('current_owners_details, current_owner_name, current_owner_legal_status, province, parcel_type, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, construction_type, construction_nature, declared_usage')
+                                            .select('current_owners_details, current_owner_name, current_owner_legal_status, province, parcel_type, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, construction_type, construction_nature, declared_usage, area_sqm')
                                             .eq('parcel_number', parcel.parcel_number)
                                             .eq('status', 'approved')
                                             .order('created_at', { ascending: false })
@@ -1109,10 +1110,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                                 email: firstOwner.email || '',
                                               };
                                               setParcelOwnerData(ownerInfo);
+                                              // Don't force requesterType — let user choose owner vs representative
                                               setFormData(prev => ({
                                                 ...prev,
-                                                requesterType: 'representative' as const,
-                                                isOwnerSameAsRequester: false,
                                                 ownerLastName: ownerInfo.lastName,
                                                 ownerFirstName: ownerInfo.firstName,
                                                 ownerMiddleName: ownerInfo.middleName,
@@ -1138,8 +1138,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                               setParcelOwnerData(ownerInfo);
                                               setFormData(prev => ({
                                                 ...prev,
-                                                requesterType: 'representative' as const,
-                                                isOwnerSameAsRequester: false,
                                                 ownerLastName: ownerInfo.lastName,
                                                 ownerFirstName: ownerInfo.firstName,
                                                 ownerLegalStatus: ownerInfo.legalStatus || 'Personne physique',
@@ -1150,7 +1148,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                           // Fetch location data: prioritize parcel table (source of truth)
                                           const { data: parcelLocData } = await supabase
                                             .from('cadastral_parcels')
-                                            .select('province, parcel_type, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, parcel_sides, gps_coordinates, construction_type, construction_nature, declared_usage')
+                                            .select('province, parcel_type, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, parcel_sides, gps_coordinates, construction_type, construction_nature, declared_usage, area_sqm, circonscription_fonciere')
                                             .eq('id', parcel.id)
                                             .single();
                                           
@@ -1174,6 +1172,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                               gpsCoordinates: parcelLocData?.gps_coordinates && Array.isArray(parcelLocData.gps_coordinates) ? parcelLocData.gps_coordinates : (contribData as any)?.gps_coordinates && Array.isArray((contribData as any).gps_coordinates) ? (contribData as any).gps_coordinates : [],
                                             };
                                             setParcelLocationData(locationInfo);
+                                            // Also extract areaSqm and circonscriptionFonciere
+                                            const fetchedAreaSqm = parcelLocData?.area_sqm || (contribData as any)?.area_sqm || null;
+                                            const fetchedCirconscription = (parcelLocData as any)?.circonscription_fonciere || (contribData as any)?.circonscription_fonciere || '';
                                             setFormData(prev => ({
                                               ...prev,
                                               sectionType: sType as 'urbaine' | 'rurale',
@@ -1186,6 +1187,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                               collectivite: locationInfo.collectivite,
                                               groupement: locationInfo.groupement,
                                               village: locationInfo.village,
+                                              areaSqm: fetchedAreaSqm ?? prev.areaSqm,
+                                              circonscriptionFonciere: fetchedCirconscription || prev.circonscriptionFonciere,
                                             }));
                                           }
 
@@ -1198,6 +1201,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                             const valoData = {
                                               constructionType: valoConstructionType,
                                               constructionNature: valoConstructionNature,
+                                              constructionMaterials: '', // no construction_materials column in DB
                                               declaredUsage: valoDeclaredUsage,
                                             };
                                             setParcelValorisationData(valoData);
@@ -2209,6 +2213,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               setConstructionType(value);
                               if (value === 'Terrain nu') setConstructionMaterials('');
                             }}
+                            disabled={isParcelLinkedMode && parcelValidated && !!parcelValorisationData?.constructionType}
                           >
                             <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
                               <SelectValue placeholder="Choisir le type" />
@@ -2228,7 +2233,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           <Select 
                             value={constructionNature}
                             onValueChange={setConstructionNature}
-                            disabled={!constructionType}
+                            disabled={!constructionType || (isParcelLinkedMode && parcelValidated && !!parcelValorisationData?.constructionNature)}
                           >
                             <SelectTrigger className={cn(
                               "h-11 text-sm rounded-xl border-2",
@@ -2273,7 +2278,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                             <Select 
                               value={declaredUsage}
                               onValueChange={setDeclaredUsage}
-                              disabled={!constructionNature}
+                              disabled={!constructionNature || (isParcelLinkedMode && parcelValidated && !!parcelValorisationData?.declaredUsage)}
                             >
                               <SelectTrigger className={cn(
                                 "h-11 text-sm rounded-xl border-2",
@@ -2576,7 +2581,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           {!requesterIdFile ? (
                             <Input
                               type="file"
-                              accept=".pdf,.jpg,.jpeg,.png"
+                              accept=".pdf,.jpg,.jpeg,.png,.webp"
                             onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
@@ -2611,7 +2616,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                             {!ownerIdFile ? (
                               <Input
                                 type="file"
-                                accept=".pdf,.jpg,.jpeg,.png"
+                                accept=".pdf,.jpg,.jpeg,.png,.webp"
                             onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
@@ -2646,7 +2651,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           {!proofOfOwnershipFile ? (
                             <Input
                               type="file"
-                              accept=".pdf,.jpg,.jpeg,.png"
+                              accept=".pdf,.jpg,.jpeg,.png,.webp"
                             onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
@@ -2674,6 +2679,46 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                             </div>
                           )}
                         </div>
+
+                        {/* Procuration document for mandataire */}
+                        {formData.requesterType === 'representative' && (
+                          <div className="space-y-1.5 animate-fade-in">
+                            <Label className="text-sm">Procuration (document d'autorisation) *</Label>
+                            {!procurationFile ? (
+                              <Input
+                                type="file"
+                                accept=".pdf,.jpg,.jpeg,.png,.webp"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    if (file.size > 10 * 1024 * 1024) {
+                                      toast({ title: "Fichier trop volumineux", description: "La taille maximale est de 10 MB", variant: "destructive" });
+                                      return;
+                                    }
+                                    setProcurationFile(file);
+                                  }
+                                }}
+                                className="h-9 text-sm rounded-lg border"
+                              />
+                            ) : (
+                              <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+                                <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+                                <span className="flex-1 truncate text-sm">{procurationFile.name}</span>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => setProcurationFile(null)}
+                                  className="h-7 w-7 rounded-lg hover:bg-destructive/10"
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            )}
+                            <p className="text-[10px] text-muted-foreground">
+                              Document attestant que vous êtes autorisé à agir au nom du propriétaire.
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -2845,6 +2890,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       requesterIdFile={requesterIdFile}
                       ownerIdFile={ownerIdFile}
                       proofOfOwnershipFile={proofOfOwnershipFile}
+                      procurationFile={procurationFile}
                       gpsCoordinates={gpsCoordinates}
                       parcelSides={parcelSides}
                       totalAmount={totalAmount}

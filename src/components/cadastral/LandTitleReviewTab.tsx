@@ -19,6 +19,7 @@ export interface LandTitleReviewTabProps {
   requesterIdFile: File | null;
   ownerIdFile: File | null;
   proofOfOwnershipFile: File | null;
+  procurationFile?: File | null;
   gpsCoordinates: Array<{ borne: string; lat: string; lng: string }>;
   parcelSides: Array<{ name: string; length: string }>;
   totalAmount: number;
@@ -66,6 +67,7 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
   requesterIdFile,
   ownerIdFile,
   proofOfOwnershipFile,
+  procurationFile,
   gpsCoordinates,
   parcelSides,
   totalAmount,
@@ -80,9 +82,12 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
 
   const requesterComplete =
     !!requestType &&
-    !!formData.requesterLastName &&
-    !!formData.requesterFirstName &&
-    !!formData.requesterPhone &&
+    (
+      // In parcel-linked owner mode, requester identity comes from the parcel data
+      (formData.requesterType === 'owner' && !!selectedParcelNumber) ||
+      // Otherwise need manual fields
+      (!!formData.requesterLastName && !!formData.requesterFirstName && !!formData.requesterPhone)
+    ) &&
     (formData.requesterType !== "representative" || (!!formData.ownerLastName && !!formData.ownerFirstName)) &&
     (requestType === 'initial' || !!selectedParcelNumber);
 
@@ -361,6 +366,12 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
               <span className="font-medium">Preuve de propriété:</span>{" "}
               {proofOfOwnershipFile ? proofOfOwnershipFile.name : <span className="italic text-muted-foreground">Non jointe</span>}
             </div>
+            {formData.requesterType === "representative" && (
+              <div>
+                <span className="font-medium">Procuration:</span>{" "}
+                {procurationFile ? procurationFile.name : <span className="italic text-amber-600 dark:text-amber-400">Non jointe (requise)</span>}
+              </div>
+            )}
             {!documentsComplete && (
               <button
                 type="button"
