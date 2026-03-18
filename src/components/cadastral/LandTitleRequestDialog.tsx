@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Loader2, CheckCircle2, Upload, X, Info, ChevronRight, User, MapPin, FileText, CreditCard, Building, Home, Award, AlertCircle, Check, ClipboardCheck, TrendingUp, Search, Plus } from 'lucide-react';
+import { Loader2, CheckCircle2, Upload, X, Info, ChevronRight, User, MapPin, FileText, CreditCard, Building, Home, Award, AlertCircle, Check, ClipboardCheck, TrendingUp, Search, Plus, AlertTriangle } from 'lucide-react';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
@@ -497,7 +498,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     if (!requestType) return false;
     if (requestType === 'renouvellement' && !parcelValidated) return false;
     if (requestType === 'initial' && hasFicheParcellaire === 'yes' && !parcelValidated) return false;
-    
+    if (requestType === 'initial' && hasFicheParcellaire !== 'yes') return false;
     // Renewal mode with owner as requester: skip requester identity fields
     const isParcelAsOwner = isParcelLinkedMode && parcelValidated && parcelOwnerData && formData.requesterType === 'owner';
     
@@ -947,6 +948,21 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               <Label htmlFor="fiche-no" className="text-sm cursor-pointer">Je n'ai pas de fiche parcellaire</Label>
                             </div>
                           </RadioGroup>
+
+                          {hasFicheParcellaire === 'no' && (
+                            <Alert variant="destructive" className="mt-3 animate-fade-in">
+                              <AlertTriangle className="h-4 w-4" />
+                              <AlertTitle>Fiche parcellaire requise</AlertTitle>
+                              <AlertDescription className="text-xs space-y-2">
+                                <p>
+                                  La demande d'un titre foncier sur une parcelle nécessite au préalable une <strong>fiche parcellaire</strong> — un document administratif local délivré par les autorités compétentes qui atteste de l'occupation du terrain par la personne qui se déclare être le propriétaire.
+                                </p>
+                                <p>
+                                  Veuillez vous adresser au <strong>bureau de la commune ou du quartier</strong> si votre parcelle se trouve dans une <strong>section urbaine</strong>, ou au <strong>bureau de la chefferie</strong> si elle se trouve dans une <strong>section rurale</strong>, afin d'obtenir ce document avant de soumettre votre demande.
+                                </p>
+                              </AlertDescription>
+                            </Alert>
+                          )}
                         </div>
                       )}
 
