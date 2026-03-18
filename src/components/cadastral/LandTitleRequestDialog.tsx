@@ -1110,10 +1110,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                                 email: firstOwner.email || '',
                                               };
                                               setParcelOwnerData(ownerInfo);
+                                              // Don't force requesterType — let user choose owner vs representative
                                               setFormData(prev => ({
                                                 ...prev,
-                                                requesterType: 'representative' as const,
-                                                isOwnerSameAsRequester: false,
                                                 ownerLastName: ownerInfo.lastName,
                                                 ownerFirstName: ownerInfo.firstName,
                                                 ownerMiddleName: ownerInfo.middleName,
@@ -1139,8 +1138,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                               setParcelOwnerData(ownerInfo);
                                               setFormData(prev => ({
                                                 ...prev,
-                                                requesterType: 'representative' as const,
-                                                isOwnerSameAsRequester: false,
                                                 ownerLastName: ownerInfo.lastName,
                                                 ownerFirstName: ownerInfo.firstName,
                                                 ownerLegalStatus: ownerInfo.legalStatus || 'Personne physique',
