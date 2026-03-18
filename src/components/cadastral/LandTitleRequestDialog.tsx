@@ -224,7 +224,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (parcelNumberSearch && (requestType === 'renouvellement' || requestType === 'definitif')) {
+      if (parcelNumberSearch && requestType === 'renouvellement') {
         searchParcels(parcelNumberSearch);
       }
     }, 300);
