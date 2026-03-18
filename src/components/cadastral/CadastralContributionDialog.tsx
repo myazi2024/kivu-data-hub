@@ -528,6 +528,215 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     }
   }, [open]);
 
+  // FIX #3: En mode édition, charger la contribution depuis Supabase si pas de données localStorage
+  useEffect(() => {
+    if (!open || !editingContributionId) return;
+
+    const fetchContribution = async () => {
+      try {
+        const { data: contrib, error } = await supabase
+          .from('cadastral_contributions')
+          .select('*')
+          .eq('id', editingContributionId)
+          .maybeSingle();
+
+        if (error || !contrib) {
+          console.error('Erreur chargement contribution:', error);
+          toast({ title: "Erreur", description: "Impossible de charger la contribution à modifier", variant: "destructive" });
+          return;
+        }
+
+        // Remplir formData avec les données de la contribution
+        setFormData(prev => ({
+          ...prev,
+          parcelNumber: contrib.parcel_number,
+          propertyTitleType: contrib.property_title_type || undefined,
+          leaseType: contrib.lease_type as any || undefined,
+          titleReferenceNumber: contrib.title_reference_number || undefined,
+          titleIssueDate: contrib.title_issue_date || undefined,
+          constructionType: contrib.construction_type || undefined,
+          constructionNature: contrib.construction_nature || undefined,
+          constructionMaterials: contrib.construction_materials || undefined,
+          declaredUsage: contrib.declared_usage || undefined,
+          constructionYear: contrib.construction_year || undefined,
+          areaSqm: contrib.area_sqm || undefined,
+          province: contrib.province || undefined,
+          ville: contrib.ville || undefined,
+          commune: contrib.commune || undefined,
+          quartier: contrib.quartier || undefined,
+          avenue: contrib.avenue || undefined,
+          territoire: contrib.territoire || undefined,
+          collectivite: contrib.collectivite || undefined,
+          groupement: contrib.groupement || undefined,
+          village: contrib.village || undefined,
+          circonscriptionFonciere: contrib.circonscription_fonciere || undefined,
+          whatsappNumber: contrib.whatsapp_number || undefined,
+          previousPermitNumber: contrib.previous_permit_number || undefined,
+        }));
+
+        // Remplir les propriétaires actuels
+        const ownersDetails = contrib.current_owners_details as any[];
+        if (ownersDetails && Array.isArray(ownersDetails) && ownersDetails.length > 0) {
+          setCurrentOwners(ownersDetails.map((o: any) => ({
+            lastName: o.lastName || o.last_name || '',
+            middleName: o.middleName || o.middle_name || '',
+            firstName: o.firstName || o.first_name || '',
+            legalStatus: o.legalStatus || o.legal_status || 'Personne physique',
+            gender: o.gender || '',
+            entityType: o.entityType || o.entity_type || '',
+            entitySubType: o.entitySubType || o.entity_sub_type || '',
+            entitySubTypeOther: o.entitySubTypeOther || o.entity_sub_type_other || '',
+            stateExploitedBy: o.stateExploitedBy || o.state_exploited_by || '',
+            rightType: o.rightType || o.right_type || '',
+            since: o.since || ''
+          })));
+          if (ownersDetails.length > 1) {
+            setOwnershipMode('multiple');
+          }
+        } else if (contrib.current_owner_name) {
+          setCurrentOwners([{
+            lastName: contrib.current_owner_name,
+            middleName: '',
+            firstName: '',
+            legalStatus: contrib.current_owner_legal_status || 'Personne physique',
+            gender: '',
+            entityType: '',
+            entitySubType: '',
+            entitySubTypeOther: '',
+            stateExploitedBy: '',
+            rightType: '',
+            since: contrib.current_owner_since || ''
+          }]);
+        }
+
+        // Remplir les anciens propriétaires (ownership_history)
+        const ownerHistory = contrib.ownership_history as any[];
+        if (ownerHistory && Array.isArray(ownerHistory) && ownerHistory.length > 0) {
+          setPreviousOwners(ownerHistory.map((o: any) => ({
+            name: o.owner_name || o.ownerName || '',
+            legalStatus: o.legal_status || o.legalStatus || 'Personne physique',
+            entityType: '',
+            entitySubType: '',
+            entitySubTypeOther: '',
+            stateExploitedBy: '',
+            startDate: o.ownership_start_date || o.startDate || '',
+            endDate: o.ownership_end_date || o.endDate || '',
+            mutationType: o.mutation_type || o.mutationType || 'Vente'
+          })));
+        }
+
+        // Remplir les coordonnées GPS
+        const gpsCoords = contrib.gps_coordinates as any[];
+        if (gpsCoords && Array.isArray(gpsCoords) && gpsCoords.length > 0) {
+          setGpsCoordinates(gpsCoords.map((c: any) => ({
+            borne: c.borne || '',
+            lat: String(c.lat || ''),
+            lng: String(c.lng || ''),
+            mode: 'manual' as const,
+            detected: true,
+            detecting: false
+          })));
+        }
+
+        // Remplir les côtés de la parcelle
+        const sides = contrib.parcel_sides as any[];
+        if (sides && Array.isArray(sides) && sides.length > 0) {
+          setParcelSides(sides.map((s: any) => ({
+            name: s.name || '',
+            length: String(s.length || '')
+          })));
+        }
+
+        // Remplir les permis de construire
+        const permits = contrib.building_permits as any[];
+        if (permits && Array.isArray(permits) && permits.length > 0) {
+          setPermitMode('existing');
+          setBuildingPermits(permits.map((p: any) => ({
+            permitType: p.permit_type || p.permitType || 'construction',
+            permitNumber: p.permit_number || p.permitNumber || '',
+            issuingService: p.issuing_service || p.issuingService || '',
+            issueDate: p.issue_date || p.issueDate || '',
+            validityMonths: String(p.validity_period_months || p.validityMonths || '36'),
+            administrativeStatus: p.administrative_status || p.administrativeStatus || 'En attente',
+            issuingServiceContact: p.issuing_service_contact || p.issuingServiceContact || '',
+            attachmentFile: null
+          })));
+        } else if (contrib.permit_request_data) {
+          setPermitMode('request');
+          const prd = contrib.permit_request_data as any;
+          setPermitRequest(prev => ({
+            ...prev,
+            permitType: prd.permitType || 'construction',
+            hasExistingConstruction: prd.hasExistingConstruction || false,
+            constructionDescription: prd.constructionDescription || '',
+            plannedUsage: prd.plannedUsage || '',
+            estimatedArea: prd.estimatedArea ? String(prd.estimatedArea) : '',
+            applicantName: prd.applicantName || '',
+            applicantPhone: prd.applicantPhone || '',
+            applicantEmail: prd.applicantEmail || '',
+            numberOfFloors: prd.numberOfFloors || '',
+            buildingMaterials: prd.buildingMaterials || '',
+            constructionYear: prd.constructionYear || '',
+            regularizationReason: prd.regularizationReason || '',
+            originalPermitNumber: prd.originalPermitNumber || '',
+            previousPermitNumber: prd.previousPermitNumber || contrib.previous_permit_number || '',
+          }));
+        }
+
+        // Remplir les taxes
+        const taxes = contrib.tax_history as any[];
+        if (taxes && Array.isArray(taxes) && taxes.length > 0) {
+          setTaxRecords(taxes.map((t: any) => ({
+            taxType: t.tax_type || t.taxType || 'Taxe foncière',
+            taxYear: String(t.tax_year || t.taxYear || ''),
+            taxAmount: String(t.amount_usd || t.amountUsd || ''),
+            paymentStatus: t.payment_status || t.paymentStatus || 'Non payée',
+            paymentDate: t.payment_date || t.paymentDate || '',
+            receiptFile: null
+          })));
+        }
+
+        // Remplir les hypothèques
+        const mortgages = contrib.mortgage_history as any[];
+        if (mortgages && Array.isArray(mortgages) && mortgages.length > 0) {
+          setHasMortgage(true);
+          setMortgageRecords(mortgages.map((m: any) => ({
+            mortgageAmount: String(m.mortgage_amount_usd || m.mortgageAmountUsd || ''),
+            duration: String(m.duration_months || m.durationMonths || ''),
+            creditorName: m.creditor_name || m.creditorName || '',
+            creditorType: m.creditor_type || m.creditorType || 'Banque',
+            contractDate: m.contract_date || m.contractDate || '',
+            mortgageStatus: m.mortgage_status || m.mortgageStatus || 'Active',
+            receiptFile: null
+          })));
+        } else {
+          setHasMortgage(false);
+        }
+
+        // Détecter le type de section
+        if (contrib.parcel_type === 'SU') {
+          setSectionType('urbaine');
+        } else if (contrib.parcel_type === 'SR') {
+          setSectionType('rurale');
+        }
+
+        // Historique de bornage
+        const boundaries = contrib.boundary_history as any[];
+        if (boundaries && Array.isArray(boundaries) && boundaries.length > 0) {
+          // boundaryHistory est géré via previousOwners/boundaryHistory state si applicable
+          // Pour l'instant on log, car le formulaire utilise des états séparés pour le bornage
+          console.log('Boundary history loaded:', boundaries.length, 'records');
+        }
+
+        console.log('Contribution chargée depuis la base de données pour édition');
+      } catch (err) {
+        console.error('Erreur lors du chargement de la contribution:', err);
+      }
+    };
+
+    fetchContribution();
+  }, [open, editingContributionId]);
+
   // FIX #2/#3: Single auto-save with debounce, ALL states included in deps, works for all users
   useEffect(() => {
     if (open && formData.parcelNumber) {

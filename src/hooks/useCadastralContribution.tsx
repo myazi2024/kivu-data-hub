@@ -216,6 +216,7 @@ export const useCadastralContribution = () => {
       parcel_sides: data.parcelSides,
       construction_type: data.constructionType,
       construction_nature: data.constructionNature,
+      construction_materials: data.constructionMaterials || null,
       construction_year: data.constructionYear || null,
       declared_usage: data.declaredUsage,
       building_permits: buildingPermitsSnake,
