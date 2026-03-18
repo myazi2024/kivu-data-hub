@@ -247,7 +247,11 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setSelectedParcelNumber('');
     setParcelValidated(false);
     setParcelSearchResults([]);
-  }, [requestType]);
+    setParcelOwnerData(null);
+    // Reset requesterType when switching away from renewal
+    if (requestType !== 'renouvellement') {
+      setFormData(prev => ({ ...prev, requesterType: 'owner', isOwnerSameAsRequester: true }));
+    }
 
   // Reset validation when construction data changes
   useEffect(() => {
