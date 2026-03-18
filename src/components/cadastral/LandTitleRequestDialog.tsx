@@ -2278,7 +2278,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                             <Select 
                               value={declaredUsage}
                               onValueChange={setDeclaredUsage}
-                              disabled={!constructionNature}
+                              disabled={!constructionNature || (isParcelLinkedMode && parcelValidated && !!parcelValorisationData?.declaredUsage)}
                             >
                               <SelectTrigger className={cn(
                                 "h-11 text-sm rounded-xl border-2",
