@@ -870,29 +870,33 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
             <ScrollArea className="h-[65vh] sm:h-[70vh]">
               <div className="space-y-4 pr-2">
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <Tabs value={activeTab} onValueChange={(val) => {
+                  const isBlocked = requestType === 'initial' && hasFicheParcellaire === 'no';
+                  if (isBlocked && val !== 'requester') return;
+                  setActiveTab(val);
+                }} className="w-full">
                   <TabsList className="grid w-full grid-cols-6 mb-4 sticky top-0 z-10 bg-background/95 backdrop-blur-sm">
                     <TabsTrigger value="requester" className="text-xs gap-1.5">
                       <User className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Demandeur</span>
                     </TabsTrigger>
-                    <TabsTrigger value="location" className="text-xs gap-1.5">
+                    <TabsTrigger value="location" className="text-xs gap-1.5" disabled={requestType === 'initial' && hasFicheParcellaire === 'no'}>
                       <MapPin className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Lieu</span>
                     </TabsTrigger>
-                    <TabsTrigger value="valorisation" className="text-xs gap-1.5">
+                    <TabsTrigger value="valorisation" className="text-xs gap-1.5" disabled={requestType === 'initial' && hasFicheParcellaire === 'no'}>
                       <Home className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Mise en valeur</span>
                     </TabsTrigger>
-                    <TabsTrigger value="documents" className="text-xs gap-1.5">
+                    <TabsTrigger value="documents" className="text-xs gap-1.5" disabled={requestType === 'initial' && hasFicheParcellaire === 'no'}>
                       <FileText className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Documents</span>
                     </TabsTrigger>
-                    <TabsTrigger value="payment" className="text-xs gap-1.5">
+                    <TabsTrigger value="payment" className="text-xs gap-1.5" disabled={requestType === 'initial' && hasFicheParcellaire === 'no'}>
                       <CreditCard className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Frais</span>
                     </TabsTrigger>
-                    <TabsTrigger value="review" className="text-xs gap-1.5">
+                    <TabsTrigger value="review" className="text-xs gap-1.5" disabled={requestType === 'initial' && hasFicheParcellaire === 'no'}>
                       <ClipboardCheck className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Envoi</span>
                     </TabsTrigger>
