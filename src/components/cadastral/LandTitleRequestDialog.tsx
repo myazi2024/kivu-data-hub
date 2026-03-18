@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Loader2, CheckCircle2, Upload, X, Info, ChevronRight, User, MapPin, FileText, CreditCard, Building, Home, Award, AlertCircle, Check, ClipboardCheck, TrendingUp, Search, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -487,20 +488,25 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     if (!requestType) return false;
     if (requestType === 'renouvellement' && !parcelValidated) return false;
     
-    // Check requester info
-    if (!formData.requesterLastName || !formData.requesterFirstName || !formData.requesterPhone) {
-      return false;
-    }
+    // Renewal mode with owner as requester: skip requester identity fields
+    const isRenewalAsOwner = requestType === 'renouvellement' && parcelValidated && parcelOwnerData && formData.requesterType === 'owner';
     
-    // Validate phone number format
-    if (!validatePhone(formData.requesterPhone)) {
-      return false;
-    }
+    if (!isRenewalAsOwner) {
+      // Check requester info
+      if (!formData.requesterLastName || !formData.requesterFirstName || !formData.requesterPhone) {
+        return false;
+      }
+      
+      // Validate phone number format
+      if (!validatePhone(formData.requesterPhone)) {
+        return false;
+      }
 
-    // Validate requester legal status & gender for personne physique
-    const rLegalStatus = formData.requesterLegalStatus || 'Personne physique';
-    if (rLegalStatus === 'Personne physique' && !formData.requesterGender) {
-      return false;
+      // Validate requester legal status & gender for personne physique
+      const rLegalStatus = formData.requesterLegalStatus || 'Personne physique';
+      if (rLegalStatus === 'Personne physique' && !formData.requesterGender) {
+        return false;
+      }
     }
     
     // Check owner info if different (skip for renewal with auto-loaded owner data)
@@ -513,6 +519,11 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       if (formData.requesterType === 'representative' && !procurationFile) {
         return false;
       }
+    }
+    
+    // Procuration required for renewal mandataire
+    if (isRenewalWithAutoOwner && formData.requesterType === 'representative' && !procurationFile) {
+      return false;
     }
     
     // Check location
@@ -1100,69 +1111,169 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         </Label>
                       </div>
 
-                      {/* Hide toggle when renewal with validated parcel - owner is auto-loaded */}
-                      {!(requestType === 'renouvellement' && parcelValidated && parcelOwnerData) && (
-                        <div className="space-y-2">
-                          <Label className="text-sm">Vous êtes *</Label>
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleInputChange('requesterType', 'owner')}
-                              className={cn(
-                                "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
-                                formData.requesterType === 'owner'
-                                  ? 'bg-primary text-primary-foreground shadow-md'
-                                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                      {/* RENEWAL MODE: Owner identified + role selection */}
+                      {requestType === 'renouvellement' && parcelValidated && parcelOwnerData && (
+                        <>
+                          {/* Masked owner info */}
+                          <div className="p-3 bg-muted/50 rounded-lg border border-border space-y-2 animate-fade-in">
+                            <div className="flex items-center gap-2">
+                              <div className="p-1 bg-primary/10 rounded">
+                                <Info className="h-3.5 w-3.5 text-primary" />
+                              </div>
+                              <span className="text-xs font-semibold text-foreground">Propriétaire identifié</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                              {parcelOwnerData.legalStatus && (
+                                <div><span className="text-muted-foreground">Statut :</span> <span className="font-medium">{parcelOwnerData.legalStatus}</span></div>
                               )}
-                            >
-                              Propriétaire
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleInputChange('requesterType', 'representative')}
-                              className={cn(
-                                "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
-                                formData.requesterType === 'representative'
-                                  ? 'bg-primary text-primary-foreground shadow-md'
-                                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                              {parcelOwnerData.gender && (
+                                <div><span className="text-muted-foreground">Genre :</span> <span className="font-medium">{parcelOwnerData.gender}</span></div>
                               )}
-                            >
-                              Mandataire
-                            </button>
+                              <div><span className="text-muted-foreground">Nom :</span> <span className="font-medium">{parcelOwnerData.lastName ? parcelOwnerData.lastName.charAt(0) + '***' : '—'}</span></div>
+                              <div><span className="text-muted-foreground">Prénom :</span> <span className="font-medium">{parcelOwnerData.firstName ? parcelOwnerData.firstName.charAt(0) + '***' : '—'}</span></div>
+                              {parcelOwnerData.middleName && (
+                                <div><span className="text-muted-foreground">Post-nom :</span> <span className="font-medium">{parcelOwnerData.middleName.charAt(0) + '***'}</span></div>
+                              )}
+                              {parcelOwnerData.phone && (
+                                <div><span className="text-muted-foreground">Tél :</span> <span className="font-medium">+243 ** *** {parcelOwnerData.phone.slice(-3)}</span></div>
+                              )}
+                            </div>
+                            <p className="text-[10px] text-muted-foreground italic">
+                              Les informations du propriétaire sont chargées depuis la base cadastrale. L'accès complet est réservé aux services habilités.
+                            </p>
                           </div>
-                        </div>
+
+                          {/* Radio: Propriétaire or Mandataire */}
+                          <div className="space-y-2">
+                            <Label className="text-sm">Vous êtes *</Label>
+                            <RadioGroup
+                              value={formData.requesterType}
+                              onValueChange={(value: string) => {
+                                handleInputChange('requesterType', value);
+                                if (value === 'owner') {
+                                  handleInputChange('isOwnerSameAsRequester', true);
+                                } else {
+                                  handleInputChange('isOwnerSameAsRequester', false);
+                                }
+                              }}
+                              className="flex gap-4"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="owner" id="renewal-owner" />
+                                <Label htmlFor="renewal-owner" className="text-sm cursor-pointer">Propriétaire</Label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="representative" id="renewal-representative" />
+                                <Label htmlFor="renewal-representative" className="text-sm cursor-pointer">Mandataire</Label>
+                              </div>
+                            </RadioGroup>
+                          </div>
+
+                          {/* If Mandataire: show fields for representative identity */}
+                          {formData.requesterType === 'representative' && (
+                            <div className="space-y-3 animate-fade-in border-t border-border pt-3">
+                              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Informations du mandataire</h4>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div className="space-y-1.5">
+                                  <Label className="text-sm">Statut juridique *</Label>
+                                  <Select
+                                    value={formData.requesterLegalStatus || 'Personne physique'}
+                                    onValueChange={(value) => {
+                                      handleInputChange('requesterLegalStatus', value);
+                                      if (value !== 'Personne physique') {
+                                        handleInputChange('requesterGender', '');
+                                      }
+                                    }}
+                                  >
+                                    <SelectTrigger className="h-9 text-sm rounded-lg border">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="Personne physique">Personne physique</SelectItem>
+                                      <SelectItem value="Société">Société</SelectItem>
+                                      <SelectItem value="Association">Association</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                {(formData.requesterLegalStatus || 'Personne physique') === 'Personne physique' && (
+                                  <div className="space-y-1.5">
+                                    <Label className="text-sm">Genre *</Label>
+                                    <Select
+                                      value={formData.requesterGender || ''}
+                                      onValueChange={(value) => handleInputChange('requesterGender', value)}
+                                    >
+                                      <SelectTrigger className="h-9 text-sm rounded-lg border">
+                                        <SelectValue placeholder="Sélectionner" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="Masculin">Masculin</SelectItem>
+                                        <SelectItem value="Féminin">Féminin</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div className="space-y-1.5">
+                                  <Label className="text-sm">Nom *</Label>
+                                  <Input
+                                    value={formData.requesterLastName}
+                                    onChange={(e) => handleInputChange('requesterLastName', e.target.value)}
+                                    placeholder="Nom du mandataire"
+                                    className="h-9 text-sm rounded-lg border"
+                                  />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <Label className="text-sm">Prénom *</Label>
+                                  <Input
+                                    value={formData.requesterFirstName}
+                                    onChange={(e) => handleInputChange('requesterFirstName', e.target.value)}
+                                    placeholder="Prénom du mandataire"
+                                    className="h-9 text-sm rounded-lg border"
+                                  />
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div className="space-y-1.5">
+                                  <Label className="text-sm">Post-nom</Label>
+                                  <Input
+                                    value={formData.requesterMiddleName}
+                                    onChange={(e) => handleInputChange('requesterMiddleName', e.target.value)}
+                                    placeholder="Post-nom"
+                                    className="h-9 text-sm rounded-lg border"
+                                  />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <Label className="text-sm">Téléphone *</Label>
+                                  <Input
+                                    value={formData.requesterPhone}
+                                    onChange={(e) => handleInputChange('requesterPhone', e.target.value)}
+                                    placeholder="+243..."
+                                    className={cn(
+                                      "h-9 text-sm rounded-lg border",
+                                      formData.requesterPhone && !validatePhone(formData.requesterPhone) && "border-destructive"
+                                    )}
+                                  />
+                                  {formData.requesterPhone && !validatePhone(formData.requesterPhone) && (
+                                    <p className="text-[10px] text-destructive">Format: +243 suivi de 9 chiffres</p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="space-y-1.5">
+                                <Label className="text-sm">Email</Label>
+                                <Input
+                                  type="email"
+                                  value={formData.requesterEmail}
+                                  onChange={(e) => handleInputChange('requesterEmail', e.target.value)}
+                                  placeholder="email@exemple.com"
+                                  className="h-9 text-sm rounded-lg border"
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </>
                       )}
 
-                      {/* Masked owner info for renewal mode */}
-                      {requestType === 'renouvellement' && parcelValidated && parcelOwnerData && (
-                        <div className="p-3 bg-muted/50 rounded-lg border border-border space-y-2 animate-fade-in">
-                          <div className="flex items-center gap-2">
-                            <div className="p-1 bg-primary/10 rounded">
-                              <Info className="h-3.5 w-3.5 text-primary" />
-                            </div>
-                            <span className="text-xs font-semibold text-foreground">Propriétaire identifié</span>
-                          </div>
-                          <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-                            {parcelOwnerData.legalStatus && (
-                              <div><span className="text-muted-foreground">Statut :</span> <span className="font-medium">{parcelOwnerData.legalStatus}</span></div>
-                            )}
-                            {parcelOwnerData.gender && (
-                              <div><span className="text-muted-foreground">Genre :</span> <span className="font-medium">{parcelOwnerData.gender}</span></div>
-                            )}
-                            <div><span className="text-muted-foreground">Nom :</span> <span className="font-medium">{parcelOwnerData.lastName ? parcelOwnerData.lastName.charAt(0) + '***' : '—'}</span></div>
-                            <div><span className="text-muted-foreground">Prénom :</span> <span className="font-medium">{parcelOwnerData.firstName ? parcelOwnerData.firstName.charAt(0) + '***' : '—'}</span></div>
-                            {parcelOwnerData.middleName && (
-                              <div><span className="text-muted-foreground">Post-nom :</span> <span className="font-medium">{parcelOwnerData.middleName.charAt(0) + '***'}</span></div>
-                            )}
-                            {parcelOwnerData.phone && (
-                              <div><span className="text-muted-foreground">Tél :</span> <span className="font-medium">+243 ** *** {parcelOwnerData.phone.slice(-3)}</span></div>
-                            )}
-                          </div>
-                          <p className="text-[10px] text-muted-foreground italic">
-                            Les informations du propriétaire sont chargées depuis la base cadastrale. L'accès complet est réservé aux services habilités.
-                          </p>
-                        </div>
-                      )}
                       {loadingOwnerData && (
                         <div className="flex items-center gap-2 text-xs text-muted-foreground p-2">
                           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -1170,106 +1281,141 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         </div>
                       )}
 
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1.5">
-                          <Label className="text-sm">Statut juridique *</Label>
-                          <Select
-                            value={formData.requesterLegalStatus || 'Personne physique'}
-                            onValueChange={(value) => {
-                              handleInputChange('requesterLegalStatus', value);
-                              if (value !== 'Personne physique') {
-                                handleInputChange('requesterGender', '');
-                              }
-                            }}
-                          >
-                            <SelectTrigger className="h-9 text-sm rounded-lg border">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Personne physique">Personne physique</SelectItem>
-                              <SelectItem value="Société">Société</SelectItem>
-                              <SelectItem value="Association">Association</SelectItem>
-                              <SelectItem value="État">État</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        {(formData.requesterLegalStatus || 'Personne physique') === 'Personne physique' && (
-                          <div className="space-y-1.5">
-                            <Label className="text-sm">Genre *</Label>
-                            <Select
-                              value={formData.requesterGender || ''}
-                              onValueChange={(value) => handleInputChange('requesterGender', value)}
-                            >
-                              <SelectTrigger className="h-9 text-sm rounded-lg border">
-                                <SelectValue placeholder="Sélectionner" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Masculin">Masculin</SelectItem>
-                                <SelectItem value="Féminin">Féminin</SelectItem>
-                              </SelectContent>
-                            </Select>
+                      {/* NON-RENEWAL MODE: Standard requester fields */}
+                      {!(requestType === 'renouvellement' && parcelValidated && parcelOwnerData) && (
+                        <>
+                          <div className="space-y-2">
+                            <Label className="text-sm">Vous êtes *</Label>
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleInputChange('requesterType', 'owner')}
+                                className={cn(
+                                  "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
+                                  formData.requesterType === 'owner'
+                                    ? 'bg-primary text-primary-foreground shadow-md'
+                                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                )}
+                              >
+                                Propriétaire
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleInputChange('requesterType', 'representative')}
+                                className={cn(
+                                  "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
+                                  formData.requesterType === 'representative'
+                                    ? 'bg-primary text-primary-foreground shadow-md'
+                                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                )}
+                              >
+                                Mandataire
+                              </button>
+                            </div>
                           </div>
-                        )}
-                      </div>
 
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1.5">
-                          <Label className="text-sm">Nom *</Label>
-                          <Input
-                            value={formData.requesterLastName}
-                            onChange={(e) => handleInputChange('requesterLastName', e.target.value)}
-                            placeholder="Votre nom"
-                            className="h-9 text-sm rounded-lg border"
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-sm">Prénom *</Label>
-                          <Input
-                            value={formData.requesterFirstName}
-                            onChange={(e) => handleInputChange('requesterFirstName', e.target.value)}
-                            placeholder="Votre prénom"
-                            className="h-9 text-sm rounded-lg border"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1.5">
-                          <Label className="text-sm">Post-nom</Label>
-                          <Input
-                            value={formData.requesterMiddleName}
-                            onChange={(e) => handleInputChange('requesterMiddleName', e.target.value)}
-                            placeholder="Post-nom"
-                            className="h-9 text-sm rounded-lg border"
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-sm">Téléphone *</Label>
-                          <Input
-                            value={formData.requesterPhone}
-                            onChange={(e) => handleInputChange('requesterPhone', e.target.value)}
-                            placeholder="+243..."
-                            className={cn(
-                              "h-9 text-sm rounded-lg border",
-                              formData.requesterPhone && !validatePhone(formData.requesterPhone) && "border-destructive"
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-1.5">
+                              <Label className="text-sm">Statut juridique *</Label>
+                              <Select
+                                value={formData.requesterLegalStatus || 'Personne physique'}
+                                onValueChange={(value) => {
+                                  handleInputChange('requesterLegalStatus', value);
+                                  if (value !== 'Personne physique') {
+                                    handleInputChange('requesterGender', '');
+                                  }
+                                }}
+                              >
+                                <SelectTrigger className="h-9 text-sm rounded-lg border">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Personne physique">Personne physique</SelectItem>
+                                  <SelectItem value="Société">Société</SelectItem>
+                                  <SelectItem value="Association">Association</SelectItem>
+                                  <SelectItem value="État">État</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            {(formData.requesterLegalStatus || 'Personne physique') === 'Personne physique' && (
+                              <div className="space-y-1.5">
+                                <Label className="text-sm">Genre *</Label>
+                                <Select
+                                  value={formData.requesterGender || ''}
+                                  onValueChange={(value) => handleInputChange('requesterGender', value)}
+                                >
+                                  <SelectTrigger className="h-9 text-sm rounded-lg border">
+                                    <SelectValue placeholder="Sélectionner" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Masculin">Masculin</SelectItem>
+                                    <SelectItem value="Féminin">Féminin</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
                             )}
-                          />
-                          {formData.requesterPhone && !validatePhone(formData.requesterPhone) && (
-                            <p className="text-[10px] text-destructive">Format: +243 suivi de 9 chiffres</p>
-                          )}
-                        </div>
-                      </div>
+                          </div>
 
-                      <div className="space-y-1.5">
-                        <Label className="text-sm">Email</Label>
-                        <Input
-                          type="email"
-                          value={formData.requesterEmail}
-                          onChange={(e) => handleInputChange('requesterEmail', e.target.value)}
-                          placeholder="votre@email.com"
-                          className="h-9 text-sm rounded-lg border"
-                        />
-                      </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-1.5">
+                              <Label className="text-sm">Nom *</Label>
+                              <Input
+                                value={formData.requesterLastName}
+                                onChange={(e) => handleInputChange('requesterLastName', e.target.value)}
+                                placeholder="Votre nom"
+                                className="h-9 text-sm rounded-lg border"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-sm">Prénom *</Label>
+                              <Input
+                                value={formData.requesterFirstName}
+                                onChange={(e) => handleInputChange('requesterFirstName', e.target.value)}
+                                placeholder="Votre prénom"
+                                className="h-9 text-sm rounded-lg border"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-1.5">
+                              <Label className="text-sm">Post-nom</Label>
+                              <Input
+                                value={formData.requesterMiddleName}
+                                onChange={(e) => handleInputChange('requesterMiddleName', e.target.value)}
+                                placeholder="Post-nom"
+                                className="h-9 text-sm rounded-lg border"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-sm">Téléphone *</Label>
+                              <Input
+                                value={formData.requesterPhone}
+                                onChange={(e) => handleInputChange('requesterPhone', e.target.value)}
+                                placeholder="+243..."
+                                className={cn(
+                                  "h-9 text-sm rounded-lg border",
+                                  formData.requesterPhone && !validatePhone(formData.requesterPhone) && "border-destructive"
+                                )}
+                              />
+                              {formData.requesterPhone && !validatePhone(formData.requesterPhone) && (
+                                <p className="text-[10px] text-destructive">Format: +243 suivi de 9 chiffres</p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <Label className="text-sm">Email</Label>
+                            <Input
+                              type="email"
+                              value={formData.requesterEmail}
+                              onChange={(e) => handleInputChange('requesterEmail', e.target.value)}
+                              placeholder="votre@email.com"
+                              className="h-9 text-sm rounded-lg border"
+                            />
+                          </div>
+                        </>
+                      )}
                     </CardContent>
                   </Card>
 
