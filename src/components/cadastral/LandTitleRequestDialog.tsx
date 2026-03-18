@@ -110,6 +110,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     collectivite?: string;
     groupement?: string;
     village?: string;
+    parcelSides?: any[];
+    gpsCoordinates?: any[];
   } | null>(null);
   const [loadingOwnerData, setLoadingOwnerData] = useState(false);
   
