@@ -284,6 +284,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setParcelSearchResults([]);
     setParcelOwnerData(null);
     setParcelLocationData(null);
+    setParcelConstructionData(null);
+    setConstructionChanged(false);
     // Reset requesterType when not in parcel-linked mode
     if (!isParcelLinkedMode) {
       setFormData(prev => ({ ...prev, requesterType: 'owner', isOwnerSameAsRequester: true }));
