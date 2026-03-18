@@ -114,6 +114,13 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     parcelSides?: any[];
     gpsCoordinates?: any[];
   } | null>(null);
+  // Valorisation data loaded from parcel for renewal mode (auto-display)
+  const [parcelValorisationData, setParcelValorisationData] = useState<{
+    constructionType?: string;
+    constructionNature?: string;
+    constructionMaterials?: string;
+    declaredUsage?: string;
+  } | null>(null);
   const [loadingOwnerData, setLoadingOwnerData] = useState(false);
   
   // Form data
@@ -275,6 +282,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setParcelSearchResults([]);
     setParcelOwnerData(null);
     setParcelLocationData(null);
+    setParcelValorisationData(null);
     // Reset requesterType when not in parcel-linked mode
     if (!isParcelLinkedMode) {
       setFormData(prev => ({ ...prev, requesterType: 'owner', isOwnerSameAsRequester: true }));
@@ -739,6 +747,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setParcelSearchResults([]);
     setParcelOwnerData(null);
     setParcelLocationData(null);
+    setParcelValorisationData(null);
     setLoadingOwnerData(false);
     // Reset GPS & dimensions
     setGpsCoordinates([{ borne: 'Borne 1', lat: '', lng: '' }]);
@@ -1077,7 +1086,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                           // First try contributions for richer owner + location details
                                           const { data: contribData } = await supabase
                                             .from('cadastral_contributions')
-                                            .select('current_owners_details, current_owner_name, current_owner_legal_status, province, parcel_type, ville, commune, quartier, avenue, territoire, collectivite, groupement, village')
+                                            .select('current_owners_details, current_owner_name, current_owner_legal_status, province, parcel_type, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, construction_type, construction_nature, declared_usage')
                                             .eq('parcel_number', parcel.parcel_number)
                                             .eq('status', 'approved')
                                             .order('created_at', { ascending: false })
@@ -1141,7 +1150,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                           // Fetch location data: prioritize parcel table (source of truth)
                                           const { data: parcelLocData } = await supabase
                                             .from('cadastral_parcels')
-                                            .select('province, parcel_type, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, parcel_sides, gps_coordinates')
+                                            .select('province, parcel_type, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, parcel_sides, gps_coordinates, construction_type, construction_nature, declared_usage')
                                             .eq('id', parcel.id)
                                             .single();
                                           
@@ -1178,6 +1187,24 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                               groupement: locationInfo.groupement,
                                               village: locationInfo.village,
                                             }));
+                                          }
+
+                                          // Fetch valorisation data (construction info) from parcel/contribution
+                                          const valoConstructionType = parcelLocData?.construction_type || contribData?.construction_type || '';
+                                          const valoConstructionNature = parcelLocData?.construction_nature || contribData?.construction_nature || '';
+                                          const valoDeclaredUsage = parcelLocData?.declared_usage || contribData?.declared_usage || '';
+                                          
+                                          if (valoConstructionType || valoConstructionNature || valoDeclaredUsage) {
+                                            const valoData = {
+                                              constructionType: valoConstructionType,
+                                              constructionNature: valoConstructionNature,
+                                              declaredUsage: valoDeclaredUsage,
+                                            };
+                                            setParcelValorisationData(valoData);
+                                            // Auto-fill construction states
+                                            if (valoConstructionType) setConstructionType(valoConstructionType);
+                                            if (valoConstructionNature) setConstructionNature(valoConstructionNature);
+                                            if (valoDeclaredUsage) setDeclaredUsage(valoDeclaredUsage);
                                           }
                                         } catch (err) {
                                           console.error('Error fetching owner data:', err);
@@ -2123,6 +2150,39 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
                 {/* Tab: Valorisation */}
                 <TabsContent value="valorisation" className="space-y-4">
+                  {/* RENEWAL MODE: Auto-loaded valorisation data displayed as read-only */}
+                  {isParcelLinkedMode && parcelValidated && parcelValorisationData && requestType === 'renouvellement' && (
+                    <Card className="border-2 border-primary/20 rounded-xl bg-primary/5">
+                      <CardContent className="p-3 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Home className="h-4 w-4 text-primary" />
+                          <h4 className="text-sm font-semibold">Données de mise en valeur enregistrées</h4>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Ces informations sont extraites de la fiche parcellaire <strong>{selectedParcelNumber}</strong> disponible dans la base de données.
+                        </p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="p-2 rounded-lg bg-background border">
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Type de construction</p>
+                            <p className="text-sm font-medium">{parcelValorisationData.constructionType || '—'}</p>
+                          </div>
+                          <div className="p-2 rounded-lg bg-background border">
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Nature</p>
+                            <p className="text-sm font-medium">{parcelValorisationData.constructionNature || '—'}</p>
+                          </div>
+                          <div className="p-2 rounded-lg bg-background border">
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Matériaux</p>
+                            <p className="text-sm font-medium">{parcelValorisationData.constructionMaterials || '—'}</p>
+                          </div>
+                          <div className="p-2 rounded-lg bg-background border">
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Usage déclaré</p>
+                            <p className="text-sm font-medium">{parcelValorisationData.declaredUsage || '—'}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
                   {/* Type de construction */}
                   <Card className="border rounded-xl">
                     <CardContent className="p-3 space-y-3">
