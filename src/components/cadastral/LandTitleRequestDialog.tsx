@@ -1188,6 +1188,24 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                               village: locationInfo.village,
                                             }));
                                           }
+
+                                          // Fetch valorisation data (construction info) from parcel/contribution
+                                          const valoConstructionType = parcelLocData?.construction_type || contribData?.construction_type || '';
+                                          const valoConstructionNature = parcelLocData?.construction_nature || contribData?.construction_nature || '';
+                                          const valoDeclaredUsage = parcelLocData?.declared_usage || contribData?.declared_usage || '';
+                                          
+                                          if (valoConstructionType || valoConstructionNature || valoDeclaredUsage) {
+                                            const valoData = {
+                                              constructionType: valoConstructionType,
+                                              constructionNature: valoConstructionNature,
+                                              declaredUsage: valoDeclaredUsage,
+                                            };
+                                            setParcelValorisationData(valoData);
+                                            // Auto-fill construction states
+                                            if (valoConstructionType) setConstructionType(valoConstructionType);
+                                            if (valoConstructionNature) setConstructionNature(valoConstructionNature);
+                                            if (valoDeclaredUsage) setDeclaredUsage(valoDeclaredUsage);
+                                          }
                                         } catch (err) {
                                           console.error('Error fetching owner data:', err);
                                         } finally {
