@@ -1267,7 +1267,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                     </CardContent>
                   </Card>
 
-                  {formData.requesterType === 'representative' && (
+                  {formData.requesterType === 'representative' && !(requestType === 'renouvellement' && parcelValidated && parcelOwnerData) && (
                     <Card className="border-2 border-dashed rounded-lg">
                       <CardContent className="p-3 space-y-3">
                         <h4 className="text-sm font-semibold text-primary flex items-center gap-2">
