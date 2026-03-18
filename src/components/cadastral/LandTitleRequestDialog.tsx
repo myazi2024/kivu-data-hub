@@ -735,6 +735,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setShowPayment(false);
     setShowSuccess(false);
     setSavedRequestId('');
+    setSavedReferenceNumber('');
     setIsSubmitting(false);
     setShowDraftPrompt(false);
     // Reset request type & parcel
