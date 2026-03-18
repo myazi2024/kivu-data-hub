@@ -156,7 +156,7 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(valueDist, 'bar-v', 'les tranches de valeur')} />}
         {v('floors') && <ChartCard title={ct('floors', 'Nbre d\'étages')} icon={Building} data={floorsDist} type="bar-v" colorIndex={1} hidden={floorsDist.length === 0}
           insight={generateInsight(floorsDist, 'bar-v', 'le nombre d\'étages')} />}
-        {v('garden-area') && <ChartCard title={ct('garden-area', 'Surface jardin')} icon={Trees} data={gardenDist} type="bar-v" colorIndex={10} hidden={gardenDist.length === 0}
+        {v('garden') && <ChartCard title={ct('garden', 'Surface jardin')} icon={Trees} data={gardenDist} type="bar-v" colorIndex={10} hidden={gardenDist.length === 0}
           insight={generateInsight(gardenDist, 'bar-v', 'les surfaces de jardin')} />}
         {v('geo') && <GeoCharts records={filtered} />}
         {v('evolution') && <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type="area" colorIndex={5} colSpan={2}

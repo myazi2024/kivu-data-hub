@@ -228,6 +228,23 @@ export const VALID_LIFTING_STATUSES = ['pending', 'demande_levee', 'approved', '
 
 const MONTH_LABELS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
 
+/** Aggregate a numeric field by month — reusable for revenue trends */
+export function sumByMonth(records: any[], amountField = 'total_amount_usd', dateField = 'created_at'): { name: string; value: number }[] {
+  const map = new Map<string, number>();
+  records.forEach(r => {
+    if (r[dateField] && r[amountField] > 0) {
+      const d = new Date(r[dateField]);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      map.set(key, (map.get(key) || 0) + r[amountField]);
+    }
+  });
+  return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([k, value]) => {
+    const [y, m] = k.split('-');
+    const name = new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('fr-FR', { year: '2-digit', month: 'short' });
+    return { name, value: Math.round(value) };
+  });
+}
+
 /** Build a human-readable label from active filters (time + location) */
 export function buildFilterLabel(filter: AnalyticsFilter): string {
   const parts: string[] = [];
