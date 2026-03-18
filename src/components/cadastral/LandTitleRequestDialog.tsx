@@ -245,17 +245,22 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     return () => clearTimeout(timer);
   }, [parcelNumberSearch, isParcelLinkedMode, searchParcels]);
 
-  // Reset parcel validation when request type changes
+  // Reset parcel validation when request type or fiche parcellaire changes
   useEffect(() => {
     setParcelNumberSearch('');
     setSelectedParcelNumber('');
     setParcelValidated(false);
     setParcelSearchResults([]);
     setParcelOwnerData(null);
-    // Reset requesterType when switching away from renewal
-    if (requestType !== 'renouvellement') {
+    // Reset requesterType when not in parcel-linked mode
+    if (!isParcelLinkedMode) {
       setFormData(prev => ({ ...prev, requesterType: 'owner', isOwnerSameAsRequester: true }));
     }
+  }, [requestType, hasFicheParcellaire]);
+
+  // Reset hasFicheParcellaire when requestType changes
+  useEffect(() => {
+    setHasFicheParcellaire('');
   }, [requestType]);
 
   // Reset validation when construction data changes
