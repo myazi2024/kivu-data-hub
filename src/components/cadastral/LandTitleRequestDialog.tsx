@@ -1201,6 +1201,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                             const valoData = {
                                               constructionType: valoConstructionType,
                                               constructionNature: valoConstructionNature,
+                                              constructionMaterials: '', // no construction_materials column in DB
                                               declaredUsage: valoDeclaredUsage,
                                             };
                                             setParcelValorisationData(valoData);
