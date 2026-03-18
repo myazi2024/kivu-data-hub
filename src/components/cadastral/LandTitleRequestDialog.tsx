@@ -238,6 +238,15 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   // Computed: is the form in "parcel-linked" mode (renewal OR initial with fiche parcellaire)
   const isParcelLinkedMode = requestType === 'renouvellement' || (requestType === 'initial' && hasFicheParcellaire === 'yes');
 
+  // Computed: is the request info step complete enough to unlock other tabs
+  const isRequestInfoComplete = (() => {
+    if (!requestType) return false;
+    if (requestType === 'renouvellement' && !parcelValidated) return false;
+    if (requestType === 'initial' && hasFicheParcellaire !== 'yes') return false;
+    if (requestType === 'initial' && hasFicheParcellaire === 'yes' && !parcelValidated) return false;
+    return true;
+  })();
+
   useEffect(() => {
     const timer = setTimeout(() => {
       if (parcelNumberSearch && isParcelLinkedMode) {
