@@ -268,9 +268,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     }
   }, [requestType, hasFicheParcellaire, knowsParcelNumber]);
 
-  // Reset hasFicheParcellaire when requestType changes
+  // Reset hasFicheParcellaire / knowsParcelNumber when requestType changes
   useEffect(() => {
     setHasFicheParcellaire('');
+    setKnowsParcelNumber('');
   }, [requestType]);
 
   // Reset validation when construction data changes
