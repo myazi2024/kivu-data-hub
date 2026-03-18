@@ -885,23 +885,23 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       <User className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Demandeur</span>
                     </TabsTrigger>
-                    <TabsTrigger value="location" className="text-xs gap-1.5">
+                    <TabsTrigger value="location" className="text-xs gap-1.5" disabled={!isRequestInfoComplete}>
                       <MapPin className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Lieu</span>
                     </TabsTrigger>
-                    <TabsTrigger value="valorisation" className="text-xs gap-1.5">
+                    <TabsTrigger value="valorisation" className="text-xs gap-1.5" disabled={!isRequestInfoComplete}>
                       <Home className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Mise en valeur</span>
                     </TabsTrigger>
-                    <TabsTrigger value="documents" className="text-xs gap-1.5">
+                    <TabsTrigger value="documents" className="text-xs gap-1.5" disabled={!isRequestInfoComplete}>
                       <FileText className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Documents</span>
                     </TabsTrigger>
-                    <TabsTrigger value="payment" className="text-xs gap-1.5">
+                    <TabsTrigger value="payment" className="text-xs gap-1.5" disabled={!isRequestInfoComplete}>
                       <CreditCard className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Frais</span>
                     </TabsTrigger>
-                    <TabsTrigger value="review" className="text-xs gap-1.5">
+                    <TabsTrigger value="review" className="text-xs gap-1.5" disabled={!isRequestInfoComplete}>
                       <ClipboardCheck className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Envoi</span>
                     </TabsTrigger>
