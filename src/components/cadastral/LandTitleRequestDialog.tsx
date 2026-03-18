@@ -81,6 +81,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   // Request type state
   const [requestType, setRequestType] = useState<'initial' | 'renouvellement' | ''>('');
   const [hasFicheParcellaire, setHasFicheParcellaire] = useState<'yes' | 'no' | ''>('');
+  const [knowsParcelNumber, setKnowsParcelNumber] = useState<'yes' | 'no' | ''>('');
   const [parcelNumberSearch, setParcelNumberSearch] = useState('');
   const [parcelSearchResults, setParcelSearchResults] = useState<Array<{ parcel_number: string; id: string }>>([]);
   const [selectedParcelNumber, setSelectedParcelNumber] = useState('');
@@ -236,10 +237,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   }, []);
 
   // Computed: is the form in "parcel-linked" mode (renewal OR initial with fiche parcellaire)
-  const isParcelLinkedMode = requestType === 'renouvellement' || (requestType === 'initial' && hasFicheParcellaire === 'yes');
+  const isParcelLinkedMode = (requestType === 'renouvellement' && knowsParcelNumber === 'yes') || (requestType === 'initial' && hasFicheParcellaire === 'yes');
 
-  // Computed: form is blocked when user has no fiche parcellaire for initial request
-  const isFormBlocked = requestType === 'initial' && hasFicheParcellaire === 'no';
+  // Computed: form is blocked when user has no fiche parcellaire for initial request OR doesn't know parcel number for renewal
+  const isFormBlocked = (requestType === 'initial' && hasFicheParcellaire === 'no') || (requestType === 'renouvellement' && knowsParcelNumber === 'no');
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -262,14 +263,15 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       setFormData(prev => ({ ...prev, requesterType: 'owner', isOwnerSameAsRequester: true }));
     }
     // Force back to requester tab when form is blocked
-    if (requestType === 'initial' && hasFicheParcellaire === 'no') {
+    if ((requestType === 'initial' && hasFicheParcellaire === 'no') || (requestType === 'renouvellement' && knowsParcelNumber === 'no')) {
       setActiveTab('requester');
     }
-  }, [requestType, hasFicheParcellaire]);
+  }, [requestType, hasFicheParcellaire, knowsParcelNumber]);
 
-  // Reset hasFicheParcellaire when requestType changes
+  // Reset hasFicheParcellaire / knowsParcelNumber when requestType changes
   useEffect(() => {
     setHasFicheParcellaire('');
+    setKnowsParcelNumber('');
   }, [requestType]);
 
   // Reset validation when construction data changes
@@ -503,7 +505,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const isFormValid = (): boolean => {
     // Check request type
     if (!requestType) return false;
-    if (requestType === 'renouvellement' && !parcelValidated) return false;
+    if (requestType === 'renouvellement' && knowsParcelNumber !== 'yes') return false;
+    if (requestType === 'renouvellement' && knowsParcelNumber === 'yes' && !parcelValidated) return false;
     if (requestType === 'initial' && hasFicheParcellaire === 'yes' && !parcelValidated) return false;
     if (requestType === 'initial' && hasFicheParcellaire !== 'yes') return false;
     // Renewal mode with owner as requester: skip requester identity fields
@@ -712,6 +715,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     // Reset request type & parcel
     setRequestType('');
     setHasFicheParcellaire('');
+    setKnowsParcelNumber('');
     setParcelNumberSearch('');
     setSelectedParcelNumber('');
     setParcelValidated(false);
@@ -966,6 +970,42 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                 </p>
                                 <p>
                                   Veuillez vous adresser au <strong>bureau de la commune ou du quartier</strong> si votre parcelle se trouve dans une <strong>section urbaine</strong>, ou au <strong>bureau de la chefferie</strong> si elle se trouve dans une <strong>section rurale</strong>, afin d'obtenir ce document avant de soumettre votre demande.
+                                </p>
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Radio buttons for renewal: knows parcel number */}
+                      {requestType === 'renouvellement' && (
+                        <div className="space-y-2 animate-fade-in">
+                          <Label className="text-sm">Connaissez-vous le numéro (SU ou SR) de la parcelle ? *</Label>
+                          <RadioGroup
+                            value={knowsParcelNumber}
+                            onValueChange={(value: string) => setKnowsParcelNumber(value as 'yes' | 'no')}
+                            className="flex gap-4"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="yes" id="parcel-num-yes" />
+                              <Label htmlFor="parcel-num-yes" className="text-sm cursor-pointer">Je connais le numéro (SU ou SR) de la parcelle</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="no" id="parcel-num-no" />
+                              <Label htmlFor="parcel-num-no" className="text-sm cursor-pointer">Je ne connais pas le numéro (SU ou SR) de la parcelle</Label>
+                            </div>
+                          </RadioGroup>
+
+                          {knowsParcelNumber === 'no' && (
+                            <Alert variant="destructive" className="mt-3 animate-fade-in">
+                              <AlertTriangle className="h-4 w-4" />
+                              <AlertTitle>Numéro de parcelle requis</AlertTitle>
+                              <AlertDescription className="text-xs space-y-2">
+                                <p>
+                                  Le renouvellement d'un titre foncier nécessite le <strong>numéro (SU ou SR) de la parcelle</strong> concernée. Ce numéro figure sur votre <strong>titre de propriété</strong> ou sur la <strong>fiche parcellaire</strong> délivrée par les autorités compétentes.
+                                </p>
+                                <p>
+                                  Veuillez vérifier votre titre de propriété pour retrouver le numéro (SU ou SR) de la parcelle avant de soumettre votre demande de renouvellement.
                                 </p>
                               </AlertDescription>
                             </Alert>
