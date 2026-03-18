@@ -67,6 +67,7 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
   requesterIdFile,
   ownerIdFile,
   proofOfOwnershipFile,
+  procurationFile,
   gpsCoordinates,
   parcelSides,
   totalAmount,
