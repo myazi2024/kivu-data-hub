@@ -114,6 +114,15 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     parcelSides?: any[];
     gpsCoordinates?: any[];
   } | null>(null);
+  // Construction data loaded from parcel for renewal mode
+  const [parcelConstructionData, setParcelConstructionData] = useState<{
+    constructionType?: string;
+    constructionNature?: string;
+    constructionMaterials?: string;
+    declaredUsage?: string;
+  } | null>(null);
+  // Whether user signals construction changes in renewal mode
+  const [constructionChanged, setConstructionChanged] = useState(false);
   const [loadingOwnerData, setLoadingOwnerData] = useState(false);
   
   // Form data
