@@ -13,6 +13,7 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   getAllProvinces, 
@@ -110,6 +111,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     collectivite?: string;
     groupement?: string;
     village?: string;
+    parcelSides?: any[];
+    gpsCoordinates?: any[];
   } | null>(null);
   const [loadingOwnerData, setLoadingOwnerData] = useState(false);
   
@@ -1138,7 +1141,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                           // Fetch location data: prioritize parcel table (source of truth)
                                           const { data: parcelLocData } = await supabase
                                             .from('cadastral_parcels')
-                                            .select('province, parcel_type, ville, commune, quartier, avenue, territoire, collectivite, groupement, village')
+                                            .select('province, parcel_type, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, parcel_sides, gps_coordinates')
                                             .eq('id', parcel.id)
                                             .single();
                                           
@@ -1158,6 +1161,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                               collectivite: parcelLocData?.collectivite || contribData?.collectivite || '',
                                               groupement: parcelLocData?.groupement || contribData?.groupement || '',
                                               village: parcelLocData?.village || contribData?.village || '',
+                                              parcelSides: parcelLocData?.parcel_sides && Array.isArray(parcelLocData.parcel_sides) ? parcelLocData.parcel_sides : (contribData as any)?.parcel_sides && Array.isArray((contribData as any).parcel_sides) ? (contribData as any).parcel_sides : [],
+                                              gpsCoordinates: parcelLocData?.gps_coordinates && Array.isArray(parcelLocData.gps_coordinates) ? parcelLocData.gps_coordinates : (contribData as any)?.gps_coordinates && Array.isArray((contribData as any).gps_coordinates) ? (contribData as any).gps_coordinates : [],
                                             };
                                             setParcelLocationData(locationInfo);
                                             setFormData(prev => ({
@@ -1757,6 +1762,96 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           </div>
                         </CardContent>
                       </Card>
+
+                      {/* Croquis de la parcelle - accès gratuit */}
+                      {parcelLocationData.gpsCoordinates && parcelLocationData.gpsCoordinates.length >= 3 && (
+                        <Card className="border-2 rounded-lg">
+                          <CardContent className="p-3 space-y-3">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="p-1.5 bg-primary/10 rounded-lg">
+                                <MapPin className="h-4 w-4 text-primary" />
+                              </div>
+                              <Label className="text-sm font-semibold">
+                                Croquis de la parcelle
+                              </Label>
+                              <Badge variant="outline" className="text-[10px] border-green-300 text-green-700 bg-green-50">
+                                Gratuit
+                              </Badge>
+                            </div>
+
+                            <div className="bg-muted/30 rounded-lg p-3 flex items-center justify-center">
+                              {(() => {
+                                const coords = parcelLocationData.gpsCoordinates!;
+                                const sides = parcelLocationData.parcelSides || [];
+                                const lats = coords.map((c: any) => c.lat);
+                                const lngs = coords.map((c: any) => c.lng);
+                                const minLat = Math.min(...lats);
+                                const maxLat = Math.max(...lats);
+                                const minLng = Math.min(...lngs);
+                                const maxLng = Math.max(...lngs);
+                                const padding = 20;
+                                const svgW = 280;
+                                const svgH = 200;
+                                const rangeX = maxLng - minLng || 0.0001;
+                                const rangeY = maxLat - minLat || 0.0001;
+                                const scale = Math.min((svgW - padding * 2) / rangeX, (svgH - padding * 2) / rangeY);
+                                
+                                const points = coords.map((c: any) => {
+                                  const x = padding + (c.lng - minLng) * scale;
+                                  const y = svgH - padding - (c.lat - minLat) * scale;
+                                  return { x, y };
+                                });
+                                
+                                const polygonPoints = points.map((p: any) => `${p.x},${p.y}`).join(' ');
+                                
+                                return (
+                                  <svg width={svgW} height={svgH} className="border border-border rounded bg-background">
+                                    <polygon
+                                      points={polygonPoints}
+                                      fill="hsl(var(--primary) / 0.1)"
+                                      stroke="hsl(var(--primary))"
+                                      strokeWidth="2"
+                                    />
+                                    {points.map((p: any, i: number) => (
+                                      <g key={i}>
+                                        <circle cx={p.x} cy={p.y} r="4" fill="hsl(var(--destructive))" />
+                                        <text x={p.x + 6} y={p.y - 6} fontSize="9" fill="hsl(var(--foreground))" fontWeight="bold">
+                                          B{i + 1}
+                                        </text>
+                                        {sides[i]?.length && (
+                                          <text
+                                            x={(p.x + points[(i + 1) % points.length].x) / 2}
+                                            y={(p.y + points[(i + 1) % points.length].y) / 2 - 5}
+                                            fontSize="8"
+                                            fill="hsl(var(--muted-foreground))"
+                                            textAnchor="middle"
+                                          >
+                                            {sides[i].length}m
+                                          </text>
+                                        )}
+                                      </g>
+                                    ))}
+                                  </svg>
+                                );
+                              })()}
+                            </div>
+
+                            {parcelLocationData.parcelSides && parcelLocationData.parcelSides.length > 0 && (
+                              <div className="grid grid-cols-2 gap-1.5 text-xs">
+                                {parcelLocationData.parcelSides.map((side: any, idx: number) => (
+                                  <div key={idx} className="flex items-center gap-1.5 p-1.5 bg-muted/50 rounded">
+                                    <span className="font-medium">{side.name || `Côté ${idx + 1}`}:</span>
+                                    <span className="text-muted-foreground">{side.length ? `${side.length}m` : '—'}</span>
+                                    {side.borderType === 'route' && (
+                                      <Badge variant="outline" className="text-[9px] h-4 px-1 border-blue-300 text-blue-700">Route</Badge>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      )}
 
                       <div className="flex gap-2 pt-4">
                         <Button variant="outline" onClick={() => setActiveTab('requester')} className="flex-1 h-8 text-xs rounded-xl">
