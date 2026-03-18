@@ -1014,6 +1014,8 @@ const CadastralMap = () => {
                               setShowLandTitleNotification(false);
                               setShowLandTitleTermsDialog(true);
                               setHasUserInteracted(true);
+                              setSearchQuery('');
+                              setSearchSuggestions([]);
                             }}
                               disabled={!!selectedParcel}
                               className={`${selectedParcel && isMobile ? 'h-8 w-8' : 'h-9 w-9'} shrink-0 rounded-xl transition-colors relative`}
