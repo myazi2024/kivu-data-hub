@@ -1147,7 +1147,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                     </CardContent>
                   </Card>
 
-                  {!isFormBlocked && (
+                  {!isFormBlocked && (<>
                   <Card className="border-2 rounded-lg">
                     <CardContent className="p-3 space-y-3">
                       <div className="flex items-center gap-2 mb-2">
