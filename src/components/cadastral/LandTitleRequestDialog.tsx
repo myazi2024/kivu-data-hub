@@ -2678,6 +2678,46 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                             </div>
                           )}
                         </div>
+
+                        {/* Procuration document for mandataire */}
+                        {formData.requesterType === 'representative' && (
+                          <div className="space-y-1.5 animate-fade-in">
+                            <Label className="text-sm">Procuration (document d'autorisation) *</Label>
+                            {!procurationFile ? (
+                              <Input
+                                type="file"
+                                accept=".pdf,.jpg,.jpeg,.png,.webp"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    if (file.size > 10 * 1024 * 1024) {
+                                      toast({ title: "Fichier trop volumineux", description: "La taille maximale est de 10 MB", variant: "destructive" });
+                                      return;
+                                    }
+                                    setProcurationFile(file);
+                                  }
+                                }}
+                                className="h-9 text-sm rounded-lg border"
+                              />
+                            ) : (
+                              <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+                                <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+                                <span className="flex-1 truncate text-sm">{procurationFile.name}</span>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => setProcurationFile(null)}
+                                  className="h-7 w-7 rounded-lg hover:bg-destructive/10"
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            )}
+                            <p className="text-[10px] text-muted-foreground">
+                              Document attestant que vous êtes autorisé à agir au nom du propriétaire.
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
