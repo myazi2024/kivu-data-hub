@@ -1172,6 +1172,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                               gpsCoordinates: parcelLocData?.gps_coordinates && Array.isArray(parcelLocData.gps_coordinates) ? parcelLocData.gps_coordinates : (contribData as any)?.gps_coordinates && Array.isArray((contribData as any).gps_coordinates) ? (contribData as any).gps_coordinates : [],
                                             };
                                             setParcelLocationData(locationInfo);
+                                            // Also extract areaSqm and circonscriptionFonciere
+                                            const fetchedAreaSqm = parcelLocData?.area_sqm || (contribData as any)?.area_sqm || null;
+                                            const fetchedCirconscription = (parcelLocData as any)?.circonscription_fonciere || (contribData as any)?.circonscription_fonciere || '';
                                             setFormData(prev => ({
                                               ...prev,
                                               sectionType: sType as 'urbaine' | 'rurale',
@@ -1184,6 +1187,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                               collectivite: locationInfo.collectivite,
                                               groupement: locationInfo.groupement,
                                               village: locationInfo.village,
+                                              areaSqm: fetchedAreaSqm ?? prev.areaSqm,
+                                              circonscriptionFonciere: fetchedCirconscription || prev.circonscriptionFonciere,
                                             }));
                                           }
 
