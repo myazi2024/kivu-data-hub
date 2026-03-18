@@ -930,14 +930,87 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               <div className="absolute z-[1300] w-full mt-1 bg-background border rounded-xl shadow-lg max-h-[180px] overflow-y-auto">
                                 {parcelSearchResults.length > 0 ? (
                                   parcelSearchResults.map((parcel) => (
-                                    <button
+                                     <button
                                       key={parcel.id}
                                       type="button"
-                                      onClick={() => {
+                                      onClick={async () => {
                                         setSelectedParcelNumber(parcel.parcel_number);
                                         setParcelNumberSearch(parcel.parcel_number);
                                         setParcelValidated(true);
                                         setShowParcelDropdown(false);
+                                        
+                                        // Fetch owner data from parcel/contributions
+                                        setLoadingOwnerData(true);
+                                        try {
+                                          // First try contributions for richer owner details
+                                          const { data: contribData } = await supabase
+                                            .from('cadastral_contributions')
+                                            .select('current_owners_details, current_owner_name, current_owner_legal_status')
+                                            .eq('parcel_number', parcel.parcel_number)
+                                            .eq('status', 'approved')
+                                            .order('created_at', { ascending: false })
+                                            .limit(1)
+                                            .maybeSingle();
+                                          
+                                          if (contribData?.current_owners_details) {
+                                            const details = Array.isArray(contribData.current_owners_details) 
+                                              ? contribData.current_owners_details 
+                                              : [];
+                                            const firstOwner = details[0] as any;
+                                            if (firstOwner) {
+                                              const ownerInfo = {
+                                                legalStatus: firstOwner.legalStatus || '',
+                                                gender: firstOwner.gender || '',
+                                                lastName: firstOwner.lastName || '',
+                                                firstName: firstOwner.firstName || '',
+                                                middleName: firstOwner.middleName || '',
+                                                phone: firstOwner.phone || '',
+                                                email: firstOwner.email || '',
+                                              };
+                                              setParcelOwnerData(ownerInfo);
+                                              // Auto-fill owner fields in form
+                                              setFormData(prev => ({
+                                                ...prev,
+                                                requesterType: 'representative' as const,
+                                                isOwnerSameAsRequester: false,
+                                                ownerLastName: ownerInfo.lastName,
+                                                ownerFirstName: ownerInfo.firstName,
+                                                ownerMiddleName: ownerInfo.middleName,
+                                                ownerLegalStatus: ownerInfo.legalStatus || 'Personne physique',
+                                                ownerGender: ownerInfo.gender,
+                                                ownerPhone: ownerInfo.phone,
+                                              }));
+                                            }
+                                          } else {
+                                            // Fallback to parcel table
+                                            const { data: parcelDetail } = await supabase
+                                              .from('cadastral_parcels')
+                                              .select('current_owner_name, current_owner_legal_status')
+                                              .eq('id', parcel.id)
+                                              .single();
+                                            if (parcelDetail) {
+                                              const nameParts = (parcelDetail.current_owner_name || '').split(/\s+/);
+                                              const ownerInfo = {
+                                                legalStatus: parcelDetail.current_owner_legal_status || 'Personne physique',
+                                                lastName: nameParts[0] || '',
+                                                firstName: nameParts.slice(1).join(' ') || '',
+                                              };
+                                              setParcelOwnerData(ownerInfo);
+                                              setFormData(prev => ({
+                                                ...prev,
+                                                requesterType: 'representative' as const,
+                                                isOwnerSameAsRequester: false,
+                                                ownerLastName: ownerInfo.lastName,
+                                                ownerFirstName: ownerInfo.firstName,
+                                                ownerLegalStatus: ownerInfo.legalStatus || 'Personne physique',
+                                              }));
+                                            }
+                                          }
+                                        } catch (err) {
+                                          console.error('Error fetching owner data:', err);
+                                        } finally {
+                                          setLoadingOwnerData(false);
+                                        }
                                       }}
                                       className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 flex items-center gap-2"
                                     >
