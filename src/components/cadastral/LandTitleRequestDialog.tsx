@@ -2156,13 +2156,127 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
                 {/* Tab: Valorisation */}
                 <TabsContent value="valorisation" className="space-y-4">
-                  {/* Type de construction */}
+                  {/* Renewal mode: auto-loaded construction data */}
+                  {requestType === 'renouvellement' && parcelConstructionData && !constructionChanged && (
+                    <Card className="border rounded-xl">
+                      <CardContent className="p-3 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-semibold flex items-center gap-2">
+                            <Home className="h-4 w-4 text-muted-foreground" />
+                            Mise en valeur enregistrée
+                          </h4>
+                          <Badge variant="outline" className="text-[10px]">Données de la parcelle</Badge>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">Type de construction</Label>
+                            <div className="h-11 flex items-center px-3 text-sm bg-muted/30 rounded-xl border-2 border-border/50">
+                              {parcelConstructionData.constructionType || '—'}
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">Nature</Label>
+                            <div className="h-11 flex items-center px-3 text-sm bg-muted/30 rounded-xl border-2 border-border/50">
+                              {parcelConstructionData.constructionNature || '—'}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          {parcelConstructionData.constructionType !== 'Terrain nu' && (
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">Matériaux</Label>
+                              <div className="h-11 flex items-center px-3 text-sm bg-muted/30 rounded-xl border-2 border-border/50">
+                                {parcelConstructionData.constructionMaterials || '—'}
+                              </div>
+                            </div>
+                          )}
+                          <div className={cn("space-y-1", parcelConstructionData.constructionType === 'Terrain nu' && "col-span-2")}>
+                            <Label className="text-xs text-muted-foreground">Usage déclaré</Label>
+                            <div className="h-11 flex items-center px-3 text-sm bg-muted/30 rounded-xl border-2 border-border/50">
+                              {parcelConstructionData.declaredUsage || '—'}
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Renewal mode: signal construction changes */}
+                  {requestType === 'renouvellement' && parcelConstructionData && (
+                    <Card className={cn(
+                      "border-2 border-dashed rounded-xl",
+                      constructionChanged ? "border-primary/50" : "border-border/50"
+                    )}>
+                      <CardContent className="p-3 space-y-3">
+                        <div className="flex items-start gap-3">
+                          <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                          <div className="space-y-2 flex-1">
+                            <p className="text-xs text-muted-foreground leading-relaxed">
+                              Vous avez effectué des travaux de construction ou de modification significative sur cette parcelle depuis l'obtention du titre ?
+                            </p>
+                            <div className="flex gap-2">
+                              <Button
+                                variant={constructionChanged ? "default" : "outline"}
+                                size="sm"
+                                className="text-xs h-8 rounded-lg"
+                                onClick={() => {
+                                  setConstructionChanged(true);
+                                  // Reset to allow manual editing
+                                  setConstructionType('');
+                                  setConstructionNature('');
+                                  setConstructionMaterials('');
+                                  setDeclaredUsage('');
+                                  setValorisationValidated(false);
+                                  setDeducedTitleType(null);
+                                }}
+                              >
+                                Oui, signaler des modifications
+                              </Button>
+                              {constructionChanged && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-xs h-8 rounded-lg"
+                                  onClick={() => {
+                                    setConstructionChanged(false);
+                                    // Restore auto-loaded data
+                                    if (parcelConstructionData.constructionType) setConstructionType(parcelConstructionData.constructionType);
+                                    if (parcelConstructionData.constructionNature) setConstructionNature(parcelConstructionData.constructionNature);
+                                    if (parcelConstructionData.declaredUsage) setDeclaredUsage(parcelConstructionData.declaredUsage);
+                                    setValorisationValidated(false);
+                                    setDeducedTitleType(null);
+                                  }}
+                                >
+                                  Annuler
+                                </Button>
+                              )}
+                            </div>
+
+                            {constructionChanged && (
+                              <Alert className="mt-2 border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20">
+                                <Info className="h-4 w-4 text-amber-600" />
+                                <AlertDescription className="text-xs text-amber-800 dark:text-amber-300">
+                                  <strong>Important :</strong> Si vous avez effectué des travaux avec une autorisation de bâtir, veuillez renseigner les nouvelles caractéristiques ci-dessous. 
+                                  Si les travaux ont été réalisés sans autorisation préalable, vous devrez demander une <strong>autorisation de régularisation</strong> via le service « Autorisation de bâtir » avant de renouveler votre titre.
+                                </AlertDescription>
+                              </Alert>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Construction form fields: shown for initial mode OR renewal with changes */}
+                  {(requestType !== 'renouvellement' || !parcelConstructionData || constructionChanged) && (
                   <Card className="border rounded-xl">
                     <CardContent className="p-3 space-y-3">
                       <div className="flex items-center justify-between">
                         <h4 className="text-sm font-semibold flex items-center gap-2">
                           <Home className="h-4 w-4 text-muted-foreground" />
-                          Mise en valeur
+                          {constructionChanged ? 'Nouvelles caractéristiques' : 'Mise en valeur'}
                           <SectionHelpPopover
                             title="Mise en valeur"
                             description="Décrivez comment la parcelle est mise en valeur : type de construction, nature, usage déclaré. Ces informations déterminent le type de titre foncier auquel vous avez droit."
@@ -2265,6 +2379,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       )}
                     </CardContent>
                   </Card>
+                  )}
 
                   {/* Éligibilité légale */}
                   {constructionType && constructionNature && declaredUsage && (
