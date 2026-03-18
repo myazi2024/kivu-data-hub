@@ -1710,8 +1710,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
                 {/* Tab: Location */}
                 <TabsContent value="location" className="space-y-4">
-                  {/* RENEWAL MODE WITH PARCEL LOCATION: Masked location display */}
-                  {isParcelLinkedMode && parcelValidated && parcelLocationData && requestType === 'renouvellement' ? (
+                  {/* PARCEL-LINKED MODE: Masked location display (renewal or initial with fiche) */}
+                  {isParcelLinkedMode && parcelValidated && parcelLocationData ? (
                     <>
                       <Card className="border-2 rounded-lg">
                         <CardContent className="p-3 space-y-3">
