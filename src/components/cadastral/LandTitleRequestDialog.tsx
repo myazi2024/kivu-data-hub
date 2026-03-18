@@ -238,6 +238,15 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   // Computed: is the form in "parcel-linked" mode (renewal OR initial with fiche parcellaire)
   const isParcelLinkedMode = requestType === 'renouvellement' || (requestType === 'initial' && hasFicheParcellaire === 'yes');
 
+  // Computed: is the request info step complete enough to unlock other tabs
+  const isRequestInfoComplete = (() => {
+    if (!requestType) return false;
+    if (requestType === 'renouvellement' && !parcelValidated) return false;
+    if (requestType === 'initial' && hasFicheParcellaire !== 'yes') return false;
+    if (requestType === 'initial' && hasFicheParcellaire === 'yes' && !parcelValidated) return false;
+    return true;
+  })();
+
   useEffect(() => {
     const timer = setTimeout(() => {
       if (parcelNumberSearch && isParcelLinkedMode) {
@@ -876,23 +885,23 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       <User className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Demandeur</span>
                     </TabsTrigger>
-                    <TabsTrigger value="location" className="text-xs gap-1.5">
+                    <TabsTrigger value="location" className="text-xs gap-1.5" disabled={!isRequestInfoComplete}>
                       <MapPin className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Lieu</span>
                     </TabsTrigger>
-                    <TabsTrigger value="valorisation" className="text-xs gap-1.5">
+                    <TabsTrigger value="valorisation" className="text-xs gap-1.5" disabled={!isRequestInfoComplete}>
                       <Home className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Mise en valeur</span>
                     </TabsTrigger>
-                    <TabsTrigger value="documents" className="text-xs gap-1.5">
+                    <TabsTrigger value="documents" className="text-xs gap-1.5" disabled={!isRequestInfoComplete}>
                       <FileText className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Documents</span>
                     </TabsTrigger>
-                    <TabsTrigger value="payment" className="text-xs gap-1.5">
+                    <TabsTrigger value="payment" className="text-xs gap-1.5" disabled={!isRequestInfoComplete}>
                       <CreditCard className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Frais</span>
                     </TabsTrigger>
-                    <TabsTrigger value="review" className="text-xs gap-1.5">
+                    <TabsTrigger value="review" className="text-xs gap-1.5" disabled={!isRequestInfoComplete}>
                       <ClipboardCheck className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Envoi</span>
                     </TabsTrigger>
