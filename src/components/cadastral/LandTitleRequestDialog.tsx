@@ -79,6 +79,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   
   // Request type state
   const [requestType, setRequestType] = useState<'initial' | 'renouvellement' | ''>('');
+  const [hasFicheParcellaire, setHasFicheParcellaire] = useState<'yes' | 'no' | ''>('');
   const [parcelNumberSearch, setParcelNumberSearch] = useState('');
   const [parcelSearchResults, setParcelSearchResults] = useState<Array<{ parcel_number: string; id: string }>>([]);
   const [selectedParcelNumber, setSelectedParcelNumber] = useState('');
@@ -233,26 +234,34 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     }
   }, []);
 
+  // Computed: is the form in "parcel-linked" mode (renewal OR initial with fiche parcellaire)
+  const isParcelLinkedMode = requestType === 'renouvellement' || (requestType === 'initial' && hasFicheParcellaire === 'yes');
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (parcelNumberSearch && requestType === 'renouvellement') {
+      if (parcelNumberSearch && isParcelLinkedMode) {
         searchParcels(parcelNumberSearch);
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [parcelNumberSearch, requestType, searchParcels]);
+  }, [parcelNumberSearch, isParcelLinkedMode, searchParcels]);
 
-  // Reset parcel validation when request type changes
+  // Reset parcel validation when request type or fiche parcellaire changes
   useEffect(() => {
     setParcelNumberSearch('');
     setSelectedParcelNumber('');
     setParcelValidated(false);
     setParcelSearchResults([]);
     setParcelOwnerData(null);
-    // Reset requesterType when switching away from renewal
-    if (requestType !== 'renouvellement') {
+    // Reset requesterType when not in parcel-linked mode
+    if (!isParcelLinkedMode) {
       setFormData(prev => ({ ...prev, requesterType: 'owner', isOwnerSameAsRequester: true }));
     }
+  }, [requestType, hasFicheParcellaire]);
+
+  // Reset hasFicheParcellaire when requestType changes
+  useEffect(() => {
+    setHasFicheParcellaire('');
   }, [requestType]);
 
   // Reset validation when construction data changes
@@ -487,11 +496,12 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     // Check request type
     if (!requestType) return false;
     if (requestType === 'renouvellement' && !parcelValidated) return false;
+    if (requestType === 'initial' && hasFicheParcellaire === 'yes' && !parcelValidated) return false;
     
     // Renewal mode with owner as requester: skip requester identity fields
-    const isRenewalAsOwner = requestType === 'renouvellement' && parcelValidated && parcelOwnerData && formData.requesterType === 'owner';
+    const isParcelAsOwner = isParcelLinkedMode && parcelValidated && parcelOwnerData && formData.requesterType === 'owner';
     
-    if (!isRenewalAsOwner) {
+    if (!isParcelAsOwner) {
       // Check requester info
       if (!formData.requesterLastName || !formData.requesterFirstName || !formData.requesterPhone) {
         return false;
@@ -510,8 +520,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     }
     
     // Check owner info if different (skip for renewal with auto-loaded owner data)
-    const isRenewalWithAutoOwner = requestType === 'renouvellement' && parcelValidated && parcelOwnerData;
-    if (!formData.isOwnerSameAsRequester && !isRenewalWithAutoOwner) {
+    const isParcelWithAutoOwner = isParcelLinkedMode && parcelValidated && parcelOwnerData;
+    if (!formData.isOwnerSameAsRequester && !isParcelWithAutoOwner) {
       if (!formData.ownerLastName || !formData.ownerFirstName) {
         return false;
       }
@@ -522,7 +532,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     }
     
     // Procuration required for renewal mandataire
-    if (isRenewalWithAutoOwner && formData.requesterType === 'representative' && !procurationFile) {
+    if (isParcelWithAutoOwner && formData.requesterType === 'representative' && !procurationFile) {
       return false;
     }
     
@@ -693,6 +703,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setShowDraftPrompt(false);
     // Reset request type & parcel
     setRequestType('');
+    setHasFicheParcellaire('');
     setParcelNumberSearch('');
     setSelectedParcelNumber('');
     setParcelValidated(false);
@@ -918,11 +929,32 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         </SelectContent>
                       </Select>
 
-                      {/* Parcel number search for renewal */}
-                      {requestType === 'renouvellement' && (
+                      {/* Radio buttons for initial: fiche parcellaire */}
+                      {requestType === 'initial' && (
+                        <div className="space-y-2 animate-fade-in">
+                          <Label className="text-sm">Avez-vous une fiche parcellaire ? *</Label>
+                          <RadioGroup
+                            value={hasFicheParcellaire}
+                            onValueChange={(value: string) => setHasFicheParcellaire(value as 'yes' | 'no')}
+                            className="flex gap-4"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="yes" id="fiche-yes" />
+                              <Label htmlFor="fiche-yes" className="text-sm cursor-pointer">J'ai une fiche parcellaire</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="no" id="fiche-no" />
+                              <Label htmlFor="fiche-no" className="text-sm cursor-pointer">Je n'ai pas de fiche parcellaire</Label>
+                            </div>
+                          </RadioGroup>
+                        </div>
+                      )}
+
+                      {/* Parcel number search for renewal OR initial with fiche parcellaire */}
+                      {isParcelLinkedMode && (
                         <div className="space-y-2 animate-fade-in">
                           <Label className="text-sm">
-                            Numéro de la parcelle (SU ou SR) *
+                            {requestType === 'initial' ? 'Numéro de la fiche parcellaire (SU ou SR) *' : 'Numéro de la parcelle (SU ou SR) *'}
                           </Label>
                           <div className="relative">
                             <div className="relative">
@@ -1064,7 +1096,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                     <p>
                                       {requestType === 'renouvellement'
                                         ? "Une demande de renouvellement d'un titre foncier doit concerner une parcelle déjà enregistrée dans notre base de données afin de faciliter un suivi rigoureux avec les services cadastraux."
-                                        : "Une demande de titre foncier définitif doit concerner une parcelle déjà enregistrée dans notre base de données afin de faciliter un suivi rigoureux avec les services cadastraux."}
+                                        : "Ce numéro de fiche parcellaire n'est pas trouvé dans notre base de données. Veuillez d'abord enregistrer votre parcelle via le formulaire CCC."}
                                     </p>
                                     <p>
                                       Nous vous invitons à commencer par ajouter cette parcelle au cadastre numérique, puis à revenir sur ce formulaire pour introduire votre demande.
@@ -1111,8 +1143,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         </Label>
                       </div>
 
-                      {/* RENEWAL MODE: Owner identified + role selection */}
-                      {requestType === 'renouvellement' && parcelValidated && parcelOwnerData && (
+                      {/* PARCEL-LINKED MODE: Owner identified + role selection */}
+                      {isParcelLinkedMode && parcelValidated && parcelOwnerData && (
                         <>
                           {/* Masked owner info */}
                           <div className="p-3 bg-muted/50 rounded-lg border border-border space-y-2 animate-fade-in">
@@ -1281,8 +1313,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         </div>
                       )}
 
-                      {/* NON-RENEWAL MODE: Standard requester fields */}
-                      {!(requestType === 'renouvellement' && parcelValidated && parcelOwnerData) && (
+                      {/* STANDARD MODE: Standard requester fields (no parcel linked or parcel not yet validated) */}
+                      {!(isParcelLinkedMode && parcelValidated && parcelOwnerData) && (
                         <>
                           <div className="space-y-2">
                             <Label className="text-sm">Vous êtes *</Label>
