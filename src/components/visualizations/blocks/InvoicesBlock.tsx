@@ -27,21 +27,7 @@ export const InvoicesBlock: React.FC<Props> = memo(({ data }) => {
   const byGeoZone = useMemo(() => countBy(filtered, 'geographical_zone'), [filtered]);
   const trend = useMemo(() => trendByMonth(filtered), [filtered]);
 
-  const revenueTrend = useMemo(() => {
-    const map = new Map<string, number>();
-    filtered.forEach(r => {
-      if (r.created_at && r.total_amount_usd > 0 && r.status === 'paid') {
-        const d = new Date(r.created_at);
-        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        map.set(key, (map.get(key) || 0) + r.total_amount_usd);
-      }
-    });
-    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([k, value]) => {
-      const [y, m] = k.split('-');
-      const name = new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('fr-FR', { year: '2-digit', month: 'short' });
-      return { name, value: Math.round(value) };
-    });
-  }, [filtered]);
+  const revenueTrend = useMemo(() => sumByMonth(filtered.filter(r => r.status === 'paid')), [filtered]);
 
   const stats = useMemo(() => {
     const paid = filtered.filter(r => r.status === 'paid');
