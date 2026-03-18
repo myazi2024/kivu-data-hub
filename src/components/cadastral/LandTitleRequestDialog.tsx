@@ -2150,6 +2150,39 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
                 {/* Tab: Valorisation */}
                 <TabsContent value="valorisation" className="space-y-4">
+                  {/* RENEWAL MODE: Auto-loaded valorisation data displayed as read-only */}
+                  {isParcelLinkedMode && parcelValidated && parcelValorisationData && requestType === 'renouvellement' && (
+                    <Card className="border-2 border-primary/20 rounded-xl bg-primary/5">
+                      <CardContent className="p-3 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Home className="h-4 w-4 text-primary" />
+                          <h4 className="text-sm font-semibold">Données de mise en valeur enregistrées</h4>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Ces informations sont extraites de la fiche parcellaire <strong>{selectedParcelNumber}</strong> disponible dans la base de données.
+                        </p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="p-2 rounded-lg bg-background border">
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Type de construction</p>
+                            <p className="text-sm font-medium">{parcelValorisationData.constructionType || '—'}</p>
+                          </div>
+                          <div className="p-2 rounded-lg bg-background border">
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Nature</p>
+                            <p className="text-sm font-medium">{parcelValorisationData.constructionNature || '—'}</p>
+                          </div>
+                          <div className="p-2 rounded-lg bg-background border">
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Matériaux</p>
+                            <p className="text-sm font-medium">{parcelValorisationData.constructionMaterials || '—'}</p>
+                          </div>
+                          <div className="p-2 rounded-lg bg-background border">
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Usage déclaré</p>
+                            <p className="text-sm font-medium">{parcelValorisationData.declaredUsage || '—'}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
                   {/* Type de construction */}
                   <Card className="border rounded-xl">
                     <CardContent className="p-3 space-y-3">
