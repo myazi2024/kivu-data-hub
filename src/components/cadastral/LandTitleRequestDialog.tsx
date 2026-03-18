@@ -98,6 +98,19 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     phone?: string;
     email?: string;
   } | null>(null);
+  // Location data loaded from parcel for renewal mode (masked display)
+  const [parcelLocationData, setParcelLocationData] = useState<{
+    province?: string;
+    sectionType?: string;
+    ville?: string;
+    commune?: string;
+    quartier?: string;
+    avenue?: string;
+    territoire?: string;
+    collectivite?: string;
+    groupement?: string;
+    village?: string;
+  } | null>(null);
   const [loadingOwnerData, setLoadingOwnerData] = useState(false);
   
   // Form data
