@@ -1195,13 +1195,14 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                           // Fetch valorisation data (construction info) from parcel/contribution
                                           const valoConstructionType = parcelLocData?.construction_type || contribData?.construction_type || '';
                                           const valoConstructionNature = parcelLocData?.construction_nature || contribData?.construction_nature || '';
+                                          const valoConstructionMaterials = contribData?.construction_nature ? (contribData as any)?.construction_materials || '' : '';
                                           const valoDeclaredUsage = parcelLocData?.declared_usage || contribData?.declared_usage || '';
                                           
                                           if (valoConstructionType || valoConstructionNature || valoDeclaredUsage) {
                                             const valoData = {
                                               constructionType: valoConstructionType,
                                               constructionNature: valoConstructionNature,
-                                              constructionMaterials: '', // no construction_materials column in DB
+                                              constructionMaterials: valoConstructionMaterials,
                                               declaredUsage: valoDeclaredUsage,
                                             };
                                             setParcelValorisationData(valoData);
