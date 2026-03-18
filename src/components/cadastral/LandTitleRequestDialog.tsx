@@ -470,7 +470,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const isFormValid = (): boolean => {
     // Check request type
     if (!requestType) return false;
-    if ((requestType === 'renouvellement' || requestType === 'definitif') && !parcelValidated) return false;
+    if (requestType === 'renouvellement' && !parcelValidated) return false;
     
     // Check requester info
     if (!formData.requesterLastName || !formData.requesterFirstName || !formData.requesterPhone) {
