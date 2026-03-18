@@ -903,7 +903,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                 Demande de titre foncier
               </DialogTitle>
               <DialogDescription className="text-sm text-muted-foreground">
-                Obtenez votre certificat d'enregistrement
+                {deducedTitleType ? `Titre déduit : ${deducedTitleType.label}` : requestType === 'renouvellement' ? 'Renouvellement de votre titre foncier' : 'Obtenez votre titre foncier'}
               </DialogDescription>
             </DialogHeader>
 
