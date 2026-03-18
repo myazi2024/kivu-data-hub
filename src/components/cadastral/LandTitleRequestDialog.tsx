@@ -1192,6 +1192,26 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                               village: locationInfo.village,
                                             }));
                                           }
+
+                                          // Fetch construction/valorisation data for renewal mode
+                                          {
+                                            const cType = parcelLocData?.construction_type || contribData?.construction_type || '';
+                                            const cNature = parcelLocData?.construction_nature || contribData?.construction_nature || '';
+                                            const cUsage = parcelLocData?.declared_usage || contribData?.declared_usage || '';
+                                            if (cType || cNature || cUsage) {
+                                              const constructionInfo = {
+                                                constructionType: cType,
+                                                constructionNature: cNature,
+                                                constructionMaterials: '',
+                                                declaredUsage: cUsage,
+                                              };
+                                              setParcelConstructionData(constructionInfo);
+                                              // Auto-fill construction fields
+                                              if (cType) setConstructionType(cType);
+                                              if (cNature) setConstructionNature(cNature);
+                                              if (cUsage) setDeclaredUsage(cUsage);
+                                            }
+                                          }
                                         } catch (err) {
                                           console.error('Error fetching owner data:', err);
                                         } finally {
