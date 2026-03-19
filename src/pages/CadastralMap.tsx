@@ -1166,9 +1166,9 @@ const CadastralMap = () => {
                 <div className="flex items-start gap-2">
                   <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-medium mb-0.5">Caractère non autorisé</p>
+                    <p className="font-medium mb-0.5">{searchBarConfig.error_message.title}</p>
                     <p className="text-destructive-foreground/90 text-[11px]">
-                      Caractères acceptés : 0-9, R, S, U, . et /.
+                      {searchBarConfig.error_message.description}
                     </p>
                   </div>
                 </div>
