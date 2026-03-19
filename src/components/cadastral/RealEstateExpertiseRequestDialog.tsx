@@ -1118,7 +1118,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                   </Select>
                 </div>
               </CardContent>
-            </Card>
+            </Card>}
 
             {/* Appartement / Immeuble - conditionnel */}
             {isApartmentOrBuilding && (
