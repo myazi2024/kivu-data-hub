@@ -738,7 +738,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   };
 
   const handleCertificateAccessPayment = async () => {
-    if (!user || !existingCertificate) return;
+    if (!user || !existingCertificate || processingCertPayment) return;
 
     if (certPaymentMethod === 'mobile_money') {
       if (!certPaymentProvider || !certPaymentPhone) {
