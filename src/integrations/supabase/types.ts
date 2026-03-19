@@ -460,7 +460,6 @@ export type Database = {
           building_permits: Json | null
           change_justification: string | null
           changed_fields: Json | null
-          circonscription_fonciere: string | null
           collectivite: string | null
           commune: string | null
           construction_materials: string | null
@@ -525,7 +524,6 @@ export type Database = {
           building_permits?: Json | null
           change_justification?: string | null
           changed_fields?: Json | null
-          circonscription_fonciere?: string | null
           collectivite?: string | null
           commune?: string | null
           construction_materials?: string | null
@@ -590,7 +588,6 @@ export type Database = {
           building_permits?: Json | null
           change_justification?: string | null
           changed_fields?: Json | null
-          circonscription_fonciere?: string | null
           collectivite?: string | null
           commune?: string | null
           construction_materials?: string | null
@@ -1023,7 +1020,6 @@ export type Database = {
           area_hectares: number | null
           area_sqm: number
           avenue: string | null
-          circonscription_fonciere: string | null
           collectivite: string | null
           commune: string | null
           construction_materials: string | null
@@ -1066,7 +1062,6 @@ export type Database = {
           area_hectares?: number | null
           area_sqm?: number
           avenue?: string | null
-          circonscription_fonciere?: string | null
           collectivite?: string | null
           commune?: string | null
           construction_materials?: string | null
@@ -1109,7 +1104,6 @@ export type Database = {
           area_hectares?: number | null
           area_sqm?: number
           avenue?: string | null
-          circonscription_fonciere?: string | null
           collectivite?: string | null
           commune?: string | null
           construction_materials?: string | null
@@ -1760,7 +1754,6 @@ export type Database = {
           additional_documents: Json | null
           area_sqm: number | null
           avenue: string | null
-          circonscription_fonciere: string | null
           collectivite: string | null
           commune: string | null
           construction_materials: string | null
@@ -1822,7 +1815,6 @@ export type Database = {
           additional_documents?: Json | null
           area_sqm?: number | null
           avenue?: string | null
-          circonscription_fonciere?: string | null
           collectivite?: string | null
           commune?: string | null
           construction_materials?: string | null
@@ -1884,7 +1876,6 @@ export type Database = {
           additional_documents?: Json | null
           area_sqm?: number | null
           avenue?: string | null
-          circonscription_fonciere?: string | null
           collectivite?: string | null
           commune?: string | null
           construction_materials?: string | null
@@ -3938,7 +3929,6 @@ export type Database = {
           avenue: string
           calculated_area_hectares: number
           calculated_surface_sqm: number
-          circonscription_fonciere: string
           collectivite: string
           commune: string
           created_at: string

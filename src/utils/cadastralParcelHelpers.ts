@@ -99,7 +99,7 @@ export async function createParcelFromContribution(contribution: any) {
     collectivite: contribution.collectivite,
     groupement: contribution.groupement,
     village: contribution.village,
-    circonscription_fonciere: contribution.circonscription_fonciere,
+    
     gps_coordinates: contribution.gps_coordinates,
     latitude: contribution.gps_coordinates?.[0]?.lat,
     longitude: contribution.gps_coordinates?.[0]?.lng,

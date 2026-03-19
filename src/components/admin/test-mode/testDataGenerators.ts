@@ -44,11 +44,11 @@ export interface GeneratedIds {
 }
 
 const PROVINCES = [
-  { province: 'Kinshasa', ville: 'Kinshasa', commune: 'Gombe', quartier: 'Socimat', avenue: 'Av. du Commerce', circonscription_fonciere: 'Kinshasa-Ouest' },
-  { province: 'Nord-Kivu', ville: 'Goma', commune: 'Goma', quartier: 'Himbi', avenue: 'Av. du Rond-Point', circonscription_fonciere: 'Goma' },
-  { province: 'Sud-Kivu', ville: 'Bukavu', commune: 'Ibanda', quartier: 'Ndendere', avenue: 'Av. Patrice Lumumba', circonscription_fonciere: 'Bukavu' },
-  { province: 'Haut-Katanga', ville: 'Lubumbashi', commune: 'Lubumbashi', quartier: 'Centre-ville', avenue: 'Av. Mobutu', circonscription_fonciere: 'Lubumbashi' },
-  { province: 'Kongo-Central', ville: 'Matadi', commune: 'Matadi', quartier: 'Ville-Basse', avenue: 'Av. du Port', circonscription_fonciere: 'Matadi' },
+  { province: 'Kinshasa', ville: 'Kinshasa', commune: 'Gombe', quartier: 'Socimat', avenue: 'Av. du Commerce' },
+  { province: 'Nord-Kivu', ville: 'Goma', commune: 'Goma', quartier: 'Himbi', avenue: 'Av. du Rond-Point' },
+  { province: 'Sud-Kivu', ville: 'Bukavu', commune: 'Ibanda', quartier: 'Ndendere', avenue: 'Av. Patrice Lumumba' },
+  { province: 'Haut-Katanga', ville: 'Lubumbashi', commune: 'Lubumbashi', quartier: 'Centre-ville', avenue: 'Av. Mobutu' },
+  { province: 'Kongo-Central', ville: 'Matadi', commune: 'Matadi', quartier: 'Ville-Basse', avenue: 'Av. du Port' },
 ];
 
 /** Step 0b: Generate cadastral parcels (required by FK joins) */
@@ -71,7 +71,6 @@ export const generateParcels = async (parcelNumbers: string[]) => {
     commune: PROVINCES[i].commune,
     quartier: PROVINCES[i].quartier,
     avenue: PROVINCES[i].avenue,
-    circonscription_fonciere: PROVINCES[i].circonscription_fonciere,
     declared_usage: ['Résidentiel', 'Commercial', 'Agricole', 'Mixte', 'Industriel'][i],
     construction_type: ['Résidentielle', 'Commerciale', 'Terrain nu', 'Résidentielle', 'Industrielle'][i],
     construction_nature: ['Durable', 'Durable', null, 'Semi-durable', 'Durable'][i] as string | null,
@@ -116,7 +115,7 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
     avenue: PROVINCES[i].avenue,
     territoire: i === 1 ? 'Nyiragongo' : null,
     village: i === 4 ? 'Test Village' : null,
-    circonscription_fonciere: PROVINCES[i].circonscription_fonciere,
+    
     status: 'pending', // All start pending to avoid CCC trigger
     contribution_type: types[i],
     user_id: userId,
@@ -262,7 +261,7 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
       ville: 'Kinshasa',
       commune: 'Gombe',
       quartier: 'Socimat',
-      circonscription_fonciere: 'Kinshasa-Ouest',
+      
       declared_usage: 'habitation',
       area_sqm: 500,
       construction_nature: 'maison',
@@ -292,7 +291,7 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
       province: 'Sud-Kivu',
       ville: 'Bukavu',
       territoire: 'Kabare',
-      circonscription_fonciere: 'Bukavu',
+      
       declared_usage: 'agriculture',
       area_sqm: 2000,
       occupation_duration: '3_5_ans',
@@ -318,7 +317,7 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
       province: 'Haut-Katanga',
       ville: 'Lubumbashi',
       commune: 'Lubumbashi',
-      circonscription_fonciere: 'Lubumbashi',
+      
       declared_usage: 'commerce',
       area_sqm: 1200,
       construction_nature: 'immeuble',
