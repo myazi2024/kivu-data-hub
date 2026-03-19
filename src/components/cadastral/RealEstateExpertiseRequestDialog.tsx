@@ -1337,7 +1337,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                           <SelectTrigger className="h-8 text-xs">
                             <SelectValue placeholder="Fournisseur d'accès internet" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="z-[1200]">
                             <SelectItem value="canalbox">Canalbox</SelectItem>
                             <SelectItem value="starlink">Starlink</SelectItem>
                             <SelectItem value="vodacom">Vodacom</SelectItem>
