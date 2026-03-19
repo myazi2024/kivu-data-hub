@@ -26,6 +26,7 @@ export interface CadastralContributionData {
   constructionNature?: string;
   constructionMaterials?: string;
   declaredUsage?: string;
+  standing?: string;
   constructionYear?: number;
   
   // Autorisation de bâtir
@@ -220,6 +221,7 @@ export const useCadastralContribution = () => {
       construction_materials: data.constructionMaterials || null,
       construction_year: data.constructionYear || null,
       declared_usage: data.declaredUsage,
+      standing: data.standing || null,
       building_permits: buildingPermitsSnake,
       previous_permit_number: data.previousPermitNumber || data.permitRequest?.originalPermitNumber,
       province: data.province,

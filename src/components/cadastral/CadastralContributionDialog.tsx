@@ -393,9 +393,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   // État pour le switch Taxes/Hypothèques dans l'onglet obligations
   const [obligationType, setObligationType] = useState<'taxes' | 'mortgages'>('taxes');
 
-  // États pour gérer les options de dépendance Type de construction -> Nature -> Usage
+  // États pour gérer les options de dépendance Type de construction -> Nature -> Matériaux/Usage/Standing
   const [availableConstructionNatures, setAvailableConstructionNatures] = useState<string[]>([]);
   const [availableDeclaredUsages, setAvailableDeclaredUsages] = useState<string[]>([]);
+  const [availableConstructionMaterials, setAvailableConstructionMaterials] = useState<string[]>([]);
+  const [availableStandings, setAvailableStandings] = useState<string[]>([]);
 
   const [formData, setFormData] = useState<CadastralContributionData>({
     parcelNumber: parcelNumber,
@@ -1045,6 +1047,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       handleInputChange('constructionNature', undefined);
       setAvailableDeclaredUsages([]);
       handleInputChange('declaredUsage', undefined);
+      setAvailableConstructionMaterials([]);
+      handleInputChange('constructionMaterials', undefined);
+      setAvailableStandings([]);
+      handleInputChange('standing', undefined);
       return;
     }
 
@@ -1081,7 +1087,42 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     }
   }, [formData.constructionType, formData.constructionNature, getPicklistDependentOptions]);
 
-  // Synchroniser "usage prévu" avec "usage déclaré" quand on passe en mode "Demander un permis"
+  // Logique de dépendance: Nature -> Matériaux de construction
+  useEffect(() => {
+    if (!formData.constructionNature || formData.constructionNature === 'Non bâti') {
+      setAvailableConstructionMaterials([]);
+      handleInputChange('constructionMaterials', undefined);
+      return;
+    }
+
+    const materialsMap = getPicklistDependentOptions('picklist_construction_materials');
+    const materials = materialsMap[formData.constructionNature] || [];
+    
+    setAvailableConstructionMaterials(materials);
+    
+    if (formData.constructionMaterials && !materials.includes(formData.constructionMaterials)) {
+      handleInputChange('constructionMaterials', undefined);
+    }
+  }, [formData.constructionNature, getPicklistDependentOptions]);
+
+  // Logique de dépendance: Nature -> Standing / Niveau de finition
+  useEffect(() => {
+    if (!formData.constructionNature || formData.constructionNature === 'Non bâti') {
+      setAvailableStandings([]);
+      handleInputChange('standing', undefined);
+      return;
+    }
+
+    const standingMap = getPicklistDependentOptions('picklist_standing');
+    const standings = standingMap[formData.constructionNature] || [];
+    
+    setAvailableStandings(standings);
+    
+    if (formData.standing && !standings.includes(formData.standing)) {
+      handleInputChange('standing', undefined);
+    }
+  }, [formData.constructionNature, getPicklistDependentOptions]);
+
   useEffect(() => {
     if (permitMode === 'request' && formData.declaredUsage && !permitRequest.plannedUsage) {
       setPermitRequest(prev => ({ ...prev, plannedUsage: formData.declaredUsage || '' }));
@@ -2585,6 +2626,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     setAvailableAvenues([]);
     setAvailableConstructionNatures([]);
     setAvailableDeclaredUsages([]);
+    setAvailableConstructionMaterials([]);
+    setAvailableStandings([]);
     setRoadSides([]);
     
     // Reset permits
@@ -3604,19 +3647,24 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                 {/* Matériaux et Usage - côte-à-côte */}
                 <div className="grid grid-cols-2 gap-2">
-                  {/* Matériaux de construction - visible sauf pour Terrain nu */}
-                  {formData.constructionType && formData.constructionType !== 'Terrain nu' ? (
+                  {/* Matériaux de construction - dépend de la Nature */}
+                  {formData.constructionNature && formData.constructionNature !== 'Non bâti' ? (
                     <div className="space-y-1.5">
-                      <Label className="text-sm font-medium">Matériaux utilisés</Label>
+                      <Label className="text-sm font-medium">Matériaux</Label>
                       <Select 
                         value={formData.constructionMaterials || ''}
                         onValueChange={(value) => handleInputChange('constructionMaterials', value)}
+                        disabled={availableConstructionMaterials.length === 0}
                       >
                         <SelectTrigger className="h-10 rounded-xl text-sm">
-                          <SelectValue placeholder="Sélectionner" />
+                          <SelectValue placeholder={
+                            availableConstructionMaterials.length === 0
+                              ? "Nature d'abord"
+                              : "Sélectionner"
+                          } />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl">
-                          {getPicklistOptions('picklist_construction_materials').map(opt => (
+                          {availableConstructionMaterials.map(opt => (
                             <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                           ))}
                         </SelectContent>
@@ -3671,6 +3719,40 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     </Select>
                   </div>
                 </div>
+
+                {/* Standing - dépend de la Nature, masqué si Non bâti */}
+                {formData.constructionNature && formData.constructionNature !== 'Non bâti' && availableStandings.length > 0 && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1">
+                      <Label className="text-sm font-medium">Standing</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-4 w-4 p-0 rounded-full">
+                            <Info className="h-3 w-3 text-muted-foreground" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64 rounded-xl text-xs">
+                          <p className="text-muted-foreground">
+                            Niveau de finition de la construction : haut standing, moyen standing ou économique.
+                          </p>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <Select 
+                      value={formData.standing || ''}
+                      onValueChange={(value) => handleInputChange('standing', value)}
+                    >
+                      <SelectTrigger className="h-10 rounded-xl text-sm">
+                        <SelectValue placeholder="Sélectionner le standing" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        {availableStandings.map((s) => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 {/* Année de construction - visible sauf Terrain nu */}
                 {formData.constructionType && formData.constructionType !== 'Terrain nu' && (
