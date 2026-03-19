@@ -2601,10 +2601,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     // Reset obligations
     setHasMortgage(null);
     setTaxRecords([{
-      taxType: 'Taxe foncière',
+      taxType: 'Impôt foncier annuel',
       taxYear: '',
       taxAmount: '',
-      paymentStatus: 'Non payée',
+      paymentStatus: 'En attente',
       paymentDate: '',
       receiptFile: null
     }]);
