@@ -307,9 +307,58 @@ const AdminCCCContributions: React.FC = () => {
       let targetParcelId: string;
 
       if (isUpdateContribution) {
-        // Pour les contributions "update", utiliser la parcelle existante
+        // Pour les contributions "update", mettre à jour la parcelle existante avec les nouvelles données
         targetParcelId = updatedContribution.original_parcel_id;
-        console.log('Contribution de mise à jour - utilisation de la parcelle existante:', targetParcelId);
+        console.log('Contribution de mise à jour - mise à jour de la parcelle existante:', targetParcelId);
+
+        const { error: updateParcelError } = await supabase
+          .from('cadastral_parcels')
+          .update({
+            parcel_number: updatedContribution.parcel_number,
+            current_owner_name: updatedContribution.current_owner_name,
+            current_owner_legal_status: updatedContribution.current_owner_legal_status,
+            current_owner_since: updatedContribution.current_owner_since,
+            area_sqm: updatedContribution.area_sqm,
+            parcel_type: updatedContribution.parcel_type || undefined,
+            property_title_type: updatedContribution.property_title_type,
+            title_reference_number: updatedContribution.title_reference_number,
+            title_issue_date: updatedContribution.title_issue_date,
+            lease_type: updatedContribution.lease_type,
+            construction_type: updatedContribution.construction_type,
+            construction_nature: updatedContribution.construction_nature,
+            construction_materials: updatedContribution.construction_materials,
+            construction_year: updatedContribution.construction_year,
+            declared_usage: updatedContribution.declared_usage,
+            standing: updatedContribution.standing,
+            house_number: updatedContribution.house_number,
+            province: updatedContribution.province,
+            ville: updatedContribution.ville,
+            commune: updatedContribution.commune,
+            quartier: updatedContribution.quartier,
+            avenue: updatedContribution.avenue,
+            territoire: updatedContribution.territoire,
+            collectivite: updatedContribution.collectivite,
+            groupement: updatedContribution.groupement,
+            village: updatedContribution.village,
+            location: [
+              updatedContribution.province,
+              updatedContribution.ville,
+              updatedContribution.commune,
+              updatedContribution.quartier
+            ].filter(Boolean).join(', ') || undefined,
+            gps_coordinates: updatedContribution.gps_coordinates,
+            parcel_sides: updatedContribution.parcel_sides,
+            whatsapp_number: updatedContribution.whatsapp_number,
+            owner_document_url: updatedContribution.owner_document_url,
+            property_title_document_url: updatedContribution.property_title_document_url,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', targetParcelId);
+
+        if (updateParcelError) {
+          console.error('Erreur lors de la mise à jour de la parcelle:', updateParcelError);
+          toast.warning('Contribution approuvée mais erreur lors de la mise à jour de la parcelle');
+        }
       } else {
         // Pour les nouvelles contributions, créer la parcelle
         let latitude = null;
