@@ -101,7 +101,7 @@ const menuItems = [
       { icon: Database, label: 'Services Cadastraux', value: 'services', badge: null },
       { icon: Settings, label: 'Config Catalogue', value: 'catalog-config', badge: null },
       { icon: Settings, label: 'Infobulle Carte', value: 'cadastral-tooltip', badge: null },
-      { icon: Search, label: 'Config Recherche', value: 'search-config', badge: null },
+      { icon: Search, label: 'Config Barre Recherche', value: 'search-config', badge: null },
       { icon: FileText, label: 'Config Résultats', value: 'results-config', badge: null },
       { icon: MapPin, label: 'Zones Territoriales', value: 'zones', badge: null },
       { icon: Building2, label: 'Autorisation de Bâtir', value: 'permits', badge: 'permits' },
