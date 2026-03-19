@@ -53,8 +53,8 @@ const CancellationPaymentStep: React.FC<CancellationPaymentStepProps> = ({
           <SelectTrigger className="h-10 rounded-xl"><SelectValue placeholder="Sélectionnez un opérateur" /></SelectTrigger>
           <SelectContent className="rounded-xl bg-popover z-[1300]">
             <SelectItem value="mpesa">M-Pesa (Vodacom)</SelectItem>
-            <SelectItem value="airtel">Airtel Money</SelectItem>
-            <SelectItem value="orange">Orange Money</SelectItem>
+            <SelectItem value="airtel_money">Airtel Money</SelectItem>
+            <SelectItem value="orange_money">Orange Money</SelectItem>
           </SelectContent>
         </Select>
         <div className="space-y-1.5">

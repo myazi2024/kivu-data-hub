@@ -176,12 +176,12 @@ export function PermitPaymentDialog({
                             <Label htmlFor="mpesa" className="cursor-pointer">M-Pesa</Label>
                           </div>
                           <div className="flex items-center gap-2">
-                            <RadioGroupItem value="orange" id="orange" />
-                            <Label htmlFor="orange" className="cursor-pointer">Orange Money</Label>
+                            <RadioGroupItem value="orange_money" id="orange_money" />
+                            <Label htmlFor="orange_money" className="cursor-pointer">Orange Money</Label>
                           </div>
                           <div className="flex items-center gap-2">
-                            <RadioGroupItem value="airtel" id="airtel" />
-                            <Label htmlFor="airtel" className="cursor-pointer">Airtel Money</Label>
+                            <RadioGroupItem value="airtel_money" id="airtel_money" />
+                            <Label htmlFor="airtel_money" className="cursor-pointer">Airtel Money</Label>
                           </div>
                         </RadioGroup>
                       </div>
