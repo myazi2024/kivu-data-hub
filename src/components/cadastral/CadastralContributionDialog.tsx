@@ -537,6 +537,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (!open || !editingContributionId) return;
 
     const fetchContribution = async () => {
+      isLoadingFromDbRef.current = true; // Prevent area recalc during load
       try {
         const { data: contrib, error } = await supabase
           .from('cadastral_contributions')
