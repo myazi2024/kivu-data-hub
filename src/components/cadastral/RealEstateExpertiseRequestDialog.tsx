@@ -313,6 +313,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
       setCreatedRequest(request);
       setStep('confirmation');
+      clearDraft();
       toast.success('Paiement réussi ! Votre demande a été enregistrée.');
       onSuccess?.();
     } catch (error: any) {
