@@ -2608,6 +2608,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     setAvailableCollectivites([]);
     setAvailableQuartiers([]);
     setAvailableAvenues([]);
+    setAvailableConstructionSubtypes([]);
     setAvailableConstructionNatures([]);
     setAvailableDeclaredUsages([]);
     setRoadSides([]);
