@@ -291,7 +291,7 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
       province: 'Sud-Kivu',
       ville: 'Bukavu',
       territoire: 'Kabare',
-      circonscription_fonciere: 'Bukavu',
+      
       declared_usage: 'agriculture',
       area_sqm: 2000,
       occupation_duration: '3_5_ans',
