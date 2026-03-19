@@ -3563,12 +3563,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   </Popover>
                 </div>
 
-                {/* Type et Nature - côte-à-côte */}
-                <div className="grid grid-cols-2 gap-2">
-                  {/* Type de construction */}
+                {/* Catégorie, Sous-type et Nature - côte-à-côte */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {/* Catégorie de construction */}
                   <div className={`space-y-1.5 ${highlightRequiredFields && !formData.constructionType ? 'ring-2 ring-primary rounded-xl p-2 bg-primary/5 animate-pulse' : ''}`}>
                     <Label className="text-sm font-medium flex items-center gap-1">
-                      Type
+                      Catégorie
                       {highlightRequiredFields && !formData.constructionType && (
                         <span className="text-primary text-xs font-semibold">*</span>
                       )}
@@ -3577,6 +3577,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       value={formData.constructionType || ''}
                       onValueChange={(value) => {
                         handleInputChange('constructionType', value);
+                        handleInputChange('constructionSubtype', undefined);
                         // Reset materials if switching to Terrain nu
                         if (value === 'Terrain nu') {
                           handleInputChange('constructionMaterials', '');
@@ -3595,6 +3596,28 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {/* Sous-type de construction */}
+                  {formData.constructionType && formData.constructionType !== 'Terrain nu' && availableConstructionSubtypes.length > 0 && (
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-medium">Sous-type</Label>
+                      <Select 
+                        value={formData.constructionSubtype || ''}
+                        onValueChange={(value) => {
+                          handleInputChange('constructionSubtype', value);
+                        }}
+                      >
+                        <SelectTrigger className="h-10 rounded-xl text-sm">
+                          <SelectValue placeholder="Sélectionner" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          {availableConstructionSubtypes.map(opt => (
+                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
 
                   {/* Nature de construction */}
                   <div className={`space-y-1.5 ${highlightRequiredFields && !formData.constructionNature ? 'ring-2 ring-primary rounded-xl p-2 bg-primary/5 animate-pulse' : ''}`}>
@@ -3615,7 +3638,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       <SelectTrigger className="h-10 rounded-xl text-sm">
                         <SelectValue placeholder={
                           !formData.constructionType 
-                            ? "Type d'abord" 
+                            ? "Catégorie d'abord" 
                             : "Sélectionner"
                         } />
                       </SelectTrigger>
