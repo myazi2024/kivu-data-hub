@@ -2381,8 +2381,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     let generalDocFilled = 0;
     const generalDocTotal = 2;
     
-    if (titleDocFiles.length > 0) { earnedPoints += 90; generalDocFilled++; }
-    if (ownerDocFile) { earnedPoints += 90; generalDocFilled++; }
+    // FIX: In edit mode, also check existing URLs when no new file uploaded
+    if (titleDocFiles.length > 0 || formData.titleDocumentUrl) { earnedPoints += 90; generalDocFilled++; }
+    if (ownerDocFile || formData.ownerDocumentUrl) { earnedPoints += 90; generalDocFilled++; }
     
     tabProgress.general.filled = generalTextFilled + generalDocFilled;
     tabProgress.general.total = generalTextTotal + generalDocTotal;
