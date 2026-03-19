@@ -897,44 +897,41 @@ const CadastralMap = () => {
                     <Search className="h-full w-full" />
                   </div>
                   <Input
-                    placeholder={selectedParcel && isMobile ? "N°..." : "N° parcelle..."}
+                    placeholder={selectedParcel && isMobile ? searchBarConfig.placeholder.map_compact : searchBarConfig.placeholder.map_default}
                     value={searchQuery}
                     onChange={(e) => {
                       const inputValue = e.target.value;
                       const normalizedValue = inputValue.toUpperCase();
-                      // Vérifier si l'utilisateur essaie d'entrer des caractères non autorisés
-                      const hasInvalidChars = /[^0-9RSU.\/]/.test(normalizedValue);
+                      const invalidRegex = buildAllowedRegex();
+                      const hasInvalidChars = invalidRegex.test(normalizedValue);
                       
                       if (hasInvalidChars) {
-                        // Jouer un son discret avec Web Audio API
-                        try {
-                          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-                          const oscillator = audioContext.createOscillator();
-                          const gainNode = audioContext.createGain();
-                          
-                          oscillator.connect(gainNode);
-                          gainNode.connect(audioContext.destination);
-                          
-                          oscillator.frequency.value = 400; // Fréquence basse pour un son doux
-                          oscillator.type = 'sine';
-                          
-                          gainNode.gain.setValueAtTime(0.08, audioContext.currentTime);
-                          gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.15);
-                          
-                          oscillator.start(audioContext.currentTime);
-                          oscillator.stop(audioContext.currentTime + 0.15);
-                        } catch (e) {
-                          // Ignorer si Web Audio n'est pas disponible
+                        if (searchBarConfig.feedback.sound_enabled) {
+                          try {
+                            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+                            const oscillator = audioContext.createOscillator();
+                            const gainNode = audioContext.createGain();
+                            
+                            oscillator.connect(gainNode);
+                            gainNode.connect(audioContext.destination);
+                            
+                            oscillator.frequency.value = searchBarConfig.feedback.sound_frequency;
+                            oscillator.type = 'sine';
+                            
+                            gainNode.gain.setValueAtTime(0.08, audioContext.currentTime);
+                            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + searchBarConfig.feedback.sound_duration);
+                            
+                            oscillator.start(audioContext.currentTime);
+                            oscillator.stop(audioContext.currentTime + searchBarConfig.feedback.sound_duration);
+                          } catch (e) {}
                         }
                         
-                        // Déclencher l'animation shake
-                        setIsShaking(true);
-                        setTimeout(() => setIsShaking(false), 500);
+                        if (searchBarConfig.feedback.shake_enabled) {
+                          setIsShaking(true);
+                          setTimeout(() => setIsShaking(false), searchBarConfig.feedback.shake_duration);
+                        }
                         
-                        // Afficher la notification contextuelle
                         setShowInvalidCharNotification(true);
-                        
-                        // Masquer automatiquement après 3 secondes
                         if (invalidCharTimeoutRef.current) {
                           clearTimeout(invalidCharTimeoutRef.current);
                         }
@@ -943,7 +940,7 @@ const CadastralMap = () => {
                         }, 3000);
                       }
                       
-                      const sanitizedValue = normalizedValue.replace(/[^0-9RSU.\/]/g, '');
+                      const sanitizedValue = normalizedValue.replace(new RegExp(invalidRegex.source, 'g'), '');
                       setSearchQuery(sanitizedValue);
                       if (sanitizedValue) setHasUserInteracted(true);
                     }}
@@ -959,8 +956,7 @@ const CadastralMap = () => {
                     }}
                     type="text"
                     inputMode="text"
-                    pattern="[0-9RSUrsu./]*"
-                    className={`${selectedParcel && isMobile ? 'h-8 text-xs pl-8' : 'h-9 text-sm pl-9'} pr-8 rounded-xl border-0 bg-muted/50 focus-visible:ring-1 focus-visible:ring-primary/50 transition-all ${isShaking ? 'animate-shake border-destructive' : ''}`}
+                    className={`${selectedParcel && isMobile ? 'h-8 text-xs pl-8' : 'h-9 text-sm pl-9'} pr-8 rounded-${searchBarConfig.appearance.border_radius} border-0 bg-muted/50 focus-visible:ring-1 focus-visible:ring-${searchBarConfig.appearance.accent_color}/50 transition-all ${isShaking ? 'animate-shake border-destructive' : ''}`}
                   />
                   
                   {searchQuery && (
