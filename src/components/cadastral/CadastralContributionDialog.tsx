@@ -2122,7 +2122,94 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   };
 
 
-  // Calculer la valeur CCC estimée (aligné avec le backend calculate_ccc_value)
+  // ============================================
+  // getMissingFields: defined here after all state declarations
+  // ============================================
+  const getMissingFields = useCallback(() => {
+    const missing: Array<{ field: string; label: string; tab: string }> = [];
+    
+    // ===== ONGLET GÉNÉRAL (Infos) =====
+    if (!formData.propertyTitleType || formData.propertyTitleType.trim() === '') {
+      missing.push({ field: 'propertyTitleType', label: 'Type de titre de propriété', tab: 'general' });
+    }
+    if (formData.propertyTitleType === 'Autre' && (!customTitleName || customTitleName.trim() === '')) {
+      missing.push({ field: 'customTitleName', label: 'Nom du titre de propriété (Autre)', tab: 'general' });
+    }
+    
+    const hasValidOwnerCheck = currentOwners.some(owner => 
+      owner.lastName && owner.lastName.trim() !== '' && 
+      owner.firstName && owner.firstName.trim() !== ''
+    );
+    if (!hasValidOwnerCheck) {
+      missing.push({ field: 'currentOwner', label: 'Nom et prénom du propriétaire', tab: 'general' });
+    }
+    
+    if (formData.isTitleInCurrentOwnerName === false && formData.titleIssueDate) {
+      const firstOwner = currentOwners[0];
+      if (firstOwner?.since && new Date(firstOwner.since) < new Date(formData.titleIssueDate)) {
+        missing.push({ field: 'ownerSince', label: 'Date "Propriétaire depuis" doit être ≥ date de délivrance', tab: 'general' });
+      }
+    }
+    
+    if (formData.isTitleInCurrentOwnerName === true && formData.titleIssueDate) {
+      const firstPreviousOwner = previousOwners[0];
+      if (firstPreviousOwner?.startDate && new Date(firstPreviousOwner.startDate) > new Date(formData.titleIssueDate)) {
+        missing.push({ field: 'previousOwnerStartDate', label: `Date début Ancien #1 doit être ≤ date de ${formData.leaseType === 'renewal' ? 'renouvellement' : 'délivrance'}`, tab: 'history' });
+      }
+    }
+    
+    // ===== ONGLET LOCALISATION =====
+    if (!formData.province || formData.province.trim() === '') {
+      missing.push({ field: 'province', label: 'Province', tab: 'location' });
+    }
+    if (!formData.areaSqm || Number(formData.areaSqm) <= 0) {
+      missing.push({ field: 'areaSqm', label: 'Superficie (m²)', tab: 'location' });
+    }
+    const isSectionTypeEmpty = !sectionType || (sectionType !== 'urbaine' && sectionType !== 'rurale');
+    if (isSectionTypeEmpty) {
+      missing.push({ field: 'sectionType', label: 'Type de section (Urbaine/Rurale)', tab: 'location' });
+    }
+    if (sectionType === 'urbaine') {
+      if (!formData.ville || formData.ville.trim() === '') missing.push({ field: 'ville', label: 'Ville', tab: 'location' });
+      if (!formData.commune || formData.commune.trim() === '') missing.push({ field: 'commune', label: 'Commune', tab: 'location' });
+      if (!formData.quartier || formData.quartier.trim() === '') missing.push({ field: 'quartier', label: 'Quartier', tab: 'location' });
+      if (!formData.avenue || formData.avenue.trim() === '') missing.push({ field: 'avenue', label: 'Avenue', tab: 'location' });
+    } else if (sectionType === 'rurale') {
+      if (!formData.territoire || formData.territoire.trim() === '') missing.push({ field: 'territoire', label: 'Territoire', tab: 'location' });
+      if (!formData.collectivite || formData.collectivite.trim() === '') missing.push({ field: 'collectivite', label: 'Collectivité', tab: 'location' });
+    }
+    
+    // ===== VALIDATION DE L'AUTORISATION DE BÂTIR =====
+    const isTerrainNu = formData.constructionType === 'Terrain nu';
+    if (!isTerrainNu && permitMode === 'existing') {
+      const hasValidExistingPermit = buildingPermits.some(permit => 
+        permit.permitNumber && permit.permitNumber.trim() !== '' &&
+        permit.issuingService && permit.issuingService.trim() !== '' &&
+        permit.issueDate && permit.issueDate.trim() !== ''
+      );
+      if (!hasValidExistingPermit) {
+        missing.push({ field: 'buildingPermit', label: 'Informations du permis existant', tab: 'general' });
+      }
+      if (formData.constructionYear) {
+        const invalidPermit = buildingPermits.find(permit => {
+          if (!permit.issueDate) return false;
+          const permitYear = new Date(permit.issueDate).getFullYear();
+          return permitYear > formData.constructionYear!;
+        });
+        if (invalidPermit) {
+          missing.push({ field: 'permitIssueDate', label: `Date de l'autorisation doit être ≤ année de construction (${formData.constructionYear})`, tab: 'general' });
+        }
+      }
+    }
+    
+    return missing;
+  }, [formData, customTitleName, currentOwners, previousOwners, sectionType, permitMode, buildingPermits]);
+
+  // Fonction pour vérifier si le formulaire est valide pour soumission
+  const isFormValidForSubmission = () => {
+    return getMissingFields().length === 0;
+  };
+
   const calculateCCCValue = useMemo(() => {
     let totalFields = 0;
     let filledFields = 0;
