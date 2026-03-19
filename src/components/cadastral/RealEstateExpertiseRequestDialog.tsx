@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealEstateExpertise } from '@/hooks/useRealEstateExpertise';
+import { usePaymentProviders } from '@/hooks/usePaymentProviders';
+import { useExpertiseDraft } from '@/hooks/useExpertiseDraft';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
