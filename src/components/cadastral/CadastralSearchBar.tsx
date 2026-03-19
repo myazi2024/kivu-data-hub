@@ -437,7 +437,7 @@ const CadastralSearchBar = () => {
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-3.5 w-3.5 text-accent shrink-0" />
                 <p className="text-xs font-medium text-accent-foreground/80">
-                  Caractères acceptés : A-Z, 0-9, / , - , _
+                  Caractères acceptés : A-Z, 0-9, . , / , - , _
                 </p>
               </div>
             </div>
