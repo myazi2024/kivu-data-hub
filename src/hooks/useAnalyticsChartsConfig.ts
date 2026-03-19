@@ -210,7 +210,7 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'parcels-titled', item_key: 'permit-service', item_type: 'chart', is_visible: true, display_order: 9, custom_title: 'Service émetteur', chart_type: 'bar-h' },
       { tab_key: 'parcels-titled', item_key: 'usage', item_type: 'chart', is_visible: true, display_order: 10, custom_title: 'Usage déclaré', chart_type: 'bar-h' },
       { tab_key: 'parcels-titled', item_key: 'lease-type', item_type: 'chart', is_visible: true, display_order: 11, custom_title: 'Type bail', chart_type: 'donut' },
-      { tab_key: 'parcels-titled', item_key: 'circonscription', item_type: 'chart', is_visible: true, display_order: 12, custom_title: 'Circonscription', chart_type: 'bar-h' },
+      
       { tab_key: 'parcels-titled', item_key: 'surface', item_type: 'chart', is_visible: true, display_order: 13, custom_title: 'Superficie', chart_type: 'bar-v' },
       { tab_key: 'parcels-titled', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 16, custom_title: 'Géographie' },
       { tab_key: 'parcels-titled', item_key: 'taxes', item_type: 'chart', is_visible: true, display_order: 14, custom_title: 'Taxes', chart_type: 'donut' },

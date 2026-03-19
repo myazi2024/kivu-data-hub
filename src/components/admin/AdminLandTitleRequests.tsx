@@ -598,10 +598,6 @@ const AdminLandTitleRequests: React.FC = () => {
                       <p className="text-xs text-muted-foreground">Superficie</p>
                       <p className="text-sm font-medium">{selectedRequest.area_sqm ? `${selectedRequest.area_sqm} m²` : '-'}</p>
                     </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Circonscription</p>
-                      <p className="text-sm font-medium">{(detailData || selectedRequest).circonscription_fonciere || '-'}</p>
-                    </div>
                   </div>
                 </TabsContent>
 

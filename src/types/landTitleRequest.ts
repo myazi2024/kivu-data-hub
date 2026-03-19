@@ -17,7 +17,7 @@ export interface LandTitleRequestRow {
   collectivite: string | null;
   groupement: string | null;
   village: string | null;
-  circonscription_fonciere: string | null;
+  
   area_sqm: number | null;
   gps_coordinates: any;
   parcel_sides: any;

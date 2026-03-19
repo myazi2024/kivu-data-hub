@@ -1065,10 +1065,6 @@ const AdminCCCContributions: React.FC = () => {
                       <p className="text-sm">{selectedContribution.title_issue_date ? new Date(selectedContribution.title_issue_date).toLocaleDateString('fr-FR') : 'Non renseigné'}</p>
                     </div>
                     <div>
-                      <Label className="text-xs text-muted-foreground">Circonscription foncière</Label>
-                      <p className="text-sm">{selectedContribution.circonscription_fonciere || 'Non renseigné'}</p>
-                    </div>
-                    <div>
                       <Label className="text-xs text-muted-foreground">Type de parcelle</Label>
                       <p className="text-sm">{selectedContribution.parcel_type === 'SU' ? 'Section Urbaine (SU)' : selectedContribution.parcel_type === 'SR' ? 'Section Rurale (SR)' : 'Non renseigné'}</p>
                     </div>
