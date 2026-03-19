@@ -2177,6 +2177,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     } else if (sectionType === 'rurale') {
       if (!formData.territoire || formData.territoire.trim() === '') missing.push({ field: 'territoire', label: 'Territoire', tab: 'location' });
       if (!formData.collectivite || formData.collectivite.trim() === '') missing.push({ field: 'collectivite', label: 'Collectivité', tab: 'location' });
+      if (!formData.groupement || formData.groupement.trim() === '') missing.push({ field: 'groupement', label: 'Groupement', tab: 'location' });
+      if (!formData.village || formData.village.trim() === '') missing.push({ field: 'village', label: 'Village', tab: 'location' });
     }
     
     // ===== VALIDATION DE L'AUTORISATION DE BÂTIR =====
