@@ -67,7 +67,7 @@ const AdminSearchBarConfig = () => {
   const handleSave = async () => {
     try {
       setSaving(true);
-      await upsertSearchConfig('search_bar_config', localConfig);
+      await upsertSearchConfig('search_bar_config', localConfig as unknown as Record<string, unknown>);
       await logAuditAction('SEARCH_BAR_CONFIG_UPDATED', 'cadastral_search_config');
       toast({ title: 'Succès', description: 'Configuration de la barre de recherche mise à jour' });
       setHasChanges(false);
