@@ -3530,7 +3530,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       <div className="space-y-2 text-xs">
                         <h4 className="font-semibold text-sm">Type de construction</h4>
                         <p className="text-muted-foreground">
-                          Catégorie de votre bien : Résidentielle, Commerciale, Industrielle, Agricole ou Terrain nu.
+                          Sélectionnez le type précis de votre bien : Villa, Appartement, Immeuble, Local commercial, Entrepôt, Agricole, Terrain nu, etc.
                         </p>
                       </div>
                     </PopoverContent>
