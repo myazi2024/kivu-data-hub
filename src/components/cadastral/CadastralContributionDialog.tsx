@@ -2301,13 +2301,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       filledFields += 1; // coordonnées partielles
     }
     
-    // SECTION 5: Historiques (3 champs)
-    totalFields += 3;
+    // SECTION 5: Historiques (2 champs - boundary_history excluded since no UI input)
+    // FIX: Aligned with SQL which counts 3 (ownership, boundary, tax) but boundary has no UI.
+    // We count only 2 here to avoid penalizing users for a field they can't fill.
+    totalFields += 2;
     const hasOwnershipHistory = previousOwners.some(o => o.name && o.startDate);
     if (hasOwnershipHistory) filledFields += 1;
-    
-    // boundaryHistory n'a pas d'UI de saisie - toujours 0 en front-end
-    // Le backend vérifie boundary_history dans la contribution
     
     const hasTaxHistory = taxRecords.some(t => t.taxAmount && t.taxYear);
     if (hasTaxHistory) filledFields += 1;
