@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Search, X, Loader2, AlertCircle, MapPin } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useCadastralSearch } from '@/hooks/useCadastralSearch';
 import { useCatalogConfig } from '@/hooks/useCatalogConfig';
@@ -33,7 +32,6 @@ const CadastralSearchBar = () => {
   const [showIntroDialog, setShowIntroDialog] = useState(false);
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
   const [isFocused, setIsFocused] = useState(false);
-  const [termsAccepted, setTermsAccepted] = useState(false);
   const [fromMap, setFromMap] = useState(false);
   const [searchSuggestions, setSearchSuggestions] = useState<ParcelSuggestion[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
@@ -43,12 +41,16 @@ const CadastralSearchBar = () => {
   const [showInvalidCharWarning, setShowInvalidCharWarning] = useState(false);
   const warningTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
+  // Ref pour suivre si le dialog a été fermé manuellement
+  const dialogClosedManuallyRef = useRef(false);
+  
   const {
     searchQuery,
     setSearchQuery,
     searchResult,
     loading,
     error,
+    searchParcel,
     clearSearch
   } = useCadastralSearch();
 
@@ -56,6 +58,7 @@ const CadastralSearchBar = () => {
   useEffect(() => {
     const handleOpenCatalog = () => {
       if (searchResult) {
+        dialogClosedManuallyRef.current = false;
         setShowResultsDialog(true);
       }
     };
@@ -79,7 +82,7 @@ const CadastralSearchBar = () => {
   const [displayedText, setDisplayedText] = useState('');
   const [showCursor, setShowCursor] = useState(true);
 
-  // Recherche prédictive
+  // Recherche prédictive — seule requête de suggestions (pas de double recherche)
   useEffect(() => {
     const fetchSuggestions = async () => {
       if (!searchQuery.trim() || searchQuery.length < 2) {
@@ -114,7 +117,7 @@ const CadastralSearchBar = () => {
     return () => clearTimeout(debounceTimer);
   }, [searchQuery]);
 
-  // Animation placeholder
+  // Animation placeholder — nettoyage robuste des timeouts/intervalles
   useEffect(() => {
     if (searchQuery || isFocused) {
       setDisplayedText('');
@@ -123,22 +126,34 @@ const CadastralSearchBar = () => {
     
     const currentText = animatedTexts[currentTextIndex];
     let charIndex = 0;
+    let isCleanedUp = false;
+    let eraseIntervalId: NodeJS.Timeout | null = null;
+    let pauseTimeoutId: NodeJS.Timeout | null = null;
+    let nextTextTimeoutId: NodeJS.Timeout | null = null;
     
     const typeInterval = setInterval(() => {
+      if (isCleanedUp) return;
       if (charIndex < currentText.length) {
         setDisplayedText(currentText.slice(0, charIndex + 1));
         charIndex++;
       } else {
         clearInterval(typeInterval);
-        setTimeout(() => {
-          const eraseInterval = setInterval(() => {
+        pauseTimeoutId = setTimeout(() => {
+          if (isCleanedUp) return;
+          eraseIntervalId = setInterval(() => {
+            if (isCleanedUp) {
+              if (eraseIntervalId) clearInterval(eraseIntervalId);
+              return;
+            }
             setDisplayedText(prev => {
               if (prev.length > 0) {
                 return prev.slice(0, -1);
               } else {
-                clearInterval(eraseInterval);
-                setTimeout(() => {
-                  setCurrentTextIndex((prev) => (prev + 1) % animatedTexts.length);
+                if (eraseIntervalId) clearInterval(eraseIntervalId);
+                nextTextTimeoutId = setTimeout(() => {
+                  if (!isCleanedUp) {
+                    setCurrentTextIndex((prev) => (prev + 1) % animatedTexts.length);
+                  }
                 }, 1500);
                 return '';
               }
@@ -148,7 +163,13 @@ const CadastralSearchBar = () => {
       }
     }, 120);
 
-    return () => clearInterval(typeInterval);
+    return () => {
+      isCleanedUp = true;
+      clearInterval(typeInterval);
+      if (pauseTimeoutId) clearTimeout(pauseTimeoutId);
+      if (eraseIntervalId) clearInterval(eraseIntervalId);
+      if (nextTextTimeoutId) clearTimeout(nextTextTimeoutId);
+    };
   }, [currentTextIndex, searchQuery, isFocused, animatedTexts]);
 
   useEffect(() => {
@@ -180,28 +201,40 @@ const CadastralSearchBar = () => {
       return;
     }
     
+    // Réinitialiser le flag de fermeture manuelle quand l'utilisateur tape
+    dialogClosedManuallyRef.current = false;
     setSearchQuery(value);
     setShowInvalidCharWarning(false);
   };
 
+  // Lancer la recherche complète quand l'utilisateur sélectionne une suggestion
   const handleSelectSuggestion = (parcelNumber: string) => {
+    dialogClosedManuallyRef.current = false;
     setSearchQuery(parcelNumber);
     setSearchSuggestions([]);
+    searchParcel(parcelNumber);
   };
 
   const handleClearSearch = () => {
+    dialogClosedManuallyRef.current = false;
     clearSearch();
     setSearchSuggestions([]);
     setShowResultsDialog(false);
   };
 
-  const inputStatus = loading ? 'loading' : error ? 'error' : searchResult ? 'success' : 'default';
-
+  // Ouvrir le dialog quand un résultat arrive, sauf si fermé manuellement
   useEffect(() => {
-    if (searchResult && !showResultsDialog) {
+    if (searchResult && !dialogClosedManuallyRef.current) {
       setShowResultsDialog(true);
     }
-  }, [searchResult, showResultsDialog]);
+  }, [searchResult]);
+
+  const handleCloseResultsDialog = useCallback(() => {
+    dialogClosedManuallyRef.current = true;
+    setShowResultsDialog(false);
+  }, []);
+
+  const inputStatus = loading ? 'loading' : error ? 'error' : searchResult ? 'success' : 'default';
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -211,6 +244,14 @@ const CadastralSearchBar = () => {
       }
     };
   }, []);
+
+  // Soumettre la recherche avec Entrée
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      setSearchSuggestions([]);
+      searchParcel(searchQuery.trim());
+    }
+  };
 
   return (
     <>
@@ -268,6 +309,7 @@ const CadastralSearchBar = () => {
                 type="text"
                 value={searchQuery}
                 onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => {
                   setIsFocused(false);
@@ -390,7 +432,7 @@ const CadastralSearchBar = () => {
         <CadastralResultsDialog 
           result={searchResult} 
           isOpen={showResultsDialog} 
-          onClose={() => setShowResultsDialog(false)} 
+          onClose={handleCloseResultsDialog} 
           fromMap={fromMap}
         />
       )}
