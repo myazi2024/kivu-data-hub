@@ -2979,7 +2979,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
             <div className="space-y-2">
               <Select value={certPaymentProvider} onValueChange={setCertPaymentProvider}>
                 <SelectTrigger className="h-9 rounded-xl text-sm"><SelectValue placeholder="Opérateur" /></SelectTrigger>
-                <SelectContent>
+                 <SelectContent className="z-[1200]">
                   <SelectItem value="airtel_money">Airtel Money</SelectItem>
                   <SelectItem value="orange_money">Orange Money</SelectItem>
                   <SelectItem value="m_pesa">M-Pesa</SelectItem>
