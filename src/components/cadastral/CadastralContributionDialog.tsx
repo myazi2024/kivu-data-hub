@@ -890,8 +890,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       }
       
       // Formule de Brahmagupta (approximation quadrilatère cyclique)
-      // Ordre cyclique correct: Nord(0), Est(2), Sud(1), Ouest(3) = côtés adjacents
+      // Ordre cyclique: Nord(0), Est(2), Sud(1), Ouest(3) → adjacents: a=Nord, b=Est, c=Sud, d=Ouest
       const a = lengths[0], b = lengths[2], c = lengths[1], d = lengths[3];
+      // Vérification d'inégalité: chaque côté doit être < somme des 3 autres
+      const total = a + b + c + d;
+      if (a >= total - a || b >= total - b || c >= total - c || d >= total - d) return;
       const s = (a + b + c + d) / 2;
       const brahmVal = (s - a) * (s - b) * (s - c) * (s - d);
       if (brahmVal <= 0) return;
