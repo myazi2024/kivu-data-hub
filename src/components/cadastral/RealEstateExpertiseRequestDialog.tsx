@@ -149,7 +149,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
   // === GÉNÉRAL ===
   const [propertyDescription, setPropertyDescription] = useState('');
-  const [constructionType, setConstructionType] = useState('villa');
+  const [constructionType, setConstructionType] = useState('Résidentielle');
   const [constructionYear, setConstructionYear] = useState('');
   const [constructionQuality, setConstructionQuality] = useState('standard');
   const [numberOfFloors, setNumberOfFloors] = useState('1');
