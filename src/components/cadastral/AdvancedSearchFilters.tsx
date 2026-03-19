@@ -45,6 +45,8 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
   const [availableCommunes, setAvailableCommunes] = useState<string[]>([]);
   const [availableTerritoires, setAvailableTerritoires] = useState<string[]>([]);
   const [availableCollectivites, setAvailableCollectivites] = useState<string[]>([]);
+  const [availableQuartiers, setAvailableQuartiers] = useState<string[]>([]);
+  const [availableAvenues, setAvailableAvenues] = useState<string[]>([]);
 
   // Charger villes et territoires quand province change
   useEffect(() => {
