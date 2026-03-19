@@ -39,7 +39,7 @@ export interface LandTitleRequestData {
   collectivite?: string;
   groupement?: string;
   village?: string;
-  circonscriptionFonciere?: string;
+  
   
   // Données techniques
   areaSqm?: number;
