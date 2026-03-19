@@ -424,12 +424,21 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     }
   };
 
+  const MAX_PARCEL_DOCS = 10;
+  const MAX_CONSTRUCTION_IMAGES = 20;
+
   const handleParcelDocSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
     
     const newFiles = Array.from(files);
-    const validFiles = newFiles.filter(file => {
+    const remaining = MAX_PARCEL_DOCS - parcelDocuments.length;
+    if (remaining <= 0) {
+      toast.error(`Maximum ${MAX_PARCEL_DOCS} documents autorisés`);
+      if (parcelDocsInputRef.current) parcelDocsInputRef.current.value = '';
+      return;
+    }
+    const validFiles = newFiles.slice(0, remaining).filter(file => {
       const isValid = file.type === 'application/pdf' || file.type.startsWith('image/');
       const isValidSize = file.size <= 10 * 1024 * 1024;
       if (!isValid) toast.error(`${file.name}: Format non supporté (PDF ou image)`);
@@ -446,7 +455,13 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     if (!files) return;
     
     const newFiles = Array.from(files);
-    const validFiles = newFiles.filter(file => {
+    const remaining = MAX_CONSTRUCTION_IMAGES - constructionImages.length;
+    if (remaining <= 0) {
+      toast.error(`Maximum ${MAX_CONSTRUCTION_IMAGES} photos autorisées`);
+      if (constructionImagesInputRef.current) constructionImagesInputRef.current.value = '';
+      return;
+    }
+    const validFiles = newFiles.slice(0, remaining).filter(file => {
       const isValid = file.type.startsWith('image/');
       const isValidSize = file.size <= 10 * 1024 * 1024;
       if (!isValid) toast.error(`${file.name}: Seules les images sont acceptées`);
@@ -454,11 +469,11 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       return isValid && isValidSize;
     });
     
-   const newUrls = validFiles.map(f => URL.createObjectURL(f));
-     setConstructionImages(prev => [...prev, ...validFiles]);
-     setConstructionImageUrls(prev => [...prev, ...newUrls]);
-     if (constructionImagesInputRef.current) constructionImagesInputRef.current.value = '';
-   };
+    const newUrls = validFiles.map(f => URL.createObjectURL(f));
+    setConstructionImages(prev => [...prev, ...validFiles]);
+    setConstructionImageUrls(prev => [...prev, ...newUrls]);
+    if (constructionImagesInputRef.current) constructionImagesInputRef.current.value = '';
+  };
 
   const removeParcelDoc = (index: number) => {
     setParcelDocuments(prev => prev.filter((_, i) => i !== index));
@@ -634,7 +649,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   };
 
   const handlePayment = async () => {
-    if (!user || !formData) return;
+    if (!user || !formData || processingPayment) return;
 
     if (paymentMethod === 'mobile_money') {
       if (!paymentProvider || !paymentPhone) {
@@ -665,8 +680,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         throw new Error('Erreur lors de la création de la demande');
       }
 
-      // Create payment record
-      const feeItems = fees.map(fee => ({
+      const mandatoryFees = fees.filter(fee => fee.is_mandatory);
+      const feeItems = mandatoryFees.map(fee => ({
         fee_id: fee.id,
         fee_name: fee.fee_name,
         amount_usd: fee.amount_usd
@@ -738,7 +753,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   };
 
   const handleCertificateAccessPayment = async () => {
-    if (!user || !existingCertificate) return;
+    if (!user || !existingCertificate || processingCertPayment) return;
 
     if (certPaymentMethod === 'mobile_money') {
       if (!certPaymentProvider || !certPaymentPhone) {
@@ -1322,7 +1337,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                           <SelectTrigger className="h-8 text-xs">
                             <SelectValue placeholder="Fournisseur d'accès internet" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="z-[1200]">
                             <SelectItem value="canalbox">Canalbox</SelectItem>
                             <SelectItem value="starlink">Starlink</SelectItem>
                             <SelectItem value="vodacom">Vodacom</SelectItem>
@@ -2670,7 +2685,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       <div className="bg-muted/30 rounded-2xl p-2.5">
         <p className="text-[11px] font-semibold text-muted-foreground mb-1.5 px-0.5">Détails des frais</p>
         <div className="space-y-1">
-          {fees.map((fee) => (
+          {fees.filter(fee => fee.is_mandatory).map((fee) => (
             <div key={fee.id} className="flex justify-between items-center px-0.5">
               <span className="text-sm">{fee.fee_name}</span>
               <span className="font-semibold text-sm">${fee.amount_usd}</span>
