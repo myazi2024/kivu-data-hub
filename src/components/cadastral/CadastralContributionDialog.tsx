@@ -100,118 +100,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [activeTab, setActiveTab] = useState('general');
   const [customTitleName, setCustomTitleName] = useState('');
   
-  // Fonction pour obtenir les champs manquants avec détails pour la navigation
-  const getMissingFields = () => {
-    const missing: Array<{ field: string; label: string; tab: string }> = [];
-    
-    // ===== ONGLET GÉNÉRAL (Infos) =====
-    // Vérifier Type de titre de propriété (obligatoire)
-    if (!formData.propertyTitleType || formData.propertyTitleType.trim() === '') {
-      missing.push({ field: 'propertyTitleType', label: 'Type de titre de propriété', tab: 'general' });
-    }
-    // Si "Autre" est sélectionné, le nom personnalisé est obligatoire
-    if (formData.propertyTitleType === 'Autre' && (!customTitleName || customTitleName.trim() === '')) {
-      missing.push({ field: 'customTitleName', label: 'Nom du titre de propriété (Autre)', tab: 'general' });
-    }
-    
-    // Vérifier qu'au moins un propriétaire actuel a lastName et firstName (obligatoire)
-    const hasValidOwner = currentOwners.some(owner => 
-      owner.lastName && owner.lastName.trim() !== '' && 
-      owner.firstName && owner.firstName.trim() !== ''
-    );
-    if (!hasValidOwner) {
-      missing.push({ field: 'currentOwner', label: 'Nom et prénom du propriétaire', tab: 'general' });
-    }
-    
-    // Validation de la date "Propriétaire depuis" si le titre n'est pas au nom du propriétaire actuel
-    if (formData.isTitleInCurrentOwnerName === false && formData.titleIssueDate) {
-      const firstOwner = currentOwners[0];
-      if (firstOwner?.since && new Date(firstOwner.since) < new Date(formData.titleIssueDate)) {
-        missing.push({ field: 'ownerSince', label: 'Date "Propriétaire depuis" doit être ≥ date de délivrance', tab: 'general' });
-      }
-    }
-    
-    // Validation: Ancien #1 "Date début" ≤ date délivrance/renouvellement si titre au nom du propriétaire actuel
-    if (formData.isTitleInCurrentOwnerName === true && formData.titleIssueDate) {
-      const firstPreviousOwner = previousOwners[0];
-      if (firstPreviousOwner?.startDate && new Date(firstPreviousOwner.startDate) > new Date(formData.titleIssueDate)) {
-        missing.push({ field: 'previousOwnerStartDate', label: `Date début Ancien #1 doit être ≤ date de ${formData.leaseType === 'renewal' ? 'renouvellement' : 'délivrance'}`, tab: 'history' });
-      }
-    }
-    
-    // ===== ONGLET LOCALISATION =====
-    // Province toujours obligatoire
-    if (!formData.province || formData.province.trim() === '') {
-      missing.push({ field: 'province', label: 'Province', tab: 'location' });
-    }
-    
-    // Superficie obligatoire
-    if (!formData.areaSqm || Number(formData.areaSqm) <= 0) {
-      missing.push({ field: 'areaSqm', label: 'Superficie (m²)', tab: 'location' });
-    }
-    
-    // Type de section obligatoire - vérifier si vide ou non défini
-    const isSectionTypeEmpty = !sectionType || (sectionType !== 'urbaine' && sectionType !== 'rurale');
-    if (isSectionTypeEmpty) {
-      missing.push({ field: 'sectionType', label: 'Type de section (Urbaine/Rurale)', tab: 'location' });
-    }
-    
-    // Champs conditionnels selon le type de section
-    if (sectionType === 'urbaine') {
-      if (!formData.ville || formData.ville.trim() === '') missing.push({ field: 'ville', label: 'Ville', tab: 'location' });
-      if (!formData.commune || formData.commune.trim() === '') missing.push({ field: 'commune', label: 'Commune', tab: 'location' });
-      if (!formData.quartier || formData.quartier.trim() === '') missing.push({ field: 'quartier', label: 'Quartier', tab: 'location' });
-      if (!formData.avenue || formData.avenue.trim() === '') missing.push({ field: 'avenue', label: 'Avenue', tab: 'location' });
-    } else if (sectionType === 'rurale') {
-      if (!formData.territoire || formData.territoire.trim() === '') missing.push({ field: 'territoire', label: 'Territoire', tab: 'location' });
-      if (!formData.collectivite || formData.collectivite.trim() === '') missing.push({ field: 'collectivite', label: 'Collectivité', tab: 'location' });
-    }
-    
-    // ===== VALIDATION DE L'AUTORISATION DE BÂTIR =====
-    // LOGIQUE DE DÉPENDANCE:
-    // 1. Si constructionType === "Terrain nu" → Pas de validation permis (terrain nu = valide sans permis)
-    // 2. Si constructionType !== "Terrain nu" ET permitMode === "request" (Pas de permis) → Valide, "Pas de permis" est une donnée valide
-    // 3. Si constructionType !== "Terrain nu" ET permitMode === "existing" (J'ai un permis) → Valider les données du permis existant
-    
-    const isTerrainNu = formData.constructionType === 'Terrain nu';
-    const hasNoPermitSelected = permitMode === 'request'; // "Pas de permis" button = permitMode 'request' 
-    
-    // Validation uniquement si: pas terrain nu ET l'utilisateur a dit "J'ai un permis"
-    if (!isTerrainNu && permitMode === 'existing') {
-      // Vérifier que les données du permis existant sont renseignées
-      const hasValidExistingPermit = buildingPermits.some(permit => 
-        permit.permitNumber && permit.permitNumber.trim() !== '' &&
-        permit.issuingService && permit.issuingService.trim() !== '' &&
-        permit.issueDate && permit.issueDate.trim() !== ''
-      );
-      
-      if (!hasValidExistingPermit) {
-        missing.push({ field: 'buildingPermit', label: 'Informations du permis existant', tab: 'general' });
-      }
-
-      // Validation: année de délivrance du permis ≤ année de construction
-      if (formData.constructionYear) {
-        const invalidPermit = buildingPermits.find(permit => {
-          if (!permit.issueDate) return false;
-          const permitYear = new Date(permit.issueDate).getFullYear();
-          return permitYear > formData.constructionYear!;
-        });
-        if (invalidPermit) {
-          missing.push({ field: 'permitIssueDate', label: `Date de l'autorisation doit être ≤ année de construction (${formData.constructionYear})`, tab: 'general' });
-        }
-      }
-    }
-    
-    // NOTE: Si "Pas de permis" (permitMode === 'request') est sélectionné,
-    // aucune validation n'est requise - c'est une donnée valide en soi
-    
-    return missing;
-  };
-
-  // Fonction pour vérifier si le formulaire est valide pour soumission
-  const isFormValidForSubmission = () => {
-    return getMissingFields().length === 0;
-  };
+  // getMissingFields is defined after all state declarations (see below ~line 2230)
+  // getMissingFields and isFormValidForSubmission are defined after all state declarations
   
   // Fonction pour changer d'onglet avec scroll vers le haut
   const handleTabChange = (tab: string) => {
@@ -337,7 +227,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     permitNumber: '',
     issuingService: '',
     issueDate: '',
-    validityMonths: '36',
+    validityMonths: '12',
     administrativeStatus: 'En attente',
     issuingServiceContact: '',
     attachmentFile: null
@@ -552,10 +442,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         }
 
         // FIX: Detect custom title type ("Autre") and restore customTitleName
-        const knownTitleTypes = ["Certificat d'enregistrement", "Contrat de location (Contrat d'occupation provisoire)", "Fiche parcellaire", "Autre"];
+        // Use PROPERTY_TITLE_TYPES constant instead of local hardcoded list
+        const knownTitleValues = PROPERTY_TITLE_TYPES.map(t => t.value);
         const storedTitleType = contrib.property_title_type || undefined;
         let effectiveTitleType = storedTitleType;
-        if (storedTitleType && !knownTitleTypes.includes(storedTitleType)) {
+        if (storedTitleType && !knownTitleValues.includes(storedTitleType)) {
           // It's a custom title name stored as the effective type - restore as "Autre"
           effectiveTitleType = 'Autre';
           setCustomTitleName(storedTitleType);
@@ -676,7 +567,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             permitNumber: p.permit_number || '',
             issuingService: p.issuing_service || '',
             issueDate: p.issue_date || '',
-            validityMonths: String(p.validity_period_months || '36'),
+            validityMonths: String(p.validity_period_months || '12'),
             administrativeStatus: p.administrative_status || 'En attente',
             issuingServiceContact: p.issuing_service_contact || '',
             attachmentFile: null
@@ -2231,7 +2122,94 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   };
 
 
-  // Calculer la valeur CCC estimée (aligné avec le backend calculate_ccc_value)
+  // ============================================
+  // getMissingFields: defined here after all state declarations
+  // ============================================
+  const getMissingFields = useCallback(() => {
+    const missing: Array<{ field: string; label: string; tab: string }> = [];
+    
+    // ===== ONGLET GÉNÉRAL (Infos) =====
+    if (!formData.propertyTitleType || formData.propertyTitleType.trim() === '') {
+      missing.push({ field: 'propertyTitleType', label: 'Type de titre de propriété', tab: 'general' });
+    }
+    if (formData.propertyTitleType === 'Autre' && (!customTitleName || customTitleName.trim() === '')) {
+      missing.push({ field: 'customTitleName', label: 'Nom du titre de propriété (Autre)', tab: 'general' });
+    }
+    
+    const hasValidOwnerCheck = currentOwners.some(owner => 
+      owner.lastName && owner.lastName.trim() !== '' && 
+      owner.firstName && owner.firstName.trim() !== ''
+    );
+    if (!hasValidOwnerCheck) {
+      missing.push({ field: 'currentOwner', label: 'Nom et prénom du propriétaire', tab: 'general' });
+    }
+    
+    if (formData.isTitleInCurrentOwnerName === false && formData.titleIssueDate) {
+      const firstOwner = currentOwners[0];
+      if (firstOwner?.since && new Date(firstOwner.since) < new Date(formData.titleIssueDate)) {
+        missing.push({ field: 'ownerSince', label: 'Date "Propriétaire depuis" doit être ≥ date de délivrance', tab: 'general' });
+      }
+    }
+    
+    if (formData.isTitleInCurrentOwnerName === true && formData.titleIssueDate) {
+      const firstPreviousOwner = previousOwners[0];
+      if (firstPreviousOwner?.startDate && new Date(firstPreviousOwner.startDate) > new Date(formData.titleIssueDate)) {
+        missing.push({ field: 'previousOwnerStartDate', label: `Date début Ancien #1 doit être ≤ date de ${formData.leaseType === 'renewal' ? 'renouvellement' : 'délivrance'}`, tab: 'history' });
+      }
+    }
+    
+    // ===== ONGLET LOCALISATION =====
+    if (!formData.province || formData.province.trim() === '') {
+      missing.push({ field: 'province', label: 'Province', tab: 'location' });
+    }
+    if (!formData.areaSqm || Number(formData.areaSqm) <= 0) {
+      missing.push({ field: 'areaSqm', label: 'Superficie (m²)', tab: 'location' });
+    }
+    const isSectionTypeEmpty = !sectionType || (sectionType !== 'urbaine' && sectionType !== 'rurale');
+    if (isSectionTypeEmpty) {
+      missing.push({ field: 'sectionType', label: 'Type de section (Urbaine/Rurale)', tab: 'location' });
+    }
+    if (sectionType === 'urbaine') {
+      if (!formData.ville || formData.ville.trim() === '') missing.push({ field: 'ville', label: 'Ville', tab: 'location' });
+      if (!formData.commune || formData.commune.trim() === '') missing.push({ field: 'commune', label: 'Commune', tab: 'location' });
+      if (!formData.quartier || formData.quartier.trim() === '') missing.push({ field: 'quartier', label: 'Quartier', tab: 'location' });
+      if (!formData.avenue || formData.avenue.trim() === '') missing.push({ field: 'avenue', label: 'Avenue', tab: 'location' });
+    } else if (sectionType === 'rurale') {
+      if (!formData.territoire || formData.territoire.trim() === '') missing.push({ field: 'territoire', label: 'Territoire', tab: 'location' });
+      if (!formData.collectivite || formData.collectivite.trim() === '') missing.push({ field: 'collectivite', label: 'Collectivité', tab: 'location' });
+    }
+    
+    // ===== VALIDATION DE L'AUTORISATION DE BÂTIR =====
+    const isTerrainNu = formData.constructionType === 'Terrain nu';
+    if (!isTerrainNu && permitMode === 'existing') {
+      const hasValidExistingPermit = buildingPermits.some(permit => 
+        permit.permitNumber && permit.permitNumber.trim() !== '' &&
+        permit.issuingService && permit.issuingService.trim() !== '' &&
+        permit.issueDate && permit.issueDate.trim() !== ''
+      );
+      if (!hasValidExistingPermit) {
+        missing.push({ field: 'buildingPermit', label: 'Informations du permis existant', tab: 'general' });
+      }
+      if (formData.constructionYear) {
+        const invalidPermit = buildingPermits.find(permit => {
+          if (!permit.issueDate) return false;
+          const permitYear = new Date(permit.issueDate).getFullYear();
+          return permitYear > formData.constructionYear!;
+        });
+        if (invalidPermit) {
+          missing.push({ field: 'permitIssueDate', label: `Date de l'autorisation doit être ≤ année de construction (${formData.constructionYear})`, tab: 'general' });
+        }
+      }
+    }
+    
+    return missing;
+  }, [formData, customTitleName, currentOwners, previousOwners, sectionType, permitMode, buildingPermits]);
+
+  // Fonction pour vérifier si le formulaire est valide pour soumission
+  const isFormValidForSubmission = () => {
+    return getMissingFields().length === 0;
+  };
+
   const calculateCCCValue = useMemo(() => {
     let totalFields = 0;
     let filledFields = 0;
@@ -2348,190 +2326,75 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     };
   }, [formData, currentOwners, buildingPermits, permitRequest, gpsCoordinates, previousOwners, taxRecords, mortgageRecords, ownerDocFile, titleDocFiles, sectionType]);
 
-  // Calculer les détails de progression avec points et badges
-  const calculateProgressDetails = () => {
-    let earnedPoints = 0;
-    const totalPoints = 1000; // Base de 1000 points pour 100%
-    
+  // FIX: Unified scoring - calculateProgressDetails now derives tab-level progress
+  // from the same field counts as calculateCCCValue to avoid double scoring
+  const calculateProgressDetails = useMemo(() => {
     const tabProgress = {
-      general: { filled: 0, total: 0 },
+      general: { filled: 0, total: 8 },   // 6 text + 2 docs
       location: { filled: 0, total: 0 },
-      history: { filled: 0, total: 0 },
-      obligations: { filled: 0, total: 0 }
+      history: { filled: 0, total: 1 },    // ownership history
+      obligations: { filled: 0, total: 2 } // tax + mortgage
     };
 
-    // ============================================
-    // ONGLET INFORMATIONS GÉNÉRALES - 30% (300 points)
-    // 40% pour données textuelles (120 pts), 60% pour pièces (180 pts)
-    // ============================================
-    const generalTextPoints = 120;
-    const generalDocPoints = 180;
-    
-    // Données textuelles (120 points répartis sur 6 champs = 20 pts/champ)
-    let generalTextFilled = 0;
-    const generalTextTotal = 6;
-    
-    if (formData.propertyTitleType) { earnedPoints += 20; generalTextFilled++; }
-    if (formData.titleReferenceNumber) { earnedPoints += 20; generalTextFilled++; }
-    if (formData.constructionType) { earnedPoints += 20; generalTextFilled++; }
-    if (formData.constructionNature) { earnedPoints += 20; generalTextFilled++; }
-    if (formData.declaredUsage) { earnedPoints += 20; generalTextFilled++; }
-    const hasValidOwner = currentOwners.some(o => o.lastName && o.firstName);
-    if (hasValidOwner) { earnedPoints += 20; generalTextFilled++; }
-    
-    // Pièces justificatives (180 points : 90 pts titre + 90 pts proprio)
-    let generalDocFilled = 0;
-    const generalDocTotal = 2;
-    
-    // FIX: In edit mode, also check existing URLs when no new file uploaded
-    if (titleDocFiles.length > 0 || formData.titleDocumentUrl) { earnedPoints += 90; generalDocFilled++; }
-    if (ownerDocFile || formData.ownerDocumentUrl) { earnedPoints += 90; generalDocFilled++; }
-    
-    tabProgress.general.filled = generalTextFilled + generalDocFilled;
-    tabProgress.general.total = generalTextTotal + generalDocTotal;
+    // General tab
+    if (formData.propertyTitleType) tabProgress.general.filled++;
+    if (formData.titleReferenceNumber) tabProgress.general.filled++;
+    if (formData.constructionType) tabProgress.general.filled++;
+    if (formData.constructionNature) tabProgress.general.filled++;
+    if (formData.declaredUsage) tabProgress.general.filled++;
+    if (currentOwners.some(o => o.lastName && o.firstName)) tabProgress.general.filled++;
+    if (titleDocFiles.length > 0 || formData.titleDocumentUrl) tabProgress.general.filled++;
+    if (ownerDocFile || formData.ownerDocumentUrl) tabProgress.general.filled++;
 
-    // ============================================
-    // ONGLET LOCALISATION - 15% (150 points)
-    // 40% pour données textuelles (60 pts), 60% pour pièces (90 pts)
-    // ============================================
-    const locationTextPoints = 60;
-    const locationDocPoints = 90;
-    
-    // Données textuelles (60 points répartis sur 3-4 champs)
-    let locationTextFilled = 0;
-    let locationTextTotal = 0;
-    
-    if (formData.province) { earnedPoints += 15; locationTextFilled++; }
-    locationTextTotal++;
-    
+    // Location tab
+    let locTotal = 2; // province + areaSqm
+    let locFilled = 0;
+    if (formData.province) locFilled++;
+    if (formData.areaSqm) locFilled++;
     if (sectionType === 'urbaine') {
-      if (formData.ville) { earnedPoints += 15; locationTextFilled++; }
-      locationTextTotal++;
-      if (formData.commune) { earnedPoints += 15; locationTextFilled++; }
-      locationTextTotal++;
+      locTotal += 3;
+      if (formData.ville) locFilled++;
+      if (formData.commune) locFilled++;
+      if (formData.quartier) locFilled++;
     } else if (sectionType === 'rurale') {
-      if (formData.territoire) { earnedPoints += 15; locationTextFilled++; }
-      locationTextTotal++;
-      if (formData.collectivite) { earnedPoints += 15; locationTextFilled++; }
-      locationTextTotal++;
+      locTotal += 2;
+      if (formData.territoire) locFilled++;
+      if (formData.collectivite) locFilled++;
     }
-    
-    if (formData.areaSqm) { earnedPoints += 15; locationTextFilled++; }
-    locationTextTotal++;
-    
-    // Pièces justificatives (90 points pour les coordonnées GPS)
-    let locationDocFilled = 0;
-    const locationDocTotal = 1;
-    
-    const hasValidGPS = gpsCoordinates.some(coord => coord.lat && coord.lng);
-    if (hasValidGPS) { earnedPoints += 90; locationDocFilled++; }
-    
-    tabProgress.location.filled = locationTextFilled + locationDocFilled;
-    tabProgress.location.total = locationTextTotal + locationDocTotal;
+    locTotal += 1; // GPS
+    if (gpsCoordinates.some(g => g.lat && g.lng)) locFilled++;
+    tabProgress.location.total = locTotal;
+    tabProgress.location.filled = locFilled;
 
-    // ============================================
-    // HISTORIQUE DES PROPRIÉTAIRES - 15% (150 points)
-    // 40% pour données textuelles (60 pts), 60% pour pièces (90 pts)
-    // ============================================
-    
-    // Données textuelles (60 points pour jusqu'à 3 propriétaires = 20 pts/proprio)
-    let historyTextFilled = 0;
-    const historyTextTotal = 3;
-    
-    const validPreviousOwners = previousOwners.filter(o => 
-      o.name && o.startDate && o.endDate && o.legalStatus && o.mutationType
-    );
-    
-    const ownerCount = Math.min(validPreviousOwners.length, 3);
-    earnedPoints += ownerCount * 20;
-    historyTextFilled = ownerCount;
-    
-    // Pièces justificatives (90 points si au moins un document)
-    let historyDocFilled = 0;
-    const historyDocTotal = 1;
-    
-    if (validPreviousOwners.length > 0) { 
-      earnedPoints += 90; 
-      historyDocFilled++; 
-    }
-    
-    tabProgress.history.filled = historyTextFilled + historyDocFilled;
-    tabProgress.history.total = historyTextTotal + historyDocTotal;
+    // History tab
+    if (previousOwners.some(o => o.name && o.startDate)) tabProgress.history.filled++;
 
-    // ============================================
-    // TAXE FONCIÈRE - 15% (150 points)
-    // 40% pour données textuelles (60 pts), 60% pour pièces (90 pts)
-    // ============================================
-    
-    // Données textuelles (60 points pour jusqu'à 3 taxes = 20 pts/taxe)
-    let taxTextFilled = 0;
-    const taxTextTotal = 3;
-    
-    const validTaxes = taxRecords.filter(t => 
-      t.taxAmount && t.taxYear && t.taxType && t.paymentStatus
-    );
-    
-    const taxCount = Math.min(validTaxes.length, 3);
-    earnedPoints += taxCount * 20;
-    taxTextFilled = taxCount;
-    
-    // Pièces justificatives (90 points si au moins un reçu)
-    let taxDocFilled = 0;
-    const taxDocTotal = 1;
-    
-    const hasTaxReceipts = taxRecords.some(t => t.receiptFile !== null);
-    if (hasTaxReceipts) { earnedPoints += 90; taxDocFilled++; }
+    // Obligations tab
+    if (taxRecords.some(t => t.taxAmount && t.taxYear)) tabProgress.obligations.filled++;
+    if (mortgageRecords.some(m => m.mortgageAmount && m.creditorName)) tabProgress.obligations.filled++;
 
-    // ============================================
-    // HYPOTHÈQUES - 25% (250 points)
-    // 40% pour données textuelles (100 pts), 60% pour pièces (150 pts)
-    // ============================================
-    
-    // Données textuelles (100 points pour jusqu'à 2 hypothèques = 50 pts/hypothèque)
-    let mortgageTextFilled = 0;
-    const mortgageTextTotal = 2;
-    
-    const validMortgages = mortgageRecords.filter(m => 
-      m.mortgageAmount && m.creditorName && m.creditorType && m.contractDate
-    );
-    
-    const mortgageCount = Math.min(validMortgages.length, 2);
-    earnedPoints += mortgageCount * 50;
-    mortgageTextFilled = mortgageCount;
-    
-    // Pièces justificatives (150 points si au moins un document)
-    let mortgageDocFilled = 0;
-    const mortgageDocTotal = 1;
-    
-    const hasMortgageReceipts = mortgageRecords.some(m => m.receiptFile !== null);
-    if (hasMortgageReceipts) { earnedPoints += 150; mortgageDocFilled++; }
-    
-    // Combiner taxes et hypothèques pour l'onglet obligations
-    tabProgress.obligations.filled = taxTextFilled + taxDocFilled + mortgageTextFilled + mortgageDocFilled;
-    tabProgress.obligations.total = taxTextTotal + taxDocTotal + mortgageTextTotal + mortgageDocTotal;
-
-    // Calculer le pourcentage final
-    const percentage = Math.round((earnedPoints / totalPoints) * 100);
-    
-    // Calculer le nombre total de champs pour l'affichage
     const filledFields = tabProgress.general.filled + tabProgress.location.filled + 
                          tabProgress.history.filled + tabProgress.obligations.filled;
     const totalFields = tabProgress.general.total + tabProgress.location.total + 
                        tabProgress.history.total + tabProgress.obligations.total;
 
+    // Use the CCC value completion rate as the single source of truth for %
+    const percentage = Math.min(100, Math.round(calculateCCCValue.completionRate * 100));
+
     return { 
       percentage, 
       filledFields, 
       totalFields, 
-      points: earnedPoints, 
-      totalPoints,
+      points: Math.round(percentage * 10), 
+      totalPoints: 1000,
       tabProgress 
     };
-  };
+  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, 
+      gpsCoordinates, sectionType, ownerDocFile, titleDocFiles, calculateCCCValue]);
 
   // Calculer le pourcentage de complétion du formulaire
   const calculateProgress = () => {
-    return calculateProgressDetails().percentage;
+    return calculateProgressDetails.percentage;
   };
 
   // Fonction pour obtenir le message motivant
@@ -2706,7 +2569,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       permitNumber: '',
       issuingService: '',
       issueDate: '',
-      validityMonths: '36',
+      validityMonths: '12',
       administrativeStatus: 'En attente',
       issuingServiceContact: '',
       attachmentFile: null
