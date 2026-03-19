@@ -306,7 +306,7 @@ const Admin = () => {
       case 'cadastral-tooltip':
         return <AdminCadastralTooltip />;
       case 'search-config':
-        return <AdminSearchConfig />;
+        return <AdminSearchBarConfig />;
       case 'results-config':
         return <AdminResultsConfig />;
       case 'zones':
