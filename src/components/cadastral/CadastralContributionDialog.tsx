@@ -691,10 +691,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         const taxes = contrib.tax_history as any[];
         if (taxes && Array.isArray(taxes) && taxes.length > 0) {
           setTaxRecords(taxes.map((t: any) => ({
-            taxType: t.tax_type || 'Taxe foncière',
+            taxType: t.tax_type || 'Impôt foncier annuel',
             taxYear: String(t.tax_year || ''),
             taxAmount: String(t.amount_usd || ''),
-            paymentStatus: t.payment_status || 'Non payée',
+            paymentStatus: t.payment_status || 'En attente',
             paymentDate: t.payment_date || '',
             receiptFile: null
           })));
