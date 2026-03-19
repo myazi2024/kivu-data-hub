@@ -230,10 +230,11 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
   // === NOTES & DOCUMENTS ===
   const [additionalNotes, setAdditionalNotes] = useState('');
-  const [parcelDocuments, setParcelDocuments] = useState<File[]>([]);
-   const [constructionImages, setConstructionImages] = useState<File[]>([]);
-   const [constructionImageUrls, setConstructionImageUrls] = useState<string[]>([]);
-   const [uploadingFiles, setUploadingFiles] = useState(false);
+   const [parcelDocuments, setParcelDocuments] = useState<File[]>([]);
+    const [constructionImages, setConstructionImages] = useState<File[]>([]);
+    const [constructionImageUrls, setConstructionImageUrls] = useState<string[]>([]);
+    const constructionImageUrlsRef = useRef<string[]>([]);
+    const [uploadingFiles, setUploadingFiles] = useState(false);
 
   // Fetch expertise fees on mount
   useEffect(() => {
@@ -331,7 +332,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   }, [open, showIntro, user?.id, existingCertificate?.id]);
 
    const getTotalAmount = () => {
-     const total = fees.reduce((sum, fee) => sum + fee.amount_usd, 0);
+     const total = fees
+       .filter(fee => fee.is_mandatory)
+       .reduce((sum, fee) => sum + fee.amount_usd, 0);
      return Math.max(total, 0);
    };
 
@@ -403,12 +406,17 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setIsRecordingSound(false);
   };
 
+  // Sync ref with state for cleanup
+  useEffect(() => {
+    constructionImageUrlsRef.current = constructionImageUrls;
+  }, [constructionImageUrls]);
+
   // Cleanup du microphone et Object URLs à la fermeture
   useEffect(() => {
     return () => {
       stopSoundMeasurement();
-      // Revoke any outstanding Object URLs to prevent memory leaks
-      constructionImageUrls.forEach(url => URL.revokeObjectURL(url));
+      // Revoke any outstanding Object URLs to prevent memory leaks (uses ref for latest value)
+      constructionImageUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
     };
   }, []);
 
@@ -630,7 +638,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   };
 
   const handlePayment = async () => {
-    if (!user || !formData) return;
+    if (!user || !formData || processingPayment) return;
 
     if (paymentMethod === 'mobile_money') {
       if (!paymentProvider || !paymentPhone) {
@@ -2215,16 +2223,13 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
               </CardContent>
             </Card>
 
-            {/* Section Construction */}
+            {/* Section Construction - Type de bien (toujours visible) */}
             <Card className="rounded-xl border-border/50 shadow-sm">
               <CardContent className="p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Home className="h-4 w-4 text-green-600" />
-                    <h4 className="text-xs font-semibold">Construction</h4>
-                    <Badge variant="outline" className="text-[10px] h-5">
-                      {[constructionType, constructionYear, totalBuiltAreaSqm, numberOfFloors, propertyCondition, constructionQuality].filter(Boolean).length}/6
-                    </Badge>
+                    <h4 className="text-xs font-semibold">Type de bien</h4>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => { setActiveTab('general'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
                     Modifier
@@ -2235,6 +2240,33 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <span className="text-muted-foreground">Type de construction</span>
                     <span className="font-medium">{CONSTRUCTION_TYPE_LABELS[constructionType] || constructionType || <span className="text-orange-600">Non renseigné</span>}</span>
                   </div>
+                  {propertyDescription && (
+                    <div className="flex justify-between text-xs py-1.5">
+                      <span className="text-muted-foreground">Description</span>
+                      <span className="font-medium text-right max-w-[60%] truncate">{propertyDescription}</span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Section Construction détails - masquée pour terrain nu */}
+            {!isTerrainNu && (
+            <Card className="rounded-xl border-border/50 shadow-sm">
+              <CardContent className="p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Building className="h-4 w-4 text-green-600" />
+                    <h4 className="text-xs font-semibold">Construction</h4>
+                    <Badge variant="outline" className="text-[10px] h-5">
+                      {[constructionYear, totalBuiltAreaSqm, numberOfFloors, propertyCondition, constructionQuality].filter(Boolean).length}/5
+                    </Badge>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => { setActiveTab('general'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
+                    Modifier
+                  </Button>
+                </div>
+                <div className="divide-y divide-border/30">
                   <div className="flex justify-between text-xs py-1.5">
                     <span className="text-muted-foreground">Année de construction</span>
                     <span className="font-medium">{constructionYear || <span className="text-muted-foreground">—</span>}</span>
@@ -2255,17 +2287,13 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <span className="text-muted-foreground">État général</span>
                     <span className="font-medium">{CONDITION_LABELS[propertyCondition] || propertyCondition}</span>
                   </div>
-                  {propertyDescription && (
-                    <div className="flex justify-between text-xs py-1.5">
-                      <span className="text-muted-foreground">Description</span>
-                      <span className="font-medium text-right max-w-[60%] truncate">{propertyDescription}</span>
-                    </div>
-                  )}
                 </div>
               </CardContent>
             </Card>
+            )}
 
-            {/* Section Pièces */}
+            {/* Section Pièces - masquée pour terrain nu */}
+            {!isTerrainNu && (
             <Card className="rounded-xl border-border/50 shadow-sm">
               <CardContent className="p-3 space-y-2">
                 <div className="flex items-center justify-between">
@@ -2293,8 +2321,10 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 </div>
               </CardContent>
             </Card>
+            )}
 
-            {/* Section Matériaux */}
+            {/* Section Matériaux - masquée pour terrain nu */}
+            {!isTerrainNu && (
             <Card className="rounded-xl border-border/50 shadow-sm">
               <CardContent className="p-3 space-y-2">
                 <div className="flex items-center justify-between">
@@ -2336,6 +2366,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 )}
               </CardContent>
             </Card>
+            )}
 
             {/* Section Emplacement */}
             <Card className="rounded-xl border-border/50 shadow-sm">
@@ -2345,7 +2376,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <MapPin className="h-4 w-4 text-cyan-600" />
                     <h4 className="text-xs font-semibold">Emplacement & Position</h4>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => { setActiveTab('materiaux'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
+                  <Button variant="ghost" size="sm" onClick={() => { setActiveTab('general'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
                     Modifier
                   </Button>
                 </div>
@@ -2391,7 +2422,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                       <Building className="h-4 w-4 text-indigo-600" />
                       <h4 className="text-xs font-semibold">Détails Appartement / Immeuble</h4>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => { setActiveTab('materiaux'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
+                    <Button variant="ghost" size="sm" onClick={() => { setActiveTab('general'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
                       Modifier
                     </Button>
                   </div>
