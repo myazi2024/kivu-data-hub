@@ -2271,7 +2271,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
             </Card>
             )}
 
-            {/* Section Pièces */}
+            {/* Section Pièces - hidden for terrain_nu */}
+            {!isTerrainNu && (
             <Card className="rounded-xl border-border/50 shadow-sm">
               <CardContent className="p-3 space-y-2">
                 <div className="flex items-center justify-between">
@@ -2299,6 +2300,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 </div>
               </CardContent>
             </Card>
+            )}
 
             {/* Section Matériaux */}
             <Card className="rounded-xl border-border/50 shadow-sm">
