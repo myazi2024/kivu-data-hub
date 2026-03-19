@@ -2688,8 +2688,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                   <SelectValue placeholder="Choisir..." />
                 </SelectTrigger>
                 <SelectContent className="z-[1200]">
-                  <SelectItem value="airtel">Airtel Money</SelectItem>
-                  <SelectItem value="orange">Orange Money</SelectItem>
+                  <SelectItem value="airtel_money">Airtel Money</SelectItem>
+                  <SelectItem value="orange_money">Orange Money</SelectItem>
                   <SelectItem value="mpesa">M-Pesa</SelectItem>
                 </SelectContent>
               </Select>
