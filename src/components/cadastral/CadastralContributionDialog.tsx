@@ -1550,6 +1550,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         }));
 
       // Add document URLs to form data
+      // FIX: In edit mode, preserve existing document URLs if user didn't re-upload
+      const existingOwnerDocUrl = editingContributionId ? formData.ownerDocumentUrl : undefined;
+      const existingTitleDocUrl = editingContributionId ? formData.titleDocumentUrl : undefined;
+
       const dataToSubmit = {
         ...formData,
         // For "Autre", store the custom title name as the effective property_title_type
@@ -1557,13 +1561,14 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         parcelType: sectionType === 'urbaine' ? 'SU' as const : sectionType === 'rurale' ? 'SR' as const : undefined, // Type de parcelle (Section Urbaine/Rurale)
         currentOwners: currentOwners.filter(o => o.lastName && o.firstName), // Ne garder que les propriétaires avec nom et prénom
         ownershipHistory: ownershipHistoryData.length > 0 ? ownershipHistoryData as any : undefined,
-        ownerDocumentUrl: ownerDocUrl || undefined,
-        titleDocumentUrl: titleDocUrls.length > 0 ? titleDocUrls[0] : undefined,
+        // FIX: Preserve existing URLs when no new file is uploaded in edit mode
+        ownerDocumentUrl: ownerDocUrl || existingOwnerDocUrl || undefined,
+        titleDocumentUrl: titleDocUrls.length > 0 ? titleDocUrls[0] : (existingTitleDocUrl || undefined),
         taxHistory: taxHistoryData.length > 0 ? taxHistoryData as any : undefined,
         mortgageHistory: mortgageHistoryData.length > 0 ? mortgageHistoryData as any : undefined,
         buildingPermits: buildingPermitsDataFinal,
         permitRequest: permitRequestData,
-        previousPermitNumber: permitRequest.previousPermitNumber || undefined, // ✅ NOUVEAU: Ajout du numéro de permis précédent
+        previousPermitNumber: permitRequest.previousPermitNumber || undefined,
         gpsCoordinates: gpsCoordinatesData,
         parcelSides: parcelSides.filter(s => s.length && parseFloat(s.length) > 0).length > 0 
           ? parcelSides.filter(s => s.length && parseFloat(s.length) > 0) 
