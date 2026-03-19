@@ -202,7 +202,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
   // Fonction pour vérifier si le formulaire est valide pour soumission
   const isFormValidForSubmission = () => {
-    return getMissingFields().length === 0;
+    return getMissingFields.length === 0;
   };
   
   // Fonction pour changer d'onglet avec scroll vers le haut
