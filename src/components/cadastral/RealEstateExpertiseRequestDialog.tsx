@@ -549,10 +549,10 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
           <div className="space-y-2">
             <Select value={certPaymentProvider} onValueChange={setCertPaymentProvider}>
               <SelectTrigger className="h-9 rounded-xl text-sm"><SelectValue placeholder="Opérateur" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="airtel_money">Airtel Money</SelectItem>
-                <SelectItem value="orange_money">Orange Money</SelectItem>
-                <SelectItem value="mpesa">M-Pesa</SelectItem>
+              <SelectContent className="z-[1200]">
+                {mobileProviders.map((p) => (
+                  <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Input value={certPaymentPhone} onChange={(e) => setCertPaymentPhone(e.target.value)} placeholder="+243 ..." className="h-9 rounded-xl text-sm" />
