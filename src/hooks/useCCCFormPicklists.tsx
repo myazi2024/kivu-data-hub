@@ -51,8 +51,8 @@ export const CCC_STATIC_PICKLIST_REGISTRY: Record<string, {
     fallback: ['Concession', 'Affectation'],
   },
   picklist_construction_type: {
-    label: 'Type de construction',
-    description: 'Types de construction',
+    label: "Type d'exploitation",
+    description: "Types d'exploitation de la parcelle",
     fallback: ['Résidentielle', 'Commerciale', 'Industrielle', 'Agricole', 'Terrain nu'],
   },
   picklist_construction_nature: {
