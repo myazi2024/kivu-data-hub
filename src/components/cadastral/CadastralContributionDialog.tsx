@@ -69,6 +69,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [showSuccess, setShowSuccess] = useState(false);
   const [showExitConfirmation, setShowExitConfirmation] = useState(false);
   const formDirtyRef = useRef(false);
+  const isLoadingFromDbRef = useRef(false); // Guard to prevent area recalc during DB load
   const isClosingAfterSuccessRef = useRef(false);
   const [showQuickAuth, setShowQuickAuth] = useState(false);
   const [pendingSubmission, setPendingSubmission] = useState(false);
