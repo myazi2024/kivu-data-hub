@@ -2259,6 +2259,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       filledFields += 1;
     }
     
+    // Bonus: previous_permit_number (dynamique, comme en SQL)
+    if (formData.previousPermitNumber || permitRequest.previousPermitNumber) {
+      totalFields += 1;
+      filledFields += 1;
+    }
+    
     // SECTION 4: Localisation (7 champs - adapté au type urbain/rural, aligné SQL)
     const isUrban = sectionType === 'urbaine' || formData.parcelType === 'SU';
     totalFields += 7;
