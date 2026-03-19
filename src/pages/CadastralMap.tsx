@@ -87,6 +87,7 @@ const CadastralMap = () => {
   // Advanced search hooks
   const advancedSearch = useAdvancedCadastralSearch();
   const searchHistory = useSearchHistory();
+  const { config: searchBarConfig, buildAllowedRegex } = useSearchBarConfig();
 
   // Reset hasScrolledToBottom when dialog closes
   useEffect(() => {
