@@ -1089,20 +1089,20 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     }
   }, [formData.constructionType, formData.constructionNature, getPicklistDependentOptions]);
 
-  // Logique de dépendance: Nature -> Matériaux de construction (hardcodé)
-  const MATERIALS_BY_NATURE: Record<string, string[]> = {
+  // Fallbacks hardcodés pour matériaux et standing (utilisés si la DB ne retourne rien)
+  const MATERIALS_BY_NATURE_FALLBACK: Record<string, string[]> = {
     Durable: ['Béton armé', 'Briques cuites', 'Parpaings', 'Pierre naturelle'],
     'Semi-durable': ['Semi-dur', 'Briques adobes', 'Bois', 'Mixte'],
     Précaire: ['Tôles', 'Bois', 'Paille', 'Autre'],
   };
 
-  // Logique de dépendance: Nature -> Standing (hardcodé)
-  const STANDING_BY_NATURE: Record<string, string[]> = {
+  const STANDING_BY_NATURE_FALLBACK: Record<string, string[]> = {
     Durable: ['Haut standing', 'Moyen standing', 'Économique'],
     'Semi-durable': ['Moyen standing', 'Économique'],
     Précaire: ['Économique'],
   };
 
+  // Logique de dépendance: Nature -> Matériaux (DB avec fallback hardcodé)
   useEffect(() => {
     if (!formData.constructionNature || formData.constructionNature === 'Non bâti') {
       setAvailableConstructionMaterials([]);
@@ -1110,14 +1110,18 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       return;
     }
 
-    const materials = MATERIALS_BY_NATURE[formData.constructionNature] || [];
+    const dbMaterialsMap = getPicklistDependentOptions('picklist_construction_materials');
+    const materials = (Object.keys(dbMaterialsMap).length > 0 
+      ? dbMaterialsMap[formData.constructionNature] 
+      : MATERIALS_BY_NATURE_FALLBACK[formData.constructionNature]) || [];
     setAvailableConstructionMaterials(materials);
     
     if (formData.constructionMaterials && !materials.includes(formData.constructionMaterials)) {
       handleInputChange('constructionMaterials', undefined);
     }
-  }, [formData.constructionNature]);
+  }, [formData.constructionNature, getPicklistDependentOptions]);
 
+  // Logique de dépendance: Nature -> Standing (DB avec fallback hardcodé)
   useEffect(() => {
     if (!formData.constructionNature || formData.constructionNature === 'Non bâti') {
       setAvailableStandings([]);
@@ -1125,13 +1129,16 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       return;
     }
 
-    const standings = STANDING_BY_NATURE[formData.constructionNature] || [];
+    const dbStandingMap = getPicklistDependentOptions('picklist_standing');
+    const standings = (Object.keys(dbStandingMap).length > 0 
+      ? dbStandingMap[formData.constructionNature] 
+      : STANDING_BY_NATURE_FALLBACK[formData.constructionNature]) || [];
     setAvailableStandings(standings);
     
     if (formData.standing && !standings.includes(formData.standing)) {
       handleInputChange('standing', undefined);
     }
-  }, [formData.constructionNature]);
+  }, [formData.constructionNature, getPicklistDependentOptions]);
 
   useEffect(() => {
     if (permitMode === 'request' && formData.declaredUsage && !permitRequest.plannedUsage) {
