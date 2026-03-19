@@ -1581,7 +1581,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         mortgageHistory: mortgageHistoryData.length > 0 ? mortgageHistoryData as any : undefined,
         buildingPermits: buildingPermitsDataFinal,
         permitRequest: permitRequestData,
-        previousPermitNumber: permitRequest.previousPermitNumber || undefined,
+        previousPermitNumber: formData.previousPermitNumber || permitRequest.previousPermitNumber || undefined,
         gpsCoordinates: gpsCoordinatesData,
         parcelSides: parcelSides.filter(s => s.length && parseFloat(s.length) > 0).length > 0 
           ? parcelSides.filter(s => s.length && parseFloat(s.length) > 0) 
