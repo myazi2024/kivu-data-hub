@@ -746,8 +746,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   }, [open, editingContributionId]);
 
   // FIX #2/#3: Single auto-save with debounce, ALL states included in deps, works for all users
+  // FIX: Skip auto-save in edit mode (data comes from Supabase, not localStorage)
+  // FIX: Skip auto-save while loading from DB to prevent overwriting with empty initial state
   useEffect(() => {
-    if (open && formData.parcelNumber) {
+    if (open && formData.parcelNumber && !editingContributionId && !isLoadingFromDbRef.current) {
       const timeoutId = setTimeout(() => {
         saveFormDataToStorage();
       }, 1500); // Debounce 1.5s
@@ -756,7 +758,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     }
   }, [open, formData, currentOwners, previousOwners, taxRecords, mortgageRecords, 
       buildingPermits, gpsCoordinates, parcelSides, permitMode, permitRequest, 
-      hasMortgage, ownershipMode, leaseYears, roadSides, obligationType, sectionType, saveFormDataToStorage]);
+      hasMortgage, ownershipMode, leaseYears, roadSides, obligationType, sectionType, saveFormDataToStorage, editingContributionId]);
 
   // NOTE: Draft is saved BEFORE resetting state in handleClose/handleAttemptClose.
   // We no longer save on !open to avoid the race condition where reset state overwrites the draft.
