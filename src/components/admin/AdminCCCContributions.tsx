@@ -63,7 +63,7 @@ interface Contribution {
   collectivite: string | null;
   groupement: string | null;
   village: string | null;
-  circonscription_fonciere: string | null;
+  
   gps_coordinates: any;
   ownership_history: any;
   boundary_history: any;
