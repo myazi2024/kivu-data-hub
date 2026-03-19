@@ -178,7 +178,7 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'title-requests', item_key: 'deduced-title', item_type: 'chart', is_visible: true, display_order: 8, custom_title: 'Titre déduit', chart_type: 'bar-h' },
       { tab_key: 'title-requests', item_key: 'owner-same', item_type: 'chart', is_visible: true, display_order: 9, custom_title: 'Demandeur = Proprio', chart_type: 'pie' },
       { tab_key: 'title-requests', item_key: 'surface', item_type: 'chart', is_visible: true, display_order: 10, custom_title: 'Superficie demandée', chart_type: 'bar-v' },
-      { tab_key: 'title-requests', item_key: 'circonscription', item_type: 'chart', is_visible: true, display_order: 11, custom_title: 'Circonscription', chart_type: 'bar-h' },
+      
       { tab_key: 'title-requests', item_key: 'construction-type', item_type: 'chart', is_visible: true, display_order: 12, custom_title: 'Type construction', chart_type: 'bar-h' },
       { tab_key: 'title-requests', item_key: 'construction-nature', item_type: 'chart', is_visible: true, display_order: 13, custom_title: 'Nature construction', chart_type: 'bar-h' },
       { tab_key: 'title-requests', item_key: 'revenue-trend', item_type: 'chart', is_visible: true, display_order: 14, custom_title: 'Revenus/mois', chart_type: 'area' },
