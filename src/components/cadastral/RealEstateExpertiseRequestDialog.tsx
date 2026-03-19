@@ -406,12 +406,17 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setIsRecordingSound(false);
   };
 
+  // Sync ref with state for cleanup
+  useEffect(() => {
+    constructionImageUrlsRef.current = constructionImageUrls;
+  }, [constructionImageUrls]);
+
   // Cleanup du microphone et Object URLs à la fermeture
   useEffect(() => {
     return () => {
       stopSoundMeasurement();
-      // Revoke any outstanding Object URLs to prevent memory leaks
-      constructionImageUrls.forEach(url => URL.revokeObjectURL(url));
+      // Revoke any outstanding Object URLs to prevent memory leaks (uses ref for latest value)
+      constructionImageUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
     };
   }, []);
 
