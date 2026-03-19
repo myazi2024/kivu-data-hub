@@ -3645,19 +3645,24 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                 {/* Matériaux et Usage - côte-à-côte */}
                 <div className="grid grid-cols-2 gap-2">
-                  {/* Matériaux de construction - visible sauf pour Terrain nu */}
-                  {formData.constructionType && formData.constructionType !== 'Terrain nu' ? (
+                  {/* Matériaux de construction - dépend de la Nature */}
+                  {formData.constructionNature && formData.constructionNature !== 'Non bâti' ? (
                     <div className="space-y-1.5">
-                      <Label className="text-sm font-medium">Matériaux utilisés</Label>
+                      <Label className="text-sm font-medium">Matériaux</Label>
                       <Select 
                         value={formData.constructionMaterials || ''}
                         onValueChange={(value) => handleInputChange('constructionMaterials', value)}
+                        disabled={availableConstructionMaterials.length === 0}
                       >
                         <SelectTrigger className="h-10 rounded-xl text-sm">
-                          <SelectValue placeholder="Sélectionner" />
+                          <SelectValue placeholder={
+                            availableConstructionMaterials.length === 0
+                              ? "Nature d'abord"
+                              : "Sélectionner"
+                          } />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl">
-                          {getPicklistOptions('picklist_construction_materials').map(opt => (
+                          {availableConstructionMaterials.map(opt => (
                             <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                           ))}
                         </SelectContent>
@@ -3712,6 +3717,40 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     </Select>
                   </div>
                 </div>
+
+                {/* Standing - dépend de la Nature, masqué si Non bâti */}
+                {formData.constructionNature && formData.constructionNature !== 'Non bâti' && availableStandings.length > 0 && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1">
+                      <Label className="text-sm font-medium">Standing</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-4 w-4 p-0 rounded-full">
+                            <Info className="h-3 w-3 text-muted-foreground" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64 rounded-xl text-xs">
+                          <p className="text-muted-foreground">
+                            Niveau de finition de la construction : haut standing, moyen standing ou économique.
+                          </p>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <Select 
+                      value={formData.standing || ''}
+                      onValueChange={(value) => handleInputChange('standing', value)}
+                    >
+                      <SelectTrigger className="h-10 rounded-xl text-sm">
+                        <SelectValue placeholder="Sélectionner le standing" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        {availableStandings.map((s) => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 {/* Année de construction - visible sauf Terrain nu */}
                 {formData.constructionType && formData.constructionType !== 'Terrain nu' && (
