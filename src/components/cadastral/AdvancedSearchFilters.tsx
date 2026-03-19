@@ -77,6 +77,24 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
     }
   }, [filters.province, filters.territoire]);
 
+  // Charger quartiers quand commune change
+  useEffect(() => {
+    if (filters.province && filters.ville && filters.commune) {
+      setAvailableQuartiers(getQuartiersForCommune(filters.province, filters.ville, filters.commune));
+    } else {
+      setAvailableQuartiers([]);
+    }
+  }, [filters.province, filters.ville, filters.commune]);
+
+  // Charger avenues quand quartier change
+  useEffect(() => {
+    if (filters.province && filters.ville && filters.commune && filters.quartier) {
+      setAvailableAvenues(getAvenuesForQuartier(filters.province, filters.ville, filters.commune, filters.quartier));
+    } else {
+      setAvailableAvenues([]);
+    }
+  }, [filters.province, filters.ville, filters.commune, filters.quartier]);
+
   // Handler pour changer le type de section
   const handleSectionTypeChange = (type: 'urbaine' | 'rurale') => {
     // Réinitialiser les champs de l'autre section
