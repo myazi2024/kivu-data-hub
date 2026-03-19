@@ -579,6 +579,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           
           whatsappNumber: contrib.whatsapp_number || undefined,
           previousPermitNumber: contrib.previous_permit_number || undefined,
+          // FIX: Preserve existing document URLs for re-save without re-upload
+          ownerDocumentUrl: contrib.owner_document_url || undefined,
+          titleDocumentUrl: contrib.property_title_document_url || undefined,
         }));
 
         // Remplir les propriétaires actuels
@@ -737,8 +740,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       } catch (err) {
         console.error('Erreur lors du chargement de la contribution:', err);
       } finally {
-        // Release the guard after a tick so parcelSides useEffect doesn't recalc
-        setTimeout(() => { isLoadingFromDbRef.current = false; }, 100);
+        // Release the guard after a longer delay to ensure all setState calls
+        // have been processed and useEffects triggered before re-enabling area calc
+        setTimeout(() => { isLoadingFromDbRef.current = false; }, 500);
       }
     };
 
@@ -746,8 +750,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   }, [open, editingContributionId]);
 
   // FIX #2/#3: Single auto-save with debounce, ALL states included in deps, works for all users
+  // FIX: Skip auto-save in edit mode (data comes from Supabase, not localStorage)
+  // FIX: Skip auto-save while loading from DB to prevent overwriting with empty initial state
   useEffect(() => {
-    if (open && formData.parcelNumber) {
+    if (open && formData.parcelNumber && !editingContributionId && !isLoadingFromDbRef.current) {
       const timeoutId = setTimeout(() => {
         saveFormDataToStorage();
       }, 1500); // Debounce 1.5s
@@ -756,7 +762,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     }
   }, [open, formData, currentOwners, previousOwners, taxRecords, mortgageRecords, 
       buildingPermits, gpsCoordinates, parcelSides, permitMode, permitRequest, 
-      hasMortgage, ownershipMode, leaseYears, roadSides, obligationType, sectionType, saveFormDataToStorage]);
+      hasMortgage, ownershipMode, leaseYears, roadSides, obligationType, sectionType, saveFormDataToStorage, editingContributionId]);
 
   // NOTE: Draft is saved BEFORE resetting state in handleClose/handleAttemptClose.
   // We no longer save on !open to avoid the race condition where reset state overwrites the draft.
@@ -1547,6 +1553,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         }));
 
       // Add document URLs to form data
+      // FIX: In edit mode, preserve existing document URLs if user didn't re-upload
+      const existingOwnerDocUrl = editingContributionId ? formData.ownerDocumentUrl : undefined;
+      const existingTitleDocUrl = editingContributionId ? formData.titleDocumentUrl : undefined;
+
       const dataToSubmit = {
         ...formData,
         // For "Autre", store the custom title name as the effective property_title_type
@@ -1554,13 +1564,14 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         parcelType: sectionType === 'urbaine' ? 'SU' as const : sectionType === 'rurale' ? 'SR' as const : undefined, // Type de parcelle (Section Urbaine/Rurale)
         currentOwners: currentOwners.filter(o => o.lastName && o.firstName), // Ne garder que les propriétaires avec nom et prénom
         ownershipHistory: ownershipHistoryData.length > 0 ? ownershipHistoryData as any : undefined,
-        ownerDocumentUrl: ownerDocUrl || undefined,
-        titleDocumentUrl: titleDocUrls.length > 0 ? titleDocUrls[0] : undefined,
+        // FIX: Preserve existing URLs when no new file is uploaded in edit mode
+        ownerDocumentUrl: ownerDocUrl || existingOwnerDocUrl || undefined,
+        titleDocumentUrl: titleDocUrls.length > 0 ? titleDocUrls[0] : (existingTitleDocUrl || undefined),
         taxHistory: taxHistoryData.length > 0 ? taxHistoryData as any : undefined,
         mortgageHistory: mortgageHistoryData.length > 0 ? mortgageHistoryData as any : undefined,
         buildingPermits: buildingPermitsDataFinal,
         permitRequest: permitRequestData,
-        previousPermitNumber: permitRequest.previousPermitNumber || undefined, // ✅ NOUVEAU: Ajout du numéro de permis précédent
+        previousPermitNumber: permitRequest.previousPermitNumber || undefined,
         gpsCoordinates: gpsCoordinatesData,
         parcelSides: parcelSides.filter(s => s.length && parseFloat(s.length) > 0).length > 0 
           ? parcelSides.filter(s => s.length && parseFloat(s.length) > 0) 
@@ -2248,6 +2259,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       filledFields += 1;
     }
     
+    // Bonus: previous_permit_number (dynamique, comme en SQL)
+    if (formData.previousPermitNumber || permitRequest.previousPermitNumber) {
+      totalFields += 1;
+      filledFields += 1;
+    }
+    
     // SECTION 4: Localisation (7 champs - adapté au type urbain/rural, aligné SQL)
     const isUrban = sectionType === 'urbaine' || formData.parcelType === 'SU';
     totalFields += 7;
@@ -2288,9 +2305,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (hasMortgageHistory) filledFields += 1;
     
     // SECTION 7: Pièces jointes (2 champs)
+    // FIX: In edit mode, also check existing URLs when no new file uploaded
     totalFields += 2;
-    if (ownerDocFile) filledFields += 1;
-    if (titleDocFiles.length > 0) filledFields += 1;
+    if (ownerDocFile || formData.ownerDocumentUrl) filledFields += 1;
+    if (titleDocFiles.length > 0 || formData.titleDocumentUrl) filledFields += 1;
     
     // SECTION 8: Métadonnées (1 champ)
     totalFields += 1;
