@@ -86,14 +86,6 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
     }
   }, [filters.province, filters.ville, filters.commune]);
 
-  // Charger avenues quand quartier change
-  useEffect(() => {
-    if (filters.province && filters.ville && filters.commune && filters.quartier) {
-      setAvailableAvenues(getAvenuesForQuartier(filters.province, filters.ville, filters.commune, filters.quartier));
-    } else {
-      setAvailableAvenues([]);
-    }
-  }, [filters.province, filters.ville, filters.commune, filters.quartier]);
 
   // Handler pour changer le type de section
   const handleSectionTypeChange = (type: 'urbaine' | 'rurale') => {
