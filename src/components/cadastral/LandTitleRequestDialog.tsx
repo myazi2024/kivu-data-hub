@@ -1187,7 +1187,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                               groupement: locationInfo.groupement,
                                               village: locationInfo.village,
                                               areaSqm: fetchedAreaSqm ?? prev.areaSqm,
-                                              circonscriptionFonciere: fetchedCirconscription || prev.circonscriptionFonciere,
                                             }));
                                           }
 
