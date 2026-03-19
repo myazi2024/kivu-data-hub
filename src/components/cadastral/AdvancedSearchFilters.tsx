@@ -19,7 +19,6 @@ import {
   getTerritoiresForProvince,
   getCollectivitesForTerritoire,
   getQuartiersForCommune,
-  getAvenuesForQuartier
 } from '@/lib/geographicData';
 
 interface AdvancedSearchFiltersProps {
