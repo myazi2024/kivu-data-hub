@@ -51,6 +51,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
   const { user, profile } = useAuth();
   const { createExpertiseRequest, loading, checkExistingValidCertificate, checkCertificateValidity } = useRealEstateExpertise();
+  const { providers: mobileProviders } = usePaymentProviders();
 
   const [formState, dispatch] = useReducer(formReducer, INITIAL_FORM_STATE);
   const [showIntro, setShowIntro] = useState(true);
