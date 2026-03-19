@@ -2305,9 +2305,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (hasMortgageHistory) filledFields += 1;
     
     // SECTION 7: Pièces jointes (2 champs)
+    // FIX: In edit mode, also check existing URLs when no new file uploaded
     totalFields += 2;
-    if (ownerDocFile) filledFields += 1;
-    if (titleDocFiles.length > 0) filledFields += 1;
+    if (ownerDocFile || formData.ownerDocumentUrl) filledFields += 1;
+    if (titleDocFiles.length > 0 || formData.titleDocumentUrl) filledFields += 1;
     
     // SECTION 8: Métadonnées (1 champ)
     totalFields += 1;
