@@ -823,7 +823,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
     // General
     setPropertyDescription('');
-    setConstructionType('villa');
+    setConstructionType('Résidentielle');
     setConstructionYear('');
     setConstructionQuality('standard');
     setNumberOfFloors('1');
