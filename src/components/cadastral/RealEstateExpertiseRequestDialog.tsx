@@ -424,12 +424,21 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     }
   };
 
+  const MAX_PARCEL_DOCS = 10;
+  const MAX_CONSTRUCTION_IMAGES = 20;
+
   const handleParcelDocSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
     
     const newFiles = Array.from(files);
-    const validFiles = newFiles.filter(file => {
+    const remaining = MAX_PARCEL_DOCS - parcelDocuments.length;
+    if (remaining <= 0) {
+      toast.error(`Maximum ${MAX_PARCEL_DOCS} documents autorisés`);
+      if (parcelDocsInputRef.current) parcelDocsInputRef.current.value = '';
+      return;
+    }
+    const validFiles = newFiles.slice(0, remaining).filter(file => {
       const isValid = file.type === 'application/pdf' || file.type.startsWith('image/');
       const isValidSize = file.size <= 10 * 1024 * 1024;
       if (!isValid) toast.error(`${file.name}: Format non supporté (PDF ou image)`);
