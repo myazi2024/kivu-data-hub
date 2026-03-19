@@ -3518,7 +3518,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
                       <MdLocationOn className="h-3.5 w-3.5 text-primary" />
                     </div>
-                    <Label className="text-sm font-semibold">Type d'exploitation</Label>
+                    <Label className="text-sm font-semibold">Type de construction</Label>
                   </div>
                   <Popover>
                     <PopoverTrigger asChild>
@@ -3528,9 +3528,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     </PopoverTrigger>
                     <PopoverContent className="w-72 rounded-xl" align="end">
                       <div className="space-y-2 text-xs">
-                        <h4 className="font-semibold text-sm">Type d'exploitation</h4>
+                        <h4 className="font-semibold text-sm">Type de construction</h4>
                         <p className="text-muted-foreground">
-                          Catégorie d'exploitation de votre bien : Résidentielle, Commerciale, Industrielle, Agricole, Terrain nu ou Autre.
+                          Catégorie de votre bien : Résidentielle, Commerciale, Industrielle, Agricole ou Terrain nu.
                         </p>
                       </div>
                     </PopoverContent>
@@ -3542,7 +3542,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   {/* Type de construction */}
                   <div className={`space-y-1.5 ${highlightRequiredFields && !formData.constructionType ? 'ring-2 ring-primary rounded-xl p-2 bg-primary/5 animate-pulse' : ''}`}>
                     <Label className="text-sm font-medium flex items-center gap-1">
-                      Type d'exploitation
+                      Type
                       {highlightRequiredFields && !formData.constructionType && (
                         <span className="text-primary text-xs font-semibold">*</span>
                       )}
