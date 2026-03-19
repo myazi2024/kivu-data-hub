@@ -2010,12 +2010,12 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       if (!constructionType) missing.push({ label: 'Type de construction', tab: 'general', required: true });
       
       // Champs importants (non obligatoires mais recommandés)
-      if (constructionType !== 'terrain_nu') {
+      if (constructionType !== 'Terrain nu') {
         if (!constructionYear) missing.push({ label: 'Année de construction', tab: 'general', required: false });
         if (!totalBuiltAreaSqm) missing.push({ label: 'Surface construite', tab: 'general', required: false });
         if (!numberOfRooms) missing.push({ label: 'Nombre de pièces', tab: 'general', required: false });
       }
-      if (constructionImages.length === 0 && constructionType !== 'terrain_nu') {
+      if (constructionImages.length === 0 && constructionType !== 'Terrain nu') {
         missing.push({ label: 'Photos de la construction', tab: 'documents', required: false });
       }
       
