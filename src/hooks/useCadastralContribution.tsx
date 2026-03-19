@@ -233,7 +233,7 @@ export const useCadastralContribution = () => {
       collectivite: data.collectivite,
       groupement: data.groupement,
       village: data.village,
-      circonscription_fonciere: data.circonscriptionFonciere,
+      // circonscription_fonciere removed - not collected in any form
       gps_coordinates: data.gpsCoordinates,
       ownership_history: ownershipHistorySnake,
       boundary_history: boundaryHistorySnake,
