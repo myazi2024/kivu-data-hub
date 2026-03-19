@@ -63,9 +63,9 @@ export const useLandDataAnalytics = () => {
         // Contributions — full fields for dedicated block
         fetchAll('cadastral_contributions',
           'id, parcel_number, parcel_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, property_title_type, current_owner_legal_status, current_owners_details, declared_usage, construction_type, construction_nature, contribution_type, area_sqm, is_suspicious, fraud_score, fraud_reason, appeal_submitted, appeal_status, lease_type, status, reviewed_at, created_at'),
-        // Title requests — added gender, nationality, area_sqm, deduced_title_type, estimated_processing_days, is_owner_same, circonscription
+        // Title requests
         fetchAll('land_title_requests',
-          'id, request_type, requester_type, requester_gender, owner_gender, nationality, section_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, declared_usage, construction_type, construction_nature, owner_legal_status, status, payment_status, total_amount_usd, area_sqm, deduced_title_type, estimated_processing_days, is_owner_same_as_requester, circonscription_fonciere, created_at, reviewed_at'),
+          'id, request_type, requester_type, requester_gender, owner_gender, nationality, section_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, declared_usage, construction_type, construction_nature, owner_legal_status, status, payment_status, total_amount_usd, area_sqm, deduced_title_type, estimated_processing_days, is_owner_same_as_requester, created_at, reviewed_at'),
         // Building permits — added validity_period_months, is_current, issuing_service
         fetchAll('cadastral_building_permits',
           'id, parcel_id, administrative_status, issue_date, validity_period_months, is_current, issuing_service, created_at'),

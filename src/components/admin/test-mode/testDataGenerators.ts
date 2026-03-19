@@ -317,7 +317,7 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
       province: 'Haut-Katanga',
       ville: 'Lubumbashi',
       commune: 'Lubumbashi',
-      circonscription_fonciere: 'Lubumbashi',
+      
       declared_usage: 'commerce',
       area_sqm: 1200,
       construction_nature: 'immeuble',
