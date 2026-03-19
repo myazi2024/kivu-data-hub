@@ -1886,9 +1886,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       mortgageAmount: '',
       duration: '',
       creditorName: '',
-      creditorType: '',
+      creditorType: 'Banque',
       contractDate: '',
-      mortgageStatus: '',
+      mortgageStatus: 'Active',
       receiptFile: null
     }]);
   };
