@@ -579,6 +579,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           
           whatsappNumber: contrib.whatsapp_number || undefined,
           previousPermitNumber: contrib.previous_permit_number || undefined,
+          // FIX: Preserve existing document URLs for re-save without re-upload
+          ownerDocumentUrl: contrib.owner_document_url || undefined,
+          titleDocumentUrl: contrib.property_title_document_url || undefined,
         }));
 
         // Remplir les propriétaires actuels
