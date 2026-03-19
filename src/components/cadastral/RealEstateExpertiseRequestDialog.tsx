@@ -515,11 +515,31 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     }
   };
 
-  const handleProceedToSummary = () => {
+  const handleProceedToSummary = async () => {
     if (!user) {
       toast.error('Vous devez être connecté');
       return;
     }
+
+    // Check for existing pending request to prevent duplicates
+    try {
+      const { data: existingPending } = await supabase
+        .from('real_estate_expertise_requests')
+        .select('id, reference_number')
+        .eq('parcel_number', parcelNumber)
+        .eq('user_id', user.id)
+        .in('status', ['pending', 'assigned', 'in_progress'])
+        .limit(1)
+        .maybeSingle();
+
+      if (existingPending) {
+        toast.error(`Une demande est déjà en cours pour cette parcelle (Réf: ${existingPending.reference_number}). Veuillez attendre son traitement.`);
+        return;
+      }
+    } catch (e) {
+      console.error('Duplicate check error:', e);
+    }
+
     setStep('summary');
   };
 
