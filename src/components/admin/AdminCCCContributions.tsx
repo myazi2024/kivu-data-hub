@@ -346,7 +346,7 @@ const AdminCCCContributions: React.FC = () => {
             collectivite: updatedContribution.collectivite,
             groupement: updatedContribution.groupement,
             village: updatedContribution.village,
-            circonscription_fonciere: updatedContribution.circonscription_fonciere,
+            
             location: [
               updatedContribution.province,
               updatedContribution.ville,
