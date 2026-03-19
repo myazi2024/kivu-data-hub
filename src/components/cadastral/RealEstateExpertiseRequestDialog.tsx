@@ -455,7 +455,13 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     if (!files) return;
     
     const newFiles = Array.from(files);
-    const validFiles = newFiles.filter(file => {
+    const remaining = MAX_CONSTRUCTION_IMAGES - constructionImages.length;
+    if (remaining <= 0) {
+      toast.error(`Maximum ${MAX_CONSTRUCTION_IMAGES} photos autorisées`);
+      if (constructionImagesInputRef.current) constructionImagesInputRef.current.value = '';
+      return;
+    }
+    const validFiles = newFiles.slice(0, remaining).filter(file => {
       const isValid = file.type.startsWith('image/');
       const isValidSize = file.size <= 10 * 1024 * 1024;
       if (!isValid) toast.error(`${file.name}: Seules les images sont acceptées`);
@@ -463,11 +469,11 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       return isValid && isValidSize;
     });
     
-   const newUrls = validFiles.map(f => URL.createObjectURL(f));
-     setConstructionImages(prev => [...prev, ...validFiles]);
-     setConstructionImageUrls(prev => [...prev, ...newUrls]);
-     if (constructionImagesInputRef.current) constructionImagesInputRef.current.value = '';
-   };
+    const newUrls = validFiles.map(f => URL.createObjectURL(f));
+    setConstructionImages(prev => [...prev, ...validFiles]);
+    setConstructionImageUrls(prev => [...prev, ...newUrls]);
+    if (constructionImagesInputRef.current) constructionImagesInputRef.current.value = '';
+  };
 
   const removeParcelDoc = (index: number) => {
     setParcelDocuments(prev => prev.filter((_, i) => i !== index));
