@@ -261,7 +261,7 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
       ville: 'Kinshasa',
       commune: 'Gombe',
       quartier: 'Socimat',
-      circonscription_fonciere: 'Kinshasa-Ouest',
+      
       declared_usage: 'habitation',
       area_sqm: 500,
       construction_nature: 'maison',
