@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils';
 const FIXED_TEXT = "Ex: ";
 
 // Caractères autorisés: lettres, chiffres, /, -, _
-const ALLOWED_CHARS_REGEX = /^[a-zA-Z0-9\/\-_\s]*$/;
+const ALLOWED_CHARS_REGEX = /^[a-zA-Z0-9\/\-_\.\s]*$/;
 
 interface ParcelSuggestion {
   id: string;
