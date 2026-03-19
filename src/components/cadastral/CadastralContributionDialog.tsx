@@ -1544,7 +1544,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         currentOwners: currentOwners.filter(o => o.lastName && o.firstName), // Ne garder que les propriétaires avec nom et prénom
         ownershipHistory: ownershipHistoryData.length > 0 ? ownershipHistoryData as any : undefined,
         ownerDocumentUrl: ownerDocUrl || undefined,
-        titleDocumentUrl: titleDocUrls.length > 0 ? JSON.stringify(titleDocUrls) : undefined,
+        titleDocumentUrl: titleDocUrls.length > 0 ? titleDocUrls[0] : undefined,
         taxHistory: taxHistoryData.length > 0 ? taxHistoryData as any : undefined,
         mortgageHistory: mortgageHistoryData.length > 0 ? mortgageHistoryData as any : undefined,
         buildingPermits: buildingPermitsDataFinal,
