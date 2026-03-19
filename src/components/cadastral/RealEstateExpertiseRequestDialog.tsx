@@ -638,7 +638,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   };
 
   const handlePayment = async () => {
-    if (!user || !formData) return;
+    if (!user || !formData || processingPayment) return;
 
     if (paymentMethod === 'mobile_money') {
       if (!paymentProvider || !paymentPhone) {
