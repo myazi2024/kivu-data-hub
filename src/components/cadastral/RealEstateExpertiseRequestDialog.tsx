@@ -60,7 +60,25 @@ import {
 const toOptions = (labels: Record<string, string>) =>
   Object.entries(labels).map(([value, label]) => ({ value, label }));
 
-const CONSTRUCTION_TYPE_OPTIONS = toOptions(CONSTRUCTION_TYPE_LABELS);
+// Only show the canonical merged construction types (not legacy keys)
+const MERGED_CONSTRUCTION_TYPES = [
+  'Résidentielle - Villa / Maison individuelle',
+  'Résidentielle - Appartement',
+  'Résidentielle - Immeuble / Bâtiment',
+  'Résidentielle - Duplex / Triplex',
+  'Résidentielle - Studio',
+  'Commerciale - Local commercial',
+  'Commerciale - Bureau',
+  'Industrielle - Entrepôt / Hangar',
+  'Industrielle - Usine',
+  'Agricole',
+  'Terrain nu',
+  'Autre',
+];
+const CONSTRUCTION_TYPE_OPTIONS = MERGED_CONSTRUCTION_TYPES.map(key => ({
+  value: key,
+  label: CONSTRUCTION_TYPE_LABELS[key] || key,
+}));
 const CONSTRUCTION_QUALITY_OPTIONS = toOptions(QUALITY_LABELS);
 const PROPERTY_CONDITION_OPTIONS = toOptions(CONDITION_LABELS);
 const ROAD_ACCESS_OPTIONS = toOptions(ROAD_LABELS);
@@ -923,8 +941,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     onOpenChange(false);
   };
 
-  const isApartmentOrBuilding = constructionType === 'appartement' || constructionType === 'immeuble' || constructionType === 'duplex' || constructionType === 'studio';
-  const isTerrainNuLocal = constructionType === 'terrain_nu';
+  const isApartmentOrBuilding = constructionType.startsWith('Résidentielle - Appartement') || constructionType.startsWith('Résidentielle - Immeuble') || constructionType.startsWith('Résidentielle - Duplex') || constructionType.startsWith('Résidentielle - Studio');
+  const isTerrainNuLocal = constructionType === 'Terrain nu';
 
   const renderForm = () => (
     <div className="space-y-3">
@@ -1996,7 +2014,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     </div>
   );
 
-  const isTerrainNu = constructionType === 'terrain_nu';
+  const isTerrainNu = constructionType === 'Terrain nu';
 
   const renderSummary = () => {
     // Use imported centralized labels (no local duplicates)
