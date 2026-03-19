@@ -890,8 +890,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       }
       
       // Formule de Brahmagupta (approximation quadrilatère cyclique)
-      // Ordre cyclique correct: Nord(0), Est(2), Sud(1), Ouest(3) = côtés adjacents
+      // Ordre cyclique: Nord(0), Est(2), Sud(1), Ouest(3) → adjacents: a=Nord, b=Est, c=Sud, d=Ouest
       const a = lengths[0], b = lengths[2], c = lengths[1], d = lengths[3];
+      // Vérification d'inégalité: chaque côté doit être < somme des 3 autres
+      const total = a + b + c + d;
+      if (a >= total - a || b >= total - b || c >= total - c || d >= total - d) return;
       const s = (a + b + c + d) / 2;
       const brahmVal = (s - a) * (s - b) * (s - c) * (s - d);
       if (brahmVal <= 0) return;
@@ -1544,7 +1547,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         currentOwners: currentOwners.filter(o => o.lastName && o.firstName), // Ne garder que les propriétaires avec nom et prénom
         ownershipHistory: ownershipHistoryData.length > 0 ? ownershipHistoryData as any : undefined,
         ownerDocumentUrl: ownerDocUrl || undefined,
-        titleDocumentUrl: titleDocUrls.length > 0 ? JSON.stringify(titleDocUrls) : undefined,
+        titleDocumentUrl: titleDocUrls.length > 0 ? titleDocUrls[0] : undefined,
         taxHistory: taxHistoryData.length > 0 ? taxHistoryData as any : undefined,
         mortgageHistory: mortgageHistoryData.length > 0 ? mortgageHistoryData as any : undefined,
         buildingPermits: buildingPermitsDataFinal,
@@ -2235,8 +2238,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       filledFields += 1;
     }
     
-    // SECTION 4: Localisation (12 champs)
-    totalFields += 12;
+    // SECTION 4: Localisation (11 champs - adapté au type de section)
+    totalFields += 11;
     if (formData.province) filledFields += 1;
     if (formData.ville) filledFields += 1;
     if (formData.commune) filledFields += 1;
