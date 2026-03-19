@@ -1087,7 +1087,20 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     }
   }, [formData.constructionType, formData.constructionNature, getPicklistDependentOptions]);
 
-  // Logique de dépendance: Nature -> Matériaux de construction
+  // Logique de dépendance: Nature -> Matériaux de construction (hardcodé)
+  const MATERIALS_BY_NATURE: Record<string, string[]> = {
+    Durable: ['Béton armé', 'Briques cuites', 'Parpaings', 'Pierre naturelle'],
+    'Semi-durable': ['Semi-dur', 'Briques adobes', 'Bois', 'Mixte'],
+    Précaire: ['Tôles', 'Bois', 'Paille', 'Autre'],
+  };
+
+  // Logique de dépendance: Nature -> Standing (hardcodé)
+  const STANDING_BY_NATURE: Record<string, string[]> = {
+    Durable: ['Haut standing', 'Moyen standing', 'Économique'],
+    'Semi-durable': ['Moyen standing', 'Économique'],
+    Précaire: ['Économique'],
+  };
+
   useEffect(() => {
     if (!formData.constructionNature || formData.constructionNature === 'Non bâti') {
       setAvailableConstructionMaterials([]);
@@ -1095,17 +1108,14 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       return;
     }
 
-    const materialsMap = getPicklistDependentOptions('picklist_construction_materials');
-    const materials = materialsMap[formData.constructionNature] || [];
-    
+    const materials = MATERIALS_BY_NATURE[formData.constructionNature] || [];
     setAvailableConstructionMaterials(materials);
     
     if (formData.constructionMaterials && !materials.includes(formData.constructionMaterials)) {
       handleInputChange('constructionMaterials', undefined);
     }
-  }, [formData.constructionNature, getPicklistDependentOptions]);
+  }, [formData.constructionNature]);
 
-  // Logique de dépendance: Nature -> Standing / Niveau de finition
   useEffect(() => {
     if (!formData.constructionNature || formData.constructionNature === 'Non bâti') {
       setAvailableStandings([]);
@@ -1113,15 +1123,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       return;
     }
 
-    const standingMap = getPicklistDependentOptions('picklist_standing');
-    const standings = standingMap[formData.constructionNature] || [];
-    
+    const standings = STANDING_BY_NATURE[formData.constructionNature] || [];
     setAvailableStandings(standings);
     
     if (formData.standing && !standings.includes(formData.standing)) {
       handleInputChange('standing', undefined);
     }
-  }, [formData.constructionNature, getPicklistDependentOptions]);
+  }, [formData.constructionNature]);
 
   useEffect(() => {
     if (permitMode === 'request' && formData.declaredUsage && !permitRequest.plannedUsage) {
