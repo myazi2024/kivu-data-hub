@@ -101,7 +101,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [customTitleName, setCustomTitleName] = useState('');
   
   // Fonction pour obtenir les champs manquants avec détails pour la navigation
-  const getMissingFields = () => {
+  // FIX: Wrapped in useMemo to avoid recalculation on every render
+  const getMissingFields = useMemo(() => {
     const missing: Array<{ field: string; label: string; tab: string }> = [];
     
     // ===== ONGLET GÉNÉRAL (Infos) =====
@@ -168,17 +169,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     }
     
     // ===== VALIDATION DE L'AUTORISATION DE BÂTIR =====
-    // LOGIQUE DE DÉPENDANCE:
-    // 1. Si constructionType === "Terrain nu" → Pas de validation permis (terrain nu = valide sans permis)
-    // 2. Si constructionType !== "Terrain nu" ET permitMode === "request" (Pas de permis) → Valide, "Pas de permis" est une donnée valide
-    // 3. Si constructionType !== "Terrain nu" ET permitMode === "existing" (J'ai un permis) → Valider les données du permis existant
-    
     const isTerrainNu = formData.constructionType === 'Terrain nu';
-    const hasNoPermitSelected = permitMode === 'request'; // "Pas de permis" button = permitMode 'request' 
+    const hasNoPermitSelected = permitMode === 'request';
     
     // Validation uniquement si: pas terrain nu ET l'utilisateur a dit "J'ai un permis"
     if (!isTerrainNu && permitMode === 'existing') {
-      // Vérifier que les données du permis existant sont renseignées
       const hasValidExistingPermit = buildingPermits.some(permit => 
         permit.permitNumber && permit.permitNumber.trim() !== '' &&
         permit.issuingService && permit.issuingService.trim() !== '' &&
@@ -202,11 +197,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       }
     }
     
-    // NOTE: Si "Pas de permis" (permitMode === 'request') est sélectionné,
-    // aucune validation n'est requise - c'est une donnée valide en soi
-    
     return missing;
-  };
+  }, [formData, customTitleName, currentOwners, previousOwners, sectionType, permitMode, buildingPermits]);
 
   // Fonction pour vérifier si le formulaire est valide pour soumission
   const isFormValidForSubmission = () => {
