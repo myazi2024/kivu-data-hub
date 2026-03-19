@@ -2715,7 +2715,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 <SelectContent className="z-[1200]">
                   <SelectItem value="airtel_money">Airtel Money</SelectItem>
                   <SelectItem value="orange_money">Orange Money</SelectItem>
-                  <SelectItem value="mpesa">M-Pesa</SelectItem>
+                   <SelectItem value="m_pesa">M-Pesa</SelectItem>
                 </SelectContent>
               </Select>
             </div>
