@@ -551,11 +551,21 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           return;
         }
 
+        // FIX: Detect custom title type ("Autre") and restore customTitleName
+        const knownTitleTypes = ["Certificat d'enregistrement", "Contrat de location (Contrat d'occupation provisoire)", "Fiche parcellaire", "Autre"];
+        const storedTitleType = contrib.property_title_type || undefined;
+        let effectiveTitleType = storedTitleType;
+        if (storedTitleType && !knownTitleTypes.includes(storedTitleType)) {
+          // It's a custom title name stored as the effective type - restore as "Autre"
+          effectiveTitleType = 'Autre';
+          setCustomTitleName(storedTitleType);
+        }
+
         // Remplir formData avec les données de la contribution
         setFormData(prev => ({
           ...prev,
           parcelNumber: contrib.parcel_number,
-          propertyTitleType: contrib.property_title_type || undefined,
+          propertyTitleType: effectiveTitleType,
           leaseType: contrib.lease_type as any || undefined,
           titleReferenceNumber: contrib.title_reference_number || undefined,
           titleIssueDate: contrib.title_issue_date || undefined,
