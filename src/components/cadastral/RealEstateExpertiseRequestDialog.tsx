@@ -941,10 +941,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         </CardContent>
       </Card>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 h-9 rounded-xl sticky top-0 z-10 bg-background/95 backdrop-blur-sm">
+      <Tabs value={activeTab} onValueChange={(tab) => {
+        // Skip materiaux tab for terrain_nu
+        if (tab === 'materiaux' && isTerrainNuLocal) return;
+        setActiveTab(tab);
+      }} className="w-full">
+        <TabsList className={`grid w-full ${isTerrainNuLocal ? 'grid-cols-3' : 'grid-cols-4'} h-9 rounded-xl sticky top-0 z-10 bg-background/95 backdrop-blur-sm`}>
           <TabsTrigger value="general" className="text-xs rounded-lg">Général</TabsTrigger>
-          <TabsTrigger value="materiaux" className="text-xs rounded-lg">Matériaux</TabsTrigger>
+          {!isTerrainNuLocal && <TabsTrigger value="materiaux" className="text-xs rounded-lg">Matériaux</TabsTrigger>}
           <TabsTrigger value="environnement" className="text-xs rounded-lg">Environ.</TabsTrigger>
           <TabsTrigger value="documents" className="text-xs rounded-lg">Documents</TabsTrigger>
         </TabsList>
