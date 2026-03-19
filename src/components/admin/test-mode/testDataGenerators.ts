@@ -44,11 +44,11 @@ export interface GeneratedIds {
 }
 
 const PROVINCES = [
-  { province: 'Kinshasa', ville: 'Kinshasa', commune: 'Gombe', quartier: 'Socimat', avenue: 'Av. du Commerce', circonscription_fonciere: 'Kinshasa-Ouest' },
-  { province: 'Nord-Kivu', ville: 'Goma', commune: 'Goma', quartier: 'Himbi', avenue: 'Av. du Rond-Point', circonscription_fonciere: 'Goma' },
-  { province: 'Sud-Kivu', ville: 'Bukavu', commune: 'Ibanda', quartier: 'Ndendere', avenue: 'Av. Patrice Lumumba', circonscription_fonciere: 'Bukavu' },
-  { province: 'Haut-Katanga', ville: 'Lubumbashi', commune: 'Lubumbashi', quartier: 'Centre-ville', avenue: 'Av. Mobutu', circonscription_fonciere: 'Lubumbashi' },
-  { province: 'Kongo-Central', ville: 'Matadi', commune: 'Matadi', quartier: 'Ville-Basse', avenue: 'Av. du Port', circonscription_fonciere: 'Matadi' },
+  { province: 'Kinshasa', ville: 'Kinshasa', commune: 'Gombe', quartier: 'Socimat', avenue: 'Av. du Commerce' },
+  { province: 'Nord-Kivu', ville: 'Goma', commune: 'Goma', quartier: 'Himbi', avenue: 'Av. du Rond-Point' },
+  { province: 'Sud-Kivu', ville: 'Bukavu', commune: 'Ibanda', quartier: 'Ndendere', avenue: 'Av. Patrice Lumumba' },
+  { province: 'Haut-Katanga', ville: 'Lubumbashi', commune: 'Lubumbashi', quartier: 'Centre-ville', avenue: 'Av. Mobutu' },
+  { province: 'Kongo-Central', ville: 'Matadi', commune: 'Matadi', quartier: 'Ville-Basse', avenue: 'Av. du Port' },
 ];
 
 /** Step 0b: Generate cadastral parcels (required by FK joins) */
