@@ -291,23 +291,42 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
                     <div className="grid grid-cols-2 gap-2">
                       <div className="space-y-1">
                         <Label className="text-xs text-muted-foreground">Quartier</Label>
-                        <Input
-                          placeholder="Saisir..."
-                          value={filters.quartier || ''}
-                          onChange={(e) => onFiltersChange({ quartier: e.target.value || undefined })}
-                          className="h-8 text-xs rounded-xl"
-                          disabled={!filters.commune}
-                        />
+                        <Select 
+                          value={filters.quartier || '_all'} 
+                          onValueChange={(v) => onFiltersChange({ 
+                            quartier: v === '_all' ? undefined : v,
+                            avenue: undefined
+                          })}
+                          disabled={!filters.commune || availableQuartiers.length === 0}
+                        >
+                          <SelectTrigger className="h-8 text-xs rounded-xl">
+                            <SelectValue placeholder={!filters.commune ? "Commune d'abord" : availableQuartiers.length === 0 ? "Aucun" : "Tous"} />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl max-h-48">
+                            <SelectItem value="_all">Tous</SelectItem>
+                            {availableQuartiers.map(q => (
+                              <SelectItem key={q} value={q}>{q}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs text-muted-foreground">Avenue</Label>
-                        <Input
-                          placeholder="Saisir..."
-                          value={filters.avenue || ''}
-                          onChange={(e) => onFiltersChange({ avenue: e.target.value || undefined })}
-                          className="h-8 text-xs rounded-xl"
-                          disabled={!filters.quartier}
-                        />
+                        <Select 
+                          value={filters.avenue || '_all'} 
+                          onValueChange={(v) => onFiltersChange({ avenue: v === '_all' ? undefined : v })}
+                          disabled={!filters.quartier || availableAvenues.length === 0}
+                        >
+                          <SelectTrigger className="h-8 text-xs rounded-xl">
+                            <SelectValue placeholder={!filters.quartier ? "Quartier d'abord" : availableAvenues.length === 0 ? "Aucune" : "Toutes"} />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl max-h-48">
+                            <SelectItem value="_all">Toutes</SelectItem>
+                            {availableAvenues.map(a => (
+                              <SelectItem key={a} value={a}>{a}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   </div>
