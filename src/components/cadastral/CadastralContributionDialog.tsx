@@ -2207,7 +2207,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   };
 
 
-  // Calculer la valeur CCC estimée (similaire au backend calculate_ccc_value)
+  // Calculer la valeur CCC estimée (aligné avec le backend calculate_ccc_value)
   const calculateCCCValue = useMemo(() => {
     let totalFields = 0;
     let filledFields = 0;
@@ -2216,8 +2216,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     totalFields += 1; // parcelNumber
     filledFields += 1; // toujours rempli
     
-    // SECTION 2: Informations générales (12 champs)
-    totalFields += 12;
+    // SECTION 2: Informations générales (14 champs - aligné SQL)
+    totalFields += 14;
     if (formData.propertyTitleType) filledFields += 1;
     if (formData.leaseType) filledFields += 1;
     if (formData.titleReferenceNumber) filledFields += 1;
@@ -2232,7 +2232,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (formData.areaSqm) filledFields += 1;
     if (formData.constructionType) filledFields += 1;
     if (formData.constructionNature) filledFields += 1;
+    if (formData.constructionMaterials) filledFields += 1; // FIX: was missing
     if (formData.declaredUsage) filledFields += 1;
+    if (formData.standing) filledFields += 1; // FIX: was missing
     
     // SECTION 3: Autorisation de bâtir (3 champs)
     totalFields += 3;
@@ -2246,18 +2248,21 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       filledFields += 1;
     }
     
-    // SECTION 4: Localisation (11 champs - adapté au type de section)
-    totalFields += 11;
+    // SECTION 4: Localisation (7 champs - adapté au type urbain/rural, aligné SQL)
+    const isUrban = sectionType === 'urbaine' || formData.parcelType === 'SU';
+    totalFields += 7;
     if (formData.province) filledFields += 1;
-    if (formData.ville) filledFields += 1;
-    if (formData.commune) filledFields += 1;
-    if (formData.quartier) filledFields += 1;
-    if (formData.avenue) filledFields += 1;
-    if (formData.territoire) filledFields += 1;
-    if (formData.collectivite) filledFields += 1;
-    if (formData.groupement) filledFields += 1;
-    if (formData.village) filledFields += 1;
-    
+    if (isUrban) {
+      if (formData.ville) filledFields += 1;
+      if (formData.commune) filledFields += 1;
+      if (formData.quartier) filledFields += 1;
+      if (formData.avenue) filledFields += 1;
+    } else {
+      if (formData.territoire) filledFields += 1;
+      if (formData.collectivite) filledFields += 1;
+      if (formData.groupement) filledFields += 1;
+      if (formData.village) filledFields += 1;
+    }
     
     const hasValidGPS = gpsCoordinates.filter(g => g.lat && g.lng).length >= 3;
     if (hasValidGPS) {
@@ -2291,6 +2296,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     totalFields += 1;
     if (formData.whatsappNumber) filledFields += 1;
     
+    // FIX: Plafonner pour éviter > 100%
+    if (filledFields > totalFields) filledFields = totalFields;
+    
     // Calculer le taux de complétion
     const completionRate = filledFields / totalFields;
     
@@ -2308,7 +2316,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       filledFields,
       totalFields
     };
-  }, [formData, currentOwners, buildingPermits, permitRequest, gpsCoordinates, previousOwners, taxRecords, mortgageRecords, ownerDocFile, titleDocFiles]);
+  }, [formData, currentOwners, buildingPermits, permitRequest, gpsCoordinates, previousOwners, taxRecords, mortgageRecords, ownerDocFile, titleDocFiles, sectionType]);
 
   // Calculer les détails de progression avec points et badges
   const calculateProgressDetails = () => {
