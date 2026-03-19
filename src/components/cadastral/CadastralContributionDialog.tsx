@@ -1048,7 +1048,22 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     }
   }, [formData.province, formData.territoire]);
 
-  // Logique de dépendance: Type de construction -> Nature de construction
+  // Logique de dépendance: Catégorie -> Sous-types disponibles
+  useEffect(() => {
+    if (!formData.constructionType) {
+      setAvailableConstructionSubtypes([]);
+      handleInputChange('constructionSubtype', undefined);
+      return;
+    }
+    const subtypeMap = getPicklistDependentOptions('picklist_construction_subtype');
+    const subtypes = subtypeMap[formData.constructionType] || [];
+    setAvailableConstructionSubtypes(subtypes);
+    if (formData.constructionSubtype && !subtypes.includes(formData.constructionSubtype)) {
+      handleInputChange('constructionSubtype', undefined);
+    }
+  }, [formData.constructionType, getPicklistDependentOptions]);
+
+  // Logique de dépendance: Catégorie -> Nature de construction
   useEffect(() => {
     if (!formData.constructionType) {
       setAvailableConstructionNatures([]);
