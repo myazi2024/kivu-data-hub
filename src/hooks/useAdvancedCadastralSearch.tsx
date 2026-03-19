@@ -48,11 +48,15 @@ export interface ParcelSearchResult {
   has_tax_arrears?: boolean;
 }
 
+const PAGE_SIZE = 50;
+
 export const useAdvancedCadastralSearch = () => {
   const [filters, setFilters] = useState<SearchFilters>({});
   const [results, setResults] = useState<ParcelSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
 
   const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
     const R = 6371e3;
@@ -69,70 +73,87 @@ export const useAdvancedCadastralSearch = () => {
     return R * c;
   };
 
-  const searchParcels = async (customFilters?: SearchFilters): Promise<ParcelSearchResult[]> => {
+  const buildQuery = (activeFilters: SearchFilters, pageNum: number) => {
+    let query = supabase
+      .from('cadastral_parcels')
+      .select('*', { count: 'exact' })
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false });
+
+    // Filtres géographiques
+    if (activeFilters.province) {
+      query = query.ilike('province', `%${activeFilters.province}%`);
+    }
+
+    // Filtre sectionType → parcel_type mapping
+    if (activeFilters.sectionType === 'urbaine') {
+      query = query.eq('parcel_type', 'Terrain bâti');
+    } else if (activeFilters.sectionType === 'rurale') {
+      query = query.eq('parcel_type', 'Terrain nu');
+    }
+
+    // Filtres urbains
+    if (activeFilters.ville) {
+      query = query.ilike('ville', `%${activeFilters.ville}%`);
+    }
+    if (activeFilters.commune) {
+      query = query.ilike('commune', `%${activeFilters.commune}%`);
+    }
+    if (activeFilters.quartier) {
+      query = query.ilike('quartier', `%${activeFilters.quartier}%`);
+    }
+    if (activeFilters.avenue) {
+      query = query.ilike('avenue', `%${activeFilters.avenue}%`);
+    }
+    // Filtres ruraux
+    if (activeFilters.territoire) {
+      query = query.ilike('territoire', `%${activeFilters.territoire}%`);
+    }
+    if (activeFilters.collectivite) {
+      query = query.ilike('collectivite', `%${activeFilters.collectivite}%`);
+    }
+    if (activeFilters.groupement) {
+      query = query.ilike('groupement', `%${activeFilters.groupement}%`);
+    }
+    if (activeFilters.village) {
+      query = query.ilike('village', `%${activeFilters.village}%`);
+    }
+
+    // Filtres de propriétaire
+    if (activeFilters.ownerName) {
+      query = query.ilike('current_owner_name', `%${activeFilters.ownerName}%`);
+    }
+
+    // Filtres de superficie — ne pas appliquer si 0 ou undefined
+    if (activeFilters.areaSqmMin !== undefined && activeFilters.areaSqmMin > 0) {
+      query = query.gte('area_sqm', activeFilters.areaSqmMin);
+    }
+    if (activeFilters.areaSqmMax !== undefined && activeFilters.areaSqmMax > 0) {
+      query = query.lte('area_sqm', activeFilters.areaSqmMax);
+    }
+
+    // Filtres de type
+    if (activeFilters.parcelType) {
+      query = query.eq('parcel_type', activeFilters.parcelType);
+    }
+    if (activeFilters.titleType) {
+      query = query.eq('property_title_type', activeFilters.titleType);
+    }
+
+    // Pagination
+    const from = pageNum * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+    query = query.range(from, to);
+
+    return query;
+  };
+
+  const searchParcels = async (customFilters?: SearchFilters, pageNum: number = 0): Promise<ParcelSearchResult[]> => {
     setLoading(true);
     const activeFilters = customFilters || filters;
 
     try {
-      let query = supabase
-        .from('cadastral_parcels')
-        .select('*', { count: 'exact' })
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false });
-
-      // Filtres géographiques
-      if (activeFilters.province) {
-        query = query.ilike('province', `%${activeFilters.province}%`);
-      }
-      // Filtres urbains
-      if (activeFilters.ville) {
-        query = query.ilike('ville', `%${activeFilters.ville}%`);
-      }
-      if (activeFilters.commune) {
-        query = query.ilike('commune', `%${activeFilters.commune}%`);
-      }
-      if (activeFilters.quartier) {
-        query = query.ilike('quartier', `%${activeFilters.quartier}%`);
-      }
-      if (activeFilters.avenue) {
-        query = query.ilike('avenue', `%${activeFilters.avenue}%`);
-      }
-      // Filtres ruraux
-      if (activeFilters.territoire) {
-        query = query.ilike('territoire', `%${activeFilters.territoire}%`);
-      }
-      if (activeFilters.collectivite) {
-        query = query.ilike('collectivite', `%${activeFilters.collectivite}%`);
-      }
-      if (activeFilters.groupement) {
-        query = query.ilike('groupement', `%${activeFilters.groupement}%`);
-      }
-      if (activeFilters.village) {
-        query = query.ilike('village', `%${activeFilters.village}%`);
-      }
-
-      // Filtres de propriétaire
-      if (activeFilters.ownerName) {
-        query = query.ilike('current_owner_name', `%${activeFilters.ownerName}%`);
-      }
-
-      // Filtres de superficie
-      if (activeFilters.areaSqmMin !== undefined && activeFilters.areaSqmMin > 0) {
-        query = query.gte('area_sqm', activeFilters.areaSqmMin);
-      }
-      if (activeFilters.areaSqmMax !== undefined && activeFilters.areaSqmMax > 0) {
-        query = query.lte('area_sqm', activeFilters.areaSqmMax);
-      }
-
-      // Filtres de type
-      if (activeFilters.parcelType) {
-        query = query.eq('parcel_type', activeFilters.parcelType);
-      }
-      if (activeFilters.titleType) {
-        query = query.eq('property_title_type', activeFilters.titleType);
-      }
-
-      const { data, error, count } = await query.limit(500);
+      const { data, error, count } = await buildQuery(activeFilters, pageNum);
 
       if (error) throw error;
 
@@ -174,7 +195,6 @@ export const useAdvancedCadastralSearch = () => {
         const parcelsWithMortgages = new Set(mortgagesData.data?.map(p => p.parcel_id) || []);
         const parcelsWithTaxArrears = new Set(taxData.data?.map(p => p.parcel_id) || []);
 
-        // Enrichir les données
         let enrichedData = filteredData.map(parcel => ({
           ...parcel,
           has_building_permit: parcelsWithPermits.has(parcel.id),
@@ -182,7 +202,6 @@ export const useAdvancedCadastralSearch = () => {
           has_tax_arrears: parcelsWithTaxArrears.has(parcel.id)
         })) as ParcelSearchResult[];
 
-        // Appliquer les filtres de statut en mode ET (tous les critères doivent être satisfaits)
         if (activeFilters.hasBuildingPermit) {
           enrichedData = enrichedData.filter(p => p.has_building_permit);
         }
@@ -196,16 +215,33 @@ export const useAdvancedCadastralSearch = () => {
         filteredData = enrichedData;
       }
 
-      setResults(filteredData);
-      setTotalCount(filteredData.length);
+      const totalFromDb = count ?? 0;
+
+      if (pageNum === 0) {
+        setResults(filteredData);
+      } else {
+        setResults(prev => [...prev, ...filteredData]);
+      }
+      
+      setTotalCount(totalFromDb);
+      setPage(pageNum);
+      setHasMore((pageNum + 1) * PAGE_SIZE < totalFromDb);
+      
       return filteredData;
     } catch (error) {
       console.error('Erreur recherche avancée:', error);
       setResults([]);
       setTotalCount(0);
+      setHasMore(false);
       return [];
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMore = () => {
+    if (!loading && hasMore) {
+      searchParcels(filters, page + 1);
     }
   };
 
@@ -217,6 +253,8 @@ export const useAdvancedCadastralSearch = () => {
     setFilters({});
     setResults([]);
     setTotalCount(0);
+    setPage(0);
+    setHasMore(false);
   };
 
   return {
@@ -224,8 +262,10 @@ export const useAdvancedCadastralSearch = () => {
     results,
     loading,
     totalCount,
+    hasMore,
     updateFilters,
     clearFilters,
-    searchParcels
+    searchParcels,
+    loadMore
   };
 };
