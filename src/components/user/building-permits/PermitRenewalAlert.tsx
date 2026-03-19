@@ -17,7 +17,7 @@ export function PermitRenewalAlert({ permits }: PermitRenewalAlertProps) {
         if (!permit.building_permits) return false;
 
         const issueDate = new Date(permit.building_permits.issue_date);
-        const validityMonths = permit.building_permits.validity_period_months || 36;
+        const validityMonths = permit.building_permits.validity_period_months || 12;
         const expiryDate = new Date(issueDate);
         expiryDate.setMonth(expiryDate.getMonth() + validityMonths);
 
