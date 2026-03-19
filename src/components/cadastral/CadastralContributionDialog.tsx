@@ -544,10 +544,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         }
 
         // FIX: Detect custom title type ("Autre") and restore customTitleName
-        const knownTitleTypes = ["Certificat d'enregistrement", "Contrat de location (Contrat d'occupation provisoire)", "Fiche parcellaire", "Autre"];
+        // Use PROPERTY_TITLE_TYPES constant instead of local hardcoded list
+        const knownTitleValues = PROPERTY_TITLE_TYPES.map(t => t.value);
         const storedTitleType = contrib.property_title_type || undefined;
         let effectiveTitleType = storedTitleType;
-        if (storedTitleType && !knownTitleTypes.includes(storedTitleType)) {
+        if (storedTitleType && !knownTitleValues.includes(storedTitleType)) {
           // It's a custom title name stored as the effective type - restore as "Autre"
           effectiveTitleType = 'Autre';
           setCustomTitleName(storedTitleType);
