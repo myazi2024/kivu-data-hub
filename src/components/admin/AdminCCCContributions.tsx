@@ -328,15 +328,19 @@ const AdminCCCContributions: React.FC = () => {
             current_owner_legal_status: updatedContribution.current_owner_legal_status,
             current_owner_since: updatedContribution.current_owner_since,
             area_sqm: updatedContribution.area_sqm,
-            // area_hectares est une colonne GENERATED - NE PAS L'INCLURE, elle est calculée automatiquement
+            // area_hectares est une colonne GENERATED - NE PAS L'INCLURE
             parcel_type: updatedContribution.parcel_type || 'SU',
             property_title_type: updatedContribution.property_title_type,
             title_reference_number: updatedContribution.title_reference_number,
-            title_issue_date: updatedContribution.title_issue_date, // Date de délivrance du titre foncier
+            title_issue_date: updatedContribution.title_issue_date,
             lease_type: updatedContribution.lease_type,
             construction_type: updatedContribution.construction_type,
             construction_nature: updatedContribution.construction_nature,
+            construction_materials: updatedContribution.construction_materials,
+            construction_year: updatedContribution.construction_year,
             declared_usage: updatedContribution.declared_usage,
+            standing: updatedContribution.standing,
+            house_number: updatedContribution.house_number,
             province: updatedContribution.province,
             ville: updatedContribution.ville,
             commune: updatedContribution.commune,
