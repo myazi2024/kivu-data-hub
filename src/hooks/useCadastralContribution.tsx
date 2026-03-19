@@ -23,6 +23,7 @@ export interface CadastralContributionData {
     since: string;
   }>;
   constructionType?: string;
+  constructionSubtype?: string;
   constructionNature?: string;
   constructionMaterials?: string;
   declaredUsage?: string;

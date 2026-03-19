@@ -51,9 +51,20 @@ export const CCC_STATIC_PICKLIST_REGISTRY: Record<string, {
     fallback: ['Concession', 'Affectation'],
   },
   picklist_construction_type: {
-    label: 'Type de construction',
-    description: 'Types de construction',
+    label: 'Catégorie de construction',
+    description: 'Catégories principales de construction',
     fallback: ['Résidentielle', 'Commerciale', 'Industrielle', 'Agricole', 'Terrain nu'],
+  },
+  picklist_construction_subtype: {
+    label: 'Sous-type de construction',
+    description: 'Sous-types de construction par catégorie (dépendant)',
+    fallback: {
+      Résidentielle: ['Villa / Maison individuelle', 'Appartement', 'Immeuble', 'Duplex / Triplex', 'Studio'],
+      Commerciale: ['Bureau', 'Boutique / Commerce', 'Entrepôt / Hangar', 'Hôtel / Restaurant'],
+      Industrielle: ['Usine', 'Atelier', 'Entrepôt industriel', 'Hangar'],
+      Agricole: ['Exploitation agricole', 'Ferme', 'Serre'],
+      'Terrain nu': [],
+    },
   },
   picklist_construction_nature: {
     label: 'Nature de construction',
