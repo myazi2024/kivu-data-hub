@@ -288,10 +288,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     paymentDate: string;
     receiptFile: File | null;
   }>>([{
-    taxType: 'Taxe foncière',
+    taxType: 'Impôt foncier annuel',
     taxYear: '',
     taxAmount: '',
-    paymentStatus: 'Non payée',
+    paymentStatus: 'En attente',
     paymentDate: '',
     receiptFile: null
   }]);
@@ -561,6 +561,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           constructionNature: contrib.construction_nature || undefined,
           constructionMaterials: contrib.construction_materials || undefined,
           declaredUsage: contrib.declared_usage || undefined,
+          standing: contrib.standing || undefined,
           constructionYear: contrib.construction_year || undefined,
           areaSqm: contrib.area_sqm || undefined,
           province: contrib.province || undefined,
@@ -691,10 +692,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         const taxes = contrib.tax_history as any[];
         if (taxes && Array.isArray(taxes) && taxes.length > 0) {
           setTaxRecords(taxes.map((t: any) => ({
-            taxType: t.tax_type || 'Taxe foncière',
+            taxType: t.tax_type || 'Impôt foncier annuel',
             taxYear: String(t.tax_year || ''),
             taxAmount: String(t.amount_usd || ''),
-            paymentStatus: t.payment_status || 'Non payée',
+            paymentStatus: t.payment_status || 'En attente',
             paymentDate: t.payment_date || '',
             receiptFile: null
           })));
@@ -889,6 +890,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       }
       
       // Formule de Brahmagupta (approximation quadrilatère cyclique)
+      // Ordre cyclique correct: Nord(0), Est(2), Sud(1), Ouest(3) = côtés adjacents
       const a = lengths[0], b = lengths[2], c = lengths[1], d = lengths[3];
       const s = (a + b + c + d) / 2;
       const brahmVal = (s - a) * (s - b) * (s - c) * (s - d);
@@ -1087,20 +1089,20 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     }
   }, [formData.constructionType, formData.constructionNature, getPicklistDependentOptions]);
 
-  // Logique de dépendance: Nature -> Matériaux de construction (hardcodé)
-  const MATERIALS_BY_NATURE: Record<string, string[]> = {
+  // Fallbacks hardcodés pour matériaux et standing (utilisés si la DB ne retourne rien)
+  const MATERIALS_BY_NATURE_FALLBACK: Record<string, string[]> = {
     Durable: ['Béton armé', 'Briques cuites', 'Parpaings', 'Pierre naturelle'],
     'Semi-durable': ['Semi-dur', 'Briques adobes', 'Bois', 'Mixte'],
     Précaire: ['Tôles', 'Bois', 'Paille', 'Autre'],
   };
 
-  // Logique de dépendance: Nature -> Standing (hardcodé)
-  const STANDING_BY_NATURE: Record<string, string[]> = {
+  const STANDING_BY_NATURE_FALLBACK: Record<string, string[]> = {
     Durable: ['Haut standing', 'Moyen standing', 'Économique'],
     'Semi-durable': ['Moyen standing', 'Économique'],
     Précaire: ['Économique'],
   };
 
+  // Logique de dépendance: Nature -> Matériaux (DB avec fallback hardcodé)
   useEffect(() => {
     if (!formData.constructionNature || formData.constructionNature === 'Non bâti') {
       setAvailableConstructionMaterials([]);
@@ -1108,14 +1110,18 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       return;
     }
 
-    const materials = MATERIALS_BY_NATURE[formData.constructionNature] || [];
+    const dbMaterialsMap = getPicklistDependentOptions('picklist_construction_materials');
+    const materials = (Object.keys(dbMaterialsMap).length > 0 
+      ? dbMaterialsMap[formData.constructionNature] 
+      : MATERIALS_BY_NATURE_FALLBACK[formData.constructionNature]) || [];
     setAvailableConstructionMaterials(materials);
     
     if (formData.constructionMaterials && !materials.includes(formData.constructionMaterials)) {
       handleInputChange('constructionMaterials', undefined);
     }
-  }, [formData.constructionNature]);
+  }, [formData.constructionNature, getPicklistDependentOptions]);
 
+  // Logique de dépendance: Nature -> Standing (DB avec fallback hardcodé)
   useEffect(() => {
     if (!formData.constructionNature || formData.constructionNature === 'Non bâti') {
       setAvailableStandings([]);
@@ -1123,13 +1129,16 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       return;
     }
 
-    const standings = STANDING_BY_NATURE[formData.constructionNature] || [];
+    const dbStandingMap = getPicklistDependentOptions('picklist_standing');
+    const standings = (Object.keys(dbStandingMap).length > 0 
+      ? dbStandingMap[formData.constructionNature] 
+      : STANDING_BY_NATURE_FALLBACK[formData.constructionNature]) || [];
     setAvailableStandings(standings);
     
     if (formData.standing && !standings.includes(formData.standing)) {
       handleInputChange('standing', undefined);
     }
-  }, [formData.constructionNature]);
+  }, [formData.constructionNature, getPicklistDependentOptions]);
 
   useEffect(() => {
     if (permitMode === 'request' && formData.declaredUsage && !permitRequest.plannedUsage) {
@@ -1753,10 +1762,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     setHighlightIncompleteTax(false);
     
     setTaxRecords([...taxRecords, {
-      taxType: '',
+      taxType: 'Impôt foncier annuel',
       taxYear: '',
       taxAmount: '',
-      paymentStatus: '',
+      paymentStatus: 'En attente',
       paymentDate: '',
       receiptFile: null
     }]);
@@ -2601,10 +2610,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     // Reset obligations
     setHasMortgage(null);
     setTaxRecords([{
-      taxType: 'Taxe foncière',
+      taxType: 'Impôt foncier annuel',
       taxYear: '',
       taxAmount: '',
-      paymentStatus: 'Non payée',
+      paymentStatus: 'En attente',
       paymentDate: '',
       receiptFile: null
     }]);
