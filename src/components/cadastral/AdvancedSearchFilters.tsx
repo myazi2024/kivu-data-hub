@@ -19,7 +19,6 @@ import {
   getTerritoiresForProvince,
   getCollectivitesForTerritoire,
   getQuartiersForCommune,
-  getAvenuesForQuartier
 } from '@/lib/geographicData';
 
 interface AdvancedSearchFiltersProps {
@@ -46,7 +45,7 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
   const [availableTerritoires, setAvailableTerritoires] = useState<string[]>([]);
   const [availableCollectivites, setAvailableCollectivites] = useState<string[]>([]);
   const [availableQuartiers, setAvailableQuartiers] = useState<string[]>([]);
-  const [availableAvenues, setAvailableAvenues] = useState<string[]>([]);
+  
 
   // Charger villes et territoires quand province change
   useEffect(() => {
@@ -86,14 +85,6 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
     }
   }, [filters.province, filters.ville, filters.commune]);
 
-  // Charger avenues quand quartier change
-  useEffect(() => {
-    if (filters.province && filters.ville && filters.commune && filters.quartier) {
-      setAvailableAvenues(getAvenuesForQuartier(filters.province, filters.ville, filters.commune, filters.quartier));
-    } else {
-      setAvailableAvenues([]);
-    }
-  }, [filters.province, filters.ville, filters.commune, filters.quartier]);
 
   // Handler pour changer le type de section
   const handleSectionTypeChange = (type: 'urbaine' | 'rurale') => {
@@ -312,21 +303,13 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs text-muted-foreground">Avenue</Label>
-                        <Select 
-                          value={filters.avenue || '_all'} 
-                          onValueChange={(v) => onFiltersChange({ avenue: v === '_all' ? undefined : v })}
-                          disabled={!filters.quartier || availableAvenues.length === 0}
-                        >
-                          <SelectTrigger className="h-8 text-xs rounded-xl">
-                            <SelectValue placeholder={!filters.quartier ? "Quartier d'abord" : availableAvenues.length === 0 ? "Aucune" : "Toutes"} />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl max-h-48">
-                            <SelectItem value="_all">Toutes</SelectItem>
-                            {availableAvenues.map(a => (
-                              <SelectItem key={a} value={a}>{a}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Input
+                          value={filters.avenue || ''}
+                          onChange={(e) => onFiltersChange({ avenue: e.target.value || undefined })}
+                          placeholder="Nom de l'avenue..."
+                          className="h-8 text-xs rounded-xl"
+                          disabled={!filters.quartier}
+                        />
                       </div>
                     </div>
                   </div>
