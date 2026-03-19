@@ -1753,10 +1753,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     setHighlightIncompleteTax(false);
     
     setTaxRecords([...taxRecords, {
-      taxType: '',
+      taxType: 'Impôt foncier annuel',
       taxYear: '',
       taxAmount: '',
-      paymentStatus: '',
+      paymentStatus: 'En attente',
       paymentDate: '',
       receiptFile: null
     }]);
