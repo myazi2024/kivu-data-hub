@@ -902,9 +902,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       const lengths = sides.map(s => parseFloat(s.length));
       
       // Pour un rectangle : Nord/Sud sont opposés et Est/Ouest sont opposés
+      // FIX: Use 1% relative tolerance instead of fixed 0.1m for real-world parcels
+      const tolerance = (side: number) => Math.max(0.5, side * 0.01);
       const isRectangle = (
-        Math.abs(lengths[0] - lengths[1]) < 0.1 &&
-        Math.abs(lengths[2] - lengths[3]) < 0.1
+        Math.abs(lengths[0] - lengths[1]) < tolerance(lengths[0]) &&
+        Math.abs(lengths[2] - lengths[3]) < tolerance(lengths[2])
       );
       
       if (isRectangle) {
@@ -1234,11 +1236,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       return;
     }
     
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    // Validate file size (max 10MB - aligned with backend validate_file_upload)
+    if (file.size > 10 * 1024 * 1024) {
       toast({
         title: "Fichier trop volumineux",
-        description: "La taille maximale est de 5 MB",
+        description: "La taille maximale est de 10 MB",
         variant: "destructive"
       });
       return;
@@ -1827,10 +1829,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       });
       return false;
     }
-    if (file.size > 5 * 1024 * 1024) {
+    // FIX: Aligned with backend validate_file_upload (10MB)
+    if (file.size > 10 * 1024 * 1024) {
       toast({
         title: "Fichier trop volumineux",
-        description: "La taille maximale est de 5 MB",
+        description: "La taille maximale est de 10 MB",
         variant: "destructive"
       });
       return false;
@@ -1886,9 +1889,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       mortgageAmount: '',
       duration: '',
       creditorName: '',
-      creditorType: '',
+      creditorType: 'Banque',
       contractDate: '',
-      mortgageStatus: '',
+      mortgageStatus: 'Active',
       receiptFile: null
     }]);
   };
@@ -2298,13 +2301,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       filledFields += 1; // coordonnées partielles
     }
     
-    // SECTION 5: Historiques (3 champs)
-    totalFields += 3;
+    // SECTION 5: Historiques (2 champs - boundary_history excluded since no UI input)
+    // FIX: Aligned with SQL which counts 3 (ownership, boundary, tax) but boundary has no UI.
+    // We count only 2 here to avoid penalizing users for a field they can't fill.
+    totalFields += 2;
     const hasOwnershipHistory = previousOwners.some(o => o.name && o.startDate);
     if (hasOwnershipHistory) filledFields += 1;
-    
-    // boundaryHistory n'a pas d'UI de saisie - toujours 0 en front-end
-    // Le backend vérifie boundary_history dans la contribution
     
     const hasTaxHistory = taxRecords.some(t => t.taxAmount && t.taxYear);
     if (hasTaxHistory) filledFields += 1;
@@ -2612,6 +2614,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     // Reset dirty flag
     formDirtyRef.current = false;
     isClosingAfterSuccessRef.current = false;
+    // FIX: Reset customTitleName (was missing)
+    setCustomTitleName('');
     
     // Reset form data
     setFormData({ parcelNumber: parcelNumber });
