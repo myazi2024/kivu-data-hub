@@ -23,6 +23,7 @@ import LandTitleRequestDialog from '@/components/cadastral/LandTitleRequestDialo
 import LandTitleTermsDialog from '@/components/cadastral/LandTitleTermsDialog';
 import { useAdvancedCadastralSearch } from '@/hooks/useAdvancedCadastralSearch';
 import { useSearchHistory } from '@/hooks/useSearchHistory';
+import { useSearchBarConfig } from '@/hooks/useSearchBarConfig';
 import 'leaflet/dist/leaflet.css';
 
 interface ParcelData {
