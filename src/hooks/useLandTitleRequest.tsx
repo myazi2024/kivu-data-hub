@@ -39,7 +39,7 @@ export interface LandTitleRequestData {
   collectivite?: string;
   groupement?: string;
   village?: string;
-  circonscriptionFonciere?: string;
+  
   
   // Données techniques
   areaSqm?: number;
@@ -202,7 +202,7 @@ export const useLandTitleRequest = () => {
           collectivite: data.collectivite || null,
           groupement: data.groupement || null,
           village: data.village || null,
-          circonscription_fonciere: data.circonscriptionFonciere || null,
+          
           area_sqm: data.areaSqm || null,
           gps_coordinates: data.gpsCoordinates || null,
           parcel_sides: data.parcelSides || null,

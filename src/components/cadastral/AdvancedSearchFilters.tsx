@@ -95,7 +95,11 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
     }
   };
 
-  const activeFiltersCount = Object.values(filters).filter(v => v !== undefined && v !== '').length;
+  const activeFiltersCount = Object.entries(filters).filter(([k, v]) => {
+    if (v === undefined || v === '' || v === false) return false;
+    if (typeof v === 'number' && v === 0) return false;
+    return true;
+  }).length;
 
   return (
     <Card className="p-3 bg-background/95 backdrop-blur-md shadow-lg rounded-2xl border border-border/50 max-w-[360px]">

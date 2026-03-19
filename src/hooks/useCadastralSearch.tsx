@@ -120,61 +120,62 @@ export const useCadastralSearch = () => {
         return;
       }
 
-      // Recherche de l'historique des propriétaires
-      const { data: ownershipData, error: ownershipError } = await supabase
-        .from('cadastral_ownership_history')
-        .select('*')
-        .eq('parcel_id', parcelData.id)
-        .order('ownership_start_date', { ascending: false });
+      if (!parcelData) {
+        setError(errorMessages.not_found);
+        return;
+      }
+
+      // Recherche parallèle de toutes les données liées
+      const [
+        { data: ownershipData, error: ownershipError },
+        { data: taxData, error: taxError },
+        { data: mortgageData, error: mortgageError },
+        { data: boundaryData, error: boundaryError },
+        { data: buildingPermitsData, error: buildingPermitsError }
+      ] = await Promise.all([
+        supabase
+          .from('cadastral_ownership_history')
+          .select('*')
+          .eq('parcel_id', parcelData.id)
+          .order('ownership_start_date', { ascending: false }),
+        supabase
+          .from('cadastral_tax_history')
+          .select('*')
+          .eq('parcel_id', parcelData.id)
+          .order('tax_year', { ascending: false }),
+        supabase
+          .from('cadastral_mortgages')
+          .select(`
+            *,
+            cadastral_mortgage_payments (
+              id,
+              payment_amount_usd,
+              payment_date,
+              payment_type,
+              payment_receipt_url
+            )
+          `)
+          .eq('parcel_id', parcelData.id)
+          .order('contract_date', { ascending: false }),
+        supabase
+          .from('cadastral_boundary_history')
+          .select('*')
+          .eq('parcel_id', parcelData.id)
+          .order('survey_date', { ascending: false }),
+        supabase
+          .from('cadastral_building_permits')
+          .select('*')
+          .eq('parcel_id', parcelData.id)
+          .order('issue_date', { ascending: false })
+      ]);
 
       if (ownershipError) throw ownershipError;
-
-      // Recherche de l'historique des taxes
-      const { data: taxData, error: taxError } = await supabase
-        .from('cadastral_tax_history')
-        .select('*')
-        .eq('parcel_id', parcelData.id)
-        .order('tax_year', { ascending: false });
-
       if (taxError) throw taxError;
-
-      // Recherche de l'historique des hypothèques avec paiements
-      const { data: mortgageData, error: mortgageError } = await supabase
-        .from('cadastral_mortgages')
-        .select(`
-          *,
-          cadastral_mortgage_payments (
-            id,
-            payment_amount_usd,
-            payment_date,
-            payment_type,
-            payment_receipt_url
-          )
-        `)
-        .eq('parcel_id', parcelData.id)
-        .order('contract_date', { ascending: false });
-
       if (mortgageError) throw mortgageError;
-
-      // Recherche de l'historique de bornage
-      const { data: boundaryData, error: boundaryError } = await supabase
-        .from('cadastral_boundary_history')
-        .select('*')
-        .eq('parcel_id', parcelData.id)
-        .order('survey_date', { ascending: false });
-
       if (boundaryError) throw boundaryError;
-
-      // Recherche des autorisations de bâtir
-      const { data: buildingPermitsData, error: buildingPermitsError } = await supabase
-        .from('cadastral_building_permits')
-        .select('*')
-        .eq('parcel_id', parcelData.id)
-        .order('issue_date', { ascending: false });
-
       if (buildingPermitsError) throw buildingPermitsError;
 
-      // Transformation des données d'hypothèques pour correspondre à l'interface
+      // Transformation des données d'hypothèques
       const formattedMortgageData = mortgageData?.map(mortgage => ({
         ...mortgage,
         payments: mortgage.cadastral_mortgage_payments || []

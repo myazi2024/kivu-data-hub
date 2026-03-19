@@ -261,7 +261,7 @@ export const UserContributions: React.FC = () => {
           constructionType: (contribution as any).construction_type || '',
           constructionYear: (contribution as any).construction_year || undefined,
           whatsappNumber: (contribution as any).whatsapp_number || '',
-          circonscriptionFonciere: (contribution as any).circonscription_fonciere || '',
+          
           isTitleInCurrentOwnerName: (contribution as any).is_title_in_current_owner_name,
         },
         // ✅ FIX: Restaurer currentOwners avec la structure complète attendue par le Dialog

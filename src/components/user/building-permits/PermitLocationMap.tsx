@@ -104,14 +104,6 @@ export function PermitLocationMap({ permit }: PermitLocationMapProps) {
         </div>
 
         {/* Informations complémentaires */}
-        {permit.circonscription_fonciere && (
-          <div className="rounded-lg border border-border/50 bg-background/50 p-3 space-y-1">
-            <p className="text-xs font-medium text-muted-foreground">
-              Circonscription foncière
-            </p>
-            <p className="text-sm">{permit.circonscription_fonciere}</p>
-          </div>
-        )}
 
         {!hasCoordinates && (
           <div className="rounded-lg bg-yellow-50 border border-yellow-200 p-3 text-xs text-yellow-800">

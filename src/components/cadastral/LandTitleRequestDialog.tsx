@@ -1148,7 +1148,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                           // Fetch location data: prioritize parcel table (source of truth)
                                           const { data: parcelLocData } = await supabase
                                             .from('cadastral_parcels')
-                                            .select('province, parcel_type, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, parcel_sides, gps_coordinates, construction_type, construction_nature, construction_materials, declared_usage, area_sqm, circonscription_fonciere')
+                                            .select('province, parcel_type, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, parcel_sides, gps_coordinates, construction_type, construction_nature, construction_materials, declared_usage, area_sqm')
                                             .eq('id', parcel.id)
                                             .single();
                                           
@@ -1172,9 +1172,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                               gpsCoordinates: parcelLocData?.gps_coordinates && Array.isArray(parcelLocData.gps_coordinates) ? parcelLocData.gps_coordinates : (contribData as any)?.gps_coordinates && Array.isArray((contribData as any).gps_coordinates) ? (contribData as any).gps_coordinates : [],
                                             };
                                             setParcelLocationData(locationInfo);
-                                            // Also extract areaSqm and circonscriptionFonciere
+                                            // Extract areaSqm
                                             const fetchedAreaSqm = parcelLocData?.area_sqm || (contribData as any)?.area_sqm || null;
-                                            const fetchedCirconscription = (parcelLocData as any)?.circonscription_fonciere || (contribData as any)?.circonscription_fonciere || '';
                                             setFormData(prev => ({
                                               ...prev,
                                               sectionType: sType as 'urbaine' | 'rurale',
@@ -1188,7 +1187,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                               groupement: locationInfo.groupement,
                                               village: locationInfo.village,
                                               areaSqm: fetchedAreaSqm ?? prev.areaSqm,
-                                              circonscriptionFonciere: fetchedCirconscription || prev.circonscriptionFonciere,
                                             }));
                                           }
 

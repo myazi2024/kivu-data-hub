@@ -44,7 +44,7 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
   const byConstructionNature = useMemo(() => countBy(filtered, 'construction_nature'), [filtered]);
   const byDeducedTitleType = useMemo(() => countBy(filtered, 'deduced_title_type'), [filtered]);
   const byNationality = useMemo(() => countBy(filtered, 'nationality'), [filtered]);
-  const byCirconscription = useMemo(() => countBy(filtered, 'circonscription_fonciere'), [filtered]);
+  
   const trend = useMemo(() => trendByMonth(filtered), [filtered]);
 
   const genderData = useMemo(() => {
@@ -146,8 +146,6 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(ownerSameData, 'pie', 'propriétaire vs mandataire')} />}
         {v('surface') && <ChartCard title={t('surface', 'Superficie demandée')} icon={Ruler} data={surfaceDist} type="bar-v" colorIndex={10} hidden={surfaceDist.length === 0}
           insight={generateInsight(surfaceDist, 'bar-v', 'les superficies')} />}
-        {v('circonscription') && <ChartCard title={t('circonscription', 'Circonscription')} data={byCirconscription} type="bar-h" colorIndex={8} labelWidth={100} hidden={byCirconscription.length === 0}
-          insight={generateInsight(byCirconscription, 'bar-h', 'les circonscriptions')} />}
         {v('construction-type') && <ChartCard title={t('construction-type', 'Type construction')} icon={Building} data={byConstructionType} type="bar-h" colorIndex={3} hidden={byConstructionType.length === 0}
           insight={generateInsight(byConstructionType, 'bar-h', 'les types de construction')} />}
         {v('construction-nature') && <ChartCard title={t('construction-nature', 'Nature construction')} data={byConstructionNature} type="bar-h" colorIndex={7} labelWidth={100}

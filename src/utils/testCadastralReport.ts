@@ -22,7 +22,7 @@ const mockCadastralResult = {
     commune: 'Goma',
     quartier: 'Himbi',
     avenue: 'Patrice Lumumba',
-    circonscription_fonciere: 'Circonscription Foncière de Goma',
+    
     construction_type: 'Maison individuelle',
     construction_nature: 'Durable',
     declared_usage: 'Résidentiel',

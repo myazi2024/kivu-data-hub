@@ -172,7 +172,7 @@ const AdminCadastralTooltip = () => {
     { key: 'gps_coordinates', label: 'Coordonnées GPS' },
     { key: 'property_title_type', label: 'Type de titre' },
     { key: 'title_reference_number', label: 'N° référence titre' },
-    { key: 'circonscription_fonciere', label: 'Circonscription foncière' },
+    
   ];
 
   return (

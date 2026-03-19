@@ -63,7 +63,7 @@ interface Contribution {
   collectivite: string | null;
   groupement: string | null;
   village: string | null;
-  circonscription_fonciere: string | null;
+  
   gps_coordinates: any;
   ownership_history: any;
   boundary_history: any;
@@ -346,7 +346,7 @@ const AdminCCCContributions: React.FC = () => {
             collectivite: updatedContribution.collectivite,
             groupement: updatedContribution.groupement,
             village: updatedContribution.village,
-            circonscription_fonciere: updatedContribution.circonscription_fonciere,
+            
             location: [
               updatedContribution.province,
               updatedContribution.ville,
@@ -1063,10 +1063,6 @@ const AdminCCCContributions: React.FC = () => {
                     <div>
                       <Label className="text-xs text-muted-foreground">Date de délivrance du titre</Label>
                       <p className="text-sm">{selectedContribution.title_issue_date ? new Date(selectedContribution.title_issue_date).toLocaleDateString('fr-FR') : 'Non renseigné'}</p>
-                    </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Circonscription foncière</Label>
-                      <p className="text-sm">{selectedContribution.circonscription_fonciere || 'Non renseigné'}</p>
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground">Type de parcelle</Label>
