@@ -1576,7 +1576,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         ownershipHistory: ownershipHistoryData.length > 0 ? ownershipHistoryData as any : undefined,
         // FIX: Preserve existing URLs when no new file is uploaded in edit mode
         ownerDocumentUrl: ownerDocUrl || existingOwnerDocUrl || undefined,
-        titleDocumentUrl: titleDocUrls.length > 0 ? titleDocUrls[0] : (existingTitleDocUrl || undefined),
+        titleDocumentUrl: titleDocUrls.length > 0 ? titleDocUrls.join(',') : (existingTitleDocUrl || undefined),
         taxHistory: taxHistoryData.length > 0 ? taxHistoryData as any : undefined,
         mortgageHistory: mortgageHistoryData.length > 0 ? mortgageHistoryData as any : undefined,
         buildingPermits: buildingPermitsDataFinal,
