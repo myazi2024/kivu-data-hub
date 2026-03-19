@@ -1829,10 +1829,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       });
       return false;
     }
-    if (file.size > 5 * 1024 * 1024) {
+    // FIX: Aligned with backend validate_file_upload (10MB)
+    if (file.size > 10 * 1024 * 1024) {
       toast({
         title: "Fichier trop volumineux",
-        description: "La taille maximale est de 5 MB",
+        description: "La taille maximale est de 10 MB",
         variant: "destructive"
       });
       return false;
