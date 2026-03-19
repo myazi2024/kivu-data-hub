@@ -902,9 +902,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       const lengths = sides.map(s => parseFloat(s.length));
       
       // Pour un rectangle : Nord/Sud sont opposés et Est/Ouest sont opposés
+      // FIX: Use 1% relative tolerance instead of fixed 0.1m for real-world parcels
+      const tolerance = (side: number) => Math.max(0.5, side * 0.01);
       const isRectangle = (
-        Math.abs(lengths[0] - lengths[1]) < 0.1 &&
-        Math.abs(lengths[2] - lengths[3]) < 0.1
+        Math.abs(lengths[0] - lengths[1]) < tolerance(lengths[0]) &&
+        Math.abs(lengths[2] - lengths[3]) < tolerance(lengths[2])
       );
       
       if (isRectangle) {
