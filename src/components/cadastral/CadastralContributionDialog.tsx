@@ -555,7 +555,16 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           leaseType: contrib.lease_type as any || undefined,
           titleReferenceNumber: contrib.title_reference_number || undefined,
           titleIssueDate: contrib.title_issue_date || undefined,
-          constructionType: contrib.construction_type || undefined,
+          constructionType: (() => {
+            const ct = contrib.construction_type || '';
+            if (ct.includes(' - ')) return ct.split(' - ')[0];
+            return ct || undefined;
+          })(),
+          constructionSubtype: (() => {
+            const ct = contrib.construction_type || '';
+            if (ct.includes(' - ')) return ct.split(' - ').slice(1).join(' - ');
+            return undefined;
+          })(),
           constructionNature: contrib.construction_nature || undefined,
           constructionMaterials: contrib.construction_materials || undefined,
           declaredUsage: contrib.declared_usage || undefined,
