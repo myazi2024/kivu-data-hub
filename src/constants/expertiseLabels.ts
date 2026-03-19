@@ -1,25 +1,9 @@
 /**
  * Constantes centralisées pour les labels d'expertise immobilière.
  * Utilisées dans le formulaire, l'admin, le PDF et le tableau de bord utilisateur.
- * 
- * IMPORTANT: Les clés de CONSTRUCTION_TYPE_LABELS sont alignées avec
- * picklist_construction_type dans useCCCFormPicklists pour garantir la cohérence.
  */
 
 export const CONSTRUCTION_TYPE_LABELS: Record<string, string> = {
-  'Résidentielle - Villa / Maison individuelle': 'Villa / Maison individuelle',
-  'Résidentielle - Appartement': 'Appartement',
-  'Résidentielle - Immeuble / Bâtiment': 'Immeuble / Bâtiment',
-  'Résidentielle - Duplex / Triplex': 'Duplex / Triplex',
-  'Résidentielle - Studio': 'Studio',
-  'Commerciale - Local commercial': 'Local commercial',
-  'Commerciale - Bureau': 'Bureau',
-  'Industrielle - Entrepôt / Hangar': 'Entrepôt / Hangar',
-  'Industrielle - Usine': 'Usine',
-  'Agricole': 'Agricole',
-  'Terrain nu': 'Terrain nu',
-  'Autre': 'Autre',
-  // Legacy keys for backward compatibility in display
   villa: 'Villa / Maison individuelle',
   appartement: 'Appartement',
   immeuble: 'Immeuble / Bâtiment',
