@@ -3528,9 +3528,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     </PopoverTrigger>
                     <PopoverContent className="w-72 rounded-xl" align="end">
                       <div className="space-y-2 text-xs">
-                        <h4 className="font-semibold text-sm">Type de construction</h4>
+                        <h4 className="font-semibold text-sm">Type d'exploitation</h4>
                         <p className="text-muted-foreground">
-                          Catégorie de construction de votre parcelle : Résidentielle, Commerciale, Industrielle, Agricole ou Terrain nu.
+                          Catégorie d'exploitation de votre parcelle : Résidentielle, Commerciale, Industrielle, Agricole ou Terrain nu.
                         </p>
                       </div>
                     </PopoverContent>
