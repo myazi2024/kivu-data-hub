@@ -1002,8 +1002,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
               </CardContent>
             </Card>
 
-            {/* Infos construction */}
-            <Card className="border rounded-xl">
+            {/* Infos construction - hidden for terrain nu */}
+            {!isTerrainNuLocal && <Card className="border rounded-xl">
               <CardContent className="p-3 space-y-3">
                 <h4 className="text-sm font-semibold flex items-center gap-2">
                   <Building className="h-4 w-4 text-muted-foreground" />
