@@ -403,10 +403,12 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setIsRecordingSound(false);
   };
 
-  // Cleanup du microphone à la fermeture
+  // Cleanup du microphone et Object URLs à la fermeture
   useEffect(() => {
     return () => {
       stopSoundMeasurement();
+      // Revoke any outstanding Object URLs to prevent memory leaks
+      constructionImageUrls.forEach(url => URL.revokeObjectURL(url));
     };
   }, []);
 
@@ -515,11 +517,31 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     }
   };
 
-  const handleProceedToSummary = () => {
+  const handleProceedToSummary = async () => {
     if (!user) {
       toast.error('Vous devez être connecté');
       return;
     }
+
+    // Check for existing pending request to prevent duplicates
+    try {
+      const { data: existingPending } = await supabase
+        .from('real_estate_expertise_requests')
+        .select('id, reference_number')
+        .eq('parcel_number', parcelNumber)
+        .eq('user_id', user.id)
+        .in('status', ['pending', 'assigned', 'in_progress'])
+        .limit(1)
+        .maybeSingle();
+
+      if (existingPending) {
+        toast.error(`Une demande est déjà en cours pour cette parcelle (Réf: ${existingPending.reference_number}). Veuillez attendre son traitement.`);
+        return;
+      }
+    } catch (e) {
+      console.error('Duplicate check error:', e);
+    }
+
     setStep('summary');
   };
 
@@ -898,6 +920,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   };
 
   const isApartmentOrBuilding = constructionType === 'appartement' || constructionType === 'immeuble' || constructionType === 'duplex' || constructionType === 'studio';
+  const isTerrainNuLocal = constructionType === 'terrain_nu';
 
   const renderForm = () => (
     <div className="space-y-3">
@@ -920,10 +943,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         </CardContent>
       </Card>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 h-9 rounded-xl sticky top-0 z-10 bg-background/95 backdrop-blur-sm">
+      <Tabs value={activeTab} onValueChange={(tab) => {
+        // Skip materiaux tab for terrain_nu
+        if (tab === 'materiaux' && isTerrainNuLocal) return;
+        setActiveTab(tab);
+      }} className="w-full">
+        <TabsList className={`grid w-full ${isTerrainNuLocal ? 'grid-cols-3' : 'grid-cols-4'} h-9 rounded-xl sticky top-0 z-10 bg-background/95 backdrop-blur-sm`}>
           <TabsTrigger value="general" className="text-xs rounded-lg">Général</TabsTrigger>
-          <TabsTrigger value="materiaux" className="text-xs rounded-lg">Matériaux</TabsTrigger>
+          {!isTerrainNuLocal && <TabsTrigger value="materiaux" className="text-xs rounded-lg">Matériaux</TabsTrigger>}
           <TabsTrigger value="environnement" className="text-xs rounded-lg">Environ.</TabsTrigger>
           <TabsTrigger value="documents" className="text-xs rounded-lg">Documents</TabsTrigger>
         </TabsList>
@@ -977,8 +1004,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
               </CardContent>
             </Card>
 
-            {/* Infos construction */}
-            <Card className="border rounded-xl">
+            {/* Infos construction - hidden for terrain nu */}
+            {!isTerrainNuLocal && <Card className="border rounded-xl">
               <CardContent className="p-3 space-y-3">
                 <h4 className="text-sm font-semibold flex items-center gap-2">
                   <Building className="h-4 w-4 text-muted-foreground" />
@@ -1093,7 +1120,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                   </Select>
                 </div>
               </CardContent>
-            </Card>
+            </Card>}
 
             {/* Appartement / Immeuble - conditionnel */}
             {isApartmentOrBuilding && (
@@ -1913,156 +1940,63 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       </Tabs>
 
       <div className="flex gap-3 mt-3">
-        {(activeTab === 'materiaux' || activeTab === 'environnement') && (
-          <Button 
-            variant="outline"
-            onClick={() => {
-              const tabOrder = ['general', 'materiaux', 'environnement', 'documents'];
-              const currentIndex = tabOrder.indexOf(activeTab);
-              setActiveTab(tabOrder[currentIndex - 1]);
-            }}
-            className="flex-1 h-11 text-sm font-semibold rounded-xl"
-          >
-            ← Précédent
-          </Button>
-        )}
-        {activeTab === 'documents' ? (
-          <div className="flex gap-3 flex-1">
-            <Button 
-              variant="outline"
-              onClick={() => setActiveTab('environnement')}
-              className="flex-1 h-11 text-sm font-semibold rounded-xl"
-            >
-              ← Précédent
-            </Button>
-            <Button 
-              onClick={handleProceedToSummary} 
-              className="flex-1 h-11 text-sm font-semibold rounded-xl shadow-lg"
-              disabled={loading || uploadingFiles || loadingFees}
-            >
-              {loadingFees ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Chargement...
-                </>
-              ) : (
-                <>
-                  <Receipt className="h-4 w-4 mr-2" />
-                  Récapitulatif
-                </>
+        {(() => {
+          const tabOrder = isTerrainNuLocal
+            ? ['general', 'environnement', 'documents']
+            : ['general', 'materiaux', 'environnement', 'documents'];
+          const currentIndex = tabOrder.indexOf(activeTab);
+          const isFirst = currentIndex === 0;
+          const isLast = currentIndex === tabOrder.length - 1;
+
+          return (
+            <>
+              {!isFirst && (
+                <Button 
+                  variant="outline"
+                  onClick={() => setActiveTab(tabOrder[currentIndex - 1])}
+                  className="flex-1 h-11 text-sm font-semibold rounded-xl"
+                >
+                  ← Précédent
+                </Button>
               )}
-            </Button>
-          </div>
-        ) : (
-          <Button 
-            onClick={() => {
-              const tabOrder = ['general', 'materiaux', 'environnement', 'documents'];
-              const currentIndex = tabOrder.indexOf(activeTab);
-              if (currentIndex < tabOrder.length - 1) {
-                setActiveTab(tabOrder[currentIndex + 1]);
-              }
-            }}
-            className="flex-1 h-11 text-sm font-semibold rounded-xl shadow-lg"
-          >
-            Suivant →
-          </Button>
-        )}
+              {isLast ? (
+                <Button 
+                  onClick={handleProceedToSummary} 
+                  className="flex-1 h-11 text-sm font-semibold rounded-xl shadow-lg"
+                  disabled={loading || uploadingFiles || loadingFees}
+                >
+                  {loadingFees ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Chargement...
+                    </>
+                  ) : (
+                    <>
+                      <Receipt className="h-4 w-4 mr-2" />
+                      Récapitulatif
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <Button 
+                  onClick={() => setActiveTab(tabOrder[currentIndex + 1])}
+                  className="flex-1 h-11 text-sm font-semibold rounded-xl shadow-lg"
+                >
+                  Suivant →
+                </Button>
+              )}
+            </>
+          );
+        })()}
       </div>
     </div>
   );
 
+  const isTerrainNu = constructionType === 'terrain_nu';
+
   const renderSummary = () => {
-    // Labels pour affichage
-    const CONSTRUCTION_TYPE_LABELS: Record<string, string> = {
-      villa: 'Villa / Maison individuelle',
-      appartement: 'Appartement',
-      immeuble: 'Immeuble / Bâtiment',
-      duplex: 'Duplex / Triplex',
-      studio: 'Studio',
-      commercial: 'Local commercial',
-      entrepot: 'Entrepôt / Hangar',
-      terrain_nu: 'Terrain nu (sans construction)',
-      autre: 'Autre'
-    };
-
-    const QUALITY_LABELS: Record<string, string> = {
-      luxe: 'Luxe / Haut standing',
-      standard: 'Standard / Moyen standing',
-      economique: 'Économique / Social'
-    };
-
-    const CONDITION_LABELS: Record<string, string> = {
-      neuf: 'Neuf (< 2 ans)',
-      bon: 'Bon état',
-      moyen: 'État moyen',
-      mauvais: 'Mauvais état',
-      a_renover: 'À rénover'
-    };
-
-    const WALL_LABELS: Record<string, string> = {
-      beton: 'Béton armé',
-      briques_cuites: 'Briques cuites',
-      briques_adobe: 'Briques adobe',
-      parpaings: 'Parpaings / Blocs',
-      bois: 'Bois',
-      tole: 'Tôles métalliques',
-      mixte: 'Mixte'
-    };
-
-    const ROOF_LABELS: Record<string, string> = {
-      tole_bac: 'Tôle bac / Ondulée',
-      tuiles: 'Tuiles',
-      dalle_beton: 'Dalle béton (terrasse)',
-      ardoise: 'Ardoise',
-      chaume: 'Chaume / Paille',
-      autre: 'Autre'
-    };
-
-    const FLOOR_LABELS: Record<string, string> = {
-      carrelage: 'Carrelage',
-      ciment_lisse: 'Ciment lissé',
-      parquet: 'Parquet / Bois',
-      marbre: 'Marbre / Granit',
-      terre_battue: 'Terre battue',
-      autre: 'Autre'
-    };
-
-    const WINDOW_LABELS: Record<string, string> = {
-      aluminium: 'Aluminium',
-      bois: 'Bois',
-      pvc: 'PVC',
-      fer: 'Fer forgé',
-      sans_fenetres: 'Sans fenêtres'
-    };
-
-    const ROAD_LABELS: Record<string, string> = {
-      asphalte: 'Route asphaltée',
-      terre: 'Route en terre',
-      piste: 'Piste / Sentier'
-    };
-
-    const SOUND_LABELS: Record<string, string> = {
-      tres_calme: 'Très calme',
-      calme: 'Calme',
-      modere: 'Modéré',
-      bruyant: 'Bruyant',
-      tres_bruyant: 'Très bruyant'
-    };
-
-    const POSITION_LABELS: Record<string, string> = {
-      premiere_position: 'Première position (bordure de route)',
-      deuxieme_position: 'Deuxième position',
-      fond_parcelle: 'Fond de parcelle',
-      dans_servitude: 'Dans une servitude',
-      coin_parcelle: 'En coin de parcelle'
-    };
-
-    const ACCESSIBILITY_LABELS: Record<string, string> = {
-      escalier: 'Escalier uniquement',
-      ascenseur: 'Ascenseur disponible',
-      escalier_ascenseur: 'Escalier + Ascenseur',
-      plain_pied: 'Plain-pied (RDC)'
-    };
+    // Use imported centralized labels (no local duplicates)
+    const POSITION_LABELS = BUILDING_POSITION_LABELS;
 
     // Validation des champs obligatoires et importants
     const getMissingFields = () => {
@@ -2775,8 +2709,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                   <SelectValue placeholder="Choisir..." />
                 </SelectTrigger>
                 <SelectContent className="z-[1200]">
-                  <SelectItem value="airtel">Airtel Money</SelectItem>
-                  <SelectItem value="orange">Orange Money</SelectItem>
+                  <SelectItem value="airtel_money">Airtel Money</SelectItem>
+                  <SelectItem value="orange_money">Orange Money</SelectItem>
                   <SelectItem value="mpesa">M-Pesa</SelectItem>
                 </SelectContent>
               </Select>
@@ -3036,8 +2970,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
               <Select value={certPaymentProvider} onValueChange={setCertPaymentProvider}>
                 <SelectTrigger className="h-9 rounded-xl text-sm"><SelectValue placeholder="Opérateur" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="airtel">Airtel Money</SelectItem>
-                  <SelectItem value="orange">Orange Money</SelectItem>
+                  <SelectItem value="airtel_money">Airtel Money</SelectItem>
+                  <SelectItem value="orange_money">Orange Money</SelectItem>
                   <SelectItem value="mpesa">M-Pesa</SelectItem>
                 </SelectContent>
               </Select>
