@@ -36,7 +36,7 @@ export function PermitDownloadButton({ permit, className }: PermitDownloadButton
         applicantName: permit.permit_request_data?.applicantName || 'N/A',
         location,
         issueDate: permit.building_permits?.[0]?.issueDate || new Date().toISOString(),
-        validityMonths: permit.building_permits?.[0]?.validityMonths || 36,
+        validityMonths: permit.building_permits?.[0]?.validityMonths || 12,
         approvedBy: 'Service de l\'Urbanisme',
         conditions: [
           'Les travaux doivent être conformes aux plans approuvés',
