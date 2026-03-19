@@ -1985,12 +1985,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
               )}
             </>
           );
-        })()}
-          >
-            Suivant →
-          </Button>
-        )}
       </div>
+    </div>
+  );
     </div>
   );
 
