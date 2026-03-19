@@ -312,21 +312,13 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs text-muted-foreground">Avenue</Label>
-                        <Select 
-                          value={filters.avenue || '_all'} 
-                          onValueChange={(v) => onFiltersChange({ avenue: v === '_all' ? undefined : v })}
-                          disabled={!filters.quartier || availableAvenues.length === 0}
-                        >
-                          <SelectTrigger className="h-8 text-xs rounded-xl">
-                            <SelectValue placeholder={!filters.quartier ? "Quartier d'abord" : availableAvenues.length === 0 ? "Aucune" : "Toutes"} />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl max-h-48">
-                            <SelectItem value="_all">Toutes</SelectItem>
-                            {availableAvenues.map(a => (
-                              <SelectItem key={a} value={a}>{a}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Input
+                          value={filters.avenue || ''}
+                          onChange={(e) => onFiltersChange({ avenue: e.target.value || undefined })}
+                          placeholder="Nom de l'avenue..."
+                          className="h-8 text-xs rounded-xl"
+                          disabled={!filters.quartier}
+                        />
                       </div>
                     </div>
                   </div>
