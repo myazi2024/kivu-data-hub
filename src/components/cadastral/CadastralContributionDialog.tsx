@@ -2614,6 +2614,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     // Reset dirty flag
     formDirtyRef.current = false;
     isClosingAfterSuccessRef.current = false;
+    // FIX: Reset customTitleName (was missing)
+    setCustomTitleName('');
     
     // Reset form data
     setFormData({ parcelNumber: parcelNumber });
