@@ -1047,6 +1047,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       handleInputChange('constructionNature', undefined);
       setAvailableDeclaredUsages([]);
       handleInputChange('declaredUsage', undefined);
+      setAvailableConstructionMaterials([]);
+      handleInputChange('constructionMaterials', undefined);
+      setAvailableStandings([]);
+      handleInputChange('standing', undefined);
       return;
     }
 
