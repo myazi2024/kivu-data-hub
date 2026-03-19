@@ -1996,7 +1996,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     </div>
   );
 
-  const isTerrainNu = constructionType === 'terrain_nu';
+  const isTerrainNu = constructionType === 'Terrain nu';
 
   const renderSummary = () => {
     // Use imported centralized labels (no local duplicates)
