@@ -737,8 +737,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       } catch (err) {
         console.error('Erreur lors du chargement de la contribution:', err);
       } finally {
-        // Release the guard after a tick so parcelSides useEffect doesn't recalc
-        setTimeout(() => { isLoadingFromDbRef.current = false; }, 100);
+        // Release the guard after a longer delay to ensure all setState calls
+        // have been processed and useEffects triggered before re-enabling area calc
+        setTimeout(() => { isLoadingFromDbRef.current = false; }, 500);
       }
     };
 
