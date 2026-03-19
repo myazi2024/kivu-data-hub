@@ -736,6 +736,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         console.log('Contribution chargée depuis la base de données pour édition');
       } catch (err) {
         console.error('Erreur lors du chargement de la contribution:', err);
+      } finally {
+        // Release the guard after a tick so parcelSides useEffect doesn't recalc
+        setTimeout(() => { isLoadingFromDbRef.current = false; }, 100);
       }
     };
 
