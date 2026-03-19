@@ -680,8 +680,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         throw new Error('Erreur lors de la création de la demande');
       }
 
-      // Create payment record
-      const feeItems = fees.map(fee => ({
+      const mandatoryFees = fees.filter(fee => fee.is_mandatory);
+      const feeItems = mandatoryFees.map(fee => ({
         fee_id: fee.id,
         fee_name: fee.fee_name,
         amount_usd: fee.amount_usd
