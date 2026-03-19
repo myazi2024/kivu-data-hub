@@ -1971,98 +1971,11 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     </div>
   );
 
+  const isTerrainNu = constructionType === 'terrain_nu';
+
   const renderSummary = () => {
-    // Labels pour affichage
-    const CONSTRUCTION_TYPE_LABELS: Record<string, string> = {
-      villa: 'Villa / Maison individuelle',
-      appartement: 'Appartement',
-      immeuble: 'Immeuble / Bâtiment',
-      duplex: 'Duplex / Triplex',
-      studio: 'Studio',
-      commercial: 'Local commercial',
-      entrepot: 'Entrepôt / Hangar',
-      terrain_nu: 'Terrain nu (sans construction)',
-      autre: 'Autre'
-    };
-
-    const QUALITY_LABELS: Record<string, string> = {
-      luxe: 'Luxe / Haut standing',
-      standard: 'Standard / Moyen standing',
-      economique: 'Économique / Social'
-    };
-
-    const CONDITION_LABELS: Record<string, string> = {
-      neuf: 'Neuf (< 2 ans)',
-      bon: 'Bon état',
-      moyen: 'État moyen',
-      mauvais: 'Mauvais état',
-      a_renover: 'À rénover'
-    };
-
-    const WALL_LABELS: Record<string, string> = {
-      beton: 'Béton armé',
-      briques_cuites: 'Briques cuites',
-      briques_adobe: 'Briques adobe',
-      parpaings: 'Parpaings / Blocs',
-      bois: 'Bois',
-      tole: 'Tôles métalliques',
-      mixte: 'Mixte'
-    };
-
-    const ROOF_LABELS: Record<string, string> = {
-      tole_bac: 'Tôle bac / Ondulée',
-      tuiles: 'Tuiles',
-      dalle_beton: 'Dalle béton (terrasse)',
-      ardoise: 'Ardoise',
-      chaume: 'Chaume / Paille',
-      autre: 'Autre'
-    };
-
-    const FLOOR_LABELS: Record<string, string> = {
-      carrelage: 'Carrelage',
-      ciment_lisse: 'Ciment lissé',
-      parquet: 'Parquet / Bois',
-      marbre: 'Marbre / Granit',
-      terre_battue: 'Terre battue',
-      autre: 'Autre'
-    };
-
-    const WINDOW_LABELS: Record<string, string> = {
-      aluminium: 'Aluminium',
-      bois: 'Bois',
-      pvc: 'PVC',
-      fer: 'Fer forgé',
-      sans_fenetres: 'Sans fenêtres'
-    };
-
-    const ROAD_LABELS: Record<string, string> = {
-      asphalte: 'Route asphaltée',
-      terre: 'Route en terre',
-      piste: 'Piste / Sentier'
-    };
-
-    const SOUND_LABELS: Record<string, string> = {
-      tres_calme: 'Très calme',
-      calme: 'Calme',
-      modere: 'Modéré',
-      bruyant: 'Bruyant',
-      tres_bruyant: 'Très bruyant'
-    };
-
-    const POSITION_LABELS: Record<string, string> = {
-      premiere_position: 'Première position (bordure de route)',
-      deuxieme_position: 'Deuxième position',
-      fond_parcelle: 'Fond de parcelle',
-      dans_servitude: 'Dans une servitude',
-      coin_parcelle: 'En coin de parcelle'
-    };
-
-    const ACCESSIBILITY_LABELS: Record<string, string> = {
-      escalier: 'Escalier uniquement',
-      ascenseur: 'Ascenseur disponible',
-      escalier_ascenseur: 'Escalier + Ascenseur',
-      plain_pied: 'Plain-pied (RDC)'
-    };
+    // Use imported centralized labels (no local duplicates)
+    const POSITION_LABELS = BUILDING_POSITION_LABELS;
 
     // Validation des champs obligatoires et importants
     const getMissingFields = () => {
