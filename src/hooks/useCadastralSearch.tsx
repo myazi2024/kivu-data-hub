@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useSearchConfig } from './useSearchConfig';
+import { useCatalogConfig } from './useCatalogConfig';
 import { CadastralParcel } from '@/types/cadastral';
 
 // Ré-exporter CadastralParcel pour rétrocompatibilité
@@ -78,23 +78,26 @@ export interface CadastralSearchResult {
   building_permits: BuildingPermit[];
 }
 
+// Default error messages (no longer depends on useSearchConfig)
+const DEFAULT_ERROR_MESSAGES = {
+  not_found: "Aucune parcelle trouvée pour ce numéro cadastral.",
+  not_found_help: "Cette parcelle n'est pas encore dans notre base ou le numéro est incorrect.",
+  verification_prompt: "Vérifiez vos informations avant de contribuer."
+};
+
 export const useCadastralSearch = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResult, setSearchResult] = useState<CadastralSearchResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-  const { getErrorMessages } = useSearchConfig();
 
-  // Mémoiser les messages d'erreur pour éviter les recalculs inutiles
-  const errorMessages = useMemo(() => getErrorMessages(), [getErrorMessages]);
+  const errorMessages = DEFAULT_ERROR_MESSAGES;
 
-  // Fonction pour valider le format du numéro de parcelle
   const validateParcelNumber = (query: string): boolean => {
     return query.trim().length > 0;
   };
 
-  // Fonction de recherche — appelée explicitement (pas d'auto-search)
   const searchParcel = async (parcelNumber: string) => {
     if (!validateParcelNumber(parcelNumber)) {
       setError('Veuillez saisir un numéro de parcelle');
@@ -105,8 +108,6 @@ export const useCadastralSearch = () => {
     setError(null);
 
     try {
-      // Recherche de la parcelle principale (correspondance exacte insensible à la casse)
-      // + filtre deleted_at pour exclure les parcelles supprimées
       const { data: parcelData, error: parcelError } = await supabase
         .from('cadastral_parcels')
         .select('*')
@@ -128,7 +129,6 @@ export const useCadastralSearch = () => {
         return;
       }
 
-      // Recherche parallèle de toutes les données liées
       const [
         { data: ownershipData, error: ownershipError },
         { data: taxData, error: taxError },
@@ -178,7 +178,6 @@ export const useCadastralSearch = () => {
       if (boundaryError) throw boundaryError;
       if (buildingPermitsError) throw buildingPermitsError;
 
-      // Transformation des données d'hypothèques
       const formattedMortgageData = mortgageData?.map(mortgage => ({
         ...mortgage,
         payments: mortgage.cadastral_mortgage_payments || []

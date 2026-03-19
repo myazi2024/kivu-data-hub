@@ -6,9 +6,14 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useCadastralSearch } from '@/hooks/useCadastralSearch';
 import { useCatalogConfig } from '@/hooks/useCatalogConfig';
+import { useSearchHistory } from '@/hooks/useSearchHistory';
+import { useDebounce } from '@/hooks/useDebounce';
 import CadastralResultsDialog from './CadastralResultsDialog';
 import CadastralContributionDialog from './CadastralContributionDialog';
 import CCCIntroDialog from './CCCIntroDialog';
+import SearchHistory from './SearchHistory';
+import AdvancedSearchFilters from './AdvancedSearchFilters';
+import { useAdvancedCadastralSearch } from '@/hooks/useAdvancedCadastralSearch';
 import { cn } from '@/lib/utils';
 
 const FIXED_TEXT = "Ex: ";
@@ -35,6 +40,7 @@ const CadastralSearchBar = () => {
   const [fromMap, setFromMap] = useState(false);
   const [searchSuggestions, setSearchSuggestions] = useState<ParcelSuggestion[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   
   // Animation shake pour caractères invalides
   const [isShaking, setIsShaking] = useState(false);
@@ -53,6 +59,17 @@ const CadastralSearchBar = () => {
     searchParcel,
     clearSearch
   } = useCadastralSearch();
+
+  const { addToHistory } = useSearchHistory();
+  const { config: catalogConfig } = useCatalogConfig();
+  const animatedTexts = catalogConfig.search_animated_examples;
+  const predictiveSettings = catalogConfig.search_predictive_settings;
+
+  // Advanced search
+  const advancedSearch = useAdvancedCadastralSearch();
+
+  // Debounce search query using catalog config settings
+  const debouncedSearchQuery = useDebounce(searchQuery, predictiveSettings.debounce_ms);
 
   // Listen for external requests to open the results dialog
   useEffect(() => {
@@ -76,28 +93,31 @@ const CadastralSearchBar = () => {
     }
   }, []);
 
-  const { config: catalogConfig } = useCatalogConfig();
-  const animatedTexts = catalogConfig.search_animated_examples;
-
   const [displayedText, setDisplayedText] = useState('');
   const [showCursor, setShowCursor] = useState(true);
 
-  // Recherche prédictive — seule requête de suggestions (pas de double recherche)
+  // Recherche prédictive — utilise le debounce et les paramètres du catalogue
   useEffect(() => {
-    const fetchSuggestions = async () => {
-      if (!searchQuery.trim() || searchQuery.length < 2) {
-        setSearchSuggestions([]);
-        return;
-      }
+    if (!predictiveSettings.enabled) {
+      setSearchSuggestions([]);
+      return;
+    }
 
+    const trimmed = debouncedSearchQuery.trim();
+    if (!trimmed || trimmed.length < predictiveSettings.min_chars) {
+      setSearchSuggestions([]);
+      return;
+    }
+
+    const fetchSuggestions = async () => {
       setLoadingSuggestions(true);
       try {
         const { data, error } = await supabase
           .from('cadastral_parcels')
           .select('id, parcel_number, current_owner_name, ville, commune, quartier')
-          .ilike('parcel_number', `%${searchQuery}%`)
+          .ilike('parcel_number', `%${trimmed}%`)
           .is('deleted_at', null)
-          .limit(5);
+          .limit(predictiveSettings.max_results);
 
         if (error) {
           console.error('Erreur recherche suggestions:', error);
@@ -113,9 +133,8 @@ const CadastralSearchBar = () => {
       }
     };
 
-    const debounceTimer = setTimeout(fetchSuggestions, 300);
-    return () => clearTimeout(debounceTimer);
-  }, [searchQuery]);
+    fetchSuggestions();
+  }, [debouncedSearchQuery, predictiveSettings]);
 
   // Animation placeholder — nettoyage robuste des timeouts/intervalles
   useEffect(() => {
@@ -212,6 +231,22 @@ const CadastralSearchBar = () => {
     dialogClosedManuallyRef.current = false;
     setSearchQuery(parcelNumber);
     setSearchSuggestions([]);
+    addToHistory(parcelNumber);
+    searchParcel(parcelNumber);
+  };
+
+  // Sélectionner depuis l'historique
+  const handleSelectHistory = (query: string) => {
+    dialogClosedManuallyRef.current = false;
+    setSearchQuery(query);
+    searchParcel(query);
+  };
+
+  // Sélectionner depuis les favoris
+  const handleSelectFavorite = (parcelNumber: string) => {
+    dialogClosedManuallyRef.current = false;
+    setSearchQuery(parcelNumber);
+    addToHistory(parcelNumber);
     searchParcel(parcelNumber);
   };
 
@@ -234,6 +269,13 @@ const CadastralSearchBar = () => {
     setShowResultsDialog(false);
   }, []);
 
+  // Fermer les filtres avancés quand la barre de recherche est focalisée
+  useEffect(() => {
+    if (isFocused && showAdvancedFilters) {
+      setShowAdvancedFilters(false);
+    }
+  }, [isFocused]);
+
   const inputStatus = loading ? 'loading' : error ? 'error' : searchResult ? 'success' : 'default';
 
   // Cleanup timeout on unmount
@@ -249,8 +291,14 @@ const CadastralSearchBar = () => {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
       setSearchSuggestions([]);
+      addToHistory(searchQuery.trim());
       searchParcel(searchQuery.trim());
     }
+  };
+
+  // Recherche avancée
+  const handleAdvancedSearch = () => {
+    advancedSearch.searchParcels();
   };
 
   return (
@@ -426,6 +474,20 @@ const CadastralSearchBar = () => {
             </div>
           </div>
         )}
+
+        {/* SearchHistory & AdvancedSearchFilters — inline expansion */}
+        <div className="mt-2 space-y-2">
+          <SearchHistory
+            onSelectHistory={handleSelectHistory}
+            onSelectFavorite={handleSelectFavorite}
+          />
+          <AdvancedSearchFilters
+            filters={advancedSearch.filters}
+            onFiltersChange={advancedSearch.updateFilters}
+            onSearch={handleAdvancedSearch}
+            onClear={advancedSearch.clearFilters}
+          />
+        </div>
       </div>
 
       {showResultsDialog && searchResult && (

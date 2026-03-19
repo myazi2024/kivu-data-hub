@@ -45,9 +45,7 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
   const [availableTerritoires, setAvailableTerritoires] = useState<string[]>([]);
   const [availableCollectivites, setAvailableCollectivites] = useState<string[]>([]);
   const [availableQuartiers, setAvailableQuartiers] = useState<string[]>([]);
-  
 
-  // Charger villes et territoires quand province change
   useEffect(() => {
     if (filters.province) {
       setAvailableVilles(getVillesForProvince(filters.province));
@@ -58,7 +56,6 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
     }
   }, [filters.province]);
 
-  // Charger communes quand ville change
   useEffect(() => {
     if (filters.province && filters.ville) {
       setAvailableCommunes(getCommunesForVille(filters.province, filters.ville));
@@ -67,7 +64,6 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
     }
   }, [filters.province, filters.ville]);
 
-  // Charger collectivités quand territoire change
   useEffect(() => {
     if (filters.province && filters.territoire) {
       setAvailableCollectivites(getCollectivitesForTerritoire(filters.province, filters.territoire));
@@ -76,7 +72,6 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
     }
   }, [filters.province, filters.territoire]);
 
-  // Charger quartiers quand commune change
   useEffect(() => {
     if (filters.province && filters.ville && filters.commune) {
       setAvailableQuartiers(getQuartiersForCommune(filters.province, filters.ville, filters.commune));
@@ -85,10 +80,7 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
     }
   }, [filters.province, filters.ville, filters.commune]);
 
-
-  // Handler pour changer le type de section
   const handleSectionTypeChange = (type: 'urbaine' | 'rurale') => {
-    // Réinitialiser les champs de l'autre section
     if (type === 'urbaine') {
       onFiltersChange({ 
         sectionType: type,
@@ -105,6 +97,17 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
         quartier: undefined,
         avenue: undefined
       });
+    }
+  };
+
+  // Safely parse area inputs — empty string → undefined, not 0
+  const handleAreaChange = (field: 'areaSqmMin' | 'areaSqmMax', value: string) => {
+    const trimmed = value.trim();
+    if (trimmed === '') {
+      onFiltersChange({ [field]: undefined });
+    } else {
+      const num = parseFloat(trimmed);
+      onFiltersChange({ [field]: isNaN(num) || num <= 0 ? undefined : num });
     }
   };
 
@@ -140,7 +143,7 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
         <CollapsibleContent className="mt-3">
           <ScrollArea className="h-[340px] pr-3">
             <div className="space-y-4">
-              {/* Localisation de la parcelle - Aligné avec CadastralContributionDialog */}
+              {/* Localisation */}
               <div className="p-3 rounded-xl bg-muted/30 space-y-3">
                 <div className="flex items-center gap-2">
                   <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -149,7 +152,7 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
                   <Label className="text-sm font-semibold">Localisation de la parcelle</Label>
                 </div>
 
-                {/* Province - toujours visible en premier */}
+                {/* Province */}
                 <div className="space-y-1.5">
                   <Label className="text-sm text-muted-foreground">Province</Label>
                   <Select 
@@ -179,7 +182,7 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
                   </Select>
                 </div>
 
-                {/* Zone urbaine ou rurale - visible après province */}
+                {/* Zone urbaine ou rurale */}
                 {filters.province && (
                   <div className="space-y-2 animate-fade-in">
                     <div className="flex items-center justify-between">
@@ -416,8 +419,8 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
                       <Input
                         type="number"
                         placeholder="0"
-                        value={filters.areaSqmMin || ''}
-                        onChange={(e) => onFiltersChange({ areaSqmMin: Number(e.target.value) })}
+                        value={filters.areaSqmMin ?? ''}
+                        onChange={(e) => handleAreaChange('areaSqmMin', e.target.value)}
                         className="h-10 text-sm rounded-xl"
                       />
                     </div>
@@ -426,8 +429,8 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
                       <Input
                         type="number"
                         placeholder="∞"
-                        value={filters.areaSqmMax || ''}
-                        onChange={(e) => onFiltersChange({ areaSqmMax: Number(e.target.value) })}
+                        value={filters.areaSqmMax ?? ''}
+                        onChange={(e) => handleAreaChange('areaSqmMax', e.target.value)}
                         className="h-10 text-sm rounded-xl"
                       />
                     </div>
