@@ -1087,7 +1087,42 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     }
   }, [formData.constructionType, formData.constructionNature, getPicklistDependentOptions]);
 
-  // Synchroniser "usage prévu" avec "usage déclaré" quand on passe en mode "Demander un permis"
+  // Logique de dépendance: Nature -> Matériaux de construction
+  useEffect(() => {
+    if (!formData.constructionNature || formData.constructionNature === 'Non bâti') {
+      setAvailableConstructionMaterials([]);
+      handleInputChange('constructionMaterials', undefined);
+      return;
+    }
+
+    const materialsMap = getPicklistDependentOptions('picklist_construction_materials');
+    const materials = materialsMap[formData.constructionNature] || [];
+    
+    setAvailableConstructionMaterials(materials);
+    
+    if (formData.constructionMaterials && !materials.includes(formData.constructionMaterials)) {
+      handleInputChange('constructionMaterials', undefined);
+    }
+  }, [formData.constructionNature, getPicklistDependentOptions]);
+
+  // Logique de dépendance: Nature -> Standing / Niveau de finition
+  useEffect(() => {
+    if (!formData.constructionNature || formData.constructionNature === 'Non bâti') {
+      setAvailableStandings([]);
+      handleInputChange('standing', undefined);
+      return;
+    }
+
+    const standingMap = getPicklistDependentOptions('picklist_standing');
+    const standings = standingMap[formData.constructionNature] || [];
+    
+    setAvailableStandings(standings);
+    
+    if (formData.standing && !standings.includes(formData.standing)) {
+      handleInputChange('standing', undefined);
+    }
+  }, [formData.constructionNature, getPicklistDependentOptions]);
+
   useEffect(() => {
     if (permitMode === 'request' && formData.declaredUsage && !permitRequest.plannedUsage) {
       setPermitRequest(prev => ({ ...prev, plannedUsage: formData.declaredUsage || '' }));
