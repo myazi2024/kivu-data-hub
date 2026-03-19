@@ -2626,6 +2626,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     setAvailableAvenues([]);
     setAvailableConstructionNatures([]);
     setAvailableDeclaredUsages([]);
+    setAvailableConstructionMaterials([]);
+    setAvailableStandings([]);
     setRoadSides([]);
     
     // Reset permits
