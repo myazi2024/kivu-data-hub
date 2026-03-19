@@ -406,7 +406,7 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
                     <Input
                       placeholder="Nom du propriétaire..."
                       value={filters.ownerName || ''}
-                      onChange={(e) => onFiltersChange({ ownerName: e.target.value })}
+                      onChange={(e) => onFiltersChange({ ownerName: e.target.value || undefined })}
                       className="h-10 text-sm rounded-xl"
                     />
                   </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useSearchConfig } from './useSearchConfig';
@@ -85,15 +85,16 @@ export const useCadastralSearch = () => {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const { getErrorMessages } = useSearchConfig();
-  const errorMessages = getErrorMessages();
+
+  // Mémoiser les messages d'erreur pour éviter les recalculs inutiles
+  const errorMessages = useMemo(() => getErrorMessages(), [getErrorMessages]);
 
   // Fonction pour valider le format du numéro de parcelle
   const validateParcelNumber = (query: string): boolean => {
-    // Accepte n'importe quel format non vide
     return query.trim().length > 0;
   };
 
-  // Fonction de recherche
+  // Fonction de recherche — appelée explicitement (pas d'auto-search)
   const searchParcel = async (parcelNumber: string) => {
     if (!validateParcelNumber(parcelNumber)) {
       setError('Veuillez saisir un numéro de parcelle');
@@ -104,11 +105,13 @@ export const useCadastralSearch = () => {
     setError(null);
 
     try {
-      // Recherche de la parcelle principale
+      // Recherche de la parcelle principale (correspondance exacte insensible à la casse)
+      // + filtre deleted_at pour exclure les parcelles supprimées
       const { data: parcelData, error: parcelError } = await supabase
         .from('cadastral_parcels')
         .select('*')
         .ilike('parcel_number', parcelNumber.trim())
+        .is('deleted_at', null)
         .maybeSingle();
 
       if (parcelError) {
@@ -202,20 +205,6 @@ export const useCadastralSearch = () => {
       setLoading(false);
     }
   };
-
-  // Effet pour rechercher automatiquement après une pause de frappe
-  useEffect(() => {
-    if (searchQuery.length >= 3) {
-      const timeoutId = setTimeout(() => {
-        searchParcel(searchQuery);
-      }, 500);
-
-      return () => clearTimeout(timeoutId);
-    } else {
-      setSearchResult(null);
-      setError(null);
-    }
-  }, [searchQuery]);
 
   const clearSearch = () => {
     setSearchQuery('');
