@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, DollarSign, Phone, CreditCard, CheckCircle2 } from 'lucide-react';
 import type { ExpertiseFee } from '@/types/expertise';
+import { usePaymentProviders } from '@/hooks/usePaymentProviders';
 
 interface ExpertisePaymentStepProps {
   parcelNumber: string;
@@ -27,6 +28,8 @@ const ExpertisePaymentStep: React.FC<ExpertisePaymentStepProps> = ({
   paymentMethod, setPaymentMethod, paymentProvider, setPaymentProvider,
   paymentPhone, setPaymentPhone, processingPayment, onBack, onPay
 }) => {
+  const { providers, loading: loadingProviders } = usePaymentProviders();
+
   return (
     <div className="space-y-3">
       <div className="bg-gradient-to-br from-primary/15 to-primary/5 rounded-2xl p-3 border border-primary/20">
@@ -85,9 +88,13 @@ const ExpertisePaymentStep: React.FC<ExpertisePaymentStepProps> = ({
               <Select value={paymentProvider} onValueChange={setPaymentProvider}>
                 <SelectTrigger className="h-9 rounded-xl text-sm"><SelectValue placeholder="Choisir..." /></SelectTrigger>
                 <SelectContent className="z-[1200]">
-                  <SelectItem value="airtel_money">Airtel Money</SelectItem>
-                  <SelectItem value="orange_money">Orange Money</SelectItem>
-                  <SelectItem value="mpesa">M-Pesa</SelectItem>
+                  {loadingProviders ? (
+                    <SelectItem value="_loading" disabled>Chargement...</SelectItem>
+                  ) : (
+                    providers.map((p) => (
+                      <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>

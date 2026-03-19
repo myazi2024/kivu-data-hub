@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealEstateExpertise } from '@/hooks/useRealEstateExpertise';
+import { usePaymentProviders } from '@/hooks/usePaymentProviders';
+import { useExpertiseDraft } from '@/hooks/useExpertiseDraft';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
@@ -49,8 +51,10 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
   const { user, profile } = useAuth();
   const { createExpertiseRequest, loading, checkExistingValidCertificate, checkCertificateValidity } = useRealEstateExpertise();
+  const { providers: mobileProviders } = usePaymentProviders();
 
   const [formState, dispatch] = useReducer(formReducer, INITIAL_FORM_STATE);
+  const { clearDraft } = useExpertiseDraft(parcelNumber, formState, dispatch, open);
   const [showIntro, setShowIntro] = useState(true);
   const [step, setStep] = useState<'form' | 'summary' | 'payment' | 'confirmation'>('form');
   const [activeTab, setActiveTabRaw] = useState('general');
@@ -309,6 +313,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
       setCreatedRequest(request);
       setStep('confirmation');
+      clearDraft();
       toast.success('Paiement réussi ! Votre demande a été enregistrée.');
       onSuccess?.();
     } catch (error: any) {
@@ -544,10 +549,10 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
           <div className="space-y-2">
             <Select value={certPaymentProvider} onValueChange={setCertPaymentProvider}>
               <SelectTrigger className="h-9 rounded-xl text-sm"><SelectValue placeholder="Opérateur" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="airtel_money">Airtel Money</SelectItem>
-                <SelectItem value="orange_money">Orange Money</SelectItem>
-                <SelectItem value="mpesa">M-Pesa</SelectItem>
+              <SelectContent className="z-[1200]">
+                {mobileProviders.map((p) => (
+                  <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Input value={certPaymentPhone} onChange={(e) => setCertPaymentPhone(e.target.value)} placeholder="+243 ..." className="h-9 rounded-xl text-sm" />
