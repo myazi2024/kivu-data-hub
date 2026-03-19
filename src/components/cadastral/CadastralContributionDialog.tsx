@@ -393,7 +393,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   // État pour le switch Taxes/Hypothèques dans l'onglet obligations
   const [obligationType, setObligationType] = useState<'taxes' | 'mortgages'>('taxes');
 
-  // États pour gérer les options de dépendance Type de construction -> Nature -> Usage
+  // États pour gérer les options de dépendance Catégorie -> Sous-type, Type -> Nature -> Usage
+  const [availableConstructionSubtypes, setAvailableConstructionSubtypes] = useState<string[]>([]);
   const [availableConstructionNatures, setAvailableConstructionNatures] = useState<string[]>([]);
   const [availableDeclaredUsages, setAvailableDeclaredUsages] = useState<string[]>([]);
 
