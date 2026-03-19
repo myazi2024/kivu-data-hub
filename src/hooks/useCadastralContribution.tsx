@@ -13,7 +13,7 @@ export interface CadastralContributionData {
   titleReferenceNumber?: string;
   titleIssueDate?: string;
   isTitleInCurrentOwnerName?: boolean;
-  ownerAcquisitionDate?: string;
+  // ownerAcquisitionDate removed: unused in CCC form (only used in MutationRequestDialog)
   currentOwners?: Array<{
     lastName: string;
     middleName?: string;

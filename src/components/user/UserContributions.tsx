@@ -336,7 +336,7 @@ export const UserContributions: React.FC = () => {
               permitNumber: p.permit_number || p.permitNumber || '',
               issuingService: p.issuing_service || p.issuingService || '',
               issueDate: p.issue_date || p.issueDate || '',
-              validityMonths: String(p.validity_period_months || p.validityMonths || '36'),
+              validityMonths: String(p.validity_period_months || p.validityMonths || '12'),
               administrativeStatus: p.administrative_status || p.administrativeStatus || 'En attente',
               issuingServiceContact: p.issuing_service_contact || p.issuingServiceContact || '',
               attachmentFile: null
