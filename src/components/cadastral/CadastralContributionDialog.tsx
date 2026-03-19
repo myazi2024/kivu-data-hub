@@ -2326,190 +2326,75 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     };
   }, [formData, currentOwners, buildingPermits, permitRequest, gpsCoordinates, previousOwners, taxRecords, mortgageRecords, ownerDocFile, titleDocFiles, sectionType]);
 
-  // Calculer les détails de progression avec points et badges
-  const calculateProgressDetails = () => {
-    let earnedPoints = 0;
-    const totalPoints = 1000; // Base de 1000 points pour 100%
-    
+  // FIX: Unified scoring - calculateProgressDetails now derives tab-level progress
+  // from the same field counts as calculateCCCValue to avoid double scoring
+  const calculateProgressDetails = useMemo(() => {
     const tabProgress = {
-      general: { filled: 0, total: 0 },
+      general: { filled: 0, total: 8 },   // 6 text + 2 docs
       location: { filled: 0, total: 0 },
-      history: { filled: 0, total: 0 },
-      obligations: { filled: 0, total: 0 }
+      history: { filled: 0, total: 1 },    // ownership history
+      obligations: { filled: 0, total: 2 } // tax + mortgage
     };
 
-    // ============================================
-    // ONGLET INFORMATIONS GÉNÉRALES - 30% (300 points)
-    // 40% pour données textuelles (120 pts), 60% pour pièces (180 pts)
-    // ============================================
-    const generalTextPoints = 120;
-    const generalDocPoints = 180;
-    
-    // Données textuelles (120 points répartis sur 6 champs = 20 pts/champ)
-    let generalTextFilled = 0;
-    const generalTextTotal = 6;
-    
-    if (formData.propertyTitleType) { earnedPoints += 20; generalTextFilled++; }
-    if (formData.titleReferenceNumber) { earnedPoints += 20; generalTextFilled++; }
-    if (formData.constructionType) { earnedPoints += 20; generalTextFilled++; }
-    if (formData.constructionNature) { earnedPoints += 20; generalTextFilled++; }
-    if (formData.declaredUsage) { earnedPoints += 20; generalTextFilled++; }
-    const hasValidOwner = currentOwners.some(o => o.lastName && o.firstName);
-    if (hasValidOwner) { earnedPoints += 20; generalTextFilled++; }
-    
-    // Pièces justificatives (180 points : 90 pts titre + 90 pts proprio)
-    let generalDocFilled = 0;
-    const generalDocTotal = 2;
-    
-    // FIX: In edit mode, also check existing URLs when no new file uploaded
-    if (titleDocFiles.length > 0 || formData.titleDocumentUrl) { earnedPoints += 90; generalDocFilled++; }
-    if (ownerDocFile || formData.ownerDocumentUrl) { earnedPoints += 90; generalDocFilled++; }
-    
-    tabProgress.general.filled = generalTextFilled + generalDocFilled;
-    tabProgress.general.total = generalTextTotal + generalDocTotal;
+    // General tab
+    if (formData.propertyTitleType) tabProgress.general.filled++;
+    if (formData.titleReferenceNumber) tabProgress.general.filled++;
+    if (formData.constructionType) tabProgress.general.filled++;
+    if (formData.constructionNature) tabProgress.general.filled++;
+    if (formData.declaredUsage) tabProgress.general.filled++;
+    if (currentOwners.some(o => o.lastName && o.firstName)) tabProgress.general.filled++;
+    if (titleDocFiles.length > 0 || formData.titleDocumentUrl) tabProgress.general.filled++;
+    if (ownerDocFile || formData.ownerDocumentUrl) tabProgress.general.filled++;
 
-    // ============================================
-    // ONGLET LOCALISATION - 15% (150 points)
-    // 40% pour données textuelles (60 pts), 60% pour pièces (90 pts)
-    // ============================================
-    const locationTextPoints = 60;
-    const locationDocPoints = 90;
-    
-    // Données textuelles (60 points répartis sur 3-4 champs)
-    let locationTextFilled = 0;
-    let locationTextTotal = 0;
-    
-    if (formData.province) { earnedPoints += 15; locationTextFilled++; }
-    locationTextTotal++;
-    
+    // Location tab
+    let locTotal = 2; // province + areaSqm
+    let locFilled = 0;
+    if (formData.province) locFilled++;
+    if (formData.areaSqm) locFilled++;
     if (sectionType === 'urbaine') {
-      if (formData.ville) { earnedPoints += 15; locationTextFilled++; }
-      locationTextTotal++;
-      if (formData.commune) { earnedPoints += 15; locationTextFilled++; }
-      locationTextTotal++;
+      locTotal += 3;
+      if (formData.ville) locFilled++;
+      if (formData.commune) locFilled++;
+      if (formData.quartier) locFilled++;
     } else if (sectionType === 'rurale') {
-      if (formData.territoire) { earnedPoints += 15; locationTextFilled++; }
-      locationTextTotal++;
-      if (formData.collectivite) { earnedPoints += 15; locationTextFilled++; }
-      locationTextTotal++;
+      locTotal += 2;
+      if (formData.territoire) locFilled++;
+      if (formData.collectivite) locFilled++;
     }
-    
-    if (formData.areaSqm) { earnedPoints += 15; locationTextFilled++; }
-    locationTextTotal++;
-    
-    // Pièces justificatives (90 points pour les coordonnées GPS)
-    let locationDocFilled = 0;
-    const locationDocTotal = 1;
-    
-    const hasValidGPS = gpsCoordinates.some(coord => coord.lat && coord.lng);
-    if (hasValidGPS) { earnedPoints += 90; locationDocFilled++; }
-    
-    tabProgress.location.filled = locationTextFilled + locationDocFilled;
-    tabProgress.location.total = locationTextTotal + locationDocTotal;
+    locTotal += 1; // GPS
+    if (gpsCoordinates.some(g => g.lat && g.lng)) locFilled++;
+    tabProgress.location.total = locTotal;
+    tabProgress.location.filled = locFilled;
 
-    // ============================================
-    // HISTORIQUE DES PROPRIÉTAIRES - 15% (150 points)
-    // 40% pour données textuelles (60 pts), 60% pour pièces (90 pts)
-    // ============================================
-    
-    // Données textuelles (60 points pour jusqu'à 3 propriétaires = 20 pts/proprio)
-    let historyTextFilled = 0;
-    const historyTextTotal = 3;
-    
-    const validPreviousOwners = previousOwners.filter(o => 
-      o.name && o.startDate && o.endDate && o.legalStatus && o.mutationType
-    );
-    
-    const ownerCount = Math.min(validPreviousOwners.length, 3);
-    earnedPoints += ownerCount * 20;
-    historyTextFilled = ownerCount;
-    
-    // Pièces justificatives (90 points si au moins un document)
-    let historyDocFilled = 0;
-    const historyDocTotal = 1;
-    
-    if (validPreviousOwners.length > 0) { 
-      earnedPoints += 90; 
-      historyDocFilled++; 
-    }
-    
-    tabProgress.history.filled = historyTextFilled + historyDocFilled;
-    tabProgress.history.total = historyTextTotal + historyDocTotal;
+    // History tab
+    if (previousOwners.some(o => o.name && o.startDate)) tabProgress.history.filled++;
 
-    // ============================================
-    // TAXE FONCIÈRE - 15% (150 points)
-    // 40% pour données textuelles (60 pts), 60% pour pièces (90 pts)
-    // ============================================
-    
-    // Données textuelles (60 points pour jusqu'à 3 taxes = 20 pts/taxe)
-    let taxTextFilled = 0;
-    const taxTextTotal = 3;
-    
-    const validTaxes = taxRecords.filter(t => 
-      t.taxAmount && t.taxYear && t.taxType && t.paymentStatus
-    );
-    
-    const taxCount = Math.min(validTaxes.length, 3);
-    earnedPoints += taxCount * 20;
-    taxTextFilled = taxCount;
-    
-    // Pièces justificatives (90 points si au moins un reçu)
-    let taxDocFilled = 0;
-    const taxDocTotal = 1;
-    
-    const hasTaxReceipts = taxRecords.some(t => t.receiptFile !== null);
-    if (hasTaxReceipts) { earnedPoints += 90; taxDocFilled++; }
+    // Obligations tab
+    if (taxRecords.some(t => t.taxAmount && t.taxYear)) tabProgress.obligations.filled++;
+    if (mortgageRecords.some(m => m.mortgageAmount && m.creditorName)) tabProgress.obligations.filled++;
 
-    // ============================================
-    // HYPOTHÈQUES - 25% (250 points)
-    // 40% pour données textuelles (100 pts), 60% pour pièces (150 pts)
-    // ============================================
-    
-    // Données textuelles (100 points pour jusqu'à 2 hypothèques = 50 pts/hypothèque)
-    let mortgageTextFilled = 0;
-    const mortgageTextTotal = 2;
-    
-    const validMortgages = mortgageRecords.filter(m => 
-      m.mortgageAmount && m.creditorName && m.creditorType && m.contractDate
-    );
-    
-    const mortgageCount = Math.min(validMortgages.length, 2);
-    earnedPoints += mortgageCount * 50;
-    mortgageTextFilled = mortgageCount;
-    
-    // Pièces justificatives (150 points si au moins un document)
-    let mortgageDocFilled = 0;
-    const mortgageDocTotal = 1;
-    
-    const hasMortgageReceipts = mortgageRecords.some(m => m.receiptFile !== null);
-    if (hasMortgageReceipts) { earnedPoints += 150; mortgageDocFilled++; }
-    
-    // Combiner taxes et hypothèques pour l'onglet obligations
-    tabProgress.obligations.filled = taxTextFilled + taxDocFilled + mortgageTextFilled + mortgageDocFilled;
-    tabProgress.obligations.total = taxTextTotal + taxDocTotal + mortgageTextTotal + mortgageDocTotal;
-
-    // Calculer le pourcentage final
-    const percentage = Math.round((earnedPoints / totalPoints) * 100);
-    
-    // Calculer le nombre total de champs pour l'affichage
     const filledFields = tabProgress.general.filled + tabProgress.location.filled + 
                          tabProgress.history.filled + tabProgress.obligations.filled;
     const totalFields = tabProgress.general.total + tabProgress.location.total + 
                        tabProgress.history.total + tabProgress.obligations.total;
 
+    // Use the CCC value completion rate as the single source of truth for %
+    const percentage = Math.min(100, Math.round(calculateCCCValue.completionRate * 100));
+
     return { 
       percentage, 
       filledFields, 
       totalFields, 
-      points: earnedPoints, 
-      totalPoints,
+      points: Math.round(percentage * 10), 
+      totalPoints: 1000,
       tabProgress 
     };
-  };
+  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, 
+      gpsCoordinates, sectionType, ownerDocFile, titleDocFiles, calculateCCCValue]);
 
   // Calculer le pourcentage de complétion du formulaire
   const calculateProgress = () => {
-    return calculateProgressDetails().percentage;
+    return calculateProgressDetails.percentage;
   };
 
   // Fonction pour obtenir le message motivant
