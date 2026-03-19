@@ -115,7 +115,7 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
     avenue: PROVINCES[i].avenue,
     territoire: i === 1 ? 'Nyiragongo' : null,
     village: i === 4 ? 'Test Village' : null,
-    circonscription_fonciere: PROVINCES[i].circonscription_fonciere,
+    
     status: 'pending', // All start pending to avoid CCC trigger
     contribution_type: types[i],
     user_id: userId,
