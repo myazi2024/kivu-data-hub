@@ -3542,7 +3542,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   {/* Type de construction */}
                   <div className={`space-y-1.5 ${highlightRequiredFields && !formData.constructionType ? 'ring-2 ring-primary rounded-xl p-2 bg-primary/5 animate-pulse' : ''}`}>
                     <Label className="text-sm font-medium flex items-center gap-1">
-                      Type
+                      Type d'exploitation
                       {highlightRequiredFields && !formData.constructionType && (
                         <span className="text-primary text-xs font-semibold">*</span>
                       )}
