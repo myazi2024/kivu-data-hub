@@ -216,7 +216,9 @@ export const useCadastralContribution = () => {
         : undefined,
       area_sqm: data.areaSqm,
       parcel_sides: data.parcelSides,
-      construction_type: data.constructionType,
+      construction_type: data.constructionSubtype 
+        ? `${data.constructionType} - ${data.constructionSubtype}` 
+        : data.constructionType,
       construction_nature: data.constructionNature,
       construction_materials: data.constructionMaterials || null,
       construction_year: data.constructionYear || null,
