@@ -551,11 +551,21 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           return;
         }
 
+        // FIX: Detect custom title type ("Autre") and restore customTitleName
+        const knownTitleTypes = ["Certificat d'enregistrement", "Contrat de location (Contrat d'occupation provisoire)", "Fiche parcellaire", "Autre"];
+        const storedTitleType = contrib.property_title_type || undefined;
+        let effectiveTitleType = storedTitleType;
+        if (storedTitleType && !knownTitleTypes.includes(storedTitleType)) {
+          // It's a custom title name stored as the effective type - restore as "Autre"
+          effectiveTitleType = 'Autre';
+          setCustomTitleName(storedTitleType);
+        }
+
         // Remplir formData avec les données de la contribution
         setFormData(prev => ({
           ...prev,
           parcelNumber: contrib.parcel_number,
-          propertyTitleType: contrib.property_title_type || undefined,
+          propertyTitleType: effectiveTitleType,
           leaseType: contrib.lease_type as any || undefined,
           titleReferenceNumber: contrib.title_reference_number || undefined,
           titleIssueDate: contrib.title_issue_date || undefined,
@@ -723,10 +733,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           setHasMortgage(false);
         }
 
-        // Détecter le type de section
-        if (contrib.parcel_type === 'SU') {
+        // Détecter le type de section (FIX: handle legacy 'urbain'/'rural' values too)
+        if (contrib.parcel_type === 'SU' || contrib.parcel_type === 'urbain') {
           setSectionType('urbaine');
-        } else if (contrib.parcel_type === 'SR') {
+        } else if (contrib.parcel_type === 'SR' || contrib.parcel_type === 'rural') {
           setSectionType('rurale');
         }
 
@@ -1566,12 +1576,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         ownershipHistory: ownershipHistoryData.length > 0 ? ownershipHistoryData as any : undefined,
         // FIX: Preserve existing URLs when no new file is uploaded in edit mode
         ownerDocumentUrl: ownerDocUrl || existingOwnerDocUrl || undefined,
-        titleDocumentUrl: titleDocUrls.length > 0 ? titleDocUrls[0] : (existingTitleDocUrl || undefined),
+        titleDocumentUrl: titleDocUrls.length > 0 ? titleDocUrls.join(',') : (existingTitleDocUrl || undefined),
         taxHistory: taxHistoryData.length > 0 ? taxHistoryData as any : undefined,
         mortgageHistory: mortgageHistoryData.length > 0 ? mortgageHistoryData as any : undefined,
         buildingPermits: buildingPermitsDataFinal,
         permitRequest: permitRequestData,
-        previousPermitNumber: permitRequest.previousPermitNumber || undefined,
+        previousPermitNumber: formData.previousPermitNumber || permitRequest.previousPermitNumber || undefined,
         gpsCoordinates: gpsCoordinatesData,
         parcelSides: parcelSides.filter(s => s.length && parseFloat(s.length) > 0).length > 0 
           ? parcelSides.filter(s => s.length && parseFloat(s.length) > 0) 
@@ -2371,8 +2381,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     let generalDocFilled = 0;
     const generalDocTotal = 2;
     
-    if (titleDocFiles.length > 0) { earnedPoints += 90; generalDocFilled++; }
-    if (ownerDocFile) { earnedPoints += 90; generalDocFilled++; }
+    // FIX: In edit mode, also check existing URLs when no new file uploaded
+    if (titleDocFiles.length > 0 || formData.titleDocumentUrl) { earnedPoints += 90; generalDocFilled++; }
+    if (ownerDocFile || formData.ownerDocumentUrl) { earnedPoints += 90; generalDocFilled++; }
     
     tabProgress.general.filled = generalTextFilled + generalDocFilled;
     tabProgress.general.total = generalTextTotal + generalDocTotal;
