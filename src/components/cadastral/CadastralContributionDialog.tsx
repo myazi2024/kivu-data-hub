@@ -101,11 +101,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [customTitleName, setCustomTitleName] = useState('');
   
   // getMissingFields is defined after all state declarations (see below ~line 2230)
-
-  // Fonction pour vérifier si le formulaire est valide pour soumission
-  const isFormValidForSubmission = () => {
-    return getMissingFields.length === 0;
-  };
+  // getMissingFields and isFormValidForSubmission are defined after all state declarations
   
   // Fonction pour changer d'onglet avec scroll vers le haut
   const handleTabChange = (tab: string) => {
