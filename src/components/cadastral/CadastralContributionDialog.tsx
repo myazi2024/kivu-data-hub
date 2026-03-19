@@ -561,6 +561,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           constructionNature: contrib.construction_nature || undefined,
           constructionMaterials: contrib.construction_materials || undefined,
           declaredUsage: contrib.declared_usage || undefined,
+          standing: contrib.standing || undefined,
           constructionYear: contrib.construction_year || undefined,
           areaSqm: contrib.area_sqm || undefined,
           province: contrib.province || undefined,
