@@ -2238,8 +2238,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       filledFields += 1;
     }
     
-    // SECTION 4: Localisation (12 champs)
-    totalFields += 12;
+    // SECTION 4: Localisation (11 champs - adapté au type de section)
+    totalFields += 11;
     if (formData.province) filledFields += 1;
     if (formData.ville) filledFields += 1;
     if (formData.commune) filledFields += 1;

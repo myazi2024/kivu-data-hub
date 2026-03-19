@@ -478,7 +478,7 @@ const AdminCCCContributions: React.FC = () => {
               creditor_name: h.creditor_name || h.creditorName || 'Non spécifié',
               creditor_type: h.creditor_type || h.creditorType || 'Banque',
               contract_date: h.contract_date || h.contractDate || new Date().toISOString().split('T')[0],
-              mortgage_status: (h.mortgage_status || h.mortgageStatus || 'active').toLowerCase() === 'active' ? 'active' : (h.mortgage_status || h.mortgageStatus || 'active').toLowerCase()
+              mortgage_status: (h.mortgage_status || h.mortgageStatus || 'active').toLowerCase()
               // reference_number est généré automatiquement par le trigger SQL
             });
             
