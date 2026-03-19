@@ -149,7 +149,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
   // === GÉNÉRAL ===
   const [propertyDescription, setPropertyDescription] = useState('');
-  const [constructionType, setConstructionType] = useState('villa');
+  const [constructionType, setConstructionType] = useState('Résidentielle');
   const [constructionYear, setConstructionYear] = useState('');
   const [constructionQuality, setConstructionQuality] = useState('standard');
   const [numberOfFloors, setNumberOfFloors] = useState('1');
@@ -823,7 +823,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
     // General
     setPropertyDescription('');
-    setConstructionType('villa');
+    setConstructionType('Résidentielle');
     setConstructionYear('');
     setConstructionQuality('standard');
     setNumberOfFloors('1');
@@ -923,8 +923,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     onOpenChange(false);
   };
 
-  const isApartmentOrBuilding = constructionType === 'appartement' || constructionType === 'immeuble' || constructionType === 'duplex' || constructionType === 'studio';
-  const isTerrainNuLocal = constructionType === 'terrain_nu';
+  const isApartmentOrBuilding = constructionType === 'Résidentielle' || constructionType === 'Commerciale';
+  const isTerrainNuLocal = constructionType === 'Terrain nu';
 
   const renderForm = () => (
     <div className="space-y-3">
@@ -1996,7 +1996,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     </div>
   );
 
-  const isTerrainNu = constructionType === 'terrain_nu';
+  const isTerrainNu = constructionType === 'Terrain nu';
 
   const renderSummary = () => {
     // Use imported centralized labels (no local duplicates)
@@ -2010,12 +2010,12 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       if (!constructionType) missing.push({ label: 'Type de construction', tab: 'general', required: true });
       
       // Champs importants (non obligatoires mais recommandés)
-      if (constructionType !== 'terrain_nu') {
+      if (constructionType !== 'Terrain nu') {
         if (!constructionYear) missing.push({ label: 'Année de construction', tab: 'general', required: false });
         if (!totalBuiltAreaSqm) missing.push({ label: 'Surface construite', tab: 'general', required: false });
         if (!numberOfRooms) missing.push({ label: 'Nombre de pièces', tab: 'general', required: false });
       }
-      if (constructionImages.length === 0 && constructionType !== 'terrain_nu') {
+      if (constructionImages.length === 0 && constructionType !== 'Terrain nu') {
         missing.push({ label: 'Photos de la construction', tab: 'documents', required: false });
       }
       
