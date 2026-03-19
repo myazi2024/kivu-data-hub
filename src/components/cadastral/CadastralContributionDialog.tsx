@@ -859,6 +859,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   }, [formData.isTitleInCurrentOwnerName, currentOwners[0]?.lastName, currentOwners[0]?.firstName, currentOwners[0]?.middleName, currentOwners[0]?.since]);
   // FIX #12: Improved surface calculation with better 2-side handling
   useEffect(() => {
+    // Skip area recalculation when loading data from DB in edit mode
+    if (isLoadingFromDbRef.current) return;
+    
     const sides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
     
     if (sides.length < 3) return; // FIX: Need at least 3 sides for a valid area calc
