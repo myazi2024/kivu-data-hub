@@ -54,6 +54,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const { providers: mobileProviders } = usePaymentProviders();
 
   const [formState, dispatch] = useReducer(formReducer, INITIAL_FORM_STATE);
+  const { clearDraft } = useExpertiseDraft(parcelNumber, formState, dispatch, open);
   const [showIntro, setShowIntro] = useState(true);
   const [step, setStep] = useState<'form' | 'summary' | 'payment' | 'confirmation'>('form');
   const [activeTab, setActiveTabRaw] = useState('general');
