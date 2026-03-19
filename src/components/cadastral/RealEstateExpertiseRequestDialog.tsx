@@ -331,7 +331,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   }, [open, showIntro, user?.id, existingCertificate?.id]);
 
    const getTotalAmount = () => {
-     const total = fees.reduce((sum, fee) => sum + fee.amount_usd, 0);
+     const total = fees.filter(fee => fee.is_mandatory).reduce((sum, fee) => sum + fee.amount_usd, 0);
      return Math.max(total, 0);
    };
 
@@ -403,12 +403,16 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setIsRecordingSound(false);
   };
 
+  // Keep a ref to constructionImageUrls so the cleanup effect always has current values
+  const constructionImageUrlsRef = useRef<string[]>([]);
+  useEffect(() => { constructionImageUrlsRef.current = constructionImageUrls; }, [constructionImageUrls]);
+
   // Cleanup du microphone et Object URLs à la fermeture
   useEffect(() => {
     return () => {
       stopSoundMeasurement();
       // Revoke any outstanding Object URLs to prevent memory leaks
-      constructionImageUrls.forEach(url => URL.revokeObjectURL(url));
+      constructionImageUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
     };
   }, []);
 
@@ -2215,7 +2219,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
               </CardContent>
             </Card>
 
-            {/* Section Construction */}
+            {/* Section Construction - hidden for terrain_nu */}
+            {!isTerrainNu && (
             <Card className="rounded-xl border-border/50 shadow-sm">
               <CardContent className="p-3 space-y-2">
                 <div className="flex items-center justify-between">
@@ -2264,8 +2269,10 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 </div>
               </CardContent>
             </Card>
+            )}
 
-            {/* Section Pièces */}
+            {/* Section Pièces - hidden for terrain_nu */}
+            {!isTerrainNu && (
             <Card className="rounded-xl border-border/50 shadow-sm">
               <CardContent className="p-3 space-y-2">
                 <div className="flex items-center justify-between">
@@ -2293,8 +2300,10 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 </div>
               </CardContent>
             </Card>
+            )}
 
-            {/* Section Matériaux */}
+            {/* Section Matériaux - hidden for terrain_nu */}
+            {!isTerrainNu && (
             <Card className="rounded-xl border-border/50 shadow-sm">
               <CardContent className="p-3 space-y-2">
                 <div className="flex items-center justify-between">
@@ -2336,6 +2345,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 )}
               </CardContent>
             </Card>
+            )}
 
             {/* Section Emplacement */}
             <Card className="rounded-xl border-border/50 shadow-sm">
@@ -2345,7 +2355,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <MapPin className="h-4 w-4 text-cyan-600" />
                     <h4 className="text-xs font-semibold">Emplacement & Position</h4>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => { setActiveTab('materiaux'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
+                   <Button variant="ghost" size="sm" onClick={() => { setActiveTab('general'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
                     Modifier
                   </Button>
                 </div>
@@ -2391,7 +2401,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                       <Building className="h-4 w-4 text-indigo-600" />
                       <h4 className="text-xs font-semibold">Détails Appartement / Immeuble</h4>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => { setActiveTab('materiaux'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
+                     <Button variant="ghost" size="sm" onClick={() => { setActiveTab('general'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
                       Modifier
                     </Button>
                   </div>
@@ -2711,7 +2721,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 <SelectContent className="z-[1200]">
                   <SelectItem value="airtel_money">Airtel Money</SelectItem>
                   <SelectItem value="orange_money">Orange Money</SelectItem>
-                  <SelectItem value="mpesa">M-Pesa</SelectItem>
+                   <SelectItem value="m_pesa">M-Pesa</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -2969,10 +2979,10 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
             <div className="space-y-2">
               <Select value={certPaymentProvider} onValueChange={setCertPaymentProvider}>
                 <SelectTrigger className="h-9 rounded-xl text-sm"><SelectValue placeholder="Opérateur" /></SelectTrigger>
-                <SelectContent>
+                 <SelectContent className="z-[1200]">
                   <SelectItem value="airtel_money">Airtel Money</SelectItem>
                   <SelectItem value="orange_money">Orange Money</SelectItem>
-                  <SelectItem value="mpesa">M-Pesa</SelectItem>
+                  <SelectItem value="m_pesa">M-Pesa</SelectItem>
                 </SelectContent>
               </Select>
               <Input value={certPaymentPhone} onChange={(e) => setCertPaymentPhone(e.target.value)} placeholder="+243 ..." className="h-9 rounded-xl text-sm" />
