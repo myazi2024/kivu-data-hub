@@ -191,8 +191,6 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(charts.byDeclaredUsage, 'bar-h', 'les usages déclarés')} />}
         {v('lease-type') && <ChartCard title={ct('lease-type', 'Type bail')} icon={Home} data={charts.byLeaseType} type="donut" colorIndex={9} hidden={charts.byLeaseType.length === 0}
           insight={generateInsight(charts.byLeaseType, 'donut', 'les types de bail')} />}
-        {v('circonscription') && <ChartCard title={ct('circonscription', 'Circonscription')} data={charts.byCirconscription} type="bar-h" colorIndex={8} labelWidth={100} hidden={charts.byCirconscription.length === 0}
-          insight={generateInsight(charts.byCirconscription, 'bar-h', 'les circonscriptions')} />}
         {v('surface') && <ChartCard title={ct('surface', 'Superficie')} icon={Ruler} data={charts.surfaceDist} type="bar-v" colorIndex={9}
           insight={generateInsight(charts.surfaceDist, 'bar-v', 'les tranches de superficie')} />}
         {v('geo') && <GeoCharts records={filteredParcels} />}
