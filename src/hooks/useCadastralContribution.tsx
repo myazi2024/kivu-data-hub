@@ -26,6 +26,7 @@ export interface CadastralContributionData {
   constructionNature?: string;
   constructionMaterials?: string;
   declaredUsage?: string;
+  standing?: string;
   constructionYear?: number;
   
   // Autorisation de bâtir
