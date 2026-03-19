@@ -2223,16 +2223,13 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
               </CardContent>
             </Card>
 
-            {/* Section Construction */}
+            {/* Section Construction - Type de bien (toujours visible) */}
             <Card className="rounded-xl border-border/50 shadow-sm">
               <CardContent className="p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Home className="h-4 w-4 text-green-600" />
-                    <h4 className="text-xs font-semibold">Construction</h4>
-                    <Badge variant="outline" className="text-[10px] h-5">
-                      {[constructionType, constructionYear, totalBuiltAreaSqm, numberOfFloors, propertyCondition, constructionQuality].filter(Boolean).length}/6
-                    </Badge>
+                    <h4 className="text-xs font-semibold">Type de bien</h4>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => { setActiveTab('general'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
                     Modifier
@@ -2243,6 +2240,33 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <span className="text-muted-foreground">Type de construction</span>
                     <span className="font-medium">{CONSTRUCTION_TYPE_LABELS[constructionType] || constructionType || <span className="text-orange-600">Non renseigné</span>}</span>
                   </div>
+                  {propertyDescription && (
+                    <div className="flex justify-between text-xs py-1.5">
+                      <span className="text-muted-foreground">Description</span>
+                      <span className="font-medium text-right max-w-[60%] truncate">{propertyDescription}</span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Section Construction détails - masquée pour terrain nu */}
+            {!isTerrainNu && (
+            <Card className="rounded-xl border-border/50 shadow-sm">
+              <CardContent className="p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Building className="h-4 w-4 text-green-600" />
+                    <h4 className="text-xs font-semibold">Construction</h4>
+                    <Badge variant="outline" className="text-[10px] h-5">
+                      {[constructionYear, totalBuiltAreaSqm, numberOfFloors, propertyCondition, constructionQuality].filter(Boolean).length}/5
+                    </Badge>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => { setActiveTab('general'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
+                    Modifier
+                  </Button>
+                </div>
+                <div className="divide-y divide-border/30">
                   <div className="flex justify-between text-xs py-1.5">
                     <span className="text-muted-foreground">Année de construction</span>
                     <span className="font-medium">{constructionYear || <span className="text-muted-foreground">—</span>}</span>
@@ -2263,15 +2287,10 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <span className="text-muted-foreground">État général</span>
                     <span className="font-medium">{CONDITION_LABELS[propertyCondition] || propertyCondition}</span>
                   </div>
-                  {propertyDescription && (
-                    <div className="flex justify-between text-xs py-1.5">
-                      <span className="text-muted-foreground">Description</span>
-                      <span className="font-medium text-right max-w-[60%] truncate">{propertyDescription}</span>
-                    </div>
-                  )}
                 </div>
               </CardContent>
             </Card>
+            )}
 
             {/* Section Pièces */}
             <Card className="rounded-xl border-border/50 shadow-sm">
