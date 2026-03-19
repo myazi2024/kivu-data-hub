@@ -733,10 +733,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           setHasMortgage(false);
         }
 
-        // Détecter le type de section
-        if (contrib.parcel_type === 'SU') {
+        // Détecter le type de section (FIX: handle legacy 'urbain'/'rural' values too)
+        if (contrib.parcel_type === 'SU' || contrib.parcel_type === 'urbain') {
           setSectionType('urbaine');
-        } else if (contrib.parcel_type === 'SR') {
+        } else if (contrib.parcel_type === 'SR' || contrib.parcel_type === 'rural') {
           setSectionType('rurale');
         }
 
