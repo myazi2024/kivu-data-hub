@@ -571,7 +571,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           collectivite: contrib.collectivite || undefined,
           groupement: contrib.groupement || undefined,
           village: contrib.village || undefined,
-          circonscriptionFonciere: contrib.circonscription_fonciere || undefined,
+          
           whatsappNumber: contrib.whatsapp_number || undefined,
           previousPermitNumber: contrib.previous_permit_number || undefined,
         }));
