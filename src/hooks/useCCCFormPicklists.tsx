@@ -68,8 +68,21 @@ export const CCC_STATIC_PICKLIST_REGISTRY: Record<string, {
   },
   picklist_construction_materials: {
     label: 'Matériaux de construction',
-    description: 'Matériaux de construction',
-    fallback: ['Béton armé', 'Briques cuites', 'Briques adobes', 'Parpaings', 'Bois', 'Tôles', 'Semi-dur', 'Mixte', 'Autre'],
+    description: 'Matériaux de construction par nature (dépendant de la nature)',
+    fallback: {
+      Durable: ['Béton armé', 'Briques cuites', 'Parpaings', 'Pierre naturelle'],
+      'Semi-durable': ['Semi-dur', 'Briques adobes', 'Bois', 'Mixte'],
+      Précaire: ['Tôles', 'Bois', 'Paille', 'Autre'],
+    },
+  },
+  picklist_standing: {
+    label: 'Standing / Niveau de finition',
+    description: 'Niveau de finition par nature de construction (dépendant)',
+    fallback: {
+      Durable: ['Haut standing', 'Moyen standing', 'Économique'],
+      'Semi-durable': ['Moyen standing', 'Économique'],
+      Précaire: ['Économique'],
+    },
   },
   picklist_declared_usage: {
     label: 'Usage déclaré',
