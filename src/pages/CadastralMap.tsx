@@ -899,8 +899,9 @@ const CadastralMap = () => {
                     value={searchQuery}
                     onChange={(e) => {
                       const inputValue = e.target.value;
+                      const normalizedValue = inputValue.toUpperCase();
                       // Vérifier si l'utilisateur essaie d'entrer des caractères non autorisés
-                      const hasInvalidChars = /[^0-9]/.test(inputValue);
+                      const hasInvalidChars = /[^0-9RSU.\/]/.test(normalizedValue);
                       
                       if (hasInvalidChars) {
                         // Jouer un son discret avec Web Audio API
@@ -940,10 +941,9 @@ const CadastralMap = () => {
                         }, 3000);
                       }
                       
-                      // Accepter seulement les caractères numériques
-                      const numericValue = inputValue.replace(/[^0-9]/g, '');
-                      setSearchQuery(numericValue);
-                      if (numericValue) setHasUserInteracted(true);
+                      const sanitizedValue = normalizedValue.replace(/[^0-9RSU.\/]/g, '');
+                      setSearchQuery(sanitizedValue);
+                      if (sanitizedValue) setHasUserInteracted(true);
                     }}
                     onFocus={() => {
                       setIsSearchBarActive(true);
@@ -955,9 +955,9 @@ const CadastralMap = () => {
                         searchHistory.addToHistory(searchQuery);
                       }
                     }}
-                    type="tel"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
+                    type="text"
+                    inputMode="text"
+                    pattern="[0-9RSUrsu./]*"
                     className={`${selectedParcel && isMobile ? 'h-8 text-xs pl-8' : 'h-9 text-sm pl-9'} pr-8 rounded-xl border-0 bg-muted/50 focus-visible:ring-1 focus-visible:ring-primary/50 transition-all ${isShaking ? 'animate-shake border-destructive' : ''}`}
                   />
                   
@@ -1170,7 +1170,7 @@ const CadastralMap = () => {
                   <div>
                     <p className="font-medium mb-0.5">Caractère non autorisé</p>
                     <p className="text-destructive-foreground/90 text-[11px]">
-                      Seuls les chiffres (0-9) sont acceptés.
+                      Caractères acceptés : 0-9, R, S, U, . et /.
                     </p>
                   </div>
                 </div>
