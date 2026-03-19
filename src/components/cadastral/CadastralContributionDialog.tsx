@@ -288,10 +288,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     paymentDate: string;
     receiptFile: File | null;
   }>>([{
-    taxType: 'Taxe foncière',
+    taxType: 'Impôt foncier annuel',
     taxYear: '',
     taxAmount: '',
-    paymentStatus: 'Non payée',
+    paymentStatus: 'En attente',
     paymentDate: '',
     receiptFile: null
   }]);
