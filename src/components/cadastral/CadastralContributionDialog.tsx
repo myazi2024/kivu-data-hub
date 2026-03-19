@@ -2188,7 +2188,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (formData.collectivite) filledFields += 1;
     if (formData.groupement) filledFields += 1;
     if (formData.village) filledFields += 1;
-    if (formData.circonscriptionFonciere) filledFields += 1;
+    
     
     const hasValidGPS = gpsCoordinates.filter(g => g.lat && g.lng).length >= 3;
     if (hasValidGPS) {

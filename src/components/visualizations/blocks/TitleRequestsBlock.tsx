@@ -44,7 +44,7 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
   const byConstructionNature = useMemo(() => countBy(filtered, 'construction_nature'), [filtered]);
   const byDeducedTitleType = useMemo(() => countBy(filtered, 'deduced_title_type'), [filtered]);
   const byNationality = useMemo(() => countBy(filtered, 'nationality'), [filtered]);
-  const byCirconscription = useMemo(() => countBy(filtered, 'circonscription_fonciere'), [filtered]);
+  
   const trend = useMemo(() => trendByMonth(filtered), [filtered]);
 
   const genderData = useMemo(() => {

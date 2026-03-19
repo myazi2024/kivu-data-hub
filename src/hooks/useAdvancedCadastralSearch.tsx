@@ -77,7 +77,8 @@ export const useAdvancedCadastralSearch = () => {
       let query = supabase
         .from('cadastral_parcels')
         .select('*', { count: 'exact' })
-        .is('deleted_at', null);
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false });
 
       // Filtres géographiques
       if (activeFilters.province) {

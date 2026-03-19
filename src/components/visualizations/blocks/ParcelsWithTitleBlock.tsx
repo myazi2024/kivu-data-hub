@@ -50,7 +50,7 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     byConstructionNature: countBy(filteredParcels, 'construction_nature'),
     byDeclaredUsage: countBy(normalizedParcels, 'declared_usage'),
     byLeaseType: countBy(filteredParcels, 'lease_type'),
-    byCirconscription: countBy(filteredParcels, 'circonscription_fonciere'),
+    
     surfaceDist: surfaceDistribution(filteredParcels),
     byDecade: yearDecadeDistribution(filteredParcels, 'construction_year'),
   }), [filteredParcels, normalizedParcels]);

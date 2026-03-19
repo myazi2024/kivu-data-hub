@@ -73,7 +73,6 @@ export interface CadastralContributionData {
   collectivite?: string;
   groupement?: string;
   village?: string;
-  circonscriptionFonciere?: string;
   gpsCoordinates?: Array<{ lat: number; lng: number; borne: string }>;
   
   // Historiques

@@ -56,9 +56,9 @@ export const useLandDataAnalytics = () => {
         subdivisions, disputes, boundaryConflicts,
         ownershipHistory, fraudAttempts, certificates, invoices,
       ] = await Promise.all([
-        // Parcels — added construction_year, circonscription_fonciere
+        // Parcels
         fetchAll('cadastral_parcels',
-          'id, parcel_number, parcel_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, property_title_type, current_owner_legal_status, declared_usage, construction_type, construction_nature, construction_year, area_sqm, gps_coordinates, lease_type, circonscription_fonciere, created_at',
+          'id, parcel_number, parcel_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, property_title_type, current_owner_legal_status, declared_usage, construction_type, construction_nature, construction_year, area_sqm, gps_coordinates, lease_type, created_at',
           q => q.is('deleted_at', null)),
         // Contributions — full fields for dedicated block
         fetchAll('cadastral_contributions',
