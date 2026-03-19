@@ -3509,7 +3509,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             </Card>
 
 
-            {/* Section Type de construction */}
+            {/* Section Type d'exploitation */}
             <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
               <CardContent className="p-3 space-y-3">
                 {/* Header */}
