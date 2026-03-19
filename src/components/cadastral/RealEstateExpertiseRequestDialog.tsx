@@ -2376,7 +2376,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <MapPin className="h-4 w-4 text-cyan-600" />
                     <h4 className="text-xs font-semibold">Emplacement & Position</h4>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => { setActiveTab('materiaux'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
+                  <Button variant="ghost" size="sm" onClick={() => { setActiveTab('general'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
                     Modifier
                   </Button>
                 </div>
