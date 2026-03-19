@@ -202,7 +202,7 @@ export const useCadastralContribution = () => {
       lease_type: data.leaseType,
       title_reference_number: data.titleReferenceNumber,
       title_issue_date: data.titleIssueDate,
-      is_title_in_current_owner_name: data.isTitleInCurrentOwnerName ?? null,
+      // Note: isTitleInCurrentOwnerName is UI-only state, not stored in DB
       current_owners_details: data.currentOwners && data.currentOwners.length > 0 
         ? data.currentOwners 
         : null,
