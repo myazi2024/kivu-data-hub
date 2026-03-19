@@ -21,7 +21,7 @@ import AdminCadastralTooltip from '@/components/admin/AdminCadastralTooltip';
 import AdminCCCContributions from '@/components/admin/AdminCCCContributions';
 import AdminValidation from '@/components/admin/AdminValidation';
 import { AdminNotifications } from '@/components/admin/AdminNotifications';
-import AdminSearchConfig from '@/components/admin/AdminSearchConfig';
+import AdminSearchBarConfig from '@/components/admin/AdminSearchBarConfig';
 import AdminResultsConfig from '@/components/admin/AdminResultsConfig';
 import AdminContributionConfig from '@/components/admin/AdminContributionConfig';
 import AdminCCCCodes from '@/components/admin/AdminCCCCodes';
