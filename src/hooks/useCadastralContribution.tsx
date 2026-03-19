@@ -202,6 +202,7 @@ export const useCadastralContribution = () => {
       lease_type: data.leaseType,
       title_reference_number: data.titleReferenceNumber,
       title_issue_date: data.titleIssueDate,
+      is_title_in_current_owner_name: data.isTitleInCurrentOwnerName ?? null,
       current_owners_details: data.currentOwners && data.currentOwners.length > 0 
         ? data.currentOwners 
         : null,
@@ -234,7 +235,6 @@ export const useCadastralContribution = () => {
       collectivite: data.collectivite,
       groupement: data.groupement,
       village: data.village,
-      // circonscription_fonciere removed - not collected in any form
       gps_coordinates: data.gpsCoordinates,
       ownership_history: ownershipHistorySnake,
       boundary_history: boundaryHistorySnake,

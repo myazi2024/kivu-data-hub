@@ -2569,7 +2569,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       permitNumber: '',
       issuingService: '',
       issueDate: '',
-      validityMonths: '36',
+      validityMonths: '12',
       administrativeStatus: 'En attente',
       issuingServiceContact: '',
       attachmentFile: null
