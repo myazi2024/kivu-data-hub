@@ -3,17 +3,16 @@
  * Utilisées dans le formulaire, l'admin, le PDF et le tableau de bord utilisateur.
  */
 
-/**
- * Aligné sur les picklists CCC (useCCCFormPicklists → picklist_construction_type)
- * pour assurer la cohérence des données dans toute l'application.
- * Les clés sont identiques aux valeurs CCC.
- */
 export const CONSTRUCTION_TYPE_LABELS: Record<string, string> = {
-  'Résidentielle': 'Résidentielle',
-  'Commerciale': 'Commerciale',
-  'Industrielle': 'Industrielle',
-  'Agricole': 'Agricole',
-  'Terrain nu': 'Terrain nu',
+  villa: 'Villa / Maison individuelle',
+  appartement: 'Appartement',
+  immeuble: 'Immeuble / Bâtiment',
+  duplex: 'Duplex / Triplex',
+  studio: 'Studio',
+  commercial: 'Local commercial',
+  entrepot: 'Entrepôt / Hangar',
+  terrain_nu: 'Terrain nu',
+  autre: 'Autre',
 };
 
 export const QUALITY_LABELS: Record<string, string> = {
