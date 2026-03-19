@@ -500,6 +500,7 @@ export type Database = {
           rejection_reasons: Json | null
           reviewed_at: string | null
           reviewed_by: string | null
+          standing: string | null
           status: string
           tax_history: Json | null
           territoire: string | null
@@ -564,6 +565,7 @@ export type Database = {
           rejection_reasons?: Json | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          standing?: string | null
           status?: string
           tax_history?: Json | null
           territoire?: string | null
@@ -628,6 +630,7 @@ export type Database = {
           rejection_reasons?: Json | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          standing?: string | null
           status?: string
           tax_history?: Json | null
           territoire?: string | null
@@ -1049,6 +1052,7 @@ export type Database = {
           property_title_type: string
           province: string | null
           quartier: string | null
+          standing: string | null
           surface_calculee_bornes: number | null
           territoire: string | null
           title_issue_date: string | null
@@ -1091,6 +1095,7 @@ export type Database = {
           property_title_type?: string
           province?: string | null
           quartier?: string | null
+          standing?: string | null
           surface_calculee_bornes?: number | null
           territoire?: string | null
           title_issue_date?: string | null
@@ -1133,6 +1138,7 @@ export type Database = {
           property_title_type?: string
           province?: string | null
           quartier?: string | null
+          standing?: string | null
           surface_calculee_bornes?: number | null
           territoire?: string | null
           title_issue_date?: string | null
