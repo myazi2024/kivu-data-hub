@@ -332,7 +332,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   }, [open, showIntro, user?.id, existingCertificate?.id]);
 
    const getTotalAmount = () => {
-     const total = fees.reduce((sum, fee) => sum + fee.amount_usd, 0);
+     const total = fees
+       .filter(fee => fee.is_mandatory)
+       .reduce((sum, fee) => sum + fee.amount_usd, 0);
      return Math.max(total, 0);
    };
 
