@@ -2391,6 +2391,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     // General tab
     if (formData.propertyTitleType) tabProgress.general.filled++;
     if (formData.titleReferenceNumber) tabProgress.general.filled++;
+    if (formData.propertyCategory) tabProgress.general.filled++;
     if (formData.constructionType) tabProgress.general.filled++;
     if (formData.constructionNature) tabProgress.general.filled++;
     if (formData.declaredUsage) tabProgress.general.filled++;
