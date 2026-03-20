@@ -4547,6 +4547,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   }}
                   servitude={servitude}
                   onServitudeChange={setServitude}
+                  buildingShapes={buildingShapes}
+                  onBuildingShapesChange={setBuildingShapes}
                   propertyCategory={formData.propertyCategory}
                   apartmentNumber={formData.apartmentNumber}
                   floorNumber={formData.floorNumber}
