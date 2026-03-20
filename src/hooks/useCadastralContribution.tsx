@@ -22,6 +22,7 @@ export interface CadastralContributionData {
     gender?: string;
     since: string;
   }>;
+  propertyCategory?: string; // UI-only: Catégorie de bien (drives constructionType)
   constructionType?: string;
   constructionNature?: string;
   constructionMaterials?: string;

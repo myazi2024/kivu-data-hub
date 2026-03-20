@@ -12,6 +12,7 @@ const LEGACY_MAP: Record<string, string> = {
   "Immeuble R+2": "Résidentielle",
   "Immeuble": "Résidentielle",
   "Maison": "Résidentielle",
+  "Appartement": "Résidentielle",
   // Commerciale variants
   "Commercial": "Commerciale",
   "Bâtiment commercial": "Commerciale",
@@ -19,11 +20,14 @@ const LEGACY_MAP: Record<string, string> = {
   "Bureau": "Commerciale",
   "Usage mixte": "Commerciale",
   "Bâtiment": "Commerciale",
+  "Local commercial": "Commerciale",
+  "Immeuble/Bâtiment": "Commerciale",
   // Industrielle variants
   "Industriel": "Industrielle",
   "Hangar": "Industrielle",
   "Entrepôt": "Industrielle",
   "Usine": "Industrielle",
+  "Entrepôt/Hangar": "Industrielle",
 };
 
 const KNOWN_TYPES = new Set([

@@ -284,7 +284,24 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   // État pour le switch Taxes/Hypothèques dans l'onglet obligations
   const [obligationType, setObligationType] = useState<'taxes' | 'mortgages'>('taxes');
 
-  // États pour gérer les options de dépendance Type de construction -> Nature -> Matériaux/Usage/Standing
+  // Mapping Catégorie de bien -> Types de construction autorisés
+  const PROPERTY_CATEGORY_OPTIONS = [
+    'Appartement', 'Villa', 'Maison', 'Local commercial',
+    'Immeuble/Bâtiment', 'Entrepôt/Hangar', 'Terrain nu',
+  ];
+
+  const CATEGORY_TO_CONSTRUCTION_TYPES: Record<string, string[]> = {
+    'Appartement': ['Résidentielle'],
+    'Villa': ['Résidentielle'],
+    'Maison': ['Résidentielle'],
+    'Local commercial': ['Commerciale'],
+    'Immeuble/Bâtiment': ['Résidentielle', 'Commerciale', 'Industrielle'],
+    'Entrepôt/Hangar': ['Industrielle', 'Agricole'],
+    'Terrain nu': ['Terrain nu'],
+  };
+
+  // États pour gérer les options de dépendance Catégorie -> Type de construction -> Nature -> Matériaux/Usage/Standing
+  const [availableConstructionTypes, setAvailableConstructionTypes] = useState<string[]>([]);
   const [availableConstructionNatures, setAvailableConstructionNatures] = useState<string[]>([]);
   const [availableDeclaredUsages, setAvailableDeclaredUsages] = useState<string[]>([]);
   const [availableConstructionMaterials, setAvailableConstructionMaterials] = useState<string[]>([]);
@@ -461,6 +478,16 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           titleReferenceNumber: contrib.title_reference_number || undefined,
           titleIssueDate: contrib.title_issue_date || undefined,
           constructionType: contrib.construction_type || undefined,
+          // Reverse-map constructionType to propertyCategory for edit mode
+          propertyCategory: (() => {
+            const ct = contrib.construction_type;
+            if (!ct) return undefined;
+            // Find the category that maps to this construction type
+            for (const [cat, types] of Object.entries(CATEGORY_TO_CONSTRUCTION_TYPES)) {
+              if (types.includes(ct)) return cat;
+            }
+            return undefined;
+          })(),
           constructionNature: contrib.construction_nature || undefined,
           constructionMaterials: contrib.construction_materials || undefined,
           declaredUsage: contrib.declared_usage || undefined,
@@ -961,6 +988,28 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       setAvailableCollectivites([]);
     }
   }, [formData.province, formData.territoire]);
+
+  // Logique de dépendance: Catégorie de bien -> Type de construction
+  useEffect(() => {
+    if (!formData.propertyCategory) {
+      setAvailableConstructionTypes([]);
+      handleInputChange('constructionType', undefined);
+      return;
+    }
+
+    const allowedTypes = CATEGORY_TO_CONSTRUCTION_TYPES[formData.propertyCategory] || [];
+    setAvailableConstructionTypes(allowedTypes);
+
+    // Auto-select if only one option
+    if (allowedTypes.length === 1) {
+      if (formData.constructionType !== allowedTypes[0]) {
+        handleInputChange('constructionType', allowedTypes[0]);
+      }
+    } else if (formData.constructionType && !allowedTypes.includes(formData.constructionType)) {
+      // Reset if current value is not in allowed list
+      handleInputChange('constructionType', undefined);
+    }
+  }, [formData.propertyCategory]);
 
   // Logique de dépendance: Type de construction -> Nature de construction
   useEffect(() => {
@@ -1900,12 +1949,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     const oneMonthAgo = new Date(today);
     oneMonthAgo.setMonth(today.getMonth() - 1);
 
-    // Logique 1: Si type de construction = "terrain nu"
-    if (formData.constructionType === 'Terrain nu') {
+    // Logique 1: Si catégorie de bien = "Terrain nu"
+    if (formData.propertyCategory === 'Terrain nu' || formData.constructionType === 'Terrain nu') {
       restrictions.blockedInExisting = 'regularization';
       restrictions.blockedInRequest = 'regularization';
-      restrictions.messageExisting = `Vous avez indiqué dans "Type de construction" que c'est un terrain nu. Un terrain nu n'a pas besoin d'une autorisation de régularisation, mais plutôt d'une autorisation de bâtir.`;
-      restrictions.messageRequest = `Vous avez indiqué dans "Type de construction" que c'est un "terrain nu". Un terrain nu n'a pas besoin d'une autorisation de régularisation, mais plutôt d'une autorisation de bâtir.`;
+      restrictions.messageExisting = `Vous avez indiqué dans "Catégorie de bien" que c'est un terrain nu. Un terrain nu n'a pas besoin d'une autorisation de régularisation, mais plutôt d'une autorisation de bâtir.`;
+      restrictions.messageRequest = `Vous avez indiqué dans "Catégorie de bien" que c'est un "terrain nu". Un terrain nu n'a pas besoin d'une autorisation de régularisation, mais plutôt d'une autorisation de bâtir.`;
       restrictions.dateMinExisting = threeYearsAgo.toISOString().split('T')[0];
       restrictions.dateMaxExisting = today.toISOString().split('T')[0];
       return restrictions;
@@ -2234,11 +2283,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (hasOwnerSince) filledFields += 1;
     
     if (formData.areaSqm) filledFields += 1;
+    if (formData.propertyCategory) filledFields += 1;
     if (formData.constructionType) filledFields += 1;
     if (formData.constructionNature) filledFields += 1;
-    if (formData.constructionMaterials) filledFields += 1; // FIX: was missing
+    if (formData.constructionMaterials) filledFields += 1;
     if (formData.declaredUsage) filledFields += 1;
-    if (formData.standing) filledFields += 1; // FIX: was missing
+    if (formData.standing) filledFields += 1;
     
     // SECTION 3: Autorisation de bâtir (3 champs)
     totalFields += 3;
@@ -2341,6 +2391,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     // General tab
     if (formData.propertyTitleType) tabProgress.general.filled++;
     if (formData.titleReferenceNumber) tabProgress.general.filled++;
+    if (formData.propertyCategory) tabProgress.general.filled++;
     if (formData.constructionType) tabProgress.general.filled++;
     if (formData.constructionNature) tabProgress.general.filled++;
     if (formData.declaredUsage) tabProgress.general.filled++;
@@ -3507,16 +3558,42 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       <div className="space-y-2 text-xs">
                         <h4 className="font-semibold text-sm">Type d'exploitation</h4>
                         <p className="text-muted-foreground">
-                          Catégorie d'exploitation de votre parcelle : Résidentielle, Commerciale, Industrielle, Agricole ou Terrain nu.
+                          Sélectionnez d'abord la catégorie de bien, puis le type de construction, la nature, les matériaux et l'usage seront filtrés automatiquement.
                         </p>
                       </div>
                     </PopoverContent>
                   </Popover>
                 </div>
 
+                {/* Catégorie de bien */}
+                <div className={`space-y-1.5 ${highlightRequiredFields && !formData.propertyCategory ? 'ring-2 ring-primary rounded-xl p-2 bg-primary/5 animate-pulse' : ''}`}>
+                  <Label className="text-sm font-medium flex items-center gap-1">
+                    Catégorie de bien
+                    {highlightRequiredFields && !formData.propertyCategory && (
+                      <span className="text-primary text-xs font-semibold">*</span>
+                    )}
+                  </Label>
+                  <Select 
+                    value={formData.propertyCategory || ''}
+                    onValueChange={(value) => {
+                      handleInputChange('propertyCategory', value);
+                      setHighlightRequiredFields(false);
+                    }}
+                  >
+                    <SelectTrigger className="h-10 rounded-xl text-sm">
+                      <SelectValue placeholder="Sélectionner la catégorie" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      {PROPERTY_CATEGORY_OPTIONS.map(opt => (
+                        <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 {/* Type et Nature - côte-à-côte */}
                 <div className="grid grid-cols-2 gap-2">
-                  {/* Type de construction */}
+                  {/* Type de construction - visible uniquement si la catégorie a plusieurs options */}
                   <div className={`space-y-1.5 ${highlightRequiredFields && !formData.constructionType ? 'ring-2 ring-primary rounded-xl p-2 bg-primary/5 animate-pulse' : ''}`}>
                     <Label className="text-sm font-medium flex items-center gap-1">
                       Type de construction
@@ -3524,27 +3601,29 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         <span className="text-primary text-xs font-semibold">*</span>
                       )}
                     </Label>
-                    <Select 
-                      value={formData.constructionType || ''}
-                      onValueChange={(value) => {
-                        handleInputChange('constructionType', value);
-                        // Reset materials if switching to Terrain nu
-                        if (value === 'Terrain nu') {
-                          handleInputChange('constructionMaterials', '');
-                          handleInputChange('constructionYear', undefined);
-                        }
-                        setHighlightRequiredFields(false);
-                      }}
-                    >
-                      <SelectTrigger className="h-10 rounded-xl text-sm">
-                        <SelectValue placeholder="Sélectionner" />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl">
-                        {getPicklistOptions('picklist_construction_type').map(opt => (
-                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    {availableConstructionTypes.length <= 1 ? (
+                      <div className="h-10 px-3 flex items-center text-sm rounded-xl border-2 bg-muted text-muted-foreground">
+                        {formData.constructionType || (formData.propertyCategory ? '—' : 'Catégorie d\'abord')}
+                      </div>
+                    ) : (
+                      <Select 
+                        value={formData.constructionType || ''}
+                        onValueChange={(value) => {
+                          handleInputChange('constructionType', value);
+                          setHighlightRequiredFields(false);
+                        }}
+                        disabled={!formData.propertyCategory}
+                      >
+                        <SelectTrigger className="h-10 rounded-xl text-sm">
+                          <SelectValue placeholder={!formData.propertyCategory ? "Catégorie d'abord" : "Sélectionner"} />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          {availableConstructionTypes.map(opt => (
+                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
 
                   {/* Nature de construction */}
@@ -3689,7 +3768,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 )}
 
                 {/* Année de construction - visible sauf Terrain nu */}
-                {formData.constructionType && formData.constructionType !== 'Terrain nu' && (
+                {formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && formData.constructionType && formData.constructionType !== 'Terrain nu' && (
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium">Année de construction</Label>
                     <Select
@@ -3712,7 +3791,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
             
             {/* Section Autorisation de bâtir - Simplifié - Masquée si Terrain nu */}
-            {formData.constructionType !== 'Terrain nu' && (
+            {formData.propertyCategory !== 'Terrain nu' && formData.constructionType !== 'Terrain nu' && (
             <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
               <CardContent className="p-3 space-y-3">
                 {/* Header */}
