@@ -220,6 +220,15 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [constructionMode, setConstructionMode] = useState<'unique' | 'multiple'>('unique');
   const [additionalConstructions, setAdditionalConstructions] = useState<AdditionalConstruction[]>([]);
   
+  // État pour les formes de construction sur la carte (croquis)
+  const [buildingShapes, setBuildingShapes] = useState<Array<{
+    id: string;
+    type: 'circle' | 'square' | 'rectangle' | 'trapeze' | 'polygon';
+    center: { lat: number; lng: number };
+    size: number;
+    rotation?: number;
+  }>>([]);
+
   // État pour gérer les autorisations de bâtir existantes
   const [buildingPermits, setBuildingPermits] = useState<Array<{
     permitType: 'construction' | 'regularization';
