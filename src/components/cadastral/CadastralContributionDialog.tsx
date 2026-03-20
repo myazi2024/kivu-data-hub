@@ -3834,15 +3834,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     </Select>
                   </div>
                 )}
-              </CardContent>
-            </Card>
 
-            
-            {/* Section Autorisation de bâtir - Simplifié - Masquée si Terrain nu */}
-            {formData.propertyCategory !== 'Terrain nu' && formData.constructionType !== 'Terrain nu' && (
-            <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
-              <CardContent className="p-3 space-y-3">
-                {/* Header */}
+                {/* Section Autorisation de bâtir - intégrée dans le bloc Construction */}
+                {formData.propertyCategory !== 'Terrain nu' && formData.constructionType !== 'Terrain nu' && (<>
+                <Separator className="my-2" />
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-start gap-2">
                     <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
