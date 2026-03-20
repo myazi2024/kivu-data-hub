@@ -420,10 +420,10 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                       </div>
                     )}
                   </div>
+                </div>
               </div>
             </div>
           );
-        })}
 
         {/* Message indicatif */}
         {confirmedSidesCount === 0 && (
