@@ -4110,8 +4110,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                 </>)}
 
-                {/* Radio: Construction unique / Plusieurs constructions - visible sauf Terrain nu */}
-                {formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && (
+                {/* Radio: Construction unique / Plusieurs constructions - visible sauf Terrain nu et Appartement */}
+                {formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && formData.propertyCategory !== 'Appartement' && (
                 <>
                 <div className="border-t border-border/50 my-2" />
                 <div className="space-y-2">
