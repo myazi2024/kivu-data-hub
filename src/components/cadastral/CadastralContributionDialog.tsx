@@ -3570,7 +3570,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
                       <MdLocationOn className="h-3.5 w-3.5 text-primary" />
                     </div>
-                    <Label className="text-sm font-semibold">Type d'exploitation</Label>
+                    <Label className="text-sm font-semibold">Construction</Label>
                   </div>
                   <Popover>
                     <PopoverTrigger asChild>
