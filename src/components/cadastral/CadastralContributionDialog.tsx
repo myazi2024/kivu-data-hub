@@ -284,7 +284,24 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   // État pour le switch Taxes/Hypothèques dans l'onglet obligations
   const [obligationType, setObligationType] = useState<'taxes' | 'mortgages'>('taxes');
 
-  // États pour gérer les options de dépendance Type de construction -> Nature -> Matériaux/Usage/Standing
+  // Mapping Catégorie de bien -> Types de construction autorisés
+  const PROPERTY_CATEGORY_OPTIONS = [
+    'Appartement', 'Villa', 'Maison', 'Local commercial',
+    'Immeuble/Bâtiment', 'Entrepôt/Hangar', 'Terrain nu',
+  ];
+
+  const CATEGORY_TO_CONSTRUCTION_TYPES: Record<string, string[]> = {
+    'Appartement': ['Résidentielle'],
+    'Villa': ['Résidentielle'],
+    'Maison': ['Résidentielle'],
+    'Local commercial': ['Commerciale'],
+    'Immeuble/Bâtiment': ['Résidentielle', 'Commerciale', 'Industrielle'],
+    'Entrepôt/Hangar': ['Industrielle', 'Agricole'],
+    'Terrain nu': ['Terrain nu'],
+  };
+
+  // États pour gérer les options de dépendance Catégorie -> Type de construction -> Nature -> Matériaux/Usage/Standing
+  const [availableConstructionTypes, setAvailableConstructionTypes] = useState<string[]>([]);
   const [availableConstructionNatures, setAvailableConstructionNatures] = useState<string[]>([]);
   const [availableDeclaredUsages, setAvailableDeclaredUsages] = useState<string[]>([]);
   const [availableConstructionMaterials, setAvailableConstructionMaterials] = useState<string[]>([]);
