@@ -976,6 +976,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
   // Mise à jour des avenues quand le quartier change
   useEffect(() => {
+    if (isLoadingFromDbRef.current) return;
     if (formData.province && formData.ville && formData.commune && formData.quartier) {
       const avenues = getAvenuesForQuartier(formData.province, formData.ville, formData.commune, formData.quartier);
       setAvailableAvenues(avenues);
