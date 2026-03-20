@@ -420,8 +420,6 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                       </div>
                     )}
                   </div>
-                </div>
-                </div>
               </div>
             </div>
           );
