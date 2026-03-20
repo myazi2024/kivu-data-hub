@@ -957,6 +957,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
   // Mise à jour des quartiers quand la commune change
   useEffect(() => {
+    if (isLoadingFromDbRef.current) return;
     if (formData.province && formData.ville && formData.commune) {
       const quartiers = getQuartiersForCommune(formData.province, formData.ville, formData.commune);
       setAvailableQuartiers(quartiers);
