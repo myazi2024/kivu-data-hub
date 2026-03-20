@@ -3791,7 +3791,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
             
             {/* Section Autorisation de bâtir - Simplifié - Masquée si Terrain nu */}
-            {formData.constructionType !== 'Terrain nu' && (
+            {formData.propertyCategory !== 'Terrain nu' && formData.constructionType !== 'Terrain nu' && (
             <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
               <CardContent className="p-3 space-y-3">
                 {/* Header */}
