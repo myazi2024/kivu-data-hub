@@ -249,17 +249,6 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                       <div className={`h-4 w-4 rounded-md flex items-center justify-center ${isRoad ? 'bg-green-500' : 'bg-amber-500'}`}>
                         {isRoad ? <Route className="h-2.5 w-2.5 text-white" /> : <BrickWall className="h-2.5 w-2.5 text-white" />}
                       </div>
-                    ) : isEditingThis ? (
-                      <Checkbox
-                        id={`side-${index}`}
-                        checked={true}
-                        onCheckedChange={(checked) => {
-                          if (!checked) {
-                            handleRemoveSide(index);
-                          }
-                        }}
-                        className="h-4 w-4 rounded-md"
-                      />
                     ) : (
                       <div className="h-4 w-4 rounded-md bg-muted flex items-center justify-center">
                         <span className="text-[9px] font-bold text-muted-foreground">{index + 1}</span>
