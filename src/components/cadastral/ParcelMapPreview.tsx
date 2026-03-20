@@ -19,7 +19,7 @@ import { AlertCircle, MapPin, AlertTriangle, Info, Move, Hand, Plus, Trash2, Tar
 import { BoundaryConflictDialog } from './BoundaryConflictDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { RoadSideInfo } from './RoadBorderingSidesPanel';
-import { ParcelSidesDimensionsPanel } from './ParcelSidesDimensionsPanel';
+import { ParcelSidesDimensionsPanel, ServitudeInfo } from './ParcelSidesDimensionsPanel';
 import { useMapConfig, MapConfig } from '@/hooks/useMapConfig';
 
 interface Coordinate {
