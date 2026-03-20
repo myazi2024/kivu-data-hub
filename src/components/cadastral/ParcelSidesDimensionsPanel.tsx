@@ -278,29 +278,26 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                     <Badge variant="secondary" className="font-mono text-xs h-5 px-1.5 rounded-md font-bold whitespace-nowrap">
                       {side.length}m
                     </Badge>
-                    {/* Bouton slide pour définir la limite - visible uniquement si pas confirmé */}
-                    {!hasConfirmed && !isEditingThis && (
+                    {/* Bouton slide - visible si pas confirmé */}
+                    {!hasConfirmed && (
                       <div
                         className="flex items-center gap-1.5"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <Switch
-                          checked={false}
-                          onCheckedChange={() => {
-                            onRoadSideUpdate(index, { bordersRoad: true, borderType: 'route' });
-                            setEditingSide(index);
-                            setShowNotification(false);
+                          checked={isEditingThis || false}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              onRoadSideUpdate(index, { bordersRoad: true, borderType: 'route' });
+                              setEditingSide(index);
+                              setShowNotification(false);
+                            } else {
+                              handleRemoveSide(index);
+                            }
                           }}
                           className="h-4 w-7 data-[state=checked]:bg-primary"
                         />
-                        <span
-                          className="text-[10px] font-medium text-muted-foreground flex items-center gap-0.5 cursor-pointer"
-                          onClick={() => {
-                            onRoadSideUpdate(index, { bordersRoad: true, borderType: 'route' });
-                            setEditingSide(index);
-                            setShowNotification(false);
-                          }}
-                        >
+                        <span className="text-[10px] font-medium text-muted-foreground flex items-center gap-0.5">
                           <BrickWall className="h-2.5 w-2.5" />
                           Mur mitoyen
                         </span>
