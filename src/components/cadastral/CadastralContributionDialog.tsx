@@ -905,7 +905,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   }, [formData.areaSqm, permitRequest.estimatedArea, permitRequest.permitType, permitMode]);
 
   // Mise à jour des villes quand la province change
+  // FIX: Skip cascade resets during DB load to prevent wiping restored child values
   useEffect(() => {
+    if (isLoadingFromDbRef.current) return;
     if (formData.province) {
       const villes = getVillesForProvince(formData.province);
       setAvailableVilles(villes);
