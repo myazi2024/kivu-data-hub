@@ -384,7 +384,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     } catch (error) {
       console.error('Erreur lors de la sauvegarde des données:', error);
     }
-  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, permitMode, buildingPermits, permitRequest, gpsCoordinates, parcelSides, obligationType, sectionType, hasMortgage, ownershipMode, leaseYears, roadSides, STORAGE_KEY]);
+  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, permitMode, buildingPermits, permitRequest, gpsCoordinates, parcelSides, obligationType, sectionType, hasMortgage, ownershipMode, leaseYears, roadSides, customTitleName, STORAGE_KEY]);
 
   // Fonction pour charger les données depuis localStorage
   const loadFormDataFromStorage = () => {
