@@ -2283,11 +2283,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (hasOwnerSince) filledFields += 1;
     
     if (formData.areaSqm) filledFields += 1;
+    if (formData.propertyCategory) filledFields += 1;
     if (formData.constructionType) filledFields += 1;
     if (formData.constructionNature) filledFields += 1;
-    if (formData.constructionMaterials) filledFields += 1; // FIX: was missing
+    if (formData.constructionMaterials) filledFields += 1;
     if (formData.declaredUsage) filledFields += 1;
-    if (formData.standing) filledFields += 1; // FIX: was missing
+    if (formData.standing) filledFields += 1;
     
     // SECTION 3: Autorisation de bâtir (3 champs)
     totalFields += 3;
