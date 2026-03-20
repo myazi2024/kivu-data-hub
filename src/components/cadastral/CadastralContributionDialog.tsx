@@ -1252,7 +1252,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
       const { data: signedData, error: signedError } = await supabase.storage
         .from('cadastral-documents')
-        .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year
+        .createSignedUrl(filePath, 60 * 60 * 24 * 365 * 10); // 10 years for cadastral archives
 
       if (signedError || !signedData?.signedUrl) {
         console.error('Signed URL error:', signedError);

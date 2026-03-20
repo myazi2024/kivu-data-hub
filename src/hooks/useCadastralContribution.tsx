@@ -270,6 +270,9 @@ export const useCadastralContribution = () => {
       whatsapp_number: data.whatsappNumber,
       owner_document_url: data.ownerDocumentUrl,
       property_title_document_url: data.titleDocumentUrl,
+      additional_constructions: data.additionalConstructions && data.additionalConstructions.length > 0
+        ? data.additionalConstructions
+        : null,
     };
 
     if (data.permitRequest) {
