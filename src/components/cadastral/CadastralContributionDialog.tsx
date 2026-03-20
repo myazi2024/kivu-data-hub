@@ -1845,7 +1845,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       mortgageStatus: 'Active',
       receiptFile: null
     }]);
-    markDirty();
   };
 
   const removeMortgageRecord = (index: number) => {
