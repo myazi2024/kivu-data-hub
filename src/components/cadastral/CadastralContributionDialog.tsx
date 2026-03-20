@@ -478,6 +478,16 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           titleReferenceNumber: contrib.title_reference_number || undefined,
           titleIssueDate: contrib.title_issue_date || undefined,
           constructionType: contrib.construction_type || undefined,
+          // Reverse-map constructionType to propertyCategory for edit mode
+          propertyCategory: (() => {
+            const ct = contrib.construction_type;
+            if (!ct) return undefined;
+            // Find the category that maps to this construction type
+            for (const [cat, types] of Object.entries(CATEGORY_TO_CONSTRUCTION_TYPES)) {
+              if (types.includes(ct)) return cat;
+            }
+            return undefined;
+          })(),
           constructionNature: contrib.construction_nature || undefined,
           constructionMaterials: contrib.construction_materials || undefined,
           declaredUsage: contrib.declared_usage || undefined,
