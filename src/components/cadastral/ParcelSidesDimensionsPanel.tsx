@@ -298,7 +298,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                         <Switch
                           checked={false}
                           onCheckedChange={() => {
-                            onRoadSideUpdate(index, { bordersRoad: true, borderType: 'mur_mitoyen' });
+                            onRoadSideUpdate(index, { bordersRoad: true, borderType: 'route' });
                             setEditingSide(index);
                             setShowNotification(false);
                           }}
@@ -307,7 +307,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                         <span
                           className="text-[10px] font-medium text-muted-foreground flex items-center gap-0.5 cursor-pointer"
                           onClick={() => {
-                            onRoadSideUpdate(index, { bordersRoad: true, borderType: 'mur_mitoyen' });
+                            onRoadSideUpdate(index, { bordersRoad: true, borderType: 'route' });
                             setEditingSide(index);
                             setShowNotification(false);
                           }}
