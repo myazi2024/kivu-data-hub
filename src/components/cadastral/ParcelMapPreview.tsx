@@ -438,11 +438,13 @@ export const ParcelMapPreview = ({
         attributionControl: true,
         center: mapCenter,
         zoom: 19,
+        maxZoom: 22,
       });
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap',
-        maxZoom: 19,
+        maxNativeZoom: 19,
+        maxZoom: 22,
       }).addTo(map);
 
       // Contrôle de zoom personnalisé : + = zoom max, - = zoom min
