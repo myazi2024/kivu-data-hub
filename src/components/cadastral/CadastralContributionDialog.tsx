@@ -3580,9 +3580,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     </PopoverTrigger>
                     <PopoverContent className="w-72 rounded-xl" align="end">
                       <div className="space-y-2 text-xs">
-                        <h4 className="font-semibold text-sm">Type d'exploitation</h4>
+                        <h4 className="font-semibold text-sm">Construction</h4>
                         <p className="text-muted-foreground">
-                          Sélectionnez d'abord la catégorie de bien, puis le type de construction, la nature, les matériaux et l'usage seront filtrés automatiquement.
+                          Renseignez les détails de votre construction : catégorie de bien, type, nature, matériaux, usage et autorisation de bâtir.
                         </p>
                       </div>
                     </PopoverContent>
