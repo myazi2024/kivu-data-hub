@@ -496,7 +496,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
           <Alert className="py-1.5 px-2 rounded-xl bg-muted/50 border-0 mt-1">
             <Info className="h-3 w-3" />
             <AlertDescription className="text-[11px]">
-              Cliquez sur un côté pour indiquer une route ou un mur mitoyen
+              Activez le bouton sur chaque côté pour définir sa limite
             </AlertDescription>
           </Alert>
         )}
