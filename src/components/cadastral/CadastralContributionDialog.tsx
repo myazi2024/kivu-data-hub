@@ -3837,7 +3837,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                 {/* Section Autorisation de bâtir - intégrée dans le bloc Construction */}
                 {formData.propertyCategory !== 'Terrain nu' && formData.constructionType !== 'Terrain nu' && (<>
-                <Separator className="my-2" />
+                <div className="border-t border-border/50 my-2" />
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-start gap-2">
                     <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
