@@ -424,6 +424,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         if (parsed.roadSides) setRoadSides(parsed.roadSides);
         // FIX: Restore customTitleName from localStorage
         if (parsed.customTitleName) setCustomTitleName(parsed.customTitleName);
+        // FIX: Restore multi-constructions from localStorage
+        if (parsed.constructionMode) setConstructionMode(parsed.constructionMode);
+        if (parsed.additionalConstructions) setAdditionalConstructions(parsed.additionalConstructions);
         
         toast({
           title: "Données restaurées",
