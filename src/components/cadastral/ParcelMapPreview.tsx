@@ -94,7 +94,10 @@ export const ParcelMapPreview = ({
   buildingShapes = [],
   onBuildingShapesChange,
   servitude,
-  onServitudeChange
+  onServitudeChange,
+  propertyCategory,
+  apartmentNumber,
+  floorNumber
 }: ParcelMapPreviewProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
