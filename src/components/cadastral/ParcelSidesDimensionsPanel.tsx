@@ -134,7 +134,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
     setShowNotification(false);
     const roadSide = roadSides.find(s => s.sideIndex === sideIndex);
     if (!roadSide?.bordersRoad) {
-      onRoadSideUpdate(sideIndex, { bordersRoad: true, borderType: 'route' });
+      onRoadSideUpdate(sideIndex, { bordersRoad: true, borderType: 'mur_mitoyen' });
     }
   };
 
