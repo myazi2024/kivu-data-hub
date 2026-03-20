@@ -2264,10 +2264,17 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         const invalidPermit = buildingPermits.find(permit => {
           if (!permit.issueDate) return false;
           const permitYear = new Date(permit.issueDate).getFullYear();
-          return permitYear > formData.constructionYear!;
+          if (permit.permitType === 'construction') {
+            return permitYear > formData.constructionYear! || permitYear < formData.constructionYear! - 3;
+          } else {
+            return permitYear < formData.constructionYear! || new Date(permit.issueDate) > new Date();
+          }
         });
         if (invalidPermit) {
-          missing.push({ field: 'permitIssueDate', label: `Date de l'autorisation doit être ≤ année de construction (${formData.constructionYear})`, tab: 'general' });
+          const msg = invalidPermit.permitType === 'construction'
+            ? `Date de l'autorisation de bâtir doit être entre ${formData.constructionYear - 3} et ${formData.constructionYear}`
+            : `Date de l'autorisation de régularisation doit être ≥ ${formData.constructionYear} et ≤ date actuelle`;
+          missing.push({ field: 'permitIssueDate', label: msg, tab: 'general' });
         }
       }
     }
