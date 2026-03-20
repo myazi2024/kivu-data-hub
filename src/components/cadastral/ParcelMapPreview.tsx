@@ -2080,7 +2080,7 @@ export const ParcelMapPreview = ({
               >
                 <div className="space-y-1">
                   <p className="text-xs font-semibold text-muted-foreground px-2 py-1">
-                    Forme de construction
+                    {propertyCategory === 'Appartement' ? "Forme de l'immeuble" : 'Forme de construction'}
                   </p>
                   {SHAPE_OPTIONS.map((option) => (
                     <Button
