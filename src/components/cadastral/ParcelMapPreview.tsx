@@ -64,6 +64,8 @@ interface ParcelMapPreviewProps {
   onSurfaceChange?: (surface: number) => void;
   buildingShapes?: BuildingShape[];
   onBuildingShapesChange?: (shapes: BuildingShape[]) => void;
+  servitude?: ServitudeInfo;
+  onServitudeChange?: (servitude: ServitudeInfo) => void;
 }
 
 const SHAPE_OPTIONS = [
