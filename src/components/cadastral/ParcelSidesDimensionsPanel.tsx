@@ -295,11 +295,10 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                               handleRemoveSide(index);
                             }
                           }}
-                          className="h-4 w-7 data-[state=checked]:bg-primary"
+                          className="h-5 w-9 data-[state=checked]:bg-primary"
                         />
-                        <span className="text-[10px] font-medium text-muted-foreground flex items-center gap-0.5">
-                          <BrickWall className="h-2.5 w-2.5" />
-                          Mur mitoyen
+                        <span className="text-[10px] font-medium text-muted-foreground">
+                          {isEditingThis ? 'Route' : 'Mur mitoyen'}
                         </span>
                       </div>
                     )}
