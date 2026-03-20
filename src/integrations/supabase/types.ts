@@ -450,6 +450,7 @@ export type Database = {
       }
       cadastral_contributions: {
         Row: {
+          additional_constructions: Json | null
           apartment_number: string | null
           appeal_data: Json | null
           appeal_status: string | null
@@ -518,6 +519,7 @@ export type Database = {
           whatsapp_number: string | null
         }
         Insert: {
+          additional_constructions?: Json | null
           apartment_number?: string | null
           appeal_data?: Json | null
           appeal_status?: string | null
@@ -586,6 +588,7 @@ export type Database = {
           whatsapp_number?: string | null
         }
         Update: {
+          additional_constructions?: Json | null
           apartment_number?: string | null
           appeal_data?: Json | null
           appeal_status?: string | null

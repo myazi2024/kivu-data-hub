@@ -378,6 +378,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       // FIX: Persist customTitleName and isTitleInCurrentOwnerName to localStorage
       customTitleName,
       isTitleInCurrentOwnerName: formData.isTitleInCurrentOwnerName,
+      // FIX: Persist multi-constructions
+      constructionMode,
+      additionalConstructions: additionalConstructions.map(c => ({
+        ...c,
+        permit: c.permit ? { ...c.permit, attachmentFile: null } : undefined
+      })),
       timestamp: new Date().toISOString()
     };
     
@@ -389,7 +395,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     } catch (error) {
       console.error('Erreur lors de la sauvegarde des données:', error);
     }
-  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, permitMode, buildingPermits, permitRequest, gpsCoordinates, parcelSides, obligationType, sectionType, hasMortgage, ownershipMode, leaseYears, roadSides, customTitleName, STORAGE_KEY]);
+  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, permitMode, buildingPermits, permitRequest, gpsCoordinates, parcelSides, obligationType, sectionType, hasMortgage, ownershipMode, leaseYears, roadSides, customTitleName, constructionMode, additionalConstructions, STORAGE_KEY]);
 
   // Fonction pour charger les données depuis localStorage
   const loadFormDataFromStorage = () => {
@@ -418,6 +424,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         if (parsed.roadSides) setRoadSides(parsed.roadSides);
         // FIX: Restore customTitleName from localStorage
         if (parsed.customTitleName) setCustomTitleName(parsed.customTitleName);
+        // FIX: Restore multi-constructions from localStorage
+        if (parsed.constructionMode) setConstructionMode(parsed.constructionMode);
+        if (parsed.additionalConstructions) setAdditionalConstructions(parsed.additionalConstructions);
         
         toast({
           title: "Données restaurées",
@@ -678,6 +687,25 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         const boundaries = contrib.boundary_history as any[];
         if (boundaries && Array.isArray(boundaries) && boundaries.length > 0) {
           console.log('Boundary history loaded:', boundaries.length, 'records');
+        }
+
+        // FIX: Restore additional constructions from DB
+        const additionalConstr = (contrib as any).additional_constructions as any[];
+        if (additionalConstr && Array.isArray(additionalConstr) && additionalConstr.length > 0) {
+          setConstructionMode('multiple');
+          setAdditionalConstructions(additionalConstr.map((c: any) => ({
+            propertyCategory: c.propertyCategory || '',
+            constructionType: c.constructionType || '',
+            constructionNature: c.constructionNature || '',
+            constructionMaterials: c.constructionMaterials || '',
+            declaredUsage: c.declaredUsage || '',
+            standing: c.standing || '',
+            constructionYear: c.constructionYear || undefined,
+            apartmentNumber: c.apartmentNumber || undefined,
+            floorNumber: c.floorNumber || undefined,
+            permitMode: c.permitMode || undefined,
+            permit: c.permit || undefined,
+          })));
         }
 
         console.log('Contribution chargée depuis la base de données pour édition');
@@ -1252,7 +1280,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
       const { data: signedData, error: signedError } = await supabase.storage
         .from('cadastral-documents')
-        .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year
+        .createSignedUrl(filePath, 60 * 60 * 24 * 365 * 10); // 10 years for cadastral archives
 
       if (signedError || !signedData?.signedUrl) {
         console.error('Signed URL error:', signedError);
@@ -1549,7 +1577,17 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         gpsCoordinates: gpsCoordinatesData,
         parcelSides: parcelSides.filter(s => s.length && parseFloat(s.length) > 0).length > 0 
           ? parcelSides.filter(s => s.length && parseFloat(s.length) > 0) 
-          : undefined, // Dimensions exactes des côtés
+          : undefined,
+        // FIX: Include additional constructions in submission payload
+        additionalConstructions: constructionMode === 'multiple' && additionalConstructions.length > 0
+          ? additionalConstructions.map(c => ({
+              ...c,
+              permit: c.permit ? {
+                ...c.permit,
+                attachmentFile: undefined, // Strip File objects
+              } : undefined,
+            }))
+          : undefined,
       };
 
       // Use update if editing, otherwise insert
@@ -1925,6 +1963,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       issuingServiceContact: '',
       attachmentFile: null
     }]);
+    markDirty();
   };
   
   const removeBuildingPermit = (index: number) => {
