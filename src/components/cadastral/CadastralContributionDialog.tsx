@@ -370,6 +370,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       ownershipMode,
       leaseYears,
       roadSides,
+      // FIX: Persist customTitleName and isTitleInCurrentOwnerName to localStorage
+      customTitleName,
+      isTitleInCurrentOwnerName: formData.isTitleInCurrentOwnerName,
       timestamp: new Date().toISOString()
     };
     
@@ -381,7 +384,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     } catch (error) {
       console.error('Erreur lors de la sauvegarde des données:', error);
     }
-  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, permitMode, buildingPermits, permitRequest, gpsCoordinates, parcelSides, obligationType, sectionType, hasMortgage, ownershipMode, leaseYears, roadSides, STORAGE_KEY]);
+  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, permitMode, buildingPermits, permitRequest, gpsCoordinates, parcelSides, obligationType, sectionType, hasMortgage, ownershipMode, leaseYears, roadSides, customTitleName, STORAGE_KEY]);
 
   // Fonction pour charger les données depuis localStorage
   const loadFormDataFromStorage = () => {
@@ -408,6 +411,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         if (parsed.ownershipMode) setOwnershipMode(parsed.ownershipMode);
         if (parsed.leaseYears !== undefined) setLeaseYears(parsed.leaseYears);
         if (parsed.roadSides) setRoadSides(parsed.roadSides);
+        // FIX: Restore customTitleName from localStorage
+        if (parsed.customTitleName) setCustomTitleName(parsed.customTitleName);
         
         toast({
           title: "Données restaurées",
@@ -478,21 +483,27 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           titleReferenceNumber: contrib.title_reference_number || undefined,
           titleIssueDate: contrib.title_issue_date || undefined,
           constructionType: contrib.construction_type || undefined,
-          // Reverse-map constructionType to propertyCategory for edit mode
-          propertyCategory: (() => {
+          // FIX: Restore propertyCategory from DB if available, else reverse-map
+          propertyCategory: (contrib as any).property_category || (() => {
             const ct = contrib.construction_type;
             if (!ct) return undefined;
-            // Find the category that maps to this construction type
+            // Reverse-map: find ALL matching categories, prefer more specific ones
+            const matches: string[] = [];
             for (const [cat, types] of Object.entries(CATEGORY_TO_CONSTRUCTION_TYPES)) {
-              if (types.includes(ct)) return cat;
+              if (types.includes(ct)) matches.push(cat);
             }
-            return undefined;
+            // If only one match, use it. If multiple (e.g. Résidentielle -> Appartement/Villa/Maison),
+            // we can't determine which, so return undefined (user must re-select)
+            return matches.length === 1 ? matches[0] : undefined;
           })(),
           constructionNature: contrib.construction_nature || undefined,
           constructionMaterials: contrib.construction_materials || undefined,
           declaredUsage: contrib.declared_usage || undefined,
           standing: contrib.standing || undefined,
           constructionYear: contrib.construction_year || undefined,
+          // FIX: Restore apartmentNumber and floorNumber from DB
+          apartmentNumber: (contrib as any).apartment_number || undefined,
+          floorNumber: (contrib as any).floor_number || undefined,
           areaSqm: contrib.area_sqm || undefined,
           province: contrib.province || undefined,
           ville: contrib.ville || undefined,
@@ -2269,10 +2280,14 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     totalFields += 1; // parcelNumber
     filledFields += 1; // toujours rempli
     
-    // SECTION 2: Informations générales (14 champs - aligné SQL)
-    totalFields += 14;
+    // SECTION 2: Informations générales (13 champs de base + 1 conditionnel leaseType)
+    totalFields += 13;
     if (formData.propertyTitleType) filledFields += 1;
-    if (formData.leaseType) filledFields += 1;
+    // FIX: leaseType only counted when applicable (Contrat de location)
+    if (formData.propertyTitleType === 'Contrat de location (Contrat d\'occupation provisoire)') {
+      totalFields += 1;
+      if (formData.leaseType) filledFields += 1;
+    }
     if (formData.titleReferenceNumber) filledFields += 1;
     
     // Propriétaires actuels
@@ -2382,7 +2397,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   // from the same field counts as calculateCCCValue to avoid double scoring
   const calculateProgressDetails = useMemo(() => {
     const tabProgress = {
-      general: { filled: 0, total: 8 },   // 6 text + 2 docs
+      general: { filled: 0, total: 9 },   // FIX: 7 text fields + 2 docs = 9 (was 8)
       location: { filled: 0, total: 0 },
       history: { filled: 0, total: 1 },    // ownership history
       obligations: { filled: 0, total: 2 } // tax + mortgage
