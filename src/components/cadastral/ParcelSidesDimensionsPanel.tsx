@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -249,17 +249,6 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                       <div className={`h-4 w-4 rounded-md flex items-center justify-center ${isRoad ? 'bg-green-500' : 'bg-amber-500'}`}>
                         {isRoad ? <Route className="h-2.5 w-2.5 text-white" /> : <BrickWall className="h-2.5 w-2.5 text-white" />}
                       </div>
-                    ) : isEditingThis ? (
-                      <Checkbox
-                        id={`side-${index}`}
-                        checked={true}
-                        onCheckedChange={(checked) => {
-                          if (!checked) {
-                            handleRemoveSide(index);
-                          }
-                        }}
-                        className="h-4 w-4 rounded-md"
-                      />
                     ) : (
                       <div className="h-4 w-4 rounded-md bg-muted flex items-center justify-center">
                         <span className="text-[9px] font-bold text-muted-foreground">{index + 1}</span>
@@ -289,29 +278,26 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                     <Badge variant="secondary" className="font-mono text-xs h-5 px-1.5 rounded-md font-bold whitespace-nowrap">
                       {side.length}m
                     </Badge>
-                    {/* Bouton slide pour définir la limite - visible uniquement si pas confirmé */}
-                    {!hasConfirmed && !isEditingThis && (
+                    {/* Bouton slide - visible si pas confirmé */}
+                    {!hasConfirmed && (
                       <div
                         className="flex items-center gap-1.5"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <Switch
-                          checked={false}
-                          onCheckedChange={() => {
-                            onRoadSideUpdate(index, { bordersRoad: true, borderType: 'route' });
-                            setEditingSide(index);
-                            setShowNotification(false);
+                          checked={isEditingThis || false}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              onRoadSideUpdate(index, { bordersRoad: true, borderType: 'route' });
+                              setEditingSide(index);
+                              setShowNotification(false);
+                            } else {
+                              handleRemoveSide(index);
+                            }
                           }}
                           className="h-4 w-7 data-[state=checked]:bg-primary"
                         />
-                        <span
-                          className="text-[10px] font-medium text-muted-foreground flex items-center gap-0.5 cursor-pointer"
-                          onClick={() => {
-                            onRoadSideUpdate(index, { bordersRoad: true, borderType: 'route' });
-                            setEditingSide(index);
-                            setShowNotification(false);
-                          }}
-                        >
+                        <span className="text-[10px] font-medium text-muted-foreground flex items-center gap-0.5">
                           <BrickWall className="h-2.5 w-2.5" />
                           Mur mitoyen
                         </span>
@@ -346,92 +332,99 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                   </p>
                 )}
 
-                {/* Formulaire d'édition */}
-                {isEditingThis && (
-                  <div className="space-y-1.5 pl-6 animate-fade-in">
-                    {/* Champs pour Route uniquement */}
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <Route className="h-3.5 w-3.5 text-green-600" />
-                      <span className="text-xs font-medium text-green-700 dark:text-green-300">Informations sur la route</span>
-                    </div>
+                {/* Formulaire d'édition avec animation d'ouverture/fermeture */}
+                <div
+                  className={`grid transition-all duration-300 ease-out ${
+                    isEditingThis
+                      ? 'grid-rows-[1fr] opacity-100'
+                      : 'grid-rows-[0fr] opacity-0'
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                    {isEditingThis && (
+                      <div className="space-y-1.5 pl-6 pt-2">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <Route className="h-3.5 w-3.5 text-green-600" />
+                          <span className="text-xs font-medium text-green-700 dark:text-green-300">Informations sur la route</span>
+                        </div>
 
-                    <Select
-                      value={roadSide?.roadType || ''}
-                      onValueChange={(value) => 
-                        onRoadSideUpdate(index, { roadType: value })
-                      }
-                    >
-                      <SelectTrigger className="h-8 text-xs rounded-lg">
-                        <SelectValue placeholder="Type de route *" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {roadTypes.map((type) => (
-                          <SelectItem key={type.value} value={type.value} className="text-xs">
-                            {type.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                        <Select
+                          value={roadSide?.roadType || ''}
+                          onValueChange={(value) => 
+                            onRoadSideUpdate(index, { roadType: value })
+                          }
+                        >
+                          <SelectTrigger className="h-8 text-xs rounded-lg">
+                            <SelectValue placeholder="Type de route *" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {roadTypes.map((type) => (
+                              <SelectItem key={type.value} value={type.value} className="text-xs">
+                                {type.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
 
-                    <div className="grid grid-cols-2 gap-1.5">
-                      <Input
-                        type="text"
-                        placeholder="Nom route"
-                        value={roadSide?.roadName || ''}
-                        onChange={(e) => 
-                          onRoadSideUpdate(index, { roadName: e.target.value })
-                        }
-                        className="h-8 text-xs rounded-lg"
-                      />
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.1"
-                        placeholder="Largeur (m)"
-                        value={roadSide?.roadWidth || ''}
-                        onChange={(e) => 
-                          onRoadSideUpdate(index, { roadWidth: parseFloat(e.target.value) || undefined })
-                        }
-                        className="h-8 text-xs rounded-lg"
-                      />
-                    </div>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <Input
+                            type="text"
+                            placeholder="Nom route"
+                            value={roadSide?.roadName || ''}
+                            onChange={(e) => 
+                              onRoadSideUpdate(index, { roadName: e.target.value })
+                            }
+                            className="h-8 text-xs rounded-lg"
+                          />
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            placeholder="Largeur (m)"
+                            value={roadSide?.roadWidth || ''}
+                            onChange={(e) => 
+                              onRoadSideUpdate(index, { roadWidth: parseFloat(e.target.value) || undefined })
+                            }
+                            className="h-8 text-xs rounded-lg"
+                          />
+                        </div>
 
-                    {/* Boutons d'action */}
-                    <div className="flex gap-1.5 pt-1">
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleConfirmSide(index);
-                        }}
-                        disabled={!canConfirm(roadSide!)}
-                        className="flex-1 h-7 text-xs rounded-lg gap-1"
-                      >
-                        <Check className="h-3 w-3" />
-                        Ajouter
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRemoveSide(index);
-                        }}
-                        className="h-7 text-xs rounded-lg px-2"
-                      >
-                        Annuler
-                      </Button>
-                    </div>
+                        {/* Boutons d'action */}
+                        <div className="flex gap-1.5 pt-1">
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleConfirmSide(index);
+                            }}
+                            disabled={!canConfirm(roadSide!)}
+                            className="flex-1 h-7 text-xs rounded-lg gap-1"
+                          >
+                            <Check className="h-3 w-3" />
+                            Ajouter
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveSide(index);
+                            }}
+                            className="h-7 text-xs rounded-lg px-2"
+                          >
+                            Annuler
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
             </div>
           );
         })}
-
-        {/* Message indicatif */}
         {confirmedSidesCount === 0 && (
           <Alert className="py-1.5 px-2 rounded-xl bg-muted/50 border-0 mt-1">
             <Info className="h-3 w-3" />
