@@ -117,6 +117,27 @@ export interface CadastralContributionData {
   ownerDocumentUrl?: string;
   titleDocumentUrl?: string;
   
+  // Constructions additionnelles (multi-constructions)
+  additionalConstructions?: Array<{
+    propertyCategory: string;
+    constructionType: string;
+    constructionNature: string;
+    constructionMaterials: string;
+    declaredUsage: string;
+    standing: string;
+    constructionYear?: number;
+    apartmentNumber?: string;
+    floorNumber?: string;
+    permitMode?: 'existing' | 'request';
+    permit?: {
+      permitType: 'construction' | 'regularization';
+      permitNumber: string;
+      issueDate: string;
+      issuingService: string;
+      attachmentUrl?: string;
+    };
+  }>;
+  
   // Métadonnées
   whatsappNumber?: string;
 }
