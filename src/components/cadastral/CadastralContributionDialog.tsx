@@ -905,7 +905,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   }, [formData.areaSqm, permitRequest.estimatedArea, permitRequest.permitType, permitMode]);
 
   // Mise à jour des villes quand la province change
+  // FIX: Skip cascade resets during DB load to prevent wiping restored child values
   useEffect(() => {
+    if (isLoadingFromDbRef.current) return;
     if (formData.province) {
       const villes = getVillesForProvince(formData.province);
       setAvailableVilles(villes);
@@ -933,6 +935,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
   // Mise à jour des communes quand la ville change
   useEffect(() => {
+    if (isLoadingFromDbRef.current) return;
     if (formData.province && formData.ville) {
       const communes = getCommunesForVille(formData.province, formData.ville);
       setAvailableCommunes(communes);
@@ -954,6 +957,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
   // Mise à jour des quartiers quand la commune change
   useEffect(() => {
+    if (isLoadingFromDbRef.current) return;
     if (formData.province && formData.ville && formData.commune) {
       const quartiers = getQuartiersForCommune(formData.province, formData.ville, formData.commune);
       setAvailableQuartiers(quartiers);
@@ -972,6 +976,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
   // Mise à jour des avenues quand le quartier change
   useEffect(() => {
+    if (isLoadingFromDbRef.current) return;
     if (formData.province && formData.ville && formData.commune && formData.quartier) {
       const avenues = getAvenuesForQuartier(formData.province, formData.ville, formData.commune, formData.quartier);
       setAvailableAvenues(avenues);
@@ -987,6 +992,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
   // Mise à jour des collectivités quand le territoire change
   useEffect(() => {
+    if (isLoadingFromDbRef.current) return;
     if (formData.province && formData.territoire) {
       const collectivites = getCollectivitesForTerritoire(formData.province, formData.territoire);
       setAvailableCollectivites(collectivites);
@@ -1845,6 +1851,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       mortgageStatus: 'Active',
       receiptFile: null
     }]);
+    markDirty();
   };
 
   const removeMortgageRecord = (index: number) => {
@@ -2280,8 +2287,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     totalFields += 1; // parcelNumber
     filledFields += 1; // toujours rempli
     
-    // SECTION 2: Informations générales (13 champs de base + 1 conditionnel leaseType)
-    totalFields += 13;
+    // SECTION 2: Informations générales (14 champs de base + 1 conditionnel leaseType)
+    // Includes: titleType, titleRef, owners×3, ownerSince, area, propertyCategory,
+    // constructionType, constructionNature, materials, usage, standing
+    totalFields += 14;
     if (formData.propertyTitleType) filledFields += 1;
     // FIX: leaseType only counted when applicable (Contrat de location)
     if (formData.propertyTitleType === 'Contrat de location (Contrat d\'occupation provisoire)') {
