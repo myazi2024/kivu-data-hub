@@ -189,7 +189,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
           </div>
         </CardTitle>
         <CardDescription className="text-xs text-muted-foreground">
-          Cliquez sur un côté pour indiquer une route ou un mur mitoyen
+          Activez le bouton sur chaque côté pour définir sa limite
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-1.5 px-3 pb-3">
