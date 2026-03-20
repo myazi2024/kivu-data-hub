@@ -205,7 +205,6 @@ export const useCadastralContribution = () => {
       lease_type: data.leaseType,
       title_reference_number: data.titleReferenceNumber,
       title_issue_date: data.titleIssueDate,
-      // Note: isTitleInCurrentOwnerName is UI-only state, not stored in DB
       current_owners_details: data.currentOwners && data.currentOwners.length > 0 
         ? data.currentOwners 
         : null,
@@ -220,6 +219,10 @@ export const useCadastralContribution = () => {
         : undefined,
       area_sqm: data.areaSqm,
       parcel_sides: data.parcelSides,
+      // FIX: Persist propertyCategory, apartmentNumber, floorNumber to DB
+      property_category: data.propertyCategory || null,
+      apartment_number: data.apartmentNumber || null,
+      floor_number: data.floorNumber || null,
       construction_type: data.constructionType,
       construction_nature: data.constructionNature,
       construction_materials: data.constructionMaterials || null,
