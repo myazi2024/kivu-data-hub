@@ -2361,6 +2361,8 @@ export const ParcelMapPreview = ({
           roadSides={roadSides}
           onRoadSideUpdate={handleRoadSideUpdate}
           roadTypes={mapConfig.roadTypes}
+          servitude={servitude}
+          onServitudeUpdate={onServitudeChange}
         />
       )}
 
