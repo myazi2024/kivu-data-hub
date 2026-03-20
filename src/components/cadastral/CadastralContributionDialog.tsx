@@ -220,15 +220,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [constructionMode, setConstructionMode] = useState<'unique' | 'multiple'>('unique');
   const [additionalConstructions, setAdditionalConstructions] = useState<AdditionalConstruction[]>([]);
   
-  // État pour les formes de construction sur la carte (croquis)
-  const [buildingShapes, setBuildingShapes] = useState<Array<{
-    id: string;
-    type: 'circle' | 'square' | 'rectangle' | 'trapeze' | 'polygon';
-    center: { lat: number; lng: number };
-    size: number;
-    rotation?: number;
-  }>>([]);
-
   // État pour gérer les autorisations de bâtir existantes
   const [buildingPermits, setBuildingPermits] = useState<Array<{
     permitType: 'construction' | 'regularization';
@@ -396,7 +387,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         ...c,
         permit: c.permit ? { ...c.permit, attachmentFile: null } : undefined
       })),
-      buildingShapes,
       timestamp: new Date().toISOString()
     };
     
@@ -408,7 +398,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     } catch (error) {
       console.error('Erreur lors de la sauvegarde des données:', error);
     }
-  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, permitMode, buildingPermits, permitRequest, gpsCoordinates, parcelSides, obligationType, sectionType, hasMortgage, ownershipMode, leaseYears, roadSides, customTitleName, constructionMode, additionalConstructions, buildingShapes, STORAGE_KEY]);
+  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, permitMode, buildingPermits, permitRequest, gpsCoordinates, parcelSides, obligationType, sectionType, hasMortgage, ownershipMode, leaseYears, roadSides, customTitleName, constructionMode, additionalConstructions, STORAGE_KEY]);
 
   // Fonction pour charger les données depuis localStorage
   const loadFormDataFromStorage = () => {
@@ -435,7 +425,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         if (parsed.ownershipMode) setOwnershipMode(parsed.ownershipMode);
         if (parsed.leaseYears !== undefined) setLeaseYears(parsed.leaseYears);
         if (parsed.roadSides) setRoadSides(parsed.roadSides);
-        if (parsed.buildingShapes) setBuildingShapes(parsed.buildingShapes);
         // FIX: Restore customTitleName from localStorage
         if (parsed.customTitleName) setCustomTitleName(parsed.customTitleName);
         // FIX: Restore multi-constructions from localStorage
@@ -4549,8 +4538,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   }}
                   servitude={servitude}
                   onServitudeChange={setServitude}
-                  buildingShapes={buildingShapes}
-                  onBuildingShapesChange={setBuildingShapes}
                   propertyCategory={formData.propertyCategory}
                   apartmentNumber={formData.apartmentNumber}
                   floorNumber={formData.floorNumber}
