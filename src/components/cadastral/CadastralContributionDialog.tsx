@@ -771,30 +771,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     }
   }, [currentOwners]);
 
-  // Auto-remplir le premier ancien propriétaire quand le titre n'est pas au nom du propriétaire actuel
-  // Ceci aide l'utilisateur à documenter correctement la chaîne de propriété
-  useEffect(() => {
-    if (formData.isTitleInCurrentOwnerName === false && formData.titleIssueDate) {
-      const firstOwnerSince = currentOwners[0]?.since;
-      
-      // Vérifier si le premier ancien propriétaire n'a pas encore de dates renseignées
-      if (previousOwners.length > 0 && previousOwners[0]) {
-        const shouldAutoFill = !previousOwners[0].startDate || !previousOwners[0].endDate;
-        
-        if (shouldAutoFill) {
-          const updated = [...previousOwners];
-          updated[0] = {
-            ...updated[0],
-            // La date de début est la date de délivrance du titre (quand le vendeur a acquis)
-            startDate: formData.titleIssueDate,
-            // La date de fin est la date "Propriétaire depuis" du premier propriétaire actuel (quand il a vendu)
-            endDate: firstOwnerSince || ''
-          };
-          setPreviousOwners(updated);
-        }
-      }
-    }
-  }, [formData.isTitleInCurrentOwnerName, formData.titleIssueDate, currentOwners[0]?.since]);
 
   // FIX #12: Improved surface calculation with better 2-side handling
   useEffect(() => {
