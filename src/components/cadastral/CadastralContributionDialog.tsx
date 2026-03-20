@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useCadastralContribution, CadastralContributionData } from '@/hooks/useCadastralContribution';
+import AdditionalConstructionBlock, { AdditionalConstruction } from '@/components/cadastral/AdditionalConstructionBlock';
 import { Loader2, CheckCircle2, Upload, X, Plus, Trash2, Info, ExternalLink, RotateCcw, ChevronRight, Camera } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { MdDashboard, MdLocationOn, MdEventNote, MdAccountBalance, MdRateReview, MdInsertDriveFile } from 'react-icons/md';
@@ -211,6 +212,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   
   // État pour le mode d'autorisation de bâtir
   const [permitMode, setPermitMode] = useState<'existing' | 'request'>('existing');
+  
+  // État pour le mode construction unique/multiple
+  const [constructionMode, setConstructionMode] = useState<'unique' | 'multiple'>('unique');
+  const [additionalConstructions, setAdditionalConstructions] = useState<AdditionalConstruction[]>([]);
   
   // État pour gérer les autorisations de bâtir existantes
   const [buildingPermits, setBuildingPermits] = useState<Array<{
@@ -4078,6 +4083,76 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     </div>
                   </div>
                 )}
+                {/* Radio: Construction unique / Plusieurs constructions */}
+                <div className="border-t border-border/50 my-2" />
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Nombre de constructions sur la parcelle</Label>
+                  <div className="flex gap-3">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="constructionMode"
+                        checked={constructionMode === 'unique'}
+                        onChange={() => {
+                          setConstructionMode('unique');
+                          setAdditionalConstructions([]);
+                        }}
+                        className="accent-primary h-4 w-4"
+                      />
+                      <span className="text-sm">Construction unique</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="constructionMode"
+                        checked={constructionMode === 'multiple'}
+                        onChange={() => setConstructionMode('multiple')}
+                        className="accent-primary h-4 w-4"
+                      />
+                      <span className="text-sm">Plusieurs constructions</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Blocs de constructions additionnelles */}
+                {constructionMode === 'multiple' && (
+                  <div className="space-y-3 animate-fade-in">
+                    {additionalConstructions.map((construction, idx) => (
+                      <AdditionalConstructionBlock
+                        key={idx}
+                        index={idx}
+                        data={construction}
+                        onChange={(i, updated) => {
+                          const copy = [...additionalConstructions];
+                          copy[i] = updated;
+                          setAdditionalConstructions(copy);
+                        }}
+                        onRemove={(i) => {
+                          setAdditionalConstructions(prev => prev.filter((_, j) => j !== i));
+                        }}
+                        getPicklistDependentOptions={getPicklistDependentOptions}
+                      />
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAdditionalConstructions(prev => [...prev, {
+                        propertyCategory: '',
+                        constructionType: '',
+                        constructionNature: '',
+                        constructionMaterials: '',
+                        declaredUsage: '',
+                        standing: '',
+                      }])}
+                      className="w-full rounded-xl gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Ajouter une construction
+                    </Button>
+                  </div>
+                )}
+
                 </>)}
               </CardContent>
             </Card>
