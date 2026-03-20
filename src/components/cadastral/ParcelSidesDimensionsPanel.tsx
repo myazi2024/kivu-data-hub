@@ -153,7 +153,6 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
   const canConfirm = (side: RoadSideInfo) => {
     if (!side.bordersRoad) return false;
     if (side.borderType === 'route') return !!side.roadType;
-    if (side.borderType === 'mur_mitoyen') return !!side.wallMaterial;
     return false;
   };
 
