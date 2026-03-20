@@ -2362,7 +2362,9 @@ export const ParcelMapPreview = ({
           <Info className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
           <p className="text-xs text-muted-foreground leading-relaxed">
             {isAddingBuilding 
-              ? "Touchez dans la parcelle pour placer la construction."
+              ? propertyCategory === 'Appartement' 
+                ? "Touchez dans la parcelle pour placer l'immeuble."
+                : "Touchez dans la parcelle pour placer la construction."
               : isDrawingMode 
                 ? "Touchez la carte pour ajouter des bornes."
                 : "Utilisez les boutons sur la carte pour les fonctions avancées."
