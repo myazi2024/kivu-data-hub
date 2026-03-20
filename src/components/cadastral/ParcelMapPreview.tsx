@@ -1750,8 +1750,12 @@ export const ParcelMapPreview = ({
               <MapPin className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-semibold">Croquis parcelle</p>
-              <p className="text-xs text-muted-foreground">Tracez les contours</p>
+              <p className="text-sm font-semibold">
+                {propertyCategory === 'Appartement' ? 'Croquis immeuble' : 'Croquis parcelle'}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {propertyCategory === 'Appartement' ? 'Localisez l\'immeuble' : 'Tracez les contours'}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-1.5">
