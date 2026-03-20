@@ -103,6 +103,18 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
   const wallCount = roadSides.filter(s => s.bordersRoad && s.isConfirmed && s.borderType === 'mur_mitoyen').length;
   const totalPerimeter = parcelSides.reduce((sum, side) => sum + parseFloat(side.length || '0'), 0);
 
+  // Vérifier si tous les côtés sont en mur mitoyen (aucun côté n'est une route)
+  const hasAnyRoute = roadSides.some(s => s.bordersRoad && s.borderType === 'route');
+  const allSidesAreMurMitoyen = parcelSides.length > 0 && !hasAnyRoute;
+  const sidesCount = parcelSides.length;
+
+  // Reset servitude quand un côté passe en route
+  useEffect(() => {
+    if (!allSidesAreMurMitoyen && servitude?.hasServitude) {
+      onServitudeUpdate?.({ hasServitude: false, width: undefined });
+    }
+  }, [allSidesAreMurMitoyen]);
+
   // Masquer la notification quand un élément est ajouté
   useEffect(() => {
     if (confirmedSidesCount > 0) {
