@@ -1925,6 +1925,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       issuingServiceContact: '',
       attachmentFile: null
     }]);
+    markDirty();
   };
   
   const removeBuildingPermit = (index: number) => {
