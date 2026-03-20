@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { Ruler, Compass, Info, Trash2, Check, Route, X, Lightbulb, BrickWall } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -133,7 +134,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
     setShowNotification(false);
     const roadSide = roadSides.find(s => s.sideIndex === sideIndex);
     if (!roadSide?.bordersRoad) {
-      onRoadSideUpdate(sideIndex, { bordersRoad: true, borderType: 'route' });
+      onRoadSideUpdate(sideIndex, { bordersRoad: true, borderType: 'mur_mitoyen' });
     }
   };
 
@@ -188,7 +189,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
           </div>
         </CardTitle>
         <CardDescription className="text-xs text-muted-foreground">
-          Cliquez sur un côté pour indiquer une route ou un mur mitoyen
+          Activez le bouton sur chaque côté pour définir sa limite
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-1.5 px-3 pb-3">
@@ -213,7 +214,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                   💡 Indiquez les limites de chaque côté
                 </p>
                 <p className="text-[11px] text-amber-700 dark:text-amber-300 leading-relaxed">
-                  Cliquez sur <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-primary/10 text-primary font-medium text-[10px]"><Route className="h-2 w-2" />Route</span> ou <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-amber-200 dark:bg-amber-800 text-amber-700 dark:text-amber-300 font-medium text-[10px]"><BrickWall className="h-2 w-2" />Mur</span>
+                   Activez le bouton sur chaque côté pour indiquer s'il borde une <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-amber-200 dark:bg-amber-800 text-amber-700 dark:text-amber-300 font-medium text-[10px]"><BrickWall className="h-2 w-2" />Mur mitoyen</span> ou une <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-primary/10 text-primary font-medium text-[10px]"><Route className="h-2 w-2" />Route</span>
                 </p>
               </div>
             </div>
@@ -289,37 +290,32 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                     <Badge variant="secondary" className="font-mono text-xs h-5 px-1.5 rounded-md font-bold whitespace-nowrap">
                       {side.length}m
                     </Badge>
-                    {/* Boutons pour ajouter route ou mur - visible uniquement si pas confirmé */}
+                    {/* Bouton slide pour définir la limite - visible uniquement si pas confirmé */}
                     {!hasConfirmed && !isEditingThis && (
-                      <div className="flex gap-0.5">
-                        <Button
-                          type="button"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onRoadSideUpdate(index, { bordersRoad: true, borderType: 'route' });
-                            setEditingSide(index);
-                            setShowNotification(false);
-                          }}
-                          className="h-6 px-2 text-[10px] rounded-md gap-1 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white border-0 shadow-sm font-medium"
-                        >
-                          <Route className="h-3 w-3" />
-                          Route
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
+                      <div
+                        className="flex items-center gap-1.5"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Switch
+                          checked={false}
+                          onCheckedChange={() => {
                             onRoadSideUpdate(index, { bordersRoad: true, borderType: 'mur_mitoyen' });
                             setEditingSide(index);
                             setShowNotification(false);
                           }}
-                          className="h-6 px-2 text-[10px] rounded-md gap-1 bg-orange-600 hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-600 text-white border-0 shadow-sm font-medium"
+                          className="h-4 w-7 data-[state=checked]:bg-primary"
+                        />
+                        <span
+                          className="text-[10px] font-medium text-muted-foreground flex items-center gap-0.5 cursor-pointer"
+                          onClick={() => {
+                            onRoadSideUpdate(index, { bordersRoad: true, borderType: 'mur_mitoyen' });
+                            setEditingSide(index);
+                            setShowNotification(false);
+                          }}
                         >
-                          <BrickWall className="h-3 w-3" />
-                          Mur
-                        </Button>
+                          <BrickWall className="h-2.5 w-2.5" />
+                          Mur mitoyen
+                        </span>
                       </div>
                     )}
                     {hasConfirmed && (
@@ -500,7 +496,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
           <Alert className="py-1.5 px-2 rounded-xl bg-muted/50 border-0 mt-1">
             <Info className="h-3 w-3" />
             <AlertDescription className="text-[11px]">
-              Cliquez sur un côté pour indiquer une route ou un mur mitoyen
+              Activez le bouton sur chaque côté pour définir sa limite
             </AlertDescription>
           </Alert>
         )}
