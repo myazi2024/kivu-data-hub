@@ -396,6 +396,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         ...c,
         permit: c.permit ? { ...c.permit, attachmentFile: null } : undefined
       })),
+      buildingShapes,
       timestamp: new Date().toISOString()
     };
     
