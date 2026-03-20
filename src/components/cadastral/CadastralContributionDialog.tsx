@@ -378,6 +378,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       // FIX: Persist customTitleName and isTitleInCurrentOwnerName to localStorage
       customTitleName,
       isTitleInCurrentOwnerName: formData.isTitleInCurrentOwnerName,
+      // FIX: Persist multi-constructions
+      constructionMode,
+      additionalConstructions: additionalConstructions.map(c => ({
+        ...c,
+        permit: c.permit ? { ...c.permit, attachmentFile: null } : undefined
+      })),
       timestamp: new Date().toISOString()
     };
     
