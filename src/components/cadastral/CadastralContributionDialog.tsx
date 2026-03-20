@@ -435,6 +435,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         if (parsed.ownershipMode) setOwnershipMode(parsed.ownershipMode);
         if (parsed.leaseYears !== undefined) setLeaseYears(parsed.leaseYears);
         if (parsed.roadSides) setRoadSides(parsed.roadSides);
+        if (parsed.buildingShapes) setBuildingShapes(parsed.buildingShapes);
         // FIX: Restore customTitleName from localStorage
         if (parsed.customTitleName) setCustomTitleName(parsed.customTitleName);
         // FIX: Restore multi-constructions from localStorage
