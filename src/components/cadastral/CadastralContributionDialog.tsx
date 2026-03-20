@@ -4078,9 +4078,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     </div>
                   </div>
                 )}
+                </>)}
               </CardContent>
             </Card>
-            )}
             
             {/* Bouton Suivant */}
             <div className="flex justify-end pt-6 mt-6 border-t">
