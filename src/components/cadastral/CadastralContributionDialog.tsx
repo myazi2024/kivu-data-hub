@@ -3825,10 +3825,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       <MdInsertDriveFile className="h-3.5 w-3.5 text-primary" />
                     </div>
                     <Label className="text-sm font-semibold leading-tight">
-                      Avez-vous obtenu une autorisation de bâtir pour votre construction {formData.constructionType?.toLowerCase() || ''}
-                      {formData.constructionNature ? `, ${formData.constructionNature.toLowerCase()}` : ''}
-                      {formData.constructionMaterials ? `, en ${formData.constructionMaterials.toLowerCase()}` : ''}
-                      {formData.declaredUsage ? `, utilisée en tant que ${formData.declaredUsage.toLowerCase()}` : ''} ?
+                      Avez-vous obtenu une autorisation de bâtir pour votre {formData.propertyCategory ? `"${formData.propertyCategory}"` : 'bien'}
+                      {formData.constructionType ? `, de type "${formData.constructionType}"` : ''}
+                      {formData.constructionNature ? `, "${formData.constructionNature}"` : ''}
+                      {formData.constructionMaterials ? `, construit avec des "${formData.constructionMaterials}"` : ''}
+                      {formData.declaredUsage ? `, et qui est utilisé comme "${formData.declaredUsage}"` : ''} ?
                     </Label>
                   </div>
                   <Popover>
