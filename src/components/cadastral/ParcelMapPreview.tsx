@@ -66,9 +66,6 @@ interface ParcelMapPreviewProps {
   onBuildingShapesChange?: (shapes: BuildingShape[]) => void;
   servitude?: ServitudeInfo;
   onServitudeChange?: (servitude: ServitudeInfo) => void;
-  propertyCategory?: string;
-  apartmentNumber?: string;
-  floorNumber?: string;
 }
 
 const SHAPE_OPTIONS = [
@@ -94,10 +91,7 @@ export const ParcelMapPreview = ({
   buildingShapes = [],
   onBuildingShapesChange,
   servitude,
-  onServitudeChange,
-  propertyCategory,
-  apartmentNumber,
-  floorNumber
+  onServitudeChange
 }: ParcelMapPreviewProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -1146,14 +1140,10 @@ export const ParcelMapPreview = ({
     }
     
     if (layer) {
-      const isApt = propertyCategory === 'Appartement';
-      const aptInfo = isApt && (floorNumber || apartmentNumber) 
-        ? `<br/><span style="color:#6b7280;">Étage: ${floorNumber || '—'} | Appt: ${apartmentNumber || '—'}</span>` 
-        : '';
       layer.bindPopup(`
         <div style="font-size: 12px;">
-          <strong style="color: #dc2626;">${isApt ? 'Immeuble' : 'Construction'}</strong><br/>
-          <span>Type: ${shape.type}</span>${aptInfo}
+          <strong style="color: #dc2626;">Construction</strong><br/>
+          <span>Type: ${shape.type}</span>
         </div>
       `);
     }
@@ -1754,12 +1744,8 @@ export const ParcelMapPreview = ({
               <MapPin className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-semibold">
-                {propertyCategory === 'Appartement' ? 'Croquis immeuble' : 'Croquis parcelle'}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {propertyCategory === 'Appartement' ? 'Localisez l\'immeuble' : 'Tracez les contours'}
-              </p>
+              <p className="text-sm font-semibold">Croquis parcelle</p>
+              <p className="text-xs text-muted-foreground">Tracez les contours</p>
             </div>
           </div>
           <div className="flex items-center gap-1.5">
@@ -2068,7 +2054,7 @@ export const ParcelMapPreview = ({
                   className={`h-8 w-8 p-0 rounded-xl shadow-md ${
                     isAddingBuilding ? 'bg-red-500 text-white' : 'bg-white hover:bg-gray-50'
                   }`}
-                  title={propertyCategory === 'Appartement' ? "Placer l'immeuble" : "Ajouter une construction"}
+                  title="Ajouter une construction"
                 >
                   <Building2 className="h-4 w-4" />
                 </Button>
@@ -2080,7 +2066,7 @@ export const ParcelMapPreview = ({
               >
                 <div className="space-y-1">
                   <p className="text-xs font-semibold text-muted-foreground px-2 py-1">
-                    {propertyCategory === 'Appartement' ? "Forme de l'immeuble" : 'Forme de construction'}
+                    Forme de construction
                   </p>
                   {SHAPE_OPTIONS.map((option) => (
                     <Button
@@ -2336,10 +2322,7 @@ export const ParcelMapPreview = ({
             <div className="flex items-center gap-2">
               <Building2 className="h-4 w-4 text-red-500" />
               <span className="text-sm font-medium text-red-700 dark:text-red-300">
-                {propertyCategory === 'Appartement' 
-                  ? `${buildingShapes.length} immeuble${buildingShapes.length > 1 ? 's' : ''}${floorNumber ? ` • Étage ${floorNumber}` : ''}${apartmentNumber ? ` • Appt ${apartmentNumber}` : ''}`
-                  : `${buildingShapes.length} construction${buildingShapes.length > 1 ? 's' : ''}`
-                }
+                {buildingShapes.length} construction{buildingShapes.length > 1 ? 's' : ''}
               </span>
             </div>
             <Button
@@ -2362,9 +2345,7 @@ export const ParcelMapPreview = ({
           <Info className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
           <p className="text-xs text-muted-foreground leading-relaxed">
             {isAddingBuilding 
-              ? propertyCategory === 'Appartement' 
-                ? "Touchez dans la parcelle pour placer l'immeuble."
-                : "Touchez dans la parcelle pour placer la construction."
+              ? "Touchez dans la parcelle pour placer la construction."
               : isDrawingMode 
                 ? "Touchez la carte pour ajouter des bornes."
                 : "Utilisez les boutons sur la carte pour les fonctions avancées."
