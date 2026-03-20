@@ -4531,6 +4531,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   onSurfaceChange={(surface) => {
                     handleInputChange('areaSqm', String(surface));
                   }}
+                  servitude={servitude}
+                  onServitudeChange={setServitude}
                 />
               </div>
             )}
