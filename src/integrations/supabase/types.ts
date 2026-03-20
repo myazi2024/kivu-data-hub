@@ -450,6 +450,7 @@ export type Database = {
       }
       cadastral_contributions: {
         Row: {
+          apartment_number: string | null
           appeal_data: Json | null
           appeal_status: string | null
           appeal_submission_date: string | null
@@ -473,6 +474,7 @@ export type Database = {
           current_owner_since: string | null
           current_owners_details: Json | null
           declared_usage: string | null
+          floor_number: string | null
           fraud_reason: string | null
           fraud_score: number | null
           gps_coordinates: Json | null
@@ -490,6 +492,7 @@ export type Database = {
           parcel_type: string | null
           permit_request_data: Json | null
           previous_permit_number: string | null
+          property_category: string | null
           property_title_document_url: string | null
           property_title_type: string | null
           province: string | null
@@ -515,6 +518,7 @@ export type Database = {
           whatsapp_number: string | null
         }
         Insert: {
+          apartment_number?: string | null
           appeal_data?: Json | null
           appeal_status?: string | null
           appeal_submission_date?: string | null
@@ -538,6 +542,7 @@ export type Database = {
           current_owner_since?: string | null
           current_owners_details?: Json | null
           declared_usage?: string | null
+          floor_number?: string | null
           fraud_reason?: string | null
           fraud_score?: number | null
           gps_coordinates?: Json | null
@@ -555,6 +560,7 @@ export type Database = {
           parcel_type?: string | null
           permit_request_data?: Json | null
           previous_permit_number?: string | null
+          property_category?: string | null
           property_title_document_url?: string | null
           property_title_type?: string | null
           province?: string | null
@@ -580,6 +586,7 @@ export type Database = {
           whatsapp_number?: string | null
         }
         Update: {
+          apartment_number?: string | null
           appeal_data?: Json | null
           appeal_status?: string | null
           appeal_submission_date?: string | null
@@ -603,6 +610,7 @@ export type Database = {
           current_owner_since?: string | null
           current_owners_details?: Json | null
           declared_usage?: string | null
+          floor_number?: string | null
           fraud_reason?: string | null
           fraud_score?: number | null
           gps_coordinates?: Json | null
@@ -620,6 +628,7 @@ export type Database = {
           parcel_type?: string | null
           permit_request_data?: Json | null
           previous_permit_number?: string | null
+          property_category?: string | null
           property_title_document_url?: string | null
           property_title_type?: string | null
           province?: string | null
