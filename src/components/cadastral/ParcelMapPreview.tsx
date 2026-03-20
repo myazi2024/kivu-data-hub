@@ -2068,7 +2068,7 @@ export const ParcelMapPreview = ({
                   className={`h-8 w-8 p-0 rounded-xl shadow-md ${
                     isAddingBuilding ? 'bg-red-500 text-white' : 'bg-white hover:bg-gray-50'
                   }`}
-                  title="Ajouter une construction"
+                  title={propertyCategory === 'Appartement' ? "Placer l'immeuble" : "Ajouter une construction"}
                 >
                   <Building2 className="h-4 w-4" />
                 </Button>
