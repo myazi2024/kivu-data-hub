@@ -407,7 +407,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                             e.stopPropagation();
                             handleConfirmSide(index);
                           }}
-                          disabled={!roadSide || !canConfirm(roadSide)}
+                          disabled={!canConfirm(roadSide!)}
                           className="flex-1 h-7 text-xs rounded-lg gap-1"
                         >
                           <Check className="h-3 w-3" />
