@@ -2264,10 +2264,17 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         const invalidPermit = buildingPermits.find(permit => {
           if (!permit.issueDate) return false;
           const permitYear = new Date(permit.issueDate).getFullYear();
-          return permitYear > formData.constructionYear!;
+          if (permit.permitType === 'construction') {
+            return permitYear > formData.constructionYear! || permitYear < formData.constructionYear! - 3;
+          } else {
+            return permitYear < formData.constructionYear! || new Date(permit.issueDate) > new Date();
+          }
         });
         if (invalidPermit) {
-          missing.push({ field: 'permitIssueDate', label: `Date de l'autorisation doit être ≤ année de construction (${formData.constructionYear})`, tab: 'general' });
+          const msg = invalidPermit.permitType === 'construction'
+            ? `Date de l'autorisation de bâtir doit être entre ${formData.constructionYear - 3} et ${formData.constructionYear}`
+            : `Date de l'autorisation de régularisation doit être ≥ ${formData.constructionYear} et ≤ date actuelle`;
+          missing.push({ field: 'permitIssueDate', label: msg, tab: 'general' });
         }
       }
     }
@@ -3979,11 +3986,14 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                                     <Info className="h-3 w-3" />
                                   </button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-64 rounded-xl text-xs" align="start" sideOffset={5}>
+                                <PopoverContent className="w-72 rounded-xl text-xs" align="start" sideOffset={5}>
                                   <div className="space-y-1">
                                     <h4 className="font-semibold text-sm">Date de délivrance</h4>
                                     <p className="text-muted-foreground leading-relaxed">
-                                      L'autorisation de bâtir est délivrée <strong>avant</strong> le début des travaux. Sa date doit donc être antérieure ou égale à l'année de construction.
+                                      {permit.permitType === 'construction'
+                                        ? <>L'autorisation de bâtir est valable <strong>3 ans</strong> en RDC. Sa date doit être dans les 3 ans précédant l'année de construction.</>
+                                        : <>L'autorisation de régularisation est délivrée <strong>après</strong> la construction. Sa date doit être postérieure ou égale à l'année de construction.</>
+                                      }
                                     </p>
                                   </div>
                                 </PopoverContent>
@@ -3992,23 +4002,62 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             <Input
                               type="date"
                               value={permit.issueDate}
-                              max={formData.constructionYear ? `${formData.constructionYear}-12-31` : undefined}
+                              max={permit.permitType === 'regularization'
+                                ? new Date().toISOString().split('T')[0]
+                                : formData.constructionYear ? `${formData.constructionYear}-12-31` : undefined
+                              }
+                              min={permit.permitType === 'construction' && formData.constructionYear
+                                ? `${formData.constructionYear - 3}-01-01`
+                                : permit.permitType === 'regularization' && formData.constructionYear
+                                  ? `${formData.constructionYear}-01-01`
+                                  : undefined
+                              }
                               onChange={(e) => {
                                 const value = e.target.value;
                                 if (formData.constructionYear && value) {
                                   const permitYear = new Date(value).getFullYear();
-                                  if (permitYear > formData.constructionYear) {
-                                    toast({ title: "Date invalide", description: `L'autorisation doit être antérieure ou égale à l'année de construction (${formData.constructionYear}).`, variant: "destructive" });
-                                    return;
+                                  if (permit.permitType === 'construction') {
+                                    if (permitYear > formData.constructionYear) {
+                                      toast({ title: "Date invalide", description: `L'autorisation de bâtir doit être antérieure ou égale à l'année de construction (${formData.constructionYear}).`, variant: "destructive" });
+                                      return;
+                                    }
+                                    if (permitYear < formData.constructionYear - 3) {
+                                      toast({ title: "Date invalide", description: `L'autorisation de bâtir est valable 3 ans en RDC. La date ne peut pas être antérieure à ${formData.constructionYear - 3}.`, variant: "destructive" });
+                                      return;
+                                    }
+                                  } else {
+                                    // Régularisation: date >= constructionYear
+                                    if (permitYear < formData.constructionYear) {
+                                      toast({ title: "Date invalide", description: `L'autorisation de régularisation doit être postérieure ou égale à l'année de construction (${formData.constructionYear}).`, variant: "destructive" });
+                                      return;
+                                    }
+                                    // Régularisation: date <= today
+                                    if (new Date(value) > new Date()) {
+                                      toast({ title: "Date invalide", description: "La date ne peut pas être dans le futur.", variant: "destructive" });
+                                      return;
+                                    }
                                   }
                                 }
                                 updateBuildingPermit(index, 'issueDate', value);
                               }}
-                              className={cn("h-10 text-sm rounded-xl", permit.issueDate && formData.constructionYear && new Date(permit.issueDate).getFullYear() > formData.constructionYear && "border-destructive")}
+                              className={cn("h-10 text-sm rounded-xl", (() => {
+                                if (!permit.issueDate || !formData.constructionYear) return false;
+                                const py = new Date(permit.issueDate).getFullYear();
+                                if (permit.permitType === 'construction') return py > formData.constructionYear || py < formData.constructionYear - 3;
+                                return py < formData.constructionYear || new Date(permit.issueDate) > new Date();
+                              })() && "border-destructive")}
                             />
-                            {permit.issueDate && formData.constructionYear && new Date(permit.issueDate).getFullYear() > formData.constructionYear && (
-                              <p className="text-[10px] text-destructive">Doit être ≤ {formData.constructionYear}</p>
-                            )}
+                            {permit.issueDate && formData.constructionYear && (() => {
+                              const py = new Date(permit.issueDate).getFullYear();
+                              if (permit.permitType === 'construction') {
+                                if (py > formData.constructionYear) return <p className="text-[10px] text-destructive">Doit être ≤ {formData.constructionYear}</p>;
+                                if (py < formData.constructionYear - 3) return <p className="text-[10px] text-destructive">Doit être ≥ {formData.constructionYear - 3} (validité 3 ans)</p>;
+                              } else {
+                                if (py < formData.constructionYear) return <p className="text-[10px] text-destructive">Doit être ≥ {formData.constructionYear}</p>;
+                                if (new Date(permit.issueDate) > new Date()) return <p className="text-[10px] text-destructive">Ne peut pas être dans le futur</p>;
+                              }
+                              return null;
+                            })()}
                           </div>
                         </div>
 
