@@ -445,6 +445,53 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
             </div>
           );
         })}
+        {/* Section Servitude de passage — visible uniquement si tous les côtés sont mur mitoyen */}
+        <div className={`grid transition-all duration-500 ease-out ${
+          allSidesAreMurMitoyen
+            ? 'grid-rows-[1fr] opacity-100'
+            : 'grid-rows-[0fr] opacity-0 pointer-events-none'
+        }`}>
+          <div className="overflow-hidden">
+            {allSidesAreMurMitoyen && (
+              <div className="mt-2 space-y-2 animate-fade-in">
+                <div className="p-2.5 rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/50 dark:to-amber-950/50 border border-orange-200 dark:border-orange-800">
+                  <div className="flex items-start gap-2">
+                    <div className="h-6 w-6 rounded-lg bg-orange-100 dark:bg-orange-900 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <AlertTriangle className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-orange-800 dark:text-orange-200">
+                        ⚠️ Servitude de passage détectée
+                      </p>
+                      <p className="text-[11px] text-orange-700 dark:text-orange-300 leading-relaxed">
+                        Les {sidesCount} limites de votre parcelle sont longées par {sidesCount} murs mitoyens. Cela signifie que votre parcelle est située dans une servitude de passage.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-orange-50/50 dark:bg-orange-950/30 border border-orange-200/50 dark:border-orange-800/50">
+                  <Label className="text-xs font-medium text-orange-800 dark:text-orange-200 mb-1.5 block">
+                    Largeur de la servitude de passage (m) *
+                  </Label>
+                  <Input
+                    type="number"
+                    min="0.5"
+                    step="0.1"
+                    placeholder="Ex: 3.5"
+                    value={servitude?.width || ''}
+                    onChange={(e) => {
+                      const width = parseFloat(e.target.value) || undefined;
+                      onServitudeUpdate?.({ hasServitude: true, width });
+                    }}
+                    className="h-8 text-xs rounded-lg bg-background"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         {confirmedSidesCount === 0 && (
           <Alert className="py-1.5 px-2 rounded-xl bg-muted/50 border-0 mt-1">
             <Info className="h-3 w-3" />
