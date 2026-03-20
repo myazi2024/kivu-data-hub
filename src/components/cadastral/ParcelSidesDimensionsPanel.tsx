@@ -332,11 +332,17 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                   </p>
                 )}
 
-                {/* Formulaire d'édition */}
-                {isEditingThis && (
-                  <div className="space-y-1.5 pl-6 animate-fade-in">
-                    {/* Champs pour Route uniquement */}
-                    <div className="flex items-center gap-1.5 mb-1">
+                {/* Formulaire d'édition avec animation d'ouverture/fermeture */}
+                <div
+                  className={`grid transition-all duration-300 ease-out ${
+                    isEditingThis
+                      ? 'grid-rows-[1fr] opacity-100'
+                      : 'grid-rows-[0fr] opacity-0'
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                  {isEditingThis && (
+                    <div className="space-y-1.5 pl-6 pt-2">
                       <Route className="h-3.5 w-3.5 text-green-600" />
                       <span className="text-xs font-medium text-green-700 dark:text-green-300">Informations sur la route</span>
                     </div>
