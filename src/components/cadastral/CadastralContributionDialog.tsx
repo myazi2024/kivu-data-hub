@@ -3731,6 +3731,30 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {/* Numéro d'appartement et étage - uniquement pour Appartement */}
+                  {formData.propertyCategory === 'Appartement' && (
+                    <>
+                      <div className="space-y-1.5">
+                        <Label className="text-sm font-medium">Numéro de l'appartement</Label>
+                        <Input
+                          value={formData.apartmentNumber || ''}
+                          onChange={(e) => handleInputChange('apartmentNumber', e.target.value)}
+                          placeholder="Ex: A12, 3B..."
+                          className="h-10 rounded-xl text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-sm font-medium">Numéro de l'étage</Label>
+                        <Input
+                          value={formData.floorNumber || ''}
+                          onChange={(e) => handleInputChange('floorNumber', e.target.value)}
+                          placeholder="Ex: RDC, 1, 2..."
+                          className="h-10 rounded-xl text-sm"
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {/* Standing - dépend de la Nature, masqué si Non bâti */}
