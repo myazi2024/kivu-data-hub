@@ -689,6 +689,25 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           console.log('Boundary history loaded:', boundaries.length, 'records');
         }
 
+        // FIX: Restore additional constructions from DB
+        const additionalConstr = (contrib as any).additional_constructions as any[];
+        if (additionalConstr && Array.isArray(additionalConstr) && additionalConstr.length > 0) {
+          setConstructionMode('multiple');
+          setAdditionalConstructions(additionalConstr.map((c: any) => ({
+            propertyCategory: c.propertyCategory || '',
+            constructionType: c.constructionType || '',
+            constructionNature: c.constructionNature || '',
+            constructionMaterials: c.constructionMaterials || '',
+            declaredUsage: c.declaredUsage || '',
+            standing: c.standing || '',
+            constructionYear: c.constructionYear || undefined,
+            apartmentNumber: c.apartmentNumber || undefined,
+            floorNumber: c.floorNumber || undefined,
+            permitMode: c.permitMode || undefined,
+            permit: c.permit || undefined,
+          })));
+        }
+
         console.log('Contribution chargée depuis la base de données pour édition');
       } catch (err) {
         console.error('Erreur lors du chargement de la contribution:', err);
