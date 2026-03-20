@@ -3561,7 +3561,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             </Card>
 
 
-            {/* Section Type d'exploitation */}
+            {/* Section Construction */}
             <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
               <CardContent className="p-3 space-y-3">
                 {/* Header */}
@@ -3570,7 +3570,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
                       <MdLocationOn className="h-3.5 w-3.5 text-primary" />
                     </div>
-                    <Label className="text-sm font-semibold">Type d'exploitation</Label>
+                    <Label className="text-sm font-semibold">Construction</Label>
                   </div>
                   <Popover>
                     <PopoverTrigger asChild>
@@ -3580,9 +3580,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     </PopoverTrigger>
                     <PopoverContent className="w-72 rounded-xl" align="end">
                       <div className="space-y-2 text-xs">
-                        <h4 className="font-semibold text-sm">Type d'exploitation</h4>
+                        <h4 className="font-semibold text-sm">Construction</h4>
                         <p className="text-muted-foreground">
-                          Sélectionnez d'abord la catégorie de bien, puis le type de construction, la nature, les matériaux et l'usage seront filtrés automatiquement.
+                          Renseignez les détails de votre construction : catégorie de bien, type, nature, matériaux, usage et autorisation de bâtir.
                         </p>
                       </div>
                     </PopoverContent>
@@ -3834,15 +3834,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     </Select>
                   </div>
                 )}
-              </CardContent>
-            </Card>
 
-            
-            {/* Section Autorisation de bâtir - Simplifié - Masquée si Terrain nu */}
-            {formData.propertyCategory !== 'Terrain nu' && formData.constructionType !== 'Terrain nu' && (
-            <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
-              <CardContent className="p-3 space-y-3">
-                {/* Header */}
+                {/* Section Autorisation de bâtir - intégrée dans le bloc Construction */}
+                {formData.propertyCategory !== 'Terrain nu' && formData.constructionType !== 'Terrain nu' && (<>
+                <div className="border-t border-border/50 my-2" />
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-start gap-2">
                     <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
@@ -4083,9 +4078,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     </div>
                   </div>
                 )}
+                </>)}
               </CardContent>
             </Card>
-            )}
             
             {/* Bouton Suivant */}
             <div className="flex justify-end pt-6 mt-6 border-t">
