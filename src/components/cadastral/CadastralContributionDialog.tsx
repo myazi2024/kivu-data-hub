@@ -2397,7 +2397,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   // from the same field counts as calculateCCCValue to avoid double scoring
   const calculateProgressDetails = useMemo(() => {
     const tabProgress = {
-      general: { filled: 0, total: 8 },   // 6 text + 2 docs
+      general: { filled: 0, total: 9 },   // FIX: 7 text fields + 2 docs = 9 (was 8)
       location: { filled: 0, total: 0 },
       history: { filled: 0, total: 1 },    // ownership history
       obligations: { filled: 0, total: 2 } // tax + mortgage
