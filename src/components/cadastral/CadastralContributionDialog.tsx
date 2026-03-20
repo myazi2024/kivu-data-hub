@@ -117,6 +117,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   // État pour gérer les côtés bordant une route
   const [roadSides, setRoadSides] = useState<any[]>([]);
   
+  // État pour la servitude de passage
+  const [servitude, setServitude] = useState<{ hasServitude: boolean; width?: number }>({ hasServitude: false });
+  
   // État pour gérer plusieurs anciens propriétaires
   const [previousOwners, setPreviousOwners] = useState<Array<{
     name: string;
