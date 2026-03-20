@@ -89,7 +89,9 @@ export const ParcelMapPreview = ({
   enableDrawingMode = true,
   onSurfaceChange,
   buildingShapes = [],
-  onBuildingShapesChange
+  onBuildingShapesChange,
+  servitude,
+  onServitudeChange
 }: ParcelMapPreviewProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
