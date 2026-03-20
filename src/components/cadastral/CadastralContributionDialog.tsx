@@ -370,6 +370,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       ownershipMode,
       leaseYears,
       roadSides,
+      // FIX: Persist customTitleName and isTitleInCurrentOwnerName to localStorage
+      customTitleName,
+      isTitleInCurrentOwnerName: formData.isTitleInCurrentOwnerName,
       timestamp: new Date().toISOString()
     };
     
