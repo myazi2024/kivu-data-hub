@@ -90,6 +90,8 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
   parcelSides,
   roadSides,
   onRoadSideUpdate,
+  servitude,
+  onServitudeUpdate,
   className = '',
   roadTypes = defaultRoadTypes,
   wallMaterials = defaultWallMaterials,
