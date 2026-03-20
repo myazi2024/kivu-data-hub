@@ -1949,12 +1949,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     const oneMonthAgo = new Date(today);
     oneMonthAgo.setMonth(today.getMonth() - 1);
 
-    // Logique 1: Si type de construction = "terrain nu"
-    if (formData.constructionType === 'Terrain nu') {
+    // Logique 1: Si catégorie de bien = "Terrain nu"
+    if (formData.propertyCategory === 'Terrain nu' || formData.constructionType === 'Terrain nu') {
       restrictions.blockedInExisting = 'regularization';
       restrictions.blockedInRequest = 'regularization';
-      restrictions.messageExisting = `Vous avez indiqué dans "Type de construction" que c'est un terrain nu. Un terrain nu n'a pas besoin d'une autorisation de régularisation, mais plutôt d'une autorisation de bâtir.`;
-      restrictions.messageRequest = `Vous avez indiqué dans "Type de construction" que c'est un "terrain nu". Un terrain nu n'a pas besoin d'une autorisation de régularisation, mais plutôt d'une autorisation de bâtir.`;
+      restrictions.messageExisting = `Vous avez indiqué dans "Catégorie de bien" que c'est un terrain nu. Un terrain nu n'a pas besoin d'une autorisation de régularisation, mais plutôt d'une autorisation de bâtir.`;
+      restrictions.messageRequest = `Vous avez indiqué dans "Catégorie de bien" que c'est un "terrain nu". Un terrain nu n'a pas besoin d'une autorisation de régularisation, mais plutôt d'une autorisation de bâtir.`;
       restrictions.dateMinExisting = threeYearsAgo.toISOString().split('T')[0];
       restrictions.dateMaxExisting = today.toISOString().split('T')[0];
       return restrictions;
