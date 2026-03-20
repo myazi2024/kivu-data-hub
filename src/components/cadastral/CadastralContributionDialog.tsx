@@ -2280,10 +2280,14 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     totalFields += 1; // parcelNumber
     filledFields += 1; // toujours rempli
     
-    // SECTION 2: Informations générales (14 champs - aligné SQL)
-    totalFields += 14;
+    // SECTION 2: Informations générales (13 champs de base + 1 conditionnel leaseType)
+    totalFields += 13;
     if (formData.propertyTitleType) filledFields += 1;
-    if (formData.leaseType) filledFields += 1;
+    // FIX: leaseType only counted when applicable (Contrat de location)
+    if (formData.propertyTitleType === 'Contrat de location (Contrat d\'occupation provisoire)') {
+      totalFields += 1;
+      if (formData.leaseType) filledFields += 1;
+    }
     if (formData.titleReferenceNumber) filledFields += 1;
     
     // Propriétaires actuels
