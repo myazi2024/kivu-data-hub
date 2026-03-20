@@ -289,47 +289,63 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                     <Badge variant="secondary" className="font-mono text-xs h-5 px-1.5 rounded-md font-bold whitespace-nowrap">
                       {side.length}m
                     </Badge>
-                    {/* Bouton slide pour définir la limite - visible uniquement si pas confirmé */}
+                    {/* Toggle slide avec labels Mur mitoyen / Route */}
                     {!hasConfirmed && !isEditingThis && (
                       <div
-                        className="flex items-center gap-1.5"
-                        onClick={(e) => e.stopPropagation()}
+                        className="relative flex items-center h-6 rounded-full bg-muted border border-border cursor-pointer select-none overflow-hidden"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRoadSideUpdate(index, { bordersRoad: true, borderType: 'route' });
+                          setEditingSide(index);
+                          setShowNotification(false);
+                        }}
                       >
-                        <Switch
-                          checked={false}
-                          onCheckedChange={() => {
-                            onRoadSideUpdate(index, { bordersRoad: true, borderType: 'route' });
-                            setEditingSide(index);
-                            setShowNotification(false);
-                          }}
-                          className="h-4 w-7 data-[state=checked]:bg-primary"
-                        />
-                        <span
-                          className="text-[10px] font-medium text-muted-foreground flex items-center gap-0.5 cursor-pointer"
-                          onClick={() => {
-                            onRoadSideUpdate(index, { bordersRoad: true, borderType: 'route' });
-                            setEditingSide(index);
-                            setShowNotification(false);
-                          }}
-                        >
-                          <BrickWall className="h-2.5 w-2.5" />
-                          Mur mitoyen
+                        {/* Pill active - côté gauche = Mur mitoyen par défaut */}
+                        <div className="absolute left-[2px] top-[2px] h-[20px] w-[calc(50%-2px)] rounded-full bg-amber-500 shadow-sm transition-transform duration-300 ease-out" />
+                        <span className="relative z-10 flex items-center gap-0.5 px-1.5 text-[8px] font-semibold text-white whitespace-nowrap">
+                          <BrickWall className="h-2 w-2" />
+                          Mur
+                        </span>
+                        <span className="relative z-10 flex items-center gap-0.5 px-1.5 text-[8px] font-semibold text-muted-foreground whitespace-nowrap">
+                          <Route className="h-2 w-2" />
+                          Route
                         </span>
                       </div>
                     )}
                     {hasConfirmed && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRemoveSide(index);
-                        }}
-                        className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 rounded-md"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <div className={`relative flex items-center h-6 rounded-full border select-none overflow-hidden ${
+                          isRoad ? 'border-primary/40' : 'border-amber-400'
+                        }`}>
+                          <div className={`absolute top-[2px] h-[20px] w-[calc(50%-2px)] rounded-full shadow-sm transition-transform duration-300 ease-out ${
+                            isRoad ? 'translate-x-[calc(100%+2px)] bg-primary' : 'left-[2px] bg-amber-500'
+                          }`} />
+                          <span className={`relative z-10 flex items-center gap-0.5 px-1.5 text-[8px] font-semibold whitespace-nowrap transition-colors duration-200 ${
+                            !isRoad ? 'text-white' : 'text-muted-foreground'
+                          }`}>
+                            <BrickWall className="h-2 w-2" />
+                            Mur
+                          </span>
+                          <span className={`relative z-10 flex items-center gap-0.5 px-1.5 text-[8px] font-semibold whitespace-nowrap transition-colors duration-200 ${
+                            isRoad ? 'text-white' : 'text-muted-foreground'
+                          }`}>
+                            <Route className="h-2 w-2" />
+                            Route
+                          </span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveSide(index);
+                          }}
+                          className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 rounded-md"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </div>
