@@ -27,6 +27,8 @@ export interface CadastralContributionData {
   constructionNature?: string;
   constructionMaterials?: string;
   declaredUsage?: string;
+  apartmentNumber?: string;
+  floorNumber?: string;
   standing?: string;
   constructionYear?: number;
   
