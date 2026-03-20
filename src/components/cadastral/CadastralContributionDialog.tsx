@@ -483,21 +483,27 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           titleReferenceNumber: contrib.title_reference_number || undefined,
           titleIssueDate: contrib.title_issue_date || undefined,
           constructionType: contrib.construction_type || undefined,
-          // Reverse-map constructionType to propertyCategory for edit mode
-          propertyCategory: (() => {
+          // FIX: Restore propertyCategory from DB if available, else reverse-map
+          propertyCategory: (contrib as any).property_category || (() => {
             const ct = contrib.construction_type;
             if (!ct) return undefined;
-            // Find the category that maps to this construction type
+            // Reverse-map: find ALL matching categories, prefer more specific ones
+            const matches: string[] = [];
             for (const [cat, types] of Object.entries(CATEGORY_TO_CONSTRUCTION_TYPES)) {
-              if (types.includes(ct)) return cat;
+              if (types.includes(ct)) matches.push(cat);
             }
-            return undefined;
+            // If only one match, use it. If multiple (e.g. Résidentielle -> Appartement/Villa/Maison),
+            // we can't determine which, so return undefined (user must re-select)
+            return matches.length === 1 ? matches[0] : undefined;
           })(),
           constructionNature: contrib.construction_nature || undefined,
           constructionMaterials: contrib.construction_materials || undefined,
           declaredUsage: contrib.declared_usage || undefined,
           standing: contrib.standing || undefined,
           constructionYear: contrib.construction_year || undefined,
+          // FIX: Restore apartmentNumber and floorNumber from DB
+          apartmentNumber: (contrib as any).apartment_number || undefined,
+          floorNumber: (contrib as any).floor_number || undefined,
           areaSqm: contrib.area_sqm || undefined,
           province: contrib.province || undefined,
           ville: contrib.ville || undefined,
