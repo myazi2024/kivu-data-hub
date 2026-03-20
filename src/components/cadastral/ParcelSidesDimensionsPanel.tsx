@@ -424,8 +424,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
               </div>
             </div>
           );
-
-        {/* Message indicatif */}
+        })}
         {confirmedSidesCount === 0 && (
           <Alert className="py-1.5 px-2 rounded-xl bg-muted/50 border-0 mt-1">
             <Info className="h-3 w-3" />
