@@ -38,10 +38,17 @@ export interface RoadSideInfo {
   isConfirmed?: boolean;
 }
 
+export interface ServitudeInfo {
+  hasServitude: boolean;
+  width?: number;
+}
+
 interface ParcelSidesDimensionsPanelProps {
   parcelSides: ParcelSide[];
   roadSides: RoadSideInfo[];
   onRoadSideUpdate: (sideIndex: number, updates: Partial<RoadSideInfo>) => void;
+  servitude?: ServitudeInfo;
+  onServitudeUpdate?: (servitude: ServitudeInfo) => void;
   className?: string;
   roadTypes?: Array<{ value: string; label: string }>;
   wallMaterials?: Array<{ value: string; label: string }>;
