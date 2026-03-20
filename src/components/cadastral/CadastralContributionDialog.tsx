@@ -992,6 +992,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
   // Mise à jour des collectivités quand le territoire change
   useEffect(() => {
+    if (isLoadingFromDbRef.current) return;
     if (formData.province && formData.territoire) {
       const collectivites = getCollectivitesForTerritoire(formData.province, formData.territoire);
       setAvailableCollectivites(collectivites);
