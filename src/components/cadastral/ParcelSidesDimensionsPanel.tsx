@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Ruler, Compass, Info, Trash2, Check, Route, X, Lightbulb, BrickWall } from 'lucide-react';
+import { Ruler, Compass, Info, Trash2, Check, Route, X, Lightbulb, BrickWall, AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
@@ -38,10 +38,17 @@ export interface RoadSideInfo {
   isConfirmed?: boolean;
 }
 
+export interface ServitudeInfo {
+  hasServitude: boolean;
+  width?: number;
+}
+
 interface ParcelSidesDimensionsPanelProps {
   parcelSides: ParcelSide[];
   roadSides: RoadSideInfo[];
   onRoadSideUpdate: (sideIndex: number, updates: Partial<RoadSideInfo>) => void;
+  servitude?: ServitudeInfo;
+  onServitudeUpdate?: (servitude: ServitudeInfo) => void;
   className?: string;
   roadTypes?: Array<{ value: string; label: string }>;
   wallMaterials?: Array<{ value: string; label: string }>;
@@ -83,6 +90,8 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
   parcelSides,
   roadSides,
   onRoadSideUpdate,
+  servitude,
+  onServitudeUpdate,
   className = '',
   roadTypes = defaultRoadTypes,
   wallMaterials = defaultWallMaterials,
@@ -93,6 +102,18 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
   const roadCount = roadSides.filter(s => s.bordersRoad && s.isConfirmed && s.borderType === 'route').length;
   const wallCount = roadSides.filter(s => s.bordersRoad && s.isConfirmed && s.borderType === 'mur_mitoyen').length;
   const totalPerimeter = parcelSides.reduce((sum, side) => sum + parseFloat(side.length || '0'), 0);
+
+  // Vérifier si tous les côtés sont en mur mitoyen (aucun côté n'est une route)
+  const hasAnyRoute = roadSides.some(s => s.bordersRoad && s.borderType === 'route');
+  const allSidesAreMurMitoyen = parcelSides.length > 0 && !hasAnyRoute;
+  const sidesCount = parcelSides.length;
+
+  // Reset servitude quand un côté passe en route
+  useEffect(() => {
+    if (!allSidesAreMurMitoyen && servitude?.hasServitude) {
+      onServitudeUpdate?.({ hasServitude: false, width: undefined });
+    }
+  }, [allSidesAreMurMitoyen]);
 
   // Masquer la notification quand un élément est ajouté
   useEffect(() => {
@@ -424,6 +445,53 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
             </div>
           );
         })}
+        {/* Section Servitude de passage — visible uniquement si tous les côtés sont mur mitoyen */}
+        <div className={`grid transition-all duration-500 ease-out ${
+          allSidesAreMurMitoyen
+            ? 'grid-rows-[1fr] opacity-100'
+            : 'grid-rows-[0fr] opacity-0 pointer-events-none'
+        }`}>
+          <div className="overflow-hidden">
+            {allSidesAreMurMitoyen && (
+              <div className="mt-2 space-y-2 animate-fade-in">
+                <div className="p-2.5 rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/50 dark:to-amber-950/50 border border-orange-200 dark:border-orange-800">
+                  <div className="flex items-start gap-2">
+                    <div className="h-6 w-6 rounded-lg bg-orange-100 dark:bg-orange-900 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <AlertTriangle className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-orange-800 dark:text-orange-200">
+                        ⚠️ Servitude de passage détectée
+                      </p>
+                      <p className="text-[11px] text-orange-700 dark:text-orange-300 leading-relaxed">
+                        Les {sidesCount} limites de votre parcelle sont longées par {sidesCount} murs mitoyens. Cela signifie que votre parcelle est située dans une servitude de passage.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-orange-50/50 dark:bg-orange-950/30 border border-orange-200/50 dark:border-orange-800/50">
+                  <Label className="text-xs font-medium text-orange-800 dark:text-orange-200 mb-1.5 block">
+                    Largeur de la servitude de passage (m) *
+                  </Label>
+                  <Input
+                    type="number"
+                    min="0.5"
+                    step="0.1"
+                    placeholder="Ex: 3.5"
+                    value={servitude?.width || ''}
+                    onChange={(e) => {
+                      const width = parseFloat(e.target.value) || undefined;
+                      onServitudeUpdate?.({ hasServitude: true, width });
+                    }}
+                    className="h-8 text-xs rounded-lg bg-background"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         {confirmedSidesCount === 0 && (
           <Alert className="py-1.5 px-2 rounded-xl bg-muted/50 border-0 mt-1">
             <Info className="h-3 w-3" />

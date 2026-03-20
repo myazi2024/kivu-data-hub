@@ -19,7 +19,7 @@ import { AlertCircle, MapPin, AlertTriangle, Info, Move, Hand, Plus, Trash2, Tar
 import { BoundaryConflictDialog } from './BoundaryConflictDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { RoadSideInfo } from './RoadBorderingSidesPanel';
-import { ParcelSidesDimensionsPanel } from './ParcelSidesDimensionsPanel';
+import { ParcelSidesDimensionsPanel, ServitudeInfo } from './ParcelSidesDimensionsPanel';
 import { useMapConfig, MapConfig } from '@/hooks/useMapConfig';
 
 interface Coordinate {
@@ -64,6 +64,8 @@ interface ParcelMapPreviewProps {
   onSurfaceChange?: (surface: number) => void;
   buildingShapes?: BuildingShape[];
   onBuildingShapesChange?: (shapes: BuildingShape[]) => void;
+  servitude?: ServitudeInfo;
+  onServitudeChange?: (servitude: ServitudeInfo) => void;
 }
 
 const SHAPE_OPTIONS = [
@@ -87,7 +89,9 @@ export const ParcelMapPreview = ({
   enableDrawingMode = true,
   onSurfaceChange,
   buildingShapes = [],
-  onBuildingShapesChange
+  onBuildingShapesChange,
+  servitude,
+  onServitudeChange
 }: ParcelMapPreviewProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -2357,6 +2361,8 @@ export const ParcelMapPreview = ({
           roadSides={roadSides}
           onRoadSideUpdate={handleRoadSideUpdate}
           roadTypes={mapConfig.roadTypes}
+          servitude={servitude}
+          onServitudeUpdate={onServitudeChange}
         />
       )}
 
