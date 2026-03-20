@@ -4517,8 +4517,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </Card>
             )}
 
-            {/* Aperçu de la carte - collecte GPS et dimensions via dessin */}
-            {sectionType && (
+            {/* Aperçu de la carte - collecte GPS et dimensions via dessin (masqué pour Appartement) */}
+            {sectionType && formData.propertyCategory !== 'Appartement' && (
               <div className="space-y-3 pt-4 border-t relative z-0">
                 <ParcelMapPreview
                   coordinates={gpsCoordinates}
@@ -4539,6 +4539,18 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   servitude={servitude}
                   onServitudeChange={setServitude}
                 />
+              </div>
+            )}
+
+            {/* Message pour Appartement - pas de croquis */}
+            {sectionType && formData.propertyCategory === 'Appartement' && (
+              <div className="p-4 border border-border/50 rounded-xl bg-muted/30 text-center space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">
+                  Le croquis de parcelle n'est pas applicable pour un appartement.
+                </p>
+                <p className="text-xs text-muted-foreground/70">
+                  Les informations de localisation (étage, n° appartement) sont renseignées dans l'onglet Infos.
+                </p>
               </div>
             )}
             
