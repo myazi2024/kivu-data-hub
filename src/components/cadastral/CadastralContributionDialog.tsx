@@ -3768,7 +3768,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 )}
 
                 {/* Année de construction - visible sauf Terrain nu */}
-                {formData.constructionType && formData.constructionType !== 'Terrain nu' && (
+                {formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && formData.constructionType && formData.constructionType !== 'Terrain nu' && (
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium">Année de construction</Label>
                     <Select
