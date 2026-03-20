@@ -1558,7 +1558,17 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         gpsCoordinates: gpsCoordinatesData,
         parcelSides: parcelSides.filter(s => s.length && parseFloat(s.length) > 0).length > 0 
           ? parcelSides.filter(s => s.length && parseFloat(s.length) > 0) 
-          : undefined, // Dimensions exactes des côtés
+          : undefined,
+        // FIX: Include additional constructions in submission payload
+        additionalConstructions: constructionMode === 'multiple' && additionalConstructions.length > 0
+          ? additionalConstructions.map(c => ({
+              ...c,
+              permit: c.permit ? {
+                ...c.permit,
+                attachmentFile: undefined, // Strip File objects
+              } : undefined,
+            }))
+          : undefined,
       };
 
       // Use update if editing, otherwise insert
