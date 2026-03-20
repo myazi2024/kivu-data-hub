@@ -4,7 +4,19 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Info, Trash2 } from 'lucide-react';
+import { Info, Trash2, X } from 'lucide-react';
+import { MdInsertDriveFile } from 'react-icons/md';
+import { cn } from '@/lib/utils';
+import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
+import { useToast } from '@/hooks/use-toast';
+
+export interface AdditionalConstructionPermit {
+  permitType: 'construction' | 'regularization';
+  permitNumber: string;
+  issueDate: string;
+  issuingService: string;
+  attachmentFile?: File | null;
+}
 
 export interface AdditionalConstruction {
   propertyCategory: string;
@@ -16,6 +28,9 @@ export interface AdditionalConstruction {
   constructionYear?: number;
   apartmentNumber?: string;
   floorNumber?: string;
+  // Autorisation de bâtir
+  permitMode?: 'existing' | 'request';
+  permit?: AdditionalConstructionPermit;
 }
 
 const PROPERTY_CATEGORY_OPTIONS_NO_TERRAIN = [
@@ -55,8 +70,17 @@ interface Props {
 const AdditionalConstructionBlock: React.FC<Props> = ({
   index, data, onChange, onRemove, getPicklistDependentOptions,
 }) => {
+  const { toast } = useToast();
+
   const update = (field: keyof AdditionalConstruction, value: any) => {
     onChange(index, { ...data, [field]: value });
+  };
+
+  const permit = data.permit || { permitType: 'construction', permitNumber: '', issueDate: '', issuingService: '' };
+  const permitMode = data.permitMode || 'existing';
+
+  const updatePermitField = (field: keyof AdditionalConstructionPermit, value: any) => {
+    onChange(index, { ...data, permit: { ...permit, [field]: value } });
   };
 
   // Cascade: category -> construction types
@@ -109,6 +133,19 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
       onChange(index, { ...data, constructionNature: '', constructionMaterials: '', declaredUsage: '', standing: '' });
     }
   }, [data.constructionType]);
+
+  // Permit type restrictions (simplified for additional block)
+  const getPermitTypeRestrictions = () => {
+    const restrictions = {
+      blockedInExisting: null as 'construction' | 'regularization' | null,
+    };
+    if (data.constructionNature === 'Précaire') {
+      restrictions.blockedInExisting = 'regularization';
+    }
+    return restrictions;
+  };
+
+  const isNotTerrainNu = data.propertyCategory && data.propertyCategory !== 'Terrain nu' && data.constructionType !== 'Terrain nu';
 
   return (
     <div className="border-2 border-border rounded-2xl p-4 space-y-3 bg-card shadow-sm animate-fade-in">
@@ -196,7 +233,21 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
         ) : <div />}
 
         <div className="space-y-1.5">
-          <Label className="text-sm font-medium">Usage</Label>
+          <div className="flex items-center gap-1">
+            <Label className="text-sm font-medium">Usage</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-4 w-4 p-0 rounded-full">
+                  <Info className="h-3 w-3 text-muted-foreground" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 rounded-xl text-xs">
+                <p className="text-muted-foreground">
+                  Utilisation effective ou prévue du bien, conforme aux règles d'urbanisme.
+                </p>
+              </PopoverContent>
+            </Popover>
+          </div>
           <Select value={data.declaredUsage} onValueChange={(v) => update('declaredUsage', v)} disabled={!data.constructionType || !data.constructionNature}>
             <SelectTrigger className="h-10 rounded-xl text-sm">
               <SelectValue placeholder={!data.constructionType || !data.constructionNature ? "Type et nature d'abord" : "Sélectionner"} />
@@ -237,7 +288,21 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
       {/* Standing */}
       {data.constructionNature && data.constructionNature !== 'Non bâti' && availableStandings.length > 0 && (
         <div className="space-y-1.5">
-          <Label className="text-sm font-medium">Standing</Label>
+          <div className="flex items-center gap-1">
+            <Label className="text-sm font-medium">Standing</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-4 w-4 p-0 rounded-full">
+                  <Info className="h-3 w-3 text-muted-foreground" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 rounded-xl text-xs">
+                <p className="text-muted-foreground">
+                  Niveau de finition de la construction : haut standing, moyen standing ou économique.
+                </p>
+              </PopoverContent>
+            </Popover>
+          </div>
           <Select value={data.standing} onValueChange={(v) => update('standing', v)}>
             <SelectTrigger className="h-10 rounded-xl text-sm">
               <SelectValue placeholder="Sélectionner le standing" />
@@ -252,22 +317,250 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
       )}
 
       {/* Année de construction */}
-      <div className="space-y-1.5">
-        <Label className="text-sm font-medium">Année de construction</Label>
-        <Select
-          value={data.constructionYear?.toString() || ''}
-          onValueChange={(v) => update('constructionYear', parseInt(v))}
-        >
-          <SelectTrigger className="h-10 rounded-xl text-sm">
-            <SelectValue placeholder="Sélectionner l'année" />
-          </SelectTrigger>
-          <SelectContent className="rounded-xl max-h-60">
-            {Array.from({ length: new Date().getFullYear() - 1950 + 1 }, (_, i) => new Date().getFullYear() - i).map(year => (
-              <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {isNotTerrainNu && (
+        <div className="space-y-1.5">
+          <Label className="text-sm font-medium">Année de construction</Label>
+          <Select
+            value={data.constructionYear?.toString() || ''}
+            onValueChange={(v) => update('constructionYear', parseInt(v))}
+          >
+            <SelectTrigger className="h-10 rounded-xl text-sm">
+              <SelectValue placeholder="Sélectionner l'année" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl max-h-60">
+              {Array.from({ length: new Date().getFullYear() - 1950 + 1 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {/* Section Autorisation de bâtir */}
+      {isNotTerrainNu && (
+        <>
+          <div className="border-t border-border/50 my-2" />
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-start gap-2">
+              <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                <MdInsertDriveFile className="h-3.5 w-3.5 text-primary" />
+              </div>
+              <Label className="text-sm font-semibold leading-tight">
+                Avez-vous obtenu une autorisation de bâtir pour votre {data.propertyCategory || 'bien'}
+                {data.constructionType ? `, de type ${data.constructionType}` : ''}
+                {data.constructionNature ? `, ${data.constructionNature}` : ''}
+                {data.constructionMaterials ? `, construit avec des ${data.constructionMaterials}` : ''}
+                {data.declaredUsage ? `, et qui est utilisé comme ${data.declaredUsage}` : ''} ?
+              </Label>
+            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-transparent">
+                  <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-72 rounded-xl" align="end">
+                <div className="space-y-2 text-xs">
+                  <h4 className="font-semibold text-sm">À propos du permis</h4>
+                  <p className="text-muted-foreground">
+                    Si vous avez déjà un permis, renseignez-le ici. Sinon, vous pourrez faire une demande depuis votre espace personnel après la soumission de votre contribution.
+                  </p>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Toggle Oui / Non */}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => update('permitMode', 'existing')}
+              className={cn(
+                "flex-1 py-3 px-4 rounded-2xl text-sm font-semibold transition-all",
+                permitMode === 'existing'
+                  ? 'bg-primary text-primary-foreground shadow-lg'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              )}
+            >
+              Oui
+            </button>
+            <button
+              type="button"
+              onClick={() => update('permitMode', 'request')}
+              className={cn(
+                "flex-1 py-3 px-4 rounded-2xl text-sm font-semibold transition-all",
+                permitMode === 'request'
+                  ? 'bg-primary text-primary-foreground shadow-lg'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              )}
+            >
+              Non
+            </button>
+          </div>
+
+          {/* Mode: J'ai déjà un permis */}
+          {permitMode === 'existing' && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="border-2 border-border rounded-2xl p-4 space-y-4 bg-card shadow-md">
+                <div className="flex items-center gap-2 pb-2 border-b border-border/50">
+                  <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <MdInsertDriveFile className="h-4 w-4 text-primary" />
+                  </div>
+                  <span className="text-sm font-semibold text-foreground">Dernière autorisation de bâtir ou de régularisation délivrée</span>
+                </div>
+
+                {/* Type de permis */}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (getPermitTypeRestrictions().blockedInExisting !== 'construction') {
+                        updatePermitField('permitType', 'construction');
+                      }
+                    }}
+                    disabled={getPermitTypeRestrictions().blockedInExisting === 'construction'}
+                    className={cn(
+                      "flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all",
+                      permit.permitType === 'construction'
+                        ? 'bg-primary text-primary-foreground shadow-md'
+                        : 'bg-muted text-muted-foreground hover:bg-muted/80',
+                      getPermitTypeRestrictions().blockedInExisting === 'construction' && 'opacity-50 cursor-not-allowed'
+                    )}
+                  >
+                    Bâtir
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (getPermitTypeRestrictions().blockedInExisting !== 'regularization') {
+                        updatePermitField('permitType', 'regularization');
+                      }
+                    }}
+                    disabled={getPermitTypeRestrictions().blockedInExisting === 'regularization'}
+                    className={cn(
+                      "flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all",
+                      permit.permitType === 'regularization'
+                        ? 'bg-primary text-primary-foreground shadow-md'
+                        : 'bg-muted text-muted-foreground hover:bg-muted/80',
+                      getPermitTypeRestrictions().blockedInExisting === 'regularization' && 'opacity-50 cursor-not-allowed'
+                    )}
+                  >
+                    Régularisation
+                  </button>
+                </div>
+
+                {/* Champs du formulaire */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-foreground">N° de l'autorisation</Label>
+                    <Input
+                      placeholder="PC-2024-001"
+                      value={permit.permitNumber}
+                      onChange={(e) => updatePermitField('permitNumber', e.target.value)}
+                      className="h-10 text-sm rounded-xl"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1">
+                      <Label className="text-sm font-medium text-foreground">Date</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button type="button" className="inline-flex items-center justify-center h-4 w-4 rounded-full text-muted-foreground hover:text-primary transition-colors">
+                            <Info className="h-3 w-3" />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64 rounded-xl text-xs" align="start" sideOffset={5}>
+                          <div className="space-y-1">
+                            <h4 className="font-semibold text-sm">Date de délivrance</h4>
+                            <p className="text-muted-foreground leading-relaxed">
+                              L'autorisation de bâtir est délivrée <strong>avant</strong> le début des travaux. Sa date doit donc être antérieure ou égale à l'année de construction.
+                            </p>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <Input
+                      type="date"
+                      value={permit.issueDate}
+                      max={data.constructionYear ? `${data.constructionYear}-12-31` : undefined}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (data.constructionYear && value) {
+                          const permitYear = new Date(value).getFullYear();
+                          if (permitYear > data.constructionYear) {
+                            toast({ title: "Date invalide", description: `L'autorisation doit être antérieure ou égale à l'année de construction (${data.constructionYear}).`, variant: "destructive" });
+                            return;
+                          }
+                        }
+                        updatePermitField('issueDate', value);
+                      }}
+                      className={cn("h-10 text-sm rounded-xl", permit.issueDate && data.constructionYear && new Date(permit.issueDate).getFullYear() > data.constructionYear && "border-destructive")}
+                    />
+                    {permit.issueDate && data.constructionYear && new Date(permit.issueDate).getFullYear() > data.constructionYear && (
+                      <p className="text-[10px] text-destructive">Doit être ≤ {data.constructionYear}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-foreground">Service émetteur de l'autorisation</Label>
+                  <BuildingPermitIssuingServiceSelect
+                    value={permit.issuingService}
+                    onValueChange={(value) => updatePermitField('issuingService', value)}
+                  />
+                </div>
+
+                {/* Document */}
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-foreground">Document (optionnel)</Label>
+                  {!permit.attachmentFile ? (
+                    <Input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          if (file.size > 10 * 1024 * 1024) {
+                            toast({ title: "Fichier trop volumineux", description: "Max 10 MB", variant: "destructive" });
+                            return;
+                          }
+                          updatePermitField('attachmentFile', file);
+                        }
+                      }}
+                      className="h-10 text-sm rounded-xl"
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-xl border overflow-hidden min-w-0">
+                      <MdInsertDriveFile className="h-4 w-4 text-primary flex-shrink-0" />
+                      <span className="text-sm flex-1 truncate overflow-hidden min-w-0">{permit.attachmentFile.name}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => updatePermitField('attachmentFile', null)}
+                        className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 rounded-lg"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Mode: Pas de permis */}
+          {permitMode === 'request' && (
+            <div className="animate-fade-in">
+              <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-xl p-3">
+                <p className="text-sm text-green-800 dark:text-green-200 text-center">
+                  ✓ Pas de souci ! Vous pourrez faire une demande d'<strong>autorisation de régularisation</strong> pour votre construction plus tard, dès que votre parcelle sera ajoutée au cadastre numérique.
+                </p>
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 };
