@@ -796,49 +796,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     }
   }, [formData.isTitleInCurrentOwnerName, formData.titleIssueDate, currentOwners[0]?.since]);
 
-  // Auto-remplir "Ancien #2" avec le nom du propriétaire actuel quand le titre n'est pas à son nom
-  // Le propriétaire actuel est aussi l'ancien propriétaire #2 dans la chaîne (il a acquis du vendeur inscrit sur le titre)
-  // NOTE: Only auto-creates/updates if the second entry is empty or was auto-filled.
-  // This avoids overwriting user-deleted entries.
-  useEffect(() => {
-    if (formData.isTitleInCurrentOwnerName === false) {
-      const firstCurrentOwner = currentOwners[0];
-      if (firstCurrentOwner?.lastName && firstCurrentOwner?.firstName) {
-        const currentOwnerFullName = [firstCurrentOwner.lastName, firstCurrentOwner.middleName, firstCurrentOwner.firstName].filter(Boolean).join(' ');
-        
-        // Only create the 2nd entry if exactly 1 exists (initial state)
-        if (previousOwners.length === 1) {
-          setPreviousOwners(prev => [...prev, {
-            name: currentOwnerFullName,
-            legalStatus: firstCurrentOwner.legalStatus || 'Personne physique',
-            entityType: firstCurrentOwner.entityType || '',
-            entitySubType: firstCurrentOwner.entitySubType || '',
-            entitySubTypeOther: firstCurrentOwner.entitySubTypeOther || '',
-            stateExploitedBy: firstCurrentOwner.stateExploitedBy || '',
-            startDate: firstCurrentOwner.since || '',
-            endDate: '',
-            mutationType: 'Vente'
-          }]);
-        } else if (previousOwners.length >= 2 && previousOwners[1]) {
-          // Only update if the name matches what we would have auto-filled (don't overwrite manual edits)
-          const existingName = previousOwners[1].name;
-          const wasAutoFilled = !existingName || existingName === currentOwnerFullName || 
-            existingName === [firstCurrentOwner.lastName, firstCurrentOwner.middleName, firstCurrentOwner.firstName].filter(Boolean).join(' ');
-          
-          if (wasAutoFilled) {
-            const updated = [...previousOwners];
-            updated[1] = {
-              ...updated[1],
-              name: currentOwnerFullName,
-              legalStatus: firstCurrentOwner.legalStatus || 'Personne physique',
-              startDate: firstCurrentOwner.since || '',
-            };
-            setPreviousOwners(updated);
-          }
-        }
-      }
-    }
-  }, [formData.isTitleInCurrentOwnerName, currentOwners[0]?.lastName, currentOwners[0]?.firstName, currentOwners[0]?.middleName, currentOwners[0]?.since]);
   // FIX #12: Improved surface calculation with better 2-side handling
   useEffect(() => {
     // Skip area recalculation when loading data from DB in edit mode
