@@ -349,111 +349,52 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                 {/* Formulaire d'édition */}
                 {isEditingThis && (
                   <div className="space-y-1.5 pl-6 animate-fade-in">
-                    {/* Toggle entre Route et Mur */}
-                    <ToggleGroup 
-                      type="single" 
-                      value={roadSide?.borderType || 'route'} 
-                      onValueChange={(value) => value && handleBorderTypeChange(index, value as SideBorderType)}
-                      className="justify-start"
+                    {/* Champs pour Route uniquement */}
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Route className="h-3.5 w-3.5 text-green-600" />
+                      <span className="text-xs font-medium text-green-700 dark:text-green-300">Informations sur la route</span>
+                    </div>
+
+                    <Select
+                      value={roadSide?.roadType || ''}
+                      onValueChange={(value) => 
+                        onRoadSideUpdate(index, { roadType: value })
+                      }
                     >
-                      <ToggleGroupItem 
-                        value="route" 
-                        aria-label="Route"
-                        className="h-7 px-2 text-xs data-[state=on]:bg-green-100 data-[state=on]:text-green-700 dark:data-[state=on]:bg-green-900 dark:data-[state=on]:text-green-300"
-                      >
-                        <Route className="h-3 w-3 mr-1" />
-                        Route
-                      </ToggleGroupItem>
-                      <ToggleGroupItem 
-                        value="mur_mitoyen" 
-                        aria-label="Mur mitoyen"
-                        className="h-7 px-2 text-xs data-[state=on]:bg-amber-100 data-[state=on]:text-amber-700 dark:data-[state=on]:bg-amber-900 dark:data-[state=on]:text-amber-300"
-                      >
-                        <BrickWall className="h-3 w-3 mr-1" />
-                        Mur mitoyen
-                      </ToggleGroupItem>
-                    </ToggleGroup>
+                      <SelectTrigger className="h-8 text-xs rounded-lg">
+                        <SelectValue placeholder="Type de route *" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {roadTypes.map((type) => (
+                          <SelectItem key={type.value} value={type.value} className="text-xs">
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
 
-                    {/* Champs pour Route */}
-                    {roadSide?.borderType === 'route' && (
-                      <>
-                        <Select
-                          value={roadSide?.roadType || ''}
-                          onValueChange={(value) => 
-                            onRoadSideUpdate(index, { roadType: value })
-                          }
-                        >
-                          <SelectTrigger className="h-8 text-xs rounded-lg">
-                            <SelectValue placeholder="Type de route *" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {roadTypes.map((type) => (
-                              <SelectItem key={type.value} value={type.value} className="text-xs">
-                                {type.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-
-                        <div className="grid grid-cols-2 gap-1.5">
-                          <Input
-                            type="text"
-                            placeholder="Nom route"
-                            value={roadSide?.roadName || ''}
-                            onChange={(e) => 
-                              onRoadSideUpdate(index, { roadName: e.target.value })
-                            }
-                            className="h-8 text-xs rounded-lg"
-                          />
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.1"
-                            placeholder="Largeur (m)"
-                            value={roadSide?.roadWidth || ''}
-                            onChange={(e) => 
-                              onRoadSideUpdate(index, { roadWidth: parseFloat(e.target.value) || undefined })
-                            }
-                            className="h-8 text-xs rounded-lg"
-                          />
-                        </div>
-                      </>
-                    )}
-
-                    {/* Champs pour Mur mitoyen */}
-                    {roadSide?.borderType === 'mur_mitoyen' && (
-                      <>
-                        <Select
-                          value={roadSide?.wallMaterial || ''}
-                          onValueChange={(value) => 
-                            onRoadSideUpdate(index, { wallMaterial: value })
-                          }
-                        >
-                          <SelectTrigger className="h-8 text-xs rounded-lg">
-                            <SelectValue placeholder="Matériau du mur *" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {wallMaterials.map((material) => (
-                              <SelectItem key={material.value} value={material.value} className="text-xs">
-                                {material.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.1"
-                          placeholder="Hauteur du mur (m)"
-                          value={roadSide?.wallHeight || ''}
-                          onChange={(e) => 
-                            onRoadSideUpdate(index, { wallHeight: parseFloat(e.target.value) || undefined })
-                          }
-                          className="h-8 text-xs rounded-lg"
-                        />
-                      </>
-                    )}
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <Input
+                        type="text"
+                        placeholder="Nom route"
+                        value={roadSide?.roadName || ''}
+                        onChange={(e) => 
+                          onRoadSideUpdate(index, { roadName: e.target.value })
+                        }
+                        className="h-8 text-xs rounded-lg"
+                      />
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        placeholder="Largeur (m)"
+                        value={roadSide?.roadWidth || ''}
+                        onChange={(e) => 
+                          onRoadSideUpdate(index, { roadWidth: parseFloat(e.target.value) || undefined })
+                        }
+                        className="h-8 text-xs rounded-lg"
+                      />
+                    </div>
 
                     {/* Boutons d'action */}
                     <div className="flex gap-1.5 pt-1">
