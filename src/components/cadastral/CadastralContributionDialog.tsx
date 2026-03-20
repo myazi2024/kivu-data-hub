@@ -3556,16 +3556,42 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       <div className="space-y-2 text-xs">
                         <h4 className="font-semibold text-sm">Type d'exploitation</h4>
                         <p className="text-muted-foreground">
-                          Catégorie d'exploitation de votre parcelle : Résidentielle, Commerciale, Industrielle, Agricole ou Terrain nu.
+                          Sélectionnez d'abord la catégorie de bien, puis le type de construction, la nature, les matériaux et l'usage seront filtrés automatiquement.
                         </p>
                       </div>
                     </PopoverContent>
                   </Popover>
                 </div>
 
+                {/* Catégorie de bien */}
+                <div className={`space-y-1.5 ${highlightRequiredFields && !formData.propertyCategory ? 'ring-2 ring-primary rounded-xl p-2 bg-primary/5 animate-pulse' : ''}`}>
+                  <Label className="text-sm font-medium flex items-center gap-1">
+                    Catégorie de bien
+                    {highlightRequiredFields && !formData.propertyCategory && (
+                      <span className="text-primary text-xs font-semibold">*</span>
+                    )}
+                  </Label>
+                  <Select 
+                    value={formData.propertyCategory || ''}
+                    onValueChange={(value) => {
+                      handleInputChange('propertyCategory', value);
+                      setHighlightRequiredFields(false);
+                    }}
+                  >
+                    <SelectTrigger className="h-10 rounded-xl text-sm">
+                      <SelectValue placeholder="Sélectionner la catégorie" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      {PROPERTY_CATEGORY_OPTIONS.map(opt => (
+                        <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 {/* Type et Nature - côte-à-côte */}
                 <div className="grid grid-cols-2 gap-2">
-                  {/* Type de construction */}
+                  {/* Type de construction - visible uniquement si la catégorie a plusieurs options */}
                   <div className={`space-y-1.5 ${highlightRequiredFields && !formData.constructionType ? 'ring-2 ring-primary rounded-xl p-2 bg-primary/5 animate-pulse' : ''}`}>
                     <Label className="text-sm font-medium flex items-center gap-1">
                       Type de construction
@@ -3573,27 +3599,29 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         <span className="text-primary text-xs font-semibold">*</span>
                       )}
                     </Label>
-                    <Select 
-                      value={formData.constructionType || ''}
-                      onValueChange={(value) => {
-                        handleInputChange('constructionType', value);
-                        // Reset materials if switching to Terrain nu
-                        if (value === 'Terrain nu') {
-                          handleInputChange('constructionMaterials', '');
-                          handleInputChange('constructionYear', undefined);
-                        }
-                        setHighlightRequiredFields(false);
-                      }}
-                    >
-                      <SelectTrigger className="h-10 rounded-xl text-sm">
-                        <SelectValue placeholder="Sélectionner" />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl">
-                        {getPicklistOptions('picklist_construction_type').map(opt => (
-                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    {availableConstructionTypes.length <= 1 ? (
+                      <div className="h-10 px-3 flex items-center text-sm rounded-xl border-2 bg-muted text-muted-foreground">
+                        {formData.constructionType || (formData.propertyCategory ? '—' : 'Catégorie d\'abord')}
+                      </div>
+                    ) : (
+                      <Select 
+                        value={formData.constructionType || ''}
+                        onValueChange={(value) => {
+                          handleInputChange('constructionType', value);
+                          setHighlightRequiredFields(false);
+                        }}
+                        disabled={!formData.propertyCategory}
+                      >
+                        <SelectTrigger className="h-10 rounded-xl text-sm">
+                          <SelectValue placeholder={!formData.propertyCategory ? "Catégorie d'abord" : "Sélectionner"} />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          {availableConstructionTypes.map(opt => (
+                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
 
                   {/* Nature de construction */}
