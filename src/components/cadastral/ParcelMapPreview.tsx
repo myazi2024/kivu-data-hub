@@ -1146,10 +1146,14 @@ export const ParcelMapPreview = ({
     }
     
     if (layer) {
+      const isApt = propertyCategory === 'Appartement';
+      const aptInfo = isApt && (floorNumber || apartmentNumber) 
+        ? `<br/><span style="color:#6b7280;">Étage: ${floorNumber || '—'} | Appt: ${apartmentNumber || '—'}</span>` 
+        : '';
       layer.bindPopup(`
         <div style="font-size: 12px;">
-          <strong style="color: #dc2626;">Construction</strong><br/>
-          <span>Type: ${shape.type}</span>
+          <strong style="color: #dc2626;">${isApt ? 'Immeuble' : 'Construction'}</strong><br/>
+          <span>Type: ${shape.type}</span>${aptInfo}
         </div>
       `);
     }
