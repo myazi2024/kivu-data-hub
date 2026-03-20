@@ -2336,7 +2336,10 @@ export const ParcelMapPreview = ({
             <div className="flex items-center gap-2">
               <Building2 className="h-4 w-4 text-red-500" />
               <span className="text-sm font-medium text-red-700 dark:text-red-300">
-                {buildingShapes.length} construction{buildingShapes.length > 1 ? 's' : ''}
+                {propertyCategory === 'Appartement' 
+                  ? `${buildingShapes.length} immeuble${buildingShapes.length > 1 ? 's' : ''}${floorNumber ? ` • Étage ${floorNumber}` : ''}${apartmentNumber ? ` • Appt ${apartmentNumber}` : ''}`
+                  : `${buildingShapes.length} construction${buildingShapes.length > 1 ? 's' : ''}`
+                }
               </span>
             </div>
             <Button
