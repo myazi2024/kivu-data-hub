@@ -338,7 +338,7 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
       )}
 
       {/* Section Autorisation de bâtir */}
-      {isNotTerrainNu && (
+      {showBuildingPermit && (
         <>
           <div className="border-t border-border/50 my-2" />
           <div className="flex items-start justify-between gap-2">
