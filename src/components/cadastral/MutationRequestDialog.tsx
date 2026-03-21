@@ -351,7 +351,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     try {
       for (const file of attachedFiles) {
         const fileExt = file.name.split('.').pop();
-        const fileName = `mutation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+        const fileName = `mutation_${Date.now()}_${crypto.randomUUID()}.${fileExt}`;
         const filePath = `mutation-documents/${user?.id}/${fileName}`;
         const { error: uploadError } = await supabase.storage.from('cadastral-documents').upload(filePath, file);
         if (uploadError) throw uploadError;
@@ -451,7 +451,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     if (!expertiseCertificateFile || !user) return null;
     try {
       const fileExt = expertiseCertificateFile.name.split('.').pop();
-      const fileName = `expertise_cert_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+      const fileName = `expertise_cert_${Date.now()}_${crypto.randomUUID()}.${fileExt}`;
       const filePath = `mutation-documents/${user.id}/certificates/${fileName}`;
       const { error: uploadError } = await supabase.storage.from('cadastral-documents').upload(filePath, expertiseCertificateFile);
       if (uploadError) throw uploadError;

@@ -54,7 +54,7 @@ export const uploadDisputeFiles = async (
 
   for (const file of files) {
     const fileExt = file.name.split('.').pop();
-    const fileName = `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+    const fileName = `${prefix}_${Date.now()}_${crypto.randomUUID()}.${fileExt}`;
     const filePath = `land-disputes/${userId}/${fileName}`;
 
     const { error } = await supabase.storage
