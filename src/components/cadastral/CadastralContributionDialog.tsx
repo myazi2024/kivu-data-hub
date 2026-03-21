@@ -2378,6 +2378,30 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     return missing;
   }, [formData, customTitleName, currentOwners, previousOwners, sectionType, permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, mortgageRecords]);
 
+  // Fonction pour obtenir les champs manquants d'un onglet spécifique
+  const getMissingFieldsForTab = useCallback((tab: string) => {
+    return getMissingFields().filter(f => f.tab === tab);
+  }, [getMissingFields]);
+
+  // Vérifier si un onglet est complet (pas de champs manquants)
+  const isTabComplete = useCallback((tab: string) => {
+    return getMissingFieldsForTab(tab).length === 0;
+  }, [getMissingFieldsForTab]);
+
+  // Ordre des onglets
+  const tabOrder = ['general', 'location', 'history', 'obligations', 'review'];
+
+  // Vérifier si un onglet est accessible (tous les onglets précédents sont complets)
+  const isTabAccessible = useCallback((tab: string) => {
+    const tabIndex = tabOrder.indexOf(tab);
+    if (tabIndex <= 0) return true; // Le premier onglet est toujours accessible
+    // Tous les onglets précédents doivent être complets
+    for (let i = 0; i < tabIndex; i++) {
+      if (!isTabComplete(tabOrder[i])) return false;
+    }
+    return true;
+  }, [isTabComplete]);
+
   // Fonction pour vérifier si le formulaire est valide pour soumission
   const isFormValidForSubmission = () => {
     return getMissingFields().length === 0;
