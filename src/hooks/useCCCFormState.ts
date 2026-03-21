@@ -466,7 +466,7 @@ export const useCCCFormState = ({
   // ─── CRUD: Building permits ───
   const addBuildingPermit = () => {
     const lastPermit = buildingPermits[buildingPermits.length - 1];
-    if (!lastPermit?.permitNumber || !lastPermit?.issuingService || !lastPermit?.issueDate) {
+    if (!lastPermit?.permitNumber || !lastPermit?.issueDate) {
       setShowPermitWarning(true); setHighlightIncompletePermit(true);
       setTimeout(() => setShowPermitWarning(false), 5000);
       setTimeout(() => setHighlightIncompletePermit(false), 3000);
