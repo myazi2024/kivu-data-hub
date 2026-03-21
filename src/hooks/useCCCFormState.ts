@@ -919,7 +919,7 @@ export const useCCCFormState = ({
 
       const validGpsCoordinates = gpsCoordinates.filter(coord => { const lat = parseFloat(coord.lat); const lng = parseFloat(coord.lng); return !isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180 && coord.lat !== '' && coord.lng !== ''; });
       const gpsCoordinatesData = validGpsCoordinates.length > 0 ? validGpsCoordinates.map(coord => ({ borne: coord.borne, lat: parseFloat(coord.lat), lng: parseFloat(coord.lng) })) : undefined;
-      const ownershipHistoryData = previousOwners.filter(owner => owner.name && owner.startDate).map(owner => ({ ownerName: owner.name, legalStatus: owner.legalStatus, startDate: owner.startDate, endDate: owner.endDate || undefined, mutationType: owner.mutationType || undefined }));
+      const ownershipHistoryData = previousOwners.filter(owner => owner.name && owner.startDate).map(owner => ({ ownerName: owner.name, legalStatus: owner.legalStatus, entityType: owner.entityType || undefined, entitySubType: owner.entitySubType || undefined, entitySubTypeOther: owner.entitySubTypeOther || undefined, stateExploitedBy: owner.stateExploitedBy || undefined, startDate: owner.startDate, endDate: owner.endDate || undefined, mutationType: owner.mutationType || undefined }));
       const existingOwnerDocUrl = editingContributionId ? formData.ownerDocumentUrl : undefined;
       const existingTitleDocUrl = editingContributionId ? formData.titleDocumentUrl : undefined;
 
