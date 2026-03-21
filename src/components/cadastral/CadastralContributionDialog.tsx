@@ -5305,9 +5305,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </Button>
                 <Button
                   type="button"
-                  onClick={() => handleTabChange('obligations')}
-                  disabled={!isTabComplete('history')}
-                  className="gap-2 rounded-xl h-10 text-sm shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => handleNextTab('history', 'obligations')}
+                  className="gap-2 rounded-xl h-10 text-sm shadow-md hover:shadow-lg transition-all"
                 >
                   Suivant
                   <ChevronRight className="h-4 w-4" />
