@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useCadastralContribution, CadastralContributionData } from '@/hooks/useCadastralContribution';
 import AdditionalConstructionBlock, { AdditionalConstruction } from '@/components/cadastral/AdditionalConstructionBlock';
-import { Loader2, CheckCircle2, Upload, X, Plus, Trash2, Info, ExternalLink, RotateCcw, ChevronRight, ChevronLeft, Camera } from 'lucide-react';
+import { Loader2, CheckCircle2, Upload, X, Plus, Trash2, Info, ExternalLink, RotateCcw, ChevronRight, ChevronLeft, Camera, AlertTriangle } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { MdDashboard, MdLocationOn, MdEventNote, MdAccountBalance, MdRateReview, MdInsertDriveFile } from 'react-icons/md';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -5761,18 +5761,78 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     </Button>
                   </div>
                   <div className="space-y-2 text-xs">
-                    {taxRecords.some(t => t.taxAmount) ? (
-                      <div>
-                        <div className="font-medium">Taxes:</div>
-                        {taxRecords.filter(t => t.taxAmount).map((tax, idx) => (
-                          <div key={idx} className="ml-2 text-muted-foreground">
-                            • {tax.taxYear}: {tax.taxAmount} USD ({tax.paymentStatus})
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-muted-foreground italic">Aucune taxe</div>
-                    )}
+                    {/* Bilan fiscal des 3 dernières années */}
+                    {(() => {
+                      const currentYear = new Date().getFullYear();
+                      const requiredYears = [currentYear - 1, currentYear - 2, currentYear - 3];
+                      const requiredTaxTypes = ['Impôt foncier annuel', ...(formData.declaredUsage === 'Location' ? ['Impôt sur les revenus locatifs'] : [])];
+                      
+                      const taxStatusByYearType: { year: number; taxType: string; paid: boolean; amount?: string; status?: string }[] = [];
+                      
+                      for (const year of requiredYears) {
+                        for (const taxType of requiredTaxTypes) {
+                          const found = taxRecords.find(t => t.taxYear === year.toString() && t.taxType === taxType && t.taxAmount);
+                          taxStatusByYearType.push({
+                            year,
+                            taxType,
+                            paid: !!found,
+                            amount: found?.taxAmount,
+                            status: found?.paymentStatus,
+                          });
+                        }
+                      }
+                      
+                      const unpaidItems = taxStatusByYearType.filter(t => !t.paid);
+                      const paidItems = taxStatusByYearType.filter(t => t.paid);
+                      
+                      return (
+                        <div className="space-y-2">
+                          <div className="font-medium">Bilan fiscal (3 dernières années) :</div>
+                          
+                          {/* Taxes payées */}
+                          {paidItems.length > 0 && (
+                            <div className="space-y-0.5">
+                              {paidItems.map((item, idx) => (
+                                <div key={idx} className="ml-2 flex items-center gap-1.5 text-green-700 dark:text-green-400">
+                                  <CheckCircle2 className="h-3 w-3 flex-shrink-0" />
+                                  <span>{item.year} — {item.taxType}: {item.amount} USD ({item.status})</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {/* Taxes non payées / non renseignées */}
+                          {unpaidItems.length > 0 && (
+                            <div className="space-y-0.5">
+                              {unpaidItems.map((item, idx) => (
+                                <div key={idx} className="ml-2 flex items-center gap-1.5 text-destructive">
+                                  <AlertTriangle className="h-3 w-3 flex-shrink-0" />
+                                  <span>{item.year} — {item.taxType}: Non renseigné</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {unpaidItems.length > 0 && (
+                            <div className="mt-1 p-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+                              <p className="text-[11px] text-amber-800 dark:text-amber-200 flex items-start gap-1">
+                                <AlertTriangle className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                                <span>{unpaidItems.length} taxe(s) non renseignée(s) sur les 3 dernières années. Les taxes non renseignées sont considérées comme non payées.</span>
+                              </p>
+                            </div>
+                          )}
+                          
+                          {unpaidItems.length === 0 && (
+                            <div className="mt-1 p-2 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
+                              <p className="text-[11px] text-green-800 dark:text-green-200 flex items-center gap-1">
+                                <CheckCircle2 className="h-3 w-3 flex-shrink-0" />
+                                <span>Conformité fiscale complète sur les 3 dernières années.</span>
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                     {/* Section Hypothèque */}
                     <div className="pt-1 border-t border-border/50">
                       <div className="font-medium">Hypothèque:</div>
