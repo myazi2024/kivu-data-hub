@@ -897,7 +897,7 @@ export const useCCCFormState = ({
         const buildingPermitsData = await Promise.all(buildingPermits.map(async (permit) => {
           let attachmentUrl = null;
           if (permit.attachmentFile) { attachmentUrl = await uploadFile(permit.attachmentFile, 'building-permits'); if (!attachmentUrl) throw new Error('Erreur téléchargement autorisation bâtir'); }
-          return { permitType: permit.permitType, permitNumber: permit.permitNumber, issuingService: permit.issuingService, issueDate: permit.issueDate, validityMonths: parseInt(permit.validityMonths), administrativeStatus: permit.administrativeStatus, issuingServiceContact: permit.issuingServiceContact || undefined, attachmentUrl: attachmentUrl || permit.existingAttachmentUrl || undefined };
+          return { permitType: permit.permitType, permitNumber: permit.permitNumber, issueDate: permit.issueDate, validityMonths: parseInt(permit.validityMonths), administrativeStatus: permit.administrativeStatus, attachmentUrl: attachmentUrl || permit.existingAttachmentUrl || undefined };
         }));
         buildingPermitsDataFinal = buildingPermitsData.length > 0 ? buildingPermitsData : undefined;
       } else if (permitMode === 'request') {
