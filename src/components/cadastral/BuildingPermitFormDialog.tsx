@@ -54,7 +54,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
     issueDate: '',
     issuingService: '',
     issuingServiceContact: '',
-    validityPeriod: '12',
+    validityPeriod: '36',
     permitFile: null
   });
 
