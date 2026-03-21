@@ -104,10 +104,27 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   // getMissingFields is defined after all state declarations (see below ~line 2230)
   // getMissingFields and isFormValidForSubmission are defined after all state declarations
   
-  // Fonction pour changer d'onglet avec scroll vers le haut
+  // Fonction pour changer d'onglet avec scroll vers le haut (avec vérification d'accès)
   const handleTabChange = (tab: string) => {
+    // Permettre de revenir en arrière librement
+    const currentIndex = ['general', 'location', 'history', 'obligations', 'review'].indexOf(activeTab);
+    const targetIndex = ['general', 'location', 'history', 'obligations', 'review'].indexOf(tab);
+    if (targetIndex > currentIndex) {
+      // Vérifier que tous les onglets entre le courant et la cible sont complets
+      const allFields = getMissingFields();
+      for (let i = 0; i <= currentIndex; i++) {
+        const tabKey = ['general', 'location', 'history', 'obligations', 'review'][i];
+        if (allFields.some(f => f.tab === tabKey)) {
+          toast({
+            title: "Champs obligatoires manquants",
+            description: `Veuillez compléter tous les champs obligatoires de l'onglet "${['Infos', 'Lieu', 'Passé', 'Taxes', 'Envoi'][i]}" avant de continuer.`,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+    }
     setActiveTab(tab);
-    // Scroll vers le haut du contenu du dialogue
     if (dialogContentRef.current) {
       dialogContentRef.current.scrollTop = 0;
     }
