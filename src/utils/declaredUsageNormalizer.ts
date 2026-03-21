@@ -25,6 +25,7 @@ const LEGACY_MAP: Record<string, string> = {
 
 const KNOWN_USAGES = new Set([
   "Habitation",
+  "Location",
   "Usage mixte",
   "Commerce",
   "Bureau",
