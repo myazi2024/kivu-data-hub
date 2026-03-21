@@ -99,6 +99,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [shouldBlinkSuperficie, setShouldBlinkSuperficie] = useState(false);
   const [showUsageLockedWarning, setShowUsageLockedWarning] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
+  const [invalidFields, setInvalidFields] = useState<Set<string>>(new Set());
   const [customTitleName, setCustomTitleName] = useState('');
   
   // getMissingFields is defined after all state declarations (see below ~line 2230)
