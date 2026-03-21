@@ -674,17 +674,8 @@ export const useCCCFormState = ({
     const hasValidPreviousOwner = previousOwners.some(o => o.name && o.name.trim() !== '');
     if (!hasValidPreviousOwner) missing.push({ field: 'previousOwner', label: 'Historique de propriété (au moins un ancien propriétaire)', tab: 'history' });
 
-    // OBLIGATIONS - TAXES
-    const currentYear = new Date().getFullYear();
-    const requiredYears = [currentYear - 1, currentYear - 2, currentYear - 3];
-    const requiredTaxTypes = ['Impôt foncier annuel'];
-    if (formData.declaredUsage === 'Location') requiredTaxTypes.push('Impôt sur les revenus locatifs');
-    for (const year of requiredYears) {
-      for (const taxType of requiredTaxTypes) {
-        const found = taxRecords.find(t => t.taxYear === year.toString() && t.taxType === taxType && t.taxAmount);
-        if (!found) missing.push({ field: `tax_${taxType}_${year}`, label: `${taxType} ${year}`, tab: 'obligations' });
-      }
-    }
+    // OBLIGATIONS - TAXES (non-bloquant : les 3 années précédentes sont encouragées mais pas obligatoires)
+    // Seuls les reçus des taxes déjà renseignées sont obligatoires
     taxRecords.forEach((tax, idx) => {
       if (tax.taxAmount && tax.taxYear && !tax.receiptFile && !tax.existingReceiptUrl) missing.push({ field: `taxReceipt_${idx}`, label: `Reçu de ${tax.taxType} ${tax.taxYear}`, tab: 'obligations' });
     });
