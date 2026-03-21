@@ -91,7 +91,7 @@ interface GeneralTabProps {
   setHighlightRequiredFields: (v: boolean) => void;
   // Picklists
   getPicklistOptions: (key: string) => string[];
-  getPicklistDependentOptions: any;
+  getPicklistDependentOptions: any; // Accepts both signatures used by parent and AdditionalConstructionBlock
   // Navigation
   handleNextTab: (current: string, next: string) => void;
   // Toast
