@@ -39,6 +39,7 @@ interface HistoryTabProps {
   handleTabChange: (tab: string) => void;
   handleNextTab: (current: string, next: string) => void;
   toast: (opts: any) => void;
+  resetPreviousOwnersBlock: () => void;
 }
 
 const HistoryTab: React.FC<HistoryTabProps> = ({
