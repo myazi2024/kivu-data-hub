@@ -424,20 +424,23 @@ const CurrentOwnersSection: React.FC<CurrentOwnersSectionProps> = ({
               : "Propriétaire(s) actuel(s)"}
           </Label>
         </div>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-transparent">
-              <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-72 rounded-xl" align="end">
-            <div className="space-y-2 text-xs">
-              <h4 className="font-semibold text-sm">Nom différent du document ?</h4>
-              <p className="text-muted-foreground">Vous pouvez indiquer votre nom si vous détenez un acte de transfert (vente, donation, succession).</p>
-              <p className="text-muted-foreground"><strong>💡</strong> Ajoutez ce document dans la section "Document du titre".</p>
-            </div>
-          </PopoverContent>
-        </Popover>
+        <div className="flex items-center gap-1">
+          <BlockResetButton blockName="Propriétaires" onReset={resetOwnersBlock} />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-transparent">
+                <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72 rounded-xl" align="end">
+              <div className="space-y-2 text-xs">
+                <h4 className="font-semibold text-sm">Nom différent du document ?</h4>
+                <p className="text-muted-foreground">Vous pouvez indiquer votre nom si vous détenez un acte de transfert (vente, donation, succession).</p>
+                <p className="text-muted-foreground"><strong>💡</strong> Ajoutez ce document dans la section "Document du titre".</p>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
 
       {currentOwners.map((owner, index) => (
