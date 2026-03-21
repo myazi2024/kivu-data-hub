@@ -258,7 +258,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
       permitRecord.issuingService ||
       permitRecord.issuingServiceContact ||
       permitRecord.permitFile ||
-      permitRecord.validityPeriod !== '12'
+      permitRecord.validityPeriod !== '36'
     );
   };
 
@@ -269,7 +269,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
       issueDate: '',
       issuingService: '',
       issuingServiceContact: '',
-      validityPeriod: '12',
+      validityPeriod: '36',
       permitFile: null
     });
     onOpenChange(false);

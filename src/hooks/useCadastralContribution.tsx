@@ -36,11 +36,9 @@ export interface CadastralContributionData {
   buildingPermits?: Array<{
     permitType: 'construction' | 'regularization';
     permitNumber: string;
-    issuingService: string;
     issueDate: string;
     validityMonths: number;
     administrativeStatus: string;
-    issuingServiceContact?: string;
     attachmentUrl?: string;
   }>;
   previousPermitNumber?: string;
@@ -89,6 +87,10 @@ export interface CadastralContributionData {
   ownershipHistory?: Array<{
     ownerName: string;
     legalStatus: string;
+    entityType?: string;
+    entitySubType?: string;
+    entitySubTypeOther?: string;
+    stateExploitedBy?: string;
     startDate: string;
     endDate?: string;
     mutationType?: string;
@@ -140,7 +142,6 @@ export interface CadastralContributionData {
       permitType: 'construction' | 'regularization';
       permitNumber: string;
       issueDate: string;
-      issuingService: string;
       attachmentUrl?: string;
     };
   }>;
@@ -178,6 +179,10 @@ export const useCadastralContribution = () => {
     const ownershipHistorySnake = data.ownershipHistory?.map(o => ({
       owner_name: o.ownerName,
       legal_status: o.legalStatus,
+      entity_type: o.entityType || null,
+      entity_sub_type: o.entitySubType || null,
+      entity_sub_type_other: o.entitySubTypeOther || null,
+      state_exploited_by: o.stateExploitedBy || null,
       ownership_start_date: o.startDate,
       ownership_end_date: o.endDate || null,
       mutation_type: o.mutationType || null,
@@ -210,11 +215,9 @@ export const useCadastralContribution = () => {
     const buildingPermitsSnake = data.buildingPermits?.map(p => ({
       permit_type: p.permitType,
       permit_number: p.permitNumber,
-      issuing_service: p.issuingService,
       issue_date: p.issueDate,
       validity_period_months: p.validityMonths,
       administrative_status: p.administrativeStatus,
-      issuing_service_contact: p.issuingServiceContact || null,
       permit_document_url: p.attachmentUrl || null,
       is_current: true
     })) || null;

@@ -120,8 +120,8 @@ export const useCCCFormState = ({
   const [additionalConstructions, setAdditionalConstructions] = useState<AdditionalConstruction[]>([]);
 
   const [buildingPermits, setBuildingPermits] = useState<BuildingPermit[]>([{
-    permitType: 'construction', permitNumber: '', issuingService: '', issueDate: '',
-    validityMonths: '36', administrativeStatus: 'En attente', issuingServiceContact: '', attachmentFile: null
+    permitType: 'construction', permitNumber: '', issueDate: '',
+    validityMonths: '36', administrativeStatus: 'En attente', attachmentFile: null
   }]);
 
   const [permitRequest, setPermitRequest] = useState({
@@ -326,8 +326,8 @@ export const useCCCFormState = ({
       setTimeout(() => setShowCurrentOwnerRequiredWarning(false), 5000);
       return;
     }
-    const firstOwner = previousOwners[0];
-    if (!firstOwner?.name || !firstOwner?.legalStatus || !firstOwner?.mutationType) {
+    const lastOwner = previousOwners[previousOwners.length - 1];
+    if (!lastOwner?.name || !lastOwner?.legalStatus || !lastOwner?.mutationType) {
       setShowPreviousOwnerWarning(true);
       setHighlightIncompletePreviousOwner(true);
       setTimeout(() => setShowPreviousOwnerWarning(false), 5000);
@@ -405,8 +405,8 @@ export const useCCCFormState = ({
 
   // ─── CRUD: Tax records ───
   const addTaxRecord = () => {
-    const firstTax = taxRecords[0];
-    if (!firstTax?.taxType || !firstTax?.taxYear || !firstTax?.taxAmount || !firstTax?.paymentStatus) {
+    const lastTax = taxRecords[taxRecords.length - 1];
+    if (!lastTax?.taxType || !lastTax?.taxYear || !lastTax?.taxAmount || !lastTax?.paymentStatus) {
       setShowTaxWarning(true); setHighlightIncompleteTax(true);
       setTimeout(() => setShowTaxWarning(false), 5000);
       setTimeout(() => setHighlightIncompleteTax(false), 3000);
@@ -473,7 +473,7 @@ export const useCCCFormState = ({
       return;
     }
     setShowPermitWarning(false); setHighlightIncompletePermit(false);
-    setBuildingPermits([...buildingPermits, { permitType: 'construction', permitNumber: '', issuingService: '', issueDate: '', validityMonths: '36', administrativeStatus: 'En attente', issuingServiceContact: '', attachmentFile: null }]);
+    setBuildingPermits([...buildingPermits, { permitType: 'construction', permitNumber: '', issueDate: '', validityMonths: '36', administrativeStatus: 'En attente', attachmentFile: null }]);
     markDirty();
   };
 
@@ -769,7 +769,7 @@ export const useCCCFormState = ({
     if (formData.declaredUsage) filledFields += 1;
     if (formData.standing) filledFields += 1;
     totalFields += 3;
-    const hasValidPermits = buildingPermits.some(p => p.permitNumber && p.issuingService);
+    const hasValidPermits = buildingPermits.some(p => p.permitNumber && p.issueDate);
     if (hasValidPermits) filledFields += 1;
     const hasPermitAttachments = buildingPermits.some(p => p.attachmentFile);
     if (hasPermitAttachments) filledFields += 1;
@@ -897,7 +897,7 @@ export const useCCCFormState = ({
         const buildingPermitsData = await Promise.all(buildingPermits.map(async (permit) => {
           let attachmentUrl = null;
           if (permit.attachmentFile) { attachmentUrl = await uploadFile(permit.attachmentFile, 'building-permits'); if (!attachmentUrl) throw new Error('Erreur téléchargement autorisation bâtir'); }
-          return { permitType: permit.permitType, permitNumber: permit.permitNumber, issuingService: permit.issuingService, issueDate: permit.issueDate, validityMonths: parseInt(permit.validityMonths), administrativeStatus: permit.administrativeStatus, issuingServiceContact: permit.issuingServiceContact || undefined, attachmentUrl: attachmentUrl || permit.existingAttachmentUrl || undefined };
+          return { permitType: permit.permitType, permitNumber: permit.permitNumber, issueDate: permit.issueDate, validityMonths: parseInt(permit.validityMonths), administrativeStatus: permit.administrativeStatus, attachmentUrl: attachmentUrl || permit.existingAttachmentUrl || undefined };
         }));
         buildingPermitsDataFinal = buildingPermitsData.length > 0 ? buildingPermitsData : undefined;
       } else if (permitMode === 'request') {
@@ -919,7 +919,7 @@ export const useCCCFormState = ({
 
       const validGpsCoordinates = gpsCoordinates.filter(coord => { const lat = parseFloat(coord.lat); const lng = parseFloat(coord.lng); return !isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180 && coord.lat !== '' && coord.lng !== ''; });
       const gpsCoordinatesData = validGpsCoordinates.length > 0 ? validGpsCoordinates.map(coord => ({ borne: coord.borne, lat: parseFloat(coord.lat), lng: parseFloat(coord.lng) })) : undefined;
-      const ownershipHistoryData = previousOwners.filter(owner => owner.name && owner.startDate).map(owner => ({ ownerName: owner.name, legalStatus: owner.legalStatus, startDate: owner.startDate, endDate: owner.endDate || undefined, mutationType: owner.mutationType || undefined }));
+      const ownershipHistoryData = previousOwners.filter(owner => owner.name && owner.startDate).map(owner => ({ ownerName: owner.name, legalStatus: owner.legalStatus, entityType: owner.entityType || undefined, entitySubType: owner.entitySubType || undefined, entitySubTypeOther: owner.entitySubTypeOther || undefined, stateExploitedBy: owner.stateExploitedBy || undefined, startDate: owner.startDate, endDate: owner.endDate || undefined, mutationType: owner.mutationType || undefined }));
       const existingOwnerDocUrl = editingContributionId ? formData.ownerDocumentUrl : undefined;
       const existingTitleDocUrl = editingContributionId ? formData.titleDocumentUrl : undefined;
 
@@ -979,7 +979,7 @@ export const useCCCFormState = ({
     setAvailableConstructionNatures([]); setAvailableDeclaredUsages([]); setAvailableConstructionMaterials([]); setAvailableStandings([]);
     setRoadSides([]);
     setPermitMode('existing');
-    setBuildingPermits([{ permitType: 'construction', permitNumber: '', issuingService: '', issueDate: '', validityMonths: '36', administrativeStatus: 'En attente', issuingServiceContact: '', attachmentFile: null }]);
+    setBuildingPermits([{ permitType: 'construction', permitNumber: '', issueDate: '', validityMonths: '36', administrativeStatus: 'En attente', attachmentFile: null }]);
     setPermitRequest({ permitType: 'construction', hasExistingConstruction: false, constructionDescription: '', plannedUsage: '', estimatedArea: '', applicantName: '', applicantPhone: '', applicantEmail: '', selectedOwnerIndex: -1, numberOfFloors: '', buildingMaterials: '', architecturalPlanImages: [], constructionYear: '', regularizationReason: '', originalPermitNumber: '', previousPermitNumber: '', constructionPhotos: [] });
     setGpsCoordinates([]);
     setShowRequiredFieldsPopover(false); setHighlightRequiredFields(false); setShowOwnerWarning(false); setHighlightIncompleteOwner(false);
@@ -1056,7 +1056,7 @@ export const useCCCFormState = ({
 
         const ownerHistory = contrib.ownership_history as any[];
         if (ownerHistory && Array.isArray(ownerHistory) && ownerHistory.length > 0) {
-          setPreviousOwners(ownerHistory.map((o: any) => ({ name: o.owner_name || '', legalStatus: o.legal_status || 'Personne physique', entityType: '', entitySubType: '', entitySubTypeOther: '', stateExploitedBy: '', startDate: o.ownership_start_date || '', endDate: o.ownership_end_date || '', mutationType: o.mutation_type || 'Vente' })));
+          setPreviousOwners(ownerHistory.map((o: any) => ({ name: o.owner_name || o.ownerName || '', legalStatus: o.legal_status || o.legalStatus || 'Personne physique', entityType: o.entity_type || o.entityType || '', entitySubType: o.entity_sub_type || o.entitySubType || '', entitySubTypeOther: o.entity_sub_type_other || o.entitySubTypeOther || '', stateExploitedBy: o.state_exploited_by || o.stateExploitedBy || '', startDate: o.ownership_start_date || o.startDate || '', endDate: o.ownership_end_date || o.endDate || '', mutationType: o.mutation_type || o.mutationType || 'Vente' })));
         }
 
         const gpsCoords = contrib.gps_coordinates as any[];
@@ -1070,7 +1070,7 @@ export const useCCCFormState = ({
         const permits = contrib.building_permits as any[];
         if (permits && Array.isArray(permits) && permits.length > 0) {
           setPermitMode('existing');
-          setBuildingPermits(permits.map((p: any) => ({ permitType: p.permit_type || 'construction', permitNumber: p.permit_number || '', issuingService: p.issuing_service || '', issueDate: p.issue_date || '', validityMonths: String(p.validity_period_months || '36'), administrativeStatus: p.administrative_status || 'En attente', issuingServiceContact: p.issuing_service_contact || '', attachmentFile: null, existingAttachmentUrl: p.permit_document_url || undefined })));
+          setBuildingPermits(permits.map((p: any) => ({ permitType: p.permit_type || p.permitType || 'construction', permitNumber: p.permit_number || p.permitNumber || '', issueDate: p.issue_date || p.issueDate || '', validityMonths: String(p.validity_period_months || p.validityMonths || '36'), administrativeStatus: p.administrative_status || p.administrativeStatus || 'En attente', attachmentFile: null, existingAttachmentUrl: p.permit_document_url || p.attachmentUrl || undefined })));
         } else if (contrib.permit_request_data) {
           setPermitMode('request');
           const prd = contrib.permit_request_data as any;
@@ -1120,12 +1120,15 @@ export const useCCCFormState = ({
     }
   }, [parcelNumber]);
 
-  // Sync previous owner end date with current owner since
+  // Sync LAST previous owner end date with current owner since (only if not manually set)
   useEffect(() => {
+    if (isLoadingFromDbRef.current) return;
     if (currentOwners.length > 0 && currentOwners[0]?.since && previousOwners.length > 0) {
-      const firstPreviousOwner = previousOwners[0];
-      if (!firstPreviousOwner.endDate || firstPreviousOwner.endDate !== currentOwners[0].since) {
-        const updated = [...previousOwners]; updated[0] = { ...updated[0], endDate: currentOwners[0].since }; setPreviousOwners(updated);
+      const lastIdx = previousOwners.length - 1;
+      const lastPreviousOwner = previousOwners[lastIdx];
+      // Only auto-fill if endDate is empty (don't overwrite manual entries)
+      if (!lastPreviousOwner.endDate) {
+        const updated = [...previousOwners]; updated[lastIdx] = { ...updated[lastIdx], endDate: currentOwners[0].since }; setPreviousOwners(updated);
       }
     }
   }, [currentOwners]);
@@ -1337,8 +1340,8 @@ export const useCCCFormState = ({
     setConstructionMode('unique');
     setAdditionalConstructions([]);
     setBuildingPermits([{
-      permitType: 'construction', permitNumber: '', issuingService: '', issueDate: '',
-      validityMonths: '36', administrativeStatus: 'En attente', issuingServiceContact: '', attachmentFile: null
+      permitType: 'construction', permitNumber: '', issueDate: '',
+      validityMonths: '36', administrativeStatus: 'En attente', attachmentFile: null
     }]);
     setPermitMode('existing');
     markDirty();

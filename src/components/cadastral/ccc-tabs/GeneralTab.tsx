@@ -35,11 +35,9 @@ export interface CurrentOwner {
 export interface BuildingPermit {
   permitType: 'construction' | 'regularization';
   permitNumber: string;
-  issuingService: string;
   issueDate: string;
   validityMonths: string;
   administrativeStatus: string;
-  issuingServiceContact: string;
   attachmentFile: File | null;
   existingAttachmentUrl?: string;
 }
@@ -212,7 +210,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
               )}
               
               <Input id="titleDoc" type="file" accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf" onChange={(e) => handleFileChange(e, 'title')} className="hidden" />
-              <p className="text-xs text-muted-foreground text-center">JPG, PNG, PDF • Max 5 MB</p>
+              <p className="text-xs text-muted-foreground text-center">JPG, PNG, PDF • Max 10 MB</p>
             </div>
           </CardContent>
         </Card>
