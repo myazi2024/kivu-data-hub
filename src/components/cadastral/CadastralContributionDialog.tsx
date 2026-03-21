@@ -1399,7 +1399,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               creditorType: mortgage.creditorType,
               contractDate: mortgage.contractDate,
               mortgageStatus: mortgage.mortgageStatus,
-              receiptUrl: receiptUrl || undefined
+              receiptUrl: receiptUrl || mortgage.existingReceiptUrl || undefined // FIX #9: preserve existing URL
             };
           })
       )).filter(Boolean); // Remove nulls
