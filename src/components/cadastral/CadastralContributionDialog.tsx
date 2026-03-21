@@ -181,6 +181,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     taxAmount: string;
     paymentStatus: string;
     paymentDate: string;
+    remainingAmount?: string;
     receiptFile: File | null;
   }>>([{
     taxType: 'Impôt foncier annuel',
@@ -5253,6 +5254,21 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           </Select>
                         </div>
                       </div>
+
+                      {tax.paymentStatus === 'Payé partiellement' && (
+                        <div className="space-y-1">
+                          <Label className="text-sm font-medium">Montant restant à payer (USD)</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            placeholder="Ex: 50.00"
+                            value={tax.remainingAmount || ''}
+                            onChange={(e) => updateTaxRecord(index, 'remainingAmount', e.target.value)}
+                            className="h-10 text-sm rounded-xl"
+                          />
+                        </div>
+                      )}
 
                       <div className="space-y-1">
                         <Label className="text-sm font-medium">Date paiement</Label>
