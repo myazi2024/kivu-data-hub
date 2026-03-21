@@ -128,6 +128,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   highlightRequiredFields={state.highlightRequiredFields} setHighlightRequiredFields={state.setHighlightRequiredFields}
                   getPicklistOptions={state.getPicklistOptions} getPicklistDependentOptions={state.getPicklistDependentOptions}
                   handleNextTab={state.handleNextTab} toast={state.toast}
+                  resetTitleBlock={state.resetTitleBlock} resetOwnersBlock={state.resetOwnersBlock} resetConstructionBlock={state.resetConstructionBlock}
                 />
               </TabsContent>
 
