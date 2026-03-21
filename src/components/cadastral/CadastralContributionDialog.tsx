@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useCadastralContribution, CadastralContributionData } from '@/hooks/useCadastralContribution';
 import AdditionalConstructionBlock, { AdditionalConstruction } from '@/components/cadastral/AdditionalConstructionBlock';
-import { Loader2, CheckCircle2, Upload, X, Plus, Trash2, Info, ExternalLink, RotateCcw, ChevronRight, ChevronLeft, Camera, AlertTriangle } from 'lucide-react';
+import { Loader2, CheckCircle2, Upload, X, Plus, Trash2, Info, ExternalLink, RotateCcw, ChevronRight, ChevronLeft, Camera, AlertTriangle, Ruler } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { MdDashboard, MdLocationOn, MdEventNote, MdAccountBalance, MdRateReview, MdInsertDriveFile } from 'react-icons/md';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -4555,13 +4555,107 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
             {/* Message pour Appartement - pas de croquis */}
             {sectionType && formData.propertyCategory === 'Appartement' && (
-              <div className="p-4 border border-border/50 rounded-xl bg-muted/30 text-center space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Le croquis de parcelle n'est pas applicable pour un appartement.
-                </p>
-                <p className="text-xs text-muted-foreground/70">
-                  Les informations de localisation (étage, n° appartement) sont renseignées dans l'onglet Infos.
-                </p>
+              <div className="space-y-4">
+                <div className="p-4 border border-border/50 rounded-xl bg-muted/30 text-center space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Le croquis de parcelle n'est pas applicable pour un appartement.
+                  </p>
+                  <p className="text-xs text-muted-foreground/70">
+                    Les informations de localisation (étage, n° appartement) sont renseignées dans l'onglet Infos.
+                  </p>
+                </div>
+
+                {/* Bloc Mesures et orientation de l'appartement */}
+                <div className="p-4 border border-border/50 rounded-xl bg-background space-y-4">
+                  <h4 className="text-sm font-semibold flex items-center gap-2">
+                    <Ruler className="h-4 w-4 text-primary" />
+                    Mesures et orientation de l'appartement
+                  </h4>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Longueur (m)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        placeholder="Ex: 12"
+                        value={formData.apartmentLength || ''}
+                        onChange={(e) => handleInputChange('apartmentLength', parseFloat(e.target.value) || undefined)}
+                        className="h-9 text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Largeur (m)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        placeholder="Ex: 8"
+                        value={formData.apartmentWidth || ''}
+                        onChange={(e) => handleInputChange('apartmentWidth', parseFloat(e.target.value) || undefined)}
+                        className="h-9 text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Hauteur (m)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        placeholder="Ex: 3"
+                        value={formData.apartmentHeight || ''}
+                        onChange={(e) => handleInputChange('apartmentHeight', parseFloat(e.target.value) || undefined)}
+                        className="h-9 text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Superficie et périmètre calculés */}
+                  {formData.apartmentLength && formData.apartmentWidth && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-center">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Superficie</p>
+                        <p className="text-lg font-bold text-primary">
+                          {(formData.apartmentLength * formData.apartmentWidth).toFixed(1)} m²
+                        </p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-center">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Périmètre</p>
+                        <p className="text-lg font-bold text-primary">
+                          {(2 * (formData.apartmentLength + formData.apartmentWidth)).toFixed(1)} m
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {formData.apartmentLength && formData.apartmentWidth && formData.apartmentHeight && (
+                    <div className="p-3 rounded-lg bg-accent/30 border border-accent/50 text-center">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Volume</p>
+                      <p className="text-lg font-bold text-accent-foreground">
+                        {(formData.apartmentLength * formData.apartmentWidth * formData.apartmentHeight).toFixed(1)} m³
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Orientation */}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium">Orientation de l'appartement</Label>
+                    <Select
+                      value={formData.apartmentOrientation || ''}
+                      onValueChange={(value) => handleInputChange('apartmentOrientation', value)}
+                    >
+                      <SelectTrigger className="h-9 text-xs">
+                        <SelectValue placeholder="Sélectionner l'orientation" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {['Nord', 'Nord-Est', 'Est', 'Sud-Est', 'Sud', 'Sud-Ouest', 'Ouest', 'Nord-Ouest'].map((o) => (
+                          <SelectItem key={o} value={o} className="text-xs">{o}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
             )}
             
