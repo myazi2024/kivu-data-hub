@@ -332,6 +332,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
         handleFileChange={handleFileChange}
         removeFile={removeFile}
         getPicklistOptions={getPicklistOptions}
+        resetOwnersBlock={resetOwnersBlock}
       />
 
       {/* Construction section */}
