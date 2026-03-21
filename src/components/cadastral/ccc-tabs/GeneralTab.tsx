@@ -120,7 +120,8 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
   getPermitTypeRestrictions, showPermitWarning, highlightIncompletePermit,
   highlightRequiredFields, setHighlightRequiredFields,
   getPicklistOptions, getPicklistDependentOptions,
-  handleNextTab, toast
+  handleNextTab, toast,
+  resetTitleBlock, resetOwnersBlock, resetConstructionBlock
 }) => {
   return (
     <div className="space-y-4 sm:space-y-6 mt-4 sm:mt-6 animate-fade-in">
