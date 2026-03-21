@@ -57,11 +57,14 @@ const LocationTab: React.FC<LocationTabProps> = ({
       {/* Localisation de la parcelle */}
       <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
         <CardContent className="p-3 space-y-3">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="p-1.5 bg-primary/10 rounded-lg">
-              <MdLocationOn className="h-4 w-4 text-primary" />
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-primary/10 rounded-lg">
+                <MdLocationOn className="h-4 w-4 text-primary" />
+              </div>
+              <Label className="text-sm font-semibold">Localisation de la parcelle</Label>
             </div>
-            <Label className="text-sm font-semibold">Localisation de la parcelle</Label>
+            <BlockResetButton blockName="Localisation" onReset={resetLocationBlock} />
           </div>
 
           {/* Province */}

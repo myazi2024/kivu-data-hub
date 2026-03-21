@@ -224,20 +224,23 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                 </div>
                 <Label className="text-sm font-semibold">Hypothèque</Label>
               </div>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-transparent">
-                    <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-72 rounded-xl" align="end">
-                  <div className="space-y-2 text-xs">
-                    <h4 className="font-semibold text-sm">Statut hypothécaire</h4>
-                    <p className="text-muted-foreground">Indiquez si cette parcelle est grevée d'une hypothèque active.</p>
-                    <p className="text-muted-foreground"><strong>💡</strong> Cette information est importante pour les acheteurs potentiels.</p>
-                  </div>
-                </PopoverContent>
-              </Popover>
+              <div className="flex items-center gap-1">
+                <BlockResetButton blockName="Hypothèque" onReset={resetMortgageBlock} />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-transparent">
+                      <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72 rounded-xl" align="end">
+                    <div className="space-y-2 text-xs">
+                      <h4 className="font-semibold text-sm">Statut hypothécaire</h4>
+                      <p className="text-muted-foreground">Indiquez si cette parcelle est grevée d'une hypothèque active.</p>
+                      <p className="text-muted-foreground"><strong>💡</strong> Cette information est importante pour les acheteurs potentiels.</p>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
 
             <div className="border-2 rounded-2xl p-3 space-y-3 bg-card shadow-sm">

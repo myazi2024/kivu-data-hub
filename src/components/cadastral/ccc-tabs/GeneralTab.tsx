@@ -832,19 +832,22 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({
           </div>
           <Label className="text-sm font-semibold">Construction</Label>
         </div>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-transparent">
-              <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-72 rounded-xl" align="end">
-            <div className="space-y-2 text-xs">
-              <h4 className="font-semibold text-sm">Construction</h4>
-              <p className="text-muted-foreground">Renseignez les détails de votre construction : catégorie de bien, type, nature, matériaux, usage et autorisation de bâtir.</p>
-            </div>
-          </PopoverContent>
-        </Popover>
+        <div className="flex items-center gap-1">
+          <BlockResetButton blockName="Construction" onReset={resetConstructionBlock} />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-transparent">
+                <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72 rounded-xl" align="end">
+              <div className="space-y-2 text-xs">
+                <h4 className="font-semibold text-sm">Construction</h4>
+                <p className="text-muted-foreground">Renseignez les détails de votre construction : catégorie de bien, type, nature, matériaux, usage et autorisation de bâtir.</p>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
 
       {/* Property category */}
