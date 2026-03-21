@@ -814,7 +814,8 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({
   updateBuildingPermit, updateBuildingPermitFile, removeBuildingPermitFile,
   getPermitTypeRestrictions, showPermitWarning, highlightIncompletePermit,
   highlightRequiredFields, setHighlightRequiredFields,
-  getPicklistDependentOptions, toast
+  getPicklistDependentOptions, toast,
+  resetConstructionBlock
 }) => (
   <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
     <CardContent className="p-3 space-y-3">
