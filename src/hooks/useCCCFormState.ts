@@ -692,7 +692,7 @@ export const useCCCFormState = ({
 
     // BUILDING PERMITS
     if (!isTerrainNu && !isAppartement && formData.constructionType !== 'Terrain nu' && permitMode === 'existing') {
-      const hasValidExistingPermit = buildingPermits.some(permit => permit.permitNumber && permit.permitNumber.trim() !== '' && permit.issuingService && permit.issuingService.trim() !== '' && permit.issueDate && permit.issueDate.trim() !== '');
+      const hasValidExistingPermit = buildingPermits.some(permit => permit.permitNumber && permit.permitNumber.trim() !== '' && permit.issueDate && permit.issueDate.trim() !== '');
       if (!hasValidExistingPermit) missing.push({ field: 'buildingPermit', label: 'Informations du permis existant', tab: 'general' });
       buildingPermits.forEach((permit, idx) => {
         if (permit.permitNumber && permit.permitNumber.trim() !== '' && !permit.attachmentFile && !permit.existingAttachmentUrl) missing.push({ field: `permitAttachment_${idx}`, label: `Pièce jointe du permis #${idx + 1}`, tab: 'general' });
