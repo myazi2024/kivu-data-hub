@@ -1426,7 +1426,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               validityMonths: parseInt(permit.validityMonths),
               administrativeStatus: permit.administrativeStatus,
               issuingServiceContact: permit.issuingServiceContact || undefined,
-              attachmentUrl: attachmentUrl || undefined
+              attachmentUrl: attachmentUrl || permit.existingAttachmentUrl || undefined // FIX #9: preserve existing URL
             };
           })
         );
