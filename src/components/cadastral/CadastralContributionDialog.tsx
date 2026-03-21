@@ -1034,7 +1034,16 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     
     // Try specific key first (e.g. "Résidentielle_Durable"), then nature-only key (e.g. "Non bâti")
     const specificKey = `${formData.constructionType}_${formData.constructionNature}`;
-    const usages = usageMap[specificKey] || usageMap[formData.constructionNature] || [];
+    let usages = [...(usageMap[specificKey] || usageMap[formData.constructionNature] || [])];
+    
+    // Hardcode: always include "Location" for Résidentielle/Commerciale Durable/Semi-durable
+    const locationEligibleKeys = [
+      'Résidentielle_Durable', 'Résidentielle_Semi-durable',
+      'Commerciale_Durable', 'Commerciale_Semi-durable',
+    ];
+    if (locationEligibleKeys.includes(specificKey) && !usages.includes('Location')) {
+      usages.push('Location');
+    }
     
     setAvailableDeclaredUsages(usages);
     
