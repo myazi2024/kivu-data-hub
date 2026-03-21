@@ -2184,8 +2184,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   // ============================================
   const getMissingFields = useCallback(() => {
     const missing: Array<{ field: string; label: string; tab: string }> = [];
+    const isTerrainNu = formData.constructionType === 'Terrain nu';
+    const isAppartement = formData.propertyCategory === 'Appartement';
     
     // ===== ONGLET GÉNÉRAL (Infos) =====
+    // --- Titre de propriété ---
     if (!formData.propertyTitleType || formData.propertyTitleType.trim() === '') {
       missing.push({ field: 'propertyTitleType', label: 'Type de titre de propriété', tab: 'general' });
     }
@@ -2193,25 +2196,72 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       missing.push({ field: 'customTitleName', label: 'Nom du titre de propriété (Autre)', tab: 'general' });
     }
     
-    const hasValidOwnerCheck = currentOwners.some(owner => 
-      owner.lastName && owner.lastName.trim() !== '' && 
-      owner.firstName && owner.firstName.trim() !== ''
-    );
-    if (!hasValidOwnerCheck) {
-      missing.push({ field: 'currentOwner', label: 'Nom et prénom du propriétaire', tab: 'general' });
-    }
-    
-    if (formData.isTitleInCurrentOwnerName === false && formData.titleIssueDate) {
-      const firstOwner = currentOwners[0];
-      if (firstOwner?.since && new Date(firstOwner.since) < new Date(formData.titleIssueDate)) {
-        missing.push({ field: 'ownerSince', label: 'Date "Propriétaire depuis" doit être ≥ date de délivrance', tab: 'general' });
+    // --- Propriétaire actuel ---
+    const firstOwner = currentOwners[0];
+    if (firstOwner?.legalStatus === 'Personne physique') {
+      if (!firstOwner.lastName || firstOwner.lastName.trim() === '') {
+        missing.push({ field: 'ownerLastName', label: 'Nom du propriétaire', tab: 'general' });
+      }
+      if (!firstOwner.firstName || firstOwner.firstName.trim() === '') {
+        missing.push({ field: 'ownerFirstName', label: 'Prénom du propriétaire', tab: 'general' });
+      }
+      if (!firstOwner.gender) {
+        missing.push({ field: 'ownerGender', label: 'Sexe du propriétaire', tab: 'general' });
+      }
+    } else if (firstOwner?.legalStatus === 'Personne morale') {
+      if (!firstOwner.entityType) {
+        missing.push({ field: 'ownerEntityType', label: "Type d'entreprise du propriétaire", tab: 'general' });
       }
     }
+    if (!firstOwner?.since) {
+      missing.push({ field: 'ownerSince', label: 'Date "Propriétaire depuis"', tab: 'general' });
+    }
     
+    // Validation chronologique titre/propriétaire
+    if (formData.isTitleInCurrentOwnerName === false && formData.titleIssueDate) {
+      if (firstOwner?.since && new Date(firstOwner.since) < new Date(formData.titleIssueDate)) {
+        missing.push({ field: 'ownerSinceDate', label: 'Date "Propriétaire depuis" doit être ≥ date de délivrance', tab: 'general' });
+      }
+    }
     if (formData.isTitleInCurrentOwnerName === true && formData.titleIssueDate) {
       const firstPreviousOwner = previousOwners[0];
       if (firstPreviousOwner?.startDate && new Date(firstPreviousOwner.startDate) > new Date(formData.titleIssueDate)) {
         missing.push({ field: 'previousOwnerStartDate', label: `Date début Ancien #1 doit être ≤ date de ${formData.leaseType === 'renewal' ? 'renouvellement' : 'délivrance'}`, tab: 'history' });
+      }
+    }
+    
+    // --- Construction ---
+    if (!formData.propertyCategory) {
+      missing.push({ field: 'propertyCategory', label: 'Catégorie de bien', tab: 'general' });
+    }
+    if (!formData.constructionType) {
+      missing.push({ field: 'constructionType', label: 'Type de construction', tab: 'general' });
+    }
+    if (!formData.constructionNature) {
+      missing.push({ field: 'constructionNature', label: 'Nature de construction', tab: 'general' });
+    }
+    if (!formData.declaredUsage) {
+      missing.push({ field: 'declaredUsage', label: 'Usage déclaré', tab: 'general' });
+    }
+    // Matériaux - obligatoire si construction bâtie
+    if (!isTerrainNu && formData.constructionNature && formData.constructionNature !== 'Non bâti' && !formData.constructionMaterials) {
+      missing.push({ field: 'constructionMaterials', label: 'Matériaux de construction', tab: 'general' });
+    }
+    // Standing - obligatoire si construction bâtie
+    if (!isTerrainNu && formData.constructionNature && formData.constructionNature !== 'Non bâti' && !formData.standing) {
+      missing.push({ field: 'standing', label: 'Standing', tab: 'general' });
+    }
+    // Année de construction - obligatoire si pas terrain nu
+    if (!isTerrainNu && formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && !formData.constructionYear) {
+      missing.push({ field: 'constructionYear', label: 'Année de construction', tab: 'general' });
+    }
+    // Appartement: numéro et étage obligatoires
+    if (isAppartement) {
+      if (!formData.apartmentNumber) {
+        missing.push({ field: 'apartmentNumber', label: "Numéro de l'appartement", tab: 'general' });
+      }
+      if (!formData.floorNumber) {
+        missing.push({ field: 'floorNumber', label: "Numéro de l'étage", tab: 'general' });
       }
     }
     
@@ -2231,6 +2281,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       if (!formData.commune || formData.commune.trim() === '') missing.push({ field: 'commune', label: 'Commune', tab: 'location' });
       if (!formData.quartier || formData.quartier.trim() === '') missing.push({ field: 'quartier', label: 'Quartier', tab: 'location' });
       if (!formData.avenue || formData.avenue.trim() === '') missing.push({ field: 'avenue', label: 'Avenue', tab: 'location' });
+      if (!formData.houseNumber) missing.push({ field: 'houseNumber', label: 'Numéro de parcelle (adresse)', tab: 'location' });
     } else if (sectionType === 'rurale') {
       if (!formData.territoire || formData.territoire.trim() === '') missing.push({ field: 'territoire', label: 'Territoire', tab: 'location' });
       if (!formData.collectivite || formData.collectivite.trim() === '') missing.push({ field: 'collectivite', label: 'Collectivité', tab: 'location' });
@@ -2238,9 +2289,65 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       if (!formData.village || formData.village.trim() === '') missing.push({ field: 'village', label: 'Village', tab: 'location' });
     }
     
+    // Dimensions parcelle (au moins un côté renseigné) - sauf appartement
+    if (!isAppartement) {
+      const hasAnySideLength = parcelSides.some(s => s.length && parseFloat(s.length) > 0);
+      if (!hasAnySideLength) {
+        missing.push({ field: 'parcelSides', label: 'Dimensions de la parcelle (au moins un côté)', tab: 'location' });
+      }
+    }
+    
+    // Appartement: mesures obligatoires
+    if (isAppartement) {
+      if (!formData.apartmentLength || formData.apartmentLength <= 0) {
+        missing.push({ field: 'apartmentLength', label: "Longueur de l'appartement", tab: 'location' });
+      }
+      if (!formData.apartmentWidth || formData.apartmentWidth <= 0) {
+        missing.push({ field: 'apartmentWidth', label: "Largeur de l'appartement", tab: 'location' });
+      }
+      if (!formData.apartmentOrientation) {
+        missing.push({ field: 'apartmentOrientation', label: "Orientation de l'appartement", tab: 'location' });
+      }
+    }
+    
+    // ===== ONGLET HISTORIQUE =====
+    // Au moins un ancien propriétaire avec nom renseigné
+    const hasValidPreviousOwner = previousOwners.some(o => o.name && o.name.trim() !== '');
+    if (!hasValidPreviousOwner) {
+      missing.push({ field: 'previousOwner', label: 'Historique de propriété (au moins un ancien propriétaire)', tab: 'history' });
+    }
+    
+    // ===== ONGLET OBLIGATIONS - TAXES =====
+    // Vérifier que l'impôt foncier annuel est renseigné pour les 3 dernières années
+    const currentYear = new Date().getFullYear();
+    const requiredYears = [currentYear - 1, currentYear - 2, currentYear - 3];
+    const requiredTaxTypes = ['Impôt foncier annuel'];
+    if (formData.declaredUsage === 'Location') {
+      requiredTaxTypes.push('Impôt sur les revenus locatifs');
+    }
+    
+    for (const year of requiredYears) {
+      for (const taxType of requiredTaxTypes) {
+        const found = taxRecords.find(t => t.taxYear === year.toString() && t.taxType === taxType && t.taxAmount);
+        if (!found) {
+          missing.push({ field: `tax_${taxType}_${year}`, label: `${taxType} ${year}`, tab: 'obligations' });
+        }
+      }
+    }
+    
+    // ===== ONGLET OBLIGATIONS - HYPOTHÈQUE =====
+    if (hasMortgage === null) {
+      missing.push({ field: 'hasMortgage', label: 'Statut hypothécaire (Oui/Non)', tab: 'obligations' });
+    }
+    if (hasMortgage === true) {
+      const hasValidMortgage = mortgageRecords.some(m => m.mortgageAmount && m.creditorName);
+      if (!hasValidMortgage) {
+        missing.push({ field: 'mortgageDetails', label: "Détails de l'hypothèque (montant et créancier)", tab: 'obligations' });
+      }
+    }
+    
     // ===== VALIDATION DE L'AUTORISATION DE BÂTIR =====
-    const isTerrainNu = formData.constructionType === 'Terrain nu';
-    if (!isTerrainNu && permitMode === 'existing') {
+    if (!isTerrainNu && !isAppartement && formData.constructionType !== 'Terrain nu' && permitMode === 'existing') {
       const hasValidExistingPermit = buildingPermits.some(permit => 
         permit.permitNumber && permit.permitNumber.trim() !== '' &&
         permit.issuingService && permit.issuingService.trim() !== '' &&
@@ -2269,7 +2376,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     }
     
     return missing;
-  }, [formData, customTitleName, currentOwners, previousOwners, sectionType, permitMode, buildingPermits]);
+  }, [formData, customTitleName, currentOwners, previousOwners, sectionType, permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, mortgageRecords]);
 
   // Fonction pour vérifier si le formulaire est valide pour soumission
   const isFormValidForSubmission = () => {
