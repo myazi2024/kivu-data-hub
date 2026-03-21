@@ -2933,7 +2933,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
         <Tabs value={activeTab} className="w-full" onValueChange={handleTabChange}>
           <div className="sticky top-0 z-20 bg-background px-2 sm:px-4 pt-2 pb-1.5 border-b shadow-sm">
-            <TabsList className="grid w-full grid-cols-5 h-10 bg-muted/50 p-0.5 rounded-xl shadow-inner gap-0.5">
+             <TabsList className="grid w-full grid-cols-5 h-10 bg-muted/50 p-0.5 rounded-xl shadow-inner gap-0.5">
               <TabsTrigger 
                 value="general" 
                 className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-sm font-semibold py-1.5 rounded-lg"
@@ -2942,25 +2942,29 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </TabsTrigger>
               <TabsTrigger 
                 value="location" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-sm font-semibold py-1.5 rounded-lg"
+                disabled={!isTabAccessible('location')}
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-sm font-semibold py-1.5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Lieu
               </TabsTrigger>
               <TabsTrigger 
                 value="history" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-sm font-semibold py-1.5 rounded-lg"
+                disabled={!isTabAccessible('history')}
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-sm font-semibold py-1.5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Passé
               </TabsTrigger>
               <TabsTrigger 
                 value="obligations" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-sm font-semibold py-1.5 rounded-lg"
+                disabled={!isTabAccessible('obligations')}
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-sm font-semibold py-1.5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Taxes
               </TabsTrigger>
               <TabsTrigger 
                 value="review" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-sm font-semibold py-1.5 rounded-lg"
+                disabled={!isTabAccessible('review')}
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-sm font-semibold py-1.5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Envoi
               </TabsTrigger>
