@@ -1517,7 +1517,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         // For "Autre", store the custom title name as the effective property_title_type
         propertyTitleType: getEffectiveTitleName(formData.propertyTitleType, customTitleName) || formData.propertyTitleType,
         parcelType: sectionType === 'urbaine' ? 'SU' as const : sectionType === 'rurale' ? 'SR' as const : undefined, // Type de parcelle (Section Urbaine/Rurale)
-        currentOwners: currentOwners.filter(o => o.lastName && o.firstName), // Ne garder que les propriétaires avec nom et prénom
+        currentOwners: currentOwners.filter(o => o.lastName && (o.firstName || o.legalStatus === 'Personne morale')), // FIX #10: Personne morale n'a pas besoin de firstName
         ownershipHistory: ownershipHistoryData.length > 0 ? ownershipHistoryData as any : undefined,
         // FIX: Preserve existing URLs when no new file is uploaded in edit mode
         ownerDocumentUrl: ownerDocUrl || existingOwnerDocUrl || undefined,
