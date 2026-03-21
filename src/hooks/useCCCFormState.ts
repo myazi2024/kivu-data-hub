@@ -405,8 +405,8 @@ export const useCCCFormState = ({
 
   // ─── CRUD: Tax records ───
   const addTaxRecord = () => {
-    const firstTax = taxRecords[0];
-    if (!firstTax?.taxType || !firstTax?.taxYear || !firstTax?.taxAmount || !firstTax?.paymentStatus) {
+    const lastTax = taxRecords[taxRecords.length - 1];
+    if (!lastTax?.taxType || !lastTax?.taxYear || !lastTax?.taxAmount || !lastTax?.paymentStatus) {
       setShowTaxWarning(true); setHighlightIncompleteTax(true);
       setTimeout(() => setShowTaxWarning(false), 5000);
       setTimeout(() => setHighlightIncompleteTax(false), 3000);
