@@ -91,7 +91,7 @@ interface GeneralTabProps {
   setHighlightRequiredFields: (v: boolean) => void;
   // Picklists
   getPicklistOptions: (key: string) => string[];
-  getPicklistDependentOptions: (parent: string, parentValue: string) => string[];
+  getPicklistDependentOptions: (key: string) => Record<string, string[]>;
   // Navigation
   handleNextTab: (current: string, next: string) => void;
   // Toast
