@@ -48,30 +48,6 @@ const HistoryTab: React.FC<HistoryTabProps> = ({
 }) => {
   return (
     <div className="space-y-3 mt-4 animate-fade-in">
-      {/* Auto-fill alert */}
-      {formData.isTitleInCurrentOwnerName === false && formData.titleIssueDate && (
-        <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 overflow-hidden">
-          <CardContent className="p-3">
-            <div className="flex items-start gap-2">
-              <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-              <div className="space-y-1.5">
-                <p className="text-xs font-medium text-blue-800 dark:text-blue-200">Remplissage automatique activé</p>
-                <p className="text-xs text-blue-700 dark:text-blue-300">
-                  Conformément à votre indication que le titre foncier n'est pas au nom du propriétaire actuel, 
-                  le premier ancien propriétaire correspond à la personne qui a cédé le bien. Les dates sont 
-                  pré-remplies automatiquement :
-                </p>
-                <ul className="text-xs text-blue-700 dark:text-blue-300 list-disc list-inside space-y-0.5">
-                  <li><strong>Date début</strong> : Date de délivrance du titre ({formData.titleIssueDate ? new Date(formData.titleIssueDate).toLocaleDateString('fr-FR') : 'Non renseignée'})</li>
-                  <li><strong>Date fin</strong> : Date d'acquisition par le propriétaire actuel ({currentOwners[0]?.since ? new Date(currentOwners[0].since).toLocaleDateString('fr-FR') : 'Non renseignée'})</li>
-                </ul>
-                <p className="text-xs text-blue-600 dark:text-blue-400 italic">Vous pouvez modifier ces informations si nécessaire.</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Previous owners card */}
       <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
         <CardContent className="p-3 space-y-3">
@@ -93,13 +69,6 @@ const HistoryTab: React.FC<HistoryTabProps> = ({
                 <div className="space-y-2 text-xs">
                   <h4 className="font-semibold text-sm">Historique des propriétaires</h4>
                   <p className="text-muted-foreground">Documentez les anciens propriétaires pour établir la chaîne de propriété complète.</p>
-                  {formData.isTitleInCurrentOwnerName === false && (
-                    <div className="p-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
-                      <p className="text-blue-700 dark:text-blue-300">
-                        <strong>📋 Auto-remplissage :</strong> Le premier ancien propriétaire est la personne inscrite sur le titre foncier qui a vendu au propriétaire actuel.
-                      </p>
-                    </div>
-                  )}
                   <p className="text-muted-foreground"><strong>💡</strong> Ordonnez du plus récent au plus ancien.</p>
                 </div>
               </PopoverContent>
@@ -123,7 +92,7 @@ const HistoryTab: React.FC<HistoryTabProps> = ({
               {/* Legal status */}
               <div className="space-y-1">
                 <Label className="text-sm font-medium">Statut</Label>
-                <Select value={owner.legalStatus} onValueChange={(value) => updatePreviousOwner(index, { legalStatus: value, entityType: '', entitySubType: '', entitySubTypeOther: '', stateExploitedBy: '' })} disabled={formData.isTitleInCurrentOwnerName === false && index === 1}>
+                <Select value={owner.legalStatus} onValueChange={(value) => updatePreviousOwner(index, { legalStatus: value, entityType: '', entitySubType: '', entitySubTypeOther: '', stateExploitedBy: '' })}>
                   <SelectTrigger className="h-10 text-sm rounded-xl"><SelectValue /></SelectTrigger>
                   <SelectContent className="rounded-xl">
                     {getPicklistOptions('picklist_legal_status').map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
@@ -133,30 +102,18 @@ const HistoryTab: React.FC<HistoryTabProps> = ({
 
               {/* Fields based on legal status */}
               {owner.legalStatus === 'Personne morale' ? (
-                <PreviousOwnerPersonneMorale owner={owner} index={index} updatePreviousOwner={updatePreviousOwner} getPicklistOptions={getPicklistOptions} formData={formData} />
+                <PreviousOwnerPersonneMorale owner={owner} index={index} updatePreviousOwner={updatePreviousOwner} getPicklistOptions={getPicklistOptions} />
               ) : owner.legalStatus === 'État' ? (
                 <div className="space-y-2">
                   <div className="space-y-1">
                     <Label className="text-sm font-medium">Exploitée par</Label>
-                    <SuggestivePicklist picklistKey="state_agencies_drc" label="" placeholder="Rechercher un service de l'État..." maxSelection={1} selectedValues={owner.stateExploitedBy ? [owner.stateExploitedBy] : []} onSelectionChange={(values) => { const val = values[0] || ''; updatePreviousOwner(index, { stateExploitedBy: val, name: val }); }} disabled={formData.isTitleInCurrentOwnerName === false && index === 1} />
+                    <SuggestivePicklist picklistKey="state_agencies_drc" label="" placeholder="Rechercher un service de l'État..." maxSelection={1} selectedValues={owner.stateExploitedBy ? [owner.stateExploitedBy] : []} onSelectionChange={(values) => { const val = values[0] || ''; updatePreviousOwner(index, { stateExploitedBy: val, name: val }); }} />
                   </div>
                 </div>
               ) : (
                 <div className="space-y-1">
-                  <div className="flex items-center gap-1">
-                    <Label className="text-sm font-medium">Nom complet</Label>
-                    {formData.isTitleInCurrentOwnerName === false && index === 1 && (
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button type="button" variant="ghost" size="sm" className="h-4 w-4 p-0 rounded-full"><Info className="h-3 w-3 text-primary" /></Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-64 rounded-xl text-xs">
-                          <p className="text-muted-foreground">Pré-rempli avec le nom du propriétaire actuel. Pour modifier, rendez-vous dans l'onglet "Infos".</p>
-                        </PopoverContent>
-                      </Popover>
-                    )}
-                  </div>
-                  <Input placeholder="ex: Jean Mukendi" value={owner.name} onChange={(e) => updatePreviousOwner(index, 'name', e.target.value)} disabled={formData.isTitleInCurrentOwnerName === false && index === 1} className={cn("h-10 text-sm rounded-xl", formData.isTitleInCurrentOwnerName === false && index === 1 && "cursor-not-allowed opacity-70")} />
+                  <Label className="text-sm font-medium">Nom complet</Label>
+                  <Input placeholder="ex: Jean Mukendi" value={owner.name} onChange={(e) => updatePreviousOwner(index, 'name', e.target.value)} className="h-10 text-sm rounded-xl" />
                 </div>
               )}
 
@@ -267,12 +224,11 @@ const PreviousOwnerPersonneMorale: React.FC<{
   owner: PreviousOwner; index: number;
   updatePreviousOwner: (i: number, f: string | Record<string, string>, v?: string) => void;
   getPicklistOptions: (key: string) => string[];
-  formData: CadastralContributionData;
-}> = ({ owner, index, updatePreviousOwner, getPicklistOptions, formData }) => (
+}> = ({ owner, index, updatePreviousOwner, getPicklistOptions }) => (
   <div className="space-y-2">
     <div className="space-y-1">
       <Label className="text-sm font-medium">Type d'entreprise *</Label>
-      <Select value={owner.entityType || ''} onValueChange={(value) => updatePreviousOwner(index, { entityType: value, entitySubType: '', entitySubTypeOther: '' })} disabled={formData.isTitleInCurrentOwnerName === false && index === 1}>
+      <Select value={owner.entityType || ''} onValueChange={(value) => updatePreviousOwner(index, { entityType: value, entitySubType: '', entitySubTypeOther: '' })}>
         <SelectTrigger className="h-10 text-sm rounded-xl"><SelectValue placeholder="Sélectionner" /></SelectTrigger>
         <SelectContent className="rounded-xl">
           <SelectItem value="Société">Société</SelectItem>
@@ -284,7 +240,7 @@ const PreviousOwnerPersonneMorale: React.FC<{
     {owner.entityType === 'Société' && (
       <div className="space-y-1 animate-fade-in">
         <Label className="text-sm font-medium">Forme juridique *</Label>
-        <Select value={owner.entitySubType || ''} onValueChange={(value) => updatePreviousOwner(index, { entitySubType: value, ...(value !== 'Autre' ? { entitySubTypeOther: '' } : {}) })} disabled={formData.isTitleInCurrentOwnerName === false && index === 1}>
+        <Select value={owner.entitySubType || ''} onValueChange={(value) => updatePreviousOwner(index, { entitySubType: value, ...(value !== 'Autre' ? { entitySubTypeOther: '' } : {}) })}>
           <SelectTrigger className="h-10 text-sm rounded-xl"><SelectValue placeholder="Sélectionner" /></SelectTrigger>
           <SelectContent className="rounded-xl">
             {['Entreprise individuelle (Ets)', 'Société en Participation (SEP)', 'Société à Responsabilité Limitée (SARL)', 'Société Anonyme (SA)', 'Société par Actions Simplifiée (SAS)', 'Société en Nom Collectif (SNC)', 'Société en Commandite Simple (SCS)', "Groupement d'Intérêt Économique (GIE)", 'Autre'].map(opt => (
@@ -293,7 +249,7 @@ const PreviousOwnerPersonneMorale: React.FC<{
           </SelectContent>
         </Select>
         {owner.entitySubType === 'Autre' && (
-          <Input placeholder="Précisez la forme juridique" value={owner.entitySubTypeOther || ''} onChange={(e) => updatePreviousOwner(index, 'entitySubTypeOther', e.target.value)} className="h-10 text-sm rounded-xl mt-1" disabled={formData.isTitleInCurrentOwnerName === false && index === 1} />
+          <Input placeholder="Précisez la forme juridique" value={owner.entitySubTypeOther || ''} onChange={(e) => updatePreviousOwner(index, 'entitySubTypeOther', e.target.value)} className="h-10 text-sm rounded-xl mt-1" />
         )}
       </div>
     )}
@@ -301,34 +257,22 @@ const PreviousOwnerPersonneMorale: React.FC<{
     {owner.entityType === 'Association' && (
       <div className="space-y-1 animate-fade-in">
         <Label className="text-sm font-medium">Type d'association *</Label>
-        <Select value={owner.entitySubType || ''} onValueChange={(value) => updatePreviousOwner(index, { entitySubType: value, ...(value !== 'Autre' ? { entitySubTypeOther: '' } : {}) })} disabled={formData.isTitleInCurrentOwnerName === false && index === 1}>
+        <Select value={owner.entitySubType || ''} onValueChange={(value) => updatePreviousOwner(index, { entitySubType: value, ...(value !== 'Autre' ? { entitySubTypeOther: '' } : {}) })}>
           <SelectTrigger className="h-10 text-sm rounded-xl"><SelectValue placeholder="Sélectionner" /></SelectTrigger>
           <SelectContent className="rounded-xl">
             {getPicklistOptions('picklist_entity_subtype_association').map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
           </SelectContent>
         </Select>
         {owner.entitySubType === 'Autre' && (
-          <Input placeholder="Précisez le type d'association" value={owner.entitySubTypeOther || ''} onChange={(e) => updatePreviousOwner(index, 'entitySubTypeOther', e.target.value)} className="h-10 text-sm rounded-xl mt-1" disabled={formData.isTitleInCurrentOwnerName === false && index === 1} />
+          <Input placeholder="Précisez le type d'association" value={owner.entitySubTypeOther || ''} onChange={(e) => updatePreviousOwner(index, 'entitySubTypeOther', e.target.value)} className="h-10 text-sm rounded-xl mt-1" />
         )}
       </div>
     )}
 
     {owner.entityType && (
       <div className="space-y-1 animate-fade-in">
-        <div className="flex items-center gap-1">
-          <Label className="text-sm font-medium">{owner.entityType === 'Association' ? 'Dénomination' : 'Raison sociale'}</Label>
-          {formData.isTitleInCurrentOwnerName === false && index === 1 && (
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button type="button" variant="ghost" size="sm" className="h-4 w-4 p-0 rounded-full"><Info className="h-3 w-3 text-primary" /></Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-64 rounded-xl text-xs">
-                <p className="text-muted-foreground">Pré-rempli depuis l'onglet "Infos". Pour modifier, rendez-vous dans l'onglet "Infos".</p>
-              </PopoverContent>
-            </Popover>
-          )}
-        </div>
-        <Input placeholder={owner.entityType === 'Association' ? "Dénomination de l'association" : "Dénomination officielle"} value={owner.name} onChange={(e) => updatePreviousOwner(index, 'name', e.target.value)} disabled={formData.isTitleInCurrentOwnerName === false && index === 1} className={cn("h-10 text-sm rounded-xl", formData.isTitleInCurrentOwnerName === false && index === 1 && "cursor-not-allowed opacity-70")} />
+        <Label className="text-sm font-medium">{owner.entityType === 'Association' ? 'Dénomination' : 'Raison sociale'}</Label>
+        <Input placeholder={owner.entityType === 'Association' ? "Dénomination de l'association" : "Dénomination officielle"} value={owner.name} onChange={(e) => updatePreviousOwner(index, 'name', e.target.value)} className="h-10 text-sm rounded-xl" />
       </div>
     )}
   </div>
