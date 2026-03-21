@@ -6,6 +6,7 @@ import { MdRateReview } from 'react-icons/md';
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
 import { PROPERTY_TITLE_TYPES } from '../PropertyTitleTypeSelect';
 import { CurrentOwner, BuildingPermit } from './GeneralTab';
+import { AdditionalConstruction } from '../AdditionalConstructionBlock';
 import { PreviousOwner } from './HistoryTab';
 import { TaxRecord, MortgageRecord } from './ObligationsTab';
 
