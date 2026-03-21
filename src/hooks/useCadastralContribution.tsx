@@ -108,6 +108,7 @@ export interface CadastralContributionData {
     paymentDate?: string;
     receiptUrl?: string;
     taxType?: string;
+    remainingAmount?: number;
   }>;
   mortgageHistory?: Array<{
     mortgageAmountUsd: number;
