@@ -2194,6 +2194,20 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (formData.propertyTitleType === 'Autre' && (!customTitleName || customTitleName.trim() === '')) {
       missing.push({ field: 'customTitleName', label: 'Nom du titre de propriété (Autre)', tab: 'general' });
     }
+    // Question "Ce titre est-il au nom du propriétaire actuel?" obligatoire si N° titre renseigné
+    if (formData.titleReferenceNumber && formData.titleReferenceNumber.trim() !== '' && formData.isTitleInCurrentOwnerName === undefined) {
+      missing.push({ field: 'isTitleInCurrentOwnerName', label: 'Ce titre est-il au nom du propriétaire actuel ?', tab: 'general' });
+    }
+    
+    // --- Pièces jointes obligatoires (onglet général) ---
+    // Document du propriétaire
+    if (!ownerDocFile && !(editingContributionId && formData.ownerDocumentUrl)) {
+      missing.push({ field: 'ownerDocFile', label: 'Pièce jointe du propriétaire', tab: 'general' });
+    }
+    // Document du titre de propriété (au moins un)
+    if (titleDocFiles.length === 0 && !(editingContributionId && formData.titleDocumentUrl)) {
+      missing.push({ field: 'titleDocFiles', label: 'Pièce jointe du titre de propriété', tab: 'general' });
+    }
     
     // --- Propriétaire actuel ---
     const firstOwner = currentOwners[0];
@@ -2334,6 +2348,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       }
     }
     
+    // Pièces jointes des taxes obligatoires pour chaque taxe renseignée
+    taxRecords.forEach((tax, idx) => {
+      if (tax.taxAmount && tax.taxYear && !tax.receiptFile) {
+        missing.push({ field: `taxReceipt_${idx}`, label: `Reçu de ${tax.taxType} ${tax.taxYear}`, tab: 'obligations' });
+      }
+    });
+    
     // ===== ONGLET OBLIGATIONS - HYPOTHÈQUE =====
     if (hasMortgage === null) {
       missing.push({ field: 'hasMortgage', label: 'Statut hypothécaire (Oui/Non)', tab: 'obligations' });
@@ -2343,6 +2364,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       if (!hasValidMortgage) {
         missing.push({ field: 'mortgageDetails', label: "Détails de l'hypothèque (montant et créancier)", tab: 'obligations' });
       }
+      // Pièces jointes hypothèque obligatoires
+      mortgageRecords.forEach((m, idx) => {
+        if (m.mortgageAmount && m.creditorName && !m.receiptFile) {
+          missing.push({ field: `mortgageReceipt_${idx}`, label: `Document hypothèque #${idx + 1}`, tab: 'obligations' });
+        }
+      });
     }
     
     // ===== VALIDATION DE L'AUTORISATION DE BÂTIR =====
@@ -2355,6 +2382,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       if (!hasValidExistingPermit) {
         missing.push({ field: 'buildingPermit', label: 'Informations du permis existant', tab: 'general' });
       }
+      // Pièce jointe du permis obligatoire
+      buildingPermits.forEach((permit, idx) => {
+        if (permit.permitNumber && permit.permitNumber.trim() !== '' && !permit.attachmentFile) {
+          missing.push({ field: `permitAttachment_${idx}`, label: `Pièce jointe du permis #${idx + 1}`, tab: 'general' });
+        }
+      });
       if (formData.constructionYear) {
         const invalidPermit = buildingPermits.find(permit => {
           if (!permit.issueDate) return false;
@@ -2375,7 +2408,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     }
     
     return missing;
-  }, [formData, customTitleName, currentOwners, previousOwners, sectionType, permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, mortgageRecords]);
+  }, [formData, customTitleName, currentOwners, previousOwners, sectionType, permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, mortgageRecords, ownerDocFile, titleDocFiles, editingContributionId]);
 
   // Fonction pour obtenir les champs manquants d'un onglet spécifique
   const getMissingFieldsForTab = useCallback((tab: string) => {
