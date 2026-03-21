@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Plus, Trash2, Info, X, ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react';
+import BlockResetButton from '../BlockResetButton';
 import { MdAccountBalance, MdInsertDriveFile } from 'react-icons/md';
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
 
@@ -61,6 +62,8 @@ interface ObligationsTabProps {
   // Navigation
   handleTabChange: (tab: string) => void;
   handleNextTab: (current: string, next: string) => void;
+  resetTaxBlock: () => void;
+  resetMortgageBlock: () => void;
 }
 
 const ObligationsTab: React.FC<ObligationsTabProps> = ({
@@ -70,7 +73,8 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
   hasMortgage, setHasMortgage, mortgageRecords, setMortgageRecords,
   updateMortgageRecord, addMortgageRecord, removeMortgageRecord,
   handleMortgageFileChange, removeMortgageFile, showMortgageWarning, highlightIncompleteMortgage,
-  getPicklistOptions, handleTabChange, handleNextTab
+  getPicklistOptions, handleTabChange, handleNextTab,
+  resetTaxBlock, resetMortgageBlock
 }) => {
   return (
     <div className="space-y-3 mt-4 animate-fade-in">
@@ -91,20 +95,23 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                 </div>
                 <Label className="text-sm font-semibold">Historique fiscal</Label>
               </div>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-transparent">
-                    <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-72 rounded-xl" align="end">
-                  <div className="space-y-2 text-xs">
-                    <h4 className="font-semibold text-sm">Taxes (optionnel)</h4>
-                    <p className="text-muted-foreground">Documentez les taxes payées pour prouver la conformité fiscale.</p>
-                    <p className="text-muted-foreground"><strong>💡</strong> Joignez les reçus si possible.</p>
-                  </div>
-                </PopoverContent>
-              </Popover>
+              <div className="flex items-center gap-1">
+                <BlockResetButton blockName="Historique fiscal" onReset={resetTaxBlock} />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-transparent">
+                      <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72 rounded-xl" align="end">
+                    <div className="space-y-2 text-xs">
+                      <h4 className="font-semibold text-sm">Taxes (optionnel)</h4>
+                      <p className="text-muted-foreground">Documentez les taxes payées pour prouver la conformité fiscale.</p>
+                      <p className="text-muted-foreground"><strong>💡</strong> Joignez les reçus si possible.</p>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
 
             {taxRecords.map((tax, index) => (
@@ -217,20 +224,23 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                 </div>
                 <Label className="text-sm font-semibold">Hypothèque</Label>
               </div>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-transparent">
-                    <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-72 rounded-xl" align="end">
-                  <div className="space-y-2 text-xs">
-                    <h4 className="font-semibold text-sm">Statut hypothécaire</h4>
-                    <p className="text-muted-foreground">Indiquez si cette parcelle est grevée d'une hypothèque active.</p>
-                    <p className="text-muted-foreground"><strong>💡</strong> Cette information est importante pour les acheteurs potentiels.</p>
-                  </div>
-                </PopoverContent>
-              </Popover>
+              <div className="flex items-center gap-1">
+                <BlockResetButton blockName="Hypothèque" onReset={resetMortgageBlock} />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-transparent">
+                      <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72 rounded-xl" align="end">
+                    <div className="space-y-2 text-xs">
+                      <h4 className="font-semibold text-sm">Statut hypothécaire</h4>
+                      <p className="text-muted-foreground">Indiquez si cette parcelle est grevée d'une hypothèque active.</p>
+                      <p className="text-muted-foreground"><strong>💡</strong> Cette information est importante pour les acheteurs potentiels.</p>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
 
             <div className="border-2 rounded-2xl p-3 space-y-3 bg-card shadow-sm">

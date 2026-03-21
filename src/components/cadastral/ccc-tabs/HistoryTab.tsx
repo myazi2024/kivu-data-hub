@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Plus, Trash2, Info, ChevronRight, ChevronLeft } from 'lucide-react';
 import { MdEventNote } from 'react-icons/md';
+import BlockResetButton from '../BlockResetButton';
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
 import SuggestivePicklist from '../SuggestivePicklist';
 import { CurrentOwner } from './GeneralTab';
@@ -38,13 +39,15 @@ interface HistoryTabProps {
   handleTabChange: (tab: string) => void;
   handleNextTab: (current: string, next: string) => void;
   toast: (opts: any) => void;
+  resetPreviousOwnersBlock: () => void;
 }
 
 const HistoryTab: React.FC<HistoryTabProps> = ({
   formData, currentOwners, previousOwners,
   updatePreviousOwner, addPreviousOwner, removePreviousOwner,
   highlightIncompletePreviousOwner, showCurrentOwnerRequiredWarning, showPreviousOwnerWarning,
-  getPicklistOptions, handleTabChange, handleNextTab, toast
+  getPicklistOptions, handleTabChange, handleNextTab, toast,
+  resetPreviousOwnersBlock
 }) => {
   return (
     <div className="space-y-3 mt-4 animate-fade-in">
@@ -59,20 +62,23 @@ const HistoryTab: React.FC<HistoryTabProps> = ({
               </div>
               <Label className="text-sm font-semibold">Anciens propriétaires</Label>
             </div>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-transparent">
-                  <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 rounded-xl" align="end">
-                <div className="space-y-2 text-xs">
-                  <h4 className="font-semibold text-sm">Historique des propriétaires</h4>
-                  <p className="text-muted-foreground">Documentez les anciens propriétaires pour établir la chaîne de propriété complète.</p>
-                  <p className="text-muted-foreground"><strong>💡</strong> Ordonnez du plus récent au plus ancien.</p>
-                </div>
-              </PopoverContent>
-            </Popover>
+            <div className="flex items-center gap-1">
+              <BlockResetButton blockName="Anciens propriétaires" onReset={resetPreviousOwnersBlock} />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-transparent">
+                    <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 rounded-xl" align="end">
+                  <div className="space-y-2 text-xs">
+                    <h4 className="font-semibold text-sm">Historique des propriétaires</h4>
+                    <p className="text-muted-foreground">Documentez les anciens propriétaires pour établir la chaîne de propriété complète.</p>
+                    <p className="text-muted-foreground"><strong>💡</strong> Ordonnez du plus récent au plus ancien.</p>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
 
           {previousOwners.map((owner, index) => (

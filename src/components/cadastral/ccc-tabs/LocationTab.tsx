@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
+import BlockResetButton from '../BlockResetButton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -39,6 +40,7 @@ interface LocationTabProps {
   // Navigation
   handleTabChange: (tab: string) => void;
   handleNextTab: (current: string, next: string) => void;
+  resetLocationBlock: () => void;
 }
 
 const LocationTab: React.FC<LocationTabProps> = ({
@@ -48,18 +50,21 @@ const LocationTab: React.FC<LocationTabProps> = ({
   gpsCoordinates, onCoordinatesUpdate, mapConfig, parcelNumber,
   roadSides, onRoadSidesChange, parcelSides, onParcelSidesUpdate,
   servitude, onServitudeChange,
-  handleTabChange, handleNextTab
+  handleTabChange, handleNextTab, resetLocationBlock
 }) => {
   return (
     <div className="space-y-3 md:space-y-6 mt-4 md:mt-6 animate-fade-in">
       {/* Localisation de la parcelle */}
       <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
         <CardContent className="p-3 space-y-3">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="p-1.5 bg-primary/10 rounded-lg">
-              <MdLocationOn className="h-4 w-4 text-primary" />
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-primary/10 rounded-lg">
+                <MdLocationOn className="h-4 w-4 text-primary" />
+              </div>
+              <Label className="text-sm font-semibold">Localisation de la parcelle</Label>
             </div>
-            <Label className="text-sm font-semibold">Localisation de la parcelle</Label>
+            <BlockResetButton blockName="Localisation" onReset={resetLocationBlock} />
           </div>
 
           {/* Province */}

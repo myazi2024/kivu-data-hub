@@ -1300,6 +1300,97 @@ export const useCCCFormState = ({
     if (showSuccess && !hasShownConfetti) { setHasShownConfetti(true); triggerConfetti(); }
   }, [showSuccess, hasShownConfetti]);
 
+  // ─── Block reset handlers ───
+  const resetTitleBlock = useCallback(() => {
+    handleInputChange('propertyTitleType', undefined);
+    handleInputChange('titleReferenceNumber', undefined);
+    handleInputChange('titleIssueDate', undefined);
+    handleInputChange('leaseType', undefined);
+    setCustomTitleName('');
+    setLeaseYears(0);
+    setTitleDocFiles([]);
+    markDirty();
+  }, []);
+
+  const resetOwnersBlock = useCallback(() => {
+    setCurrentOwners([{
+      lastName: '', middleName: '', firstName: '', legalStatus: 'Personne physique',
+      gender: '', entityType: '', entitySubType: '', entitySubTypeOther: '',
+      stateExploitedBy: '', rightType: '', since: ''
+    }]);
+    setOwnershipMode('unique');
+    setOwnerDocFile(null);
+    handleInputChange('isTitleInCurrentOwnerName', undefined);
+    markDirty();
+  }, []);
+
+  const resetConstructionBlock = useCallback(() => {
+    handleInputChange('propertyCategory', undefined);
+    handleInputChange('constructionType', undefined);
+    handleInputChange('constructionNature', undefined);
+    handleInputChange('constructionMaterials', undefined);
+    handleInputChange('declaredUsage', undefined);
+    handleInputChange('standing', undefined);
+    handleInputChange('constructionYear', undefined);
+    handleInputChange('floorNumber', undefined);
+    handleInputChange('apartmentNumber', undefined);
+    setConstructionMode('unique');
+    setAdditionalConstructions([]);
+    setBuildingPermits([{
+      permitType: 'construction', permitNumber: '', issuingService: '', issueDate: '',
+      validityMonths: '36', administrativeStatus: 'En attente', issuingServiceContact: '', attachmentFile: null
+    }]);
+    setPermitMode('existing');
+    markDirty();
+  }, []);
+
+  const resetLocationBlock = useCallback(() => {
+    handleInputChange('province', undefined);
+    handleInputChange('ville', undefined);
+    handleInputChange('commune', undefined);
+    handleInputChange('quartier', undefined);
+    handleInputChange('avenue', undefined);
+    handleInputChange('houseNumber', undefined);
+    handleInputChange('territoire', undefined);
+    handleInputChange('collectivite', undefined);
+    handleInputChange('groupement', undefined);
+    handleInputChange('village', undefined);
+    handleInputChange('areaSqm', undefined);
+    setGpsCoordinates([]);
+    setParcelSides([
+      { name: 'Côté Nord', length: '' }, { name: 'Côté Sud', length: '' },
+      { name: 'Côté Est', length: '' }, { name: 'Côté Ouest', length: '' }
+    ]);
+    setRoadSides([]);
+    setServitude({ hasServitude: false });
+    markDirty();
+  }, []);
+
+  const resetPreviousOwnersBlock = useCallback(() => {
+    setPreviousOwners([{
+      name: '', legalStatus: 'Personne physique', entityType: '', entitySubType: '',
+      entitySubTypeOther: '', stateExploitedBy: '', startDate: '', endDate: '', mutationType: 'Vente'
+    }]);
+    markDirty();
+  }, []);
+
+  const resetTaxBlock = useCallback(() => {
+    setTaxRecords([{
+      taxType: 'Impôt foncier annuel', taxYear: '', taxAmount: '', paymentStatus: 'Payé',
+      paymentDate: '', receiptFile: null
+    }]);
+    markDirty();
+  }, []);
+
+  const resetMortgageBlock = useCallback(() => {
+    setHasMortgage(null);
+    setMortgageRecords([{
+      mortgageAmount: '', duration: '', creditorName: '', creditorType: 'Banque',
+      contractDate: '', mortgageStatus: 'Active', receiptFile: null
+    }]);
+    markDirty();
+  }, []);
+
   return {
     // Core hooks
     loading, uploading, user, toast, isMobile, mapConfig, mapConfigLoading,
@@ -1349,5 +1440,8 @@ export const useCCCFormState = ({
     // Misc warnings
     showAreaMismatchWarning, areaMismatchMessage, shouldBlinkSuperficie,
     showPermitTypeBlockedWarning, permitTypeBlockedMessage,
+    // Block reset handlers
+    resetTitleBlock, resetOwnersBlock, resetConstructionBlock,
+    resetLocationBlock, resetPreviousOwnersBlock, resetTaxBlock, resetMortgageBlock,
   };
 };

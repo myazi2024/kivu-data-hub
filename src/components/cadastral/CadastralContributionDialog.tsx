@@ -128,6 +128,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   highlightRequiredFields={state.highlightRequiredFields} setHighlightRequiredFields={state.setHighlightRequiredFields}
                   getPicklistOptions={state.getPicklistOptions} getPicklistDependentOptions={state.getPicklistDependentOptions}
                   handleNextTab={state.handleNextTab} toast={state.toast}
+                  resetTitleBlock={state.resetTitleBlock} resetOwnersBlock={state.resetOwnersBlock} resetConstructionBlock={state.resetConstructionBlock}
                 />
               </TabsContent>
 
@@ -145,6 +146,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   parcelSides={state.parcelSides} onParcelSidesUpdate={state.setParcelSides}
                   servitude={state.servitude} onServitudeChange={state.setServitude}
                   handleTabChange={state.handleTabChange} handleNextTab={state.handleNextTab}
+                  resetLocationBlock={state.resetLocationBlock}
                 />
               </TabsContent>
 
@@ -158,6 +160,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   showPreviousOwnerWarning={state.showPreviousOwnerWarning}
                   getPicklistOptions={state.getPicklistOptions}
                   handleTabChange={state.handleTabChange} handleNextTab={state.handleNextTab} toast={state.toast}
+                  resetPreviousOwnersBlock={state.resetPreviousOwnersBlock}
                 />
               </TabsContent>
 
@@ -175,6 +178,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   showMortgageWarning={state.showMortgageWarning} highlightIncompleteMortgage={state.highlightIncompleteMortgage}
                   getPicklistOptions={state.getPicklistOptions}
                   handleTabChange={state.handleTabChange} handleNextTab={state.handleNextTab}
+                  resetTaxBlock={state.resetTaxBlock} resetMortgageBlock={state.resetMortgageBlock}
                 />
               </TabsContent>
 
