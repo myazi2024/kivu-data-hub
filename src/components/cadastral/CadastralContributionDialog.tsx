@@ -3781,11 +3781,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </div>
 
                 {/* Catégorie de bien */}
-                <div className={`space-y-1.5 ${highlightRequiredFields && !formData.propertyCategory ? 'ring-2 ring-primary rounded-xl p-2 bg-primary/5 animate-pulse' : ''}`}>
+                <div className={`space-y-1.5 ${highlightRequiredFields && !formData.propertyCategory ? 'ring-2 ring-destructive rounded-xl p-2 bg-destructive/5 animate-pulse' : ''}`}>
                   <Label className="text-sm font-medium flex items-center gap-1">
                     Catégorie de bien
                     {highlightRequiredFields && !formData.propertyCategory && (
-                      <span className="text-primary text-xs font-semibold">*</span>
+                      <span className="text-destructive text-xs font-semibold">*</span>
                     )}
                   </Label>
                   <Select 
@@ -3809,11 +3809,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 {/* Type et Nature - côte-à-côte */}
                 <div className="grid grid-cols-2 gap-2">
                   {/* Type de construction - visible uniquement si la catégorie a plusieurs options */}
-                  <div className={`space-y-1.5 ${highlightRequiredFields && !formData.constructionType ? 'ring-2 ring-primary rounded-xl p-2 bg-primary/5 animate-pulse' : ''}`}>
+                  <div className={`space-y-1.5 ${highlightRequiredFields && !formData.constructionType ? 'ring-2 ring-destructive rounded-xl p-2 bg-destructive/5 animate-pulse' : ''}`}>
                     <Label className="text-sm font-medium flex items-center gap-1">
                       Type de construction
                       {highlightRequiredFields && !formData.constructionType && (
-                        <span className="text-primary text-xs font-semibold">*</span>
+                        <span className="text-destructive text-xs font-semibold">*</span>
                       )}
                     </Label>
                     {availableConstructionTypes.length <= 1 ? (
@@ -3842,11 +3842,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   </div>
 
                   {/* Nature de construction */}
-                  <div className={`space-y-1.5 ${highlightRequiredFields && !formData.constructionNature ? 'ring-2 ring-primary rounded-xl p-2 bg-primary/5 animate-pulse' : ''}`}>
+                  <div className={`space-y-1.5 ${highlightRequiredFields && !formData.constructionNature ? 'ring-2 ring-destructive rounded-xl p-2 bg-destructive/5 animate-pulse' : ''}`}>
                     <Label className="text-sm font-medium flex items-center gap-1">
                       Nature
                       {highlightRequiredFields && !formData.constructionNature && (
-                        <span className="text-primary text-xs font-semibold">*</span>
+                        <span className="text-destructive text-xs font-semibold">*</span>
                       )}
                     </Label>
                     <Select 
@@ -3903,12 +3903,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   )}
 
                   {/* Usage déclaré */}
-                  <div className={`space-y-1.5 ${highlightRequiredFields && !formData.declaredUsage ? 'ring-2 ring-primary rounded-xl p-2 bg-primary/5 animate-pulse' : ''}`}>
+                  <div className={`space-y-1.5 ${highlightRequiredFields && !formData.declaredUsage ? 'ring-2 ring-destructive rounded-xl p-2 bg-destructive/5 animate-pulse' : ''}`}>
                     <div className="flex items-center gap-1">
                       <Label className="text-sm font-medium flex items-center gap-1">
                         Usage
                         {highlightRequiredFields && !formData.declaredUsage && (
-                          <span className="text-primary text-xs font-semibold">*</span>
+                          <span className="text-destructive text-xs font-semibold">*</span>
                         )}
                       </Label>
                       <Popover>
