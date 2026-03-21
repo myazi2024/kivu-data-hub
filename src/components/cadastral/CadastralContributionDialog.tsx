@@ -2289,11 +2289,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       if (!formData.village || formData.village.trim() === '') missing.push({ field: 'village', label: 'Village', tab: 'location' });
     }
     
-    // Dimensions parcelle (au moins un côté renseigné) - sauf appartement
+    // Dimensions parcelle (au moins 3 côtés renseignés pour former une figure géométrique) - sauf appartement
     if (!isAppartement) {
-      const hasAnySideLength = parcelSides.some(s => s.length && parseFloat(s.length) > 0);
-      if (!hasAnySideLength) {
-        missing.push({ field: 'parcelSides', label: 'Dimensions de la parcelle (au moins un côté)', tab: 'location' });
+      const filledSides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
+      if (filledSides.length < 3) {
+        missing.push({ field: 'parcelSides', label: 'Dimensions de la parcelle (au moins 3 côtés)', tab: 'location' });
       }
     }
     
