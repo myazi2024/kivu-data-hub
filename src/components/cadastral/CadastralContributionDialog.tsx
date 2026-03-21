@@ -2358,7 +2358,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     
     // Pièces jointes des taxes obligatoires pour chaque taxe renseignée
     taxRecords.forEach((tax, idx) => {
-      if (tax.taxAmount && tax.taxYear && !tax.receiptFile) {
+      if (tax.taxAmount && tax.taxYear && !tax.receiptFile && !tax.existingReceiptUrl) {
         missing.push({ field: `taxReceipt_${idx}`, label: `Reçu de ${tax.taxType} ${tax.taxYear}`, tab: 'obligations' });
       }
     });
