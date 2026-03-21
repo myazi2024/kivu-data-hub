@@ -45,6 +45,10 @@ import { useMapConfig } from '@/hooks/useMapConfig';
 import SuggestivePicklist from './SuggestivePicklist';
 import { useCCCFormPicklists } from '@/hooks/useCCCFormPicklists';
 import LocationTab from './ccc-tabs/LocationTab';
+import GeneralTab from './ccc-tabs/GeneralTab';
+import HistoryTab from './ccc-tabs/HistoryTab';
+import ObligationsTab from './ccc-tabs/ObligationsTab';
+import ReviewTab from './ccc-tabs/ReviewTab';
 
 interface CadastralContributionDialogProps {
   open: boolean;
