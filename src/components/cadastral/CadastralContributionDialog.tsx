@@ -107,7 +107,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   // Fonction pour changer d'onglet avec scroll vers le haut
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
-    // Scroll vers le haut du contenu du dialogue
     if (dialogContentRef.current) {
       dialogContentRef.current.scrollTop = 0;
     }
@@ -2378,6 +2377,30 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     return missing;
   }, [formData, customTitleName, currentOwners, previousOwners, sectionType, permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, mortgageRecords]);
 
+  // Fonction pour obtenir les champs manquants d'un onglet spécifique
+  const getMissingFieldsForTab = useCallback((tab: string) => {
+    return getMissingFields().filter(f => f.tab === tab);
+  }, [getMissingFields]);
+
+  // Vérifier si un onglet est complet (pas de champs manquants)
+  const isTabComplete = useCallback((tab: string) => {
+    return getMissingFieldsForTab(tab).length === 0;
+  }, [getMissingFieldsForTab]);
+
+  // Ordre des onglets
+  const tabOrder = ['general', 'location', 'history', 'obligations', 'review'];
+
+  // Vérifier si un onglet est accessible (tous les onglets précédents sont complets)
+  const isTabAccessible = useCallback((tab: string) => {
+    const tabIndex = tabOrder.indexOf(tab);
+    if (tabIndex <= 0) return true; // Le premier onglet est toujours accessible
+    // Tous les onglets précédents doivent être complets
+    for (let i = 0; i < tabIndex; i++) {
+      if (!isTabComplete(tabOrder[i])) return false;
+    }
+    return true;
+  }, [isTabComplete]);
+
   // Fonction pour vérifier si le formulaire est valide pour soumission
   const isFormValidForSubmission = () => {
     return getMissingFields().length === 0;
@@ -2892,7 +2915,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
         <Tabs value={activeTab} className="w-full" onValueChange={handleTabChange}>
           <div className="sticky top-0 z-20 bg-background px-2 sm:px-4 pt-2 pb-1.5 border-b shadow-sm">
-            <TabsList className="grid w-full grid-cols-5 h-10 bg-muted/50 p-0.5 rounded-xl shadow-inner gap-0.5">
+             <TabsList className="grid w-full grid-cols-5 h-10 bg-muted/50 p-0.5 rounded-xl shadow-inner gap-0.5">
               <TabsTrigger 
                 value="general" 
                 className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-sm font-semibold py-1.5 rounded-lg"
@@ -2901,25 +2924,29 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </TabsTrigger>
               <TabsTrigger 
                 value="location" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-sm font-semibold py-1.5 rounded-lg"
+                disabled={!isTabAccessible('location')}
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-sm font-semibold py-1.5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Lieu
               </TabsTrigger>
               <TabsTrigger 
                 value="history" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-sm font-semibold py-1.5 rounded-lg"
+                disabled={!isTabAccessible('history')}
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-sm font-semibold py-1.5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Passé
               </TabsTrigger>
               <TabsTrigger 
                 value="obligations" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-sm font-semibold py-1.5 rounded-lg"
+                disabled={!isTabAccessible('obligations')}
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-sm font-semibold py-1.5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Taxes
               </TabsTrigger>
               <TabsTrigger 
                 value="review" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-sm font-semibold py-1.5 rounded-lg"
+                disabled={!isTabAccessible('review')}
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-sm font-semibold py-1.5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Envoi
               </TabsTrigger>
@@ -4316,7 +4343,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 <Button
                   type="button"
                   onClick={() => handleTabChange('location')}
-                  className="gap-2 rounded-xl h-10 text-sm shadow-md hover:shadow-lg transition-all"
+                  disabled={!isTabComplete('general')}
+                  className="gap-2 rounded-xl h-10 text-sm shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Suivant
                   <ChevronRight className="h-4 w-4" />
@@ -4789,7 +4817,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 <Button
                   type="button"
                   onClick={() => handleTabChange('history')}
-                  className="gap-2 rounded-xl h-10 text-sm shadow-md hover:shadow-lg transition-all"
+                  disabled={!isTabComplete('location')}
+                  className="gap-2 rounded-xl h-10 text-sm shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Suivant
                   <ChevronRight className="h-4 w-4" />
@@ -5219,7 +5248,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 <Button
                   type="button"
                   onClick={() => handleTabChange('obligations')}
-                  className="gap-2 rounded-xl h-10 text-sm shadow-md hover:shadow-lg transition-all"
+                  disabled={!isTabComplete('history')}
+                  className="gap-2 rounded-xl h-10 text-sm shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Suivant
                   <ChevronRight className="h-4 w-4" />
@@ -5742,7 +5772,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       handleTabChange('review');
                     }
                   }}
-                  className="gap-2 rounded-xl h-10 text-sm shadow-md hover:shadow-lg transition-all"
+                  disabled={!isTabComplete('obligations')}
+                  className="gap-2 rounded-xl h-10 text-sm shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {obligationType === 'taxes' ? 'Suivant' : 'Reviser'}
                   <ChevronRight className="h-4 w-4" />
