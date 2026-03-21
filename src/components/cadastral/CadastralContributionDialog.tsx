@@ -160,6 +160,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   showPreviousOwnerWarning={state.showPreviousOwnerWarning}
                   getPicklistOptions={state.getPicklistOptions}
                   handleTabChange={state.handleTabChange} handleNextTab={state.handleNextTab} toast={state.toast}
+                  resetPreviousOwnersBlock={state.resetPreviousOwnersBlock}
                 />
               </TabsContent>
 
