@@ -2392,7 +2392,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       }
       // Pièce jointe du permis obligatoire
       buildingPermits.forEach((permit, idx) => {
-        if (permit.permitNumber && permit.permitNumber.trim() !== '' && !permit.attachmentFile) {
+        if (permit.permitNumber && permit.permitNumber.trim() !== '' && !permit.attachmentFile && !permit.existingAttachmentUrl) {
           missing.push({ field: `permitAttachment_${idx}`, label: `Pièce jointe du permis #${idx + 1}`, tab: 'general' });
         }
       });
