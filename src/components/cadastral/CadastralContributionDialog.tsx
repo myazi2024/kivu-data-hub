@@ -233,12 +233,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     administrativeStatus: string;
     issuingServiceContact: string;
     attachmentFile: File | null;
+    existingAttachmentUrl?: string; // FIX #9: Track existing URL for edit mode validation
   }>>([{
     permitType: 'construction',
     permitNumber: '',
     issuingService: '',
     issueDate: '',
-    validityMonths: '12',
+    validityMonths: '36',
     administrativeStatus: 'En attente',
     issuingServiceContact: '',
     attachmentFile: null
