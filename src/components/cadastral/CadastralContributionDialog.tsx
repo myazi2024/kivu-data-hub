@@ -2374,7 +2374,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       }
       // Pièces jointes hypothèque obligatoires
       mortgageRecords.forEach((m, idx) => {
-        if (m.mortgageAmount && m.creditorName && !m.receiptFile) {
+        if (m.mortgageAmount && m.creditorName && !m.receiptFile && !m.existingReceiptUrl) {
           missing.push({ field: `mortgageReceipt_${idx}`, label: `Document hypothèque #${idx + 1}`, tab: 'obligations' });
         }
       });
