@@ -1070,7 +1070,7 @@ export const useCCCFormState = ({
         const permits = contrib.building_permits as any[];
         if (permits && Array.isArray(permits) && permits.length > 0) {
           setPermitMode('existing');
-          setBuildingPermits(permits.map((p: any) => ({ permitType: p.permit_type || 'construction', permitNumber: p.permit_number || '', issuingService: p.issuing_service || '', issueDate: p.issue_date || '', validityMonths: String(p.validity_period_months || '36'), administrativeStatus: p.administrative_status || 'En attente', issuingServiceContact: p.issuing_service_contact || '', attachmentFile: null, existingAttachmentUrl: p.permit_document_url || undefined })));
+          setBuildingPermits(permits.map((p: any) => ({ permitType: p.permit_type || p.permitType || 'construction', permitNumber: p.permit_number || p.permitNumber || '', issueDate: p.issue_date || p.issueDate || '', validityMonths: String(p.validity_period_months || p.validityMonths || '36'), administrativeStatus: p.administrative_status || p.administrativeStatus || 'En attente', attachmentFile: null, existingAttachmentUrl: p.permit_document_url || p.attachmentUrl || undefined })));
         } else if (contrib.permit_request_data) {
           setPermitMode('request');
           const prd = contrib.permit_request_data as any;
