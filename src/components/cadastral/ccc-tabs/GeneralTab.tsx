@@ -395,6 +395,7 @@ interface CurrentOwnersSectionProps {
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>, type: 'owner' | 'title') => void;
   removeFile: (type: 'owner' | 'title', index?: number) => void;
   getPicklistOptions: (key: string) => string[];
+  resetOwnersBlock: () => void;
 }
 
 const CurrentOwnersSection: React.FC<CurrentOwnersSectionProps> = ({
