@@ -326,8 +326,8 @@ export const useCCCFormState = ({
       setTimeout(() => setShowCurrentOwnerRequiredWarning(false), 5000);
       return;
     }
-    const firstOwner = previousOwners[0];
-    if (!firstOwner?.name || !firstOwner?.legalStatus || !firstOwner?.mutationType) {
+    const lastOwner = previousOwners[previousOwners.length - 1];
+    if (!lastOwner?.name || !lastOwner?.legalStatus || !lastOwner?.mutationType) {
       setShowPreviousOwnerWarning(true);
       setHighlightIncompletePreviousOwner(true);
       setTimeout(() => setShowPreviousOwnerWarning(false), 5000);
