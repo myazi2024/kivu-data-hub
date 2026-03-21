@@ -79,7 +79,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
   const calculatedStatus = useMemo((): string => {
     if (!permitRecord.issueDate || !permitRecord.validityPeriod) return 'En cours';
     const issueDate = new Date(permitRecord.issueDate);
-    const validityMonths = parseInt(permitRecord.validityPeriod) || 12;
+    const validityMonths = parseInt(permitRecord.validityPeriod) || 36;
     const expiryDate = new Date(issueDate);
     expiryDate.setMonth(expiryDate.getMonth() + validityMonths);
     return expiryDate > new Date() ? 'Valide' : 'Expiré';
