@@ -96,6 +96,10 @@ interface GeneralTabProps {
   handleNextTab: (current: string, next: string) => void;
   // Toast
   toast: (opts: any) => void;
+  // Reset handlers
+  resetTitleBlock: () => void;
+  resetOwnersBlock: () => void;
+  resetConstructionBlock: () => void;
 }
 
 const GeneralTab: React.FC<GeneralTabProps> = ({
