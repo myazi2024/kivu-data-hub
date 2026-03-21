@@ -99,6 +99,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [shouldBlinkSuperficie, setShouldBlinkSuperficie] = useState(false);
   const [showUsageLockedWarning, setShowUsageLockedWarning] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
+  const [invalidFields, setInvalidFields] = useState<Set<string>>(new Set());
   const [customTitleName, setCustomTitleName] = useState('');
   
   // getMissingFields is defined after all state declarations (see below ~line 2230)
@@ -2434,6 +2435,36 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     return true;
   }, [isTabComplete]);
 
+  // Fonction pour tenter de passer à l'onglet suivant avec validation
+  const handleNextTab = useCallback((currentTab: string, nextTab: string) => {
+    const missingFields = getMissingFieldsForTab(currentTab);
+    if (missingFields.length > 0) {
+      // Activer la mise en évidence des champs obligatoires manquants
+      setHighlightRequiredFields(true);
+      setInvalidFields(new Set(missingFields.map(f => f.field)));
+      // Afficher un toast avec la liste des champs manquants
+      const maxShow = 5;
+      const fieldNames = missingFields.slice(0, maxShow).map(f => `• ${f.label}`).join('\n');
+      const extra = missingFields.length > maxShow ? `\n... et ${missingFields.length - maxShow} autre(s)` : '';
+      toast({
+        title: '⚠️ Champs obligatoires manquants',
+        description: `Veuillez compléter les champs suivants :\n${fieldNames}${extra}`,
+        variant: 'destructive',
+      });
+      // Scroll vers le premier champ en surbrillance
+      setTimeout(() => {
+        const firstHighlighted = dialogContentRef.current?.querySelector('.ring-destructive');
+        if (firstHighlighted) {
+          firstHighlighted.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 150);
+    } else {
+      setHighlightRequiredFields(false);
+      setInvalidFields(new Set());
+      handleTabChange(nextTab);
+    }
+  }, [getMissingFieldsForTab, toast, handleTabChange]);
+
   // Fonction pour vérifier si le formulaire est valide pour soumission
   const isFormValidForSubmission = () => {
     return getMissingFields().length === 0;
@@ -3754,11 +3785,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </div>
 
                 {/* Catégorie de bien */}
-                <div className={`space-y-1.5 ${highlightRequiredFields && !formData.propertyCategory ? 'ring-2 ring-primary rounded-xl p-2 bg-primary/5 animate-pulse' : ''}`}>
+                <div className={`space-y-1.5 ${highlightRequiredFields && !formData.propertyCategory ? 'ring-2 ring-destructive rounded-xl p-2 bg-destructive/5 animate-pulse' : ''}`}>
                   <Label className="text-sm font-medium flex items-center gap-1">
                     Catégorie de bien
                     {highlightRequiredFields && !formData.propertyCategory && (
-                      <span className="text-primary text-xs font-semibold">*</span>
+                      <span className="text-destructive text-xs font-semibold">*</span>
                     )}
                   </Label>
                   <Select 
@@ -3782,11 +3813,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 {/* Type et Nature - côte-à-côte */}
                 <div className="grid grid-cols-2 gap-2">
                   {/* Type de construction - visible uniquement si la catégorie a plusieurs options */}
-                  <div className={`space-y-1.5 ${highlightRequiredFields && !formData.constructionType ? 'ring-2 ring-primary rounded-xl p-2 bg-primary/5 animate-pulse' : ''}`}>
+                  <div className={`space-y-1.5 ${highlightRequiredFields && !formData.constructionType ? 'ring-2 ring-destructive rounded-xl p-2 bg-destructive/5 animate-pulse' : ''}`}>
                     <Label className="text-sm font-medium flex items-center gap-1">
                       Type de construction
                       {highlightRequiredFields && !formData.constructionType && (
-                        <span className="text-primary text-xs font-semibold">*</span>
+                        <span className="text-destructive text-xs font-semibold">*</span>
                       )}
                     </Label>
                     {availableConstructionTypes.length <= 1 ? (
@@ -3815,11 +3846,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   </div>
 
                   {/* Nature de construction */}
-                  <div className={`space-y-1.5 ${highlightRequiredFields && !formData.constructionNature ? 'ring-2 ring-primary rounded-xl p-2 bg-primary/5 animate-pulse' : ''}`}>
+                  <div className={`space-y-1.5 ${highlightRequiredFields && !formData.constructionNature ? 'ring-2 ring-destructive rounded-xl p-2 bg-destructive/5 animate-pulse' : ''}`}>
                     <Label className="text-sm font-medium flex items-center gap-1">
                       Nature
                       {highlightRequiredFields && !formData.constructionNature && (
-                        <span className="text-primary text-xs font-semibold">*</span>
+                        <span className="text-destructive text-xs font-semibold">*</span>
                       )}
                     </Label>
                     <Select 
@@ -3876,12 +3907,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   )}
 
                   {/* Usage déclaré */}
-                  <div className={`space-y-1.5 ${highlightRequiredFields && !formData.declaredUsage ? 'ring-2 ring-primary rounded-xl p-2 bg-primary/5 animate-pulse' : ''}`}>
+                  <div className={`space-y-1.5 ${highlightRequiredFields && !formData.declaredUsage ? 'ring-2 ring-destructive rounded-xl p-2 bg-destructive/5 animate-pulse' : ''}`}>
                     <div className="flex items-center gap-1">
                       <Label className="text-sm font-medium flex items-center gap-1">
                         Usage
                         {highlightRequiredFields && !formData.declaredUsage && (
-                          <span className="text-primary text-xs font-semibold">*</span>
+                          <span className="text-destructive text-xs font-semibold">*</span>
                         )}
                       </Label>
                       <Popover>
@@ -4375,9 +4406,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               <div className="flex justify-end">
                 <Button
                   type="button"
-                  onClick={() => handleTabChange('location')}
-                  disabled={!isTabComplete('general')}
-                  className="gap-2 rounded-xl h-10 text-sm shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => handleNextTab('general', 'location')}
+                  className="gap-2 rounded-xl h-10 text-sm shadow-md hover:shadow-lg transition-all"
                 >
                   Suivant
                   <ChevronRight className="h-4 w-4" />
@@ -4849,9 +4879,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </Button>
                 <Button
                   type="button"
-                  onClick={() => handleTabChange('history')}
-                  disabled={!isTabComplete('location')}
-                  className="gap-2 rounded-xl h-10 text-sm shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => handleNextTab('location', 'history')}
+                  className="gap-2 rounded-xl h-10 text-sm shadow-md hover:shadow-lg transition-all"
                 >
                   Suivant
                   <ChevronRight className="h-4 w-4" />
@@ -5280,9 +5309,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </Button>
                 <Button
                   type="button"
-                  onClick={() => handleTabChange('obligations')}
-                  disabled={!isTabComplete('history')}
-                  className="gap-2 rounded-xl h-10 text-sm shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => handleNextTab('history', 'obligations')}
+                  className="gap-2 rounded-xl h-10 text-sm shadow-md hover:shadow-lg transition-all"
                 >
                   Suivant
                   <ChevronRight className="h-4 w-4" />
@@ -5802,11 +5830,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     if (obligationType === 'taxes') {
                       setObligationType('mortgages');
                     } else {
-                      handleTabChange('review');
+                      handleNextTab('obligations', 'review');
                     }
                   }}
-                  disabled={!isTabComplete('obligations')}
-                  className="gap-2 rounded-xl h-10 text-sm shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="gap-2 rounded-xl h-10 text-sm shadow-md hover:shadow-lg transition-all"
                 >
                   {obligationType === 'taxes' ? 'Suivant' : 'Reviser'}
                   <ChevronRight className="h-4 w-4" />
