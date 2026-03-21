@@ -1440,5 +1440,8 @@ export const useCCCFormState = ({
     // Misc warnings
     showAreaMismatchWarning, areaMismatchMessage, shouldBlinkSuperficie,
     showPermitTypeBlockedWarning, permitTypeBlockedMessage,
+    // Block reset handlers
+    resetTitleBlock, resetOwnersBlock, resetConstructionBlock,
+    resetLocationBlock, resetPreviousOwnersBlock, resetTaxBlock, resetMortgageBlock,
   };
 };
