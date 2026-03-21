@@ -1120,12 +1120,15 @@ export const useCCCFormState = ({
     }
   }, [parcelNumber]);
 
-  // Sync previous owner end date with current owner since
+  // Sync LAST previous owner end date with current owner since (only if not manually set)
   useEffect(() => {
+    if (isLoadingFromDbRef.current) return;
     if (currentOwners.length > 0 && currentOwners[0]?.since && previousOwners.length > 0) {
-      const firstPreviousOwner = previousOwners[0];
-      if (!firstPreviousOwner.endDate || firstPreviousOwner.endDate !== currentOwners[0].since) {
-        const updated = [...previousOwners]; updated[0] = { ...updated[0], endDate: currentOwners[0].since }; setPreviousOwners(updated);
+      const lastIdx = previousOwners.length - 1;
+      const lastPreviousOwner = previousOwners[lastIdx];
+      // Only auto-fill if endDate is empty (don't overwrite manual entries)
+      if (!lastPreviousOwner.endDate) {
+        const updated = [...previousOwners]; updated[lastIdx] = { ...updated[lastIdx], endDate: currentOwners[0].since }; setPreviousOwners(updated);
       }
     }
   }, [currentOwners]);
