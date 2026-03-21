@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useCadastralContribution, CadastralContributionData } from '@/hooks/useCadastralContribution';
 import AdditionalConstructionBlock, { AdditionalConstruction } from '@/components/cadastral/AdditionalConstructionBlock';
-import { Loader2, CheckCircle2, Upload, X, Plus, Trash2, Info, ExternalLink, RotateCcw, ChevronRight, ChevronLeft, Camera, AlertTriangle } from 'lucide-react';
+import { Loader2, CheckCircle2, Upload, X, Plus, Trash2, Info, ExternalLink, RotateCcw, ChevronRight, ChevronLeft, Camera, AlertTriangle, Ruler } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { MdDashboard, MdLocationOn, MdEventNote, MdAccountBalance, MdRateReview, MdInsertDriveFile } from 'react-icons/md';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
