@@ -73,7 +73,8 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
   hasMortgage, setHasMortgage, mortgageRecords, setMortgageRecords,
   updateMortgageRecord, addMortgageRecord, removeMortgageRecord,
   handleMortgageFileChange, removeMortgageFile, showMortgageWarning, highlightIncompleteMortgage,
-  getPicklistOptions, handleTabChange, handleNextTab
+  getPicklistOptions, handleTabChange, handleNextTab,
+  resetTaxBlock, resetMortgageBlock
 }) => {
   return (
     <div className="space-y-3 mt-4 animate-fade-in">

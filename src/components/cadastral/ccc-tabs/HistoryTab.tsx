@@ -46,7 +46,8 @@ const HistoryTab: React.FC<HistoryTabProps> = ({
   formData, currentOwners, previousOwners,
   updatePreviousOwner, addPreviousOwner, removePreviousOwner,
   highlightIncompletePreviousOwner, showCurrentOwnerRequiredWarning, showPreviousOwnerWarning,
-  getPicklistOptions, handleTabChange, handleNextTab, toast
+  getPicklistOptions, handleTabChange, handleNextTab, toast,
+  resetPreviousOwnersBlock
 }) => {
   return (
     <div className="space-y-3 mt-4 animate-fade-in">

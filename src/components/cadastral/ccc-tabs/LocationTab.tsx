@@ -40,6 +40,7 @@ interface LocationTabProps {
   // Navigation
   handleTabChange: (tab: string) => void;
   handleNextTab: (current: string, next: string) => void;
+  resetLocationBlock: () => void;
 }
 
 const LocationTab: React.FC<LocationTabProps> = ({
@@ -49,7 +50,7 @@ const LocationTab: React.FC<LocationTabProps> = ({
   gpsCoordinates, onCoordinatesUpdate, mapConfig, parcelNumber,
   roadSides, onRoadSidesChange, parcelSides, onParcelSidesUpdate,
   servitude, onServitudeChange,
-  handleTabChange, handleNextTab
+  handleTabChange, handleNextTab, resetLocationBlock
 }) => {
   return (
     <div className="space-y-3 md:space-y-6 mt-4 md:mt-6 animate-fade-in">
