@@ -34,7 +34,7 @@ export interface AdditionalConstruction {
 }
 
 const PROPERTY_CATEGORY_OPTIONS_NO_TERRAIN = [
-  'Appartement', 'Villa', 'Maison', 'Local commercial',
+  'Villa', 'Maison', 'Local commercial',
   'Immeuble/Bâtiment', 'Entrepôt/Hangar',
 ];
 
