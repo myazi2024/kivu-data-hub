@@ -35,11 +35,9 @@ export interface CurrentOwner {
 export interface BuildingPermit {
   permitType: 'construction' | 'regularization';
   permitNumber: string;
-  issuingService: string;
   issueDate: string;
   validityMonths: string;
   administrativeStatus: string;
-  issuingServiceContact: string;
   attachmentFile: File | null;
   existingAttachmentUrl?: string;
 }
