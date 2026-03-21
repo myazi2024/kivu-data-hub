@@ -205,6 +205,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     contractDate: string;
     mortgageStatus: string;
     receiptFile: File | null;
+    existingReceiptUrl?: string; // FIX #9: Track existing URL for edit mode validation
   }>>([{
     mortgageAmount: '',
     duration: '',
