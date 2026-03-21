@@ -2435,6 +2435,32 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     return true;
   }, [isTabComplete]);
 
+  // Fonction pour tenter de passer à l'onglet suivant avec validation
+  const handleNextTab = useCallback((currentTab: string, nextTab: string) => {
+    const missingFields = getMissingFieldsForTab(currentTab);
+    if (missingFields.length > 0) {
+      // Marquer les champs invalides
+      setInvalidFields(new Set(missingFields.map(f => f.field)));
+      // Afficher un toast avec la liste des champs manquants
+      const fieldNames = missingFields.map(f => `• ${f.label}`).join('\n');
+      toast({
+        title: '⚠️ Champs obligatoires manquants',
+        description: `Veuillez compléter les champs suivants :\n${fieldNames}`,
+        variant: 'destructive',
+      });
+      // Scroll vers le premier champ invalide
+      setTimeout(() => {
+        const firstInvalidEl = dialogContentRef.current?.querySelector('[data-invalid="true"]');
+        if (firstInvalidEl) {
+          firstInvalidEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+    } else {
+      setInvalidFields(new Set());
+      handleTabChange(nextTab);
+    }
+  }, [getMissingFieldsForTab, toast, handleTabChange]);
+
   // Fonction pour vérifier si le formulaire est valide pour soumission
   const isFormValidForSubmission = () => {
     return getMissingFields().length === 0;
