@@ -64,6 +64,12 @@ export interface CadastralContributionData {
     constructionPhotos?: string[];
   };
   
+  // Mesures appartement
+  apartmentLength?: number;
+  apartmentWidth?: number;
+  apartmentHeight?: number;
+  apartmentOrientation?: string;
+  
   // Localisation
   areaSqm?: number;
   parcelSides?: Array<{ name: string; length: string }>;
