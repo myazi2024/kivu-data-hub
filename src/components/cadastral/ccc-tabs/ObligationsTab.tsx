@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Plus, Trash2, Info, X, ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react';
+import BlockResetButton from '../BlockResetButton';
 import { MdAccountBalance, MdInsertDriveFile } from 'react-icons/md';
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
 
