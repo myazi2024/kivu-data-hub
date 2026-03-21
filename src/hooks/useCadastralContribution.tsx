@@ -87,6 +87,10 @@ export interface CadastralContributionData {
   ownershipHistory?: Array<{
     ownerName: string;
     legalStatus: string;
+    entityType?: string;
+    entitySubType?: string;
+    entitySubTypeOther?: string;
+    stateExploitedBy?: string;
     startDate: string;
     endDate?: string;
     mutationType?: string;
