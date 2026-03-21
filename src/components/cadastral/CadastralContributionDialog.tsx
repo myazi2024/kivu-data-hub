@@ -2194,15 +2194,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (formData.propertyTitleType === 'Autre' && (!customTitleName || customTitleName.trim() === '')) {
       missing.push({ field: 'customTitleName', label: 'Nom du titre de propriété (Autre)', tab: 'general' });
     }
-    // Pièces jointes titre - au moins une obligatoire
-    if (titleDocFiles.length === 0 && !formData.titleDocumentUrl) {
-      missing.push({ field: 'titleDocument', label: 'Pièce jointe du titre de propriété (au moins une)', tab: 'general' });
-    }
-    // Question "titre au nom du propriétaire actuel" obligatoire
-    if (formData.isTitleInCurrentOwnerName === undefined || formData.isTitleInCurrentOwnerName === null) {
-      missing.push({ field: 'isTitleInCurrentOwnerName', label: 'Ce titre est-il au nom du propriétaire actuel ?', tab: 'general' });
-    }
     
+    // --- Propriétaire actuel ---
     const firstOwner = currentOwners[0];
     if (firstOwner?.legalStatus === 'Personne physique') {
       if (!firstOwner.lastName || firstOwner.lastName.trim() === '') {
