@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useCadastralContribution, CadastralContributionData } from '@/hooks/useCadastralContribution';
 import AdditionalConstructionBlock, { AdditionalConstruction } from '@/components/cadastral/AdditionalConstructionBlock';
-import { Loader2, CheckCircle2, Upload, X, Plus, Trash2, Info, ExternalLink, RotateCcw, ChevronRight, Camera } from 'lucide-react';
+import { Loader2, CheckCircle2, Upload, X, Plus, Trash2, Info, ExternalLink, RotateCcw, ChevronRight, ChevronLeft, Camera } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { MdDashboard, MdLocationOn, MdEventNote, MdAccountBalance, MdRateReview, MdInsertDriveFile } from 'react-icons/md';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -4186,16 +4186,18 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </CardContent>
             </Card>
             
-            {/* Bouton Suivant */}
-            <div className="flex justify-end pt-6 mt-6 border-t">
-              <Button
-                type="button"
-                onClick={() => handleTabChange('location')}
-                className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all hover:scale-105 shadow-lg hover:shadow-xl animate-fade-in"
-              >
-                Suivant
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+            {/* Bouton Suivant - fixé en bas */}
+            <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur-sm border-t pt-3 pb-3 px-1 -mx-1">
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  onClick={() => handleTabChange('location')}
+                  className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all hover:scale-105 shadow-lg hover:shadow-xl animate-fade-in"
+                >
+                  Suivant
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </TabsContent>
 
@@ -4554,16 +4556,27 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </div>
             )}
             
-            {/* Bouton Suivant */}
-            <div className="flex justify-end pt-6 mt-6 border-t">
-              <Button
-                type="button"
-                onClick={() => handleTabChange('history')}
-                className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all hover:scale-105 shadow-lg hover:shadow-xl animate-fade-in"
-              >
-                Suivant
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+            {/* Boutons Précédent / Suivant - fixés en bas */}
+            <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur-sm border-t pt-3 pb-3 px-1 -mx-1">
+              <div className="flex justify-between">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleTabChange('general')}
+                  className="gap-2 rounded-xl"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Précédent
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => handleTabChange('history')}
+                  className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all hover:scale-105 shadow-lg hover:shadow-xl animate-fade-in"
+                >
+                  Suivant
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </TabsContent>
 
@@ -4973,16 +4986,27 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </CardContent>
             </Card>
             
-            {/* Bouton Suivant */}
-            <div className="flex justify-end pt-4 mt-4 border-t">
-              <Button
-                type="button"
-                onClick={() => handleTabChange('obligations')}
-                className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all hover:scale-105 shadow-lg hover:shadow-xl animate-fade-in"
-              >
-                Suivant
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+            {/* Boutons Précédent / Suivant - fixés en bas */}
+            <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur-sm border-t pt-3 pb-3 px-1 -mx-1">
+              <div className="flex justify-between">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleTabChange('location')}
+                  className="gap-2 rounded-xl"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Précédent
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => handleTabChange('obligations')}
+                  className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all hover:scale-105 shadow-lg hover:shadow-xl animate-fade-in"
+                >
+                  Suivant
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </TabsContent>
 
@@ -5459,22 +5483,39 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </Card>
             )}
             
-            {/* Bouton Suivant */}
-            <div className="flex justify-end pt-4 sm:pt-6 mt-4 sm:mt-6 border-t">
-              <Button
-                type="button"
-                onClick={() => {
-                  if (obligationType === 'taxes') {
-                    setObligationType('mortgages');
-                  } else {
-                    handleTabChange('review');
-                  }
-                }}
-                className="gap-2 bg-gradient-to-r from-seloger-red to-seloger-red-dark hover:from-seloger-red-dark hover:to-red-700 transition-all hover:scale-105 shadow-lg hover:shadow-xl animate-fade-in text-white text-sm sm:text-base h-10 sm:h-11 rounded-xl"
-              >
-                {obligationType === 'taxes' ? 'Suivant' : 'Reviser'}
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+            {/* Boutons Précédent / Suivant - fixés en bas */}
+            <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur-sm border-t pt-3 pb-3 px-1 -mx-1">
+              <div className="flex justify-between">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    if (obligationType === 'mortgages') {
+                      setObligationType('taxes');
+                    } else {
+                      handleTabChange('history');
+                    }
+                  }}
+                  className="gap-2 rounded-xl"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Précédent
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    if (obligationType === 'taxes') {
+                      setObligationType('mortgages');
+                    } else {
+                      handleTabChange('review');
+                    }
+                  }}
+                  className="gap-2 bg-gradient-to-r from-seloger-red to-seloger-red-dark hover:from-seloger-red-dark hover:to-red-700 transition-all hover:scale-105 shadow-lg hover:shadow-xl animate-fade-in text-white text-sm sm:text-base h-10 sm:h-11 rounded-xl"
+                >
+                  {obligationType === 'taxes' ? 'Suivant' : 'Reviser'}
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </TabsContent>
 
