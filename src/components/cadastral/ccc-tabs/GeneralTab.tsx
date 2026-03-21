@@ -790,7 +790,7 @@ interface ConstructionSectionProps {
   highlightIncompletePermit: boolean;
   highlightRequiredFields: boolean;
   setHighlightRequiredFields: (v: boolean) => void;
-  getPicklistDependentOptions: (parent: string, parentValue: string) => string[];
+  getPicklistDependentOptions: any;
   toast: (opts: any) => void;
 }
 
