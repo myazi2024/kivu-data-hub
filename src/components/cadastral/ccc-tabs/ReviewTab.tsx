@@ -20,6 +20,8 @@ interface ReviewTabProps {
   hasMortgage: boolean | null;
   buildingPermits: BuildingPermit[];
   permitMode: 'existing' | 'request';
+  constructionMode: 'unique' | 'multiple';
+  additionalConstructions: AdditionalConstruction[];
   ownerDocFile: File | null;
   titleDocFiles: File[];
   gpsCoordinates: Array<{ borne: string; lat: string; lng: string }>;
