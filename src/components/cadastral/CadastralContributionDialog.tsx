@@ -183,11 +183,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     paymentDate: string;
     remainingAmount?: string;
     receiptFile: File | null;
+    existingReceiptUrl?: string; // FIX #9: Track existing URL for edit mode validation
   }>>([{
     taxType: 'Impôt foncier annuel',
     taxYear: '',
     taxAmount: '',
-    paymentStatus: 'En attente',
+    paymentStatus: 'Payé',
     paymentDate: '',
     receiptFile: null
   }]);
@@ -204,6 +205,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     contractDate: string;
     mortgageStatus: string;
     receiptFile: File | null;
+    existingReceiptUrl?: string; // FIX #9: Track existing URL for edit mode validation
   }>>([{
     mortgageAmount: '',
     duration: '',
@@ -231,12 +233,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     administrativeStatus: string;
     issuingServiceContact: string;
     attachmentFile: File | null;
+    existingAttachmentUrl?: string; // FIX #9: Track existing URL for edit mode validation
   }>>([{
     permitType: 'construction',
     permitNumber: '',
     issuingService: '',
     issueDate: '',
-    validityMonths: '12',
+    validityMonths: '36',
     administrativeStatus: 'En attente',
     issuingServiceContact: '',
     attachmentFile: null
@@ -623,10 +626,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             permitNumber: p.permit_number || '',
             issuingService: p.issuing_service || '',
             issueDate: p.issue_date || '',
-            validityMonths: String(p.validity_period_months || '12'),
+            validityMonths: String(p.validity_period_months || '36'),
             administrativeStatus: p.administrative_status || 'En attente',
             issuingServiceContact: p.issuing_service_contact || '',
-            attachmentFile: null
+            attachmentFile: null,
+            existingAttachmentUrl: p.permit_document_url || undefined // FIX #9: preserve existing URL
           })));
         } else if (contrib.permit_request_data) {
           setPermitMode('request');
@@ -657,9 +661,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             taxType: t.tax_type || 'Impôt foncier annuel',
             taxYear: String(t.tax_year || ''),
             taxAmount: String(t.amount_usd || ''),
-            paymentStatus: t.payment_status || 'En attente',
+            paymentStatus: t.payment_status || 'Payé',
             paymentDate: t.payment_date || '',
-            receiptFile: null
+            remainingAmount: t.remaining_amount ? String(t.remaining_amount) : undefined,
+            receiptFile: null,
+            existingReceiptUrl: t.receipt_document_url || undefined // FIX #9: preserve existing URL
           })));
         }
 
@@ -674,7 +680,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             creditorType: m.creditor_type || 'Banque',
             contractDate: m.contract_date || '',
             mortgageStatus: m.mortgage_status || 'Active',
-            receiptFile: null
+            receiptFile: null,
+            existingReceiptUrl: m.receipt_url || undefined // FIX #9: preserve existing URL
           })));
         } else {
           setHasMortgage(false);
@@ -1362,8 +1369,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               amountUsd: parsedAmount,
               paymentStatus: tax.paymentStatus,
               paymentDate: tax.paymentDate || undefined,
-              receiptUrl: receiptUrl || undefined,
-              taxType: tax.taxType
+              receiptUrl: receiptUrl || tax.existingReceiptUrl || undefined, // FIX #9: preserve existing URL
+              taxType: tax.taxType,
+              remainingAmount: tax.remainingAmount ? parseFloat(tax.remainingAmount) : undefined // FIX #1: persist remainingAmount
             };
           })
       )).filter(Boolean); // Remove nulls
@@ -1391,7 +1399,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               creditorType: mortgage.creditorType,
               contractDate: mortgage.contractDate,
               mortgageStatus: mortgage.mortgageStatus,
-              receiptUrl: receiptUrl || undefined
+              receiptUrl: receiptUrl || mortgage.existingReceiptUrl || undefined // FIX #9: preserve existing URL
             };
           })
       )).filter(Boolean); // Remove nulls
@@ -1418,7 +1426,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               validityMonths: parseInt(permit.validityMonths),
               administrativeStatus: permit.administrativeStatus,
               issuingServiceContact: permit.issuingServiceContact || undefined,
-              attachmentUrl: attachmentUrl || undefined
+              attachmentUrl: attachmentUrl || permit.existingAttachmentUrl || undefined // FIX #9: preserve existing URL
             };
           })
         );
@@ -1510,7 +1518,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         // For "Autre", store the custom title name as the effective property_title_type
         propertyTitleType: getEffectiveTitleName(formData.propertyTitleType, customTitleName) || formData.propertyTitleType,
         parcelType: sectionType === 'urbaine' ? 'SU' as const : sectionType === 'rurale' ? 'SR' as const : undefined, // Type de parcelle (Section Urbaine/Rurale)
-        currentOwners: currentOwners.filter(o => o.lastName && o.firstName), // Ne garder que les propriétaires avec nom et prénom
+        currentOwners: currentOwners.filter(o => o.lastName && (o.firstName || o.legalStatus === 'Personne morale')), // FIX #10: Personne morale n'a pas besoin de firstName
         ownershipHistory: ownershipHistoryData.length > 0 ? ownershipHistoryData as any : undefined,
         // FIX: Preserve existing URLs when no new file is uploaded in edit mode
         ownerDocumentUrl: ownerDocUrl || existingOwnerDocUrl || undefined,
@@ -1745,7 +1753,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       taxType: 'Impôt foncier annuel',
       taxYear: '',
       taxAmount: '',
-      paymentStatus: 'En attente',
+      paymentStatus: 'Payé',
       paymentDate: '',
       receiptFile: null
     }]);
@@ -1904,7 +1912,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       permitNumber: '',
       issuingService: '',
       issueDate: '',
-      validityMonths: '12',
+      validityMonths: '36',
       administrativeStatus: 'En attente',
       issuingServiceContact: '',
       attachmentFile: null
@@ -2351,7 +2359,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     
     // Pièces jointes des taxes obligatoires pour chaque taxe renseignée
     taxRecords.forEach((tax, idx) => {
-      if (tax.taxAmount && tax.taxYear && !tax.receiptFile) {
+      if (tax.taxAmount && tax.taxYear && !tax.receiptFile && !tax.existingReceiptUrl) {
         missing.push({ field: `taxReceipt_${idx}`, label: `Reçu de ${tax.taxType} ${tax.taxYear}`, tab: 'obligations' });
       }
     });
@@ -2367,7 +2375,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       }
       // Pièces jointes hypothèque obligatoires
       mortgageRecords.forEach((m, idx) => {
-        if (m.mortgageAmount && m.creditorName && !m.receiptFile) {
+        if (m.mortgageAmount && m.creditorName && !m.receiptFile && !m.existingReceiptUrl) {
           missing.push({ field: `mortgageReceipt_${idx}`, label: `Document hypothèque #${idx + 1}`, tab: 'obligations' });
         }
       });
@@ -2385,7 +2393,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       }
       // Pièce jointe du permis obligatoire
       buildingPermits.forEach((permit, idx) => {
-        if (permit.permitNumber && permit.permitNumber.trim() !== '' && !permit.attachmentFile) {
+        if (permit.permitNumber && permit.permitNumber.trim() !== '' && !permit.attachmentFile && !permit.existingAttachmentUrl) {
           missing.push({ field: `permitAttachment_${idx}`, label: `Pièce jointe du permis #${idx + 1}`, tab: 'general' });
         }
       });
@@ -2796,7 +2804,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       taxType: 'Impôt foncier annuel',
       taxYear: '',
       taxAmount: '',
-      paymentStatus: 'En attente',
+      paymentStatus: 'Payé',
       paymentDate: '',
       receiptFile: null
     }]);
@@ -2837,7 +2845,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       permitNumber: '',
       issuingService: '',
       issueDate: '',
-      validityMonths: '12',
+      validityMonths: '36',
       administrativeStatus: 'En attente',
       issuingServiceContact: '',
       attachmentFile: null

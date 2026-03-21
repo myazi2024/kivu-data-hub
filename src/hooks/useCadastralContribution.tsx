@@ -108,6 +108,7 @@ export interface CadastralContributionData {
     paymentDate?: string;
     receiptUrl?: string;
     taxType?: string;
+    remainingAmount?: number;
   }>;
   mortgageHistory?: Array<{
     mortgageAmountUsd: number;
@@ -190,7 +191,8 @@ export const useCadastralContribution = () => {
       payment_status: t.paymentStatus,
       payment_date: t.paymentDate || null,
       receipt_document_url: t.receiptUrl || null,
-      tax_type: t.taxType || null
+      tax_type: t.taxType || null,
+      remaining_amount: t.remainingAmount || null // FIX #1: persist remaining amount
     })) || null;
 
     // Convert mortgage history to snake_case for DB trigger

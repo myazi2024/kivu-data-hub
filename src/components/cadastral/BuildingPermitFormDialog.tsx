@@ -54,7 +54,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
     issueDate: '',
     issuingService: '',
     issuingServiceContact: '',
-    validityPeriod: '12',
+    validityPeriod: '36',
     permitFile: null
   });
 
@@ -79,7 +79,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
   const calculatedStatus = useMemo((): string => {
     if (!permitRecord.issueDate || !permitRecord.validityPeriod) return 'En cours';
     const issueDate = new Date(permitRecord.issueDate);
-    const validityMonths = parseInt(permitRecord.validityPeriod) || 12;
+    const validityMonths = parseInt(permitRecord.validityPeriod) || 36;
     const expiryDate = new Date(issueDate);
     expiryDate.setMonth(expiryDate.getMonth() + validityMonths);
     return expiryDate > new Date() ? 'Valide' : 'Expiré';
@@ -214,7 +214,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
             issueDate: permitRecord.issueDate,
             issuingService: permitRecord.issuingService,
             issuingServiceContact: permitRecord.issuingServiceContact,
-            validityMonths: parseInt(permitRecord.validityPeriod) || 12,
+            validityMonths: parseInt(permitRecord.validityPeriod) || 36,
             administrativeStatus: calculatedStatus,
             permitType: standardizedPermitType,
             documentUrl: documentUrl,
