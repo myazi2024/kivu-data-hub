@@ -62,6 +62,8 @@ interface ObligationsTabProps {
   // Navigation
   handleTabChange: (tab: string) => void;
   handleNextTab: (current: string, next: string) => void;
+  resetTaxBlock: () => void;
+  resetMortgageBlock: () => void;
 }
 
 const ObligationsTab: React.FC<ObligationsTabProps> = ({
