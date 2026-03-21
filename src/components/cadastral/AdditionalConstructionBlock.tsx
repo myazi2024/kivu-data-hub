@@ -101,7 +101,11 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
     if (!data.constructionType || !data.constructionNature) return [];
     const usageMap = getPicklistDependentOptions('picklist_declared_usage');
     const specificKey = `${data.constructionType}_${data.constructionNature}`;
-    return usageMap[specificKey] || usageMap[data.constructionNature] || [];
+    const usages = [...(usageMap[specificKey] || usageMap[data.constructionNature] || [])];
+    // Inject "Location" for eligible residential/commercial combinations (same as main form)
+    const locationEligibleKeys = ['Résidentielle_Durable', 'Résidentielle_Semi-durable', 'Commerciale_Durable', 'Commerciale_Semi-durable'];
+    if (locationEligibleKeys.includes(specificKey) && !usages.includes('Location')) usages.push('Location');
+    return usages;
   }, [data.constructionType, data.constructionNature, getPicklistDependentOptions]);
 
   // Cascade: nature -> materials

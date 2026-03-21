@@ -646,7 +646,7 @@ export const useCCCFormState = ({
 
     // LOCATION
     if (!formData.province || formData.province.trim() === '') missing.push({ field: 'province', label: 'Province', tab: 'location' });
-    if (!formData.areaSqm || Number(formData.areaSqm) <= 0) missing.push({ field: 'areaSqm', label: 'Superficie (m²)', tab: 'location' });
+    if (!isAppartement && (!formData.areaSqm || Number(formData.areaSqm) <= 0)) missing.push({ field: 'areaSqm', label: 'Superficie (m²)', tab: 'location' });
     if (!sectionType || (sectionType !== 'urbaine' && sectionType !== 'rurale')) missing.push({ field: 'sectionType', label: 'Type de section (Urbaine/Rurale)', tab: 'location' });
     if (sectionType === 'urbaine') {
       if (!formData.ville || formData.ville.trim() === '') missing.push({ field: 'ville', label: 'Ville', tab: 'location' });
