@@ -4186,16 +4186,18 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </CardContent>
             </Card>
             
-            {/* Bouton Suivant */}
-            <div className="flex justify-end pt-6 mt-6 border-t">
-              <Button
-                type="button"
-                onClick={() => handleTabChange('location')}
-                className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all hover:scale-105 shadow-lg hover:shadow-xl animate-fade-in"
-              >
-                Suivant
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+            {/* Bouton Suivant - fixé en bas */}
+            <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur-sm border-t pt-3 pb-3 px-1 -mx-1">
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  onClick={() => handleTabChange('location')}
+                  className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all hover:scale-105 shadow-lg hover:shadow-xl animate-fade-in"
+                >
+                  Suivant
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </TabsContent>
 
