@@ -800,6 +800,7 @@ interface ConstructionSectionProps {
   setHighlightRequiredFields: (v: boolean) => void;
   getPicklistDependentOptions: any;
   toast: (opts: any) => void;
+  resetConstructionBlock: () => void;
 }
 
 const ConstructionSection: React.FC<ConstructionSectionProps> = ({
