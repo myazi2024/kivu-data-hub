@@ -679,7 +679,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             creditorType: m.creditor_type || 'Banque',
             contractDate: m.contract_date || '',
             mortgageStatus: m.mortgage_status || 'Active',
-            receiptFile: null
+            receiptFile: null,
+            existingReceiptUrl: m.receipt_url || undefined // FIX #9: preserve existing URL
           })));
         } else {
           setHasMortgage(false);
