@@ -497,7 +497,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       // Upload parcel documents
       for (const file of parcelDocuments) {
         const fileExt = file.name.split('.').pop();
-        const fileName = `parcel_doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+        const fileName = `parcel_doc_${Date.now()}_${crypto.randomUUID()}.${fileExt}`;
         const filePath = `expertise-documents/${user?.id}/parcels/${fileName}`;
         
         const { error: uploadError } = await supabase.storage
