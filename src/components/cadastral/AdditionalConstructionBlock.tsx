@@ -547,14 +547,6 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-foreground">Service émetteur de l'autorisation</Label>
-                  <BuildingPermitIssuingServiceSelect
-                    value={permit.issuingService}
-                    onValueChange={(value) => updatePermitField('issuingService', value)}
-                  />
-                </div>
-
                 {/* Document */}
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-foreground">Document (optionnel)</Label>
