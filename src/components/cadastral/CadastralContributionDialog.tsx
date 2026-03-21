@@ -626,10 +626,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             permitNumber: p.permit_number || '',
             issuingService: p.issuing_service || '',
             issueDate: p.issue_date || '',
-            validityMonths: String(p.validity_period_months || '12'),
+            validityMonths: String(p.validity_period_months || '36'),
             administrativeStatus: p.administrative_status || 'En attente',
             issuingServiceContact: p.issuing_service_contact || '',
-            attachmentFile: null
+            attachmentFile: null,
+            existingAttachmentUrl: p.permit_document_url || undefined // FIX #9: preserve existing URL
           })));
         } else if (contrib.permit_request_data) {
           setPermitMode('request');
