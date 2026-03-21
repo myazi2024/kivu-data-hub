@@ -473,7 +473,7 @@ export const useCCCFormState = ({
       return;
     }
     setShowPermitWarning(false); setHighlightIncompletePermit(false);
-    setBuildingPermits([...buildingPermits, { permitType: 'construction', permitNumber: '', issuingService: '', issueDate: '', validityMonths: '36', administrativeStatus: 'En attente', issuingServiceContact: '', attachmentFile: null }]);
+    setBuildingPermits([...buildingPermits, { permitType: 'construction', permitNumber: '', issueDate: '', validityMonths: '36', administrativeStatus: 'En attente', attachmentFile: null }]);
     markDirty();
   };
 
