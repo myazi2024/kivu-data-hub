@@ -44,6 +44,7 @@ import { ParcelMapPreview } from './ParcelMapPreview';
 import { useMapConfig } from '@/hooks/useMapConfig';
 import SuggestivePicklist from './SuggestivePicklist';
 import { useCCCFormPicklists } from '@/hooks/useCCCFormPicklists';
+import LocationTab from './ccc-tabs/LocationTab';
 
 interface CadastralContributionDialogProps {
   open: boolean;
