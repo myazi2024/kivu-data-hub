@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Plus, Trash2, Info, ChevronRight, ChevronLeft } from 'lucide-react';
 import { MdEventNote } from 'react-icons/md';
+import BlockResetButton from '../BlockResetButton';
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
 import SuggestivePicklist from '../SuggestivePicklist';
 import { CurrentOwner } from './GeneralTab';
