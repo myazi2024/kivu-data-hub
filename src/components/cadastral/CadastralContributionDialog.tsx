@@ -5483,22 +5483,39 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </Card>
             )}
             
-            {/* Bouton Suivant */}
-            <div className="flex justify-end pt-4 sm:pt-6 mt-4 sm:mt-6 border-t">
-              <Button
-                type="button"
-                onClick={() => {
-                  if (obligationType === 'taxes') {
-                    setObligationType('mortgages');
-                  } else {
-                    handleTabChange('review');
-                  }
-                }}
-                className="gap-2 bg-gradient-to-r from-seloger-red to-seloger-red-dark hover:from-seloger-red-dark hover:to-red-700 transition-all hover:scale-105 shadow-lg hover:shadow-xl animate-fade-in text-white text-sm sm:text-base h-10 sm:h-11 rounded-xl"
-              >
-                {obligationType === 'taxes' ? 'Suivant' : 'Reviser'}
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+            {/* Boutons Précédent / Suivant - fixés en bas */}
+            <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur-sm border-t pt-3 pb-3 px-1 -mx-1">
+              <div className="flex justify-between">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    if (obligationType === 'mortgages') {
+                      setObligationType('taxes');
+                    } else {
+                      handleTabChange('history');
+                    }
+                  }}
+                  className="gap-2 rounded-xl"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Précédent
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    if (obligationType === 'taxes') {
+                      setObligationType('mortgages');
+                    } else {
+                      handleTabChange('review');
+                    }
+                  }}
+                  className="gap-2 bg-gradient-to-r from-seloger-red to-seloger-red-dark hover:from-seloger-red-dark hover:to-red-700 transition-all hover:scale-105 shadow-lg hover:shadow-xl animate-fade-in text-white text-sm sm:text-base h-10 sm:h-11 rounded-xl"
+                >
+                  {obligationType === 'taxes' ? 'Suivant' : 'Reviser'}
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </TabsContent>
 
