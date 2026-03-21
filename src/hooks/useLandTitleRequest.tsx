@@ -79,7 +79,7 @@ export const validatePhone = (phone: string): boolean => {
 const uploadDocument = async (file: File, folder: string): Promise<string | null> => {
   try {
     const fileExt = file.name.split('.').pop();
-    const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const fileName = `${folder}/${Date.now()}_${crypto.randomUUID()}.${fileExt}`;
     
     const { error: uploadError } = await supabase.storage
       .from('land-title-documents')

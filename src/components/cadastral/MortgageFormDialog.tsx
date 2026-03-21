@@ -252,7 +252,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
       let documentUrl: string | null = null;
       if (mortgageRecord.receiptFile) {
         const fileExt = mortgageRecord.receiptFile.name.split('.').pop();
-        const fileName = `mortgage_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+        const fileName = `mortgage_${Date.now()}_${crypto.randomUUID()}.${fileExt}`;
         const filePath = `mortgage-documents/${user.id}/${fileName}`;
         
         const { error: uploadError } = await supabase.storage

@@ -82,7 +82,7 @@ export const BoundaryConflictDialog = ({
         setUploading(true);
         for (const file of evidenceFiles) {
           const fileExt = file.name.split('.').pop();
-          const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+          const fileName = `${Date.now()}_${crypto.randomUUID()}.${fileExt}`;
           const filePath = `boundary-conflicts/${user?.id}/${fileName}`;
 
           const { error: uploadError } = await supabase.storage

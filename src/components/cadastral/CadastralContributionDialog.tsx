@@ -1219,7 +1219,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const uploadFile = async (file: File, path: string): Promise<string | null> => {
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const fileName = `${crypto.randomUUID()}.${fileExt}`;
       const filePath = `${path}/${fileName}`;
 
       const { error: uploadError, data } = await supabase.storage

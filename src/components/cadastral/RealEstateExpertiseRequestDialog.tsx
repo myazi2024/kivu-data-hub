@@ -513,7 +513,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       // Upload construction images
       for (const file of constructionImages) {
         const fileExt = file.name.split('.').pop();
-        const fileName = `construction_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+        const fileName = `construction_${Date.now()}_${crypto.randomUUID()}.${fileExt}`;
         const filePath = `expertise-documents/${user?.id}/constructions/${fileName}`;
         
         const { error: uploadError } = await supabase.storage
