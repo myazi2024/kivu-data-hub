@@ -1056,7 +1056,7 @@ export const useCCCFormState = ({
 
         const ownerHistory = contrib.ownership_history as any[];
         if (ownerHistory && Array.isArray(ownerHistory) && ownerHistory.length > 0) {
-          setPreviousOwners(ownerHistory.map((o: any) => ({ name: o.owner_name || '', legalStatus: o.legal_status || 'Personne physique', entityType: '', entitySubType: '', entitySubTypeOther: '', stateExploitedBy: '', startDate: o.ownership_start_date || '', endDate: o.ownership_end_date || '', mutationType: o.mutation_type || 'Vente' })));
+          setPreviousOwners(ownerHistory.map((o: any) => ({ name: o.owner_name || o.ownerName || '', legalStatus: o.legal_status || o.legalStatus || 'Personne physique', entityType: o.entity_type || o.entityType || '', entitySubType: o.entity_sub_type || o.entitySubType || '', entitySubTypeOther: o.entity_sub_type_other || o.entitySubTypeOther || '', stateExploitedBy: o.state_exploited_by || o.stateExploitedBy || '', startDate: o.ownership_start_date || o.startDate || '', endDate: o.ownership_end_date || o.endDate || '', mutationType: o.mutation_type || o.mutationType || 'Vente' })));
         }
 
         const gpsCoords = contrib.gps_coordinates as any[];
