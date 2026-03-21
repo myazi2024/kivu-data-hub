@@ -175,6 +175,10 @@ export const useCadastralContribution = () => {
     const ownershipHistorySnake = data.ownershipHistory?.map(o => ({
       owner_name: o.ownerName,
       legal_status: o.legalStatus,
+      entity_type: o.entityType || null,
+      entity_sub_type: o.entitySubType || null,
+      entity_sub_type_other: o.entitySubTypeOther || null,
+      state_exploited_by: o.stateExploitedBy || null,
       ownership_start_date: o.startDate,
       ownership_end_date: o.endDate || null,
       mutation_type: o.mutationType || null,
