@@ -769,7 +769,7 @@ export const useCCCFormState = ({
     if (formData.declaredUsage) filledFields += 1;
     if (formData.standing) filledFields += 1;
     totalFields += 3;
-    const hasValidPermits = buildingPermits.some(p => p.permitNumber && p.issuingService);
+    const hasValidPermits = buildingPermits.some(p => p.permitNumber && p.issueDate);
     if (hasValidPermits) filledFields += 1;
     const hasPermitAttachments = buildingPermits.some(p => p.attachmentFile);
     if (hasPermitAttachments) filledFields += 1;
