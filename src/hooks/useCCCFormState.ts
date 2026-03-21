@@ -979,7 +979,7 @@ export const useCCCFormState = ({
     setAvailableConstructionNatures([]); setAvailableDeclaredUsages([]); setAvailableConstructionMaterials([]); setAvailableStandings([]);
     setRoadSides([]);
     setPermitMode('existing');
-    setBuildingPermits([{ permitType: 'construction', permitNumber: '', issuingService: '', issueDate: '', validityMonths: '36', administrativeStatus: 'En attente', issuingServiceContact: '', attachmentFile: null }]);
+    setBuildingPermits([{ permitType: 'construction', permitNumber: '', issueDate: '', validityMonths: '36', administrativeStatus: 'En attente', attachmentFile: null }]);
     setPermitRequest({ permitType: 'construction', hasExistingConstruction: false, constructionDescription: '', plannedUsage: '', estimatedArea: '', applicantName: '', applicantPhone: '', applicantEmail: '', selectedOwnerIndex: -1, numberOfFloors: '', buildingMaterials: '', architecturalPlanImages: [], constructionYear: '', regularizationReason: '', originalPermitNumber: '', previousPermitNumber: '', constructionPhotos: [] });
     setGpsCoordinates([]);
     setShowRequiredFieldsPopover(false); setHighlightRequiredFields(false); setShowOwnerWarning(false); setHighlightIncompleteOwner(false);
