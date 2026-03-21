@@ -362,6 +362,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
         setHighlightRequiredFields={setHighlightRequiredFields}
         getPicklistDependentOptions={getPicklistDependentOptions}
         toast={toast}
+        resetConstructionBlock={resetConstructionBlock}
       />
 
       {/* Navigation */}
