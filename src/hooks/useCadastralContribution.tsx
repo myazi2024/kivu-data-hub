@@ -211,11 +211,9 @@ export const useCadastralContribution = () => {
     const buildingPermitsSnake = data.buildingPermits?.map(p => ({
       permit_type: p.permitType,
       permit_number: p.permitNumber,
-      issuing_service: p.issuingService,
       issue_date: p.issueDate,
       validity_period_months: p.validityMonths,
       administrative_status: p.administrativeStatus,
-      issuing_service_contact: p.issuingServiceContact || null,
       permit_document_url: p.attachmentUrl || null,
       is_current: true
     })) || null;
