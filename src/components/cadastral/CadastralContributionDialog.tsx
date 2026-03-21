@@ -1369,8 +1369,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               amountUsd: parsedAmount,
               paymentStatus: tax.paymentStatus,
               paymentDate: tax.paymentDate || undefined,
-              receiptUrl: receiptUrl || undefined,
-              taxType: tax.taxType
+              receiptUrl: receiptUrl || tax.existingReceiptUrl || undefined, // FIX #9: preserve existing URL
+              taxType: tax.taxType,
+              remainingAmount: tax.remainingAmount ? parseFloat(tax.remainingAmount) : undefined // FIX #1: persist remainingAmount
             };
           })
       )).filter(Boolean); // Remove nulls
