@@ -11,7 +11,7 @@ import { Plus, Trash2, Info, X, ChevronRight } from 'lucide-react';
 import { MdDashboard, MdLocationOn, MdInsertDriveFile } from 'react-icons/md';
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
 import { PropertyTitleTypeSelect, PROPERTY_TITLE_TYPES, getEffectiveTitleName } from '../PropertyTitleTypeSelect';
-import { BuildingPermitIssuingServiceSelect } from '../BuildingPermitIssuingServiceSelect';
+
 import { InputWithPopover } from '../InputWithPopover';
 import SuggestivePicklist from '../SuggestivePicklist';
 import AdditionalConstructionBlock, { AdditionalConstruction } from '../AdditionalConstructionBlock';
