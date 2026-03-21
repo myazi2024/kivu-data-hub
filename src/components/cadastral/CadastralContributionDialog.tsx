@@ -188,6 +188,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   currentOwners={state.currentOwners} previousOwners={state.previousOwners}
                   taxRecords={state.taxRecords} mortgageRecords={state.mortgageRecords} hasMortgage={state.hasMortgage}
                   buildingPermits={state.buildingPermits} permitMode={state.permitMode}
+                  constructionMode={state.constructionMode} additionalConstructions={state.additionalConstructions}
                   ownerDocFile={state.ownerDocFile} titleDocFiles={state.titleDocFiles}
                   gpsCoordinates={state.gpsCoordinates} parcelSides={state.parcelSides}
                   leaseYears={state.leaseYears} customTitleName={state.customTitleName}

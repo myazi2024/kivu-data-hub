@@ -6,6 +6,7 @@ import { MdRateReview } from 'react-icons/md';
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
 import { PROPERTY_TITLE_TYPES } from '../PropertyTitleTypeSelect';
 import { CurrentOwner, BuildingPermit } from './GeneralTab';
+import { AdditionalConstruction } from '../AdditionalConstructionBlock';
 import { PreviousOwner } from './HistoryTab';
 import { TaxRecord, MortgageRecord } from './ObligationsTab';
 
@@ -19,6 +20,8 @@ interface ReviewTabProps {
   hasMortgage: boolean | null;
   buildingPermits: BuildingPermit[];
   permitMode: 'existing' | 'request';
+  constructionMode: 'unique' | 'multiple';
+  additionalConstructions: AdditionalConstruction[];
   ownerDocFile: File | null;
   titleDocFiles: File[];
   gpsCoordinates: Array<{ borne: string; lat: string; lng: string }>;
@@ -45,7 +48,7 @@ interface ReviewTabProps {
 const ReviewTab: React.FC<ReviewTabProps> = ({
   formData, sectionType, currentOwners, previousOwners,
   taxRecords, mortgageRecords, hasMortgage,
-  buildingPermits, permitMode, ownerDocFile, titleDocFiles,
+  buildingPermits, permitMode, constructionMode, additionalConstructions, ownerDocFile, titleDocFiles,
   gpsCoordinates, parcelSides, leaseYears, customTitleName,
   calculateCCCValue, isFormValidForSubmission, getMissingFields,
   handleSubmit, handleTabChange, saveFormDataToStorage,
@@ -124,6 +127,25 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
                 ) : (
                   <div className="ml-2 text-destructive text-xs italic">Non renseigné</div>
                 )}
+              </div>
+            )}
+            {/* Constructions additionnelles */}
+            {constructionMode === 'multiple' && additionalConstructions.length > 0 && (
+              <div className="pt-1 border-t border-border/50">
+                <div className="font-medium">Constructions additionnelles ({additionalConstructions.length}):</div>
+                {additionalConstructions.map((c, idx) => (
+                  <div key={idx} className="ml-2 mt-1 p-2 bg-muted/50 rounded-lg space-y-0.5">
+                    <div className="font-medium text-foreground">Construction #{idx + 2}</div>
+                    {c.propertyCategory && <div className="text-muted-foreground">Catégorie: {c.propertyCategory}</div>}
+                    {c.constructionType && <div className="text-muted-foreground">Type: {c.constructionType}</div>}
+                    {c.constructionNature && <div className="text-muted-foreground">Nature: {c.constructionNature}</div>}
+                    {c.constructionMaterials && <div className="text-muted-foreground">Matériaux: {c.constructionMaterials}</div>}
+                    {c.declaredUsage && <div className="text-muted-foreground">Usage: {c.declaredUsage}</div>}
+                    {c.standing && <div className="text-muted-foreground">Standing: {c.standing}</div>}
+                    {c.constructionYear && <div className="text-muted-foreground">Année: {c.constructionYear}</div>}
+                    {c.permit?.permitNumber && <div className="text-muted-foreground">Permis: N° {c.permit.permitNumber}</div>}
+                  </div>
+                ))}
               </div>
             )}
             {(!formData.propertyTitleType && !currentOwners.some(o => o.lastName || o.firstName)) && (
