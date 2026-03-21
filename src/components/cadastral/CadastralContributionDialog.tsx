@@ -2439,23 +2439,27 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const handleNextTab = useCallback((currentTab: string, nextTab: string) => {
     const missingFields = getMissingFieldsForTab(currentTab);
     if (missingFields.length > 0) {
-      // Marquer les champs invalides
+      // Activer la mise en évidence des champs obligatoires manquants
+      setHighlightRequiredFields(true);
       setInvalidFields(new Set(missingFields.map(f => f.field)));
       // Afficher un toast avec la liste des champs manquants
-      const fieldNames = missingFields.map(f => `• ${f.label}`).join('\n');
+      const maxShow = 5;
+      const fieldNames = missingFields.slice(0, maxShow).map(f => `• ${f.label}`).join('\n');
+      const extra = missingFields.length > maxShow ? `\n... et ${missingFields.length - maxShow} autre(s)` : '';
       toast({
         title: '⚠️ Champs obligatoires manquants',
-        description: `Veuillez compléter les champs suivants :\n${fieldNames}`,
+        description: `Veuillez compléter les champs suivants :\n${fieldNames}${extra}`,
         variant: 'destructive',
       });
-      // Scroll vers le premier champ invalide
+      // Scroll vers le premier champ en surbrillance
       setTimeout(() => {
-        const firstInvalidEl = dialogContentRef.current?.querySelector('[data-invalid="true"]');
-        if (firstInvalidEl) {
-          firstInvalidEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const firstHighlighted = dialogContentRef.current?.querySelector('.ring-destructive');
+        if (firstHighlighted) {
+          firstHighlighted.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-      }, 100);
+      }, 150);
     } else {
+      setHighlightRequiredFields(false);
       setInvalidFields(new Set());
       handleTabChange(nextTab);
     }
