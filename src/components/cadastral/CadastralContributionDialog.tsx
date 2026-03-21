@@ -2194,6 +2194,20 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (formData.propertyTitleType === 'Autre' && (!customTitleName || customTitleName.trim() === '')) {
       missing.push({ field: 'customTitleName', label: 'Nom du titre de propriété (Autre)', tab: 'general' });
     }
+    // Question "Ce titre est-il au nom du propriétaire actuel?" obligatoire si N° titre renseigné
+    if (formData.titleReferenceNumber && formData.titleReferenceNumber.trim() !== '' && formData.isTitleInCurrentOwnerName === undefined) {
+      missing.push({ field: 'isTitleInCurrentOwnerName', label: 'Ce titre est-il au nom du propriétaire actuel ?', tab: 'general' });
+    }
+    
+    // --- Pièces jointes obligatoires (onglet général) ---
+    // Document du propriétaire
+    if (!ownerDocFile && !(editingContributionId && formData.ownerDocumentUrl)) {
+      missing.push({ field: 'ownerDocFile', label: 'Pièce jointe du propriétaire', tab: 'general' });
+    }
+    // Document du titre de propriété (au moins un)
+    if (titleDocFiles.length === 0 && !(editingContributionId && formData.titleDocumentUrl)) {
+      missing.push({ field: 'titleDocFiles', label: 'Pièce jointe du titre de propriété', tab: 'general' });
+    }
     
     // --- Propriétaire actuel ---
     const firstOwner = currentOwners[0];
