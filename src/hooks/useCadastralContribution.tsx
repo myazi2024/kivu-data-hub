@@ -138,7 +138,6 @@ export interface CadastralContributionData {
       permitType: 'construction' | 'regularization';
       permitNumber: string;
       issueDate: string;
-      issuingService: string;
       attachmentUrl?: string;
     };
   }>;
