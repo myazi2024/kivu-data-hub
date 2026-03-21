@@ -146,6 +146,7 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
   };
 
   const isNotTerrainNu = data.propertyCategory && data.propertyCategory !== 'Terrain nu' && data.constructionType !== 'Terrain nu';
+  const showBuildingPermit = isNotTerrainNu && data.propertyCategory !== 'Appartement';
 
   return (
     <div className="border-2 border-border rounded-2xl p-4 space-y-3 bg-card shadow-sm animate-fade-in">
