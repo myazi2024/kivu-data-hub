@@ -4121,11 +4121,16 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </>)}
 
                 {/* Radio: Construction unique / Plusieurs constructions - visible sauf Terrain nu et Appartement */}
-                {formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && formData.propertyCategory !== 'Appartement' && (
+                {formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && formData.propertyCategory !== 'Appartement' && (() => {
+                  const isFirstConstructionComplete = !!(formData.constructionType && formData.constructionNature && formData.declaredUsage);
+                  return (
                 <>
                 <div className="border-t border-border/50 my-2" />
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold">Nombre de constructions sur la parcelle</Label>
+                  {!isFirstConstructionComplete && (
+                    <p className="text-xs text-muted-foreground italic">Renseignez d'abord la construction principale (type, nature, usage) avant d'ajouter d'autres constructions.</p>
+                  )}
                   <div className="flex gap-3">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
@@ -4140,12 +4145,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       />
                       <span className="text-sm">Construction unique</span>
                     </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className={`flex items-center gap-2 ${isFirstConstructionComplete ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}>
                       <input
                         type="radio"
                         name="constructionMode"
                         checked={constructionMode === 'multiple'}
-                        onChange={() => setConstructionMode('multiple')}
+                        onChange={() => isFirstConstructionComplete && setConstructionMode('multiple')}
+                        disabled={!isFirstConstructionComplete}
                         className="accent-primary h-4 w-4"
                       />
                       <span className="text-sm">Plusieurs constructions</span>
