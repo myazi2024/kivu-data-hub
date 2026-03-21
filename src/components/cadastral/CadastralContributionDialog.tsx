@@ -4198,7 +4198,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   </div>
                 )}
 
-                </>)}
+                </>);
+                })()}
               </CardContent>
             </Card>
             
