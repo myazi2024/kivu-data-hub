@@ -1011,7 +1011,7 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({
         {permitMode === 'existing' && (
           <div className="space-y-4 animate-fade-in">
             {buildingPermits.map((permit, index) => (
-              <div key={index} className={cn("border-2 rounded-2xl p-4 space-y-4 bg-card shadow-md", highlightIncompletePermit && index === buildingPermits.length - 1 && (!permit.permitNumber || !permit.issuingService || !permit.issueDate) ? 'ring-2 ring-primary border-primary animate-pulse' : 'border-border')}>
+              <div key={index} className={cn("border-2 rounded-2xl p-4 space-y-4 bg-card shadow-md", highlightIncompletePermit && index === buildingPermits.length - 1 && (!permit.permitNumber || !permit.issueDate) ? 'ring-2 ring-primary border-primary animate-pulse' : 'border-border')}>
                 <div className="flex items-center justify-between pb-2 border-b border-border/50">
                   <div className="flex items-center gap-2">
                     <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
