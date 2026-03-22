@@ -7,9 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Ruler, Compass, Info, Trash2, Check, Route, X, Lightbulb, BrickWall, AlertTriangle } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Ruler, Compass, Info, Trash2, Check, Route, X, Lightbulb, BrickWall, AlertTriangle, DoorOpen } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export interface ParcelSide {
   name: string;
@@ -36,6 +38,8 @@ export interface RoadSideInfo {
   orientation?: string;
   length?: number;
   isConfirmed?: boolean;
+  // Entrée de la parcelle
+  hasEntrance?: boolean;
 }
 
 export interface ServitudeInfo {
@@ -96,12 +100,13 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
   roadTypes = defaultRoadTypes,
   wallMaterials = defaultWallMaterials,
 }) => {
+  const isMobile = useIsMobile();
   const [editingSide, setEditingSide] = useState<number | null>(null);
   const [showNotification, setShowNotification] = useState(true);
   const confirmedSidesCount = roadSides.filter(s => s.bordersRoad && s.isConfirmed).length;
   const roadCount = roadSides.filter(s => s.bordersRoad && s.isConfirmed && s.borderType === 'route').length;
   const wallCount = roadSides.filter(s => s.bordersRoad && s.isConfirmed && s.borderType === 'mur_mitoyen').length;
-  const totalPerimeter = parcelSides.reduce((sum, side) => sum + parseFloat(side.length || '0'), 0);
+  
 
   // Vérifier si tous les côtés sont en mur mitoyen (aucun côté n'est une route)
   const hasAnyRoute = roadSides.some(s => s.bordersRoad && s.borderType === 'route');
@@ -296,9 +301,22 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                         {roadSide.orientation}
                       </Badge>
                     )}
-                    <Badge variant="secondary" className="font-mono text-xs h-5 px-1.5 rounded-md font-bold whitespace-nowrap">
-                      {side.length}m
-                    </Badge>
+                    <div
+                      className="flex items-center gap-1"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Checkbox
+                        id={`entrance-${index}`}
+                        checked={roadSide?.hasEntrance || false}
+                        onCheckedChange={(checked) => {
+                          onRoadSideUpdate(index, { hasEntrance: !!checked });
+                        }}
+                        className="h-3.5 w-3.5"
+                      />
+                      <label htmlFor={`entrance-${index}`} className="text-[10px] font-medium text-muted-foreground cursor-pointer select-none">
+                        {isMobile ? 'Entrée' : 'Entrée de la parcelle'}
+                      </label>
+                    </div>
                     {/* Bouton slide - visible si pas confirmé */}
                     {!hasConfirmed && (
                       <div
