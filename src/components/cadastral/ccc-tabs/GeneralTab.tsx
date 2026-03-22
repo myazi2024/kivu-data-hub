@@ -551,24 +551,59 @@ const CurrentOwnersSection: React.FC<CurrentOwnersSectionProps> = ({
               max={new Date().toISOString().split('T')[0]}
               min={formData.isTitleInCurrentOwnerName === false && formData.titleIssueDate && index === 0 ? formData.titleIssueDate : undefined}
               value={index > 0 && ownershipMode === 'multiple' ? currentOwners[0]?.since || '' : owner.since}
-              onChange={(e) => updateCurrentOwner(index, 'since', e.target.value)}
-              className={`h-10 text-sm rounded-xl ${formData.isTitleInCurrentOwnerName === true && index === 0 ? 'cursor-not-allowed opacity-70' : ''} ${
+              onChange={(e) => {
+                updateCurrentOwner(index, 'since', e.target.value);
+                // Clear previousTitleType if date no longer triggers the condition
+                if (formData.isTitleInCurrentOwnerName === true && formData.titleIssueDate && index === 0) {
+                  if (!e.target.value || new Date(e.target.value) >= new Date(formData.titleIssueDate)) {
+                    updateCurrentOwner(index, 'previousTitleType', '');
+                  }
+                }
+              }}
+              className={`h-10 text-sm rounded-xl ${
                 index > 0 && ownershipMode === 'multiple' ? 'cursor-not-allowed opacity-70 bg-muted' : ''
               } ${
                 formData.isTitleInCurrentOwnerName === false && formData.titleIssueDate && owner.since && index === 0 && new Date(owner.since) < new Date(formData.titleIssueDate) 
                   ? 'border-destructive ring-1 ring-destructive' : ''
               }`}
-              disabled={(formData.isTitleInCurrentOwnerName === true && index === 0) || (index > 0 && ownershipMode === 'multiple')}
-              title={index > 0 && ownershipMode === 'multiple' ? 'Date synchronisée avec le copropriétaire 1' : formData.isTitleInCurrentOwnerName === true && index === 0 ? 'Cette date est synchronisée avec la date de délivrance du titre' : undefined}
+              disabled={index > 0 && ownershipMode === 'multiple'}
+              title={index > 0 && ownershipMode === 'multiple' ? 'Date synchronisée avec le copropriétaire 1' : undefined}
             />
-            {formData.isTitleInCurrentOwnerName === true && index === 0 && (
-              <p className="text-xs text-muted-foreground">Synchronisée avec la date de délivrance</p>
-            )}
             {index > 0 && ownershipMode === 'multiple' && (
               <p className="text-xs text-muted-foreground">Synchronisée avec le copropriétaire 1</p>
             )}
             {formData.isTitleInCurrentOwnerName === false && formData.titleIssueDate && owner.since && index === 0 && new Date(owner.since) < new Date(formData.titleIssueDate) && (
               <p className="text-xs text-destructive">⚠️ Date invalide : doit être ≥ {new Date(formData.titleIssueDate).toLocaleDateString('fr-FR')}</p>
+            )}
+
+            {/* Dependent picklist: show when isTitleInCurrentOwnerName=true AND owner.since < titleIssueDate */}
+            {formData.isTitleInCurrentOwnerName === true && formData.titleIssueDate && owner.since && index === 0 && new Date(owner.since) < new Date(formData.titleIssueDate) && (
+              <div className="space-y-1 pt-1 animate-fade-in">
+                <Label className="text-sm font-medium">
+                  Titre de propriété antérieur <span className="text-destructive">*</span>
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  La date d'acquisition est antérieure à la délivrance du titre actuel. Quel titre détenait le propriétaire avant ?
+                </p>
+                <Select
+                  value={owner.previousTitleType || ''}
+                  onValueChange={(val) => updateCurrentOwner(index, 'previousTitleType', val)}
+                >
+                  <SelectTrigger className="h-10 rounded-xl text-sm">
+                    <SelectValue placeholder="Sélectionner le titre antérieur" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    {PROPERTY_TITLE_TYPES
+                      .filter(t => t.value !== formData.propertyTitleType && t.value !== 'Autre')
+                      .map(t => (
+                        <SelectItem key={t.value} value={t.value}>
+                          {t.label}
+                        </SelectItem>
+                      ))}
+                    <SelectItem value="Aucun">Aucun titre antérieur</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             )}
           </div>
 
