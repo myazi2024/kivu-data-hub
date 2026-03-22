@@ -316,7 +316,7 @@ const UrbanSection: React.FC<UrbanSectionProps> = ({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="avenue" className="text-sm">Avenue *</Label>
+          <Label htmlFor="avenue" className="text-sm">Avenue</Label>
           <Input
             id="avenue"
             className="h-9 text-sm rounded-xl"
