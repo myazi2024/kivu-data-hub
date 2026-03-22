@@ -1043,7 +1043,7 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({
             <Label className="text-sm font-semibold leading-tight">
               Avez-vous obtenu une autorisation de bâtir pour votre {formData.propertyCategory || 'bien'}
               {formData.constructionType ? `, de type ${formData.constructionType}` : ''}
-              {formData.constructionNature ? `, ${formData.constructionNature}` : ''}
+              {formData.constructionNature ? `, construction ${formData.constructionNature.toLowerCase()}` : ''}
               {formData.constructionMaterials ? `, construit avec des ${formData.constructionMaterials}` : ''}
               {formData.declaredUsage ? `, et qui est utilisé comme ${formData.declaredUsage}` : ''} ?
             </Label>
