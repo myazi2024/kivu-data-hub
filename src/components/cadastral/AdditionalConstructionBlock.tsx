@@ -221,7 +221,7 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
         </Select>
       </div>
 
-      {/* Type et Nature */}
+      {/* Type et Matériaux */}
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1.5">
           <Label className="text-sm font-medium">Type de construction</Label>
@@ -243,29 +243,12 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
           )}
         </div>
 
-        <div className="space-y-1.5">
-          <Label className="text-sm font-medium">Nature</Label>
-          <Select value={data.constructionNature} onValueChange={(v) => update('constructionNature', v)} disabled={!data.constructionType}>
-            <SelectTrigger className="h-10 rounded-xl text-sm">
-              <SelectValue placeholder={!data.constructionType ? "Type d'abord" : "Sélectionner"} />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl">
-              {availableNatures.map(n => (
-                <SelectItem key={n} value={n}>{n}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Matériaux et Usage */}
-      <div className="grid grid-cols-2 gap-2">
-        {data.constructionNature && data.constructionNature !== 'Non bâti' ? (
+        {availableMaterials.length > 0 ? (
           <div className="space-y-1.5">
             <Label className="text-sm font-medium">Matériaux</Label>
             <Select value={data.constructionMaterials} onValueChange={(v) => update('constructionMaterials', v)} disabled={availableMaterials.length === 0}>
               <SelectTrigger className="h-10 rounded-xl text-sm">
-                <SelectValue placeholder={availableMaterials.length === 0 ? "Nature d'abord" : "Sélectionner"} />
+                <SelectValue placeholder={!data.constructionType ? "Type d'abord" : "Sélectionner"} />
               </SelectTrigger>
               <SelectContent className="rounded-xl">
                 {availableMaterials.map(opt => (
@@ -275,6 +258,16 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
             </Select>
           </div>
         ) : <div />}
+      </div>
+
+      {/* Nature (auto-remplie) et Usage */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1.5">
+          <Label className="text-sm font-medium">Nature</Label>
+          <div className="h-10 px-3 flex items-center text-sm rounded-xl border-2 bg-muted text-muted-foreground">
+            {data.constructionNature ? `Construction ${data.constructionNature.toLowerCase()}` : (data.constructionMaterials ? '—' : "Matériaux d'abord")}
+          </div>
+        </div>
 
         <div className="space-y-1.5">
           <div className="flex items-center gap-1">
