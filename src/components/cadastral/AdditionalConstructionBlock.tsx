@@ -385,7 +385,7 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
               <Label className="text-sm font-semibold leading-tight">
                 Avez-vous obtenu une autorisation de bâtir pour votre {data.propertyCategory || 'bien'}
                 {data.constructionType ? `, de type ${data.constructionType}` : ''}
-                {data.constructionNature ? `, ${data.constructionNature}` : ''}
+                {data.constructionNature ? `, construction ${data.constructionNature.toLowerCase()}` : ''}
                 {data.constructionMaterials ? `, construit avec des ${data.constructionMaterials}` : ''}
                 {data.declaredUsage ? `, et qui est utilisé comme ${data.declaredUsage}` : ''} ?
               </Label>
