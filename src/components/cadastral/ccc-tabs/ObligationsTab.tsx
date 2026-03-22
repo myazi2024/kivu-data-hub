@@ -82,6 +82,7 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
       <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-xl w-fit shadow-inner mx-auto">
         <Button type="button" variant={obligationType === 'taxes' ? 'default' : 'ghost'} size="sm" onClick={() => setObligationType('taxes')} className="text-sm h-8">Taxes</Button>
         <Button type="button" variant={obligationType === 'mortgages' ? 'default' : 'ghost'} size="sm" onClick={() => setObligationType('mortgages')} className="text-sm h-8">Hypothèques</Button>
+        <Button type="button" variant={obligationType === 'disputes' ? 'default' : 'ghost'} size="sm" onClick={() => setObligationType('disputes')} className="text-sm h-8">Litiges</Button>
       </div>
 
       {/* Taxes */}
