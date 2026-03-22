@@ -910,7 +910,7 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({
         </Select>
       </div>
 
-      {/* Type & Nature */}
+      {/* Type & Matériaux */}
       <div className="grid grid-cols-2 gap-2">
         <div className={`space-y-1.5 ${highlightRequiredFields && !formData.constructionType ? 'ring-2 ring-destructive rounded-xl p-2 bg-destructive/5 animate-pulse' : ''}`}>
           <Label className="text-sm font-medium flex items-center gap-1">
@@ -931,33 +931,30 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({
           )}
         </div>
 
-        <div className={`space-y-1.5 ${highlightRequiredFields && !formData.constructionNature ? 'ring-2 ring-destructive rounded-xl p-2 bg-destructive/5 animate-pulse' : ''}`}>
-          <Label className="text-sm font-medium flex items-center gap-1">
-            Nature
-            {highlightRequiredFields && !formData.constructionNature && <span className="text-destructive text-xs font-semibold">*</span>}
-          </Label>
-          <Select value={formData.constructionNature || ''} onValueChange={(value) => { handleInputChange('constructionNature', value); setHighlightRequiredFields(false); }} disabled={!formData.constructionType}>
-            <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder={!formData.constructionType ? "Type d'abord" : "Sélectionner"} /></SelectTrigger>
-            <SelectContent className="rounded-xl">
-              {availableConstructionNatures.map(nature => <SelectItem key={nature} value={nature}>{nature}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Materials & Usage */}
-      <div className="grid grid-cols-2 gap-2">
         {availableConstructionMaterials.length > 0 ? (
           <div className="space-y-1.5">
             <Label className="text-sm font-medium">Matériaux</Label>
             <Select value={formData.constructionMaterials || ''} onValueChange={(value) => handleInputChange('constructionMaterials', value)} disabled={availableConstructionMaterials.length === 0}>
-              <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder={availableConstructionMaterials.length === 0 ? "Nature d'abord" : "Sélectionner"} /></SelectTrigger>
+              <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder={!formData.constructionType ? "Type d'abord" : "Sélectionner"} /></SelectTrigger>
               <SelectContent className="rounded-xl">
                 {availableConstructionMaterials.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
         ) : <div />}
+      </div>
+
+      {/* Nature (auto-remplie) & Usage */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className={`space-y-1.5 ${highlightRequiredFields && !formData.constructionNature ? 'ring-2 ring-destructive rounded-xl p-2 bg-destructive/5 animate-pulse' : ''}`}>
+          <Label className="text-sm font-medium flex items-center gap-1">
+            Nature
+            {highlightRequiredFields && !formData.constructionNature && <span className="text-destructive text-xs font-semibold">*</span>}
+          </Label>
+          <div className="h-10 px-3 flex items-center text-sm rounded-xl border-2 bg-muted text-muted-foreground">
+            {formData.constructionNature ? `Construction ${formData.constructionNature.toLowerCase()}` : (formData.constructionMaterials ? '—' : "Matériaux d'abord")}
+          </div>
+        </div>
 
         <div className={`space-y-1.5 ${highlightRequiredFields && !formData.declaredUsage ? 'ring-2 ring-destructive rounded-xl p-2 bg-destructive/5 animate-pulse' : ''}`}>
           <div className="flex items-center gap-1">
