@@ -9,6 +9,7 @@ import { Plus, Trash2, Info, X, ChevronRight, ChevronLeft, CheckCircle2 } from '
 import BlockResetButton from '../BlockResetButton';
 import { MdAccountBalance, MdInsertDriveFile } from 'react-icons/md';
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
+import LandDisputeReportForm from '../LandDisputeReportForm';
 
 export interface TaxRecord {
   taxType: string;
