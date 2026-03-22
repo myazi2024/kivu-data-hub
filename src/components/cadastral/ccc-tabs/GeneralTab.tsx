@@ -30,6 +30,7 @@ export interface CurrentOwner {
   stateExploitedBy: string;
   rightType: string;
   since: string;
+  previousTitleType?: string;
 }
 
 export interface BuildingPermit {
