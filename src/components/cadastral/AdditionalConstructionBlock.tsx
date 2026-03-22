@@ -89,7 +89,40 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
     return CATEGORY_TO_CONSTRUCTION_TYPES[data.propertyCategory] || [];
   }, [data.propertyCategory]);
 
-  // Cascade: type -> natures
+  // Cascade: type -> all materials (flattened from all natures)
+  const availableMaterials = useMemo(() => {
+    if (!data.constructionType) return [];
+    const natureMap = getPicklistDependentOptions('picklist_construction_nature');
+    const natures = natureMap[data.constructionType] || [];
+    const dbMap = getPicklistDependentOptions('picklist_construction_materials');
+    const hasDb = Object.keys(dbMap).length > 0;
+    const allMats: string[] = [];
+    const seen = new Set<string>();
+    for (const nature of natures) {
+      if (nature === 'Non bâti') continue;
+      const mats = hasDb ? (dbMap[nature] || []) : (MATERIALS_BY_NATURE_FALLBACK[nature] || []);
+      for (const m of mats) {
+        if (!seen.has(m)) { seen.add(m); allMats.push(m); }
+      }
+    }
+    return allMats;
+  }, [data.constructionType, getPicklistDependentOptions]);
+
+  // Reverse lookup: material -> nature
+  const materialToNatureMap = useMemo(() => {
+    const dbMap = getPicklistDependentOptions('picklist_construction_materials');
+    const hasDb = Object.keys(dbMap).length > 0;
+    const source = hasDb ? dbMap : MATERIALS_BY_NATURE_FALLBACK;
+    const reverseMap: Record<string, string> = {};
+    for (const [nature, materials] of Object.entries(source)) {
+      for (const mat of materials) {
+        if (!reverseMap[mat]) reverseMap[mat] = nature;
+      }
+    }
+    return reverseMap;
+  }, [getPicklistDependentOptions]);
+
+  // Cascade: type -> natures (for downstream usage/standing)
   const availableNatures = useMemo(() => {
     if (!data.constructionType) return [];
     const natureMap = getPicklistDependentOptions('picklist_construction_nature');
@@ -102,18 +135,10 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
     const usageMap = getPicklistDependentOptions('picklist_declared_usage');
     const specificKey = `${data.constructionType}_${data.constructionNature}`;
     const usages = [...(usageMap[specificKey] || usageMap[data.constructionNature] || [])];
-    // Inject "Location" for eligible residential/commercial combinations (same as main form)
     const locationEligibleKeys = ['Résidentielle_Durable', 'Résidentielle_Semi-durable', 'Commerciale_Durable', 'Commerciale_Semi-durable', 'Industrielle_Durable', 'Industrielle_Semi-durable'];
     if (locationEligibleKeys.includes(specificKey) && !usages.includes('Location')) usages.push('Location');
     return usages;
   }, [data.constructionType, data.constructionNature, getPicklistDependentOptions]);
-
-  // Cascade: nature -> materials
-  const availableMaterials = useMemo(() => {
-    if (!data.constructionNature || data.constructionNature === 'Non bâti') return [];
-    const dbMap = getPicklistDependentOptions('picklist_construction_materials');
-    return (Object.keys(dbMap).length > 0 ? dbMap[data.constructionNature] : MATERIALS_BY_NATURE_FALLBACK[data.constructionNature]) || [];
-  }, [data.constructionNature, getPicklistDependentOptions]);
 
   // Cascade: nature -> standings
   const availableStandings = useMemo(() => {
@@ -131,10 +156,24 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
     }
   }, [data.propertyCategory]);
 
-  // Reset nature when type changes
+  // Auto-fill nature when materials changes
   useEffect(() => {
-    if (data.constructionNature && availableNatures.length > 0 && !availableNatures.includes(data.constructionNature)) {
-      onChange(index, { ...data, constructionNature: '', constructionMaterials: '', declaredUsage: '', standing: '' });
+    if (!data.constructionMaterials) {
+      if (data.constructionNature) {
+        onChange(index, { ...data, constructionNature: '', declaredUsage: '', standing: '' });
+      }
+      return;
+    }
+    const deducedNature = materialToNatureMap[data.constructionMaterials];
+    if (deducedNature && deducedNature !== data.constructionNature) {
+      onChange(index, { ...data, constructionNature: deducedNature, declaredUsage: '', standing: '' });
+    }
+  }, [data.constructionMaterials]);
+
+  // Reset materials when type changes
+  useEffect(() => {
+    if (data.constructionMaterials && availableMaterials.length > 0 && !availableMaterials.includes(data.constructionMaterials)) {
+      onChange(index, { ...data, constructionMaterials: '', constructionNature: '', declaredUsage: '', standing: '' });
     }
   }, [data.constructionType]);
 
