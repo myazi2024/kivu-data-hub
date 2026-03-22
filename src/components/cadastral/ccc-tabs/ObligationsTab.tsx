@@ -132,7 +132,7 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                     <Select value={tax.taxType} onValueChange={(value) => updateTaxRecord(index, 'taxType', value)}>
                       <SelectTrigger className="h-10 text-sm rounded-xl"><SelectValue placeholder="Type" /></SelectTrigger>
                       <SelectContent className="rounded-xl">
-                        {['Impôt foncier annuel', ...(formData.declaredUsage === 'Location' ? ['Impôt sur les revenus locatifs'] : [])].map(opt => (
+                        {['Impôt foncier annuel', ...((formData.declaredUsage === 'Location' || (Array.isArray(formData.additionalConstructions) && formData.additionalConstructions.some((c: any) => c.declaredUsage === 'Location'))) ? ['Impôt sur les revenus locatifs'] : [])].map(opt => (
                           <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                         ))}
                       </SelectContent>
