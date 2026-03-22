@@ -439,13 +439,15 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
         </Alert>
       )}
 
-      {/* Avertissement important */}
-      <Alert className="bg-amber-50 border-amber-300 rounded-xl">
-        <AlertTriangle className="h-4 w-4 text-amber-600" />
-        <AlertDescription className="text-xs text-amber-900 leading-relaxed">
-          <span className="font-semibold">Important :</span> Les informations que vous fournissez dans ce formulaire doivent être exactes et vérifiables. Tout signalement contenant des informations erronées ou mensongères ne sera pas pris en considération et pourra engager votre responsabilité.
-        </AlertDescription>
-      </Alert>
+      {/* Avertissement important - masqué en mode embarqué */}
+      {!embedded && (
+        <Alert className="bg-amber-50 border-amber-300 rounded-xl">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-xs text-amber-900 leading-relaxed">
+            <span className="font-semibold">Important :</span> Les informations que vous fournissez dans ce formulaire doivent être exactes et vérifiables. Tout signalement contenant des informations erronées ou mensongères ne sera pas pris en considération et pourra engager votre responsabilité.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Référence */}
       <Card className="bg-primary/5 border-primary/20 rounded-xl shadow-sm">
@@ -689,19 +691,23 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
         </CardContent>
       </Card>
 
-      <Separator />
+      {!embedded && (
+        <>
+          <Separator />
 
-      {/* Certification */}
-      <div className="flex items-start gap-2.5">
-        <Checkbox checked={certifyAccuracy} onCheckedChange={(c) => setCertifyAccuracy(c === true)} id="certify" className="mt-0.5" />
-        <label htmlFor="certify" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
-          Je certifie sur l'honneur que les informations fournies sont exactes et complètes. Tout signalement abusif ou frauduleux engage ma responsabilité civile et pénale.
-        </label>
-      </div>
+          {/* Certification */}
+          <div className="flex items-start gap-2.5">
+            <Checkbox checked={certifyAccuracy} onCheckedChange={(c) => setCertifyAccuracy(c === true)} id="certify" className="mt-0.5" />
+            <label htmlFor="certify" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
+              Je certifie sur l'honneur que les informations fournies sont exactes et complètes. Tout signalement abusif ou frauduleux engage ma responsabilité civile et pénale.
+            </label>
+          </div>
 
-      <Button onClick={handleGoToReview} className="w-full h-11 rounded-xl" disabled={!certifyAccuracy}>
-        Vérifier et soumettre
-      </Button>
+          <Button onClick={handleGoToReview} className="w-full h-11 rounded-xl" disabled={!certifyAccuracy}>
+            Vérifier et soumettre
+          </Button>
+        </>
+      )}
 
       <WhatsAppFloatingButton 
         message={`Bonjour, j'ai besoin d'aide pour signaler un litige foncier sur la parcelle ${parcelNumber}.`}
