@@ -439,13 +439,15 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
         </Alert>
       )}
 
-      {/* Avertissement important */}
-      <Alert className="bg-amber-50 border-amber-300 rounded-xl">
-        <AlertTriangle className="h-4 w-4 text-amber-600" />
-        <AlertDescription className="text-xs text-amber-900 leading-relaxed">
-          <span className="font-semibold">Important :</span> Les informations que vous fournissez dans ce formulaire doivent être exactes et vérifiables. Tout signalement contenant des informations erronées ou mensongères ne sera pas pris en considération et pourra engager votre responsabilité.
-        </AlertDescription>
-      </Alert>
+      {/* Avertissement important - masqué en mode embarqué */}
+      {!embedded && (
+        <Alert className="bg-amber-50 border-amber-300 rounded-xl">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-xs text-amber-900 leading-relaxed">
+            <span className="font-semibold">Important :</span> Les informations que vous fournissez dans ce formulaire doivent être exactes et vérifiables. Tout signalement contenant des informations erronées ou mensongères ne sera pas pris en considération et pourra engager votre responsabilité.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Référence */}
       <Card className="bg-primary/5 border-primary/20 rounded-xl shadow-sm">
