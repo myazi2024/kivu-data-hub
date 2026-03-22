@@ -100,7 +100,7 @@ export const useCCCFormState = ({
   const [currentOwners, setCurrentOwners] = useState<CurrentOwner[]>([{
     lastName: '', middleName: '', firstName: '', legalStatus: 'Personne physique',
     gender: '', entityType: '', entitySubType: '', entitySubTypeOther: '',
-    stateExploitedBy: '', rightType: '', since: ''
+    stateExploitedBy: '', rightType: '', since: '', previousTitleType: ''
   }]);
 
   const [taxRecords, setTaxRecords] = useState<TaxRecord[]>([{
