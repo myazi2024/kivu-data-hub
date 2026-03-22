@@ -322,34 +322,65 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
         )}
       </div>
 
-      {/* Standing */}
+      {/* Standing & Nombre d'étages */}
       {data.constructionNature && data.constructionNature !== 'Non bâti' && availableStandings.length > 0 && (
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-1">
-            <Label className="text-sm font-medium">Standing</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-4 w-4 p-0 rounded-full">
-                  <Info className="h-3 w-3 text-muted-foreground" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-64 rounded-xl text-xs">
-                <p className="text-muted-foreground">
-                  Niveau de finition de la construction : haut standing, moyen standing ou économique.
-                </p>
-              </PopoverContent>
-            </Popover>
+        <div className={`grid gap-3 ${data.propertyCategory !== 'Appartement' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1">
+              <Label className="text-sm font-medium">Standing</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-4 w-4 p-0 rounded-full">
+                    <Info className="h-3 w-3 text-muted-foreground" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 rounded-xl text-xs">
+                  <p className="text-muted-foreground">
+                    Niveau de finition de la construction : haut standing, moyen standing ou économique.
+                  </p>
+                </PopoverContent>
+              </Popover>
+            </div>
+            <Select value={data.standing} onValueChange={(v) => update('standing', v)}>
+              <SelectTrigger className="h-10 rounded-xl text-sm">
+                <SelectValue placeholder="Sélectionner le standing" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                {availableStandings.map(s => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <Select value={data.standing} onValueChange={(v) => update('standing', v)}>
-            <SelectTrigger className="h-10 rounded-xl text-sm">
-              <SelectValue placeholder="Sélectionner le standing" />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl">
-              {availableStandings.map(s => (
-                <SelectItem key={s} value={s}>{s}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+
+          {data.propertyCategory !== 'Appartement' && (
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1">
+                <Label className="text-sm font-medium">Nombre d'étages</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-4 w-4 p-0 rounded-full">
+                      <Info className="h-3 w-3 text-muted-foreground" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64 rounded-xl text-xs">
+                    <p className="text-muted-foreground">
+                      Indiquez le nombre d'étages de la construction. La valeur « 0 » désigne un rez-de-chaussée uniquement.
+                    </p>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <Input
+                type="number"
+                min={0}
+                max={200}
+                value={data.floorNumber || ''}
+                onChange={(e) => update('floorNumber', e.target.value)}
+                placeholder="Ex: 2"
+                className="h-10 rounded-xl text-sm"
+              />
+            </div>
+          )}
         </div>
       )}
 
