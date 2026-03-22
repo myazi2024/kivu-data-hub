@@ -594,7 +594,7 @@ const CurrentOwnersSection: React.FC<CurrentOwnersSectionProps> = ({
                   </SelectTrigger>
                   <SelectContent className="rounded-xl">
                     {PROPERTY_TITLE_TYPES
-                      .filter(t => t.value !== formData.propertyTitleType && t.value !== 'Autre')
+                      .filter(t => t.value !== 'Autre')
                       .map(t => (
                         <SelectItem key={t.value} value={t.value}>
                           {t.label}
