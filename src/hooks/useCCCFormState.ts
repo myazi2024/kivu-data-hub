@@ -632,6 +632,10 @@ export const useCCCFormState = ({
       if (firstOwner?.since && new Date(firstOwner.since) < new Date(formData.titleIssueDate) && !firstOwner.previousTitleType) {
         missing.push({ field: 'previousTitleType', label: 'Titre de propriété antérieur', tab: 'general' });
       }
+      // If previousTitleType is "Autre", require custom name
+      if (firstOwner?.previousTitleType === 'Autre' && !firstOwner.previousTitleCustomName?.trim()) {
+        missing.push({ field: 'previousTitleCustomName', label: 'Nom du titre antérieur', tab: 'general' });
+      }
       const firstPreviousOwner = previousOwners[0];
       if (firstPreviousOwner?.startDate && new Date(firstPreviousOwner.startDate) > new Date(formData.titleIssueDate)) missing.push({ field: 'previousOwnerStartDate', label: `Date début Ancien #1 doit être ≤ date de ${formData.leaseType === 'renewal' ? 'renouvellement' : 'délivrance'}`, tab: 'history' });
     }
