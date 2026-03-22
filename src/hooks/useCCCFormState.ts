@@ -1240,31 +1240,6 @@ export const useCCCFormState = ({
     else if (formData.constructionType && !allowedTypes.includes(formData.constructionType)) handleInputChange('constructionType', undefined);
   }, [formData.propertyCategory]);
 
-  useEffect(() => {
-    if (!formData.constructionType) {
-      setAvailableConstructionNatures([]); handleInputChange('constructionNature', undefined);
-      setAvailableDeclaredUsages([]); handleInputChange('declaredUsage', undefined);
-      setAvailableConstructionMaterials([]); handleInputChange('constructionMaterials', undefined);
-      setAvailableStandings([]); handleInputChange('standing', undefined);
-      return;
-    }
-    const natureMap = getPicklistDependentOptions('picklist_construction_nature');
-    const natures = natureMap[formData.constructionType] || [];
-    setAvailableConstructionNatures(natures);
-    if (formData.constructionNature && !natures.includes(formData.constructionNature)) handleInputChange('constructionNature', undefined);
-  }, [formData.constructionType, getPicklistDependentOptions]);
-
-  useEffect(() => {
-    if (!formData.constructionType || !formData.constructionNature) { setAvailableDeclaredUsages([]); handleInputChange('declaredUsage', undefined); return; }
-    const usageMap = getPicklistDependentOptions('picklist_declared_usage');
-    const specificKey = `${formData.constructionType}_${formData.constructionNature}`;
-    let usages = [...(usageMap[specificKey] || usageMap[formData.constructionNature] || [])];
-    const locationEligibleKeys = ['Résidentielle_Durable', 'Résidentielle_Semi-durable', 'Commerciale_Durable', 'Commerciale_Semi-durable', 'Industrielle_Durable', 'Industrielle_Semi-durable'];
-    if (locationEligibleKeys.includes(specificKey) && !usages.includes('Location')) usages.push('Location');
-    setAvailableDeclaredUsages(usages);
-    if (formData.declaredUsage && !usages.includes(formData.declaredUsage)) handleInputChange('declaredUsage', undefined);
-  }, [formData.constructionType, formData.constructionNature, getPicklistDependentOptions]);
-
   const MATERIALS_BY_NATURE_FALLBACK: Record<string, string[]> = {
     Durable: ['Béton armé', 'Briques cuites', 'Parpaings', 'Pierre naturelle'],
     'Semi-durable': ['Semi-dur', 'Briques adobes', 'Bois', 'Mixte'],
@@ -1276,14 +1251,87 @@ export const useCCCFormState = ({
     Précaire: ['Économique'],
   };
 
-  useEffect(() => {
-    if (!formData.constructionNature || formData.constructionNature === 'Non bâti') { setAvailableConstructionMaterials([]); handleInputChange('constructionMaterials', undefined); return; }
-    const dbMaterialsMap = getPicklistDependentOptions('picklist_construction_materials');
-    const materials = (Object.keys(dbMaterialsMap).length > 0 ? dbMaterialsMap[formData.constructionNature] : MATERIALS_BY_NATURE_FALLBACK[formData.constructionNature]) || [];
-    setAvailableConstructionMaterials(materials);
-    if (formData.constructionMaterials && !materials.includes(formData.constructionMaterials)) handleInputChange('constructionMaterials', undefined);
-  }, [formData.constructionNature, getPicklistDependentOptions]);
+  // Helper: build reverse mapping material -> nature
+  const buildMaterialToNatureMap = useCallback((materialsMap: Record<string, string[]>): Record<string, string> => {
+    const reverseMap: Record<string, string> = {};
+    for (const [nature, materials] of Object.entries(materialsMap)) {
+      for (const mat of materials) {
+        if (!reverseMap[mat]) reverseMap[mat] = nature; // first match wins
+      }
+    }
+    return reverseMap;
+  }, []);
 
+  // When constructionType changes: reset children, compute available materials (flattened from all natures)
+  useEffect(() => {
+    if (!formData.constructionType) {
+      setAvailableConstructionNatures([]); handleInputChange('constructionNature', undefined);
+      setAvailableDeclaredUsages([]); handleInputChange('declaredUsage', undefined);
+      setAvailableConstructionMaterials([]); handleInputChange('constructionMaterials', undefined);
+      setAvailableStandings([]); handleInputChange('standing', undefined);
+      return;
+    }
+    // Compute natures for this type (still needed for usage/standing downstream)
+    const natureMap = getPicklistDependentOptions('picklist_construction_nature');
+    const natures = natureMap[formData.constructionType] || [];
+    setAvailableConstructionNatures(natures);
+
+    // Compute flattened materials from all natures of this type
+    const dbMaterialsMap = getPicklistDependentOptions('picklist_construction_materials');
+    const hasMaterialsInDb = Object.keys(dbMaterialsMap).length > 0;
+    const allMaterials: string[] = [];
+    const seen = new Set<string>();
+    for (const nature of natures) {
+      if (nature === 'Non bâti') continue;
+      const mats = hasMaterialsInDb ? (dbMaterialsMap[nature] || []) : (MATERIALS_BY_NATURE_FALLBACK[nature] || []);
+      for (const m of mats) {
+        if (!seen.has(m)) { seen.add(m); allMaterials.push(m); }
+      }
+    }
+    setAvailableConstructionMaterials(allMaterials);
+
+    // Reset if current values are no longer valid
+    if (formData.constructionMaterials && !allMaterials.includes(formData.constructionMaterials)) {
+      handleInputChange('constructionMaterials', undefined);
+      handleInputChange('constructionNature', undefined);
+    }
+    if (formData.constructionNature && !natures.includes(formData.constructionNature)) {
+      handleInputChange('constructionNature', undefined);
+    }
+  }, [formData.constructionType, getPicklistDependentOptions]);
+
+  // When constructionMaterials changes: auto-fill constructionNature via reverse lookup
+  useEffect(() => {
+    if (!formData.constructionMaterials || !formData.constructionType) {
+      if (!formData.constructionMaterials) {
+        handleInputChange('constructionNature', undefined);
+        setAvailableStandings([]); handleInputChange('standing', undefined);
+      }
+      return;
+    }
+    const dbMaterialsMap = getPicklistDependentOptions('picklist_construction_materials');
+    const hasMaterialsInDb = Object.keys(dbMaterialsMap).length > 0;
+    const materialsMap = hasMaterialsInDb ? dbMaterialsMap : MATERIALS_BY_NATURE_FALLBACK;
+    const reverseMap = buildMaterialToNatureMap(materialsMap);
+    const deducedNature = reverseMap[formData.constructionMaterials];
+    if (deducedNature && deducedNature !== formData.constructionNature) {
+      handleInputChange('constructionNature', deducedNature);
+    }
+  }, [formData.constructionMaterials, formData.constructionType, getPicklistDependentOptions, buildMaterialToNatureMap]);
+
+  // Usage depends on type + nature
+  useEffect(() => {
+    if (!formData.constructionType || !formData.constructionNature) { setAvailableDeclaredUsages([]); handleInputChange('declaredUsage', undefined); return; }
+    const usageMap = getPicklistDependentOptions('picklist_declared_usage');
+    const specificKey = `${formData.constructionType}_${formData.constructionNature}`;
+    let usages = [...(usageMap[specificKey] || usageMap[formData.constructionNature] || [])];
+    const locationEligibleKeys = ['Résidentielle_Durable', 'Résidentielle_Semi-durable', 'Commerciale_Durable', 'Commerciale_Semi-durable', 'Industrielle_Durable', 'Industrielle_Semi-durable'];
+    if (locationEligibleKeys.includes(specificKey) && !usages.includes('Location')) usages.push('Location');
+    setAvailableDeclaredUsages(usages);
+    if (formData.declaredUsage && !usages.includes(formData.declaredUsage)) handleInputChange('declaredUsage', undefined);
+  }, [formData.constructionType, formData.constructionNature, getPicklistDependentOptions]);
+
+  // Standing depends on nature
   useEffect(() => {
     if (!formData.constructionNature || formData.constructionNature === 'Non bâti') { setAvailableStandings([]); handleInputChange('standing', undefined); return; }
     const dbStandingMap = getPicklistDependentOptions('picklist_standing');
