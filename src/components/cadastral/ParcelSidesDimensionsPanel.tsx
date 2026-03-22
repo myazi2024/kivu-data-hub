@@ -7,9 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Ruler, Compass, Info, Trash2, Check, Route, X, Lightbulb, BrickWall, AlertTriangle } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Ruler, Compass, Info, Trash2, Check, Route, X, Lightbulb, BrickWall, AlertTriangle, DoorOpen } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export interface ParcelSide {
   name: string;
