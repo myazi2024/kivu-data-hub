@@ -9,6 +9,7 @@ import { Plus, Trash2, Info, X, ChevronRight, ChevronLeft, CheckCircle2 } from '
 import BlockResetButton from '../BlockResetButton';
 import { MdAccountBalance, MdInsertDriveFile } from 'react-icons/md';
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
+import LandDisputeReportForm from '../LandDisputeReportForm';
 
 export interface TaxRecord {
   taxType: string;
@@ -33,6 +34,8 @@ export interface MortgageRecord {
 }
 
 interface ObligationsTabProps {
+  parcelNumber: string;
+  parcelId?: string;
   formData: CadastralContributionData;
   obligationType: 'taxes' | 'mortgages' | 'disputes';
   setObligationType: (v: 'taxes' | 'mortgages' | 'disputes') => void;
@@ -67,6 +70,7 @@ interface ObligationsTabProps {
 }
 
 const ObligationsTab: React.FC<ObligationsTabProps> = ({
+  parcelNumber, parcelId,
   formData, obligationType, setObligationType,
   taxRecords, updateTaxRecord, addTaxRecord, removeTaxRecord,
   handleTaxFileChange, removeTaxFile, showTaxWarning, highlightIncompleteTax,
@@ -351,24 +355,20 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
 
       {/* Litiges */}
       {obligationType === 'disputes' && (
-        <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
-          <CardContent className="p-3 space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Info className="h-3.5 w-3.5 text-primary" />
-              </div>
-              <Label className="text-sm font-semibold">Litiges fonciers</Label>
-            </div>
-            <div className="bg-muted/30 rounded-xl p-4 text-center space-y-2">
-              <p className="text-sm text-muted-foreground">
-                Déclarez ici tout litige foncier connu lié à cette parcelle (contestation de limites, revendication de propriété, etc.).
-              </p>
-              <p className="text-xs text-muted-foreground">
-                💡 Cette section est optionnelle. Si aucun litige n'est en cours, vous pouvez passer à l'étape suivante.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="max-w-[360px] mx-auto">
+          <div className="bg-muted/30 rounded-xl p-3 mb-3 text-center">
+            <p className="text-xs text-muted-foreground">
+              💡 Cette section est optionnelle. Si aucun litige n'est en cours, vous pouvez passer à l'étape suivante.
+            </p>
+          </div>
+          <LandDisputeReportForm
+            parcelNumber={parcelNumber}
+            parcelId={parcelId}
+            open={true}
+            onOpenChange={() => {}}
+            embedded={true}
+          />
+        </div>
       )}
       
       {/* Navigation */}
