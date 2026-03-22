@@ -1059,7 +1059,7 @@ export const useCCCFormState = ({
           setCurrentOwners(ownersDetails.map((o: any) => ({ lastName: o.last_name || o.lastName || '', middleName: o.middle_name || o.middleName || '', firstName: o.first_name || o.firstName || '', legalStatus: o.legal_status || o.legalStatus || 'Personne physique', gender: o.gender || '', entityType: o.entity_type || o.entityType || '', entitySubType: o.entity_sub_type || o.entitySubType || '', entitySubTypeOther: o.entity_sub_type_other || o.entitySubTypeOther || '', stateExploitedBy: o.state_exploited_by || o.stateExploitedBy || '', rightType: o.right_type || o.rightType || '', since: o.since || '', previousTitleType: o.previous_title_type || o.previousTitleType || '', previousTitleCustomName: o.previous_title_custom_name || o.previousTitleCustomName || '' })));
           if (ownersDetails.length > 1) setOwnershipMode('multiple');
         } else if (contrib.current_owner_name) {
-          setCurrentOwners([{ lastName: contrib.current_owner_name, middleName: '', firstName: '', legalStatus: contrib.current_owner_legal_status || 'Personne physique', gender: '', entityType: '', entitySubType: '', entitySubTypeOther: '', stateExploitedBy: '', rightType: '', since: contrib.current_owner_since || '', previousTitleType: '' }]);
+          setCurrentOwners([{ lastName: contrib.current_owner_name, middleName: '', firstName: '', legalStatus: contrib.current_owner_legal_status || 'Personne physique', gender: '', entityType: '', entitySubType: '', entitySubTypeOther: '', stateExploitedBy: '', rightType: '', since: contrib.current_owner_since || '', previousTitleType: '', previousTitleCustomName: '' }]);
         }
 
         const ownerHistory = contrib.ownership_history as any[];
