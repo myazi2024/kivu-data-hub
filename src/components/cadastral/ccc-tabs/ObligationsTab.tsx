@@ -34,8 +34,8 @@ export interface MortgageRecord {
 
 interface ObligationsTabProps {
   formData: CadastralContributionData;
-  obligationType: 'taxes' | 'mortgages';
-  setObligationType: (v: 'taxes' | 'mortgages') => void;
+  obligationType: 'taxes' | 'mortgages' | 'disputes';
+  setObligationType: (v: 'taxes' | 'mortgages' | 'disputes') => void;
   // Tax
   taxRecords: TaxRecord[];
   updateTaxRecord: (index: number, field: string, value: string) => void;
@@ -82,6 +82,7 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
       <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-xl w-fit shadow-inner mx-auto">
         <Button type="button" variant={obligationType === 'taxes' ? 'default' : 'ghost'} size="sm" onClick={() => setObligationType('taxes')} className="text-sm h-8">Taxes</Button>
         <Button type="button" variant={obligationType === 'mortgages' ? 'default' : 'ghost'} size="sm" onClick={() => setObligationType('mortgages')} className="text-sm h-8">Hypothèques</Button>
+        <Button type="button" variant={obligationType === 'disputes' ? 'default' : 'ghost'} size="sm" onClick={() => setObligationType('disputes')} className="text-sm h-8">Litiges</Button>
       </div>
 
       {/* Taxes */}
@@ -347,15 +348,37 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
           </CardContent>
         </Card>
       )}
+
+      {/* Litiges */}
+      {obligationType === 'disputes' && (
+        <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
+          <CardContent className="p-3 space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Info className="h-3.5 w-3.5 text-primary" />
+              </div>
+              <Label className="text-sm font-semibold">Litiges fonciers</Label>
+            </div>
+            <div className="bg-muted/30 rounded-xl p-4 text-center space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Déclarez ici tout litige foncier connu lié à cette parcelle (contestation de limites, revendication de propriété, etc.).
+              </p>
+              <p className="text-xs text-muted-foreground">
+                💡 Cette section est optionnelle. Si aucun litige n'est en cours, vous pouvez passer à l'étape suivante.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       
       {/* Navigation */}
       <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur-sm border-t pt-3 pb-3 px-1 -mx-1">
         <div className="flex justify-between">
-          <Button type="button" variant="outline" onClick={() => { if (obligationType === 'mortgages') setObligationType('taxes'); else handleTabChange('history'); }} className="gap-2 rounded-xl h-10 text-sm">
+          <Button type="button" variant="outline" onClick={() => { if (obligationType === 'disputes') setObligationType('mortgages'); else if (obligationType === 'mortgages') setObligationType('taxes'); else handleTabChange('history'); }} className="gap-2 rounded-xl h-10 text-sm">
             <ChevronLeft className="h-4 w-4" /> Précédent
           </Button>
-          <Button type="button" onClick={() => { if (obligationType === 'taxes') setObligationType('mortgages'); else handleNextTab('obligations', 'review'); }} className="gap-2 rounded-xl h-10 text-sm shadow-md hover:shadow-lg transition-all">
-            {obligationType === 'taxes' ? 'Suivant' : 'Reviser'} <ChevronRight className="h-4 w-4" />
+          <Button type="button" onClick={() => { if (obligationType === 'taxes') setObligationType('mortgages'); else if (obligationType === 'mortgages') setObligationType('disputes'); else handleNextTab('obligations', 'review'); }} className="gap-2 rounded-xl h-10 text-sm shadow-md hover:shadow-lg transition-all">
+            {obligationType === 'disputes' ? 'Reviser' : 'Suivant'} <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       </div>
