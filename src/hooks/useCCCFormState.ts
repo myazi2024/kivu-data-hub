@@ -384,7 +384,7 @@ export const useCCCFormState = ({
     setCurrentOwners([...currentOwners, {
       lastName: '', middleName: '', firstName: '', legalStatus: 'Personne physique',
       gender: '', entityType: '', entitySubType: '', entitySubTypeOther: '',
-      stateExploitedBy: '', rightType: '', since: ''
+      stateExploitedBy: '', rightType: '', since: '', previousTitleType: ''
     }]);
     markDirty();
   };
