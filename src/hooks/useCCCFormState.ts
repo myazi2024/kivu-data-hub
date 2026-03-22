@@ -110,6 +110,7 @@ export const useCCCFormState = ({
   }]);
 
   const [hasMortgage, setHasMortgage] = useState<boolean | null>(null);
+  const [hasDispute, setHasDispute] = useState<boolean | null>(null);
 
   const [mortgageRecords, setMortgageRecords] = useState<MortgageRecord[]>([{
     mortgageAmount: '', duration: '', creditorName: '', creditorType: 'Banque',
