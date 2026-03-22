@@ -100,6 +100,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
   roadTypes = defaultRoadTypes,
   wallMaterials = defaultWallMaterials,
 }) => {
+  const isMobile = useIsMobile();
   const [editingSide, setEditingSide] = useState<number | null>(null);
   const [showNotification, setShowNotification] = useState(true);
   const confirmedSidesCount = roadSides.filter(s => s.bordersRoad && s.isConfirmed).length;
