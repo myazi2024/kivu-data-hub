@@ -301,9 +301,22 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                         {roadSide.orientation}
                       </Badge>
                     )}
-                    <Badge variant="secondary" className="font-mono text-xs h-5 px-1.5 rounded-md font-bold whitespace-nowrap">
-                      {side.length}m
-                    </Badge>
+                    <div
+                      className="flex items-center gap-1"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Checkbox
+                        id={`entrance-${index}`}
+                        checked={roadSide?.hasEntrance || false}
+                        onCheckedChange={(checked) => {
+                          onRoadSideUpdate(index, { hasEntrance: !!checked });
+                        }}
+                        className="h-3.5 w-3.5"
+                      />
+                      <label htmlFor={`entrance-${index}`} className="text-[10px] font-medium text-muted-foreground cursor-pointer select-none">
+                        {isMobile ? 'Entrée' : 'Entrée de la parcelle'}
+                      </label>
+                    </div>
                     {/* Bouton slide - visible si pas confirmé */}
                     {!hasConfirmed && (
                       <div
