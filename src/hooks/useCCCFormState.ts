@@ -13,6 +13,7 @@ import { PROPERTY_TITLE_TYPES, getEffectiveTitleName } from '@/components/cadast
 import { CurrentOwner, BuildingPermit } from '@/components/cadastral/ccc-tabs/GeneralTab';
 import { PreviousOwner } from '@/components/cadastral/ccc-tabs/HistoryTab';
 import { TaxRecord, MortgageRecord } from '@/components/cadastral/ccc-tabs/ObligationsTab';
+import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
 import {
   getAllProvinces,
   getVillesForProvince,
@@ -1317,14 +1318,10 @@ export const useCCCFormState = ({
     }
   }, [formData.constructionMaterials, formData.constructionType, getPicklistDependentOptions, buildMaterialToNatureMap]);
 
-  // Usage depends on type + nature
+  // Usage depends on type + nature (shared logic via resolveAvailableUsages)
   useEffect(() => {
     if (!formData.constructionType || !formData.constructionNature) { setAvailableDeclaredUsages([]); handleInputChange('declaredUsage', undefined); return; }
-    const usageMap = getPicklistDependentOptions('picklist_declared_usage');
-    const specificKey = `${formData.constructionType}_${formData.constructionNature}`;
-    let usages = [...(usageMap[specificKey] || usageMap[formData.constructionNature] || [])];
-    const locationEligibleKeys = ['Résidentielle_Durable', 'Résidentielle_Semi-durable', 'Commerciale_Durable', 'Commerciale_Semi-durable', 'Industrielle_Durable', 'Industrielle_Semi-durable'];
-    if (locationEligibleKeys.includes(specificKey) && !usages.includes('Location')) usages.push('Location');
+    const usages = resolveAvailableUsages(formData.constructionType, formData.constructionNature, getPicklistDependentOptions);
     setAvailableDeclaredUsages(usages);
     if (formData.declaredUsage && !usages.includes(formData.declaredUsage)) handleInputChange('declaredUsage', undefined);
   }, [formData.constructionType, formData.constructionNature, getPicklistDependentOptions]);
