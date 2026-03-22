@@ -70,6 +70,7 @@ interface ObligationsTabProps {
 }
 
 const ObligationsTab: React.FC<ObligationsTabProps> = ({
+  parcelNumber, parcelId,
   formData, obligationType, setObligationType,
   taxRecords, updateTaxRecord, addTaxRecord, removeTaxRecord,
   handleTaxFileChange, removeTaxFile, showTaxWarning, highlightIncompleteTax,
