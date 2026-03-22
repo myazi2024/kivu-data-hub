@@ -691,19 +691,23 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
         </CardContent>
       </Card>
 
-      <Separator />
+      {!embedded && (
+        <>
+          <Separator />
 
-      {/* Certification */}
-      <div className="flex items-start gap-2.5">
-        <Checkbox checked={certifyAccuracy} onCheckedChange={(c) => setCertifyAccuracy(c === true)} id="certify" className="mt-0.5" />
-        <label htmlFor="certify" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
-          Je certifie sur l'honneur que les informations fournies sont exactes et complètes. Tout signalement abusif ou frauduleux engage ma responsabilité civile et pénale.
-        </label>
-      </div>
+          {/* Certification */}
+          <div className="flex items-start gap-2.5">
+            <Checkbox checked={certifyAccuracy} onCheckedChange={(c) => setCertifyAccuracy(c === true)} id="certify" className="mt-0.5" />
+            <label htmlFor="certify" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
+              Je certifie sur l'honneur que les informations fournies sont exactes et complètes. Tout signalement abusif ou frauduleux engage ma responsabilité civile et pénale.
+            </label>
+          </div>
 
-      <Button onClick={handleGoToReview} className="w-full h-11 rounded-xl" disabled={!certifyAccuracy}>
-        Vérifier et soumettre
-      </Button>
+          <Button onClick={handleGoToReview} className="w-full h-11 rounded-xl" disabled={!certifyAccuracy}>
+            Vérifier et soumettre
+          </Button>
+        </>
+      )}
 
       <WhatsAppFloatingButton 
         message={`Bonjour, j'ai besoin d'aide pour signaler un litige foncier sur la parcelle ${parcelNumber}.`}
