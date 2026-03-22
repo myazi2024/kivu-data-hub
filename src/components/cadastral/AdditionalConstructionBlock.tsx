@@ -129,15 +129,9 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
     return natureMap[data.constructionType] || [];
   }, [data.constructionType, getPicklistDependentOptions]);
 
-  // Cascade: type + nature -> usages
+  // Cascade: type + nature -> usages (shared logic via resolveAvailableUsages)
   const availableUsages = useMemo(() => {
-    if (!data.constructionType || !data.constructionNature) return [];
-    const usageMap = getPicklistDependentOptions('picklist_declared_usage');
-    const specificKey = `${data.constructionType}_${data.constructionNature}`;
-    const usages = [...(usageMap[specificKey] || usageMap[data.constructionNature] || [])];
-    const locationEligibleKeys = ['Résidentielle_Durable', 'Résidentielle_Semi-durable', 'Commerciale_Durable', 'Commerciale_Semi-durable', 'Industrielle_Durable', 'Industrielle_Semi-durable'];
-    if (locationEligibleKeys.includes(specificKey) && !usages.includes('Location')) usages.push('Location');
-    return usages;
+    return resolveAvailableUsages(data.constructionType, data.constructionNature, getPicklistDependentOptions);
   }, [data.constructionType, data.constructionNature, getPicklistDependentOptions]);
 
   // Cascade: nature -> standings
