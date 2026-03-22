@@ -36,6 +36,8 @@ export interface RoadSideInfo {
   orientation?: string;
   length?: number;
   isConfirmed?: boolean;
+  // Entrée de la parcelle
+  hasEntrance?: boolean;
 }
 
 export interface ServitudeInfo {
