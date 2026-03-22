@@ -34,8 +34,8 @@ export interface MortgageRecord {
 
 interface ObligationsTabProps {
   formData: CadastralContributionData;
-  obligationType: 'taxes' | 'mortgages';
-  setObligationType: (v: 'taxes' | 'mortgages') => void;
+  obligationType: 'taxes' | 'mortgages' | 'disputes';
+  setObligationType: (v: 'taxes' | 'mortgages' | 'disputes') => void;
   // Tax
   taxRecords: TaxRecord[];
   updateTaxRecord: (index: number, field: string, value: string) => void;

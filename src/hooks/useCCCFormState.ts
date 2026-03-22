@@ -137,7 +137,7 @@ export const useCCCFormState = ({
     borne: string; lat: string; lng: string; mode?: 'auto' | 'manual'; detected?: boolean; detecting?: boolean;
   }>>([]);
 
-  const [obligationType, setObligationType] = useState<'taxes' | 'mortgages'>('taxes');
+  const [obligationType, setObligationType] = useState<'taxes' | 'mortgages' | 'disputes'>('taxes');
 
   const PROPERTY_CATEGORY_OPTIONS = [
     'Appartement', 'Villa', 'Maison', 'Local commercial',
