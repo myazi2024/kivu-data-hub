@@ -271,13 +271,6 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
                 type="button"
                 onClick={() => {
                   handleInputChange('isTitleInCurrentOwnerName', true);
-                  if (formData.titleIssueDate) {
-                    const updatedOwners = [...currentOwners];
-                    if (updatedOwners.length > 0) {
-                      updatedOwners[0] = { ...updatedOwners[0], since: formData.titleIssueDate };
-                      setCurrentOwners(updatedOwners as any);
-                    }
-                  }
                 }}
                 className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${
                   formData.isTitleInCurrentOwnerName === true
