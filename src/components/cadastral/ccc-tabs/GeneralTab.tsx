@@ -31,6 +31,7 @@ export interface CurrentOwner {
   rightType: string;
   since: string;
   previousTitleType?: string;
+  previousTitleCustomName?: string;
 }
 
 export interface BuildingPermit {
