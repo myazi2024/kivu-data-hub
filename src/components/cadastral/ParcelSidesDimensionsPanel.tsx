@@ -106,7 +106,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
   const confirmedSidesCount = roadSides.filter(s => s.bordersRoad && s.isConfirmed).length;
   const roadCount = roadSides.filter(s => s.bordersRoad && s.isConfirmed && s.borderType === 'route').length;
   const wallCount = roadSides.filter(s => s.bordersRoad && s.isConfirmed && s.borderType === 'mur_mitoyen').length;
-  const totalPerimeter = parcelSides.reduce((sum, side) => sum + parseFloat(side.length || '0'), 0);
+  
 
   // Vérifier si tous les côtés sont en mur mitoyen (aucun côté n'est une route)
   const hasAnyRoute = roadSides.some(s => s.bordersRoad && s.borderType === 'route');
