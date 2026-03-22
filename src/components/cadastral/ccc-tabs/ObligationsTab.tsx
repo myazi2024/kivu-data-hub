@@ -60,6 +60,9 @@ interface ObligationsTabProps {
   removeMortgageFile: (index: number) => void;
   showMortgageWarning: boolean;
   highlightIncompleteMortgage: boolean;
+  // Dispute
+  hasDispute: boolean | null;
+  setHasDispute: (v: boolean | null) => void;
   // Picklists
   getPicklistOptions: (key: string) => string[];
   // Navigation
