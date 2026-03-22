@@ -103,7 +103,7 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
     const specificKey = `${data.constructionType}_${data.constructionNature}`;
     const usages = [...(usageMap[specificKey] || usageMap[data.constructionNature] || [])];
     // Inject "Location" for eligible residential/commercial combinations (same as main form)
-    const locationEligibleKeys = ['Résidentielle_Durable', 'Résidentielle_Semi-durable', 'Commerciale_Durable', 'Commerciale_Semi-durable'];
+    const locationEligibleKeys = ['Résidentielle_Durable', 'Résidentielle_Semi-durable', 'Commerciale_Durable', 'Commerciale_Semi-durable', 'Industrielle_Durable', 'Industrielle_Semi-durable'];
     if (locationEligibleKeys.includes(specificKey) && !usages.includes('Location')) usages.push('Location');
     return usages;
   }, [data.constructionType, data.constructionNature, getPicklistDependentOptions]);
