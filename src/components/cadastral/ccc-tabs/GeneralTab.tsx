@@ -588,22 +588,40 @@ const CurrentOwnersSection: React.FC<CurrentOwnersSectionProps> = ({
                 </p>
                 <Select
                   value={owner.previousTitleType || ''}
-                  onValueChange={(val) => updateCurrentOwner(index, 'previousTitleType', val)}
+                  onValueChange={(val) => {
+                    updateCurrentOwner(index, 'previousTitleType', val);
+                    if (val !== 'Autre') {
+                      updateCurrentOwner(index, 'previousTitleCustomName', '');
+                    }
+                  }}
                 >
                   <SelectTrigger className="h-10 rounded-xl text-sm">
                     <SelectValue placeholder="Sélectionner le titre antérieur" />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl">
-                    {PROPERTY_TITLE_TYPES
-                      .filter(t => t.value !== 'Autre')
-                      .map(t => (
-                        <SelectItem key={t.value} value={t.value}>
-                          {t.label}
-                        </SelectItem>
-                      ))}
+                    {PROPERTY_TITLE_TYPES.map(t => (
+                      <SelectItem key={t.value} value={t.value}>
+                        {t.label}
+                      </SelectItem>
+                    ))}
                     <SelectItem value="Aucun">Aucun titre antérieur</SelectItem>
                   </SelectContent>
                 </Select>
+
+                {/* Custom name input when "Autre" is selected */}
+                {owner.previousTitleType === 'Autre' && (
+                  <div className="space-y-1 animate-fade-in">
+                    <Label className="text-sm font-medium">
+                      Nom du titre antérieur <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      placeholder="Ex: Livret de logeur, Attestation de propriété..."
+                      value={owner.previousTitleCustomName || ''}
+                      onChange={(e) => updateCurrentOwner(index, 'previousTitleCustomName', e.target.value)}
+                      className="h-9 text-sm rounded-xl"
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>
