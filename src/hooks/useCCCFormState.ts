@@ -110,6 +110,7 @@ export const useCCCFormState = ({
   }]);
 
   const [hasMortgage, setHasMortgage] = useState<boolean | null>(null);
+  const [hasDispute, setHasDispute] = useState<boolean | null>(null);
 
   const [mortgageRecords, setMortgageRecords] = useState<MortgageRecord[]>([{
     mortgageAmount: '', duration: '', creditorName: '', creditorType: 'Banque',
@@ -1483,6 +1484,7 @@ export const useCCCFormState = ({
     hasMortgage, setHasMortgage, mortgageRecords, setMortgageRecords,
     updateMortgageRecord, addMortgageRecord, removeMortgageRecord, handleMortgageFileChange, removeMortgageFile,
     showMortgageWarning, highlightIncompleteMortgage,
+    hasDispute, setHasDispute,
     // Validation
     highlightRequiredFields, setHighlightRequiredFields,
     getMissingFields, isFormValidForSubmission, calculateCCCValue,

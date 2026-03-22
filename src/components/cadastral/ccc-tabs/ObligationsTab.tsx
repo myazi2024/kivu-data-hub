@@ -60,6 +60,9 @@ interface ObligationsTabProps {
   removeMortgageFile: (index: number) => void;
   showMortgageWarning: boolean;
   highlightIncompleteMortgage: boolean;
+  // Dispute
+  hasDispute: boolean | null;
+  setHasDispute: (v: boolean | null) => void;
   // Picklists
   getPicklistOptions: (key: string) => string[];
   // Navigation
@@ -77,6 +80,7 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
   hasMortgage, setHasMortgage, mortgageRecords, setMortgageRecords,
   updateMortgageRecord, addMortgageRecord, removeMortgageRecord,
   handleMortgageFileChange, removeMortgageFile, showMortgageWarning, highlightIncompleteMortgage,
+  hasDispute, setHasDispute,
   getPicklistOptions, handleTabChange, handleNextTab,
   resetTaxBlock, resetMortgageBlock
 }) => {
@@ -355,20 +359,40 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
 
       {/* Litiges */}
       {obligationType === 'disputes' && (
-        <div className="max-w-[360px] mx-auto">
-          <div className="bg-muted/30 rounded-xl p-3 mb-3 text-center">
-            <p className="text-xs text-muted-foreground">
-              💡 Cette section est optionnelle. Si aucun litige n'est en cours, vous pouvez passer à l'étape suivante.
-            </p>
-          </div>
-          <LandDisputeReportForm
-            parcelNumber={parcelNumber}
-            parcelId={parcelId}
-            open={true}
-            onOpenChange={() => {}}
-            embedded={true}
-          />
-        </div>
+        <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
+          <CardContent className="p-3 space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
+                <MdAccountBalance className="h-3.5 w-3.5 text-primary" />
+              </div>
+              <Label className="text-sm font-semibold">Litige foncier</Label>
+            </div>
+
+            <div className="border-2 rounded-2xl p-3 space-y-3 bg-card shadow-sm">
+              <Label className="text-sm font-medium">Y a-t-il un litige foncier en cours sur cette parcelle ?</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button type="button" variant={hasDispute === true ? "default" : "outline"} onClick={() => setHasDispute(true)} className={`h-10 text-sm rounded-xl transition-all ${hasDispute === true ? "bg-primary text-primary-foreground shadow-md" : "hover:bg-primary/10"}`}>Oui</Button>
+                <Button type="button" variant={hasDispute === false ? "default" : "outline"} onClick={() => setHasDispute(false)} className={`h-10 text-sm rounded-xl transition-all ${hasDispute === false ? "bg-primary text-primary-foreground shadow-md" : "hover:bg-primary/10"}`}>Non</Button>
+              </div>
+              {hasDispute === false && (
+                <div className="bg-green-50 dark:bg-green-950/50 border border-green-200 dark:border-green-800 rounded-xl p-2 flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
+                  <p className="text-xs text-green-700 dark:text-green-300">Aucun litige en cours - parcelle sans contentieux</p>
+                </div>
+              )}
+            </div>
+
+            {hasDispute === true && (
+              <LandDisputeReportForm
+                parcelNumber={parcelNumber}
+                parcelId={parcelId}
+                open={true}
+                onOpenChange={() => {}}
+                embedded={true}
+              />
+            )}
+          </CardContent>
+        </Card>
       )}
       
       {/* Navigation */}
