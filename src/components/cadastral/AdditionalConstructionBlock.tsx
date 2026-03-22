@@ -9,6 +9,7 @@ import { MdInsertDriveFile } from 'react-icons/md';
 import { cn } from '@/lib/utils';
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
 import { useToast } from '@/hooks/use-toast';
+import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
 
 export interface AdditionalConstructionPermit {
   permitType: 'construction' | 'regularization';
