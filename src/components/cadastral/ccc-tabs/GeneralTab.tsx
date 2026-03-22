@@ -996,7 +996,7 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({
 
       {/* Standing + Nombre d'étages */}
       {formData.constructionNature && formData.constructionNature !== 'Non bâti' && availableStandings.length > 0 && (
-        <div className="grid grid-cols-2 gap-3">
+        <div className={`grid gap-3 ${formData.propertyCategory !== 'Appartement' ? 'grid-cols-2' : 'grid-cols-1'}`}>
           <div className="space-y-1.5">
             <div className="flex items-center gap-1">
               <Label className="text-sm font-medium">Standing</Label>
@@ -1016,28 +1016,30 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-1">
-              <Label className="text-sm font-medium">Nombre d'étages</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-4 w-4 p-0 rounded-full"><Info className="h-3 w-3 text-muted-foreground" /></Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-64 rounded-xl text-xs">
-                  <p className="text-muted-foreground">Nombre de niveaux de la construction (0 = rez-de-chaussée uniquement).</p>
-                </PopoverContent>
-              </Popover>
+          {formData.propertyCategory !== 'Appartement' && (
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1">
+                <Label className="text-sm font-medium">Nombre d'étages</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-4 w-4 p-0 rounded-full"><Info className="h-3 w-3 text-muted-foreground" /></Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64 rounded-xl text-xs">
+                    <p className="text-muted-foreground">Nombre de niveaux de la construction (0 = rez-de-chaussée uniquement).</p>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <Input
+                type="number"
+                min={0}
+                max={200}
+                value={formData.floorNumber || ''}
+                onChange={(e) => handleInputChange('floorNumber', e.target.value)}
+                placeholder="Ex: 2"
+                className="h-10 rounded-xl text-sm"
+              />
             </div>
-            <Input
-              type="number"
-              min={0}
-              max={200}
-              value={formData.floorNumber || ''}
-              onChange={(e) => handleInputChange('floorNumber', e.target.value)}
-              placeholder="Ex: 2"
-              className="h-10 rounded-xl text-sm"
-            />
-          </div>
+          )}
         </div>
       )}
 
