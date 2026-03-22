@@ -660,8 +660,6 @@ export const useCCCFormState = ({
       if (!formData.ville || formData.ville.trim() === '') missing.push({ field: 'ville', label: 'Ville', tab: 'location' });
       if (!formData.commune || formData.commune.trim() === '') missing.push({ field: 'commune', label: 'Commune', tab: 'location' });
       if (!formData.quartier || formData.quartier.trim() === '') missing.push({ field: 'quartier', label: 'Quartier', tab: 'location' });
-      if (!formData.avenue || formData.avenue.trim() === '') missing.push({ field: 'avenue', label: 'Avenue', tab: 'location' });
-      if (!formData.houseNumber) missing.push({ field: 'houseNumber', label: 'Numéro de parcelle (adresse)', tab: 'location' });
     } else if (sectionType === 'rurale') {
       if (!formData.territoire || formData.territoire.trim() === '') missing.push({ field: 'territoire', label: 'Territoire', tab: 'location' });
       if (!formData.collectivite || formData.collectivite.trim() === '') missing.push({ field: 'collectivite', label: 'Collectivité', tab: 'location' });
