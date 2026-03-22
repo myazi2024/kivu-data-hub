@@ -1327,7 +1327,7 @@ export const useCCCFormState = ({
     setCurrentOwners([{
       lastName: '', middleName: '', firstName: '', legalStatus: 'Personne physique',
       gender: '', entityType: '', entitySubType: '', entitySubTypeOther: '',
-      stateExploitedBy: '', rightType: '', since: '', previousTitleType: ''
+      stateExploitedBy: '', rightType: '', since: '', previousTitleType: '', previousTitleCustomName: ''
     }]);
     setOwnershipMode('unique');
     setOwnerDocFile(null);
