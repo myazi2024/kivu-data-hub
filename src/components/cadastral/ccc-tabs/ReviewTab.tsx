@@ -326,7 +326,8 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
 const TaxSummary: React.FC<{ taxRecords: TaxRecord[]; formData: CadastralContributionData }> = ({ taxRecords, formData }) => {
   const currentYear = new Date().getFullYear();
   const requiredYears = [currentYear - 1, currentYear - 2, currentYear - 3];
-  const requiredTaxTypes = ['Impôt foncier annuel', ...(formData.declaredUsage === 'Location' ? ['Impôt sur les revenus locatifs'] : [])];
+  const hasLocationUsage = formData.declaredUsage === 'Location' || (Array.isArray(formData.additionalConstructions) && formData.additionalConstructions.some((c: any) => c.declaredUsage === 'Location'));
+  const requiredTaxTypes = ['Impôt foncier annuel', ...(hasLocationUsage ? ['Impôt sur les revenus locatifs'] : [])];
   
   const taxStatusByYearType: { year: number; taxType: string; paid: boolean; amount?: string; status?: string }[] = [];
   for (const year of requiredYears) {
