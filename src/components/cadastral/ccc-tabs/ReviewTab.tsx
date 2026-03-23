@@ -35,6 +35,7 @@ interface ReviewTabProps {
   servitude: { hasServitude: boolean; width?: number };
   buildingShapes: any[];
   disputeFormData: any;
+  mapConfig: any;
   // CCC value
   calculateCCCValue: { value: number };
   // Validation
