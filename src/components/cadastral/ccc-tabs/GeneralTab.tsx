@@ -1182,21 +1182,6 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({
                   </div>
                 </div>
 
-                {/* Administrative status */}
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-foreground">Statut administratif</Label>
-                  <select
-                    value={permit.administrativeStatus}
-                    onChange={(e) => updateBuildingPermit(index, 'administrativeStatus', e.target.value)}
-                    className="w-full h-10 text-sm rounded-xl border border-input bg-background px-3"
-                  >
-                    <option value="En attente">En attente</option>
-                    <option value="Délivré">Délivré</option>
-                    <option value="Expiré">Expiré</option>
-                    <option value="Annulé">Annulé</option>
-                  </select>
-                </div>
-
 
                 {/* Document */}
                 <div className="space-y-1.5">

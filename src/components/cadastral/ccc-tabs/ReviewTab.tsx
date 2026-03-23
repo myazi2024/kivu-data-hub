@@ -165,8 +165,6 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
                     <div key={idx} className="ml-2 text-muted-foreground space-y-0.5">
                       <div>• N° {permit.permitNumber} ({permit.permitType === 'regularization' ? 'Régularisation' : 'Construction'})</div>
                       {permit.issueDate && <div className="ml-3 text-[11px]">Date: {new Date(permit.issueDate).toLocaleDateString('fr-FR')}</div>}
-                      {permit.validityMonths && <div className="ml-3 text-[11px]">Validité: {permit.validityMonths} mois</div>}
-                      {permit.administrativeStatus && <div className="ml-3 text-[11px]">Statut: {permit.administrativeStatus}</div>}
                     </div>
                   ))
                 ) : permitMode === 'request' ? (
