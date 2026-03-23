@@ -117,6 +117,21 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
     }
   }, [disputeNature, disputeDescription, disputeStartDate, hasResolutionStarted, resolutionLevel, resolutionDetails, declarantName, declarantPhone, declarantEmail, declarantQuality, parties, step, draftKey]);
 
+  // Emit dispute data to parent for ReviewTab display
+  useEffect(() => {
+    if (onDisputeDataChange) {
+      if (disputeNature || disputeDescription) {
+        onDisputeDataChange({
+          disputeNature, disputeDescription, disputeStartDate,
+          hasResolutionStarted, resolutionLevel, resolutionDetails,
+          declarantQuality, parties: parties.filter(p => p.name),
+        });
+      } else {
+        onDisputeDataChange(null);
+      }
+    }
+  }, [disputeNature, disputeDescription, disputeStartDate, hasResolutionStarted, resolutionLevel, resolutionDetails, declarantQuality, parties, onDisputeDataChange]);
+
   // Generate reference ONCE per session and restore draft
   useEffect(() => {
     if (open && !referenceGenerated.current) {
