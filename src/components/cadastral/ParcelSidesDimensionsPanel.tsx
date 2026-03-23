@@ -197,7 +197,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
           <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center">
             <Ruler className="h-3.5 w-3.5 text-primary" />
           </div>
-          Dimensions & Limites
+          Limites et Entrée
           <div className="flex gap-1 ml-auto">
             {roadCount > 0 && (
               <Badge variant="secondary" className="text-[10px] h-5 px-1.5 rounded-md bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300">
@@ -214,7 +214,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
           </div>
         </CardTitle>
         <CardDescription className="text-xs text-muted-foreground">
-          Activez le bouton sur chaque côté pour définir sa limite
+          Définissez les limites et l'entrée de chaque côté
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-1.5 px-3 pb-3">
@@ -236,10 +236,10 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
               </div>
               <div className="space-y-1">
                 <p className="text-xs font-medium text-amber-800 dark:text-amber-200">
-                  💡 Indiquez les limites de chaque côté
+                  💡 Définissez les limites et l'entrée
                 </p>
                 <p className="text-[11px] text-amber-700 dark:text-amber-300 leading-relaxed">
-                   Activez le bouton sur chaque côté pour indiquer s'il borde une <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-amber-200 dark:bg-amber-800 text-amber-700 dark:text-amber-300 font-medium text-[10px]"><BrickWall className="h-2 w-2" />Mur mitoyen</span> ou une <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-primary/10 text-primary font-medium text-[10px]"><Route className="h-2 w-2" />Route</span>
+                   Activez le bouton sur chaque côté pour indiquer s'il borde une <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-amber-200 dark:bg-amber-800 text-amber-700 dark:text-amber-300 font-medium text-[10px]"><BrickWall className="h-2 w-2" />Mur mitoyen</span> ou une <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-primary/10 text-primary font-medium text-[10px]"><Route className="h-2 w-2" />Route</span>, puis cochez <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-primary/10 text-primary font-medium text-[10px]"><DoorOpen className="h-2 w-2" />Entrée</span> sur le côté ayant une porte d'accès.
                 </p>
               </div>
             </div>
@@ -514,7 +514,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
           <Alert className="py-1.5 px-2 rounded-xl bg-muted/50 border-0 mt-1">
             <Info className="h-3 w-3" />
             <AlertDescription className="text-[11px]">
-              Activez le bouton sur chaque côté pour définir sa limite
+              Définissez les limites et cochez l'entrée de la parcelle
             </AlertDescription>
           </Alert>
         )}
