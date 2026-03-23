@@ -165,7 +165,7 @@ export const UserContributions: React.FC = () => {
       return { label: 'Autorisation de bâtir', icon: '🏗️', color: 'text-blue-600' };
     }
     if (contribution.permit_request_data) {
-      return { label: 'Demande de permis', icon: '📝', color: 'text-purple-600' };
+      return { label: "Demande d'autorisation", icon: '📝', color: 'text-purple-600' };
     }
     if (contribution.tax_history && Array.isArray(contribution.tax_history) && contribution.tax_history.length > 0) {
       return { label: 'Historique fiscal', icon: '📊', color: 'text-green-600' };
