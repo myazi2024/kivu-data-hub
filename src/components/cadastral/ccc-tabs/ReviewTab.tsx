@@ -362,7 +362,31 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
               {hasDispute === null ? (
                 <div className="ml-2 text-muted-foreground italic">Non renseigné</div>
               ) : hasDispute ? (
-                <div className="ml-2 text-amber-600 flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Litige déclaré</div>
+                <div className="ml-2 space-y-1">
+                  <div className="text-amber-600 flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Litige déclaré</div>
+                  {disputeFormData && (
+                    <div className="ml-2 text-muted-foreground space-y-0.5">
+                      {disputeFormData.disputeNature && (
+                        <div>Nature: {DISPUTE_NATURES_MAP[disputeFormData.disputeNature] || disputeFormData.disputeNature}</div>
+                      )}
+                      {disputeFormData.disputeDescription && (
+                        <div>Description: {disputeFormData.disputeDescription.length > 80 ? disputeFormData.disputeDescription.substring(0, 80) + '…' : disputeFormData.disputeDescription}</div>
+                      )}
+                      {disputeFormData.disputeStartDate && (
+                        <div>Début: {new Date(disputeFormData.disputeStartDate).toLocaleDateString('fr-FR')}</div>
+                      )}
+                      {disputeFormData.declarantQuality && (
+                        <div>Qualité: {DECLARANT_QUALITIES_MAP[disputeFormData.declarantQuality] || disputeFormData.declarantQuality}</div>
+                      )}
+                      {disputeFormData.hasResolutionStarted && disputeFormData.resolutionLevel && (
+                        <div>Résolution: {RESOLUTION_LEVELS.find(r => r.value === disputeFormData.resolutionLevel)?.label || disputeFormData.resolutionLevel}</div>
+                      )}
+                      {disputeFormData.parties && disputeFormData.parties.length > 0 && (
+                        <div>Parties impliquées: {disputeFormData.parties.map((p: any) => p.name).join(', ')}</div>
+                      )}
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="ml-2 text-green-600 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Aucun litige</div>
               )}
