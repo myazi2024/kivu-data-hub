@@ -10,6 +10,7 @@ import { AdditionalConstruction } from '../AdditionalConstructionBlock';
 import { PreviousOwner } from './HistoryTab';
 import { TaxRecord, MortgageRecord } from './ObligationsTab';
 import { DISPUTE_NATURES_MAP, DECLARANT_QUALITIES_MAP, RESOLUTION_LEVELS } from '@/utils/disputeSharedTypes';
+import { ParcelMapPreview } from '../ParcelMapPreview';
 
 interface ReviewTabProps {
   formData: CadastralContributionData;
@@ -34,6 +35,7 @@ interface ReviewTabProps {
   servitude: { hasServitude: boolean; width?: number };
   buildingShapes: any[];
   disputeFormData: any;
+  mapConfig: any;
   // CCC value
   calculateCCCValue: { value: number };
   // Validation
@@ -56,7 +58,7 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
   taxRecords, mortgageRecords, hasMortgage, hasDispute,
   buildingPermits, permitMode, constructionMode, additionalConstructions, ownerDocFile, titleDocFiles,
   gpsCoordinates, parcelSides, leaseYears, customTitleName,
-  roadSides, servitude, buildingShapes, disputeFormData,
+  roadSides, servitude, buildingShapes, disputeFormData, mapConfig,
   calculateCCCValue, isFormValidForSubmission, getMissingFields,
   handleSubmit, handleTabChange, saveFormDataToStorage,
   setShowQuickAuth, setPendingSubmission,
@@ -230,10 +232,27 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
               </div>
             )}
 
-            {/* Croquis de la parcelle */}
-            {(parcelSides.some(s => s.length) || gpsCoordinates.filter(g => g.lat && g.lng).length > 0 || buildingShapes.length > 0) && (
-              <div className="pt-1 border-t border-border/50">
+            {/* Croquis de la parcelle — carte visuelle */}
+            {gpsCoordinates.filter(g => g.lat && g.lng).length >= 3 && (
+              <div className="pt-2 border-t border-border/50 space-y-2">
                 <div className="font-medium">Croquis de la parcelle:</div>
+                <div className="rounded-xl overflow-hidden border border-border/50" style={{ height: 220, pointerEvents: 'none' }}>
+                  <ParcelMapPreview
+                    coordinates={gpsCoordinates}
+                    onCoordinatesUpdate={() => {}}
+                    config={mapConfig}
+                    currentParcelNumber={formData.parcelNumber}
+                    roadSides={roadSides}
+                    onRoadSidesChange={() => {}}
+                    parcelSides={parcelSides}
+                    onParcelSidesUpdate={() => {}}
+                    enableDrawingMode={false}
+                    buildingShapes={buildingShapes}
+                    onBuildingShapesChange={undefined}
+                    servitude={servitude}
+                    onServitudeChange={() => {}}
+                  />
+                </div>
                 {parcelSides.filter(s => s.length).length > 0 && (
                   <div className="ml-2 text-muted-foreground">
                     <div className="font-medium text-foreground text-[11px] mt-1">Dimensions des côtés:</div>
