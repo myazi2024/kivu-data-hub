@@ -795,18 +795,16 @@ export const useCCCFormState = ({
       if (formData.commune) filledFields += 1;
       if (formData.quartier) filledFields += 1;
       if (formData.avenue) filledFields += 1;
-      if (formData.houseNumber) filledFields += 1;
     } else {
       if (formData.territoire) filledFields += 1;
       if (formData.collectivite) filledFields += 1;
       if (formData.groupement) filledFields += 1;
       if (formData.village) filledFields += 1;
     }
-    const filledSides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
-    if (filledSides.length >= 3) filledFields += 1;
-    totalFields += 5;
+    // GPS scoring: aligned with backend SQL (2 points for >=3 coords, 1 for partial)
     const validGps = gpsCoordinates.filter(c => c.lat && c.lng);
-    if (validGps.length > 0) filledFields += Math.min(validGps.length, 3);
+    if (validGps.length >= 3) filledFields += 2;
+    else if (validGps.length > 0) filledFields += 1;
     if (formData.whatsappNumber) { totalFields += 1; filledFields += 1; }
     totalFields += 3;
     const validPreviousOwners = previousOwners.filter(o => o.name);
