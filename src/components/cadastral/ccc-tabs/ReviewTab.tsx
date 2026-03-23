@@ -254,7 +254,6 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
                   buildingShapes={buildingShapes}
                   roadSides={roadSides}
                   servitude={servitude}
-                  height={240}
                 />
                 {/* Détails textuels sous le croquis */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">

@@ -64,6 +64,28 @@ const ParcelSketchSVG: React.FC<ParcelSketchSVGProps> = ({
     [coordinates],
   );
 
+  // Compute dynamic height based on parcel real-world aspect ratio
+  const dynamicHeight = useMemo(() => {
+    if (heightProp) return heightProp;
+    if (validCoords.length < 3) return 400;
+
+    const lats = validCoords.map(c => c.lat);
+    const lngs = validCoords.map(c => c.lng);
+    const avgLat = (Math.min(...lats) + Math.max(...lats)) / 2;
+    const metersPerDegLat = 111320;
+    const metersPerDegLng = 111320 * Math.cos((avgLat * Math.PI) / 180);
+
+    const rangeXm = (Math.max(...lngs) - Math.min(...lngs)) * metersPerDegLng;
+    const rangeYm = (Math.max(...lats) - Math.min(...lats)) * metersPerDegLat;
+
+    const aspect = rangeXm > 0 ? rangeYm / rangeXm : 1;
+    // Clamp height between 300 and 600, base width is SVG_W
+    const computed = Math.round(SVG_W * Math.min(Math.max(aspect, 0.5), 1.4));
+    return Math.max(300, Math.min(600, computed));
+  }, [validCoords, heightProp]);
+
+  const height = dynamicHeight;
+
   const { points, bounds, cx, cy, metersPerPx } = useMemo(() => {
     if (validCoords.length < 3) return { points: [], bounds: { w: 0, h: 0 }, cx: 0, cy: 0, metersPerPx: 1 };
 
@@ -82,6 +104,7 @@ const ParcelSketchSVG: React.FC<ParcelSketchSVGProps> = ({
 
     const rangeX = maxLng - minLng || 0.0001;
     const rangeY = maxLat - minLat || 0.0001;
+    // Scale factor x2 for better visibility
     const scale = Math.min(usableW / rangeX, usableH / rangeY);
 
     // Calculate meters per pixel for scale bar
