@@ -869,7 +869,7 @@ export const useCCCFormState = ({
     if (missingFields.length > 0) {
       const fieldsByTab: { [key: string]: string[] } = {};
       missingFields.forEach(f => { if (!fieldsByTab[f.tab]) fieldsByTab[f.tab] = []; fieldsByTab[f.tab].push(f.label); });
-      const tabNames: { [key: string]: string } = { general: 'Infos', location: 'Lieu', history: 'Passé', obligations: 'Obligations', review: 'Récapitulatif' };
+      const tabNames: { [key: string]: string } = { general: 'Infos', location: 'Localisation', history: 'Passé', obligations: 'Obligations', review: 'Récapitulatif' };
       const summary = Object.entries(fieldsByTab).map(([tab, fields]) => `${tabNames[tab] || tab}: ${fields.join(', ')}`).join(' | ');
       toast({ title: "Champs requis manquants", description: summary.length > 100 ? `${missingFields.length} champs manquants.` : summary, variant: "destructive" });
       return;

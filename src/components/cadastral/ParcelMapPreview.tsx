@@ -459,24 +459,24 @@ export const ParcelMapPreview = ({
           
           const zoomIn = L.DomUtil.create('a', 'leaflet-control-zoom-in', container);
           zoomIn.innerHTML = '+';
-          zoomIn.title = 'Zoom max';
+          zoomIn.title = 'Zoom avant';
           zoomIn.href = '#';
           zoomIn.role = 'button';
-          zoomIn.setAttribute('aria-label', 'Zoom max');
+          zoomIn.setAttribute('aria-label', 'Zoom avant');
           L.DomEvent.on(zoomIn, 'click', function(e: any) {
             L.DomEvent.preventDefault(e);
-            map.setZoom(map.getMaxZoom());
+            map.setZoom(Math.min(map.getZoom() + 1, map.getMaxZoom()));
           });
           
           const zoomOut = L.DomUtil.create('a', 'leaflet-control-zoom-out', container);
           zoomOut.innerHTML = '\u2212';
-          zoomOut.title = 'Zoom min';
+          zoomOut.title = 'Zoom arrière';
           zoomOut.href = '#';
           zoomOut.role = 'button';
-          zoomOut.setAttribute('aria-label', 'Zoom min');
+          zoomOut.setAttribute('aria-label', 'Zoom arrière');
           L.DomEvent.on(zoomOut, 'click', function(e: any) {
             L.DomEvent.preventDefault(e);
-            map.setZoom(map.getMinZoom());
+            map.setZoom(Math.max(map.getZoom() - 1, map.getMinZoom()));
           });
           
           L.DomEvent.disableClickPropagation(container);
