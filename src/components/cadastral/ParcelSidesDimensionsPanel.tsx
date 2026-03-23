@@ -214,7 +214,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
           </div>
         </CardTitle>
         <CardDescription className="text-xs text-muted-foreground">
-          Activez le bouton sur chaque côté pour définir sa limite
+          Définissez les limites et l'entrée de chaque côté
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-1.5 px-3 pb-3">
