@@ -89,6 +89,8 @@ export const useCCCFormState = ({
   const [hasShownConfetti, setHasShownConfetti] = useState(false);
   const [roadSides, setRoadSides] = useState<any[]>([]);
   const [servitude, setServitude] = useState<{ hasServitude: boolean; width?: number }>({ hasServitude: false });
+  const [buildingShapes, setBuildingShapes] = useState<any[]>([]);
+  const [disputeFormData, setDisputeFormData] = useState<any>(null);
 
   const [previousOwners, setPreviousOwners] = useState<PreviousOwner[]>([{
     name: '', legalStatus: 'Personne physique', entityType: '', entitySubType: '',
