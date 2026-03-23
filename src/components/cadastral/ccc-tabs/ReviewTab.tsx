@@ -10,6 +10,7 @@ import { AdditionalConstruction } from '../AdditionalConstructionBlock';
 import { PreviousOwner } from './HistoryTab';
 import { TaxRecord, MortgageRecord } from './ObligationsTab';
 import { DISPUTE_NATURES_MAP, DECLARANT_QUALITIES_MAP, RESOLUTION_LEVELS } from '@/utils/disputeSharedTypes';
+import { ParcelMapPreview } from '../ParcelMapPreview';
 
 interface ReviewTabProps {
   formData: CadastralContributionData;
