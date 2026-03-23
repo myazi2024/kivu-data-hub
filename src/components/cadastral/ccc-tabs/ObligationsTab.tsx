@@ -81,7 +81,7 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
   hasMortgage, setHasMortgage, mortgageRecords, setMortgageRecords,
   updateMortgageRecord, addMortgageRecord, removeMortgageRecord,
   handleMortgageFileChange, removeMortgageFile, showMortgageWarning, highlightIncompleteMortgage,
-  hasDispute, setHasDispute,
+  hasDispute, setHasDispute, onDisputeDataChange,
   getPicklistOptions, handleTabChange, handleNextTab,
   resetTaxBlock, resetMortgageBlock
 }) => {
