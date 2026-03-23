@@ -197,7 +197,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
           <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center">
             <Ruler className="h-3.5 w-3.5 text-primary" />
           </div>
-          Dimensions & Limites
+          Limites et Entrée
           <div className="flex gap-1 ml-auto">
             {roadCount > 0 && (
               <Badge variant="secondary" className="text-[10px] h-5 px-1.5 rounded-md bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300">
