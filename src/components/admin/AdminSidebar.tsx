@@ -105,7 +105,7 @@ const menuItems = [
       { icon: FileText, label: 'Config Résultats', value: 'results-config', badge: null },
       { icon: MapPin, label: 'Zones Territoriales', value: 'zones', badge: null },
       { icon: Building2, label: 'Autorisation de Bâtir', value: 'permits', badge: 'permits' },
-      { icon: FileText, label: 'Config Frais Permis', value: 'permit-fees-config', badge: null },
+      { icon: FileText, label: 'Config Frais Autorisation', value: 'permit-fees-config', badge: null },
       { icon: FileText, label: 'Demandes Titres Fonciers', value: 'land-title-requests', badge: 'landTitle' },
       { icon: FileText, label: 'Demandes Mutation', value: 'mutations', badge: 'mutations' },
       { icon: DollarSign, label: 'Config Frais Mutation', value: 'mutation-fees-config', badge: null },

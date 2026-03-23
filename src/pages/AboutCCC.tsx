@@ -244,7 +244,7 @@ const AboutCCC = () => {
                       <li><strong>Coordonnées GPS :</strong> Position exacte du terrain sur une carte (latitude et longitude)</li>
                       <li><strong>Circonscription foncière :</strong> Bureau administratif gérant les terres de la zone (ex : Circonscription Foncière de Goma)</li>
                       <li><strong>Hypothèque :</strong> Garantie sur le terrain en cas de prêt bancaire</li>
-                      <li><strong>Permis de bâtir :</strong> Autorisation officielle de construire, délivrée par la mairie</li>
+                      <li><strong>Autorisation de bâtir :</strong> Autorisation officielle de construire, délivrée par la mairie</li>
                       <li><strong>Bornage :</strong> Délimitation officielle des limites du terrain par un géomètre</li>
                     </ul>
                   </div>
@@ -584,7 +584,7 @@ const AboutCCC = () => {
                       <span className="text-primary">•</span>
                       <div>
                         <strong className="text-foreground">Documents officiels :</strong> Copies de titres de propriété, 
-                        permis de bâtir, certificats d'enregistrement, ou autres documents administratifs
+                        autorisations de bâtir, certificats d'enregistrement, ou autres documents administratifs
                       </div>
                     </li>
                   </ul>

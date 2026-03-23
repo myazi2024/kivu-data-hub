@@ -139,8 +139,8 @@ export const CCC_STATIC_PICKLIST_REGISTRY: Record<string, {
     fallback: ['Active', 'En défaut', 'Renégociée'],
   },
   picklist_permit_admin_status: {
-    label: 'Statut admin permis',
-    description: 'Statuts administratifs des permis de construire',
+    label: 'Statut admin autorisation',
+    description: 'Statuts administratifs des autorisations de bâtir',
     fallback: ['En attente', 'Approuvé', 'Rejeté', 'Expiré'],
   },
 };

@@ -61,7 +61,7 @@ export const UserQuickStats = () => {
       description: "Contributions cadastrales",
     },
     {
-      title: "Permis",
+      title: "Autorisations",
       value: stats.permits,
       icon: Building,
       description: "Autorisation de bâtir",

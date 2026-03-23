@@ -118,7 +118,7 @@ const AdminBuildingPermits = () => {
       format(new Date(p.created_at), 'dd/MM/yyyy', { locale: fr }),
       p.permit_request_data?.status || 'pending'
     ]);
-    exportToCSV({ headers, data, filename: `permis-construire-${format(new Date(), 'yyyy-MM-dd')}.csv` });
+    exportToCSV({ headers, data, filename: `autorisations-batir-${format(new Date(), 'yyyy-MM-dd')}.csv` });
     toast.success('Export CSV réussi');
   };
 
@@ -225,7 +225,7 @@ const AdminBuildingPermits = () => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Gestion des Demandes de Permis</CardTitle>
+              <CardTitle>Gestion des Demandes d'Autorisation</CardTitle>
               <CardDescription>
                 Examinez et traitez les demandes d'autorisation de bâtir et de régularisation
               </CardDescription>
@@ -276,7 +276,7 @@ const AdminBuildingPermits = () => {
           {/* Table */}
           {filteredPermits.length === 0 ? (
             <Alert>
-              <AlertDescription>Aucune demande de permis trouvée.</AlertDescription>
+              <AlertDescription>Aucune demande d'autorisation trouvée.</AlertDescription>
             </Alert>
           ) : (
             <div className="border rounded-lg overflow-x-auto">

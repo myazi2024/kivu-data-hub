@@ -162,10 +162,10 @@ export const UserContributions: React.FC = () => {
       return { label: 'Hypothèque', icon: '🏦', color: 'text-amber-600' };
     }
     if (contribution.building_permits && Array.isArray(contribution.building_permits) && contribution.building_permits.length > 0) {
-      return { label: 'Permis de bâtir', icon: '🏗️', color: 'text-blue-600' };
+      return { label: 'Autorisation de bâtir', icon: '🏗️', color: 'text-blue-600' };
     }
     if (contribution.permit_request_data) {
-      return { label: 'Demande de permis', icon: '📝', color: 'text-purple-600' };
+      return { label: "Demande d'autorisation", icon: '📝', color: 'text-purple-600' };
     }
     if (contribution.tax_history && Array.isArray(contribution.tax_history) && contribution.tax_history.length > 0) {
       return { label: 'Historique fiscal', icon: '📊', color: 'text-green-600' };
@@ -734,10 +734,10 @@ export const UserContributions: React.FC = () => {
               {selectedContribution.permit_request_data && (
                 <div className="bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
                   <p className="text-sm font-medium text-purple-700 dark:text-purple-400 mb-2 flex items-center gap-2">
-                    📝 Détails de la demande de permis
+                    📝 Détails de la demande d'autorisation
                   </p>
                   <div className="text-sm space-y-1">
-                    <p><strong>Type:</strong> {selectedContribution.permit_request_data.permit_type || selectedContribution.permit_request_data.permitType || 'Permis de bâtir'}</p>
+                    <p><strong>Type:</strong> {selectedContribution.permit_request_data.permit_type || selectedContribution.permit_request_data.permitType || 'Autorisation de bâtir'}</p>
                     <p><strong>Surface:</strong> {selectedContribution.permit_request_data.construction_area || selectedContribution.permit_request_data.constructionArea || 'N/A'} m²</p>
                     {selectedContribution.permit_request_data.construction_type && (
                       <p><strong>Type construction:</strong> {selectedContribution.permit_request_data.construction_type}</p>
@@ -750,7 +750,7 @@ export const UserContributions: React.FC = () => {
               {selectedContribution.building_permits && Array.isArray(selectedContribution.building_permits) && selectedContribution.building_permits.length > 0 && (
                 <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                   <p className="text-sm font-medium text-blue-700 dark:text-blue-400 mb-2 flex items-center gap-2">
-                    🏗️ Détails du permis de bâtir
+                    🏗️ Détails de l'autorisation de bâtir
                   </p>
                   {selectedContribution.building_permits.map((permit: any, idx: number) => (
                     <div key={idx} className="text-sm space-y-1">
@@ -864,7 +864,7 @@ export const UserContributions: React.FC = () => {
               <p className="text-sm text-muted-foreground">
                 Cette contribution a été soumise via un formulaire spécialisé 
                 ({editFormType === 'tax' ? 'Historique fiscal' : 
-                  editFormType === 'mortgage' ? 'Hypothèque' : 'Permis de bâtir'}).
+                  editFormType === 'mortgage' ? 'Hypothèque' : 'Autorisation de bâtir'}).
               </p>
               <p className="text-sm text-muted-foreground">
                 Pour la modifier, veuillez vous rendre sur la carte cadastrale, 

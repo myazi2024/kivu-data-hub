@@ -192,14 +192,14 @@ export const PermitRequestDialog: React.FC<PermitRequestDialogProps> = ({
       await supabase.from('notifications').insert({
         user_id: userId,
         type: action === 'approve' ? 'success' : 'error',
-        title: action === 'approve' ? 'Permis délivré !' : 'Demande rejetée',
+        title: action === 'approve' ? 'Autorisation délivrée !' : 'Demande rejetée',
         message: action === 'approve'
-          ? `Votre permis ${updatedPermitData.permitNumber} a été délivré pour la parcelle ${parcelNumber}. Le certificat est disponible dans votre espace.`
-          : `Votre demande de permis pour la parcelle ${parcelNumber} a été rejetée. ${response}`,
+          ? `Votre autorisation ${updatedPermitData.permitNumber} a été délivrée pour la parcelle ${parcelNumber}. Le certificat est disponible dans votre espace.`
+          : `Votre demande d'autorisation pour la parcelle ${parcelNumber} a été rejetée. ${response}`,
         action_url: '/user-dashboard?tab=building-permits'
       });
 
-      toast.success(action === 'approve' ? 'Permis délivré avec succès' : 'Demande rejetée');
+      toast.success(action === 'approve' ? 'Autorisation délivrée avec succès' : 'Demande rejetée');
       onProcessed();
       onOpenChange(false);
     } catch (error: any) {
@@ -219,7 +219,7 @@ export const PermitRequestDialog: React.FC<PermitRequestDialogProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
-            Demande de permis - Parcelle {parcelNumber}
+            Demande d'autorisation - Parcelle {parcelNumber}
           </DialogTitle>
         </DialogHeader>
 

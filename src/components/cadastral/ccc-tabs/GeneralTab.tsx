@@ -1082,8 +1082,8 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({
             </PopoverTrigger>
             <PopoverContent className="w-72 rounded-xl" align="end">
               <div className="space-y-2 text-xs">
-                <h4 className="font-semibold text-sm">À propos du permis</h4>
-                <p className="text-muted-foreground">Si vous avez déjà un permis, renseignez-le ici. Sinon, vous pourrez faire une demande depuis votre espace personnel après la soumission de votre contribution.</p>
+                <h4 className="font-semibold text-sm">À propos de l'autorisation</h4>
+                <p className="text-muted-foreground">Si vous avez déjà une autorisation de bâtir, renseignez-la ici. Sinon, vous pourrez faire une demande depuis votre espace personnel après la soumission de votre contribution.</p>
               </div>
             </PopoverContent>
           </Popover>

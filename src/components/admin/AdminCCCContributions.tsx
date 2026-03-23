@@ -502,7 +502,7 @@ const AdminCCCContributions: React.FC = () => {
                 permit_document_url: (permit as any).permit_document_url
               });
               if (bpError) {
-                console.error('Erreur permis de construire:', bpError);
+                console.error('Erreur autorisation de bâtir:', bpError);
                 historyErrors.push('permis');
               }
             }
@@ -1060,7 +1060,7 @@ const AdminCCCContributions: React.FC = () => {
                   </Button>
                 )}
 
-                {/* Demande de permis */}
+                {/* Demande d'autorisation */}
                 {selectedContribution.permit_request_data && (
                   <Button
                     variant="outline"
@@ -1283,7 +1283,7 @@ const AdminCCCContributions: React.FC = () => {
 
                   {selectedContribution.permit_request_data && (
                     <div className="mt-2 md:mt-4">
-                      <Label className="text-xs text-muted-foreground">Demande de permis</Label>
+                      <Label className="text-xs text-muted-foreground">Demande d'autorisation</Label>
                       <div className="p-2 md:p-3 bg-secondary rounded space-y-0.5 md:space-y-1 text-xs md:text-sm mt-1">
                         <p><strong>Type:</strong> {selectedContribution.permit_request_data.permitType === 'construction' ? 'Construction' : 'Régularisation'}</p>
                         <p><strong>Construction existante:</strong> {selectedContribution.permit_request_data.hasExistingConstruction ? 'Oui' : 'Non'}</p>
@@ -1571,7 +1571,7 @@ const AdminCCCContributions: React.FC = () => {
             />
           )}
 
-          {/* Dialog demande de permis */}
+          {/* Dialog demande d'autorisation */}
           {selectedContribution.permit_request_data && (
             <PermitRequestDialog
               open={showPermitDialog}
