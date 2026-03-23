@@ -59,7 +59,8 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
   parcelId,
   open,
   onOpenChange,
-  embedded = false
+  embedded = false,
+  onDisputeDataChange
 }) => {
   const { user, profile } = useAuth();
   const [step, setStep] = useState<Step>('form');
