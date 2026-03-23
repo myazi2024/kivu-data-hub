@@ -180,10 +180,10 @@ export const useCCCFormState = ({
   // ─── Helper: mark form dirty ───
   const markDirty = useCallback(() => { formDirtyRef.current = true; }, []);
 
-  const handleInputChange = (field: keyof CadastralContributionData, value: any) => {
+  const handleInputChange = useCallback((field: keyof CadastralContributionData, value: any) => {
     formDirtyRef.current = true;
     setFormData(prev => ({ ...prev, [field]: value }));
-  };
+  }, []);
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
