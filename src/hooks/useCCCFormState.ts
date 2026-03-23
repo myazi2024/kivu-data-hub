@@ -257,6 +257,8 @@ export const useCCCFormState = ({
         if (parsed.customTitleName) setCustomTitleName(parsed.customTitleName);
         if (parsed.constructionMode) setConstructionMode(parsed.constructionMode);
         if (parsed.additionalConstructions) setAdditionalConstructions(parsed.additionalConstructions);
+        if (parsed.buildingShapes) setBuildingShapes(parsed.buildingShapes);
+        if (parsed.disputeFormData) setDisputeFormData(parsed.disputeFormData);
         toast({ title: "Données restaurées", description: "Vos données précédentes ont été restaurées." });
       }
     } catch (error) {
