@@ -162,7 +162,7 @@ export const UserContributions: React.FC = () => {
       return { label: 'Hypothèque', icon: '🏦', color: 'text-amber-600' };
     }
     if (contribution.building_permits && Array.isArray(contribution.building_permits) && contribution.building_permits.length > 0) {
-      return { label: 'Permis de bâtir', icon: '🏗️', color: 'text-blue-600' };
+      return { label: 'Autorisation de bâtir', icon: '🏗️', color: 'text-blue-600' };
     }
     if (contribution.permit_request_data) {
       return { label: 'Demande de permis', icon: '📝', color: 'text-purple-600' };
