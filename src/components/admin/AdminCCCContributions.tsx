@@ -1060,7 +1060,7 @@ const AdminCCCContributions: React.FC = () => {
                   </Button>
                 )}
 
-                {/* Demande de permis */}
+                {/* Demande d'autorisation */}
                 {selectedContribution.permit_request_data && (
                   <Button
                     variant="outline"
