@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 
 interface Coordinate {
-  lat: number;
-  lng: number;
+  lat: number | string;
+  lng: number | string;
   borne: string;
 }
 
