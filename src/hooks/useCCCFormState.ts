@@ -835,10 +835,16 @@ export const useCCCFormState = ({
       const validMortgages = mortgageRecords.filter(m => m.mortgageAmount && m.creditorName);
       if (validMortgages.length > 0) filledFields += Math.min(validMortgages.length * 2, 2);
     } else if (hasMortgage === false) { filledFields += 2; }
+    // Dispute scoring
+    totalFields += 1;
+    if (hasDispute !== null) filledFields += 1;
+    // Building shapes scoring
+    totalFields += 1;
+    if (buildingShapes.length > 0) filledFields += 1;
     const percentage = totalFields > 0 ? (filledFields / totalFields) * 100 : 0;
     const value = (percentage / 100) * 5;
     return { value: Math.min(value, 5), percentage: Math.min(percentage, 100), filledFields, totalFields };
-  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, hasMortgage, buildingPermits, permitRequest, gpsCoordinates, parcelSides, sectionType]);
+  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, hasMortgage, hasDispute, buildingPermits, permitRequest, gpsCoordinates, parcelSides, sectionType, buildingShapes]);
 
   // ─── Confetti ───
   const triggerConfetti = async () => {
@@ -967,10 +973,11 @@ export const useCCCFormState = ({
         parcelSides: parcelSides.filter(s => s.length && parseFloat(s.length) > 0).length > 0 ? parcelSides.filter(s => s.length && parseFloat(s.length) > 0) : undefined,
         additionalConstructions: constructionMode === 'multiple' && additionalConstructions.length > 0
           ? additionalConstructions.map(c => ({ ...c, permit: c.permit ? { ...c.permit, attachmentFile: undefined } : undefined })) : undefined,
-        // FIX: Persist roadSides, servitude, and hasDispute to DB
         roadSides: roadSides.length > 0 ? roadSides : undefined,
         servitudeData: servitude.hasServitude ? servitude : undefined,
         hasDispute: hasDispute ?? undefined,
+        disputeData: disputeFormData || undefined,
+        buildingShapes: buildingShapes.length > 0 ? buildingShapes : undefined,
       };
 
       const result = editingContributionId ? await updateContribution(editingContributionId, dataToSubmit) : await submitContribution(dataToSubmit);
@@ -1131,7 +1138,7 @@ export const useCCCFormState = ({
           setAdditionalConstructions(additionalConstr.map((c: any) => ({ propertyCategory: c.propertyCategory || '', constructionType: c.constructionType || '', constructionNature: c.constructionNature || '', constructionMaterials: c.constructionMaterials || '', declaredUsage: c.declaredUsage || '', standing: c.standing || '', constructionYear: c.constructionYear || undefined, apartmentNumber: c.apartmentNumber || undefined, floorNumber: c.floorNumber || undefined, permitMode: c.permitMode || undefined, permit: c.permit || undefined })));
         }
 
-        // FIX: Restore roadSides, servitude, and hasDispute from DB
+        // Restore roadSides, servitude, hasDispute, disputeData, buildingShapes from DB
         const savedRoadSides = (contrib as any).road_sides as any[];
         if (savedRoadSides && Array.isArray(savedRoadSides)) setRoadSides(savedRoadSides);
 
@@ -1141,6 +1148,12 @@ export const useCCCFormState = ({
         if ((contrib as any).has_dispute !== null && (contrib as any).has_dispute !== undefined) {
           setHasDispute((contrib as any).has_dispute);
         }
+
+        const savedDisputeData = (contrib as any).dispute_data as any;
+        if (savedDisputeData) setDisputeFormData(savedDisputeData);
+
+        const savedBuildingShapes = (contrib as any).building_shapes as any[];
+        if (savedBuildingShapes && Array.isArray(savedBuildingShapes)) setBuildingShapes(savedBuildingShapes);
       } catch (err) { console.error('Erreur chargement contribution:', err); }
       finally { setTimeout(() => { isLoadingFromDbRef.current = false; }, 500); }
     };
