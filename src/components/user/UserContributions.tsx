@@ -737,7 +737,7 @@ export const UserContributions: React.FC = () => {
                     📝 Détails de la demande d'autorisation
                   </p>
                   <div className="text-sm space-y-1">
-                    <p><strong>Type:</strong> {selectedContribution.permit_request_data.permit_type || selectedContribution.permit_request_data.permitType || 'Permis de bâtir'}</p>
+                    <p><strong>Type:</strong> {selectedContribution.permit_request_data.permit_type || selectedContribution.permit_request_data.permitType || 'Autorisation de bâtir'}</p>
                     <p><strong>Surface:</strong> {selectedContribution.permit_request_data.construction_area || selectedContribution.permit_request_data.constructionArea || 'N/A'} m²</p>
                     {selectedContribution.permit_request_data.construction_type && (
                       <p><strong>Type construction:</strong> {selectedContribution.permit_request_data.construction_type}</p>
