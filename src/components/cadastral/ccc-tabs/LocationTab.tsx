@@ -37,6 +37,8 @@ interface LocationTabProps {
   onParcelSidesUpdate: (sides: Array<{ name: string; length: string }>) => void;
   servitude: { hasServitude: boolean; width?: number };
   onServitudeChange: (s: { hasServitude: boolean; width?: number }) => void;
+  buildingShapes: any[];
+  onBuildingShapesChange: (shapes: any[]) => void;
   // Navigation
   handleTabChange: (tab: string) => void;
   handleNextTab: (current: string, next: string) => void;
