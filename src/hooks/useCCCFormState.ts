@@ -215,7 +215,7 @@ export const useCCCFormState = ({
       buildingPermits: buildingPermits.map(p => ({ ...p, attachmentFile: null })),
       permitRequest: { ...permitRequest, architecturalPlanImages: [], constructionPhotos: [] },
       gpsCoordinates, parcelSides, obligationType, sectionType,
-      hasMortgage, hasDispute, ownershipMode, leaseYears, roadSides, servitude, customTitleName,
+      hasMortgage, hasDispute, ownershipMode, leaseYears, roadSides, servitude, customTitleName, buildingShapes, disputeFormData,
       isTitleInCurrentOwnerName: formData.isTitleInCurrentOwnerName,
       constructionMode,
       additionalConstructions: additionalConstructions.map(c => ({
