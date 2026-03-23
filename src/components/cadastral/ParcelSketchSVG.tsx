@@ -57,7 +57,7 @@ const ROAD_TYPE_LABELS: Record<string, string> = {
 const SVG_W = 440;
 
 const ParcelSketchSVG: React.FC<ParcelSketchSVGProps> = ({
-  coordinates, parcelSides, buildingShapes, roadSides = [], servitude, height = 300,
+  coordinates, parcelSides, buildingShapes, roadSides = [], servitude, height: heightProp,
 }) => {
   const validCoords = useMemo(
     () => coordinates.filter((c) => c.lat && c.lng).map(c => ({ ...c, lat: Number(c.lat), lng: Number(c.lng) })),
