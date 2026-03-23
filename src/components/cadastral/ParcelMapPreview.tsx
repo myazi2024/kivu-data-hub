@@ -2207,7 +2207,7 @@ export const ParcelMapPreview = ({
         
         {/* Panel de déplacement précis de borne — mobile uniquement */}
         {selectedBorne && (
-          <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-[1000] md:hidden">
+          <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-[1000]">
             <Card className="p-2 rounded-2xl shadow-lg bg-white/95 dark:bg-card/95 backdrop-blur-sm border-primary/30">
               <div className="flex flex-col items-center gap-1.5">
                 <div className="flex items-center gap-1">
