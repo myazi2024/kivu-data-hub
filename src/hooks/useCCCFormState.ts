@@ -1124,6 +1124,17 @@ export const useCCCFormState = ({
           setConstructionMode('multiple');
           setAdditionalConstructions(additionalConstr.map((c: any) => ({ propertyCategory: c.propertyCategory || '', constructionType: c.constructionType || '', constructionNature: c.constructionNature || '', constructionMaterials: c.constructionMaterials || '', declaredUsage: c.declaredUsage || '', standing: c.standing || '', constructionYear: c.constructionYear || undefined, apartmentNumber: c.apartmentNumber || undefined, floorNumber: c.floorNumber || undefined, permitMode: c.permitMode || undefined, permit: c.permit || undefined })));
         }
+
+        // FIX: Restore roadSides, servitude, and hasDispute from DB
+        const savedRoadSides = (contrib as any).road_sides as any[];
+        if (savedRoadSides && Array.isArray(savedRoadSides)) setRoadSides(savedRoadSides);
+
+        const savedServitude = (contrib as any).servitude_data as any;
+        if (savedServitude) setServitude(savedServitude);
+
+        if ((contrib as any).has_dispute !== null && (contrib as any).has_dispute !== undefined) {
+          setHasDispute((contrib as any).has_dispute);
+        }
       } catch (err) { console.error('Erreur chargement contribution:', err); }
       finally { setTimeout(() => { isLoadingFromDbRef.current = false; }, 500); }
     };
