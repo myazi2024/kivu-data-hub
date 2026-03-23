@@ -190,7 +190,7 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
     const today = new Date().toISOString().split('T')[0];
     if (disputeStartDate > today) { toast.error('La date de début ne peut pas être dans le futur'); return false; }
     if (hasResolutionStarted && !resolutionLevel) { toast.error('Veuillez indiquer le niveau de résolution'); return false; }
-    if (!declarantName.trim() || declarantName.trim().length < 3) { toast.error('Le nom du déclarant doit contenir au moins 3 caractères'); return false; }
+    if (!embedded && (!declarantName.trim() || declarantName.trim().length < 3)) { toast.error('Le nom du déclarant doit contenir au moins 3 caractères'); return false; }
     if (!declarantQuality) { toast.error('Veuillez indiquer votre qualité'); return false; }
     if (declarantEmail && !validateEmail(declarantEmail)) { toast.error('Adresse e-mail invalide'); return false; }
     if (declarantPhone && !validatePhone(declarantPhone)) { toast.error('Numéro de téléphone invalide'); return false; }
@@ -387,10 +387,10 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
           <CardContent className="p-3 space-y-2">
             <div className="flex items-center gap-2 text-sm font-semibold text-primary"><User className="h-4 w-4" /> Déclarant</div>
             <div className="space-y-1.5 text-sm">
-              <div className="flex justify-between"><span className="text-muted-foreground">Nom :</span><span>{declarantName}</span></div>
+              {!embedded && <div className="flex justify-between"><span className="text-muted-foreground">Nom :</span><span>{declarantName}</span></div>}
               <div className="flex justify-between"><span className="text-muted-foreground">Qualité :</span><span>{DECLARANT_QUALITIES.find(q => q.value === declarantQuality)?.label}</span></div>
-              {declarantPhone && <div className="flex justify-between"><span className="text-muted-foreground">Téléphone :</span><span>{declarantPhone}</span></div>}
-              {declarantEmail && <div className="flex justify-between"><span className="text-muted-foreground">E-mail :</span><span>{declarantEmail}</span></div>}
+              {!embedded && declarantPhone && <div className="flex justify-between"><span className="text-muted-foreground">Téléphone :</span><span>{declarantPhone}</span></div>}
+              {!embedded && declarantEmail && <div className="flex justify-between"><span className="text-muted-foreground">E-mail :</span><span>{declarantEmail}</span></div>}
             </div>
           </CardContent>
         </Card>
@@ -614,14 +614,16 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
         <CardContent className="p-3 space-y-3">
           <h4 className="text-sm font-semibold text-primary flex items-center gap-2">
             <div className="w-1.5 h-1.5 bg-primary rounded-full" />
-            Identité du déclarant
-            <SectionHelpPopover title="Déclarant" description="Renseignez vos informations personnelles. Ces données permettent de vous contacter pour le suivi du dossier." />
+            {embedded ? 'Qualité du déclarant' : 'Identité du déclarant'}
+            <SectionHelpPopover title="Déclarant" description={embedded ? "Indiquez votre qualité par rapport à cette parcelle." : "Renseignez vos informations personnelles. Ces données permettent de vous contacter pour le suivi du dossier."} />
           </h4>
           <div className="space-y-2.5">
-            <div className="space-y-1">
-              <Label className="text-xs">Nom complet *</Label>
-              <Input value={declarantName} onChange={(e) => setDeclarantName(e.target.value)} className="h-11 text-sm rounded-xl border-2" />
-            </div>
+            {!embedded && (
+              <div className="space-y-1">
+                <Label className="text-xs">Nom complet *</Label>
+                <Input value={declarantName} onChange={(e) => setDeclarantName(e.target.value)} className="h-11 text-sm rounded-xl border-2" />
+              </div>
+            )}
             <div className="space-y-1">
               <Label className="text-xs">Qualité *</Label>
               <Select value={declarantQuality} onValueChange={setDeclarantQuality}>
@@ -631,16 +633,18 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <Label className="text-xs">Téléphone</Label>
-                <Input value={declarantPhone} onChange={(e) => setDeclarantPhone(e.target.value)} className="h-11 text-sm rounded-xl border-2" placeholder="+243..." />
+            {!embedded && (
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Téléphone</Label>
+                  <Input value={declarantPhone} onChange={(e) => setDeclarantPhone(e.target.value)} className="h-11 text-sm rounded-xl border-2" placeholder="+243..." />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">E-mail</Label>
+                  <Input value={declarantEmail} onChange={(e) => setDeclarantEmail(e.target.value)} className="h-11 text-sm rounded-xl border-2" type="email" />
+                </div>
               </div>
-              <div className="space-y-1">
-                <Label className="text-xs">E-mail</Label>
-                <Input value={declarantEmail} onChange={(e) => setDeclarantEmail(e.target.value)} className="h-11 text-sm rounded-xl border-2" type="email" />
-              </div>
-            </div>
+            )}
           </div>
         </CardContent>
       </Card>
