@@ -90,9 +90,21 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
         </CardContent>
       </Card>
 
-      <div className="flex items-center gap-2">
-        <CheckCircle2 className="h-4 w-4 text-primary" />
-        <h3 className="text-sm font-semibold">Récapitulatif</h3>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <CheckCircle2 className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-semibold">Récapitulatif</h3>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => window.print()}
+          className="rounded-xl h-8 px-2 md:px-3 gap-1.5 text-xs"
+        >
+          <Printer className="h-3.5 w-3.5" />
+          <span className="hidden md:inline">Imprimer</span>
+        </Button>
       </div>
 
       {/* ═══ INFOS GÉNÉRALES ═══ */}
