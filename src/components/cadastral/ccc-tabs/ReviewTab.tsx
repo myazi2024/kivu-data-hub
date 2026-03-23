@@ -18,6 +18,7 @@ interface ReviewTabProps {
   taxRecords: TaxRecord[];
   mortgageRecords: MortgageRecord[];
   hasMortgage: boolean | null;
+  hasDispute: boolean | null;
   buildingPermits: BuildingPermit[];
   permitMode: 'existing' | 'request';
   constructionMode: 'unique' | 'multiple';
@@ -28,6 +29,8 @@ interface ReviewTabProps {
   parcelSides: Array<{ name: string; length: string }>;
   leaseYears: number;
   customTitleName: string;
+  roadSides: any[];
+  servitude: { hasServitude: boolean; width?: number };
   // CCC value
   calculateCCCValue: { value: number };
   // Validation
@@ -47,9 +50,10 @@ interface ReviewTabProps {
 
 const ReviewTab: React.FC<ReviewTabProps> = ({
   formData, sectionType, currentOwners, previousOwners,
-  taxRecords, mortgageRecords, hasMortgage,
+  taxRecords, mortgageRecords, hasMortgage, hasDispute,
   buildingPermits, permitMode, constructionMode, additionalConstructions, ownerDocFile, titleDocFiles,
   gpsCoordinates, parcelSides, leaseYears, customTitleName,
+  roadSides, servitude,
   calculateCCCValue, isFormValidForSubmission, getMissingFields,
   handleSubmit, handleTabChange, saveFormDataToStorage,
   setShowQuickAuth, setPendingSubmission,
@@ -86,7 +90,7 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
         <h3 className="text-sm font-semibold">Récapitulatif</h3>
       </div>
 
-      {/* General info */}
+      {/* ═══ INFOS GÉNÉRALES ═══ */}
       <Card className="rounded-2xl shadow-sm border-border/50">
         <CardContent className="p-3 space-y-2">
           <div className="flex items-center justify-between">
@@ -94,30 +98,58 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
             <Button type="button" variant="ghost" size="sm" onClick={() => handleTabChange('general')} className="text-xs h-6 px-2">Modifier</Button>
           </div>
           <div className="space-y-1 text-xs">
-            {formData.parcelNumber && <div><span className="font-medium">Parcelle:</span> {formData.parcelNumber}</div>}
-            {formData.propertyTitleType && <div><span className="font-medium">Titre:</span> {formData.propertyTitleType}</div>}
-            {formData.titleReferenceNumber && <div><span className="font-medium">Réf:</span> {formData.titleReferenceNumber}</div>}
+            {formData.parcelNumber && <ReviewLine label="Parcelle" value={formData.parcelNumber} />}
+            {formData.propertyTitleType && <ReviewLine label="Titre" value={formData.propertyTitleType} />}
+            {formData.leaseType && <ReviewLine label="Type bail" value={formData.leaseType === 'initial' ? 'Initial' : 'Renouvellement'} />}
+            {formData.titleReferenceNumber && <ReviewLine label="Réf. titre" value={formData.titleReferenceNumber} />}
+            {formData.titleIssueDate && <ReviewLine label="Date délivrance" value={new Date(formData.titleIssueDate).toLocaleDateString('fr-FR')} />}
+            {formData.isTitleInCurrentOwnerName !== undefined && (
+              <ReviewLine label="Titre au nom du propriétaire" value={formData.isTitleInCurrentOwnerName ? 'Oui' : 'Non'} />
+            )}
+            
+            {/* Propriétaires */}
             {currentOwners.some(o => o.lastName || o.firstName) && (
               <div className="pt-1 border-t border-border/50">
                 <div className="font-medium">Propriétaire(s):</div>
                 {currentOwners.filter(o => o.lastName || o.firstName).map((owner, idx) => (
-                  <div key={idx} className="ml-2 text-muted-foreground">• {owner.lastName} {owner.firstName}{owner.since && ` (${new Date(owner.since).toLocaleDateString('fr-FR')})`}</div>
+                  <div key={idx} className="ml-2 text-muted-foreground space-y-0.5">
+                    <div>• {owner.lastName}{owner.middleName ? ` ${owner.middleName}` : ''} {owner.firstName}</div>
+                    {owner.legalStatus && <div className="ml-3 text-[11px]">Statut: {owner.legalStatus}</div>}
+                    {owner.gender && <div className="ml-3 text-[11px]">Genre: {owner.gender}</div>}
+                    {owner.since && <div className="ml-3 text-[11px]">Depuis: {new Date(owner.since).toLocaleDateString('fr-FR')}</div>}
+                    {owner.entityType && <div className="ml-3 text-[11px]">Type entité: {owner.entityType}</div>}
+                  </div>
                 ))}
               </div>
             )}
-            {formData.constructionType && (
+
+            {/* Construction */}
+            {formData.propertyCategory && (
               <div className="pt-1 border-t border-border/50">
-                <span className="font-medium">Construction:</span> {formData.constructionType}
-                {formData.constructionType === 'Terrain nu' && <span className="ml-2 text-xs text-muted-foreground italic">(permis non requis)</span>}
+                <ReviewLine label="Catégorie" value={formData.propertyCategory} />
               </div>
             )}
-            {formData.declaredUsage && <div><span className="font-medium">Usage:</span> {formData.declaredUsage}</div>}
+            {formData.constructionType && <ReviewLine label="Type construction" value={formData.constructionType} />}
+            {formData.constructionNature && <ReviewLine label="Nature" value={`Construction ${formData.constructionNature.toLowerCase()}`} />}
+            {formData.constructionMaterials && <ReviewLine label="Matériaux" value={formData.constructionMaterials} />}
+            {formData.declaredUsage && <ReviewLine label="Usage" value={formData.declaredUsage} />}
+            {formData.standing && <ReviewLine label="Standing" value={formData.standing} />}
+            {formData.constructionYear && <ReviewLine label="Année construction" value={String(formData.constructionYear)} />}
+            {formData.floorNumber && <ReviewLine label="Nombre d'étages" value={formData.floorNumber} />}
+            {formData.apartmentNumber && <ReviewLine label="N° appartement" value={formData.apartmentNumber} />}
+            {formData.whatsappNumber && <ReviewLine label="WhatsApp" value={formData.whatsappNumber} />}
+
+            {/* Permis */}
             {formData.constructionType !== 'Terrain nu' && (
               <div className="pt-1 border-t border-border/50">
                 <div className="font-medium">Autorisation de bâtir:</div>
                 {permitMode === 'existing' && buildingPermits.some(p => p.permitNumber) ? (
                   buildingPermits.filter(p => p.permitNumber).map((permit, idx) => (
-                    <div key={idx} className="ml-2 text-muted-foreground">• N° {permit.permitNumber} ({permit.permitType === 'regularization' ? 'Régularisation' : 'Construction'})</div>
+                    <div key={idx} className="ml-2 text-muted-foreground space-y-0.5">
+                      <div>• N° {permit.permitNumber} ({permit.permitType === 'regularization' ? 'Régularisation' : 'Construction'})</div>
+                      {permit.issueDate && <div className="ml-3 text-[11px]">Date: {new Date(permit.issueDate).toLocaleDateString('fr-FR')}</div>}
+                      {permit.administrativeStatus && <div className="ml-3 text-[11px]">Statut: {permit.administrativeStatus}</div>}
+                    </div>
                   ))
                 ) : permitMode === 'request' ? (
                   <div className="ml-2 text-muted-foreground flex items-center gap-1">
@@ -129,6 +161,7 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
                 )}
               </div>
             )}
+
             {/* Constructions additionnelles */}
             {constructionMode === 'multiple' && additionalConstructions.length > 0 && (
               <div className="pt-1 border-t border-border/50">
@@ -155,7 +188,7 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
         </CardContent>
       </Card>
 
-      {/* Location */}
+      {/* ═══ LOCALISATION ═══ */}
       <Card className="rounded-2xl shadow-sm border-border/50">
         <CardContent className="p-3 space-y-2">
           <div className="flex items-center justify-between">
@@ -163,20 +196,26 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
             <Button type="button" variant="ghost" size="sm" onClick={() => handleTabChange('location')} className="text-xs h-6 px-2">Modifier</Button>
           </div>
           <div className="space-y-1 text-xs">
-            {formData.province && <div><span className="font-medium">Province:</span> {formData.province}</div>}
-            {sectionType && <div><span className="font-medium">Section:</span> {sectionType === 'urbaine' ? 'Urbaine' : 'Rurale'}</div>}
+            {formData.province && <ReviewLine label="Province" value={formData.province} />}
+            {sectionType && <ReviewLine label="Section" value={sectionType === 'urbaine' ? 'Urbaine' : 'Rurale'} />}
             {sectionType === 'urbaine' && (<>
-              {formData.ville && <div><span className="font-medium">Ville:</span> {formData.ville}</div>}
-              {formData.commune && <div><span className="font-medium">Commune:</span> {formData.commune}</div>}
-              {formData.quartier && <div><span className="font-medium">Quartier:</span> {formData.quartier}</div>}
-              {formData.avenue && <div><span className="font-medium">Avenue:</span> {formData.avenue}</div>}
+              {formData.ville && <ReviewLine label="Ville" value={formData.ville} />}
+              {formData.commune && <ReviewLine label="Commune" value={formData.commune} />}
+              {formData.quartier && <ReviewLine label="Quartier" value={formData.quartier} />}
+              {formData.avenue && <ReviewLine label="Avenue" value={formData.avenue} />}
+              {formData.houseNumber && <ReviewLine label="N° parcelle" value={formData.houseNumber} />}
             </>)}
             {sectionType === 'rurale' && (<>
-              {formData.territoire && <div><span className="font-medium">Territoire:</span> {formData.territoire}</div>}
-              {formData.collectivite && <div><span className="font-medium">Collectivité:</span> {formData.collectivite}</div>}
-              {formData.village && <div><span className="font-medium">Village:</span> {formData.village}</div>}
+              {formData.territoire && <ReviewLine label="Territoire" value={formData.territoire} />}
+              {formData.collectivite && <ReviewLine label="Collectivité" value={formData.collectivite} />}
+              {formData.groupement && <ReviewLine label="Groupement" value={formData.groupement} />}
+              {formData.village && <ReviewLine label="Village" value={formData.village} />}
             </>)}
-            {formData.areaSqm && <div className="pt-1 border-t border-border/50"><span className="font-medium">Superficie:</span> {formData.areaSqm} m²</div>}
+            {formData.areaSqm && (
+              <div className="pt-1 border-t border-border/50">
+                <ReviewLine label="Superficie" value={`${formData.areaSqm} m²`} />
+              </div>
+            )}
             {parcelSides.some(s => s.length) && (
               <div className="pt-1 border-t border-border/50">
                 <div className="font-medium">Dimensions:</div>
@@ -185,15 +224,39 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
                 ))}
               </div>
             )}
+
+            {/* Limites et entrées */}
+            {roadSides.length > 0 && (
+              <div className="pt-1 border-t border-border/50">
+                <div className="font-medium">Limites et Entrées:</div>
+                {roadSides.map((side: any, idx: number) => {
+                  const details: string[] = [];
+                  if (side.bordersRoad) details.push(`Route: ${side.roadType || '?'}${side.roadName ? ` (${side.roadName})` : ''}`);
+                  if (side.hasEntrance) details.push('🚪 Entrée');
+                  if (details.length === 0 && !side.bordersRoad) details.push('Mur mitoyen');
+                  return (
+                    <div key={idx} className="ml-2 text-muted-foreground">
+                      • {side.name?.replace('Côté ', '') || `Côté ${idx + 1}`}: {details.join(' • ')}
+                    </div>
+                  );
+                })}
+                {servitude.hasServitude && (
+                  <div className="ml-2 text-muted-foreground">
+                    🛤️ Servitude de passage: {servitude.width ? `${servitude.width}m` : 'Non renseigné'}
+                  </div>
+                )}
+              </div>
+            )}
+
             {gpsCoordinates.filter(g => g.lat && g.lng).length > 0 && (
-              <div className="pt-1 border-t border-border/50"><span className="font-medium">GPS:</span> {gpsCoordinates.filter(g => g.lat && g.lng).length} borne(s)</div>
+              <div className="pt-1 border-t border-border/50"><ReviewLine label="GPS" value={`${gpsCoordinates.filter(g => g.lat && g.lng).length} borne(s)`} /></div>
             )}
             {(!formData.province && !formData.areaSqm) && <div className="text-muted-foreground italic">Aucune localisation renseignée</div>}
           </div>
         </CardContent>
       </Card>
 
-      {/* History */}
+      {/* ═══ HISTORIQUE ═══ */}
       <Card className="rounded-2xl shadow-sm border-border/50">
         <CardContent className="p-3 space-y-2">
           <div className="flex items-center justify-between">
@@ -203,12 +266,18 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
           <div className="space-y-1 text-xs">
             {previousOwners.some(o => o.name) ? (
               previousOwners.filter(o => o.name).map((owner, idx) => (
-                <div key={idx} className="border-l-2 border-primary/30 pl-2">
+                <div key={idx} className="border-l-2 border-primary/30 pl-2 space-y-0.5">
                   <div className="font-medium">Ancien #{idx + 1}: {owner.name}</div>
                   <div className="text-muted-foreground">
-                    {owner.mutationType && `${owner.mutationType}`}
-                    {owner.startDate && ` • ${new Date(owner.startDate).toLocaleDateString('fr-FR')}`}
+                    {owner.legalStatus && <span>{owner.legalStatus}</span>}
+                    {owner.mutationType && <span> • {owner.mutationType}</span>}
                   </div>
+                  {owner.startDate && (
+                    <div className="text-muted-foreground text-[11px]">
+                      {new Date(owner.startDate).toLocaleDateString('fr-FR')}
+                      {owner.endDate && ` → ${new Date(owner.endDate).toLocaleDateString('fr-FR')}`}
+                    </div>
+                  )}
                 </div>
               ))
             ) : <div className="text-muted-foreground italic">Aucun historique</div>}
@@ -216,7 +285,7 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
         </CardContent>
       </Card>
 
-      {/* Obligations */}
+      {/* ═══ OBLIGATIONS ═══ */}
       <Card className="rounded-2xl shadow-sm border-border/50">
         <CardContent className="p-3 space-y-2">
           <div className="flex items-center justify-between">
@@ -225,6 +294,8 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
           </div>
           <div className="space-y-2 text-xs">
             <TaxSummary taxRecords={taxRecords} formData={formData} />
+            
+            {/* Hypothèque */}
             <div className="pt-1 border-t border-border/50">
               <div className="font-medium">Hypothèque:</div>
               {hasMortgage === null ? (
@@ -233,22 +304,39 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
                 <div className="ml-2 text-green-600 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Aucune hypothèque - Parcelle libre</div>
               ) : mortgageRecords.some(m => m.mortgageAmount) ? (
                 mortgageRecords.filter(m => m.mortgageAmount).map((mortgage, idx) => (
-                  <div key={idx} className="ml-2 text-muted-foreground">• {mortgage.mortgageAmount} USD - {mortgage.creditorName} ({mortgage.mortgageStatus})</div>
+                  <div key={idx} className="ml-2 text-muted-foreground space-y-0.5">
+                    <div>• {mortgage.mortgageAmount} USD - {mortgage.creditorName} ({mortgage.mortgageStatus})</div>
+                    {mortgage.creditorType && <div className="ml-3 text-[11px]">Type créancier: {mortgage.creditorType}</div>}
+                    {mortgage.duration && <div className="ml-3 text-[11px]">Durée: {mortgage.duration} mois</div>}
+                    {mortgage.contractDate && <div className="ml-3 text-[11px]">Date contrat: {new Date(mortgage.contractDate).toLocaleDateString('fr-FR')}</div>}
+                  </div>
                 ))
               ) : (
                 <div className="ml-2 text-amber-600">Hypothèque déclarée - détails à compléter</div>
+              )}
+            </div>
+
+            {/* Litige */}
+            <div className="pt-1 border-t border-border/50">
+              <div className="font-medium">Litige foncier:</div>
+              {hasDispute === null ? (
+                <div className="ml-2 text-muted-foreground italic">Non renseigné</div>
+              ) : hasDispute ? (
+                <div className="ml-2 text-amber-600 flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Litige déclaré</div>
+              ) : (
+                <div className="ml-2 text-green-600 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Aucun litige</div>
               )}
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Documents */}
+      {/* ═══ DOCUMENTS ═══ */}
       <Card className="rounded-2xl shadow-sm border-border/50">
         <CardContent className="p-3 space-y-2">
           <h4 className="text-xs font-semibold flex items-center gap-1.5"><span>📎</span> Documents joints</h4>
           <div className="space-y-1 text-xs">
-            {/* Owner doc: check both new file AND existing URL */}
+            {/* Owner doc */}
             {(() => {
               const hasOwnerDoc = ownerDocFile || formData.ownerDocumentUrl;
               return (
@@ -262,7 +350,7 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
                 </div>
               );
             })()}
-            {/* Title docs: check both new files AND existing URLs */}
+            {/* Title docs */}
             {(() => {
               const existingTitleCount = formData.titleDocumentUrl ? formData.titleDocumentUrl.split(',').filter(u => u.trim()).length : 0;
               const totalTitleDocs = titleDocFiles.length + existingTitleCount;
@@ -274,21 +362,21 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
                 </div>
               );
             })()}
-            {/* Permits: check both new files AND existing URLs */}
+            {/* Permits */}
             {(buildingPermits.some(p => p.attachmentFile) || buildingPermits.some(p => (p as any).existingAttachmentUrl)) && (
               <div className="text-foreground flex items-center gap-1.5">
                 <CheckCircle2 className="h-3 w-3 text-primary" />
                 <span>Permis: {buildingPermits.filter(p => p.attachmentFile || (p as any).existingAttachmentUrl).length} fichier(s)</span>
               </div>
             )}
-            {/* Tax receipts: check both new files AND existing URLs */}
+            {/* Tax receipts */}
             {(taxRecords.some(t => t.receiptFile) || taxRecords.some(t => t.existingReceiptUrl)) && (
               <div className="text-foreground flex items-center gap-1.5">
                 <CheckCircle2 className="h-3 w-3 text-primary" />
                 <span>Reçus taxes: {taxRecords.filter(t => t.receiptFile || t.existingReceiptUrl).length} fichier(s)</span>
               </div>
             )}
-            {/* Mortgage receipts: check both new files AND existing URLs */}
+            {/* Mortgage receipts */}
             {(mortgageRecords.some(m => m.receiptFile) || mortgageRecords.some(m => m.existingReceiptUrl)) && (
               <div className="text-foreground flex items-center gap-1.5">
                 <CheckCircle2 className="h-3 w-3 text-primary" />
@@ -338,6 +426,11 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
     </div>
   );
 };
+
+/* ─── Helper: single review line ─── */
+const ReviewLine: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+  <div><span className="font-medium">{label}:</span> {value}</div>
+);
 
 /* ─── Tax Summary ─── */
 const TaxSummary: React.FC<{ taxRecords: TaxRecord[]; formData: CadastralContributionData }> = ({ taxRecords, formData }) => {
