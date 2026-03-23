@@ -189,11 +189,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   formData={state.formData} sectionType={state.sectionType}
                   currentOwners={state.currentOwners} previousOwners={state.previousOwners}
                   taxRecords={state.taxRecords} mortgageRecords={state.mortgageRecords} hasMortgage={state.hasMortgage}
+                  hasDispute={state.hasDispute}
                   buildingPermits={state.buildingPermits} permitMode={state.permitMode}
                   constructionMode={state.constructionMode} additionalConstructions={state.additionalConstructions}
                   ownerDocFile={state.ownerDocFile} titleDocFiles={state.titleDocFiles}
                   gpsCoordinates={state.gpsCoordinates} parcelSides={state.parcelSides}
                   leaseYears={state.leaseYears} customTitleName={state.customTitleName}
+                  roadSides={state.roadSides} servitude={state.servitude}
                   calculateCCCValue={state.calculateCCCValue} isFormValidForSubmission={state.isFormValidForSubmission}
                   getMissingFields={state.getMissingFields} handleSubmit={state.handleSubmit}
                   handleTabChange={state.handleTabChange} saveFormDataToStorage={state.saveFormDataToStorage}
