@@ -450,6 +450,7 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                 open={true}
                 onOpenChange={() => {}}
                 embedded={true}
+                onDisputeDataChange={onDisputeDataChange}
               />
             )}
           </CardContent>
