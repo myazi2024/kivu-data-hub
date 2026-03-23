@@ -148,7 +148,6 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
                     <div key={idx} className="ml-2 text-muted-foreground space-y-0.5">
                       <div>• N° {permit.permitNumber} ({permit.permitType === 'regularization' ? 'Régularisation' : 'Construction'})</div>
                       {permit.issueDate && <div className="ml-3 text-[11px]">Date: {new Date(permit.issueDate).toLocaleDateString('fr-FR')}</div>}
-                      {permit.administrativeStatus && <div className="ml-3 text-[11px]">Statut: {permit.administrativeStatus}</div>}
                     </div>
                   ))
                 ) : permitMode === 'request' ? (
@@ -216,12 +215,38 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
                 <ReviewLine label="Superficie" value={`${formData.areaSqm} m²`} />
               </div>
             )}
-            {parcelSides.some(s => s.length) && (
+
+            {/* Mesures appartement */}
+            {formData.apartmentLength && (
               <div className="pt-1 border-t border-border/50">
-                <div className="font-medium">Dimensions:</div>
-                {parcelSides.filter(s => s.length).map((side, idx) => (
-                  <span key={idx} className="text-muted-foreground mr-2">{side.name.replace('Côté ', '')}: {side.length}m</span>
-                ))}
+                <div className="font-medium">Mesures appartement:</div>
+                <div className="ml-2 text-muted-foreground space-y-0.5">
+                  <div>Longueur: {formData.apartmentLength}m × Largeur: {formData.apartmentWidth}m{formData.apartmentHeight ? ` × Hauteur: ${formData.apartmentHeight}m` : ''}</div>
+                  {formData.apartmentOrientation && <div>Orientation: {formData.apartmentOrientation}</div>}
+                </div>
+              </div>
+            )}
+
+            {/* Croquis de la parcelle */}
+            {(parcelSides.some(s => s.length) || gpsCoordinates.filter(g => g.lat && g.lng).length > 0) && (
+              <div className="pt-1 border-t border-border/50">
+                <div className="font-medium">Croquis de la parcelle:</div>
+                {parcelSides.filter(s => s.length).length > 0 && (
+                  <div className="ml-2 text-muted-foreground">
+                    <div className="font-medium text-foreground text-[11px] mt-1">Dimensions des côtés:</div>
+                    {parcelSides.filter(s => s.length).map((side, idx) => (
+                      <div key={idx}>• {side.name}: {side.length}m</div>
+                    ))}
+                  </div>
+                )}
+                {gpsCoordinates.filter(g => g.lat && g.lng).length > 0 && (
+                  <div className="ml-2 text-muted-foreground mt-1">
+                    <div className="font-medium text-foreground text-[11px]">Bornes GPS ({gpsCoordinates.filter(g => g.lat && g.lng).length}):</div>
+                    {gpsCoordinates.filter(g => g.lat && g.lng).map((coord, idx) => (
+                      <div key={idx} className="text-[11px]">• {coord.borne}: {Number(coord.lat).toFixed(6)}, {Number(coord.lng).toFixed(6)}</div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -231,9 +256,10 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
                 <div className="font-medium">Limites et Entrées:</div>
                 {roadSides.map((side: any, idx: number) => {
                   const details: string[] = [];
-                  if (side.bordersRoad) details.push(`Route: ${side.roadType || '?'}${side.roadName ? ` (${side.roadName})` : ''}`);
+                  if (side.orientation) details.push(side.orientation);
+                  if (side.bordersRoad) details.push(`Route: ${side.roadType || '?'}${side.roadName ? ` (${side.roadName})` : ''}${side.roadWidth ? ` [${side.roadWidth}m]` : ''}`);
                   if (side.hasEntrance) details.push('🚪 Entrée');
-                  if (details.length === 0 && !side.bordersRoad) details.push('Mur mitoyen');
+                  if (!side.bordersRoad) details.push('Mur mitoyen');
                   return (
                     <div key={idx} className="ml-2 text-muted-foreground">
                       • {side.name?.replace('Côté ', '') || `Côté ${idx + 1}`}: {details.join(' • ')}
@@ -248,9 +274,6 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
               </div>
             )}
 
-            {gpsCoordinates.filter(g => g.lat && g.lng).length > 0 && (
-              <div className="pt-1 border-t border-border/50"><ReviewLine label="GPS" value={`${gpsCoordinates.filter(g => g.lat && g.lng).length} borne(s)`} /></div>
-            )}
             {(!formData.province && !formData.areaSqm) && <div className="text-muted-foreground italic">Aucune localisation renseignée</div>}
           </div>
         </CardContent>
