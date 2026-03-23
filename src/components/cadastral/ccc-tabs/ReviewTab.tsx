@@ -9,6 +9,7 @@ import { CurrentOwner, BuildingPermit } from './GeneralTab';
 import { AdditionalConstruction } from '../AdditionalConstructionBlock';
 import { PreviousOwner } from './HistoryTab';
 import { TaxRecord, MortgageRecord } from './ObligationsTab';
+import { DISPUTE_NATURES_MAP, DECLARANT_QUALITIES_MAP, RESOLUTION_LEVELS } from '@/utils/disputeSharedTypes';
 
 interface ReviewTabProps {
   formData: CadastralContributionData;
