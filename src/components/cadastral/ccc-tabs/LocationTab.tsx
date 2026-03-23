@@ -188,6 +188,8 @@ const LocationTab: React.FC<LocationTabProps> = ({
             }}
             servitude={servitude}
             onServitudeChange={onServitudeChange}
+            buildingShapes={buildingShapes}
+            onBuildingShapesChange={onBuildingShapesChange}
           />
         </div>
       )}
