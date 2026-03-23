@@ -57,7 +57,7 @@ const ParcelSketchSVG: React.FC<ParcelSketchSVGProps> = ({
   height = 260,
 }) => {
   const validCoords = useMemo(
-    () => coordinates.filter((c) => c.lat && c.lng),
+    () => coordinates.filter((c) => c.lat && c.lng).map(c => ({ ...c, lat: Number(c.lat), lng: Number(c.lng) })),
     [coordinates],
   );
 
