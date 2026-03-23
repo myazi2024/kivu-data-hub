@@ -514,7 +514,7 @@ export const useCCCFormState = ({
       restrictions.dateMaxExisting = today.toISOString().split('T')[0];
       return restrictions;
     }
-    if (formData.constructionNature === 'Précaire') {
+    if (formData.constructionNature === 'Précaire' || formData.constructionNature === 'Construction précaire') {
       restrictions.blockedInExisting = 'regularization'; restrictions.blockedInRequest = 'regularization';
       restrictions.messageExisting = `Construction précaire : pas besoin d'autorisation de régularisation.`;
       restrictions.messageRequest = restrictions.messageExisting;
