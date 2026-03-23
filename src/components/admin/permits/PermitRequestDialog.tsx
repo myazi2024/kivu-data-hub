@@ -199,7 +199,7 @@ export const PermitRequestDialog: React.FC<PermitRequestDialogProps> = ({
         action_url: '/user-dashboard?tab=building-permits'
       });
 
-      toast.success(action === 'approve' ? 'Permis délivré avec succès' : 'Demande rejetée');
+      toast.success(action === 'approve' ? 'Autorisation délivrée avec succès' : 'Demande rejetée');
       onProcessed();
       onOpenChange(false);
     } catch (error: any) {
