@@ -1143,6 +1143,18 @@ export const useCCCFormState = ({
         if ((contrib as any).has_dispute !== null && (contrib as any).has_dispute !== undefined) {
           setHasDispute((contrib as any).has_dispute);
         }
+
+        // Restore building shapes from DB
+        const savedBuildingShapes = (contrib as any).building_shapes as any[];
+        if (savedBuildingShapes && Array.isArray(savedBuildingShapes) && savedBuildingShapes.length > 0) {
+          setBuildingShapes(savedBuildingShapes);
+        }
+
+        // Restore dispute data from DB
+        const savedDisputeData = (contrib as any).dispute_data as any;
+        if (savedDisputeData) {
+          setDisputeFormData(savedDisputeData);
+        }
       } catch (err) { console.error('Erreur chargement contribution:', err); }
       finally { setTimeout(() => { isLoadingFromDbRef.current = false; }, 500); }
     };
