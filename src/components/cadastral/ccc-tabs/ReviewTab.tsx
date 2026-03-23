@@ -32,6 +32,8 @@ interface ReviewTabProps {
   customTitleName: string;
   roadSides: any[];
   servitude: { hasServitude: boolean; width?: number };
+  buildingShapes: any[];
+  disputeFormData: any;
   // CCC value
   calculateCCCValue: { value: number };
   // Validation
