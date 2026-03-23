@@ -1132,7 +1132,7 @@ export const useCCCFormState = ({
           setAdditionalConstructions(additionalConstr.map((c: any) => ({ propertyCategory: c.propertyCategory || '', constructionType: c.constructionType || '', constructionNature: c.constructionNature || '', constructionMaterials: c.constructionMaterials || '', declaredUsage: c.declaredUsage || '', standing: c.standing || '', constructionYear: c.constructionYear || undefined, apartmentNumber: c.apartmentNumber || undefined, floorNumber: c.floorNumber || undefined, permitMode: c.permitMode || undefined, permit: c.permit || undefined })));
         }
 
-        // FIX: Restore roadSides, servitude, and hasDispute from DB
+        // Restore roadSides, servitude, hasDispute, disputeData, buildingShapes from DB
         const savedRoadSides = (contrib as any).road_sides as any[];
         if (savedRoadSides && Array.isArray(savedRoadSides)) setRoadSides(savedRoadSides);
 
@@ -1142,6 +1142,12 @@ export const useCCCFormState = ({
         if ((contrib as any).has_dispute !== null && (contrib as any).has_dispute !== undefined) {
           setHasDispute((contrib as any).has_dispute);
         }
+
+        const savedDisputeData = (contrib as any).dispute_data as any;
+        if (savedDisputeData) setDisputeFormData(savedDisputeData);
+
+        const savedBuildingShapes = (contrib as any).building_shapes as any[];
+        if (savedBuildingShapes && Array.isArray(savedBuildingShapes)) setBuildingShapes(savedBuildingShapes);
       } catch (err) { console.error('Erreur chargement contribution:', err); }
       finally { setTimeout(() => { isLoadingFromDbRef.current = false; }, 500); }
     };
