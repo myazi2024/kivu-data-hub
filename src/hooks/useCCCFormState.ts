@@ -963,6 +963,10 @@ export const useCCCFormState = ({
         parcelSides: parcelSides.filter(s => s.length && parseFloat(s.length) > 0).length > 0 ? parcelSides.filter(s => s.length && parseFloat(s.length) > 0) : undefined,
         additionalConstructions: constructionMode === 'multiple' && additionalConstructions.length > 0
           ? additionalConstructions.map(c => ({ ...c, permit: c.permit ? { ...c.permit, attachmentFile: undefined } : undefined })) : undefined,
+        // FIX: Persist roadSides, servitude, and hasDispute to DB
+        roadSides: roadSides.length > 0 ? roadSides : undefined,
+        servitudeData: servitude.hasServitude ? servitude : undefined,
+        hasDispute: hasDispute ?? undefined,
       };
 
       const result = editingContributionId ? await updateContribution(editingContributionId, dataToSubmit) : await submitContribution(dataToSubmit);
@@ -1119,6 +1123,17 @@ export const useCCCFormState = ({
         if (additionalConstr && Array.isArray(additionalConstr) && additionalConstr.length > 0) {
           setConstructionMode('multiple');
           setAdditionalConstructions(additionalConstr.map((c: any) => ({ propertyCategory: c.propertyCategory || '', constructionType: c.constructionType || '', constructionNature: c.constructionNature || '', constructionMaterials: c.constructionMaterials || '', declaredUsage: c.declaredUsage || '', standing: c.standing || '', constructionYear: c.constructionYear || undefined, apartmentNumber: c.apartmentNumber || undefined, floorNumber: c.floorNumber || undefined, permitMode: c.permitMode || undefined, permit: c.permit || undefined })));
+        }
+
+        // FIX: Restore roadSides, servitude, and hasDispute from DB
+        const savedRoadSides = (contrib as any).road_sides as any[];
+        if (savedRoadSides && Array.isArray(savedRoadSides)) setRoadSides(savedRoadSides);
+
+        const savedServitude = (contrib as any).servitude_data as any;
+        if (savedServitude) setServitude(savedServitude);
+
+        if ((contrib as any).has_dispute !== null && (contrib as any).has_dispute !== undefined) {
+          setHasDispute((contrib as any).has_dispute);
         }
       } catch (err) { console.error('Erreur chargement contribution:', err); }
       finally { setTimeout(() => { isLoadingFromDbRef.current = false; }, 500); }
