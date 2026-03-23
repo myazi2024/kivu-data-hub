@@ -708,7 +708,7 @@ export const useCCCFormState = ({
       if (!hasEntrance) missing.push({ field: 'parcelEntrance', label: "Entrée de la parcelle (cochez le côté ayant une porte d'accès)", tab: 'location' });
 
       // Si aucun côté n'est bordé par une route, la servitude de passage est obligatoire
-      const hasRoadSide = roadSides.some((s: any) => s.enabled && s.type === 'Route');
+      const hasRoadSide = roadSides.some((s: any) => s.bordersRoad === true);
       if (!hasRoadSide && (!servitude.hasServitude || !servitude.width || servitude.width <= 0)) {
         missing.push({ field: 'servitudeWidth', label: "Largeur de la servitude de passage (aucune route ne borde la parcelle)", tab: 'location' });
       }
