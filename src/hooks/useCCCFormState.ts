@@ -213,7 +213,7 @@ export const useCCCFormState = ({
       buildingPermits: buildingPermits.map(p => ({ ...p, attachmentFile: null })),
       permitRequest: { ...permitRequest, architecturalPlanImages: [], constructionPhotos: [] },
       gpsCoordinates, parcelSides, obligationType, sectionType,
-      hasMortgage, ownershipMode, leaseYears, roadSides, customTitleName,
+      hasMortgage, hasDispute, ownershipMode, leaseYears, roadSides, customTitleName,
       isTitleInCurrentOwnerName: formData.isTitleInCurrentOwnerName,
       constructionMode,
       additionalConstructions: additionalConstructions.map(c => ({
@@ -227,7 +227,7 @@ export const useCCCFormState = ({
     } catch (error) {
       console.error('Erreur sauvegarde:', error);
     }
-  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, permitMode, buildingPermits, permitRequest, gpsCoordinates, parcelSides, obligationType, sectionType, hasMortgage, ownershipMode, leaseYears, roadSides, customTitleName, constructionMode, additionalConstructions, STORAGE_KEY]);
+  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, permitMode, buildingPermits, permitRequest, gpsCoordinates, parcelSides, obligationType, sectionType, hasMortgage, hasDispute, ownershipMode, leaseYears, roadSides, customTitleName, constructionMode, additionalConstructions, STORAGE_KEY]);
 
   const loadFormDataFromStorage = () => {
     try {
@@ -247,6 +247,7 @@ export const useCCCFormState = ({
         if (parsed.obligationType) setObligationType(parsed.obligationType);
         if (parsed.sectionType) setSectionType(parsed.sectionType);
         if (parsed.hasMortgage !== undefined) setHasMortgage(parsed.hasMortgage);
+        if (parsed.hasDispute !== undefined) setHasDispute(parsed.hasDispute);
         if (parsed.ownershipMode) setOwnershipMode(parsed.ownershipMode);
         if (parsed.leaseYears !== undefined) setLeaseYears(parsed.leaseYears);
         if (parsed.roadSides) setRoadSides(parsed.roadSides);
@@ -513,7 +514,7 @@ export const useCCCFormState = ({
       restrictions.dateMaxExisting = today.toISOString().split('T')[0];
       return restrictions;
     }
-    if (formData.constructionNature === 'Précaire') {
+    if (formData.constructionNature === 'Précaire' || formData.constructionNature === 'Construction précaire') {
       restrictions.blockedInExisting = 'regularization'; restrictions.blockedInRequest = 'regularization';
       restrictions.messageExisting = `Construction précaire : pas besoin d'autorisation de régularisation.`;
       restrictions.messageRequest = restrictions.messageExisting;
@@ -646,8 +647,8 @@ export const useCCCFormState = ({
     if (!formData.constructionType) missing.push({ field: 'constructionType', label: 'Type de construction', tab: 'general' });
     if (!formData.constructionNature) missing.push({ field: 'constructionNature', label: 'Nature de construction', tab: 'general' });
     if (!formData.declaredUsage) missing.push({ field: 'declaredUsage', label: 'Usage déclaré', tab: 'general' });
-    if (!isTerrainNu && formData.constructionNature && formData.constructionNature !== 'Non bâti' && !formData.constructionMaterials) missing.push({ field: 'constructionMaterials', label: 'Matériaux de construction', tab: 'general' });
-    if (!isTerrainNu && formData.constructionNature && formData.constructionNature !== 'Non bâti' && !formData.standing) missing.push({ field: 'standing', label: 'Standing', tab: 'general' });
+    if (!isTerrainNu && formData.constructionNature && formData.constructionNature !== 'Non bâti' && formData.constructionNature !== 'Construction précaire' && !formData.constructionMaterials) missing.push({ field: 'constructionMaterials', label: 'Matériaux de construction', tab: 'general' });
+    if (!isTerrainNu && formData.constructionNature && formData.constructionNature !== 'Non bâti' && formData.constructionNature !== 'Construction précaire' && !formData.standing) missing.push({ field: 'standing', label: 'Standing', tab: 'general' });
     if (!isTerrainNu && formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && !formData.constructionYear) missing.push({ field: 'constructionYear', label: 'Année de construction', tab: 'general' });
     if (isAppartement) {
       if (!formData.apartmentNumber) missing.push({ field: 'apartmentNumber', label: "Numéro de l'appartement", tab: 'general' });
@@ -698,6 +699,9 @@ export const useCCCFormState = ({
       });
     }
 
+    // OBLIGATIONS - DISPUTE
+    if (hasDispute === null) missing.push({ field: 'hasDispute', label: 'Statut litige foncier (Oui/Non)', tab: 'obligations' });
+
     // BUILDING PERMITS
     if (!isTerrainNu && !isAppartement && formData.constructionType !== 'Terrain nu' && permitMode === 'existing') {
       const hasValidExistingPermit = buildingPermits.some(permit => permit.permitNumber && permit.permitNumber.trim() !== '' && permit.issueDate && permit.issueDate.trim() !== '');
@@ -722,7 +726,7 @@ export const useCCCFormState = ({
     }
 
     return missing;
-  }, [formData, customTitleName, currentOwners, previousOwners, sectionType, permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, mortgageRecords, ownerDocFile, titleDocFiles, editingContributionId]);
+  }, [formData, customTitleName, currentOwners, previousOwners, sectionType, permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, hasDispute, mortgageRecords, ownerDocFile, titleDocFiles, editingContributionId]);
 
   const getMissingFieldsForTab = useCallback((tab: string) => getMissingFields().filter(f => f.tab === tab), [getMissingFields]);
   const isTabComplete = useCallback((tab: string) => getMissingFieldsForTab(tab).length === 0, [getMissingFieldsForTab]);
@@ -791,18 +795,16 @@ export const useCCCFormState = ({
       if (formData.commune) filledFields += 1;
       if (formData.quartier) filledFields += 1;
       if (formData.avenue) filledFields += 1;
-      if (formData.houseNumber) filledFields += 1;
     } else {
       if (formData.territoire) filledFields += 1;
       if (formData.collectivite) filledFields += 1;
       if (formData.groupement) filledFields += 1;
       if (formData.village) filledFields += 1;
     }
-    const filledSides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
-    if (filledSides.length >= 3) filledFields += 1;
-    totalFields += 5;
+    // GPS scoring: aligned with backend SQL (2 points for >=3 coords, 1 for partial)
     const validGps = gpsCoordinates.filter(c => c.lat && c.lng);
-    if (validGps.length > 0) filledFields += Math.min(validGps.length, 3);
+    if (validGps.length >= 3) filledFields += 2;
+    else if (validGps.length > 0) filledFields += 1;
     if (formData.whatsappNumber) { totalFields += 1; filledFields += 1; }
     totalFields += 3;
     const validPreviousOwners = previousOwners.filter(o => o.name);
@@ -861,7 +863,7 @@ export const useCCCFormState = ({
     if (missingFields.length > 0) {
       const fieldsByTab: { [key: string]: string[] } = {};
       missingFields.forEach(f => { if (!fieldsByTab[f.tab]) fieldsByTab[f.tab] = []; fieldsByTab[f.tab].push(f.label); });
-      const tabNames: { [key: string]: string } = { general: 'Infos', location: 'Lieu', permits: 'Permis' };
+      const tabNames: { [key: string]: string } = { general: 'Infos', location: 'Lieu', history: 'Passé', obligations: 'Obligations', review: 'Récapitulatif' };
       const summary = Object.entries(fieldsByTab).map(([tab, fields]) => `${tabNames[tab] || tab}: ${fields.join(', ')}`).join(' | ');
       toast({ title: "Champs requis manquants", description: summary.length > 100 ? `${missingFields.length} champs manquants.` : summary, variant: "destructive" });
       return;
@@ -979,6 +981,7 @@ export const useCCCFormState = ({
     setPreviousOwners([{ name: '', legalStatus: 'Personne physique', entityType: '', entitySubType: '', entitySubTypeOther: '', stateExploitedBy: '', startDate: '', endDate: '', mutationType: 'Vente' }]);
     setCurrentOwners([{ lastName: '', middleName: '', firstName: '', legalStatus: 'Personne physique', gender: '', entityType: '', entitySubType: '', entitySubTypeOther: '', stateExploitedBy: '', rightType: '', since: '', previousTitleType: '', previousTitleCustomName: '' }]);
     setHasMortgage(null);
+    setHasDispute(null);
     setTaxRecords([{ taxType: 'Impôt foncier annuel', taxYear: '', taxAmount: '', paymentStatus: 'Payé', paymentDate: '', receiptFile: null }]);
     setMortgageRecords([{ mortgageAmount: '', duration: '', creditorName: '', creditorType: 'Banque', contractDate: '', mortgageStatus: 'Active', receiptFile: null }]);
     setObligationType('taxes');
@@ -1116,7 +1119,7 @@ export const useCCCFormState = ({
       const timeoutId = setTimeout(() => saveFormDataToStorage(), 1500);
       return () => clearTimeout(timeoutId);
     }
-  }, [open, formData, currentOwners, previousOwners, taxRecords, mortgageRecords, buildingPermits, gpsCoordinates, parcelSides, permitMode, permitRequest, hasMortgage, ownershipMode, leaseYears, roadSides, obligationType, sectionType, saveFormDataToStorage, editingContributionId]);
+  }, [open, formData, currentOwners, previousOwners, taxRecords, mortgageRecords, buildingPermits, gpsCoordinates, parcelSides, permitMode, permitRequest, hasMortgage, hasDispute, ownershipMode, leaseYears, roadSides, obligationType, sectionType, saveFormDataToStorage, editingContributionId]);
 
   // Auto-detect section type from parcel number
   useEffect(() => {
