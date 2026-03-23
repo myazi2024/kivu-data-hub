@@ -68,6 +68,11 @@ export interface CadastralContributionData {
   apartmentHeight?: number;
   apartmentOrientation?: string;
   
+  // Limites et entrées
+  roadSides?: Array<{ name: string; bordersRoad?: boolean; roadType?: string; roadName?: string; roadWidth?: string; hasEntrance?: boolean }>;
+  servitudeData?: { hasServitude: boolean; width?: number };
+  hasDispute?: boolean;
+  
   // Localisation
   areaSqm?: number;
   parcelSides?: Array<{ name: string; length: string }>;
