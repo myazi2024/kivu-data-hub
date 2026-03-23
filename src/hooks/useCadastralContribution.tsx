@@ -294,6 +294,8 @@ export const useCadastralContribution = () => {
       road_sides: data.roadSides && data.roadSides.length > 0 ? data.roadSides : null,
       servitude_data: data.servitudeData || null,
       has_dispute: data.hasDispute ?? null,
+      dispute_data: data.disputeData || null,
+      building_shapes: data.buildingShapes && data.buildingShapes.length > 0 ? data.buildingShapes : null,
     };
 
     if (data.permitRequest) {
