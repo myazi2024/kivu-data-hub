@@ -9,6 +9,7 @@ import { CurrentOwner, BuildingPermit } from './GeneralTab';
 import { AdditionalConstruction } from '../AdditionalConstructionBlock';
 import { PreviousOwner } from './HistoryTab';
 import { TaxRecord, MortgageRecord } from './ObligationsTab';
+import { DISPUTE_NATURES_MAP, DECLARANT_QUALITIES_MAP, RESOLUTION_LEVELS } from '@/utils/disputeSharedTypes';
 
 interface ReviewTabProps {
   formData: CadastralContributionData;
@@ -31,6 +32,8 @@ interface ReviewTabProps {
   customTitleName: string;
   roadSides: any[];
   servitude: { hasServitude: boolean; width?: number };
+  buildingShapes: any[];
+  disputeFormData: any;
   // CCC value
   calculateCCCValue: { value: number };
   // Validation
@@ -53,7 +56,7 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
   taxRecords, mortgageRecords, hasMortgage, hasDispute,
   buildingPermits, permitMode, constructionMode, additionalConstructions, ownerDocFile, titleDocFiles,
   gpsCoordinates, parcelSides, leaseYears, customTitleName,
-  roadSides, servitude,
+  roadSides, servitude, buildingShapes, disputeFormData,
   calculateCCCValue, isFormValidForSubmission, getMissingFields,
   handleSubmit, handleTabChange, saveFormDataToStorage,
   setShowQuickAuth, setPendingSubmission,
@@ -228,7 +231,7 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
             )}
 
             {/* Croquis de la parcelle */}
-            {(parcelSides.some(s => s.length) || gpsCoordinates.filter(g => g.lat && g.lng).length > 0) && (
+            {(parcelSides.some(s => s.length) || gpsCoordinates.filter(g => g.lat && g.lng).length > 0 || buildingShapes.length > 0) && (
               <div className="pt-1 border-t border-border/50">
                 <div className="font-medium">Croquis de la parcelle:</div>
                 {parcelSides.filter(s => s.length).length > 0 && (
@@ -245,6 +248,20 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
                     {gpsCoordinates.filter(g => g.lat && g.lng).map((coord, idx) => (
                       <div key={idx} className="text-[11px]">• {coord.borne}: {Number(coord.lat).toFixed(6)}, {Number(coord.lng).toFixed(6)}</div>
                     ))}
+                  </div>
+                )}
+                {buildingShapes.length > 0 && (
+                  <div className="ml-2 text-muted-foreground mt-1">
+                    <div className="font-medium text-foreground text-[11px]">Constructions tracées ({buildingShapes.length}):</div>
+                    {buildingShapes.map((shape: any, idx: number) => {
+                      const shapeLabels: Record<string, string> = { circle: 'Cercle', square: 'Carré', rectangle: 'Rectangle', trapeze: 'Trapèze', polygon: 'Polygone' };
+                      return (
+                        <div key={idx} className="text-[11px]">
+                          • {shapeLabels[shape.type] || shape.type} — {shape.size}m
+                          {shape.rotation ? ` (rotation: ${shape.rotation}°)` : ''}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -345,7 +362,31 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
               {hasDispute === null ? (
                 <div className="ml-2 text-muted-foreground italic">Non renseigné</div>
               ) : hasDispute ? (
-                <div className="ml-2 text-amber-600 flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Litige déclaré</div>
+                <div className="ml-2 space-y-1">
+                  <div className="text-amber-600 flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Litige déclaré</div>
+                  {disputeFormData && (
+                    <div className="ml-2 text-muted-foreground space-y-0.5">
+                      {disputeFormData.disputeNature && (
+                        <div>Nature: {DISPUTE_NATURES_MAP[disputeFormData.disputeNature] || disputeFormData.disputeNature}</div>
+                      )}
+                      {disputeFormData.disputeDescription && (
+                        <div>Description: {disputeFormData.disputeDescription.length > 80 ? disputeFormData.disputeDescription.substring(0, 80) + '…' : disputeFormData.disputeDescription}</div>
+                      )}
+                      {disputeFormData.disputeStartDate && (
+                        <div>Début: {new Date(disputeFormData.disputeStartDate).toLocaleDateString('fr-FR')}</div>
+                      )}
+                      {disputeFormData.declarantQuality && (
+                        <div>Qualité: {DECLARANT_QUALITIES_MAP[disputeFormData.declarantQuality] || disputeFormData.declarantQuality}</div>
+                      )}
+                      {disputeFormData.hasResolutionStarted && disputeFormData.resolutionLevel && (
+                        <div>Résolution: {RESOLUTION_LEVELS.find(r => r.value === disputeFormData.resolutionLevel)?.label || disputeFormData.resolutionLevel}</div>
+                      )}
+                      {disputeFormData.parties && disputeFormData.parties.length > 0 && (
+                        <div>Parties impliquées: {disputeFormData.parties.map((p: any) => p.name).join(', ')}</div>
+                      )}
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="ml-2 text-green-600 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Aucun litige</div>
               )}

@@ -145,6 +145,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   roadSides={state.roadSides} onRoadSidesChange={state.setRoadSides}
                   parcelSides={state.parcelSides} onParcelSidesUpdate={state.setParcelSides}
                   servitude={state.servitude} onServitudeChange={state.setServitude}
+                  buildingShapes={state.buildingShapes} onBuildingShapesChange={state.setBuildingShapes}
                   handleTabChange={state.handleTabChange} handleNextTab={state.handleNextTab}
                   resetLocationBlock={state.resetLocationBlock}
                 />
@@ -178,6 +179,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   removeMortgageFile={state.removeMortgageFile}
                    showMortgageWarning={state.showMortgageWarning} highlightIncompleteMortgage={state.highlightIncompleteMortgage}
                    hasDispute={state.hasDispute} setHasDispute={state.setHasDispute}
+                  onDisputeDataChange={state.setDisputeFormData}
                   getPicklistOptions={state.getPicklistOptions}
                   handleTabChange={state.handleTabChange} handleNextTab={state.handleNextTab}
                   resetTaxBlock={state.resetTaxBlock} resetMortgageBlock={state.resetMortgageBlock}
@@ -196,6 +198,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   gpsCoordinates={state.gpsCoordinates} parcelSides={state.parcelSides}
                   leaseYears={state.leaseYears} customTitleName={state.customTitleName}
                   roadSides={state.roadSides} servitude={state.servitude}
+                  buildingShapes={state.buildingShapes} disputeFormData={state.disputeFormData}
                   calculateCCCValue={state.calculateCCCValue} isFormValidForSubmission={state.isFormValidForSubmission}
                   getMissingFields={state.getMissingFields} handleSubmit={state.handleSubmit}
                   handleTabChange={state.handleTabChange} saveFormDataToStorage={state.saveFormDataToStorage}

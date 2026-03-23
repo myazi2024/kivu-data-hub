@@ -42,6 +42,7 @@ interface LandDisputeReportFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   embedded?: boolean;
+  onDisputeDataChange?: (data: any) => void;
 }
 
 interface Party {
@@ -58,7 +59,8 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
   parcelId,
   open,
   onOpenChange,
-  embedded = false
+  embedded = false,
+  onDisputeDataChange
 }) => {
   const { user, profile } = useAuth();
   const [step, setStep] = useState<Step>('form');
@@ -114,6 +116,21 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
       localStorage.setItem(draftKey, JSON.stringify(draftData));
     }
   }, [disputeNature, disputeDescription, disputeStartDate, hasResolutionStarted, resolutionLevel, resolutionDetails, declarantName, declarantPhone, declarantEmail, declarantQuality, parties, step, draftKey]);
+
+  // Emit dispute data to parent for ReviewTab display
+  useEffect(() => {
+    if (onDisputeDataChange) {
+      if (disputeNature || disputeDescription) {
+        onDisputeDataChange({
+          disputeNature, disputeDescription, disputeStartDate,
+          hasResolutionStarted, resolutionLevel, resolutionDetails,
+          declarantQuality, parties: parties.filter(p => p.name),
+        });
+      } else {
+        onDisputeDataChange(null);
+      }
+    }
+  }, [disputeNature, disputeDescription, disputeStartDate, hasResolutionStarted, resolutionLevel, resolutionDetails, declarantQuality, parties, onDisputeDataChange]);
 
   // Generate reference ONCE per session and restore draft
   useEffect(() => {

@@ -37,6 +37,8 @@ interface LocationTabProps {
   onParcelSidesUpdate: (sides: Array<{ name: string; length: string }>) => void;
   servitude: { hasServitude: boolean; width?: number };
   onServitudeChange: (s: { hasServitude: boolean; width?: number }) => void;
+  buildingShapes: any[];
+  onBuildingShapesChange: (shapes: any[]) => void;
   // Navigation
   handleTabChange: (tab: string) => void;
   handleNextTab: (current: string, next: string) => void;
@@ -49,7 +51,7 @@ const LocationTab: React.FC<LocationTabProps> = ({
   availableVilles, availableCommunes, availableTerritoires, availableCollectivites, availableQuartiers, availableAvenues,
   gpsCoordinates, onCoordinatesUpdate, mapConfig, parcelNumber,
   roadSides, onRoadSidesChange, parcelSides, onParcelSidesUpdate,
-  servitude, onServitudeChange,
+  servitude, onServitudeChange, buildingShapes, onBuildingShapesChange,
   handleTabChange, handleNextTab, resetLocationBlock
 }) => {
   return (
@@ -186,6 +188,8 @@ const LocationTab: React.FC<LocationTabProps> = ({
             }}
             servitude={servitude}
             onServitudeChange={onServitudeChange}
+            buildingShapes={buildingShapes}
+            onBuildingShapesChange={onBuildingShapesChange}
           />
         </div>
       )}

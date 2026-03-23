@@ -89,6 +89,8 @@ export const useCCCFormState = ({
   const [hasShownConfetti, setHasShownConfetti] = useState(false);
   const [roadSides, setRoadSides] = useState<any[]>([]);
   const [servitude, setServitude] = useState<{ hasServitude: boolean; width?: number }>({ hasServitude: false });
+  const [buildingShapes, setBuildingShapes] = useState<any[]>([]);
+  const [disputeFormData, setDisputeFormData] = useState<any>(null);
 
   const [previousOwners, setPreviousOwners] = useState<PreviousOwner[]>([{
     name: '', legalStatus: 'Personne physique', entityType: '', entitySubType: '',
@@ -213,7 +215,7 @@ export const useCCCFormState = ({
       buildingPermits: buildingPermits.map(p => ({ ...p, attachmentFile: null })),
       permitRequest: { ...permitRequest, architecturalPlanImages: [], constructionPhotos: [] },
       gpsCoordinates, parcelSides, obligationType, sectionType,
-      hasMortgage, hasDispute, ownershipMode, leaseYears, roadSides, servitude, customTitleName,
+      hasMortgage, hasDispute, ownershipMode, leaseYears, roadSides, servitude, customTitleName, buildingShapes, disputeFormData,
       isTitleInCurrentOwnerName: formData.isTitleInCurrentOwnerName,
       constructionMode,
       additionalConstructions: additionalConstructions.map(c => ({
@@ -227,7 +229,7 @@ export const useCCCFormState = ({
     } catch (error) {
       console.error('Erreur sauvegarde:', error);
     }
-  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, permitMode, buildingPermits, permitRequest, gpsCoordinates, parcelSides, obligationType, sectionType, hasMortgage, hasDispute, ownershipMode, leaseYears, roadSides, servitude, customTitleName, constructionMode, additionalConstructions, STORAGE_KEY]);
+  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, permitMode, buildingPermits, permitRequest, gpsCoordinates, parcelSides, obligationType, sectionType, hasMortgage, hasDispute, ownershipMode, leaseYears, roadSides, servitude, customTitleName, constructionMode, additionalConstructions, buildingShapes, disputeFormData, STORAGE_KEY]);
 
   const loadFormDataFromStorage = () => {
     try {
@@ -255,6 +257,8 @@ export const useCCCFormState = ({
         if (parsed.customTitleName) setCustomTitleName(parsed.customTitleName);
         if (parsed.constructionMode) setConstructionMode(parsed.constructionMode);
         if (parsed.additionalConstructions) setAdditionalConstructions(parsed.additionalConstructions);
+        if (parsed.buildingShapes) setBuildingShapes(parsed.buildingShapes);
+        if (parsed.disputeFormData) setDisputeFormData(parsed.disputeFormData);
         toast({ title: "Données restaurées", description: "Vos données précédentes ont été restaurées." });
       }
     } catch (error) {
@@ -1006,6 +1010,8 @@ export const useCCCFormState = ({
     setAvailableVilles([]); setAvailableCommunes([]); setAvailableTerritoires([]); setAvailableCollectivites([]); setAvailableQuartiers([]); setAvailableAvenues([]);
     setAvailableConstructionNatures([]); setAvailableDeclaredUsages([]); setAvailableConstructionMaterials([]); setAvailableStandings([]);
     setRoadSides([]);
+    setBuildingShapes([]);
+    setDisputeFormData(null);
     setPermitMode('existing');
     setBuildingPermits([{ permitType: 'construction', permitNumber: '', issueDate: '', validityMonths: '36', administrativeStatus: 'En attente', attachmentFile: null }]);
     setPermitRequest({ permitType: 'construction', hasExistingConstruction: false, constructionDescription: '', plannedUsage: '', estimatedArea: '', applicantName: '', applicantPhone: '', applicantEmail: '', selectedOwnerIndex: -1, numberOfFloors: '', buildingMaterials: '', architecturalPlanImages: [], constructionYear: '', regularizationReason: '', originalPermitNumber: '', previousPermitNumber: '', constructionPhotos: [] });
@@ -1512,6 +1518,7 @@ export const useCCCFormState = ({
     availableVilles, availableCommunes, availableTerritoires, availableCollectivites, availableQuartiers, availableAvenues,
     gpsCoordinates, setGpsCoordinates, parcelSides, setParcelSides,
     roadSides, setRoadSides, servitude, setServitude,
+    buildingShapes, setBuildingShapes,
     // Obligations
     obligationType, setObligationType,
     taxRecords, updateTaxRecord, addTaxRecord, removeTaxRecord, handleTaxFileChange, removeTaxFile,
@@ -1520,6 +1527,7 @@ export const useCCCFormState = ({
     updateMortgageRecord, addMortgageRecord, removeMortgageRecord, handleMortgageFileChange, removeMortgageFile,
     showMortgageWarning, highlightIncompleteMortgage,
     hasDispute, setHasDispute,
+    disputeFormData, setDisputeFormData,
     // Validation
     highlightRequiredFields, setHighlightRequiredFields,
     getMissingFields, isFormValidForSubmission, calculateCCCValue,

@@ -63,6 +63,7 @@ interface ObligationsTabProps {
   // Dispute
   hasDispute: boolean | null;
   setHasDispute: (v: boolean | null) => void;
+  onDisputeDataChange?: (data: any) => void;
   // Picklists
   getPicklistOptions: (key: string) => string[];
   // Navigation
@@ -80,7 +81,7 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
   hasMortgage, setHasMortgage, mortgageRecords, setMortgageRecords,
   updateMortgageRecord, addMortgageRecord, removeMortgageRecord,
   handleMortgageFileChange, removeMortgageFile, showMortgageWarning, highlightIncompleteMortgage,
-  hasDispute, setHasDispute,
+  hasDispute, setHasDispute, onDisputeDataChange,
   getPicklistOptions, handleTabChange, handleNextTab,
   resetTaxBlock, resetMortgageBlock
 }) => {
@@ -449,6 +450,7 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                 open={true}
                 onOpenChange={() => {}}
                 embedded={true}
+                onDisputeDataChange={onDisputeDataChange}
               />
             )}
           </CardContent>
