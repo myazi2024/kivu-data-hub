@@ -231,7 +231,7 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
             )}
 
             {/* Croquis de la parcelle */}
-            {(parcelSides.some(s => s.length) || gpsCoordinates.filter(g => g.lat && g.lng).length > 0) && (
+            {(parcelSides.some(s => s.length) || gpsCoordinates.filter(g => g.lat && g.lng).length > 0 || buildingShapes.length > 0) && (
               <div className="pt-1 border-t border-border/50">
                 <div className="font-medium">Croquis de la parcelle:</div>
                 {parcelSides.filter(s => s.length).length > 0 && (
@@ -248,6 +248,20 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
                     {gpsCoordinates.filter(g => g.lat && g.lng).map((coord, idx) => (
                       <div key={idx} className="text-[11px]">• {coord.borne}: {Number(coord.lat).toFixed(6)}, {Number(coord.lng).toFixed(6)}</div>
                     ))}
+                  </div>
+                )}
+                {buildingShapes.length > 0 && (
+                  <div className="ml-2 text-muted-foreground mt-1">
+                    <div className="font-medium text-foreground text-[11px]">Constructions tracées ({buildingShapes.length}):</div>
+                    {buildingShapes.map((shape: any, idx: number) => {
+                      const shapeLabels: Record<string, string> = { circle: 'Cercle', square: 'Carré', rectangle: 'Rectangle', trapeze: 'Trapèze', polygon: 'Polygone' };
+                      return (
+                        <div key={idx} className="text-[11px]">
+                          • {shapeLabels[shape.type] || shape.type} — {shape.size}m
+                          {shape.rotation ? ` (rotation: ${shape.rotation}°)` : ''}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
