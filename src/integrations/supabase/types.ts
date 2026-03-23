@@ -480,6 +480,7 @@ export type Database = {
           fraud_score: number | null
           gps_coordinates: Json | null
           groupement: string | null
+          has_dispute: boolean | null
           house_number: string | null
           id: string
           is_suspicious: boolean | null
@@ -504,6 +505,8 @@ export type Database = {
           rejection_reasons: Json | null
           reviewed_at: string | null
           reviewed_by: string | null
+          road_sides: Json | null
+          servitude_data: Json | null
           standing: string | null
           status: string
           tax_history: Json | null
@@ -549,6 +552,7 @@ export type Database = {
           fraud_score?: number | null
           gps_coordinates?: Json | null
           groupement?: string | null
+          has_dispute?: boolean | null
           house_number?: string | null
           id?: string
           is_suspicious?: boolean | null
@@ -573,6 +577,8 @@ export type Database = {
           rejection_reasons?: Json | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          road_sides?: Json | null
+          servitude_data?: Json | null
           standing?: string | null
           status?: string
           tax_history?: Json | null
@@ -618,6 +624,7 @@ export type Database = {
           fraud_score?: number | null
           gps_coordinates?: Json | null
           groupement?: string | null
+          has_dispute?: boolean | null
           house_number?: string | null
           id?: string
           is_suspicious?: boolean | null
@@ -642,6 +649,8 @@ export type Database = {
           rejection_reasons?: Json | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          road_sides?: Json | null
+          servitude_data?: Json | null
           standing?: string | null
           status?: string
           tax_history?: Json | null
