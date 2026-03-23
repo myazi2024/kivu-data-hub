@@ -160,7 +160,7 @@ export async function testCadastralReportGeneration() {
     console.log('   3. Les coordonnées GPS (4 bornes affichées)');
     console.log('   4. L\'historique de propriété (max 3 entrées)');
     console.log('   5. Les obligations financières (taxes et hypothèques)');
-    console.log('   6. Les permis de bâtir et bornage');
+    console.log('   6. Les autorisations de bâtir et bornage');
     console.log('   7. Les services inclus');
     console.log('   8. L\'authentification avec QR code');
     console.log('   9. Le rapport ne doit PAS dépasser 2 pages');

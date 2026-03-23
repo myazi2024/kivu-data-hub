@@ -864,7 +864,7 @@ export const UserContributions: React.FC = () => {
               <p className="text-sm text-muted-foreground">
                 Cette contribution a été soumise via un formulaire spécialisé 
                 ({editFormType === 'tax' ? 'Historique fiscal' : 
-                  editFormType === 'mortgage' ? 'Hypothèque' : 'Permis de bâtir'}).
+                  editFormType === 'mortgage' ? 'Hypothèque' : 'Autorisation de bâtir'}).
               </p>
               <p className="text-sm text-muted-foreground">
                 Pour la modifier, veuillez vous rendre sur la carte cadastrale, 

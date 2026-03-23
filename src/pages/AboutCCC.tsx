@@ -584,7 +584,7 @@ const AboutCCC = () => {
                       <span className="text-primary">•</span>
                       <div>
                         <strong className="text-foreground">Documents officiels :</strong> Copies de titres de propriété, 
-                        permis de bâtir, certificats d'enregistrement, ou autres documents administratifs
+                        autorisations de bâtir, certificats d'enregistrement, ou autres documents administratifs
                       </div>
                     </li>
                   </ul>

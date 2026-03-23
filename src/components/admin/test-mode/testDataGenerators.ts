@@ -729,7 +729,7 @@ export const generateBuildingPermits = async (
     .insert(records)
     .select('id');
 
-  if (error) console.error('Permis de construire (non-bloquant):', error);
+  if (error) console.error('Autorisation de bâtir (non-bloquant):', error);
   return data ?? [];
 };
 

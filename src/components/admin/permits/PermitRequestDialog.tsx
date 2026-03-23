@@ -219,7 +219,7 @@ export const PermitRequestDialog: React.FC<PermitRequestDialogProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
-            Demande de permis - Parcelle {parcelNumber}
+            Demande d'autorisation - Parcelle {parcelNumber}
           </DialogTitle>
         </DialogHeader>
 

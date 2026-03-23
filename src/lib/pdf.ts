@@ -641,12 +641,12 @@ export async function generateCadastralReport(
 
   currentY += 4;
 
-  // 6. PERMIS DE BÂTIR ET BORNAGE (condensés)
+  // 6. AUTORISATION DE BÂTIR ET BORNAGE (condensés)
   if (building_permits && building_permits.length > 0) {
     doc.setTextColor(0, 51, 102);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
-    doc.text("6. PERMIS DE BÂTIR", margin, currentY);
+    doc.text("6. AUTORISATION DE BÂTIR", margin, currentY);
     currentY += 5;
 
     doc.setTextColor(60, 60, 60);

@@ -1571,7 +1571,7 @@ const AdminCCCContributions: React.FC = () => {
             />
           )}
 
-          {/* Dialog demande de permis */}
+          {/* Dialog demande d'autorisation */}
           {selectedContribution.permit_request_data && (
             <PermitRequestDialog
               open={showPermitDialog}

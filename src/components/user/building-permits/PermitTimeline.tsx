@@ -24,7 +24,7 @@ export function PermitTimeline({ permit }: PermitTimelineProps) {
       date: permit.created_at,
       status: "pending",
       title: "Demande soumise",
-      description: `Demande de permis pour la parcelle ${permit.parcel_number}`,
+      description: `Demande d'autorisation pour la parcelle ${permit.parcel_number}`,
     });
 
     // Révision

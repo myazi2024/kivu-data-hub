@@ -29,7 +29,7 @@ export function PermitMessaging({ contributionId, parcelNumber }: PermitMessagin
       id: "1",
       sender: "admin",
       senderName: "Service Urbanisme",
-      content: "Votre demande de permis a été reçue et est en cours d'examen.",
+      content: "Votre demande d'autorisation a été reçue et est en cours d'examen.",
       timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
     },
   ]);

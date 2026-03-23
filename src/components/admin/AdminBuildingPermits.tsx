@@ -276,7 +276,7 @@ const AdminBuildingPermits = () => {
           {/* Table */}
           {filteredPermits.length === 0 ? (
             <Alert>
-              <AlertDescription>Aucune demande de permis trouvée.</AlertDescription>
+              <AlertDescription>Aucune demande d'autorisation trouvée.</AlertDescription>
             </Alert>
           ) : (
             <div className="border rounded-lg overflow-x-auto">
