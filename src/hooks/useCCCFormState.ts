@@ -647,8 +647,8 @@ export const useCCCFormState = ({
     if (!formData.constructionType) missing.push({ field: 'constructionType', label: 'Type de construction', tab: 'general' });
     if (!formData.constructionNature) missing.push({ field: 'constructionNature', label: 'Nature de construction', tab: 'general' });
     if (!formData.declaredUsage) missing.push({ field: 'declaredUsage', label: 'Usage déclaré', tab: 'general' });
-    if (!isTerrainNu && formData.constructionNature && formData.constructionNature !== 'Non bâti' && !formData.constructionMaterials) missing.push({ field: 'constructionMaterials', label: 'Matériaux de construction', tab: 'general' });
-    if (!isTerrainNu && formData.constructionNature && formData.constructionNature !== 'Non bâti' && !formData.standing) missing.push({ field: 'standing', label: 'Standing', tab: 'general' });
+    if (!isTerrainNu && formData.constructionNature && formData.constructionNature !== 'Non bâti' && formData.constructionNature !== 'Construction précaire' && !formData.constructionMaterials) missing.push({ field: 'constructionMaterials', label: 'Matériaux de construction', tab: 'general' });
+    if (!isTerrainNu && formData.constructionNature && formData.constructionNature !== 'Non bâti' && formData.constructionNature !== 'Construction précaire' && !formData.standing) missing.push({ field: 'standing', label: 'Standing', tab: 'general' });
     if (!isTerrainNu && formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && !formData.constructionYear) missing.push({ field: 'constructionYear', label: 'Année de construction', tab: 'general' });
     if (isAppartement) {
       if (!formData.apartmentNumber) missing.push({ field: 'apartmentNumber', label: "Numéro de l'appartement", tab: 'general' });
