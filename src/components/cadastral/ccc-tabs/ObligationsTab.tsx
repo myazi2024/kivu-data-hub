@@ -112,7 +112,7 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                       <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-72 rounded-xl" align="end">
+                   <PopoverContent className="w-72 rounded-xl z-[10001]" align="end">
                     <div className="space-y-2 text-xs">
                       <h4 className="font-semibold text-sm">Taxes (optionnel)</h4>
                       <p className="text-muted-foreground">Documentez les taxes payées pour prouver la conformité fiscale.</p>
@@ -241,7 +241,7 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                       <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-72 rounded-xl" align="end">
+                  <PopoverContent className="w-72 rounded-xl z-[10001]" align="end">
                     <div className="space-y-2 text-xs">
                       <h4 className="font-semibold text-sm">Statut hypothécaire</h4>
                       <p className="text-muted-foreground">Indiquez si cette parcelle est grevée d'une hypothèque active.</p>

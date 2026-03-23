@@ -28,7 +28,7 @@ const SectionHelpPopover: React.FC<SectionHelpPopoverProps> = ({
         </button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-72 rounded-xl text-xs z-[1300]" 
+        className="w-72 rounded-xl text-xs z-[10001]" 
         align={align} 
         sideOffset={5}
       >
