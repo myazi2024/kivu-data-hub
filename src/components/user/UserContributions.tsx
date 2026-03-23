@@ -750,7 +750,7 @@ export const UserContributions: React.FC = () => {
               {selectedContribution.building_permits && Array.isArray(selectedContribution.building_permits) && selectedContribution.building_permits.length > 0 && (
                 <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                   <p className="text-sm font-medium text-blue-700 dark:text-blue-400 mb-2 flex items-center gap-2">
-                    🏗️ Détails du permis de bâtir
+                    🏗️ Détails de l'autorisation de bâtir
                   </p>
                   {selectedContribution.building_permits.map((permit: any, idx: number) => (
                     <div key={idx} className="text-sm space-y-1">
