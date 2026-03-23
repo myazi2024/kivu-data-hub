@@ -51,7 +51,7 @@ const LocationTab: React.FC<LocationTabProps> = ({
   availableVilles, availableCommunes, availableTerritoires, availableCollectivites, availableQuartiers, availableAvenues,
   gpsCoordinates, onCoordinatesUpdate, mapConfig, parcelNumber,
   roadSides, onRoadSidesChange, parcelSides, onParcelSidesUpdate,
-  servitude, onServitudeChange,
+  servitude, onServitudeChange, buildingShapes, onBuildingShapesChange,
   handleTabChange, handleNextTab, resetLocationBlock
 }) => {
   return (
