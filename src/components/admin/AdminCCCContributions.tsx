@@ -502,7 +502,7 @@ const AdminCCCContributions: React.FC = () => {
                 permit_document_url: (permit as any).permit_document_url
               });
               if (bpError) {
-                console.error('Erreur permis de construire:', bpError);
+                console.error('Erreur autorisation de bâtir:', bpError);
                 historyErrors.push('permis');
               }
             }
