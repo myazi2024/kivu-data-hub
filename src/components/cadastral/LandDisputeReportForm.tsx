@@ -190,7 +190,7 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
     const today = new Date().toISOString().split('T')[0];
     if (disputeStartDate > today) { toast.error('La date de début ne peut pas être dans le futur'); return false; }
     if (hasResolutionStarted && !resolutionLevel) { toast.error('Veuillez indiquer le niveau de résolution'); return false; }
-    if (!declarantName.trim() || declarantName.trim().length < 3) { toast.error('Le nom du déclarant doit contenir au moins 3 caractères'); return false; }
+    if (!embedded && (!declarantName.trim() || declarantName.trim().length < 3)) { toast.error('Le nom du déclarant doit contenir au moins 3 caractères'); return false; }
     if (!declarantQuality) { toast.error('Veuillez indiquer votre qualité'); return false; }
     if (declarantEmail && !validateEmail(declarantEmail)) { toast.error('Adresse e-mail invalide'); return false; }
     if (declarantPhone && !validatePhone(declarantPhone)) { toast.error('Numéro de téléphone invalide'); return false; }
