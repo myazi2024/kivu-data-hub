@@ -175,7 +175,35 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
                     <Label className="text-sm font-medium">Montant (USD)</Label>
-                    <Input type="number" placeholder="150" value={tax.taxAmount} onChange={(e) => updateTaxRecord(index, 'taxAmount', e.target.value)} className="h-10 text-sm rounded-xl" />
+                    {(() => {
+                      // Find if this is a complement of a "Payé partiellement" record
+                      const partialMatch = tax.taxType && tax.taxYear
+                        ? taxRecords.find((other, otherIdx) =>
+                            otherIdx !== index &&
+                            other.taxType === tax.taxType &&
+                            other.taxYear === tax.taxYear &&
+                            other.paymentStatus === 'Payé partiellement' &&
+                            other.remainingAmount
+                          )
+                        : null;
+                      const maxAmount = partialMatch ? parseFloat(partialMatch.remainingAmount || '0') : undefined;
+                      return (
+                        <Input
+                          type="number"
+                          placeholder={maxAmount ? `Max: ${maxAmount}` : "150"}
+                          value={tax.taxAmount}
+                          max={maxAmount}
+                          onChange={(e) => {
+                            let val = e.target.value;
+                            if (maxAmount && parseFloat(val) > maxAmount) {
+                              val = maxAmount.toString();
+                            }
+                            updateTaxRecord(index, 'taxAmount', val);
+                          }}
+                          className="h-10 text-sm rounded-xl"
+                        />
+                      );
+                    })()}
                   </div>
                   <div className="space-y-1">
                     <Label className="text-sm font-medium">Statut</Label>
