@@ -514,7 +514,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
           <Alert className="py-1.5 px-2 rounded-xl bg-muted/50 border-0 mt-1">
             <Info className="h-3 w-3" />
             <AlertDescription className="text-[11px]">
-              Activez le bouton sur chaque côté pour définir sa limite
+              Définissez les limites et cochez l'entrée de la parcelle
             </AlertDescription>
           </Alert>
         )}
