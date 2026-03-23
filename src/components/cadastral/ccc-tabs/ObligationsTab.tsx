@@ -153,7 +153,19 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                       <SelectContent className="rounded-xl">
                         {Array.from({ length: 10 }, (_, i) => {
                           const year = new Date().getFullYear() - i;
-                          return <SelectItem key={year} value={year.toString()}>{year}</SelectItem>;
+                          const yearStr = year.toString();
+                          // Block year if same taxType+year already declared "Payé" in another record
+                          const isBlocked = tax.taxType && taxRecords.some((other, otherIdx) =>
+                            otherIdx !== index &&
+                            other.taxType === tax.taxType &&
+                            other.taxYear === yearStr &&
+                            other.paymentStatus === 'Payé'
+                          );
+                          return (
+                            <SelectItem key={year} value={yearStr} disabled={isBlocked}>
+                              {year}{isBlocked ? ' (déjà payé)' : ''}
+                            </SelectItem>
+                          );
                         })}
                       </SelectContent>
                     </Select>
