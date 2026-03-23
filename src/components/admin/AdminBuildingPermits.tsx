@@ -225,7 +225,7 @@ const AdminBuildingPermits = () => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Gestion des Demandes de Permis</CardTitle>
+              <CardTitle>Gestion des Demandes d'Autorisation</CardTitle>
               <CardDescription>
                 Examinez et traitez les demandes d'autorisation de bâtir et de régularisation
               </CardDescription>
