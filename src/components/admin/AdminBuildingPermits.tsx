@@ -118,7 +118,7 @@ const AdminBuildingPermits = () => {
       format(new Date(p.created_at), 'dd/MM/yyyy', { locale: fr }),
       p.permit_request_data?.status || 'pending'
     ]);
-    exportToCSV({ headers, data, filename: `permis-construire-${format(new Date(), 'yyyy-MM-dd')}.csv` });
+    exportToCSV({ headers, data, filename: `autorisations-batir-${format(new Date(), 'yyyy-MM-dd')}.csv` });
     toast.success('Export CSV réussi');
   };
 
