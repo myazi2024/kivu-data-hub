@@ -702,6 +702,12 @@ export const useCCCFormState = ({
     // OBLIGATIONS - DISPUTE
     if (hasDispute === null) missing.push({ field: 'hasDispute', label: 'Statut litige foncier (Oui/Non)', tab: 'obligations' });
 
+    // LOCATION - ENTRANCE (obligatoire pour les parcelles, pas les appartements)
+    if (!isAppartement) {
+      const hasEntrance = roadSides.some((s: any) => s.hasEntrance === true);
+      if (!hasEntrance) missing.push({ field: 'parcelEntrance', label: "Entrée de la parcelle (cochez le côté ayant une porte d'accès)", tab: 'location' });
+    }
+
     // BUILDING PERMITS
     if (!isTerrainNu && !isAppartement && formData.constructionType !== 'Terrain nu' && permitMode === 'existing') {
       const hasValidExistingPermit = buildingPermits.some(permit => permit.permitNumber && permit.permitNumber.trim() !== '' && permit.issueDate && permit.issueDate.trim() !== '');
