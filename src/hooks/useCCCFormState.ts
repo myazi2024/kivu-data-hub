@@ -835,10 +835,16 @@ export const useCCCFormState = ({
       const validMortgages = mortgageRecords.filter(m => m.mortgageAmount && m.creditorName);
       if (validMortgages.length > 0) filledFields += Math.min(validMortgages.length * 2, 2);
     } else if (hasMortgage === false) { filledFields += 2; }
+    // Dispute scoring
+    totalFields += 1;
+    if (hasDispute !== null) filledFields += 1;
+    // Building shapes scoring
+    totalFields += 1;
+    if (buildingShapes.length > 0) filledFields += 1;
     const percentage = totalFields > 0 ? (filledFields / totalFields) * 100 : 0;
     const value = (percentage / 100) * 5;
     return { value: Math.min(value, 5), percentage: Math.min(percentage, 100), filledFields, totalFields };
-  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, hasMortgage, buildingPermits, permitRequest, gpsCoordinates, parcelSides, sectionType]);
+  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, hasMortgage, hasDispute, buildingPermits, permitRequest, gpsCoordinates, parcelSides, sectionType, buildingShapes]);
 
   // ─── Confetti ───
   const triggerConfetti = async () => {
