@@ -72,6 +72,8 @@ export interface CadastralContributionData {
   roadSides?: Array<{ name: string; bordersRoad?: boolean; roadType?: string; roadName?: string; roadWidth?: string; hasEntrance?: boolean }>;
   servitudeData?: { hasServitude: boolean; width?: number };
   hasDispute?: boolean;
+  buildingShapes?: any[];
+  disputeData?: any;
   
   // Localisation
   areaSqm?: number;
@@ -292,6 +294,8 @@ export const useCadastralContribution = () => {
       road_sides: data.roadSides && data.roadSides.length > 0 ? data.roadSides : null,
       servitude_data: data.servitudeData || null,
       has_dispute: data.hasDispute ?? null,
+      building_shapes: data.buildingShapes && data.buildingShapes.length > 0 ? data.buildingShapes : null,
+      dispute_data: data.disputeData || null,
     };
 
     if (data.permitRequest) {

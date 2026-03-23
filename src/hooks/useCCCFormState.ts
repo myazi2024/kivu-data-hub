@@ -967,10 +967,12 @@ export const useCCCFormState = ({
         parcelSides: parcelSides.filter(s => s.length && parseFloat(s.length) > 0).length > 0 ? parcelSides.filter(s => s.length && parseFloat(s.length) > 0) : undefined,
         additionalConstructions: constructionMode === 'multiple' && additionalConstructions.length > 0
           ? additionalConstructions.map(c => ({ ...c, permit: c.permit ? { ...c.permit, attachmentFile: undefined } : undefined })) : undefined,
-        // FIX: Persist roadSides, servitude, and hasDispute to DB
+        // FIX: Persist roadSides, servitude, hasDispute, buildingShapes, disputeData to DB
         roadSides: roadSides.length > 0 ? roadSides : undefined,
         servitudeData: servitude.hasServitude ? servitude : undefined,
         hasDispute: hasDispute ?? undefined,
+        buildingShapes: buildingShapes.length > 0 ? buildingShapes : undefined,
+        disputeData: disputeFormData || undefined,
       };
 
       const result = editingContributionId ? await updateContribution(editingContributionId, dataToSubmit) : await submitContribution(dataToSubmit);
@@ -1140,6 +1142,18 @@ export const useCCCFormState = ({
 
         if ((contrib as any).has_dispute !== null && (contrib as any).has_dispute !== undefined) {
           setHasDispute((contrib as any).has_dispute);
+        }
+
+        // Restore building shapes from DB
+        const savedBuildingShapes = (contrib as any).building_shapes as any[];
+        if (savedBuildingShapes && Array.isArray(savedBuildingShapes) && savedBuildingShapes.length > 0) {
+          setBuildingShapes(savedBuildingShapes);
+        }
+
+        // Restore dispute data from DB
+        const savedDisputeData = (contrib as any).dispute_data as any;
+        if (savedDisputeData) {
+          setDisputeFormData(savedDisputeData);
         }
       } catch (err) { console.error('Erreur chargement contribution:', err); }
       finally { setTimeout(() => { isLoadingFromDbRef.current = false; }, 500); }

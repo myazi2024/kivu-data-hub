@@ -460,6 +460,7 @@ export type Database = {
           avenue: string | null
           boundary_history: Json | null
           building_permits: Json | null
+          building_shapes: Json | null
           change_justification: string | null
           changed_fields: Json | null
           collectivite: string | null
@@ -475,6 +476,7 @@ export type Database = {
           current_owner_since: string | null
           current_owners_details: Json | null
           declared_usage: string | null
+          dispute_data: Json | null
           floor_number: string | null
           fraud_reason: string | null
           fraud_score: number | null
@@ -532,6 +534,7 @@ export type Database = {
           avenue?: string | null
           boundary_history?: Json | null
           building_permits?: Json | null
+          building_shapes?: Json | null
           change_justification?: string | null
           changed_fields?: Json | null
           collectivite?: string | null
@@ -547,6 +550,7 @@ export type Database = {
           current_owner_since?: string | null
           current_owners_details?: Json | null
           declared_usage?: string | null
+          dispute_data?: Json | null
           floor_number?: string | null
           fraud_reason?: string | null
           fraud_score?: number | null
@@ -604,6 +608,7 @@ export type Database = {
           avenue?: string | null
           boundary_history?: Json | null
           building_permits?: Json | null
+          building_shapes?: Json | null
           change_justification?: string | null
           changed_fields?: Json | null
           collectivite?: string | null
@@ -619,6 +624,7 @@ export type Database = {
           current_owner_since?: string | null
           current_owners_details?: Json | null
           declared_usage?: string | null
+          dispute_data?: Json | null
           floor_number?: string | null
           fraud_reason?: string | null
           fraud_score?: number | null
