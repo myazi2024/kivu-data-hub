@@ -72,6 +72,8 @@ export interface CadastralContributionData {
   roadSides?: Array<{ name: string; bordersRoad?: boolean; roadType?: string; roadName?: string; roadWidth?: string; hasEntrance?: boolean }>;
   servitudeData?: { hasServitude: boolean; width?: number };
   hasDispute?: boolean;
+  buildingShapes?: any[];
+  disputeData?: any;
   
   // Localisation
   areaSqm?: number;
