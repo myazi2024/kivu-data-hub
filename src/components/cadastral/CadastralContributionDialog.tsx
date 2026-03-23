@@ -179,6 +179,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   removeMortgageFile={state.removeMortgageFile}
                    showMortgageWarning={state.showMortgageWarning} highlightIncompleteMortgage={state.highlightIncompleteMortgage}
                    hasDispute={state.hasDispute} setHasDispute={state.setHasDispute}
+                  onDisputeDataChange={state.setDisputeFormData}
                   getPicklistOptions={state.getPicklistOptions}
                   handleTabChange={state.handleTabChange} handleNextTab={state.handleNextTab}
                   resetTaxBlock={state.resetTaxBlock} resetMortgageBlock={state.resetMortgageBlock}
