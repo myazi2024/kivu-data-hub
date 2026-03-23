@@ -614,14 +614,16 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
         <CardContent className="p-3 space-y-3">
           <h4 className="text-sm font-semibold text-primary flex items-center gap-2">
             <div className="w-1.5 h-1.5 bg-primary rounded-full" />
-            Identité du déclarant
-            <SectionHelpPopover title="Déclarant" description="Renseignez vos informations personnelles. Ces données permettent de vous contacter pour le suivi du dossier." />
+            {embedded ? 'Qualité du déclarant' : 'Identité du déclarant'}
+            <SectionHelpPopover title="Déclarant" description={embedded ? "Indiquez votre qualité par rapport à cette parcelle." : "Renseignez vos informations personnelles. Ces données permettent de vous contacter pour le suivi du dossier."} />
           </h4>
           <div className="space-y-2.5">
-            <div className="space-y-1">
-              <Label className="text-xs">Nom complet *</Label>
-              <Input value={declarantName} onChange={(e) => setDeclarantName(e.target.value)} className="h-11 text-sm rounded-xl border-2" />
-            </div>
+            {!embedded && (
+              <div className="space-y-1">
+                <Label className="text-xs">Nom complet *</Label>
+                <Input value={declarantName} onChange={(e) => setDeclarantName(e.target.value)} className="h-11 text-sm rounded-xl border-2" />
+              </div>
+            )}
             <div className="space-y-1">
               <Label className="text-xs">Qualité *</Label>
               <Select value={declarantQuality} onValueChange={setDeclarantQuality}>
@@ -631,16 +633,18 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <Label className="text-xs">Téléphone</Label>
-                <Input value={declarantPhone} onChange={(e) => setDeclarantPhone(e.target.value)} className="h-11 text-sm rounded-xl border-2" placeholder="+243..." />
+            {!embedded && (
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Téléphone</Label>
+                  <Input value={declarantPhone} onChange={(e) => setDeclarantPhone(e.target.value)} className="h-11 text-sm rounded-xl border-2" placeholder="+243..." />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">E-mail</Label>
+                  <Input value={declarantEmail} onChange={(e) => setDeclarantEmail(e.target.value)} className="h-11 text-sm rounded-xl border-2" type="email" />
+                </div>
               </div>
-              <div className="space-y-1">
-                <Label className="text-xs">E-mail</Label>
-                <Input value={declarantEmail} onChange={(e) => setDeclarantEmail(e.target.value)} className="h-11 text-sm rounded-xl border-2" type="email" />
-              </div>
-            </div>
+            )}
           </div>
         </CardContent>
       </Card>
