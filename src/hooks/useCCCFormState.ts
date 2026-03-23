@@ -1010,6 +1010,8 @@ export const useCCCFormState = ({
     setAvailableVilles([]); setAvailableCommunes([]); setAvailableTerritoires([]); setAvailableCollectivites([]); setAvailableQuartiers([]); setAvailableAvenues([]);
     setAvailableConstructionNatures([]); setAvailableDeclaredUsages([]); setAvailableConstructionMaterials([]); setAvailableStandings([]);
     setRoadSides([]);
+    setBuildingShapes([]);
+    setDisputeFormData(null);
     setPermitMode('existing');
     setBuildingPermits([{ permitType: 'construction', permitNumber: '', issueDate: '', validityMonths: '36', administrativeStatus: 'En attente', attachmentFile: null }]);
     setPermitRequest({ permitType: 'construction', hasExistingConstruction: false, constructionDescription: '', plannedUsage: '', estimatedArea: '', applicantName: '', applicantPhone: '', applicantEmail: '', selectedOwnerIndex: -1, numberOfFloors: '', buildingMaterials: '', architecturalPlanImages: [], constructionYear: '', regularizationReason: '', originalPermitNumber: '', previousPermitNumber: '', constructionPhotos: [] });
