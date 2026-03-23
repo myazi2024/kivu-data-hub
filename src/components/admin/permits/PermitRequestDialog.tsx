@@ -192,10 +192,10 @@ export const PermitRequestDialog: React.FC<PermitRequestDialogProps> = ({
       await supabase.from('notifications').insert({
         user_id: userId,
         type: action === 'approve' ? 'success' : 'error',
-        title: action === 'approve' ? 'Permis délivré !' : 'Demande rejetée',
+        title: action === 'approve' ? 'Autorisation délivrée !' : 'Demande rejetée',
         message: action === 'approve'
-          ? `Votre permis ${updatedPermitData.permitNumber} a été délivré pour la parcelle ${parcelNumber}. Le certificat est disponible dans votre espace.`
-          : `Votre demande de permis pour la parcelle ${parcelNumber} a été rejetée. ${response}`,
+          ? `Votre autorisation ${updatedPermitData.permitNumber} a été délivrée pour la parcelle ${parcelNumber}. Le certificat est disponible dans votre espace.`
+          : `Votre demande d'autorisation pour la parcelle ${parcelNumber} a été rejetée. ${response}`,
         action_url: '/user-dashboard?tab=building-permits'
       });
 
