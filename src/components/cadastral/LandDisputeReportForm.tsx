@@ -42,6 +42,7 @@ interface LandDisputeReportFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   embedded?: boolean;
+  onDisputeDataChange?: (data: any) => void;
 }
 
 interface Party {
