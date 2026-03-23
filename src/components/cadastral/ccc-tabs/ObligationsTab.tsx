@@ -63,6 +63,7 @@ interface ObligationsTabProps {
   // Dispute
   hasDispute: boolean | null;
   setHasDispute: (v: boolean | null) => void;
+  onDisputeDataChange?: (data: any) => void;
   // Picklists
   getPicklistOptions: (key: string) => string[];
   // Navigation
