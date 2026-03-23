@@ -1518,6 +1518,7 @@ export const useCCCFormState = ({
     availableVilles, availableCommunes, availableTerritoires, availableCollectivites, availableQuartiers, availableAvenues,
     gpsCoordinates, setGpsCoordinates, parcelSides, setParcelSides,
     roadSides, setRoadSides, servitude, setServitude,
+    buildingShapes, setBuildingShapes,
     // Obligations
     obligationType, setObligationType,
     taxRecords, updateTaxRecord, addTaxRecord, removeTaxRecord, handleTaxFileChange, removeTaxFile,
@@ -1526,6 +1527,7 @@ export const useCCCFormState = ({
     updateMortgageRecord, addMortgageRecord, removeMortgageRecord, handleMortgageFileChange, removeMortgageFile,
     showMortgageWarning, highlightIncompleteMortgage,
     hasDispute, setHasDispute,
+    disputeFormData, setDisputeFormData,
     // Validation
     highlightRequiredFields, setHighlightRequiredFields,
     getMissingFields, isFormValidForSubmission, calculateCCCValue,
