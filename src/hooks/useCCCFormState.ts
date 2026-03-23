@@ -251,6 +251,7 @@ export const useCCCFormState = ({
         if (parsed.ownershipMode) setOwnershipMode(parsed.ownershipMode);
         if (parsed.leaseYears !== undefined) setLeaseYears(parsed.leaseYears);
         if (parsed.roadSides) setRoadSides(parsed.roadSides);
+        if (parsed.servitude) setServitude(parsed.servitude);
         if (parsed.customTitleName) setCustomTitleName(parsed.customTitleName);
         if (parsed.constructionMode) setConstructionMode(parsed.constructionMode);
         if (parsed.additionalConstructions) setAdditionalConstructions(parsed.additionalConstructions);
