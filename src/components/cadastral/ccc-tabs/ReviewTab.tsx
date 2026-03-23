@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, CheckCircle2, Info, AlertTriangle, ChevronRight } from 'lucide-react';
+import { Loader2, CheckCircle2, Info, AlertTriangle, ChevronRight, Printer } from 'lucide-react';
 import { MdRateReview } from 'react-icons/md';
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
 import { PROPERTY_TITLE_TYPES } from '../PropertyTitleTypeSelect';
