@@ -244,57 +244,55 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
               </div>
             )}
 
-            {/* Croquis de la parcelle — carte visuelle */}
+            {/* Croquis de la parcelle — SVG statique léger */}
             {gpsCoordinates.filter(g => g.lat && g.lng).length >= 3 && (
               <div className="pt-2 border-t border-border/50 space-y-2">
                 <div className="font-medium">Croquis de la parcelle:</div>
-                <div className="rounded-xl overflow-hidden border border-border/50" style={{ height: 220, pointerEvents: 'none' }}>
-                  <ParcelMapPreview
-                    coordinates={gpsCoordinates}
-                    onCoordinatesUpdate={() => {}}
-                    config={mapConfig}
-                    currentParcelNumber={formData.parcelNumber}
-                    roadSides={roadSides}
-                    onRoadSidesChange={() => {}}
-                    parcelSides={parcelSides}
-                    onParcelSidesUpdate={() => {}}
-                    enableDrawingMode={false}
-                    buildingShapes={buildingShapes}
-                    onBuildingShapesChange={undefined}
-                    servitude={servitude}
-                    onServitudeChange={() => {}}
-                  />
-                </div>
-                {parcelSides.filter(s => s.length).length > 0 && (
-                  <div className="ml-2 text-muted-foreground">
-                    <div className="font-medium text-foreground text-[11px] mt-1">Dimensions des côtés:</div>
-                    {parcelSides.filter(s => s.length).map((side, idx) => (
-                      <div key={idx}>• {side.name}: {side.length}m</div>
-                    ))}
-                  </div>
-                )}
-                {gpsCoordinates.filter(g => g.lat && g.lng).length > 0 && (
-                  <div className="ml-2 text-muted-foreground mt-1">
-                    <div className="font-medium text-foreground text-[11px]">Bornes GPS ({gpsCoordinates.filter(g => g.lat && g.lng).length}):</div>
-                    {gpsCoordinates.filter(g => g.lat && g.lng).map((coord, idx) => (
-                      <div key={idx} className="text-[11px]">• {coord.borne}: {Number(coord.lat).toFixed(6)}, {Number(coord.lng).toFixed(6)}</div>
-                    ))}
-                  </div>
-                )}
-                {buildingShapes.length > 0 && (
-                  <div className="ml-2 text-muted-foreground mt-1">
-                    <div className="font-medium text-foreground text-[11px]">Constructions tracées ({buildingShapes.length}):</div>
-                    {buildingShapes.map((shape: any, idx: number) => {
-                      const shapeLabels: Record<string, string> = { circle: 'Cercle', square: 'Carré', rectangle: 'Rectangle', trapeze: 'Trapèze', polygon: 'Polygone' };
-                      return (
-                        <div key={idx} className="text-[11px]">
-                          • {shapeLabels[shape.type] || shape.type} — {shape.size}m
-                          {shape.rotation ? ` (rotation: ${shape.rotation}°)` : ''}
+                <ParcelSketchSVG
+                  coordinates={gpsCoordinates}
+                  parcelSides={parcelSides}
+                  buildingShapes={buildingShapes}
+                  roadSides={roadSides}
+                  servitude={servitude}
+                  height={240}
+                />
+                {/* Détails textuels sous le croquis */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                  {gpsCoordinates.filter(g => g.lat && g.lng).length > 0 && (
+                    <div className="p-2 rounded-lg bg-muted/30 space-y-0.5">
+                      <div className="font-semibold text-foreground">Bornes GPS ({gpsCoordinates.filter(g => g.lat && g.lng).length})</div>
+                      {gpsCoordinates.filter(g => g.lat && g.lng).map((coord, idx) => (
+                        <div key={idx} className="text-muted-foreground font-mono">
+                          {coord.borne}: {Number(coord.lat).toFixed(6)}, {Number(coord.lng).toFixed(6)}
                         </div>
-                      );
-                    })}
+                      ))}
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    {parcelSides.filter(s => s.length).length > 0 && (
+                      <div className="p-2 rounded-lg bg-muted/30 space-y-0.5">
+                        <div className="font-semibold text-foreground">Dimensions</div>
+                        {parcelSides.filter(s => s.length).map((side, idx) => (
+                          <div key={idx} className="text-muted-foreground">{side.name}: {side.length}m</div>
+                        ))}
+                      </div>
+                    )}
+                    {buildingShapes.length > 0 && (
+                      <div className="p-2 rounded-lg bg-muted/30 space-y-0.5">
+                        <div className="font-semibold text-foreground">Constructions ({buildingShapes.length})</div>
+                        {buildingShapes.map((shape: any, idx: number) => {
+                          const labels: Record<string, string> = { circle: 'Cercle', square: 'Carré', rectangle: 'Rectangle', trapeze: 'Trapèze', polygon: 'Polygone' };
+                          return (
+                            <div key={idx} className="text-muted-foreground">
+                              {labels[shape.type] || shape.type} — {shape.size}m
+                              {shape.rotation ? ` (${shape.rotation}°)` : ''}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
             )}
 
