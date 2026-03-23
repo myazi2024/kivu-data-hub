@@ -247,6 +247,7 @@ export const useCCCFormState = ({
         if (parsed.obligationType) setObligationType(parsed.obligationType);
         if (parsed.sectionType) setSectionType(parsed.sectionType);
         if (parsed.hasMortgage !== undefined) setHasMortgage(parsed.hasMortgage);
+        if (parsed.hasDispute !== undefined) setHasDispute(parsed.hasDispute);
         if (parsed.ownershipMode) setOwnershipMode(parsed.ownershipMode);
         if (parsed.leaseYears !== undefined) setLeaseYears(parsed.leaseYears);
         if (parsed.roadSides) setRoadSides(parsed.roadSides);
