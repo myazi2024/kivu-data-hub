@@ -1119,7 +1119,7 @@ export const useCCCFormState = ({
       const timeoutId = setTimeout(() => saveFormDataToStorage(), 1500);
       return () => clearTimeout(timeoutId);
     }
-  }, [open, formData, currentOwners, previousOwners, taxRecords, mortgageRecords, buildingPermits, gpsCoordinates, parcelSides, permitMode, permitRequest, hasMortgage, ownershipMode, leaseYears, roadSides, obligationType, sectionType, saveFormDataToStorage, editingContributionId]);
+  }, [open, formData, currentOwners, previousOwners, taxRecords, mortgageRecords, buildingPermits, gpsCoordinates, parcelSides, permitMode, permitRequest, hasMortgage, hasDispute, ownershipMode, leaseYears, roadSides, obligationType, sectionType, saveFormDataToStorage, editingContributionId]);
 
   // Auto-detect section type from parcel number
   useEffect(() => {
