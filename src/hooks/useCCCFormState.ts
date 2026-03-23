@@ -967,10 +967,11 @@ export const useCCCFormState = ({
         parcelSides: parcelSides.filter(s => s.length && parseFloat(s.length) > 0).length > 0 ? parcelSides.filter(s => s.length && parseFloat(s.length) > 0) : undefined,
         additionalConstructions: constructionMode === 'multiple' && additionalConstructions.length > 0
           ? additionalConstructions.map(c => ({ ...c, permit: c.permit ? { ...c.permit, attachmentFile: undefined } : undefined })) : undefined,
-        // FIX: Persist roadSides, servitude, and hasDispute to DB
         roadSides: roadSides.length > 0 ? roadSides : undefined,
         servitudeData: servitude.hasServitude ? servitude : undefined,
         hasDispute: hasDispute ?? undefined,
+        disputeData: disputeFormData || undefined,
+        buildingShapes: buildingShapes.length > 0 ? buildingShapes : undefined,
       };
 
       const result = editingContributionId ? await updateContribution(editingContributionId, dataToSubmit) : await submitContribution(dataToSubmit);
