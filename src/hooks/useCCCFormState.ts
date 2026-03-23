@@ -213,7 +213,7 @@ export const useCCCFormState = ({
       buildingPermits: buildingPermits.map(p => ({ ...p, attachmentFile: null })),
       permitRequest: { ...permitRequest, architecturalPlanImages: [], constructionPhotos: [] },
       gpsCoordinates, parcelSides, obligationType, sectionType,
-      hasMortgage, ownershipMode, leaseYears, roadSides, customTitleName,
+      hasMortgage, hasDispute, ownershipMode, leaseYears, roadSides, customTitleName,
       isTitleInCurrentOwnerName: formData.isTitleInCurrentOwnerName,
       constructionMode,
       additionalConstructions: additionalConstructions.map(c => ({
@@ -227,7 +227,7 @@ export const useCCCFormState = ({
     } catch (error) {
       console.error('Erreur sauvegarde:', error);
     }
-  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, permitMode, buildingPermits, permitRequest, gpsCoordinates, parcelSides, obligationType, sectionType, hasMortgage, ownershipMode, leaseYears, roadSides, customTitleName, constructionMode, additionalConstructions, STORAGE_KEY]);
+  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, permitMode, buildingPermits, permitRequest, gpsCoordinates, parcelSides, obligationType, sectionType, hasMortgage, hasDispute, ownershipMode, leaseYears, roadSides, customTitleName, constructionMode, additionalConstructions, STORAGE_KEY]);
 
   const loadFormDataFromStorage = () => {
     try {
