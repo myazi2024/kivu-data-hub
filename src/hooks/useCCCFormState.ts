@@ -180,10 +180,10 @@ export const useCCCFormState = ({
   // ─── Helper: mark form dirty ───
   const markDirty = useCallback(() => { formDirtyRef.current = true; }, []);
 
-  const handleInputChange = (field: keyof CadastralContributionData, value: any) => {
+  const handleInputChange = useCallback((field: keyof CadastralContributionData, value: any) => {
     formDirtyRef.current = true;
     setFormData(prev => ({ ...prev, [field]: value }));
-  };
+  }, []);
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
@@ -213,7 +213,7 @@ export const useCCCFormState = ({
       buildingPermits: buildingPermits.map(p => ({ ...p, attachmentFile: null })),
       permitRequest: { ...permitRequest, architecturalPlanImages: [], constructionPhotos: [] },
       gpsCoordinates, parcelSides, obligationType, sectionType,
-      hasMortgage, hasDispute, ownershipMode, leaseYears, roadSides, customTitleName,
+      hasMortgage, hasDispute, ownershipMode, leaseYears, roadSides, servitude, customTitleName,
       isTitleInCurrentOwnerName: formData.isTitleInCurrentOwnerName,
       constructionMode,
       additionalConstructions: additionalConstructions.map(c => ({
@@ -227,7 +227,7 @@ export const useCCCFormState = ({
     } catch (error) {
       console.error('Erreur sauvegarde:', error);
     }
-  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, permitMode, buildingPermits, permitRequest, gpsCoordinates, parcelSides, obligationType, sectionType, hasMortgage, hasDispute, ownershipMode, leaseYears, roadSides, customTitleName, constructionMode, additionalConstructions, STORAGE_KEY]);
+  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, permitMode, buildingPermits, permitRequest, gpsCoordinates, parcelSides, obligationType, sectionType, hasMortgage, hasDispute, ownershipMode, leaseYears, roadSides, servitude, customTitleName, constructionMode, additionalConstructions, STORAGE_KEY]);
 
   const loadFormDataFromStorage = () => {
     try {
@@ -251,6 +251,7 @@ export const useCCCFormState = ({
         if (parsed.ownershipMode) setOwnershipMode(parsed.ownershipMode);
         if (parsed.leaseYears !== undefined) setLeaseYears(parsed.leaseYears);
         if (parsed.roadSides) setRoadSides(parsed.roadSides);
+        if (parsed.servitude) setServitude(parsed.servitude);
         if (parsed.customTitleName) setCustomTitleName(parsed.customTitleName);
         if (parsed.constructionMode) setConstructionMode(parsed.constructionMode);
         if (parsed.additionalConstructions) setAdditionalConstructions(parsed.additionalConstructions);
@@ -1157,6 +1158,7 @@ export const useCCCFormState = ({
   }, [currentOwners]);
 
   // Surface calculation from parcel sides
+  // Sides order: [Nord, Sud, Est, Ouest] → opposite pairs: Nord↔Sud (0↔1), Est↔Ouest (2↔3)
   useEffect(() => {
     if (isLoadingFromDbRef.current) return;
     const sides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
@@ -1172,12 +1174,15 @@ export const useCCCFormState = ({
     if (sides.length === 4) {
       const lengths = sides.map(s => parseFloat(s.length));
       const tolerance = (side: number) => Math.max(0.5, side * 0.01);
+      // FIX: Compare opposite sides (Nord↔Sud = 0↔1, Est↔Ouest = 2↔3)
       const isRectangle = Math.abs(lengths[0] - lengths[1]) < tolerance(lengths[0]) && Math.abs(lengths[2] - lengths[3]) < tolerance(lengths[2]);
+      // FIX: For rectangle, area = side_a * side_b where a and b are adjacent (Nord * Est)
       if (isRectangle) { handleInputChange('areaSqm', parseFloat((lengths[0] * lengths[2]).toFixed(2))); return; }
+      // FIX: Brahmagupta for cyclic quadrilateral — sides must be in order (adjacent): Nord, Est, Sud, Ouest
       const a = lengths[0], b = lengths[2], c = lengths[1], d = lengths[3];
       const total = a + b + c + d;
       if (a >= total - a || b >= total - b || c >= total - c || d >= total - d) return;
-      const s = (a + b + c + d) / 2;
+      const s = total / 2;
       const brahmVal = (s - a) * (s - b) * (s - c) * (s - d);
       if (brahmVal <= 0) return;
       handleInputChange('areaSqm', parseFloat(Math.sqrt(brahmVal).toFixed(2)));

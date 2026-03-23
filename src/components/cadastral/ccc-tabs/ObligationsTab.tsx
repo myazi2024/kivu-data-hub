@@ -220,7 +220,27 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                 {tax.paymentStatus === 'Payé partiellement' && (
                   <div className="space-y-1">
                     <Label className="text-sm font-medium">Montant restant à payer (USD)</Label>
-                    <Input type="number" min="0" step="0.01" placeholder="Ex: 50.00" value={tax.remainingAmount || ''} onChange={(e) => updateTaxRecord(index, 'remainingAmount', e.target.value)} className="h-10 text-sm rounded-xl" />
+                    <Input
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      max={tax.taxAmount ? parseFloat(tax.taxAmount) : undefined}
+                      placeholder="Ex: 50.00"
+                      value={tax.remainingAmount || ''}
+                      onChange={(e) => {
+                        let val = e.target.value;
+                        const paidAmount = parseFloat(tax.taxAmount || '0');
+                        // FIX: remaining cannot exceed the paid amount
+                        if (paidAmount > 0 && parseFloat(val) > paidAmount) {
+                          val = paidAmount.toString();
+                        }
+                        updateTaxRecord(index, 'remainingAmount', val);
+                      }}
+                      className="h-10 text-sm rounded-xl"
+                    />
+                    {tax.taxAmount && tax.remainingAmount && parseFloat(tax.remainingAmount) >= parseFloat(tax.taxAmount) && (
+                      <p className="text-xs text-destructive">Le montant restant ne peut pas dépasser le montant payé ({tax.taxAmount} USD)</p>
+                    )}
                   </div>
                 )}
 

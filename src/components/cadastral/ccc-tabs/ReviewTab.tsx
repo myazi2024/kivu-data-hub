@@ -248,34 +248,51 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
         <CardContent className="p-3 space-y-2">
           <h4 className="text-xs font-semibold flex items-center gap-1.5"><span>📎</span> Documents joints</h4>
           <div className="space-y-1 text-xs">
-            <div className={ownerDocFile ? "text-foreground flex items-center gap-1.5" : "text-muted-foreground flex items-center gap-1.5"}>
-              {ownerDocFile ? <CheckCircle2 className="h-3 w-3 text-primary" /> : <span>⭕</span>}
-              <span>{currentOwners[0]?.legalStatus === 'Personne morale' && currentOwners[0]?.entityType === 'Association' ? "Arrêté ministériel"
-                : currentOwners[0]?.legalStatus === 'Personne morale' && currentOwners[0]?.entityType === 'Société' ? "Certificat RCCM"
-                : currentOwners[0]?.legalStatus === 'État' && currentOwners[0]?.rightType === 'Concession' ? "Titre de concession"
-                : currentOwners[0]?.legalStatus === 'État' && currentOwners[0]?.rightType === 'Affectation' ? "Acte d'affectation"
-                : "Pièce d'identité"}: {ownerDocFile ? "✓" : "Non"}</span>
-            </div>
-            <div className={titleDocFiles.length > 0 ? "text-foreground flex items-center gap-1.5" : "text-muted-foreground flex items-center gap-1.5"}>
-              {titleDocFiles.length > 0 ? <CheckCircle2 className="h-3 w-3 text-primary" /> : <span>⭕</span>}
-              <span>Titre: {titleDocFiles.length > 0 ? `${titleDocFiles.length} fichier(s)` : "Non"}</span>
-            </div>
-            {buildingPermits.some(p => p.attachmentFile) && (
+            {/* Owner doc: check both new file AND existing URL */}
+            {(() => {
+              const hasOwnerDoc = ownerDocFile || formData.ownerDocumentUrl;
+              return (
+                <div className={hasOwnerDoc ? "text-foreground flex items-center gap-1.5" : "text-muted-foreground flex items-center gap-1.5"}>
+                  {hasOwnerDoc ? <CheckCircle2 className="h-3 w-3 text-primary" /> : <span>⭕</span>}
+                  <span>{currentOwners[0]?.legalStatus === 'Personne morale' && currentOwners[0]?.entityType === 'Association' ? "Arrêté ministériel"
+                    : currentOwners[0]?.legalStatus === 'Personne morale' && currentOwners[0]?.entityType === 'Société' ? "Certificat RCCM"
+                    : currentOwners[0]?.legalStatus === 'État' && currentOwners[0]?.rightType === 'Concession' ? "Titre de concession"
+                    : currentOwners[0]?.legalStatus === 'État' && currentOwners[0]?.rightType === 'Affectation' ? "Acte d'affectation"
+                    : "Pièce d'identité"}: {hasOwnerDoc ? "✓" : "Non"}</span>
+                </div>
+              );
+            })()}
+            {/* Title docs: check both new files AND existing URLs */}
+            {(() => {
+              const existingTitleCount = formData.titleDocumentUrl ? formData.titleDocumentUrl.split(',').filter(u => u.trim()).length : 0;
+              const totalTitleDocs = titleDocFiles.length + existingTitleCount;
+              const hasTitleDoc = totalTitleDocs > 0;
+              return (
+                <div className={hasTitleDoc ? "text-foreground flex items-center gap-1.5" : "text-muted-foreground flex items-center gap-1.5"}>
+                  {hasTitleDoc ? <CheckCircle2 className="h-3 w-3 text-primary" /> : <span>⭕</span>}
+                  <span>Titre: {hasTitleDoc ? `${totalTitleDocs} fichier(s)` : "Non"}</span>
+                </div>
+              );
+            })()}
+            {/* Permits: check both new files AND existing URLs */}
+            {(buildingPermits.some(p => p.attachmentFile) || buildingPermits.some(p => (p as any).existingAttachmentUrl)) && (
               <div className="text-foreground flex items-center gap-1.5">
                 <CheckCircle2 className="h-3 w-3 text-primary" />
-                <span>Permis: {buildingPermits.filter(p => p.attachmentFile).length} fichier(s)</span>
+                <span>Permis: {buildingPermits.filter(p => p.attachmentFile || (p as any).existingAttachmentUrl).length} fichier(s)</span>
               </div>
             )}
-            {taxRecords.some(t => t.receiptFile) && (
+            {/* Tax receipts: check both new files AND existing URLs */}
+            {(taxRecords.some(t => t.receiptFile) || taxRecords.some(t => t.existingReceiptUrl)) && (
               <div className="text-foreground flex items-center gap-1.5">
                 <CheckCircle2 className="h-3 w-3 text-primary" />
-                <span>Reçus taxes: {taxRecords.filter(t => t.receiptFile).length} fichier(s)</span>
+                <span>Reçus taxes: {taxRecords.filter(t => t.receiptFile || t.existingReceiptUrl).length} fichier(s)</span>
               </div>
             )}
-            {mortgageRecords.some(m => m.receiptFile) && (
+            {/* Mortgage receipts: check both new files AND existing URLs */}
+            {(mortgageRecords.some(m => m.receiptFile) || mortgageRecords.some(m => m.existingReceiptUrl)) && (
               <div className="text-foreground flex items-center gap-1.5">
                 <CheckCircle2 className="h-3 w-3 text-primary" />
-                <span>Hypothèques: {mortgageRecords.filter(m => m.receiptFile).length} fichier(s)</span>
+                <span>Hypothèques: {mortgageRecords.filter(m => m.receiptFile || m.existingReceiptUrl).length} fichier(s)</span>
               </div>
             )}
           </div>
