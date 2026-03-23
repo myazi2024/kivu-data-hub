@@ -387,10 +387,10 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
           <CardContent className="p-3 space-y-2">
             <div className="flex items-center gap-2 text-sm font-semibold text-primary"><User className="h-4 w-4" /> Déclarant</div>
             <div className="space-y-1.5 text-sm">
-              <div className="flex justify-between"><span className="text-muted-foreground">Nom :</span><span>{declarantName}</span></div>
+              {!embedded && <div className="flex justify-between"><span className="text-muted-foreground">Nom :</span><span>{declarantName}</span></div>}
               <div className="flex justify-between"><span className="text-muted-foreground">Qualité :</span><span>{DECLARANT_QUALITIES.find(q => q.value === declarantQuality)?.label}</span></div>
-              {declarantPhone && <div className="flex justify-between"><span className="text-muted-foreground">Téléphone :</span><span>{declarantPhone}</span></div>}
-              {declarantEmail && <div className="flex justify-between"><span className="text-muted-foreground">E-mail :</span><span>{declarantEmail}</span></div>}
+              {!embedded && declarantPhone && <div className="flex justify-between"><span className="text-muted-foreground">Téléphone :</span><span>{declarantPhone}</span></div>}
+              {!embedded && declarantEmail && <div className="flex justify-between"><span className="text-muted-foreground">E-mail :</span><span>{declarantEmail}</span></div>}
             </div>
           </CardContent>
         </Card>
