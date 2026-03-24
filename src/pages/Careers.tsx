@@ -9,18 +9,18 @@ import { Briefcase, Users, TrendingUp, Heart } from 'lucide-react';
 const Careers = () => {
   const positions = [
     {
-      title: "Analyste de Données Immobilières",
+      title: "Analyste de Données Foncières",
       location: "Goma, Nord-Kivu",
       type: "Temps plein",
       department: "Recherche & Analyse",
-      description: "Rejoignez notre équipe pour analyser les tendances du marché immobilier congolais et produire des insights stratégiques."
+      description: "Rejoignez notre équipe pour analyser les données cadastrales et foncières congolaises et produire des insights stratégiques."
     },
     {
       title: "Développeur Mobile",
       location: "Kinshasa / Télétravail",
       type: "Temps plein",
       department: "Technologie",
-      description: "Participez au développement de l'application Myazi et des outils numériques innovants pour le secteur immobilier."
+      description: "Participez au développement de l'application Myazi et des outils numériques innovants pour le secteur foncier."
     },
     {
       title: "Coordinateur Terrain",
@@ -52,7 +52,7 @@ const Careers = () => {
     {
       icon: <Heart className="h-6 w-6 text-primary" />,
       title: "Impact Social",
-      description: "Contribuez au développement du secteur immobilier congolais"
+      description: "Contribuez au développement du secteur foncier congolais"
     },
     {
       icon: <Briefcase className="h-6 w-6 text-primary" />,
@@ -69,7 +69,7 @@ const Careers = () => {
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold text-foreground mb-4">Rejoignez-nous</h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Faites partie de l'équipe qui révolutionne le secteur immobilier en République Démocratique du Congo
+              Faites partie de l'équipe qui révolutionne le secteur foncier en République Démocratique du Congo
             </p>
           </div>
 

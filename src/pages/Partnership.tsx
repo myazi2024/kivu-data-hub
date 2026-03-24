@@ -22,7 +22,7 @@ const Partnership = () => {
       title: "Partenariat Institutionnel",
       description: "Collaboration avec les institutions publiques, ONG et organismes de développement.",
       benefits: [
-        "Accès aux données territoriales exclusives",
+        "Accès aux données cadastrales exclusives",
         "Support technique et méthodologique",
         "Formations personnalisées aux équipes"
       ],
@@ -33,7 +33,7 @@ const Partnership = () => {
       title: "Partenariat Commercial",
       description: "Intégration de nos services dans vos solutions ou développement conjoint.",
       benefits: [
-        "API d'accès aux données immobilières",
+        "API d'accès aux données cadastrales",
         "Co-développement de produits",
         "Partage des revenus"
       ],
@@ -53,7 +53,7 @@ const Partnership = () => {
     {
       icon: TrendingUp,
       title: "Partenariat Technologique",
-      description: "Alliance avec les acteurs tech pour l'innovation dans le secteur immobilier.",
+      description: "Alliance avec les acteurs tech pour l'innovation dans le secteur foncier.",
       benefits: [
         "Intégration technologique avancée",
         "Développement d'outils innovants",
@@ -98,7 +98,7 @@ const Partnership = () => {
             </h1>
             <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
               Le BIC développe des partenariats durables pour maximiser l'impact de nos données 
-              immobilières et territoriales. Rejoignez notre écosystème d'innovation.
+              cadastrales et foncières. Rejoignez notre écosystème d'innovation.
             </p>
           </div>
 
@@ -228,7 +228,7 @@ const Partnership = () => {
                 </h2>
                 <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
                   Contactez notre équipe pour explorer les opportunités de collaboration 
-                  et développer ensemble des solutions innovantes pour le secteur immobilier congolais.
+                  et développer ensemble des solutions innovantes pour le secteur foncier congolais.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Button size="lg" className="flex items-center gap-2">

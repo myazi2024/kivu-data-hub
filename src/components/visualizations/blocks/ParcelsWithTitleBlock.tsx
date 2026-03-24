@@ -212,7 +212,7 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
         {v('mortgage-trend') && <ChartCard title={ct('mortgage-trend', 'Contrats hyp./an')} icon={TrendingUp} data={mortgageData.contractTrend} type="area" colorIndex={4} hidden={mortgageData.contractTrend.length < 2}
           insight={generateInsight(mortgageData.contractTrend, 'area', 'les contrats hypothécaires')} />}
         {v('evolution') && <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type="area" colorIndex={0} colSpan={2}
-          insight={generateInsight(trend, 'area', 'les parcelles titrées')} />}
+          insight={generateInsight(trend, 'area', 'les parcelles')} />}
       </div>
     </div>
     </FilterLabelContext.Provider>

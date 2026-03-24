@@ -14,9 +14,9 @@ const Articles = () => {
   const selectedTheme = themes.find(t => t.id === selectedThemeId);
   const pageTitle = selectedTheme 
     ? `Articles ${selectedTheme.name} - BIC`
-    : 'Articles Immobiliers - BIC';
+    : 'Articles Fonciers - BIC';
   const pageDescription = selectedTheme?.description || 
-    'Découvrez nos analyses, guides et actualités sur le marché immobilier de la RDC';
+    'Découvrez nos analyses, guides et actualités sur le secteur foncier de la RDC';
 
   return (
     <>
@@ -39,12 +39,12 @@ const Articles = () => {
           <section className="bg-gradient-to-b from-primary/5 to-background py-12 px-4">
             <div className="container max-w-7xl mx-auto">
               <h1 className="text-3xl md:text-4xl font-bold mb-3">
-                {selectedTheme ? selectedTheme.name : 'Articles Immobiliers'}
+                {selectedTheme ? selectedTheme.name : 'Articles Fonciers'}
               </h1>
               <p className="text-muted-foreground text-lg max-w-2xl">
                 {selectedTheme 
                   ? selectedTheme.description
-                  : 'Analyses, guides pratiques et actualités du marché immobilier congolais'}
+                  : 'Analyses, guides pratiques et actualités du secteur foncier congolais'}
               </p>
             </div>
           </section>

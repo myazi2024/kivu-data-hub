@@ -15,7 +15,7 @@ const About = () => {
             <h2 className="text-2xl font-semibold text-foreground mb-4">Qui sommes-nous ?</h2>
             <p className="text-muted-foreground leading-relaxed mb-6">
               Fondé par des experts en droit, données urbaines et innovation numérique, le BIC (Bureau de l'Immobilier du Congo) 
-              est né pour répondre à un besoin urgent : Comprendre les réalités foncières et locatives à travers des données concrètes et contextualisées.
+              est né pour répondre à un besoin urgent : Comprendre les réalités foncières et cadastrales à travers des données concrètes et contextualisées.
             </p>
             <figure className="mt-4">
               <img
@@ -34,7 +34,7 @@ const About = () => {
               Nous combinons plusieurs sources pour produire des diagnostics complets :
             </p>
             <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
-              <li>Collecte numérique via l'application <strong>Myazi Immobilier</strong></li>
+              <li>Collecte numérique via l'application <strong>Myazi</strong></li>
               <li>Enquêtes terrain et remontées communautaires</li>
               <li>Imagerie satellite (OSM, Mapbox)</li>
               <li>Modélisation statistique et cartographie interactive</li>

@@ -184,7 +184,7 @@ export const PublicationCard: React.FC<PublicationCardProps> = ({ publication })
         ) : (
           <img
             src={reportThumbnail}
-            alt="Miniature de rapport — marché immobilier et données territoriales"
+            alt="Miniature de rapport — données cadastrales et territoriales"
             className="w-full h-full object-cover"
             loading="lazy"
             decoding="async"
@@ -221,7 +221,7 @@ export const PublicationCard: React.FC<PublicationCardProps> = ({ publication })
 
       <CardContent className="flex-1 flex flex-col p-2 sm:p-3 pt-0">
         <p className="text-muted-foreground text-xs leading-relaxed mb-2 line-clamp-2 flex-1">
-          {publication.description || "Rapport d'analyse détaillé du marché immobilier."}
+          {publication.description || "Rapport d'analyse cadastrale et foncière détaillé."}
         </p>
 
         {/* Price and Actions - Compact */}

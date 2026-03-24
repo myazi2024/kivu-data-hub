@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 const PHRASES = [
-  "BIC transforme les marchés fonciers en insights stratégiques.",
+  "BIC transforme les données foncières en outils de décision.",
   "Explorez, comparez, agissez avec clarté et précision."
 ];
 
