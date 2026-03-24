@@ -59,6 +59,7 @@ const DRCInteractiveMap = () => {
   const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
   const [mapInstance, setMapInstance] = useState<any>(null);
   const [activeMobilePanel, setActiveMobilePanel] = useState<'map' | 'details' | 'analytics'>('map');
+  const [isMapZoomed, setIsMapZoomed] = useState(false);
 
   const { data: analytics, isLoading } = useLandDataAnalytics();
 
@@ -203,12 +204,13 @@ const DRCInteractiveMap = () => {
                         getProvinceColor={getProvinceColor}
                         onMapReady={setMapInstance}
                         tooltipLineConfigs={tooltipLineConfigs}
+                        onZoomChange={setIsMapZoomed}
                       />
                     </div>
                   </div>
                   
-                  {/* Légende choroplèthe à 4 paliers */}
-                  <div className="absolute bottom-2 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30">
+                  {/* Légende choroplèthe à 4 paliers — masquée pendant le zoom */}
+                  {!isMapZoomed && <div className="absolute bottom-2 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30">
                     <div className="text-[8px] text-muted-foreground mb-0.5"><div className="text-[8px] text-muted-foreground mb-0.5">Densité parcelles cadastrées</div></div>
                     <div className="flex flex-col gap-0.5">
                       {DENSITY_TIERS.map(tier => (
@@ -220,7 +222,7 @@ const DRCInteractiveMap = () => {
                         </div>
                       ))}
                     </div>
-                  </div>
+                  </div>}
                   
                   <div className="absolute bottom-2 right-2 z-10">
                     <Popover>
