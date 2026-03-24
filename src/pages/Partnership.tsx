@@ -33,7 +33,7 @@ const Partnership = () => {
       title: "Partenariat Commercial",
       description: "Intégration de nos services dans vos solutions ou développement conjoint.",
       benefits: [
-        "API d'accès aux données immobilières",
+        "API d'accès aux données cadastrales",
         "Co-développement de produits",
         "Partage des revenus"
       ],
