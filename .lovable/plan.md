@@ -1,61 +1,107 @@
 
 
-# Audit visuel — Accueil, Analytics, Carte RDC
+# Audit visuel — Indicateurs fictifs et divergences
 
-## Résultat
+## Constat principal
 
-L'accueil (Index), les blocs Analytics (`src/components/visualizations/`) et la carte DRC (`DRCInteractiveMap.tsx`) sont **globalement alignés** sur les indicateurs CCC. Les divergences résiduelles se trouvent dans des composants périphériques qui touchent ces zones.
+Le type `ProvinceData` et plusieurs composants contiennent des **indicateurs immobiliers/locatifs fictifs** hérités d'un ancien concept de marché immobilier. Ces indicateurs ne sont pas collectés par le CCC et ne proviennent d'aucune source de données réelle. Ils sont soit hardcodés à `0`, soit "détournés" (`// repurposed`) pour stocker des données cadastrales réelles dans des champs au nom trompeur.
 
-## Divergences identifiées
+## Divergences et éléments fictifs identifiés
 
-### 1. `InteractiveMap.tsx` — Filtres de type de propriété (lignes 115-211)
+### 1. `ProvinceData` (type) — Champs fictifs jamais alimentés
 
-Labels hardcodés avec les **anciennes valeurs** :
-- `'residential' → 'Résidentiel'` au lieu de `'Habitation'`
-- `'commercial' → 'Commercial'` au lieu de `'Commerce'`
-- `'industrial' → 'Industriel'` au lieu de `'Industrie'`
+Le type `src/types/province.ts` contient 15+ champs qui ne correspondent à aucune donnée collectée :
 
-Apparaît dans les labels de filtre ET les options du `<Select>`.
-
-### 2. `CadastralMap.tsx` — Popup de lot (ligne 809)
-
-Fallback hardcodé `'résidentiel'` pour `intended_use` :
+```text
+FICTIF (toujours 0 ou vide)         DÉTOURNÉ (nom trompeur)
+─────────────────────────────       ─────────────────────────────
+variationLoyer3Mois: 0              prixMoyenLoyer → parcels count
+typologieDominante: ''              prixMoyenVenteM2 → title requests
+rendementLocatifBrut: 0             tauxOccupationLocatif → contributions
+tauxCroissancePrixAnnuel: 0         dureeMoyenneMiseLocationJours → mutations
+permisConstruireMois: 0             tauxVacanceLocative → disputes count
+tauxAccessibiliteLogement: 0        volumeAnnoncesImmobilieres → certificates
+repartitionTypologique: {0,0,0}     populationLocativeEstimee → expertises
+region: 'Centre' (forcé)            nombreTransactionsEstimees → invoices
+zone: 'Urbaine' (forcé)
+historiquePrix: (jamais alimenté)
 ```
-Usage: ${lot.intended_use || 'résidentiel'}
-```
-Devrait être `'Habitation'` pour s'aligner sur le CCC.
 
-### 3. `landTitleDeduction.ts` — Détection d'usage (lignes 84-88)
+### 2. `ProvinceAnalytics.tsx` — Composant entièrement fictif (code mort)
 
-Compare les anciennes valeurs **sans utiliser le normaliseur** :
-- `'Résidentiel'` au lieu de passer par `normalizeDeclaredUsage()`
-- `'Commercial'`, `'Industriel'`, `'Mixte'` — idem
+- N'est importé nulle part dans l'application
+- Affiche des graphiques basés sur les champs détournés avec des labels trompeurs ("Prix de loyer par province", "Population par province", "Prix Moyens Nationaux")
+- Simule des évolutions de prix avec des formules arbitraires (lignes 42-72)
 
-Devrait inclure les valeurs CCC (`'Habitation'`, `'Commerce'`, `'Industrie'`, `'Usage mixte'`) ou appeler le normaliseur en amont.
+### 3. `ZoneDetailsPanel.tsx` — Indicateurs fictifs du marché immobilier
 
-### 4. `testCadastralReport.ts` — Données de test (ligne 28)
+- **Mock data explicite** (ligne 65) : `generateMockTrendData()` génère de fausses tendances de prix
+- Affiche des KPIs non collectés : "Prix moyen loyer", "Prix m² vente", "Taux vacance", "Variation 3 mois", "Population locative estimée", "Volume annonces/mois"
+- Onglet "Tendances" entièrement basé sur des données simulées
 
-`declared_usage: 'Résidentiel'` — devrait être `'Habitation'`.
+### 4. `TerritorialMap.tsx` + `TerritorialFilters.tsx` — Filtres fictifs
 
-### 5. `constructionUsageResolver.ts` — Clés de cascade (lignes 7-14)
+- Filtre "Taux de vacance" (slider 0-100%) basé sur des données non collectées
+- Les zones territoriales (`AdminTerritorialZones`) exposent des champs de saisie admin pour des indicateurs fictifs (prix loyer, prix vente m², taux vacance, volume annonces, population locative, durée mise en location)
 
-Utilise `Résidentielle`, `Commerciale`, `Industrielle` pour les clés de `LOCATION_ELIGIBLE_KEYS`. Ces valeurs correspondent aux **types de construction** (pas aux usages), et proviennent du CCC (`construction_type`). A vérifier : si le CCC utilise bien ces mêmes valeurs pour `construction_type`, c'est correct. Sinon, divergence.
+### 5. `StandardizedZoneMetrics` — Interface fantôme
+
+L'interface dans `province.ts` (lignes 50-69) définit des métriques de marché immobilier (`prixMoyenLoyer`, `tauxVacanceLocative`, `volumeAnnonces`, `populationLocative`) qui ne sont utilisées nulle part comme contrat de données.
+
+### 6. `ServicesSection.tsx` + `Services.tsx` — Descriptions trompeuses
+
+- "Estimation de population" → "Calcul de la population locative et superficie occupée" : l'application ne calcule pas de population locative
+- "Recettes fiscales" → "Estimation des recettes fiscales locatives théoriques" : les recettes sont cadastrales, pas locatives
+- "Cartographie dynamique" → "Visualisation des loyers et taux de vacance par zone" : l'app visualise des données cadastrales, pas des loyers
 
 ### Pas de divergence
 
-- **Accueil** (`Index.tsx`, `HeroSection.tsx`, `ServicesSection.tsx`) : aucun indicateur CCC hardcodé
-- **Analytics** (`src/components/visualizations/`) : aucune valeur hardcodée divergente
-- **DRCInteractiveMap.tsx** : utilise des clés techniques (`residential`, `commercial`, `mixte`) dans `repartitionTypologique` qui alimentent un type TypeScript — pas affiché directement en UI
-- **ZoneDetailsPanel.tsx** : `Densité résidentielle` est un libellé de KPI admin, pas un indicateur CCC
+- **Accueil** (HeroSection, Footer, TypewriterAnimation) : aucun indicateur fictif
+- **Analytics** (13 blocs dans `visualizations/blocks/`) : tous alimentés par des données Supabase réelles via `useLandDataAnalytics`
+- **DRCInteractiveMap** panneau de détail province : les labels affichés ("Parcelles", "Titres", "Contributions", etc.) sont corrects grâce au système `dt()` configurable par l'admin
 
 ## Plan de correction
 
-| Fichier | Correction |
-|---------|-----------|
-| `src/components/InteractiveMap.tsx` | Remplacer les labels : `Résidentiel→Habitation`, `Commercial→Commerce`, `Industriel→Industrie` |
-| `src/pages/CadastralMap.tsx` | Fallback `'résidentiel'` → `'Habitation'` |
-| `src/utils/landTitleDeduction.ts` | Ajouter les valeurs CCC dans les comparaisons (`'Habitation'`, `'Commerce'`, `'Industrie'`, `'Usage mixte'`) |
-| `src/utils/testCadastralReport.ts` | `declared_usage: 'Résidentiel'` → `'Habitation'` |
+### Etape 1 : Refactorer `ProvinceData` — Renommer les champs détournés
 
-4 fichiers à modifier, corrections mineures de chaînes de caractères.
+Remplacer les noms trompeurs par des noms sémantiquement corrects :
+- `prixMoyenLoyer` → `parcelsCount`
+- `prixMoyenVenteM2` → `titleRequestsCount`
+- `tauxOccupationLocatif` → `contributionsCount`
+- `dureeMoyenneMiseLocationJours` → `mutationsCount`
+- `tauxVacanceLocative` → `disputesCount`
+- `volumeAnnoncesImmobilieres` → `certificatesCount`
+- `populationLocativeEstimee` → `expertisesCount`
+- `nombreTransactionsEstimees` → `invoicesCount`
+- `recettesLocativesUsd` → `revenueUsd`
+
+Supprimer les champs purement fictifs : `variationLoyer3Mois`, `typologieDominante`, `rendementLocatifBrut`, `tauxCroissancePrixAnnuel`, `permisConstruireMois`, `tauxAccessibiliteLogement`, `repartitionTypologique`, `historiquePrix`, `StandardizedZoneMetrics`.
+
+### Etape 2 : Supprimer `ProvinceAnalytics.tsx` (code mort)
+
+### Etape 3 : Nettoyer `ZoneDetailsPanel.tsx`
+
+Supprimer les KPIs et graphiques fictifs (prix loyer, prix vente, taux vacance, variation, mock trends). Ne garder que les métriques alimentées par la base (pression foncière, typologie, recettes).
+
+### Etape 4 : Corriger les descriptions de services
+
+- "Estimation de population" → description alignée sur les données réelles (cadastre, parcelles)
+- "Recettes fiscales" → supprimer "locatives théoriques"
+- "Cartographie dynamique" → description cadastrale
+
+### Etape 5 : Mettre à jour tous les consommateurs
+
+Propager les renommages de `ProvinceData` dans `DRCInteractiveMap.tsx`, `DRCMapWithTooltip`, `buildEmptyProvince()`, etc.
+
+### Fichiers impactés
+
+| Fichier | Action |
+|---------|--------|
+| `src/types/province.ts` | Refactorer le type, supprimer `StandardizedZoneMetrics` |
+| `src/components/DRCInteractiveMap.tsx` | Adapter aux nouveaux noms de champs |
+| `src/components/charts/ProvinceAnalytics.tsx` | Supprimer (code mort) |
+| `src/components/map/ZoneDetailsPanel.tsx` | Supprimer indicateurs fictifs et mock data |
+| `src/components/ServicesSection.tsx` | Corriger descriptions |
+| `src/pages/Services.tsx` | Corriger descriptions |
+| Consommateurs de `ProvinceData` | Adapter aux renommages |
 
