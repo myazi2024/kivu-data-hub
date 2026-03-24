@@ -132,18 +132,22 @@ const DRCInteractiveMap = () => {
     });
   }, [analytics]);
 
-  /** Max parcels across provinces for choropleth */
-  const maxParcels = useMemo(() => Math.max(1, ...provincesData.map(p => p.parcelsCount)), [provincesData]);
-
+  /** Paliers choroplèthes fixes pour la densité */
+  const DENSITY_TIERS = [
+    { label: 'Faible', min: 0, max: 30, color: 'hsl(142, 71%, 75%)' },
+    { label: 'Modéré', min: 31, max: 100, color: 'hsl(45, 93%, 55%)' },
+    { label: 'Élevé', min: 101, max: 500, color: 'hsl(25, 90%, 55%)' },
+    { label: 'Très élevé', min: 501, max: Infinity, color: 'hsl(348, 80%, 45%)' },
+  ];
   const formatNumber = (value: number): string => new Intl.NumberFormat('fr-FR').format(value);
   const formatCurrency = (value: number): string =>
     new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
 
-  /** Dynamic choropleth color based on parcels count */
+  /** Choropleth color based on fixed density tiers */
   const getProvinceColor = (province: ProvinceData) => {
-    const ratio = province.parcelsCount / maxParcels;
-    const lightness = 85 - ratio * 50; // 85% (light) → 35% (dark)
-    return `hsl(142, 71%, ${lightness}%)`;
+    const count = province.parcelsCount;
+    const tier = DENSITY_TIERS.find(t => count >= t.min && count <= t.max) || DENSITY_TIERS[0];
+    return tier.color;
   };
 
   if (isLoading) {
@@ -203,14 +207,18 @@ const DRCInteractiveMap = () => {
                     </div>
                   </div>
                   
-                  {/* Légende choroplèthe */}
+                  {/* Légende choroplèthe à 4 paliers */}
                   <div className="absolute bottom-2 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30">
                     <div className="text-[8px] text-muted-foreground mb-0.5">Densité parcelles</div>
-                    <div className="flex items-center gap-0.5">
-                      <div className="w-3 h-2 rounded-sm" style={{ background: 'hsl(142, 71%, 85%)' }} />
-                      <span className="text-[7px] text-muted-foreground">0</span>
-                      <div className="w-8 h-2 rounded-sm" style={{ background: 'linear-gradient(to right, hsl(142, 71%, 85%), hsl(142, 71%, 35%))' }} />
-                      <span className="text-[7px] text-muted-foreground">{maxParcels}</span>
+                    <div className="flex flex-col gap-0.5">
+                      {DENSITY_TIERS.map(tier => (
+                        <div key={tier.label} className="flex items-center gap-1">
+                          <div className="w-3 h-2 rounded-sm flex-shrink-0" style={{ background: tier.color }} />
+                          <span className="text-[7px] text-muted-foreground">
+                            {tier.label} ({tier.min}{tier.max === Infinity ? '+' : `–${tier.max}`})
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                   
