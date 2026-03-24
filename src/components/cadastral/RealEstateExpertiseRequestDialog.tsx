@@ -40,6 +40,11 @@ interface RealEstateExpertiseRequestDialogProps {
     area_sqm?: number;
     current_owner_name?: string;
     construction_type?: string;
+    construction_nature?: string;
+    construction_materials?: string;
+    construction_year?: number;
+    floor_number?: string;
+    property_category?: string;
     property_title_type?: string;
   };
   trigger?: React.ReactNode;
