@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
+
 import { supabase } from '@/integrations/supabase/client';
 import { Activity, Database, Server, Wifi, RefreshCw, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
