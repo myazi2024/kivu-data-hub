@@ -22,7 +22,7 @@ const Partnership = () => {
       title: "Partenariat Institutionnel",
       description: "Collaboration avec les institutions publiques, ONG et organismes de développement.",
       benefits: [
-        "Accès aux données territoriales exclusives",
+        "Accès aux données cadastrales exclusives",
         "Support technique et méthodologique",
         "Formations personnalisées aux équipes"
       ],
