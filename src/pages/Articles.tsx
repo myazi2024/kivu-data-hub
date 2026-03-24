@@ -14,9 +14,9 @@ const Articles = () => {
   const selectedTheme = themes.find(t => t.id === selectedThemeId);
   const pageTitle = selectedTheme 
     ? `Articles ${selectedTheme.name} - BIC`
-    : 'Articles Immobiliers - BIC';
+    : 'Articles Fonciers - BIC';
   const pageDescription = selectedTheme?.description || 
-    'Découvrez nos analyses, guides et actualités sur le marché immobilier de la RDC';
+    'Découvrez nos analyses, guides et actualités sur le secteur foncier de la RDC';
 
   return (
     <>
