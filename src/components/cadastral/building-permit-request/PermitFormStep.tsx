@@ -82,6 +82,16 @@ const PermitFormStep: React.FC<PermitFormStepProps> = ({
           </Alert>
         )}
 
+        {/* Pre-fill from CCC indicator */}
+        {!isDraftRestored && parcelData && (parcelData.construction_type || parcelData.construction_nature || parcelData.declared_usage) && (
+          <Alert className="rounded-xl border-primary/30 bg-primary/5">
+            <Info className="h-4 w-4 text-primary" />
+            <AlertDescription className="text-xs text-muted-foreground">
+              Certaines informations ont été pré-remplies depuis les données cadastrales. Vous pouvez les modifier si nécessaire.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Parcelle info */}
         <Card className="bg-muted/50 border-0 rounded-xl">
           <CardContent className="p-3">
