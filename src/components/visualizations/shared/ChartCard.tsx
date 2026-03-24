@@ -274,6 +274,7 @@ export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
               </BarChart>
             </ResponsiveContainer>
             <InsightText text={insight} />
+            <ChartFooter />
           </>
         )}
       </CardContent>
