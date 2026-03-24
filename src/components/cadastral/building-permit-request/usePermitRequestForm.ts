@@ -17,7 +17,7 @@ interface UsePermitRequestFormOptions {
   parcelData?: any;
 }
 
-export const usePermitRequestForm = ({ parcelNumber, hasExistingConstruction }: UsePermitRequestFormOptions) => {
+export const usePermitRequestForm = ({ parcelNumber, hasExistingConstruction, parcelData }: UsePermitRequestFormOptions) => {
   const { user } = useAuth();
   const { toast } = useToast();
 
