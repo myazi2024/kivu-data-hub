@@ -86,7 +86,7 @@ const AdminSystemHealth = () => {
         },
         {
           name: 'Edge Functions',
-          status: 'online',
+          status: 'degraded',
           latency: undefined,
           lastCheck: new Date(),
         },
