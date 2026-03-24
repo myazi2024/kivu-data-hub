@@ -1,34 +1,61 @@
 
 
-# Audit Admin — Divergences avec les indicateurs CCC
+# Audit visuel — Accueil, Analytics, Carte RDC
 
-## Constat
+## Résultat
 
-L'espace admin est globalement bien aligné. **Une seule divergence significative** a été identifiée :
+L'accueil (Index), les blocs Analytics (`src/components/visualizations/`) et la carte DRC (`DRCInteractiveMap.tsx`) sont **globalement alignés** sur les indicateurs CCC. Les divergences résiduelles se trouvent dans des composants périphériques qui touchent ces zones.
 
-### Divergence : Données de test (testDataGenerators.ts, ligne 74)
+## Divergences identifiées
 
-Le générateur de parcelles de test utilise les **anciennes valeurs** pour `declared_usage` :
+### 1. `InteractiveMap.tsx` — Filtres de type de propriété (lignes 115-211)
 
-| Champ | Valeurs actuelles (ligne 74) | Valeurs CCC (source de vérité) |
-|-------|------------------------------|-------------------------------|
-| `declared_usage` | `Résidentiel`, `Commercial`, `Agricole`, `Mixte`, `Industriel` | `Habitation`, `Commerce`, `Agriculture`, `Usage mixte`, `Industrie` |
-| `construction_nature` | `null` (au lieu de `'Non bâti'` pour terrain nu) | `Non bâti` |
+Labels hardcodés avec les **anciennes valeurs** :
+- `'residential' → 'Résidentiel'` au lieu de `'Habitation'`
+- `'commercial' → 'Commercial'` au lieu de `'Commerce'`
+- `'industrial' → 'Industriel'` au lieu de `'Industrie'`
 
-**Note :** La ligne 125 (contributions de test) utilise déjà les bonnes valeurs CCC. Seule la ligne 74 (parcelles de test) est divergente.
+Apparaît dans les labels de filtre ET les options du `<Select>`.
 
-### Points vérifiés sans divergence
+### 2. `CadastralMap.tsx` — Popup de lot (ligne 809)
 
-- Aucun usage de `en_dur`/`semi_dur`/`en_paille` dans l'admin
-- Aucun `Permis de construire`/`Permis de régularisation` résiduel
-- Aucun normaliseur manquant dans les composants admin
-- `AdminTerritorialZones` utilise `Usage mixte` correctement (c'est un champ de typologie de zone, pas un `declared_usage`)
-- Les contributions (ligne 125) sont correctement alignées
+Fallback hardcodé `'résidentiel'` pour `intended_use` :
+```
+Usage: ${lot.intended_use || 'résidentiel'}
+```
+Devrait être `'Habitation'` pour s'aligner sur le CCC.
+
+### 3. `landTitleDeduction.ts` — Détection d'usage (lignes 84-88)
+
+Compare les anciennes valeurs **sans utiliser le normaliseur** :
+- `'Résidentiel'` au lieu de passer par `normalizeDeclaredUsage()`
+- `'Commercial'`, `'Industriel'`, `'Mixte'` — idem
+
+Devrait inclure les valeurs CCC (`'Habitation'`, `'Commerce'`, `'Industrie'`, `'Usage mixte'`) ou appeler le normaliseur en amont.
+
+### 4. `testCadastralReport.ts` — Données de test (ligne 28)
+
+`declared_usage: 'Résidentiel'` — devrait être `'Habitation'`.
+
+### 5. `constructionUsageResolver.ts` — Clés de cascade (lignes 7-14)
+
+Utilise `Résidentielle`, `Commerciale`, `Industrielle` pour les clés de `LOCATION_ELIGIBLE_KEYS`. Ces valeurs correspondent aux **types de construction** (pas aux usages), et proviennent du CCC (`construction_type`). A vérifier : si le CCC utilise bien ces mêmes valeurs pour `construction_type`, c'est correct. Sinon, divergence.
+
+### Pas de divergence
+
+- **Accueil** (`Index.tsx`, `HeroSection.tsx`, `ServicesSection.tsx`) : aucun indicateur CCC hardcodé
+- **Analytics** (`src/components/visualizations/`) : aucune valeur hardcodée divergente
+- **DRCInteractiveMap.tsx** : utilise des clés techniques (`residential`, `commercial`, `mixte`) dans `repartitionTypologique` qui alimentent un type TypeScript — pas affiché directement en UI
+- **ZoneDetailsPanel.tsx** : `Densité résidentielle` est un libellé de KPI admin, pas un indicateur CCC
 
 ## Plan de correction
 
-### Fichier unique : `src/components/admin/test-mode/testDataGenerators.ts`
+| Fichier | Correction |
+|---------|-----------|
+| `src/components/InteractiveMap.tsx` | Remplacer les labels : `Résidentiel→Habitation`, `Commercial→Commerce`, `Industriel→Industrie` |
+| `src/pages/CadastralMap.tsx` | Fallback `'résidentiel'` → `'Habitation'` |
+| `src/utils/landTitleDeduction.ts` | Ajouter les valeurs CCC dans les comparaisons (`'Habitation'`, `'Commerce'`, `'Industrie'`, `'Usage mixte'`) |
+| `src/utils/testCadastralReport.ts` | `declared_usage: 'Résidentiel'` → `'Habitation'` |
 
-1. **Ligne 74** : Remplacer `['Résidentiel', 'Commercial', 'Agricole', 'Mixte', 'Industriel']` par `['Habitation', 'Commerce', 'Agriculture', 'Usage mixte', 'Industrie']`
-2. **Ligne 76** : Remplacer `null` par `'Non bâti'` pour le terrain nu (index 2), en cohérence avec la ligne 127
+4 fichiers à modifier, corrections mineures de chaînes de caractères.
 
