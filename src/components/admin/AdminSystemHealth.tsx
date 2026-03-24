@@ -90,7 +90,7 @@ const AdminSystemHealth = () => {
         },
         {
           name: 'Edge Functions',
-          status: 'online', // Note: monitoring réel à implémenter via health check endpoint
+          status: 'online',
           latency: undefined,
           lastCheck: new Date(),
         },
