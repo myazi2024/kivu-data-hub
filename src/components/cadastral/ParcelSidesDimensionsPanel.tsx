@@ -342,18 +342,33 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                       </div>
                     )}
                     {hasConfirmed && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRemoveSide(index);
-                        }}
-                        className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 rounded-md"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                      <>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRoadSideUpdate(index, { isConfirmed: false });
+                            setEditingSide(index);
+                          }}
+                          className="h-6 w-6 p-0 text-primary hover:bg-primary/10 rounded-md"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveSide(index);
+                          }}
+                          className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 rounded-md"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </>
                     )}
                   </div>
                 </div>
