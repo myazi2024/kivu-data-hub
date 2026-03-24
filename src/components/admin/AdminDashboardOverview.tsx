@@ -18,7 +18,7 @@ import { ComparativeAnalysis } from './dashboard/ComparativeAnalysis';
 import { BusinessMetrics } from './dashboard/BusinessMetrics';
 import { GeographicalAnalysis } from './dashboard/GeographicalAnalysis';
 import { ContributionPerformance } from './dashboard/ContributionPerformance';
-import { SmartAlerts } from './dashboard/SmartAlerts';
+
 import { ResellerAnalysis } from './dashboard/ResellerAnalysis';
 import { CohortAnalysis } from './dashboard/CohortAnalysis';
 import { AutomatedReports } from './dashboard/AutomatedReports';
