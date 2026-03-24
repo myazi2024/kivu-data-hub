@@ -14,6 +14,7 @@ const DRAFT_KEY = 'permit_request_draft';
 interface UsePermitRequestFormOptions {
   parcelNumber: string;
   hasExistingConstruction: boolean;
+  parcelData?: any;
 }
 
 export const usePermitRequestForm = ({ parcelNumber, hasExistingConstruction }: UsePermitRequestFormOptions) => {
