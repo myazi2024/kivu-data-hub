@@ -22,6 +22,23 @@ export const isZoneAutoDetected = (parcelNumber: string): boolean => {
  */
 export const detectUsageType = (parcelData?: any): 'residential' | 'commercial' | 'industrial' | 'agricultural' | 'mixed' => {
   switch (parcelData?.declared_usage) {
+    // CCC picklist values (source of truth)
+    case 'Habitation':
+    case 'Location':
+      return 'residential';
+    case 'Commerce':
+    case 'Bureau':
+    case 'Entrepôt':
+      return 'commercial';
+    case 'Industrie':
+      return 'industrial';
+    case 'Agriculture':
+    case 'Terrain vacant':
+    case 'Parking':
+      return 'agricultural';
+    case 'Usage mixte':
+      return 'mixed';
+    // Legacy values (backward compat)
     case 'Commercial': return 'commercial';
     case 'Industriel': return 'industrial';
     case 'Agricole': return 'agricultural';
@@ -30,17 +47,30 @@ export const detectUsageType = (parcelData?: any): 'residential' | 'commercial' 
 };
 
 /**
- * Maps DB construction_type values to internal tax construction categories.
- * Source of truth for DB values: useCCCFormPicklists → picklist_construction_type
+ * Maps DB construction_nature values to internal tax construction categories.
+ * Source of truth for DB values: useCCCFormPicklists → picklist_construction_nature
  * If CCC picklist labels change, update these switch cases accordingly.
  */
 export const detectConstructionType = (parcelData?: any): 'en_dur' | 'semi_dur' | 'en_paille' | null => {
-  switch (parcelData?.construction_type) {
+  const nature = parcelData?.construction_nature;
+  switch (nature) {
+    // CCC picklist values (source of truth)
+    case 'Durable':
+      return 'en_dur';
+    case 'Semi-durable':
+      return 'semi_dur';
+    case 'Précaire':
+      return 'en_paille';
+    case 'Non bâti':
+      return null;
+    // Legacy values (backward compat)
     case 'En dur': return 'en_dur';
     case 'Semi-dur': return 'semi_dur';
     case 'En paille': return 'en_paille';
-    case 'Terrain nu': return null;
-    default: return null;
+    // Also check construction_type for Terrain nu
+    default:
+      if (parcelData?.construction_type === 'Terrain nu') return null;
+      return null;
   }
 };
 

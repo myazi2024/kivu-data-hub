@@ -135,7 +135,6 @@ const PermitFormStep: React.FC<PermitFormStepProps> = ({
                   <SelectItem value="Commerciale">Commerciale</SelectItem>
                   <SelectItem value="Industrielle">Industrielle</SelectItem>
                   <SelectItem value="Agricole">Agricole</SelectItem>
-                  <SelectItem value="Mixte">Mixte (résidentiel + commercial)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -144,9 +143,9 @@ const PermitFormStep: React.FC<PermitFormStepProps> = ({
               <Select value={formData.constructionNature} onValueChange={(v) => handleInputChange('constructionNature', v)}>
                 <SelectTrigger className="h-10 text-sm rounded-xl border-2"><SelectValue placeholder="Sélectionner la nature" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="En dur">En dur (béton, briques, ciment)</SelectItem>
-                  <SelectItem value="Semi-dur">Semi-dur (matériaux mixtes)</SelectItem>
-                  <SelectItem value="Précaire">Précaire (bois, tôle)</SelectItem>
+                  <SelectItem value="Durable">Construction durable (béton, briques, ciment)</SelectItem>
+                  <SelectItem value="Semi-durable">Construction semi-durable (matériaux mixtes)</SelectItem>
+                  <SelectItem value="Précaire">Construction précaire (bois, tôle)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -156,9 +155,11 @@ const PermitFormStep: React.FC<PermitFormStepProps> = ({
                 <SelectTrigger className="h-10 text-sm rounded-xl border-2"><SelectValue placeholder="Sélectionner l'usage" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Habitation">Habitation</SelectItem>
+                  <SelectItem value="Location">Location</SelectItem>
                   <SelectItem value="Commerce">Commerce</SelectItem>
                   <SelectItem value="Bureau">Bureau</SelectItem>
                   <SelectItem value="Entrepôt">Entrepôt</SelectItem>
+                  <SelectItem value="Industrie">Industrie</SelectItem>
                   <SelectItem value="Usage mixte">Usage mixte</SelectItem>
                 </SelectContent>
               </Select>
