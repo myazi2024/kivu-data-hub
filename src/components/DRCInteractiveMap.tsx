@@ -59,6 +59,7 @@ const DRCInteractiveMap = () => {
   const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
   const [mapInstance, setMapInstance] = useState<any>(null);
   const [activeMobilePanel, setActiveMobilePanel] = useState<'map' | 'details' | 'analytics'>('map');
+  const [isMapZoomed, setIsMapZoomed] = useState(false);
 
   const { data: analytics, isLoading } = useLandDataAnalytics();
 
