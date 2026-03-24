@@ -153,10 +153,10 @@ export function PredictionsPanel({ loading = false, historicalData = [] }: Predi
             <div>
               <CardTitle className="text-sm md:text-base flex items-center gap-2">
                 <Sparkles className="h-4 w-4" />
-                Prévisions IA - 7 prochains jours
+                Prévisions statistiques - 7 prochains jours
               </CardTitle>
               <CardDescription className="text-xs mt-1">
-                Prédictions basées sur l'historique et les tendances
+                Basé sur une régression linéaire simple — à titre indicatif uniquement
               </CardDescription>
             </div>
           </div>
@@ -246,7 +246,7 @@ export function PredictionsPanel({ loading = false, historicalData = [] }: Predi
           <CardHeader className="p-4 md:p-6">
             <CardTitle className="text-sm md:text-base flex items-center gap-2">
               <Sparkles className="h-4 w-4" />
-              Recommandations IA
+              Recommandations statistiques
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 md:p-6 pt-0 space-y-2">

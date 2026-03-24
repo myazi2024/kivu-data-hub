@@ -10,29 +10,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { MapPin, Edit2, Plus, Trash2, Save, Upload, Download } from 'lucide-react';
+import { MapPin, Edit2, Plus, Trash2, Save, Download } from 'lucide-react';
 
 interface TerritorialZone {
   id: string;
   name: string;
   zone_type: string;
   coordinates: any;
-  prix_moyen_loyer: number;
-  prix_moyen_vente_m2: number;
-  taux_vacance_locative: number;
-  taux_occupation_locatif: number;
-  densite_residentielle: number;
-  population_locative_estimee: number;
-  recettes_locatives_theoriques_usd: number;
   recettes_fiscales_estimees_usd: number;
-  variation_loyer_3mois_pct: number;
-  volume_annonces_mois: number;
-  nombre_transactions_estimees: number;
-  duree_moyenne_mise_location_jours: number;
   valeur_fonciere_moyenne_parcelle_usd: number;
   typologie_dominante: string;
   indice_pression_fonciere: string;
-  indice_pression_locative: string;
   parent_zone_id?: string;
   created_at: string;
   updated_at: string;
@@ -50,22 +38,10 @@ const AdminTerritorialZones = () => {
   const [formData, setFormData] = useState({
     name: '',
     zone_type: 'province',
-    prix_moyen_loyer: 0,
-    prix_moyen_vente_m2: 0,
-    taux_vacance_locative: 0,
-    taux_occupation_locatif: 0,
-    densite_residentielle: 0,
-    population_locative_estimee: 0,
-    recettes_locatives_theoriques_usd: 0,
     recettes_fiscales_estimees_usd: 0,
-    variation_loyer_3mois_pct: 0,
-    volume_annonces_mois: 0,
-    nombre_transactions_estimees: 0,
-    duree_moyenne_mise_location_jours: 0,
     valeur_fonciere_moyenne_parcelle_usd: 0,
     typologie_dominante: 'Usage mixte',
     indice_pression_fonciere: 'Modéré',
-    indice_pression_locative: 'Modéré',
     coordinates: '[]'
   });
 
@@ -106,21 +82,13 @@ const AdminTerritorialZones = () => {
       }
 
       const zoneData = {
-        ...formData,
+        name: formData.name,
+        zone_type: formData.zone_type,
         coordinates,
-        prix_moyen_loyer: Number(formData.prix_moyen_loyer),
-        prix_moyen_vente_m2: Number(formData.prix_moyen_vente_m2),
-        taux_vacance_locative: Number(formData.taux_vacance_locative),
-        taux_occupation_locatif: Number(formData.taux_occupation_locatif),
-        densite_residentielle: Number(formData.densite_residentielle),
-        population_locative_estimee: Number(formData.population_locative_estimee),
-        recettes_locatives_theoriques_usd: Number(formData.recettes_locatives_theoriques_usd),
         recettes_fiscales_estimees_usd: Number(formData.recettes_fiscales_estimees_usd),
-        variation_loyer_3mois_pct: Number(formData.variation_loyer_3mois_pct),
-        volume_annonces_mois: Number(formData.volume_annonces_mois),
-        nombre_transactions_estimees: Number(formData.nombre_transactions_estimees),
-        duree_moyenne_mise_location_jours: Number(formData.duree_moyenne_mise_location_jours),
         valeur_fonciere_moyenne_parcelle_usd: Number(formData.valeur_fonciere_moyenne_parcelle_usd),
+        typologie_dominante: formData.typologie_dominante,
+        indice_pression_fonciere: formData.indice_pression_fonciere,
       };
 
       if (editingZone) {
@@ -131,10 +99,7 @@ const AdminTerritorialZones = () => {
         
         if (error) throw error;
         
-        toast({
-          title: "Succès",
-          description: "Zone mise à jour avec succès",
-        });
+        toast({ title: "Succès", description: "Zone mise à jour avec succès" });
       } else {
         const { error } = await supabase
           .from('territorial_zones')
@@ -142,10 +107,7 @@ const AdminTerritorialZones = () => {
         
         if (error) throw error;
         
-        toast({
-          title: "Succès",
-          description: "Zone créée avec succès",
-        });
+        toast({ title: "Succès", description: "Zone créée avec succès" });
       }
 
       setIsDialogOpen(false);
@@ -167,22 +129,10 @@ const AdminTerritorialZones = () => {
     setFormData({
       name: zone.name,
       zone_type: zone.zone_type,
-      prix_moyen_loyer: zone.prix_moyen_loyer,
-      prix_moyen_vente_m2: zone.prix_moyen_vente_m2,
-      taux_vacance_locative: zone.taux_vacance_locative,
-      taux_occupation_locatif: zone.taux_occupation_locatif || 100 - zone.taux_vacance_locative,
-      densite_residentielle: zone.densite_residentielle,
-      population_locative_estimee: zone.population_locative_estimee,
-      recettes_locatives_theoriques_usd: zone.recettes_locatives_theoriques_usd,
       recettes_fiscales_estimees_usd: zone.recettes_fiscales_estimees_usd || 0,
-      variation_loyer_3mois_pct: zone.variation_loyer_3mois_pct,
-      volume_annonces_mois: zone.volume_annonces_mois,
-      nombre_transactions_estimees: zone.nombre_transactions_estimees || 0,
-      duree_moyenne_mise_location_jours: zone.duree_moyenne_mise_location_jours || 0,
       valeur_fonciere_moyenne_parcelle_usd: zone.valeur_fonciere_moyenne_parcelle_usd || 0,
       typologie_dominante: zone.typologie_dominante,
       indice_pression_fonciere: zone.indice_pression_fonciere,
-      indice_pression_locative: zone.indice_pression_locative || 'Modéré',
       coordinates: JSON.stringify(zone.coordinates)
     });
     setIsDialogOpen(true);
@@ -199,11 +149,7 @@ const AdminTerritorialZones = () => {
       
       if (error) throw error;
       
-      toast({
-        title: "Succès",
-        description: "Zone supprimée avec succès",
-      });
-      
+      toast({ title: "Succès", description: "Zone supprimée avec succès" });
       fetchZones();
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
@@ -219,42 +165,24 @@ const AdminTerritorialZones = () => {
     setFormData({
       name: '',
       zone_type: 'province',
-      prix_moyen_loyer: 0,
-      prix_moyen_vente_m2: 0,
-      taux_vacance_locative: 0,
-      taux_occupation_locatif: 0,
-      densite_residentielle: 0,
-      population_locative_estimee: 0,
-      recettes_locatives_theoriques_usd: 0,
       recettes_fiscales_estimees_usd: 0,
-      variation_loyer_3mois_pct: 0,
-      volume_annonces_mois: 0,
-      nombre_transactions_estimees: 0,
-      duree_moyenne_mise_location_jours: 0,
       valeur_fonciere_moyenne_parcelle_usd: 0,
       typologie_dominante: 'Usage mixte',
       indice_pression_fonciere: 'Modéré',
-      indice_pression_locative: 'Modéré',
       coordinates: '[]'
     });
   };
 
   const handleExport = () => {
+    if (zones.length === 0) return;
+
     const csvContent = zones.map(zone => ({
       Nom: zone.name,
       Type: zone.zone_type,
-      'Volume annonces': zone.volume_annonces_mois,
-      'Nb transactions estimées': zone.nombre_transactions_estimees || 0,
-      'Prix moyen vente (m²)': zone.prix_moyen_vente_m2,
-      'Prix moyen location (m²)': zone.prix_moyen_loyer,
-      'Taux occupation': (zone.taux_occupation_locatif || 100 - zone.taux_vacance_locative).toFixed(1) + '%',
-      'Durée moy. location (jours)': zone.duree_moyenne_mise_location_jours || 0,
-      'Population locative': zone.population_locative_estimee,
-      'Taux vacance': zone.taux_vacance_locative.toFixed(1) + '%',
-      'Recettes locatives': zone.recettes_locatives_theoriques_usd,
-      'Recettes fiscales': zone.recettes_fiscales_estimees_usd || 0,
-      'Valeur foncière moy.': zone.valeur_fonciere_moyenne_parcelle_usd || 0,
-      'Indice pression locative': zone.indice_pression_locative || 'Modéré'
+      'Typologie dominante': zone.typologie_dominante,
+      'Pression foncière': zone.indice_pression_fonciere,
+      'Valeur foncière moy. (USD)': zone.valeur_fonciere_moyenne_parcelle_usd || 0,
+      'Recettes fiscales (USD)': zone.recettes_fiscales_estimees_usd || 0,
     }));
 
     const csvString = [
@@ -266,7 +194,7 @@ const AdminTerritorialZones = () => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'donnees_immobilieres_rdc.csv';
+    a.download = 'donnees_foncieres_rdc.csv';
     a.click();
     window.URL.revokeObjectURL(url);
   };
@@ -335,8 +263,6 @@ const AdminTerritorialZones = () => {
               <Tabs defaultValue="general" className="space-y-4">
                 <TabsList>
                   <TabsTrigger value="general">Général</TabsTrigger>
-                  <TabsTrigger value="economique">Marché</TabsTrigger>
-                  <TabsTrigger value="financier">Financier</TabsTrigger>
                   <TabsTrigger value="geographique">Géographique</TabsTrigger>
                 </TabsList>
                 
@@ -395,122 +321,6 @@ const AdminTerritorialZones = () => {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="indice_pression_locative">Pression locative</Label>
-                      <Select value={formData.indice_pression_locative} onValueChange={(value) => setFormData({...formData, indice_pression_locative: value})}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Faible">Faible</SelectItem>
-                          <SelectItem value="Modéré">Modéré</SelectItem>
-                          <SelectItem value="Élevé">Élevé</SelectItem>
-                          <SelectItem value="Très élevé">Très élevé</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="economique" className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="volume_annonces_mois">Volume annonces/mois</Label>
-                      <Input
-                        id="volume_annonces_mois"
-                        type="number"
-                        value={formData.volume_annonces_mois}
-                        onChange={(e) => setFormData({...formData, volume_annonces_mois: Number(e.target.value)})}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="nombre_transactions_estimees">Nb transactions estimées/an</Label>
-                      <Input
-                        id="nombre_transactions_estimees"
-                        type="number"
-                        value={formData.nombre_transactions_estimees}
-                        onChange={(e) => setFormData({...formData, nombre_transactions_estimees: Number(e.target.value)})}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="prix_moyen_vente_m2">Prix moyen vente (m² bâti)</Label>
-                      <Input
-                        id="prix_moyen_vente_m2"
-                        type="number"
-                        value={formData.prix_moyen_vente_m2}
-                        onChange={(e) => setFormData({...formData, prix_moyen_vente_m2: Number(e.target.value)})}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="prix_moyen_loyer">Prix moyen location (m² bâti)</Label>
-                      <Input
-                        id="prix_moyen_loyer"
-                        type="number"
-                        value={formData.prix_moyen_loyer}
-                        onChange={(e) => setFormData({...formData, prix_moyen_loyer: Number(e.target.value)})}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="taux_occupation_locatif">Taux d'occupation locatif (%)</Label>
-                      <Input
-                        id="taux_occupation_locatif"
-                        type="number"
-                        step="0.1"
-                        value={formData.taux_occupation_locatif}
-                        onChange={(e) => setFormData({...formData, taux_occupation_locatif: Number(e.target.value)})}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="duree_moyenne_mise_location_jours">Durée moy. mise en location (jours)</Label>
-                      <Input
-                        id="duree_moyenne_mise_location_jours"
-                        type="number"
-                        value={formData.duree_moyenne_mise_location_jours}
-                        onChange={(e) => setFormData({...formData, duree_moyenne_mise_location_jours: Number(e.target.value)})}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="population_locative_estimee">Population locative estimée</Label>
-                      <Input
-                        id="population_locative_estimee"
-                        type="number"
-                        value={formData.population_locative_estimee}
-                        onChange={(e) => setFormData({...formData, population_locative_estimee: Number(e.target.value)})}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="taux_vacance_locative">Taux de vacance locative (%)</Label>
-                      <Input
-                        id="taux_vacance_locative"
-                        type="number"
-                        step="0.1"
-                        value={formData.taux_vacance_locative}
-                        onChange={(e) => setFormData({...formData, taux_vacance_locative: Number(e.target.value)})}
-                      />
-                    </div>
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="financier" className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="recettes_locatives_theoriques_usd">Recettes locatives (USD)</Label>
-                      <Input
-                        id="recettes_locatives_theoriques_usd"
-                        type="number"
-                        value={formData.recettes_locatives_theoriques_usd}
-                        onChange={(e) => setFormData({...formData, recettes_locatives_theoriques_usd: Number(e.target.value)})}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="recettes_fiscales_estimees_usd">Recettes fiscales estimées (USD)</Label>
-                      <Input
-                        id="recettes_fiscales_estimees_usd"
-                        type="number"
-                        value={formData.recettes_fiscales_estimees_usd}
-                        onChange={(e) => setFormData({...formData, recettes_fiscales_estimees_usd: Number(e.target.value)})}
-                      />
-                    </div>
-                    <div className="space-y-2">
                       <Label htmlFor="valeur_fonciere_moyenne_parcelle_usd">Valeur foncière moy./parcelle (USD)</Label>
                       <Input
                         id="valeur_fonciere_moyenne_parcelle_usd"
@@ -520,13 +330,12 @@ const AdminTerritorialZones = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="variation_loyer_3mois_pct">Variation loyer 3 mois (%)</Label>
+                      <Label htmlFor="recettes_fiscales_estimees_usd">Recettes fiscales estimées (USD)</Label>
                       <Input
-                        id="variation_loyer_3mois_pct"
+                        id="recettes_fiscales_estimees_usd"
                         type="number"
-                        step="0.1"
-                        value={formData.variation_loyer_3mois_pct}
-                        onChange={(e) => setFormData({...formData, variation_loyer_3mois_pct: Number(e.target.value)})}
+                        value={formData.recettes_fiscales_estimees_usd}
+                        onChange={(e) => setFormData({...formData, recettes_fiscales_estimees_usd: Number(e.target.value)})}
                       />
                     </div>
                   </div>
@@ -600,11 +409,10 @@ const AdminTerritorialZones = () => {
                   <TableRow>
                     <TableHead>Nom</TableHead>
                     <TableHead>Type</TableHead>
-                    <TableHead>Prix Loyer</TableHead>
-                    <TableHead>Prix m²</TableHead>
-                    <TableHead>Taux Vacance</TableHead>
-                    <TableHead>Population</TableHead>
-                    <TableHead>Pression</TableHead>
+                    <TableHead>Typologie</TableHead>
+                    <TableHead>Pression foncière</TableHead>
+                    <TableHead>Valeur foncière moy.</TableHead>
+                    <TableHead>Recettes fiscales</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -617,15 +425,14 @@ const AdminTerritorialZones = () => {
                           {zone.zone_type}
                         </Badge>
                       </TableCell>
-                      <TableCell>{formatCurrency(zone.prix_moyen_loyer)}</TableCell>
-                      <TableCell>{formatCurrency(zone.prix_moyen_vente_m2)}</TableCell>
-                      <TableCell>{zone.taux_vacance_locative.toFixed(1)}%</TableCell>
-                      <TableCell>{zone.population_locative_estimee.toLocaleString()}</TableCell>
+                      <TableCell>{zone.typologie_dominante}</TableCell>
                       <TableCell>
                         <Badge className={getPressureColor(zone.indice_pression_fonciere)}>
                           {zone.indice_pression_fonciere}
                         </Badge>
                       </TableCell>
+                      <TableCell>{formatCurrency(zone.valeur_fonciere_moyenne_parcelle_usd || 0)}</TableCell>
+                      <TableCell>{formatCurrency(zone.recettes_fiscales_estimees_usd || 0)}</TableCell>
                       <TableCell>
                         <div className="flex gap-2">
                           <Button

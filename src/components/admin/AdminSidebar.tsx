@@ -110,7 +110,7 @@ const menuItems = [
       { icon: FileText, label: 'Demandes Mutation', value: 'mutations', badge: 'mutations' },
       { icon: DollarSign, label: 'Config Frais Mutation', value: 'mutation-fees-config', badge: null },
       { icon: Grid3X3, label: 'Demandes Lotissement', value: 'subdivision-requests', badge: 'subdivisions' },
-      { icon: FileCheck, label: 'Expertises Immob.', value: 'expertise-requests', badge: 'expertise' },
+      { icon: FileCheck, label: 'Expertises foncières', value: 'expertise-requests', badge: 'expertise' },
       { icon: DollarSign, label: 'Config Frais Expert.', value: 'expertise-fees-config', badge: null },
       { icon: AlertTriangle, label: 'Conflits Limites', value: 'boundary-conflicts', badge: null },
       { icon: Scale, label: 'Litiges Fonciers', value: 'land-disputes', badge: null },

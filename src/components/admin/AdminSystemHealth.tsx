@@ -90,7 +90,7 @@ const AdminSystemHealth = () => {
         },
         {
           name: 'Edge Functions',
-          status: 'online', // Note: monitoring réel à implémenter via health check endpoint
+          status: 'online',
           latency: undefined,
           lastCheck: new Date(),
         },
@@ -225,7 +225,7 @@ const AdminSystemHealth = () => {
                     <div>
                       <p className="text-xs font-medium">{service.name}</p>
                       <p className="text-[10px] text-muted-foreground">
-                        {service.latency !== undefined ? `Latence: ${service.latency}ms` : 'Statut estimé'}
+                        {service.latency !== undefined ? `Latence: ${service.latency}ms` : 'Statut non vérifié'}
                       </p>
                     </div>
                   </div>
@@ -240,17 +240,17 @@ const AdminSystemHealth = () => {
       {/* Connection Pool */}
       <Card className="rounded-2xl shadow-sm border-0 bg-card/80 backdrop-blur-sm">
         <CardHeader className="p-4 pb-2">
-          <CardTitle className="text-sm font-semibold">Pool de Connexions</CardTitle>
+          <CardTitle className="text-sm font-semibold">Santé estimée (latence)</CardTitle>
         </CardHeader>
         <CardContent className="p-4 pt-0">
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Utilisation</span>
+              <span className="text-muted-foreground">Score</span>
               <span className="font-medium">{dbStats.connectionPool}%</span>
             </div>
             <Progress value={dbStats.connectionPool} className="h-2" />
             <p className="text-[10px] text-muted-foreground">
-              Valeur estimée - monitoring avancé à venir
+              Estimation basée sur la latence de réponse — ne reflète pas l'état réel du pool de connexions
             </p>
           </div>
         </CardContent>
