@@ -822,7 +822,9 @@ export const useCCCFormState = ({
     const validGps = gpsCoordinates.filter(c => c.lat && c.lng);
     if (validGps.length >= 3) filledFields += 2;
     else if (validGps.length > 0) filledFields += 1;
-    if (formData.whatsappNumber) { totalFields += 1; filledFields += 1; }
+    // WhatsApp: always count (aligned with backend SQL)
+    totalFields += 1;
+    if (formData.whatsappNumber) filledFields += 1;
     totalFields += 3;
     const validPreviousOwners = previousOwners.filter(o => o.name);
     if (validPreviousOwners.length > 0) filledFields += Math.min(validPreviousOwners.length * 2, 3);
