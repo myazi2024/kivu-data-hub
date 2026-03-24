@@ -14,6 +14,7 @@ interface TooltipLineConfig {
 interface DRCMapWithTooltipProps {
   provincesData: ProvinceData[];
   selectedProvince: string | null;
+  externalZoomProvinceId?: string | null;
   onProvinceSelect: (province: ProvinceData) => void;
   onProvinceHover: (provinceId: string | null) => void;
   hoveredProvince: string | null;
@@ -36,6 +37,7 @@ function easeOutCubic(t: number) {
 const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
   provincesData,
   selectedProvince,
+  externalZoomProvinceId,
   onProvinceSelect,
   onProvinceHover,
   hoveredProvince,
@@ -350,6 +352,26 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
       };
     }
   }, [isDragging, dragOffset]);
+
+  // React to external province zoom (from Analytics filter)
+  useEffect(() => {
+    if (externalZoomProvinceId && svgContent && !isAnimating) {
+      if (externalZoomProvinceId !== zoomedProvinceId) {
+        // If already zoomed on another province, zoom out first then zoom in
+        if (zoomedProvinceId) {
+          zoomOut();
+          const timer = setTimeout(() => {
+            zoomToProvince(externalZoomProvinceId);
+          }, 550);
+          return () => clearTimeout(timer);
+        } else {
+          zoomToProvince(externalZoomProvinceId);
+        }
+      }
+    } else if (!externalZoomProvinceId && zoomedProvinceId && !isAnimating) {
+      zoomOut();
+    }
+  }, [externalZoomProvinceId, svgContent]);
 
   // Cleanup animation frame on unmount
   useEffect(() => {

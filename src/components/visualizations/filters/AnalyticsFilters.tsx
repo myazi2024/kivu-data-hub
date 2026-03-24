@@ -1,9 +1,12 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useContext, createContext } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { MapPin, Calendar, X, CheckCircle, CreditCard } from 'lucide-react';
 import { AnalyticsFilter, defaultFilter, extractUnique, getAvailableYears, getSectionType } from '@/utils/analyticsHelpers';
+
+/** Context to propagate province filter changes up to the map */
+export const ProvinceFilterContext = createContext<((province: string | undefined) => void) | null>(null);
 import {
   getAllProvinces,
   getVillesForProvince,
@@ -31,6 +34,7 @@ export const AnalyticsFilters: React.FC<Props> = ({
   data, filter, onChange, dateField = 'created_at',
   statusField, paymentStatusField, hideStatus = false, hidePaymentStatus = false,
 }) => {
+  const provinceFilterCallback = useContext(ProvinceFilterContext);
   const years = useMemo(() => {
     const dataYears = getAvailableYears(data, dateField);
     const currentYear = new Date().getFullYear();
@@ -216,13 +220,17 @@ export const AnalyticsFilters: React.FC<Props> = ({
         <Badge variant="outline" className="gap-0.5 text-[10px] px-1.5 py-0"><MapPin className="h-2.5 w-2.5" /> Lieu</Badge>
 
         {/* Province */}
-        <Select value={filter.province || '__all__'} onValueChange={v => onChange({
-          ...filter,
-          province: v === '__all__' ? undefined : v,
-          sectionType: 'all',
-          ville: undefined, commune: undefined, quartier: undefined, avenue: undefined,
-          territoire: undefined, collectivite: undefined, groupement: undefined, villageFilter: undefined,
-        })}>
+        <Select value={filter.province || '__all__'} onValueChange={v => {
+          const newProvince = v === '__all__' ? undefined : v;
+          onChange({
+            ...filter,
+            province: newProvince,
+            sectionType: 'all',
+            ville: undefined, commune: undefined, quartier: undefined, avenue: undefined,
+            territoire: undefined, collectivite: undefined, groupement: undefined, villageFilter: undefined,
+          });
+          provinceFilterCallback?.(newProvince);
+        }}>
           <SelectTrigger className={selectCls}><SelectValue placeholder="Province" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="__all__">Rép. Dém. du Congo</SelectItem>

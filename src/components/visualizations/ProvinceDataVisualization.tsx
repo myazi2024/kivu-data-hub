@@ -16,10 +16,12 @@ import { CertificatesBlock } from './blocks/CertificatesBlock';
 import { InvoicesBlock } from './blocks/InvoicesBlock';
 import { ProvinceData } from '@/types/province';
 import { useAnalyticsTabsConfig } from '@/hooks/useAnalyticsChartsConfig';
+import { ProvinceFilterContext } from './filters/AnalyticsFilters';
 
 interface ProvinceDataVisualizationProps {
   provinces: ProvinceData[];
   selectedProvince?: ProvinceData | null;
+  onProvinceFilter?: (provinceName: string | undefined) => void;
 }
 
 const ICON_MAP: Record<string, React.ComponentType<any>> = {
@@ -54,7 +56,7 @@ const BLOCK_MAP: Record<string, React.ComponentType<{ data: any }>> = {
   'invoices': InvoicesBlock,
 };
 
-const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = () => {
+const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({ onProvinceFilter }) => {
   const { visibleTabs, isLoading: tabsLoading } = useAnalyticsTabsConfig();
   const [activeTab, setActiveTab] = useState('');
   const { data: analytics, isLoading, error } = useLandDataAnalytics();
@@ -114,7 +116,9 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = () =
 
       {/* Content - scrolls independently */}
       <div className="flex-1 min-w-0 min-h-0 overflow-y-auto overflow-x-hidden p-1 lg:p-0 lg:mt-1.5">
-        {BlockComponent ? <BlockComponent data={analytics} /> : null}
+        <ProvinceFilterContext.Provider value={onProvinceFilter || null}>
+          {BlockComponent ? <BlockComponent data={analytics} /> : null}
+        </ProvinceFilterContext.Provider>
       </div>
     </div>
   );

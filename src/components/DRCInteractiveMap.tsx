@@ -63,6 +63,7 @@ const DRCInteractiveMap = () => {
   const [activeMobilePanel, setActiveMobilePanel] = useState<'map' | 'details' | 'analytics'>('map');
   const [isMapZoomed, setIsMapZoomed] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
+  const [externalProvinceId, setExternalProvinceId] = useState<string | null>(null);
   const mapCardRef = React.useRef<HTMLDivElement>(null);
 
   const { data: analytics, isLoading } = useLandDataAnalytics();
@@ -151,6 +152,20 @@ const DRCInteractiveMap = () => {
   const totalParcels = useMemo(() => provincesData.reduce((s, p) => s + p.parcelsCount, 0), [provincesData]);
   const todayStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
+  /** Handle province filter from Analytics → zoom map */
+  const handleProvinceFilter = React.useCallback((provinceName: string | undefined) => {
+    if (!provinceName) {
+      setSelectedProvince(null);
+      setExternalProvinceId(null);
+      return;
+    }
+    const province = provincesData.find(p => p.name === provinceName);
+    if (province) {
+      setSelectedProvince(province);
+      setExternalProvinceId(province.id);
+    }
+  }, [provincesData]);
+
   const handleCopyImage = async () => {
     if (!mapCardRef.current || isCopying) return;
     setIsCopying(true);
@@ -226,13 +241,14 @@ const DRCInteractiveMap = () => {
                       <DRCMapWithTooltip
                         provincesData={provincesData}
                         selectedProvince={selectedProvince?.id || null}
+                        externalZoomProvinceId={externalProvinceId}
                         onProvinceSelect={setSelectedProvince}
                         onProvinceHover={setHoveredProvince}
                         hoveredProvince={hoveredProvince}
                         getProvinceColor={getProvinceColor}
                         onMapReady={setMapInstance}
                         tooltipLineConfigs={tooltipLineConfigs}
-                        onZoomChange={setIsMapZoomed}
+                        onZoomChange={(zoomed) => { setIsMapZoomed(zoomed); if (!zoomed) setExternalProvinceId(null); }}
                       />
                     </div>
                   </div>
@@ -472,6 +488,7 @@ const DRCInteractiveMap = () => {
                   <ProvinceDataVisualization 
                     provinces={provincesData} 
                     selectedProvince={selectedProvince}
+                    onProvinceFilter={handleProvinceFilter}
                   />
                 </div>
               </CardContent>
