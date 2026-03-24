@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Compass, Info, Plus, Trash2, Check } from 'lucide-react';
+import { Compass, Info, Plus, Trash2, Check, Pencil } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export interface RoadSideInfo {
@@ -87,7 +87,7 @@ export const RoadBorderingSidesPanel: React.FC<RoadBorderingSidesPanelProps> = (
   };
 
   const canConfirm = (side: RoadSideInfo) => {
-    return side.bordersRoad && side.roadType;
+    return side.bordersRoad && side.roadType && side.roadWidth && side.roadWidth > 0;
   };
 
   return (
@@ -180,18 +180,33 @@ export const RoadBorderingSidesPanel: React.FC<RoadBorderingSidesPanelProps> = (
                         </Badge>
                       )}
                       {side.isConfirmed && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveRoad(side.sideIndex);
-                          }}
-                          className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 rounded-md"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        <>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSideUpdate(side.sideIndex, { isConfirmed: false });
+                              setEditingSide(side.sideIndex);
+                            }}
+                            className="h-6 w-6 p-0 text-primary hover:bg-primary/10 rounded-md"
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveRoad(side.sideIndex);
+                            }}
+                            className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 rounded-md"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </>
                       )}
                     </div>
                   </div>
