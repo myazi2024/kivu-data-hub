@@ -166,7 +166,7 @@ const DRCInteractiveMap = () => {
     }
   }, [provincesData]);
 
-
+  const handleCopyImage = async () => {
     if (!mapCardRef.current || isCopying) return;
     setIsCopying(true);
     try {
