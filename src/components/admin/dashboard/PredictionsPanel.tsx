@@ -246,7 +246,7 @@ export function PredictionsPanel({ loading = false, historicalData = [] }: Predi
           <CardHeader className="p-4 md:p-6">
             <CardTitle className="text-sm md:text-base flex items-center gap-2">
               <Sparkles className="h-4 w-4" />
-              Recommandations IA
+              Recommandations statistiques
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 md:p-6 pt-0 space-y-2">

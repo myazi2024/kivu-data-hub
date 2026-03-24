@@ -225,7 +225,7 @@ const AdminSystemHealth = () => {
                     <div>
                       <p className="text-xs font-medium">{service.name}</p>
                       <p className="text-[10px] text-muted-foreground">
-                        {service.latency !== undefined ? `Latence: ${service.latency}ms` : 'Statut estimé'}
+                        {service.latency !== undefined ? `Latence: ${service.latency}ms` : 'Statut non vérifié'}
                       </p>
                     </div>
                   </div>
