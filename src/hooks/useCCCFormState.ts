@@ -708,7 +708,7 @@ export const useCCCFormState = ({
     if (hasDispute === null) missing.push({ field: 'hasDispute', label: 'Statut litige foncier (Oui/Non)', tab: 'obligations' });
 
     // LOCATION - ENTRANCE & SERVITUDE (obligatoire pour les parcelles, pas les appartements)
-    if (!isAppartement) {
+    if (!isAppartement && roadSides.length > 0) {
       const hasEntrance = roadSides.some((s: any) => s.hasEntrance === true);
       if (!hasEntrance) missing.push({ field: 'parcelEntrance', label: "Entrée de la parcelle (cochez le côté ayant une porte d'accès)", tab: 'location' });
 
