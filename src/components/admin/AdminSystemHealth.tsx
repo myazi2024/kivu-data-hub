@@ -178,12 +178,12 @@ const AdminSystemHealth = () => {
       </Card>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         <Card className="rounded-xl shadow-sm border-0 bg-card/80">
           <CardContent className="p-3 text-center">
             <Database className="h-4 w-4 mx-auto text-primary mb-1" />
             <p className="text-lg font-bold">{dbStats.totalTables}</p>
-            <p className="text-[10px] text-muted-foreground">Tables</p>
+            <p className="text-[10px] text-muted-foreground">Tables surveillées</p>
           </CardContent>
         </Card>
         <Card className="rounded-xl shadow-sm border-0 bg-card/80">
@@ -191,13 +191,6 @@ const AdminSystemHealth = () => {
             <Server className="h-4 w-4 mx-auto text-primary mb-1" />
             <p className="text-lg font-bold">{dbStats.totalRecords.toLocaleString()}</p>
             <p className="text-[10px] text-muted-foreground">Enregistrements</p>
-          </CardContent>
-        </Card>
-        <Card className="rounded-xl shadow-sm border-0 bg-card/80">
-          <CardContent className="p-3 text-center">
-            <Wifi className="h-4 w-4 mx-auto text-primary mb-1" />
-            <p className="text-lg font-bold">{dbStats.connectionPool}%</p>
-            <p className="text-[10px] text-muted-foreground">Pool</p>
           </CardContent>
         </Card>
       </div>
