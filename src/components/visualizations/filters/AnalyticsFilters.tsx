@@ -34,6 +34,7 @@ export const AnalyticsFilters: React.FC<Props> = ({
   data, filter, onChange, dateField = 'created_at',
   statusField, paymentStatusField, hideStatus = false, hidePaymentStatus = false,
 }) => {
+  const provinceFilterCallback = useContext(ProvinceFilterContext);
   const years = useMemo(() => {
     const dataYears = getAvailableYears(data, dateField);
     const currentYear = new Date().getFullYear();
