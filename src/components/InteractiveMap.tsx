@@ -114,9 +114,9 @@ const InteractiveMap = () => {
 
   const getPropertyTypeLabel = (type: string) => {
     const labels: { [key: string]: string } = {
-      'residential': 'Résidentiel',
-      'commercial': 'Commercial',
-      'industrial': 'Industriel',
+      'residential': 'Habitation',
+      'commercial': 'Commerce',
+      'industrial': 'Industrie',
       'land': 'Terrain'
     };
     return labels[type] || type;
