@@ -227,7 +227,7 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
         });
       };
     }
-  }, [svgContent, provincesData, onProvinceHover, onProvinceSelect]);
+  }, [svgContent, provincesData, onProvinceHover, onProvinceSelect, getProvinceColor]);
 
   // Event listeners pour le drag global (souris + tactile)
   useEffect(() => {
