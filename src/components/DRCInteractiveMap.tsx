@@ -143,11 +143,11 @@ const DRCInteractiveMap = () => {
   const formatCurrency = (value: number): string =>
     new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
 
-  /** Dynamic choropleth color based on parcels count */
+  /** Choropleth color based on fixed density tiers */
   const getProvinceColor = (province: ProvinceData) => {
-    const ratio = province.parcelsCount / maxParcels;
-    const lightness = 85 - ratio * 50; // 85% (light) → 35% (dark)
-    return `hsl(142, 71%, ${lightness}%)`;
+    const count = province.parcelsCount;
+    const tier = DENSITY_TIERS.find(t => count >= t.min && count <= t.max) || DENSITY_TIERS[0];
+    return tier.color;
   };
 
   if (isLoading) {
