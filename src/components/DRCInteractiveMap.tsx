@@ -133,7 +133,7 @@ const DRCInteractiveMap = () => {
   }, [analytics]);
 
   /** Max parcels across provinces for choropleth */
-  const maxParcels = useMemo(() => Math.max(1, ...provincesData.map(p => p.prixMoyenLoyer)), [provincesData]);
+  const maxParcels = useMemo(() => Math.max(1, ...provincesData.map(p => p.parcelsCount)), [provincesData]);
 
   const formatNumber = (value: number): string => new Intl.NumberFormat('fr-FR').format(value);
   const formatCurrency = (value: number): string =>
