@@ -222,7 +222,7 @@ const DRCInteractiveMap = () => {
                         </div>
                       ))}
                     </div>
-                  </div>
+                  </div>}
                   
                   <div className="absolute bottom-2 right-2 z-10">
                     <Popover>
