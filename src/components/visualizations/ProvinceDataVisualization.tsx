@@ -116,7 +116,9 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({ o
 
       {/* Content - scrolls independently */}
       <div className="flex-1 min-w-0 min-h-0 overflow-y-auto overflow-x-hidden p-1 lg:p-0 lg:mt-1.5">
-        {BlockComponent ? <BlockComponent data={analytics} /> : null}
+        <ProvinceFilterContext.Provider value={onProvinceFilter || null}>
+          {BlockComponent ? <BlockComponent data={analytics} /> : null}
+        </ProvinceFilterContext.Provider>
       </div>
     </div>
   );
