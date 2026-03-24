@@ -2260,14 +2260,21 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                   <SelectValue placeholder="Choisir" />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl">
-                                  <SelectItem value="Béton armé" className="text-sm py-2">Béton armé</SelectItem>
-                                  <SelectItem value="Briques cuites" className="text-sm py-2">Briques cuites</SelectItem>
-                                  <SelectItem value="Briques adobes" className="text-sm py-2">Briques adobes</SelectItem>
-                                  <SelectItem value="Parpaings" className="text-sm py-2">Parpaings</SelectItem>
-                                  <SelectItem value="Bois" className="text-sm py-2">Bois</SelectItem>
-                                  <SelectItem value="Tôles" className="text-sm py-2">Tôles</SelectItem>
-                                  <SelectItem value="Semi-dur" className="text-sm py-2">Semi-dur</SelectItem>
-                                  <SelectItem value="Mixte" className="text-sm py-2">Mixte</SelectItem>
+                                  {(() => {
+                                    // CCC-aligned: materials depend on construction nature
+                                    const materialsByNature: Record<string, string[]> = {
+                                      'Durable': ['Béton armé', 'Briques cuites', 'Parpaings', 'Pierre naturelle'],
+                                      'Semi-durable': ['Semi-dur', 'Briques adobes', 'Bois', 'Mixte'],
+                                      'Précaire': ['Tôles', 'Bois', 'Paille', 'Autre'],
+                                    };
+                                    const materials = materialsByNature[constructionNature] || [
+                                      'Béton armé', 'Briques cuites', 'Parpaings', 'Pierre naturelle',
+                                      'Semi-dur', 'Briques adobes', 'Bois', 'Mixte', 'Tôles', 'Paille', 'Autre'
+                                    ];
+                                    return materials.map(m => (
+                                      <SelectItem key={m} value={m} className="text-sm py-2">{m}</SelectItem>
+                                    ));
+                                  })()}
                                 </SelectContent>
                               </Select>
                             </div>
