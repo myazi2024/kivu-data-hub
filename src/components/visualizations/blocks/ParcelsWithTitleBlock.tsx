@@ -97,8 +97,8 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     return { distribution, byAdminStatus, byIssuingService, validityDist };
   }, [filteredParcels, filteredPermits]);
 
-  const urbanCount = useMemo(() => filteredParcels.filter(p => p.parcel_type === 'SU').length, [filteredParcels]);
-  const ruralCount = useMemo(() => filteredParcels.filter(p => p.parcel_type === 'SR').length, [filteredParcels]);
+  const urbanCount = useMemo(() => filteredParcels.filter(p => p.parcel_type === 'SU' || p.parcel_type === 'Terrain bâti').length, [filteredParcels]);
+  const ruralCount = useMemo(() => filteredParcels.filter(p => p.parcel_type === 'SR' || p.parcel_type === 'Terrain nu').length, [filteredParcels]);
   const totalSurface = useMemo(() => filteredParcels.reduce((s, p) => s + (p.area_sqm || 0), 0), [filteredParcels]);
 
   const taxData = useMemo(() => {

@@ -60,8 +60,8 @@ const Services = () => {
     },
     {
       icon: Building2,
-      title: "Projets immobiliers",
-      description: "Appui aux projets immobiliers : faisabilité, développement, data urbaine",
+      title: "Projets fonciers",
+      description: "Appui aux projets fonciers : faisabilité, développement, data urbaine",
       variant: "secondary"
     },
     {
