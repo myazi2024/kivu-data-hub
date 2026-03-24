@@ -316,6 +316,7 @@ export const ColorMappedPieCard: React.FC<MultiDataPieProps> = memo(({
               </PieChart>
             </ResponsiveContainer>
             <InsightText text={insight} />
+            <ChartFooter />
           </>
         )}
       </CardContent>
