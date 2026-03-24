@@ -209,13 +209,16 @@ const DRCInteractiveMap = () => {
             
             {/* Carte RDC */}
             <div className={`flex flex-col min-h-0 transition-all duration-300 w-full ${selectedProvince ? 'h-1/2 lg:h-auto' : 'h-full lg:h-auto'} lg:flex-[3]`}>
-              <Card className="flex-1 overflow-hidden flex flex-col border-border/30">
+              <Card ref={mapCardRef} className="flex-1 overflow-hidden flex flex-col border-border/30">
                 <CardContent className="p-0 flex-1 flex flex-col relative min-h-0">
                   <div className="bg-muted/20 px-2 py-0.5 border-b border-border/30 flex-shrink-0">
                     <h2 className="text-[10px] sm:text-xs font-medium text-foreground flex items-center gap-1">
                       <MapPin className="h-3 w-3 text-primary" />
                       <span>RDC — Données réelles</span>
                     </h2>
+                    <p className="text-[7px] text-muted-foreground leading-tight">
+                      Répartition géographique des données foncières cadastrales — Total : {formatNumber(totalParcels)} parcelles enregistrées
+                    </p>
                   </div>
                   
                   <div className="flex-1 min-h-0 overflow-hidden flex items-center justify-center p-1">
