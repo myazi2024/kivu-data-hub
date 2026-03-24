@@ -36,7 +36,7 @@ const Footer = () => {
             </div>
             
             <p className="text-muted-foreground text-xs leading-relaxed mb-3 max-w-md">
-              Production et diffusion de données immobilières et territoriales pour la RDC.
+              Production et diffusion de données cadastrales et foncières pour la RDC.
             </p>
             
             <div className="space-y-1 text-xs">

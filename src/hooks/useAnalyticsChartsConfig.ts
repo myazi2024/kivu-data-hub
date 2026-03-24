@@ -196,7 +196,7 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
     ],
   },
   'parcels-titled': {
-    label: 'Parcelles titrées',
+    label: 'Parcelles',
     charts: [
       { tab_key: 'parcels-titled', item_key: 'title-type', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Type titre', chart_type: 'bar-h' },
       { tab_key: 'parcels-titled', item_key: 'legal-status', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Propriétaires', chart_type: 'donut' },

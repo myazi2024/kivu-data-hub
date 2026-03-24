@@ -42,7 +42,7 @@ const Publications = () => {
           <div className="mb-4 sm:mb-6">
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Publications</h1>
             <p className="text-sm text-muted-foreground max-w-2xl">
-              Rapports d'analyse urbaine et immobilière avec données locales, cartes interactives et projections fiscales.
+              Rapports d'analyse cadastrale et foncière avec données locales, cartes interactives et projections fiscales.
             </p>
           </div>
 

@@ -69,7 +69,7 @@ const Careers = () => {
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold text-foreground mb-4">Rejoignez-nous</h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Faites partie de l'équipe qui révolutionne le secteur immobilier en République Démocratique du Congo
+              Faites partie de l'équipe qui révolutionne le secteur foncier en République Démocratique du Congo
             </p>
           </div>
 

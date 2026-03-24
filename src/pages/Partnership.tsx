@@ -228,7 +228,7 @@ const Partnership = () => {
                 </h2>
                 <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
                   Contactez notre équipe pour explorer les opportunités de collaboration 
-                  et développer ensemble des solutions innovantes pour le secteur immobilier congolais.
+                  et développer ensemble des solutions innovantes pour le secteur foncier congolais.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Button size="lg" className="flex items-center gap-2">

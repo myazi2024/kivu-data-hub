@@ -44,7 +44,7 @@ const Articles = () => {
               <p className="text-muted-foreground text-lg max-w-2xl">
                 {selectedTheme 
                   ? selectedTheme.description
-                  : 'Analyses, guides pratiques et actualités du marché immobilier congolais'}
+                  : 'Analyses, guides pratiques et actualités du secteur foncier congolais'}
               </p>
             </div>
           </section>
