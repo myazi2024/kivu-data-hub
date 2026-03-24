@@ -115,30 +115,19 @@ const DRCInteractiveMap = () => {
       return {
         id: meta.id,
         name: meta.name,
-        // Computed stats stored in ProvinceData fields
-        prixMoyenLoyer: pCount, // repurposed: parcels count
-        prixMoyenVenteM2: trCount, // repurposed: title requests count
-        valeurFonciereParcelleUsd: totalRevenue,
-        tauxOccupationLocatif: contribCount, // repurposed: contributions count
-        dureeMoyenneMiseLocationJours: mutationCount, // repurposed: mutations count
-        tauxVacanceLocative: disputeCount, // repurposed: disputes count
-        indicePresionLocative: (pCount > 500 ? 'Très élevé' : pCount > 100 ? 'Élevé' : pCount > 30 ? 'Modéré' : 'Faible') as ProvinceData['indicePresionLocative'],
-        volumeAnnoncesImmobilieres: certCount,
-        nombreTransactionsEstimees: allInvoices.length,
-        populationLocativeEstimee: expertiseCount,
-        recettesLocativesUsd: totalRevenue,
-        recettesFiscalesUsd: fiscalRevenue,
-        variationLoyer3Mois: 0,
-        typologieDominante: '',
-        rendementLocatifBrut: 0,
-        tauxCroissancePrixAnnuel: 0,
-        permisConstruireMois: 0,
-        tauxAccessibiliteLogement: 0,
-        repartitionTypologique: { residential: 0, commercial: 0, mixte: 0 },
-        tauxPropriete: disputeCount > 0 ? Math.round((resolvedDisputes / disputeCount) * 100) : 0,
-        indicePresionFonciere: Math.round(totalSurface / 10000), // hectares
-        region: 'Centre' as any,
-        zone: 'Urbaine' as any,
+        parcelsCount: pCount,
+        titleRequestsCount: trCount,
+        revenueUsd: totalRevenue,
+        contributionsCount: contribCount,
+        mutationsCount: mutationCount,
+        disputesCount: disputeCount,
+        densityLevel: (pCount > 500 ? 'Très élevé' : pCount > 100 ? 'Élevé' : pCount > 30 ? 'Modéré' : 'Faible') as ProvinceData['densityLevel'],
+        certificatesCount: certCount,
+        invoicesCount: allInvoices.length,
+        expertisesCount: expertiseCount,
+        fiscalRevenueUsd: fiscalRevenue,
+        disputeResolutionRate: disputeCount > 0 ? Math.round((resolvedDisputes / disputeCount) * 100) : 0,
+        totalSurfaceHa: Math.round(totalSurface / 10000),
       };
     });
   }, [analytics]);
