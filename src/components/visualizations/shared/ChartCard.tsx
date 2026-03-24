@@ -223,6 +223,7 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
               )}
             </ResponsiveContainer>
             <InsightText text={insight} />
+            <ChartFooter />
           </>
         )}
       </CardContent>
