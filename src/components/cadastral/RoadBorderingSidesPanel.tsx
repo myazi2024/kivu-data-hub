@@ -257,7 +257,7 @@ export const RoadBorderingSidesPanel: React.FC<RoadBorderingSidesPanelProps> = (
                           type="number"
                           min="0"
                           step="0.1"
-                          placeholder="Largeur (m)"
+                          placeholder="Largeur (m) *"
                           value={side.roadWidth || ''}
                           onChange={(e) => 
                             onSideUpdate(side.sideIndex, { roadWidth: parseFloat(e.target.value) || undefined })
