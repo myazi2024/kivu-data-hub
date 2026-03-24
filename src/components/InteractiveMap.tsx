@@ -114,9 +114,9 @@ const InteractiveMap = () => {
 
   const getPropertyTypeLabel = (type: string) => {
     const labels: { [key: string]: string } = {
-      'residential': 'Résidentiel',
-      'commercial': 'Commercial',
-      'industrial': 'Industriel',
+      'residential': 'Habitation',
+      'commercial': 'Commerce',
+      'industrial': 'Industrie',
       'land': 'Terrain'
     };
     return labels[type] || type;
@@ -204,9 +204,9 @@ const InteractiveMap = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tous les types</SelectItem>
-                    <SelectItem value="residential">Résidentiel</SelectItem>
-                    <SelectItem value="commercial">Commercial</SelectItem>
-                    <SelectItem value="industrial">Industriel</SelectItem>
+                    <SelectItem value="residential">Habitation</SelectItem>
+                    <SelectItem value="commercial">Commerce</SelectItem>
+                    <SelectItem value="industrial">Industrie</SelectItem>
                     <SelectItem value="land">Terrain</SelectItem>
                   </SelectContent>
                 </Select>

@@ -25,7 +25,7 @@ const mockCadastralResult = {
     
     construction_type: 'Maison individuelle',
     construction_nature: 'Durable',
-    declared_usage: 'Résidentiel',
+    declared_usage: 'Habitation',
     gps_coordinates: [
       { lat: -1.6789, lng: 29.2234 },
       { lat: -1.6790, lng: 29.2235 },
