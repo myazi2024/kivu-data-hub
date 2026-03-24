@@ -58,15 +58,15 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
           
           const paths = svg.querySelectorAll('path[id]');
           
-          // Couleur uniforme pour TOUTES les provinces
-          const uniformColor = 'hsl(210, 40%, 85%)'; // gris-bleu clair uniforme
+          const defaultColor = 'hsl(210, 40%, 85%)';
           
           paths.forEach(path => {
             const provinceId = path.getAttribute('id');
             const province = provincesData.find(p => p.id === provinceId);
             
-            // Appliquer la couleur uniforme à TOUTES les provinces
-            path.setAttribute('fill', uniformColor);
+            // Appliquer la couleur choroplèthe si données disponibles, sinon couleur par défaut
+            const fillColor = province ? getProvinceColor(province) : defaultColor;
+            path.setAttribute('fill', fillColor);
             path.setAttribute('stroke', '#ffffff');
             path.setAttribute('stroke-width', '2');
             path.setAttribute('cursor', 'pointer');
@@ -86,7 +86,7 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
         }
       })
       .catch(console.error);
-  }, [provincesData]);
+  }, [provincesData, getProvinceColor]);
 
   // Attacher les événements après que le SVG soit rendu
   useEffect(() => {
@@ -143,9 +143,11 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
 
       const handlePathMouseOut = (event: Event) => {
         const target = event.target as SVGElement;
+        const provinceId = target.getAttribute('data-province');
+        const province = provinceId ? provincesData.find(p => p.id === provinceId) : null;
         
-        // Restaurer la couleur uniforme
-        target.setAttribute('fill', 'hsl(210, 40%, 85%)');
+        // Restaurer la couleur choroplèthe
+        target.setAttribute('fill', province ? getProvinceColor(province) : 'hsl(210, 40%, 85%)');
 
         // Ne pas masquer si on est au-dessus de l'infobulle, en train de drag, ou si positionnée manuellement
         if (isDragging || isManuallyPositioned || overTooltip) {
@@ -225,7 +227,7 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
         });
       };
     }
-  }, [svgContent, provincesData, onProvinceHover, onProvinceSelect]);
+  }, [svgContent, provincesData, onProvinceHover, onProvinceSelect, getProvinceColor]);
 
   // Event listeners pour le drag global (souris + tactile)
   useEffect(() => {
