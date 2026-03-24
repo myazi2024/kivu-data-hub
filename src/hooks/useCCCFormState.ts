@@ -1017,6 +1017,7 @@ export const useCCCFormState = ({
     setAvailableVilles([]); setAvailableCommunes([]); setAvailableTerritoires([]); setAvailableCollectivites([]); setAvailableQuartiers([]); setAvailableAvenues([]);
     setAvailableConstructionNatures([]); setAvailableDeclaredUsages([]); setAvailableConstructionMaterials([]); setAvailableStandings([]);
     setRoadSides([]);
+    setServitude({ hasServitude: false });
     setBuildingShapes([]);
     setDisputeFormData(null);
     setPermitMode('existing');
