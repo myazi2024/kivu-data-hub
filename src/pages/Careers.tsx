@@ -13,7 +13,7 @@ const Careers = () => {
       location: "Goma, Nord-Kivu",
       type: "Temps plein",
       department: "Recherche & Analyse",
-      description: "Rejoignez notre équipe pour analyser les tendances du marché immobilier congolais et produire des insights stratégiques."
+      description: "Rejoignez notre équipe pour analyser les données cadastrales et foncières congolaises et produire des insights stratégiques."
     },
     {
       title: "Développeur Mobile",
