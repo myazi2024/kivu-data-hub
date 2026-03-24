@@ -52,7 +52,7 @@ const Careers = () => {
     {
       icon: <Heart className="h-6 w-6 text-primary" />,
       title: "Impact Social",
-      description: "Contribuez au développement du secteur immobilier congolais"
+      description: "Contribuez au développement du secteur foncier congolais"
     },
     {
       icon: <Briefcase className="h-6 w-6 text-primary" />,
