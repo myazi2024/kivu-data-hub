@@ -86,7 +86,7 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
         }
       })
       .catch(console.error);
-  }, [provincesData]);
+  }, [provincesData, getProvinceColor]);
 
   // Attacher les événements après que le SVG soit rendu
   useEffect(() => {
