@@ -1029,6 +1029,16 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
           {/* === ONGLET GÉNÉRAL === */}
           <TabsContent value="general" className="space-y-3 pr-2 mt-0">
             {/* Notification importance des données exactes */}
+            {/* Pre-fill indicator */}
+            {parcelData && (parcelData.property_category || parcelData.construction_year || parcelData.construction_materials) && (
+              <Alert className="border-primary/30 bg-primary/5 rounded-xl">
+                <Info className="h-4 w-4 text-primary" />
+                <AlertDescription className="text-xs text-muted-foreground">
+                  Certaines informations ont été pré-remplies depuis les données cadastrales de cette parcelle. Vous pouvez les modifier si nécessaire.
+                </AlertDescription>
+              </Alert>
+            )}
+            {/* Notification importance des données exactes */}
             <Alert className="border-amber-500/30 bg-amber-500/10 rounded-xl">
               <Info className="h-4 w-4 text-amber-600" />
               <AlertDescription className="text-xs text-amber-800 dark:text-amber-200">
