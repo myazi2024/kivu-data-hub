@@ -49,12 +49,9 @@ const AdminSystemHealth = () => {
         totalRecords += count || 0;
       }
 
-      // Estimate connection pool health based on response latency
-      const estimatedPoolHealth = dbLatency < 100 ? 95 : dbLatency < 300 ? 80 : dbLatency < 500 ? 60 : 40;
       setDbStats({
         totalTables: tables.length,
         totalRecords,
-        connectionPool: estimatedPoolHealth,
       });
 
       // Test real latency for storage
