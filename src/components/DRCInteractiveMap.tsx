@@ -368,7 +368,7 @@ const DRCInteractiveMap = () => {
                         {isChartVisible('detail-surface') && (
                           <Card className="p-1 border-border/30">
                             <div className="text-[9px] text-muted-foreground truncate">{dt('detail-surface', 'Surface (ha)')}</div>
-                            <div className="text-[11px] font-bold text-accent">{formatNumber(selectedProvince.indicePresionFonciere || 0)}</div>
+                            <div className="text-[11px] font-bold text-accent">{formatNumber(selectedProvince.totalSurfaceHa || 0)}</div>
                           </Card>
                         )}
                         {isChartVisible('detail-resolution') && (
