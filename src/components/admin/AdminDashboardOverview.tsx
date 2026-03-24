@@ -13,7 +13,7 @@ import { RecentActivity } from './dashboard/RecentActivity';
 import { AlertsPanel } from './dashboard/AlertsPanel';
 import { TopPerformers } from './dashboard/TopPerformers';
 import { AdditionalCharts } from './dashboard/AdditionalCharts';
-import { PredictionsPanel } from './dashboard/PredictionsPanel';
+
 import { ComparativeAnalysis } from './dashboard/ComparativeAnalysis';
 import { BusinessMetrics } from './dashboard/BusinessMetrics';
 import { GeographicalAnalysis } from './dashboard/GeographicalAnalysis';
