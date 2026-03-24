@@ -410,17 +410,14 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
 
       {/* Back button when zoomed */}
       {zoomedProvinceId && !isAnimating && (
-        <div className="absolute top-2 left-2 z-20 animate-fade-in">
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 text-xs bg-background/90 backdrop-blur-sm border-border/50 shadow-md hover:bg-background"
-            onClick={zoomOut}
-          >
-            <ArrowLeft className="h-3 w-3 mr-1" />
-            Retour à la carte
-          </Button>
-        </div>
+        <button
+          className="absolute top-2 right-2 z-20 animate-fade-in h-6 w-6 flex items-center justify-center rounded-full bg-background/90 backdrop-blur-sm border border-border/50 shadow-md hover:bg-background transition-colors"
+          onClick={zoomOut}
+          title="Retour à la carte"
+          aria-label="Retour à la carte"
+        >
+          <ArrowLeft className="h-3 w-3 text-foreground" />
+        </button>
       )}
       
       {/* Tooltip */}

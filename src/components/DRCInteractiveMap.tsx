@@ -4,7 +4,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { MapPin, DollarSign, BarChart3, Info, FileText, Database, AlertTriangle, Loader2 } from 'lucide-react';
+import { MapPin, DollarSign, BarChart3, Info, FileText, Database, AlertTriangle, Loader2, Copy, Check } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import { toast } from 'sonner';
 import DRCMapWithTooltip from './DRCMapWithTooltip';
 
 import { ProvinceData } from '@/types/province';
@@ -60,6 +62,8 @@ const DRCInteractiveMap = () => {
   const [mapInstance, setMapInstance] = useState<any>(null);
   const [activeMobilePanel, setActiveMobilePanel] = useState<'map' | 'details' | 'analytics'>('map');
   const [isMapZoomed, setIsMapZoomed] = useState(false);
+  const [isCopying, setIsCopying] = useState(false);
+  const mapCardRef = React.useRef<HTMLDivElement>(null);
 
   const { data: analytics, isLoading } = useLandDataAnalytics();
 
@@ -144,6 +148,27 @@ const DRCInteractiveMap = () => {
   const formatCurrency = (value: number): string =>
     new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
 
+  const totalParcels = useMemo(() => provincesData.reduce((s, p) => s + p.parcelsCount, 0), [provincesData]);
+  const todayStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+  const handleCopyImage = async () => {
+    if (!mapCardRef.current || isCopying) return;
+    setIsCopying(true);
+    try {
+      const canvas = await html2canvas(mapCardRef.current, { backgroundColor: null, scale: 2, borderRadius: 12 } as any);
+      canvas.toBlob(async (blob) => {
+        if (blob) {
+          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+          toast.success('Image copiée dans le presse-papier');
+        }
+        setIsCopying(false);
+      }, 'image/png');
+    } catch {
+      toast.error('Impossible de copier l\'image');
+      setIsCopying(false);
+    }
+  };
+
   /** Choropleth color based on fixed density tiers */
   const getProvinceColor = (province: ProvinceData) => {
     const count = province.parcelsCount;
@@ -184,13 +209,16 @@ const DRCInteractiveMap = () => {
             
             {/* Carte RDC */}
             <div className={`flex flex-col min-h-0 transition-all duration-300 w-full ${selectedProvince ? 'h-1/2 lg:h-auto' : 'h-full lg:h-auto'} lg:flex-[3]`}>
-              <Card className="flex-1 overflow-hidden flex flex-col border-border/30">
+              <Card ref={mapCardRef} className="flex-1 overflow-hidden flex flex-col border-border/30">
                 <CardContent className="p-0 flex-1 flex flex-col relative min-h-0">
                   <div className="bg-muted/20 px-2 py-0.5 border-b border-border/30 flex-shrink-0">
                     <h2 className="text-[10px] sm:text-xs font-medium text-foreground flex items-center gap-1">
                       <MapPin className="h-3 w-3 text-primary" />
                       <span>RDC — Données réelles</span>
                     </h2>
+                    <p className="text-[7px] text-muted-foreground leading-tight">
+                      Répartition géographique des données foncières cadastrales — Total : {formatNumber(totalParcels)} parcelles enregistrées
+                    </p>
                   </div>
                   
                   <div className="flex-1 min-h-0 overflow-hidden flex items-center justify-center p-1">
@@ -210,21 +238,52 @@ const DRCInteractiveMap = () => {
                   </div>
                   
                   {/* Légende choroplèthe à 4 paliers — masquée pendant le zoom */}
-                  {!isMapZoomed && <div className="absolute bottom-2 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30">
-                    <div className="text-[8px] text-muted-foreground mb-0.5"><div className="text-[8px] text-muted-foreground mb-0.5">Densité parcelles cadastrées</div></div>
-                    <div className="flex flex-col gap-0.5">
-                      {DENSITY_TIERS.map(tier => (
-                        <div key={tier.label} className="flex items-center gap-1">
-                          <div className="w-3 h-2 rounded-sm flex-shrink-0" style={{ background: tier.color }} />
-                          <span className="text-[7px] text-muted-foreground">
-                            {tier.label} ({tier.min}{tier.max === Infinity ? '+' : `–${tier.max}`})
-                          </span>
-                        </div>
-                      ))}
+                  {!isMapZoomed && (
+                    <div className="absolute bottom-5 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30">
+                      <div className="text-[8px] text-muted-foreground mb-0.5">Densité parcelles cadastrées</div>
+                      <div className="flex flex-col gap-0.5">
+                        {DENSITY_TIERS.map(tier => (
+                          <div key={tier.label} className="flex items-center gap-1">
+                            <div className="w-3 h-2 rounded-sm flex-shrink-0" style={{ background: tier.color }} />
+                            <span className="text-[7px] text-muted-foreground">
+                              {tier.label} ({tier.min}{tier.max === Infinity ? '+' : `–${tier.max}`})
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>}
+                  )}
+
+                  {/* Légende contextuelle province zoomée */}
+                  {isMapZoomed && selectedProvince && (
+                    <div className="absolute bottom-5 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30 animate-fade-in">
+                      <div className="text-[8px] font-medium text-foreground mb-0.5">{selectedProvince.name}</div>
+                      <div className="flex flex-col gap-0.5 text-[7px] text-muted-foreground">
+                        <div className="flex justify-between gap-2"><span>Parcelles</span><span className="font-medium text-foreground">{formatNumber(selectedProvince.parcelsCount)}</span></div>
+                        <div className="flex justify-between gap-2"><span>Titres dem.</span><span className="font-medium text-foreground">{formatNumber(selectedProvince.titleRequestsCount)}</span></div>
+                        <div className="flex justify-between gap-2"><span>Revenus</span><span className="font-medium text-foreground">{formatCurrency(selectedProvince.revenueUsd)}</span></div>
+                        <div className="flex justify-between gap-2"><span>Densité</span><span className="font-medium text-foreground">{selectedProvince.densityLevel}</span></div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Pied de carte : date + copyright */}
+                  <div className="absolute bottom-0 left-0 right-0 z-10 text-center py-0.5">
+                    <span className="text-[7px] text-muted-foreground">{todayStr} — BIC - Tous droits réservés</span>
+                  </div>
                   
-                  <div className="absolute bottom-2 right-2 z-10">
+                  <div className="absolute bottom-5 right-2 z-10 flex gap-1">
+                    {/* Bouton copier en image */}
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-6 w-6 rounded-full bg-background/80 backdrop-blur-sm border-border/50 shadow-sm"
+                      onClick={handleCopyImage}
+                      title="Copier en image"
+                      disabled={isCopying}
+                    >
+                      {isCopying ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3 text-muted-foreground" />}
+                    </Button>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button variant="outline" size="icon" className="h-6 w-6 rounded-full bg-background/80 backdrop-blur-sm border-border/50 shadow-sm">
