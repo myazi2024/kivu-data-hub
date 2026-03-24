@@ -53,7 +53,7 @@ const Partnership = () => {
     {
       icon: TrendingUp,
       title: "Partenariat Technologique",
-      description: "Alliance avec les acteurs tech pour l'innovation dans le secteur immobilier.",
+      description: "Alliance avec les acteurs tech pour l'innovation dans le secteur foncier.",
       benefits: [
         "Intégration technologique avancée",
         "Développement d'outils innovants",
