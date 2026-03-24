@@ -20,7 +20,7 @@ const Careers = () => {
       location: "Kinshasa / Télétravail",
       type: "Temps plein",
       department: "Technologie",
-      description: "Participez au développement de l'application Myazi et des outils numériques innovants pour le secteur immobilier."
+      description: "Participez au développement de l'application Myazi et des outils numériques innovants pour le secteur foncier."
     },
     {
       title: "Coordinateur Terrain",
