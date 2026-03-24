@@ -65,6 +65,16 @@ const InsightText: React.FC<{ text?: string }> = ({ text }) => {
   );
 };
 
+const ChartFooter: React.FC = () => {
+  const today = new Date();
+  const formatted = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+  return (
+    <p className="text-[7px] text-muted-foreground text-right mt-1 select-none">
+      {formatted} · BIC - Tous droits réservés
+    </p>
+  );
+};
+
 const ChartFilterSubtitle: React.FC<{ filterLabel: string }> = ({ filterLabel }) => (
   <p className="block text-[9px] italic leading-tight text-muted-foreground mt-0.5 break-words">({filterLabel})</p>
 );
