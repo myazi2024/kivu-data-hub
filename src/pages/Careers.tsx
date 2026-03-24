@@ -9,7 +9,7 @@ import { Briefcase, Users, TrendingUp, Heart } from 'lucide-react';
 const Careers = () => {
   const positions = [
     {
-      title: "Analyste de Données Immobilières",
+      title: "Analyste de Données Foncières",
       location: "Goma, Nord-Kivu",
       type: "Temps plein",
       department: "Recherche & Analyse",
