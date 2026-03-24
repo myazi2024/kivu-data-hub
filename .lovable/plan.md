@@ -1,86 +1,60 @@
 
 
-# Audit Admin — Divergences, données fictives, redondances et irrégularités
+# Suppression des données et indicateurs simulés dans l'espace admin
 
-## Divergences identifiées
+## Composants concernés
 
-### 1. `AdminAnalytics.tsx` — Code mort (295 lignes)
+### 1. `PredictionsPanel.tsx` — Prédictions simulées (entier composant)
 
-Ce composant n'est **importé dans aucune page**. Le dashboard admin utilise `AdminDashboardOverview` et la config graphiques utilise `AdminAnalyticsChartsConfig`. `AdminAnalytics.tsx` est un doublon obsolète qui requête les tables `payments` et `publication_downloads` indépendamment du système principal.
+Le panneau "Prévisions statistiques" génère des prédictions à 7 jours via une régression linéaire naïve, détecte des "anomalies" par z-score, et produit des "recommandations" hardcodées. Tout est calculé côté client sans aucun modèle entraîné. C'est un simulateur, pas un outil analytique fiable. A supprimer.
 
-### 2. `AdminTerritorialZones.tsx` — Indicateurs locatifs/immobiliers fictifs (660 lignes)
+### 2. `AdminSystemHealth.tsx` — Indicateurs simulés
 
-Le composant gère 12 champs locatifs/immobiliers qui ne correspondent à **aucune donnée collectée par le CCC** :
+- **"Pool de connexions"** : valeur estimée à partir de la latence (pas une mesure réelle du pool Supabase)
+- **Edge Functions** : statut forcé à `'online'` sans aucune vérification
+- **Score santé en %** : formule arbitraire basée sur la latence
 
-| Champ fictif | Onglet |
-|---|---|
-| `prix_moyen_loyer` | Marché |
-| `prix_moyen_vente_m2` | Marché |
-| `taux_vacance_locative` | Marché |
-| `taux_occupation_locatif` | Marché |
-| `population_locative_estimee` | Marché |
-| `duree_moyenne_mise_location_jours` | Marché |
-| `volume_annonces_mois` | Marché |
-| `nombre_transactions_estimees` | Marché |
-| `recettes_locatives_theoriques_usd` | Financier |
-| `variation_loyer_3mois_pct` | Financier |
-| `indice_pression_locative` | Général |
-| `densite_residentielle` | (pas affiché dans formulaire mais dans le type) |
+Les mesures réelles (latence DB, latence Auth, latence Storage) sont utiles. Ce qui est simulé doit être supprimé.
 
-Les onglets **"Marché"** et **"Financier"** sont entièrement composés de ces champs fictifs. Le tableau principal affiche "Prix Loyer", "Prix m²", "Taux Vacance", "Population" — toutes des données non collectées.
+### 3. `AdminDashboardOverview.tsx` — Onglet "Prédictions IA"
 
-L'export CSV s'appelle `donnees_immobilieres_rdc.csv` (devrait être `donnees_foncieres_rdc.csv` — déjà identifié dans un audit précédent mais non corrigé).
+- L'onglet `"Prédictions IA"` référence `PredictionsPanel` et `SmartAlerts`
+- Le label dit encore "Prédictions IA" (ligne 340)
 
-### 3. `AdminSidebar.tsx` — Terminologie résiduelle
+### 4. `SmartAlerts.tsx` — Alertes associées aux prédictions
 
-- Ligne 113 : `'Expertises Immob.'` → devrait être `'Expertises foncières'`
-
-### 4. `AdminSystemHealth.tsx` — Indicateurs simulés
-
-- `connectionPool: 85` hardcodé comme valeur initiale (ligne 25)
-- `Edge Functions` : statut forcé à `'online'` sans vérification réelle (ligne 93)
-- Le "Pool de Connexions" affiche une valeur **estimée** à partir de la latence, pas une mesure réelle
-
-### 5. `PredictionsPanel.tsx` — "IA" sans avertissement
-
-Le panneau "Prévisions IA" utilise une simple régression linéaire et un z-score pour la détection d'anomalies. Le label "IA" est trompeur sans disclaimer sur la méthode simpliste utilisée.
+Consommé uniquement dans l'onglet Prédictions. Si les prédictions sont supprimées, les alertes perdent leur contexte.
 
 ## Plan de correction
 
-### Etape 1 : Supprimer `AdminAnalytics.tsx` (code mort)
+### Etape 1 : Supprimer `PredictionsPanel.tsx`
 
-### Etape 2 : Nettoyer `AdminTerritorialZones.tsx`
+Fichier entièrement simulé — aucune donnée réelle.
 
-- **Supprimer les onglets "Marché" et "Financier"** du formulaire de création/édition (ne garder que "Général" et "Géographique")
-- **Supprimer les colonnes fictives** du tableau : "Prix Loyer", "Prix m²", "Taux Vacance", "Population"
-- **Remplacer** par des colonnes pertinentes : "Pression foncière", "Typologie", "Valeur foncière moy."
-- **Supprimer les champs fictifs** du `formData`, `resetForm()`, `handleSave()` et du type `TerritorialZone`
-- **Conserver** les champs pertinents : `name`, `zone_type`, `coordinates`, `typologie_dominante`, `indice_pression_fonciere`, `valeur_fonciere_moyenne_parcelle_usd`, `recettes_fiscales_estimees_usd`
-- **Renommer** l'export CSV en `donnees_foncieres_rdc.csv` et nettoyer les colonnes exportées
+### Etape 2 : Nettoyer `AdminSystemHealth.tsx`
 
-### Etape 3 : Corriger `AdminSidebar.tsx`
+- Supprimer la carte "Santé estimée (latence)" (le bloc `connectionPool` avec sa `Progress` bar)
+- Supprimer la métrique "Pool" de la grille de stats (3e carte)
+- Changer le statut Edge Functions : afficher `'Statut non vérifié'` au lieu de `'online'`
+- Conserver : latence DB, latence Auth, latence Storage, compteurs Tables/Enregistrements
 
-- `'Expertises Immob.'` → `'Expertises foncières'`
+### Etape 3 : Nettoyer `AdminDashboardOverview.tsx`
 
-### Etape 4 : Corriger `AdminSystemHealth.tsx`
+- Supprimer l'onglet "Prédictions IA" et son `TabsContent`
+- Supprimer l'import de `PredictionsPanel` et `SmartAlerts`
 
-- Remplacer le label "Pool de Connexions" par "Latence estimée" ou ajouter un disclaimer clair "Estimation basée sur la latence"
-- Ajouter "(non vérifié)" à côté du statut Edge Functions
+### Etape 4 : Supprimer `SmartAlerts.tsx`
 
-### Etape 5 : Ajouter un disclaimer au `PredictionsPanel.tsx`
-
-- Remplacer "Prévisions IA" par "Prévisions statistiques"
-- Ajouter une note : "Basé sur une régression linéaire simple — à titre indicatif uniquement"
+Plus utilisé après suppression de l'onglet Prédictions.
 
 ### Fichiers impactés
 
 | Fichier | Action |
 |---------|--------|
-| `src/components/admin/AdminAnalytics.tsx` | Supprimer |
-| `src/components/admin/AdminTerritorialZones.tsx` | Retirer onglets/champs fictifs locatifs |
-| `src/components/admin/AdminSidebar.tsx` | "Expertises Immob." → "Expertises foncières" |
-| `src/components/admin/AdminSystemHealth.tsx` | Clarifier les valeurs estimées |
-| `src/components/admin/dashboard/PredictionsPanel.tsx` | Disclaimer sur la méthode |
+| `src/components/admin/dashboard/PredictionsPanel.tsx` | Supprimer |
+| `src/components/admin/dashboard/SmartAlerts.tsx` | Supprimer |
+| `src/components/admin/AdminSystemHealth.tsx` | Retirer pool simulé + corriger Edge Functions |
+| `src/components/admin/AdminDashboardOverview.tsx` | Retirer onglet Prédictions + imports |
 
-5 fichiers, dont 1 suppression et 4 corrections.
+4 fichiers : 2 suppressions, 2 nettoyages.
 
