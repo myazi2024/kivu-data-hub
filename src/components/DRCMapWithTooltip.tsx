@@ -353,6 +353,26 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
     }
   }, [isDragging, dragOffset]);
 
+  // React to external province zoom (from Analytics filter)
+  useEffect(() => {
+    if (externalZoomProvinceId && svgContent && !isAnimating) {
+      if (externalZoomProvinceId !== zoomedProvinceId) {
+        // If already zoomed on another province, zoom out first then zoom in
+        if (zoomedProvinceId) {
+          zoomOut();
+          const timer = setTimeout(() => {
+            zoomToProvince(externalZoomProvinceId);
+          }, 550);
+          return () => clearTimeout(timer);
+        } else {
+          zoomToProvince(externalZoomProvinceId);
+        }
+      }
+    } else if (!externalZoomProvinceId && zoomedProvinceId && !isAnimating) {
+      zoomOut();
+    }
+  }, [externalZoomProvinceId, svgContent]);
+
   // Cleanup animation frame on unmount
   useEffect(() => {
     return () => cancelAnimationFrame(animFrameRef.current);
