@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Compass, Info, Plus, Trash2, Check } from 'lucide-react';
+import { Compass, Info, Plus, Trash2, Check, Pencil } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export interface RoadSideInfo {
@@ -62,10 +62,15 @@ export const RoadBorderingSidesPanel: React.FC<RoadBorderingSidesPanelProps> = (
 
   const handleConfirmRoad = (sideIndex: number) => {
     const side = sides.find(s => s.sideIndex === sideIndex);
-    if (side && side.bordersRoad && side.roadType) {
+    if (side && side.bordersRoad && side.roadType && side.roadWidth) {
       onSideUpdate(sideIndex, { isConfirmed: true });
       setEditingSide(null);
     }
+  };
+
+  const handleEditRoad = (sideIndex: number) => {
+    onSideUpdate(sideIndex, { isConfirmed: false });
+    setEditingSide(sideIndex);
   };
 
   const handleRemoveRoad = (sideIndex: number) => {
@@ -87,7 +92,7 @@ export const RoadBorderingSidesPanel: React.FC<RoadBorderingSidesPanelProps> = (
   };
 
   const canConfirm = (side: RoadSideInfo) => {
-    return side.bordersRoad && side.roadType;
+    return side.bordersRoad && side.roadType && side.roadWidth && side.roadWidth > 0;
   };
 
   return (
@@ -180,18 +185,32 @@ export const RoadBorderingSidesPanel: React.FC<RoadBorderingSidesPanelProps> = (
                         </Badge>
                       )}
                       {side.isConfirmed && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveRoad(side.sideIndex);
-                          }}
-                          className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 rounded-md"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        <>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditRoad(side.sideIndex);
+                            }}
+                            className="h-6 w-6 p-0 text-primary hover:bg-primary/10 rounded-md"
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveRoad(side.sideIndex);
+                            }}
+                            className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 rounded-md"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </>
                       )}
                     </div>
                   </div>
@@ -238,7 +257,7 @@ export const RoadBorderingSidesPanel: React.FC<RoadBorderingSidesPanelProps> = (
                           type="number"
                           min="0"
                           step="0.1"
-                          placeholder="Largeur (m)"
+                          placeholder="Largeur (m) *"
                           value={side.roadWidth || ''}
                           onChange={(e) => 
                             onSideUpdate(side.sideIndex, { roadWidth: parseFloat(e.target.value) || undefined })
