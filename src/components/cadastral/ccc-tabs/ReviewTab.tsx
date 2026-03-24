@@ -65,7 +65,7 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
   loading, uploading, user
 }) => {
   return (
-    <div className="space-y-3 py-3 max-w-[360px] mx-auto">
+    <div className="space-y-3 py-3 max-w-[360px] mx-auto print-review-content" id="review-print-area">
       {/* CCC Value header */}
       <Card className="rounded-2xl shadow-md border-border/50 overflow-hidden bg-gradient-to-br from-amber-50/50 to-amber-100/30 dark:from-amber-950/20 dark:to-amber-900/10">
         <CardContent className="p-3 space-y-2">

@@ -355,90 +355,88 @@ All colors MUST be HSL.
 
 /* ═══ Print styles for ReviewTab ═══ */
 @media print {
-  /* Hide everything except the review content */
-  body * {
-    visibility: hidden;
-  }
-
-  /* Target the review tab content */
-  .space-y-3.py-3 ,
-  .space-y-3.py-3 * {
-    visibility: visible !important;
-  }
-
-  .space-y-3.py-3 {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    max-width: 100% !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-
-  /* Remove max-width constraint */
-  .max-w-\[360px\] {
-    max-width: 100% !important;
-  }
-
-  /* Hide interactive elements */
-  button, [role="button"] {
-    display: none !important;
-  }
-
-  /* But keep the print button area title visible */
-  .space-y-3.py-3 h3,
-  .space-y-3.py-3 h4 {
-    display: flex !important;
-    visibility: visible !important;
-  }
-
-  /* Hide sticky submit bar */
-  .sticky.bottom-0 {
-    display: none !important;
-  }
-
-  /* Cards should not break across pages */
-  .rounded-2xl {
-    break-inside: avoid;
-    page-break-inside: avoid;
-    box-shadow: none !important;
-    border: 1px solid #e5e5e5 !important;
-  }
-
-  /* Remove dark mode backgrounds for print */
-  [class*="dark:"] {
-    background: white !important;
-    color: black !important;
-  }
-
-  /* Map preview sizing for print */
-  .space-y-3.py-3 .rounded-xl.overflow-hidden {
-    height: 250px !important;
-    pointer-events: none;
-  }
-
-  /* Ensure text is black */
-  .text-muted-foreground,
-  .text-foreground,
-  .text-xs,
-  .text-sm {
-    color: #333 !important;
-  }
-
-  .font-medium, .font-semibold, .font-bold {
-    color: #000 !important;
-  }
-
-  /* Page margins */
   @page {
     margin: 1.5cm;
     size: A4;
   }
 
-  /* Remove gradients for clean print */
-  [class*="bg-gradient"] {
+  /* Hide EVERYTHING by default */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Show only the review print area and its children */
+  #review-print-area,
+  #review-print-area * {
+    visibility: visible !important;
+  }
+
+  /* Position it at the top, full width */
+  #review-print-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Hide ALL buttons, scrollbars, tab triggers, navigation, sticky bars */
+  #review-print-area button,
+  #review-print-area [role="button"],
+  #review-print-area [role="tablist"],
+  #review-print-area nav,
+  #review-print-area .sticky,
+  #review-print-area [data-state],
+  #review-print-area .scrollbar-hide {
+    display: none !important;
+  }
+
+  /* Keep headings visible (h3, h4 are display:flex, override the button hide) */
+  #review-print-area h3,
+  #review-print-area h4,
+  #review-print-area h5 {
+    display: flex !important;
+    visibility: visible !important;
+  }
+
+  /* Cards: no break, no shadow, light border */
+  #review-print-area .rounded-2xl,
+  #review-print-area .rounded-xl {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+  }
+
+  /* Clean text colors for print */
+  #review-print-area * {
+    color: #222 !important;
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Preserve SVG sketch colors */
+  #review-print-area svg,
+  #review-print-area svg * {
+    color: initial !important;
+    background: initial !important;
+  }
+
+  /* Remove gradients */
+  #review-print-area [class*="bg-gradient"] {
     background: #f9f9f9 !important;
+  }
+
+  /* Hide scrollbars */
+  * {
+    overflow: visible !important;
+    scrollbar-width: none;
+  }
+  *::-webkit-scrollbar {
+    display: none !important;
   }
 }
 
