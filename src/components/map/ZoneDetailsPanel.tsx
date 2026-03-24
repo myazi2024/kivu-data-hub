@@ -2,17 +2,11 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   X, 
   Building2, 
-  Users, 
-  TrendingUp, 
-  TrendingDown,
-  Minus,
   DollarSign,
-  MapPin,
-  BarChart3
+  MapPin
 } from 'lucide-react';
 import type { ZoneData } from '../TerritorialMap';
 
@@ -30,22 +24,6 @@ export const ZoneDetailsPanel: React.FC<ZoneDetailsPanelProps> = ({ zone, onClos
     }).format(value);
   };
 
-  const formatPercentage = (value: number) => {
-    return `${value.toFixed(1)}%`;
-  };
-
-  const getVariationIcon = (variation: number) => {
-    if (variation > 2) return <TrendingUp className="w-4 h-4 text-primary" />;
-    if (variation < -2) return <TrendingDown className="w-4 h-4 text-destructive" />;
-    return <Minus className="w-4 h-4 text-muted-foreground" />;
-  };
-
-  const getZoneColor = (tauxVacance: number) => {
-    if (tauxVacance > 25) return '#ef4444';
-    if (tauxVacance >= 10) return '#eab308';
-    return '#22c55e';
-  };
-
   const getPressureColor = (pression: string) => {
     switch (pression) {
       case 'Très élevé': return '#dc2626';
@@ -61,17 +39,6 @@ export const ZoneDetailsPanel: React.FC<ZoneDetailsPanelProps> = ({ zone, onClos
     if (typologie.includes('maison') || typologie.includes('villa')) return '🏠';
     return '🏘️';
   };
-
-  // Mock data pour les graphiques miniatures
-  const generateMockTrendData = () => {
-    const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun'];
-    return months.map((month, index) => ({
-      month,
-      value: zone.prixmoyenloyer * (1 + (zone.variationloyer3mois_pct / 100) * (index / 6))
-    }));
-  };
-
-  const trendData = generateMockTrendData();
 
   return (
     <Card className="fixed inset-1 sm:inset-2 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 max-w-full max-h-full">
@@ -96,203 +63,80 @@ export const ZoneDetailsPanel: React.FC<ZoneDetailsPanelProps> = ({ zone, onClos
         </Button>
       </CardHeader>
       
-      <CardContent className="max-h-[calc(100vh-4rem)] sm:max-h-[calc(100vh-6rem)] overflow-y-auto p-1 sm:p-3 charts-compact">
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 h-8">
-            <TabsTrigger value="overview" className="text-xs">Vue d'ensemble</TabsTrigger>
-            <TabsTrigger value="analytics" className="text-xs">Analyses</TabsTrigger>
-            <TabsTrigger value="trends" className="text-xs">Tendances</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="overview" className="space-y-3">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-              <Card>
-                <CardContent className="p-2">
-                  <div className="flex items-center gap-1 mb-1">
-                    <DollarSign className="w-3 h-3 text-primary" />
-                    <p className="text-xs font-medium">Prix moyen loyer</p>
-                  </div>
-                  <p className="text-lg font-bold">{formatCurrency(zone.prixmoyenloyer)}</p>
-                  <p className="text-xs text-muted-foreground">par mois</p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-2">
-                  <div className="flex items-center gap-1 mb-1">
-                    <Building2 className="w-3 h-3 text-primary" />
-                    <p className="text-xs font-medium">Prix m² vente</p>
-                  </div>
-                  <p className="text-lg font-bold">{formatCurrency(zone.prixmoyenvente_m2)}</p>
-                  <p className="text-xs text-muted-foreground">par m²</p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-2">
-                  <div className="flex items-center gap-1 mb-1">
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: getZoneColor(zone.tauxvacancelocative) }}
-                    />
-                    <p className="text-xs font-medium">Taux vacance</p>
-                  </div>
-                  <p className="text-lg font-bold">{formatPercentage(zone.tauxvacancelocative)}</p>
-                  <p className="text-xs text-muted-foreground">logements vacants</p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-2">
-                  <div className="flex items-center gap-1 mb-1">
-                    {getVariationIcon(zone.variationloyer3mois_pct)}
-                    <p className="text-xs font-medium">Variation 3 mois</p>
-                  </div>
-                  <p className="text-lg font-bold">
-                    {zone.variationloyer3mois_pct > 0 ? '+' : ''}{formatPercentage(zone.variationloyer3mois_pct)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">évolution des prix</p>
-                </CardContent>
-              </Card>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Card>
-                <CardHeader className="pb-1">
-                  <CardTitle className="text-xs">Données démographiques</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 p-2">
-                  <div className="flex justify-between">
-                    <span className="text-xs text-muted-foreground">Population locative estimée</span>
-                    <span className="font-semibold text-xs">{zone.populationlocativeestimee.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-xs text-muted-foreground">Densité résidentielle</span>
-                    <span className="font-semibold text-xs">{zone.densite_residentielle} hab/km²</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-xs text-muted-foreground">Typologie dominante</span>
-                    <span className="font-semibold text-xs">{zone.typologie_dominante}</span>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="pb-1">
-                  <CardTitle className="text-xs">Marché immobilier</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 p-2">
-                  <div className="flex justify-between">
-                    <span className="text-xs text-muted-foreground">Recettes théoriques</span>
-                    <span className="font-semibold text-xs">{formatCurrency(zone.recetteslocativestheoriques_usd)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-xs text-muted-foreground">Volume annonces/mois</span>
-                    <span className="font-semibold text-xs">{zone.volumeannoncesmois}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-xs text-muted-foreground">Indice pression foncière</span>
-                    <Badge 
-                      style={{ backgroundColor: getPressureColor(zone.indicepressionfonciere) }}
-                      className="text-white text-xs px-1 py-0"
-                    >
-                      {zone.indicepressionfonciere}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="analytics" className="space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Card>
-                <CardHeader className="pb-1">
-                  <CardTitle className="text-xs flex items-center gap-1">
-                    <BarChart3 className="w-3 h-3" />
-                    Analyse de vacance
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-2">
-                  <div className="h-20 flex items-end justify-center gap-2">
-                    {/* Histogramme simplifié */}
-                    <div className="flex flex-col items-center">
-                      <div 
-                        className="w-6 bg-red-500 rounded-t"
-                        style={{ height: `${zone.tauxvacancelocative > 25 ? '100%' : '20%'}` }}
-                      />
-                      <span className="text-xs mt-1">Élevé</span>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <div 
-                        className="w-6 bg-yellow-500 rounded-t"
-                        style={{ height: `${zone.tauxvacancelocative >= 10 && zone.tauxvacancelocative <= 25 ? '100%' : '40%'}` }}
-                      />
-                      <span className="text-xs mt-1">Moyen</span>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <div 
-                        className="w-6 bg-green-500 rounded-t"
-                        style={{ height: `${zone.tauxvacancelocative < 10 ? '100%' : '60%'}` }}
-                      />
-                      <span className="text-xs mt-1">Faible</span>
-                    </div>
-                  </div>
-                  <p className="text-center text-xs text-muted-foreground mt-2">
-                    Répartition du taux de vacance locative
-                  </p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="pb-1">
-                  <CardTitle className="text-xs">Carte thermique - Pression foncière</CardTitle>
-                </CardHeader>
-                <CardContent className="p-2">
-                  <div className="h-20 bg-gradient-to-r from-green-200 via-yellow-200 to-red-200 rounded flex items-center justify-center">
-                    <div 
-                      className="w-3 h-3 rounded-full border-2 border-white"
-                      style={{ backgroundColor: getPressureColor(zone.indicepressionfonciere) }}
-                    />
-                  </div>
-                  <p className="text-center text-xs text-muted-foreground mt-2">
-                    Position sur l'échelle de pression foncière
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="trends" className="space-y-3">
+      <CardContent className="max-h-[calc(100vh-4rem)] sm:max-h-[calc(100vh-6rem)] overflow-y-auto p-1 sm:p-3">
+        <div className="space-y-3">
+          {/* Informations générales */}
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
             <Card>
-              <CardHeader className="pb-1">
-                <CardTitle className="text-xs flex items-center gap-1">
-                  <TrendingUp className="w-3 h-3" />
-                  Évolution des prix (6 derniers mois)
-                </CardTitle>
-              </CardHeader>
               <CardContent className="p-2">
-                <div className="h-24 flex items-end justify-between gap-1">
-                  {trendData.map((point, index) => (
-                    <div key={point.month} className="flex flex-col items-center">
-                      <div 
-                        className="w-4 bg-primary rounded-t"
-                        style={{ 
-                          height: `${(point.value / Math.max(...trendData.map(d => d.value))) * 100}%`,
-                          minHeight: '8px'
-                        }}
-                      />
-                      <span className="text-xs mt-1">{point.month}</span>
-                    </div>
-                  ))}
+                <div className="flex items-center gap-1 mb-1">
+                  <MapPin className="w-3 h-3 text-primary" />
+                  <p className="text-xs font-medium">Type de zone</p>
                 </div>
-                <p className="text-center text-xs text-muted-foreground mt-2">
-                  Évolution des prix de location
-                </p>
+                <p className="text-lg font-bold capitalize">{zone.type}</p>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+            
+            <Card>
+              <CardContent className="p-2">
+                <div className="flex items-center gap-1 mb-1">
+                  <Building2 className="w-3 h-3 text-primary" />
+                  <p className="text-xs font-medium">Typologie</p>
+                </div>
+                <p className="text-sm font-bold">{zone.typologie_dominante}</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-2">
+                <div className="flex items-center gap-1 mb-1">
+                  <DollarSign className="w-3 h-3 text-primary" />
+                  <p className="text-xs font-medium">Recettes théoriques</p>
+                </div>
+                <p className="text-lg font-bold">{formatCurrency(zone.recetteslocativestheoriques_usd)}</p>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Card>
+              <CardHeader className="pb-1">
+                <CardTitle className="text-xs">Caractéristiques</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 p-2">
+                <div className="flex justify-between">
+                  <span className="text-xs text-muted-foreground">Densité résidentielle</span>
+                  <span className="font-semibold text-xs">{zone.densite_residentielle} hab/km²</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-xs text-muted-foreground">Typologie dominante</span>
+                  <span className="font-semibold text-xs">{zone.typologie_dominante}</span>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-1">
+                <CardTitle className="text-xs">Pression foncière</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 p-2">
+                <div className="flex justify-between">
+                  <span className="text-xs text-muted-foreground">Indice pression foncière</span>
+                  <Badge 
+                    style={{ backgroundColor: getPressureColor(zone.indicepressionfonciere) }}
+                    className="text-white text-xs px-1 py-0"
+                  >
+                    {zone.indicepressionfonciere}
+                  </Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-xs text-muted-foreground">Recettes théoriques</span>
+                  <span className="font-semibold text-xs">{formatCurrency(zone.recetteslocativestheoriques_usd)}</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
