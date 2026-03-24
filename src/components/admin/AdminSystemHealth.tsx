@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
 import { supabase } from '@/integrations/supabase/client';
-import { Activity, Database, Server, Wifi, RefreshCw, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import { Activity, Database, Server, RefreshCw, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ServiceStatus {

@@ -358,12 +358,6 @@ export function AdminDashboardOverview() {
           </div>
         </TabsContent>
 
-        <TabsContent value="predictions">
-          <PredictionsPanel loading={enhancedLoading} historicalData={enhancedData?.historicalRevenue} />
-          <div className="mt-4">
-            <SmartAlerts alerts={enhancedData?.alerts} />
-          </div>
-        </TabsContent>
 
         <TabsContent value="business">
           <BusinessMetrics loading={enhancedLoading} metrics={enhancedData?.businessMetrics} />
