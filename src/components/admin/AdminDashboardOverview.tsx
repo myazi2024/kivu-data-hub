@@ -335,7 +335,7 @@ export function AdminDashboardOverview() {
 
       {/* Enhanced Analytics Tabs */}
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 h-auto gap-1">
+        <TabsList className="grid w-full grid-cols-3 md:grid-cols-5 h-auto gap-1">
           <TabsTrigger value="overview" className="text-xs md:text-sm">Vue d'ensemble</TabsTrigger>
           
           <TabsTrigger value="business" className="text-xs md:text-sm">Métriques Business</TabsTrigger>
