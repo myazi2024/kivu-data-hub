@@ -184,7 +184,7 @@ export const PublicationCard: React.FC<PublicationCardProps> = ({ publication })
         ) : (
           <img
             src={reportThumbnail}
-            alt="Miniature de rapport — marché immobilier et données territoriales"
+            alt="Miniature de rapport — données cadastrales et territoriales"
             className="w-full h-full object-cover"
             loading="lazy"
             decoding="async"
