@@ -825,12 +825,15 @@ export const useCCCFormState = ({
     // WhatsApp: always count (aligned with backend SQL)
     totalFields += 1;
     if (formData.whatsappNumber) filledFields += 1;
-    totalFields += 3;
+    // Previous owners: aligned with backend (1 point for having any)
+    totalFields += 2;
     const validPreviousOwners = previousOwners.filter(o => o.name);
-    if (validPreviousOwners.length > 0) filledFields += Math.min(validPreviousOwners.length * 2, 3);
-    totalFields += 6;
+    if (validPreviousOwners.length > 0) filledFields += 1;
+    // Tax history: aligned with backend (1 point for having any)
+    totalFields += 2;
     const validTaxes = taxRecords.filter(t => t.taxAmount && t.taxYear);
-    if (validTaxes.length > 0) filledFields += Math.min(validTaxes.length * 2, 6);
+    if (validTaxes.length > 0) filledFields += 1;
+    // Mortgage
     totalFields += 3;
     if (hasMortgage !== null) filledFields += 1;
     if (hasMortgage === true) {
