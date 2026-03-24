@@ -16,10 +16,12 @@ import { CertificatesBlock } from './blocks/CertificatesBlock';
 import { InvoicesBlock } from './blocks/InvoicesBlock';
 import { ProvinceData } from '@/types/province';
 import { useAnalyticsTabsConfig } from '@/hooks/useAnalyticsChartsConfig';
+import { ProvinceFilterContext } from './filters/AnalyticsFilters';
 
 interface ProvinceDataVisualizationProps {
   provinces: ProvinceData[];
   selectedProvince?: ProvinceData | null;
+  onProvinceFilter?: (provinceName: string | undefined) => void;
 }
 
 const ICON_MAP: Record<string, React.ComponentType<any>> = {
