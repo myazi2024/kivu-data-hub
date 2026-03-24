@@ -71,9 +71,9 @@ export const generateParcels = async (parcelNumbers: string[]) => {
     commune: PROVINCES[i].commune,
     quartier: PROVINCES[i].quartier,
     avenue: PROVINCES[i].avenue,
-    declared_usage: ['Résidentiel', 'Commercial', 'Agricole', 'Mixte', 'Industriel'][i],
+    declared_usage: ['Habitation', 'Commerce', 'Agriculture', 'Usage mixte', 'Industrie'][i],
     construction_type: ['Résidentielle', 'Commerciale', 'Terrain nu', 'Résidentielle', 'Industrielle'][i],
-    construction_nature: ['Durable', 'Durable', null, 'Semi-durable', 'Durable'][i] as string | null,
+    construction_nature: ['Durable', 'Durable', 'Non bâti', 'Semi-durable', 'Durable'][i] as string | null,
     construction_year: [2010, 2018, null, 2005, 2015][i],
     lease_type: [null, 'initial', null, null, 'renewal'][i],
     gps_coordinates: [
