@@ -132,9 +132,13 @@ const DRCInteractiveMap = () => {
     });
   }, [analytics]);
 
-  /** Max parcels across provinces for choropleth */
-  const maxParcels = useMemo(() => Math.max(1, ...provincesData.map(p => p.parcelsCount)), [provincesData]);
-
+  /** Paliers choroplèthes fixes pour la densité */
+  const DENSITY_TIERS = [
+    { label: 'Faible', min: 0, max: 30, color: 'hsl(142, 71%, 75%)' },
+    { label: 'Modéré', min: 31, max: 100, color: 'hsl(45, 93%, 55%)' },
+    { label: 'Élevé', min: 101, max: 500, color: 'hsl(25, 90%, 55%)' },
+    { label: 'Très élevé', min: 501, max: Infinity, color: 'hsl(348, 80%, 45%)' },
+  ];
   const formatNumber = (value: number): string => new Intl.NumberFormat('fr-FR').format(value);
   const formatCurrency = (value: number): string =>
     new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
