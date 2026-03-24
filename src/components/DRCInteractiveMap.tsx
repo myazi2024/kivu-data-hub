@@ -473,6 +473,7 @@ const DRCInteractiveMap = () => {
                   <ProvinceDataVisualization 
                     provinces={provincesData} 
                     selectedProvince={selectedProvince}
+                    onProvinceFilter={handleProvinceFilter}
                   />
                 </div>
               </CardContent>
