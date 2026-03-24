@@ -178,7 +178,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
 
   const canConfirm = (side: RoadSideInfo) => {
     if (!side.bordersRoad) return false;
-    if (side.borderType === 'route') return !!side.roadType;
+    if (side.borderType === 'route') return !!side.roadType && !!side.roadWidth && side.roadWidth > 0;
     return false;
   };
 
