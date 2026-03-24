@@ -63,6 +63,7 @@ const DRCInteractiveMap = () => {
   const [activeMobilePanel, setActiveMobilePanel] = useState<'map' | 'details' | 'analytics'>('map');
   const [isMapZoomed, setIsMapZoomed] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
+  const [externalProvinceId, setExternalProvinceId] = useState<string | null>(null);
   const mapCardRef = React.useRef<HTMLDivElement>(null);
 
   const { data: analytics, isLoading } = useLandDataAnalytics();
