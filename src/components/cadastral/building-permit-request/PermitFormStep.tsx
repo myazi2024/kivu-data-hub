@@ -36,6 +36,8 @@ interface PermitFormStepProps {
   onPreview: () => void;
   /** Fix #15: Show draft restored indicator */
   isDraftRestored?: boolean;
+  /** Pre-fill indicator */
+  parcelData?: any;
 }
 
 const PermitFormStep: React.FC<PermitFormStepProps> = ({
