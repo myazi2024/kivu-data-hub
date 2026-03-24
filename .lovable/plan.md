@@ -1,60 +1,48 @@
 
 
-# Suppression des données et indicateurs simulés dans l'espace admin
+# Amélioration de la légende choroplèthe "Densité parcelles"
 
-## Composants concernés
+## Constat
 
-### 1. `PredictionsPanel.tsx` — Prédictions simulées (entier composant)
+La légende actuelle affiche un dégradé vert continu de `0` à `maxParcels` (ex: 61) avec seulement 2 repères (min/max). Problèmes :
+- **Pas de paliers lisibles** : l'utilisateur ne peut pas associer une couleur à une plage de valeurs
+- **L'échelle est relative** : `maxParcels` change dynamiquement, ce qui rend les couleurs non comparables d'une session à l'autre
+- **Pas de correspondance explicite** avec les 4 niveaux de densité déjà définis (`Faible`, `Modéré`, `Élevé`, `Très élevé`)
+- **La carte utilise un dégradé HSL continu** (`getProvinceColor`) mais la légende ne montre pas les seuils
 
-Le panneau "Prévisions statistiques" génère des prédictions à 7 jours via une régression linéaire naïve, détecte des "anomalies" par z-score, et produit des "recommandations" hardcodées. Tout est calculé côté client sans aucun modèle entraîné. C'est un simulateur, pas un outil analytique fiable. A supprimer.
+## Plan
 
-### 2. `AdminSystemHealth.tsx` — Indicateurs simulés
+### 1. Remplacer le dégradé continu par une légende à 4 paliers
 
-- **"Pool de connexions"** : valeur estimée à partir de la latence (pas une mesure réelle du pool Supabase)
-- **Edge Functions** : statut forcé à `'online'` sans aucune vérification
-- **Score santé en %** : formule arbitraire basée sur la latence
+Aligner la légende sur les 4 niveaux de densité déjà calculés (ligne 124 de `DRCInteractiveMap.tsx`) :
 
-Les mesures réelles (latence DB, latence Auth, latence Storage) sont utiles. Ce qui est simulé doit être supprimé.
+| Niveau | Seuil (parcelles) | Couleur |
+|--------|-------------------|---------|
+| Faible | 0 – 30 | Vert clair |
+| Modéré | 31 – 100 | Jaune/ambre |
+| Élevé | 101 – 500 | Orange |
+| Très élevé | > 500 | Rouge foncé |
 
-### 3. `AdminDashboardOverview.tsx` — Onglet "Prédictions IA"
+### 2. Aligner `getProvinceColor()` sur ces 4 paliers
 
-- L'onglet `"Prédictions IA"` référence `PredictionsPanel` et `SmartAlerts`
-- Le label dit encore "Prédictions IA" (ligne 340)
+Actuellement, la couleur est un dégradé vert proportionnel à `maxParcels`. Remplacer par une palette à 4 couleurs discrètes correspondant aux seuils ci-dessus. Cela rend les couleurs **stables** (indépendantes de maxParcels) et **cohérentes** avec le `densityLevel` affiché dans le tooltip.
 
-### 4. `SmartAlerts.tsx` — Alertes associées aux prédictions
+### 3. Mettre à jour la légende visuelle
 
-Consommé uniquement dans l'onglet Prédictions. Si les prédictions sont supprimées, les alertes perdent leur contexte.
+Remplacer le dégradé linéaire par 4 carrés de couleur avec leurs labels :
+```
+■ Faible (0-30)  ■ Modéré (31-100)  ■ Élevé (101-500)  ■ Très élevé (>500)
+```
 
-## Plan de correction
+### 4. Aligner `DRCMap.tsx` hover
 
-### Etape 1 : Supprimer `PredictionsPanel.tsx`
-
-Fichier entièrement simulé — aucune donnée réelle.
-
-### Etape 2 : Nettoyer `AdminSystemHealth.tsx`
-
-- Supprimer la carte "Santé estimée (latence)" (le bloc `connectionPool` avec sa `Progress` bar)
-- Supprimer la métrique "Pool" de la grille de stats (3e carte)
-- Changer le statut Edge Functions : afficher `'Statut non vérifié'` au lieu de `'online'`
-- Conserver : latence DB, latence Auth, latence Storage, compteurs Tables/Enregistrements
-
-### Etape 3 : Nettoyer `AdminDashboardOverview.tsx`
-
-- Supprimer l'onglet "Prédictions IA" et son `TabsContent`
-- Supprimer l'import de `PredictionsPanel` et `SmartAlerts`
-
-### Etape 4 : Supprimer `SmartAlerts.tsx`
-
-Plus utilisé après suppression de l'onglet Prédictions.
+La couleur au survol (ligne 118) est forcée à rouge — la conserver car c'est un feedback d'interaction, pas une donnée.
 
 ### Fichiers impactés
 
 | Fichier | Action |
 |---------|--------|
-| `src/components/admin/dashboard/PredictionsPanel.tsx` | Supprimer |
-| `src/components/admin/dashboard/SmartAlerts.tsx` | Supprimer |
-| `src/components/admin/AdminSystemHealth.tsx` | Retirer pool simulé + corriger Edge Functions |
-| `src/components/admin/AdminDashboardOverview.tsx` | Retirer onglet Prédictions + imports |
+| `src/components/DRCInteractiveMap.tsx` | Refactorer `getProvinceColor()` + légende à 4 paliers |
 
-4 fichiers : 2 suppressions, 2 nettoyages.
+1 fichier, modifications ciblées.
 
