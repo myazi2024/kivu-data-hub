@@ -167,7 +167,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
       <TaxManagementDialog parcelNumber={parcelNumber} parcelId={parcelId} parcelData={parcelData} open={showTaxDialog} onOpenChange={setShowTaxDialog}
         onOpenServiceCatalog={() => { setShowTaxDialog(false); setTimeout(() => { window.dispatchEvent(new CustomEvent('open-cadastral-results-dialog')); }, 150); }}
       />
-      <BuildingPermitRequestDialog parcelNumber={parcelNumber} open={showPermitRequestDialog} onOpenChange={setShowPermitRequestDialog} hasExistingConstruction={!!(parcelData?.construction_type || parcelData?.construction_nature)} />
+      <BuildingPermitRequestDialog parcelNumber={parcelNumber} parcelData={parcelData} open={showPermitRequestDialog} onOpenChange={setShowPermitRequestDialog} hasExistingConstruction={!!(parcelData?.construction_type || parcelData?.construction_nature)} />
       <SubdivisionRequestDialog parcelNumber={parcelNumber} parcelId={parcelId} parcelData={parcelData} open={showSubdivisionDialog} onOpenChange={setShowSubdivisionDialog} />
       <RealEstateExpertiseRequestDialog parcelNumber={parcelNumber} parcelId={parcelId} parcelData={parcelData} open={showExpertiseDialog} onOpenChange={setShowExpertiseDialog} />
       <LandDisputeManagementDialog parcelNumber={parcelNumber} parcelId={parcelId} parcelData={parcelData} open={showLandDisputeDialog} onOpenChange={setShowLandDisputeDialog}

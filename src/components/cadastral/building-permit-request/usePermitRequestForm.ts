@@ -80,6 +80,20 @@ export const usePermitRequestForm = ({ parcelNumber, hasExistingConstruction, pa
     }
   }, [user]);
 
+  // Pre-fill from parcelData (CCC) — only once, skip if draft restored
+  const prefillDoneRef = useRef(false);
+  useEffect(() => {
+    if (!parcelData || prefillDoneRef.current || draftRestoredRef.current) return;
+    prefillDoneRef.current = true;
+    setFormData(prev => ({
+      ...prev,
+      constructionType: prev.constructionType || parcelData.construction_type || '',
+      constructionNature: prev.constructionNature || parcelData.construction_nature || '',
+      declaredUsage: prev.declaredUsage || parcelData.declared_usage || '',
+      plannedArea: prev.plannedArea || (parcelData.area_sqm ? String(parcelData.area_sqm) : ''),
+    }));
+  }, [parcelData]);
+
   // Save draft to localStorage on form change
   useEffect(() => {
     try {

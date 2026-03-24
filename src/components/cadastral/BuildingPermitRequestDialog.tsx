@@ -54,7 +54,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
   const [paymentProvider, setPaymentProvider] = useState('');
   const [paymentPhone, setPaymentPhone] = useState('');
 
-  const form = usePermitRequestForm({ parcelNumber, hasExistingConstruction });
+  const form = usePermitRequestForm({ parcelNumber, hasExistingConstruction, parcelData });
 
   // Cleanup abort controller on unmount
   useEffect(() => {

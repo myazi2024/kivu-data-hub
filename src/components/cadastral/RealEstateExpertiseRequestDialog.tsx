@@ -240,6 +240,52 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
    const [constructionImageUrls, setConstructionImageUrls] = useState<string[]>([]);
    const [uploadingFiles, setUploadingFiles] = useState(false);
 
+  // Pre-fill from parcelData (CCC) on first open — using ref guard per memory/ui/form-prefill-persistence-pattern
+  const prefillDoneRef = useRef(false);
+  useEffect(() => {
+    if (!open || !parcelData || prefillDoneRef.current) return;
+    prefillDoneRef.current = true;
+
+    // Map property_category → expertise constructionType key
+    const categoryMap: Record<string, string> = {
+      'Villa': 'villa', 'Maison individuelle': 'villa',
+      'Appartement': 'appartement',
+      'Immeuble': 'immeuble', 'Bâtiment': 'immeuble',
+      'Duplex': 'duplex', 'Triplex': 'duplex',
+      'Studio': 'studio',
+      'Local commercial': 'commercial', 'Commerce': 'commercial', 'Bureau': 'commercial',
+      'Entrepôt': 'entrepot', 'Hangar': 'entrepot',
+      'Terrain nu': 'terrain_nu',
+    };
+
+    // Map construction_materials → expertise wallMaterial key
+    const materialMap: Record<string, string> = {
+      'Béton armé': 'beton',
+      'Briques cuites': 'briques_cuites',
+      'Briques adobe': 'briques_adobe',
+      'Parpaings': 'parpaings', 'Blocs': 'parpaings',
+      'Bois': 'bois',
+      'Tôles métalliques': 'tole',
+      'Mixte': 'mixte',
+    };
+
+    if (parcelData.property_category && categoryMap[parcelData.property_category]) {
+      setConstructionType(categoryMap[parcelData.property_category]);
+    }
+    if (parcelData.construction_year) {
+      setConstructionYear(parcelData.construction_year.toString());
+    }
+    if (parcelData.floor_number) {
+      setNumberOfFloors(parcelData.floor_number);
+    }
+    if (parcelData.area_sqm && parcelData.area_sqm > 0) {
+      setTotalBuiltAreaSqm(parcelData.area_sqm.toString());
+    }
+    if (parcelData.construction_materials && materialMap[parcelData.construction_materials]) {
+      setWallMaterial(materialMap[parcelData.construction_materials]);
+    }
+  }, [open, parcelData]);
+
   // Fetch expertise fees on mount
   useEffect(() => {
     const fetchFees = async () => {
