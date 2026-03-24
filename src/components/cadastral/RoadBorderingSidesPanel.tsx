@@ -62,10 +62,15 @@ export const RoadBorderingSidesPanel: React.FC<RoadBorderingSidesPanelProps> = (
 
   const handleConfirmRoad = (sideIndex: number) => {
     const side = sides.find(s => s.sideIndex === sideIndex);
-    if (side && side.bordersRoad && side.roadType) {
+    if (side && side.bordersRoad && side.roadType && side.roadWidth) {
       onSideUpdate(sideIndex, { isConfirmed: true });
       setEditingSide(null);
     }
+  };
+
+  const handleEditRoad = (sideIndex: number) => {
+    onSideUpdate(sideIndex, { isConfirmed: false });
+    setEditingSide(sideIndex);
   };
 
   const handleRemoveRoad = (sideIndex: number) => {
