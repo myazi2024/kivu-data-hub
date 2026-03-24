@@ -238,21 +238,52 @@ const DRCInteractiveMap = () => {
                   </div>
                   
                   {/* Légende choroplèthe à 4 paliers — masquée pendant le zoom */}
-                  {!isMapZoomed && <div className="absolute bottom-2 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30">
-                    <div className="text-[8px] text-muted-foreground mb-0.5"><div className="text-[8px] text-muted-foreground mb-0.5">Densité parcelles cadastrées</div></div>
-                    <div className="flex flex-col gap-0.5">
-                      {DENSITY_TIERS.map(tier => (
-                        <div key={tier.label} className="flex items-center gap-1">
-                          <div className="w-3 h-2 rounded-sm flex-shrink-0" style={{ background: tier.color }} />
-                          <span className="text-[7px] text-muted-foreground">
-                            {tier.label} ({tier.min}{tier.max === Infinity ? '+' : `–${tier.max}`})
-                          </span>
-                        </div>
-                      ))}
+                  {!isMapZoomed && (
+                    <div className="absolute bottom-5 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30">
+                      <div className="text-[8px] text-muted-foreground mb-0.5">Densité parcelles cadastrées</div>
+                      <div className="flex flex-col gap-0.5">
+                        {DENSITY_TIERS.map(tier => (
+                          <div key={tier.label} className="flex items-center gap-1">
+                            <div className="w-3 h-2 rounded-sm flex-shrink-0" style={{ background: tier.color }} />
+                            <span className="text-[7px] text-muted-foreground">
+                              {tier.label} ({tier.min}{tier.max === Infinity ? '+' : `–${tier.max}`})
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>}
+                  )}
+
+                  {/* Légende contextuelle province zoomée */}
+                  {isMapZoomed && selectedProvince && (
+                    <div className="absolute bottom-5 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30 animate-fade-in">
+                      <div className="text-[8px] font-medium text-foreground mb-0.5">{selectedProvince.name}</div>
+                      <div className="flex flex-col gap-0.5 text-[7px] text-muted-foreground">
+                        <div className="flex justify-between gap-2"><span>Parcelles</span><span className="font-medium text-foreground">{formatNumber(selectedProvince.parcelsCount)}</span></div>
+                        <div className="flex justify-between gap-2"><span>Titres dem.</span><span className="font-medium text-foreground">{formatNumber(selectedProvince.titleRequestsCount)}</span></div>
+                        <div className="flex justify-between gap-2"><span>Revenus</span><span className="font-medium text-foreground">{formatCurrency(selectedProvince.revenueUsd)}</span></div>
+                        <div className="flex justify-between gap-2"><span>Densité</span><span className="font-medium text-foreground">{selectedProvince.densityLevel}</span></div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Pied de carte : date + copyright */}
+                  <div className="absolute bottom-0 left-0 right-0 z-10 text-center py-0.5">
+                    <span className="text-[7px] text-muted-foreground">{todayStr} — BIC - Tous droits réservés</span>
+                  </div>
                   
-                  <div className="absolute bottom-2 right-2 z-10">
+                  <div className="absolute bottom-5 right-2 z-10 flex gap-1">
+                    {/* Bouton copier en image */}
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-6 w-6 rounded-full bg-background/80 backdrop-blur-sm border-border/50 shadow-sm"
+                      onClick={handleCopyImage}
+                      title="Copier en image"
+                      disabled={isCopying}
+                    >
+                      {isCopying ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3 text-muted-foreground" />}
+                    </Button>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button variant="outline" size="icon" className="h-6 w-6 rounded-full bg-background/80 backdrop-blur-sm border-border/50 shadow-sm">
