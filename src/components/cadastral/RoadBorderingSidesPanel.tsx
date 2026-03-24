@@ -87,7 +87,7 @@ export const RoadBorderingSidesPanel: React.FC<RoadBorderingSidesPanelProps> = (
   };
 
   const canConfirm = (side: RoadSideInfo) => {
-    return side.bordersRoad && side.roadType;
+    return side.bordersRoad && side.roadType && side.roadWidth && side.roadWidth > 0;
   };
 
   return (
