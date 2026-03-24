@@ -28,10 +28,11 @@ interface BuildingPermitRequestDialogProps {
   onOpenChange: (open: boolean) => void;
   parcelNumber: string;
   hasExistingConstruction?: boolean;
+  parcelData?: any;
 }
 
 const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = ({
-  open, onOpenChange, parcelNumber, hasExistingConstruction = false,
+  open, onOpenChange, parcelNumber, hasExistingConstruction = false, parcelData,
 }) => {
   const { toast } = useToast();
   const { user } = useAuth();
