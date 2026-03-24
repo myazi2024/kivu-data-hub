@@ -443,8 +443,8 @@ export const useCCCFormState = ({
 
   // ─── CRUD: Mortgage records ───
   const addMortgageRecord = () => {
-    const firstMortgage = mortgageRecords[0];
-    if (!firstMortgage?.mortgageAmount || !firstMortgage?.duration || !firstMortgage?.creditorName || !firstMortgage?.creditorType || !firstMortgage?.contractDate || !firstMortgage?.mortgageStatus) {
+    const lastMortgage = mortgageRecords[mortgageRecords.length - 1];
+    if (!lastMortgage?.mortgageAmount || !lastMortgage?.duration || !lastMortgage?.creditorName || !lastMortgage?.creditorType || !lastMortgage?.contractDate || !lastMortgage?.mortgageStatus) {
       setShowMortgageWarning(true); setHighlightIncompleteMortgage(true);
       setTimeout(() => setShowMortgageWarning(false), 5000);
       setTimeout(() => setHighlightIncompleteMortgage(false), 3000);
@@ -708,7 +708,7 @@ export const useCCCFormState = ({
     if (hasDispute === null) missing.push({ field: 'hasDispute', label: 'Statut litige foncier (Oui/Non)', tab: 'obligations' });
 
     // LOCATION - ENTRANCE & SERVITUDE (obligatoire pour les parcelles, pas les appartements)
-    if (!isAppartement) {
+    if (!isAppartement && roadSides.length > 0) {
       const hasEntrance = roadSides.some((s: any) => s.hasEntrance === true);
       if (!hasEntrance) missing.push({ field: 'parcelEntrance', label: "Entrée de la parcelle (cochez le côté ayant une porte d'accès)", tab: 'location' });
 
@@ -743,7 +743,7 @@ export const useCCCFormState = ({
     }
 
     return missing;
-  }, [formData, customTitleName, currentOwners, previousOwners, sectionType, permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, hasDispute, mortgageRecords, ownerDocFile, titleDocFiles, editingContributionId, roadSides]);
+  }, [formData, customTitleName, currentOwners, previousOwners, sectionType, permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, hasDispute, mortgageRecords, ownerDocFile, titleDocFiles, editingContributionId, roadSides, servitude]);
 
   const getMissingFieldsForTab = useCallback((tab: string) => getMissingFields().filter(f => f.tab === tab), [getMissingFields]);
   const isTabComplete = useCallback((tab: string) => getMissingFieldsForTab(tab).length === 0, [getMissingFieldsForTab]);
@@ -822,13 +822,18 @@ export const useCCCFormState = ({
     const validGps = gpsCoordinates.filter(c => c.lat && c.lng);
     if (validGps.length >= 3) filledFields += 2;
     else if (validGps.length > 0) filledFields += 1;
-    if (formData.whatsappNumber) { totalFields += 1; filledFields += 1; }
-    totalFields += 3;
+    // WhatsApp: always count (aligned with backend SQL)
+    totalFields += 1;
+    if (formData.whatsappNumber) filledFields += 1;
+    // Previous owners: aligned with backend (1 point for having any)
+    totalFields += 2;
     const validPreviousOwners = previousOwners.filter(o => o.name);
-    if (validPreviousOwners.length > 0) filledFields += Math.min(validPreviousOwners.length * 2, 3);
-    totalFields += 6;
+    if (validPreviousOwners.length > 0) filledFields += 1;
+    // Tax history: aligned with backend (1 point for having any)
+    totalFields += 2;
     const validTaxes = taxRecords.filter(t => t.taxAmount && t.taxYear);
-    if (validTaxes.length > 0) filledFields += Math.min(validTaxes.length * 2, 6);
+    if (validTaxes.length > 0) filledFields += 1;
+    // Mortgage
     totalFields += 3;
     if (hasMortgage !== null) filledFields += 1;
     if (hasMortgage === true) {
@@ -1017,6 +1022,7 @@ export const useCCCFormState = ({
     setAvailableVilles([]); setAvailableCommunes([]); setAvailableTerritoires([]); setAvailableCollectivites([]); setAvailableQuartiers([]); setAvailableAvenues([]);
     setAvailableConstructionNatures([]); setAvailableDeclaredUsages([]); setAvailableConstructionMaterials([]); setAvailableStandings([]);
     setRoadSides([]);
+    setServitude({ hasServitude: false });
     setBuildingShapes([]);
     setDisputeFormData(null);
     setPermitMode('existing');
@@ -1524,7 +1530,7 @@ export const useCCCFormState = ({
     availableConstructionMaterials, availableDeclaredUsages, availableStandings,
     constructionMode, setConstructionMode, additionalConstructions, setAdditionalConstructions,
     // Permits
-    permitMode, setPermitMode, buildingPermits, updateBuildingPermit, updateBuildingPermitFile, removeBuildingPermitFile,
+    permitMode, setPermitMode, buildingPermits, addBuildingPermit, updateBuildingPermit, updateBuildingPermitFile, removeBuildingPermitFile,
     getPermitTypeRestrictions, showPermitWarning, highlightIncompletePermit,
     // Location
     sectionType, sectionTypeAutoDetected, handleSectionTypeChange,
