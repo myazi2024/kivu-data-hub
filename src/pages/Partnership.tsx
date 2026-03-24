@@ -98,7 +98,7 @@ const Partnership = () => {
             </h1>
             <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
               Le BIC développe des partenariats durables pour maximiser l'impact de nos données 
-              immobilières et territoriales. Rejoignez notre écosystème d'innovation.
+              cadastrales et foncières. Rejoignez notre écosystème d'innovation.
             </p>
           </div>
 
