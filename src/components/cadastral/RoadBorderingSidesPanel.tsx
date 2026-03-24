@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Compass, Info, Plus, Trash2, Check } from 'lucide-react';
+import { Compass, Info, Plus, Trash2, Check, Pencil } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export interface RoadSideInfo {
