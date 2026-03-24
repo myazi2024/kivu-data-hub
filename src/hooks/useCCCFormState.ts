@@ -443,8 +443,8 @@ export const useCCCFormState = ({
 
   // ─── CRUD: Mortgage records ───
   const addMortgageRecord = () => {
-    const firstMortgage = mortgageRecords[0];
-    if (!firstMortgage?.mortgageAmount || !firstMortgage?.duration || !firstMortgage?.creditorName || !firstMortgage?.creditorType || !firstMortgage?.contractDate || !firstMortgage?.mortgageStatus) {
+    const lastMortgage = mortgageRecords[mortgageRecords.length - 1];
+    if (!lastMortgage?.mortgageAmount || !lastMortgage?.duration || !lastMortgage?.creditorName || !lastMortgage?.creditorType || !lastMortgage?.contractDate || !lastMortgage?.mortgageStatus) {
       setShowMortgageWarning(true); setHighlightIncompleteMortgage(true);
       setTimeout(() => setShowMortgageWarning(false), 5000);
       setTimeout(() => setHighlightIncompleteMortgage(false), 3000);
