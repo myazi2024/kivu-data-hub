@@ -21,16 +21,16 @@ const formatCurrency = (num: number) =>
 
 /** Default tooltip lines mapping ProvinceData fields to real cadastral labels */
 const DEFAULT_LINES: { key: string; field: keyof ProvinceData; label: string; format: 'number' | 'currency' | 'badge'; color: string }[] = [
-  { key: 'tooltip-parcels', field: 'prixMoyenLoyer', label: 'Parcelles', format: 'number', color: 'text-primary' },
-  { key: 'tooltip-titles', field: 'prixMoyenVenteM2', label: 'Titres dem.', format: 'number', color: 'text-blue-600' },
-  { key: 'tooltip-contributions', field: 'tauxOccupationLocatif', label: 'Contributions', format: 'number', color: 'text-emerald-600' },
-  { key: 'tooltip-mutations', field: 'dureeMoyenneMiseLocationJours', label: 'Mutations', format: 'number', color: 'text-violet-600' },
-  { key: 'tooltip-disputes', field: 'tauxVacanceLocative', label: 'Litiges', format: 'number', color: 'text-orange-500' },
-  { key: 'tooltip-expertises', field: 'populationLocativeEstimee', label: 'Expertises', format: 'number', color: 'text-blue-600' },
-  { key: 'tooltip-certificates', field: 'volumeAnnoncesImmobilieres', label: 'Certificats', format: 'number', color: 'text-emerald-600' },
-  { key: 'tooltip-invoices', field: 'nombreTransactionsEstimees', label: 'Factures', format: 'number', color: 'text-blue-600' },
-  { key: 'tooltip-revenue', field: 'recettesLocativesUsd', label: 'Revenus', format: 'currency', color: 'text-primary' },
-  { key: 'tooltip-fiscal', field: 'recettesFiscalesUsd', label: 'Rec. fiscales', format: 'currency', color: 'text-emerald-700' },
+  { key: 'tooltip-parcels', field: 'parcelsCount', label: 'Parcelles', format: 'number', color: 'text-primary' },
+  { key: 'tooltip-titles', field: 'titleRequestsCount', label: 'Titres dem.', format: 'number', color: 'text-blue-600' },
+  { key: 'tooltip-contributions', field: 'contributionsCount', label: 'Contributions', format: 'number', color: 'text-emerald-600' },
+  { key: 'tooltip-mutations', field: 'mutationsCount', label: 'Mutations', format: 'number', color: 'text-violet-600' },
+  { key: 'tooltip-disputes', field: 'disputesCount', label: 'Litiges', format: 'number', color: 'text-orange-500' },
+  { key: 'tooltip-expertises', field: 'expertisesCount', label: 'Expertises', format: 'number', color: 'text-blue-600' },
+  { key: 'tooltip-certificates', field: 'certificatesCount', label: 'Certificats', format: 'number', color: 'text-emerald-600' },
+  { key: 'tooltip-invoices', field: 'invoicesCount', label: 'Factures', format: 'number', color: 'text-blue-600' },
+  { key: 'tooltip-revenue', field: 'revenueUsd', label: 'Revenus', format: 'currency', color: 'text-primary' },
+  { key: 'tooltip-fiscal', field: 'fiscalRevenueUsd', label: 'Rec. fiscales', format: 'currency', color: 'text-emerald-700' },
 ];
 
 const ProvinceTooltip: React.FC<ProvinceTooltipProps> = ({ province, lineConfigs }) => {
@@ -66,12 +66,12 @@ const ProvinceTooltip: React.FC<ProvinceTooltipProps> = ({ province, lineConfigs
             <div className="flex justify-between items-center pt-0.5 border-t border-border/30">
               <span className="text-muted-foreground truncate">{getTitle('tooltip-density', 'Densité')} :</span>
               <span className={`font-semibold px-1 py-0.5 rounded text-[9px] ${
-                province.indicePresionLocative === 'Très élevé' ? 'bg-red-100/80 text-red-700 dark:bg-red-900/60 dark:text-red-300' :
-                province.indicePresionLocative === 'Élevé' ? 'bg-orange-100/80 text-orange-700 dark:bg-orange-900/60 dark:text-orange-300' :
-                province.indicePresionLocative === 'Modéré' ? 'bg-yellow-100/80 text-yellow-700 dark:bg-yellow-900/60 dark:text-yellow-300' :
+                province.densityLevel === 'Très élevé' ? 'bg-red-100/80 text-red-700 dark:bg-red-900/60 dark:text-red-300' :
+                province.densityLevel === 'Élevé' ? 'bg-orange-100/80 text-orange-700 dark:bg-orange-900/60 dark:text-orange-300' :
+                province.densityLevel === 'Modéré' ? 'bg-yellow-100/80 text-yellow-700 dark:bg-yellow-900/60 dark:text-yellow-300' :
                 'bg-green-100/80 text-green-700 dark:bg-green-900/60 dark:text-green-300'
               }`}>
-                {province.indicePresionLocative}
+                {province.densityLevel}
               </span>
             </div>
           )}
