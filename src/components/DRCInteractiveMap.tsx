@@ -115,36 +115,25 @@ const DRCInteractiveMap = () => {
       return {
         id: meta.id,
         name: meta.name,
-        // Computed stats stored in ProvinceData fields
-        prixMoyenLoyer: pCount, // repurposed: parcels count
-        prixMoyenVenteM2: trCount, // repurposed: title requests count
-        valeurFonciereParcelleUsd: totalRevenue,
-        tauxOccupationLocatif: contribCount, // repurposed: contributions count
-        dureeMoyenneMiseLocationJours: mutationCount, // repurposed: mutations count
-        tauxVacanceLocative: disputeCount, // repurposed: disputes count
-        indicePresionLocative: (pCount > 500 ? 'Très élevé' : pCount > 100 ? 'Élevé' : pCount > 30 ? 'Modéré' : 'Faible') as ProvinceData['indicePresionLocative'],
-        volumeAnnoncesImmobilieres: certCount,
-        nombreTransactionsEstimees: allInvoices.length,
-        populationLocativeEstimee: expertiseCount,
-        recettesLocativesUsd: totalRevenue,
-        recettesFiscalesUsd: fiscalRevenue,
-        variationLoyer3Mois: 0,
-        typologieDominante: '',
-        rendementLocatifBrut: 0,
-        tauxCroissancePrixAnnuel: 0,
-        permisConstruireMois: 0,
-        tauxAccessibiliteLogement: 0,
-        repartitionTypologique: { residential: 0, commercial: 0, mixte: 0 },
-        tauxPropriete: disputeCount > 0 ? Math.round((resolvedDisputes / disputeCount) * 100) : 0,
-        indicePresionFonciere: Math.round(totalSurface / 10000), // hectares
-        region: 'Centre' as any,
-        zone: 'Urbaine' as any,
+        parcelsCount: pCount,
+        titleRequestsCount: trCount,
+        revenueUsd: totalRevenue,
+        contributionsCount: contribCount,
+        mutationsCount: mutationCount,
+        disputesCount: disputeCount,
+        densityLevel: (pCount > 500 ? 'Très élevé' : pCount > 100 ? 'Élevé' : pCount > 30 ? 'Modéré' : 'Faible') as ProvinceData['densityLevel'],
+        certificatesCount: certCount,
+        invoicesCount: allInvoices.length,
+        expertisesCount: expertiseCount,
+        fiscalRevenueUsd: fiscalRevenue,
+        disputeResolutionRate: disputeCount > 0 ? Math.round((resolvedDisputes / disputeCount) * 100) : 0,
+        totalSurfaceHa: Math.round(totalSurface / 10000),
       };
     });
   }, [analytics]);
 
   /** Max parcels across provinces for choropleth */
-  const maxParcels = useMemo(() => Math.max(1, ...provincesData.map(p => p.prixMoyenLoyer)), [provincesData]);
+  const maxParcels = useMemo(() => Math.max(1, ...provincesData.map(p => p.parcelsCount)), [provincesData]);
 
   const formatNumber = (value: number): string => new Intl.NumberFormat('fr-FR').format(value);
   const formatCurrency = (value: number): string =>
@@ -152,7 +141,7 @@ const DRCInteractiveMap = () => {
 
   /** Dynamic choropleth color based on parcels count */
   const getProvinceColor = (province: ProvinceData) => {
-    const ratio = province.prixMoyenLoyer / maxParcels; // prixMoyenLoyer = parcels count
+    const ratio = province.parcelsCount / maxParcels;
     const lightness = 85 - ratio * 50; // 85% (light) → 35% (dark)
     return `hsl(142, 71%, ${lightness}%)`;
   };
@@ -280,19 +269,19 @@ const DRCInteractiveMap = () => {
                           {isChartVisible('detail-parcels') && (
                             <Card className="p-1 border-border/30">
                               <div className="text-[9px] text-muted-foreground truncate">{dt('detail-parcels', 'Parcelles')}</div>
-                              <div className="text-[11px] font-bold text-primary">{formatNumber(selectedProvince.prixMoyenLoyer)}</div>
+                              <div className="text-[11px] font-bold text-primary">{formatNumber(selectedProvince.parcelsCount)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-titles') && (
                             <Card className="p-1 border-border/30">
                               <div className="text-[9px] text-muted-foreground truncate">{dt('detail-titles', 'Titres dem.')}</div>
-                              <div className="text-[11px] font-bold text-blue-600">{formatNumber(selectedProvince.prixMoyenVenteM2)}</div>
+                              <div className="text-[11px] font-bold text-blue-600">{formatNumber(selectedProvince.titleRequestsCount)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-contributions') && (
                             <Card className="p-1 border-border/30">
                               <div className="text-[9px] text-muted-foreground truncate">{dt('detail-contributions', 'Contributions')}</div>
-                              <div className="text-[11px] font-bold text-emerald-600">{formatNumber(selectedProvince.tauxOccupationLocatif)}</div>
+                              <div className="text-[11px] font-bold text-emerald-600">{formatNumber(selectedProvince.contributionsCount)}</div>
                             </Card>
                           )}
                         </div>
@@ -308,25 +297,25 @@ const DRCInteractiveMap = () => {
                           {isChartVisible('detail-mutations') && (
                             <Card className="p-1 border-border/30">
                               <div className="text-[9px] text-muted-foreground truncate">{dt('detail-mutations', 'Mutations')}</div>
-                              <div className="text-[11px] font-bold text-violet-600">{formatNumber(selectedProvince.dureeMoyenneMiseLocationJours)}</div>
+                              <div className="text-[11px] font-bold text-violet-600">{formatNumber(selectedProvince.mutationsCount)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-disputes') && (
                             <Card className="p-1 border-border/30">
                               <div className="text-[9px] text-muted-foreground truncate">{dt('detail-disputes', 'Litiges')}</div>
-                              <div className="text-[11px] font-bold text-orange-500">{formatNumber(selectedProvince.tauxVacanceLocative)}</div>
+                              <div className="text-[11px] font-bold text-orange-500">{formatNumber(selectedProvince.disputesCount)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-certificates') && (
                             <Card className="p-1 border-border/30">
                               <div className="text-[9px] text-muted-foreground truncate">{dt('detail-certificates', 'Certificats')}</div>
-                              <div className="text-[11px] font-bold text-emerald-600">{formatNumber(selectedProvince.volumeAnnoncesImmobilieres)}</div>
+                              <div className="text-[11px] font-bold text-emerald-600">{formatNumber(selectedProvince.certificatesCount)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-expertises') && (
                             <Card className="p-1 border-border/30">
                               <div className="text-[9px] text-muted-foreground truncate">{dt('detail-expertises', 'Expertises')}</div>
-                              <div className="text-[11px] font-bold text-blue-600">{formatNumber(selectedProvince.populationLocativeEstimee)}</div>
+                              <div className="text-[11px] font-bold text-blue-600">{formatNumber(selectedProvince.expertisesCount)}</div>
                             </Card>
                           )}
                         </div>
@@ -342,19 +331,19 @@ const DRCInteractiveMap = () => {
                           {isChartVisible('detail-revenue') && (
                             <Card className="p-1 border-border/30">
                               <div className="text-[9px] text-muted-foreground truncate">{dt('detail-revenue', 'Revenus')}</div>
-                              <div className="text-[11px] font-bold text-primary">{formatCurrency(selectedProvince.recettesLocativesUsd)}</div>
+                              <div className="text-[11px] font-bold text-primary">{formatCurrency(selectedProvince.revenueUsd)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-fiscal') && (
                             <Card className="p-1 border-border/30">
                               <div className="text-[9px] text-muted-foreground truncate">{dt('detail-fiscal', 'Recettes fisc.')}</div>
-                              <div className="text-[11px] font-bold text-emerald-600">{formatCurrency(selectedProvince.recettesFiscalesUsd)}</div>
+                              <div className="text-[11px] font-bold text-emerald-600">{formatCurrency(selectedProvince.fiscalRevenueUsd)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-invoices') && (
                             <Card className="p-1 border-border/30">
                               <div className="text-[9px] text-muted-foreground truncate">{dt('detail-invoices', 'Factures')}</div>
-                              <div className="text-[11px] font-bold text-blue-600">{formatNumber(selectedProvince.nombreTransactionsEstimees)}</div>
+                              <div className="text-[11px] font-bold text-blue-600">{formatNumber(selectedProvince.invoicesCount)}</div>
                             </Card>
                           )}
                         </div>
@@ -367,25 +356,25 @@ const DRCInteractiveMap = () => {
                             <div className="text-[9px] text-muted-foreground truncate">{dt('detail-density', 'Densité')}</div>
                             <Badge 
                               variant={
-                                selectedProvince.indicePresionLocative === 'Très élevé' ? 'destructive' :
-                                selectedProvince.indicePresionLocative === 'Élevé' ? 'secondary' : 'outline'
+                                selectedProvince.densityLevel === 'Très élevé' ? 'destructive' :
+                                selectedProvince.densityLevel === 'Élevé' ? 'secondary' : 'outline'
                               }
                               className="text-[8px] px-1 py-0"
                             >
-                              {selectedProvince.indicePresionLocative}
+                              {selectedProvince.densityLevel}
                             </Badge>
                           </Card>
                         )}
                         {isChartVisible('detail-surface') && (
                           <Card className="p-1 border-border/30">
                             <div className="text-[9px] text-muted-foreground truncate">{dt('detail-surface', 'Surface (ha)')}</div>
-                            <div className="text-[11px] font-bold text-accent">{formatNumber(selectedProvince.indicePresionFonciere || 0)}</div>
+                            <div className="text-[11px] font-bold text-accent">{formatNumber(selectedProvince.totalSurfaceHa || 0)}</div>
                           </Card>
                         )}
                         {isChartVisible('detail-resolution') && (
                           <Card className="p-1 border-border/30">
                             <div className="text-[9px] text-muted-foreground truncate">{dt('detail-resolution', 'Résol. litiges')}</div>
-                            <div className="text-[11px] font-bold text-emerald-600">{selectedProvince.tauxPropriete || 0}%</div>
+                            <div className="text-[11px] font-bold text-emerald-600">{selectedProvince.disputeResolutionRate || 0}%</div>
                           </Card>
                         )}
                       </div>
@@ -429,20 +418,17 @@ function buildEmptyProvince(meta: { id: string; name: string }): ProvinceData {
   return {
     id: meta.id,
     name: meta.name,
-    prixMoyenLoyer: 0,
-    prixMoyenVenteM2: 0,
-    valeurFonciereParcelleUsd: 0,
-    tauxOccupationLocatif: 0,
-    dureeMoyenneMiseLocationJours: 0,
-    tauxVacanceLocative: 0,
-    indicePresionLocative: 'Faible',
-    volumeAnnoncesImmobilieres: 0,
-    nombreTransactionsEstimees: 0,
-    populationLocativeEstimee: 0,
-    recettesLocativesUsd: 0,
-    recettesFiscalesUsd: 0,
-    variationLoyer3Mois: 0,
-    typologieDominante: '',
+    parcelsCount: 0,
+    titleRequestsCount: 0,
+    revenueUsd: 0,
+    contributionsCount: 0,
+    mutationsCount: 0,
+    disputesCount: 0,
+    densityLevel: 'Faible',
+    certificatesCount: 0,
+    invoicesCount: 0,
+    expertisesCount: 0,
+    fiscalRevenueUsd: 0,
   };
 }
 

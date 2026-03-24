@@ -2,31 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Tooltip, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import ProvinceTooltip from './ProvinceTooltip';
 import DOMPurify from 'dompurify';
-
-interface ProvinceData {
-  id: string;
-  name: string;
-  // Prix & Valeur
-  prixMoyenLoyer: number;
-  prixMoyenVenteM2: number;
-  valeurFonciereParcelleUsd: number;
-  // Performance locative
-  tauxOccupationLocatif: number;
-  dureeMoyenneMiseLocationJours: number;
-  tauxVacanceLocative: number;
-  indicePresionLocative: 'Faible' | 'Modéré' | 'Élevé' | 'Très élevé';
-  // Activité du marché
-  volumeAnnoncesImmobilieres: number;
-  nombreTransactionsEstimees: number;
-  // Population & usage
-  populationLocativeEstimee: number;
-  // Recettes & fiscalité
-  recettesLocativesUsd: number;
-  recettesFiscalesUsd: number;
-  // Autres
-  variationLoyer3Mois: number;
-  typologieDominante: string;
-}
+import { ProvinceData } from '@/types/province';
 
 interface DRCMapProps {
   provincesData: ProvinceData[];
