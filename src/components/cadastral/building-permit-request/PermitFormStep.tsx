@@ -44,7 +44,7 @@ const PermitFormStep: React.FC<PermitFormStepProps> = ({
   parcelNumber, requestType, setRequestType, formData, handleInputChange,
   attachments, setAttachments, feesLoading, feesSource, feeBreakdown,
   totalFeeUSD, isFormValid, requiresOriginalPermit, onPreview,
-  isDraftRestored = false,
+  isDraftRestored = false, parcelData,
 }) => {
   const { toast } = useToast();
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
