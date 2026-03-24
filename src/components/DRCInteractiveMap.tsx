@@ -374,7 +374,7 @@ const DRCInteractiveMap = () => {
                         {isChartVisible('detail-resolution') && (
                           <Card className="p-1 border-border/30">
                             <div className="text-[9px] text-muted-foreground truncate">{dt('detail-resolution', 'Résol. litiges')}</div>
-                            <div className="text-[11px] font-bold text-emerald-600">{selectedProvince.tauxPropriete || 0}%</div>
+                            <div className="text-[11px] font-bold text-emerald-600">{selectedProvince.disputeResolutionRate || 0}%</div>
                           </Card>
                         )}
                       </div>
