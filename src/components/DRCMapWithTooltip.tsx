@@ -14,6 +14,7 @@ interface TooltipLineConfig {
 interface DRCMapWithTooltipProps {
   provincesData: ProvinceData[];
   selectedProvince: string | null;
+  externalZoomProvinceId?: string | null;
   onProvinceSelect: (province: ProvinceData) => void;
   onProvinceHover: (provinceId: string | null) => void;
   hoveredProvince: string | null;
