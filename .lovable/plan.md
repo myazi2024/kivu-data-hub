@@ -1,107 +1,77 @@
 
 
-# Audit visuel — Indicateurs fictifs et divergences
+# Audit — Divergences, visuels fictifs et données fictives
 
-## Constat principal
+## Constat
 
-Le type `ProvinceData` et plusieurs composants contiennent des **indicateurs immobiliers/locatifs fictifs** hérités d'un ancien concept de marché immobilier. Ces indicateurs ne sont pas collectés par le CCC et ne proviennent d'aucune source de données réelle. Ils sont soit hardcodés à `0`, soit "détournés" (`// repurposed`) pour stocker des données cadastrales réelles dans des champs au nom trompeur.
+L'application BIC est un outil cadastral et foncier, mais de nombreux textes et libellés à travers l'application utilisent encore le vocabulaire "immobilier" et "locatif" hérité de l'ancien concept. De plus, certaines données affichées dans les analytics (hypothèques, taxes, permis) proviennent exclusivement des tables satellites peuplées lors de l'approbation des contributions CCC — leur volume dépend directement des données de test générées et non d'une collecte terrain indépendante.
 
-## Divergences et éléments fictifs identifiés
+## Divergences identifiées
 
-### 1. `ProvinceData` (type) — Champs fictifs jamais alimentés
+### Catégorie 1 : Terminologie "immobilier/locatif" résiduelle
 
-Le type `src/types/province.ts` contient 15+ champs qui ne correspondent à aucune donnée collectée :
+| Fichier | Texte actuel | Problème |
+|---------|-------------|----------|
+| `TypewriterAnimation.tsx` (ligne 4) | "BIC transforme les **marchés fonciers** en insights stratégiques" | Terme vague — devrait refléter la mission cadastrale |
+| `Footer.tsx` (ligne 39) | "Production et diffusion de données **immobilières** et territoriales" | Imprécis — c'est des données cadastrales |
+| `About.tsx` (ligne 18) | "Comprendre les réalités foncières et **locatives**" | Pas de données locatives collectées |
+| `About.tsx` (ligne 37) | "Collecte numérique via **Myazi Immobilier**" | Nom d'application obsolète |
+| `Articles.tsx` (lignes 17, 19, 42, 47) | "Articles **Immobiliers**", "marché **immobilier** de la RDC" | Devrait être "Articles fonciers" |
+| `Careers.tsx` (lignes 12, 16, 23, 55, 72) | "Analyste de Données **Immobilières**", "secteur **immobilier**" | Terminologie incohérente |
+| `Partnership.tsx` (lignes 36, 56, 101) | "API d'accès aux données **immobilières**", "secteur **immobilier**" | Idem |
+| `Publications.tsx` (ligne 45) | "Rapports d'analyse urbaine et **immobilière**" | Devrait être "cadastrale et foncière" |
+| `PublicationCard.tsx` (lignes 187, 224) | "marché **immobilier** et données territoriales", "Rapport d'analyse du marché **immobilier**" | Idem |
 
-```text
-FICTIF (toujours 0 ou vide)         DÉTOURNÉ (nom trompeur)
-─────────────────────────────       ─────────────────────────────
-variationLoyer3Mois: 0              prixMoyenLoyer → parcels count
-typologieDominante: ''              prixMoyenVenteM2 → title requests
-rendementLocatifBrut: 0             tauxOccupationLocatif → contributions
-tauxCroissancePrixAnnuel: 0         dureeMoyenneMiseLocationJours → mutations
-permisConstruireMois: 0             tauxVacanceLocative → disputes count
-tauxAccessibiliteLogement: 0        volumeAnnoncesImmobilieres → certificates
-repartitionTypologique: {0,0,0}     populationLocativeEstimee → expertises
-region: 'Centre' (forcé)            nombreTransactionsEstimees → invoices
-zone: 'Urbaine' (forcé)
-historiquePrix: (jamais alimenté)
-```
+### Catégorie 2 : Onglet "Parcelles titrées" — données satellites potentiellement fictives
 
-### 2. `ProvinceAnalytics.tsx` — Composant entièrement fictif (code mort)
+L'onglet `parcels-titled` dans Analytics affiche des données provenant de 3 tables satellites :
+- `cadastral_mortgages` (2 enregistrements) — graphiques "Hypothèques", "Créanciers", "Statut hyp.", "Contrats hyp./an"
+- `cadastral_tax_history` (15 enregistrements) — graphiques "Taxes", "Taxes/année", "Montants taxes/an"
+- `cadastral_building_permits` (46 enregistrements) — graphiques "Autorisation bâtir", "Statut autoris.", "Validité autoris.", "Service émetteur"
 
-- N'est importé nulle part dans l'application
-- Affiche des graphiques basés sur les champs détournés avec des labels trompeurs ("Prix de loyer par province", "Population par province", "Prix Moyens Nationaux")
-- Simule des évolutions de prix avec des formules arbitraires (lignes 42-72)
+**Ces données ne sont pas collectées directement via le formulaire CCC.** Elles sont insérées dans ces tables satellites uniquement lorsqu'un admin approuve une contribution CCC (`AdminCCCContributions.tsx`). Le nombre affiché (ex: le "2700" mentionné par l'utilisateur) peut venir de données de test non purgées ou de l'accumulation de données d'approbations.
 
-### 3. `ZoneDetailsPanel.tsx` — Indicateurs fictifs du marché immobilier
+Le **nom de l'onglet** "Parcelles titrées" est aussi trompeur : il affiche TOUTES les parcelles de `cadastral_parcels`, pas uniquement celles avec un titre foncier.
 
-- **Mock data explicite** (ligne 65) : `generateMockTrendData()` génère de fausses tendances de prix
-- Affiche des KPIs non collectés : "Prix moyen loyer", "Prix m² vente", "Taux vacance", "Variation 3 mois", "Population locative estimée", "Volume annonces/mois"
-- Onglet "Tendances" entièrement basé sur des données simulées
+### Catégorie 3 : KPI "Hypothèques" dans l'onglet Parcelles
 
-### 4. `TerritorialMap.tsx` + `TerritorialFilters.tsx` — Filtres fictifs
-
-- Filtre "Taux de vacance" (slider 0-100%) basé sur des données non collectées
-- Les zones territoriales (`AdminTerritorialZones`) exposent des champs de saisie admin pour des indicateurs fictifs (prix loyer, prix vente m², taux vacance, volume annonces, population locative, durée mise en location)
-
-### 5. `StandardizedZoneMetrics` — Interface fantôme
-
-L'interface dans `province.ts` (lignes 50-69) définit des métriques de marché immobilier (`prixMoyenLoyer`, `tauxVacanceLocative`, `volumeAnnonces`, `populationLocative`) qui ne sont utilisées nulle part comme contrat de données.
-
-### 6. `ServicesSection.tsx` + `Services.tsx` — Descriptions trompeuses
-
-- "Estimation de population" → "Calcul de la population locative et superficie occupée" : l'application ne calcule pas de population locative
-- "Recettes fiscales" → "Estimation des recettes fiscales locatives théoriques" : les recettes sont cadastrales, pas locatives
-- "Cartographie dynamique" → "Visualisation des loyers et taux de vacance par zone" : l'app visualise des données cadastrales, pas des loyers
-
-### Pas de divergence
-
-- **Accueil** (HeroSection, Footer, TypewriterAnimation) : aucun indicateur fictif
-- **Analytics** (13 blocs dans `visualizations/blocks/`) : tous alimentés par des données Supabase réelles via `useLandDataAnalytics`
-- **DRCInteractiveMap** panneau de détail province : les labels affichés ("Parcelles", "Titres", "Contributions", etc.) sont corrects grâce au système `dt()` configurable par l'admin
+Le KPI `kpi-mortgages` affiche le montant total des hypothèques comme indicateur clé de l'onglet parcelles, ce qui est disproportionné pour 2 enregistrements et donne l'impression de données significatives.
 
 ## Plan de correction
 
-### Etape 1 : Refactorer `ProvinceData` — Renommer les champs détournés
+### Etape 1 : Aligner la terminologie sur la mission cadastrale
 
-Remplacer les noms trompeurs par des noms sémantiquement corrects :
-- `prixMoyenLoyer` → `parcelsCount`
-- `prixMoyenVenteM2` → `titleRequestsCount`
-- `tauxOccupationLocatif` → `contributionsCount`
-- `dureeMoyenneMiseLocationJours` → `mutationsCount`
-- `tauxVacanceLocative` → `disputesCount`
-- `volumeAnnoncesImmobilieres` → `certificatesCount`
-- `populationLocativeEstimee` → `expertisesCount`
-- `nombreTransactionsEstimees` → `invoicesCount`
-- `recettesLocativesUsd` → `revenueUsd`
+Corriger les textes "immobilier/locatif" dans les 9 fichiers identifiés :
+- `TypewriterAnimation.tsx` → "BIC transforme les données foncières en outils de décision"
+- `Footer.tsx` → "Production et diffusion de données cadastrales et foncières pour la RDC"
+- `About.tsx` → Supprimer "locatives", remplacer "Myazi Immobilier" par "Myazi"
+- `Articles.tsx` → "Articles fonciers", "analyses sur le secteur foncier de la RDC"
+- `Careers.tsx` → "Analyste de Données Foncières", "secteur foncier"
+- `Partnership.tsx` → "données cadastrales", "secteur foncier"
+- `Publications.tsx` → "analyse cadastrale et foncière"
+- `PublicationCard.tsx` → "données cadastrales et territoriales"
 
-Supprimer les champs purement fictifs : `variationLoyer3Mois`, `typologieDominante`, `rendementLocatifBrut`, `tauxCroissancePrixAnnuel`, `permisConstruireMois`, `tauxAccessibiliteLogement`, `repartitionTypologique`, `historiquePrix`, `StandardizedZoneMetrics`.
+### Etape 2 : Renommer l'onglet "Parcelles titrées" → "Parcelles"
 
-### Etape 2 : Supprimer `ProvinceAnalytics.tsx` (code mort)
+Dans `ANALYTICS_TABS_REGISTRY`, changer le label de `'Parcelles titrées'` à `'Parcelles'` pour refléter le contenu réel (toutes les parcelles cadastrales, pas uniquement les titrées).
 
-### Etape 3 : Nettoyer `ZoneDetailsPanel.tsx`
+### Etape 3 : Regrouper les données satellites sous condition d'existence
 
-Supprimer les KPIs et graphiques fictifs (prix loyer, prix vente, taux vacance, variation, mock trends). Ne garder que les métriques alimentées par la base (pression foncière, typologie, recettes).
-
-### Etape 4 : Corriger les descriptions de services
-
-- "Estimation de population" → description alignée sur les données réelles (cadastre, parcelles)
-- "Recettes fiscales" → supprimer "locatives théoriques"
-- "Cartographie dynamique" → description cadastrale
-
-### Etape 5 : Mettre à jour tous les consommateurs
-
-Propager les renommages de `ProvinceData` dans `DRCInteractiveMap.tsx`, `DRCMapWithTooltip`, `buildEmptyProvince()`, etc.
+Dans `ParcelsWithTitleBlock.tsx`, masquer automatiquement les sections hypothèques/taxes/permis quand ces tables sont vides (elles le seront souvent en production) au lieu de les afficher avec des graphiques "0". Les graphiques sont déjà conditionnés par `hidden={...length === 0}` pour certains, mais les KPIs s'affichent toujours.
 
 ### Fichiers impactés
 
 | Fichier | Action |
 |---------|--------|
-| `src/types/province.ts` | Refactorer le type, supprimer `StandardizedZoneMetrics` |
-| `src/components/DRCInteractiveMap.tsx` | Adapter aux nouveaux noms de champs |
-| `src/components/charts/ProvinceAnalytics.tsx` | Supprimer (code mort) |
-| `src/components/map/ZoneDetailsPanel.tsx` | Supprimer indicateurs fictifs et mock data |
-| `src/components/ServicesSection.tsx` | Corriger descriptions |
-| `src/pages/Services.tsx` | Corriger descriptions |
-| Consommateurs de `ProvinceData` | Adapter aux renommages |
+| `src/components/TypewriterAnimation.tsx` | Corriger la phrase |
+| `src/components/Footer.tsx` | Corriger la description |
+| `src/pages/About.tsx` | Supprimer "locatives", corriger "Myazi" |
+| `src/pages/Articles.tsx` | "Immobiliers" → "Fonciers" |
+| `src/pages/Careers.tsx` | "Immobilières" → "Foncières" |
+| `src/pages/Partnership.tsx` | "immobilières" → "cadastrales" |
+| `src/pages/Publications.tsx` | "immobilière" → "cadastrale et foncière" |
+| `src/components/publications/PublicationCard.tsx` | "immobilier" → "cadastral" |
+| `src/hooks/useAnalyticsChartsConfig.ts` | Label "Parcelles titrées" → "Parcelles" |
+
+9 fichiers, corrections de chaînes de caractères.
 
