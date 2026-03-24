@@ -134,7 +134,7 @@ const DRCInteractiveMap = () => {
 
   /** Paliers choroplèthes fixes pour la densité */
   const DENSITY_TIERS = [
-    { label: 'Faible', min: 0, max: 30, color: 'hsl(142, 71%, 75%)' },
+    { label: 'Faible', min: 0, max: 30, color: 'hsl(210, 20%, 82%)' },
     { label: 'Modéré', min: 31, max: 100, color: 'hsl(45, 93%, 55%)' },
     { label: 'Élevé', min: 101, max: 500, color: 'hsl(25, 90%, 55%)' },
     { label: 'Très élevé', min: 501, max: Infinity, color: 'hsl(348, 80%, 45%)' },
