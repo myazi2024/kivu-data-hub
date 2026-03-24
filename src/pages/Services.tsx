@@ -31,19 +31,19 @@ const Services = () => {
     {
       icon: Map,
       title: "Cartographie dynamique",
-      description: "Cartographie dynamique des loyers et taux de vacance par zone géographique",
+      description: "Visualisation des données cadastrales et foncières par zone géographique",
       variant: "primary"
     },
     {
       icon: BarChart3,
-      title: "Estimation de population",
-      description: "Estimation de la population locative et de la superficie occupée",
+      title: "Analyse cadastrale",
+      description: "Statistiques sur les parcelles, titres et contributions par territoire",
       variant: "secondary"
     },
     {
       icon: Calculator,
       title: "Recettes fiscales",
-      description: "Calcul des recettes fiscales locatives théoriques",
+      description: "Estimation des recettes fiscales cadastrales par zone",
       variant: "accent"
     },
     {
