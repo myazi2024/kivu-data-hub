@@ -241,6 +241,7 @@ const DRCInteractiveMap = () => {
                       <DRCMapWithTooltip
                         provincesData={provincesData}
                         selectedProvince={selectedProvince?.id || null}
+                        externalZoomProvinceId={externalProvinceId}
                         onProvinceSelect={setSelectedProvince}
                         onProvinceHover={setHoveredProvince}
                         hoveredProvince={hoveredProvince}

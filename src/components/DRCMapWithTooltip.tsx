@@ -37,6 +37,7 @@ function easeOutCubic(t: number) {
 const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
   provincesData,
   selectedProvince,
+  externalZoomProvinceId,
   onProvinceSelect,
   onProvinceHover,
   hoveredProvince,
