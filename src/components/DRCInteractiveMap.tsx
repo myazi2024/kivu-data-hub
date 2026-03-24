@@ -152,7 +152,21 @@ const DRCInteractiveMap = () => {
   const totalParcels = useMemo(() => provincesData.reduce((s, p) => s + p.parcelsCount, 0), [provincesData]);
   const todayStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-  const handleCopyImage = async () => {
+  /** Handle province filter from Analytics → zoom map */
+  const handleProvinceFilter = React.useCallback((provinceName: string | undefined) => {
+    if (!provinceName) {
+      setSelectedProvince(null);
+      setExternalProvinceId(null);
+      return;
+    }
+    const province = provincesData.find(p => p.name === provinceName);
+    if (province) {
+      setSelectedProvince(province);
+      setExternalProvinceId(province.id);
+    }
+  }, [provincesData]);
+
+
     if (!mapCardRef.current || isCopying) return;
     setIsCopying(true);
     try {
