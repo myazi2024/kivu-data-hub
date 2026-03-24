@@ -81,11 +81,11 @@ export function deduceLandTitleType(input: LandTitleDeductionInput): DeducedLand
   const isNonBati = constructionNature === 'Non bâti' || constructionType === 'Terrain nu';
   
   // Types d'usage
-  const isResidential = declaredUsage === 'Habitation' || declaredUsage === 'Résidentiel';
-  const isCommercial = declaredUsage === 'Commercial' || declaredUsage === 'Affaires';
-  const isAgricultural = declaredUsage === 'Agriculture' || declaredUsage === 'Élevage' || declaredUsage === 'Exploitation agricole';
-  const isIndustrial = declaredUsage === 'Industriel' || declaredUsage === 'Manufacture';
-  const isMixed = declaredUsage === 'Mixte';
+  const isResidential = declaredUsage === 'Habitation' || declaredUsage === 'Résidentiel' || declaredUsage === 'Location';
+  const isCommercial = declaredUsage === 'Commerce' || declaredUsage === 'Commercial' || declaredUsage === 'Affaires' || declaredUsage === 'Bureau' || declaredUsage === 'Entrepôt';
+  const isAgricultural = declaredUsage === 'Agriculture' || declaredUsage === 'Agricole' || declaredUsage === 'Élevage' || declaredUsage === 'Exploitation agricole';
+  const isIndustrial = declaredUsage === 'Industrie' || declaredUsage === 'Industriel' || declaredUsage === 'Manufacture';
+  const isMixed = declaredUsage === 'Usage mixte' || declaredUsage === 'Mixte';
   
   // Classification par superficie
   const isLargeArea = areaSqm && areaSqm > SURFACE_THRESHOLDS.GRAND_TERRAIN;

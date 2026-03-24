@@ -806,7 +806,7 @@ const CadastralMap = () => {
                     <strong>Lot ${lot.lot_number}</strong><br/>
                     <span style="color:#666">Parcelle: ${lot.parcel_number}</span><br/>
                     <span>Surface: ${lot.area_sqm?.toLocaleString()} m²</span><br/>
-                    <span>Usage: ${lot.intended_use || 'résidentiel'}</span>
+                    <span>Usage: ${lot.intended_use || 'Habitation'}</span>
                     ${lot.owner_name ? `<br/><span>Propriétaire: ${lot.owner_name}</span>` : ''}
                   </div>
                 `);
