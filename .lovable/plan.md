@@ -1,76 +1,86 @@
 
 
-# Audit — Accueil, Données foncières, Carte RDC : Divergences et code mort
+# Audit Admin — Divergences, données fictives, redondances et irrégularités
 
 ## Divergences identifiées
 
-### 1. `TerritorialMap.tsx` et ses sous-composants — Code mort avec indicateurs fictifs
+### 1. `AdminAnalytics.tsx` — Code mort (295 lignes)
 
-Le composant `TerritorialMap` et ses dépendances (`ZoneIndicators`, `ZoneDetailsPanel`, `TerritorialFilters`) ne sont **importés dans aucune page**. C'est du code mort.
+Ce composant n'est **importé dans aucune page**. Le dashboard admin utilise `AdminDashboardOverview` et la config graphiques utilise `AdminAnalyticsChartsConfig`. `AdminAnalytics.tsx` est un doublon obsolète qui requête les tables `payments` et `publication_downloads` indépendamment du système principal.
 
-Plus grave, ces composants affichent des **indicateurs fictifs immobiliers/locatifs** provenant de la table `territorial_zones` :
+### 2. `AdminTerritorialZones.tsx` — Indicateurs locatifs/immobiliers fictifs (660 lignes)
 
-| Composant | Indicateurs fictifs affichés |
-|-----------|------------------------------|
-| `ZoneData` (type, ligne 36-48) | `prixmoyenloyer`, `prixmoyenvente_m2`, `tauxvacancelocative`, `variationloyer3mois_pct`, `populationlocativeestimee`, `volumeannoncesmois`, `recetteslocativestheoriques_usd` |
-| `ZoneIndicators.tsx` | "Loyer moyen", "Taux vacance moyen", "Population totale", "Variation moyenne", "Recettes théoriques" |
-| `ZoneDetailsPanel.tsx` | "Recettes théoriques", "Densité résidentielle" |
-| `TerritorialFilters.tsx` | Filtre "Taux de vacance" (slider 0-100%) |
-| `TerritorialMap.tsx` popup (lignes 354-391) | "Prix loyer", "Prix vente m²", "Taux vacance", "Variation 3M", "Population" |
+Le composant gère 12 champs locatifs/immobiliers qui ne correspondent à **aucune donnée collectée par le CCC** :
 
-Aucune de ces données n'est collectée par le CCC. Elles viennent de la table `territorial_zones` qui contient des champs locatifs/immobiliers hérités.
+| Champ fictif | Onglet |
+|---|---|
+| `prix_moyen_loyer` | Marché |
+| `prix_moyen_vente_m2` | Marché |
+| `taux_vacance_locative` | Marché |
+| `taux_occupation_locatif` | Marché |
+| `population_locative_estimee` | Marché |
+| `duree_moyenne_mise_location_jours` | Marché |
+| `volume_annonces_mois` | Marché |
+| `nombre_transactions_estimees` | Marché |
+| `recettes_locatives_theoriques_usd` | Financier |
+| `variation_loyer_3mois_pct` | Financier |
+| `indice_pression_locative` | Général |
+| `densite_residentielle` | (pas affiché dans formulaire mais dans le type) |
 
-### 2. `useZoneData.ts` — Hook associé au code mort
+Les onglets **"Marché"** et **"Financier"** sont entièrement composés de ces champs fictifs. Le tableau principal affiche "Prix Loyer", "Prix m²", "Taux Vacance", "Population" — toutes des données non collectées.
 
-Ce hook charge les données de `territorial_zones` et calcule des "recettes locatives théoriques" avec la formule `prixLoyer * population * 12 * (1 - tauxVacance / 100)` (ligne 59). Formule purement fictive.
+L'export CSV s'appelle `donnees_immobilieres_rdc.csv` (devrait être `donnees_foncieres_rdc.csv` — déjà identifié dans un audit précédent mais non corrigé).
 
-### 3. Terminologie résiduelle "immobilier"
+### 3. `AdminSidebar.tsx` — Terminologie résiduelle
 
-| Fichier | Texte | Correction |
-|---------|-------|------------|
-| `ServicesSection.tsx` ligne 50 | "Projets **immobiliers**" | → "Projets fonciers" |
-| `Services.tsx` ligne 63 | "Projets **immobiliers**" | → "Projets fonciers" |
-| `Services.tsx` ligne 64 | "Appui aux projets **immobiliers**" | → "Appui aux projets fonciers" |
-| `Auth.tsx` ligne 260 | "Bureau de l'**Immobilier** du Congo" | Nom officiel — conserver tel quel |
+- Ligne 113 : `'Expertises Immob.'` → devrait être `'Expertises foncières'`
 
-**Note** : "Bureau de l'Immobilier du Congo" est le nom légal de l'organisation (Footer, Navigation, Legal, About, Contact, Invoice). Ce n'est pas une divergence, c'est la dénomination sociale.
+### 4. `AdminSystemHealth.tsx` — Indicateurs simulés
 
-Le terme "expertise immobilière" dans les services (Mutation, Expertise) désigne un acte juridique réel (évaluation vénale d'un bien). Ce n'est pas un indicateur fictif — il est correct.
+- `connectionPool: 85` hardcodé comme valeur initiale (ligne 25)
+- `Edge Functions` : statut forcé à `'online'` sans vérification réelle (ligne 93)
+- Le "Pool de Connexions" affiche une valeur **estimée** à partir de la latence, pas une mesure réelle
 
-### 4. Redondance potentielle : `parcel_type` filtrage
+### 5. `PredictionsPanel.tsx` — "IA" sans avertissement
 
-Dans `ParcelsWithTitleBlock.tsx` (ligne 100-101), les parcelles urbaines sont filtrées par `parcel_type === 'SU'` et rurales par `parcel_type === 'SR'`. Or le CCC utilise `parcel_type` avec les valeurs `'Terrain bâti'` et `'Terrain nu'`, pas `'SU'`/`'SR'`. Si la base ne contient que des valeurs CCC, ces compteurs seront toujours à 0.
+Le panneau "Prévisions IA" utilise une simple régression linéaire et un z-score pour la détection d'anomalies. Le label "IA" est trompeur sans disclaimer sur la méthode simpliste utilisée.
 
 ## Plan de correction
 
-### Etape 1 : Supprimer le code mort `TerritorialMap`
+### Etape 1 : Supprimer `AdminAnalytics.tsx` (code mort)
 
-Supprimer les fichiers suivants (jamais importés dans aucune route) :
-- `src/components/TerritorialMap.tsx`
-- `src/components/map/ZoneIndicators.tsx`
-- `src/components/map/ZoneDetailsPanel.tsx`
-- `src/components/map/TerritorialFilters.tsx`
-- `src/hooks/useZoneData.ts`
+### Etape 2 : Nettoyer `AdminTerritorialZones.tsx`
 
-### Etape 2 : Corriger la terminologie "Projets immobiliers"
+- **Supprimer les onglets "Marché" et "Financier"** du formulaire de création/édition (ne garder que "Général" et "Géographique")
+- **Supprimer les colonnes fictives** du tableau : "Prix Loyer", "Prix m²", "Taux Vacance", "Population"
+- **Remplacer** par des colonnes pertinentes : "Pression foncière", "Typologie", "Valeur foncière moy."
+- **Supprimer les champs fictifs** du `formData`, `resetForm()`, `handleSave()` et du type `TerritorialZone`
+- **Conserver** les champs pertinents : `name`, `zone_type`, `coordinates`, `typologie_dominante`, `indice_pression_fonciere`, `valeur_fonciere_moyenne_parcelle_usd`, `recettes_fiscales_estimees_usd`
+- **Renommer** l'export CSV en `donnees_foncieres_rdc.csv` et nettoyer les colonnes exportées
 
-- `ServicesSection.tsx` : "Projets immobiliers" → "Projets fonciers"
-- `Services.tsx` : idem + description
+### Etape 3 : Corriger `AdminSidebar.tsx`
 
-### Etape 3 : Vérifier le filtrage `SU`/`SR` dans ParcelsWithTitleBlock
+- `'Expertises Immob.'` → `'Expertises foncières'`
 
-Aligner les valeurs de filtrage sur celles réellement utilisées dans la base. Si la base utilise `'Terrain bâti'`/`'Terrain nu'`, corriger les conditions (lignes 100-101).
+### Etape 4 : Corriger `AdminSystemHealth.tsx`
+
+- Remplacer le label "Pool de Connexions" par "Latence estimée" ou ajouter un disclaimer clair "Estimation basée sur la latence"
+- Ajouter "(non vérifié)" à côté du statut Edge Functions
+
+### Etape 5 : Ajouter un disclaimer au `PredictionsPanel.tsx`
+
+- Remplacer "Prévisions IA" par "Prévisions statistiques"
+- Ajouter une note : "Basé sur une régression linéaire simple — à titre indicatif uniquement"
 
 ### Fichiers impactés
 
 | Fichier | Action |
 |---------|--------|
-| `src/components/TerritorialMap.tsx` | Supprimer |
-| `src/components/map/ZoneIndicators.tsx` | Supprimer |
-| `src/components/map/ZoneDetailsPanel.tsx` | Supprimer |
-| `src/components/map/TerritorialFilters.tsx` | Supprimer |
-| `src/hooks/useZoneData.ts` | Supprimer |
-| `src/components/ServicesSection.tsx` | "immobiliers" → "fonciers" |
-| `src/pages/Services.tsx` | "immobiliers" → "fonciers" |
-| `src/components/visualizations/blocks/ParcelsWithTitleBlock.tsx` | Vérifier filtrage SU/SR |
+| `src/components/admin/AdminAnalytics.tsx` | Supprimer |
+| `src/components/admin/AdminTerritorialZones.tsx` | Retirer onglets/champs fictifs locatifs |
+| `src/components/admin/AdminSidebar.tsx` | "Expertises Immob." → "Expertises foncières" |
+| `src/components/admin/AdminSystemHealth.tsx` | Clarifier les valeurs estimées |
+| `src/components/admin/dashboard/PredictionsPanel.tsx` | Disclaimer sur la méthode |
+
+5 fichiers, dont 1 suppression et 4 corrections.
 
