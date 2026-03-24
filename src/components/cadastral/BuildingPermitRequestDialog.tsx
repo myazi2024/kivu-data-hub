@@ -369,6 +369,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
               isFormValid={form.isFormValid} requiresOriginalPermit={form.requiresOriginalPermit}
               onPreview={handlePreview}
               isDraftRestored={form.isDraftRestored}
+              parcelData={parcelData}
             />
           )}
           {step === 'preview' && (
