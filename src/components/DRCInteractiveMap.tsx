@@ -207,14 +207,18 @@ const DRCInteractiveMap = () => {
                     </div>
                   </div>
                   
-                  {/* Légende choroplèthe */}
+                  {/* Légende choroplèthe à 4 paliers */}
                   <div className="absolute bottom-2 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30">
                     <div className="text-[8px] text-muted-foreground mb-0.5">Densité parcelles</div>
-                    <div className="flex items-center gap-0.5">
-                      <div className="w-3 h-2 rounded-sm" style={{ background: 'hsl(142, 71%, 85%)' }} />
-                      <span className="text-[7px] text-muted-foreground">0</span>
-                      <div className="w-8 h-2 rounded-sm" style={{ background: 'linear-gradient(to right, hsl(142, 71%, 85%), hsl(142, 71%, 35%))' }} />
-                      <span className="text-[7px] text-muted-foreground">{maxParcels}</span>
+                    <div className="flex flex-col gap-0.5">
+                      {DENSITY_TIERS.map(tier => (
+                        <div key={tier.label} className="flex items-center gap-1">
+                          <div className="w-3 h-2 rounded-sm flex-shrink-0" style={{ background: tier.color }} />
+                          <span className="text-[7px] text-muted-foreground">
+                            {tier.label} ({tier.min}{tier.max === Infinity ? '+' : `–${tier.max}`})
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                   
