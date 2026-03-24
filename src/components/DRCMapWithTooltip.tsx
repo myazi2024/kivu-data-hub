@@ -143,9 +143,11 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
 
       const handlePathMouseOut = (event: Event) => {
         const target = event.target as SVGElement;
+        const provinceId = target.getAttribute('data-province');
+        const province = provinceId ? provincesData.find(p => p.id === provinceId) : null;
         
-        // Restaurer la couleur uniforme
-        target.setAttribute('fill', 'hsl(210, 40%, 85%)');
+        // Restaurer la couleur choroplèthe
+        target.setAttribute('fill', province ? getProvinceColor(province) : 'hsl(210, 40%, 85%)');
 
         // Ne pas masquer si on est au-dessus de l'infobulle, en train de drag, ou si positionnée manuellement
         if (isDragging || isManuallyPositioned || overTooltip) {
