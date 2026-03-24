@@ -141,7 +141,7 @@ const DRCInteractiveMap = () => {
 
   /** Dynamic choropleth color based on parcels count */
   const getProvinceColor = (province: ProvinceData) => {
-    const ratio = province.prixMoyenLoyer / maxParcels; // prixMoyenLoyer = parcels count
+    const ratio = province.parcelsCount / maxParcels;
     const lightness = 85 - ratio * 50; // 85% (light) → 35% (dark)
     return `hsl(142, 71%, ${lightness}%)`;
   };
