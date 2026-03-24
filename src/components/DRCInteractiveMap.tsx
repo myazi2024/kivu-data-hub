@@ -297,7 +297,7 @@ const DRCInteractiveMap = () => {
                           {isChartVisible('detail-mutations') && (
                             <Card className="p-1 border-border/30">
                               <div className="text-[9px] text-muted-foreground truncate">{dt('detail-mutations', 'Mutations')}</div>
-                              <div className="text-[11px] font-bold text-violet-600">{formatNumber(selectedProvince.dureeMoyenneMiseLocationJours)}</div>
+                              <div className="text-[11px] font-bold text-violet-600">{formatNumber(selectedProvince.mutationsCount)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-disputes') && (
