@@ -13,12 +13,12 @@ import { RecentActivity } from './dashboard/RecentActivity';
 import { AlertsPanel } from './dashboard/AlertsPanel';
 import { TopPerformers } from './dashboard/TopPerformers';
 import { AdditionalCharts } from './dashboard/AdditionalCharts';
-import { PredictionsPanel } from './dashboard/PredictionsPanel';
+
 import { ComparativeAnalysis } from './dashboard/ComparativeAnalysis';
 import { BusinessMetrics } from './dashboard/BusinessMetrics';
 import { GeographicalAnalysis } from './dashboard/GeographicalAnalysis';
 import { ContributionPerformance } from './dashboard/ContributionPerformance';
-import { SmartAlerts } from './dashboard/SmartAlerts';
+
 import { ResellerAnalysis } from './dashboard/ResellerAnalysis';
 import { CohortAnalysis } from './dashboard/CohortAnalysis';
 import { AutomatedReports } from './dashboard/AutomatedReports';
@@ -335,9 +335,9 @@ export function AdminDashboardOverview() {
 
       {/* Enhanced Analytics Tabs */}
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 h-auto gap-1">
+        <TabsList className="grid w-full grid-cols-3 md:grid-cols-5 h-auto gap-1">
           <TabsTrigger value="overview" className="text-xs md:text-sm">Vue d'ensemble</TabsTrigger>
-          <TabsTrigger value="predictions" className="text-xs md:text-sm">Prédictions IA</TabsTrigger>
+          
           <TabsTrigger value="business" className="text-xs md:text-sm">Métriques Business</TabsTrigger>
           <TabsTrigger value="comparative" className="text-xs md:text-sm">Comparatif</TabsTrigger>
           <TabsTrigger value="cohort" className="text-xs md:text-sm">Cohortes</TabsTrigger>
@@ -358,12 +358,6 @@ export function AdminDashboardOverview() {
           </div>
         </TabsContent>
 
-        <TabsContent value="predictions">
-          <PredictionsPanel loading={enhancedLoading} historicalData={enhancedData?.historicalRevenue} />
-          <div className="mt-4">
-            <SmartAlerts alerts={enhancedData?.alerts} />
-          </div>
-        </TabsContent>
 
         <TabsContent value="business">
           <BusinessMetrics loading={enhancedLoading} metrics={enhancedData?.businessMetrics} />

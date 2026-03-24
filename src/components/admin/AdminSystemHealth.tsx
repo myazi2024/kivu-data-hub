@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
+
 import { supabase } from '@/integrations/supabase/client';
-import { Activity, Database, Server, Wifi, RefreshCw, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import { Activity, Database, Server, RefreshCw, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ServiceStatus {
@@ -20,7 +20,6 @@ const AdminSystemHealth = () => {
   const [dbStats, setDbStats] = useState({
     totalTables: 0,
     totalRecords: 0,
-    connectionPool: 85,
   });
 
   useEffect(() => {
@@ -50,12 +49,9 @@ const AdminSystemHealth = () => {
         totalRecords += count || 0;
       }
 
-      // Estimate connection pool health based on response latency
-      const estimatedPoolHealth = dbLatency < 100 ? 95 : dbLatency < 300 ? 80 : dbLatency < 500 ? 60 : 40;
       setDbStats({
         totalTables: tables.length,
         totalRecords,
-        connectionPool: estimatedPoolHealth,
       });
 
       // Test real latency for storage
@@ -90,7 +86,7 @@ const AdminSystemHealth = () => {
         },
         {
           name: 'Edge Functions',
-          status: 'online',
+          status: 'degraded',
           latency: undefined,
           lastCheck: new Date(),
         },
@@ -182,12 +178,12 @@ const AdminSystemHealth = () => {
       </Card>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         <Card className="rounded-xl shadow-sm border-0 bg-card/80">
           <CardContent className="p-3 text-center">
             <Database className="h-4 w-4 mx-auto text-primary mb-1" />
             <p className="text-lg font-bold">{dbStats.totalTables}</p>
-            <p className="text-[10px] text-muted-foreground">Tables</p>
+            <p className="text-[10px] text-muted-foreground">Tables surveillées</p>
           </CardContent>
         </Card>
         <Card className="rounded-xl shadow-sm border-0 bg-card/80">
@@ -195,13 +191,6 @@ const AdminSystemHealth = () => {
             <Server className="h-4 w-4 mx-auto text-primary mb-1" />
             <p className="text-lg font-bold">{dbStats.totalRecords.toLocaleString()}</p>
             <p className="text-[10px] text-muted-foreground">Enregistrements</p>
-          </CardContent>
-        </Card>
-        <Card className="rounded-xl shadow-sm border-0 bg-card/80">
-          <CardContent className="p-3 text-center">
-            <Wifi className="h-4 w-4 mx-auto text-primary mb-1" />
-            <p className="text-lg font-bold">{dbStats.connectionPool}%</p>
-            <p className="text-[10px] text-muted-foreground">Pool</p>
           </CardContent>
         </Card>
       </div>
@@ -237,24 +226,6 @@ const AdminSystemHealth = () => {
         </CardContent>
       </Card>
 
-      {/* Connection Pool */}
-      <Card className="rounded-2xl shadow-sm border-0 bg-card/80 backdrop-blur-sm">
-        <CardHeader className="p-4 pb-2">
-          <CardTitle className="text-sm font-semibold">Santé estimée (latence)</CardTitle>
-        </CardHeader>
-        <CardContent className="p-4 pt-0">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Score</span>
-              <span className="font-medium">{dbStats.connectionPool}%</span>
-            </div>
-            <Progress value={dbStats.connectionPool} className="h-2" />
-            <p className="text-[10px] text-muted-foreground">
-              Estimation basée sur la latence de réponse — ne reflète pas l'état réel du pool de connexions
-            </p>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };
