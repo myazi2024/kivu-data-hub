@@ -204,6 +204,7 @@ const DRCInteractiveMap = () => {
                         getProvinceColor={getProvinceColor}
                         onMapReady={setMapInstance}
                         tooltipLineConfigs={tooltipLineConfigs}
+                        onZoomChange={setIsMapZoomed}
                       />
                     </div>
                   </div>
