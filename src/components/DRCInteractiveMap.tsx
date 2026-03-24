@@ -148,6 +148,27 @@ const DRCInteractiveMap = () => {
   const formatCurrency = (value: number): string =>
     new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
 
+  const totalParcels = useMemo(() => provincesData.reduce((s, p) => s + p.parcelsCount, 0), [provincesData]);
+  const todayStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+  const handleCopyImage = async () => {
+    if (!mapCardRef.current || isCopying) return;
+    setIsCopying(true);
+    try {
+      const canvas = await html2canvas(mapCardRef.current, { backgroundColor: null, scale: 2, borderRadius: 12 } as any);
+      canvas.toBlob(async (blob) => {
+        if (blob) {
+          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+          toast.success('Image copiée dans le presse-papier');
+        }
+        setIsCopying(false);
+      }, 'image/png');
+    } catch {
+      toast.error('Impossible de copier l\'image');
+      setIsCopying(false);
+    }
+  };
+
   /** Choropleth color based on fixed density tiers */
   const getProvinceColor = (province: ProvinceData) => {
     const count = province.parcelsCount;
