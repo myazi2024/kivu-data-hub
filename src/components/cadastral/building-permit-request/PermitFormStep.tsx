@@ -36,13 +36,15 @@ interface PermitFormStepProps {
   onPreview: () => void;
   /** Fix #15: Show draft restored indicator */
   isDraftRestored?: boolean;
+  /** Pre-fill indicator */
+  parcelData?: any;
 }
 
 const PermitFormStep: React.FC<PermitFormStepProps> = ({
   parcelNumber, requestType, setRequestType, formData, handleInputChange,
   attachments, setAttachments, feesLoading, feesSource, feeBreakdown,
   totalFeeUSD, isFormValid, requiresOriginalPermit, onPreview,
-  isDraftRestored = false,
+  isDraftRestored = false, parcelData,
 }) => {
   const { toast } = useToast();
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -76,6 +78,16 @@ const PermitFormStep: React.FC<PermitFormStepProps> = ({
             <RotateCcw className="h-4 w-4 text-blue-600 dark:text-blue-400" />
             <AlertDescription className="text-xs text-blue-700 dark:text-blue-300">
               Brouillon restauré automatiquement. Vous pouvez reprendre votre saisie.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Pre-fill from CCC indicator */}
+        {!isDraftRestored && parcelData && (parcelData.construction_type || parcelData.construction_nature || parcelData.declared_usage) && (
+          <Alert className="rounded-xl border-primary/30 bg-primary/5">
+            <Info className="h-4 w-4 text-primary" />
+            <AlertDescription className="text-xs text-muted-foreground">
+              Certaines informations ont été pré-remplies depuis les données cadastrales. Vous pouvez les modifier si nécessaire.
             </AlertDescription>
           </Alert>
         )}

@@ -28,10 +28,11 @@ interface BuildingPermitRequestDialogProps {
   onOpenChange: (open: boolean) => void;
   parcelNumber: string;
   hasExistingConstruction?: boolean;
+  parcelData?: any;
 }
 
 const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = ({
-  open, onOpenChange, parcelNumber, hasExistingConstruction = false,
+  open, onOpenChange, parcelNumber, hasExistingConstruction = false, parcelData,
 }) => {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -53,7 +54,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
   const [paymentProvider, setPaymentProvider] = useState('');
   const [paymentPhone, setPaymentPhone] = useState('');
 
-  const form = usePermitRequestForm({ parcelNumber, hasExistingConstruction });
+  const form = usePermitRequestForm({ parcelNumber, hasExistingConstruction, parcelData });
 
   // Cleanup abort controller on unmount
   useEffect(() => {
@@ -368,6 +369,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
               isFormValid={form.isFormValid} requiresOriginalPermit={form.requiresOriginalPermit}
               onPreview={handlePreview}
               isDraftRestored={form.isDraftRestored}
+              parcelData={parcelData}
             />
           )}
           {step === 'preview' && (

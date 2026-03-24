@@ -40,6 +40,11 @@ interface RealEstateExpertiseRequestDialogProps {
     area_sqm?: number;
     current_owner_name?: string;
     construction_type?: string;
+    construction_nature?: string;
+    construction_materials?: string;
+    construction_year?: number;
+    floor_number?: string;
+    property_category?: string;
     property_title_type?: string;
   };
   trigger?: React.ReactNode;
@@ -234,6 +239,52 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
    const [constructionImages, setConstructionImages] = useState<File[]>([]);
    const [constructionImageUrls, setConstructionImageUrls] = useState<string[]>([]);
    const [uploadingFiles, setUploadingFiles] = useState(false);
+
+  // Pre-fill from parcelData (CCC) on first open — using ref guard per memory/ui/form-prefill-persistence-pattern
+  const prefillDoneRef = useRef(false);
+  useEffect(() => {
+    if (!open || !parcelData || prefillDoneRef.current) return;
+    prefillDoneRef.current = true;
+
+    // Map property_category → expertise constructionType key
+    const categoryMap: Record<string, string> = {
+      'Villa': 'villa', 'Maison individuelle': 'villa',
+      'Appartement': 'appartement',
+      'Immeuble': 'immeuble', 'Bâtiment': 'immeuble',
+      'Duplex': 'duplex', 'Triplex': 'duplex',
+      'Studio': 'studio',
+      'Local commercial': 'commercial', 'Commerce': 'commercial', 'Bureau': 'commercial',
+      'Entrepôt': 'entrepot', 'Hangar': 'entrepot',
+      'Terrain nu': 'terrain_nu',
+    };
+
+    // Map construction_materials → expertise wallMaterial key
+    const materialMap: Record<string, string> = {
+      'Béton armé': 'beton',
+      'Briques cuites': 'briques_cuites',
+      'Briques adobe': 'briques_adobe',
+      'Parpaings': 'parpaings', 'Blocs': 'parpaings',
+      'Bois': 'bois',
+      'Tôles métalliques': 'tole',
+      'Mixte': 'mixte',
+    };
+
+    if (parcelData.property_category && categoryMap[parcelData.property_category]) {
+      setConstructionType(categoryMap[parcelData.property_category]);
+    }
+    if (parcelData.construction_year) {
+      setConstructionYear(parcelData.construction_year.toString());
+    }
+    if (parcelData.floor_number) {
+      setNumberOfFloors(parcelData.floor_number);
+    }
+    if (parcelData.area_sqm && parcelData.area_sqm > 0) {
+      setTotalBuiltAreaSqm(parcelData.area_sqm.toString());
+    }
+    if (parcelData.construction_materials && materialMap[parcelData.construction_materials]) {
+      setWallMaterial(materialMap[parcelData.construction_materials]);
+    }
+  }, [open, parcelData]);
 
   // Fetch expertise fees on mount
   useEffect(() => {
@@ -977,6 +1028,16 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         <div className="mt-3">
           {/* === ONGLET GÉNÉRAL === */}
           <TabsContent value="general" className="space-y-3 pr-2 mt-0">
+            {/* Notification importance des données exactes */}
+            {/* Pre-fill indicator */}
+            {parcelData && (parcelData.property_category || parcelData.construction_year || parcelData.construction_materials) && (
+              <Alert className="border-primary/30 bg-primary/5 rounded-xl">
+                <Info className="h-4 w-4 text-primary" />
+                <AlertDescription className="text-xs text-muted-foreground">
+                  Certaines informations ont été pré-remplies depuis les données cadastrales de cette parcelle. Vous pouvez les modifier si nécessaire.
+                </AlertDescription>
+              </Alert>
+            )}
             {/* Notification importance des données exactes */}
             <Alert className="border-amber-500/30 bg-amber-500/10 rounded-xl">
               <Info className="h-4 w-4 text-amber-600" />

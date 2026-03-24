@@ -14,9 +14,10 @@ const DRAFT_KEY = 'permit_request_draft';
 interface UsePermitRequestFormOptions {
   parcelNumber: string;
   hasExistingConstruction: boolean;
+  parcelData?: any;
 }
 
-export const usePermitRequestForm = ({ parcelNumber, hasExistingConstruction }: UsePermitRequestFormOptions) => {
+export const usePermitRequestForm = ({ parcelNumber, hasExistingConstruction, parcelData }: UsePermitRequestFormOptions) => {
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -78,6 +79,20 @@ export const usePermitRequestForm = ({ parcelNumber, hasExistingConstruction }: 
       }));
     }
   }, [user]);
+
+  // Pre-fill from parcelData (CCC) — only once, skip if draft restored
+  const prefillDoneRef = useRef(false);
+  useEffect(() => {
+    if (!parcelData || prefillDoneRef.current || draftRestoredRef.current) return;
+    prefillDoneRef.current = true;
+    setFormData(prev => ({
+      ...prev,
+      constructionType: prev.constructionType || parcelData.construction_type || '',
+      constructionNature: prev.constructionNature || parcelData.construction_nature || '',
+      declaredUsage: prev.declaredUsage || parcelData.declared_usage || '',
+      plannedArea: prev.plannedArea || (parcelData.area_sqm ? String(parcelData.area_sqm) : ''),
+    }));
+  }, [parcelData]);
 
   // Save draft to localStorage on form change
   useEffect(() => {
