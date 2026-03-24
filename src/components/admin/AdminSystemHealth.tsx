@@ -226,24 +226,6 @@ const AdminSystemHealth = () => {
         </CardContent>
       </Card>
 
-      {/* Connection Pool */}
-      <Card className="rounded-2xl shadow-sm border-0 bg-card/80 backdrop-blur-sm">
-        <CardHeader className="p-4 pb-2">
-          <CardTitle className="text-sm font-semibold">Santé estimée (latence)</CardTitle>
-        </CardHeader>
-        <CardContent className="p-4 pt-0">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Score</span>
-              <span className="font-medium">{dbStats.connectionPool}%</span>
-            </div>
-            <Progress value={dbStats.connectionPool} className="h-2" />
-            <p className="text-[10px] text-muted-foreground">
-              Estimation basée sur la latence de réponse — ne reflète pas l'état réel du pool de connexions
-            </p>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };
