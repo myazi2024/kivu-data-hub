@@ -185,18 +185,32 @@ export const RoadBorderingSidesPanel: React.FC<RoadBorderingSidesPanelProps> = (
                         </Badge>
                       )}
                       {side.isConfirmed && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveRoad(side.sideIndex);
-                          }}
-                          className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 rounded-md"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        <>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditRoad(side.sideIndex);
+                            }}
+                            className="h-6 w-6 p-0 text-primary hover:bg-primary/10 rounded-md"
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveRoad(side.sideIndex);
+                            }}
+                            className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 rounded-md"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </>
                       )}
                     </div>
                   </div>
