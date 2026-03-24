@@ -20,7 +20,6 @@ const AdminSystemHealth = () => {
   const [dbStats, setDbStats] = useState({
     totalTables: 0,
     totalRecords: 0,
-    connectionPool: 85,
   });
 
   useEffect(() => {
