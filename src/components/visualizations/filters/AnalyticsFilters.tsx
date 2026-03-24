@@ -1,9 +1,12 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useContext, createContext } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { MapPin, Calendar, X, CheckCircle, CreditCard } from 'lucide-react';
 import { AnalyticsFilter, defaultFilter, extractUnique, getAvailableYears, getSectionType } from '@/utils/analyticsHelpers';
+
+/** Context to propagate province filter changes up to the map */
+export const ProvinceFilterContext = createContext<((province: string | undefined) => void) | null>(null);
 import {
   getAllProvinces,
   getVillesForProvince,
