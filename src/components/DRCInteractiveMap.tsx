@@ -356,12 +356,12 @@ const DRCInteractiveMap = () => {
                             <div className="text-[9px] text-muted-foreground truncate">{dt('detail-density', 'Densité')}</div>
                             <Badge 
                               variant={
-                                selectedProvince.indicePresionLocative === 'Très élevé' ? 'destructive' :
-                                selectedProvince.indicePresionLocative === 'Élevé' ? 'secondary' : 'outline'
+                                selectedProvince.densityLevel === 'Très élevé' ? 'destructive' :
+                                selectedProvince.densityLevel === 'Élevé' ? 'secondary' : 'outline'
                               }
                               className="text-[8px] px-1 py-0"
                             >
-                              {selectedProvince.indicePresionLocative}
+                              {selectedProvince.densityLevel}
                             </Badge>
                           </Card>
                         )}
