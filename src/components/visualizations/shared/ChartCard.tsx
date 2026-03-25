@@ -65,12 +65,16 @@ const InsightText: React.FC<{ text?: string }> = ({ text }) => {
   );
 };
 
+/** Context providing configurable watermark text */
+export const WatermarkContext = createContext<string>('BIC - Tous droits réservés');
+
 const ChartFooter: React.FC = () => {
+  const watermark = useContext(WatermarkContext);
   const today = new Date();
   const formatted = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
   return (
     <p className="text-[7px] text-muted-foreground text-right mt-1 select-none">
-      {formatted} · BIC - Tous droits réservés
+      {formatted} · {watermark}
     </p>
   );
 };

@@ -15,8 +15,9 @@ import { FraudAttemptsBlock } from './blocks/FraudAttemptsBlock';
 import { CertificatesBlock } from './blocks/CertificatesBlock';
 import { InvoicesBlock } from './blocks/InvoicesBlock';
 import { ProvinceData } from '@/types/province';
-import { useAnalyticsTabsConfig } from '@/hooks/useAnalyticsChartsConfig';
+import { useAnalyticsTabsConfig, useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { ProvinceFilterContext } from './filters/AnalyticsFilters';
+import { WatermarkContext } from './shared/ChartCard';
 
 interface ProvinceDataVisualizationProps {
   provinces: ProvinceData[];
@@ -60,6 +61,13 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({ o
   const { visibleTabs, isLoading: tabsLoading } = useAnalyticsTabsConfig();
   const [activeTab, setActiveTab] = useState('');
   const { data: analytics, isLoading, error } = useLandDataAnalytics();
+
+  // Load global watermark config
+  const globalDefaults = ANALYTICS_TABS_REGISTRY['_global']
+    ? [...ANALYTICS_TABS_REGISTRY['_global'].kpis, ...ANALYTICS_TABS_REGISTRY['_global'].charts]
+    : [];
+  const { getChartConfig: getGlobalConfig } = useTabChartsConfig('_global', globalDefaults);
+  const watermarkText = getGlobalConfig('global-watermark')?.custom_title || 'BIC - Tous droits réservés';
 
   // Set default active tab once visible tabs are loaded
   React.useEffect(() => {
@@ -116,9 +124,11 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({ o
 
       {/* Content - scrolls independently */}
       <div className="flex-1 min-w-0 min-h-0 overflow-y-auto overflow-x-hidden p-1 lg:p-0 lg:mt-1.5">
-        <ProvinceFilterContext.Provider value={onProvinceFilter || null}>
-          {BlockComponent ? <BlockComponent data={analytics} /> : null}
-        </ProvinceFilterContext.Provider>
+        <WatermarkContext.Provider value={watermarkText}>
+          <ProvinceFilterContext.Provider value={onProvinceFilter || null}>
+            {BlockComponent ? <BlockComponent data={analytics} /> : null}
+          </ProvinceFilterContext.Provider>
+        </WatermarkContext.Provider>
       </div>
     </div>
   );

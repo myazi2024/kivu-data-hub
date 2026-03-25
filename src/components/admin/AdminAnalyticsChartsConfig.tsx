@@ -479,7 +479,7 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
             <CardContent className="p-0">
               <ScrollArea className="h-[500px]">
                 <div className="space-y-0.5 p-2">
-                  {Object.entries(ANALYTICS_TABS_REGISTRY).map(([key, tab]) => {
+                  {Object.entries(ANALYTICS_TABS_REGISTRY).filter(([key]) => key !== '_global').map(([key, tab]) => {
                     const stat = tabStats[key];
                     const tabConf = localTabs.find(t => t.key === key);
                     const tabLabel = tabConf?.label || tab.label;
@@ -537,12 +537,59 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
             <CardContent>
               <ScrollArea className="h-[460px]">
                 <div className="space-y-4">
+                  {/* Special sections for rdc-map */}
+                  {activeTab === 'rdc-map' && currentCharts.length > 0 && (
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                          <Palette className="h-3.5 w-3.5" />
+                          Paramètres carte ({currentCharts.length})
+                        </h4>
+                      </div>
+                      <div className="space-y-1">
+                        {currentCharts.map((item, idx) => (
+                          <div key={item.item_key} className={`flex items-center gap-2 p-2 rounded-lg border transition-colors ${
+                            item.is_visible ? 'bg-card border-border/50' : 'bg-muted/30 border-border/20 opacity-60'
+                          }`}>
+                            <Switch
+                              checked={item.is_visible}
+                              onCheckedChange={(checked) => updateItem(item.item_key, { ...item, is_visible: checked })}
+                              className="shrink-0"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <Input
+                                value={item.custom_title || ''}
+                                onChange={(e) => updateItem(item.item_key, { ...item, custom_title: e.target.value })}
+                                className="h-7 text-xs"
+                                placeholder="Valeur..."
+                              />
+                            </div>
+                            {item.item_key.startsWith('map-tier-') && (
+                              <input
+                                type="color"
+                                value={item.custom_color || '#3b82f6'}
+                                onChange={(e) => updateItem(item.item_key, { ...item, custom_color: e.target.value })}
+                                className="w-6 h-6 rounded cursor-pointer border-0 p-0"
+                                title="Couleur du palier"
+                              />
+                            )}
+                            <Badge variant="outline" className="text-[9px] shrink-0 font-mono">
+                              {item.item_key}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                      <Separator className="my-3" />
+                    </div>
+                  )}
+
                   {/* KPIs section */}
+                  {currentKpis.length > 0 && (
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                         <LayoutGrid className="h-3.5 w-3.5" />
-                        Indicateurs KPI ({currentKpis.length})
+                        {activeTab === 'rdc-map' ? 'KPIs Tooltip & Détails' : `Indicateurs KPI (${currentKpis.length})`}
                       </h4>
                       <div className="flex gap-1">
                         <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => toggleAll('kpi', true)}>
@@ -567,10 +614,12 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
                       ))}
                     </div>
                   </div>
+                  )}
 
+                  {/* Charts section — skip for rdc-map (already shown above) */}
+                  {activeTab !== 'rdc-map' && currentCharts.length > 0 && (
+                  <>
                   <Separator />
-
-                  {/* Charts section */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
@@ -600,6 +649,8 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
                       ))}
                     </div>
                   </div>
+                  </>
+                  )}
                 </div>
               </ScrollArea>
             </CardContent>

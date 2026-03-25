@@ -138,13 +138,24 @@ const DRCInteractiveMap = () => {
     });
   }, [analytics]);
 
-  /** Paliers choroplèthes fixes pour la densité */
-  const DENSITY_TIERS = [
-    { label: 'Faible', min: 0, max: 30, color: 'hsl(210, 20%, 82%)' },
-    { label: 'Modéré', min: 31, max: 100, color: 'hsl(45, 93%, 55%)' },
-    { label: 'Élevé', min: 101, max: 500, color: 'hsl(25, 90%, 55%)' },
-    { label: 'Très élevé', min: 501, max: Infinity, color: 'hsl(348, 80%, 45%)' },
-  ];
+  /** Paliers choroplèthes — configurables depuis admin */
+  const DENSITY_TIERS = useMemo(() => {
+    const tierKeys = ['map-tier-1', 'map-tier-2', 'map-tier-3', 'map-tier-4'];
+    const defaultTiers = [
+      { label: 'Faible', min: 0, max: 30, color: 'hsl(210, 20%, 82%)' },
+      { label: 'Modéré', min: 31, max: 100, color: 'hsl(45, 93%, 55%)' },
+      { label: 'Élevé', min: 101, max: 500, color: 'hsl(25, 90%, 55%)' },
+      { label: 'Très élevé', min: 501, max: Infinity, color: 'hsl(348, 80%, 45%)' },
+    ];
+    return defaultTiers.map((d, i) => {
+      const cfg = getChartConfig(tierKeys[i]);
+      return {
+        ...d,
+        label: cfg?.custom_title?.replace(/\s*\(.*\)/, '') || d.label,
+        color: cfg?.custom_color || d.color,
+      };
+    });
+  }, [getChartConfig]);
   const formatNumber = (value: number): string => new Intl.NumberFormat('fr-FR').format(value);
   const formatCurrency = (value: number): string =>
     new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
@@ -232,7 +243,7 @@ const DRCInteractiveMap = () => {
                       <span>RDC — Données réelles</span>
                     </h2>
                     <p className="text-[7px] text-muted-foreground leading-tight">
-                      Répartition géographique des données foncières cadastrales — Total : {formatNumber(totalParcels)} parcelles enregistrées
+                      {getChartConfig('map-header-note')?.custom_title || 'Répartition géographique des données foncières cadastrales'} — Total : {formatNumber(totalParcels)} parcelles enregistrées
                     </p>
                   </div>
                   
@@ -256,7 +267,7 @@ const DRCInteractiveMap = () => {
                   {/* Légende choroplèthe à 4 paliers — masquée pendant le zoom */}
                   {!isMapZoomed && (
                     <div className="absolute bottom-5 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30">
-                      <div className="text-[8px] text-muted-foreground mb-0.5">Densité parcelles cadastrées</div>
+                      <div className="text-[8px] text-muted-foreground mb-0.5">{getChartConfig('map-legend-title')?.custom_title || 'Densité parcelles cadastrées'}</div>
                       <div className="flex flex-col gap-0.5">
                         {DENSITY_TIERS.map(tier => (
                           <div key={tier.label} className="flex items-center gap-1">
@@ -285,21 +296,23 @@ const DRCInteractiveMap = () => {
 
                   {/* Pied de carte : date + copyright */}
                   <div className="absolute bottom-0 left-0 right-0 z-10 text-center py-0.5">
-                    <span className="text-[7px] text-muted-foreground">{todayStr} — BIC - Tous droits réservés</span>
+                    <span className="text-[7px] text-muted-foreground">{todayStr} — {getChartConfig('map-watermark')?.custom_title || 'BIC - Tous droits réservés'}</span>
                   </div>
                   
                   <div className="absolute bottom-5 right-2 z-10 flex gap-1">
-                    {/* Bouton copier en image */}
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-6 w-6 rounded-full bg-background/80 backdrop-blur-sm border-border/50 shadow-sm"
-                      onClick={handleCopyImage}
-                      title="Copier en image"
-                      disabled={isCopying}
-                    >
-                      {isCopying ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3 text-muted-foreground" />}
-                    </Button>
+                    {/* Bouton copier en image — configurable */}
+                    {isChartVisible('map-copy-button') && (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-6 w-6 rounded-full bg-background/80 backdrop-blur-sm border-border/50 shadow-sm"
+                        onClick={handleCopyImage}
+                        title="Copier en image"
+                        disabled={isCopying}
+                      >
+                        {isCopying ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3 text-muted-foreground" />}
+                      </Button>
+                    )}
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button variant="outline" size="icon" className="h-6 w-6 rounded-full bg-background/80 backdrop-blur-sm border-border/50 shadow-sm">
