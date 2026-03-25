@@ -1,50 +1,68 @@
 
 
-# Synchronisation filtre Analytics → Zoom Carte RDC
+# Compléter la couverture admin pour Carte RDC et Analytics
 
-## Objectif
+## Constat
 
-Quand l'utilisateur sélectionne une province dans les filtres Analytics (colonne droite), la carte RDC (colonne gauche) zoome automatiquement sur cette province avec la même animation (600ms, ease-out cubique) que lors d'un clic direct sur la carte.
+Le module admin "Configuration graphiques" (`AdminAnalyticsChartsConfig`) gère actuellement :
+- **Onglets Analytics** : visibilité, ordre, renommage (13 onglets)
+- **Graphiques/KPIs par onglet** : visibilité, ordre, titre, couleur, type de graphique
+- **Carte RDC (tab `rdc-map`)** : visibilité/renommage des KPIs tooltip et panneau détails (23 entrées)
 
-## Architecture actuelle
+**Éléments NON configurables actuellement :**
 
-- Chaque bloc Analytics (`TitleRequestsBlock`, etc.) gère son propre `filter` local via `AnalyticsFilters`
-- `ProvinceDataVisualization` orchestre les onglets mais ne remonte pas les changements de filtre
-- `DRCMapWithTooltip` ne zoome que sur clic SVG direct — pas de réaction aux changements de la prop `selectedProvince`
+| Élément | Zone | Statut |
+|---------|------|--------|
+| Paliers choroplèthes (seuils 30/100/500, couleurs) | Carte RDC | Non configurable |
+| Titre de la légende choroplèthe | Carte RDC | Hardcodé |
+| Note descriptive (texte d'en-tête carte) | Carte RDC | Hardcodé |
+| Watermark ("BIC - Tous droits réservés") | Carte RDC + Analytics | Hardcodé |
+| KPIs de la légende contextuelle (zoom) | Carte RDC | Suit `detail-*` mais pas configurable séparément |
+| Bouton "Copier en image" (visibilité) | Carte RDC | Toujours visible |
+| Texte du watermark/footer | Analytics (ChartFooter) | Hardcodé dans `ChartCard.tsx` |
 
 ## Plan
 
-### 1. `AnalyticsFilters.tsx` — Ajouter callback `onProvinceChange`
+### Etape 1 : Enrichir le registre `rdc-map` dans `useAnalyticsChartsConfig.ts`
 
-Nouvelle prop optionnelle `onProvinceChange?: (province: string | undefined) => void`. Appelée dans le `onValueChange` du Select Province (en plus du `onChange` existant).
+Ajouter des entrées de type `chart` (utilisées comme config, pas comme graphique) pour les éléments manquants :
 
-### 2. Chaque bloc Analytics — Propager le callback
+- `map-legend-title` : titre légende choroplèthe (défaut : "Densité parcelles cadastrées")
+- `map-header-note` : note descriptive de la carte
+- `map-watermark` : texte du watermark (défaut : "BIC - Tous droits réservés")
+- `map-copy-button` : visibilité du bouton copier
+- `map-tier-1` à `map-tier-4` : les 4 paliers choroplèthes (titre = label, `custom_color` = couleur)
 
-Ajouter `onProvinceChange` comme prop à chaque bloc (`TitleRequestsBlock`, `ParcelsWithTitleBlock`, etc.) et le passer à `AnalyticsFilters`.
+### Etape 2 : Enrichir le registre global pour Analytics
 
-### 3. `ProvinceDataVisualization.tsx` — Remonter vers le parent
+Ajouter une entrée globale dans un pseudo-onglet `_global` :
+- `global-watermark` : texte du watermark partagé par tous les graphiques (défaut : "BIC - Tous droits réservés")
 
-Nouvelle prop `onProvinceFilter?: (provinceName: string | undefined) => void`, passée au `BlockComponent` actif.
+### Etape 3 : Consommer les nouvelles configs dans `DRCInteractiveMap.tsx`
 
-### 4. `DRCInteractiveMap.tsx` — Réagir au filtre province
+- Lire `map-legend-title`, `map-header-note`, `map-watermark` via `getChartConfig()`
+- Lire `map-tier-1` à `map-tier-4` pour construire `DENSITY_TIERS` dynamiquement (couleur + label)
+- Conditionner le bouton copier sur `isChartVisible('map-copy-button')`
 
-- Recevoir le callback de `ProvinceDataVisualization`
-- Trouver le `ProvinceData` correspondant au nom de province
-- Appeler `setSelectedProvince(province)` pour mettre à jour le bloc de données
+### Etape 4 : Consommer le watermark global dans `ChartCard.tsx`
 
-### 5. `DRCMapWithTooltip.tsx` — Zoom automatique sur changement de prop
+- Importer `useTabChartsConfig` pour lire `global-watermark`
+- Utiliser le texte configuré dans `ChartFooter`
 
-Ajouter un `useEffect` qui surveille `selectedProvince` : quand il change vers une nouvelle province (et n'est pas déjà zoomé dessus), appeler `zoomToProvince(provinceId)`. Quand il passe à `null`, appeler `zoomOut()`.
+### Etape 5 : Adapter l'UI admin `AdminAnalyticsChartsConfig.tsx`
 
-## Fichiers impactés
+- Pour l'onglet `rdc-map` : séparer visuellement les sections (Tooltip, Panneau détails, Paramètres carte) au lieu d'un seul listing KPI
+- Afficher un éditeur de couleur pour les entrées `map-tier-*`
+- Afficher un champ texte élargi pour `map-watermark` et `map-header-note`
+
+### Fichiers impactés
 
 | Fichier | Action |
 |---------|--------|
-| `src/components/visualizations/filters/AnalyticsFilters.tsx` | Prop `onProvinceChange` |
-| `src/components/visualizations/ProvinceDataVisualization.tsx` | Prop `onProvinceFilter` + passage aux blocs |
-| `src/components/visualizations/blocks/*.tsx` (13 blocs) | Prop `onProvinceChange` → `AnalyticsFilters` |
-| `src/components/DRCInteractiveMap.tsx` | Handler province depuis analytics |
-| `src/components/DRCMapWithTooltip.tsx` | `useEffect` zoom auto sur `selectedProvince` |
+| `src/hooks/useAnalyticsChartsConfig.ts` | Enrichir `rdc-map` + ajouter `_global` |
+| `src/components/DRCInteractiveMap.tsx` | Consommer configs dynamiques |
+| `src/components/visualizations/shared/ChartCard.tsx` | Watermark configurable |
+| `src/components/admin/AdminAnalyticsChartsConfig.tsx` | UI enrichie pour `rdc-map` |
 
-16 fichiers modifiés.
+4 fichiers modifiés.
 
