@@ -1,91 +1,96 @@
 
 
-# Audit du service "Ajouter une autorisation" — Divergences et corrections
+# Audit du service "Taxes foncieres" — Divergences et optimisations
 
 ## Problemes identifies
 
-### 1. DESALIGNEMENT CRITIQUE DES CLES JSON (bug majeur — admin voit des champs vides)
+### 1. PAS DE PANNEAU ADMIN DEDIE POUR LES DECLARATIONS FISCALES (majeur)
 
-Le formulaire (`BuildingPermitRequestDialog.tsx` L105-125) stocke les donnees avec certaines cles, mais le dialogue admin (`PermitRequestDialog.tsx`) lit des cles differentes. L'admin voit donc des champs vides pour la majorite des demandes.
+Les trois services fiscaux (Impot foncier, Taxe de batisse, IRL) soumettent des declarations dans `cadastral_contributions` avec `contribution_type = 'update'` et un champ `tax_history` JSON. Mais il n'existe **aucun panneau admin dedie** pour visualiser, valider ou rejeter ces declarations.
 
-| Ce que le formulaire stocke | Ce que l'admin lit | Consequence |
-|---|---|---|
-| `requestType: 'construction'` | `permitType` (L212, L293, L329) | Type jamais affiche, badges cassés |
-| `projectDescription` | `constructionDescription` (L273) | Description vide |
-| `declaredUsage` | `plannedUsage` (L279) | Usage vide |
-| `plannedArea` | `estimatedArea` (L284) | Surface vide |
-| `constructionNature` | `buildingMaterials` (L300) | Materiaux vide |
-| `attachments` (objet cle→URL) | `architecturalPlanImages` (L305), `constructionPhotos` (L347) | Documents jamais affiches |
-| `constructionDate` | `constructionYear` (L333) | Annee vide (le form stocke une date, pas un nombre) |
+- `AdminTaxHistory.tsx` lit depuis `cadastral_tax_history` — une table differente qui n'est alimentee que lors de l'approbation CCC (pas depuis les services fiscaux).
+- `AdminCCCContributions.tsx` affiche les contributions CCC (type `new`) mais pas les declarations fiscales (type `update`).
 
-Le filtre par type dans `AdminBuildingPermits.tsx` L78 compare aussi `permitData?.permitType` — ce filtre ne fonctionne donc jamais.
+**Consequence** : Les declarations fiscales soumises via les services restent indefiniment en statut `pending` sans qu'aucun admin ne puisse les traiter.
 
-**Correction** : Mettre a jour le dialogue admin pour lire les cles correctes. Ajouter un mapping de compatibilite pour les anciennes demandes qui utilisaient les vieilles cles.
+**Correction** : Creer un composant `AdminTaxDeclarations.tsx` qui liste les contributions de type `update` ayant un `tax_history` non-null, avec filtres par type de taxe, annee, statut, et actions Approuver/Rejeter/Renvoyer. Lors de l'approbation, inserer dans `cadastral_tax_history`.
 
-### 2. ADMIN NE MONTRE QUE 6 CHAMPS SUR 26
+### 2. DESALIGNEMENT CLES JSON CCC vs SERVICE (bug)
 
-Le formulaire collecte 26 champs (type, nature, usage, surface, etages, pieces, toiture, eau, electricite, cout, architecte, agrement, adresse, email, telephone, description, date debut, duree, raison regularisation, etat actuel, date construction, conformite, permis original + attachments). L'admin n'en affiche que 6 (description, usage, surface, etages, materiaux, permis original).
+Le CCC stocke les taxes en **camelCase** (`taxYear`, `amountUsd`, `paymentStatus`). Les services fiscaux stockent en **snake_case** (`tax_year`, `amount_usd`, `payment_status`). L'admin CCC (L1350) lit en camelCase. L'approbation CCC (L476) lit en snake_case.
 
-**Correction** : Afficher tous les champs collectes dans le dialogue admin, organises en sections (Construction, Planification/Regularisation, Architecte, Demandeur, Documents joints).
+| Source | Cle annee | Cle montant | Cle statut |
+|--------|-----------|-------------|------------|
+| CCC form | `taxYear` | `amountUsd` | `paymentStatus` |
+| Service fiscal | `tax_year` | `amount_usd` | `payment_status` |
+| Admin CCC display | `taxYear` | `amountUsd` | `paymentStatus` |
+| Admin CCC approval | `tax_year` | `amount_usd` | `payment_status` |
 
-### 3. PAS D'ACTION "RENVOYER POUR CORRECTION"
+L'approbation CCC echoue silencieusement car elle lit `tax_year` alors que le CCC stocke `taxYear` — les champs inseres dans `cadastral_tax_history` sont donc `null`.
 
-Le dialogue admin n'offre que Approuver et Rejeter. Pas d'option `returned` pour demander des corrections sans rejet definitif.
+**Correction** : Ajouter un helper de compatibilite dans l'approbation CCC qui resout les deux formats. Standardiser sur snake_case pour les nouvelles soumissions.
 
-**Correction** : Ajouter un troisieme bouton "Renvoyer" dans le footer du dialogue admin, avec notification dediee.
+### 3. VERIFICATION DE DOUBLON N'EXCLUT PAS LE STATUT `returned`
 
-### 4. STATUT LU DEPUIS LE JSON AU LIEU DE LA COLONNE DB
+`checkDuplicateTaxSubmission` (L95) filtre `.neq('status', 'rejected')` mais ne prend pas en compte le statut `returned`. Si une declaration a ete renvoyee pour correction, l'utilisateur ne peut pas la re-soumettre car le doublon est detecte.
 
-`AdminBuildingPermits.tsx` L73-74 lit le statut depuis `permitData?.status` (le JSON `permit_request_data`) au lieu de la colonne `status` de la contribution. Quand l'admin change le statut, il met a jour les deux (L148-149), mais les stats (L102-108) et les filtres (L73-80) se basent sur le JSON — ce qui peut diverger si un autre processus met a jour la colonne DB sans toucher au JSON.
+**Correction** : Ajouter `.neq('status', 'returned')` ou filtrer avec `.in('status', ['pending', 'approved'])`.
 
-**Correction** : Utiliser `permit.status` (colonne DB) pour les filtres et les stats. Conserver la lecture JSON comme fallback pour les anciennes donnees.
+### 4. PAS D'ONGLET ANALYTICS DEDIE AUX TAXES
 
-### 5. PAS D'ONGLET ANALYTICS DEDIE
+Les graphiques fiscaux (`taxes`, `taxes-year`, `taxes-amount`) sont integres dans l'onglet `parcels-titled`. Il n'y a pas d'onglet `taxes` dedie dans `ANALYTICS_TABS_REGISTRY`, contrairement aux mutations, hypotheques et autorisations.
 
-Les graphiques autorisations sont integres dans l'onglet `parcels-titled` (permits, permit-admin, permit-validity, permit-service). Il n'y a pas d'onglet `building-permits` dedie dans le registre analytics, contrairement aux mutations et hypotheques qui ont maintenant leurs propres onglets.
+**Correction** : Creer un onglet `taxes` avec graphiques : repartition par type de taxe, montants par exercice, taux de penalite, repartition zone fiscale, conformite par province.
 
-**Correction** : Creer un onglet `building-permits` dans `ANALYTICS_TABS_REGISTRY` avec des graphiques specifiques : repartition construction/regularisation, cout estime par tranche, delai de traitement, taux d'approbation, repartition par type de construction.
+### 5. REDONDANCE CCC : DONNEES FISCALES NON PRE-REMPLIES
 
-### 6. PROPRIETAIRE ACTUEL NON AFFICHE
+Le CCC collecte l'historique fiscal (type, annee, montant, statut paiement, date, recu). Quand l'utilisateur ouvre ensuite un calculateur fiscal sur la meme parcelle, aucune de ces donnees n'est exploitee — ni pour pre-remplir l'exercice fiscal deja couvert, ni pour avertir qu'une annee est deja declaree via CCC.
 
-Ni le formulaire utilisateur ni le dialogue admin n'affichent `current_owner_name` depuis les donnees parcelle.
+**Correction** : Dans les 3 calculateurs, verifier si une contribution CCC existe avec des `tax_history` pour la meme parcelle et les memes annees, et afficher un avertissement.
 
-**Correction** : Afficher le proprietaire dans la Card info parcelle du formulaire et dans le dialogue admin.
+### 6. PROPRIETAIRE ACTUEL NON AFFICHE DANS LE RECAPITULATIF
+
+`PropertyTaxSummaryStep` n'affiche pas le nom du proprietaire (`ownerName`). Le nom est collecte dans le formulaire mais absent de la fiche de declaration soumise.
+
+**Correction** : Ajouter `ownerName` dans le recapitulatif et dans le payload JSON.
 
 ### 7. AUCUNE DONNEE FICTIVE DETECTEE
 
-Les frais sont charges depuis `permit_fees_config` (DB) avec fallback statique. Les stats admin sont calculees sur des donnees reelles. Pas de donnees simulees.
+Les taux sont charges depuis `property_tax_rates_config` (DB) avec fallback code. Les taux de batisse viennent de `cadastral_contribution_config`. L'IRL utilise 22% (legislation DRC). Pas de donnees simulees.
 
 ---
 
 ## Plan d'implementation
 
-### Etape 1 — Corriger le desalignement des cles dans le dialogue admin
-Modifier `PermitRequestDialog.tsx` pour lire les cles correctes (`requestType` au lieu de `permitType`, `projectDescription` au lieu de `constructionDescription`, etc.). Ajouter un helper de compatibilite qui resout les deux formats (ancien et nouveau).
+### Etape 1 — Creer le panneau admin des declarations fiscales
+Creer `AdminTaxDeclarations.tsx` : liste les `cadastral_contributions` de type `update` avec `tax_history` non-null. Afficher type de taxe, exercice, montant, parcelle, statut. Actions : Approuver (insere dans `cadastral_tax_history`), Rejeter, Renvoyer. Filtres par type de taxe, annee, statut. Export CSV.
 
-### Etape 2 — Afficher tous les champs collectes dans l'admin
-Ajouter les sections manquantes : toiture, pieces, eau, electricite, cout estime, architecte/agrement, adresse demandeur, date debut, duree. Afficher les documents joints depuis `attachments` (objet cle→URL).
+### Etape 2 — Corriger le desalignement camelCase/snake_case
+Dans `AdminCCCContributions.tsx` L474-480, ajouter un helper de resolution qui accepte les deux formats (`taxYear` || `tax_year`). Meme correction pour l'affichage L1350-1354.
 
-### Etape 3 — Corriger les filtres et stats admin
-Utiliser `permit.status` (colonne DB) au lieu de `permitData?.status` pour les compteurs et filtres dans `AdminBuildingPermits.tsx`.
+### Etape 3 — Corriger la verification de doublons
+Modifier `checkDuplicateTaxSubmission` pour exclure aussi le statut `returned`.
 
-### Etape 4 — Ajouter l'action "Renvoyer pour correction"
-Ajouter un bouton "Renvoyer" dans le footer du dialogue admin + notification dediee + statut `returned`.
+### Etape 4 — Ajouter le proprietaire dans le recapitulatif
+Passer `ownerName` a `PropertyTaxSummaryStep` et l'afficher. Inclure dans le payload de soumission.
 
-### Etape 5 — Afficher le proprietaire actuel
-Ajouter `current_owner_name` dans le formulaire utilisateur et le dialogue admin.
+### Etape 5 — Creer l'onglet analytics dedie
+Ajouter un bloc `taxes` dans `ANALYTICS_TABS_REGISTRY` avec graphiques : type de taxe, exercice fiscal, zone fiscale, penalites, conformite.
 
-### Etape 6 — Creer l'onglet analytics dedie
-Ajouter un bloc `building-permits` dans `ANALYTICS_TABS_REGISTRY` avec graphiques sur les types de demande, couts, delais et taux d'approbation.
+### Etape 6 — Integrer le panneau dans la sidebar admin
+Ajouter l'entree dans le menu admin et le routage.
 
 ### Fichiers impactes
 
 | Fichier | Action |
 |---------|--------|
-| `src/components/admin/permits/PermitRequestDialog.tsx` | Corriger cles JSON, afficher tous les champs, ajouter "Renvoyer" |
-| `src/components/admin/AdminBuildingPermits.tsx` | Corriger filtres/stats (colonne DB), ajouter filtre `returned` |
-| `src/components/cadastral/building-permit-request/PermitFormStep.tsx` | Afficher proprietaire actuel |
-| `src/hooks/useAnalyticsChartsConfig.ts` | Onglet analytics dedie `building-permits` |
+| `src/components/admin/AdminTaxDeclarations.tsx` | **Nouveau** — panneau admin |
+| `src/components/admin/AdminCCCContributions.tsx` | Fix camelCase/snake_case |
+| `src/components/cadastral/tax-calculator/taxSharedUtils.ts` | Fix doublon `returned` |
+| `src/components/cadastral/tax-calculator/PropertyTaxSummaryStep.tsx` | Afficher proprietaire |
+| `src/components/cadastral/PropertyTaxCalculator.tsx` | Passer ownerName au summary |
+| `src/hooks/useAnalyticsChartsConfig.ts` | Onglet analytics `taxes` |
+| Sidebar/routing admin | Ajouter entree menu |
 
-4 fichiers modifies, aucune migration DB.
+6-7 fichiers modifies + 1 nouveau, aucune migration DB.
 
