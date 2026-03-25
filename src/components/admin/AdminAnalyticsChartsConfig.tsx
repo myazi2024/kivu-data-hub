@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,9 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Settings, Save, Eye, EyeOff, ChevronUp, ChevronDown, RotateCcw, Loader2,
   BarChart3, PieChart as PieChartIcon, TrendingUp, LayoutGrid, Palette, GripVertical,
-  Layers, Pencil
+  Layers, Pencil, Map as MapIcon, Globe
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -230,17 +234,19 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
   const [activeTab, setActiveTab] = useState(Object.keys(ANALYTICS_TABS_REGISTRY)[0]);
   const [localItems, setLocalItems] = useState<Record<string, ChartConfigItem[]>>({});
   const [localTabs, setLocalTabs] = useState<TabConfig[]>([]);
-  const [hasChartChanges, setHasChartChanges] = useState(false);
   const [hasTabChanges, setHasTabChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [viewMode, setViewMode] = useState<'tabs' | 'charts'>('tabs');
+  const [modifiedTabs, setModifiedTabs] = useState<Set<string>>(new Set());
+  const [pendingTabSwitch, setPendingTabSwitch] = useState<string | null>(null);
 
+  const hasChartChanges = modifiedTabs.size > 0;
   const hasChanges = hasChartChanges || hasTabChanges;
 
   // Initialize local state from defaults + DB overrides
   useEffect(() => {
     if (isLoading) return;
-    const dbMap = new Map<string, ChartConfigItem>();
+    const dbMap: Map<string, ChartConfigItem> = new Map();
     configs.filter(c => c.item_type !== 'tab').forEach(c => dbMap.set(`${c.tab_key}::${c.item_key}`, c));
 
     const result: Record<string, ChartConfigItem[]> = {};
@@ -278,13 +284,17 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
   const currentKpis = currentItems.filter(i => i.item_type === 'kpi');
   const currentCharts = currentItems.filter(i => i.item_type === 'chart');
 
+  const markTabModified = useCallback((tabKey: string) => {
+    setModifiedTabs(prev => new Set(prev).add(tabKey));
+  }, []);
+
   const updateItem = useCallback((itemKey: string, updated: ChartConfigItem) => {
     setLocalItems(prev => ({
       ...prev,
       [activeTab]: (prev[activeTab] || []).map(i => i.item_key === itemKey ? updated : i),
     }));
-    setHasChartChanges(true);
-  }, [activeTab]);
+    markTabModified(activeTab);
+  }, [activeTab, markTabModified]);
 
   const moveItem = useCallback((itemKey: string, direction: 'up' | 'down', type: 'kpi' | 'chart') => {
     setLocalItems(prev => {
@@ -305,8 +315,8 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
         return a.display_order - b.display_order;
       }) };
     });
-    setHasChartChanges(true);
-  }, [activeTab]);
+    markTabModified(activeTab);
+  }, [activeTab, markTabModified]);
 
   const tabConfigToItems = useCallback((tabs: TabConfig[]): ChartConfigItem[] => {
     return tabs.map(t => ({
@@ -325,7 +335,7 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
       const items = localItems[activeTab] || [];
       await upsertConfig.mutateAsync(items);
       toast.success(`Configuration "${ANALYTICS_TABS_REGISTRY[activeTab]?.label}" sauvegardée`);
-      setHasChartChanges(false);
+      setModifiedTabs(prev => { const n = new Set(prev); n.delete(activeTab); return n; });
     } catch (error: any) {
       console.error('Save chart error:', error);
       toast.error(`Erreur: ${error?.message || 'Sauvegarde impossible'}`);
@@ -341,7 +351,7 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
       const tabItems = tabConfigToItems(localTabs);
       await upsertConfig.mutateAsync([...allChartItems, ...tabItems]);
       toast.success('Toute la configuration Analytics a été sauvegardée');
-      setHasChartChanges(false);
+      setModifiedTabs(new Set());
       setHasTabChanges(false);
     } catch (error: any) {
       console.error('Save all error:', error);
@@ -373,17 +383,38 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
       ...prev,
       [activeTab]: [...tab.kpis, ...tab.charts],
     }));
-    setHasChartChanges(true);
+    markTabModified(activeTab);
     toast.info('Configuration réinitialisée (non sauvegardée)');
-  }, [activeTab]);
+  }, [activeTab, markTabModified]);
 
   const toggleAll = useCallback((type: 'kpi' | 'chart', visible: boolean) => {
     setLocalItems(prev => ({
       ...prev,
       [activeTab]: (prev[activeTab] || []).map(i => i.item_type === type ? { ...i, is_visible: visible } : i),
     }));
-    setHasChartChanges(true);
-  }, [activeTab]);
+    markTabModified(activeTab);
+  }, [activeTab, markTabModified]);
+
+  /** Tab switch with unsaved changes confirmation */
+  const handleTabSwitch = useCallback((targetTab: string) => {
+    if (modifiedTabs.has(activeTab)) {
+      setPendingTabSwitch(targetTab);
+    } else {
+      setActiveTab(targetTab);
+    }
+  }, [activeTab, modifiedTabs]);
+
+  const confirmTabSwitch = useCallback(() => {
+    if (pendingTabSwitch) {
+      setActiveTab(pendingTabSwitch);
+      setPendingTabSwitch(null);
+    }
+  }, [pendingTabSwitch]);
+
+  const cancelTabSwitch = useCallback(() => {
+    setPendingTabSwitch(null);
+  }, []);
+
 
   const tabStats = useMemo(() => {
     const stats: Record<string, { kpis: number; charts: number; hidden: number }> = {};
@@ -479,15 +510,17 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
             <CardContent className="p-0">
               <ScrollArea className="h-[500px]">
                 <div className="space-y-0.5 p-2">
-                  {Object.entries(ANALYTICS_TABS_REGISTRY).filter(([key]) => key !== '_global').map(([key, tab]) => {
+                  {Object.entries(ANALYTICS_TABS_REGISTRY).map(([key, tab]) => {
                     const stat = tabStats[key];
                     const tabConf = localTabs.find(t => t.key === key);
                     const tabLabel = tabConf?.label || tab.label;
                     const isHiddenTab = tabConf && !tabConf.is_visible;
+                    const isModified = modifiedTabs.has(key);
+                    const isSpecial = key === 'rdc-map' || key === '_global';
                     return (
                       <button
                         key={key}
-                        onClick={() => setActiveTab(key)}
+                        onClick={() => handleTabSwitch(key)}
                         className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors flex items-center justify-between ${
                           activeTab === key
                             ? 'bg-primary text-primary-foreground'
@@ -496,13 +529,28 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
                       >
                         <span className="font-medium flex items-center gap-1">
                           {isHiddenTab && <EyeOff className="h-3 w-3" />}
+                          {key === 'rdc-map' && <MapIcon className="h-3 w-3" />}
+                          {key === '_global' && <Globe className="h-3 w-3" />}
                           {tabLabel}
                         </span>
-                        {stat && stat.hidden > 0 && (
-                          <Badge variant="secondary" className="text-[9px] h-4 px-1">
-                            {stat.hidden} masqué{stat.hidden > 1 ? 's' : ''}
-                          </Badge>
-                        )}
+                        <div className="flex items-center gap-1">
+                          {isModified && (
+                            <Badge variant="destructive" className="text-[8px] h-3.5 px-1">
+                              modifié
+                            </Badge>
+                          )}
+                          {key === 'rdc-map' && (
+                            <Badge variant="outline" className="text-[8px] h-3.5 px-1">Carte</Badge>
+                          )}
+                          {key === '_global' && (
+                            <Badge variant="outline" className="text-[8px] h-3.5 px-1">Global</Badge>
+                          )}
+                          {stat && stat.hidden > 0 && (
+                            <Badge variant="secondary" className="text-[9px] h-4 px-1">
+                              {stat.hidden} masqué{stat.hidden > 1 ? 's' : ''}
+                            </Badge>
+                          )}
+                        </div>
                       </button>
                     );
                   })}
@@ -657,6 +705,22 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
           </Card>
         </div>
       )}
+
+      {/* Unsaved changes confirmation dialog */}
+      <AlertDialog open={!!pendingTabSwitch} onOpenChange={(open) => { if (!open) cancelTabSwitch(); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Modifications non sauvegardées</AlertDialogTitle>
+            <AlertDialogDescription>
+              L'onglet « {ANALYTICS_TABS_REGISTRY[activeTab]?.label} » contient des modifications non sauvegardées. Voulez-vous continuer sans sauvegarder ?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelTabSwitch}>Rester</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmTabSwitch}>Continuer sans sauvegarder</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
