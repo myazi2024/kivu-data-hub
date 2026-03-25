@@ -36,7 +36,7 @@ const AdminBuildingPermits = () => {
   const [permits, setPermits] = useState<PermitRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'_all' | 'pending' | 'approved' | 'rejected'>('_all');
+  const [filterStatus, setFilterStatus] = useState<'_all' | 'pending' | 'approved' | 'rejected' | 'returned'>('_all');
   const [filterType, setFilterType] = useState<'_all' | 'construction' | 'regularization'>('_all');
   const [selectedPermit, setSelectedPermit] = useState<PermitRequest | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -70,12 +70,16 @@ const AdminBuildingPermits = () => {
       permit.parcel_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
       permitData?.applicantName?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const permitStatus = permitData?.status || 'pending';
+    // Use DB column status (not JSON)
     const matchesStatus = 
-      filterStatus === '_all' ? true : permitStatus === filterStatus;
+      filterStatus === '_all' ? true : permit.status === filterStatus;
     
+    // Support both requestType (new format) and permitType (old format)
+    const pType = permitData?.requestType === 'new' ? 'construction' : 
+                  permitData?.requestType === 'regularization' ? 'regularization' :
+                  permitData?.permitType || 'construction';
     const matchesType = 
-      filterType === '_all' ? true : permitData?.permitType === filterType;
+      filterType === '_all' ? true : pType === filterType;
     
     return matchesSearch && matchesStatus && matchesType;
   }), [permits, searchTerm, filterStatus, filterType]);
@@ -99,24 +103,33 @@ const AdminBuildingPermits = () => {
     goToPage(1);
   }, [searchTerm, filterStatus, filterType]);
 
+  // Helper to resolve permit type across formats
+  const getPermitType = (p: PermitRequest) => {
+    const d = p.permit_request_data;
+    if (d?.requestType === 'new') return 'construction';
+    if (d?.requestType === 'regularization') return 'regularization';
+    return d?.permitType || 'construction';
+  };
+
   const stats = {
     total: permits.length,
-    pending: permits.filter(p => !p.permit_request_data?.status || p.permit_request_data.status === 'pending').length,
-    approved: permits.filter(p => p.permit_request_data?.status === 'approved').length,
-    rejected: permits.filter(p => p.permit_request_data?.status === 'rejected').length,
-    construction: permits.filter(p => p.permit_request_data?.permitType === 'construction').length,
-    regularization: permits.filter(p => p.permit_request_data?.permitType === 'regularization').length,
+    pending: permits.filter(p => p.status === 'pending').length,
+    approved: permits.filter(p => p.status === 'approved').length,
+    rejected: permits.filter(p => p.status === 'rejected').length,
+    returned: permits.filter(p => p.status === 'returned').length,
+    construction: permits.filter(p => getPermitType(p) === 'construction').length,
+    regularization: permits.filter(p => getPermitType(p) === 'regularization').length,
   };
 
   const handleExportCSV = () => {
     const headers = ['Parcelle', 'Type', 'Demandeur', 'Téléphone', 'Date', 'Statut'];
     const data = filteredPermits.map(p => [
       p.parcel_number,
-      p.permit_request_data?.permitType === 'construction' ? 'Construction' : 'Régularisation',
+      getPermitType(p) === 'construction' ? 'Construction' : 'Régularisation',
       p.permit_request_data?.applicantName || 'N/A',
       p.permit_request_data?.applicantPhone || '',
       format(new Date(p.created_at), 'dd/MM/yyyy', { locale: fr }),
-      p.permit_request_data?.status || 'pending'
+      p.status
     ]);
     exportToCSV({ headers, data, filename: `autorisations-batir-${format(new Date(), 'yyyy-MM-dd')}.csv` });
     toast.success('Export CSV réussi');
@@ -132,6 +145,7 @@ const AdminBuildingPermits = () => {
       pending: { variant: 'outline' as const, icon: Clock, label: 'En attente' },
       approved: { variant: 'default' as const, icon: CheckCircle, label: 'Approuvé' },
       rejected: { variant: 'destructive' as const, icon: XCircle, label: 'Rejeté' },
+      returned: { variant: 'secondary' as const, icon: AlertCircle, label: 'Renvoyé' },
     };
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
     const Icon = config.icon;
@@ -250,7 +264,7 @@ const AdminBuildingPermits = () => {
                 />
               </div>
             </div>
-            <Select value={filterStatus} onValueChange={(value: '_all' | 'pending' | 'approved' | 'rejected') => setFilterStatus(value)}>
+            <Select value={filterStatus} onValueChange={(value: '_all' | 'pending' | 'approved' | 'rejected' | 'returned') => setFilterStatus(value)}>
               <SelectTrigger className="w-full md:w-[180px]">
                 <SelectValue placeholder="Statut" />
               </SelectTrigger>
@@ -259,6 +273,7 @@ const AdminBuildingPermits = () => {
                 <SelectItem value="pending">En attente</SelectItem>
                 <SelectItem value="approved">Approuvés</SelectItem>
                 <SelectItem value="rejected">Rejetés</SelectItem>
+                <SelectItem value="returned">Renvoyés</SelectItem>
               </SelectContent>
             </Select>
             <Select value={filterType} onValueChange={(value: '_all' | 'construction' | 'regularization') => setFilterType(value)}>
@@ -294,12 +309,12 @@ const AdminBuildingPermits = () => {
                 <ResponsiveTableBody>
                   {paginatedPermits.map((permit) => {
                     const permitData = permit.permit_request_data;
-                    const status = permitData?.status || 'pending';
+                    const status = permit.status;
                     
                     return (
                       <ResponsiveTableRow key={permit.id}>
                         <ResponsiveTableCell label="Parcelle" className="font-medium">{permit.parcel_number}</ResponsiveTableCell>
-                        <ResponsiveTableCell label="Type">{getTypeBadge(permitData?.permitType)}</ResponsiveTableCell>
+                        <ResponsiveTableCell label="Type">{getTypeBadge(getPermitType(permit))}</ResponsiveTableCell>
                         <ResponsiveTableCell label="Demandeur" priority="low">
                           <div>
                             <p className="font-medium">{permitData?.applicantName || 'N/A'}</p>
