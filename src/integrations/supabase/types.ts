@@ -2110,14 +2110,21 @@ export type Database = {
       }
       mutation_requests: {
         Row: {
+          bank_fee_amount: number | null
           beneficiary_id_document_url: string | null
           beneficiary_name: string | null
           beneficiary_phone: string | null
           created_at: string
           estimated_processing_days: number | null
+          expertise_certificate_date: string | null
+          expertise_certificate_url: string | null
           fee_items: Json
           id: string
           justification: string | null
+          late_fee_amount: number | null
+          late_fee_days: number | null
+          market_value_usd: number | null
+          mutation_fee_amount: number | null
           mutation_type: string
           paid_at: string | null
           parcel_id: string | null
@@ -2137,19 +2144,27 @@ export type Database = {
           reviewed_by: string | null
           status: string
           supporting_documents: Json | null
+          title_age: string | null
           total_amount_usd: number
           updated_at: string
           user_id: string
         }
         Insert: {
+          bank_fee_amount?: number | null
           beneficiary_id_document_url?: string | null
           beneficiary_name?: string | null
           beneficiary_phone?: string | null
           created_at?: string
           estimated_processing_days?: number | null
+          expertise_certificate_date?: string | null
+          expertise_certificate_url?: string | null
           fee_items?: Json
           id?: string
           justification?: string | null
+          late_fee_amount?: number | null
+          late_fee_days?: number | null
+          market_value_usd?: number | null
+          mutation_fee_amount?: number | null
           mutation_type?: string
           paid_at?: string | null
           parcel_id?: string | null
@@ -2169,19 +2184,27 @@ export type Database = {
           reviewed_by?: string | null
           status?: string
           supporting_documents?: Json | null
+          title_age?: string | null
           total_amount_usd?: number
           updated_at?: string
           user_id: string
         }
         Update: {
+          bank_fee_amount?: number | null
           beneficiary_id_document_url?: string | null
           beneficiary_name?: string | null
           beneficiary_phone?: string | null
           created_at?: string
           estimated_processing_days?: number | null
+          expertise_certificate_date?: string | null
+          expertise_certificate_url?: string | null
           fee_items?: Json
           id?: string
           justification?: string | null
+          late_fee_amount?: number | null
+          late_fee_days?: number | null
+          market_value_usd?: number | null
+          mutation_fee_amount?: number | null
           mutation_type?: string
           paid_at?: string | null
           parcel_id?: string | null
@@ -2201,6 +2224,7 @@ export type Database = {
           reviewed_by?: string | null
           status?: string
           supporting_documents?: Json | null
+          title_age?: string | null
           total_amount_usd?: number
           updated_at?: string
           user_id?: string
