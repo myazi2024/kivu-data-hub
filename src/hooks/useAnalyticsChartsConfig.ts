@@ -354,7 +354,7 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
     ],
   },
   'disputes': {
-    label: 'Litiges',
+    label: 'Litiges fonciers',
     charts: [
       { tab_key: 'disputes', item_key: 'nature', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Nature', chart_type: 'bar-h' },
       { tab_key: 'disputes', item_key: 'resolution-status', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'En cours vs Résolus', chart_type: 'pie' },
@@ -365,7 +365,15 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'disputes', item_key: 'nature-resolution', item_type: 'chart', is_visible: true, display_order: 6, custom_title: 'Nature × Résolution' },
       { tab_key: 'disputes', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 7, custom_title: 'Géographie' },
       { tab_key: 'disputes', item_key: 'resolution-rate', item_type: 'chart', is_visible: true, display_order: 8, custom_title: 'Taux résolution %', chart_type: 'area', col_span: 2 },
-      { tab_key: 'disputes', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 9, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
+      { tab_key: 'disputes', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 9, custom_title: 'Évolution signalements', chart_type: 'area', col_span: 2 },
+      // Levées
+      { tab_key: 'disputes', item_key: 'lifting-status', item_type: 'chart', is_visible: true, display_order: 10, custom_title: 'Statut levée', chart_type: 'pie' },
+      { tab_key: 'disputes', item_key: 'lifting-resolution-level', item_type: 'chart', is_visible: true, display_order: 11, custom_title: 'Niveau résolution (levée)', chart_type: 'bar-h' },
+      { tab_key: 'disputes', item_key: 'lifting-nature', item_type: 'chart', is_visible: true, display_order: 12, custom_title: 'Nature litige (levée)', chart_type: 'bar-h' },
+      { tab_key: 'disputes', item_key: 'lifting-reason', item_type: 'chart', is_visible: true, display_order: 13, custom_title: 'Motif de levée', chart_type: 'bar-h' },
+      { tab_key: 'disputes', item_key: 'lifting-geo', item_type: 'chart', is_visible: true, display_order: 14, custom_title: 'Géographie (levée)' },
+      { tab_key: 'disputes', item_key: 'lifting-success-rate', item_type: 'chart', is_visible: true, display_order: 15, custom_title: 'Taux réussite %', chart_type: 'area', col_span: 2 },
+      { tab_key: 'disputes', item_key: 'lifting-evolution', item_type: 'chart', is_visible: true, display_order: 16, custom_title: 'Évolution levées', chart_type: 'area', col_span: 2 },
     ],
     kpis: [
       { tab_key: 'disputes', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Total' },
@@ -373,25 +381,10 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'disputes', item_key: 'kpi-resolus', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'Résolus' },
       { tab_key: 'disputes', item_key: 'kpi-rate', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Taux résolution' },
       { tab_key: 'disputes', item_key: 'kpi-duration', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Durée moy.' },
-    ],
-  },
-  'lifting': {
-    label: 'Levée litige',
-    charts: [
-      { tab_key: 'lifting', item_key: 'lifting-status', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Statut levée', chart_type: 'pie' },
-      { tab_key: 'lifting', item_key: 'resolution-level', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Niveau résolution', chart_type: 'bar-h' },
-      { tab_key: 'lifting', item_key: 'nature', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Nature litige', chart_type: 'bar-h' },
-      { tab_key: 'lifting', item_key: 'reason', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Motif de levée', chart_type: 'bar-h' },
-      { tab_key: 'lifting', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Géographie' },
-      { tab_key: 'lifting', item_key: 'success-rate', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Taux réussite %', chart_type: 'area', col_span: 2 },
-      { tab_key: 'lifting', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 6, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
-    ],
-    kpis: [
-      { tab_key: 'lifting', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Total levées' },
-      { tab_key: 'lifting', item_key: 'kpi-approved', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Approuvées' },
-      { tab_key: 'lifting', item_key: 'kpi-pending', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'En attente' },
-      { tab_key: 'lifting', item_key: 'kpi-rejected', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Rejetées' },
-      { tab_key: 'lifting', item_key: 'kpi-success', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Taux réussite' },
+      { tab_key: 'disputes', item_key: 'kpi-lifting-total', item_type: 'kpi', is_visible: true, display_order: 5, custom_title: 'Demandes levée' },
+      { tab_key: 'disputes', item_key: 'kpi-lifting-approved', item_type: 'kpi', is_visible: true, display_order: 6, custom_title: 'Levées approuvées' },
+      { tab_key: 'disputes', item_key: 'kpi-lifting-pending', item_type: 'kpi', is_visible: true, display_order: 7, custom_title: 'Levées en attente' },
+      { tab_key: 'disputes', item_key: 'kpi-lifting-success', item_type: 'kpi', is_visible: true, display_order: 8, custom_title: 'Taux réussite levée' },
     ],
   },
   'boundary': {
