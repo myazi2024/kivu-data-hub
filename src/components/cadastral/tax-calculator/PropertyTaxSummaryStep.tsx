@@ -20,6 +20,7 @@ export { USAGE_OPTIONS } from './taxFormConstants';
 interface PropertyTaxSummaryStepProps {
   parcelNumber: string;
   nif: string;
+  ownerName?: string;
   input: TaxCalculationInput;
   result: TaxCalculationResult;
   onBack: () => void;
@@ -28,7 +29,7 @@ interface PropertyTaxSummaryStepProps {
 }
 
 const PropertyTaxSummaryStep: React.FC<PropertyTaxSummaryStepProps> = ({
-  parcelNumber, nif, input, result, onBack, onSubmit, loading
+  parcelNumber, nif, ownerName, input, result, onBack, onSubmit, loading
 }) => {
   return (
     <div className="space-y-4 px-4 pb-4">
