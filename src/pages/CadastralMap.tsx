@@ -339,7 +339,7 @@ const CadastralMap = () => {
         setLoading(true);
         const { data, error } = await supabase
           .from('cadastral_parcels')
-          .select('id, parcel_number, gps_coordinates, parcel_sides, current_owner_name, area_sqm, province, ville, commune, quartier, latitude, longitude')
+          .select('id, parcel_number, gps_coordinates, parcel_sides, current_owner_name, area_sqm, province, ville, commune, quartier, latitude, longitude, is_subdivided')
           .is('deleted_at', null)
           .limit(500); // Limiter à 500 parcelles pour performance
 
