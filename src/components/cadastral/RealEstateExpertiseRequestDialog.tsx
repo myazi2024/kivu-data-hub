@@ -1007,12 +1007,12 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
       <Tabs value={activeTab} onValueChange={(tab) => {
         // Skip materiaux tab for terrain_nu
-        if (tab === 'materiaux' && isTerrainNuLocal) return;
+        if (tab === 'materiaux' && isTerrainNu) return;
         setActiveTab(tab);
       }} className="w-full">
-        <TabsList className={`grid w-full ${isTerrainNuLocal ? 'grid-cols-3' : 'grid-cols-4'} h-9 rounded-xl sticky top-0 z-10 bg-background/95 backdrop-blur-sm`}>
+        <TabsList className={`grid w-full ${isTerrainNu ? 'grid-cols-3' : 'grid-cols-4'} h-9 rounded-xl sticky top-0 z-10 bg-background/95 backdrop-blur-sm`}>
           <TabsTrigger value="general" className="text-xs rounded-lg">Général</TabsTrigger>
-          {!isTerrainNuLocal && <TabsTrigger value="materiaux" className="text-xs rounded-lg">Matériaux</TabsTrigger>}
+          {!isTerrainNu && <TabsTrigger value="materiaux" className="text-xs rounded-lg">Matériaux</TabsTrigger>}
           <TabsTrigger value="environnement" className="text-xs rounded-lg">Environ.</TabsTrigger>
           <TabsTrigger value="documents" className="text-xs rounded-lg">Documents</TabsTrigger>
         </TabsList>
@@ -1077,7 +1077,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
             </Card>
 
             {/* Infos construction - hidden for terrain nu */}
-            {!isTerrainNuLocal && <Card className="border rounded-xl">
+            {!isTerrainNu && <Card className="border rounded-xl">
               <CardContent className="p-3 space-y-3">
                 <h4 className="text-sm font-semibold flex items-center gap-2">
                   <Building className="h-4 w-4 text-muted-foreground" />
@@ -2013,7 +2013,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
       <div className="flex gap-3 mt-3">
         {(() => {
-          const tabOrder = isTerrainNuLocal
+          const tabOrder = isTerrainNu
             ? ['general', 'environnement', 'documents']
             : ['general', 'materiaux', 'environnement', 'documents'];
           const currentIndex = tabOrder.indexOf(activeTab);
