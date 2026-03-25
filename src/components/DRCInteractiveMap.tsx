@@ -267,7 +267,7 @@ const DRCInteractiveMap = () => {
                   {/* Légende choroplèthe à 4 paliers — masquée pendant le zoom */}
                   {!isMapZoomed && (
                     <div className="absolute bottom-5 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30">
-                      <div className="text-[8px] text-muted-foreground mb-0.5">Densité parcelles cadastrées</div>
+                      <div className="text-[8px] text-muted-foreground mb-0.5">{getChartConfig('map-legend-title')?.custom_title || 'Densité parcelles cadastrées'}</div>
                       <div className="flex flex-col gap-0.5">
                         {DENSITY_TIERS.map(tier => (
                           <div key={tier.label} className="flex items-center gap-1">
