@@ -95,13 +95,13 @@ export const PermitRequestDialog: React.FC<PermitRequestDialogProps> = ({
     // Vérifier le paiement avant d'approuver
     if (action === 'approve' && paymentStatus !== 'paid') {
       if (paymentStatus === 'pending') {
-        toast.error('Le paiement des frais de permis est en attente. Veuillez attendre la confirmation du paiement.');
+        toast.error('Le paiement des frais d\'autorisation est en attente. Veuillez attendre la confirmation du paiement.');
         return;
       } else if (paymentStatus === 'failed') {
-        toast.error('Le paiement des frais de permis a échoué. Le demandeur doit effectuer le paiement à nouveau.');
+        toast.error('Le paiement des frais d\'autorisation a échoué. Le demandeur doit effectuer le paiement à nouveau.');
         return;
       } else if (paymentStatus === 'not_found') {
-        toast.error('Aucun paiement trouvé pour cette demande. Le demandeur doit d\'abord payer les frais de permis.');
+        toast.error('Aucun paiement trouvé pour cette demande. Le demandeur doit d\'abord payer les frais d\'autorisation.');
         return;
       }
     }

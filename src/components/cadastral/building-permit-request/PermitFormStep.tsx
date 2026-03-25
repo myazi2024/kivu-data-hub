@@ -293,8 +293,8 @@ const PermitFormStep: React.FC<PermitFormStepProps> = ({
                 <Select value={formData.regularizationReason} onValueChange={(v) => handleInputChange('regularizationReason', v)}>
                   <SelectTrigger className="h-10 text-sm rounded-xl border-2"><SelectValue placeholder="Sélectionner la raison" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Construction sans permis initial">Construction sans permis initial</SelectItem>
-                    <SelectItem value="Permis périmé">Permis périmé</SelectItem>
+                    <SelectItem value="Construction sans autorisation initiale">Construction sans autorisation initiale</SelectItem>
+                    <SelectItem value="Autorisation périmée">Autorisation périmée</SelectItem>
                     <SelectItem value="Modification non autorisée">Modification non autorisée</SelectItem>
                     <SelectItem value="Extension ou agrandissement">Extension ou agrandissement</SelectItem>
                     <SelectItem value="Changement d'usage sans autorisation">Changement d'usage sans autorisation</SelectItem>
