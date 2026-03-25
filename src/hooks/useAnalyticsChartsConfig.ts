@@ -466,10 +466,10 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'rdc-map', item_key: 'map-header-note', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Répartition géographique des données foncières cadastrales' },
       { tab_key: 'rdc-map', item_key: 'map-watermark', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'BIC - Tous droits réservés' },
       { tab_key: 'rdc-map', item_key: 'map-copy-button', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Bouton copier image' },
-      { tab_key: 'rdc-map', item_key: 'map-tier-1', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Faible (0–30)', custom_color: 'hsl(210, 20%, 82%)' },
-      { tab_key: 'rdc-map', item_key: 'map-tier-2', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Modéré (31–100)', custom_color: 'hsl(45, 93%, 55%)' },
-      { tab_key: 'rdc-map', item_key: 'map-tier-3', item_type: 'chart', is_visible: true, display_order: 6, custom_title: 'Élevé (101–500)', custom_color: 'hsl(25, 90%, 55%)' },
-      { tab_key: 'rdc-map', item_key: 'map-tier-4', item_type: 'chart', is_visible: true, display_order: 7, custom_title: 'Très élevé (501+)', custom_color: 'hsl(348, 80%, 45%)' },
+      { tab_key: 'rdc-map', item_key: 'map-tier-1', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Faible (0–30)', custom_color: '#bec8d1' },
+      { tab_key: 'rdc-map', item_key: 'map-tier-2', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Modéré (31–100)', custom_color: '#f0b90b' },
+      { tab_key: 'rdc-map', item_key: 'map-tier-3', item_type: 'chart', is_visible: true, display_order: 6, custom_title: 'Élevé (101–500)', custom_color: '#e87422' },
+      { tab_key: 'rdc-map', item_key: 'map-tier-4', item_type: 'chart', is_visible: true, display_order: 7, custom_title: 'Très élevé (501+)', custom_color: '#b31942' },
     ],
     kpis: [
       // Tooltip KPIs
