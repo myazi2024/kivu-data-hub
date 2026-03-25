@@ -839,37 +839,52 @@ const AdminMutationRequests: React.FC = () => {
                   </div>
                 )}
 
-                {/* Documents joints */}
-                {Array.isArray(changes.supporting_documents) && changes.supporting_documents.length > 0 && (
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Documents joints</Label>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {changes.supporting_documents.map((url: string, i: number) => (
-                        <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline">
-                          Document {i + 1}
-                        </a>
-                      ))}
+                {/* Documents joints — read from column first, fallback to JSON */}
+                {(() => {
+                  const docs = Array.isArray(selectedRequest.supporting_documents) && selectedRequest.supporting_documents.length > 0
+                    ? selectedRequest.supporting_documents
+                    : Array.isArray(changes.supporting_documents) ? changes.supporting_documents : [];
+                  if (docs.length === 0) return null;
+                  return (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Documents joints</Label>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {docs.map((url: string, i: number) => (
+                          <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline">
+                            Document {i + 1}
+                          </a>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
-                {/* Certificat d'expertise */}
-                {changes.expertise_certificate_url && (
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Certificat d'expertise</Label>
-                    <div className="mt-1 space-y-1">
-                      <a href={changes.expertise_certificate_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline block">
-                        Voir le certificat
-                      </a>
-                      {changes.market_value_usd && (
-                        <p className="text-xs">Valeur vénale: <strong>${Number(changes.market_value_usd).toLocaleString()}</strong></p>
-                      )}
-                      {changes.expertise_certificate_date && (
-                        <p className="text-xs text-muted-foreground">Date: {changes.expertise_certificate_date}</p>
-                      )}
+                {/* Certificat d'expertise — read from columns first, fallback to JSON */}
+                {(() => {
+                  const certUrl = selectedRequest.expertise_certificate_url || changes.expertise_certificate_url;
+                  const marketVal = selectedRequest.market_value_usd ?? changes.market_value_usd;
+                  const certDate = selectedRequest.expertise_certificate_date || changes.expertise_certificate_date;
+                  if (!certUrl) return null;
+                  return (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Certificat d'expertise</Label>
+                      <div className="mt-1 space-y-1">
+                        <a href={certUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline block">
+                          Voir le certificat
+                        </a>
+                        {marketVal && (
+                          <p className="text-xs">Valeur vénale: <strong>${Number(marketVal).toLocaleString()}</strong></p>
+                        )}
+                        {certDate && (
+                          <p className="text-xs text-muted-foreground">Date: {certDate}</p>
+                        )}
+                        {selectedRequest.title_age && (
+                          <p className="text-xs text-muted-foreground">Ancienneté titre: {selectedRequest.title_age === '10_or_more' ? '≥ 10 ans' : '< 10 ans'}</p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 <Separator />
 
@@ -884,27 +899,39 @@ const AdminMutationRequests: React.FC = () => {
                     </div>
                   ))}
 
-                  {changes.mutation_fees && (
-                    <>
-                      <div className="flex justify-between text-xs">
-                        <span>Frais de mutation ({changes.mutation_fees.percentage}%)</span>
-                        <span className="font-mono">${Number(changes.mutation_fees.mutation_fee).toFixed(2)}</span>
-                      </div>
-                      {Number(changes.mutation_fees.bank_fee) > 0 && (
+                  {/* Mutation fees — columns first, fallback JSON */}
+                  {(() => {
+                    const mutFee = selectedRequest.mutation_fee_amount ?? changes.mutation_fees?.mutation_fee;
+                    const bankFee = selectedRequest.bank_fee_amount ?? changes.mutation_fees?.bank_fee;
+                    if (!mutFee) return null;
+                    return (
+                      <>
                         <div className="flex justify-between text-xs">
-                          <span>Frais bancaires</span>
-                          <span className="font-mono">${Number(changes.mutation_fees.bank_fee).toFixed(2)}</span>
+                          <span>Frais de mutation</span>
+                          <span className="font-mono">${Number(mutFee).toFixed(2)}</span>
                         </div>
-                      )}
-                    </>
-                  )}
+                        {Number(bankFee) > 0 && (
+                          <div className="flex justify-between text-xs">
+                            <span>Frais bancaires</span>
+                            <span className="font-mono">${Number(bankFee).toFixed(2)}</span>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
 
-                  {changes.late_fees && (
-                    <div className="flex justify-between text-xs text-orange-600">
-                      <span>Retard ({changes.late_fees.days}j)</span>
-                      <span className="font-mono">${Number(changes.late_fees.fee).toFixed(2)}</span>
-                    </div>
-                  )}
+                  {/* Late fees — columns first, fallback JSON */}
+                  {(() => {
+                    const lateFee = selectedRequest.late_fee_amount ?? changes.late_fees?.fee;
+                    const lateDays = selectedRequest.late_fee_days ?? changes.late_fees?.days;
+                    if (!lateFee) return null;
+                    return (
+                      <div className="flex justify-between text-xs text-orange-600">
+                        <span>Retard ({lateDays}j)</span>
+                        <span className="font-mono">${Number(lateFee).toFixed(2)}</span>
+                      </div>
+                    );
+                  })()}
 
                   <Separator />
                   <div className="flex items-center justify-between">
