@@ -471,13 +471,15 @@ const AdminCCCContributions: React.FC = () => {
         if (updatedContribution.tax_history && Array.isArray(updatedContribution.tax_history)) {
           for (const history of updatedContribution.tax_history) {
             if (typeof history === 'object' && history !== null) {
+              // Compatibility helper: CCC stores camelCase, services store snake_case
+              const rr = (obj: any, ...keys: string[]) => { for (const k of keys) { if (obj?.[k] !== undefined && obj[k] !== null) return obj[k]; } return null; };
               const { error: thError } = await supabase.from('cadastral_tax_history').insert({
                 parcel_id: targetParcelId,
-                tax_year: (history as any).tax_year,
-                amount_usd: (history as any).amount_usd,
-                payment_status: (history as any).payment_status,
-                payment_date: (history as any).payment_date,
-                receipt_document_url: (history as any).receipt_document_url
+                tax_year: Number(rr(history, 'tax_year', 'taxYear')),
+                amount_usd: Number(rr(history, 'amount_usd', 'amountUsd')) || 0,
+                payment_status: rr(history, 'payment_status', 'paymentStatus') || 'En attente',
+                payment_date: rr(history, 'payment_date', 'paymentDate'),
+                receipt_document_url: rr(history, 'receipt_document_url', 'receiptDocumentUrl'),
               });
               if (thError) {
                 console.error('Erreur historique taxes:', thError);
@@ -1347,11 +1349,11 @@ const AdminCCCContributions: React.FC = () => {
                       <div className="space-y-1 md:space-y-2 mt-1">
                         {selectedContribution.tax_history.map((tax: any, idx: number) => (
                           <div key={idx} className="p-1.5 md:p-2 bg-secondary rounded text-xs md:text-sm">
-                            <p><strong>Année:</strong> {tax.taxYear}</p>
-                            <p><strong>Montant:</strong> ${tax.amountUsd}</p>
-                            <p><strong>Statut:</strong> {tax.paymentStatus}</p>
-                            {tax.paymentDate && <p><strong>Date de paiement:</strong> {new Date(tax.paymentDate).toLocaleDateString('fr-FR')}</p>}
-                            {tax.taxType && <p><strong>Type:</strong> {tax.taxType}</p>}
+                            <p><strong>Année:</strong> {tax.taxYear || tax.tax_year}</p>
+                            <p><strong>Montant:</strong> ${tax.amountUsd || tax.amount_usd}</p>
+                            <p><strong>Statut:</strong> {tax.paymentStatus || tax.payment_status}</p>
+                            {(tax.paymentDate || tax.payment_date) && <p><strong>Date de paiement:</strong> {new Date(tax.paymentDate || tax.payment_date).toLocaleDateString('fr-FR')}</p>}
+                            {(tax.taxType || tax.tax_type) && <p><strong>Type:</strong> {tax.taxType || tax.tax_type}</p>}
                           </div>
                         ))}
                       </div>

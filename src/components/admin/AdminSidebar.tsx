@@ -116,6 +116,7 @@ const menuItems = [
       { icon: Scale, label: 'Litiges Fonciers', value: 'land-disputes', badge: null },
       { icon: Database, label: 'Hypothèques', value: 'mortgages', badge: null },
       { icon: FileText, label: 'Historique Taxes', value: 'tax-history', badge: null },
+      { icon: Receipt, label: 'Déclarations Fiscales', value: 'tax-declarations', badge: null },
       { icon: Users, label: 'Historique Propriété', value: 'ownership-history', badge: null },
       { icon: MapPin, label: 'Historique Bornage', value: 'boundary-history', badge: null },
     ]

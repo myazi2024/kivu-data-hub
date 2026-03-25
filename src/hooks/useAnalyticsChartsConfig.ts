@@ -502,6 +502,28 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'building-permits', item_key: 'kpi-approval-rate', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Taux approbation' },
     ],
   },
+  'taxes': {
+    label: 'Taxes foncières',
+    charts: [
+      { tab_key: 'taxes', item_key: 'tax-type', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Type de taxe', chart_type: 'pie' },
+      { tab_key: 'taxes', item_key: 'fiscal-year', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Exercice fiscal', chart_type: 'bar-v' },
+      { tab_key: 'taxes', item_key: 'status', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Statut', chart_type: 'bar-v' },
+      { tab_key: 'taxes', item_key: 'fiscal-zone', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Zone fiscale', chart_type: 'donut' },
+      { tab_key: 'taxes', item_key: 'penalties', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Avec/sans pénalités', chart_type: 'pie' },
+      { tab_key: 'taxes', item_key: 'exemptions', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Exonérations', chart_type: 'pie' },
+      { tab_key: 'taxes', item_key: 'amount-range', item_type: 'chart', is_visible: true, display_order: 6, custom_title: 'Tranche montant', chart_type: 'bar-h' },
+      { tab_key: 'taxes', item_key: 'province', item_type: 'chart', is_visible: true, display_order: 7, custom_title: 'Par province', chart_type: 'bar-h' },
+      { tab_key: 'taxes', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 8, custom_title: 'Géographie' },
+      { tab_key: 'taxes', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 9, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
+    ],
+    kpis: [
+      { tab_key: 'taxes', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Total déclarations' },
+      { tab_key: 'taxes', item_key: 'kpi-revenue', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Montant total' },
+      { tab_key: 'taxes', item_key: 'kpi-pending', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'En attente' },
+      { tab_key: 'taxes', item_key: 'kpi-approved', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Approuvées' },
+      { tab_key: 'taxes', item_key: 'kpi-penalty-rate', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Taux pénalités' },
+    ],
+  },
   '_global': {
     label: 'Global',
     charts: [

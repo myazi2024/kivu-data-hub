@@ -92,7 +92,8 @@ export const checkDuplicateTaxSubmission = async (
     .eq('parcel_number', parcelNumber)
     .eq('user_id', userId)
     .eq('contribution_type', 'update') // #6: Only check 'update' type contributions
-    .neq('status', 'rejected');
+    .neq('status', 'rejected')
+    .neq('status', 'returned');
 
   if (!data || data.length === 0) return false;
 
