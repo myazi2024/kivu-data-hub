@@ -449,7 +449,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
           {parcelId && (
             <ParcelOwnerInfo parcelId={parcelId} />
           )}
-          </div>
+
 
           {/* Formulaire */}
           <div className="grid grid-cols-2 gap-3">
