@@ -26,18 +26,38 @@ export interface MutationRequest {
   requester_email: string | null;
   beneficiary_name: string | null;
   beneficiary_phone: string | null;
+  beneficiary_id_document_url: string | null;
+  requester_id_document_url: string | null;
   proposed_changes: Record<string, any>;
   justification: string | null;
   fee_items: any[];
   total_amount_usd: number;
   payment_status: string;
+  payment_id: string | null;
+  paid_at: string | null;
   status: string;
   processing_notes: string | null;
   rejection_reason: string | null;
   estimated_processing_days: number;
+  supporting_documents: any[] | null;
+  // New dedicated columns (previously in proposed_changes JSON)
+  market_value_usd: number | null;
+  expertise_certificate_url: string | null;
+  expertise_certificate_date: string | null;
+  title_age: string | null;
+  mutation_fee_amount: number | null;
+  bank_fee_amount: number | null;
+  late_fee_amount: number | null;
+  late_fee_days: number | null;
+  // Timestamps
+  reviewed_at: string | null;
+  reviewed_by: string | null;
   created_at: string;
   updated_at: string;
-  // Admin join field
+}
+
+/** Extended type for admin views with profile join */
+export interface MutationRequestWithProfile extends MutationRequest {
   profiles?: { full_name: string; email: string } | null;
 }
 
