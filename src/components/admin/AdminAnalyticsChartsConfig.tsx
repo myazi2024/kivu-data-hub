@@ -15,7 +15,7 @@ import {
 import {
   Settings, Save, Eye, EyeOff, ChevronUp, ChevronDown, RotateCcw, Loader2,
   BarChart3, PieChart as PieChartIcon, TrendingUp, LayoutGrid, Palette, GripVertical,
-  Layers, Pencil, Map, Globe
+  Layers, Pencil, Map as MapIcon, Globe
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
