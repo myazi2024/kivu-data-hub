@@ -84,7 +84,7 @@ const PermitPreviewStep: React.FC<PermitPreviewStepProps> = ({
                   <PreviewRow label="Raison" value={formData.regularizationReason} />
                   <PreviewRow label="Date de construction" value={formData.constructionDate} />
                   <PreviewRow label="État actuel" value={formData.currentState} />
-                  <PreviewRow label="Permis initial" value={formData.originalPermitNumber} />
+                  <PreviewRow label="Autorisation initiale" value={formData.originalPermitNumber} />
                   <PreviewRow label="Problèmes de conformité" value={formData.complianceIssues} />
                 </div>
               </>
