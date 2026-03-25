@@ -36,7 +36,7 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { exportToCSV } from '@/utils/csvExport';
 import { getMutationTypeLabel, MUTATION_TYPES, MUTATION_STATUS_LABELS } from '@/components/cadastral/mutation/MutationConstants';
 
-import type { MutationFee, MutationRequest } from '@/types/mutation';
+import type { MutationFee, MutationRequest, MutationRequestWithProfile } from '@/types/mutation';
 
 const AdminMutationRequests: React.FC = () => {
   const { user, profile } = useAuth();
