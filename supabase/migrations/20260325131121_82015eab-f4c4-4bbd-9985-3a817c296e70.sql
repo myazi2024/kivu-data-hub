@@ -1,0 +1,1 @@
+UPDATE parcel_actions_config SET label = 'Demander une autorisation' WHERE action_key = 'permit_request';
