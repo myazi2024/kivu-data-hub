@@ -1,72 +1,100 @@
 
 
-# Plan: Renommer "Obtenir une autorisation" → "Demander une autorisation" + Audit residuel
+# Audit du service "Demander un lotissement" + Affichage du plan valide sur la carte
 
-## Partie 1 — Renommage du label
+## Problemes identifies
 
-Le label "Obtenir une autorisation" existe dans le fallback du hook `useParcelActionsConfig.tsx` (L93). La valeur en production est pilotee par la table `parcel_actions_config` en DB, donc il faut aussi mettre a jour la DB.
+### 1. PAS D'ACTION "RENVOYER POUR CORRECTION" (coherence manquante)
 
-### Fichier impacte
-- `src/hooks/useParcelActionsConfig.tsx` L93: changer `'Obtenir une autorisation'` en `'Demander une autorisation'`
+Le panneau admin (`AdminSubdivisionRequests.tsx` L325-329) n'offre que "Approuver" et "Rejeter". Contrairement aux autorisations et taxes qui ont maintenant un bouton "Renvoyer", le lotissement ne permet pas de demander des corrections sans rejet definitif.
 
-### Mise a jour DB
-- UPDATE de la table `parcel_actions_config` pour le `key = 'permit_request'`: mettre `label = 'Demander une autorisation'`
+### 2. PARCELLE MERE NON MODIFIEE APRES APPROBATION (fonctionnalite demandee)
 
----
+Quand un lotissement est approuve :
+- Les lots sont inseres dans `subdivision_lots` et affiches sur la carte (L783-834 de `CadastralMap.tsx`) — OK.
+- Mais la parcelle mere continue de s'afficher avec son polygone rouge standard identique aux autres parcelles. Rien n'indique visuellement qu'elle a ete subdivisee.
+- Il n'existe aucune colonne `is_subdivided` dans `cadastral_parcels` pour marquer la parcelle.
 
-## Partie 2 — Audit residuel du service "Demander une autorisation"
+**Correction** : Ajouter une colonne `is_subdivided` (boolean, default false) a `cadastral_parcels`. Lors de l'approbation, mettre cette colonne a `true`. Sur la carte, modifier le rendu de la parcelle mere : contour en pointilles, couleur differente, label "Lotie", et ne pas afficher le polygone plein rouge pour eviter le chevauchement visuel avec les lots.
 
-### Constat global apres les corrections precedentes
+### 3. CROQUIS DE LA PARCELLE MERE NON MIS A JOUR
 
-Les problemes majeurs (desalignement cles JSON, admin incomplet, action "Renvoyer", stats DB, analytics dedie) ont deja ete corriges. L'audit actuel ne revele que des points mineurs :
+Le croquis (building shapes, dimensions) de la parcelle mere n'est pas modifie apres approbation. Le plan de lotissement valide devrait devenir le nouveau croquis de reference.
 
-### 1. AUCUNE DIVERGENCE CRITIQUE RESTANTE
-- Les cles JSON sont alignees avec le helper `r()` et `getRequestType()`
-- L'admin affiche les 26 champs collectes
-- Les 3 actions (Approuver/Rejeter/Renvoyer) sont presentes
-- Les stats utilisent la colonne DB `status`
-- L'onglet analytics `building-permits` existe avec 11 graphiques et 5 KPIs
+**Correction** : Lors de l'approbation, sauvegarder les lots comme `subdivision_plan` dans la parcelle mere (colonne JSONB existante ou nouvelle). Sur la carte, si `is_subdivided = true`, afficher les lots colores au lieu du polygone rouge simple.
 
-### 2. AUCUNE DONNEE FICTIVE
-- Frais charges depuis `permit_fees_config` avec fallback ($75/$120)
-- Stats admin calculees sur donnees reelles
-- Taux de validite (36 mois) conforme a la legislation RDC
+### 4. AUCUNE DONNEE FICTIVE DETECTEE
 
-### 3. REDONDANCE CCC DEJA GEREE
-- Pre-remplissage depuis `parcelData` (type, nature, usage, surface) via `usePermitRequestForm`
-- Alerte visuelle "Certaines informations ont ete pre-remplies"
-- Proprietaire actuel affiche dans le formulaire et l'admin
+- Frais de soumission : 20$ (code + DB).
+- Frais de traitement : saisis par l'admin a l'approbation.
+- Stats basees sur donnees reelles.
 
-### 4. POINT MINEUR — Le label "Permis initial" dans le preview
-Dans `PermitPreviewStep.tsx` L87, le label dit "Permis initial" au lieu de "Autorisation initiale" pour le champ `originalPermitNumber`. A corriger pour coherence terminologique.
+### 5. REDONDANCE CCC DEJA GEREE
 
-### 5. POINT MINEUR — Texte "Permis périmé" dans les options de regularisation
-Dans `PermitFormStep.tsx` L297, l'option de raison de regularisation dit "Permis périmé" au lieu de "Autorisation périmée". A corriger.
+- Pre-remplissage depuis `parcelData` (surface, localisation, proprietaire, GPS, cotes).
+- Infos demandeur auto-remplies depuis `authUser`.
 
-### 6. POINT MINEUR — Label "frais de permis" dans l'admin
-Dans `PermitRequestDialog.tsx` L98/104, les messages d'erreur mentionnent "frais de permis" au lieu de "frais d'autorisation".
+### 6. LE FILTRE STATUT N'INCLUT PAS `returned`
+
+Le `SUBDIVISION_STATUS_MAP` (L60-67) n'a pas d'entree `returned`. A ajouter pour coherence.
+
+### 7. DETAILS ADMIN INCOMPLETS
+
+Le dialogue de details (L349-404) n'affiche pas :
+- L'email du demandeur
+- Le type de demandeur (proprietaire/mandataire)
+- Le type de titre foncier
+- Le motif complet avec label lisible
+- Les voies d'acces internes
+- Les espaces communs et servitudes du `subdivision_plan_data`
 
 ---
 
 ## Plan d'implementation
 
-### Etape 1 — Renommer le fallback et mettre a jour la DB
-- `useParcelActionsConfig.tsx` L93: `label: 'Demander une autorisation'`
-- Requete SQL sur `parcel_actions_config`
+### Etape 1 — Migration DB : ajouter `is_subdivided` a `cadastral_parcels`
 
-### Etape 2 — Harmoniser la terminologie "Permis" → "Autorisation"
-- `PermitPreviewStep.tsx` L87: "Permis initial" → "Autorisation initiale"
-- `PermitFormStep.tsx` L297: "Permis périmé" → "Autorisation périmée"
-- `PermitRequestDialog.tsx` L98/104: "frais de permis" → "frais d'autorisation"
+```sql
+ALTER TABLE cadastral_parcels ADD COLUMN IF NOT EXISTS is_subdivided boolean DEFAULT false;
+```
+
+### Etape 2 — Modifier l'approbation admin pour marquer la parcelle mere
+
+Dans `AdminSubdivisionRequests.tsx`, apres `saveApprovedLots()` :
+- Faire un `UPDATE cadastral_parcels SET is_subdivided = true WHERE parcel_number = request.parcel_number`
+- Stocker le `subdivision_plan_data` dans la parcelle si necessaire
+
+### Etape 3 — Modifier le rendu carte pour les parcelles subdivisees
+
+Dans `CadastralMap.tsx` (L706-780), quand `parcel.is_subdivided === true` :
+- Remplacer le polygone rouge plein par un contour en pointilles gris/bleu
+- Ajouter un label "Lotie" au centroid
+- Les lots individuels (deja affiches L783-834) restent colores par usage
+- Le resultat visuel : parcelle mere = contour discret + lots colores a l'interieur
+
+### Etape 4 — Ajouter l'action "Renvoyer pour correction"
+
+Dans `AdminSubdivisionRequests.tsx` :
+- Ajouter `returned` au `SUBDIVISION_STATUS_MAP`
+- Ajouter un 3eme bouton "Renvoyer" a cote de Approuver/Rejeter
+- Ajouter un dialogue avec champ "Motif du renvoi"
+- Notification dediee a l'utilisateur
+
+### Etape 5 — Enrichir le dialogue de details admin
+
+Ajouter les champs manquants : email, type demandeur, titre foncier, voies internes, espaces communs, servitudes depuis `subdivision_plan_data`.
+
+### Etape 6 — Charger `is_subdivided` dans la requete carte
+
+S'assurer que la requete Supabase dans `CadastralMap.tsx` inclut `is_subdivided` dans le `select`.
 
 ### Fichiers impactes
 
 | Fichier | Action |
 |---------|--------|
-| `src/hooks/useParcelActionsConfig.tsx` | Renommer label fallback |
-| `src/components/cadastral/building-permit-request/PermitPreviewStep.tsx` | Terminologie |
-| `src/components/cadastral/building-permit-request/PermitFormStep.tsx` | Terminologie |
-| `src/components/admin/permits/PermitRequestDialog.tsx` | Terminologie |
+| Migration SQL | Ajouter colonne `is_subdivided` |
+| `src/components/admin/AdminSubdivisionRequests.tsx` | Marquer parcelle, ajouter "Renvoyer", enrichir details |
+| `src/pages/CadastralMap.tsx` | Rendu conditionnel pour parcelles subdivisees |
 
-4 fichiers modifies, 1 update DB. Corrections mineures uniquement — le service est deja bien structure.
+3 fichiers modifies + 1 migration.
 
