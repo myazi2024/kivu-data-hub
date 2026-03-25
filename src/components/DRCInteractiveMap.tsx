@@ -296,7 +296,7 @@ const DRCInteractiveMap = () => {
 
                   {/* Pied de carte : date + copyright */}
                   <div className="absolute bottom-0 left-0 right-0 z-10 text-center py-0.5">
-                    <span className="text-[7px] text-muted-foreground">{todayStr} — BIC - Tous droits réservés</span>
+                    <span className="text-[7px] text-muted-foreground">{todayStr} — {getChartConfig('map-watermark')?.custom_title || 'BIC - Tous droits réservés'}</span>
                   </div>
                   
                   <div className="absolute bottom-5 right-2 z-10 flex gap-1">
