@@ -56,7 +56,7 @@ const AdminMutationRequests: React.FC = () => {
   const [editingFee, setEditingFee] = useState<MutationFee | null>(null);
   
   // Process form
-  const [processAction, setProcessAction] = useState<'approve' | 'reject' | 'hold'>('approve');
+  const [processAction, setProcessAction] = useState<'approve' | 'reject' | 'hold' | 'return'>('approve');
   const [processingNotes, setProcessingNotes] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
   const [processing, setProcessing] = useState(false);
