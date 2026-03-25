@@ -114,6 +114,7 @@ const menuItems = [
       { icon: DollarSign, label: 'Config Frais Expert.', value: 'expertise-fees-config', badge: null },
       { icon: AlertTriangle, label: 'Conflits Limites', value: 'boundary-conflicts', badge: null },
       { icon: Scale, label: 'Litiges Fonciers', value: 'land-disputes', badge: null },
+      { icon: BarChart, label: 'Analytics Litiges', value: 'dispute-analytics', badge: null },
       { icon: Database, label: 'Hypothèques', value: 'mortgages', badge: null },
       { icon: FileText, label: 'Historique Taxes', value: 'tax-history', badge: null },
       { icon: Receipt, label: 'Déclarations Fiscales', value: 'tax-declarations', badge: null },

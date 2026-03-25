@@ -77,7 +77,7 @@ const AdminDisputeAnalytics: React.FC = () => {
     if (resolvedWithDates.length > 0) {
       const totalDays = resolvedWithDates.reduce((sum, d) => {
         const start = new Date(d.dispute_start_date!).getTime();
-        const end = d.resolved_at ? new Date(d.resolved_at).getTime() : Date.now();
+        const end = Date.now();
         return sum + (end - start) / (1000 * 60 * 60 * 24);
       }, 0);
       avgDays = Math.round(totalDays / resolvedWithDates.length);
