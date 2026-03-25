@@ -125,11 +125,11 @@ const AdminBuildingPermits = () => {
     const headers = ['Parcelle', 'Type', 'Demandeur', 'Téléphone', 'Date', 'Statut'];
     const data = filteredPermits.map(p => [
       p.parcel_number,
-      p.permit_request_data?.permitType === 'construction' ? 'Construction' : 'Régularisation',
+      getPermitType(p) === 'construction' ? 'Construction' : 'Régularisation',
       p.permit_request_data?.applicantName || 'N/A',
       p.permit_request_data?.applicantPhone || '',
       format(new Date(p.created_at), 'dd/MM/yyyy', { locale: fr }),
-      p.permit_request_data?.status || 'pending'
+      p.status
     ]);
     exportToCSV({ headers, data, filename: `autorisations-batir-${format(new Date(), 'yyyy-MM-dd')}.csv` });
     toast.success('Export CSV réussi');
