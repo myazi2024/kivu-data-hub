@@ -49,6 +49,42 @@ export interface ExpertiseRequest {
   rejection_reason?: string;
   created_at: string;
   updated_at: string;
+
+  // Extended columns (previously stored as JSON in additional_notes)
+  wall_material?: string;
+  roof_material?: string;
+  window_type?: string;
+  floor_material?: string;
+  has_plaster?: boolean;
+  has_painting?: boolean;
+  has_ceiling?: boolean;
+  has_double_glazing?: boolean;
+  building_position?: string;
+  facade_orientation?: string;
+  is_corner_plot?: boolean;
+  sound_environment?: string;
+  nearby_noise_sources?: string;
+  has_pool?: boolean;
+  has_air_conditioning?: boolean;
+  has_solar_panels?: boolean;
+  has_generator?: boolean;
+  has_water_tank?: boolean;
+  has_borehole?: boolean;
+  has_electric_fence?: boolean;
+  has_garage?: boolean;
+  has_cellar?: boolean;
+  has_automatic_gate?: boolean;
+  internet_provider?: string;
+  number_of_rooms?: number;
+  number_of_bedrooms?: number;
+  number_of_bathrooms?: number;
+  apartment_number?: string;
+  floor_number?: string;
+  total_building_floors?: number;
+  accessibility?: string;
+  monthly_charges?: number;
+  has_common_areas?: boolean;
+  nearby_amenities?: string;
 }
 
 export interface CreateExpertiseRequestData {
@@ -81,6 +117,42 @@ export interface CreateExpertiseRequestData {
   requester_name: string;
   requester_phone?: string;
   requester_email?: string;
+
+  // Extended columns
+  wall_material?: string;
+  roof_material?: string;
+  window_type?: string;
+  floor_material?: string;
+  has_plaster?: boolean;
+  has_painting?: boolean;
+  has_ceiling?: boolean;
+  has_double_glazing?: boolean;
+  building_position?: string;
+  facade_orientation?: string;
+  is_corner_plot?: boolean;
+  sound_environment?: string;
+  nearby_noise_sources?: string;
+  has_pool?: boolean;
+  has_air_conditioning?: boolean;
+  has_solar_panels?: boolean;
+  has_generator?: boolean;
+  has_water_tank?: boolean;
+  has_borehole?: boolean;
+  has_electric_fence?: boolean;
+  has_garage?: boolean;
+  has_cellar?: boolean;
+  has_automatic_gate?: boolean;
+  internet_provider?: string;
+  number_of_rooms?: number;
+  number_of_bedrooms?: number;
+  number_of_bathrooms?: number;
+  apartment_number?: string;
+  floor_number?: string;
+  total_building_floors?: number;
+  accessibility?: string;
+  monthly_charges?: number;
+  has_common_areas?: boolean;
+  nearby_amenities?: string;
 }
 
 export interface ExpertiseFee {

@@ -255,7 +255,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       'Studio': 'studio',
       'Local commercial': 'commercial', 'Commerce': 'commercial', 'Bureau': 'commercial',
       'Entrepôt': 'entrepot', 'Hangar': 'entrepot',
-      'Terrain nu': 'terrain_nu',
+      'Terrain nu': 'terrain_nu', 'Terrain non bâti': 'terrain_nu', 'Non bâti': 'terrain_nu',
     };
 
     // Map construction_materials → expertise wallMaterial key
@@ -267,6 +267,16 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       'Bois': 'bois',
       'Tôles métalliques': 'tole',
       'Mixte': 'mixte',
+    };
+
+    // Map construction_nature → propertyCondition
+    const natureConditionMap: Record<string, string> = {
+      'Durable': 'bon',
+      'Semi-durable': 'moyen',
+      'Précaire': 'mauvais',
+      'Construction durable': 'bon',
+      'Construction semi-durable': 'moyen',
+      'Construction précaire': 'mauvais',
     };
 
     if (parcelData.property_category && categoryMap[parcelData.property_category]) {
@@ -283,6 +293,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     }
     if (parcelData.construction_materials && materialMap[parcelData.construction_materials]) {
       setWallMaterial(materialMap[parcelData.construction_materials]);
+    }
+    if (parcelData.construction_nature && natureConditionMap[parcelData.construction_nature]) {
+      setPropertyCondition(natureConditionMap[parcelData.construction_nature]);
     }
   }, [open, parcelData]);
 
@@ -621,47 +634,6 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       return;
     }
 
-    // Store form data for later submission (extended fields stored in additional_notes as JSON)
-    const extendedData = {
-      construction_type: constructionType,
-      number_of_rooms: numberOfRooms ? parseInt(numberOfRooms) : undefined,
-      number_of_bedrooms: numberOfBedrooms ? parseInt(numberOfBedrooms) : undefined,
-      number_of_bathrooms: numberOfBathrooms ? parseInt(numberOfBathrooms) : undefined,
-      wall_material: wallMaterial,
-      roof_material: roofMaterial,
-      window_type: windowType,
-      floor_material: floorMaterial,
-      has_plaster: hasPlaster,
-      has_painting: hasPainting,
-      has_ceiling: hasCeiling,
-      building_position: buildingPosition,
-      facade_orientation: facadeOrientation || undefined,
-      distance_from_road: distanceFromRoad ? parseFloat(distanceFromRoad) : undefined,
-      is_corner_plot: isCornerPlot,
-      has_direct_street_access: hasDirectStreetAccess,
-      floor_number: floorNumber ? parseInt(floorNumber) : undefined,
-      total_building_floors: totalBuildingFloors ? parseInt(totalBuildingFloors) : undefined,
-      accessibility: accessibility,
-      apartment_number: apartmentNumber || undefined,
-      has_common_areas: hasCommonAreas,
-      monthly_charges: monthlyCharges ? parseFloat(monthlyCharges) : undefined,
-      sound_environment: soundEnvironment,
-      nearby_noise_sources: nearbyNoiseSources.length > 0 ? nearbyNoiseSources.join(', ') : undefined,
-      has_double_glazing: hasDoubleGlazing,
-      internet_provider: hasInternet && internetProvider ? internetProvider : undefined,
-      has_pool: hasPool,
-      has_air_conditioning: hasAirConditioning,
-      has_solar_panels: hasSolarPanels,
-      has_water_tank: hasWaterTank,
-      has_generator: hasGenerator,
-      has_borehole: hasBorehole,
-      has_electric_fence: hasElectricFence,
-      has_garage: hasGarage,
-      has_cellar: hasCellar,
-      has_automatic_gate: hasAutomaticGate,
-      nearby_amenities: nearbyAmenities.length > 0 ? nearbyAmenities.join(', ') : undefined,
-    };
-
     setFormData({
       parcel_number: parcelNumber,
       parcel_id: parcelId,
@@ -687,13 +659,45 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       distance_to_market_km: distanceToMarket ? parseFloat(distanceToMarket) : undefined,
       flood_risk_zone: floodRiskZone,
       erosion_risk_zone: erosionRiskZone,
-      additional_notes: JSON.stringify({ 
-        user_notes: additionalNotes,
-        extended_data: extendedData 
-      }),
+      additional_notes: additionalNotes || undefined,
       requester_name: profile?.full_name || user.email || 'Utilisateur',
       requester_phone: undefined,
       requester_email: profile?.email || user.email || undefined,
+      // Extended columns — stored directly in DB columns
+      wall_material: wallMaterial || undefined,
+      roof_material: roofMaterial || undefined,
+      window_type: windowType || undefined,
+      floor_material: floorMaterial || undefined,
+      has_plaster: hasPlaster,
+      has_painting: hasPainting,
+      has_ceiling: hasCeiling,
+      has_double_glazing: hasDoubleGlazing,
+      building_position: buildingPosition || undefined,
+      facade_orientation: facadeOrientation || undefined,
+      is_corner_plot: isCornerPlot,
+      sound_environment: soundEnvironment || undefined,
+      nearby_noise_sources: nearbyNoiseSources.length > 0 ? nearbyNoiseSources.join(', ') : undefined,
+      has_pool: hasPool,
+      has_air_conditioning: hasAirConditioning,
+      has_solar_panels: hasSolarPanels,
+      has_generator: hasGenerator,
+      has_water_tank: hasWaterTank,
+      has_borehole: hasBorehole,
+      has_electric_fence: hasElectricFence,
+      has_garage: hasGarage,
+      has_cellar: hasCellar,
+      has_automatic_gate: hasAutomaticGate,
+      internet_provider: hasInternet && internetProvider ? internetProvider : undefined,
+      number_of_rooms: numberOfRooms ? parseInt(numberOfRooms) : undefined,
+      number_of_bedrooms: numberOfBedrooms ? parseInt(numberOfBedrooms) : undefined,
+      number_of_bathrooms: numberOfBathrooms ? parseInt(numberOfBathrooms) : undefined,
+      apartment_number: apartmentNumber || undefined,
+      floor_number: floorNumber || undefined,
+      total_building_floors: totalBuildingFloors ? parseInt(totalBuildingFloors) : undefined,
+      accessibility: accessibility || undefined,
+      monthly_charges: monthlyCharges ? parseFloat(monthlyCharges) : undefined,
+      has_common_areas: hasCommonAreas,
+      nearby_amenities: nearbyAmenities.length > 0 ? nearbyAmenities.join(', ') : undefined,
     });
 
     setStep('payment');
@@ -986,11 +990,12 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setCheckingCertificateAccess(false);
     setCertificateAccessFee(0);
 
+    prefillDoneRef.current = false;
     onOpenChange(false);
   };
 
+  const isTerrainNu = constructionType === 'terrain_nu';
   const isApartmentOrBuilding = constructionType === 'appartement' || constructionType === 'immeuble' || constructionType === 'duplex' || constructionType === 'studio';
-  const isTerrainNuLocal = constructionType === 'terrain_nu';
 
   const renderForm = () => (
     <div className="space-y-3">
@@ -1015,12 +1020,12 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
       <Tabs value={activeTab} onValueChange={(tab) => {
         // Skip materiaux tab for terrain_nu
-        if (tab === 'materiaux' && isTerrainNuLocal) return;
+        if (tab === 'materiaux' && isTerrainNu) return;
         setActiveTab(tab);
       }} className="w-full">
-        <TabsList className={`grid w-full ${isTerrainNuLocal ? 'grid-cols-3' : 'grid-cols-4'} h-9 rounded-xl sticky top-0 z-10 bg-background/95 backdrop-blur-sm`}>
+        <TabsList className={`grid w-full ${isTerrainNu ? 'grid-cols-3' : 'grid-cols-4'} h-9 rounded-xl sticky top-0 z-10 bg-background/95 backdrop-blur-sm`}>
           <TabsTrigger value="general" className="text-xs rounded-lg">Général</TabsTrigger>
-          {!isTerrainNuLocal && <TabsTrigger value="materiaux" className="text-xs rounded-lg">Matériaux</TabsTrigger>}
+          {!isTerrainNu && <TabsTrigger value="materiaux" className="text-xs rounded-lg">Matériaux</TabsTrigger>}
           <TabsTrigger value="environnement" className="text-xs rounded-lg">Environ.</TabsTrigger>
           <TabsTrigger value="documents" className="text-xs rounded-lg">Documents</TabsTrigger>
         </TabsList>
@@ -1085,7 +1090,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
             </Card>
 
             {/* Infos construction - hidden for terrain nu */}
-            {!isTerrainNuLocal && <Card className="border rounded-xl">
+            {!isTerrainNu && <Card className="border rounded-xl">
               <CardContent className="p-3 space-y-3">
                 <h4 className="text-sm font-semibold flex items-center gap-2">
                   <Building className="h-4 w-4 text-muted-foreground" />
@@ -2021,7 +2026,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
       <div className="flex gap-3 mt-3">
         {(() => {
-          const tabOrder = isTerrainNuLocal
+          const tabOrder = isTerrainNu
             ? ['general', 'environnement', 'documents']
             : ['general', 'materiaux', 'environnement', 'documents'];
           const currentIndex = tabOrder.indexOf(activeTab);
@@ -2072,7 +2077,6 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     </div>
   );
 
-  const isTerrainNu = constructionType === 'terrain_nu';
 
   const renderSummary = () => {
     // Use imported centralized labels (no local duplicates)
@@ -2085,12 +2089,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       // Champs obligatoires
       if (!constructionType) missing.push({ label: 'Type de construction', tab: 'general', required: true });
       
-      // Champs importants (non obligatoires mais recommandés)
       if (constructionType !== 'terrain_nu') {
-        if (!constructionYear) missing.push({ label: 'Année de construction', tab: 'general', required: false });
-        if (!totalBuiltAreaSqm) missing.push({ label: 'Surface construite', tab: 'general', required: false });
+        // Champs obligatoires pour biens bâtis
+        if (!constructionYear) missing.push({ label: 'Année de construction', tab: 'general', required: true });
+        if (!totalBuiltAreaSqm) missing.push({ label: 'Surface construite', tab: 'general', required: true });
+        // Champs importants (recommandés)
         if (!numberOfRooms) missing.push({ label: 'Nombre de pièces', tab: 'general', required: false });
       }
+      if (!roadAccessType) missing.push({ label: 'Type d\'accès routier', tab: 'environnement', required: true });
       if (constructionImages.length === 0 && constructionType !== 'terrain_nu') {
         missing.push({ label: 'Photos de la construction', tab: 'documents', required: false });
       }
@@ -2102,14 +2108,26 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     const requiredMissing = missingFields.filter(f => f.required);
     const recommendedMissing = missingFields.filter(f => !f.required);
 
-    // Comptage de la complétion
-    const allFields = [
-      constructionType, constructionYear, constructionQuality, numberOfFloors, 
-      totalBuiltAreaSqm, propertyCondition, numberOfRooms, numberOfBedrooms, numberOfBathrooms,
-      wallMaterial, roofMaterial, windowType, floorMaterial, buildingPosition, roadAccessType, soundEnvironment
-    ].filter(Boolean).length;
-    const totalPossibleFields = 16;
-    const completionPercentage = Math.round((allFields / totalPossibleFields) * 100);
+    // Comptage dynamique de la complétion
+    const computeCompletion = () => {
+      const baseFields = [constructionType, roadAccessType];
+      const builtFields = isTerrainNu ? [] : [
+        constructionYear, constructionQuality, numberOfFloors, totalBuiltAreaSqm,
+        propertyCondition, numberOfRooms, numberOfBedrooms, numberOfBathrooms,
+        wallMaterial, roofMaterial, windowType, floorMaterial, buildingPosition, soundEnvironment,
+      ];
+      const equipFields = [
+        hasWaterSupply, hasElectricity, hasSewageSystem, hasInternet,
+        hasSecuritySystem, hasParking, hasGarden,
+      ];
+      const docScore = (parcelDocuments.length > 0 ? 1 : 0) + (constructionImages.length > 0 && !isTerrainNu ? 1 : 0);
+      const filledBase = baseFields.filter(Boolean).length;
+      const filledBuilt = builtFields.filter(Boolean).length;
+      const filledEquip = equipFields.filter(Boolean).length;
+      const totalPossible = baseFields.length + builtFields.length + equipFields.length + (isTerrainNu ? 1 : 2);
+      return Math.round(((filledBase + filledBuilt + filledEquip + docScore) / totalPossible) * 100);
+    };
+    const completionPercentage = computeCompletion();
 
     // Liste des équipements sélectionnés (incluant les nouveaux)
     const selectedEquipments = [

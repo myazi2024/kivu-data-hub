@@ -2931,9 +2931,12 @@ export type Database = {
       }
       real_estate_expertise_requests: {
         Row: {
+          accessibility: string | null
           additional_notes: string | null
+          apartment_number: string | null
           assigned_at: string | null
           assigned_to: string | null
+          building_position: string | null
           certificate_expiry_date: string | null
           certificate_issue_date: string | null
           certificate_url: string | null
@@ -2947,18 +2950,44 @@ export type Database = {
           erosion_risk_zone: boolean | null
           expertise_date: string | null
           expertise_report_url: string | null
+          facade_orientation: string | null
           flood_risk_zone: boolean | null
+          floor_material: string | null
+          floor_number: string | null
           garden_area_sqm: number | null
+          has_air_conditioning: boolean | null
+          has_automatic_gate: boolean | null
+          has_borehole: boolean | null
+          has_ceiling: boolean | null
+          has_cellar: boolean | null
+          has_common_areas: boolean | null
+          has_double_glazing: boolean | null
+          has_electric_fence: boolean | null
           has_electricity: boolean | null
+          has_garage: boolean | null
           has_garden: boolean | null
+          has_generator: boolean | null
           has_internet: boolean | null
+          has_painting: boolean | null
           has_parking: boolean | null
+          has_plaster: boolean | null
+          has_pool: boolean | null
           has_security_system: boolean | null
           has_sewage_system: boolean | null
+          has_solar_panels: boolean | null
           has_water_supply: boolean | null
+          has_water_tank: boolean | null
           id: string
+          internet_provider: string | null
+          is_corner_plot: boolean | null
           market_value_usd: number | null
+          monthly_charges: number | null
+          nearby_amenities: string | null
+          nearby_noise_sources: string | null
+          number_of_bathrooms: number | null
+          number_of_bedrooms: number | null
           number_of_floors: number | null
+          number_of_rooms: number | null
           parcel_id: string | null
           parcel_number: string
           parking_spaces: number | null
@@ -2972,16 +3001,24 @@ export type Database = {
           requester_name: string
           requester_phone: string | null
           road_access_type: string | null
+          roof_material: string | null
+          sound_environment: string | null
           status: string
           supporting_documents: Json | null
+          total_building_floors: number | null
           total_built_area_sqm: number | null
           updated_at: string
           user_id: string
+          wall_material: string | null
+          window_type: string | null
         }
         Insert: {
+          accessibility?: string | null
           additional_notes?: string | null
+          apartment_number?: string | null
           assigned_at?: string | null
           assigned_to?: string | null
+          building_position?: string | null
           certificate_expiry_date?: string | null
           certificate_issue_date?: string | null
           certificate_url?: string | null
@@ -2995,18 +3032,44 @@ export type Database = {
           erosion_risk_zone?: boolean | null
           expertise_date?: string | null
           expertise_report_url?: string | null
+          facade_orientation?: string | null
           flood_risk_zone?: boolean | null
+          floor_material?: string | null
+          floor_number?: string | null
           garden_area_sqm?: number | null
+          has_air_conditioning?: boolean | null
+          has_automatic_gate?: boolean | null
+          has_borehole?: boolean | null
+          has_ceiling?: boolean | null
+          has_cellar?: boolean | null
+          has_common_areas?: boolean | null
+          has_double_glazing?: boolean | null
+          has_electric_fence?: boolean | null
           has_electricity?: boolean | null
+          has_garage?: boolean | null
           has_garden?: boolean | null
+          has_generator?: boolean | null
           has_internet?: boolean | null
+          has_painting?: boolean | null
           has_parking?: boolean | null
+          has_plaster?: boolean | null
+          has_pool?: boolean | null
           has_security_system?: boolean | null
           has_sewage_system?: boolean | null
+          has_solar_panels?: boolean | null
           has_water_supply?: boolean | null
+          has_water_tank?: boolean | null
           id?: string
+          internet_provider?: string | null
+          is_corner_plot?: boolean | null
           market_value_usd?: number | null
+          monthly_charges?: number | null
+          nearby_amenities?: string | null
+          nearby_noise_sources?: string | null
+          number_of_bathrooms?: number | null
+          number_of_bedrooms?: number | null
           number_of_floors?: number | null
+          number_of_rooms?: number | null
           parcel_id?: string | null
           parcel_number: string
           parking_spaces?: number | null
@@ -3020,16 +3083,24 @@ export type Database = {
           requester_name: string
           requester_phone?: string | null
           road_access_type?: string | null
+          roof_material?: string | null
+          sound_environment?: string | null
           status?: string
           supporting_documents?: Json | null
+          total_building_floors?: number | null
           total_built_area_sqm?: number | null
           updated_at?: string
           user_id: string
+          wall_material?: string | null
+          window_type?: string | null
         }
         Update: {
+          accessibility?: string | null
           additional_notes?: string | null
+          apartment_number?: string | null
           assigned_at?: string | null
           assigned_to?: string | null
+          building_position?: string | null
           certificate_expiry_date?: string | null
           certificate_issue_date?: string | null
           certificate_url?: string | null
@@ -3043,18 +3114,44 @@ export type Database = {
           erosion_risk_zone?: boolean | null
           expertise_date?: string | null
           expertise_report_url?: string | null
+          facade_orientation?: string | null
           flood_risk_zone?: boolean | null
+          floor_material?: string | null
+          floor_number?: string | null
           garden_area_sqm?: number | null
+          has_air_conditioning?: boolean | null
+          has_automatic_gate?: boolean | null
+          has_borehole?: boolean | null
+          has_ceiling?: boolean | null
+          has_cellar?: boolean | null
+          has_common_areas?: boolean | null
+          has_double_glazing?: boolean | null
+          has_electric_fence?: boolean | null
           has_electricity?: boolean | null
+          has_garage?: boolean | null
           has_garden?: boolean | null
+          has_generator?: boolean | null
           has_internet?: boolean | null
+          has_painting?: boolean | null
           has_parking?: boolean | null
+          has_plaster?: boolean | null
+          has_pool?: boolean | null
           has_security_system?: boolean | null
           has_sewage_system?: boolean | null
+          has_solar_panels?: boolean | null
           has_water_supply?: boolean | null
+          has_water_tank?: boolean | null
           id?: string
+          internet_provider?: string | null
+          is_corner_plot?: boolean | null
           market_value_usd?: number | null
+          monthly_charges?: number | null
+          nearby_amenities?: string | null
+          nearby_noise_sources?: string | null
+          number_of_bathrooms?: number | null
+          number_of_bedrooms?: number | null
           number_of_floors?: number | null
+          number_of_rooms?: number | null
           parcel_id?: string | null
           parcel_number?: string
           parking_spaces?: number | null
@@ -3068,11 +3165,16 @@ export type Database = {
           requester_name?: string
           requester_phone?: string | null
           road_access_type?: string | null
+          roof_material?: string | null
+          sound_environment?: string | null
           status?: string
           supporting_documents?: Json | null
+          total_building_floors?: number | null
           total_built_area_sqm?: number | null
           updated_at?: string
           user_id?: string
+          wall_material?: string | null
+          window_type?: string | null
         }
         Relationships: [
           {
