@@ -103,13 +103,22 @@ const AdminBuildingPermits = () => {
     goToPage(1);
   }, [searchTerm, filterStatus, filterType]);
 
+  // Helper to resolve permit type across formats
+  const getPermitType = (p: PermitRequest) => {
+    const d = p.permit_request_data;
+    if (d?.requestType === 'new') return 'construction';
+    if (d?.requestType === 'regularization') return 'regularization';
+    return d?.permitType || 'construction';
+  };
+
   const stats = {
     total: permits.length,
-    pending: permits.filter(p => !p.permit_request_data?.status || p.permit_request_data.status === 'pending').length,
-    approved: permits.filter(p => p.permit_request_data?.status === 'approved').length,
-    rejected: permits.filter(p => p.permit_request_data?.status === 'rejected').length,
-    construction: permits.filter(p => p.permit_request_data?.permitType === 'construction').length,
-    regularization: permits.filter(p => p.permit_request_data?.permitType === 'regularization').length,
+    pending: permits.filter(p => p.status === 'pending').length,
+    approved: permits.filter(p => p.status === 'approved').length,
+    rejected: permits.filter(p => p.status === 'rejected').length,
+    returned: permits.filter(p => p.status === 'returned').length,
+    construction: permits.filter(p => getPermitType(p) === 'construction').length,
+    regularization: permits.filter(p => getPermitType(p) === 'regularization').length,
   };
 
   const handleExportCSV = () => {
