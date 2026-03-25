@@ -652,7 +652,7 @@ export const AdminExpertiseRequests: React.FC = () => {
 
                 {/* Infos bien */}
                 {(() => {
-                  const { userNotes, extendedData } = getExtendedData(selectedRequest.additional_notes);
+                  const { userNotes, extendedData } = getExtendedData(selectedRequest);
                   return (
                     <>
                       <div>
