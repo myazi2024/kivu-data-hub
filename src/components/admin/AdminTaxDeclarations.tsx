@@ -7,9 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Receipt, Search, Download, RefreshCw, CheckCircle, XCircle, RotateCcw, Eye } from 'lucide-react';
+import { Receipt, Search, Download, RefreshCw, CheckCircle, XCircle, RotateCcw, Eye, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { usePagination } from '@/hooks/usePagination';
@@ -17,7 +18,6 @@ import { PaginationControls } from '@/components/shared/PaginationControls';
 import { StatusBadge, StatusType } from '@/components/shared/StatusBadge';
 import { exportToCSV } from '@/utils/csvExport';
 import { useAuth } from '@/hooks/useAuth';
-import ResponsiveTable from '@/components/shared/ResponsiveTable';
 
 /**
  * Helper to resolve camelCase / snake_case tax_history keys.
