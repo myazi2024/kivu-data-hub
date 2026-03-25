@@ -140,7 +140,17 @@ export const useMutationRequest = () => {
         total_amount_usd: totalAmount,
         payment_status: 'pending',
         status: 'pending',
-        estimated_processing_days: 14
+        estimated_processing_days: 14,
+        // Dedicated columns (no longer buried in JSON)
+        supporting_documents: data.supporting_documents?.length ? data.supporting_documents : null,
+        market_value_usd: data.market_value_usd ?? null,
+        expertise_certificate_url: data.expertise_certificate_url ?? null,
+        expertise_certificate_date: data.expertise_certificate_date || null,
+        title_age: data.title_age ?? null,
+        mutation_fee_amount: data.mutation_fee_amount ?? null,
+        bank_fee_amount: data.bank_fee_amount ?? null,
+        late_fee_amount: data.late_fee_amount ?? null,
+        late_fee_days: data.late_fee_days ?? null,
       };
 
       const { data: request, error } = await supabase
