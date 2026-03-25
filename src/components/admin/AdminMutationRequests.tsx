@@ -164,6 +164,7 @@ const AdminMutationRequests: React.FC = () => {
         case 'approve': newStatus = 'approved'; break;
         case 'reject': newStatus = 'rejected'; break;
         case 'hold': newStatus = 'on_hold'; break;
+        case 'return': newStatus = 'returned'; break;
         default: newStatus = 'pending';
       }
 
