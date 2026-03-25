@@ -183,6 +183,7 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
           : input.usageType === 'agricultural' ? 'Agricole'
           : 'Résidentiel',
         construction_year: input.constructionYear,
+        current_owner_name: ownerName || null,
         owner_document_url: idDocUrl,
         tax_history: [{
           tax_type: 'Impôt foncier annuel',
