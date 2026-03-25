@@ -80,7 +80,7 @@ const AdminMutationRequests: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setRequests((data || []) as unknown as MutationRequest[]);
+      setRequests((data || []) as unknown as MutationRequestWithProfile[]);
     } catch (error) {
       console.error('Error fetching requests:', error);
       toast.error('Erreur lors du chargement des demandes');
