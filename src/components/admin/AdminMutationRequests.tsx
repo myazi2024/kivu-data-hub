@@ -41,7 +41,7 @@ import type { MutationFee, MutationRequest, MutationRequestWithProfile } from '@
 const AdminMutationRequests: React.FC = () => {
   const { user, profile } = useAuth();
   const [activeTab, setActiveTab] = useState('requests');
-  const [requests, setRequests] = useState<MutationRequest[]>([]);
+  const [requests, setRequests] = useState<MutationRequestWithProfile[]>([]);
   const [fees, setFees] = useState<MutationFee[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
