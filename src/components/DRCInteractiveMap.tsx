@@ -243,7 +243,7 @@ const DRCInteractiveMap = () => {
                       <span>RDC — Données réelles</span>
                     </h2>
                     <p className="text-[7px] text-muted-foreground leading-tight">
-                      Répartition géographique des données foncières cadastrales — Total : {formatNumber(totalParcels)} parcelles enregistrées
+                      {getChartConfig('map-header-note')?.custom_title || 'Répartition géographique des données foncières cadastrales'} — Total : {formatNumber(totalParcels)} parcelles enregistrées
                     </p>
                   </div>
                   
