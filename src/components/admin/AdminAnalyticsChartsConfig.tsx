@@ -705,6 +705,22 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
           </Card>
         </div>
       )}
+
+      {/* Unsaved changes confirmation dialog */}
+      <AlertDialog open={!!pendingTabSwitch} onOpenChange={(open) => { if (!open) cancelTabSwitch(); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Modifications non sauvegardées</AlertDialogTitle>
+            <AlertDialogDescription>
+              L'onglet « {ANALYTICS_TABS_REGISTRY[activeTab]?.label} » contient des modifications non sauvegardées. Voulez-vous continuer sans sauvegarder ?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelTabSwitch}>Rester</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmTabSwitch}>Continuer sans sauvegarder</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
