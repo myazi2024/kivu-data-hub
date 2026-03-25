@@ -1009,6 +1009,7 @@ const AdminMutationRequests: React.FC = () => {
                     <SelectItem value="approve">Approuver</SelectItem>
                     <SelectItem value="reject">Rejeter</SelectItem>
                     <SelectItem value="hold">Mettre en attente</SelectItem>
+                    <SelectItem value="return">Renvoyer pour correction</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
