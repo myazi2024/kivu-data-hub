@@ -93,6 +93,16 @@ export const useMutationRequest = () => {
     justification?: string;
     selected_fees: MutationFee[];
     total_amount_override?: number;
+    // New dedicated column fields
+    supporting_documents?: string[];
+    market_value_usd?: number;
+    expertise_certificate_url?: string;
+    expertise_certificate_date?: string;
+    title_age?: string;
+    mutation_fee_amount?: number;
+    bank_fee_amount?: number;
+    late_fee_amount?: number;
+    late_fee_days?: number;
   }) => {
     if (!user) {
       toast({
