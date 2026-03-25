@@ -49,6 +49,7 @@ const PropertyTaxSummaryStep: React.FC<PropertyTaxSummaryStepProps> = ({
           {/* Identification */}
           <div className="space-y-2 text-sm">
             <SummaryRow label="NIF contribuable" value={nif || '—'} bold />
+            {ownerName && <SummaryRow label="Propriétaire" value={ownerName} />}
             {input.redevableIsDifferent && input.redevableNom && (
               <>
                 <SummaryRow label="Redevable" value={input.redevableNom} />

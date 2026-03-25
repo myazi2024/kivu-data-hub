@@ -259,6 +259,7 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
       <PropertyTaxSummaryStep
         parcelNumber={parcelNumber}
         nif={nif}
+        ownerName={ownerName}
         input={input}
         result={result}
         onBack={() => setCalcStep('questions')}

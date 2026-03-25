@@ -334,6 +334,8 @@ const Admin = () => {
         return <AdminMortgages />;
       case 'tax-history':
         return <AdminTaxHistory />;
+      case 'tax-declarations':
+        return <AdminTaxDeclarations />;
       case 'ownership-history':
         return <AdminOwnershipHistory />;
       case 'boundary-history':
