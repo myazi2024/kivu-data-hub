@@ -1349,11 +1349,11 @@ const AdminCCCContributions: React.FC = () => {
                       <div className="space-y-1 md:space-y-2 mt-1">
                         {selectedContribution.tax_history.map((tax: any, idx: number) => (
                           <div key={idx} className="p-1.5 md:p-2 bg-secondary rounded text-xs md:text-sm">
-                            <p><strong>Année:</strong> {tax.taxYear}</p>
-                            <p><strong>Montant:</strong> ${tax.amountUsd}</p>
-                            <p><strong>Statut:</strong> {tax.paymentStatus}</p>
-                            {tax.paymentDate && <p><strong>Date de paiement:</strong> {new Date(tax.paymentDate).toLocaleDateString('fr-FR')}</p>}
-                            {tax.taxType && <p><strong>Type:</strong> {tax.taxType}</p>}
+                            <p><strong>Année:</strong> {tax.taxYear || tax.tax_year}</p>
+                            <p><strong>Montant:</strong> ${tax.amountUsd || tax.amount_usd}</p>
+                            <p><strong>Statut:</strong> {tax.paymentStatus || tax.payment_status}</p>
+                            {(tax.paymentDate || tax.payment_date) && <p><strong>Date de paiement:</strong> {new Date(tax.paymentDate || tax.payment_date).toLocaleDateString('fr-FR')}</p>}
+                            {(tax.taxType || tax.tax_type) && <p><strong>Type:</strong> {tax.taxType || tax.tax_type}</p>}
                           </div>
                         ))}
                       </div>
