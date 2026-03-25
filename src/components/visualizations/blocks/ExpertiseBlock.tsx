@@ -3,13 +3,14 @@ import { AnalyticsFilters } from '../filters/AnalyticsFilters';
 import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, avgProcessingDays, numericDistribution, yearDecadeDistribution, avgField, buildFilterLabel } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { Search, TrendingUp, DollarSign, Building, Zap, ShieldAlert, MapPin, Ruler, Clock, Trees } from 'lucide-react';
+import { Search, TrendingUp, DollarSign, Building, Zap, ShieldAlert, MapPin, Ruler, Clock, Trees, Volume2, Layers } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
 
 import { generateInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
+import { WALL_LABELS, ROOF_LABELS, SOUND_LABELS, BUILDING_POSITION_LABELS } from '@/constants/expertiseLabels';
 
 interface Props { data: LandAnalyticsData; }
 
@@ -30,6 +31,27 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
   const trend = useMemo(() => trendByMonth(filtered), [filtered]);
 
   const byDecade = useMemo(() => yearDecadeDistribution(filtered, 'construction_year'), [filtered]);
+
+  // New charts from extended columns
+  const byWallMaterial = useMemo(() => {
+    const raw = countBy(filtered.filter(r => r.wall_material), 'wall_material');
+    return raw.map(d => ({ ...d, name: WALL_LABELS[d.name] || d.name }));
+  }, [filtered]);
+
+  const byRoofMaterial = useMemo(() => {
+    const raw = countBy(filtered.filter(r => r.roof_material), 'roof_material');
+    return raw.map(d => ({ ...d, name: ROOF_LABELS[d.name] || d.name }));
+  }, [filtered]);
+
+  const bySoundEnv = useMemo(() => {
+    const raw = countBy(filtered.filter(r => r.sound_environment), 'sound_environment');
+    return raw.map(d => ({ ...d, name: SOUND_LABELS[d.name] || d.name }));
+  }, [filtered]);
+
+  const byBuildingPosition = useMemo(() => {
+    const raw = countBy(filtered.filter(r => r.building_position), 'building_position');
+    return raw.map(d => ({ ...d, name: BUILDING_POSITION_LABELS[d.name] || d.name }));
+  }, [filtered]);
 
   const builtAreaDist = useMemo(() => numericDistribution(filtered, 'total_built_area_sqm', [
     { name: '< 50 m²', min: 0, max: 50 },
@@ -56,6 +78,16 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
       { field: 'has_parking', label: 'Parking' },
       { field: 'has_security_system', label: 'Sécurité' },
       { field: 'has_garden', label: 'Jardin' },
+      { field: 'has_pool', label: 'Piscine' },
+      { field: 'has_air_conditioning', label: 'Climatisation' },
+      { field: 'has_solar_panels', label: 'Solaire' },
+      { field: 'has_generator', label: 'Groupe élec.' },
+      { field: 'has_water_tank', label: 'Citerne' },
+      { field: 'has_borehole', label: 'Forage' },
+      { field: 'has_garage', label: 'Garage' },
+      { field: 'has_electric_fence', label: 'Clôture élec.' },
+      { field: 'has_cellar', label: 'Cave' },
+      { field: 'has_automatic_gate', label: 'Portail auto.' },
     ];
     return items.map(i => ({
       name: i.label,
@@ -146,6 +178,14 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(builtAreaDist, 'bar-v', 'les surfaces bâties')} />}
         {v('equipment') && <ChartCard title={ct('equipment', 'Équipements')} icon={Zap} data={equipmentData} type="bar-h" colorIndex={9} labelWidth={100} hidden={equipmentData.length === 0}
           insight="Répartition des équipements disponibles dans les biens expertisés." />}
+        {v('wall-material') && <ChartCard title={ct('wall-material', 'Matériau murs')} icon={Layers} data={byWallMaterial} type="bar-h" colorIndex={3} labelWidth={110} hidden={byWallMaterial.length === 0}
+          insight={generateInsight(byWallMaterial, 'bar-h', 'les matériaux de murs')} />}
+        {v('roof-material') && <ChartCard title={ct('roof-material', 'Matériau toiture')} icon={Building} data={byRoofMaterial} type="pie" colorIndex={1} hidden={byRoofMaterial.length === 0}
+          insight={generateInsight(byRoofMaterial, 'pie', 'les matériaux de toiture')} />}
+        {v('sound-env') && <ChartCard title={ct('sound-env', 'Env. sonore')} icon={Volume2} data={bySoundEnv} type="donut" colorIndex={6} hidden={bySoundEnv.length === 0}
+          insight={generateInsight(bySoundEnv, 'donut', 'l\'environnement sonore')} />}
+        {v('building-position') && <ChartCard title={ct('building-position', 'Position bâtiment')} icon={MapPin} data={byBuildingPosition} type="pie" colorIndex={8} hidden={byBuildingPosition.length === 0}
+          insight={generateInsight(byBuildingPosition, 'pie', 'les positions sur parcelle')} />}
         {v('road-access') && <ChartCard title={ct('road-access', 'Accès routier')} icon={MapPin} data={byRoadAccess} type="pie" colorIndex={0} hidden={byRoadAccess.length === 0}
           insight={generateInsight(byRoadAccess, 'pie', 'les types d\'accès routier')} />}
         {v('proximity') && <ChartCard title={ct('proximity', 'Proximité moy.')} icon={MapPin} data={proximityData} type="bar-h" colorIndex={6} labelWidth={110} hidden={proximityData.length === 0}
