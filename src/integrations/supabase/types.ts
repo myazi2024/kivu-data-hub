@@ -1064,6 +1064,7 @@ export type Database = {
           deleted_at: string | null
           gps_coordinates: Json | null
           groupement: string | null
+          has_dispute: boolean | null
           house_number: string | null
           id: string
           is_subdivided: boolean | null
@@ -1108,6 +1109,7 @@ export type Database = {
           deleted_at?: string | null
           gps_coordinates?: Json | null
           groupement?: string | null
+          has_dispute?: boolean | null
           house_number?: string | null
           id?: string
           is_subdivided?: boolean | null
@@ -1152,6 +1154,7 @@ export type Database = {
           deleted_at?: string | null
           gps_coordinates?: Json | null
           groupement?: string | null
+          has_dispute?: boolean | null
           house_number?: string | null
           id?: string
           is_subdivided?: boolean | null

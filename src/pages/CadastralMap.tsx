@@ -710,37 +710,79 @@ const CadastralMap = () => {
               coord => [coord.lat, coord.lng]
             );
             
-            // Rendu conditionnel : parcelle subdivisée vs normale
+            // Rendu conditionnel : parcelle subdivisée / en litige / normale
             const isSubdivided = (parcel as any).is_subdivided === true;
+            const hasDispute = (parcel as any).has_dispute === true;
+            
+            let polyColor = '#ef4444';
+            let polyWeight = 2;
+            let polyFillOpacity = 0.2;
+            let polyDash: string | undefined = undefined;
+            
+            if (isSubdivided) {
+              polyColor = '#6b7280';
+              polyWeight = 1.5;
+              polyFillOpacity = 0.05;
+              polyDash = '6 4';
+            } else if (hasDispute) {
+              polyColor = '#f97316'; // orange
+              polyWeight = 2.5;
+              polyFillOpacity = 0.15;
+              polyDash = '8 4';
+            }
+            
             const polygon = L.polygon(polygonPoints, {
-              color: isSubdivided ? '#6b7280' : '#ef4444',
-              weight: isSubdivided ? 1.5 : 2,
-              fillColor: isSubdivided ? '#6b7280' : '#ef4444',
-              fillOpacity: isSubdivided ? 0.05 : 0.2,
-              dashArray: isSubdivided ? '6 4' : undefined,
+              color: polyColor,
+              weight: polyWeight,
+              fillColor: polyColor,
+              fillOpacity: polyFillOpacity,
+              dashArray: polyDash,
             }).addTo(map);
 
-            // Label "Lotie" au centroid si subdivisée
-            if (isSubdivided) {
+            // Labels au centroid
+            if (isSubdivided || hasDispute) {
               const centLat = polygonPoints.reduce((s, p) => s + p[0], 0) / polygonPoints.length;
               const centLng = polygonPoints.reduce((s, p) => s + p[1], 0) / polygonPoints.length;
-              const subdivLabel = L.divIcon({
-                className: 'subdivided-label',
-                html: `<div style="
-                  background: hsl(var(--muted));
-                  color: hsl(var(--muted-foreground));
-                  padding: 1px 6px;
-                  border-radius: 4px;
-                  border: 1px solid hsl(var(--border));
-                  font-size: 9px;
-                  font-weight: 600;
-                  white-space: nowrap;
-                  opacity: 0.85;
-                ">Lotie</div>`,
-                iconSize: [36, 16],
-                iconAnchor: [18, 8],
-              });
-              L.marker([centLat, centLng], { icon: subdivLabel }).addTo(map);
+              
+              if (isSubdivided) {
+                const subdivLabel = L.divIcon({
+                  className: 'subdivided-label',
+                  html: `<div style="
+                    background: hsl(var(--muted));
+                    color: hsl(var(--muted-foreground));
+                    padding: 1px 6px;
+                    border-radius: 4px;
+                    border: 1px solid hsl(var(--border));
+                    font-size: 9px;
+                    font-weight: 600;
+                    white-space: nowrap;
+                    opacity: 0.85;
+                  ">Lotie</div>`,
+                  iconSize: [36, 16],
+                  iconAnchor: [18, 8],
+                });
+                L.marker([centLat, centLng], { icon: subdivLabel }).addTo(map);
+              }
+              
+              if (hasDispute) {
+                const disputeLabel = L.divIcon({
+                  className: 'dispute-label',
+                  html: `<div style="
+                    background: #fff7ed;
+                    color: #c2410c;
+                    padding: 1px 6px;
+                    border-radius: 4px;
+                    border: 1px solid #f97316;
+                    font-size: 9px;
+                    font-weight: 600;
+                    white-space: nowrap;
+                    opacity: 0.9;
+                  ">⚠ Litige</div>`,
+                  iconSize: [50, 16],
+                  iconAnchor: [25, isSubdivided ? -4 : 8],
+                });
+                L.marker([centLat, centLng], { icon: disputeLabel }).addTo(map);
+              }
             }
 
             // Extraire les dimensions exactes depuis parcel_sides (formulaire CCC)

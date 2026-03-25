@@ -61,6 +61,7 @@ import { AdminPermissions } from '@/components/admin/AdminPermissions';
 import AdminSubdivisionRequests from '@/components/admin/AdminSubdivisionRequests';
 import AdminParcelActionsConfig from '@/components/admin/AdminParcelActionsConfig';
 import AdminLandDisputes from '@/components/admin/AdminLandDisputes';
+import AdminDisputeAnalytics from '@/components/admin/AdminDisputeAnalytics';
 import AdminCertificates from '@/components/admin/AdminCertificates';
 import AdminMapProviders from '@/components/admin/AdminMapProviders';
 import AdminAnalyticsChartsConfig from '@/components/admin/AdminAnalyticsChartsConfig';
@@ -360,6 +361,8 @@ const Admin = () => {
         return <AdminParcelActionsConfig />;
       case 'land-disputes':
         return <AdminLandDisputes />;
+      case 'dispute-analytics':
+        return <AdminDisputeAnalytics />;
       case 'certificates':
         return <AdminCertificates />;
       case 'analytics-charts-config':

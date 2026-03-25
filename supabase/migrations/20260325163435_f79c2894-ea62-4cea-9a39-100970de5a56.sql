@@ -1,0 +1,1 @@
+ALTER TABLE cadastral_parcels ADD COLUMN IF NOT EXISTS has_dispute boolean DEFAULT false;
