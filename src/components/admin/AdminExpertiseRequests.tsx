@@ -230,7 +230,7 @@ export const AdminExpertiseRequests: React.FC = () => {
         expiryDate.setMonth(expiryDate.getMonth() + 6);
 
         // Parse extended data from additional_notes
-        const { extendedData: extData } = getExtendedData(selectedRequest.additional_notes);
+        const { extendedData: extData } = getExtendedData(selectedRequest);
 
         const pdfBlob = await generateExpertiseCertificatePDF({
           referenceNumber: selectedRequest.reference_number,
