@@ -138,13 +138,24 @@ const DRCInteractiveMap = () => {
     });
   }, [analytics]);
 
-  /** Paliers choroplèthes fixes pour la densité */
-  const DENSITY_TIERS = [
-    { label: 'Faible', min: 0, max: 30, color: 'hsl(210, 20%, 82%)' },
-    { label: 'Modéré', min: 31, max: 100, color: 'hsl(45, 93%, 55%)' },
-    { label: 'Élevé', min: 101, max: 500, color: 'hsl(25, 90%, 55%)' },
-    { label: 'Très élevé', min: 501, max: Infinity, color: 'hsl(348, 80%, 45%)' },
-  ];
+  /** Paliers choroplèthes — configurables depuis admin */
+  const DENSITY_TIERS = useMemo(() => {
+    const tierKeys = ['map-tier-1', 'map-tier-2', 'map-tier-3', 'map-tier-4'];
+    const defaultTiers = [
+      { label: 'Faible', min: 0, max: 30, color: 'hsl(210, 20%, 82%)' },
+      { label: 'Modéré', min: 31, max: 100, color: 'hsl(45, 93%, 55%)' },
+      { label: 'Élevé', min: 101, max: 500, color: 'hsl(25, 90%, 55%)' },
+      { label: 'Très élevé', min: 501, max: Infinity, color: 'hsl(348, 80%, 45%)' },
+    ];
+    return defaultTiers.map((d, i) => {
+      const cfg = getChartConfig(tierKeys[i]);
+      return {
+        ...d,
+        label: cfg?.custom_title?.replace(/\s*\(.*\)/, '') || d.label,
+        color: cfg?.custom_color || d.color,
+      };
+    });
+  }, [getChartConfig]);
   const formatNumber = (value: number): string => new Intl.NumberFormat('fr-FR').format(value);
   const formatCurrency = (value: number): string =>
     new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
