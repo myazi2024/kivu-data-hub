@@ -3,9 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
-import type { MutationFee, MutationRequest } from '@/types/mutation';
+import type { MutationFee, MutationRequest, MutationRequestWithProfile } from '@/types/mutation';
 
-export type { MutationFee, MutationRequest };
+export type { MutationFee, MutationRequest, MutationRequestWithProfile };
 
 export const useMutationRequest = () => {
   const [loading, setLoading] = useState(false);
