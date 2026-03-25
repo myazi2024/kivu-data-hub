@@ -1,96 +1,72 @@
 
 
-# Audit du service "Taxes foncieres" — Divergences et optimisations
+# Plan: Renommer "Obtenir une autorisation" → "Demander une autorisation" + Audit residuel
 
-## Problemes identifies
+## Partie 1 — Renommage du label
 
-### 1. PAS DE PANNEAU ADMIN DEDIE POUR LES DECLARATIONS FISCALES (majeur)
+Le label "Obtenir une autorisation" existe dans le fallback du hook `useParcelActionsConfig.tsx` (L93). La valeur en production est pilotee par la table `parcel_actions_config` en DB, donc il faut aussi mettre a jour la DB.
 
-Les trois services fiscaux (Impot foncier, Taxe de batisse, IRL) soumettent des declarations dans `cadastral_contributions` avec `contribution_type = 'update'` et un champ `tax_history` JSON. Mais il n'existe **aucun panneau admin dedie** pour visualiser, valider ou rejeter ces declarations.
+### Fichier impacte
+- `src/hooks/useParcelActionsConfig.tsx` L93: changer `'Obtenir une autorisation'` en `'Demander une autorisation'`
 
-- `AdminTaxHistory.tsx` lit depuis `cadastral_tax_history` — une table differente qui n'est alimentee que lors de l'approbation CCC (pas depuis les services fiscaux).
-- `AdminCCCContributions.tsx` affiche les contributions CCC (type `new`) mais pas les declarations fiscales (type `update`).
+### Mise a jour DB
+- UPDATE de la table `parcel_actions_config` pour le `key = 'permit_request'`: mettre `label = 'Demander une autorisation'`
 
-**Consequence** : Les declarations fiscales soumises via les services restent indefiniment en statut `pending` sans qu'aucun admin ne puisse les traiter.
+---
 
-**Correction** : Creer un composant `AdminTaxDeclarations.tsx` qui liste les contributions de type `update` ayant un `tax_history` non-null, avec filtres par type de taxe, annee, statut, et actions Approuver/Rejeter/Renvoyer. Lors de l'approbation, inserer dans `cadastral_tax_history`.
+## Partie 2 — Audit residuel du service "Demander une autorisation"
 
-### 2. DESALIGNEMENT CLES JSON CCC vs SERVICE (bug)
+### Constat global apres les corrections precedentes
 
-Le CCC stocke les taxes en **camelCase** (`taxYear`, `amountUsd`, `paymentStatus`). Les services fiscaux stockent en **snake_case** (`tax_year`, `amount_usd`, `payment_status`). L'admin CCC (L1350) lit en camelCase. L'approbation CCC (L476) lit en snake_case.
+Les problemes majeurs (desalignement cles JSON, admin incomplet, action "Renvoyer", stats DB, analytics dedie) ont deja ete corriges. L'audit actuel ne revele que des points mineurs :
 
-| Source | Cle annee | Cle montant | Cle statut |
-|--------|-----------|-------------|------------|
-| CCC form | `taxYear` | `amountUsd` | `paymentStatus` |
-| Service fiscal | `tax_year` | `amount_usd` | `payment_status` |
-| Admin CCC display | `taxYear` | `amountUsd` | `paymentStatus` |
-| Admin CCC approval | `tax_year` | `amount_usd` | `payment_status` |
+### 1. AUCUNE DIVERGENCE CRITIQUE RESTANTE
+- Les cles JSON sont alignees avec le helper `r()` et `getRequestType()`
+- L'admin affiche les 26 champs collectes
+- Les 3 actions (Approuver/Rejeter/Renvoyer) sont presentes
+- Les stats utilisent la colonne DB `status`
+- L'onglet analytics `building-permits` existe avec 11 graphiques et 5 KPIs
 
-L'approbation CCC echoue silencieusement car elle lit `tax_year` alors que le CCC stocke `taxYear` — les champs inseres dans `cadastral_tax_history` sont donc `null`.
+### 2. AUCUNE DONNEE FICTIVE
+- Frais charges depuis `permit_fees_config` avec fallback ($75/$120)
+- Stats admin calculees sur donnees reelles
+- Taux de validite (36 mois) conforme a la legislation RDC
 
-**Correction** : Ajouter un helper de compatibilite dans l'approbation CCC qui resout les deux formats. Standardiser sur snake_case pour les nouvelles soumissions.
+### 3. REDONDANCE CCC DEJA GEREE
+- Pre-remplissage depuis `parcelData` (type, nature, usage, surface) via `usePermitRequestForm`
+- Alerte visuelle "Certaines informations ont ete pre-remplies"
+- Proprietaire actuel affiche dans le formulaire et l'admin
 
-### 3. VERIFICATION DE DOUBLON N'EXCLUT PAS LE STATUT `returned`
+### 4. POINT MINEUR — Le label "Permis initial" dans le preview
+Dans `PermitPreviewStep.tsx` L87, le label dit "Permis initial" au lieu de "Autorisation initiale" pour le champ `originalPermitNumber`. A corriger pour coherence terminologique.
 
-`checkDuplicateTaxSubmission` (L95) filtre `.neq('status', 'rejected')` mais ne prend pas en compte le statut `returned`. Si une declaration a ete renvoyee pour correction, l'utilisateur ne peut pas la re-soumettre car le doublon est detecte.
+### 5. POINT MINEUR — Texte "Permis périmé" dans les options de regularisation
+Dans `PermitFormStep.tsx` L297, l'option de raison de regularisation dit "Permis périmé" au lieu de "Autorisation périmée". A corriger.
 
-**Correction** : Ajouter `.neq('status', 'returned')` ou filtrer avec `.in('status', ['pending', 'approved'])`.
-
-### 4. PAS D'ONGLET ANALYTICS DEDIE AUX TAXES
-
-Les graphiques fiscaux (`taxes`, `taxes-year`, `taxes-amount`) sont integres dans l'onglet `parcels-titled`. Il n'y a pas d'onglet `taxes` dedie dans `ANALYTICS_TABS_REGISTRY`, contrairement aux mutations, hypotheques et autorisations.
-
-**Correction** : Creer un onglet `taxes` avec graphiques : repartition par type de taxe, montants par exercice, taux de penalite, repartition zone fiscale, conformite par province.
-
-### 5. REDONDANCE CCC : DONNEES FISCALES NON PRE-REMPLIES
-
-Le CCC collecte l'historique fiscal (type, annee, montant, statut paiement, date, recu). Quand l'utilisateur ouvre ensuite un calculateur fiscal sur la meme parcelle, aucune de ces donnees n'est exploitee — ni pour pre-remplir l'exercice fiscal deja couvert, ni pour avertir qu'une annee est deja declaree via CCC.
-
-**Correction** : Dans les 3 calculateurs, verifier si une contribution CCC existe avec des `tax_history` pour la meme parcelle et les memes annees, et afficher un avertissement.
-
-### 6. PROPRIETAIRE ACTUEL NON AFFICHE DANS LE RECAPITULATIF
-
-`PropertyTaxSummaryStep` n'affiche pas le nom du proprietaire (`ownerName`). Le nom est collecte dans le formulaire mais absent de la fiche de declaration soumise.
-
-**Correction** : Ajouter `ownerName` dans le recapitulatif et dans le payload JSON.
-
-### 7. AUCUNE DONNEE FICTIVE DETECTEE
-
-Les taux sont charges depuis `property_tax_rates_config` (DB) avec fallback code. Les taux de batisse viennent de `cadastral_contribution_config`. L'IRL utilise 22% (legislation DRC). Pas de donnees simulees.
+### 6. POINT MINEUR — Label "frais de permis" dans l'admin
+Dans `PermitRequestDialog.tsx` L98/104, les messages d'erreur mentionnent "frais de permis" au lieu de "frais d'autorisation".
 
 ---
 
 ## Plan d'implementation
 
-### Etape 1 — Creer le panneau admin des declarations fiscales
-Creer `AdminTaxDeclarations.tsx` : liste les `cadastral_contributions` de type `update` avec `tax_history` non-null. Afficher type de taxe, exercice, montant, parcelle, statut. Actions : Approuver (insere dans `cadastral_tax_history`), Rejeter, Renvoyer. Filtres par type de taxe, annee, statut. Export CSV.
+### Etape 1 — Renommer le fallback et mettre a jour la DB
+- `useParcelActionsConfig.tsx` L93: `label: 'Demander une autorisation'`
+- Requete SQL sur `parcel_actions_config`
 
-### Etape 2 — Corriger le desalignement camelCase/snake_case
-Dans `AdminCCCContributions.tsx` L474-480, ajouter un helper de resolution qui accepte les deux formats (`taxYear` || `tax_year`). Meme correction pour l'affichage L1350-1354.
-
-### Etape 3 — Corriger la verification de doublons
-Modifier `checkDuplicateTaxSubmission` pour exclure aussi le statut `returned`.
-
-### Etape 4 — Ajouter le proprietaire dans le recapitulatif
-Passer `ownerName` a `PropertyTaxSummaryStep` et l'afficher. Inclure dans le payload de soumission.
-
-### Etape 5 — Creer l'onglet analytics dedie
-Ajouter un bloc `taxes` dans `ANALYTICS_TABS_REGISTRY` avec graphiques : type de taxe, exercice fiscal, zone fiscale, penalites, conformite.
-
-### Etape 6 — Integrer le panneau dans la sidebar admin
-Ajouter l'entree dans le menu admin et le routage.
+### Etape 2 — Harmoniser la terminologie "Permis" → "Autorisation"
+- `PermitPreviewStep.tsx` L87: "Permis initial" → "Autorisation initiale"
+- `PermitFormStep.tsx` L297: "Permis périmé" → "Autorisation périmée"
+- `PermitRequestDialog.tsx` L98/104: "frais de permis" → "frais d'autorisation"
 
 ### Fichiers impactes
 
 | Fichier | Action |
 |---------|--------|
-| `src/components/admin/AdminTaxDeclarations.tsx` | **Nouveau** — panneau admin |
-| `src/components/admin/AdminCCCContributions.tsx` | Fix camelCase/snake_case |
-| `src/components/cadastral/tax-calculator/taxSharedUtils.ts` | Fix doublon `returned` |
-| `src/components/cadastral/tax-calculator/PropertyTaxSummaryStep.tsx` | Afficher proprietaire |
-| `src/components/cadastral/PropertyTaxCalculator.tsx` | Passer ownerName au summary |
-| `src/hooks/useAnalyticsChartsConfig.ts` | Onglet analytics `taxes` |
-| Sidebar/routing admin | Ajouter entree menu |
+| `src/hooks/useParcelActionsConfig.tsx` | Renommer label fallback |
+| `src/components/cadastral/building-permit-request/PermitPreviewStep.tsx` | Terminologie |
+| `src/components/cadastral/building-permit-request/PermitFormStep.tsx` | Terminologie |
+| `src/components/admin/permits/PermitRequestDialog.tsx` | Terminologie |
 
-6-7 fichiers modifies + 1 nouveau, aucune migration DB.
+4 fichiers modifies, 1 update DB. Corrections mineures uniquement — le service est deja bien structure.
 
