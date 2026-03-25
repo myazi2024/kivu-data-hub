@@ -48,7 +48,6 @@ const BLOCK_MAP: Record<string, React.ComponentType<{ data: any }>> = {
   'mutations': MutationBlock,
   'subdivision': SubdivisionBlock,
   'disputes': DisputesBlock,
-  'lifting': DisputeLiftingBlock,
   'boundary': BoundaryConflictsBlock,
   'ownership': OwnershipHistoryBlock,
   'fraud': FraudAttemptsBlock,
