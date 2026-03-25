@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Save, Download } from 'lucide-react';
 import { useMortgageDraft } from '@/hooks/useMortgageDraft';
@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, Landmark, CheckCircle2, X, Plus, ArrowLeft, FileText, ExternalLink, Eye } from 'lucide-react';
+import { Loader2, Landmark, CheckCircle2, X, Plus, ArrowLeft, FileText, ExternalLink, Eye, User } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
@@ -19,6 +19,29 @@ import { generateMortgageReference } from '@/utils/mortgageReferences';
 import MortgageFlowContainer from './MortgageFlowContainer';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useNavigate } from 'react-router-dom';
+
+/** Small component to display current owner from parcel data */
+const ParcelOwnerInfo: React.FC<{ parcelId: string }> = ({ parcelId }) => {
+  const [ownerName, setOwnerName] = useState<string | null>(null);
+  useEffect(() => {
+    supabase
+      .from('cadastral_parcels')
+      .select('current_owner_name')
+      .eq('id', parcelId)
+      .maybeSingle()
+      .then(({ data }) => { if (data) setOwnerName(data.current_owner_name); });
+  }, [parcelId]);
+  if (!ownerName) return null;
+  return (
+    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-muted/50 border border-border/50">
+      <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+      <div className="text-xs">
+        <span className="text-muted-foreground">Propriétaire actuel : </span>
+        <span className="font-medium">{ownerName}</span>
+      </div>
+    </div>
+  );
+};
 
 interface MortgageFormDialogProps {
   parcelNumber: string;
@@ -210,7 +233,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
       .eq('parcel_number', parcelNumber)
       .eq('user_id', user.id)
       .eq('contribution_type', 'mortgage_registration')
-      .in('status', ['pending']);
+      .in('status', ['pending', 'returned']);
 
     return (data?.length ?? 0) > 0;
   };
@@ -410,7 +433,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
             <div className="h-8 w-8 rounded-xl bg-amber-500/10 flex items-center justify-center">
               <Landmark className="h-4 w-4 text-amber-600" />
             </div>
-            <div>
+           <div>
               <Label className="text-base font-semibold flex items-center gap-1.5">
                 Nouvelle Hypothèque
                 <SectionHelpPopover
@@ -421,6 +444,12 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
               <p className="text-xs text-muted-foreground">Parcelle: {parcelNumber}</p>
             </div>
           </div>
+
+          {/* Propriétaire actuel (depuis données CCC) */}
+          {parcelId && (
+            <ParcelOwnerInfo parcelId={parcelId} />
+          )}
+
 
           {/* Formulaire */}
           <div className="grid grid-cols-2 gap-3">
@@ -602,6 +631,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
               <span className="text-muted-foreground">Parcelle</span>
               <span className="font-mono font-bold">{parcelNumber}</span>
             </div>
+            {parcelId && <ParcelOwnerInfo parcelId={parcelId} />}
             <div className="flex justify-between py-2 border-b">
               <span className="text-muted-foreground">Montant</span>
               <span className="font-semibold">{parseFloat(mortgageRecord.mortgageAmount).toLocaleString()} USD</span>

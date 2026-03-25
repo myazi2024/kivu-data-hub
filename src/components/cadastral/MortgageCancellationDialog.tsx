@@ -289,7 +289,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       .eq('parcel_number', parcelNumber)
       .eq('user_id', user.id)
       .eq('contribution_type', 'mortgage_cancellation')
-      .in('status', ['pending']);
+      .in('status', ['pending', 'returned']);
     return data?.some(c => {
       const history = c.mortgage_history as any[];
       return history?.some(h => h.mortgage_reference_number?.toUpperCase() === formData.mortgageReferenceNumber.toUpperCase());
@@ -441,6 +441,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     setMortgageData(null);
     setParcelData(null);
     parcelDataLoadedRef.current = false;
+    feesInitializedRef.current = false;
     setRequestReferenceNumber('');
     setShowDraftPrompt(false);
     setShowExitConfirm(false);

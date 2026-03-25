@@ -310,6 +310,27 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'mutations', item_key: 'kpi-revenue', item_type: 'kpi', is_visible: true, display_order: 5, custom_title: 'Revenus' },
     ],
   },
+  'mortgages': {
+    label: 'Hypothèques',
+    charts: [
+      { tab_key: 'mortgages', item_key: 'creditor-type', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Type créancier', chart_type: 'donut' },
+      { tab_key: 'mortgages', item_key: 'amount-brackets', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Montants', chart_type: 'bar-v' },
+      { tab_key: 'mortgages', item_key: 'status', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Statut', chart_type: 'pie' },
+      { tab_key: 'mortgages', item_key: 'request-type', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Enreg. vs Radiation', chart_type: 'pie' },
+      { tab_key: 'mortgages', item_key: 'request-status', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Statut demandes', chart_type: 'bar-v' },
+      { tab_key: 'mortgages', item_key: 'duration', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Durée (mois)', chart_type: 'bar-v' },
+      { tab_key: 'mortgages', item_key: 'trend', item_type: 'chart', is_visible: true, display_order: 6, custom_title: 'Contrats/mois', chart_type: 'area' },
+      { tab_key: 'mortgages', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 7, custom_title: 'Géographie' },
+      { tab_key: 'mortgages', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 8, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
+    ],
+    kpis: [
+      { tab_key: 'mortgages', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Total' },
+      { tab_key: 'mortgages', item_key: 'kpi-active', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Actives' },
+      { tab_key: 'mortgages', item_key: 'kpi-paid', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'Soldées' },
+      { tab_key: 'mortgages', item_key: 'kpi-amount', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Montant total' },
+      { tab_key: 'mortgages', item_key: 'kpi-pending', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Demandes en att.' },
+    ],
+  },
   'subdivision': {
     label: 'Lotissement',
     charts: [

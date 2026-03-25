@@ -352,13 +352,36 @@ const AdminMortgages = () => {
   };
 
   const handleExportCSV = () => {
-    const headers = ['Référence', 'Parcelle', 'Créancier', 'Type', 'Montant USD', 'Durée', 'Statut', 'Date contrat', 'Date création'];
-    const data = filteredMortgages.map(m => [
-      m.reference_number || '', m.parcel_number || '', m.creditor_name,
-      getCreditorTypeLabel(m.creditor_type), m.mortgage_amount_usd, m.duration_months,
-      m.mortgage_status, m.contract_date, m.created_at
-    ]);
-    exportToCSV({ filename: 'hypotheques.csv', headers, data });
+    if (activeTab === 'requests') {
+      const headers = ['Référence', 'Parcelle', 'Type', 'Créancier', 'Montant USD', 'Statut', 'Date'];
+      const data = pendingRequests.map(r => {
+        const m = r.mortgage_history[0];
+        return [
+          m?.request_reference_number || '', r.parcel_number, getRequestTypeLabel(r.contribution_type),
+          m?.creditor_name || m?.creditorName || '', m?.mortgage_amount_usd || m?.mortgageAmountUsd || '',
+          r.status, r.created_at
+        ];
+      });
+      exportToCSV({ filename: 'demandes-hypotheques.csv', headers, data });
+    } else if (activeTab === 'history') {
+      const headers = ['Référence', 'Parcelle', 'Type', 'Statut', 'Motif rejet', 'Date'];
+      const data = processedRequests.map(r => {
+        const m = r.mortgage_history[0];
+        return [
+          m?.request_reference_number || '', r.parcel_number, getRequestTypeLabel(r.contribution_type),
+          r.status, r.rejection_reason || r.change_justification || '', r.created_at
+        ];
+      });
+      exportToCSV({ filename: 'historique-hypotheques.csv', headers, data });
+    } else {
+      const headers = ['Référence', 'Parcelle', 'Créancier', 'Type', 'Montant USD', 'Durée', 'Statut', 'Date contrat', 'Date création'];
+      const data = filteredMortgages.map(m => [
+        m.reference_number || '', m.parcel_number || '', m.creditor_name,
+        getCreditorTypeLabel(m.creditor_type), m.mortgage_amount_usd, m.duration_months,
+        m.mortgage_status, m.contract_date, m.created_at
+      ]);
+      exportToCSV({ filename: 'hypotheques.csv', headers, data });
+    }
   };
 
   return (
