@@ -55,8 +55,8 @@ const AdminDisputeAnalytics: React.FC = () => {
     const fetchDisputes = async () => {
       const { data } = await supabase
         .from('cadastral_land_disputes')
-        .select('id, dispute_nature, dispute_type, current_status, resolution_level, created_at, dispute_start_date, resolved_at');
-      setDisputes((data as Dispute[]) || []);
+        .select('id, dispute_nature, dispute_type, current_status, resolution_level, created_at, dispute_start_date');
+      setDisputes((data as unknown as Dispute[]) || []);
       setLoading(false);
     };
     fetchDisputes();
