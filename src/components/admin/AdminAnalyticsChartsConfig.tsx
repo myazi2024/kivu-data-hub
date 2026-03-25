@@ -246,7 +246,7 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
   // Initialize local state from defaults + DB overrides
   useEffect(() => {
     if (isLoading) return;
-    const dbMap = new Map<string, ChartConfigItem>();
+    const dbMap: Map<string, ChartConfigItem> = new Map();
     configs.filter(c => c.item_type !== 'tab').forEach(c => dbMap.set(`${c.tab_key}::${c.item_key}`, c));
 
     const result: Record<string, ChartConfigItem[]> = {};
