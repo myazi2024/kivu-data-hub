@@ -94,11 +94,17 @@ const PermitFormStep: React.FC<PermitFormStepProps> = ({
 
         {/* Parcelle info */}
         <Card className="bg-muted/50 border-0 rounded-xl">
-          <CardContent className="p-3">
+          <CardContent className="p-3 space-y-1">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm text-muted-foreground"><MapPin className="h-4 w-4" />Parcelle</div>
               <span className="font-mono font-bold text-sm">{parcelNumber}</span>
             </div>
+            {parcelData?.current_owner_name && (
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>Propriétaire actuel</span>
+                <span className="font-medium text-foreground">{parcelData.current_owner_name}</span>
+              </div>
+            )}
           </CardContent>
         </Card>
 
