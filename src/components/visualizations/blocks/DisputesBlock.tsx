@@ -1,9 +1,9 @@
-import React, { useState, useMemo, memo, useCallback } from 'react';
+import React, { useState, useMemo, memo } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
-import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, CHART_COLORS, buildFilterLabel } from '@/utils/analyticsHelpers';
+import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, CHART_COLORS, VALID_LIFTING_STATUSES, buildFilterLabel } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { AlertTriangle, Scale, TrendingUp, Users } from 'lucide-react';
+import { AlertTriangle, Scale, TrendingUp, Users, ShieldCheck, MessageSquare } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, StackedBarCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
@@ -22,6 +22,7 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
   const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
   const filtered = useMemo(() => applyFilters(data.disputes, filter), [data.disputes, filter]);
 
+  // === SIGNALEMENTS ===
   const { enCours, resolus, byNature, byType, byStatus, byResolutionLevel, byDeclarantQuality, trend, natureStatusCross, resolutionStatus } = useMemo(() => {
     const enCours = filtered.filter(d => !['resolved', 'closed', 'resolu', 'leve'].includes(d.current_status));
     const resolus = filtered.filter(d => ['resolved', 'closed', 'resolu', 'leve'].includes(d.current_status));
@@ -73,17 +74,59 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
     });
   }, [filtered]);
 
+  // === LEVÉES ===
+  const liftingDisputes = useMemo(() =>
+    filtered.filter(d => d.lifting_status && VALID_LIFTING_STATUSES.includes(d.lifting_status)),
+    [filtered]
+  );
+
+  const byLiftingStatus = useMemo(() => countBy(liftingDisputes, 'lifting_status'), [liftingDisputes]);
+  const byLiftingResolutionLevel = useMemo(() => countBy(liftingDisputes, 'resolution_level'), [liftingDisputes]);
+  const byLiftingNature = useMemo(() => countBy(liftingDisputes, 'dispute_nature'), [liftingDisputes]);
+  const byLiftingReason = useMemo(() => countBy(liftingDisputes.filter(r => r.lifting_reason), 'lifting_reason'), [liftingDisputes]);
+  const liftingTrend = useMemo(() => trendByMonth(liftingDisputes), [liftingDisputes]);
+
+  const liftingStats = useMemo(() => {
+    const approved = liftingDisputes.filter(d => d.lifting_status === 'approved').length;
+    const pending = liftingDisputes.filter(d => ['pending', 'demande_levee', 'in_review'].includes(d.lifting_status)).length;
+    const rejected = liftingDisputes.filter(d => d.lifting_status === 'rejected').length;
+    return { approved, pending, rejected };
+  }, [liftingDisputes]);
+
+  const liftingSuccessTrend = useMemo(() => {
+    const map = new Map<string, { total: number; approved: number }>();
+    liftingDisputes.forEach(d => {
+      if (!d.created_at) return;
+      const dt = new Date(d.created_at);
+      const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`;
+      if (!map.has(key)) map.set(key, { total: 0, approved: 0 });
+      const e = map.get(key)!;
+      e.total++;
+      if (d.lifting_status === 'approved') e.approved++;
+    });
+    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([key, d]) => {
+      const [y, m] = key.split('-');
+      const name = new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('fr-FR', { year: '2-digit', month: 'short' });
+      return { name, value: d.total > 0 ? Math.round((d.approved / d.total) * 100) : 0 };
+    });
+  }, [liftingDisputes]);
 
   const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
   const v = isChartVisible;
 
   const kpiItems = useMemo(() => [
+    // Signalements KPIs
     { key: 'kpi-total', label: ct('kpi-total', 'Total'), value: filtered.length, cls: 'text-red-600' },
     { key: 'kpi-en-cours', label: ct('kpi-en-cours', 'En cours'), value: enCours.length, cls: 'text-amber-600', tooltip: pct(enCours.length, filtered.length) },
     { key: 'kpi-resolus', label: ct('kpi-resolus', 'Résolus'), value: resolus.length, cls: 'text-emerald-600', tooltip: pct(resolus.length, filtered.length) },
     { key: 'kpi-rate', label: ct('kpi-rate', 'Taux résolution'), value: pct(resolus.length, filtered.length), cls: 'text-purple-600' },
     { key: 'kpi-duration', label: ct('kpi-duration', 'Durée moy.'), value: avgDuration > 0 ? `${avgDuration}j` : 'N/A', cls: 'text-blue-600', tooltip: 'Durée moyenne des litiges (jours)' },
-  ].filter(k => v(k.key)), [filtered, enCours, resolus, avgDuration, v, getChartConfig]);
+    // Levées KPIs
+    { key: 'kpi-lifting-total', label: ct('kpi-lifting-total', 'Demandes levée'), value: liftingDisputes.length, cls: 'text-sky-600' },
+    { key: 'kpi-lifting-approved', label: ct('kpi-lifting-approved', 'Levées approuvées'), value: liftingStats.approved, cls: 'text-emerald-600', tooltip: pct(liftingStats.approved, liftingDisputes.length) },
+    { key: 'kpi-lifting-pending', label: ct('kpi-lifting-pending', 'Levées en attente'), value: liftingStats.pending, cls: 'text-amber-600', tooltip: pct(liftingStats.pending, liftingDisputes.length) },
+    { key: 'kpi-lifting-success', label: ct('kpi-lifting-success', 'Taux réussite levée'), value: pct(liftingStats.approved, liftingDisputes.length), cls: 'text-purple-600' },
+  ].filter(k => v(k.key)), [filtered, enCours, resolus, avgDuration, liftingDisputes, liftingStats, v, getChartConfig]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
@@ -92,6 +135,8 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
         statusField="current_status" hidePaymentStatus
       />
       <KpiGrid items={kpiItems} />
+
+      {/* Section Signalements */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {v('nature') && <ChartCard title={ct('nature', 'Nature')} icon={AlertTriangle} iconColor="text-red-500" data={byNature} type="bar-h" colorIndex={4} labelWidth={110}
           insight={generateInsight(byNature, 'bar-h', 'les natures de litige')} />}
@@ -113,9 +158,35 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
         {v('geo') && <GeoCharts records={filtered} />}
         {v('resolution-rate') && <ChartCard title={ct('resolution-rate', 'Taux résolution %')} icon={TrendingUp} data={resolutionTrend} type="area" colorIndex={2} colSpan={2} hidden={resolutionTrend.length < 2}
           insight={generateInsight(resolutionTrend, 'area', 'le taux de résolution mensuel')} />}
-        {v('evolution') && <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type="area" colorIndex={4} colSpan={2}
+        {v('evolution') && <ChartCard title={ct('evolution', 'Évolution signalements')} icon={TrendingUp} data={trend} type="area" colorIndex={4} colSpan={2}
           insight={generateInsight(trend, 'area', 'les litiges')} />}
       </div>
+
+      {/* Section Levées */}
+      {liftingDisputes.length > 0 && (
+        <>
+          <div className="flex items-center gap-2 pt-2 pb-1">
+            <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-sm font-semibold text-foreground">Levées de litige</h3>
+            <span className="text-xs text-muted-foreground">({liftingDisputes.length})</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {v('lifting-status') && <ChartCard title={ct('lifting-status', 'Statut levée')} icon={ShieldCheck} data={byLiftingStatus} type="pie" colorIndex={9}
+              insight={generateInsight(byLiftingStatus, 'pie', 'les statuts de levée')} />}
+            {v('lifting-resolution-level') && <ChartCard title={ct('lifting-resolution-level', 'Niveau résolution (levée)')} icon={Scale} iconColor="text-purple-500" data={byLiftingResolutionLevel} type="bar-h" colorIndex={9} labelWidth={100}
+              insight={generateInsight(byLiftingResolutionLevel, 'bar-h', 'les niveaux de résolution')} />}
+            {v('lifting-nature') && <ChartCard title={ct('lifting-nature', 'Nature litige (levée)')} data={byLiftingNature} type="bar-h" colorIndex={4} labelWidth={100}
+              insight={generateInsight(byLiftingNature, 'bar-h', 'les natures de litige concernées')} />}
+            {v('lifting-reason') && <ChartCard title={ct('lifting-reason', 'Motif de levée')} icon={MessageSquare} data={byLiftingReason} type="bar-h" colorIndex={6} labelWidth={120} hidden={byLiftingReason.length === 0}
+              insight={generateInsight(byLiftingReason, 'bar-h', 'les motifs de levée')} />}
+            {v('lifting-geo') && <GeoCharts records={liftingDisputes} />}
+            {v('lifting-success-rate') && <ChartCard title={ct('lifting-success-rate', 'Taux réussite %')} icon={TrendingUp} data={liftingSuccessTrend} type="area" colorIndex={2} colSpan={2} hidden={liftingSuccessTrend.length < 2}
+              insight={generateInsight(liftingSuccessTrend, 'area', 'le taux de réussite des levées')} />}
+            {v('lifting-evolution') && <ChartCard title={ct('lifting-evolution', 'Évolution levées')} icon={TrendingUp} data={liftingTrend} type="area" colorIndex={9} colSpan={2}
+              insight={generateInsight(liftingTrend, 'area', 'les levées de litige')} />}
+          </div>
+        </>
+      )}
     </div>
     </FilterLabelContext.Provider>
   );
