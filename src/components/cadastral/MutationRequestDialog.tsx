@@ -514,32 +514,27 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       mutation_type: mutationType,
       requester_type: requesterType,
       requester_name: requesterName,
-      requester_phone: null, // Explicitly null, not empty string
+      requester_phone: null,
       requester_email: requesterEmail,
       beneficiary_name: isTransferMutation ? fullBeneficiaryName : undefined,
       beneficiary_phone: isTransferMutation && beneficiaryPhone.trim() ? beneficiaryPhone.trim() : undefined,
       proposed_changes: { 
         description: autoDescription,
         beneficiary_legal_status: isTransferMutation ? beneficiaryLegalStatus : undefined,
-        supporting_documents: documentUrls,
-        expertise_certificate_url: expertiseCertificateUrl,
-        expertise_certificate_date: expertiseCertificateDate || undefined,
-        market_value_usd: marketValueUsd ? parseFloat(marketValueUsd) : undefined,
-        title_age: titleAge,
-        mutation_fees: isTransferMutation && mutationFeesCalculation.applicable ? {
-          percentage: mutationFeesCalculation.percentage,
-          mutation_fee: mutationFeesCalculation.mutationFee,
-          bank_fee: mutationFeesCalculation.bankFee,
-          total: mutationFeesCalculation.total
-        } : undefined,
-        late_fees: showLateFees && lateFeesCalculation.applicable ? {
-          days: lateFeesCalculation.days,
-          fee: lateFeesCalculation.fee
-        } : undefined
       },
       justification: justification.trim() || undefined,
       selected_fees: selectedFeesDetails,
-      total_amount_override: totalAmount
+      total_amount_override: totalAmount,
+      // Dedicated columns
+      supporting_documents: documentUrls.length > 0 ? documentUrls : undefined,
+      expertise_certificate_url: expertiseCertificateUrl || undefined,
+      expertise_certificate_date: expertiseCertificateDate || undefined,
+      market_value_usd: marketValueUsd ? parseFloat(marketValueUsd) : undefined,
+      title_age: titleAge || undefined,
+      mutation_fee_amount: isTransferMutation && mutationFeesCalculation.applicable ? mutationFeesCalculation.mutationFee : undefined,
+      bank_fee_amount: isTransferMutation && mutationFeesCalculation.applicable ? mutationFeesCalculation.bankFee : undefined,
+      late_fee_amount: showLateFees && lateFeesCalculation.applicable ? lateFeesCalculation.fee : undefined,
+      late_fee_days: showLateFees && lateFeesCalculation.applicable ? lateFeesCalculation.days : undefined,
     });
 
     setIsSubmitting(false);
