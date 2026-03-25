@@ -381,14 +381,66 @@ const AdminTaxDeclarations = () => {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <ResponsiveTable
-            data={paginatedData}
-            columns={columns}
-            loading={loading}
-            emptyMessage="Aucune déclaration fiscale"
-          />
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="text-xs">
+                  <TableHead className="p-2">Parcelle</TableHead>
+                  <TableHead className="p-2">Type</TableHead>
+                  <TableHead className="p-2">Exercice</TableHead>
+                  <TableHead className="p-2 hidden sm:table-cell">Montant</TableHead>
+                  <TableHead className="p-2">Statut</TableHead>
+                  <TableHead className="p-2 hidden sm:table-cell">Date</TableHead>
+                  <TableHead className="p-2"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8">
+                      <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
+                    </TableCell>
+                  </TableRow>
+                ) : paginatedData.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-6 text-xs text-muted-foreground">
+                      Aucune déclaration fiscale
+                    </TableCell>
+                  </TableRow>
+                ) : paginatedData.map((d) => {
+                  const info = getTaxInfo(d);
+                  return (
+                    <TableRow key={d.id} className="text-xs">
+                      <TableCell className="p-2 font-mono">{d.parcel_number}</TableCell>
+                      <TableCell className="p-2"><Badge variant="outline" className="text-[10px]">{info.taxType}</Badge></TableCell>
+                      <TableCell className="p-2">{info.taxYear}</TableCell>
+                      <TableCell className="p-2 hidden sm:table-cell">{info.amount.toLocaleString()} USD</TableCell>
+                      <TableCell className="p-2"><StatusBadge status={d.status as StatusType} /></TableCell>
+                      <TableCell className="p-2 hidden sm:table-cell">{format(new Date(d.created_at), 'dd/MM/yy', { locale: fr })}</TableCell>
+                      <TableCell className="p-2">
+                        <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => openDetail(d)}>
+                          <Eye className="h-3.5 w-3.5" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
           <div className="p-3">
-            <PaginationControls {...pagination} />
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              hasNextPage={hasNextPage}
+              hasPreviousPage={hasPreviousPage}
+              onPageChange={goToPage}
+              onPageSizeChange={changePageSize}
+              onNextPage={goToNextPage}
+              onPreviousPage={goToPreviousPage}
+            />
           </div>
         </CardContent>
       </Card>
