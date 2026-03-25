@@ -15,8 +15,9 @@ import { FraudAttemptsBlock } from './blocks/FraudAttemptsBlock';
 import { CertificatesBlock } from './blocks/CertificatesBlock';
 import { InvoicesBlock } from './blocks/InvoicesBlock';
 import { ProvinceData } from '@/types/province';
-import { useAnalyticsTabsConfig } from '@/hooks/useAnalyticsChartsConfig';
+import { useAnalyticsTabsConfig, useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { ProvinceFilterContext } from './filters/AnalyticsFilters';
+import { WatermarkContext } from './shared/ChartCard';
 
 interface ProvinceDataVisualizationProps {
   provinces: ProvinceData[];
