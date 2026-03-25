@@ -479,6 +479,29 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'invoices', item_key: 'kpi-discounts', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Remises' },
     ],
   },
+  'building-permits': {
+    label: 'Autorisations',
+    charts: [
+      { tab_key: 'building-permits', item_key: 'request-type', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Construction vs Régularisation', chart_type: 'pie' },
+      { tab_key: 'building-permits', item_key: 'status', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Statut', chart_type: 'bar-v' },
+      { tab_key: 'building-permits', item_key: 'construction-type', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Type construction', chart_type: 'bar-h' },
+      { tab_key: 'building-permits', item_key: 'declared-usage', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Usage déclaré', chart_type: 'bar-h' },
+      { tab_key: 'building-permits', item_key: 'estimated-cost', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Coût estimé', chart_type: 'bar-v' },
+      { tab_key: 'building-permits', item_key: 'roofing-type', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Type toiture', chart_type: 'donut' },
+      { tab_key: 'building-permits', item_key: 'water-supply', item_type: 'chart', is_visible: true, display_order: 6, custom_title: 'Alimentation eau', chart_type: 'pie' },
+      { tab_key: 'building-permits', item_key: 'electricity', item_type: 'chart', is_visible: true, display_order: 7, custom_title: 'Alimentation élec.', chart_type: 'pie' },
+      { tab_key: 'building-permits', item_key: 'payment', item_type: 'chart', is_visible: true, display_order: 8, custom_title: 'Paiement', chart_type: 'donut' },
+      { tab_key: 'building-permits', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 9, custom_title: 'Géographie' },
+      { tab_key: 'building-permits', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 10, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
+    ],
+    kpis: [
+      { tab_key: 'building-permits', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Total' },
+      { tab_key: 'building-permits', item_key: 'kpi-approved', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Approuvées' },
+      { tab_key: 'building-permits', item_key: 'kpi-pending', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'En attente' },
+      { tab_key: 'building-permits', item_key: 'kpi-rejected', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Rejetées' },
+      { tab_key: 'building-permits', item_key: 'kpi-approval-rate', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Taux approbation' },
+    ],
+  },
   '_global': {
     label: 'Global',
     charts: [
