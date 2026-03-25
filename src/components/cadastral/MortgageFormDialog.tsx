@@ -631,6 +631,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
               <span className="text-muted-foreground">Parcelle</span>
               <span className="font-mono font-bold">{parcelNumber}</span>
             </div>
+            {parcelId && <ParcelOwnerInfo parcelId={parcelId} />}
             <div className="flex justify-between py-2 border-b">
               <span className="text-muted-foreground">Montant</span>
               <span className="font-semibold">{parseFloat(mortgageRecord.mortgageAmount).toLocaleString()} USD</span>

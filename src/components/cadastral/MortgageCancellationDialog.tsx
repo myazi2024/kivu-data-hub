@@ -441,6 +441,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     setMortgageData(null);
     setParcelData(null);
     parcelDataLoadedRef.current = false;
+    feesInitializedRef.current = false;
     setRequestReferenceNumber('');
     setShowDraftPrompt(false);
     setShowExitConfirm(false);
