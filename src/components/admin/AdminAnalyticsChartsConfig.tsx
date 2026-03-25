@@ -284,13 +284,17 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
   const currentKpis = currentItems.filter(i => i.item_type === 'kpi');
   const currentCharts = currentItems.filter(i => i.item_type === 'chart');
 
+  const markTabModified = useCallback((tabKey: string) => {
+    setModifiedTabs(prev => new Set(prev).add(tabKey));
+  }, []);
+
   const updateItem = useCallback((itemKey: string, updated: ChartConfigItem) => {
     setLocalItems(prev => ({
       ...prev,
       [activeTab]: (prev[activeTab] || []).map(i => i.item_key === itemKey ? updated : i),
     }));
-    setHasChartChanges(true);
-  }, [activeTab]);
+    markTabModified(activeTab);
+  }, [activeTab, markTabModified]);
 
   const moveItem = useCallback((itemKey: string, direction: 'up' | 'down', type: 'kpi' | 'chart') => {
     setLocalItems(prev => {
@@ -311,8 +315,105 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
         return a.display_order - b.display_order;
       }) };
     });
-    setHasChartChanges(true);
-  }, [activeTab]);
+    markTabModified(activeTab);
+  }, [activeTab, markTabModified]);
+
+  const tabConfigToItems = useCallback((tabs: TabConfig[]): ChartConfigItem[] => {
+    return tabs.map(t => ({
+      tab_key: t.key,
+      item_key: '__tab__',
+      item_type: 'tab' as const,
+      is_visible: t.is_visible,
+      display_order: t.display_order,
+      custom_title: t.label !== t.defaultLabel ? t.label : null,
+    }));
+  }, []);
+
+  const handleSave = useCallback(async () => {
+    setIsSaving(true);
+    try {
+      const items = localItems[activeTab] || [];
+      await upsertConfig.mutateAsync(items);
+      toast.success(`Configuration "${ANALYTICS_TABS_REGISTRY[activeTab]?.label}" sauvegardée`);
+      setModifiedTabs(prev => { const n = new Set(prev); n.delete(activeTab); return n; });
+    } catch (error: any) {
+      console.error('Save chart error:', error);
+      toast.error(`Erreur: ${error?.message || 'Sauvegarde impossible'}`);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [activeTab, localItems, upsertConfig]);
+
+  const handleSaveAll = useCallback(async () => {
+    setIsSaving(true);
+    try {
+      const allChartItems = Object.values(localItems).flat();
+      const tabItems = tabConfigToItems(localTabs);
+      await upsertConfig.mutateAsync([...allChartItems, ...tabItems]);
+      toast.success('Toute la configuration Analytics a été sauvegardée');
+      setModifiedTabs(new Set());
+      setHasTabChanges(false);
+    } catch (error: any) {
+      console.error('Save all error:', error);
+      toast.error(`Erreur: ${error?.message || 'Sauvegarde globale impossible'}`);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [localItems, localTabs, upsertConfig, tabConfigToItems]);
+
+  const handleSaveTabs = useCallback(async () => {
+    setIsSaving(true);
+    try {
+      const tabItems = tabConfigToItems(localTabs);
+      await upsertConfig.mutateAsync(tabItems);
+      toast.success('Configuration des onglets sauvegardée');
+      setHasTabChanges(false);
+    } catch (error: any) {
+      console.error('Save tabs error:', error);
+      toast.error(`Erreur: ${error?.message || 'Sauvegarde des onglets impossible'}`);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [localTabs, upsertConfig, tabConfigToItems]);
+
+  const handleReset = useCallback(() => {
+    const tab = ANALYTICS_TABS_REGISTRY[activeTab];
+    if (!tab) return;
+    setLocalItems(prev => ({
+      ...prev,
+      [activeTab]: [...tab.kpis, ...tab.charts],
+    }));
+    markTabModified(activeTab);
+    toast.info('Configuration réinitialisée (non sauvegardée)');
+  }, [activeTab, markTabModified]);
+
+  const toggleAll = useCallback((type: 'kpi' | 'chart', visible: boolean) => {
+    setLocalItems(prev => ({
+      ...prev,
+      [activeTab]: (prev[activeTab] || []).map(i => i.item_type === type ? { ...i, is_visible: visible } : i),
+    }));
+    markTabModified(activeTab);
+  }, [activeTab, markTabModified]);
+
+  /** Tab switch with unsaved changes confirmation */
+  const handleTabSwitch = useCallback((targetTab: string) => {
+    if (modifiedTabs.has(activeTab)) {
+      setPendingTabSwitch(targetTab);
+    } else {
+      setActiveTab(targetTab);
+    }
+  }, [activeTab, modifiedTabs]);
+
+  const confirmTabSwitch = useCallback(() => {
+    if (pendingTabSwitch) {
+      setActiveTab(pendingTabSwitch);
+      setPendingTabSwitch(null);
+    }
+  }, [pendingTabSwitch]);
+
+  const cancelTabSwitch = useCallback(() => {
+    setPendingTabSwitch(null);
+  }, []);
 
   const tabConfigToItems = useCallback((tabs: TabConfig[]): ChartConfigItem[] => {
     return tabs.map(t => ({
