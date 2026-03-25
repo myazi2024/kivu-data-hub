@@ -18,7 +18,6 @@ interface Dispute {
   resolution_level: string | null;
   created_at: string;
   dispute_start_date: string | null;
-  resolved_at: string | null;
 }
 
 const NATURE_LABELS: Record<string, string> = {
