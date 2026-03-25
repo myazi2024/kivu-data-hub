@@ -710,14 +710,33 @@ const CadastralMap = () => {
               coord => [coord.lat, coord.lng]
             );
             
-            // Rendu conditionnel : parcelle subdivisée vs normale
+            // Rendu conditionnel : parcelle subdivisée / en litige / normale
             const isSubdivided = (parcel as any).is_subdivided === true;
+            const hasDispute = (parcel as any).has_dispute === true;
+            
+            let polyColor = '#ef4444';
+            let polyWeight = 2;
+            let polyFillOpacity = 0.2;
+            let polyDash: string | undefined = undefined;
+            
+            if (isSubdivided) {
+              polyColor = '#6b7280';
+              polyWeight = 1.5;
+              polyFillOpacity = 0.05;
+              polyDash = '6 4';
+            } else if (hasDispute) {
+              polyColor = '#f97316'; // orange
+              polyWeight = 2.5;
+              polyFillOpacity = 0.15;
+              polyDash = '8 4';
+            }
+            
             const polygon = L.polygon(polygonPoints, {
-              color: isSubdivided ? '#6b7280' : '#ef4444',
-              weight: isSubdivided ? 1.5 : 2,
-              fillColor: isSubdivided ? '#6b7280' : '#ef4444',
-              fillOpacity: isSubdivided ? 0.05 : 0.2,
-              dashArray: isSubdivided ? '6 4' : undefined,
+              color: polyColor,
+              weight: polyWeight,
+              fillColor: polyColor,
+              fillOpacity: polyFillOpacity,
+              dashArray: polyDash,
             }).addTo(map);
 
             // Label "Lotie" au centroid si subdivisée
