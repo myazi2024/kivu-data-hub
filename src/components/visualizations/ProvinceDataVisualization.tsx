@@ -1,5 +1,5 @@
 import React, { useState, memo } from 'react';
-import { FileText, Map, Search, ArrowRightLeft, Scissors, AlertTriangle, ShieldCheck, Loader2, Database, MapPin, History, ShieldAlert, Award, Receipt } from 'lucide-react';
+import { FileText, Map, Search, ArrowRightLeft, Scissors, AlertTriangle, Loader2, Database, MapPin, History, ShieldAlert, Award, Receipt } from 'lucide-react';
 import { useLandDataAnalytics } from '@/hooks/useLandDataAnalytics';
 import { TitleRequestsBlock } from './blocks/TitleRequestsBlock';
 import { ParcelsWithTitleBlock } from './blocks/ParcelsWithTitleBlock';
