@@ -142,10 +142,10 @@ const DRCInteractiveMap = () => {
   const DENSITY_TIERS = useMemo(() => {
     const tierKeys = ['map-tier-1', 'map-tier-2', 'map-tier-3', 'map-tier-4'];
     const defaultTiers = [
-      { label: 'Faible', min: 0, max: 30, color: 'hsl(210, 20%, 82%)' },
-      { label: 'Modéré', min: 31, max: 100, color: 'hsl(45, 93%, 55%)' },
-      { label: 'Élevé', min: 101, max: 500, color: 'hsl(25, 90%, 55%)' },
-      { label: 'Très élevé', min: 501, max: Infinity, color: 'hsl(348, 80%, 45%)' },
+      { label: 'Faible', min: 0, max: 30, color: '#bec8d1' },
+      { label: 'Modéré', min: 31, max: 100, color: '#f0b90b' },
+      { label: 'Élevé', min: 101, max: 500, color: '#e87422' },
+      { label: 'Très élevé', min: 501, max: Infinity, color: '#b31942' },
     ];
     return defaultTiers.map((d, i) => {
       const cfg = getChartConfig(tierKeys[i]);
@@ -156,6 +156,17 @@ const DRCInteractiveMap = () => {
       };
     });
   }, [getChartConfig]);
+
+  /** Watermark: map-specific fallback to global */
+  const globalDefaults = ANALYTICS_TABS_REGISTRY['_global']
+    ? [...ANALYTICS_TABS_REGISTRY['_global'].kpis, ...ANALYTICS_TABS_REGISTRY['_global'].charts]
+    : [];
+  const { getChartConfig: getGlobalConfig } = useTabChartsConfig('_global', globalDefaults);
+  const watermarkText = useMemo(() => {
+    const mapWm = getChartConfig('map-watermark')?.custom_title;
+    const globalWm = getGlobalConfig('global-watermark')?.custom_title;
+    return mapWm || globalWm || 'BIC - Tous droits réservés';
+  }, [getChartConfig, getGlobalConfig]);
   const formatNumber = (value: number): string => new Intl.NumberFormat('fr-FR').format(value);
   const formatCurrency = (value: number): string =>
     new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
