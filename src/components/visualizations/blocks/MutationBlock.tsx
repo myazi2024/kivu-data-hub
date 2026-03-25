@@ -1,4 +1,4 @@
-import React, { useState, useMemo, memo, useCallback } from 'react';
+import React, { useState, useMemo, memo } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
 import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, CHART_COLORS, avgProcessingDays, buildFilterLabel, sumByMonth } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
@@ -44,6 +44,48 @@ export const MutationBlock: React.FC<Props> = memo(({ data }) => {
   }, [filtered]);
 
   const revenueTrend = useMemo(() => sumByMonth(filtered), [filtered]);
+
+  // New: market value distribution
+  const byMarketValue = useMemo(() => {
+    const buckets: Record<string, number> = { '< $10k': 0, '$10k–$50k': 0, '$50k–$100k': 0, '$100k–$500k': 0, '> $500k': 0 };
+    filtered.forEach(r => {
+      const v = (r as any).market_value_usd ?? (r.proposed_changes as any)?.market_value_usd;
+      if (!v || Number(v) <= 0) return;
+      const val = Number(v);
+      if (val < 10000) buckets['< $10k']++;
+      else if (val < 50000) buckets['$10k–$50k']++;
+      else if (val < 100000) buckets['$50k–$100k']++;
+      else if (val < 500000) buckets['$100k–$500k']++;
+      else buckets['> $500k']++;
+    });
+    return Object.entries(buckets).filter(([, v]) => v > 0).map(([name, value]) => ({ name, value }));
+  }, [filtered]);
+
+  // New: title age distribution
+  const byTitleAge = useMemo(() => {
+    const counts: Record<string, number> = { '< 10 ans': 0, '≥ 10 ans': 0, 'Non renseigné': 0 };
+    filtered.forEach(r => {
+      const age = (r as any).title_age ?? (r.proposed_changes as any)?.title_age;
+      if (age === 'less_than_10') counts['< 10 ans']++;
+      else if (age === '10_or_more') counts['≥ 10 ans']++;
+      else counts['Non renseigné']++;
+    });
+    return Object.entries(counts).filter(([, v]) => v > 0).map(([name, value]) => ({ name, value }));
+  }, [filtered]);
+
+  // New: late fees vs no late fees
+  const byLateFees = useMemo(() => {
+    let withLate = 0, withoutLate = 0;
+    filtered.forEach(r => {
+      const lateFee = (r as any).late_fee_amount ?? (r.proposed_changes as any)?.late_fees?.fee;
+      if (lateFee && Number(lateFee) > 0) withLate++;
+      else withoutLate++;
+    });
+    return [
+      { name: 'Avec retard', value: withLate },
+      { name: 'Sans retard', value: withoutLate },
+    ].filter(d => d.value > 0);
+  }, [filtered]);
 
   const stats = useMemo(() => {
     const approved = filtered.filter(r => r.status === 'approved').length;
@@ -92,6 +134,12 @@ export const MutationBlock: React.FC<Props> = memo(({ data }) => {
             { dataKey: 'pending', name: 'En attente' },
             { dataKey: 'rejected', name: 'Rejetées' },
           ], 'croisement type/statut')} />}
+        {v('market-value') && <ChartCard title={t('market-value', 'Valeur vénale')} icon={DollarSign} data={byMarketValue} type="bar-v" colorIndex={5} hidden={byMarketValue.length === 0}
+          insight={generateInsight(byMarketValue, 'bar-v', 'la valeur vénale des mutations')} />}
+        {v('title-age') && <ChartCard title={t('title-age', 'Ancienneté titre')} data={byTitleAge} type="pie" colorIndex={3} hidden={byTitleAge.length === 0}
+          insight={generateInsight(byTitleAge, 'pie', "l'ancienneté des titres")} />}
+        {v('late-fees') && <ChartCard title={t('late-fees', 'Retard mutation')} data={byLateFees} type="pie" colorIndex={4} hidden={byLateFees.length === 0}
+          insight={generateInsight(byLateFees, 'pie', 'les retards de mutation')} />}
         {v('revenue-trend') && <ChartCard title={t('revenue-trend', 'Revenus/mois')} icon={TrendingUp} data={revenueTrend} type="area" colorIndex={2} hidden={revenueTrend.length < 2}
           insight={generateInsight(revenueTrend, 'area', 'les revenus de mutation')} />}
         {v('geo') && <GeoCharts records={filtered} />}
