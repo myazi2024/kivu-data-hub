@@ -62,6 +62,13 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({ o
   const [activeTab, setActiveTab] = useState('');
   const { data: analytics, isLoading, error } = useLandDataAnalytics();
 
+  // Load global watermark config
+  const globalDefaults = ANALYTICS_TABS_REGISTRY['_global']
+    ? [...ANALYTICS_TABS_REGISTRY['_global'].kpis, ...ANALYTICS_TABS_REGISTRY['_global'].charts]
+    : [];
+  const { getChartConfig: getGlobalConfig } = useTabChartsConfig('_global', globalDefaults);
+  const watermarkText = getGlobalConfig('global-watermark')?.custom_title || 'BIC - Tous droits réservés';
+
   // Set default active tab once visible tabs are loaded
   React.useEffect(() => {
     if (visibleTabs.length > 0 && (!activeTab || !visibleTabs.find(t => t.key === activeTab))) {
