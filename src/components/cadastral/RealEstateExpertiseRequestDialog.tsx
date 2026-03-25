@@ -2076,12 +2076,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       // Champs obligatoires
       if (!constructionType) missing.push({ label: 'Type de construction', tab: 'general', required: true });
       
-      // Champs importants (non obligatoires mais recommandés)
       if (constructionType !== 'terrain_nu') {
-        if (!constructionYear) missing.push({ label: 'Année de construction', tab: 'general', required: false });
-        if (!totalBuiltAreaSqm) missing.push({ label: 'Surface construite', tab: 'general', required: false });
+        // Champs obligatoires pour biens bâtis
+        if (!constructionYear) missing.push({ label: 'Année de construction', tab: 'general', required: true });
+        if (!totalBuiltAreaSqm) missing.push({ label: 'Surface construite', tab: 'general', required: true });
+        // Champs importants (recommandés)
         if (!numberOfRooms) missing.push({ label: 'Nombre de pièces', tab: 'general', required: false });
       }
+      if (!roadAccessType) missing.push({ label: 'Type d\'accès routier', tab: 'environnement', required: true });
       if (constructionImages.length === 0 && constructionType !== 'terrain_nu') {
         missing.push({ label: 'Photos de la construction', tab: 'documents', required: false });
       }
@@ -2093,14 +2095,26 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     const requiredMissing = missingFields.filter(f => f.required);
     const recommendedMissing = missingFields.filter(f => !f.required);
 
-    // Comptage de la complétion
-    const allFields = [
-      constructionType, constructionYear, constructionQuality, numberOfFloors, 
-      totalBuiltAreaSqm, propertyCondition, numberOfRooms, numberOfBedrooms, numberOfBathrooms,
-      wallMaterial, roofMaterial, windowType, floorMaterial, buildingPosition, roadAccessType, soundEnvironment
-    ].filter(Boolean).length;
-    const totalPossibleFields = 16;
-    const completionPercentage = Math.round((allFields / totalPossibleFields) * 100);
+    // Comptage dynamique de la complétion
+    const computeCompletion = () => {
+      const baseFields = [constructionType, roadAccessType];
+      const builtFields = isTerrainNu ? [] : [
+        constructionYear, constructionQuality, numberOfFloors, totalBuiltAreaSqm,
+        propertyCondition, numberOfRooms, numberOfBedrooms, numberOfBathrooms,
+        wallMaterial, roofMaterial, windowType, floorMaterial, buildingPosition, soundEnvironment,
+      ];
+      const equipFields = [
+        hasWaterSupply, hasElectricity, hasSewageSystem, hasInternet,
+        hasSecuritySystem, hasParking, hasGarden,
+      ];
+      const docScore = (parcelDocuments.length > 0 ? 1 : 0) + (constructionImages.length > 0 && !isTerrainNu ? 1 : 0);
+      const filledBase = baseFields.filter(Boolean).length;
+      const filledBuilt = builtFields.filter(Boolean).length;
+      const filledEquip = equipFields.filter(Boolean).length;
+      const totalPossible = baseFields.length + builtFields.length + equipFields.length + (isTerrainNu ? 1 : 2);
+      return Math.round(((filledBase + filledBuilt + filledEquip + docScore) / totalPossible) * 100);
+    };
+    const completionPercentage = computeCompletion();
 
     // Liste des équipements sélectionnés (incluant les nouveaux)
     const selectedEquipments = [
