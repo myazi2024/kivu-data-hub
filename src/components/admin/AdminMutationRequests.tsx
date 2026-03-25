@@ -36,12 +36,12 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { exportToCSV } from '@/utils/csvExport';
 import { getMutationTypeLabel, MUTATION_TYPES, MUTATION_STATUS_LABELS } from '@/components/cadastral/mutation/MutationConstants';
 
-import type { MutationFee, MutationRequest } from '@/types/mutation';
+import type { MutationFee, MutationRequest, MutationRequestWithProfile } from '@/types/mutation';
 
 const AdminMutationRequests: React.FC = () => {
   const { user, profile } = useAuth();
   const [activeTab, setActiveTab] = useState('requests');
-  const [requests, setRequests] = useState<MutationRequest[]>([]);
+  const [requests, setRequests] = useState<MutationRequestWithProfile[]>([]);
   const [fees, setFees] = useState<MutationFee[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -56,7 +56,7 @@ const AdminMutationRequests: React.FC = () => {
   const [editingFee, setEditingFee] = useState<MutationFee | null>(null);
   
   // Process form
-  const [processAction, setProcessAction] = useState<'approve' | 'reject' | 'hold'>('approve');
+  const [processAction, setProcessAction] = useState<'approve' | 'reject' | 'hold' | 'return'>('approve');
   const [processingNotes, setProcessingNotes] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
   const [processing, setProcessing] = useState(false);
@@ -80,7 +80,7 @@ const AdminMutationRequests: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setRequests((data || []) as unknown as MutationRequest[]);
+      setRequests((data || []) as unknown as MutationRequestWithProfile[]);
     } catch (error) {
       console.error('Error fetching requests:', error);
       toast.error('Erreur lors du chargement des demandes');
@@ -164,6 +164,7 @@ const AdminMutationRequests: React.FC = () => {
         case 'approve': newStatus = 'approved'; break;
         case 'reject': newStatus = 'rejected'; break;
         case 'hold': newStatus = 'on_hold'; break;
+        case 'return': newStatus = 'returned'; break;
         default: newStatus = 'pending';
       }
 
@@ -229,12 +230,14 @@ const AdminMutationRequests: React.FC = () => {
         ? `Votre demande ${selectedRequest.reference_number} a été approuvée. Le certificat est disponible dans votre espace.`
         : processAction === 'reject'
           ? `Votre demande ${selectedRequest.reference_number} a été rejetée. Motif : ${rejectionReason.trim()}`
-          : `Votre demande ${selectedRequest.reference_number} a été mise en attente.${processingNotes.trim() ? ` Raison : ${processingNotes.trim()}` : ' Veuillez patienter.'}`;
+          : processAction === 'return'
+            ? `Votre demande ${selectedRequest.reference_number} a été renvoyée pour correction.${processingNotes.trim() ? ` Motif : ${processingNotes.trim()}` : ' Veuillez vérifier et corriger votre demande.'}`
+            : `Votre demande ${selectedRequest.reference_number} a été mise en attente.${processingNotes.trim() ? ` Raison : ${processingNotes.trim()}` : ' Veuillez patienter.'}`;
 
       await supabase.from('notifications').insert({
         user_id: selectedRequest.user_id,
-        type: processAction === 'approve' ? 'success' : processAction === 'reject' ? 'error' : 'warning',
-        title: `Demande de mutation ${processAction === 'approve' ? 'approuvée' : processAction === 'reject' ? 'rejetée' : 'mise en attente'}`,
+        type: processAction === 'approve' ? 'success' : processAction === 'reject' ? 'error' : processAction === 'return' ? 'info' : 'warning',
+        title: `Demande de mutation ${processAction === 'approve' ? 'approuvée' : processAction === 'reject' ? 'rejetée' : processAction === 'return' ? 'renvoyée pour correction' : 'mise en attente'}`,
         message: notificationMessage,
         action_url: '/user-dashboard?tab=mutations'
       });
@@ -387,6 +390,7 @@ const AdminMutationRequests: React.FC = () => {
       rejected: { variant: 'destructive', label: 'Rejetée' },
       on_hold: { variant: 'secondary', label: 'Suspendue' },
       cancelled: { variant: 'destructive', label: 'Annulée' },
+      returned: { variant: 'outline', label: 'À corriger' },
     };
     return statusMap[status] || { variant: 'default', label: status };
   };
@@ -835,37 +839,52 @@ const AdminMutationRequests: React.FC = () => {
                   </div>
                 )}
 
-                {/* Documents joints */}
-                {Array.isArray(changes.supporting_documents) && changes.supporting_documents.length > 0 && (
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Documents joints</Label>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {changes.supporting_documents.map((url: string, i: number) => (
-                        <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline">
-                          Document {i + 1}
-                        </a>
-                      ))}
+                {/* Documents joints — read from column first, fallback to JSON */}
+                {(() => {
+                  const docs = Array.isArray(selectedRequest.supporting_documents) && selectedRequest.supporting_documents.length > 0
+                    ? selectedRequest.supporting_documents
+                    : Array.isArray(changes.supporting_documents) ? changes.supporting_documents : [];
+                  if (docs.length === 0) return null;
+                  return (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Documents joints</Label>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {docs.map((url: string, i: number) => (
+                          <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline">
+                            Document {i + 1}
+                          </a>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
-                {/* Certificat d'expertise */}
-                {changes.expertise_certificate_url && (
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Certificat d'expertise</Label>
-                    <div className="mt-1 space-y-1">
-                      <a href={changes.expertise_certificate_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline block">
-                        Voir le certificat
-                      </a>
-                      {changes.market_value_usd && (
-                        <p className="text-xs">Valeur vénale: <strong>${Number(changes.market_value_usd).toLocaleString()}</strong></p>
-                      )}
-                      {changes.expertise_certificate_date && (
-                        <p className="text-xs text-muted-foreground">Date: {changes.expertise_certificate_date}</p>
-                      )}
+                {/* Certificat d'expertise — read from columns first, fallback to JSON */}
+                {(() => {
+                  const certUrl = selectedRequest.expertise_certificate_url || changes.expertise_certificate_url;
+                  const marketVal = selectedRequest.market_value_usd ?? changes.market_value_usd;
+                  const certDate = selectedRequest.expertise_certificate_date || changes.expertise_certificate_date;
+                  if (!certUrl) return null;
+                  return (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Certificat d'expertise</Label>
+                      <div className="mt-1 space-y-1">
+                        <a href={certUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline block">
+                          Voir le certificat
+                        </a>
+                        {marketVal && (
+                          <p className="text-xs">Valeur vénale: <strong>${Number(marketVal).toLocaleString()}</strong></p>
+                        )}
+                        {certDate && (
+                          <p className="text-xs text-muted-foreground">Date: {certDate}</p>
+                        )}
+                        {selectedRequest.title_age && (
+                          <p className="text-xs text-muted-foreground">Ancienneté titre: {selectedRequest.title_age === '10_or_more' ? '≥ 10 ans' : '< 10 ans'}</p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 <Separator />
 
@@ -880,27 +899,39 @@ const AdminMutationRequests: React.FC = () => {
                     </div>
                   ))}
 
-                  {changes.mutation_fees && (
-                    <>
-                      <div className="flex justify-between text-xs">
-                        <span>Frais de mutation ({changes.mutation_fees.percentage}%)</span>
-                        <span className="font-mono">${Number(changes.mutation_fees.mutation_fee).toFixed(2)}</span>
-                      </div>
-                      {Number(changes.mutation_fees.bank_fee) > 0 && (
+                  {/* Mutation fees — columns first, fallback JSON */}
+                  {(() => {
+                    const mutFee = selectedRequest.mutation_fee_amount ?? changes.mutation_fees?.mutation_fee;
+                    const bankFee = selectedRequest.bank_fee_amount ?? changes.mutation_fees?.bank_fee;
+                    if (!mutFee) return null;
+                    return (
+                      <>
                         <div className="flex justify-between text-xs">
-                          <span>Frais bancaires</span>
-                          <span className="font-mono">${Number(changes.mutation_fees.bank_fee).toFixed(2)}</span>
+                          <span>Frais de mutation</span>
+                          <span className="font-mono">${Number(mutFee).toFixed(2)}</span>
                         </div>
-                      )}
-                    </>
-                  )}
+                        {Number(bankFee) > 0 && (
+                          <div className="flex justify-between text-xs">
+                            <span>Frais bancaires</span>
+                            <span className="font-mono">${Number(bankFee).toFixed(2)}</span>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
 
-                  {changes.late_fees && (
-                    <div className="flex justify-between text-xs text-orange-600">
-                      <span>Retard ({changes.late_fees.days}j)</span>
-                      <span className="font-mono">${Number(changes.late_fees.fee).toFixed(2)}</span>
-                    </div>
-                  )}
+                  {/* Late fees — columns first, fallback JSON */}
+                  {(() => {
+                    const lateFee = selectedRequest.late_fee_amount ?? changes.late_fees?.fee;
+                    const lateDays = selectedRequest.late_fee_days ?? changes.late_fees?.days;
+                    if (!lateFee) return null;
+                    return (
+                      <div className="flex justify-between text-xs text-orange-600">
+                        <span>Retard ({lateDays}j)</span>
+                        <span className="font-mono">${Number(lateFee).toFixed(2)}</span>
+                      </div>
+                    );
+                  })()}
 
                   <Separator />
                   <div className="flex items-center justify-between">
@@ -953,12 +984,16 @@ const AdminMutationRequests: React.FC = () => {
                     <span className="text-muted-foreground">Montant payé</span>
                     <span className="font-bold text-primary">${Number(selectedRequest.total_amount_usd).toFixed(2)}</span>
                   </div>
-                  {selectedRequest.proposed_changes && (selectedRequest.proposed_changes as any).market_value_usd && (
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Valeur vénale</span>
-                      <span>${Number((selectedRequest.proposed_changes as any).market_value_usd).toLocaleString()}</span>
-                    </div>
-                  )}
+                  {selectedRequest.proposed_changes && (() => {
+                    const mv = (selectedRequest as any).market_value_usd ?? (selectedRequest.proposed_changes as any)?.market_value_usd;
+                    if (!mv) return null;
+                    return (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">Valeur vénale</span>
+                        <span>${Number(mv).toLocaleString()}</span>
+                      </div>
+                    );
+                  })()}
                   {selectedRequest.justification && (
                     <div className="pt-1 border-t">
                       <span className="text-[10px] text-muted-foreground">Justification :</span>
@@ -978,6 +1013,7 @@ const AdminMutationRequests: React.FC = () => {
                     <SelectItem value="approve">Approuver</SelectItem>
                     <SelectItem value="reject">Rejeter</SelectItem>
                     <SelectItem value="hold">Mettre en attente</SelectItem>
+                    <SelectItem value="return">Renvoyer pour correction</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -17,6 +17,7 @@ import { Loader2, FileEdit, CreditCard, CheckCircle2, AlertTriangle, MapPin, Clo
 import { useAuth } from '@/hooks/useAuth';
 import { useMutationRequest } from '@/hooks/useMutationRequest';
 import type { MutationFee, MutationRequest } from '@/types/mutation';
+import { MutationRequestWithProfile } from '@/types/mutation';
 import { LATE_FEE_CAP_USD, DAILY_LATE_FEE_USD, LEGAL_GRACE_PERIOD_DAYS } from '@/types/mutation';
 import { pollTransactionStatus } from '@/utils/pollTransactionStatus';
 import { usePaymentConfig } from '@/hooks/usePaymentConfig';
@@ -513,32 +514,27 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       mutation_type: mutationType,
       requester_type: requesterType,
       requester_name: requesterName,
-      requester_phone: null, // Explicitly null, not empty string
+      requester_phone: null,
       requester_email: requesterEmail,
       beneficiary_name: isTransferMutation ? fullBeneficiaryName : undefined,
       beneficiary_phone: isTransferMutation && beneficiaryPhone.trim() ? beneficiaryPhone.trim() : undefined,
       proposed_changes: { 
         description: autoDescription,
         beneficiary_legal_status: isTransferMutation ? beneficiaryLegalStatus : undefined,
-        supporting_documents: documentUrls,
-        expertise_certificate_url: expertiseCertificateUrl,
-        expertise_certificate_date: expertiseCertificateDate || undefined,
-        market_value_usd: marketValueUsd ? parseFloat(marketValueUsd) : undefined,
-        title_age: titleAge,
-        mutation_fees: isTransferMutation && mutationFeesCalculation.applicable ? {
-          percentage: mutationFeesCalculation.percentage,
-          mutation_fee: mutationFeesCalculation.mutationFee,
-          bank_fee: mutationFeesCalculation.bankFee,
-          total: mutationFeesCalculation.total
-        } : undefined,
-        late_fees: showLateFees && lateFeesCalculation.applicable ? {
-          days: lateFeesCalculation.days,
-          fee: lateFeesCalculation.fee
-        } : undefined
       },
       justification: justification.trim() || undefined,
       selected_fees: selectedFeesDetails,
-      total_amount_override: totalAmount
+      total_amount_override: totalAmount,
+      // Dedicated columns
+      supporting_documents: documentUrls.length > 0 ? documentUrls : undefined,
+      expertise_certificate_url: expertiseCertificateUrl || undefined,
+      expertise_certificate_date: expertiseCertificateDate || undefined,
+      market_value_usd: marketValueUsd ? parseFloat(marketValueUsd) : undefined,
+      title_age: titleAge || undefined,
+      mutation_fee_amount: isTransferMutation && mutationFeesCalculation.applicable ? mutationFeesCalculation.mutationFee : undefined,
+      bank_fee_amount: isTransferMutation && mutationFeesCalculation.applicable ? mutationFeesCalculation.bankFee : undefined,
+      late_fee_amount: showLateFees && lateFeesCalculation.applicable ? lateFeesCalculation.fee : undefined,
+      late_fee_days: showLateFees && lateFeesCalculation.applicable ? lateFeesCalculation.days : undefined,
     });
 
     setIsSubmitting(false);
@@ -703,8 +699,21 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                     {parcelData.province} {parcelData.ville && `• ${parcelData.ville}`}
                   </p>
                 )}
+                {parcelData?.current_owner_name && (
+                  <p className="text-xs text-muted-foreground truncate">
+                    Propriétaire : <span className="font-medium text-foreground">{parcelData.current_owner_name}</span>
+                  </p>
+                )}
               </div>
             </div>
+            {parcelData?.is_title_in_current_owner_name === false && (
+              <Alert className="mt-2 border-orange-300 bg-orange-50 dark:bg-orange-950/20">
+                <AlertTriangle className="h-4 w-4 text-orange-600" />
+                <AlertDescription className="text-xs text-orange-700 dark:text-orange-400">
+                  Le titre foncier n'est pas au nom du propriétaire actuel. Cette situation peut complexifier la procédure de mutation.
+                </AlertDescription>
+              </Alert>
+            )}
           </CardContent>
         </Card>
 

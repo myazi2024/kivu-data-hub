@@ -3,9 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
-import type { MutationFee, MutationRequest } from '@/types/mutation';
+import type { MutationFee, MutationRequest, MutationRequestWithProfile } from '@/types/mutation';
 
-export type { MutationFee, MutationRequest };
+export type { MutationFee, MutationRequest, MutationRequestWithProfile };
 
 export const useMutationRequest = () => {
   const [loading, setLoading] = useState(false);
@@ -93,6 +93,16 @@ export const useMutationRequest = () => {
     justification?: string;
     selected_fees: MutationFee[];
     total_amount_override?: number;
+    // New dedicated column fields
+    supporting_documents?: string[];
+    market_value_usd?: number;
+    expertise_certificate_url?: string;
+    expertise_certificate_date?: string;
+    title_age?: string;
+    mutation_fee_amount?: number;
+    bank_fee_amount?: number;
+    late_fee_amount?: number;
+    late_fee_days?: number;
   }) => {
     if (!user) {
       toast({
@@ -130,7 +140,17 @@ export const useMutationRequest = () => {
         total_amount_usd: totalAmount,
         payment_status: 'pending',
         status: 'pending',
-        estimated_processing_days: 14
+        estimated_processing_days: 14,
+        // Dedicated columns (no longer buried in JSON)
+        supporting_documents: data.supporting_documents?.length ? data.supporting_documents : null,
+        market_value_usd: data.market_value_usd ?? null,
+        expertise_certificate_url: data.expertise_certificate_url ?? null,
+        expertise_certificate_date: data.expertise_certificate_date || null,
+        title_age: data.title_age ?? null,
+        mutation_fee_amount: data.mutation_fee_amount ?? null,
+        bank_fee_amount: data.bank_fee_amount ?? null,
+        late_fee_amount: data.late_fee_amount ?? null,
+        late_fee_days: data.late_fee_days ?? null,
       };
 
       const { data: request, error } = await supabase
