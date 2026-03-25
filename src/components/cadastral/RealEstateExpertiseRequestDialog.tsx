@@ -977,11 +977,12 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setCheckingCertificateAccess(false);
     setCertificateAccessFee(0);
 
+    prefillDoneRef.current = false;
     onOpenChange(false);
   };
 
+  const isTerrainNu = constructionType === 'terrain_nu';
   const isApartmentOrBuilding = constructionType === 'appartement' || constructionType === 'immeuble' || constructionType === 'duplex' || constructionType === 'studio';
-  const isTerrainNuLocal = constructionType === 'terrain_nu';
 
   const renderForm = () => (
     <div className="space-y-3">
