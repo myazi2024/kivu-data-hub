@@ -264,7 +264,7 @@ const AdminBuildingPermits = () => {
                 />
               </div>
             </div>
-            <Select value={filterStatus} onValueChange={(value: '_all' | 'pending' | 'approved' | 'rejected') => setFilterStatus(value)}>
+            <Select value={filterStatus} onValueChange={(value: '_all' | 'pending' | 'approved' | 'rejected' | 'returned') => setFilterStatus(value)}>
               <SelectTrigger className="w-full md:w-[180px]">
                 <SelectValue placeholder="Statut" />
               </SelectTrigger>
@@ -273,6 +273,7 @@ const AdminBuildingPermits = () => {
                 <SelectItem value="pending">En attente</SelectItem>
                 <SelectItem value="approved">Approuvés</SelectItem>
                 <SelectItem value="rejected">Rejetés</SelectItem>
+                <SelectItem value="returned">Renvoyés</SelectItem>
               </SelectContent>
             </Select>
             <Select value={filterType} onValueChange={(value: '_all' | 'construction' | 'regularization') => setFilterType(value)}>
