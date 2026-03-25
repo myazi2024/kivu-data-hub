@@ -361,6 +361,8 @@ const Admin = () => {
         return <AdminParcelActionsConfig />;
       case 'land-disputes':
         return <AdminLandDisputes />;
+      case 'dispute-analytics':
+        return <AdminDisputeAnalytics />;
       case 'certificates':
         return <AdminCertificates />;
       case 'analytics-charts-config':
