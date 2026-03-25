@@ -1,80 +1,129 @@
 
 
-# Audit "Configuration graphiques" — Divergences, redondances et améliorations
+# Audit du service d'expertise immobiliere — Divergences et optimisations
 
-## Problèmes identifiés
+## Problemes identifies
 
-### 1. DOUBLON display_order dans `parcels-titled`
+### 1. DONNEES ETENDUES STOCKEES EN JSON BRUT DANS `additional_notes` (majeur)
 
-Dans le registre `useAnalyticsChartsConfig.ts`, l'onglet `parcels-titled` a **deux entrées avec `display_order: 16`** :
-- `geo` (Géographie) — display_order: 16
-- `taxes-amount` (Montants taxes/an) — display_order: 16
+Le formulaire collecte ~30 champs etendus (materiaux, son, equipements, position, etc.) mais les stocke comme un blob JSON sérialise dans la colonne `additional_notes` de la table DB. La table `real_estate_expertise_requests` ne possede **aucune colonne** pour :
+- `wall_material`, `roof_material`, `window_type`, `floor_material`
+- `has_plaster`, `has_painting`, `has_ceiling`, `has_double_glazing`
+- `building_position`, `facade_orientation`, `is_corner_plot`
+- `sound_environment`, `nearby_noise_sources`
+- `has_pool`, `has_air_conditioning`, `has_solar_panels`, `has_generator`, `has_water_tank`, `has_borehole`, `has_electric_fence`, `has_garage`, `has_cellar`, `has_automatic_gate`
+- `internet_provider`, `number_of_rooms`, `number_of_bedrooms`, `number_of_bathrooms`
+- `apartment_number`, `floor_number` (etage appart.), `total_building_floors`, `accessibility`, `monthly_charges`, `has_common_areas`
+- `nearby_amenities`
 
-Cela peut causer un ordre d'affichage imprévisible.
+**Consequence** : ces donnees ne sont pas exploitables en SQL (filtrage, tri, analytics). Le composant `ExpertiseBlock.tsx` ne peut pas generer de graphiques pour les materiaux, le son, les equipements etendus (piscine, climatisation, etc.) car ces champs n'existent pas en colonnes.
 
-**Correction** : Renuméroter séquentiellement les display_order de `parcels-titled` (0 à 21 sans trou ni doublon).
+**Correction** : Creer une migration ajoutant les colonnes manquantes a la table DB, puis stocker directement au lieu du JSON dans `additional_notes`. Mettre a jour `CreateExpertiseRequestData`, `ExpertiseRequest` (types), le hook `useRealEstateExpertise`, et `handleProceedToPayment`.
 
-### 2. GAP display_order dans `parcels-titled`
+### 2. REDONDANCE PARTIELLE AVEC LES DONNEES CCC
 
-`display_order: 12` est absent (saut de 11 à 13). Pas de donnée manquante, mais l'ordre est incohérent.
+Le formulaire CCC (`cadastral_contributions`) collecte deja :
+- `construction_type`, `construction_nature`, `construction_materials`, `construction_year`, `floor_number`, `property_category`
 
-**Correction** : Renuméroter séquentiellement.
+Le formulaire d'expertise re-collecte ces memes donnees (type, annee, etages, materiaux). Le pre-remplissage via `parcelData` (useEffect L245-287) attenué le probleme mais :
+- Le mapping `categoryMap` est incomplet (ex: `"Terrain non bâti"` absent)
+- Seul `construction_materials` → `wallMaterial` est mappe ; la toiture et le sol du CCC ne sont pas exploites
+- Si `parcelData` n'est pas fourni (ouverture depuis un autre contexte), l'utilisateur re-saisit tout
 
-### 3. GAP display_order dans `title-requests`
+**Correction** : Enrichir le pre-remplissage avec les champs CCC supplementaires disponibles (`construction_nature` → `propertyCondition` mapping, etc.). Ajouter un indicateur visuel plus clair pour les champs pre-remplis (par champ, pas juste l'alerte globale).
 
-`display_order: 11` est absent (saut de 10 à 12). Même problème esthétique.
+### 3. ANALYTICS EXPERTISE SOUS-EXPLOITEES
 
-**Correction** : Renuméroter séquentiellement.
+Le `ExpertiseBlock.tsx` n'exploite que les colonnes DB existantes. Avec les donnees etendues bloquees en JSON, il manque des graphiques pour :
+- Repartition par materiau de mur/toiture
+- Repartition par environnement sonore
+- Taux d'equipements etendus (piscine, climatisation, solaire, etc.)
+- Repartition par fournisseur internet
+- Repartition par position sur parcelle
 
-### 4. Redondance watermark : `map-watermark` vs `global-watermark`
+**Correction** : Une fois les colonnes DB ajoutees (point 1), enrichir `ExpertiseBlock.tsx` avec ces nouveaux graphiques et les enregistrer dans `ANALYTICS_TABS_REGISTRY['expertise']`.
 
-Deux configurations distinctes gèrent le même texte de watermark :
-- `_global > global-watermark` : utilisé dans les graphiques Analytics (via `WatermarkContext`)
-- `rdc-map > map-watermark` : utilisé dans la Carte RDC
+### 4. VALIDATION TROP PERMISSIVE
 
-Si l'admin modifie l'un sans l'autre, le watermark sera incohérent entre Carte RDC et Analytics.
+`getMissingFields()` (L2082-2098) ne declare qu'un seul champ obligatoire : `constructionType`. Les champs suivants devraient etre requis pour une expertise serieuse :
+- `constructionYear` pour les biens batis (impact direct sur la valeur)
+- `totalBuiltAreaSqm` (sans surface, pas d'estimation possible)
+- `roadAccessType` (facteur determinant en RDC)
 
-**Correction** : Faire en sorte que `map-watermark` hérite de `global-watermark` par défaut, avec possibilité de surcharge. Dans `DRCInteractiveMap.tsx`, utiliser `global-watermark` en fallback si `map-watermark` n'est pas surchargé.
+**Correction** : Ajouter ces champs comme `required: true` dans `getMissingFields()`.
 
-### 5. Section `_global` invisible dans l'admin UI
+### 5. SCORE DE COMPLETION INEXACT
 
-Le `_global` est filtré (`filter(([key]) => key !== '_global')`) dans le sélecteur d'onglets de l'admin. Le watermark global n'est **éditable nulle part** dans l'interface admin.
+Le `completionPercentage` (L2106-2112) est calcule sur 16 champs hardcodes, sans inclure les equipements, documents, ni les champs d'appartement. Le score ne reflete pas la completude reelle du formulaire.
 
-**Correction** : Afficher `_global` dans la liste des onglets (avec un label "Paramètres globaux") ou l'intégrer comme section en haut de la vue Graphiques.
+**Correction** : Calculer dynamiquement en fonction du type de bien (terrain nu vs bati vs appartement) et inclure les equipements et documents.
 
-### 6. Onglet `rdc-map` absent du sélecteur d'onglets
+### 6. DOUBLE DECLARATION `isTerrainNu`
 
-Comme `_global`, l'onglet `rdc-map` est bien enregistré dans le registre mais son apparition dans le sélecteur dépend du filtre `key !== '_global'`. Il est visible, mais pourrait ne pas apparaître dans la gestion des onglets (vue "Onglets"), ce qui empêche de le masquer/renommer dans la section TabManager.
+Deux variables identiques :
+- `isTerrainNuLocal` (L993) utilisee dans `renderForm()`
+- `isTerrainNu` (L2075) utilisee dans `renderSummary()`
 
-**Correction** : Vérifier que `rdc-map` apparaît dans TabManager. Actuellement, la vue Onglets montre tous les registres sauf `_global`, donc `rdc-map` est bien affiché — mais il ne correspond pas à un onglet analytics réel (c'est un composant séparé). Ajouter un badge "Carte" pour le distinguer.
+Les deux font `constructionType === 'terrain_nu'`. C'est une redondance mineure.
 
-### 7. Pas de prévisualisation des couleurs de palier
+**Correction** : Unifier en une seule variable.
 
-Les couleurs des `map-tier-*` utilisent des valeurs HSL (`hsl(210, 20%, 82%)`), mais le `<input type="color">` HTML ne supporte que le format hex. Les couleurs HSL par défaut ne s'afficheront pas correctement dans le color picker.
+### 7. `prefillDoneRef` NON REINITIALISE A LA FERMETURE
 
-**Correction** : Convertir les couleurs HSL en hex pour les valeurs par défaut du registre, ou ajouter une fonction de conversion HSL → hex dans l'admin UI.
+Le `handleClose()` reinitialise tous les champs mais ne remet pas `prefillDoneRef.current = false`. Si l'utilisateur ferme puis rouvre le dialogue sur une autre parcelle, le pre-remplissage ne s'effectuera pas.
 
-### 8. "Service émetteur" — indicateur non fictif mais potentiellement vide
+**Correction** : Ajouter `prefillDoneRef.current = false;` dans `handleClose()`.
 
-Le graphique `permit-service` dans `parcels-titled` consomme `issuing_service` des permis de construire. Ce champ est bien collecté dans le formulaire permis, mais rarement rempli (formulaire peu utilisé). Le graphique sera souvent vide.
+### 8. AUCUNE DONNEE FICTIVE DETECTEE
 
-**Pas de suppression nécessaire** — le `hidden` flag s'active déjà quand les données sont vides. L'admin peut le masquer via la config.
+Les graphiques analytics et le formulaire n'utilisent aucune donnee fictive/simulee. Les indicateurs (`ExpertiseBlock`) sont tous construits a partir de requetes Supabase reelles. Pas de probleme ici.
 
-### 9. Sauvegarde partielle : `handleSave` ne sauvegarde qu'un onglet
+### 9. FICHIER MONOLITHIQUE (3157 LIGNES)
 
-Le bouton "Sauvegarder" dans la vue Graphiques ne sauvegarde que l'onglet actif (`localItems[activeTab]`). Si l'admin modifie plusieurs onglets avant de sauvegarder, seul le dernier actif est sauvegardé. Les modifications non sauvegardées des autres onglets sont perdues silencieusement.
+Le composant `RealEstateExpertiseRequestDialog.tsx` est excessivement long. Il melange :
+- ~60 variables d'etat
+- Logique metier (paiement, upload, validation)
+- 4 vues (form, summary, payment, confirmation)
+- Mesure du son via microphone
 
-**Correction** : Ajouter un indicateur visuel par onglet (badge "modifié") ET une confirmation si l'admin change d'onglet avec des modifications non sauvegardées.
+**Correction** : Extraire en sous-composants (`ExpertiseFormTab`, `ExpertiseSummary`, `ExpertisePayment`, `ExpertiseConfirmation`) et un hook `useExpertiseFormState`.
 
-## Plan d'implémentation
+---
 
-### Fichiers impactés
+## Plan d'implementation
+
+### Etape 1 — Migration DB : ajouter les colonnes etendues
+Creer une migration SQL ajoutant ~25 colonnes a `real_estate_expertise_requests` pour les donnees actuellement stockees en JSON.
+
+### Etape 2 — Mettre a jour les types TypeScript
+Enrichir `ExpertiseRequest` et `CreateExpertiseRequestData` dans `src/types/expertise.ts`.
+
+### Etape 3 — Stocker les donnees etendues en colonnes
+Modifier `handleProceedToPayment()` pour ecrire les champs directement dans `formData` au lieu du JSON `additional_notes`.
+
+### Etape 4 — Corriger le pre-remplissage CCC
+Reinitialiser `prefillDoneRef` a la fermeture. Enrichir le mapping CCC (ajouter `construction_nature`, corriger les cas manquants).
+
+### Etape 5 — Renforcer la validation
+Ajouter `constructionYear`, `totalBuiltAreaSqm` comme requis pour les biens batis.
+
+### Etape 6 — Unifier `isTerrainNu` / Corriger le score de completion
+Supprimer `isTerrainNuLocal`, rendre le score dynamique.
+
+### Etape 7 — Enrichir les analytics expertise
+Ajouter les nouveaux graphiques dans `ExpertiseBlock.tsx` et les enregistrer dans le registre de config.
+
+### Fichiers impactes
 
 | Fichier | Action |
 |---------|--------|
-| `src/hooks/useAnalyticsChartsConfig.ts` | Renuméroter display_order (title-requests, parcels-titled) ; convertir couleurs HSL en hex ; faire fallback map-watermark → global-watermark |
-| `src/components/admin/AdminAnalyticsChartsConfig.tsx` | Afficher section _global ; badge "modifié" par onglet ; confirmation changement onglet ; badge "Carte" sur rdc-map |
-| `src/components/DRCInteractiveMap.tsx` | Fallback watermark vers global-watermark |
+| Migration SQL | Nouvelle migration |
+| `src/types/expertise.ts` | Enrichir les types |
+| `src/components/cadastral/RealEstateExpertiseRequestDialog.tsx` | Corrections multiples |
+| `src/hooks/useRealEstateExpertise.tsx` | Adapter au nouveau schema |
+| `src/components/visualizations/blocks/ExpertiseBlock.tsx` | Nouveaux graphiques |
+| `src/hooks/useAnalyticsChartsConfig.ts` | Registre expertise enrichi |
+| `src/components/admin/AdminExpertiseRequests.tsx` | Afficher les nouvelles colonnes |
 
-3 fichiers modifiés.
+7 fichiers modifies + 1 migration.
 
