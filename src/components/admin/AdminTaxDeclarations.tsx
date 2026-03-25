@@ -133,11 +133,7 @@ const AdminTaxDeclarations = () => {
     return true;
   });
 
-  const pagination = usePagination({ totalItems: filtered.length, itemsPerPage: 15 });
-  const paginatedData = filtered.slice(
-    (pagination.currentPage - 1) * 15,
-    pagination.currentPage * 15
-  );
+  const { paginatedData, currentPage, totalPages, pageSize, totalItems, hasNextPage, hasPreviousPage, goToPage, goToNextPage, goToPreviousPage, changePageSize } = usePagination(filtered);
 
   // Stats
   const stats = {
