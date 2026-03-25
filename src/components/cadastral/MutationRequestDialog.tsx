@@ -699,8 +699,21 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                     {parcelData.province} {parcelData.ville && `• ${parcelData.ville}`}
                   </p>
                 )}
+                {parcelData?.current_owner_name && (
+                  <p className="text-xs text-muted-foreground truncate">
+                    Propriétaire : <span className="font-medium text-foreground">{parcelData.current_owner_name}</span>
+                  </p>
+                )}
               </div>
             </div>
+            {parcelData?.is_title_in_current_owner_name === false && (
+              <Alert className="mt-2 border-orange-300 bg-orange-50 dark:bg-orange-950/20">
+                <AlertTriangle className="h-4 w-4 text-orange-600" />
+                <AlertDescription className="text-xs text-orange-700 dark:text-orange-400">
+                  Le titre foncier n'est pas au nom du propriétaire actuel. Cette situation peut complexifier la procédure de mutation.
+                </AlertDescription>
+              </Alert>
+            )}
           </CardContent>
         </Card>
 
