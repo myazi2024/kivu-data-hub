@@ -410,7 +410,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
             <div className="h-8 w-8 rounded-xl bg-amber-500/10 flex items-center justify-center">
               <Landmark className="h-4 w-4 text-amber-600" />
             </div>
-            <div>
+           <div>
               <Label className="text-base font-semibold flex items-center gap-1.5">
                 Nouvelle Hypothèque
                 <SectionHelpPopover
@@ -420,6 +420,12 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
               </Label>
               <p className="text-xs text-muted-foreground">Parcelle: {parcelNumber}</p>
             </div>
+          </div>
+
+          {/* Propriétaire actuel (depuis données CCC) */}
+          {parcelId && (
+            <ParcelOwnerInfo parcelId={parcelId} />
+          )}
           </div>
 
           {/* Formulaire */}
