@@ -309,12 +309,12 @@ const AdminBuildingPermits = () => {
                 <ResponsiveTableBody>
                   {paginatedPermits.map((permit) => {
                     const permitData = permit.permit_request_data;
-                    const status = permitData?.status || 'pending';
+                    const status = permit.status;
                     
                     return (
                       <ResponsiveTableRow key={permit.id}>
                         <ResponsiveTableCell label="Parcelle" className="font-medium">{permit.parcel_number}</ResponsiveTableCell>
-                        <ResponsiveTableCell label="Type">{getTypeBadge(permitData?.permitType)}</ResponsiveTableCell>
+                        <ResponsiveTableCell label="Type">{getTypeBadge(getPermitType(permit))}</ResponsiveTableCell>
                         <ResponsiveTableCell label="Demandeur" priority="low">
                           <div>
                             <p className="font-medium">{permitData?.applicantName || 'N/A'}</p>
