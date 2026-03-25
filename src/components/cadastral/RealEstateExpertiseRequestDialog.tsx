@@ -255,7 +255,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       'Studio': 'studio',
       'Local commercial': 'commercial', 'Commerce': 'commercial', 'Bureau': 'commercial',
       'Entrepôt': 'entrepot', 'Hangar': 'entrepot',
-      'Terrain nu': 'terrain_nu',
+      'Terrain nu': 'terrain_nu', 'Terrain non bâti': 'terrain_nu', 'Non bâti': 'terrain_nu',
     };
 
     // Map construction_materials → expertise wallMaterial key
@@ -267,6 +267,16 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       'Bois': 'bois',
       'Tôles métalliques': 'tole',
       'Mixte': 'mixte',
+    };
+
+    // Map construction_nature → propertyCondition
+    const natureConditionMap: Record<string, string> = {
+      'Durable': 'bon',
+      'Semi-durable': 'moyen',
+      'Précaire': 'mauvais',
+      'Construction durable': 'bon',
+      'Construction semi-durable': 'moyen',
+      'Construction précaire': 'mauvais',
     };
 
     if (parcelData.property_category && categoryMap[parcelData.property_category]) {
@@ -283,6 +293,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     }
     if (parcelData.construction_materials && materialMap[parcelData.construction_materials]) {
       setWallMaterial(materialMap[parcelData.construction_materials]);
+    }
+    if (parcelData.construction_nature && natureConditionMap[parcelData.construction_nature]) {
+      setPropertyCondition(natureConditionMap[parcelData.construction_nature]);
     }
   }, [open, parcelData]);
 
