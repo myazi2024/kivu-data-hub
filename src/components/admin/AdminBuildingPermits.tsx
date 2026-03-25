@@ -145,6 +145,7 @@ const AdminBuildingPermits = () => {
       pending: { variant: 'outline' as const, icon: Clock, label: 'En attente' },
       approved: { variant: 'default' as const, icon: CheckCircle, label: 'Approuvé' },
       rejected: { variant: 'destructive' as const, icon: XCircle, label: 'Rejeté' },
+      returned: { variant: 'secondary' as const, icon: AlertCircle, label: 'Renvoyé' },
     };
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
     const Icon = config.icon;
