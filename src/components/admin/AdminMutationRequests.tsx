@@ -390,6 +390,7 @@ const AdminMutationRequests: React.FC = () => {
       rejected: { variant: 'destructive', label: 'Rejetée' },
       on_hold: { variant: 'secondary', label: 'Suspendue' },
       cancelled: { variant: 'destructive', label: 'Annulée' },
+      returned: { variant: 'outline', label: 'À corriger' },
     };
     return statusMap[status] || { variant: 'default', label: status };
   };
