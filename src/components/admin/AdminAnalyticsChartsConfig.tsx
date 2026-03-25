@@ -510,15 +510,17 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
             <CardContent className="p-0">
               <ScrollArea className="h-[500px]">
                 <div className="space-y-0.5 p-2">
-                  {Object.entries(ANALYTICS_TABS_REGISTRY).filter(([key]) => key !== '_global').map(([key, tab]) => {
+                  {Object.entries(ANALYTICS_TABS_REGISTRY).map(([key, tab]) => {
                     const stat = tabStats[key];
                     const tabConf = localTabs.find(t => t.key === key);
                     const tabLabel = tabConf?.label || tab.label;
                     const isHiddenTab = tabConf && !tabConf.is_visible;
+                    const isModified = modifiedTabs.has(key);
+                    const isSpecial = key === 'rdc-map' || key === '_global';
                     return (
                       <button
                         key={key}
-                        onClick={() => setActiveTab(key)}
+                        onClick={() => handleTabSwitch(key)}
                         className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors flex items-center justify-between ${
                           activeTab === key
                             ? 'bg-primary text-primary-foreground'
@@ -527,13 +529,28 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
                       >
                         <span className="font-medium flex items-center gap-1">
                           {isHiddenTab && <EyeOff className="h-3 w-3" />}
+                          {key === 'rdc-map' && <MapIcon className="h-3 w-3" />}
+                          {key === '_global' && <Globe className="h-3 w-3" />}
                           {tabLabel}
                         </span>
-                        {stat && stat.hidden > 0 && (
-                          <Badge variant="secondary" className="text-[9px] h-4 px-1">
-                            {stat.hidden} masqué{stat.hidden > 1 ? 's' : ''}
-                          </Badge>
-                        )}
+                        <div className="flex items-center gap-1">
+                          {isModified && (
+                            <Badge variant="destructive" className="text-[8px] h-3.5 px-1">
+                              modifié
+                            </Badge>
+                          )}
+                          {key === 'rdc-map' && (
+                            <Badge variant="outline" className="text-[8px] h-3.5 px-1">Carte</Badge>
+                          )}
+                          {key === '_global' && (
+                            <Badge variant="outline" className="text-[8px] h-3.5 px-1">Global</Badge>
+                          )}
+                          {stat && stat.hidden > 0 && (
+                            <Badge variant="secondary" className="text-[9px] h-4 px-1">
+                              {stat.hidden} masqué{stat.hidden > 1 ? 's' : ''}
+                            </Badge>
+                          )}
+                        </div>
                       </button>
                     );
                   })}
