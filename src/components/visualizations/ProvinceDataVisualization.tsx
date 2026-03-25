@@ -8,7 +8,7 @@ import { ExpertiseBlock } from './blocks/ExpertiseBlock';
 import { MutationBlock } from './blocks/MutationBlock';
 import { SubdivisionBlock } from './blocks/SubdivisionBlock';
 import { DisputesBlock } from './blocks/DisputesBlock';
-import { DisputeLiftingBlock } from './blocks/DisputeLiftingBlock';
+
 import { BoundaryConflictsBlock } from './blocks/BoundaryConflictsBlock';
 import { OwnershipHistoryBlock } from './blocks/OwnershipHistoryBlock';
 import { FraudAttemptsBlock } from './blocks/FraudAttemptsBlock';
