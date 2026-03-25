@@ -163,10 +163,6 @@ const DRCInteractiveMap = () => {
   }, [getChartConfig]);
 
   /** Watermark: map-specific fallback to global */
-  const globalDefaults = ANALYTICS_TABS_REGISTRY['_global']
-    ? [...ANALYTICS_TABS_REGISTRY['_global'].kpis, ...ANALYTICS_TABS_REGISTRY['_global'].charts]
-    : [];
-  const { getChartConfig: getGlobalConfig } = useTabChartsConfig('_global', globalDefaults);
   const watermarkText = useMemo(() => {
     const mapWm = getChartConfig('map-watermark')?.custom_title;
     const globalWm = getGlobalConfig('global-watermark')?.custom_title;
