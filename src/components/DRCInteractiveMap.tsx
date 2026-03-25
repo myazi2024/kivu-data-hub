@@ -73,6 +73,11 @@ const DRCInteractiveMap = () => {
     : [];
   const { isChartVisible, getChartConfig } = useTabChartsConfig('rdc-map', rdcMapDefaults);
 
+  const globalDefaults = ANALYTICS_TABS_REGISTRY['_global']
+    ? [...ANALYTICS_TABS_REGISTRY['_global'].kpis, ...ANALYTICS_TABS_REGISTRY['_global'].charts]
+    : [];
+  const { getChartConfig: getGlobalConfig } = useTabChartsConfig('_global', globalDefaults);
+
   /** Build tooltip line configs from admin config */
   const tooltipLineConfigs = useMemo(() => {
     const keys = [
