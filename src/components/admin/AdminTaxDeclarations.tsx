@@ -296,7 +296,7 @@ const AdminTaxDeclarations = () => {
         'Date soumission': format(new Date(d.created_at), 'dd/MM/yyyy', { locale: fr }),
       };
     });
-    exportToCSV(rows, 'declarations-fiscales');
+    exportToCSV(rows as any, 'declarations-fiscales' as any);
   };
 
   const columns = [
