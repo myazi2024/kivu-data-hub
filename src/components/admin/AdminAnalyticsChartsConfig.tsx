@@ -479,7 +479,7 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
             <CardContent className="p-0">
               <ScrollArea className="h-[500px]">
                 <div className="space-y-0.5 p-2">
-                  {Object.entries(ANALYTICS_TABS_REGISTRY).map(([key, tab]) => {
+                  {Object.entries(ANALYTICS_TABS_REGISTRY).filter(([key]) => key !== '_global').map(([key, tab]) => {
                     const stat = tabStats[key];
                     const tabConf = localTabs.find(t => t.key === key);
                     const tabLabel = tabConf?.label || tab.label;
