@@ -1,68 +1,80 @@
 
 
-# Compléter la couverture admin pour Carte RDC et Analytics
+# Audit "Configuration graphiques" — Divergences, redondances et améliorations
 
-## Constat
+## Problèmes identifiés
 
-Le module admin "Configuration graphiques" (`AdminAnalyticsChartsConfig`) gère actuellement :
-- **Onglets Analytics** : visibilité, ordre, renommage (13 onglets)
-- **Graphiques/KPIs par onglet** : visibilité, ordre, titre, couleur, type de graphique
-- **Carte RDC (tab `rdc-map`)** : visibilité/renommage des KPIs tooltip et panneau détails (23 entrées)
+### 1. DOUBLON display_order dans `parcels-titled`
 
-**Éléments NON configurables actuellement :**
+Dans le registre `useAnalyticsChartsConfig.ts`, l'onglet `parcels-titled` a **deux entrées avec `display_order: 16`** :
+- `geo` (Géographie) — display_order: 16
+- `taxes-amount` (Montants taxes/an) — display_order: 16
 
-| Élément | Zone | Statut |
-|---------|------|--------|
-| Paliers choroplèthes (seuils 30/100/500, couleurs) | Carte RDC | Non configurable |
-| Titre de la légende choroplèthe | Carte RDC | Hardcodé |
-| Note descriptive (texte d'en-tête carte) | Carte RDC | Hardcodé |
-| Watermark ("BIC - Tous droits réservés") | Carte RDC + Analytics | Hardcodé |
-| KPIs de la légende contextuelle (zoom) | Carte RDC | Suit `detail-*` mais pas configurable séparément |
-| Bouton "Copier en image" (visibilité) | Carte RDC | Toujours visible |
-| Texte du watermark/footer | Analytics (ChartFooter) | Hardcodé dans `ChartCard.tsx` |
+Cela peut causer un ordre d'affichage imprévisible.
 
-## Plan
+**Correction** : Renuméroter séquentiellement les display_order de `parcels-titled` (0 à 21 sans trou ni doublon).
 
-### Etape 1 : Enrichir le registre `rdc-map` dans `useAnalyticsChartsConfig.ts`
+### 2. GAP display_order dans `parcels-titled`
 
-Ajouter des entrées de type `chart` (utilisées comme config, pas comme graphique) pour les éléments manquants :
+`display_order: 12` est absent (saut de 11 à 13). Pas de donnée manquante, mais l'ordre est incohérent.
 
-- `map-legend-title` : titre légende choroplèthe (défaut : "Densité parcelles cadastrées")
-- `map-header-note` : note descriptive de la carte
-- `map-watermark` : texte du watermark (défaut : "BIC - Tous droits réservés")
-- `map-copy-button` : visibilité du bouton copier
-- `map-tier-1` à `map-tier-4` : les 4 paliers choroplèthes (titre = label, `custom_color` = couleur)
+**Correction** : Renuméroter séquentiellement.
 
-### Etape 2 : Enrichir le registre global pour Analytics
+### 3. GAP display_order dans `title-requests`
 
-Ajouter une entrée globale dans un pseudo-onglet `_global` :
-- `global-watermark` : texte du watermark partagé par tous les graphiques (défaut : "BIC - Tous droits réservés")
+`display_order: 11` est absent (saut de 10 à 12). Même problème esthétique.
 
-### Etape 3 : Consommer les nouvelles configs dans `DRCInteractiveMap.tsx`
+**Correction** : Renuméroter séquentiellement.
 
-- Lire `map-legend-title`, `map-header-note`, `map-watermark` via `getChartConfig()`
-- Lire `map-tier-1` à `map-tier-4` pour construire `DENSITY_TIERS` dynamiquement (couleur + label)
-- Conditionner le bouton copier sur `isChartVisible('map-copy-button')`
+### 4. Redondance watermark : `map-watermark` vs `global-watermark`
 
-### Etape 4 : Consommer le watermark global dans `ChartCard.tsx`
+Deux configurations distinctes gèrent le même texte de watermark :
+- `_global > global-watermark` : utilisé dans les graphiques Analytics (via `WatermarkContext`)
+- `rdc-map > map-watermark` : utilisé dans la Carte RDC
 
-- Importer `useTabChartsConfig` pour lire `global-watermark`
-- Utiliser le texte configuré dans `ChartFooter`
+Si l'admin modifie l'un sans l'autre, le watermark sera incohérent entre Carte RDC et Analytics.
 
-### Etape 5 : Adapter l'UI admin `AdminAnalyticsChartsConfig.tsx`
+**Correction** : Faire en sorte que `map-watermark` hérite de `global-watermark` par défaut, avec possibilité de surcharge. Dans `DRCInteractiveMap.tsx`, utiliser `global-watermark` en fallback si `map-watermark` n'est pas surchargé.
 
-- Pour l'onglet `rdc-map` : séparer visuellement les sections (Tooltip, Panneau détails, Paramètres carte) au lieu d'un seul listing KPI
-- Afficher un éditeur de couleur pour les entrées `map-tier-*`
-- Afficher un champ texte élargi pour `map-watermark` et `map-header-note`
+### 5. Section `_global` invisible dans l'admin UI
+
+Le `_global` est filtré (`filter(([key]) => key !== '_global')`) dans le sélecteur d'onglets de l'admin. Le watermark global n'est **éditable nulle part** dans l'interface admin.
+
+**Correction** : Afficher `_global` dans la liste des onglets (avec un label "Paramètres globaux") ou l'intégrer comme section en haut de la vue Graphiques.
+
+### 6. Onglet `rdc-map` absent du sélecteur d'onglets
+
+Comme `_global`, l'onglet `rdc-map` est bien enregistré dans le registre mais son apparition dans le sélecteur dépend du filtre `key !== '_global'`. Il est visible, mais pourrait ne pas apparaître dans la gestion des onglets (vue "Onglets"), ce qui empêche de le masquer/renommer dans la section TabManager.
+
+**Correction** : Vérifier que `rdc-map` apparaît dans TabManager. Actuellement, la vue Onglets montre tous les registres sauf `_global`, donc `rdc-map` est bien affiché — mais il ne correspond pas à un onglet analytics réel (c'est un composant séparé). Ajouter un badge "Carte" pour le distinguer.
+
+### 7. Pas de prévisualisation des couleurs de palier
+
+Les couleurs des `map-tier-*` utilisent des valeurs HSL (`hsl(210, 20%, 82%)`), mais le `<input type="color">` HTML ne supporte que le format hex. Les couleurs HSL par défaut ne s'afficheront pas correctement dans le color picker.
+
+**Correction** : Convertir les couleurs HSL en hex pour les valeurs par défaut du registre, ou ajouter une fonction de conversion HSL → hex dans l'admin UI.
+
+### 8. "Service émetteur" — indicateur non fictif mais potentiellement vide
+
+Le graphique `permit-service` dans `parcels-titled` consomme `issuing_service` des permis de construire. Ce champ est bien collecté dans le formulaire permis, mais rarement rempli (formulaire peu utilisé). Le graphique sera souvent vide.
+
+**Pas de suppression nécessaire** — le `hidden` flag s'active déjà quand les données sont vides. L'admin peut le masquer via la config.
+
+### 9. Sauvegarde partielle : `handleSave` ne sauvegarde qu'un onglet
+
+Le bouton "Sauvegarder" dans la vue Graphiques ne sauvegarde que l'onglet actif (`localItems[activeTab]`). Si l'admin modifie plusieurs onglets avant de sauvegarder, seul le dernier actif est sauvegardé. Les modifications non sauvegardées des autres onglets sont perdues silencieusement.
+
+**Correction** : Ajouter un indicateur visuel par onglet (badge "modifié") ET une confirmation si l'admin change d'onglet avec des modifications non sauvegardées.
+
+## Plan d'implémentation
 
 ### Fichiers impactés
 
 | Fichier | Action |
 |---------|--------|
-| `src/hooks/useAnalyticsChartsConfig.ts` | Enrichir `rdc-map` + ajouter `_global` |
-| `src/components/DRCInteractiveMap.tsx` | Consommer configs dynamiques |
-| `src/components/visualizations/shared/ChartCard.tsx` | Watermark configurable |
-| `src/components/admin/AdminAnalyticsChartsConfig.tsx` | UI enrichie pour `rdc-map` |
+| `src/hooks/useAnalyticsChartsConfig.ts` | Renuméroter display_order (title-requests, parcels-titled) ; convertir couleurs HSL en hex ; faire fallback map-watermark → global-watermark |
+| `src/components/admin/AdminAnalyticsChartsConfig.tsx` | Afficher section _global ; badge "modifié" par onglet ; confirmation changement onglet ; badge "Carte" sur rdc-map |
+| `src/components/DRCInteractiveMap.tsx` | Fallback watermark vers global-watermark |
 
-4 fichiers modifiés.
+3 fichiers modifiés.
 
