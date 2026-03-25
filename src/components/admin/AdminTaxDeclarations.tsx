@@ -281,22 +281,26 @@ const AdminTaxDeclarations = () => {
   };
 
   const handleExport = () => {
+    const fields = ['Parcelle', 'Propriétaire', 'Type taxe', 'Exercice', 'Montant (USD)', 'NIF', 'Statut', 'Province', 'Ville', 'Date soumission'];
     const rows = filtered.map(d => {
       const info = getTaxInfo(d);
-      return {
-        'Parcelle': d.parcel_number,
-        'Propriétaire': d.current_owner_name || '',
-        'Type taxe': info.taxType,
-        'Exercice': info.taxYear,
-        'Montant (USD)': info.amount,
-        'NIF': info.nif || '',
-        'Statut': d.status,
-        'Province': d.province || '',
-        'Ville': d.ville || '',
-        'Date soumission': format(new Date(d.created_at), 'dd/MM/yyyy', { locale: fr }),
-      };
+      return fields.map(f => {
+        switch (f) {
+          case 'Parcelle': return d.parcel_number;
+          case 'Propriétaire': return d.current_owner_name || '';
+          case 'Type taxe': return info.taxType;
+          case 'Exercice': return info.taxYear;
+          case 'Montant (USD)': return info.amount;
+          case 'NIF': return info.nif || '';
+          case 'Statut': return d.status;
+          case 'Province': return d.province || '';
+          case 'Ville': return d.ville || '';
+          case 'Date soumission': return format(new Date(d.created_at), 'dd/MM/yyyy', { locale: fr });
+          default: return '';
+        }
+      });
     });
-    exportToCSV(rows as any, 'declarations-fiscales' as any);
+    exportToCSV({ filename: 'declarations-fiscales.csv', headers: fields, data: rows });
   };
 
   const columns = [
