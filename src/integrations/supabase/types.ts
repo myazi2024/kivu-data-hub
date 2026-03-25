@@ -1066,6 +1066,7 @@ export type Database = {
           groupement: string | null
           house_number: string | null
           id: string
+          is_subdivided: boolean | null
           latitude: number | null
           lease_type: string | null
           location: string
@@ -1109,6 +1110,7 @@ export type Database = {
           groupement?: string | null
           house_number?: string | null
           id?: string
+          is_subdivided?: boolean | null
           latitude?: number | null
           lease_type?: string | null
           location: string
@@ -1152,6 +1154,7 @@ export type Database = {
           groupement?: string | null
           house_number?: string | null
           id?: string
+          is_subdivided?: boolean | null
           latitude?: number | null
           lease_type?: string | null
           location?: string

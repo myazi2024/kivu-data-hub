@@ -1,0 +1,1 @@
+ALTER TABLE cadastral_parcels ADD COLUMN IF NOT EXISTS is_subdivided boolean DEFAULT false;
