@@ -36,7 +36,7 @@ const AdminBuildingPermits = () => {
   const [permits, setPermits] = useState<PermitRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'_all' | 'pending' | 'approved' | 'rejected'>('_all');
+  const [filterStatus, setFilterStatus] = useState<'_all' | 'pending' | 'approved' | 'rejected' | 'returned'>('_all');
   const [filterType, setFilterType] = useState<'_all' | 'construction' | 'regularization'>('_all');
   const [selectedPermit, setSelectedPermit] = useState<PermitRequest | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
