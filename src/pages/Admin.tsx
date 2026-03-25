@@ -49,6 +49,7 @@ import AdminMutationFeesConfig from '@/components/admin/AdminMutationFeesConfig'
 import AdminBoundaryConflicts from '@/components/admin/AdminBoundaryConflicts';
 import AdminMortgages from '@/components/admin/AdminMortgages';
 import AdminTaxHistory from '@/components/admin/AdminTaxHistory';
+import AdminTaxDeclarations from '@/components/admin/AdminTaxDeclarations';
 import AdminOwnershipHistory from '@/components/admin/AdminOwnershipHistory';
 import AdminBoundaryHistory from '@/components/admin/AdminBoundaryHistory';
 import AdminCCCUsage from '@/components/admin/AdminCCCUsage';
