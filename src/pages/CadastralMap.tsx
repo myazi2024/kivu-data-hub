@@ -710,12 +710,38 @@ const CadastralMap = () => {
               coord => [coord.lat, coord.lng]
             );
             
+            // Rendu conditionnel : parcelle subdivisée vs normale
+            const isSubdivided = (parcel as any).is_subdivided === true;
             const polygon = L.polygon(polygonPoints, {
-              color: '#ef4444',
-              weight: 2,
-              fillColor: '#ef4444',
-              fillOpacity: 0.2
+              color: isSubdivided ? '#6b7280' : '#ef4444',
+              weight: isSubdivided ? 1.5 : 2,
+              fillColor: isSubdivided ? '#6b7280' : '#ef4444',
+              fillOpacity: isSubdivided ? 0.05 : 0.2,
+              dashArray: isSubdivided ? '6 4' : undefined,
             }).addTo(map);
+
+            // Label "Lotie" au centroid si subdivisée
+            if (isSubdivided) {
+              const centLat = polygonPoints.reduce((s, p) => s + p[0], 0) / polygonPoints.length;
+              const centLng = polygonPoints.reduce((s, p) => s + p[1], 0) / polygonPoints.length;
+              const subdivLabel = L.divIcon({
+                className: 'subdivided-label',
+                html: `<div style="
+                  background: hsl(var(--muted));
+                  color: hsl(var(--muted-foreground));
+                  padding: 1px 6px;
+                  border-radius: 4px;
+                  border: 1px solid hsl(var(--border));
+                  font-size: 9px;
+                  font-weight: 600;
+                  white-space: nowrap;
+                  opacity: 0.85;
+                ">Lotie</div>`,
+                iconSize: [36, 16],
+                iconAnchor: [18, 8],
+              });
+              L.marker([centLat, centLng], { icon: subdivLabel }).addTo(map);
+            }
 
             // Extraire les dimensions exactes depuis parcel_sides (formulaire CCC)
             const parcelSides = parcel.parcel_sides && Array.isArray(parcel.parcel_sides)

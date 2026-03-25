@@ -18,7 +18,8 @@ import { fr } from 'date-fns/locale';
 import {
   Grid3X3, Search, Eye, Check, X, FileText, User, MapPin,
   Clock, AlertTriangle, Loader2, RefreshCw, DollarSign,
-  ChevronLeft, ChevronRight, Square
+  ChevronLeft, ChevronRight, Square, RotateCcw, Mail, Phone,
+  TreePine, Route, Shield
 } from 'lucide-react';
 import { generateAndUploadCertificate } from '@/utils/certificateService';
 import { StatusBadge, StatusType } from '@/components/shared/StatusBadge';
@@ -33,6 +34,7 @@ interface SubdivisionRequest {
   parent_parcel_location?: string;
   parent_parcel_owner_name: string;
   parent_parcel_title_reference?: string;
+  parent_parcel_title_type?: string;
   parent_parcel_gps_coordinates?: any;
   requester_first_name: string;
   requester_last_name: string;
@@ -62,8 +64,42 @@ const SUBDIVISION_STATUS_MAP: Record<string, StatusType> = {
   in_review: 'in_review',
   approved: 'approved',
   rejected: 'rejected',
+  returned: 'returned',
   awaiting_payment: 'processing',
   completed: 'completed',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: 'En attente',
+  in_review: 'En examen',
+  approved: 'Approuvé',
+  rejected: 'Rejeté',
+  returned: 'Renvoyé',
+  awaiting_payment: 'Attente paiement',
+  completed: 'Terminé',
+};
+
+const PURPOSE_LABELS: Record<string, string> = {
+  sale: 'Vente de lots',
+  family_distribution: 'Distribution familiale',
+  development: 'Aménagement immobilier',
+  investment: 'Investissement',
+  other: 'Autre',
+};
+
+const REQUESTER_TYPE_LABELS: Record<string, string> = {
+  owner: 'Propriétaire',
+  mandatary: 'Mandataire',
+  notary: 'Notaire',
+  other: 'Autre',
+};
+
+const USAGE_LABELS: Record<string, string> = {
+  residential: 'Résidentiel',
+  commercial: 'Commercial',
+  industrial: 'Industriel',
+  agricultural: 'Agricole',
+  mixed: 'Mixte',
 };
 
 export function AdminSubdivisionRequests() {
@@ -76,9 +112,10 @@ export function AdminSubdivisionRequests() {
   const [selectedRequest, setSelectedRequest] = useState<SubdivisionRequest | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showActionDialog, setShowActionDialog] = useState(false);
-  const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null);
+  const [actionType, setActionType] = useState<'approve' | 'reject' | 'return' | null>(null);
   const [processingFee, setProcessingFee] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
+  const [returnReason, setReturnReason] = useState('');
   const [processingNotes, setProcessingNotes] = useState('');
   const [processing, setProcessing] = useState(false);
   const [page, setPage] = useState(1);
@@ -114,11 +151,12 @@ export function AdminSubdivisionRequests() {
   const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
   const pendingCount = requests.filter(r => r.status === 'pending').length;
 
-  const handleAction = (request: SubdivisionRequest, action: 'approve' | 'reject') => {
+  const handleAction = (request: SubdivisionRequest, action: 'approve' | 'reject' | 'return') => {
     setSelectedRequest(request);
     setActionType(action);
     setProcessingFee('');
     setRejectionReason('');
+    setReturnReason('');
     setProcessingNotes('');
     setShowActionDialog(true);
   };
@@ -129,7 +167,6 @@ export function AdminSubdivisionRequests() {
     const parentGps = request.parent_parcel_gps_coordinates;
     
     for (const lot of lotsData) {
-      // Convert normalized vertices to GPS if parent has GPS coords
       let gpsCoordinates = null;
       if (parentGps && Array.isArray(parentGps) && parentGps.length >= 3 && lot.vertices) {
         const bb = {
@@ -158,7 +195,19 @@ export function AdminSubdivisionRequests() {
         gps_coordinates: gpsCoordinates,
         plan_coordinates: lot.vertices || null,
         color: lot.color || '#22c55e',
-      } as any); // Dynamic lot data
+      } as any);
+    }
+  };
+
+  // Mark parent parcel as subdivided
+  const markParcelAsSubdivided = async (parcelNumber: string) => {
+    try {
+      await supabase
+        .from('cadastral_parcels')
+        .update({ is_subdivided: true } as any)
+        .eq('parcel_number', parcelNumber);
+    } catch (err) {
+      console.error('Erreur marquage parcelle subdivisée:', err);
     }
   };
 
@@ -183,7 +232,7 @@ export function AdminSubdivisionRequests() {
         updates.processing_fee_usd = fee;
         updates.total_amount_usd = (selectedRequest.submission_fee_usd || 20) + fee;
         if (fee === 0) updates.approved_at = new Date().toISOString();
-      } else {
+      } else if (actionType === 'reject') {
         if (!rejectionReason.trim()) {
           toast({ title: 'Erreur', description: 'Motif de rejet requis.', variant: 'destructive' });
           setProcessing(false);
@@ -191,6 +240,14 @@ export function AdminSubdivisionRequests() {
         }
         updates.status = 'rejected';
         updates.rejection_reason = rejectionReason;
+      } else if (actionType === 'return') {
+        if (!returnReason.trim()) {
+          toast({ title: 'Erreur', description: 'Motif du renvoi requis.', variant: 'destructive' });
+          setProcessing(false);
+          return;
+        }
+        updates.status = 'returned';
+        updates.rejection_reason = returnReason;
       }
 
       const { error } = await supabase
@@ -199,9 +256,10 @@ export function AdminSubdivisionRequests() {
         .eq('id', selectedRequest.id);
       if (error) throw error;
 
-      // On approval, save lots for map display and generate certificate
+      // On approval, save lots, mark parcel, and generate certificate
       if (actionType === 'approve' && updates.status === 'approved') {
         await saveApprovedLots(selectedRequest);
+        await markParcelAsSubdivided(selectedRequest.parcel_number);
         
         const fullName = `${selectedRequest.requester_first_name} ${selectedRequest.requester_last_name}`;
         await generateAndUploadCertificate(
@@ -224,18 +282,35 @@ export function AdminSubdivisionRequests() {
       }
 
       // Notification
+      const notifMap: Record<string, { type: string; title: string; message: string }> = {
+        approve: {
+          type: 'success',
+          title: 'Lotissement approuvé',
+          message: `Votre demande ${selectedRequest.reference_number} a été approuvée. Le plan est maintenant visible sur la carte cadastrale.`,
+        },
+        reject: {
+          type: 'error',
+          title: 'Lotissement rejeté',
+          message: `Votre demande ${selectedRequest.reference_number} a été rejetée. Motif: ${rejectionReason}`,
+        },
+        return: {
+          type: 'warning',
+          title: 'Lotissement renvoyé pour correction',
+          message: `Votre demande ${selectedRequest.reference_number} nécessite des corrections. Motif: ${returnReason}`,
+        },
+      };
+      const notif = notifMap[actionType];
       await supabase.from('notifications').insert({
         user_id: selectedRequest.user_id,
-        type: actionType === 'approve' ? 'success' : 'error',
-        title: actionType === 'approve' ? 'Lotissement approuvé' : 'Lotissement rejeté',
-        message: actionType === 'approve'
-          ? `Votre demande ${selectedRequest.reference_number} a été approuvée. Le plan est maintenant visible sur la carte cadastrale.`
-          : `Votre demande ${selectedRequest.reference_number} a été rejetée. Motif: ${rejectionReason}`,
+        type: notif.type,
+        title: notif.title,
+        message: notif.message,
         action_url: '/user-dashboard?tab=subdivisions',
       });
 
+      const actionLabels = { approve: 'approuvée', reject: 'rejetée', return: 'renvoyée' };
       toast({
-        title: actionType === 'approve' ? 'Demande approuvée' : 'Demande rejetée',
+        title: `Demande ${actionLabels[actionType]}`,
         description: `${selectedRequest.reference_number} traitée.`,
       });
       setShowActionDialog(false);
@@ -245,6 +320,17 @@ export function AdminSubdivisionRequests() {
     } finally {
       setProcessing(false);
     }
+  };
+
+  // Extract plan data helpers
+  const getPlanRoads = (req: SubdivisionRequest) => {
+    return req.subdivision_plan_data?.roads || [];
+  };
+  const getPlanCommonSpaces = (req: SubdivisionRequest) => {
+    return req.subdivision_plan_data?.commonSpaces || [];
+  };
+  const getPlanServitudes = (req: SubdivisionRequest) => {
+    return req.subdivision_plan_data?.servitudes || [];
   };
 
   return (
@@ -281,10 +367,9 @@ export function AdminSubdivisionRequests() {
               <SelectTrigger className="w-[180px]"><SelectValue placeholder="Statut" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="_all">Tous</SelectItem>
-                {Object.entries(SUBDIVISION_STATUS_MAP).map(([v]) => {
-                  const labels: Record<string, string> = { pending: 'En attente', in_review: 'En examen', approved: 'Approuvé', rejected: 'Rejeté', awaiting_payment: 'Attente paiement', completed: 'Terminé' };
-                  return <SelectItem key={v} value={v}>{labels[v] || v}</SelectItem>;
-                })}
+                {Object.entries(STATUS_LABELS).map(([v, label]) => (
+                  <SelectItem key={v} value={v}>{label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -318,13 +403,14 @@ export function AdminSubdivisionRequests() {
                         <div className="flex items-center gap-1 text-muted-foreground"><Clock className="h-3.5 w-3.5" /><span>{format(new Date(request.created_at), 'dd/MM/yyyy', { locale: fr })}</span></div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <Button variant="outline" size="sm" onClick={() => { setSelectedRequest(request); setShowDetailsDialog(true); }} className="gap-1">
                         <Eye className="h-4 w-4" /> Détails
                       </Button>
-                      {request.status === 'pending' && (
+                      {(request.status === 'pending' || request.status === 'returned') && (
                         <>
                           <Button size="sm" onClick={() => handleAction(request, 'approve')} className="gap-1"><Check className="h-4 w-4" /> Approuver</Button>
+                          <Button variant="outline" size="sm" onClick={() => handleAction(request, 'return')} className="gap-1 text-amber-600 border-amber-300 hover:bg-amber-50"><RotateCcw className="h-4 w-4" /> Renvoyer</Button>
                           <Button variant="destructive" size="sm" onClick={() => handleAction(request, 'reject')} className="gap-1"><X className="h-4 w-4" /> Rejeter</Button>
                         </>
                       )}
@@ -360,23 +446,67 @@ export function AdminSubdivisionRequests() {
                   <StatusBadge status={SUBDIVISION_STATUS_MAP[selectedRequest.status] || 'pending'} />
                   <span className="text-sm text-muted-foreground">{format(new Date(selectedRequest.created_at), 'PPP', { locale: fr })}</span>
                 </div>
+
+                {/* Parcelle mère */}
                 <Card>
-                  <CardContent className="pt-4 grid grid-cols-2 gap-3 text-sm">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2"><MapPin className="h-4 w-4" /> Parcelle mère</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-2 gap-3 text-sm">
                     <div><span className="text-muted-foreground">Parcelle:</span> <span className="font-mono ml-1">{selectedRequest.parcel_number}</span></div>
                     <div><span className="text-muted-foreground">Surface:</span> <span className="ml-1">{selectedRequest.parent_parcel_area_sqm?.toLocaleString()} m²</span></div>
                     <div><span className="text-muted-foreground">Propriétaire:</span> <span className="ml-1">{selectedRequest.parent_parcel_owner_name}</span></div>
-                    <div><span className="text-muted-foreground">Lots:</span> <span className="ml-1 font-bold">{selectedRequest.number_of_lots}</span></div>
+                    <div><span className="text-muted-foreground">Localisation:</span> <span className="ml-1">{selectedRequest.parent_parcel_location || '—'}</span></div>
+                    {selectedRequest.parent_parcel_title_reference && (
+                      <div><span className="text-muted-foreground">Réf. titre:</span> <span className="ml-1">{selectedRequest.parent_parcel_title_reference}</span></div>
+                    )}
+                    {(selectedRequest as any).parent_parcel_title_type && (
+                      <div><span className="text-muted-foreground">Type titre:</span> <span className="ml-1">{(selectedRequest as any).parent_parcel_title_type}</span></div>
+                    )}
                   </CardContent>
                 </Card>
+
+                {/* Demandeur */}
                 <Card>
-                  <CardContent className="pt-4">
-                    <h4 className="text-sm font-semibold mb-2">Lots</h4>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2"><User className="h-4 w-4" /> Demandeur</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-2 gap-3 text-sm">
+                    <div><span className="text-muted-foreground">Nom:</span> <span className="ml-1">{selectedRequest.requester_last_name} {selectedRequest.requester_first_name} {selectedRequest.requester_middle_name || ''}</span></div>
+                    <div className="flex items-center gap-1"><Phone className="h-3.5 w-3.5 text-muted-foreground" /><span>{selectedRequest.requester_phone}</span></div>
+                    {selectedRequest.requester_email && (
+                      <div className="flex items-center gap-1"><Mail className="h-3.5 w-3.5 text-muted-foreground" /><span>{selectedRequest.requester_email}</span></div>
+                    )}
+                    {selectedRequest.requester_type && (
+                      <div><span className="text-muted-foreground">Qualité:</span> <span className="ml-1">{REQUESTER_TYPE_LABELS[selectedRequest.requester_type] || selectedRequest.requester_type}</span></div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Motif & Frais */}
+                <Card>
+                  <CardContent className="pt-4 grid grid-cols-2 gap-3 text-sm">
+                    {selectedRequest.purpose_of_subdivision && (
+                      <div className="col-span-2"><span className="text-muted-foreground">Motif:</span> <span className="ml-1">{PURPOSE_LABELS[selectedRequest.purpose_of_subdivision] || selectedRequest.purpose_of_subdivision}</span></div>
+                    )}
+                    <div><span className="text-muted-foreground">Frais soumission:</span> <span className="ml-1">${selectedRequest.submission_fee_usd}</span></div>
+                    <div><span className="text-muted-foreground">Total:</span> <span className="ml-1 font-bold">${selectedRequest.total_amount_usd}</span></div>
+                  </CardContent>
+                </Card>
+
+                {/* Lots */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2"><Grid3X3 className="h-4 w-4" /> {selectedRequest.number_of_lots} Lots</CardTitle>
+                  </CardHeader>
+                  <CardContent>
                     <div className="space-y-1">
                       {(selectedRequest.lots_data || []).map((lot: any, i: number) => (
                         <div key={i} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg text-sm">
                           <div className="flex items-center gap-2">
                             <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: lot.color || '#22c55e' }} />
                             <span>Lot {lot.lotNumber || i + 1}</span>
+                            {lot.intendedUse && <Badge variant="outline" className="text-[10px] px-1.5">{USAGE_LABELS[lot.intendedUse] || lot.intendedUse}</Badge>}
                           </div>
                           <Badge variant="outline"><Square className="h-3 w-3 mr-1" />{(lot.areaSqm || 0).toLocaleString()} m²</Badge>
                         </div>
@@ -384,18 +514,74 @@ export function AdminSubdivisionRequests() {
                     </div>
                   </CardContent>
                 </Card>
-                <Card>
-                  <CardContent className="pt-4 grid grid-cols-2 gap-3 text-sm">
-                    <div><span className="text-muted-foreground">Demandeur:</span> <span className="ml-1">{selectedRequest.requester_last_name} {selectedRequest.requester_first_name}</span></div>
-                    <div><span className="text-muted-foreground">Tél:</span> <span className="ml-1">{selectedRequest.requester_phone}</span></div>
-                    <div><span className="text-muted-foreground">Frais:</span> <span className="ml-1 font-bold">${selectedRequest.total_amount_usd}</span></div>
-                    {selectedRequest.purpose_of_subdivision && <div className="col-span-2"><span className="text-muted-foreground">Motif:</span> <span className="ml-1">{selectedRequest.purpose_of_subdivision}</span></div>}
-                  </CardContent>
-                </Card>
+
+                {/* Voies internes */}
+                {getPlanRoads(selectedRequest).length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2"><Route className="h-4 w-4" /> Voies internes ({getPlanRoads(selectedRequest).length})</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-1">
+                        {getPlanRoads(selectedRequest).map((road: any, i: number) => (
+                          <div key={i} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg text-sm">
+                            <span>{road.name || `Voie ${i + 1}`}</span>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline">{road.widthM || '?'} m</Badge>
+                              <Badge variant="outline">{road.surfaceType || '—'}</Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Espaces communs */}
+                {getPlanCommonSpaces(selectedRequest).length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2"><TreePine className="h-4 w-4" /> Espaces communs ({getPlanCommonSpaces(selectedRequest).length})</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-1">
+                        {getPlanCommonSpaces(selectedRequest).map((space: any, i: number) => (
+                          <div key={i} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg text-sm">
+                            <span>{space.name || space.type}</span>
+                            <Badge variant="outline">{(space.areaSqm || 0).toLocaleString()} m²</Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Servitudes */}
+                {getPlanServitudes(selectedRequest).length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2"><Shield className="h-4 w-4" /> Servitudes ({getPlanServitudes(selectedRequest).length})</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-1">
+                        {getPlanServitudes(selectedRequest).map((srv: any, i: number) => (
+                          <div key={i} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg text-sm">
+                            <span>{srv.description || srv.type}</span>
+                            {srv.widthM && <Badge variant="outline">{srv.widthM} m</Badge>}
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Rejection/return reason */}
                 {selectedRequest.rejection_reason && (
-                  <Alert variant="destructive">
+                  <Alert variant={selectedRequest.status === 'returned' ? 'default' : 'destructive'}>
                     <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription><strong>Motif du rejet:</strong> {selectedRequest.rejection_reason}</AlertDescription>
+                    <AlertDescription>
+                      <strong>{selectedRequest.status === 'returned' ? 'Motif du renvoi:' : 'Motif du rejet:'}</strong> {selectedRequest.rejection_reason}
+                    </AlertDescription>
                   </Alert>
                 )}
               </div>
@@ -408,20 +594,29 @@ export function AdminSubdivisionRequests() {
       <Dialog open={showActionDialog} onOpenChange={setShowActionDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{actionType === 'approve' ? 'Approuver' : 'Rejeter'} la demande</DialogTitle>
+            <DialogTitle>
+              {actionType === 'approve' ? 'Approuver' : actionType === 'return' ? 'Renvoyer pour correction' : 'Rejeter'} la demande
+            </DialogTitle>
             <DialogDescription>{selectedRequest?.reference_number}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            {actionType === 'approve' ? (
+            {actionType === 'approve' && (
               <div className="space-y-2">
                 <Label>Frais de traitement ($)</Label>
                 <Input type="number" value={processingFee} onChange={e => setProcessingFee(e.target.value)} placeholder="0" />
                 <p className="text-xs text-muted-foreground">Entrez 0 si aucun frais supplémentaire.</p>
               </div>
-            ) : (
+            )}
+            {actionType === 'reject' && (
               <div className="space-y-2">
                 <Label>Motif du rejet *</Label>
-                <Textarea value={rejectionReason} onChange={e => setRejectionReason(e.target.value)} placeholder="Raison..." rows={3} />
+                <Textarea value={rejectionReason} onChange={e => setRejectionReason(e.target.value)} placeholder="Raison du rejet..." rows={3} />
+              </div>
+            )}
+            {actionType === 'return' && (
+              <div className="space-y-2">
+                <Label>Motif du renvoi *</Label>
+                <Textarea value={returnReason} onChange={e => setReturnReason(e.target.value)} placeholder="Éléments à corriger..." rows={3} />
               </div>
             )}
             <div className="space-y-2">
@@ -431,9 +626,18 @@ export function AdminSubdivisionRequests() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowActionDialog(false)}>Annuler</Button>
-            <Button variant={actionType === 'approve' ? 'default' : 'destructive'} onClick={submitAction} disabled={processing}>
-              {processing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : actionType === 'approve' ? <Check className="h-4 w-4 mr-2" /> : <X className="h-4 w-4 mr-2" />}
-              {actionType === 'approve' ? 'Approuver' : 'Rejeter'}
+            <Button
+              variant={actionType === 'approve' ? 'default' : actionType === 'return' ? 'outline' : 'destructive'}
+              onClick={submitAction}
+              disabled={processing}
+              className={actionType === 'return' ? 'text-amber-600 border-amber-300 hover:bg-amber-50' : ''}
+            >
+              {processing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : 
+                actionType === 'approve' ? <Check className="h-4 w-4 mr-2" /> :
+                actionType === 'return' ? <RotateCcw className="h-4 w-4 mr-2" /> :
+                <X className="h-4 w-4 mr-2" />
+              }
+              {actionType === 'approve' ? 'Approuver' : actionType === 'return' ? 'Renvoyer' : 'Rejeter'}
             </Button>
           </DialogFooter>
         </DialogContent>
