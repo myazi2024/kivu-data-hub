@@ -70,12 +70,16 @@ const AdminBuildingPermits = () => {
       permit.parcel_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
       permitData?.applicantName?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const permitStatus = permitData?.status || 'pending';
+    // Use DB column status (not JSON)
     const matchesStatus = 
-      filterStatus === '_all' ? true : permitStatus === filterStatus;
+      filterStatus === '_all' ? true : permit.status === filterStatus;
     
+    // Support both requestType (new format) and permitType (old format)
+    const pType = permitData?.requestType === 'new' ? 'construction' : 
+                  permitData?.requestType === 'regularization' ? 'regularization' :
+                  permitData?.permitType || 'construction';
     const matchesType = 
-      filterType === '_all' ? true : permitData?.permitType === filterType;
+      filterType === '_all' ? true : pType === filterType;
     
     return matchesSearch && matchesStatus && matchesType;
   }), [permits, searchTerm, filterStatus, filterType]);
