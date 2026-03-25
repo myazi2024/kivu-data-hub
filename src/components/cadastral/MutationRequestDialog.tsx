@@ -17,6 +17,7 @@ import { Loader2, FileEdit, CreditCard, CheckCircle2, AlertTriangle, MapPin, Clo
 import { useAuth } from '@/hooks/useAuth';
 import { useMutationRequest } from '@/hooks/useMutationRequest';
 import type { MutationFee, MutationRequest } from '@/types/mutation';
+import { MutationRequestWithProfile } from '@/types/mutation';
 import { LATE_FEE_CAP_USD, DAILY_LATE_FEE_USD, LEGAL_GRACE_PERIOD_DAYS } from '@/types/mutation';
 import { pollTransactionStatus } from '@/utils/pollTransactionStatus';
 import { usePaymentConfig } from '@/hooks/usePaymentConfig';
