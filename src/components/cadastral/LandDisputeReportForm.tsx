@@ -271,22 +271,14 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
         throw error;
       }
 
-      // Create CCC contribution (non-blocking)
+      // Marquer la parcelle comme ayant un litige actif
       try {
-          await supabase
-            .from('cadastral_contributions')
-            .insert({
-              parcel_number: parcelNumber,
-              original_parcel_id: parcelId || null as any,
-            user_id: user.id,
-            contribution_type: 'new',
-            status: 'pending',
-            current_owner_name: declarantName,
-            province: null,
-            whatsapp_number: declarantPhone || null,
-          });
-      } catch (contributionError) {
-        console.warn('Erreur contribution CCC:', contributionError);
+        await supabase
+          .from('cadastral_parcels')
+          .update({ has_dispute: true } as any)
+          .eq('parcel_number', parcelNumber);
+      } catch (flagError) {
+        console.warn('Erreur mise à jour has_dispute:', flagError);
       }
 
       // Notification to submitter
