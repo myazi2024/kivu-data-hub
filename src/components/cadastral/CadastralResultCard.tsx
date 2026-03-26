@@ -754,9 +754,9 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                               <div className="flex justify-between items-center gap-2 mb-1">
                                 <span className="text-[10px] text-muted-foreground">Statut:</span>
                                 <div className="flex items-center gap-1">
-                                  {permit.administrative_status === 'Conforme' && <CheckCircle className="h-3 w-3 text-green-500" />}
+                                  {(['Conforme', 'Approuvé', 'Délivré', 'Delivre'].includes(permit.administrative_status)) && <CheckCircle className="h-3 w-3 text-green-500" />}
                                   {permit.administrative_status === 'En attente' && <AlertCircle className="h-3 w-3 text-yellow-500" />}
-                                  {permit.administrative_status === 'Non autorisé' && <XCircle className="h-3 w-3 text-red-500" />}
+                                  {(['Non autorisé', 'Rejeté', 'Rejete'].includes(permit.administrative_status)) && <XCircle className="h-3 w-3 text-red-500" />}
                                   <span className="text-xs font-medium">{permit.administrative_status}</span>
                                 </div>
                               </div>
