@@ -44,8 +44,8 @@ export const useTestDataStats = () => {
         /* 11 */ contribIds.length > 0
           ? supabase.from('fraud_attempts').select('id', { count: 'exact', head: true }).in('contribution_id', contribIds)
           : Promise.resolve({ count: 0 }),
-        /* 13 */ supabase.from('generated_certificates').select('id', { count: 'exact', head: true }).ilike('reference_number', 'TEST-%'),
-        /* 14 */ parcelIds.length > 0
+        /* 12 */ supabase.from('generated_certificates').select('id', { count: 'exact', head: true }).ilike('reference_number', 'TEST-%'),
+        /* 13 */ parcelIds.length > 0
           ? supabase.from('cadastral_boundary_history').select('id', { count: 'exact', head: true }).in('parcel_id', parcelIds)
           : Promise.resolve({ count: 0 }),
         /* 15 */ parcelIds.length > 0
