@@ -38,7 +38,7 @@ export const useTestDataStats = () => {
         /* 9 */ parcelIds.length > 0
           ? supabase.from('cadastral_ownership_history').select('id', { count: 'exact', head: true }).in('parcel_id', parcelIds)
           : Promise.resolve({ count: 0 }),
-        /* 11 */ parcelIds.length > 0
+        /* 10 */ parcelIds.length > 0
           ? supabase.from('cadastral_tax_history').select('id', { count: 'exact', head: true }).in('parcel_id', parcelIds)
           : Promise.resolve({ count: 0 }),
         /* 12 */ contribIds.length > 0
