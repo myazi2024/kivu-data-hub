@@ -106,6 +106,8 @@ export function AlertsPanel({ loading, alerts, onAlertAction }: AlertsPanelProps
       blocked: <UserX className="h-5 w-5" />,
       expired: <Calendar className="h-5 w-5" />,
       inactive: <TrendingDown className="h-5 w-5" />,
+      disputes: <Scale className="h-5 w-5" />,
+      mortgages: <Building2 className="h-5 w-5" />,
     };
     return icons[type as keyof typeof icons] || <AlertTriangle className="h-5 w-5" />;
   };
