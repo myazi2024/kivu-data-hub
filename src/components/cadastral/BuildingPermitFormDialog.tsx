@@ -28,7 +28,6 @@ interface PermitRecord {
   permitNumber: string;
   issueDate: string;
   issuingService: string;
-  issuingServiceContact: string;
   validityPeriod: string;
   permitFile: File | null;
 }
@@ -53,7 +52,6 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
     permitNumber: '',
     issueDate: '',
     issuingService: '',
-    issuingServiceContact: '',
     validityPeriod: '36',
     permitFile: null
   });
@@ -213,7 +211,6 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
             permitNumber: normalizedPermitNumber,
             issueDate: permitRecord.issueDate,
             issuingService: permitRecord.issuingService,
-            issuingServiceContact: permitRecord.issuingServiceContact,
             validityMonths: parseInt(permitRecord.validityPeriod) || 36,
             administrativeStatus: calculatedStatus,
             permitType: standardizedPermitType,
@@ -256,7 +253,6 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
       permitRecord.permitNumber ||
       permitRecord.issueDate ||
       permitRecord.issuingService ||
-      permitRecord.issuingServiceContact ||
       permitRecord.permitFile ||
       permitRecord.validityPeriod !== '36'
     );
@@ -268,7 +264,6 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
       permitNumber: '',
       issueDate: '',
       issuingService: '',
-      issuingServiceContact: '',
       validityPeriod: '36',
       permitFile: null
     });
@@ -324,16 +319,6 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
         <BuildingPermitIssuingServiceSelect
           value={permitRecord.issuingService}
           onValueChange={(value) => updatePermit('issuingService', value)}
-        />
-      </div>
-
-      <div className="space-y-1">
-        <Label className="text-xs font-medium">Contact service</Label>
-        <Input
-          placeholder="Téléphone ou email du service"
-          value={permitRecord.issuingServiceContact}
-          onChange={(e) => updatePermit('issuingServiceContact', e.target.value)}
-          className="h-9 text-sm rounded-xl"
         />
       </div>
 
