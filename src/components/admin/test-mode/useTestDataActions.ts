@@ -51,6 +51,7 @@ const GENERATION_STEPS: GenerationStep[] = [
   { label: 'Historique propriété & taxes', status: 'pending' },
   { label: 'Bornages & hypothèques & permis', status: 'pending' },
   { label: 'Fraudes & certificats', status: 'pending' },
+  { label: 'Mutations & lotissements', status: 'pending' },
 ];
 
 export const useTestDataActions = ({
