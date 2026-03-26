@@ -1543,6 +1543,18 @@ const CadastralMap = () => {
         open={showLandTitleDialog}
         onOpenChange={setShowLandTitleDialog}
       />
+      {/* Catalogue de services en overlay */}
+      {cadastralSearch.searchResult && (
+        <CadastralResultsDialog
+          result={cadastralSearch.searchResult}
+          isOpen={showServiceCatalog}
+          onClose={() => {
+            setShowServiceCatalog(false);
+            cadastralSearch.clearSearch();
+          }}
+          fromMap={true}
+        />
+      )}
     </div>
   );
 };
