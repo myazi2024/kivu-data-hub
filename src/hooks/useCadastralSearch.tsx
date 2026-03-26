@@ -108,88 +108,41 @@ export const useCadastralSearch = () => {
     setError(null);
 
     try {
-      const { data: parcelData, error: parcelError } = await supabase
-        .from('cadastral_parcels')
-        .select('*')
-        .ilike('parcel_number', parcelNumber.trim())
-        .is('deleted_at', null)
-        .maybeSingle();
+      // Correction 3: Utiliser la RPC sécurisée qui gate les données premium
+      const { data: rpcData, error: rpcError } = await supabase.rpc(
+        'get_cadastral_parcel_data',
+        { p_parcel_number: parcelNumber.trim() }
+      );
 
-      if (parcelError) {
-        if (parcelError.code === 'PGRST116') {
+      if (rpcError) {
+        if (rpcError.code === 'PGRST116') {
           setError(errorMessages.not_found);
         } else {
-          throw parcelError;
+          throw rpcError;
         }
         return;
       }
 
-      if (!parcelData) {
+      if (!rpcData || rpcData.error === 'not_found') {
         setError(errorMessages.not_found);
         return;
       }
 
-      const [
-        { data: ownershipData, error: ownershipError },
-        { data: taxData, error: taxError },
-        { data: mortgageData, error: mortgageError },
-        { data: boundaryData, error: boundaryError },
-        { data: buildingPermitsData, error: buildingPermitsError }
-      ] = await Promise.all([
-        supabase
-          .from('cadastral_ownership_history')
-          .select('*')
-          .eq('parcel_id', parcelData.id)
-          .order('ownership_start_date', { ascending: false }),
-        supabase
-          .from('cadastral_tax_history')
-          .select('*')
-          .eq('parcel_id', parcelData.id)
-          .order('tax_year', { ascending: false }),
-        supabase
-          .from('cadastral_mortgages')
-          .select(`
-            *,
-            cadastral_mortgage_payments (
-              id,
-              payment_amount_usd,
-              payment_date,
-              payment_type,
-              payment_receipt_url
-            )
-          `)
-          .eq('parcel_id', parcelData.id)
-          .order('contract_date', { ascending: false }),
-        supabase
-          .from('cadastral_boundary_history')
-          .select('*')
-          .eq('parcel_id', parcelData.id)
-          .order('survey_date', { ascending: false }),
-        supabase
-          .from('cadastral_building_permits')
-          .select('*')
-          .eq('parcel_id', parcelData.id)
-          .order('issue_date', { ascending: false })
-      ]);
+      const result = rpcData as any;
 
-      if (ownershipError) throw ownershipError;
-      if (taxError) throw taxError;
-      if (mortgageError) throw mortgageError;
-      if (boundaryError) throw boundaryError;
-      if (buildingPermitsError) throw buildingPermitsError;
-
-      const formattedMortgageData = mortgageData?.map(mortgage => ({
+      // Formater les hypothèques (renommer cadastral_mortgage_payments → payments)
+      const formattedMortgageData = (result.mortgage_history || []).map((mortgage: any) => ({
         ...mortgage,
         payments: mortgage.cadastral_mortgage_payments || []
-      })) || [];
+      }));
 
       setSearchResult({
-        parcel: parcelData as unknown as CadastralParcel,
-        ownership_history: ownershipData as OwnershipHistory[],
-        tax_history: taxData as TaxHistory[],
-        mortgage_history: formattedMortgageData as MortgageHistory[],
-        boundary_history: boundaryData as BoundaryHistory[],
-        building_permits: buildingPermitsData as BuildingPermit[]
+        parcel: result.parcel as unknown as CadastralParcel,
+        ownership_history: result.ownership_history || [],
+        tax_history: result.tax_history || [],
+        mortgage_history: formattedMortgageData,
+        boundary_history: result.boundary_history || [],
+        building_permits: result.building_permits || []
       });
 
     } catch (err) {
