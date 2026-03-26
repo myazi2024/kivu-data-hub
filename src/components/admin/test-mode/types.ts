@@ -40,6 +40,8 @@ export const EMPTY_STATS: TestDataStats = {
   boundaryHistory: 0,
   mortgages: 0,
   buildingPermits: 0,
+  mutationRequests: 0,
+  subdivisionRequests: 0,
 };
 
 /** All TEST- prefixed tables in FK-safe deletion order (children → parents) */
