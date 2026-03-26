@@ -40,6 +40,7 @@ export interface BuildingPermit {
   issueDate: string;
   validityMonths: string;
   administrativeStatus: string;
+  issuingService: string;
   attachmentFile: File | null;
   existingAttachmentUrl?: string;
 }
