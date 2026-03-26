@@ -24,6 +24,8 @@ import LandTitleTermsDialog from '@/components/cadastral/LandTitleTermsDialog';
 import { useAdvancedCadastralSearch } from '@/hooks/useAdvancedCadastralSearch';
 import { useSearchHistory } from '@/hooks/useSearchHistory';
 import { useSearchBarConfig } from '@/hooks/useSearchBarConfig';
+import { useCadastralSearch } from '@/hooks/useCadastralSearch';
+import CadastralResultsDialog from '@/components/cadastral/CadastralResultsDialog';
 import 'leaflet/dist/leaflet.css';
 
 interface ParcelData {
@@ -78,6 +80,7 @@ const CadastralMap = () => {
   const [showLandTitleButton, setShowLandTitleButton] = useState(false);
   const landTitleButtonTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
+  const [showServiceCatalog, setShowServiceCatalog] = useState(false);
   
   // Animation shake et notification caractères invalides
   const [isShaking, setIsShaking] = useState(false);
@@ -88,6 +91,9 @@ const CadastralMap = () => {
   const advancedSearch = useAdvancedCadastralSearch();
   const searchHistory = useSearchHistory();
   const { config: searchBarConfig, buildAllowedRegex } = useSearchBarConfig();
+  
+  // Hook pour la recherche cadastrale (catalogue de services)
+  const cadastralSearch = useCadastralSearch();
 
   // Reset hasScrolledToBottom when dialog closes
   useEffect(() => {
@@ -1360,12 +1366,16 @@ const CadastralMap = () => {
                   {/* Action buttons */}
                   <div className="flex gap-1.5">
                     <Button
-                      onClick={() => navigate(`/services?search=${encodeURIComponent(selectedParcel.parcel_number)}&from=map`)}
+                      onClick={async () => {
+                        if (!selectedParcel) return;
+                        await cadastralSearch.searchParcel(selectedParcel.parcel_number);
+                        setShowServiceCatalog(true);
+                      }}
                       className="flex-1 h-9 text-xs rounded-xl font-medium shadow-sm"
                       size="sm"
-                      disabled={loadingHistory}
+                      disabled={cadastralSearch.loading}
                     >
-                      {loadingHistory ? (
+                      {cadastralSearch.loading ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       ) : (
                         <>
@@ -1533,6 +1543,18 @@ const CadastralMap = () => {
         open={showLandTitleDialog}
         onOpenChange={setShowLandTitleDialog}
       />
+      {/* Catalogue de services en overlay */}
+      {cadastralSearch.searchResult && (
+        <CadastralResultsDialog
+          result={cadastralSearch.searchResult}
+          isOpen={showServiceCatalog}
+          onClose={() => {
+            setShowServiceCatalog(false);
+            cadastralSearch.clearSearch();
+          }}
+          fromMap={true}
+        />
+      )}
     </div>
   );
 };
