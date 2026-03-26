@@ -33,7 +33,7 @@ const ICON_MAP: Record<string, React.ComponentType<any>> = {
   'mutations': ArrowRightLeft,
   'subdivision': Scissors,
   'disputes': AlertTriangle,
-  'boundary': MapPin,
+  
   'ownership': History,
   'fraud': ShieldAlert,
   'certificates': Award,
