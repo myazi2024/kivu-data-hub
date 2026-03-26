@@ -8,6 +8,7 @@ export interface TestDataStats {
   titleRequests: number;
   expertiseRequests: number;
   disputes: number;
+  boundaryConflicts: number;
   
   ownershipHistory: number;
   taxHistory: number;
