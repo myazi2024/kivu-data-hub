@@ -605,8 +605,8 @@ export const generateOwnershipHistory = async (
       owner_name: `Ancien Propriétaire ${i + 1}A`,
       ownership_start_date: '2010-01-01',
       ownership_end_date: '2018-06-15',
-      legal_status: 'personne_physique',
-      mutation_type: 'vente',
+      legal_status: 'Personne physique',
+      mutation_type: 'Vente',
     },
     {
       parcel_id: p.id,
