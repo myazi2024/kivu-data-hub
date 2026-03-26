@@ -1366,12 +1366,16 @@ const CadastralMap = () => {
                   {/* Action buttons */}
                   <div className="flex gap-1.5">
                     <Button
-                      onClick={() => navigate(`/services?search=${encodeURIComponent(selectedParcel.parcel_number)}&from=map`)}
+                      onClick={async () => {
+                        if (!selectedParcel) return;
+                        await cadastralSearch.searchParcel(selectedParcel.parcel_number);
+                        setShowServiceCatalog(true);
+                      }}
                       className="flex-1 h-9 text-xs rounded-xl font-medium shadow-sm"
                       size="sm"
-                      disabled={loadingHistory}
+                      disabled={cadastralSearch.loading}
                     >
-                      {loadingHistory ? (
+                      {cadastralSearch.loading ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       ) : (
                         <>
