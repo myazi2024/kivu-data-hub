@@ -392,7 +392,7 @@ export const generateExpertiseRequests = async (userId: string, parcelNumbers: s
       garden_area_sqm: 0,
       has_electricity: false,
       has_water_supply: false,
-      construction_quality: 'neuf',
+      construction_quality: 'luxe',
       road_access_type: 'terre',
       distance_to_main_road_m: 500,
       distance_to_market_km: 3.5,
