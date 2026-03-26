@@ -85,8 +85,6 @@ export const useLandDataAnalytics = () => {
         fetchAll('cadastral_land_disputes',
           'id, parcel_number, parcel_id, dispute_nature, dispute_type, current_status, resolution_level, lifting_status, lifting_request_reference, lifting_reason, declarant_quality, dispute_start_date, created_at'),
         // New tables
-        fetchAll('cadastral_boundary_conflicts',
-          'id, conflict_type, status, reporting_parcel_number, conflicting_parcel_number, created_at, resolved_at'),
         fetchAll('cadastral_ownership_history',
           'id, parcel_id, owner_name, legal_status, mutation_type, ownership_start_date, ownership_end_date, created_at'),
         fetchAll('fraud_attempts',
