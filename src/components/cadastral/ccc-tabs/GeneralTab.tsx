@@ -16,6 +16,7 @@ import { PropertyTitleTypeSelect, PROPERTY_TITLE_TYPES, getEffectiveTitleName } 
 import { InputWithPopover } from '../InputWithPopover';
 import SuggestivePicklist from '../SuggestivePicklist';
 import AdditionalConstructionBlock, { AdditionalConstruction } from '../AdditionalConstructionBlock';
+import { BuildingPermitIssuingServiceSelect } from '../BuildingPermitIssuingServiceSelect';
 
 // Types for owner, permit, etc.
 export interface CurrentOwner {
@@ -40,6 +41,7 @@ export interface BuildingPermit {
   issueDate: string;
   validityMonths: string;
   administrativeStatus: string;
+  issuingService: string;
   attachmentFile: File | null;
   existingAttachmentUrl?: string;
 }
@@ -1182,6 +1184,14 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({
                   </div>
                 </div>
 
+                {/* Service émetteur */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-foreground">Service émetteur</Label>
+                  <BuildingPermitIssuingServiceSelect
+                    value={permit.issuingService}
+                    onValueChange={(value) => updateBuildingPermit(index, 'issuingService', value)}
+                  />
+                </div>
 
                 {/* Document */}
                 <div className="space-y-1.5">

@@ -125,7 +125,7 @@ export const useCCCFormState = ({
 
   const [buildingPermits, setBuildingPermits] = useState<BuildingPermit[]>([{
     permitType: 'construction', permitNumber: '', issueDate: '',
-    validityMonths: '36', administrativeStatus: 'En attente', attachmentFile: null
+    validityMonths: '36', administrativeStatus: 'En attente', issuingService: '', attachmentFile: null
   }]);
 
   const [permitRequest, setPermitRequest] = useState({
@@ -481,7 +481,7 @@ export const useCCCFormState = ({
       return;
     }
     setShowPermitWarning(false); setHighlightIncompletePermit(false);
-    setBuildingPermits([...buildingPermits, { permitType: 'construction', permitNumber: '', issueDate: '', validityMonths: '36', administrativeStatus: 'En attente', attachmentFile: null }]);
+    setBuildingPermits([...buildingPermits, { permitType: 'construction', permitNumber: '', issueDate: '', validityMonths: '36', administrativeStatus: 'En attente', issuingService: '', attachmentFile: null }]);
     markDirty();
   };
 
@@ -935,7 +935,7 @@ export const useCCCFormState = ({
         const buildingPermitsData = await Promise.all(buildingPermits.map(async (permit) => {
           let attachmentUrl = null;
           if (permit.attachmentFile) { attachmentUrl = await uploadFile(permit.attachmentFile, 'building-permits'); if (!attachmentUrl) throw new Error('Erreur téléchargement autorisation bâtir'); }
-          return { permitType: permit.permitType, permitNumber: permit.permitNumber, issueDate: permit.issueDate, validityMonths: parseInt(permit.validityMonths), administrativeStatus: permit.administrativeStatus, attachmentUrl: attachmentUrl || permit.existingAttachmentUrl || undefined };
+          return { permitType: permit.permitType, permitNumber: permit.permitNumber, issueDate: permit.issueDate, validityMonths: parseInt(permit.validityMonths), administrativeStatus: permit.administrativeStatus, issuingService: permit.issuingService, attachmentUrl: attachmentUrl || permit.existingAttachmentUrl || undefined };
         }));
         buildingPermitsDataFinal = buildingPermitsData.length > 0 ? buildingPermitsData : undefined;
       } else if (permitMode === 'request') {
@@ -1026,7 +1026,7 @@ export const useCCCFormState = ({
     setBuildingShapes([]);
     setDisputeFormData(null);
     setPermitMode('existing');
-    setBuildingPermits([{ permitType: 'construction', permitNumber: '', issueDate: '', validityMonths: '36', administrativeStatus: 'En attente', attachmentFile: null }]);
+    setBuildingPermits([{ permitType: 'construction', permitNumber: '', issueDate: '', validityMonths: '36', administrativeStatus: 'En attente', issuingService: '', attachmentFile: null }]);
     setPermitRequest({ permitType: 'construction', hasExistingConstruction: false, constructionDescription: '', plannedUsage: '', estimatedArea: '', applicantName: '', applicantPhone: '', applicantEmail: '', selectedOwnerIndex: -1, numberOfFloors: '', buildingMaterials: '', architecturalPlanImages: [], constructionYear: '', regularizationReason: '', originalPermitNumber: '', previousPermitNumber: '', constructionPhotos: [] });
     setGpsCoordinates([]);
     setShowRequiredFieldsPopover(false); setHighlightRequiredFields(false); setShowOwnerWarning(false); setHighlightIncompleteOwner(false);
@@ -1117,7 +1117,7 @@ export const useCCCFormState = ({
         const permits = contrib.building_permits as any[];
         if (permits && Array.isArray(permits) && permits.length > 0) {
           setPermitMode('existing');
-          setBuildingPermits(permits.map((p: any) => ({ permitType: p.permit_type || p.permitType || 'construction', permitNumber: p.permit_number || p.permitNumber || '', issueDate: p.issue_date || p.issueDate || '', validityMonths: String(p.validity_period_months || p.validityMonths || '36'), administrativeStatus: p.administrative_status || p.administrativeStatus || 'En attente', attachmentFile: null, existingAttachmentUrl: p.permit_document_url || p.attachmentUrl || undefined })));
+          setBuildingPermits(permits.map((p: any) => ({ permitType: p.permit_type || p.permitType || 'construction', permitNumber: p.permit_number || p.permitNumber || '', issueDate: p.issue_date || p.issueDate || '', validityMonths: String(p.validity_period_months || p.validityMonths || '36'), administrativeStatus: p.administrative_status || p.administrativeStatus || 'En attente', issuingService: p.issuing_service || p.issuingService || '', attachmentFile: null, existingAttachmentUrl: p.permit_document_url || p.attachmentUrl || undefined })));
         } else if (contrib.permit_request_data) {
           setPermitMode('request');
           const prd = contrib.permit_request_data as any;
@@ -1453,7 +1453,7 @@ export const useCCCFormState = ({
     setAdditionalConstructions([]);
     setBuildingPermits([{
       permitType: 'construction', permitNumber: '', issueDate: '',
-      validityMonths: '36', administrativeStatus: 'En attente', attachmentFile: null
+      validityMonths: '36', administrativeStatus: 'En attente', issuingService: '', attachmentFile: null
     }]);
     setPermitMode('existing');
     markDirty();
