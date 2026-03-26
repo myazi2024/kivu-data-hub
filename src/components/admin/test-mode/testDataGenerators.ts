@@ -126,7 +126,7 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
     construction_type: ['Résidentielle', 'Commerciale', 'Terrain nu', 'Résidentielle', 'Industrielle'][i],
     construction_nature: ['Durable', 'Durable', 'Non bâti', 'Semi-durable', 'Durable'][i],
     construction_year: [2010, 2018, null, 2005, 2015][i],
-    current_owner_legal_status: i % 2 === 0 ? 'personne_physique' : 'personne_morale',
+    current_owner_legal_status: i % 2 === 0 ? 'Personne physique' : 'Personne morale',
   }));
 
   const { data, error } = await supabase
