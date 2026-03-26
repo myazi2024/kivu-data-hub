@@ -53,7 +53,7 @@ export const useLandDataAnalytics = () => {
       const [
         parcels, contribs, titleReqs, permits,
         taxes, mortgages, expertise, mutations,
-        subdivisions, disputes, boundaryConflicts,
+        subdivisions, disputes,
         ownershipHistory, fraudAttempts, certificates, invoices,
       ] = await Promise.all([
         // Parcels
