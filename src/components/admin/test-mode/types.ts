@@ -17,6 +17,8 @@ export interface TestDataStats {
   boundaryHistory: number;
   mortgages: number;
   buildingPermits: number;
+  mutationRequests: number;
+  subdivisionRequests: number;
 }
 
 export const EMPTY_STATS: TestDataStats = {
@@ -38,6 +40,8 @@ export const EMPTY_STATS: TestDataStats = {
   boundaryHistory: 0,
   mortgages: 0,
   buildingPermits: 0,
+  mutationRequests: 0,
+  subdivisionRequests: 0,
 };
 
 /** All TEST- prefixed tables in FK-safe deletion order (children → parents) */
@@ -67,6 +71,8 @@ export const TEST_TABLES_DELETION_ORDER = [
   { table: 'land_title_requests' as const, filter: 'ilike' as const, column: 'reference_number', value: 'TEST-%' },
   { table: 'cadastral_boundary_conflicts' as const, filter: 'ilike' as const, column: 'reporting_parcel_number', value: 'TEST-%' },
   { table: 'generated_certificates' as const, filter: 'ilike' as const, column: 'reference_number', value: 'TEST-%' },
+  { table: 'mutation_requests' as const, filter: 'ilike' as const, column: 'reference_number', value: 'TEST-%' },
+  { table: 'subdivision_requests' as const, filter: 'ilike' as const, column: 'reference_number', value: 'TEST-%' },
 ] as const;
 
 /** Generation step for progress tracking */

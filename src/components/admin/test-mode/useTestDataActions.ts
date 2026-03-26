@@ -25,6 +25,8 @@ import {
   generateMortgages,
   generateBuildingPermits,
   generateCertificates,
+  generateMutationRequests,
+  generateSubdivisionRequests,
   rollbackTestData,
 } from './testDataGenerators';
 
@@ -49,6 +51,7 @@ const GENERATION_STEPS: GenerationStep[] = [
   { label: 'Historique propriété & taxes', status: 'pending' },
   { label: 'Bornages & hypothèques & permis', status: 'pending' },
   { label: 'Fraudes & certificats', status: 'pending' },
+  { label: 'Mutations & lotissements', status: 'pending' },
 ];
 
 export const useTestDataActions = ({
@@ -124,6 +127,8 @@ export const useTestDataActions = ({
       await safeDelete('title_requests', supabase.from('land_title_requests').delete().ilike('reference_number', 'TEST-%'));
       await safeDelete('boundary_conflicts', supabase.from('cadastral_boundary_conflicts').delete().ilike('reporting_parcel_number', 'TEST-%'));
       await safeDelete('certificates', supabase.from('generated_certificates').delete().ilike('reference_number', 'TEST-%'));
+      await safeDelete('mutation_requests', supabase.from('mutation_requests').delete().ilike('reference_number', 'TEST-%'));
+      await safeDelete('subdivision_requests', supabase.from('subdivision_requests').delete().ilike('reference_number', 'TEST-%'));
 
       await logAuditAction(
         'TEST_DATA_CLEANUP',
@@ -306,6 +311,17 @@ export const useTestDataActions = ({
         console.error('Fraud/certificates (non-blocking):', fcError);
       }
 
+      // Step 13: Mutations & subdivisions (non-blocking)
+      updateStep(13, 'running');
+      try {
+        await generateMutationRequests(userId, parcels, suffix);
+        await generateSubdivisionRequests(userId, parcels, suffix);
+        updateStep(13, 'done');
+      } catch (msError) {
+        updateStep(13, 'error');
+        console.error('Mutations/subdivisions (non-blocking):', msError);
+      }
+
       await logAuditAction(
         'TEST_DATA_GENERATED',
         'cadastral_contributions',
@@ -322,6 +338,7 @@ export const useTestDataActions = ({
             'ownership_history', 'tax_history',
             'boundary_history', 'mortgages', 'building_permits',
             'fraud_attempts', 'certificates',
+            'mutation_requests', 'subdivision_requests',
           ],
         })
       );
