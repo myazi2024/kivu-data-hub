@@ -86,7 +86,7 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-[1500] bg-black/60 backdrop-blur-sm"
       data-results-dialog
       onClick={handleOverlayClick}
     >
@@ -96,13 +96,13 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
           type="button"
           aria-label="Fermer"
           onClick={handleClose}
-          className="absolute inline-flex items-center justify-center h-8 w-8 rounded-xl border bg-background/95 backdrop-blur-sm text-foreground shadow-sm hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring z-50 top-3 right-3"
+          className="absolute inline-flex items-center justify-center h-8 w-8 rounded-xl border bg-background/95 backdrop-blur-sm text-foreground shadow-sm hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring z-[1501] top-3 right-3"
         >
           <X className="h-4 w-4" />
         </button>
         
         {/* Header compact */}
-        <div className="sticky top-0 z-40 flex items-center gap-2 px-3 py-2.5 border-b bg-background/95 backdrop-blur-sm shrink-0">
+        <div className="sticky top-0 z-[1501] flex items-center gap-2 px-3 py-2.5 border-b bg-background/95 backdrop-blur-sm shrink-0">
           {fromMap && (
             <Button 
               variant="ghost"
