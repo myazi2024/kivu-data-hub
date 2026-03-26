@@ -209,9 +209,9 @@ const UserProfileSection: React.FC = () => {
 
   const statItems = [
     { title: "Contributions", value: stats.contributions, icon: FileText },
-    { title: "Autorisations", value: stats.permits, icon: Building },
+    { title: "Titres", value: stats.titles, icon: Award },
     { title: "Factures", value: stats.invoices, icon: CreditCard },
-    { title: "Codes CCC", value: stats.cccCodes, icon: Award },
+    { title: "Litiges", value: stats.disputes, icon: Building },
   ];
 
   return (
