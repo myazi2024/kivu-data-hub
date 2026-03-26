@@ -693,11 +693,11 @@ export const generateMortgages = async (
   const records = parcels.slice(0, 2).map((p, i) => ({
     parcel_id: p.id,
     creditor_name: [`Banque Commerciale du Congo`, `Trust Merchant Bank`][i],
-    creditor_type: ['banque', 'institution_financiere'][i],
+    creditor_type: ['Banque', 'Microfinance'][i],
     mortgage_amount_usd: [25000, 50000][i],
     duration_months: [60, 120][i],
     contract_date: ['2022-01-15', '2023-06-01'][i],
-    mortgage_status: ['active', 'completed'][i],
+    mortgage_status: ['Active', 'Renégociée'][i],
     reference_number: `TEST-HYP-${Date.now().toString(36)}-${i}`,
   }));
 

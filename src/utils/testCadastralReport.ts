@@ -102,7 +102,7 @@ const mockCadastralResult = {
       pv_reference_number: 'PV-2019-123',
       survey_date: '2019-12-15',
       surveyor_name: 'Géomètre Jean Dupont',
-      boundary_purpose: 'Délimitation initiale'
+      boundary_purpose: 'Réajustement ou rectification'
     }
   ]
 };
