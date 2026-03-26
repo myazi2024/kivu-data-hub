@@ -51,11 +51,14 @@ const AdminSystemHealth = () => {
 
       // Count records across all tables in parallel
       const countResults = await Promise.all(
-        ALL_TABLES.map(table =>
-          supabase.from(table as any).select('*', { count: 'exact', head: true })
-            .then(({ count }) => count || 0)
-            .catch(() => 0)
-        )
+        ALL_TABLES.map(async (table) => {
+          try {
+            const { count } = await supabase.from(table as any).select('*', { count: 'exact', head: true });
+            return count || 0;
+          } catch {
+            return 0;
+          }
+        })
       );
 
       const totalRecords = countResults.reduce((sum, c) => sum + c, 0);
