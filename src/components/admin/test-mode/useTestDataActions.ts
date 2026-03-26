@@ -127,6 +127,8 @@ export const useTestDataActions = ({
       await safeDelete('title_requests', supabase.from('land_title_requests').delete().ilike('reference_number', 'TEST-%'));
       await safeDelete('boundary_conflicts', supabase.from('cadastral_boundary_conflicts').delete().ilike('reporting_parcel_number', 'TEST-%'));
       await safeDelete('certificates', supabase.from('generated_certificates').delete().ilike('reference_number', 'TEST-%'));
+      await safeDelete('mutation_requests', supabase.from('mutation_requests').delete().ilike('reference_number', 'TEST-%'));
+      await safeDelete('subdivision_requests', supabase.from('subdivision_requests').delete().ilike('reference_number', 'TEST-%'));
 
       await logAuditAction(
         'TEST_DATA_CLEANUP',
