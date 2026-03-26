@@ -17,6 +17,7 @@ import {
   generateDisputes,
   generateContributorCodes,
   generateFraudAttempts,
+  generateBoundaryConflicts,
   
   generateOwnershipHistory,
   generateTaxHistory,
@@ -121,7 +122,7 @@ export const useTestDataActions = ({
       await safeDelete('expertise_requests', supabase.from('real_estate_expertise_requests').delete().ilike('reference_number', 'TEST-%'));
       await safeDelete('disputes', supabase.from('cadastral_land_disputes').delete().ilike('parcel_number', 'TEST-%'));
       await safeDelete('title_requests', supabase.from('land_title_requests').delete().ilike('reference_number', 'TEST-%'));
-      
+      await safeDelete('boundary_conflicts', supabase.from('cadastral_boundary_conflicts').delete().ilike('reporting_parcel_number', 'TEST-%'));
       await safeDelete('certificates', supabase.from('generated_certificates').delete().ilike('reference_number', 'TEST-%'));
 
       await logAuditAction(
@@ -281,16 +282,17 @@ export const useTestDataActions = ({
         console.error('History (non-blocking):', histError);
       }
 
-      // Step 11: Boundary history + mortgages + building permits (Bug 17 fix)
+      // Step 11: Boundary history + mortgages + building permits + boundary conflicts
       updateStep(11, 'running');
       try {
         await generateBoundaryHistory(parcels);
         await generateMortgages(parcels);
         await generateBuildingPermits(parcels);
+        await generateBoundaryConflicts(parcelNumbers, userId);
         updateStep(11, 'done');
       } catch (bmError) {
         updateStep(11, 'error');
-        console.error('Bornages/hypothèques/permis (non-blocking):', bmError);
+        console.error('Bornages/hypothèques/permis/conflits (non-blocking):', bmError);
       }
 
       // Step 12: Fraud attempts + certificates (non-blocking)
