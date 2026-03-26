@@ -102,7 +102,7 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
         </button>
         
         {/* Header compact */}
-        <div className="sticky top-0 z-40 flex items-center gap-2 px-3 py-2.5 border-b bg-background/95 backdrop-blur-sm shrink-0">
+        <div className="sticky top-0 z-[1501] flex items-center gap-2 px-3 py-2.5 border-b bg-background/95 backdrop-blur-sm shrink-0">
           {fromMap && (
             <Button 
               variant="ghost"
