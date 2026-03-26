@@ -79,6 +79,8 @@ export const useTestDataStats = () => {
         boundaryHistory: count(14),
         mortgages: count(15),
         buildingPermits: count(16),
+        mutationRequests: count(17),
+        subdivisionRequests: count(18),
       });
     } catch (error) {
       console.error('Error loading test data stats:', error);

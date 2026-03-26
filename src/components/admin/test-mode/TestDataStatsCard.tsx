@@ -162,7 +162,7 @@ const TestDataStatsCard: React.FC<TestDataStatsCardProps> = ({
                 <AlertDialogTitle>Supprimer toutes les données de test ?</AlertDialogTitle>
                 <AlertDialogDescription>
                   Cette action supprimera <strong>{total}</strong> enregistrement(s) de test
-                  répartis sur 17 tables (parcelles, contributions, factures, paiements, bornages, hypothèques, permis, etc.).
+                  répartis sur 19 tables (parcelles, contributions, factures, paiements, bornages, hypothèques, permis, mutations, lotissements, etc.).
                   <br />
                   <strong>Cette action est irréversible.</strong>
                 </AlertDialogDescription>

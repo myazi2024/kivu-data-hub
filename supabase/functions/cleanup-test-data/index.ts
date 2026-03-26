@@ -165,6 +165,14 @@ Deno.serve(async (req) => {
       "generated_certificates",
       supabase.from("generated_certificates").delete().ilike("reference_number", "TEST-%").lt("generated_at", cutoffISO).select("id")
     );
+    await safeDelete(
+      "mutation_requests",
+      supabase.from("mutation_requests").delete().ilike("reference_number", "TEST-%").lt("created_at", cutoffISO).select("id")
+    );
+    await safeDelete(
+      "subdivision_requests",
+      supabase.from("subdivision_requests").delete().ilike("reference_number", "TEST-%").lt("created_at", cutoffISO).select("id")
+    );
 
     // Audit log (Bug 19 fix: include errors in audit)
     await supabase.rpc("log_audit_action", {

@@ -338,6 +338,7 @@ export const useTestDataActions = ({
             'ownership_history', 'tax_history',
             'boundary_history', 'mortgages', 'building_permits',
             'fraud_attempts', 'certificates',
+            'mutation_requests', 'subdivision_requests',
           ],
         })
       );
