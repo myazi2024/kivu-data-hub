@@ -65,7 +65,7 @@ export const generateParcels = async (parcelNumbers: string[]) => {
     area_sqm: areas[i],
     current_owner_name: `Test Propriétaire ${i + 1}`,
     current_owner_since: '2020-01-01',
-    current_owner_legal_status: i % 2 === 0 ? 'personne_physique' : 'personne_morale',
+    current_owner_legal_status: i % 2 === 0 ? 'Personne physique' : 'Personne morale',
     province: PROVINCES[i].province,
     ville: PROVINCES[i].ville,
     commune: PROVINCES[i].commune,
