@@ -46,7 +46,7 @@ import AdminMutationRequests from '@/components/admin/AdminMutationRequests';
 import AdminExpertiseRequests from '@/components/admin/AdminExpertiseRequests';
 import AdminExpertiseFeesConfig from '@/components/admin/AdminExpertiseFeesConfig';
 import AdminMutationFeesConfig from '@/components/admin/AdminMutationFeesConfig';
-import AdminBoundaryConflicts from '@/components/admin/AdminBoundaryConflicts';
+
 import AdminMortgages from '@/components/admin/AdminMortgages';
 import AdminTaxHistory from '@/components/admin/AdminTaxHistory';
 import AdminTaxDeclarations from '@/components/admin/AdminTaxDeclarations';
@@ -329,8 +329,6 @@ const Admin = () => {
         return <AdminPermitFeesConfig />;
       case 'mutation-fees-config':
         return <AdminMutationFeesConfig />;
-      case 'boundary-conflicts':
-        return <AdminBoundaryConflicts />;
       case 'mortgages':
         return <AdminMortgages />;
       case 'tax-history':

@@ -17,7 +17,7 @@ import {
   generateDisputes,
   generateContributorCodes,
   generateFraudAttempts,
-  generateBoundaryConflicts,
+  
   generateOwnershipHistory,
   generateTaxHistory,
   generateBoundaryHistory,
@@ -44,7 +44,7 @@ const GENERATION_STEPS: GenerationStep[] = [
   { label: 'Demandes de titres fonciers', status: 'pending' },
   { label: 'Demandes d\'expertise', status: 'pending' },
   { label: 'Litiges fonciers', status: 'pending' },
-  { label: 'Conflits de limites', status: 'pending' },
+  
   { label: 'Historique propriété & taxes', status: 'pending' },
   { label: 'Bornages & hypothèques & permis', status: 'pending' },
   { label: 'Fraudes & certificats', status: 'pending' },
@@ -121,7 +121,7 @@ export const useTestDataActions = ({
       await safeDelete('expertise_requests', supabase.from('real_estate_expertise_requests').delete().ilike('reference_number', 'TEST-%'));
       await safeDelete('disputes', supabase.from('cadastral_land_disputes').delete().ilike('parcel_number', 'TEST-%'));
       await safeDelete('title_requests', supabase.from('land_title_requests').delete().ilike('reference_number', 'TEST-%'));
-      await safeDelete('boundary_conflicts', supabase.from('cadastral_boundary_conflicts').delete().ilike('reporting_parcel_number', 'TEST-%'));
+      
       await safeDelete('certificates', supabase.from('generated_certificates').delete().ilike('reference_number', 'TEST-%'));
 
       await logAuditAction(
@@ -270,47 +270,37 @@ export const useTestDataActions = ({
         console.error('Disputes failed (non-blocking):', dispError);
       }
 
-      // Step 10: Boundary conflicts (non-blocking)
+      // Step 10: Ownership history + tax history (non-blocking)
       updateStep(10, 'running');
-      try {
-        await generateBoundaryConflicts(parcelNumbers, userId);
-        updateStep(10, 'done');
-      } catch (bcError) {
-        updateStep(10, 'error');
-        console.error('Boundary conflicts (non-blocking):', bcError);
-      }
-
-      // Step 11: Ownership history + tax history (non-blocking)
-      updateStep(11, 'running');
       try {
         await generateOwnershipHistory(parcels);
         await generateTaxHistory(parcels);
-        updateStep(11, 'done');
+        updateStep(10, 'done');
       } catch (histError) {
-        updateStep(11, 'error');
+        updateStep(10, 'error');
         console.error('History (non-blocking):', histError);
       }
 
-      // Step 12: Boundary history + mortgages + building permits (Bug 17 fix)
-      updateStep(12, 'running');
+      // Step 11: Boundary history + mortgages + building permits (Bug 17 fix)
+      updateStep(11, 'running');
       try {
         await generateBoundaryHistory(parcels);
         await generateMortgages(parcels);
         await generateBuildingPermits(parcels);
-        updateStep(12, 'done');
+        updateStep(11, 'done');
       } catch (bmError) {
-        updateStep(12, 'error');
+        updateStep(11, 'error');
         console.error('Bornages/hypothèques/permis (non-blocking):', bmError);
       }
 
-      // Step 13: Fraud attempts + certificates (non-blocking)
-      updateStep(13, 'running');
+      // Step 12: Fraud attempts + certificates (non-blocking)
+      updateStep(12, 'running');
       try {
         await generateFraudAttempts(userId, contributions);
         await generateCertificates(parcelNumbers, suffix, userId);
-        updateStep(13, 'done');
+        updateStep(12, 'done');
       } catch (fcError) {
-        updateStep(13, 'error');
+        updateStep(12, 'error');
         console.error('Fraud/certificates (non-blocking):', fcError);
       }
 
@@ -327,7 +317,7 @@ export const useTestDataActions = ({
           entities: [
             'parcels', 'contributions', 'invoices', 'payments', 'service_access',
             'contributor_codes', 'title_requests', 'expertise', 'disputes',
-            'boundary_conflicts', 'ownership_history', 'tax_history',
+            'ownership_history', 'tax_history',
             'boundary_history', 'mortgages', 'building_permits',
             'fraud_attempts', 'certificates',
           ],

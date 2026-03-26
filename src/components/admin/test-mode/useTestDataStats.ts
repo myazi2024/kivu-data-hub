@@ -35,24 +35,23 @@ export const useTestDataStats = () => {
         // Bug 16 fix: expertise requests use reference_number with TEST- prefix for reliable filtering
         /* 7  */ supabase.from('real_estate_expertise_requests').select('id', { count: 'exact', head: true }).ilike('reference_number', 'TEST-%'),
         /* 8  */ supabase.from('cadastral_land_disputes').select('id', { count: 'exact', head: true }).ilike('parcel_number', 'TEST-%'),
-        /* 9  */ supabase.from('cadastral_boundary_conflicts').select('id', { count: 'exact', head: true }).ilike('reporting_parcel_number', 'TEST-%'),
-        /* 10 */ parcelIds.length > 0
+        /* 9 */ parcelIds.length > 0
           ? supabase.from('cadastral_ownership_history').select('id', { count: 'exact', head: true }).in('parcel_id', parcelIds)
           : Promise.resolve({ count: 0 }),
-        /* 11 */ parcelIds.length > 0
+        /* 10 */ parcelIds.length > 0
           ? supabase.from('cadastral_tax_history').select('id', { count: 'exact', head: true }).in('parcel_id', parcelIds)
           : Promise.resolve({ count: 0 }),
-        /* 12 */ contribIds.length > 0
+        /* 11 */ contribIds.length > 0
           ? supabase.from('fraud_attempts').select('id', { count: 'exact', head: true }).in('contribution_id', contribIds)
           : Promise.resolve({ count: 0 }),
-        /* 13 */ supabase.from('generated_certificates').select('id', { count: 'exact', head: true }).ilike('reference_number', 'TEST-%'),
-        /* 14 */ parcelIds.length > 0
+        /* 12 */ supabase.from('generated_certificates').select('id', { count: 'exact', head: true }).ilike('reference_number', 'TEST-%'),
+        /* 13 */ parcelIds.length > 0
           ? supabase.from('cadastral_boundary_history').select('id', { count: 'exact', head: true }).in('parcel_id', parcelIds)
           : Promise.resolve({ count: 0 }),
-        /* 15 */ parcelIds.length > 0
+        /* 14 */ parcelIds.length > 0
           ? supabase.from('cadastral_mortgages').select('id', { count: 'exact', head: true }).in('parcel_id', parcelIds)
           : Promise.resolve({ count: 0 }),
-        /* 16 */ parcelIds.length > 0
+        /* 15 */ parcelIds.length > 0
           ? supabase.from('cadastral_building_permits').select('id', { count: 'exact', head: true }).in('parcel_id', parcelIds)
           : Promise.resolve({ count: 0 }),
       ]);
@@ -70,14 +69,13 @@ export const useTestDataStats = () => {
         titleRequests: count(6),
         expertiseRequests: count(7),
         disputes: count(8),
-        boundaryConflicts: count(9),
-        ownershipHistory: count(10),
-        taxHistory: count(11),
-        fraudAttempts: count(12),
-        certificates: count(13),
-        boundaryHistory: count(14),
-        mortgages: count(15),
-        buildingPermits: count(16),
+        ownershipHistory: count(9),
+        taxHistory: count(10),
+        fraudAttempts: count(11),
+        certificates: count(12),
+        boundaryHistory: count(13),
+        mortgages: count(14),
+        buildingPermits: count(15),
       });
     } catch (error) {
       console.error('Error loading test data stats:', error);

@@ -1,5 +1,5 @@
 import React, { useState, memo } from 'react';
-import { FileText, Map, Search, ArrowRightLeft, Scissors, AlertTriangle, Loader2, Database, MapPin, History, ShieldAlert, Award, Receipt } from 'lucide-react';
+import { FileText, Map, Search, ArrowRightLeft, Scissors, AlertTriangle, Loader2, Database, History, ShieldAlert, Award, Receipt } from 'lucide-react';
 import { useLandDataAnalytics } from '@/hooks/useLandDataAnalytics';
 import { TitleRequestsBlock } from './blocks/TitleRequestsBlock';
 import { ParcelsWithTitleBlock } from './blocks/ParcelsWithTitleBlock';
@@ -9,7 +9,7 @@ import { MutationBlock } from './blocks/MutationBlock';
 import { SubdivisionBlock } from './blocks/SubdivisionBlock';
 import { DisputesBlock } from './blocks/DisputesBlock';
 
-import { BoundaryConflictsBlock } from './blocks/BoundaryConflictsBlock';
+
 import { OwnershipHistoryBlock } from './blocks/OwnershipHistoryBlock';
 import { FraudAttemptsBlock } from './blocks/FraudAttemptsBlock';
 import { CertificatesBlock } from './blocks/CertificatesBlock';
@@ -33,7 +33,7 @@ const ICON_MAP: Record<string, React.ComponentType<any>> = {
   'mutations': ArrowRightLeft,
   'subdivision': Scissors,
   'disputes': AlertTriangle,
-  'boundary': MapPin,
+  
   'ownership': History,
   'fraud': ShieldAlert,
   'certificates': Award,
@@ -48,7 +48,7 @@ const BLOCK_MAP: Record<string, React.ComponentType<{ data: any }>> = {
   'mutations': MutationBlock,
   'subdivision': SubdivisionBlock,
   'disputes': DisputesBlock,
-  'boundary': BoundaryConflictsBlock,
+  
   'ownership': OwnershipHistoryBlock,
   'fraud': FraudAttemptsBlock,
   'certificates': CertificatesBlock,

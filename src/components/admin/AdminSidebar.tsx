@@ -112,7 +112,7 @@ const menuItems = [
       { icon: Grid3X3, label: 'Demandes Lotissement', value: 'subdivision-requests', badge: 'subdivisions' },
       { icon: FileCheck, label: 'Expertises foncières', value: 'expertise-requests', badge: 'expertise' },
       { icon: DollarSign, label: 'Config Frais Expert.', value: 'expertise-fees-config', badge: null },
-      { icon: AlertTriangle, label: 'Conflits Limites', value: 'boundary-conflicts', badge: null },
+      
       { icon: Scale, label: 'Litiges Fonciers', value: 'land-disputes', badge: null },
       { icon: BarChart, label: 'Analytics Litiges', value: 'dispute-analytics', badge: null },
       { icon: Database, label: 'Hypothèques', value: 'mortgages', badge: null },

@@ -12,7 +12,7 @@ export interface LandAnalyticsData {
   mutationRequests: any[];
   subdivisionRequests: any[];
   disputes: any[];
-  boundaryConflicts: any[];
+  
   ownershipHistory: any[];
   fraudAttempts: any[];
   certificates: any[];
@@ -53,7 +53,7 @@ export const useLandDataAnalytics = () => {
       const [
         parcels, contribs, titleReqs, permits,
         taxes, mortgages, expertise, mutations,
-        subdivisions, disputes, boundaryConflicts,
+        subdivisions, disputes,
         ownershipHistory, fraudAttempts, certificates, invoices,
       ] = await Promise.all([
         // Parcels
@@ -85,8 +85,6 @@ export const useLandDataAnalytics = () => {
         fetchAll('cadastral_land_disputes',
           'id, parcel_number, parcel_id, dispute_nature, dispute_type, current_status, resolution_level, lifting_status, lifting_request_reference, lifting_reason, declarant_quality, dispute_start_date, created_at'),
         // New tables
-        fetchAll('cadastral_boundary_conflicts',
-          'id, conflict_type, status, reporting_parcel_number, conflicting_parcel_number, created_at, resolved_at'),
         fetchAll('cadastral_ownership_history',
           'id, parcel_id, owner_name, legal_status, mutation_type, ownership_start_date, ownership_end_date, created_at'),
         fetchAll('fraud_attempts',
@@ -125,7 +123,7 @@ export const useLandDataAnalytics = () => {
           };
         });
 
-      // Enrich boundary conflicts by parcel_number lookup
+      // Enrich records by parcel_number lookup (certificates, invoices)
       const enrichByParcelNumber = (records: any[]) =>
         records.map(r => {
           const p1 = r.reporting_parcel_number && byNum.get(r.reporting_parcel_number);
@@ -187,7 +185,7 @@ export const useLandDataAnalytics = () => {
         mutationRequests: enrich(mutations),
         subdivisionRequests: enrich(subdivisions),
         disputes: enrich(disputes),
-        boundaryConflicts: enrichByParcelNumber(boundaryConflicts),
+        
         ownershipHistory: enrich(ownershipHistory),
         fraudAttempts: enrichFraud(fraudAttempts),
         certificates: enrichByParcelNumber(certificates),

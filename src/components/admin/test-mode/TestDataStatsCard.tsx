@@ -40,7 +40,7 @@ const STAT_ITEMS: { key: keyof TestDataStats; label: string }[] = [
   { key: 'titleRequests', label: 'Demandes titres' },
   { key: 'expertiseRequests', label: 'Expertises' },
   { key: 'disputes', label: 'Litiges' },
-  { key: 'boundaryConflicts', label: 'Conflits limites' },
+  
   { key: 'ownershipHistory', label: 'Hist. propriété' },
   { key: 'taxHistory', label: 'Hist. taxes' },
   { key: 'boundaryHistory', label: 'Hist. bornages' },
@@ -114,7 +114,7 @@ const TestDataStatsCard: React.FC<TestDataStatsCardProps> = ({
                   <strong>3 factures</strong>, <strong>paiements</strong>,{' '}
                   <strong>3 codes CCC</strong>, <strong>3 demandes de titres</strong>,{' '}
                   <strong>3 expertises</strong>, <strong>3 litiges</strong>,{' '}
-                  <strong>2 conflits de limites</strong>, <strong>historique de propriété et taxes</strong>,{' '}
+                  <strong>historique de propriété et taxes</strong>,{' '}
                   <strong>tentatives de fraude</strong> et <strong>certificats</strong>.
                   <br /><br />
                   Toutes les données seront préfixées <strong>TEST-</strong> et pourront être
