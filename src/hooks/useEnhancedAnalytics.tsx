@@ -241,17 +241,11 @@ async function calculateBusinessMetrics() {
   // Calculate ARPU (Average Revenue Per User)
   const arpu = uniqueUsers > 0 ? totalRevenue / uniqueUsers : 0;
 
-  // Estimate CAC based on industry benchmarks (20-30% of LTV)
-  const cac = ltv * 0.25;
-  const paybackPeriod = arpu > 0 ? cac / arpu : 0;
-
   return {
     ltv: parseFloat(ltv.toFixed(2)),
-    cac: parseFloat(cac.toFixed(2)),
     retentionRate: parseFloat(retentionRate.toFixed(1)),
     churnRate: parseFloat(churnRate.toFixed(1)),
     arpu: parseFloat(arpu.toFixed(2)),
-    paybackPeriod: parseFloat(paybackPeriod.toFixed(1))
   };
 }
 

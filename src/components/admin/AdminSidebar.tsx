@@ -167,6 +167,8 @@ export function AdminSidebar({ pendingCount, pendingLandTitleCount, pendingPermi
       case 'expertise': return pendingExpertiseCount || 0;
       case 'subdivisions': return pendingSubdivisionsCount || 0;
       case 'payments': return pendingPaymentsCount || 0;
+      case 'disputes': return pendingDisputesCount || 0;
+      case 'mortgages': return pendingMortgagesCount || 0;
       default: return 0;
     }
   };

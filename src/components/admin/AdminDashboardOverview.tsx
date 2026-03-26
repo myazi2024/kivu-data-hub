@@ -367,11 +367,25 @@ export function AdminDashboardOverview() {
         </TabsContent>
 
         <TabsContent value="comparative">
-          <ComparativeAnalysis loading={enhancedLoading} />
+          <ComparativeAnalysis
+            loading={enhancedLoading || loading || prevLoading}
+            currentPeriodData={{
+              revenue: statistics.total_revenue || 0,
+              transactions: statistics.total_invoices || 0,
+              avgTransaction: (statistics.total_revenue || 0) / Math.max(statistics.total_invoices || 1, 1),
+              newUsers: statistics.total_users || 0,
+            }}
+            previousPeriodData={{
+              revenue: prevStatistics.total_revenue || 0,
+              transactions: prevStatistics.total_invoices || 0,
+              avgTransaction: (prevStatistics.total_revenue || 0) / Math.max(prevStatistics.total_invoices || 1, 1),
+              newUsers: prevStatistics.total_users || 0,
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="cohort">
-          <CohortAnalysis loading={enhancedLoading} />
+          <CohortAnalysis loading={enhancedLoading} cohorts={enhancedData?.cohortData} />
         </TabsContent>
 
         <TabsContent value="reports">
