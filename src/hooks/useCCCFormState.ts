@@ -125,7 +125,7 @@ export const useCCCFormState = ({
 
   const [buildingPermits, setBuildingPermits] = useState<BuildingPermit[]>([{
     permitType: 'construction', permitNumber: '', issueDate: '',
-    validityMonths: '36', administrativeStatus: 'En attente', attachmentFile: null
+    validityMonths: '36', administrativeStatus: 'En attente', issuingService: '', attachmentFile: null
   }]);
 
   const [permitRequest, setPermitRequest] = useState({
