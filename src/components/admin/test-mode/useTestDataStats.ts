@@ -48,7 +48,7 @@ export const useTestDataStats = () => {
         /* 13 */ parcelIds.length > 0
           ? supabase.from('cadastral_boundary_history').select('id', { count: 'exact', head: true }).in('parcel_id', parcelIds)
           : Promise.resolve({ count: 0 }),
-        /* 15 */ parcelIds.length > 0
+        /* 14 */ parcelIds.length > 0
           ? supabase.from('cadastral_mortgages').select('id', { count: 'exact', head: true }).in('parcel_id', parcelIds)
           : Promise.resolve({ count: 0 }),
         /* 16 */ parcelIds.length > 0
