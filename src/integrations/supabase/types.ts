@@ -4086,6 +4086,10 @@ export type Database = {
         Args: { end_date?: string; start_date?: string; stat_type?: string }
         Returns: Json
       }
+      get_cadastral_parcel_data: {
+        Args: { p_parcel_number: string }
+        Returns: Json
+      }
       get_cadastral_parcel_with_calculations: {
         Args: { parcel_number_param: string }
         Returns: {
