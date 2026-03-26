@@ -1,35 +1,27 @@
 
 
-# Aligner le formulaire "Ajouter une autorisation" (dropdown) sur le formulaire CCC et nettoyer les affichages
+# Corriger les valeurs fictives de "Service émetteur" dans les données de test
 
 ## Problème
 
-Le formulaire "Ajouter une autorisation" (dropdown actions, `BuildingPermitFormDialog.tsx`) contient un champ **"Contact service"** (`issuingServiceContact`) qui n'existe pas dans le formulaire CCC. Ce champ crée une divergence entre les deux formulaires qui collectent les mêmes données.
+Le générateur de données de test (`testDataGenerators.ts`) insère des valeurs de service émetteur fictives (`"Service Urbanisme Kinshasa"`, `"Service Urbanisme Goma"`) qui ne correspondent pas aux options standardisées du composant `BuildingPermitIssuingServiceSelect`. Ces valeurs polluent le graphique analytics "Service émetteur" dans l'onglet Parcelles.
 
-De plus, l'affichage dans l'onglet Parcelle (`CadastralResultCard.tsx`) montre `issuing_service_contact` qui n'est plus collecté par le CCC — il faut le retirer pour aligner l'affichage aux données réellement collectées.
+Le graphique analytics lui-même est légitime : il agrège la colonne `issuing_service` de la table `cadastral_building_permits`, qui est désormais correctement alimentée par les deux formulaires (CCC et dropdown). Il ne faut donc pas supprimer le graphique, mais corriger les données de test pour qu'elles utilisent les vraies valeurs du référentiel.
 
-## Modifications
+## Modification
 
-### 1. Supprimer `issuingServiceContact` du formulaire dropdown
+### 1. Aligner les valeurs de test sur le référentiel `ISSUING_SERVICES`
 
-Dans `BuildingPermitFormDialog.tsx` :
-- Retirer le champ "Contact service" du formulaire UI (lignes 330-338)
-- Retirer `issuingServiceContact` de l'interface `PermitRecord` et de l'état initial
-- Retirer de la sérialisation lors du submit (ne plus envoyer `issuingServiceContact` dans le JSON)
-- Retirer de `hasUnsavedChanges()` et `resetAndClose()`
-- Retirer de la preview (récapitulatif)
+Dans `src/components/admin/test-mode/testDataGenerators.ts` (ligne 721), remplacer les valeurs fictives par des valeurs existantes dans `BuildingPermitIssuingServiceSelect` :
 
-### 2. Retirer l'affichage "Contact" dans l'onglet Parcelle
+- `"Service Urbanisme Kinshasa"` → `"Division Provinciale de l'Urbanisme et Habitat - Kinshasa"` (valeur `DPUH Kinshasa` du référentiel)
+- `"Service Urbanisme Goma"` → `"Service Communal d'Urbanisme - Goma"` (valeur `SCU Goma` du référentiel)
 
-Dans `CadastralResultCard.tsx` :
-- Retirer les blocs affichant `issuing_service_contact` (lignes ~706-716 pour les autorisations courantes, ~777-788 pour l'historique)
-
-## Fichiers impactés
+## Fichier impacté
 
 | Fichier | Action |
 |---------|--------|
-| `src/components/cadastral/BuildingPermitFormDialog.tsx` | Supprimer champ + état + sérialisation |
-| `src/components/cadastral/CadastralResultCard.tsx` | Retirer affichage contact service |
+| `src/components/admin/test-mode/testDataGenerators.ts` | Corriger les 2 valeurs `issuing_service` |
 
-2 fichiers modifiés.
+1 fichier modifié.
 
