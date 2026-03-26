@@ -270,18 +270,8 @@ export const useTestDataActions = ({
         console.error('Disputes failed (non-blocking):', dispError);
       }
 
-      // Step 10: Boundary conflicts (non-blocking)
+      // Step 10: Ownership history + tax history (non-blocking)
       updateStep(10, 'running');
-      try {
-        await generateBoundaryConflicts(parcelNumbers, userId);
-        updateStep(10, 'done');
-      } catch (bcError) {
-        updateStep(10, 'error');
-        console.error('Boundary conflicts (non-blocking):', bcError);
-      }
-
-      // Step 11: Ownership history + tax history (non-blocking)
-      updateStep(11, 'running');
       try {
         await generateOwnershipHistory(parcels);
         await generateTaxHistory(parcels);
