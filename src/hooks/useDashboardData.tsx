@@ -18,6 +18,8 @@ interface DashboardData {
   blockedUsers: number;
   expiredCodes: number;
   inactiveResellers: number;
+  pendingDisputes: number;
+  pendingMortgages: number;
 
   // Recent Activity
   recentActivities: Array<{
