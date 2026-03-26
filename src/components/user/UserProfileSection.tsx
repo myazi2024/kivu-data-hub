@@ -45,31 +45,30 @@ const UserProfileSection: React.FC = () => {
 
     const fetchStats = async () => {
       try {
-        const [contributions, permits, invoices, cccCodes] = await Promise.all([
+        const [contributions, titles, invoices, disputes] = await Promise.all([
           supabase
             .from("cadastral_contributions")
             .select("id", { count: "exact", head: true })
             .eq("user_id", user.id),
           supabase
-            .from("cadastral_contributions")
+            .from("land_title_requests")
             .select("id", { count: "exact", head: true })
-            .eq("user_id", user.id)
-            .not("permit_request_data", "is", null),
+            .eq("user_id", user.id),
           supabase
             .from("cadastral_invoices")
             .select("id", { count: "exact", head: true })
             .eq("user_id", user.id),
           supabase
-            .from("cadastral_contributor_codes")
+            .from("cadastral_land_disputes")
             .select("id", { count: "exact", head: true })
-            .eq("user_id", user.id),
+            .eq("reported_by", user.id),
         ]);
 
         setStats({
           contributions: contributions.count || 0,
-          permits: permits.count || 0,
+          titles: titles.count || 0,
           invoices: invoices.count || 0,
-          cccCodes: cccCodes.count || 0,
+          disputes: disputes.count || 0,
         });
       } catch (error) {
         console.error("Error fetching stats:", error);
