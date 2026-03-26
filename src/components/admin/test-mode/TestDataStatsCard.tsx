@@ -116,9 +116,10 @@ const TestDataStatsCard: React.FC<TestDataStatsCardProps> = ({
                   <strong>5 parcelles</strong>, <strong>5 contributions</strong>,{' '}
                   <strong>3 factures</strong>, <strong>paiements</strong>,{' '}
                   <strong>3 codes CCC</strong>, <strong>3 demandes de titres</strong>,{' '}
-                  <strong>3 expertises</strong>, <strong>3 litiges</strong>,{' '}
-                  <strong>historique de propriété et taxes</strong>,{' '}
-                  <strong>tentatives de fraude</strong> et <strong>certificats</strong>.
+                   <strong>3 expertises</strong>, <strong>3 litiges</strong>,{' '}
+                   <strong>historique de propriété et taxes</strong>,{' '}
+                   <strong>tentatives de fraude</strong>, <strong>certificats</strong>,{' '}
+                   <strong>3 mutations</strong> et <strong>2 lotissements</strong>.
                   <br /><br />
                   Toutes les données seront préfixées <strong>TEST-</strong> et pourront être
                   nettoyées facilement.
