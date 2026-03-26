@@ -123,7 +123,7 @@ export const useCadastralSearch = () => {
         return;
       }
 
-      if (!rpcData || rpcData.error === 'not_found') {
+      if (!rpcData || (typeof rpcData === 'object' && !Array.isArray(rpcData) && (rpcData as any).error === 'not_found')) {
         setError(errorMessages.not_found);
         return;
       }
