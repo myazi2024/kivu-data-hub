@@ -211,7 +211,6 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
             permitNumber: normalizedPermitNumber,
             issueDate: permitRecord.issueDate,
             issuingService: permitRecord.issuingService,
-            issuingServiceContact: permitRecord.issuingServiceContact,
             validityMonths: parseInt(permitRecord.validityPeriod) || 36,
             administrativeStatus: calculatedStatus,
             permitType: standardizedPermitType,
