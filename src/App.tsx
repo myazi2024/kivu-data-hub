@@ -26,7 +26,7 @@ const Map = React.lazy(() => import("./pages/Map"));
 const CadastralMap = React.lazy(() => import("./pages/CadastralMap"));
 const Admin = React.lazy(() => import("./pages/Admin"));
 const JoinUs = React.lazy(() => import("./pages/JoinUs"));
-const BillingDashboard = React.lazy(() => import("./pages/BillingDashboard"));
+
 const UserDashboard = React.lazy(() => import("./pages/UserDashboard"));
 const ResellerDashboard = React.lazy(() => import("./pages/ResellerDashboard"));
 const About = React.lazy(() => import("./pages/About"));
@@ -79,11 +79,6 @@ const App = () => (
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/careers" element={<JoinUs />} />
-                  <Route path="/billing" element={
-                    <ProtectedRoute>
-                      <BillingDashboard />
-                    </ProtectedRoute>
-                  } />
                   <Route path="/mon-compte" element={
                     <ProtectedRoute>
                       <UserDashboard />

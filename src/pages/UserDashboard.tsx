@@ -16,7 +16,8 @@ import { UserLandDisputes } from '@/components/user/UserLandDisputes';
 import { UserExpertiseRequests } from '@/components/user/UserExpertiseRequests';
 import { UserMutationRequests } from '@/components/user/UserMutationRequests';
 import { UserMortgageRequests } from '@/components/user/UserMortgageRequests';
-import { User, FileText, Building, CreditCard, Settings, ScrollText, Scale, FileSearch, FileEdit, Landmark } from 'lucide-react';
+import { UserSubdivisionRequests } from '@/components/user/UserSubdivisionRequests';
+import { User, FileText, Building, CreditCard, Settings, ScrollText, Scale, FileSearch, FileEdit, Landmark, LayoutGrid } from 'lucide-react';
 
 const UserDashboard = () => {
   const { user, loading } = useAuth();
@@ -99,6 +100,13 @@ const UserDashboard = () => {
                   <span className="text-[10px] font-medium">Hypothèques</span>
                 </TabsTrigger>
                 <TabsTrigger 
+                  value="subdivisions" 
+                  className="flex flex-col items-center gap-0.5 py-2 px-3 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                  <span className="text-[10px] font-medium">Lotissements</span>
+                </TabsTrigger>
+                <TabsTrigger 
                   value="disputes" 
                   className="flex flex-col items-center gap-0.5 py-2 px-3 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
                 >
@@ -106,7 +114,7 @@ const UserDashboard = () => {
                   <span className="text-[10px] font-medium">Litiges</span>
                 </TabsTrigger>
                 <TabsTrigger 
-                  value="invoices" 
+                  value="invoices"
                   className="flex flex-col items-center gap-0.5 py-2 px-3 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
                 >
                   <CreditCard className="h-4 w-4" />
@@ -144,6 +152,10 @@ const UserDashboard = () => {
 
             <TabsContent value="mortgages" className="mt-4">
               <UserMortgageRequests />
+            </TabsContent>
+
+            <TabsContent value="subdivisions" className="mt-4">
+              <UserSubdivisionRequests />
             </TabsContent>
 
             <TabsContent value="disputes" className="mt-4">
