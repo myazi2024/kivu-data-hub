@@ -806,4 +806,139 @@ export const rollbackTestData = async (parcelNumbers: string[], suffix: string) 
   await supabase.from('land_title_requests').delete().ilike('reference_number', `TEST-LTR-%-${suffix}`);
   await supabase.from('cadastral_boundary_conflicts').delete().in('reporting_parcel_number', parcelNumbers);
   await supabase.from('generated_certificates').delete().ilike('reference_number', `TEST-CERT-%-${suffix}`);
+  await supabase.from('mutation_requests').delete().ilike('reference_number', `TEST-MUT-%-${suffix}`);
+  await supabase.from('subdivision_requests').delete().ilike('reference_number', `TEST-SUB-%-${suffix}`);
+};
+
+/** Step 13a: Generate mutation requests */
+export const generateMutationRequests = async (
+  userId: string,
+  parcels: Array<{ id: string; parcel_number: string }>,
+  suffix: string
+) => {
+  const records = [
+    {
+      reference_number: `TEST-MUT-001-${suffix}`,
+      parcel_number: parcels[0].parcel_number,
+      parcel_id: parcels[0].id,
+      mutation_type: 'vente',
+      requester_type: 'proprietaire',
+      requester_name: 'Test Vendeur Alpha',
+      beneficiary_name: 'Test Acheteur Beta',
+      status: 'pending',
+      payment_status: 'paid',
+      total_amount_usd: 166,
+      market_value_usd: 25000,
+      mutation_fee_amount: 83,
+      user_id: userId,
+      proposed_changes: { new_owner_name: 'Test Acheteur Beta', new_owner_legal_status: 'Personne physique' } as unknown as Json,
+      fee_items: [
+        { fee_name: 'Frais de dossier', amount_usd: 83, is_mandatory: true },
+        { fee_name: 'Frais de mutation (1.5%)', amount_usd: 83, is_mandatory: true },
+      ] as unknown as Json,
+    },
+    {
+      reference_number: `TEST-MUT-002-${suffix}`,
+      parcel_number: parcels[1].parcel_number,
+      parcel_id: parcels[1].id,
+      mutation_type: 'donation',
+      requester_type: 'proprietaire',
+      requester_name: 'Test Donateur Gamma',
+      beneficiary_name: 'Test Donataire Delta',
+      status: 'approved',
+      payment_status: 'paid',
+      total_amount_usd: 83,
+      user_id: userId,
+      proposed_changes: { new_owner_name: 'Test Donataire Delta', new_owner_legal_status: 'Personne physique' } as unknown as Json,
+      fee_items: [
+        { fee_name: 'Frais de dossier', amount_usd: 83, is_mandatory: true },
+      ] as unknown as Json,
+      reviewed_at: new Date().toISOString(),
+    },
+    {
+      reference_number: `TEST-MUT-003-${suffix}`,
+      parcel_number: parcels[2].parcel_number,
+      parcel_id: parcels[2].id,
+      mutation_type: 'succession',
+      requester_type: 'heritier',
+      requester_name: 'Test Héritier Epsilon',
+      status: 'rejected',
+      payment_status: 'paid',
+      total_amount_usd: 83,
+      user_id: userId,
+      proposed_changes: { new_owner_name: 'Test Héritier Epsilon', new_owner_legal_status: 'Personne physique' } as unknown as Json,
+      fee_items: [
+        { fee_name: 'Frais de dossier', amount_usd: 83, is_mandatory: true },
+      ] as unknown as Json,
+      rejection_reason: 'Documents insuffisants (test)',
+      reviewed_at: new Date().toISOString(),
+    },
+  ];
+
+  const { data, error } = await supabase
+    .from('mutation_requests')
+    .insert(records)
+    .select('id');
+
+  if (error) console.error('Mutations (non-bloquant):', error);
+  return data ?? [];
+};
+
+/** Step 13b: Generate subdivision requests */
+export const generateSubdivisionRequests = async (
+  userId: string,
+  parcels: Array<{ id: string; parcel_number: string }>,
+  suffix: string
+) => {
+  const records = [
+    {
+      reference_number: `TEST-SUB-001-${suffix}`,
+      parcel_number: parcels[3].parcel_number,
+      parcel_id: parcels[3].id,
+      number_of_lots: 3,
+      parent_parcel_area_sqm: 1500,
+      parent_parcel_owner_name: 'Test Propriétaire Lotissement',
+      requester_first_name: 'Test',
+      requester_last_name: 'Lotisseur Alpha',
+      requester_phone: '+243810000001',
+      requester_type: 'proprietaire',
+      status: 'pending',
+      purpose_of_subdivision: 'Résidentielle',
+      user_id: userId,
+      lots_data: [
+        { lot_number: 1, area_sqm: 500, intended_use: 'Résidentielle' },
+        { lot_number: 2, area_sqm: 500, intended_use: 'Résidentielle' },
+        { lot_number: 3, area_sqm: 500, intended_use: 'Commerciale' },
+      ] as unknown as Json,
+    },
+    {
+      reference_number: `TEST-SUB-002-${suffix}`,
+      parcel_number: parcels[4].parcel_number,
+      parcel_id: parcels[4].id,
+      number_of_lots: 2,
+      parent_parcel_area_sqm: 800,
+      parent_parcel_owner_name: 'Test Propriétaire Subdivision',
+      requester_first_name: 'Test',
+      requester_last_name: 'Lotisseur Beta',
+      requester_phone: '+243810000002',
+      requester_type: 'mandataire',
+      status: 'approved',
+      purpose_of_subdivision: 'Commerciale',
+      user_id: userId,
+      lots_data: [
+        { lot_number: 1, area_sqm: 400, intended_use: 'Commerciale' },
+        { lot_number: 2, area_sqm: 400, intended_use: 'Commerciale' },
+      ] as unknown as Json,
+      reviewed_at: new Date().toISOString(),
+      approved_at: new Date().toISOString(),
+    },
+  ];
+
+  const { data, error } = await supabase
+    .from('subdivision_requests')
+    .insert(records)
+    .select('id');
+
+  if (error) console.error('Lotissements (non-bloquant):', error);
+  return data ?? [];
 };
