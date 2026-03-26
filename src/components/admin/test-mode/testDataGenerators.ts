@@ -318,9 +318,9 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
       ville: 'Lubumbashi',
       commune: 'Lubumbashi',
       
-      declared_usage: 'commerce',
+      declared_usage: 'Commerce',
       area_sqm: 1200,
-      construction_nature: 'immeuble',
+      construction_nature: 'Durable',
       occupation_duration: '1_3_ans',
       estimated_processing_days: 60,
       status: 'rejected',
