@@ -17,6 +17,8 @@ export interface TestDataStats {
   boundaryHistory: number;
   mortgages: number;
   buildingPermits: number;
+  mutationRequests: number;
+  subdivisionRequests: number;
 }
 
 export const EMPTY_STATS: TestDataStats = {
