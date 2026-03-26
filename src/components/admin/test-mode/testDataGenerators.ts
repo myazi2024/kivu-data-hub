@@ -742,7 +742,7 @@ export const generateCertificates = async (
   const records = [
     {
       reference_number: `TEST-CERT-001-${suffix}`,
-      certificate_type: 'attestation_cadastrale',
+      certificate_type: 'titre_foncier',
       parcel_number: parcelNumbers[0],
       recipient_name: 'Test Propriétaire 1',
       status: 'generated',
