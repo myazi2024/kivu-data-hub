@@ -605,16 +605,16 @@ export const generateOwnershipHistory = async (
       owner_name: `Ancien Propriétaire ${i + 1}A`,
       ownership_start_date: '2010-01-01',
       ownership_end_date: '2018-06-15',
-      legal_status: 'personne_physique',
-      mutation_type: 'vente',
+      legal_status: 'Personne physique',
+      mutation_type: 'Vente',
     },
     {
       parcel_id: p.id,
       owner_name: `Propriétaire Actuel ${i + 1}`,
       ownership_start_date: '2018-06-15',
       ownership_end_date: null,
-      legal_status: i % 2 === 0 ? 'personne_physique' : 'personne_morale',
-      mutation_type: 'achat',
+      legal_status: i % 2 === 0 ? 'Personne physique' : 'Personne morale',
+      mutation_type: 'Donation',
     },
   ]);
 
@@ -720,7 +720,7 @@ export const generateBuildingPermits = async (
     issue_date: ['2023-01-10', '2024-03-15'][i],
     issuing_service: [`Division Provinciale de l'Urbanisme et Habitat - Kinshasa`, `Service Communal d'Urbanisme - Goma`][i],
     validity_period_months: [24, 12][i],
-    administrative_status: ['Conforme', 'Non autorisé'][i],
+    administrative_status: ['Approuvé', 'Rejeté'][i],
     is_current: [true, false][i],
   }));
 
@@ -742,7 +742,7 @@ export const generateCertificates = async (
   const records = [
     {
       reference_number: `TEST-CERT-001-${suffix}`,
-      certificate_type: 'attestation_cadastrale',
+      certificate_type: 'titre_foncier',
       parcel_number: parcelNumbers[0],
       recipient_name: 'Test Propriétaire 1',
       status: 'generated',
@@ -751,7 +751,7 @@ export const generateCertificates = async (
     },
     {
       reference_number: `TEST-CERT-002-${suffix}`,
-      certificate_type: 'certificat_bornage',
+      certificate_type: 'mutation_fonciere',
       parcel_number: parcelNumbers[1],
       recipient_name: 'Test Propriétaire 2',
       status: 'generated',
