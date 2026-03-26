@@ -299,6 +299,8 @@ export const useDashboardData = (startDate?: Date, endDate?: Date) => {
         blockedUsers,
         expiredCodes,
         inactiveResellers: inactiveResellers.data?.length || 0,
+        pendingDisputes,
+        pendingMortgages,
         recentActivities: activities,
         topResellers,
         topUsers,
