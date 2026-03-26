@@ -613,8 +613,8 @@ export const generateOwnershipHistory = async (
       owner_name: `Propriétaire Actuel ${i + 1}`,
       ownership_start_date: '2018-06-15',
       ownership_end_date: null,
-      legal_status: i % 2 === 0 ? 'personne_physique' : 'personne_morale',
-      mutation_type: 'achat',
+      legal_status: i % 2 === 0 ? 'Personne physique' : 'Personne morale',
+      mutation_type: 'Donation',
     },
   ]);
 
