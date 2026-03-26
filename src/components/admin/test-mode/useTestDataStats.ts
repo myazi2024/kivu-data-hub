@@ -35,8 +35,7 @@ export const useTestDataStats = () => {
         // Bug 16 fix: expertise requests use reference_number with TEST- prefix for reliable filtering
         /* 7  */ supabase.from('real_estate_expertise_requests').select('id', { count: 'exact', head: true }).ilike('reference_number', 'TEST-%'),
         /* 8  */ supabase.from('cadastral_land_disputes').select('id', { count: 'exact', head: true }).ilike('parcel_number', 'TEST-%'),
-        /* 9  */ supabase.from('cadastral_boundary_conflicts').select('id', { count: 'exact', head: true }).ilike('reporting_parcel_number', 'TEST-%'),
-        /* 10 */ parcelIds.length > 0
+        /* 9 */ parcelIds.length > 0
           ? supabase.from('cadastral_ownership_history').select('id', { count: 'exact', head: true }).in('parcel_id', parcelIds)
           : Promise.resolve({ count: 0 }),
         /* 11 */ parcelIds.length > 0
