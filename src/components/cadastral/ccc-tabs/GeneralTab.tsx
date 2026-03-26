@@ -16,6 +16,7 @@ import { PropertyTitleTypeSelect, PROPERTY_TITLE_TYPES, getEffectiveTitleName } 
 import { InputWithPopover } from '../InputWithPopover';
 import SuggestivePicklist from '../SuggestivePicklist';
 import AdditionalConstructionBlock, { AdditionalConstruction } from '../AdditionalConstructionBlock';
+import { BuildingPermitIssuingServiceSelect } from '../BuildingPermitIssuingServiceSelect';
 
 // Types for owner, permit, etc.
 export interface CurrentOwner {
