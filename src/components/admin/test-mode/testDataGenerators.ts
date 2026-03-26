@@ -262,9 +262,9 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
       commune: 'Gombe',
       quartier: 'Socimat',
       
-      declared_usage: 'habitation',
+      declared_usage: 'Habitation',
       area_sqm: 500,
-      construction_nature: 'maison',
+      construction_nature: 'Durable',
       occupation_duration: '5_ans_plus',
       estimated_processing_days: 30,
       status: 'pending',
