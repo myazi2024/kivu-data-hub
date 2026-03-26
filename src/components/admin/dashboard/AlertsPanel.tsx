@@ -83,6 +83,20 @@ export function AlertsPanel({ loading, alerts, onAlertAction }: AlertsPanelProps
       description: 'Aucune vente depuis 30 jours',
       count: alerts.inactiveResellers || 0,
     },
+    {
+      id: 'disputes',
+      type: 'warning',
+      title: 'Litiges en attente',
+      description: 'Litiges nécessitant un traitement',
+      count: alerts.pendingDisputes || 0,
+    },
+    {
+      id: 'mortgages',
+      type: 'info',
+      title: 'Hypothèques en attente',
+      description: 'Demandes d\'hypothèque à traiter',
+      count: alerts.pendingMortgages || 0,
+    },
   ];
 
   const getIcon = (type: string) => {
