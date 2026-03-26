@@ -254,7 +254,7 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
       requester_email: 'test-titre1@example.com',
       requester_type: 'proprietaire',
       requester_gender: 'M',
-      requester_legal_status: 'personne_physique',
+      requester_legal_status: 'Personne physique',
       nationality: 'RDC',
       section_type: 'urbain',
       province: 'Kinshasa',
