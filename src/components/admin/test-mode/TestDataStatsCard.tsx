@@ -49,6 +49,8 @@ const STAT_ITEMS: { key: keyof TestDataStats; label: string }[] = [
   { key: 'buildingPermits', label: 'Permis bâtir' },
   { key: 'fraudAttempts', label: 'Fraudes' },
   { key: 'certificates', label: 'Certificats' },
+  { key: 'mutationRequests', label: 'Mutations' },
+  { key: 'subdivisionRequests', label: 'Lotissements' },
 ];
 
 const TestDataStatsCard: React.FC<TestDataStatsCardProps> = ({
