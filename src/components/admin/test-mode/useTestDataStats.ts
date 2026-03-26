@@ -54,6 +54,8 @@ export const useTestDataStats = () => {
         /* 16 */ parcelIds.length > 0
           ? supabase.from('cadastral_building_permits').select('id', { count: 'exact', head: true }).in('parcel_id', parcelIds)
           : Promise.resolve({ count: 0 }),
+        /* 17 */ supabase.from('mutation_requests').select('id', { count: 'exact', head: true }).ilike('reference_number', 'TEST-%'),
+        /* 18 */ supabase.from('subdivision_requests').select('id', { count: 'exact', head: true }).ilike('reference_number', 'TEST-%'),
       ]);
 
       const count = (i: number) =>
