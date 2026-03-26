@@ -16,7 +16,8 @@ import { UserLandDisputes } from '@/components/user/UserLandDisputes';
 import { UserExpertiseRequests } from '@/components/user/UserExpertiseRequests';
 import { UserMutationRequests } from '@/components/user/UserMutationRequests';
 import { UserMortgageRequests } from '@/components/user/UserMortgageRequests';
-import { User, FileText, Building, CreditCard, Settings, ScrollText, Scale, FileSearch, FileEdit, Landmark } from 'lucide-react';
+import { UserSubdivisionRequests } from '@/components/user/UserSubdivisionRequests';
+import { User, FileText, Building, CreditCard, Settings, ScrollText, Scale, FileSearch, FileEdit, Landmark, LayoutGrid } from 'lucide-react';
 
 const UserDashboard = () => {
   const { user, loading } = useAuth();
