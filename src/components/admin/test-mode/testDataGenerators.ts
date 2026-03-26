@@ -718,7 +718,7 @@ export const generateBuildingPermits = async (
     parcel_id: p.id,
     permit_number: `TEST-PC-${Date.now().toString(36)}-${i}`,
     issue_date: ['2023-01-10', '2024-03-15'][i],
-    issuing_service: [`Service Urbanisme Kinshasa`, `Service Urbanisme Goma`][i],
+    issuing_service: [`Division Provinciale de l'Urbanisme et Habitat - Kinshasa`, `Service Communal d'Urbanisme - Goma`][i],
     validity_period_months: [24, 12][i],
     administrative_status: ['Conforme', 'Non autorisé'][i],
     is_current: [true, false][i],
