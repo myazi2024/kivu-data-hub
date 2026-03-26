@@ -53,9 +53,12 @@ export const TEST_TABLES_DELETION_ORDER = [
   { table: 'cadastral_invoices' as const, filter: 'ilike' as const, column: 'parcel_number', value: 'TEST-%' },
   // Contributions
   { table: 'cadastral_contributions' as const, filter: 'ilike' as const, column: 'parcel_number', value: 'TEST-%' },
-  // Parcel children (ownership, tax, boundary history handled via parcel_id join)
+  // Parcel children (ownership, tax, boundary history, mortgages, permits handled via parcel_id join)
   { table: 'cadastral_ownership_history' as const, filter: 'parcel_join' as const, column: '', value: '' },
   { table: 'cadastral_tax_history' as const, filter: 'parcel_join' as const, column: '', value: '' },
+  { table: 'cadastral_boundary_history' as const, filter: 'parcel_join' as const, column: '', value: '' },
+  { table: 'cadastral_mortgages' as const, filter: 'parcel_join' as const, column: '', value: '' },
+  { table: 'cadastral_building_permits' as const, filter: 'parcel_join' as const, column: '', value: '' },
   // Parcels
   { table: 'cadastral_parcels' as const, filter: 'ilike' as const, column: 'parcel_number', value: 'TEST-%' },
   // Independent tables
