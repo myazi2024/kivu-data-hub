@@ -123,7 +123,7 @@ export const useLandDataAnalytics = () => {
           };
         });
 
-      // Enrich boundary conflicts by parcel_number lookup
+      // Enrich records by parcel_number lookup (certificates, invoices)
       const enrichByParcelNumber = (records: any[]) =>
         records.map(r => {
           const p1 = r.reporting_parcel_number && byNum.get(r.reporting_parcel_number);
