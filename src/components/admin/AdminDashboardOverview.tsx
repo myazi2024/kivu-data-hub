@@ -323,6 +323,8 @@ export function AdminDashboardOverview() {
             blockedUsers: dashboardData.blockedUsers,
             expiredCodes: dashboardData.expiredCodes,
             inactiveResellers: dashboardData.inactiveResellers,
+            pendingDisputes: dashboardData.pendingDisputes,
+            pendingMortgages: dashboardData.pendingMortgages,
           }}
           onAlertAction={handleAlertAction}
         />
