@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, Clock, XCircle, UserX, Calendar, TrendingDown } from 'lucide-react';
+import { AlertTriangle, Clock, XCircle, UserX, Calendar, TrendingDown, Scale, Building2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface AlertItem {
@@ -25,6 +25,8 @@ interface AlertsPanelProps {
     blockedUsers?: number;
     expiredCodes?: number;
     inactiveResellers?: number;
+    pendingDisputes?: number;
+    pendingMortgages?: number;
   };
   onAlertAction?: (alertType: string) => void;
 }
@@ -81,6 +83,20 @@ export function AlertsPanel({ loading, alerts, onAlertAction }: AlertsPanelProps
       description: 'Aucune vente depuis 30 jours',
       count: alerts.inactiveResellers || 0,
     },
+    {
+      id: 'disputes',
+      type: 'warning',
+      title: 'Litiges en attente',
+      description: 'Litiges nécessitant un traitement',
+      count: alerts.pendingDisputes || 0,
+    },
+    {
+      id: 'mortgages',
+      type: 'info',
+      title: 'Hypothèques en attente',
+      description: 'Demandes d\'hypothèque à traiter',
+      count: alerts.pendingMortgages || 0,
+    },
   ];
 
   const getIcon = (type: string) => {
@@ -90,6 +106,8 @@ export function AlertsPanel({ loading, alerts, onAlertAction }: AlertsPanelProps
       blocked: <UserX className="h-5 w-5" />,
       expired: <Calendar className="h-5 w-5" />,
       inactive: <TrendingDown className="h-5 w-5" />,
+      disputes: <Scale className="h-5 w-5" />,
+      mortgages: <Building2 className="h-5 w-5" />,
     };
     return icons[type as keyof typeof icons] || <AlertTriangle className="h-5 w-5" />;
   };

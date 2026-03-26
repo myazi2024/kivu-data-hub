@@ -18,6 +18,8 @@ interface DashboardData {
   blockedUsers: number;
   expiredCodes: number;
   inactiveResellers: number;
+  pendingDisputes: number;
+  pendingMortgages: number;
 
   // Recent Activity
   recentActivities: Array<{
@@ -68,6 +70,8 @@ export const useDashboardData = (startDate?: Date, endDate?: Date) => {
     blockedUsers: 0,
     expiredCodes: 0,
     inactiveResellers: 0,
+    pendingDisputes: 0,
+    pendingMortgages: 0,
     recentActivities: [],
     topResellers: [],
     topUsers: [],
@@ -183,6 +187,21 @@ export const useDashboardData = (startDate?: Date, endDate?: Date) => {
         .select('reseller_id')
         .lt('created_at', thirtyDaysAgo.toISOString());
 
+      // Fetch pending disputes and mortgages
+      const [disputesResult, mortgagesResult] = await Promise.all([
+        supabase
+          .from('cadastral_land_disputes')
+          .select('*', { count: 'exact', head: true })
+          .in('current_status', ['pending', 'under_investigation']),
+        supabase
+          .from('cadastral_mortgages')
+          .select('*', { count: 'exact', head: true })
+          .eq('mortgage_status', 'pending'),
+      ]);
+
+      const pendingDisputes = disputesResult.count || 0;
+      const pendingMortgages = mortgagesResult.count || 0;
+
       // Prepare recent activities
       const activities = [
         ...recentContributions.data?.map(c => ({
@@ -280,6 +299,8 @@ export const useDashboardData = (startDate?: Date, endDate?: Date) => {
         blockedUsers,
         expiredCodes,
         inactiveResellers: inactiveResellers.data?.length || 0,
+        pendingDisputes,
+        pendingMortgages,
         recentActivities: activities,
         topResellers,
         topUsers,

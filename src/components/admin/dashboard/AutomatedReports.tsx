@@ -1,116 +1,113 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Download, Mail, Calendar, CheckCircle } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { FileText, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
-interface Report {
-  id: string;
-  name: string;
-  type: 'daily' | 'weekly' | 'monthly';
-  lastGenerated: string;
-  status: 'active' | 'paused';
-}
+import { supabase } from '@/integrations/supabase/client';
 
 interface AutomatedReportsProps {
-  reports?: Report[];
   onGenerate?: (reportId: string) => void;
-  onSchedule?: (reportId: string) => void;
 }
 
-export function AutomatedReports({ 
-  reports = [],
-  onGenerate = () => {},
-  onSchedule = () => {}
-}: AutomatedReportsProps) {
+interface ReportDefinition {
+  id: string;
+  name: string;
+  description: string;
+  fetchAndExport: () => Promise<void>;
+}
+
+export function AutomatedReports({ onGenerate }: AutomatedReportsProps) {
   const { toast } = useToast();
 
-  const defaultReports: Report[] = reports.length > 0 ? reports : [
-    {
-      id: '1',
-      name: 'Rapport quotidien revenus',
-      type: 'daily',
-      lastGenerated: new Date().toISOString(),
-      status: 'active'
-    },
-    {
-      id: '2',
-      name: 'Rapport hebdomadaire contributions',
-      type: 'weekly',
-      lastGenerated: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-      status: 'active'
-    },
-    {
-      id: '3',
-      name: 'Rapport mensuel performance',
-      type: 'monthly',
-      lastGenerated: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-      status: 'paused'
+  const downloadCSV = (data: any[], filename: string) => {
+    if (!data || data.length === 0) {
+      toast({ title: 'Aucune donnée', description: 'Pas de données à exporter', variant: 'destructive' });
+      return;
     }
+    const headers = Object.keys(data[0]);
+    const csvContent = [
+      headers.join(','),
+      ...data.map(row => headers.map(h => {
+        const val = row[h];
+        const str = val === null || val === undefined ? '' : String(val);
+        return str.includes(',') || str.includes('"') ? `"${str.replace(/"/g, '""')}"` : str;
+      }).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${filename}_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const reports: ReportDefinition[] = [
+    {
+      id: 'revenue',
+      name: 'Export Revenus (Factures)',
+      description: 'Toutes les factures payées avec montants et dates',
+      fetchAndExport: async () => {
+        const { data, error } = await supabase
+          .from('cadastral_invoices')
+          .select('invoice_number, parcel_number, client_email, client_name, total_amount_usd, status, payment_method, created_at')
+          .eq('status', 'paid')
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+        downloadCSV(data || [], 'revenus_factures');
+      },
+    },
+    {
+      id: 'contributions',
+      name: 'Export Contributions CCC',
+      description: 'Toutes les contributions avec statut et parcelle',
+      fetchAndExport: async () => {
+        const { data, error } = await supabase
+          .from('cadastral_contributions')
+          .select('parcel_number, contribution_type, status, province, commune, created_at')
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+        downloadCSV(data || [], 'contributions_ccc');
+      },
+    },
+    {
+      id: 'users',
+      name: 'Export Utilisateurs',
+      description: 'Liste des utilisateurs inscrits',
+      fetchAndExport: async () => {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('full_name, email, phone, is_blocked, created_at')
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+        downloadCSV(data || [], 'utilisateurs');
+      },
+    },
   ];
 
-  const handleDownload = (report: Report) => {
-    toast({
-      title: "Téléchargement en cours",
-      description: `Génération de ${report.name}...`
-    });
-    onGenerate(report.id);
-  };
-
-  const handleEmail = (report: Report) => {
-    toast({
-      title: "Email envoyé",
-      description: `${report.name} envoyé par email`
-    });
-  };
-
-  const handleSchedule = (report: Report) => {
-    toast({
-      title: "Planification mise à jour",
-      description: `${report.name} ${report.status === 'active' ? 'mis en pause' : 'activé'}`
-    });
-    onSchedule(report.id);
-  };
-
-  const getTypeLabel = (type: Report['type']) => {
-    switch (type) {
-      case 'daily':
-        return 'Quotidien';
-      case 'weekly':
-        return 'Hebdomadaire';
-      case 'monthly':
-        return 'Mensuel';
-    }
-  };
-
-  const getTypeColor = (type: Report['type']) => {
-    switch (type) {
-      case 'daily':
-        return 'bg-blue-500/10 text-blue-600 border-blue-500/20';
-      case 'weekly':
-        return 'bg-green-500/10 text-green-600 border-green-500/20';
-      case 'monthly':
-        return 'bg-purple-500/10 text-purple-600 border-purple-500/20';
+  const handleExport = async (report: ReportDefinition) => {
+    try {
+      toast({ title: 'Génération en cours', description: `Export de ${report.name}...` });
+      await report.fetchAndExport();
+      toast({ title: 'Export terminé', description: `${report.name} téléchargé avec succès` });
+      onGenerate?.(report.id);
+    } catch (error: any) {
+      console.error('Export error:', error);
+      toast({ title: 'Erreur', description: `Impossible d'exporter: ${error.message}`, variant: 'destructive' });
     }
   };
 
   return (
     <Card>
       <CardHeader className="p-4 md:p-6">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm md:text-base flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Rapports automatisés
-          </CardTitle>
-          <Button variant="outline" size="sm" className="text-xs h-8">
-            <FileText className="h-3 w-3 mr-1" />
-            Nouveau rapport
-          </Button>
-        </div>
+        <CardTitle className="text-sm md:text-base flex items-center gap-2">
+          <FileText className="h-4 w-4" />
+          Rapports & Exports
+        </CardTitle>
       </CardHeader>
       <CardContent className="p-4 md:p-6 pt-0">
         <div className="space-y-3">
-          {defaultReports.map((report) => (
+          {reports.map((report) => (
             <div
               key={report.id}
               className="p-3 rounded-lg border bg-card"
@@ -121,51 +118,19 @@ export function AutomatedReports({
                     {report.name}
                   </h4>
                   <p className="text-[10px] md:text-xs text-muted-foreground mt-1">
-                    Dernière génération: {new Date(report.lastGenerated).toLocaleDateString('fr-FR')}
+                    {report.description}
                   </p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <Badge 
-                    variant="outline" 
-                    className={`text-[10px] ${getTypeColor(report.type)}`}
-                  >
-                    {getTypeLabel(report.type)}
-                  </Badge>
-                  {report.status === 'active' && (
-                    <CheckCircle className="h-3 w-3 md:h-4 md:w-4 text-green-600" />
-                  )}
-                </div>
               </div>
-
-              <div className="flex items-center gap-2 flex-wrap">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 text-[10px] md:text-xs px-2"
-                  onClick={() => handleDownload(report)}
-                >
-                  <Download className="h-3 w-3 mr-1" />
-                  Télécharger
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 text-[10px] md:text-xs px-2"
-                  onClick={() => handleEmail(report)}
-                >
-                  <Mail className="h-3 w-3 mr-1" />
-                  Envoyer
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 text-[10px] md:text-xs px-2"
-                  onClick={() => handleSchedule(report)}
-                >
-                  <Calendar className="h-3 w-3 mr-1" />
-                  {report.status === 'active' ? 'Pause' : 'Activer'}
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-[10px] md:text-xs px-2"
+                onClick={() => handleExport(report)}
+              >
+                <Download className="h-3 w-3 mr-1" />
+                Télécharger CSV
+              </Button>
             </div>
           ))}
         </div>

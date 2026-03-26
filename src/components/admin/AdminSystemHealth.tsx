@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-
 import { supabase } from '@/integrations/supabase/client';
 import { Activity, Database, Server, RefreshCw, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -13,6 +12,16 @@ interface ServiceStatus {
   latency?: number;
   lastCheck: Date;
 }
+
+const ALL_TABLES = [
+  'profiles', 'cadastral_parcels', 'cadastral_contributions', 'payments', 'notifications',
+  'cadastral_invoices', 'cadastral_contributor_codes', 'cadastral_services_config',
+  'reseller_sales', 'resellers', 'discount_codes', 'articles', 'article_themes',
+  'audit_logs', 'fraud_attempts', 'land_title_requests', 'mutation_requests',
+  'real_estate_expertise_requests', 'cadastral_land_disputes', 'cadastral_mortgages',
+  'cadastral_tax_history', 'cadastral_ownership_history', 'cadastral_boundary_history',
+  'cadastral_building_permits', 'generated_certificates', 'subdivision_requests',
+] as const;
 
 const AdminSystemHealth = () => {
   const [services, setServices] = useState<ServiceStatus[]>([]);
@@ -30,34 +39,55 @@ const AdminSystemHealth = () => {
     setLoading(true);
     try {
       const startTime = Date.now();
-      
+
       // Test Supabase connection
       const { error: dbError } = await supabase.from('profiles').select('count', { count: 'exact', head: true });
       const dbLatency = Date.now() - startTime;
-      
+
       // Test auth service
       const authStart = Date.now();
       const { error: authError } = await supabase.auth.getSession();
       const authLatency = Date.now() - authStart;
 
-      // Get some DB stats
-      const tables = ['profiles', 'cadastral_parcels', 'cadastral_contributions', 'payments', 'notifications'];
-      let totalRecords = 0;
-      
-      for (const table of tables) {
-        const { count } = await supabase.from(table as any).select('*', { count: 'exact', head: true });
-        totalRecords += count || 0;
-      }
+      // Count records across all tables in parallel
+      const countResults = await Promise.all(
+        ALL_TABLES.map(async (table) => {
+          try {
+            const { count } = await supabase.from(table as any).select('*', { count: 'exact', head: true });
+            return count || 0;
+          } catch {
+            return 0;
+          }
+        })
+      );
+
+      const totalRecords = countResults.reduce((sum, c) => sum + c, 0);
+      const accessibleTables = countResults.filter((_, i) => true).length;
 
       setDbStats({
-        totalTables: tables.length,
+        totalTables: accessibleTables,
         totalRecords,
       });
 
-      // Test real latency for storage
+      // Test storage
       const storageStart = Date.now();
       const { error: storageError } = await supabase.storage.getBucket('avatars');
       const storageLatency = Date.now() - storageStart;
+
+      // Test Edge Functions with a real ping
+      const edgeFnStart = Date.now();
+      let edgeFnStatus: 'online' | 'degraded' | 'offline' = 'offline';
+      let edgeFnLatency: number | undefined;
+      try {
+        const { error: fnError } = await supabase.functions.invoke('cleanup-test-data', {
+          body: { dry_run: true },
+        });
+        edgeFnLatency = Date.now() - edgeFnStart;
+        edgeFnStatus = fnError ? 'degraded' : edgeFnLatency > 2000 ? 'degraded' : 'online';
+      } catch {
+        edgeFnLatency = Date.now() - edgeFnStart;
+        edgeFnStatus = 'offline';
+      }
 
       setServices([
         {
@@ -67,7 +97,7 @@ const AdminSystemHealth = () => {
           lastCheck: new Date(),
         },
         {
-          name: 'Service d\'authentification',
+          name: "Service d'authentification",
           status: authError ? 'offline' : authLatency > 300 ? 'degraded' : 'online',
           latency: authLatency,
           lastCheck: new Date(),
@@ -86,8 +116,8 @@ const AdminSystemHealth = () => {
         },
         {
           name: 'Edge Functions',
-          status: 'degraded',
-          latency: undefined,
+          status: edgeFnStatus,
+          latency: edgeFnLatency,
           lastCheck: new Date(),
         },
       ]);
@@ -127,10 +157,10 @@ const AdminSystemHealth = () => {
     }
   };
 
-  const overallStatus = services.every(s => s.status === 'online') 
-    ? 'online' 
-    : services.some(s => s.status === 'offline') 
-      ? 'offline' 
+  const overallStatus = services.every(s => s.status === 'online')
+    ? 'online'
+    : services.some(s => s.status === 'offline')
+      ? 'offline'
       : 'degraded';
 
   return (
@@ -140,8 +170,8 @@ const AdminSystemHealth = () => {
           <h2 className="text-lg font-bold">Santé du Système</h2>
           <p className="text-xs text-muted-foreground">Surveillance en temps réel</p>
         </div>
-        <Button 
-          onClick={checkSystemHealth} 
+        <Button
+          onClick={checkSystemHealth}
           disabled={loading}
           size="sm"
           className="text-xs"
@@ -225,7 +255,6 @@ const AdminSystemHealth = () => {
           )}
         </CardContent>
       </Card>
-
     </div>
   );
 };

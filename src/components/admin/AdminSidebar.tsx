@@ -43,6 +43,8 @@ interface AdminSidebarProps {
   pendingExpertiseCount?: number;
   pendingSubdivisionsCount?: number;
   pendingPaymentsCount?: number;
+  pendingDisputesCount?: number;
+  pendingMortgagesCount?: number;
   onNavigate?: () => void;
 }
 
@@ -113,9 +115,9 @@ const menuItems = [
       { icon: FileCheck, label: 'Expertises foncières', value: 'expertise-requests', badge: 'expertise' },
       { icon: DollarSign, label: 'Config Frais Expert.', value: 'expertise-fees-config', badge: null },
       
-      { icon: Scale, label: 'Litiges Fonciers', value: 'land-disputes', badge: null },
+      { icon: Scale, label: 'Litiges Fonciers', value: 'land-disputes', badge: 'disputes' },
       { icon: BarChart, label: 'Analytics Litiges', value: 'dispute-analytics', badge: null },
-      { icon: Database, label: 'Hypothèques', value: 'mortgages', badge: null },
+      { icon: Database, label: 'Hypothèques', value: 'mortgages', badge: 'mortgages' },
       { icon: FileText, label: 'Historique Taxes', value: 'tax-history', badge: null },
       { icon: Receipt, label: 'Déclarations Fiscales', value: 'tax-declarations', badge: null },
       { icon: Users, label: 'Historique Propriété', value: 'ownership-history', badge: null },
@@ -148,7 +150,7 @@ const menuItems = [
   },
 ];
 
-export function AdminSidebar({ pendingCount, pendingLandTitleCount, pendingPermitsCount, pendingMutationsCount, pendingExpertiseCount, pendingSubdivisionsCount, pendingPaymentsCount, onNavigate }: AdminSidebarProps) {
+export function AdminSidebar({ pendingCount, pendingLandTitleCount, pendingPermitsCount, pendingMutationsCount, pendingExpertiseCount, pendingSubdivisionsCount, pendingPaymentsCount, pendingDisputesCount, pendingMortgagesCount, onNavigate }: AdminSidebarProps) {
   const location = useLocation();
   const currentTab = new URLSearchParams(location.search).get('tab') || 'dashboard';
 
@@ -165,6 +167,8 @@ export function AdminSidebar({ pendingCount, pendingLandTitleCount, pendingPermi
       case 'expertise': return pendingExpertiseCount || 0;
       case 'subdivisions': return pendingSubdivisionsCount || 0;
       case 'payments': return pendingPaymentsCount || 0;
+      case 'disputes': return pendingDisputesCount || 0;
+      case 'mortgages': return pendingMortgagesCount || 0;
       default: return 0;
     }
   };

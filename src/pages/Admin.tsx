@@ -77,6 +77,8 @@ const Admin = () => {
   const [pendingExpertiseCount, setPendingExpertiseCount] = useState(0);
   const [pendingSubdivisionsCount, setPendingSubdivisionsCount] = useState(0);
   const [pendingPaymentsCount, setPendingPaymentsCount] = useState(0);
+  const [pendingDisputesCount, setPendingDisputesCount] = useState(0);
+  const [pendingMortgagesCount, setPendingMortgagesCount] = useState(0);
   const [hasAdminRole, setHasAdminRole] = useState<boolean | null>(null);
 
   // Verify admin role from user_roles table
@@ -120,6 +122,8 @@ const Admin = () => {
         fetchPendingExpertiseCount(),
         fetchPendingSubdivisionsCount(),
         fetchPendingPaymentsCount(),
+        fetchPendingDisputesCount(),
+        fetchPendingMortgagesCount(),
       ]);
     }
   }, [hasAdminRole]);
@@ -234,6 +238,36 @@ const Admin = () => {
       }
     } catch (error) {
       console.error('Erreur compteur paiements:', error);
+    }
+  };
+
+  const fetchPendingDisputesCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('cadastral_land_disputes')
+        .select('*', { count: 'exact', head: true })
+        .in('current_status', ['pending', 'under_investigation']);
+
+      if (!error) {
+        setPendingDisputesCount(count || 0);
+      }
+    } catch (error) {
+      console.error('Erreur compteur litiges:', error);
+    }
+  };
+
+  const fetchPendingMortgagesCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('cadastral_mortgages')
+        .select('*', { count: 'exact', head: true })
+        .eq('mortgage_status', 'pending');
+
+      if (!error) {
+        setPendingMortgagesCount(count || 0);
+      }
+    } catch (error) {
+      console.error('Erreur compteur hypothèques:', error);
     }
   };
 
@@ -388,6 +422,8 @@ const Admin = () => {
           pendingExpertiseCount={pendingExpertiseCount}
           pendingSubdivisionsCount={pendingSubdivisionsCount}
           pendingPaymentsCount={pendingPaymentsCount}
+          pendingDisputesCount={pendingDisputesCount}
+          pendingMortgagesCount={pendingMortgagesCount}
         />
       </aside>
 
@@ -406,6 +442,8 @@ const Admin = () => {
             pendingExpertiseCount={pendingExpertiseCount}
             pendingSubdivisionsCount={pendingSubdivisionsCount}
             pendingPaymentsCount={pendingPaymentsCount}
+            pendingDisputesCount={pendingDisputesCount}
+            pendingMortgagesCount={pendingMortgagesCount}
             onNavigate={() => setMobileMenuOpen(false)}
           />
         </SheetContent>
