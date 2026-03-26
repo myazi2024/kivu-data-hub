@@ -282,16 +282,17 @@ export const useTestDataActions = ({
         console.error('History (non-blocking):', histError);
       }
 
-      // Step 11: Boundary history + mortgages + building permits (Bug 17 fix)
+      // Step 11: Boundary history + mortgages + building permits + boundary conflicts
       updateStep(11, 'running');
       try {
         await generateBoundaryHistory(parcels);
         await generateMortgages(parcels);
         await generateBuildingPermits(parcels);
+        await generateBoundaryConflicts(parcelNumbers, userId);
         updateStep(11, 'done');
       } catch (bmError) {
         updateStep(11, 'error');
-        console.error('Bornages/hypothèques/permis (non-blocking):', bmError);
+        console.error('Bornages/hypothèques/permis/conflits (non-blocking):', bmError);
       }
 
       // Step 12: Fraud attempts + certificates (non-blocking)
