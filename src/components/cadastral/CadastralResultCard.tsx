@@ -736,7 +736,8 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                       <div className="space-y-2">
                         {building_permits.filter(permit => !permit.is_current).map((permit) => {
                           const issueDate = new Date(permit.issue_date);
-                          const validityEndDate = new Date(issueDate.getTime() + permit.validity_period_months * 30 * 24 * 60 * 60 * 1000);
+                          const validityEndDate = new Date(issueDate);
+                          validityEndDate.setMonth(validityEndDate.getMonth() + permit.validity_period_months);
                           
                           return (
                             <div key={permit.id} className="p-2 bg-background/50 rounded-lg border border-border/30">
