@@ -115,9 +115,9 @@ const menuItems = [
       { icon: FileCheck, label: 'Expertises foncières', value: 'expertise-requests', badge: 'expertise' },
       { icon: DollarSign, label: 'Config Frais Expert.', value: 'expertise-fees-config', badge: null },
       
-      { icon: Scale, label: 'Litiges Fonciers', value: 'land-disputes', badge: null },
+      { icon: Scale, label: 'Litiges Fonciers', value: 'land-disputes', badge: 'disputes' },
       { icon: BarChart, label: 'Analytics Litiges', value: 'dispute-analytics', badge: null },
-      { icon: Database, label: 'Hypothèques', value: 'mortgages', badge: null },
+      { icon: Database, label: 'Hypothèques', value: 'mortgages', badge: 'mortgages' },
       { icon: FileText, label: 'Historique Taxes', value: 'tax-history', badge: null },
       { icon: Receipt, label: 'Déclarations Fiscales', value: 'tax-declarations', badge: null },
       { icon: Users, label: 'Historique Propriété', value: 'ownership-history', badge: null },
