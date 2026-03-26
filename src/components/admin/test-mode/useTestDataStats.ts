@@ -51,7 +51,7 @@ export const useTestDataStats = () => {
         /* 14 */ parcelIds.length > 0
           ? supabase.from('cadastral_mortgages').select('id', { count: 'exact', head: true }).in('parcel_id', parcelIds)
           : Promise.resolve({ count: 0 }),
-        /* 16 */ parcelIds.length > 0
+        /* 15 */ parcelIds.length > 0
           ? supabase.from('cadastral_building_permits').select('id', { count: 'exact', head: true }).in('parcel_id', parcelIds)
           : Promise.resolve({ count: 0 }),
       ]);
