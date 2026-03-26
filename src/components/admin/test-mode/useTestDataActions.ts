@@ -298,9 +298,9 @@ export const useTestDataActions = ({
       try {
         await generateFraudAttempts(userId, contributions);
         await generateCertificates(parcelNumbers, suffix, userId);
-        updateStep(13, 'done');
+        updateStep(12, 'done');
       } catch (fcError) {
-        updateStep(13, 'error');
+        updateStep(12, 'error');
         console.error('Fraud/certificates (non-blocking):', fcError);
       }
 
