@@ -275,14 +275,14 @@ export const useTestDataActions = ({
       try {
         await generateOwnershipHistory(parcels);
         await generateTaxHistory(parcels);
-        updateStep(11, 'done');
+        updateStep(10, 'done');
       } catch (histError) {
-        updateStep(11, 'error');
+        updateStep(10, 'error');
         console.error('History (non-blocking):', histError);
       }
 
-      // Step 12: Boundary history + mortgages + building permits (Bug 17 fix)
-      updateStep(12, 'running');
+      // Step 11: Boundary history + mortgages + building permits (Bug 17 fix)
+      updateStep(11, 'running');
       try {
         await generateBoundaryHistory(parcels);
         await generateMortgages(parcels);
