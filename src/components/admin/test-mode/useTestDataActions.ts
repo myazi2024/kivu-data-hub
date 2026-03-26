@@ -287,14 +287,14 @@ export const useTestDataActions = ({
         await generateBoundaryHistory(parcels);
         await generateMortgages(parcels);
         await generateBuildingPermits(parcels);
-        updateStep(12, 'done');
+        updateStep(11, 'done');
       } catch (bmError) {
-        updateStep(12, 'error');
+        updateStep(11, 'error');
         console.error('Bornages/hypothèques/permis (non-blocking):', bmError);
       }
 
-      // Step 13: Fraud attempts + certificates (non-blocking)
-      updateStep(13, 'running');
+      // Step 12: Fraud attempts + certificates (non-blocking)
+      updateStep(12, 'running');
       try {
         await generateFraudAttempts(userId, contributions);
         await generateCertificates(parcelNumbers, suffix, userId);
