@@ -1,60 +1,68 @@
 
 
-# Diagnostic complet de l'espace utilisateur — Resultats et orientations
+# Diagnostic complet du Catalogue de Services — Resultats et orientations
 
 ## Synthese
 
-L'espace utilisateur comprend 10 onglets (Profil, Donnees, Titres, Autorisations, Expertises, Mutations, Hypotheques, Litiges, Factures, Reglages) avec une architecture solide. Le diagnostic revele **3 categories de problemes** : des composants orphelins/dupliques, des indicateurs incomplets, et des fonctionnalites absentes.
+Le catalogue de services (ouvert via "Plus de donnees") comprend 3 composants principaux : `CadastralBillingPanel` (selection et paiement), `CadastralResultCard` (affichage des donnees par onglet), et `CadastralInvoice` (facture post-paiement). Le diagnostic revele **2 categories de problemes** : des divergences dans le rendu des donnees et une fragilite dans la gestion de la facture.
 
 ---
 
 ## Problemes identifies
 
-### Categorie 1 — Composants orphelins (code mort)
+### Categorie 1 — Divergences dans le rendu des donnees
 
-**Bug 1 — 4 composants jamais importes dans l'application**
+**Bug 1 — Icones de statut des permis ne correspondent pas aux valeurs reelles**
 
-Les fichiers suivants existent dans `src/components/user/` mais ne sont importes nulle part dans le dashboard utilisateur ni aucune autre page :
-- `UserQuickStats.tsx` — duplique exactement la logique des stats deja integree dans `UserProfileSection.tsx` (meme 4 compteurs, memes requetes)
-- `UserQuickActions.tsx` — duplique le lien de parrainage et le bouton support deja integres dans `UserProfileSection.tsx`
-- `UserProfileEdit.tsx` — l'edition du profil est deja geree directement dans `UserProfileSection.tsx`
-- `UserVerification.tsx` — la verification email est deja integree dans `UserProfileSection.tsx` (bouton "Verifier" a cote de l'email)
+- **Fichier** : `CadastralResultCard.tsx` L690-692 et L756-758
+- **Code** : Les conditions testent `'Conforme'` et `'Non autorise'` pour afficher les icones (vert/rouge)
+- **Valeurs reelles** : Le formulaire admin (`PermitRequestDialog.tsx` L150) ecrit `'Delivre'`, les donnees de test (`testDataGenerators.ts` L723) utilisent `'Approuve'` / `'Rejete'`
+- **Impact** : Les icones de statut (CheckCircle vert, XCircle rouge) ne s'affichent **jamais** pour les permis reels. Seul le texte brut apparait sans icone visuelle.
 
-**Impact** : 4 fichiers de code mort (~300 lignes) qui polluent le projet sans etre utilises.
+**Bug 2 — Calcul de date de fin de validite incoherent entre permis courant et historique**
 
-### Categorie 2 — Indicateurs incomplets sur le profil
+- **Fichier** : `CadastralResultCard.tsx`
+- **Permis courant** (L676-677) : `validityEndDate.setMonth(validityEndDate.getMonth() + months)` — methode correcte
+- **Permis historique** (L739) : `issueDate.getTime() + months * 30 * 24 * 60 * 60 * 1000` — approximation avec mois de 30 jours
+- **Impact** : Pour un permis de 36 mois emis le 1er janvier, la methode historique donne le 27 decembre au lieu du 1er janvier +3ans. Decalage de 3-5 jours selon les mois.
 
-**Bug 2 — Quick Stats du profil ne montrent que 4 metriques sur 8+**
+### Categorie 2 — Fragilite de la facture post-paiement
 
-`UserProfileSection.tsx` L211-216 affiche 4 stats : Contributions, Autorisations, Factures, Codes CCC. Mais l'utilisateur a egalement des :
-- Demandes de titres fonciers (`land_title_requests`)
-- Demandes d'expertise (`real_estate_expertise_requests`)
-- Demandes de mutation (`mutation_requests`)
-- Litiges fonciers (`cadastral_land_disputes`)
-- Demandes d'hypotheque (contributions type `mortgage_*`)
+**Bug 3 — CadastralInvoice lit la remise depuis localStorage**
 
-**Impact** : L'apercu rapide du profil ne reflete pas l'ensemble de l'activite de l'utilisateur.
-
-**Bug 3 — Le compteur "Autorisations" compte mal**
-
-`UserProfileSection.tsx` L54-57 : Le compteur "Autorisations" filtre les contributions ayant `permit_request_data != null`. Mais `UserBuildingPermits.tsx` L56-77 fetche aussi les contributions de type `update` avec `building_permits != null`. Le compteur du profil est donc sous-estime.
-
-### Categorie 3 — Fonctionnalite absente
-
-**Bug 4 — Pas d'onglet "Lotissements" pour l'utilisateur**
-
-L'admin a un module `AdminSubdivisionRequests` avec compteur sidebar pour `subdivision_requests`. Mais l'utilisateur n'a **aucun onglet** dans son dashboard pour suivre ses demandes de lotissement. La table `subdivision_requests` a un champ `user_id` et le mode test genere ces donnees, mais l'utilisateur ne peut pas les consulter.
-
-**Impact** : Un utilisateur qui soumet une demande de lotissement n'a aucun moyen de suivre son avancement.
-
-**Bug 5 — Page BillingDashboard duplique des fonctionnalites**
-
-`BillingDashboard.tsx` est une page separee (`/billing`) qui affiche `UserProfileHeader` + `CadastralDashboardTabs` + `UserStatisticsCharts` + `UserPreferences`. Ces composants sont tous deja accessibles depuis `UserDashboard.tsx` (onglets Factures, Profil, Reglages). La page `UserStatisticsCharts` en particulier affiche des KPI via le hook `useUserStatistics` (appel RPC `get_user_statistics`) qui ne sont visibles nulle part dans le dashboard principal.
-
-**Impact** : Duplication de navigation. Les statistiques detaillees (total depense, factures en attente, taux d'approbation, codes CCC gagnes/utilises) ne sont accessibles que depuis cette page secondaire.
+- **Fichier** : `CadastralInvoice.tsx` L52-64 et L261
+- **Code** : `localStorage.getItem('currentCadastralInvoice')` pour recuperer `discount_amount_usd` et `discount_code_used`
+- **Impact** : Si le localStorage est vide (navigation privee, nettoyage), la remise disparait de la facture affichee meme si elle existe en DB. La facture PDF (`handleDownloadPDF` dans CadastralResultCard L229-279) lit correctement la DB — incoherence entre les deux vues.
 
 ---
 
 ## Orientations recommandees
 
-### Correction 1 — Supprimer les composants orphelins
+### Correction 1 — Aligner les icones de statut des permis (1 fichier)
+
+| Action | Fichier |
+|--------|---------|
+| Remplacer `'Conforme'` par `'Approuve'` et `'Delivre'` pour l'icone verte. Remplacer `'Non autorise'` par `'Rejete'` pour l'icone rouge. Appliquer aux 2 blocs (permis courant L690-692 et historique L756-758). | `CadastralResultCard.tsx` |
+
+### Correction 2 — Unifier le calcul de date de fin de validite (1 fichier)
+
+| Action | Fichier |
+|--------|---------|
+| Remplacer le calcul approximatif `months * 30 * 24 * 60 * 60 * 1000` (L739) par `setMonth(getMonth() + months)` comme pour le permis courant. | `CadastralResultCard.tsx` |
+
+### Correction 3 — Supprimer la dependance localStorage dans la facture (1 fichier)
+
+| Action | Fichier |
+|--------|---------|
+| Au lieu de lire le localStorage, charger la facture reelle depuis Supabase (`cadastral_invoices` filtree par `parcel_number` + `user_id` + `status='paid'`), comme le fait deja `handleDownloadPDF` dans CadastralResultCard. Cela garantit que la remise, le numero de facture et les montants sont toujours corrects. | `CadastralInvoice.tsx` |
+
+---
+
+## Resume
+
+| Categorie | Problemes | Fichiers impactes |
+|-----------|-----------|-------------------|
+| Divergences rendu | 2 (icones statut, calcul date) | 1 (`CadastralResultCard.tsx`) |
+| Fragilite facture | 1 (localStorage) | 1 (`CadastralInvoice.tsx`) |
+| **Total** | **3 problemes** | **2 fichiers** |
+
