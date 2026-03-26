@@ -1183,6 +1183,14 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({
                   </div>
                 </div>
 
+                {/* Service émetteur */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-foreground">Service émetteur</Label>
+                  <BuildingPermitIssuingServiceSelect
+                    value={permit.issuingService}
+                    onValueChange={(value) => updateBuildingPermit(index, 'issuingService', value)}
+                  />
+                </div>
 
                 {/* Document */}
                 <div className="space-y-1.5">
