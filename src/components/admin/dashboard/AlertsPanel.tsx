@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, Clock, XCircle, UserX, Calendar, TrendingDown } from 'lucide-react';
+import { AlertTriangle, Clock, XCircle, UserX, Calendar, TrendingDown, Scale, Building2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface AlertItem {
