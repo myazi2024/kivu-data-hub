@@ -324,16 +324,6 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
         />
       </div>
 
-      <div className="space-y-1">
-        <Label className="text-xs font-medium">Contact service</Label>
-        <Input
-          placeholder="Téléphone ou email du service"
-          value={permitRecord.issuingServiceContact}
-          onChange={(e) => updatePermit('issuingServiceContact', e.target.value)}
-          className="h-9 text-sm rounded-xl"
-        />
-      </div>
-
       <div className="grid grid-cols-2 gap-2.5">
         <div className="space-y-1">
           <Label className="text-xs font-medium">Validité (mois)</Label>

@@ -763,17 +763,6 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                                 <span className="text-[10px] text-muted-foreground">Service émetteur:</span>
                                 <span className="text-xs text-right leading-tight max-w-[60%]">{permit.issuing_service}</span>
                               </div>
-                              {permit.issuing_service_contact && (
-                                <div className="flex justify-between items-center gap-2 mt-1">
-                                  <span className="text-[10px] text-muted-foreground">Contact:</span>
-                                  <Button variant="outline" size="sm" className="h-5 text-xs px-2" asChild>
-                                    <a href={`tel:${permit.issuing_service_contact}`}>
-                                      <ExternalLink className="h-2 w-2 mr-1" />
-                                      {permit.issuing_service_contact}
-                                    </a>
-                                  </Button>
-                                </div>
-                              )}
                             </div>
                           );
                         })}
