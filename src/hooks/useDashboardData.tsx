@@ -70,6 +70,8 @@ export const useDashboardData = (startDate?: Date, endDate?: Date) => {
     blockedUsers: 0,
     expiredCodes: 0,
     inactiveResellers: 0,
+    pendingDisputes: 0,
+    pendingMortgages: 0,
     recentActivities: [],
     topResellers: [],
     topUsers: [],
