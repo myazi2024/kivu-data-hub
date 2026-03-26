@@ -751,7 +751,7 @@ export const generateCertificates = async (
     },
     {
       reference_number: `TEST-CERT-002-${suffix}`,
-      certificate_type: 'certificat_bornage',
+      certificate_type: 'mutation_fonciere',
       parcel_number: parcelNumbers[1],
       recipient_name: 'Test Propriétaire 2',
       status: 'generated',

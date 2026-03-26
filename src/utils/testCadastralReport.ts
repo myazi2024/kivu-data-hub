@@ -93,7 +93,7 @@ const mockCadastralResult = {
       issuing_service: "Service Communal d'Urbanisme - Goma",
       issue_date: '2020-01-01',
       validity_period_months: 36,
-      administrative_status: 'Conforme',
+      administrative_status: 'Approuvé',
       issuing_service_contact: '+243 997 123 456'
     }
   ],
