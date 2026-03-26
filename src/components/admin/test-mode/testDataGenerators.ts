@@ -292,7 +292,7 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
       ville: 'Bukavu',
       territoire: 'Kabare',
       
-      declared_usage: 'agriculture',
+      declared_usage: 'Agriculture',
       area_sqm: 2000,
       occupation_duration: '3_5_ans',
       estimated_processing_days: 45,
