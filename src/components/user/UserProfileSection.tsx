@@ -27,9 +27,9 @@ const UserProfileSection: React.FC = () => {
   
   const [stats, setStats] = useState({
     contributions: 0,
-    permits: 0,
+    titles: 0,
     invoices: 0,
-    cccCodes: 0,
+    disputes: 0,
   });
 
   useEffect(() => {
