@@ -90,10 +90,10 @@ const mockCadastralResult = {
   building_permits: [
     {
       permit_number: 'PB-2020-001',
-      issuing_service: 'Service Urbanisme Goma',
+      issuing_service: "Service Communal d'Urbanisme - Goma",
       issue_date: '2020-01-01',
       validity_period_months: 36,
-      administrative_status: 'Délivré',
+      administrative_status: 'Conforme',
       issuing_service_contact: '+243 997 123 456'
     }
   ],
