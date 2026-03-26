@@ -1,93 +1,100 @@
 
 
-# Diagnostic complet du Mode Test — Couverture des données et optimisations
+# Diagnostic complet de l'espace Admin — Résultats et orientations
 
-## Contexte
+## Synthese
 
-Le Mode Test génère actuellement 17 types d'entités. Cependant, l'application collecte des données dans **2 tables supplémentaires** consommées par les Analytics et les modules Admin qui ne sont pas couvertes. De plus, le nettoyage (manuel, rollback, cron) et les statistiques ne couvrent pas ces tables.
-
----
-
-## Tables manquantes dans le Mode Test
-
-### Entité 1 — `mutation_requests` (Demandes de mutation)
-
-**Consommateurs** :
-- `useLandDataAnalytics.tsx` L80-81 : `fetchAll('mutation_requests', ...)` — alimente les graphiques Analytics (type mutation, statut, montants, délais)
-- `AdminMutationRequests.tsx` — module admin de gestion des demandes
-- `Admin.tsx` L177-181 — compteur sidebar "Mutations en attente"
-
-**Impact** : Les graphiques Analytics "Mutations" restent vides en mode test. L'admin ne peut pas tester le flux d'approbation/rejet des mutations.
-
-**Champs requis** : `reference_number` (TEST-MUT-xxx), `parcel_number`, `parcel_id`, `mutation_type`, `requester_type`, `requester_name`, `status`, `payment_status`, `total_amount_usd`, `user_id`, `proposed_changes` (JSON), `fee_items` (JSON)
-
-### Entité 2 — `subdivision_requests` (Demandes de lotissement)
-
-**Consommateurs** :
-- `useLandDataAnalytics.tsx` L82-83 : `fetchAll('subdivision_requests', ...)` — alimente les graphiques Analytics (nombre de lots, statuts, montants)
-- `AdminSubdivisionRequests.tsx` — module admin complet
-- `Admin.tsx` L208-212 — compteur sidebar "Lotissements en attente"
-
-**Impact** : Les graphiques Analytics "Lotissements" restent vides en mode test. L'admin ne peut pas tester le flux de lotissement.
-
-**Champs requis** : `reference_number` (TEST-SUB-xxx), `parcel_number`, `parcel_id`, `number_of_lots`, `lots_data` (JSON), `parent_parcel_area_sqm`, `parent_parcel_owner_name`, `requester_first_name`, `requester_last_name`, `requester_phone`, `status`, `user_id`, `purpose_of_subdivision`, `requester_type`
+L'espace admin comprend **50+ modules** avec une architecture solide (données réelles Supabase, filtres temporels, pagination). Cependant, le diagnostic révèle **3 catégories de problèmes** : des indicateurs fictifs/calculés artificiellement, des composants non connectés à leurs données, et des fonctionnalités structurelles absentes.
 
 ---
 
-## Résumé des actions par fichier
+## Problemes identifies
 
-### Fichier 1 : `testDataGenerators.ts` — Ajouter 2 générateurs
+### Categorie 1 — Indicateurs fictifs dans le Dashboard
 
-| Fonction | Entité | Enregistrements |
-|----------|--------|----------------|
-| `generateMutationRequests` | `mutation_requests` | 3 (pending, approved, rejected) |
-| `generateSubdivisionRequests` | `subdivision_requests` | 2 (pending, approved) |
+**Bug 1 — CAC (Cout d'Acquisition Client) invente**
+- **Fichier** : `useEnhancedAnalytics.tsx` L244-246
+- **Code** : `const cac = ltv * 0.25` — Le CAC est estimé à 25% du LTV sans aucune donnée réelle de dépenses marketing
+- **Composant** : `BusinessMetrics.tsx` affiche ce CAC et un "Ratio LTV/CAC" et une "Période de remboursement" tous dérivés de cette valeur inventée
+- **Impact** : 3 KPI sur 6 dans l'onglet "Métriques Business" sont fictifs
 
-- Les `mutation_type` utiliseront les valeurs du référentiel : `'vente'`, `'donation'`, `'succession'` (constantes dans `MutationConstants.ts`)
-- Les `parcel_id` seront liés aux parcelles TEST générées
-- Les `reference_number` suivront le pattern `TEST-MUT-xxx` / `TEST-SUB-xxx`
+**Bug 2 — Edge Functions toujours "Degradé"**
+- **Fichier** : `AdminSystemHealth.tsx` L88-92
+- **Code** : Le statut Edge Functions est hardcodé `status: 'degraded'` sans aucun test réel
+- **Impact** : Le statut global du système affiche toujours "Dégradé" même si tout fonctionne. Cela rend le monitoring inutile.
 
-### Fichier 2 : `useTestDataActions.ts` — Brancher les générateurs
+**Bug 3 — "Tables surveillées" ne montre que 5 tables**
+- **Fichier** : `AdminSystemHealth.tsx` L44
+- **Code** : `const tables = ['profiles', 'cadastral_parcels', 'cadastral_contributions', 'payments', 'notifications']`
+- **Impact** : Le KPI "Tables surveillées" affiche "5" alors que l'application en utilise ~25+. Nombre trompeur.
 
-- Importer `generateMutationRequests` et `generateSubdivisionRequests`
-- Ajouter un Step 13 "Mutations & lotissements" dans `GENERATION_STEPS`
-- Appeler les 2 fonctions dans le flux de génération (après les certificats)
-- Ajouter le nettoyage des 2 tables dans `cleanupTestData` (section "Independent tables")
-- Ajouter les 2 tables dans le `rollbackTestData`
-- Ajouter `'mutation_requests'` et `'subdivision_requests'` dans le log audit `entities`
+### Categorie 2 — Composants non connectes a leurs donnees
 
-### Fichier 3 : `types.ts` — Étendre stats et registre
+**Bug 4 — ComparativeAnalysis reçoit toujours des données vides**
+- **Fichier** : `AdminDashboardOverview.tsx` L370
+- **Code** : `<ComparativeAnalysis loading={enhancedLoading} />` — pas de props `currentPeriodData` ni `previousPeriodData`
+- **Impact** : L'onglet "Comparatif" du dashboard affiche toujours 0 partout. Les données existent dans `useAdminStatistics` (période courante et précédente) mais ne sont pas transmises.
 
-- Ajouter `mutationRequests: number` et `subdivisionRequests: number` dans `TestDataStats`
-- Ajouter les valeurs dans `EMPTY_STATS`
-- Ajouter les 2 tables dans `TEST_TABLES_DELETION_ORDER`
+**Bug 5 — CohortAnalysis ne reçoit pas ses données**
+- **Fichier** : `AdminDashboardOverview.tsx` L373
+- **Code** : `<CohortAnalysis loading={enhancedLoading} />` — pas de prop `cohorts`
+- **Impact** : L'onglet "Cohortes" du dashboard est toujours vide malgré le calcul réel dans `useEnhancedAnalytics` (`cohortData`)
 
-### Fichier 4 : `useTestDataStats.ts` — Ajouter compteurs
+**Bug 6 — AutomatedReports utilise des rapports fictifs hardcodés**
+- **Fichier** : `AutomatedReports.tsx` L28-50
+- **Code** : `defaultReports` contient 3 rapports fictifs avec des dates fabriquées. Les boutons "Télécharger" et "Email" affichent un toast mais ne font rien.
+- **Impact** : L'onglet "Rapports" donne l'illusion d'une fonctionnalité automatisée qui n'existe pas.
 
-- Ajouter 2 requêtes count sur `mutation_requests` (ilike reference_number TEST-%) et `subdivision_requests` (ilike reference_number TEST-%)
-- Mapper les résultats dans le state
+### Categorie 3 — Fonctionnalites manquantes ou incompletes
 
-### Fichier 5 : `TestDataStatsCard.tsx` — Ajouter lignes UI
+**Bug 7 — Alertes du dashboard sans compteur de litiges en attente**
+- Le `AlertsPanel` surveille contributions, paiements, utilisateurs bloqués, codes expirés, revendeurs inactifs — mais **pas les litiges en attente**, les **demandes de titre**, ou les **demandes d'expertise** qui ont toutes un flux d'approbation admin.
 
-- Ajouter 2 entrées dans `STAT_ITEMS` : "Mutations" et "Lotissements"
-- Mettre à jour la description du dialog de génération (mentionner mutations et lotissements)
+**Bug 8 — Sidebar "Litiges" sans badge compteur**
+- Les litiges (`land-disputes`) n'ont pas de badge compteur dans la sidebar contrairement aux mutations, expertises et permis.
 
-### Fichier 6 : `cleanup-test-data/index.ts` — Ajouter nettoyage cron
-
-- Ajouter le nettoyage des 2 tables dans la section "Independent tables" de l'edge function
+**Bug 9 — Pas de compteur pour les demandes de mortgage (hypothèques)**
+- Les demandes d'inscription/radiation d'hypothèques (`mortgage_requests`) ont un flux d'approbation mais aucun compteur dans la sidebar ni alerte dashboard.
 
 ---
 
-## Résumé
+## Orientations recommandees
 
-| Métrique | Avant | Après |
-|----------|-------|-------|
-| Entités couvertes | 17 | 19 |
-| Tables dans cleanup manuel | 17 | 19 |
-| Tables dans cleanup cron | 17 | 19 |
-| Tables dans rollback | 17 | 19 |
-| Tables dans stats UI | 17 | 19 |
-| Steps de génération | 13 | 14 |
+### Correction 1 — Supprimer les indicateurs fictifs (3 fichiers)
 
-6 fichiers modifiés, 2 nouveaux générateurs, couverture complète de toutes les données collectées par l'application.
+| Action | Fichier |
+|--------|---------|
+| Supprimer le calcul CAC inventé (`ltv * 0.25`) et la Période de remboursement. Garder LTV, ARPU, Retention, Churn (calculs réels). | `useEnhancedAnalytics.tsx` |
+| Retirer les cartes CAC et Période de remboursement (4 KPI restants au lieu de 6) | `BusinessMetrics.tsx` |
+| Tester réellement les Edge Functions (ping d'une function connue comme `cleanup-test-data`) au lieu du statut hardcodé. Élargir la liste des tables surveillées. | `AdminSystemHealth.tsx` |
+
+### Correction 2 — Connecter les composants a leurs donnees (1 fichier)
+
+| Action | Fichier |
+|--------|---------|
+| Passer `currentPeriodData`/`previousPeriodData` à `ComparativeAnalysis` depuis les stats déjà chargées. Passer `cohorts={enhancedData?.cohortData}` à `CohortAnalysis`. | `AdminDashboardOverview.tsx` |
+
+### Correction 3 — Remplacer les rapports fictifs (1 fichier)
+
+| Action | Fichier |
+|--------|---------|
+| Remplacer les rapports hardcodés par un vrai export (réutiliser `exportToCSV`/`exportToJSON` existants). Supprimer les boutons Email/Planification non fonctionnels. | `AutomatedReports.tsx` |
+
+### Correction 4 — Completer les alertes et compteurs sidebar (2 fichiers)
+
+| Action | Fichier |
+|--------|---------|
+| Ajouter compteurs litiges en attente et hypothèques en attente dans les fetchs `Admin.tsx`. Ajouter les badges correspondants dans la sidebar. | `Admin.tsx`, `AdminSidebar.tsx` |
+| Ajouter les alertes litiges et hypothèques dans `AlertsPanel` et `useDashboardData` | `AlertsPanel.tsx`, `useDashboardData.tsx` |
+
+---
+
+## Resume
+
+| Categorie | Problèmes | Fichiers impactés |
+|-----------|-----------|-------------------|
+| Indicateurs fictifs | 3 (CAC, Edge Functions, tables surveillées) | 3 |
+| Composants non connectés | 3 (Comparatif, Cohortes, Rapports) | 2 |
+| Fonctionnalités manquantes | 3 (alertes litiges, badge sidebar, compteur hypothèques) | 4 |
+| **Total** | **9 problèmes** | **~8 fichiers** |
 
