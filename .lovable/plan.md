@@ -1,37 +1,35 @@
 
 
-# Restaurer le champ "Service émetteur" dans le formulaire CCC
+# Aligner le formulaire "Ajouter une autorisation" (dropdown) sur le formulaire CCC et nettoyer les affichages
 
-## Contexte
+## Problème
 
-Le champ "Service émetteur" a été supprimé du formulaire CCC (onglet Infos, section autorisation de bâtir/régularisation) mais existe toujours dans le formulaire standalone (`BuildingPermitFormDialog.tsx`) et dans la table DB (`building_permits.issuing_service`). Il faut le restaurer dans le CCC.
+Le formulaire "Ajouter une autorisation" (dropdown actions, `BuildingPermitFormDialog.tsx`) contient un champ **"Contact service"** (`issuingServiceContact`) qui n'existe pas dans le formulaire CCC. Ce champ crée une divergence entre les deux formulaires qui collectent les mêmes données.
+
+De plus, l'affichage dans l'onglet Parcelle (`CadastralResultCard.tsx`) montre `issuing_service_contact` qui n'est plus collecté par le CCC — il faut le retirer pour aligner l'affichage aux données réellement collectées.
 
 ## Modifications
 
-### 1. Ajouter `issuingService` à l'interface `BuildingPermit` (GeneralTab.tsx L37-45)
+### 1. Supprimer `issuingServiceContact` du formulaire dropdown
 
-Ajouter `issuingService: string;` à l'interface.
+Dans `BuildingPermitFormDialog.tsx` :
+- Retirer le champ "Contact service" du formulaire UI (lignes 330-338)
+- Retirer `issuingServiceContact` de l'interface `PermitRecord` et de l'état initial
+- Retirer de la sérialisation lors du submit (ne plus envoyer `issuingServiceContact` dans le JSON)
+- Retirer de `hasUnsavedChanges()` et `resetAndClose()`
+- Retirer de la preview (récapitulatif)
 
-### 2. Ajouter le champ UI dans le formulaire (GeneralTab.tsx ~L1183)
+### 2. Retirer l'affichage "Contact" dans l'onglet Parcelle
 
-Après la grille N° autorisation / Date (ligne 1183), insérer un champ "Service émetteur" utilisant le composant `BuildingPermitIssuingServiceSelect` déjà existant.
-
-### 3. Mettre à jour l'état initial et le CRUD (useCCCFormState.ts)
-
-- L126-128 : ajouter `issuingService: ''` à l'état initial
-- L484 : ajouter `issuingService: ''` au `addBuildingPermit`
-- L1120 : ajouter `issuingService: p.issuing_service || p.issuingService || ''` au chargement DB
-
-### 4. Inclure dans la sérialisation (useCCCFormState.ts L938)
-
-Ajouter `issuingService: permit.issuingService` à l'objet sérialisé pour la soumission.
+Dans `CadastralResultCard.tsx` :
+- Retirer les blocs affichant `issuing_service_contact` (lignes ~706-716 pour les autorisations courantes, ~777-788 pour l'historique)
 
 ## Fichiers impactés
 
 | Fichier | Action |
 |---------|--------|
-| `src/components/cadastral/ccc-tabs/GeneralTab.tsx` | Interface + champ UI |
-| `src/hooks/useCCCFormState.ts` | État initial, chargement, sérialisation |
+| `src/components/cadastral/BuildingPermitFormDialog.tsx` | Supprimer champ + état + sérialisation |
+| `src/components/cadastral/CadastralResultCard.tsx` | Retirer affichage contact service |
 
 2 fichiers modifiés.
 
