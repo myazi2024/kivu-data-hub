@@ -311,6 +311,17 @@ export const useTestDataActions = ({
         console.error('Fraud/certificates (non-blocking):', fcError);
       }
 
+      // Step 13: Mutations & subdivisions (non-blocking)
+      updateStep(13, 'running');
+      try {
+        await generateMutationRequests(userId, parcels, suffix);
+        await generateSubdivisionRequests(userId, parcels, suffix);
+        updateStep(13, 'done');
+      } catch (msError) {
+        updateStep(13, 'error');
+        console.error('Mutations/subdivisions (non-blocking):', msError);
+      }
+
       await logAuditAction(
         'TEST_DATA_GENERATED',
         'cadastral_contributions',
