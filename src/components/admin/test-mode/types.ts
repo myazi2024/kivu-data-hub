@@ -29,6 +29,7 @@ export const EMPTY_STATS: TestDataStats = {
   titleRequests: 0,
   expertiseRequests: 0,
   disputes: 0,
+  boundaryConflicts: 0,
   
   ownershipHistory: 0,
   taxHistory: 0,
