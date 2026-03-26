@@ -28,7 +28,6 @@ interface PermitRecord {
   permitNumber: string;
   issueDate: string;
   issuingService: string;
-  issuingServiceContact: string;
   validityPeriod: string;
   permitFile: File | null;
 }
