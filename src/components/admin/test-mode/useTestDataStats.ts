@@ -69,14 +69,13 @@ export const useTestDataStats = () => {
         titleRequests: count(6),
         expertiseRequests: count(7),
         disputes: count(8),
-        boundaryConflicts: count(9),
-        ownershipHistory: count(10),
-        taxHistory: count(11),
-        fraudAttempts: count(12),
-        certificates: count(13),
-        boundaryHistory: count(14),
-        mortgages: count(15),
-        buildingPermits: count(16),
+        ownershipHistory: count(9),
+        taxHistory: count(10),
+        fraudAttempts: count(11),
+        certificates: count(12),
+        boundaryHistory: count(13),
+        mortgages: count(14),
+        buildingPermits: count(15),
       });
     } catch (error) {
       console.error('Error loading test data stats:', error);

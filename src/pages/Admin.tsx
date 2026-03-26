@@ -329,8 +329,6 @@ const Admin = () => {
         return <AdminPermitFeesConfig />;
       case 'mutation-fees-config':
         return <AdminMutationFeesConfig />;
-      case 'boundary-conflicts':
-        return <AdminBoundaryConflicts />;
       case 'mortgages':
         return <AdminMortgages />;
       case 'tax-history':

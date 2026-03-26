@@ -185,7 +185,7 @@ export const useLandDataAnalytics = () => {
         mutationRequests: enrich(mutations),
         subdivisionRequests: enrich(subdivisions),
         disputes: enrich(disputes),
-        boundaryConflicts: enrichByParcelNumber(boundaryConflicts),
+        
         ownershipHistory: enrich(ownershipHistory),
         fraudAttempts: enrichFraud(fraudAttempts),
         certificates: enrichByParcelNumber(certificates),

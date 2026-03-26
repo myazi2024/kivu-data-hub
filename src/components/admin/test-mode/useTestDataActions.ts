@@ -317,7 +317,7 @@ export const useTestDataActions = ({
           entities: [
             'parcels', 'contributions', 'invoices', 'payments', 'service_access',
             'contributor_codes', 'title_requests', 'expertise', 'disputes',
-            'boundary_conflicts', 'ownership_history', 'tax_history',
+            'ownership_history', 'tax_history',
             'boundary_history', 'mortgages', 'building_permits',
             'fraud_attempts', 'certificates',
           ],
