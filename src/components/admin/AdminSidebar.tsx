@@ -43,6 +43,8 @@ interface AdminSidebarProps {
   pendingExpertiseCount?: number;
   pendingSubdivisionsCount?: number;
   pendingPaymentsCount?: number;
+  pendingDisputesCount?: number;
+  pendingMortgagesCount?: number;
   onNavigate?: () => void;
 }
 
