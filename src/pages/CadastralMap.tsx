@@ -80,6 +80,7 @@ const CadastralMap = () => {
   const [showLandTitleButton, setShowLandTitleButton] = useState(false);
   const landTitleButtonTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
+  const [showServiceCatalog, setShowServiceCatalog] = useState(false);
   
   // Animation shake et notification caractères invalides
   const [isShaking, setIsShaking] = useState(false);
@@ -90,6 +91,9 @@ const CadastralMap = () => {
   const advancedSearch = useAdvancedCadastralSearch();
   const searchHistory = useSearchHistory();
   const { config: searchBarConfig, buildAllowedRegex } = useSearchBarConfig();
+  
+  // Hook pour la recherche cadastrale (catalogue de services)
+  const cadastralSearch = useCadastralSearch();
 
   // Reset hasScrolledToBottom when dialog closes
   useEffect(() => {
