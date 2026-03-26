@@ -126,6 +126,8 @@ export function AdminDashboardOverview() {
       blocked: '/admin?tab=users',
       expired: '/admin?tab=ccc-codes',
       inactive: '/admin?tab=resellers',
+      disputes: '/admin?tab=land-disputes',
+      mortgages: '/admin?tab=mortgages',
     };
     navigate(routes[alertType] || '/admin');
   };
