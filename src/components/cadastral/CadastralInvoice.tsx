@@ -9,6 +9,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
 import { useCadastralServices, CadastralService } from '@/hooks/useCadastralServices';
 import { TVA_RATE } from '@/constants/billing';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface CadastralInvoiceProps {
   isOpen: boolean;
@@ -27,8 +29,49 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
 }) => {
   const [showCloseWarning, setShowCloseWarning] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
-  // Fix #2: Utiliser le hook réactif au lieu de la variable globale deprecated
+  const [dbInvoice, setDbInvoice] = useState<{ discount_amount_usd: number; discount_code_used: string; invoice_number: string } | null>(null);
   const { services: catalogServices } = useCadastralServices();
+  const { user } = useAuth();
+
+  // Charger la facture depuis Supabase au lieu du localStorage
+  useEffect(() => {
+    if (!isOpen || !user) return;
+    const fetchInvoice = async () => {
+      try {
+        const { data } = await supabase
+          .from('cadastral_invoices')
+          .select('discount_amount_usd, discount_code_used, invoice_number')
+          .eq('parcel_number', result.parcel.parcel_number)
+          .eq('user_id', user.id)
+          .eq('status', 'paid')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        if (data) {
+          setDbInvoice({
+            discount_amount_usd: data.discount_amount_usd || 0,
+            discount_code_used: data.discount_code_used || '',
+            invoice_number: data.invoice_number || '',
+          });
+        }
+      } catch (e) {
+        console.log('Facture non trouvée en DB, fallback localStorage:', e);
+        // Fallback localStorage pour compatibilité
+        try {
+          const stored = localStorage.getItem('currentCadastralInvoice');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            setDbInvoice({
+              discount_amount_usd: parsed.discount_amount_usd || 0,
+              discount_code_used: parsed.discount_code_used || '',
+              invoice_number: '',
+            });
+          }
+        } catch { /* ignore */ }
+      }
+    };
+    fetchInvoice();
+  }, [isOpen, user, result.parcel.parcel_number]);
 
   const handleClose = () => {
     setShowCloseWarning(true);
@@ -48,34 +91,25 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
     const selectedServices = catalogServices.filter(s => paidServices.includes(s.id));
     const originalSubtotal = selectedServices.reduce((sum, service) => sum + Number(service.price), 0);
     
-    // Récupérer les informations de remise depuis le localStorage ou les props
-    const storedInvoice = localStorage.getItem('currentCadastralInvoice');
-    let discountAmount = 0;
-    let discountCode = '';
-    
-    if (storedInvoice) {
-      try {
-        const parsedInvoice = JSON.parse(storedInvoice);
-        discountAmount = parsedInvoice.discount_amount_usd || 0;
-        discountCode = parsedInvoice.discount_code_used || '';
-      } catch (e) {
-        console.log('Erreur lors de la lecture de la facture stockée:', e);
-      }
-    }
+    const discountAmount = dbInvoice?.discount_amount_usd || 0;
+    const discountCode = dbInvoice?.discount_code_used || '';
     
     const netAmount = Math.max(0, originalSubtotal - discountAmount);
     const tvaAmount = netAmount * TVA_RATE;
     const total = netAmount + tvaAmount;
     
-    // Fix #5: Générer un numéro stable basé sur la parcelle
-    const parcelId = result.parcel.parcel_number.replace(/[^0-9]/g, '').slice(-4);
-    const stableHash = result.parcel.parcel_number.split('').reduce((a, b) => {
-      a = ((a << 5) - a) + b.charCodeAt(0);
-      return a & a;
-    }, 0);
-    const stableTimestamp = Math.abs(stableHash).toString().slice(-6);
-    const locationCode = (result.parcel.ville || result.parcel.commune || 'RDC').substring(0, 4).toUpperCase();
-    const invoiceNumber = `INV-${result.parcel.parcel_type}-${locationCode}-${parcelId}-${stableTimestamp}`;
+    // Utiliser le numéro de facture DB si disponible, sinon générer un stable
+    let invoiceNumber = dbInvoice?.invoice_number || '';
+    if (!invoiceNumber) {
+      const parcelId = result.parcel.parcel_number.replace(/[^0-9]/g, '').slice(-4);
+      const stableHash = result.parcel.parcel_number.split('').reduce((a, b) => {
+        a = ((a << 5) - a) + b.charCodeAt(0);
+        return a & a;
+      }, 0);
+      const stableTimestamp = Math.abs(stableHash).toString().slice(-6);
+      const locationCode = (result.parcel.ville || result.parcel.commune || 'RDC').substring(0, 4).toUpperCase();
+      invoiceNumber = `INV-${result.parcel.parcel_type}-${locationCode}-${parcelId}-${stableTimestamp}`;
+    }
     
     return {
       invoiceNumber,
@@ -88,7 +122,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
       currentDate: new Date().toLocaleDateString('fr-FR'),
       currentTime: new Date().toLocaleTimeString('fr-FR')
     };
-  }, [result.parcel.parcel_number, result.parcel.ville, result.parcel.commune, result.parcel.parcel_type, paidServices, catalogServices]);
+  }, [result.parcel.parcel_number, result.parcel.ville, result.parcel.commune, result.parcel.parcel_type, paidServices, catalogServices, dbInvoice]);
 
   // Informations légales de BIC
   const BIC_COMPANY_INFO = {
