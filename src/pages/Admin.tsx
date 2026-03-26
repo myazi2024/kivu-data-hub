@@ -241,6 +241,36 @@ const Admin = () => {
     }
   };
 
+  const fetchPendingDisputesCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('cadastral_land_disputes')
+        .select('*', { count: 'exact', head: true })
+        .in('current_status', ['pending', 'under_investigation']);
+
+      if (!error) {
+        setPendingDisputesCount(count || 0);
+      }
+    } catch (error) {
+      console.error('Erreur compteur litiges:', error);
+    }
+  };
+
+  const fetchPendingMortgagesCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('cadastral_mortgages')
+        .select('*', { count: 'exact', head: true })
+        .eq('mortgage_status', 'pending');
+
+      if (!error) {
+        setPendingMortgagesCount(count || 0);
+      }
+    } catch (error) {
+      console.error('Erreur compteur hypothèques:', error);
+    }
+  };
+
   if (loading || hasAdminRole === null) {
     return (
       <div className="flex items-center justify-center min-h-dvh">
