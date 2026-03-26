@@ -1453,7 +1453,7 @@ export const useCCCFormState = ({
     setAdditionalConstructions([]);
     setBuildingPermits([{
       permitType: 'construction', permitNumber: '', issueDate: '',
-      validityMonths: '36', administrativeStatus: 'En attente', attachmentFile: null
+      validityMonths: '36', administrativeStatus: 'En attente', issuingService: '', attachmentFile: null
     }]);
     setPermitMode('existing');
     markDirty();
