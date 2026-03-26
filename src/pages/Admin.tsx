@@ -422,6 +422,8 @@ const Admin = () => {
           pendingExpertiseCount={pendingExpertiseCount}
           pendingSubdivisionsCount={pendingSubdivisionsCount}
           pendingPaymentsCount={pendingPaymentsCount}
+          pendingDisputesCount={pendingDisputesCount}
+          pendingMortgagesCount={pendingMortgagesCount}
         />
       </aside>
 
