@@ -25,6 +25,8 @@ interface AlertsPanelProps {
     blockedUsers?: number;
     expiredCodes?: number;
     inactiveResellers?: number;
+    pendingDisputes?: number;
+    pendingMortgages?: number;
   };
   onAlertAction?: (alertType: string) => void;
 }
