@@ -12,7 +12,7 @@ export interface LandAnalyticsData {
   mutationRequests: any[];
   subdivisionRequests: any[];
   disputes: any[];
-  boundaryConflicts: any[];
+  
   ownershipHistory: any[];
   fraudAttempts: any[];
   certificates: any[];
