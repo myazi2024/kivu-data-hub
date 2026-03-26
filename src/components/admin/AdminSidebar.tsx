@@ -150,7 +150,7 @@ const menuItems = [
   },
 ];
 
-export function AdminSidebar({ pendingCount, pendingLandTitleCount, pendingPermitsCount, pendingMutationsCount, pendingExpertiseCount, pendingSubdivisionsCount, pendingPaymentsCount, onNavigate }: AdminSidebarProps) {
+export function AdminSidebar({ pendingCount, pendingLandTitleCount, pendingPermitsCount, pendingMutationsCount, pendingExpertiseCount, pendingSubdivisionsCount, pendingPaymentsCount, pendingDisputesCount, pendingMortgagesCount, onNavigate }: AdminSidebarProps) {
   const location = useLocation();
   const currentTab = new URLSearchParams(location.search).get('tab') || 'dashboard';
 
