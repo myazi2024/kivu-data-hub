@@ -442,6 +442,8 @@ const Admin = () => {
             pendingExpertiseCount={pendingExpertiseCount}
             pendingSubdivisionsCount={pendingSubdivisionsCount}
             pendingPaymentsCount={pendingPaymentsCount}
+            pendingDisputesCount={pendingDisputesCount}
+            pendingMortgagesCount={pendingMortgagesCount}
             onNavigate={() => setMobileMenuOpen(false)}
           />
         </SheetContent>
