@@ -187,6 +187,21 @@ export const useDashboardData = (startDate?: Date, endDate?: Date) => {
         .select('reseller_id')
         .lt('created_at', thirtyDaysAgo.toISOString());
 
+      // Fetch pending disputes and mortgages
+      const [disputesResult, mortgagesResult] = await Promise.all([
+        supabase
+          .from('cadastral_land_disputes')
+          .select('*', { count: 'exact', head: true })
+          .in('current_status', ['pending', 'under_investigation']),
+        supabase
+          .from('cadastral_mortgages')
+          .select('*', { count: 'exact', head: true })
+          .eq('mortgage_status', 'pending'),
+      ]);
+
+      const pendingDisputes = disputesResult.count || 0;
+      const pendingMortgages = mortgagesResult.count || 0;
+
       // Prepare recent activities
       const activities = [
         ...recentContributions.data?.map(c => ({
