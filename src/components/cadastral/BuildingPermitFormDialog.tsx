@@ -255,7 +255,6 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
       permitRecord.permitNumber ||
       permitRecord.issueDate ||
       permitRecord.issuingService ||
-      permitRecord.issuingServiceContact ||
       permitRecord.permitFile ||
       permitRecord.validityPeriod !== '36'
     );
