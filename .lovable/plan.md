@@ -1,56 +1,70 @@
 
 
-# Corriger les valeurs fictives restantes dans les données de test
+# Diagnostic complet du Mode Test — Résultats et orientations
 
-## Divergences identifiées
+## Résumé de l'audit
 
-### 1. Historique propriété — `legal_status` (testDataGenerators.ts L608-616)
-- **Test** : `'personne_physique'`, `'personne_morale'` (snake_case)
-- **Formulaire CCC** (picklist_legal_status) : `'Personne physique'`, `'Personne morale'`, `'État'`
-- **Impact** : Le graphique "Statut juridique" dans l'onglet Ownership affiche des catégories non reconnues
+L'infrastructure du Mode Test couvre 17 types d'entités avec génération, nettoyage manuel, nettoyage automatique (cron), rollback, statistiques temps réel et progression visuelle. Après les corrections récentes des valeurs fictives, voici les problèmes résiduels et les orientations recommandées.
 
-### 2. Historique propriété — `mutation_type` (testDataGenerators.ts L609-618)
-- **Test** : `'vente'`, `'achat'` (minuscules, et `'achat'` n'existe pas)
-- **Formulaire CCC** (picklist_mutation_type) : `'Vente'`, `'Donation'`, `'Succession'`, `'Expropriation'`, `'Échange'`
-- **Impact** : Le graphique "Type mutation" affiche `vente` et `achat` au lieu des catégories standardisées
+---
 
-### 3. Certificats — `certificate_type` (testDataGenerators.ts L745-754)
-- **Test** : `'attestation_cadastrale'`, `'certificat_bornage'`
-- **Référentiel** (types/certificate.ts) : `'expertise_immobiliere'`, `'titre_foncier'`, `'permis_construire'`, `'mutation_fonciere'`, `'lotissement'`
-- **Impact** : Le graphique "Type certificat" affiche des catégories fantômes non reconnues par `CERTIFICATE_TYPE_LABELS`
+## Problèmes identifiés
 
-### 4. Autorisations de bâtir — `administrative_status` (testDataGenerators.ts L723)
-- **Test** : `'Conforme'`, `'Non autorisé'`
-- **Formulaire CCC** (picklist_permit_admin_status) : `'En attente'`, `'Approuvé'`, `'Rejeté'`, `'Expiré'`
-- **Impact** : Le graphique "Statut admin" dans l'onglet Parcelles affiche des catégories fantômes
+### Bug 1 — `current_owner_legal_status` en snake_case (parcelles + contributions)
 
-## Corrections
+**Fichier** : `testDataGenerators.ts` L68, L129
+**Valeurs actuelles** : `'personne_physique'`, `'personne_morale'`
+**Référentiel** (picklist_legal_status) : `'Personne physique'`, `'Personne morale'`, `'État'`
+**Impact** : Les graphiques Analytics "Statut juridique" des propriétaires affichent des catégories non reconnues par les normalizers.
 
-### Fichier : `testDataGenerators.ts`
+### Bug 2 — `generateBoundaryConflicts` est défini mais jamais appelé
 
-**Historique propriété (L608-618)** :
-- `legal_status: 'personne_physique'` → `'Personne physique'`
-- `legal_status: 'personne_morale'` → `'Personne morale'`
-- `mutation_type: 'vente'` → `'Vente'`
-- `mutation_type: 'achat'` → `'Donation'`
+**Fichier** : `testDataGenerators.ts` L564-596 (fonction exportée)
+**Fichier** : `useTestDataActions.ts` — la fonction n'est ni importée ni invoquée dans le flux de génération.
+**Impact** : Les conflits de limites ne sont jamais générés malgré la présence du code. Le rollback les nettoie, mais il n'y a rien à nettoyer.
 
-**Certificats (L745, L754)** :
-- `certificate_type: 'attestation_cadastrale'` → `'titre_foncier'`
-- `certificate_type: 'certificat_bornage'` → `'mutation_fonciere'`
+### Bug 3 — Conflits de limites absents des statistiques
 
-**Autorisations de bâtir (L723)** :
-- `administrative_status: 'Conforme'` → `'Approuvé'`
-- `administrative_status: 'Non autorisé'` → `'Rejeté'`
+**Fichier** : `useTestDataStats.ts` — aucune requête sur `cadastral_boundary_conflicts`
+**Fichier** : `types.ts` — `TestDataStats` n'a pas de champ `boundaryConflicts`
+**Fichier** : `TestDataStatsCard.tsx` — pas de ligne d'affichage correspondante
+**Impact** : Même si on corrige le Bug 2, les conflits ne seraient pas comptabilisés dans les statistiques affichées.
 
-### Fichier : `testCadastralReport.ts`
-- Vérifier et corriger `administrative_status: 'Conforme'` → `'Approuvé'`
+### Bug 4 — Nettoyage manuel oublie les conflits de limites
 
-## Fichiers impactés
+**Fichier** : `useTestDataActions.ts` L81-146 — `cleanupTestData` ne supprime pas `cadastral_boundary_conflicts` (contrairement au rollback L807 et au cron edge function L169).
+**Impact** : Le bouton "Nettoyer tout" laisse des conflits orphelins en base.
 
-| Fichier | Action |
-|---------|--------|
-| `src/components/admin/test-mode/testDataGenerators.ts` | Corriger ~8 valeurs (ownership, certificates, permits) |
-| `src/utils/testCadastralReport.ts` | Corriger `administrative_status` |
+### Bug 5 — `TEST_TABLES_DELETION_ORDER` dans `types.ts` incomplet
 
-2 fichiers modifiés, ~9 valeurs corrigées.
+Le tableau de référence n'inclut pas `cadastral_boundary_history`, `cadastral_mortgages` ni `cadastral_building_permits` (ajoutés au Bug 17 mais pas reflétés dans ce registre).
+**Impact** : Ce tableau n'est pas utilisé directement par le code d'exécution (le cleanup est codé en dur), mais il sert de documentation et pourrait induire en erreur.
+
+### Bug 6 — `requester_legal_status` dans les demandes de titres
+
+**Fichier** : `testDataGenerators.ts` L257, L283, L289
+**Valeurs** : `'personne_physique'` (snake_case)
+**Vérification** : Ce champ est propre aux demandes de titres (pas un picklist CCC). La DB accepte des valeurs libres. Pas de graphique Analytics impacté actuellement — risque faible, mais incohérent avec la convention Title Case utilisée partout ailleurs.
+
+---
+
+## Orientations recommandées
+
+### Correction immédiate (5 fichiers)
+
+| # | Action | Fichier |
+|---|--------|---------|
+| 1 | Remplacer `'personne_physique'`/`'personne_morale'` par `'Personne physique'`/`'Personne morale'` (L68, L129) | `testDataGenerators.ts` |
+| 2 | Importer et appeler `generateBoundaryConflicts` dans le step 11 (avec les bornages/hypothèques/permis) | `useTestDataActions.ts` |
+| 3 | Ajouter `boundaryConflicts` dans `TestDataStats`, `EMPTY_STATS`, et `TEST_TABLES_DELETION_ORDER` (+ ajouter les 3 tables manquantes) | `types.ts` |
+| 4 | Ajouter le compteur `cadastral_boundary_conflicts` dans `useTestDataStats.ts` | `useTestDataStats.ts` |
+| 5 | Ajouter la ligne stats + le nettoyage des conflits dans le cleanup manuel | `TestDataStatsCard.tsx` + `useTestDataActions.ts` |
+
+### Harmonisation optionnelle
+
+| # | Action | Fichier |
+|---|--------|---------|
+| 6 | Aligner `requester_legal_status` sur Title Case dans les demandes de titres | `testDataGenerators.ts` |
+
+6 fichiers modifiés, 1 champ corrigé, 1 fonction branchée, 1 entité ajoutée aux stats/cleanup.
 
