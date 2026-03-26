@@ -1,70 +1,93 @@
 
 
-# Diagnostic complet du Mode Test — Résultats et orientations
+# Diagnostic complet du Mode Test — Couverture des données et optimisations
 
-## Résumé de l'audit
+## Contexte
 
-L'infrastructure du Mode Test couvre 17 types d'entités avec génération, nettoyage manuel, nettoyage automatique (cron), rollback, statistiques temps réel et progression visuelle. Après les corrections récentes des valeurs fictives, voici les problèmes résiduels et les orientations recommandées.
-
----
-
-## Problèmes identifiés
-
-### Bug 1 — `current_owner_legal_status` en snake_case (parcelles + contributions)
-
-**Fichier** : `testDataGenerators.ts` L68, L129
-**Valeurs actuelles** : `'personne_physique'`, `'personne_morale'`
-**Référentiel** (picklist_legal_status) : `'Personne physique'`, `'Personne morale'`, `'État'`
-**Impact** : Les graphiques Analytics "Statut juridique" des propriétaires affichent des catégories non reconnues par les normalizers.
-
-### Bug 2 — `generateBoundaryConflicts` est défini mais jamais appelé
-
-**Fichier** : `testDataGenerators.ts` L564-596 (fonction exportée)
-**Fichier** : `useTestDataActions.ts` — la fonction n'est ni importée ni invoquée dans le flux de génération.
-**Impact** : Les conflits de limites ne sont jamais générés malgré la présence du code. Le rollback les nettoie, mais il n'y a rien à nettoyer.
-
-### Bug 3 — Conflits de limites absents des statistiques
-
-**Fichier** : `useTestDataStats.ts` — aucune requête sur `cadastral_boundary_conflicts`
-**Fichier** : `types.ts` — `TestDataStats` n'a pas de champ `boundaryConflicts`
-**Fichier** : `TestDataStatsCard.tsx` — pas de ligne d'affichage correspondante
-**Impact** : Même si on corrige le Bug 2, les conflits ne seraient pas comptabilisés dans les statistiques affichées.
-
-### Bug 4 — Nettoyage manuel oublie les conflits de limites
-
-**Fichier** : `useTestDataActions.ts` L81-146 — `cleanupTestData` ne supprime pas `cadastral_boundary_conflicts` (contrairement au rollback L807 et au cron edge function L169).
-**Impact** : Le bouton "Nettoyer tout" laisse des conflits orphelins en base.
-
-### Bug 5 — `TEST_TABLES_DELETION_ORDER` dans `types.ts` incomplet
-
-Le tableau de référence n'inclut pas `cadastral_boundary_history`, `cadastral_mortgages` ni `cadastral_building_permits` (ajoutés au Bug 17 mais pas reflétés dans ce registre).
-**Impact** : Ce tableau n'est pas utilisé directement par le code d'exécution (le cleanup est codé en dur), mais il sert de documentation et pourrait induire en erreur.
-
-### Bug 6 — `requester_legal_status` dans les demandes de titres
-
-**Fichier** : `testDataGenerators.ts` L257, L283, L289
-**Valeurs** : `'personne_physique'` (snake_case)
-**Vérification** : Ce champ est propre aux demandes de titres (pas un picklist CCC). La DB accepte des valeurs libres. Pas de graphique Analytics impacté actuellement — risque faible, mais incohérent avec la convention Title Case utilisée partout ailleurs.
+Le Mode Test génère actuellement 17 types d'entités. Cependant, l'application collecte des données dans **2 tables supplémentaires** consommées par les Analytics et les modules Admin qui ne sont pas couvertes. De plus, le nettoyage (manuel, rollback, cron) et les statistiques ne couvrent pas ces tables.
 
 ---
 
-## Orientations recommandées
+## Tables manquantes dans le Mode Test
 
-### Correction immédiate (5 fichiers)
+### Entité 1 — `mutation_requests` (Demandes de mutation)
 
-| # | Action | Fichier |
-|---|--------|---------|
-| 1 | Remplacer `'personne_physique'`/`'personne_morale'` par `'Personne physique'`/`'Personne morale'` (L68, L129) | `testDataGenerators.ts` |
-| 2 | Importer et appeler `generateBoundaryConflicts` dans le step 11 (avec les bornages/hypothèques/permis) | `useTestDataActions.ts` |
-| 3 | Ajouter `boundaryConflicts` dans `TestDataStats`, `EMPTY_STATS`, et `TEST_TABLES_DELETION_ORDER` (+ ajouter les 3 tables manquantes) | `types.ts` |
-| 4 | Ajouter le compteur `cadastral_boundary_conflicts` dans `useTestDataStats.ts` | `useTestDataStats.ts` |
-| 5 | Ajouter la ligne stats + le nettoyage des conflits dans le cleanup manuel | `TestDataStatsCard.tsx` + `useTestDataActions.ts` |
+**Consommateurs** :
+- `useLandDataAnalytics.tsx` L80-81 : `fetchAll('mutation_requests', ...)` — alimente les graphiques Analytics (type mutation, statut, montants, délais)
+- `AdminMutationRequests.tsx` — module admin de gestion des demandes
+- `Admin.tsx` L177-181 — compteur sidebar "Mutations en attente"
 
-### Harmonisation optionnelle
+**Impact** : Les graphiques Analytics "Mutations" restent vides en mode test. L'admin ne peut pas tester le flux d'approbation/rejet des mutations.
 
-| # | Action | Fichier |
-|---|--------|---------|
-| 6 | Aligner `requester_legal_status` sur Title Case dans les demandes de titres | `testDataGenerators.ts` |
+**Champs requis** : `reference_number` (TEST-MUT-xxx), `parcel_number`, `parcel_id`, `mutation_type`, `requester_type`, `requester_name`, `status`, `payment_status`, `total_amount_usd`, `user_id`, `proposed_changes` (JSON), `fee_items` (JSON)
 
-6 fichiers modifiés, 1 champ corrigé, 1 fonction branchée, 1 entité ajoutée aux stats/cleanup.
+### Entité 2 — `subdivision_requests` (Demandes de lotissement)
+
+**Consommateurs** :
+- `useLandDataAnalytics.tsx` L82-83 : `fetchAll('subdivision_requests', ...)` — alimente les graphiques Analytics (nombre de lots, statuts, montants)
+- `AdminSubdivisionRequests.tsx` — module admin complet
+- `Admin.tsx` L208-212 — compteur sidebar "Lotissements en attente"
+
+**Impact** : Les graphiques Analytics "Lotissements" restent vides en mode test. L'admin ne peut pas tester le flux de lotissement.
+
+**Champs requis** : `reference_number` (TEST-SUB-xxx), `parcel_number`, `parcel_id`, `number_of_lots`, `lots_data` (JSON), `parent_parcel_area_sqm`, `parent_parcel_owner_name`, `requester_first_name`, `requester_last_name`, `requester_phone`, `status`, `user_id`, `purpose_of_subdivision`, `requester_type`
+
+---
+
+## Résumé des actions par fichier
+
+### Fichier 1 : `testDataGenerators.ts` — Ajouter 2 générateurs
+
+| Fonction | Entité | Enregistrements |
+|----------|--------|----------------|
+| `generateMutationRequests` | `mutation_requests` | 3 (pending, approved, rejected) |
+| `generateSubdivisionRequests` | `subdivision_requests` | 2 (pending, approved) |
+
+- Les `mutation_type` utiliseront les valeurs du référentiel : `'vente'`, `'donation'`, `'succession'` (constantes dans `MutationConstants.ts`)
+- Les `parcel_id` seront liés aux parcelles TEST générées
+- Les `reference_number` suivront le pattern `TEST-MUT-xxx` / `TEST-SUB-xxx`
+
+### Fichier 2 : `useTestDataActions.ts` — Brancher les générateurs
+
+- Importer `generateMutationRequests` et `generateSubdivisionRequests`
+- Ajouter un Step 13 "Mutations & lotissements" dans `GENERATION_STEPS`
+- Appeler les 2 fonctions dans le flux de génération (après les certificats)
+- Ajouter le nettoyage des 2 tables dans `cleanupTestData` (section "Independent tables")
+- Ajouter les 2 tables dans le `rollbackTestData`
+- Ajouter `'mutation_requests'` et `'subdivision_requests'` dans le log audit `entities`
+
+### Fichier 3 : `types.ts` — Étendre stats et registre
+
+- Ajouter `mutationRequests: number` et `subdivisionRequests: number` dans `TestDataStats`
+- Ajouter les valeurs dans `EMPTY_STATS`
+- Ajouter les 2 tables dans `TEST_TABLES_DELETION_ORDER`
+
+### Fichier 4 : `useTestDataStats.ts` — Ajouter compteurs
+
+- Ajouter 2 requêtes count sur `mutation_requests` (ilike reference_number TEST-%) et `subdivision_requests` (ilike reference_number TEST-%)
+- Mapper les résultats dans le state
+
+### Fichier 5 : `TestDataStatsCard.tsx` — Ajouter lignes UI
+
+- Ajouter 2 entrées dans `STAT_ITEMS` : "Mutations" et "Lotissements"
+- Mettre à jour la description du dialog de génération (mentionner mutations et lotissements)
+
+### Fichier 6 : `cleanup-test-data/index.ts` — Ajouter nettoyage cron
+
+- Ajouter le nettoyage des 2 tables dans la section "Independent tables" de l'edge function
+
+---
+
+## Résumé
+
+| Métrique | Avant | Après |
+|----------|-------|-------|
+| Entités couvertes | 17 | 19 |
+| Tables dans cleanup manuel | 17 | 19 |
+| Tables dans cleanup cron | 17 | 19 |
+| Tables dans rollback | 17 | 19 |
+| Tables dans stats UI | 17 | 19 |
+| Steps de génération | 13 | 14 |
+
+6 fichiers modifiés, 2 nouveaux générateurs, couverture complète de toutes les données collectées par l'application.
 
