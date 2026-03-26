@@ -122,6 +122,8 @@ const Admin = () => {
         fetchPendingExpertiseCount(),
         fetchPendingSubdivisionsCount(),
         fetchPendingPaymentsCount(),
+        fetchPendingDisputesCount(),
+        fetchPendingMortgagesCount(),
       ]);
     }
   }, [hasAdminRole]);
