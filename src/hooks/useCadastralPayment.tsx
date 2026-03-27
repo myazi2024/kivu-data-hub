@@ -135,7 +135,7 @@ export const useCadastralPayment = () => {
 
         await grantServiceAccess(user.id, invoice.id, parcelNumber, serviceIds);
 
-        toast({ title: "Accès accordé (mode développement)", description: "Services accessibles gratuitement" });
+        toast({ title: "Accès accordé (mode test)", description: "Services accessibles gratuitement" });
         clearServices();
         window.dispatchEvent(new CustomEvent('cadastralPaymentCompleted'));
         return invoice;

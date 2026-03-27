@@ -275,7 +275,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             <div className="flex items-start gap-2 p-2 rounded-xl bg-amber-50/80 border border-amber-300/60 dark:bg-amber-900/20 dark:border-amber-700/40">
               <Info className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
               <p className="text-xs text-amber-800 dark:text-amber-200 leading-relaxed font-medium">
-                ⚠ Mode développement — Accès gratuit aux services
+                🧪 Mode test — Accès gratuit aux services
               </p>
             </div>
           )}

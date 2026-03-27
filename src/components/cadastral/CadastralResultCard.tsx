@@ -1165,13 +1165,15 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                       </h4>
                       {mortgage_history.length > 0 ? (
                         <div className="space-y-2">
-                          {/* Indicateur d'hypothèque active */}
-                          <div className="flex items-center gap-2 p-2 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
-                            <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></div>
-                            <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
-                              Parcelle avec hypothèque active
-                            </span>
-                          </div>
+                          {/* Indicateur d'hypothèque active — affiché uniquement si au moins une hypothèque est active */}
+                          {mortgage_history.some(m => ['active', 'Active', 'En cours'].includes(m.mortgage_status)) && (
+                            <div className="flex items-center gap-2 p-2 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
+                              <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></div>
+                              <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                                Parcelle avec hypothèque active
+                              </span>
+                            </div>
+                          )}
                           
                            {mortgage_history.map((mortgage) => {
                              const totalPaid = mortgage.payments.reduce((sum, payment) => sum + payment.payment_amount_usd, 0);
