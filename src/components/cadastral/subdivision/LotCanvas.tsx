@@ -424,7 +424,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     }
     drag.endDrag();
     viewport.endPan();
-  }, [drag, viewport, isLineDragging, lineDrawPoints, lineDrawMousePos, getSvgPos, fromScreen, showLineChoice, roadEndpointDrag]);
+  }, [drag, viewport, isLineDragging, lineDrawPoints, lineDrawMousePos, getSvgPos, fromScreen, showLineChoice, roadEndpointDrag, roadWidthDrag]);
 
   const handleCanvasClick = useCallback((e: React.MouseEvent) => {
     if (readOnly) return;
