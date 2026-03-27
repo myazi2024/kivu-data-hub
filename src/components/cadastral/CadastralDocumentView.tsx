@@ -62,9 +62,15 @@ const formatArea = (sqm: number) => {
 const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
   result, paidServices, catalogServices, onDownloadReport, onBackToCatalog,
 }) => {
-  const { parcel, ownership_history, tax_history, mortgage_history, boundary_history, building_permits } = result;
+  const { parcel, ownership_history, tax_history, mortgage_history, boundary_history, building_permits, land_disputes, legal_verification } = result;
 
-  const hasAccess = (serviceType: string) => paidServices.includes(serviceType);
+  // Data-presence gating: if the server returned data, the user has access
+  const hasParcelData = !!parcel.current_owner_name; // full parcel has owner; minimal doesn't
+  const hasLocationData = boundary_history.length > 0 || !!parcel.latitude;
+  const hasHistoryData = ownership_history.length > 0;
+  const hasObligationsData = tax_history.length > 0 || mortgage_history.length > 0;
+  const hasDisputesData = land_disputes !== undefined && land_disputes !== null;
+  const hasLegalVerification = legal_verification !== null && legal_verification !== undefined;
 
   const getPaymentStatusLabel = (status: string) => {
     switch (status) {
