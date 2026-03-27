@@ -1,84 +1,109 @@
 
 
-# Test global front-end ↔ back-end — Diagnostic et orientations
+# Refonte de l'affichage des informations parcellaires — Format Document
 
-## Résultat du diagnostic
+## Probleme actuel
 
-### 1. Edge Functions — CORS incohérent (BUG ACTIF)
+Le composant `CadastralResultCard.tsx` (1340 lignes) affiche les donnees dans de petites cartes avec du texte minuscule (10px-13px), des badges compacts et des layouts en `flex justify-between`. C'est optimise pour une vue mobile "app" mais pas pour l'exploitation des informations. L'utilisateur souhaite un format document structure, lisible et imprimable.
 
-Deux Edge Functions utilisent un en-tête CORS **incomplet** :
+## Approche
 
-| Edge Function | CORS `Allow-Headers` | Statut |
-|---|---|---|
-| `create-payment` | `authorization, x-client-info, apikey, content-type` | **Incomplet** — manque les headers `x-supabase-client-platform*` |
-| `process-mobile-money-payment` | idem | **Incomplet** |
-| `cleanup-test-data` | Complet (inclut `x-supabase-client-platform*`) | OK |
-| `test-payment-provider` | Complet | OK |
+Creer un nouveau composant `CadastralDocumentView` qui presente les donnees payees dans un format document A4-like (feuille blanche, marges, sections titrees, tableaux structures). Le composant existant `CadastralResultCard` continue de gerer la logique d'acces/paiement, mais delegue l'affichage des donnees au nouveau composant.
 
-Les versions récentes du SDK Supabase envoient automatiquement les headers `x-supabase-client-platform`, `x-supabase-client-platform-version`, etc. Si le navigateur envoie ces headers non déclarés dans le preflight, **la requête CORS échoue silencieusement** sur certains navigateurs.
+```text
+Flux actuel:
+  CadastralResultsDialog → CadastralResultCard (billing OU affichage cards)
 
-### 2. Edge Function `test-payment-provider` — absente du `config.toml`
+Flux refonte:
+  CadastralResultsDialog → CadastralResultCard (billing OU CadastralDocumentView)
+```
 
-La nouvelle Edge Function `test-payment-provider` n'est pas déclarée dans `supabase/config.toml`. Sans `[functions.test-payment-provider]`, `verify_jwt` est `true` par défaut, ce qui bloque les appels depuis le frontend si le token n'est pas passé correctement.
+## Structure du document
 
-### 3. API Deno — styles de serveur incohérents
+Le format document reprendra les sections existantes dans un layout papier:
 
-| Edge Function | Serveur | Statut |
-|---|---|---|
-| `create-payment` | `serve()` (std) | Ancien |
-| `process-mobile-money-payment` | `serve()` (std) | Ancien |
-| `stripe-webhook` | `serve()` (std) | Ancien |
-| `cleanup-test-data` | `Deno.serve()` | Moderne |
-| `test-payment-provider` | `Deno.serve()` | Moderne |
+```text
+┌─────────────────────────────────────┐
+│  BIC - Bureau de l'Immobilier       │
+│  FICHE CADASTRALE                   │
+│  Parcelle N° XX/YY/ZZ              │
+│  Generee le DD/MM/YYYY             │
+├─────────────────────────────────────┤
+│  1. IDENTIFICATION DE LA PARCELLE   │
+│  ┌─────────────┬──────────────┐     │
+│  │ Type        │ Section Urb. │     │
+│  │ Surface     │ 450 m²       │     │
+│  │ Usage       │ Habitation   │     │
+│  └─────────────┴──────────────┘     │
+│                                     │
+│  2. PROPRIETAIRE ACTUEL             │
+│  Nom: ...                           │
+│  Statut juridique: ...              │
+│  Depuis: ...                        │
+│                                     │
+│  3. LOCALISATION                    │
+│  Province: ... | Ville: ...         │
+│  Coordonnees GPS: ...               │
+│                                     │
+│  4. HISTORIQUE DE PROPRIETE         │
+│  ┌──────────┬────────┬──────────┐   │
+│  │ Periode  │ Nom    │ Type mut.│   │
+│  └──────────┴────────┴──────────┘   │
+│                                     │
+│  5. OBLIGATIONS FINANCIERES         │
+│  5.1 Taxes foncieres (tableau)      │
+│  5.2 Hypotheques (tableau)          │
+│                                     │
+│  6. AUTORISATIONS DE BATIR          │
+│  7. BORNAGE                         │
+│  8. LITIGES FONCIERS                │
+│                                     │
+│  ─── Disclaimer + QR verification ──│
+└─────────────────────────────────────┘
+```
 
-`Deno.serve()` est la méthode native recommandée. Les anciennes fonctions importent `serve` depuis `deno.land/std` avec des versions variées (`0.168.0`, `0.190.0`).
+## Plan d'implementation
 
-### 4. Edge Function `stripe-webhook` — pas de CORS du tout
+### 1. Creer `CadastralDocumentView.tsx`
 
-C'est correct pour un webhook (appel serveur-to-serveur), mais l'absence de gestion OPTIONS signifie qu'un appel accidentel depuis le frontend retournera une erreur non informative.
+Nouveau composant presentant les donnees dans un format document:
+- Fond blanc avec ombre (aspect feuille A4)
+- En-tete avec logo BIC, numero de parcelle, date de generation
+- Sections numerotees avec titres en bleu fonce
+- Donnees en tableaux structures (2 colonnes label/valeur) au lieu de cards
+- Taille de texte lisible (14px labels, 15px valeurs au lieu de 10-13px)
+- Boutons d'action en haut: Telecharger PDF, Imprimer, Retour au catalogue
+- Chaque section n'apparait que si le service correspondant est paye
+- Pied de page avec disclaimer et lien de verification
+- Design responsive: pleine largeur sur mobile, max-w-4xl centre sur desktop
 
-### 5. `create-payment` — utilise `SUPABASE_ANON_KEY` au lieu de `SERVICE_ROLE_KEY`
+### 2. Modifier `CadastralResultCard.tsx`
 
-La fonction `create-payment` crée un client Supabase avec `SUPABASE_ANON_KEY` pour la validation initiale de l'utilisateur, puis crée un **second** client avec `SERVICE_ROLE_KEY` pour les opérations admin plus loin dans le code. Cela crée une duplication et un risque : le premier client est soumis aux RLS, ce qui peut faire échouer des requêtes silencieusement.
+Apres paiement, au lieu d'afficher les cards avec onglets, rendre `CadastralDocumentView` en lui passant:
+- `result` (donnees cadastrales)
+- `paidServices` (services payes)
+- `catalogServices` (catalogue pour le PDF)
+- Callbacks pour telecharger/imprimer
 
-### 6. Pas de validation d'entrée structurée (Zod)
+Cela remplace tout le bloc apres `if (showBillingPanel)` (lignes 397-1337), soit ~940 lignes de JSX complexe remplacees par un appel au nouveau composant.
 
-Aucune Edge Function n'utilise de validation d'entrée structurée. Le body JSON est parsé et utilisé directement avec un minimum de vérifications manuelles.
+### 3. Adapter `CadastralResultsDialog.tsx`
 
----
+Elargir le conteneur quand le document est affiche: passer de `md:max-w-2xl` a `md:max-w-4xl` pour que le format document ait assez d'espace.
 
-## Orientations et améliorations proposées
+## Details techniques
 
-### Priorité haute — Corrections de bugs
+- Les sections verrouillees affichent un placeholder discret "Section non incluse dans votre abonnement" au lieu du `LockedServiceOverlay` actuel
+- Le composant `DisputesContent` (requete Supabase pour litiges) est reutilise tel quel
+- Les composants `DocumentAttachment` et `VerificationButton` sont reutilises dans le format document
+- L'impression utilise `@media print` avec des styles dedies pour masquer les boutons et optimiser le rendu papier
+- Le generateur PDF existant (`generateCadastralReport`) reste disponible pour le telechargement
 
-1. **Harmoniser les CORS** : Mettre à jour `create-payment` et `process-mobile-money-payment` pour utiliser les mêmes headers CORS complets que `cleanup-test-data` et `test-payment-provider`.
-
-2. **Ajouter `test-payment-provider` à `config.toml`** : Déclarer `[functions.test-payment-provider]` avec `verify_jwt = false`.
-
-### Priorité moyenne — Cohérence technique
-
-3. **Migrer vers `Deno.serve()`** : Convertir `create-payment`, `process-mobile-money-payment` et `stripe-webhook` pour utiliser `Deno.serve()` natif au lieu de `serve()` importé, et supprimer les imports `deno.land/std`.
-
-4. **Client Supabase unique dans `create-payment`** : Utiliser `SERVICE_ROLE_KEY` dès le début (comme `process-mobile-money-payment`), avec validation manuelle du JWT via `supabase.auth.getUser(token)`.
-
-5. **Ajouter la validation Zod** dans les Edge Functions `create-payment` et `process-mobile-money-payment` pour valider le body JSON à l'entrée.
-
-### Priorité basse — Améliorations
-
-6. **Endpoint de health-check dédié** : Créer une Edge Function `health-check` légère (retourne `{ ok: true, timestamp }`) au lieu de détourner `cleanup-test-data` avec `dry_run: true` dans `AdminSystemHealth`.
-
-7. **Enrichir `AdminSystemHealth`** : Ajouter le test de chaque Edge Function individuellement (pas seulement `cleanup-test-data`) et afficher le statut Realtime (WebSocket).
-
-8. **Unifier les versions des dépendances esm.sh** : `@supabase/supabase-js` est importé en `@2`, `@2.38.4`, et `@2.45.0` selon les fonctions. Aligner sur une seule version.
-
-## Fichiers impactés
+## Fichiers impactes
 
 | Action | Fichier |
-|---|---|
-| Modifié | `supabase/functions/create-payment/index.ts` — CORS, Deno.serve, client unique, Zod |
-| Modifié | `supabase/functions/process-mobile-money-payment/index.ts` — CORS, Deno.serve, Zod |
-| Modifié | `supabase/functions/stripe-webhook/index.ts` — Deno.serve, version esm.sh |
-| Modifié | `supabase/config.toml` — Ajouter `test-payment-provider` |
-| Créé | `supabase/functions/health-check/index.ts` — Endpoint de health-check léger |
-| Modifié | `src/components/admin/AdminSystemHealth.tsx` — Utiliser `health-check` au lieu de `cleanup-test-data` |
+|--------|---------|
+| Cree | `src/components/cadastral/CadastralDocumentView.tsx` — Nouveau composant format document |
+| Modifie | `src/components/cadastral/CadastralResultCard.tsx` — Delegation de l'affichage au nouveau composant |
+| Modifie | `src/components/cadastral/CadastralResultsDialog.tsx` — Elargir le conteneur pour le format document |
 
