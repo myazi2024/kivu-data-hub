@@ -90,13 +90,13 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   commonSpaces, setCommonSpaces, servitudes, setServitudes, lotIds,
   onCreateInitialLot, validation, canUndo, canRedo, onUndo, onRedo
 }) => {
-  const [numberOfLots, setNumberOfLots] = useState(4);
-  const [direction, setDirection] = useState<'horizontal' | 'vertical' | 'grid'>('horizontal');
-  const [includeRoad, setIncludeRoad] = useState(true);
-  const [roadWidth, setRoadWidth] = useState(6);
   const [selectedLotId, setSelectedLotId] = useState<string | null>(null);
   const [selectedLotIds, setSelectedLotIds] = useState<string[]>([]);
-  const [showAutoPanel, setShowAutoPanel] = useState(lots.length === 0);
+  const [editingRoadId, setEditingRoadId] = useState<string | null>(null);
+  const [canvasMode, setCanvasMode] = useState<CanvasMode>('select');
+  const [canvasShowGrid, setCanvasShowGrid] = useState(true);
+  // Measure mode state
+  const [measurePoints, setMeasurePoints] = useState<Point2D[]>([]);
   const [editingRoadId, setEditingRoadId] = useState<string | null>(null);
   const [canvasMode, setCanvasMode] = useState<CanvasMode>('select');
   const [canvasShowGrid, setCanvasShowGrid] = useState(true);
