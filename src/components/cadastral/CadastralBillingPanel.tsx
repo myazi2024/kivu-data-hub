@@ -611,6 +611,8 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
           processMobileMoneyPayment={processMobileMoneyPayment}
           processStripePayment={processStripePayment}
           resetPaymentState={resetPaymentState}
+          selectedCurrency={selectedCurrency}
+          exchangeRate={exchangeRate}
         />
       )}
     </TooltipProvider>
