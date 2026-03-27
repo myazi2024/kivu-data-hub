@@ -177,7 +177,7 @@ export const AdminUserRoles: React.FC = () => {
     try {
       const { error } = await supabase.from('user_roles').insert({
         user_id: selectedUserId,
-        role: selectedRole,
+        role: selectedRole as any,
       });
 
       if (error) throw error;
