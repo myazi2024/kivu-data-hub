@@ -109,8 +109,8 @@ export const useCadastralPayment = () => {
         return null;
       }
 
-      // Mode bypass (développement) — accès gratuit, insert direct
-      if (paymentMode.bypass_payment) {
+      // Mode bypass — accès gratuit, insert direct
+      if (paymentMode.enabled && paymentMode.bypass_payment) {
         const { data: invoice, error } = await supabase
           .from('cadastral_invoices')
           .insert({
@@ -121,8 +121,8 @@ export const useCadastralPayment = () => {
             total_amount_usd: 0,
             original_amount_usd: 0,
             discount_amount_usd: 0,
-            discount_code_used: 'MODE_DEV',
-            payment_method: 'MODE_DEV',
+            discount_code_used: 'BYPASS',
+            payment_method: 'bypass',
             client_email: user.email || '',
             client_name: user.user_metadata?.full_name || null,
             geographical_zone: selectedServices[0]?.parcel_location || '',
@@ -135,7 +135,7 @@ export const useCadastralPayment = () => {
 
         await grantServiceAccess(user.id, invoice.id, parcelNumber, serviceIds);
 
-        toast({ title: "Accès accordé (mode test)", description: "Services accessibles gratuitement" });
+        toast({ title: "Accès accordé", description: "Services accessibles gratuitement" });
         clearServices();
         window.dispatchEvent(new CustomEvent('cadastralPaymentCompleted'));
         return invoice;
@@ -221,7 +221,6 @@ export const useCadastralPayment = () => {
             phone_number: paymentData.phoneNumber,
             amount_usd: invoice.data.total_amount_usd,
             payment_type: 'cadastral_service',
-            test_mode: paymentMode.test_mode
           }
         }
       );

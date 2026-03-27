@@ -48,7 +48,6 @@ export const usePayment = () => {
             phone_number: paymentData.phoneNumber,
             amount_usd: item.price,
             payment_type: 'publication',
-            test_mode: paymentMode.test_mode // Utiliser la config admin
           }
         }
       );
@@ -144,7 +143,6 @@ export const usePayment = () => {
       const { data, error } = await supabase.functions.invoke('create-payment', {
         body: { 
           items: itemIds,
-          test_mode: paymentMode.test_mode // Utiliser la config admin
         },
       });
 
