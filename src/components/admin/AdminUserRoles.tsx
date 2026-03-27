@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/select';
 import { UserSearchSelect } from './users/UserSearchSelect';
 
-type AppRole = 'super_admin' | 'admin' | 'partner' | 'user' | 'expert_immobilier' | 'mortgage_officer';
+type AppRole = 'super_admin' | 'admin' | 'partner' | 'user' | 'expert_immobilier' | 'mortgage_officer' | 'notaire' | 'geometre' | 'urbaniste';
 
 interface UserRole {
   id: string;
@@ -58,6 +58,24 @@ const roleConfig = {
     label: 'Officier Hypothécaire',
     color: 'bg-gradient-to-r from-red-500 to-rose-500',
     description: 'Traitement des demandes de radiation d\'hypothèque',
+  },
+  notaire: {
+    icon: Briefcase,
+    label: 'Notaire',
+    color: 'bg-gradient-to-r from-indigo-500 to-violet-500',
+    description: 'Mutations et attestations notariées',
+  },
+  geometre: {
+    icon: Shield,
+    label: 'Géomètre',
+    color: 'bg-gradient-to-r from-lime-500 to-green-500',
+    description: 'Bornage et lotissement',
+  },
+  urbaniste: {
+    icon: Shield,
+    label: 'Agent d\'urbanisme',
+    color: 'bg-gradient-to-r from-rose-500 to-red-500',
+    description: 'Autorisations de bâtir',
   },
   user: {
     icon: User,
@@ -159,7 +177,7 @@ export const AdminUserRoles: React.FC = () => {
     try {
       const { error } = await supabase.from('user_roles').insert({
         user_id: selectedUserId,
-        role: selectedRole,
+        role: selectedRole as any,
       });
 
       if (error) throw error;

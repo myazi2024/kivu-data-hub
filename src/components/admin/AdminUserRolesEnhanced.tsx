@@ -40,7 +40,7 @@ import {
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-type AppRole = 'super_admin' | 'admin' | 'partner' | 'user' | 'expert_immobilier' | 'mortgage_officer';
+type AppRole = 'super_admin' | 'admin' | 'partner' | 'user' | 'expert_immobilier' | 'mortgage_officer' | 'notaire' | 'geometre' | 'urbaniste';
 
 interface AllUserProfile {
   user_id: string;
@@ -100,6 +100,24 @@ const roleConfig = {
     label: 'Agent Hypothécaire',
     color: 'bg-gradient-to-r from-teal-500 to-cyan-500',
     description: 'Gestion des hypothèques',
+  },
+  notaire: {
+    icon: Briefcase,
+    label: 'Notaire',
+    color: 'bg-gradient-to-r from-indigo-500 to-violet-500',
+    description: 'Mutations et attestations notariées',
+  },
+  geometre: {
+    icon: Shield,
+    label: 'Géomètre',
+    color: 'bg-gradient-to-r from-lime-500 to-green-500',
+    description: 'Bornage et lotissement',
+  },
+  urbaniste: {
+    icon: Shield,
+    label: 'Agent d\'urbanisme',
+    color: 'bg-gradient-to-r from-rose-500 to-red-500',
+    description: 'Autorisations de bâtir',
   },
   user: {
     icon: User,
@@ -262,7 +280,7 @@ export const AdminUserRolesEnhanced: React.FC = () => {
         .from('user_roles')
         .select('role')
         .eq('user_id', selectedUserId)
-        .eq('role', selectedRole);
+        .eq('role', selectedRole as any);
 
       if (checkError) throw checkError;
 
@@ -277,7 +295,7 @@ export const AdminUserRolesEnhanced: React.FC = () => {
 
       const { error } = await supabase.from('user_roles').insert({
         user_id: selectedUserId,
-        role: selectedRole,
+        role: selectedRole as any,
         created_by: user?.id,
       });
 

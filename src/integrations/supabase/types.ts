@@ -4332,6 +4332,9 @@ export type Database = {
         | "user"
         | "expert_immobilier"
         | "mortgage_officer"
+        | "notaire"
+        | "geometre"
+        | "urbaniste"
       user_role: "admin" | "partner" | "user"
     }
     CompositeTypes: {
@@ -4467,6 +4470,9 @@ export const Constants = {
         "user",
         "expert_immobilier",
         "mortgage_officer",
+        "notaire",
+        "geometre",
+        "urbaniste",
       ],
       user_role: ["admin", "partner", "user"],
     },

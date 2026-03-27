@@ -19,6 +19,9 @@ const roleConfig = {
   partner: { icon: Briefcase, label: 'Partenaire', color: 'bg-green-500' },
   expert_immobilier: { icon: User, label: 'Expert Immobilier', color: 'bg-amber-500' },
   mortgage_officer: { icon: User, label: 'Agent Hypothécaire', color: 'bg-teal-500' },
+  notaire: { icon: Briefcase, label: 'Notaire', color: 'bg-indigo-500' },
+  geometre: { icon: User, label: 'Géomètre', color: 'bg-lime-500' },
+  urbaniste: { icon: User, label: 'Agent d\'urbanisme', color: 'bg-rose-500' },
   user: { icon: User, label: 'Utilisateur', color: 'bg-gray-500' },
 };
 
