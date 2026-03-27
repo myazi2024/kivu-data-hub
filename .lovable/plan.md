@@ -1,66 +1,61 @@
 
 
-# Refonte de la creation de voies — Approche intuitive
+# Fix Undo/Redo — Two Root Causes
 
-## Problemes actuels
+## Problem 1: `canUndo`/`canRedo` use stale state
 
-1. **Pas de conversion limite-en-voie** : Si deux lots partagent une limite commune, l'utilisateur ne peut pas la transformer en voie. Il doit supprimer les lots, retracer, etc.
-2. **Le menu contextuel post-trace est la seule facon de creer une voie** : pas d'action directe sur les elements existants.
-3. **Ajout de voie via "+"** cree une voie rigide au centre — peu utile.
-4. **Aucune aide visuelle** pour comprendre qu'une limite peut devenir une voie.
+Line 411 of `useSubdivisionForm.ts`:
+```typescript
+canUndo: historyIndex > 0, canRedo: historyIndex < history.length - 1
+```
+These use the React **state** variables, but `undo`/`redo` update the **refs** first. After an undo, `historyIndexRef` changes but `historyIndex` state may not have re-rendered yet, so the buttons stay disabled or get out of sync.
 
-## Solution — 3 mecanismes complementaires
+## Problem 2: Most lot mutations skip history
 
-### 1. Clic droit sur une arete partagee → "Convertir en voie"
+`setLots` is passed directly to `StepLotDesigner`, which calls it ~15 times for splitting, merging, dragging, annotations, edge-to-road conversion, etc. None of these calls go through `pushHistory`. So the history array stays nearly empty — there's nothing to undo.
 
-Quand l'utilisateur fait un **clic droit (ou double-clic) sur une arete entre deux lots**, un menu contextuel s'affiche avec l'option **"Convertir en voie"**. En cliquant :
-- Une voie est creee le long de cette arete avec la largeur par defaut (6m)
-- Les deux lots adjacents sont **retrecis** automatiquement de chaque cote (3m chacun) pour laisser la place a la voie
-- La voie apparait immediatement, selectable et ajustable (largeur, nom, revetement)
+Only `createInitialLot`, `updateLot`, and `deleteLot` from the hook push history, but StepLotDesigner doesn't use those — it uses raw `setLots`.
 
-```text
-  Avant:                    Apres:
-  ┌──────┬──────┐           ┌─────┐     ┌─────┐
-  │ Lot1 │ Lot2 │    →      │Lot1 │═════│Lot2 │
-  │      │      │           │     │voie │     │
-  └──────┴──────┘           └─────┘     └─────┘
+## Solution
+
+### 1. Wrap `setLots` with automatic history tracking
+
+Instead of exposing raw `setLots`, expose a `setLotsWithHistory` wrapper that automatically pushes to history on every call. Keep a raw `setLotsRaw` for undo/redo to avoid infinite loops.
+
+```typescript
+const setLotsWithHistory = useCallback((updater) => {
+  setLots(prev => {
+    const next = typeof updater === 'function' ? updater(prev) : updater;
+    pushHistory(next);
+    return next;
+  });
+}, [pushHistory]);
 ```
 
-### 2. Amelioration du menu contextuel (lots)
+### 2. Use refs for `canUndo`/`canRedo`
 
-Le menu contextuel existant (double-clic/clic droit sur un lot) gagne une option **"Creer une voie sur ce cote"** qui affiche les aretes du lot. L'utilisateur clique sur l'arete souhaitee et la voie est creee le long de celle-ci.
+Replace state-derived booleans with a small state counter that gets bumped whenever refs change, forcing re-render:
 
-### 3. Simplification du bouton "+" voies
+```typescript
+const [historyVersion, setHistoryVersion] = useState(0);
 
-Remplacer le bouton "+" actuel (qui cree une voie au centre) par un bouton qui active un **mode de selection d'arete**. L'utilisateur clique sur n'importe quelle arete de lot, et la voie est creee le long de cette arete. Un message d'instruction s'affiche : "Cliquez sur une limite entre deux lots pour creer une voie".
+// In pushHistory, undo, redo — after updating refs:
+setHistoryVersion(v => v + 1);
 
-## Details techniques
+// Expose:
+canUndo: historyIndexRef.current > 0,
+canRedo: historyIndexRef.current < historyRef.current.length - 1,
+```
 
-### Detection d'aretes partagees
-- Parcourir toutes les paires d'aretes entre lots
-- Deux aretes sont "partagees" si leurs extremites sont proches (tolerance ~0.01 en coordonnees normalisees)
-- Stocker la correspondance lot1/arete1 ↔ lot2/arete2
+### 3. Debounce drag operations
 
-### Retrecissement des lots lors de la conversion
-- Calculer la normale de l'arete partagee
-- Deplacer les sommets de chaque lot de `(largeur_voie / 2) / sideLength` dans la direction opposee a la voie
-- Recalculer `areaSqm` et `perimeterM` apres deplacement
+Vertex dragging calls `setLots` on every mouse move. Add a flag `skipHistoryRef` that the canvas sets during drag, and only push history on mouseUp (already handled by `onUpdateLot` in LotCanvas which fires on mouseUp).
 
-### Nouveau mode canvas : `selectEdge`
-- Quand actif, survoler une arete la met en surbrillance (epaisseur + couleur)
-- Cliquer cree la voie
-- Le mode se desactive automatiquement apres creation
+## Files changed
 
-### Menu contextuel sur arete
-- Detecter le clic droit sur une arete (pas sur le polygone entier)
-- Afficher un petit menu SVG flottant avec "Convertir en voie" + icone
-- Si l'arete n'est pas partagee (bordure de parcelle), proposer "Creer une voie le long de ce cote"
-
-## Fichiers impactes
-
-| Action | Fichier |
-|--------|---------|
-| Modifie | `LotCanvas.tsx` — Ajouter mode `selectEdge`, detection hover/clic sur aretes, menu contextuel sur arete, surbrillance des aretes partagees |
-| Modifie | `StepLotDesigner.tsx` — Logique `convertEdgeToRoad` (retrecissement lots + creation voie), remplacer le bouton "+" voie par activation du mode `selectEdge`, ajouter option dans menu contextuel lot |
-| Modifie | `LotCanvas.tsx` (types) — Ajouter `selectEdge` au type `CanvasMode` |
+| File | Change |
+|------|--------|
+| `useSubdivisionForm.ts` | Wrap `setLots` → `setLotsWithHistory`, add `historyVersion` state, expose `setLotsRaw` for undo/redo only, fix `canUndo`/`canRedo` |
+| `StepLotDesigner.tsx` | No changes needed — it already receives `setLots` as prop, which will now be the history-aware wrapper |
+| `LotCanvas.tsx` | For `onUpdateLot` (drag), distinguish drag-in-progress (no history) vs drag-end (with history) — use existing mouseUp handler |
 
