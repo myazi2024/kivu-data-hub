@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,8 @@ import { supabase } from '@/integrations/supabase/client';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 import SuggestivePicklist from './SuggestivePicklist';
 import SectionHelpPopover from './SectionHelpPopover';
+import { useCCCFormPicklists } from '@/hooks/useCCCFormPicklists';
+import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
 
 interface RealEstateExpertiseRequestDialogProps {
   parcelNumber: string;
