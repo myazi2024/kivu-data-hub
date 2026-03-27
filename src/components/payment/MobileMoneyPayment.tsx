@@ -19,6 +19,7 @@ interface MobileMoneyPaymentProps {
 const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
   item,
   currency,
+  displayAmount,
   onPaymentSuccess
 }) => {
   const [paymentData, setPaymentData] = useState<PaymentData>({
