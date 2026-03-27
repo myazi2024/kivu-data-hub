@@ -84,6 +84,11 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   // Draw road mode state
   const [roadDrawPoints, setRoadDrawPoints] = useState<Point2D[]>([]);
   const [roadDrawMousePos, setRoadDrawMousePos] = useState<Point2D | null>(null);
+  const [isRoadDragging, setIsRoadDragging] = useState(false); // simple drag mode
+  const [roadDrawMultiMode, setRoadDrawMultiMode] = useState(false); // multi-click mode
+
+  // Road endpoint drag state
+  const [roadEndpointDrag, setRoadEndpointDrag] = useState<{roadId: string; pointIdx: number} | null>(null);
 
   // Context menu state
   const [contextMenuLotId, setContextMenuLotId] = useState<string | null>(null);
