@@ -551,7 +551,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                {paymentMode.bypass_payment ? (
+              {!isPaymentRequired() ? (
                   <CheckCircle className="h-4 w-4" />
                 ) : (
                   <CreditCard className="h-4 w-4" />
@@ -561,7 +561,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                     ? 'Sélectionner des services' 
                     : !acceptedTerms 
                     ? 'Accepter les conditions'
-                    : (paymentMode.enabled && paymentMode.bypass_payment)
+                    : !isPaymentRequired()
                     ? 'Accéder aux services'
                     : 'Payer'
                   }
