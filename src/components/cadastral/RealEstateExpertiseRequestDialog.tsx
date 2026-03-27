@@ -271,6 +271,15 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const [erosionRiskZone, setErosionRiskZone] = useState(false);
   const [nearbyAmenities, setNearbyAmenities] = useState<string[]>([]);
 
+  // === AUTORISATION DE BÂTIR ===
+  const [hasBuildingPermit, setHasBuildingPermit] = useState<'yes' | 'no' | null>(null);
+  const [buildingPermitType, setBuildingPermitType] = useState<'construction' | 'regularization'>('construction');
+  const [buildingPermitNumber, setBuildingPermitNumber] = useState('');
+  const [buildingPermitIssueDate, setBuildingPermitIssueDate] = useState('');
+  const [buildingPermitIssuingService, setBuildingPermitIssuingService] = useState('');
+  const [buildingPermitFile, setBuildingPermitFile] = useState<File | null>(null);
+  const permitFileInputRef = useRef<HTMLInputElement>(null);
+
   // === NOTES & DOCUMENTS ===
   const [additionalNotes, setAdditionalNotes] = useState('');
   const [parcelDocuments, setParcelDocuments] = useState<File[]>([]);
