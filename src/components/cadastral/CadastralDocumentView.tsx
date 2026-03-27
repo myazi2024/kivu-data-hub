@@ -340,7 +340,7 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
           )}
 
           {/* ===================== HISTORIQUE ===================== */}
-          {hasAccess('history') ? (
+          {hasHistoryData || (hasParcelData && paidServices.includes('history')) ? (
             <>
               <SectionTitle number={++sectionNumber} icon={<Clock className="h-4 w-4" />} title="Historique de propriété" />
               <table className="doc-table">
