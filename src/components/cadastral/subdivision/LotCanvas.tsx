@@ -105,6 +105,9 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     setCutMousePos(null);
     setRoadDrawPoints([]);
     setRoadDrawMousePos(null);
+    setIsRoadDragging(false);
+    setRoadDrawMultiMode(false);
+    setRoadEndpointDrag(null);
     if (mode !== 'clipart') {
       setShowClipartPalette(false);
       setClipartType(null);
