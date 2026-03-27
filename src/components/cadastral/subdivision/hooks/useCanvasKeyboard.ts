@@ -11,6 +11,7 @@ interface KeyboardActions {
   onSpaceDown?: () => void;
   onSpaceUp?: () => void;
   onBackspace?: () => void;
+  onArrowMove?: (dx: number, dy: number) => void;
 }
 
 export function useCanvasKeyboard(
