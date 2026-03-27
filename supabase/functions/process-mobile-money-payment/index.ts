@@ -1,9 +1,9 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 interface PaymentRequest {
@@ -19,7 +19,7 @@ interface PaymentRequest {
   amount_local?: number;
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -44,6 +44,12 @@ serve(async (req) => {
     }
 
     const body: PaymentRequest = await req.json();
+
+    // Validate required fields
+    if (!body.payment_provider || !body.phone_number || !body.amount_usd || !body.payment_type) {
+      throw new Error('Missing required fields: payment_provider, phone_number, amount_usd, payment_type');
+    }
+
     const { payment_provider, phone_number, amount_usd, payment_type, invoice_id, currency_code: clientCurrency } = body;
 
     // Fetch server-side exchange rate for the requested currency
@@ -56,7 +62,7 @@ serve(async (req) => {
         .eq('currency_code', requestedCurrency)
         .eq('is_active', true)
         .single();
-      
+
       if (currencyData) {
         serverExchangeRate = Number(currencyData.exchange_rate_to_usd);
       }
@@ -168,13 +174,12 @@ serve(async (req) => {
     // In test mode or if no real API credentials, simulate payment
     if (test_mode || !providerConfig.api_credentials?.apiKey) {
       console.log('⚠️ SIMULATION MODE - Payment will be auto-completed after 3 seconds');
-      
-      // Simulate async payment processing
+
       setTimeout(async () => {
         const completedAt = new Date().toISOString();
         await supabase
           .from('payment_transactions')
-          .update({ 
+          .update({
             status: 'completed',
             transaction_reference: `TEST-${Date.now()}`,
             metadata: {
@@ -201,30 +206,10 @@ serve(async (req) => {
     }
 
     // Real payment processing with provider API
-    // TODO: Integrate with real Mobile Money APIs (Airtel, Orange, M-Pesa)
-    // For now, we'll simulate the payment
     try {
-      // Example integration structure (to be implemented with real APIs):
-      /*
-      const paymentResult = await fetch(providerConfig.api_credentials.apiUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${providerConfig.api_credentials.apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          phone: phone_number,
-          amount: amount_usd,
-          currency: 'USD',
-          reference: transaction.id
-        })
-      });
-      */
-
-      // Update transaction status then simulate asynchronous provider confirmation
       await supabase
         .from('payment_transactions')
-        .update({ 
+        .update({
           status: 'processing',
           transaction_reference: `REAL-${Date.now()}`
         })
@@ -260,10 +245,9 @@ serve(async (req) => {
       );
 
     } catch (apiError: any) {
-      // Update transaction with error
       await supabase
         .from('payment_transactions')
-        .update({ 
+        .update({
           status: 'failed',
           error_message: apiError.message
         })
@@ -277,11 +261,11 @@ serve(async (req) => {
   } catch (error: any) {
     console.error('Payment processing error:', error);
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: error.message || 'Payment processing failed',
         success: false
       }),
-      { 
+      {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }

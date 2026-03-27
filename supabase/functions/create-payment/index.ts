@@ -1,61 +1,63 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 interface PaymentRequest {
-  items?: string[]; // Publication IDs
-  invoice_id?: string; // Cadastral invoice ID or expertise payment ID
+  items?: string[];
+  invoice_id?: string;
   payment_type: 'publications' | 'cadastral_service' | 'expertise_fee' | 'certificate_access' | 'mutation_request';
-  amount_usd?: number; // For cadastral/expertise services
+  amount_usd?: number;
 }
 
-serve(async (req) => {
-  // Handle CORS preflight requests
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Create Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-    );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { persistSession: false },
+    });
 
-    // Get authenticated user (REQUIRED now)
+    // Authenticate user via JWT
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       throw new Error("Authentication required");
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
-    
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
     if (authError || !user) {
       throw new Error("Invalid authentication token");
     }
 
-    // Parse request
+    // Parse & validate request body
     const body: PaymentRequest = await req.json();
     const { items: itemIds, invoice_id, payment_type, amount_usd } = body;
+
+    if (!payment_type) {
+      throw new Error("payment_type is required");
+    }
 
     let lineItems: any[] = [];
     let totalAmount = 0;
     let orderMetadata: any = {
-      user_id: user?.id || "guest",
-      email: user?.email || "",
-      payment_type
+      user_id: user.id,
+      email: user.email || "",
+      payment_type,
     };
 
     // Handle Publications payment
     if (payment_type === 'publications' && itemIds && itemIds.length > 0) {
-      // SECURITY: Fetch real prices from database, not from client
-      const { data: publications, error: pubError } = await supabaseClient
+      const { data: publications, error: pubError } = await supabase
         .from("publications")
         .select("id, title, price_usd, cover_image_url, status")
         .in("id", itemIds)
@@ -81,14 +83,7 @@ serve(async (req) => {
     }
     // Handle Cadastral Service payment
     else if (payment_type === 'cadastral_service' && invoice_id && amount_usd) {
-      // Fetch invoice details from database
-      const supabaseService = createClient(
-        Deno.env.get("SUPABASE_URL") ?? "",
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-        { auth: { persistSession: false } }
-      );
-
-      const { data: invoice, error: invoiceError } = await supabaseService
+      const { data: invoice, error: invoiceError } = await supabase
         .from("cadastral_invoices")
         .select("*")
         .eq("id", invoice_id)
@@ -117,14 +112,7 @@ serve(async (req) => {
     }
     // Handle Expertise Fee / Certificate Access payment
     else if ((payment_type === 'expertise_fee' || payment_type === 'certificate_access') && invoice_id && amount_usd) {
-      // invoice_id here is the expertise_payments record ID
-      const supabaseService = createClient(
-        Deno.env.get("SUPABASE_URL") ?? "",
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-        { auth: { persistSession: false } }
-      );
-
-      const { data: expertisePayment, error: epError } = await supabaseService
+      const { data: expertisePayment, error: epError } = await supabase
         .from("expertise_payments")
         .select("*")
         .eq("id", invoice_id)
@@ -155,13 +143,7 @@ serve(async (req) => {
       orderMetadata.expertise_payment_id = invoice_id;
     }
     else if (payment_type === 'mutation_request' && invoice_id && amount_usd) {
-      const supabaseService = createClient(
-        Deno.env.get("SUPABASE_URL") ?? "",
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-        { auth: { persistSession: false } }
-      );
-
-      const { data: mutationRequest, error: mutationError } = await supabaseService
+      const { data: mutationRequest, error: mutationError } = await supabase
         .from("mutation_requests")
         .select("id, reference_number, parcel_number, total_amount_usd, user_id")
         .eq("id", invoice_id)
@@ -193,15 +175,9 @@ serve(async (req) => {
       throw new Error("Invalid payment request: missing items or invoice_id");
     }
 
-    // Rate limiting: Check recent payment attempts
-    const supabaseService = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      { auth: { persistSession: false } }
-    );
-
+    // Rate limiting
     const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
-    const { count: recentAttempts } = await supabaseService
+    const { count: recentAttempts } = await supabase
       .from("rate_limit_attempts")
       .select("*", { count: "exact", head: true })
       .eq("user_id", user.id)
@@ -212,15 +188,14 @@ serve(async (req) => {
       throw new Error("Rate limit exceeded. Please try again later.");
     }
 
-    // Log this attempt
-    await supabaseService.from("rate_limit_attempts").insert({
+    await supabase.from("rate_limit_attempts").insert({
       user_id: user.id,
       endpoint: "create-payment",
       ip_address: req.headers.get("x-forwarded-for") || null,
     });
 
-    // Validate that Stripe is enabled in payment_methods_config
-    const { data: stripeConfig, error: stripeConfigError } = await supabaseService
+    // Validate Stripe is enabled
+    const { data: stripeConfig, error: stripeConfigError } = await supabase
       .from('payment_methods_config')
       .select('*')
       .eq('provider_id', 'stripe')
@@ -229,7 +204,6 @@ serve(async (req) => {
       .single();
 
     if (stripeConfigError || !stripeConfig) {
-      console.error("Stripe not enabled:", stripeConfigError);
       throw new Error("Stripe payment method is not available");
     }
 
@@ -238,19 +212,19 @@ serve(async (req) => {
       apiVersion: "2023-10-16",
     });
 
-    // Check if customer exists for authenticated users
+    // Check if customer exists
     let customerId;
-    if (user?.email) {
+    if (user.email) {
       const customers = await stripe.customers.list({ email: user.email, limit: 1 });
       if (customers.data.length > 0) {
         customerId = customers.data[0].id;
       }
     }
 
-    // Create Stripe checkout session
+    // Build URLs
+    const origin = req.headers.get("origin") || "";
     let successUrl: string;
     let cancelUrl: string;
-    const origin = req.headers.get("origin") || "";
 
     if (payment_type === 'expertise_fee' || payment_type === 'certificate_access' || payment_type === 'mutation_request') {
       successUrl = `${origin}/cadastral-map?payment=success&type=${payment_type}&session_id={CHECKOUT_SESSION_ID}`;
@@ -265,7 +239,7 @@ serve(async (req) => {
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      customer_email: customerId ? undefined : user?.email || undefined,
+      customer_email: customerId ? undefined : user.email || undefined,
       line_items: lineItems,
       mode: "payment",
       success_url: successUrl,
@@ -273,53 +247,46 @@ serve(async (req) => {
       metadata: orderMetadata,
     });
 
-    // Store order/transaction in database
+    // Store order/transaction
     if (payment_type === 'publications') {
-      const { error: orderError } = await supabaseService.from("orders").insert({
-        user_id: user?.id || null,
-        email: user?.email || "",
+      await supabase.from("orders").insert({
+        user_id: user.id,
+        email: user.email || "",
         stripe_session_id: session.id,
         amount: totalAmount,
         status: "pending",
         items: lineItems.map((item, idx) => ({
           id: itemIds![idx],
           title: item.price_data.product_data.name,
-          price: item.price_data.unit_amount / 100
+          price: item.price_data.unit_amount / 100,
         })),
       });
-
-      if (orderError) {
-        console.error("Error creating order:", orderError);
-      }
     } else if (payment_type === 'cadastral_service' && invoice_id) {
-      // Create payment transaction for cadastral service
-      await supabaseService.from("payment_transactions").insert({
+      await supabase.from("payment_transactions").insert({
         user_id: user.id,
-        invoice_id: invoice_id,
+        invoice_id,
         payment_method: 'bank_card',
         provider: 'stripe',
         amount_usd: amount_usd!,
         status: 'pending',
         transaction_reference: session.id,
-        metadata: { stripe_session_id: session.id }
+        metadata: { stripe_session_id: session.id },
       });
 
-      // Update invoice with payment info
-      await supabaseService.from("cadastral_invoices").update({
+      await supabase.from("cadastral_invoices").update({
         payment_method: 'stripe',
-        status: 'processing'
+        status: 'processing',
       }).eq('id', invoice_id);
     } else if ((payment_type === 'expertise_fee' || payment_type === 'certificate_access') && invoice_id) {
-      // Update expertise payment with Stripe session
-      await supabaseService.from("expertise_payments").update({
+      await supabase.from("expertise_payments").update({
         transaction_id: session.id,
         payment_method: 'bank_card',
         payment_provider: 'stripe',
       }).eq('id', invoice_id);
     } else if (payment_type === 'mutation_request' && invoice_id) {
-      await supabaseService.from("payment_transactions").insert({
+      await supabase.from("payment_transactions").insert({
         user_id: user.id,
-        invoice_id: invoice_id,
+        invoice_id,
         payment_method: 'bank_card',
         provider: 'stripe',
         amount_usd: amount_usd!,
@@ -329,7 +296,7 @@ serve(async (req) => {
           stripe_session_id: session.id,
           payment_type: 'mutation_request',
           mutation_request_id: invoice_id,
-        }
+        },
       });
     }
 

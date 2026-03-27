@@ -18,3 +18,9 @@ verify_jwt = false
 
 [functions.cleanup-test-data]
 verify_jwt = false
+
+[functions.test-payment-provider]
+verify_jwt = false
+
+[functions.health-check]
+verify_jwt = false
