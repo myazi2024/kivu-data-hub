@@ -2470,8 +2470,30 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 </div>
                 <div className="divide-y divide-border/30">
                   <div className="flex justify-between text-xs py-1.5">
+                    <span className="text-muted-foreground">Catégorie</span>
+                    <span className="font-medium">{propertyCategory || <span className="text-orange-600">Non renseigné</span>}</span>
+                  </div>
+                  <div className="flex justify-between text-xs py-1.5">
                     <span className="text-muted-foreground">Type de construction</span>
-                    <span className="font-medium">{CONSTRUCTION_TYPE_LABELS[constructionType] || constructionType || <span className="text-orange-600">Non renseigné</span>}</span>
+                    <span className="font-medium">{constructionType || <span className="text-muted-foreground">—</span>}</span>
+                  </div>
+                  <div className="flex justify-between text-xs py-1.5">
+                    <span className="text-muted-foreground">Matériaux</span>
+                    <span className="font-medium">{constructionMaterials || <span className="text-muted-foreground">—</span>}</span>
+                  </div>
+                  <div className="flex justify-between text-xs py-1.5">
+                    <span className="text-muted-foreground">Nature</span>
+                    <span className="font-medium">{constructionNature ? `Construction ${constructionNature.toLowerCase()}` : <span className="text-muted-foreground">—</span>}</span>
+                  </div>
+                  {declaredUsage && (
+                    <div className="flex justify-between text-xs py-1.5">
+                      <span className="text-muted-foreground">Usage</span>
+                      <span className="font-medium">{declaredUsage}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-xs py-1.5">
+                    <span className="text-muted-foreground">Standing</span>
+                    <span className="font-medium">{standing || <span className="text-muted-foreground">—</span>}</span>
                   </div>
                   <div className="flex justify-between text-xs py-1.5">
                     <span className="text-muted-foreground">Année de construction</span>
@@ -2484,10 +2506,6 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                   <div className="flex justify-between text-xs py-1.5">
                     <span className="text-muted-foreground">Nombre d'étages</span>
                     <span className="font-medium">{numberOfFloors || <span className="text-muted-foreground">—</span>}</span>
-                  </div>
-                  <div className="flex justify-between text-xs py-1.5">
-                    <span className="text-muted-foreground">Standing</span>
-                    <span className="font-medium">{QUALITY_LABELS[constructionQuality] || constructionQuality}</span>
                   </div>
                   <div className="flex justify-between text-xs py-1.5">
                     <span className="text-muted-foreground">État général</span>
