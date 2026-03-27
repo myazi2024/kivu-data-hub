@@ -460,11 +460,44 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       }
     }
 
+    // Rotation drag
+    if (rotationDrag) {
+      const svgEl = svgRef.current;
+      if (svgEl) {
+        const rect = svgEl.getBoundingClientRect();
+        const currentAngle = Math.atan2(
+          e.clientY - rect.top - rotationDrag.centerY * (rect.height / CANVAS_H) * viewport.viewport.zoom,
+          e.clientX - rect.left - rotationDrag.centerX * (rect.width / CANVAS_W) * viewport.viewport.zoom
+        );
+        const deltaAngle = currentAngle - rotationDrag.startAngle;
+        const deltaDeg = Math.round((deltaAngle * 180) / Math.PI);
+        setRotationAngleDisplay(deltaDeg);
+        
+        const theta = deltaAngle;
+        const rotateVertices = (vertices: Point2D[]) => {
+          const ccx = vertices.reduce((s, v) => s + v.x, 0) / vertices.length;
+          const ccy = vertices.reduce((s, v) => s + v.y, 0) / vertices.length;
+          return vertices.map(v => ({
+            x: ccx + (v.x - ccx) * Math.cos(theta) - (v.y - ccy) * Math.sin(theta),
+            y: ccy + (v.x - ccx) * Math.sin(theta) + (v.y - ccy) * Math.cos(theta),
+          }));
+        };
+        if (selectedLotId) {
+          const lot = lots.find(l => l.id === selectedLotId);
+          if (lot) onUpdateLot(selectedLotId, rotateVertices(lot.vertices));
+        } else if (selectedRoadId && onUpdateRoad) {
+          const road = roads.find(r => r.id === selectedRoadId);
+          if (road) onUpdateRoad(selectedRoadId, { path: rotateVertices(road.path) });
+        }
+        setRotationDrag({ ...rotationDrag, startAngle: currentAngle });
+      }
+    }
+
     if (drag.isDragging) {
       const normalized = fromScreen(pos.x, pos.y);
       drag.moveDrag(normalized);
     }
-  }, [viewport, getSvgPos, fromScreen, mode, lineDrawPoints, drag, isLineDragging, lineDrawMultiMode, roadEndpointDrag, roads, onUpdateRoad, roadWidthDrag, toScreen, sideLength]);
+  }, [viewport, getSvgPos, fromScreen, mode, lineDrawPoints, drag, isLineDragging, lineDrawMultiMode, roadEndpointDrag, roads, onUpdateRoad, roadWidthDrag, toScreen, sideLength, rotationDrag, selectedLotId, selectedRoadId, lots, onUpdateLot]);
 
   // Show choice menu after line drawing finishes
   const showLineChoice = useCallback((path: Point2D[]) => {
