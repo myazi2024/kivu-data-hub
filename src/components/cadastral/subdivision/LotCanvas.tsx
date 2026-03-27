@@ -547,55 +547,73 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
           </g>
         )}
 
-        {/* Roads */}
+        {/* Roads — polyline rendering */}
         {showRoads && roads.map(road => {
           if (road.path.length < 2) return null;
           const pathPoints = road.path.map(p => toScreen(p));
-          const roadWidthPx = (road.widthM / sideLength) * (CANVAS_W - 2 * PADDING);
+          const polylineStr = pathPoints.map(p => `${p.x},${p.y}`).join(' ');
+          const roadWidthPx = Math.max(4, (road.widthM / sideLength) * (CANVAS_W - 2 * PADDING));
           const isExisting = (road as any).isExisting;
           const isRoadSelected = road.id === selectedRoadId;
           
           return (
             <g key={road.id}>
-              <line
-                x1={pathPoints[0].x} y1={pathPoints[0].y}
-                x2={pathPoints[pathPoints.length - 1].x} y2={pathPoints[pathPoints.length - 1].y}
-                stroke="transparent" strokeWidth={Math.max(20, roadWidthPx + 10)}
+              {/* Hit target */}
+              <polyline
+                points={polylineStr}
+                fill="none" stroke="transparent" strokeWidth={Math.max(20, roadWidthPx + 10)}
+                strokeLinecap="round" strokeLinejoin="round"
                 className={readOnly || mode !== 'select' ? '' : 'cursor-pointer'}
                 onClick={e => !readOnly && handleRoadClick(road.id, e)}
               />
-              <line
-                x1={pathPoints[0].x} y1={pathPoints[0].y}
-                x2={pathPoints[pathPoints.length - 1].x} y2={pathPoints[pathPoints.length - 1].y}
+              {/* Width visualization (filled band) */}
+              <polyline
+                points={polylineStr}
+                fill="none"
                 stroke={isRoadSelected ? 'hsl(var(--primary))' : isExisting ? '#92400e' : '#9ca3af'}
-                strokeWidth={Math.max(isExisting ? 6 : 4, roadWidthPx)}
-                strokeLinecap="round"
+                strokeWidth={roadWidthPx}
+                strokeLinecap="round" strokeLinejoin="round"
                 strokeDasharray={isExisting ? 'none' : '6 3'}
-                opacity={isRoadSelected ? 0.8 : isExisting ? 0.6 : 0.4}
-                className={readOnly || mode !== 'select' ? '' : 'cursor-pointer'}
+                opacity={isRoadSelected ? 0.35 : isExisting ? 0.25 : 0.15}
+                className="pointer-events-none"
+              />
+              {/* Center line */}
+              <polyline
+                points={polylineStr}
+                fill="none"
+                stroke={isRoadSelected ? 'hsl(var(--primary))' : isExisting ? '#92400e' : '#9ca3af'}
+                strokeWidth={isExisting ? 3 : 2}
+                strokeLinecap="round" strokeLinejoin="round"
+                strokeDasharray={isExisting ? 'none' : '6 3'}
+                opacity={isRoadSelected ? 0.9 : isExisting ? 0.7 : 0.5}
+                className={readOnly || mode !== 'select' ? 'pointer-events-none' : 'cursor-pointer'}
                 onClick={e => !readOnly && handleRoadClick(road.id, e)}
               />
               {isRoadSelected && (
-                <line
-                  x1={pathPoints[0].x} y1={pathPoints[0].y}
-                  x2={pathPoints[pathPoints.length - 1].x} y2={pathPoints[pathPoints.length - 1].y}
+                <polyline
+                  points={polylineStr}
+                  fill="none"
                   stroke="hsl(var(--primary))"
-                  strokeWidth={Math.max(isExisting ? 8 : 6, roadWidthPx + 4)}
-                  strokeLinecap="round" opacity={0.2} className="pointer-events-none"
+                  strokeWidth={roadWidthPx + 4}
+                  strokeLinecap="round" strokeLinejoin="round"
+                  opacity={0.12} className="pointer-events-none"
                 />
               )}
-              {/* Road label */}
+              {/* Road label at midpoint */}
               {(() => {
-                const mx = (pathPoints[0].x + pathPoints[pathPoints.length - 1].x) / 2;
-                const my = (pathPoints[0].y + pathPoints[pathPoints.length - 1].y) / 2;
-                const dx = pathPoints[pathPoints.length - 1].y - pathPoints[0].y;
-                const dy = pathPoints[0].x - pathPoints[pathPoints.length - 1].x;
+                const midIdx = Math.floor(pathPoints.length / 2);
+                const p1 = pathPoints[Math.max(0, midIdx - 1)];
+                const p2 = pathPoints[Math.min(pathPoints.length - 1, midIdx)];
+                const mx = (p1.x + p2.x) / 2;
+                const my = (p1.y + p2.y) / 2;
+                const dx = p2.y - p1.y;
+                const dy = p1.x - p2.x;
                 const len = Math.sqrt(dx * dx + dy * dy) || 1;
-                const off = isExisting ? 14 : 8;
+                const off = Math.max(roadWidthPx / 2 + 8, 14);
                 const ox = (dx / len) * off;
                 const oy = (dy / len) * off;
                 return (
-                  <g>
+                  <g className="pointer-events-none select-none">
                     <rect x={mx + ox - 35} y={my + oy - 7} width={70} height={14} rx={3}
                       fill={isRoadSelected ? 'hsl(var(--primary))' : isExisting ? 'hsl(30, 70%, 95%)' : 'hsl(var(--background))'}
                       fillOpacity={isRoadSelected ? 0.15 : 0.9}
@@ -610,6 +628,19 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                   </g>
                 );
               })()}
+              {/* Draggable endpoint handles on selected road */}
+              {isRoadSelected && !readOnly && mode === 'select' && pathPoints.map((pt, idx) => (
+                <circle
+                  key={`road-handle-${idx}`}
+                  cx={pt.x} cy={pt.y} r={5}
+                  fill="white" stroke="hsl(var(--primary))" strokeWidth={2}
+                  className="cursor-grab active:cursor-grabbing"
+                  onMouseDown={e => {
+                    e.stopPropagation();
+                    setRoadEndpointDrag({ roadId: road.id, pointIdx: idx });
+                  }}
+                />
+              ))}
               {/* Delete button on selected road */}
               {isRoadSelected && !isExisting && !readOnly && onDeleteRoad && (() => {
                 const mx = (pathPoints[0].x + pathPoints[pathPoints.length - 1].x) / 2;
@@ -617,9 +648,9 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 const dx = pathPoints[pathPoints.length - 1].y - pathPoints[0].y;
                 const dy = pathPoints[0].x - pathPoints[pathPoints.length - 1].x;
                 const len = Math.sqrt(dx * dx + dy * dy) || 1;
-                const off = 8;
-                const ox = -(dx / len) * (off + 14);
-                const oy = -(dy / len) * (off + 14);
+                const off = Math.max(roadWidthPx / 2 + 14, 22);
+                const ox = -(dx / len) * off;
+                const oy = -(dy / len) * off;
                 return (
                   <g className="cursor-pointer" onClick={e => { e.stopPropagation(); onDeleteRoad(road.id); }}>
                     <circle cx={mx + ox} cy={my + oy} r={10} fill="hsl(var(--destructive))" fillOpacity={0.9} />
