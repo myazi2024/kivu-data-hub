@@ -1,109 +1,52 @@
 
 
-# Refonte de l'affichage des informations parcellaires — Format Document
+# Audit de la Fiche Cadastrale — Données fictives et divergences
 
-## Probleme actuel
+## Divergences identifiées
 
-Le composant `CadastralResultCard.tsx` (1340 lignes) affiche les donnees dans de petites cartes avec du texte minuscule (10px-13px), des badges compacts et des layouts en `flex justify-between`. C'est optimise pour une vue mobile "app" mais pas pour l'exploitation des informations. L'utilisateur souhaite un format document structure, lisible et imprimable.
+| Problème | Détail | Impact |
+|----------|--------|--------|
+| **`bypass_payment` est du code mort dans la RPC** | La fonction SQL `get_cadastral_parcel_data` lit encore `bypass_payment` dans `cadastral_search_config` (ligne 36-41), mais cette clé a été supprimée de l'admin lors de la refonte du mode de paiement. | Le bypass ne fonctionne plus ; code mort à nettoyer. |
+| **Permis de bâtir : gating incohérent** | La RPC gate les permis sur le service `'permits'`, mais ce service n'existe pas dans le catalogue (`cadastral_services_config`). Le document les affiche sous `hasAccess('information')`. Résultat : la RPC ne retourne jamais les permis (aucun service `permits` ne peut être payé), mais le document les cherche dans la mauvaise clé. | **Bug actif** — les permis ne s'affichent jamais. |
+| **Données parcellaires toujours retournées par la RPC** | `v_parcel` est retourné sans aucun gating (lignes 31-33), peu importe les services payés. Mais le document les masque côté client avec `hasAccess('information')`. | Double incohérence : le serveur envoie les données même sans paiement, mais le client les cache. Le gating doit être côté serveur. |
+| **Service `legal_verification` sans section** | Le catalogue contient un service `legal_verification` (prix facturé), mais la Fiche Cadastrale n'affiche aucune section correspondante. L'utilisateur paie pour rien. | **Bug actif** — service facturé sans contenu. |
+| **Mode test non vérifié dans la RPC** | La RPC ne consulte pas le mode test global (`test_mode` dans `cadastral_search_config`). Le mode test est uniquement géré côté client. | Incohérence avec l'architecture serveur-first. |
+| **Pas de gating serveur pour `land_disputes`** | La section litiges est affichée via une requête client directe (`DisputesSection`), contournant le gating serveur de la RPC. | Faille : les litiges sont accessibles sans paiement si l'utilisateur inspecte le réseau. |
+| **`legal_verification` mappé à aucune donnée** | La RPC n'a aucune branche `WHEN ... 'legal_verification'` — ce service ne retourne aucune donnée serveur. |  |
 
-## Approche
+## Plan de correction
 
-Creer un nouveau composant `CadastralDocumentView` qui presente les donnees payees dans un format document A4-like (feuille blanche, marges, sections titrees, tableaux structures). Le composant existant `CadastralResultCard` continue de gerer la logique d'acces/paiement, mais delegue l'affichage des donnees au nouveau composant.
+### 1. Mettre à jour la RPC `get_cadastral_parcel_data`
 
-```text
-Flux actuel:
-  CadastralResultsDialog → CadastralResultCard (billing OU affichage cards)
+- Supprimer la lecture de `bypass_payment` (code mort)
+- Remplacer par la lecture du mode test global (`test_mode.enabled`)
+- Gater les données parcellaires (`v_parcel`) derrière le service `information` (ou mode test/paiement activé=false)
+- Remplacer `'permits'` par `'information'` pour les permis (ils font partie du service Informations)
+- Ajouter une branche pour `land_disputes` : requêter `cadastral_land_disputes` côté serveur au lieu de laisser le client le faire
+- Ajouter une branche pour `legal_verification` (retourner les données de vérification juridique si elles existent, ou un objet vide structuré)
 
-Flux refonte:
-  CadastralResultsDialog → CadastralResultCard (billing OU CadastralDocumentView)
-```
+### 2. Supprimer la requête client `DisputesSection`
 
-## Structure du document
+Remplacer le composant `DisputesSection` (qui fait une requête Supabase directe) par l'affichage des données `result.land_disputes` retournées par la RPC. Le gating se fait ainsi côté serveur.
 
-Le format document reprendra les sections existantes dans un layout papier:
+### 3. Ajouter la section `legal_verification` dans le document
 
-```text
-┌─────────────────────────────────────┐
-│  BIC - Bureau de l'Immobilier       │
-│  FICHE CADASTRALE                   │
-│  Parcelle N° XX/YY/ZZ              │
-│  Generee le DD/MM/YYYY             │
-├─────────────────────────────────────┤
-│  1. IDENTIFICATION DE LA PARCELLE   │
-│  ┌─────────────┬──────────────┐     │
-│  │ Type        │ Section Urb. │     │
-│  │ Surface     │ 450 m²       │     │
-│  │ Usage       │ Habitation   │     │
-│  └─────────────┴──────────────┘     │
-│                                     │
-│  2. PROPRIETAIRE ACTUEL             │
-│  Nom: ...                           │
-│  Statut juridique: ...              │
-│  Depuis: ...                        │
-│                                     │
-│  3. LOCALISATION                    │
-│  Province: ... | Ville: ...         │
-│  Coordonnees GPS: ...               │
-│                                     │
-│  4. HISTORIQUE DE PROPRIETE         │
-│  ┌──────────┬────────┬──────────┐   │
-│  │ Periode  │ Nom    │ Type mut.│   │
-│  └──────────┴────────┴──────────┘   │
-│                                     │
-│  5. OBLIGATIONS FINANCIERES         │
-│  5.1 Taxes foncieres (tableau)      │
-│  5.2 Hypotheques (tableau)          │
-│                                     │
-│  6. AUTORISATIONS DE BATIR          │
-│  7. BORNAGE                         │
-│  8. LITIGES FONCIERS                │
-│                                     │
-│  ─── Disclaimer + QR verification ──│
-└─────────────────────────────────────┘
-```
+Créer une section « Vérification juridique » dans `CadastralDocumentView` affichant les données retournées par la RPC pour ce service (statut du titre, conformité, observations).
 
-## Plan d'implementation
+### 4. Synchroniser le gating client avec le serveur
 
-### 1. Creer `CadastralDocumentView.tsx`
+Le document ne doit plus utiliser `hasAccess(serviceType)` pour décider quoi afficher. Il doit vérifier si les données sont présentes (non vides) dans le résultat RPC. Si la RPC retourne `[]` ou `null` pour une section, le placeholder verrouillé s'affiche. Le gating est ainsi entièrement piloté par le serveur.
 
-Nouveau composant presentant les donnees dans un format document:
-- Fond blanc avec ombre (aspect feuille A4)
-- En-tete avec logo BIC, numero de parcelle, date de generation
-- Sections numerotees avec titres en bleu fonce
-- Donnees en tableaux structures (2 colonnes label/valeur) au lieu de cards
-- Taille de texte lisible (14px labels, 15px valeurs au lieu de 10-13px)
-- Boutons d'action en haut: Telecharger PDF, Imprimer, Retour au catalogue
-- Chaque section n'apparait que si le service correspondant est paye
-- Pied de page avec disclaimer et lien de verification
-- Design responsive: pleine largeur sur mobile, max-w-4xl centre sur desktop
+### 5. Vérifier le mode de paiement désactivé
 
-### 2. Modifier `CadastralResultCard.tsx`
+Quand le paiement est désactivé (`payment_mode.enabled = false`), la RPC doit retourner toutes les données (accès gratuit). Remplacer la logique `bypass_payment` supprimée par la vérification de `payment_mode.enabled`.
 
-Apres paiement, au lieu d'afficher les cards avec onglets, rendre `CadastralDocumentView` en lui passant:
-- `result` (donnees cadastrales)
-- `paidServices` (services payes)
-- `catalogServices` (catalogue pour le PDF)
-- Callbacks pour telecharger/imprimer
-
-Cela remplace tout le bloc apres `if (showBillingPanel)` (lignes 397-1337), soit ~940 lignes de JSX complexe remplacees par un appel au nouveau composant.
-
-### 3. Adapter `CadastralResultsDialog.tsx`
-
-Elargir le conteneur quand le document est affiche: passer de `md:max-w-2xl` a `md:max-w-4xl` pour que le format document ait assez d'espace.
-
-## Details techniques
-
-- Les sections verrouillees affichent un placeholder discret "Section non incluse dans votre abonnement" au lieu du `LockedServiceOverlay` actuel
-- Le composant `DisputesContent` (requete Supabase pour litiges) est reutilise tel quel
-- Les composants `DocumentAttachment` et `VerificationButton` sont reutilises dans le format document
-- L'impression utilise `@media print` avec des styles dedies pour masquer les boutons et optimiser le rendu papier
-- Le generateur PDF existant (`generateCadastralReport`) reste disponible pour le telechargement
-
-## Fichiers impactes
+## Fichiers impactés
 
 | Action | Fichier |
 |--------|---------|
-| Cree | `src/components/cadastral/CadastralDocumentView.tsx` — Nouveau composant format document |
-| Modifie | `src/components/cadastral/CadastralResultCard.tsx` — Delegation de l'affichage au nouveau composant |
-| Modifie | `src/components/cadastral/CadastralResultsDialog.tsx` — Elargir le conteneur pour le format document |
+| Migration SQL | Mise à jour de `get_cadastral_parcel_data` — suppression bypass, ajout test_mode, gating parcelle, litiges serveur, legal_verification, correction permits |
+| Modifié | `src/components/cadastral/CadastralDocumentView.tsx` — Suppression `DisputesSection`, gating par données présentes, ajout section legal_verification |
+| Modifié | `src/hooks/useCadastralSearch.tsx` — Mapper `land_disputes` depuis le résultat RPC |
+| Modifié | `src/types/cadastral.ts` ou types inline — Ajouter `land_disputes` au type `CadastralSearchResult` |
 
