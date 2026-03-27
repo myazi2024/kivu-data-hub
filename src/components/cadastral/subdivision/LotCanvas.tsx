@@ -43,6 +43,7 @@ interface LotCanvasProps {
   onDeleteRoad?: (id: string) => void;
   onUpdateRoad?: (id: string, updates: Partial<SubdivisionRoad>) => void;
   onSplitLot?: (id: string) => void;
+  onConvertEdgeToRoad?: (edge: EdgeInfo) => void;
   onMergeLots?: (ids: string[]) => void;
   onCutLot?: (lotId: string, cutStart: Point2D, cutEnd: Point2D) => void;
   onFinishRoadDraw?: (path: Point2D[]) => void;
