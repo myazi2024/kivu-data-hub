@@ -100,6 +100,9 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   const [editingRoadId, setEditingRoadId] = useState<string | null>(null);
   const [canvasMode, setCanvasMode] = useState<CanvasMode>('select');
   const [canvasShowGrid, setCanvasShowGrid] = useState(true);
+  // Road pre-configuration
+  const [roadPresetWidth, setRoadPresetWidth] = useState(6);
+  const [roadPresetSurface, setRoadPresetSurface] = useState<SubdivisionRoad['surfaceType']>('planned');
 
   const editingRoad = roads.find(r => r.id === editingRoadId) || null;
 
