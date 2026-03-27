@@ -12,7 +12,17 @@ interface ParcelSide {
   [key: string]: any;
 }
 
-export type CanvasMode = 'select' | 'drawLine' | 'clipart';
+export type CanvasMode = 'select' | 'drawLine' | 'clipart' | 'selectEdge';
+
+export interface EdgeInfo {
+  lotId1: string;
+  edgeIdx1: number;
+  lotId2?: string;
+  edgeIdx2?: number;
+  p1: Point2D;
+  p2: Point2D;
+  isShared: boolean;
+}
 
 interface LotCanvasProps {
   lots: SubdivisionLot[];
