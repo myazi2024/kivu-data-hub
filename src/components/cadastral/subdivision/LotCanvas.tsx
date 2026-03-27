@@ -424,50 +424,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       }
     }
 
-    // Road endpoint drag
-    if (roadEndpointDrag && onUpdateRoad) {
-      const normalized = fromScreen(pos.x, pos.y);
-      const snapped = drag.snapToGrid(normalized);
-      const road = roads.find(r => r.id === roadEndpointDrag.roadId);
-      if (road) {
-        const newPath = [...road.path];
-        newPath[roadEndpointDrag.pointIdx] = snapped;
-        onUpdateRoad(roadEndpointDrag.roadId, { path: newPath });
-      }
-    }
-
-    // Road width drag
-    if (roadWidthDrag && onUpdateRoad) {
-      const road = roads.find(r => r.id === roadWidthDrag.roadId);
-      if (road && road.path.length >= 2) {
-        // Calculate perpendicular distance moved in meters
-        const p0 = toScreen(road.path[0]);
-        const p1 = toScreen(road.path[road.path.length - 1]);
-        const rdx = p1.x - p0.x;
-        const rdy = p1.y - p0.y;
-        const rlen = Math.sqrt(rdx * rdx + rdy * rdy) || 1;
-        // Normal direction
-        const nx = -rdy / rlen;
-        const ny = rdx / rlen;
-        // Project mouse delta onto normal
-        const deltaPx = (pos.x - roadWidthDrag.startY) * nx + (pos.y - roadWidthDrag.startY) * ny;
-        // Actually just use simple vertical/horizontal mouse delta for intuitive feel
-        const svg = svgRef.current;
-        if (svg) {
-          const rect = svg.getBoundingClientRect();
-          const scaleY = (CANVAS_H / viewport.viewport.zoom) / rect.height;
-          const mouseScreenY = e.clientY;
-          const deltaScreenPx = mouseScreenY - roadWidthDrag.startY;
-          const deltaNorm = Math.abs(deltaScreenPx * scaleY) / (CANVAS_H - 2 * PADDING);
-          const deltaM = deltaNorm * sideLength;
-          const sign = deltaScreenPx > 0 ? 1 : -1;
-          const newWidth = Math.max(2, Math.min(30, roadWidthDrag.startWidth + sign * deltaM * 2));
-          onUpdateRoad(roadWidthDrag.roadId, { widthM: Math.round(newWidth * 2) / 2 });
-        }
-      }
-    }
-
-    // Rotation drag — use SVG coords consistently + cumulative rotation from original vertices
+    // Rotation drag — HIGHEST PRIORITY — use SVG coords consistently + cumulative rotation
     if (rotationDrag) {
       const svgMouse = getSvgPos(e);
       const currentAngle = Math.atan2(
@@ -491,6 +448,48 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       } else if (onUpdateRoad) {
         onUpdateRoad(rotationDrag.targetId, { path: rotated });
       }
+      return;
+    }
+
+    // Road endpoint drag
+    if (roadEndpointDrag && onUpdateRoad) {
+      const normalized = fromScreen(pos.x, pos.y);
+      const snapped = drag.snapToGrid(normalized);
+      const road = roads.find(r => r.id === roadEndpointDrag.roadId);
+      if (road) {
+        const newPath = [...road.path];
+        newPath[roadEndpointDrag.pointIdx] = snapped;
+        onUpdateRoad(roadEndpointDrag.roadId, { path: newPath });
+      }
+      return;
+    }
+
+    // Road width drag
+    if (roadWidthDrag && onUpdateRoad) {
+      const road = roads.find(r => r.id === roadWidthDrag.roadId);
+      if (road && road.path.length >= 2) {
+        const p0 = toScreen(road.path[0]);
+        const p1 = toScreen(road.path[road.path.length - 1]);
+        const rdx = p1.x - p0.x;
+        const rdy = p1.y - p0.y;
+        const rlen = Math.sqrt(rdx * rdx + rdy * rdy) || 1;
+        const nx = -rdy / rlen;
+        const ny = rdx / rlen;
+        const deltaPx = (pos.x - roadWidthDrag.startY) * nx + (pos.y - roadWidthDrag.startY) * ny;
+        const svg = svgRef.current;
+        if (svg) {
+          const rect = svg.getBoundingClientRect();
+          const scaleY = (CANVAS_H / viewport.viewport.zoom) / rect.height;
+          const mouseScreenY = e.clientY;
+          const deltaScreenPx = mouseScreenY - roadWidthDrag.startY;
+          const deltaNorm = Math.abs(deltaScreenPx * scaleY) / (CANVAS_H - 2 * PADDING);
+          const deltaM = deltaNorm * sideLength;
+          const sign = deltaScreenPx > 0 ? 1 : -1;
+          const newWidth = Math.max(2, Math.min(30, roadWidthDrag.startWidth + sign * deltaM * 2));
+          onUpdateRoad(roadWidthDrag.roadId, { widthM: Math.round(newWidth * 2) / 2 });
+        }
+      }
+      return;
     }
 
     if (drag.isDragging) {
@@ -972,40 +971,65 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                   </g>
                 );
               })()}
-              {/* Rotation handle for selected road */}
+              {/* Rotation ring for selected road */}
               {isRoadSelected && !readOnly && mode === 'select' && (() => {
                 const allPts = pathPoints;
                 const rcx = allPts.reduce((s, p) => s + p.x, 0) / allPts.length;
                 const rcy = allPts.reduce((s, p) => s + p.y, 0) / allPts.length;
-                const minRY = Math.min(...allPts.map(p => p.y));
-                const handleRY = minRY - 30;
+                const minX = Math.min(...allPts.map(p => p.x));
+                const maxX = Math.max(...allPts.map(p => p.x));
+                const minY = Math.min(...allPts.map(p => p.y));
+                const maxY = Math.max(...allPts.map(p => p.y));
+                const bboxW = maxX - minX;
+                const bboxH = maxY - minY;
+                const ringRadius = Math.max(bboxW, bboxH) / 2 + 20;
+                const handleX = rcx;
+                const handleY = rcy - ringRadius;
+                const startRotationRoad = (e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  const svgMouse = getSvgPos(e);
+                  const normCx = road.path.reduce((s, p) => s + p.x, 0) / road.path.length;
+                  const normCy = road.path.reduce((s, p) => s + p.y, 0) / road.path.length;
+                  const angle = Math.atan2(svgMouse.y - rcy, svgMouse.x - rcx);
+                  setRotationDrag({ startAngle: angle, centerX: normCx, centerY: normCy, svgCenterX: rcx, svgCenterY: rcy, originalVertices: [...road.path], targetType: 'road', targetId: road.id });
+                  setRotationAngleDisplay(0);
+                };
                 return (
                   <g>
-                    <line x1={rcx} y1={minRY} x2={rcx} y2={handleRY}
-                      stroke="hsl(var(--primary))" strokeWidth={1} strokeDasharray="3 2" opacity={0.5}
+                    {/* Rotation ring */}
+                    <circle cx={rcx} cy={rcy} r={ringRadius}
+                      fill="none" stroke="hsl(var(--primary))" strokeWidth={2}
+                      strokeDasharray="4 3" opacity={0.3}
                       className="pointer-events-none" />
-                    <circle cx={rcx} cy={handleRY} r={8}
-                      fill="hsl(var(--background))" stroke="hsl(var(--primary))" strokeWidth={2}
+                    {/* Invisible thick ring for easier grab */}
+                    <circle cx={rcx} cy={rcy} r={ringRadius}
+                      fill="none" stroke="transparent" strokeWidth={14}
                       className="cursor-grab active:cursor-grabbing"
-                      onMouseDown={e => {
-                        e.stopPropagation();
-                        const svgMouse = getSvgPos(e);
-                        const normCx = allPts.reduce((s, p) => s + fromScreen(p.x, p.y).x, 0) / allPts.length;
-                        const normCy = allPts.reduce((s, p) => s + fromScreen(p.x, p.y).y, 0) / allPts.length;
-                        const angle = Math.atan2(svgMouse.y - rcy, svgMouse.x - rcx);
-                        setRotationDrag({ startAngle: angle, centerX: normCx, centerY: normCy, svgCenterX: rcx, svgCenterY: rcy, originalVertices: [...road.path], targetType: 'road', targetId: road.id });
-                        setRotationAngleDisplay(0);
-                      }}
-                    />
-                    <text x={rcx} y={handleRY + 1} textAnchor="middle" dominantBaseline="middle"
-                      fontSize={10} fill="hsl(var(--primary))" fontWeight="bold"
+                      onMouseDown={startRotationRoad} />
+                    {/* Guide line center → handle */}
+                    <line x1={rcx} y1={rcy} x2={handleX} y2={handleY}
+                      stroke="hsl(var(--primary))" strokeWidth={1} strokeDasharray="3 2" opacity={0.3}
+                      className="pointer-events-none" />
+                    {/* Handle on ring */}
+                    <circle cx={handleX} cy={handleY} r={10}
+                      fill="hsl(var(--background))" stroke="hsl(var(--primary))" strokeWidth={2.5}
+                      className="cursor-grab active:cursor-grabbing"
+                      onMouseDown={startRotationRoad} />
+                    <text x={handleX} y={handleY + 1} textAnchor="middle" dominantBaseline="middle"
+                      fontSize={12} fill="hsl(var(--primary))" fontWeight="bold"
                       className="pointer-events-none select-none">↻</text>
-                    {rotationAngleDisplay !== null && rotationDrag && (
-                      <text x={rcx + 14} y={handleRY - 4} textAnchor="start" dominantBaseline="middle"
-                        fontSize={8} fill="hsl(var(--primary))" fontWeight="600"
-                        className="pointer-events-none select-none">
-                        {rotationAngleDisplay > 0 ? '+' : ''}{rotationAngleDisplay}°
-                      </text>
+                    {/* Angle display */}
+                    {rotationAngleDisplay !== null && rotationDrag && rotationDrag.targetId === road.id && (
+                      <g>
+                        <rect x={rcx - 18} y={rcy - 8} width={36} height={16} rx={4}
+                          fill="hsl(var(--primary))" fillOpacity={0.15} />
+                        <text x={rcx} y={rcy} textAnchor="middle" dominantBaseline="middle"
+                          fontSize={10} fill="hsl(var(--primary))" fontWeight="700"
+                          className="pointer-events-none select-none">
+                          {rotationAngleDisplay > 0 ? '+' : ''}{rotationAngleDisplay}°
+                        </text>
+                      </g>
                     )}
                   </g>
                 );
@@ -1219,38 +1243,62 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 />
               ))}
 
-              {/* Rotation handle */}
+              {/* Rotation ring */}
               {!readOnly && mode === 'select' && isSelected && (() => {
+                const minX = Math.min(...screenVertices.map(v => v.x));
+                const maxX = Math.max(...screenVertices.map(v => v.x));
                 const minY = Math.min(...screenVertices.map(v => v.y));
-                const handleY = minY - 30;
+                const maxY = Math.max(...screenVertices.map(v => v.y));
+                const bboxW = maxX - minX;
+                const bboxH = maxY - minY;
+                const ringRadius = Math.max(bboxW, bboxH) / 2 + 20;
+                const handleX = cx;
+                const handleY = cy - ringRadius;
+                const startRotationLot = (e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  const svgMouse = getSvgPos(e);
+                  const normCx = lot.vertices.reduce((s, v) => s + v.x, 0) / lot.vertices.length;
+                  const normCy = lot.vertices.reduce((s, v) => s + v.y, 0) / lot.vertices.length;
+                  const angle = Math.atan2(svgMouse.y - cy, svgMouse.x - cx);
+                  setRotationDrag({ startAngle: angle, centerX: normCx, centerY: normCy, svgCenterX: cx, svgCenterY: cy, originalVertices: [...lot.vertices], targetType: 'lot', targetId: lot.id });
+                  setRotationAngleDisplay(0);
+                };
                 return (
                   <g>
-                    <line x1={cx} y1={minY} x2={cx} y2={handleY}
-                      stroke="hsl(var(--primary))" strokeWidth={1} strokeDasharray="3 2" opacity={0.5}
+                    {/* Rotation ring */}
+                    <circle cx={cx} cy={cy} r={ringRadius}
+                      fill="none" stroke="hsl(var(--primary))" strokeWidth={2}
+                      strokeDasharray="4 3" opacity={0.3}
                       className="pointer-events-none" />
-                    <circle cx={cx} cy={handleY} r={8}
-                      fill="hsl(var(--background))" stroke="hsl(var(--primary))" strokeWidth={2}
+                    {/* Invisible thick ring for easier grab */}
+                    <circle cx={cx} cy={cy} r={ringRadius}
+                      fill="none" stroke="transparent" strokeWidth={14}
                       className="cursor-grab active:cursor-grabbing"
-                      onMouseDown={e => {
-                        e.stopPropagation();
-                        const svgMouse = getSvgPos(e);
-                        const normCx = lot.vertices.reduce((s, v) => s + v.x, 0) / lot.vertices.length;
-                        const normCy = lot.vertices.reduce((s, v) => s + v.y, 0) / lot.vertices.length;
-                        const svgCenter = toScreen({ x: normCx, y: normCy });
-                        const angle = Math.atan2(svgMouse.y - svgCenter.y, svgMouse.x - svgCenter.x);
-                        setRotationDrag({ startAngle: angle, centerX: normCx, centerY: normCy, svgCenterX: svgCenter.x, svgCenterY: svgCenter.y, originalVertices: [...lot.vertices], targetType: 'lot', targetId: lot.id });
-                        setRotationAngleDisplay(0);
-                      }}
-                    />
-                    <text x={cx} y={handleY + 1} textAnchor="middle" dominantBaseline="middle"
-                      fontSize={10} fill="hsl(var(--primary))" fontWeight="bold"
+                      onMouseDown={startRotationLot} />
+                    {/* Guide line center → handle */}
+                    <line x1={cx} y1={cy} x2={handleX} y2={handleY}
+                      stroke="hsl(var(--primary))" strokeWidth={1} strokeDasharray="3 2" opacity={0.3}
+                      className="pointer-events-none" />
+                    {/* Handle on ring */}
+                    <circle cx={handleX} cy={handleY} r={10}
+                      fill="hsl(var(--background))" stroke="hsl(var(--primary))" strokeWidth={2.5}
+                      className="cursor-grab active:cursor-grabbing"
+                      onMouseDown={startRotationLot} />
+                    <text x={handleX} y={handleY + 1} textAnchor="middle" dominantBaseline="middle"
+                      fontSize={12} fill="hsl(var(--primary))" fontWeight="bold"
                       className="pointer-events-none select-none">↻</text>
-                    {rotationAngleDisplay !== null && rotationDrag && (
-                      <text x={cx + 14} y={handleY - 4} textAnchor="start" dominantBaseline="middle"
-                        fontSize={8} fill="hsl(var(--primary))" fontWeight="600"
-                        className="pointer-events-none select-none">
-                        {rotationAngleDisplay > 0 ? '+' : ''}{rotationAngleDisplay}°
-                      </text>
+                    {/* Angle display */}
+                    {rotationAngleDisplay !== null && rotationDrag && rotationDrag.targetId === lot.id && (
+                      <g>
+                        <rect x={cx - 18} y={cy - 8} width={36} height={16} rx={4}
+                          fill="hsl(var(--primary))" fillOpacity={0.15} />
+                        <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle"
+                          fontSize={10} fill="hsl(var(--primary))" fontWeight="700"
+                          className="pointer-events-none select-none">
+                          {rotationAngleDisplay > 0 ? '+' : ''}{rotationAngleDisplay}°
+                        </text>
+                      </g>
                     )}
                   </g>
                 );
