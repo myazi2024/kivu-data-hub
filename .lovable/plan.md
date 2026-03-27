@@ -1,65 +1,67 @@
 
 
-# Fix "Impossible de charger les rôles" + Amélioration du bloc Rôles
+# Enrichir la liste des rôles selon les données collectées par l'application
 
-## Diagnostic
+## Analyse des services et données de l'application
 
-### Cause racine de l'erreur
-La requête `fetchUserRoles` utilise un JOIN `profiles!inner(full_name, email)` mais il n'existe **aucune clé étrangère directe** entre `user_roles` et `profiles`. Les deux tables référencent `auth.users(id)` indépendamment. PostgREST ne peut pas résoudre ce JOIN indirect, ce qui provoque une erreur 400 et déclenche le toast "Impossible de charger les rôles".
+L'application gère les services cadastraux suivants, chacun impliquant des acteurs métier spécifiques :
 
-### Autres problèmes identifiés
+| Service | Acteurs métier impliqués | Rôle existant ? |
+|---------|------------------------|-----------------|
+| Expertise immobilière | Expert immobilier | ✅ `expert_immobilier` |
+| Hypothèques | Agent hypothécaire | ✅ `mortgage_officer` |
+| Mutations de propriété | Notaire (attestation notariée, acte de vente) | ❌ Manquant |
+| Bornage / Lotissement | Géomètre (surveyor_name, PV de bornage) | ❌ Manquant |
+| Autorisations de bâtir | Agent d'urbanisme (service émetteur, contrôle) | ❌ Manquant |
+| Litiges fonciers | — (traité par admin) | — |
+| Partenaires / Revendeurs | Partenaire commercial | ✅ `partner` |
 
-| Problème | Impact |
-|----------|--------|
-| JOIN `profiles!inner` impossible (pas de FK directe) | **Erreur bloquante** — les rôles ne se chargent pas |
-| RLS : seuls les `super_admin` ont INSERT/DELETE sur `user_roles`, mais l'UI laisse les `admin` essayer | Admin voit le formulaire d'ajout mais l'insertion échoue silencieusement |
-| `get_current_user_role()` CASE incomplet — manque `expert_immobilier` (5) et `mortgage_officer` (6) | Ces rôles retournent NULL, bloquant potentiellement l'accès aux profiles |
-| Colonne `created_by` jamais renseignée lors de l'ajout d'un rôle | Pas de traçabilité de qui a attribué le rôle |
-| Pas de pagination — tous les utilisateurs chargés d'un coup | Lent avec beaucoup d'utilisateurs |
+## Rôles à ajouter
 
-## Plan de correction
+### 1. `notaire` — Notaire
+- **Justification** : Les mutations référencent des "attestations notariées", "actes de vente notariés". Un notaire devrait pouvoir consulter et valider les demandes de mutation qui le concernent.
+- **Permissions** : Consulter les mutations, valider les documents de mutation, accéder aux fiches parcellaires concernées.
 
-### 1. Corriger `fetchUserRoles` — deux requêtes séparées
+### 2. `geometre` — Géomètre
+- **Justification** : Les bornages collectent `surveyor_name`, `survey_date`, `pv_reference_number`. Les lotissements requièrent un géomètre agréé. Ce rôle permet au géomètre de consulter/soumettre ses PV de bornage.
+- **Permissions** : Consulter les bornages, soumettre des PV, accéder aux lotissements assignés.
 
-Remplacer le JOIN impossible par :
-1. Fetch `user_roles` (id, user_id, role, created_at)
-2. Fetch `profiles` pour les user_ids récupérés
-3. Merger côté client
+### 3. `urbaniste` — Agent d'urbanisme
+- **Justification** : Les autorisations de bâtir référencent un `building_permit_issuing_service` (Mairie, Division de l'Urbanisme). Ce rôle permet à l'agent de traiter les demandes d'autorisation.
+- **Permissions** : Consulter les demandes d'autorisation, valider/rejeter, accéder aux informations de construction.
 
-Même logique pour `fetchAllUsers` — déjà fonctionnel (pas de JOIN).
+## Plan technique
 
-### 2. Corriger `get_current_user_role()` — ajouter les rôles manquants
+### 1. Migration SQL — ajouter les 3 valeurs à l'enum `app_role`
 
-Migration SQL pour recréer la fonction avec le CASE complet :
 ```sql
-CASE role
-  WHEN 'super_admin' THEN 1
-  WHEN 'admin' THEN 2
-  WHEN 'expert_immobilier' THEN 3
-  WHEN 'mortgage_officer' THEN 4
-  WHEN 'partner' THEN 5
-  WHEN 'user' THEN 6
-END
+ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'notaire';
+ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'geometre';
+ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'urbaniste';
 ```
 
-### 3. Ajouter une policy INSERT pour les admins sur `user_roles`
+Mettre à jour `get_user_highest_role` pour inclure les nouveaux rôles dans la hiérarchie (notaire = 5, geometre = 6, urbaniste = 7, les autres décalés).
 
-Actuellement seuls les `super_admin` peuvent insérer/supprimer des rôles. Ajouter des policies pour que les `admin` puissent aussi gérer les rôles (sauf `super_admin`) :
-- INSERT pour admin (avec restriction : ne peut pas attribuer `super_admin`)
-- DELETE pour admin (avec restriction : ne peut pas retirer `super_admin`)
+Insérer les permissions par défaut pour chaque nouveau rôle dans `role_permissions`.
 
-### 4. Renseigner `created_by` lors de l'ajout
+### 2. Mettre à jour `roleConfig` dans les 3 fichiers UI
 
-Modifier `addRole` pour inclure `created_by: user.id` dans l'insert.
+Ajouter les 3 rôles avec icône, label, couleur et description dans :
+- `AdminUserRolesEnhanced.tsx`
+- `AdminUserRoles.tsx`
+- `AdminPermissions.tsx`
 
-### 5. Afficher `created_by` dans l'historique
+### 3. Mettre à jour `types.ts`
 
-Afficher le nom de l'admin qui a attribué chaque rôle dans la liste et l'historique.
+Ajouter les 3 nouvelles valeurs à l'enum `app_role` dans le fichier de types Supabase.
 
 ## Fichiers modifiés
 
 | Action | Fichier |
 |--------|---------|
-| Migration SQL | Fix `get_current_user_role()`, ajouter policies INSERT/DELETE pour admin |
-| Modifié | `src/components/admin/AdminUserRolesEnhanced.tsx` — fix fetch, ajout `created_by`, UI améliorée |
+| Migration SQL | Enum + hiérarchie + permissions par défaut |
+| Modifié | `src/components/admin/AdminUserRolesEnhanced.tsx` |
+| Modifié | `src/components/admin/AdminUserRoles.tsx` |
+| Modifié | `src/components/admin/AdminPermissions.tsx` |
+| Modifié | `src/integrations/supabase/types.ts` |
 
