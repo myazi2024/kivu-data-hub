@@ -62,16 +62,15 @@ serve(async (req) => {
       }
     }
 
-    // SECURITY: Read test_mode from server-side config, never trust client
-    const { data: paymentModeConfig } = await supabase
+    // SECURITY: Read test_mode from global test_mode config, never trust client
+    const { data: testModeConfig } = await supabase
       .from('cadastral_search_config')
       .select('config_value')
-      .eq('config_key', 'payment_mode')
+      .eq('config_key', 'test_mode')
       .eq('is_active', true)
-      .single();
+      .maybeSingle();
 
-    const serverTestMode = paymentModeConfig?.config_value?.test_mode === true;
-    const test_mode = serverTestMode;
+    const test_mode = testModeConfig?.config_value?.enabled === true;
 
     // Rate limiting: Check recent payment attempts
     const oneHourAgo = new Date(Date.now() - 3600000).toISOString();

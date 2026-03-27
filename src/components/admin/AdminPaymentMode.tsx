@@ -1,89 +1,109 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, CreditCard, ShieldAlert, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Loader2, CreditCard, AlertTriangle, CheckCircle2, Info, TestTube2, History, Coins } from 'lucide-react';
 import { usePaymentConfig } from '@/hooks/usePaymentConfig';
+import { useTestMode } from '@/hooks/useTestMode';
 import { upsertSearchConfig, logAuditAction } from '@/utils/supabaseConfigUtils';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-interface PaymentModeConfig {
-  enabled: boolean;
-  bypass_payment: boolean;
-  test_mode: boolean;
+interface AuditEntry {
+  id: string;
+  action: string;
+  admin_name: string | null;
+  created_at: string;
+  old_values: any;
+  new_values: any;
 }
 
 const AdminPaymentMode: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [auditHistory, setAuditHistory] = useState<AuditEntry[]>([]);
   const { paymentMode: loadedConfig, availableMethods, refreshConfiguration } = usePaymentConfig();
-  const [config, setConfig] = useState<PaymentModeConfig>({
-    enabled: false,
-    bypass_payment: false,
-    test_mode: false
-  });
+  const { isTestModeActive } = useTestMode();
+  const [enabled, setEnabled] = useState(false);
+
+  const isDirty = useMemo(() => enabled !== loadedConfig.enabled, [enabled, loadedConfig.enabled]);
 
   useEffect(() => {
     if (loadedConfig) {
-      setConfig(loadedConfig);
+      setEnabled(loadedConfig.enabled);
       setLoading(false);
     }
   }, [loadedConfig]);
+
+  // Charger l'historique des changements
+  useEffect(() => {
+    const loadAuditHistory = async () => {
+      const { data } = await supabase
+        .from('audit_logs')
+        .select('id, action, admin_name, created_at, old_values, new_values')
+        .eq('action', 'PAYMENT_MODE_UPDATED')
+        .order('created_at', { ascending: false })
+        .limit(5);
+      if (data) setAuditHistory(data);
+    };
+    loadAuditHistory();
+  }, [saving]);
 
   const saveConfiguration = async () => {
     try {
       setSaving(true);
 
-      const oldConfig = { ...loadedConfig };
+      const oldConfig = { enabled: loadedConfig.enabled };
+      const newConfig = { enabled };
 
-      // Fix #14: Utilisation de l'utilitaire partagé
       await upsertSearchConfig(
         'payment_mode',
-        config as unknown as Record<string, unknown>,
+        newConfig as unknown as Record<string, unknown>,
         'Configuration du mode de paiement pour les services cadastraux'
       );
 
-      // Audit logging
       await logAuditAction(
         'PAYMENT_MODE_UPDATED',
         'cadastral_search_config',
         undefined,
         oldConfig as unknown as Record<string, unknown>,
-        config as unknown as Record<string, unknown>
+        newConfig as unknown as Record<string, unknown>
       );
 
-      toast.success('Configuration enregistrée avec succès', {
-        description: 'Les changements sont effectifs immédiatement pour tous les utilisateurs'
+      toast.success('Configuration enregistrée', {
+        description: enabled ? 'Paiement activé pour tous les utilisateurs' : 'Accès gratuit pour tous les utilisateurs'
       });
 
       await refreshConfiguration();
     } catch (error: any) {
       console.error('Erreur lors de l\'enregistrement:', error);
-      toast.error('Erreur lors de l\'enregistrement de la configuration', {
-        description: error.message || 'Veuillez réessayer'
-      });
+      toast.error('Erreur lors de l\'enregistrement', { description: error.message || 'Veuillez réessayer' });
     } finally {
       setSaving(false);
     }
   };
 
-  const getCurrentMode = () => {
-    if (!config.enabled && config.bypass_payment) {
-      return { label: 'Mode Développement', variant: 'secondary' as const, icon: AlertTriangle };
+  const handleSave = () => {
+    // Confirmation si on active le paiement et le mode test est inactif (= production réelle)
+    if (enabled && !isTestModeActive) {
+      setShowConfirmDialog(true);
+    } else {
+      saveConfiguration();
     }
-    if (config.enabled && config.test_mode) {
-      return { label: 'Mode Test', variant: 'default' as const, icon: ShieldAlert };
-    }
-    if (config.enabled && !config.test_mode) {
-      return { label: 'Mode Production', variant: 'default' as const, icon: CheckCircle2 };
-    }
-    if (!config.enabled && !config.bypass_payment) {
-      return { label: 'Paiement désactivé', variant: 'outline' as const, icon: AlertTriangle };
-    }
-    return { label: 'Mode Inconnu', variant: 'destructive' as const, icon: AlertTriangle };
   };
 
   if (loading) {
@@ -93,9 +113,6 @@ const AdminPaymentMode: React.FC = () => {
       </div>
     );
   }
-
-  const currentMode = getCurrentMode();
-  const Icon = currentMode.icon;
 
   return (
     <div className="space-y-6">
@@ -112,19 +129,34 @@ const AdminPaymentMode: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-primary/10">
-                <Icon className="h-6 w-6 text-primary" />
+                {loadedConfig.enabled ? (
+                  <CheckCircle2 className="h-6 w-6 text-primary" />
+                ) : (
+                  <AlertTriangle className="h-6 w-6 text-primary" />
+                )}
               </div>
               <div>
                 <CardTitle className="text-lg">État actuel</CardTitle>
                 <CardDescription>Mode de fonctionnement du système de paiement</CardDescription>
               </div>
             </div>
-            <Badge variant={currentMode.variant} className="text-sm px-3 py-1">
-              {currentMode.label}
+            <Badge variant={loadedConfig.enabled ? 'default' : 'outline'} className="text-sm px-3 py-1">
+              {loadedConfig.enabled ? 'Paiement requis' : 'Accès gratuit'}
             </Badge>
           </div>
         </CardHeader>
       </Card>
+
+      {/* Bandeau Mode Test global */}
+      {isTestModeActive && (
+        <Alert className="border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700">
+          <TestTube2 className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+          <AlertDescription className="text-amber-800 dark:text-amber-200">
+            <strong>Mode Test global actif</strong> — Les paiements sont simulés automatiquement.
+            Les transactions ne sont pas réelles. Gérez le mode test dans l'onglet <strong>Mode Test</strong>.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Configuration */}
       <Card>
@@ -134,150 +166,69 @@ const AdminPaymentMode: React.FC = () => {
             Configuration du paiement
           </CardTitle>
           <CardDescription>
-            Activez ou désactivez le système de paiement pour les services cadastraux
+            Activez ou désactivez le paiement requis pour accéder aux services cadastraux
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Mode développement (bypass) */}
+          {/* Switch unique : Paiement requis */}
           <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
             <div className="space-y-1 flex-1">
-              <Label htmlFor="bypass-mode" className="text-base font-medium">
-                Mode développement (Bypass)
+              <Label htmlFor="payment-required" className="text-base font-medium">
+                Paiement requis
               </Label>
               <p className="text-sm text-muted-foreground">
-                En mode développement, les paiements sont bypassés et l'accès est accordé gratuitement
+                {enabled
+                  ? 'Les utilisateurs doivent payer pour accéder aux services cadastraux'
+                  : 'Les services cadastraux sont accessibles gratuitement'}
               </p>
             </div>
             <Switch
-              id="bypass-mode"
-              checked={config.bypass_payment}
-              onCheckedChange={(checked) => 
-                setConfig(prev => ({ 
-                  ...prev, 
-                  bypass_payment: checked,
-                  enabled: checked ? false : prev.enabled
-                }))
-              }
+              id="payment-required"
+              checked={enabled}
+              onCheckedChange={setEnabled}
             />
           </div>
 
-          {/* Paiement activé */}
-          <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
-            <div className="space-y-1 flex-1">
-              <Label htmlFor="payment-enabled" className="text-base font-medium">
-                Paiement activé
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Active le système de paiement réel pour les services cadastraux
-              </p>
-            </div>
-            <Switch
-              id="payment-enabled"
-              checked={config.enabled}
-              disabled={config.bypass_payment}
-              onCheckedChange={(checked) => 
-                setConfig(prev => ({ 
-                  ...prev, 
-                  enabled: checked
-                }))
-              }
-            />
-          </div>
-
-          {/* Mode test */}
-          <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
-            <div className="space-y-1 flex-1">
-              <Label htmlFor="test-mode" className="text-base font-medium">
-                Mode test
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Utilise des paiements de test (simulation sans transaction réelle)
-              </p>
-            </div>
-            <Switch
-              id="test-mode"
-              checked={config.test_mode}
-              disabled={!config.enabled || config.bypass_payment}
-              onCheckedChange={(checked) => 
-                setConfig(prev => ({ ...prev, test_mode: checked }))
-              }
-            />
-          </div>
-
-          {/* Alertes */}
-          {config.bypass_payment && (
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Mode développement actif :</strong> Tous les services sont accessibles gratuitement. 
-                Aucun paiement n'est requis. Ce mode doit être désactivé en production.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {config.enabled && config.test_mode && !config.bypass_payment && (
-            <Alert>
-              <ShieldAlert className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Mode test actif :</strong> Les paiements sont simulés. 
-                Les transactions ne sont pas réelles. Idéal pour les tests avant la mise en production.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {config.enabled && !config.test_mode && !config.bypass_payment && (
+          {/* Alertes contextuelles */}
+          {enabled && !isTestModeActive && (
             <Alert>
               <CheckCircle2 className="h-4 w-4" />
               <AlertDescription>
-                <strong>Mode production actif :</strong> Les paiements réels sont activés. 
+                <strong>Mode production :</strong> Les paiements réels sont activés.
                 Les utilisateurs devront payer pour accéder aux services.
               </AlertDescription>
             </Alert>
           )}
 
-          {/* Bouton d'enregistrement */}
+          {enabled && isTestModeActive && (
+            <Alert>
+              <TestTube2 className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Paiement activé en mode test :</strong> Les paiements sont simulés.
+                Aucune transaction réelle n'est effectuée.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {!enabled && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Accès gratuit :</strong> Tous les services sont accessibles sans paiement.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Bouton d'enregistrement avec dirty-check */}
           <div className="flex justify-end pt-4">
-            <Button 
-              onClick={saveConfiguration} 
-              disabled={saving}
+            <Button
+              onClick={handleSave}
+              disabled={saving || !isDirty}
               size="lg"
             >
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Enregistrer les modifications
             </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Informations complémentaires */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Informations importantes</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm text-muted-foreground">
-          <div className="flex gap-2">
-            <div className="shrink-0 mt-0.5">•</div>
-            <p>
-              Le <strong>mode développement</strong> doit être utilisé uniquement pendant le développement et les tests internes.
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <div className="shrink-0 mt-0.5">•</div>
-            <p>
-              Le <strong>mode test</strong> permet de tester le flux de paiement sans effectuer de vraies transactions.
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <div className="shrink-0 mt-0.5">•</div>
-            <p>
-              Le <strong>mode production</strong> active les paiements réels. Assurez-vous que votre passerelle de paiement est correctement configurée.
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <div className="shrink-0 mt-0.5">•</div>
-            <p>
-              Les changements sont appliqués immédiatement pour tous les nouveaux accès aux services.
-            </p>
           </div>
         </CardContent>
       </Card>
@@ -330,17 +281,88 @@ const AdminPaymentMode: React.FC = () => {
             </Badge>
           </div>
 
-          {!availableMethods.hasAnyMethod && config.enabled && !config.bypass_payment && (
+          {/* Devises supportées */}
+          <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Coins className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Devises supportées</p>
+                <p className="text-xs text-muted-foreground">Dollar américain et Franc congolais</p>
+              </div>
+            </div>
+            <div className="flex gap-1">
+              <Badge variant="outline">USD</Badge>
+              <Badge variant="outline">CDF</Badge>
+            </div>
+          </div>
+
+          {!availableMethods.hasAnyMethod && enabled && (
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
-                <strong>Attention :</strong> Le paiement est activé mais aucun moyen de paiement n'est configuré. 
+                <strong>Attention :</strong> Le paiement est activé mais aucun moyen de paiement n'est configuré.
                 Les utilisateurs ne pourront pas payer. Configurez au moins une méthode dans l'onglet "Moyens de paiement".
               </AlertDescription>
             </Alert>
           )}
         </CardContent>
       </Card>
+
+      {/* Historique des changements */}
+      {auditHistory.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <History className="h-5 w-5 text-primary" />
+              <CardTitle className="text-base">Historique des modifications</CardTitle>
+            </div>
+            <CardDescription>Derniers changements de configuration du paiement</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {auditHistory.map((entry) => (
+                <div key={entry.id} className="flex items-center justify-between p-2.5 rounded-lg border bg-card text-sm">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Badge variant="outline" className="text-xs shrink-0">
+                      {entry.new_values?.enabled ? 'Activé' : 'Désactivé'}
+                    </Badge>
+                    <span className="text-muted-foreground text-xs truncate">
+                      par {entry.admin_name || 'Admin'}
+                    </span>
+                  </div>
+                  <span className="text-xs text-muted-foreground shrink-0 ml-2">
+                    {new Date(entry.created_at).toLocaleDateString('fr-FR', {
+                      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                    })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Dialogue de confirmation production */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Activer le paiement en production ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Le mode test global est <strong>inactif</strong>. Activer le paiement signifie que les utilisateurs
+              effectueront des <strong>transactions réelles</strong>. Assurez-vous que vos passerelles de paiement
+              sont correctement configurées.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={saveConfiguration}>
+              Confirmer l'activation
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

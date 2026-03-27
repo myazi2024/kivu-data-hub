@@ -192,19 +192,6 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     
     setIsSubmitting(true);
     try {
-      if (paymentMode.bypass_payment) {
-        const invoice = await createInvoice(appliedDiscount ?? undefined);
-        if (invoice) {
-          toast({
-            title: "Accès accordé",
-            description: "Services débloqués avec succès (mode test)",
-            duration: 3000
-          });
-          onPaymentSuccess(selectedServices.map(s => s.id));
-        }
-        return;
-      }
-      
       if (isPaymentRequired()) {
         const invoice = await createInvoice(appliedDiscount ?? undefined);
         if (invoice) {
@@ -564,7 +551,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                {paymentMode.bypass_payment ? (
+              {!isPaymentRequired() ? (
                   <CheckCircle className="h-4 w-4" />
                 ) : (
                   <CreditCard className="h-4 w-4" />
@@ -574,7 +561,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                     ? 'Sélectionner des services' 
                     : !acceptedTerms 
                     ? 'Accepter les conditions'
-                    : (paymentMode.enabled && paymentMode.bypass_payment)
+                    : !isPaymentRequired()
                     ? 'Accéder aux services'
                     : 'Payer'
                   }
@@ -597,9 +584,9 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
               Validation des conditions requise
             </p>
           )}
-          {paymentMode.enabled && (paymentMode.bypass_payment || paymentMode.test_mode) && (
+          {!isPaymentRequired() && (
             <p className="text-[10px] text-muted-foreground/60 text-right mt-1">
-              Mode test
+              Accès gratuit
             </p>
           )}
         </CardContent>
