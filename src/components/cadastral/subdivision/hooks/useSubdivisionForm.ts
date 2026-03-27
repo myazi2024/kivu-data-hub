@@ -204,13 +204,13 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
 
   // History management
   const pushHistory = useCallback((newLots: SubdivisionLot[]) => {
-    setHistory(prev => {
-      const newHistory = prev.slice(0, historyIndex + 1);
-      newHistory.push(JSON.parse(JSON.stringify(newLots)));
-      return newHistory;
-    });
-    setHistoryIndex(prev => prev + 1);
-  }, [historyIndex]);
+    const newHistory = historyRef.current.slice(0, historyIndexRef.current + 1);
+    newHistory.push(JSON.parse(JSON.stringify(newLots)));
+    historyRef.current = newHistory;
+    historyIndexRef.current = newHistory.length - 1;
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+  }, []);
 
   // Create initial lot covering the entire parent parcel
   const createInitialLot = useCallback(() => {
