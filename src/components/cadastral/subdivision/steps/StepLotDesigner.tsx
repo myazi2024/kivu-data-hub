@@ -419,25 +419,15 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
           Sélection
         </Button>
         <Button
-          variant={canvasMode === 'cut' ? 'default' : 'outline'}
+          variant={canvasMode === 'drawLine' ? 'default' : 'outline'}
           size="sm"
-          onClick={() => setCanvasMode(canvasMode === 'cut' ? 'select' : 'cut')}
+          onClick={() => setCanvasMode(canvasMode === 'drawLine' ? 'select' : 'drawLine')}
           className="gap-1 text-xs"
           disabled={lots.length === 0}
-          title="Découper un lot en traçant une ligne"
-        >
-          <Scissors className="h-3.5 w-3.5" />
-          Découper
-        </Button>
-        <Button
-          variant={canvasMode === 'drawRoad' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setCanvasMode(canvasMode === 'drawRoad' ? 'select' : 'drawRoad')}
-          className="gap-1 text-xs"
-          title="Tracer une voie manuellement"
+          title="Tracer une ligne pour diviser un lot ou créer une voie"
         >
           <Pencil className="h-3.5 w-3.5" />
-          Tracer voie
+          Tracer ligne
         </Button>
         <Button
           variant={canvasMode === 'clipart' ? 'default' : 'outline'}
