@@ -207,6 +207,24 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     onToggleSnap: () => setSnapEnabled(prev => !prev),
     onSpaceDown: () => viewport.setSpaceDown(true),
     onSpaceUp: () => viewport.setSpaceDown(false),
+    onArrowMove: (dx, dy) => {
+      const step = 1 / (CANVAS_W - 2 * PADDING);
+      const ndx = dx * step;
+      const ndy = dy * step;
+      if (selectedLotId) {
+        const lot = lots.find(l => l.id === selectedLotId);
+        if (lot) {
+          onUpdateLot(selectedLotId, lot.vertices.map(v => ({ x: v.x + ndx, y: v.y + ndy })));
+        }
+      } else if (selectedRoadId && onUpdateRoad) {
+        const road = roads.find(r => r.id === selectedRoadId);
+        if (road) {
+          onUpdateRoad(selectedRoadId, {
+            path: road.path.map(v => ({ x: v.x + ndx, y: v.y + ndy })),
+          });
+        }
+      }
+    },
   }, !readOnly);
 
   const toScreen = useCallback((p: Point2D) => ({

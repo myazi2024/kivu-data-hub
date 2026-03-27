@@ -11,6 +11,7 @@ interface KeyboardActions {
   onSpaceDown?: () => void;
   onSpaceUp?: () => void;
   onBackspace?: () => void;
+  onArrowMove?: (dx: number, dy: number) => void;
 }
 
 export function useCanvasKeyboard(
@@ -59,6 +60,13 @@ export function useCanvasKeyboard(
     if (e.key === ' ') {
       e.preventDefault();
       actions.onSpaceDown?.();
+    }
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+      e.preventDefault();
+      const step = e.shiftKey ? 10 : 1;
+      const dx = e.key === 'ArrowRight' ? step : e.key === 'ArrowLeft' ? -step : 0;
+      const dy = e.key === 'ArrowDown' ? step : e.key === 'ArrowUp' ? -step : 0;
+      actions.onArrowMove?.(dx, dy);
     }
   }, [enabled, actions]);
 
