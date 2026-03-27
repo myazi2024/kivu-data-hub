@@ -436,15 +436,6 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
             >
               <Printer className="h-4 w-4" />
             </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={onClose} 
-              className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive transition-all duration-200"
-              title="Fermer"
-            >
-              <XCircle className="h-4 w-4" />
-            </Button>
           </div>
         </div>
       </CardHeader>
