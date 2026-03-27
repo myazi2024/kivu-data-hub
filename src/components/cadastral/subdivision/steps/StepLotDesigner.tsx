@@ -373,14 +373,18 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     const newRoad: SubdivisionRoad = {
       id: `road-draw-${Date.now()}`,
       name: `Voie ${roads.length + 1}`,
-      widthM: 6,
-      surfaceType: 'planned',
+      widthM: roadPresetWidth,
+      surfaceType: roadPresetSurface,
       isExisting: false,
       path,
     };
     setRoads([...roads, newRoad]);
     setEditingRoadId(newRoad.id);
     setCanvasMode('select');
+  }, [roads, setRoads, roadPresetWidth, roadPresetSurface]);
+
+  const handleUpdateRoad = useCallback((roadId: string, updates: Partial<SubdivisionRoad>) => {
+    setRoads(roads.map(r => r.id === roadId ? { ...r, ...updates } : r));
   }, [roads, setRoads]);
 
   const totalArea = lots.reduce((s, l) => s + l.areaSqm, 0);
