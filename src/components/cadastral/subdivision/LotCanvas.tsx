@@ -86,6 +86,8 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [showClipartPalette, setShowClipartPalette] = useState(false);
+  const [rotationDrag, setRotationDrag] = useState<{ startAngle: number; centerX: number; centerY: number } | null>(null);
+  const [rotationAngleDisplay, setRotationAngleDisplay] = useState<number | null>(null);
   const [clipartType, setClipartType] = useState<LotAnnotation['type'] | null>(null);
 
   // Unified drawLine mode state
@@ -223,6 +225,24 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
             path: road.path.map(v => ({ x: v.x + ndx, y: v.y + ndy })),
           });
         }
+      }
+    },
+    onRotate: (angleDeg) => {
+      const theta = (angleDeg * Math.PI) / 180;
+      const rotateVertices = (vertices: Point2D[]) => {
+        const cx = vertices.reduce((s, v) => s + v.x, 0) / vertices.length;
+        const cy = vertices.reduce((s, v) => s + v.y, 0) / vertices.length;
+        return vertices.map(v => ({
+          x: cx + (v.x - cx) * Math.cos(theta) - (v.y - cy) * Math.sin(theta),
+          y: cy + (v.x - cx) * Math.sin(theta) + (v.y - cy) * Math.cos(theta),
+        }));
+      };
+      if (selectedLotId) {
+        const lot = lots.find(l => l.id === selectedLotId);
+        if (lot) onUpdateLot(selectedLotId, rotateVertices(lot.vertices));
+      } else if (selectedRoadId && onUpdateRoad) {
+        const road = roads.find(r => r.id === selectedRoadId);
+        if (road) onUpdateRoad(selectedRoadId, { path: rotateVertices(road.path) });
       }
     },
   }, !readOnly);
@@ -440,11 +460,44 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       }
     }
 
+    // Rotation drag
+    if (rotationDrag) {
+      const svgEl = svgRef.current;
+      if (svgEl) {
+        const rect = svgEl.getBoundingClientRect();
+        const currentAngle = Math.atan2(
+          e.clientY - rect.top - rotationDrag.centerY * (rect.height / CANVAS_H) * viewport.viewport.zoom,
+          e.clientX - rect.left - rotationDrag.centerX * (rect.width / CANVAS_W) * viewport.viewport.zoom
+        );
+        const deltaAngle = currentAngle - rotationDrag.startAngle;
+        const deltaDeg = Math.round((deltaAngle * 180) / Math.PI);
+        setRotationAngleDisplay(deltaDeg);
+        
+        const theta = deltaAngle;
+        const rotateVertices = (vertices: Point2D[]) => {
+          const ccx = vertices.reduce((s, v) => s + v.x, 0) / vertices.length;
+          const ccy = vertices.reduce((s, v) => s + v.y, 0) / vertices.length;
+          return vertices.map(v => ({
+            x: ccx + (v.x - ccx) * Math.cos(theta) - (v.y - ccy) * Math.sin(theta),
+            y: ccy + (v.x - ccx) * Math.sin(theta) + (v.y - ccy) * Math.cos(theta),
+          }));
+        };
+        if (selectedLotId) {
+          const lot = lots.find(l => l.id === selectedLotId);
+          if (lot) onUpdateLot(selectedLotId, rotateVertices(lot.vertices));
+        } else if (selectedRoadId && onUpdateRoad) {
+          const road = roads.find(r => r.id === selectedRoadId);
+          if (road) onUpdateRoad(selectedRoadId, { path: rotateVertices(road.path) });
+        }
+        setRotationDrag({ ...rotationDrag, startAngle: currentAngle });
+      }
+    }
+
     if (drag.isDragging) {
       const normalized = fromScreen(pos.x, pos.y);
       drag.moveDrag(normalized);
     }
-  }, [viewport, getSvgPos, fromScreen, mode, lineDrawPoints, drag, isLineDragging, lineDrawMultiMode, roadEndpointDrag, roads, onUpdateRoad, roadWidthDrag, toScreen, sideLength]);
+  }, [viewport, getSvgPos, fromScreen, mode, lineDrawPoints, drag, isLineDragging, lineDrawMultiMode, roadEndpointDrag, roads, onUpdateRoad, roadWidthDrag, toScreen, sideLength, rotationDrag, selectedLotId, selectedRoadId, lots, onUpdateLot]);
 
   // Show choice menu after line drawing finishes
   const showLineChoice = useCallback((path: Point2D[]) => {
@@ -496,11 +549,16 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     if (roadWidthDrag) {
       setRoadWidthDrag(null);
     }
+    // Rotation drag end
+    if (rotationDrag) {
+      setRotationDrag(null);
+      setRotationAngleDisplay(null);
+    }
     drag.endDrag();
     viewport.endPan();
-  }, [drag, viewport, isLineDragging, lineDrawPoints, lineDrawMousePos, getSvgPos, fromScreen, showLineChoice, roadEndpointDrag, roadWidthDrag]);
+  }, [drag, viewport, isLineDragging, lineDrawPoints, lineDrawMousePos, getSvgPos, fromScreen, showLineChoice, roadEndpointDrag, roadWidthDrag, rotationDrag]);
 
-  const handleCanvasClick = useCallback((e: React.MouseEvent) => {
+
     if (readOnly) return;
     if (drag.isDragging) return;
     if (lineChoiceMenu) return;
@@ -914,6 +972,42 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                   </g>
                 );
               })()}
+              {/* Rotation handle for selected road */}
+              {isRoadSelected && !readOnly && mode === 'select' && (() => {
+                const allPts = pathPoints;
+                const rcx = allPts.reduce((s, p) => s + p.x, 0) / allPts.length;
+                const rcy = allPts.reduce((s, p) => s + p.y, 0) / allPts.length;
+                const minRY = Math.min(...allPts.map(p => p.y));
+                const handleRY = minRY - 30;
+                return (
+                  <g>
+                    <line x1={rcx} y1={minRY} x2={rcx} y2={handleRY}
+                      stroke="hsl(var(--primary))" strokeWidth={1} strokeDasharray="3 2" opacity={0.5}
+                      className="pointer-events-none" />
+                    <circle cx={rcx} cy={handleRY} r={8}
+                      fill="hsl(var(--background))" stroke="hsl(var(--primary))" strokeWidth={2}
+                      className="cursor-grab active:cursor-grabbing"
+                      onMouseDown={e => {
+                        e.stopPropagation();
+                        const angle = Math.atan2(e.clientY - (svgRef.current?.getBoundingClientRect().top ?? 0) - rcy,
+                          e.clientX - (svgRef.current?.getBoundingClientRect().left ?? 0) - rcx);
+                        setRotationDrag({ startAngle: angle, centerX: rcx, centerY: rcy });
+                        setRotationAngleDisplay(0);
+                      }}
+                    />
+                    <text x={rcx} y={handleRY + 1} textAnchor="middle" dominantBaseline="middle"
+                      fontSize={10} fill="hsl(var(--primary))" fontWeight="bold"
+                      className="pointer-events-none select-none">↻</text>
+                    {rotationAngleDisplay !== null && rotationDrag && (
+                      <text x={rcx + 14} y={handleRY - 4} textAnchor="start" dominantBaseline="middle"
+                        fontSize={8} fill="hsl(var(--primary))" fontWeight="600"
+                        className="pointer-events-none select-none">
+                        {rotationAngleDisplay > 0 ? '+' : ''}{rotationAngleDisplay}°
+                      </text>
+                    )}
+                  </g>
+                );
+              })()}
             </g>
           );
         })}
@@ -1122,6 +1216,40 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                   onMouseDown={e => handleVertexMouseDown(lot.id, i, e)}
                 />
               ))}
+
+              {/* Rotation handle */}
+              {!readOnly && mode === 'select' && isSelected && (() => {
+                const minY = Math.min(...screenVertices.map(v => v.y));
+                const handleY = minY - 30;
+                return (
+                  <g>
+                    <line x1={cx} y1={minY} x2={cx} y2={handleY}
+                      stroke="hsl(var(--primary))" strokeWidth={1} strokeDasharray="3 2" opacity={0.5}
+                      className="pointer-events-none" />
+                    <circle cx={cx} cy={handleY} r={8}
+                      fill="hsl(var(--background))" stroke="hsl(var(--primary))" strokeWidth={2}
+                      className="cursor-grab active:cursor-grabbing"
+                      onMouseDown={e => {
+                        e.stopPropagation();
+                        const angle = Math.atan2(e.clientY - (svgRef.current?.getBoundingClientRect().top ?? 0) - cy,
+                          e.clientX - (svgRef.current?.getBoundingClientRect().left ?? 0) - cx);
+                        setRotationDrag({ startAngle: angle, centerX: cx, centerY: cy });
+                        setRotationAngleDisplay(0);
+                      }}
+                    />
+                    <text x={cx} y={handleY + 1} textAnchor="middle" dominantBaseline="middle"
+                      fontSize={10} fill="hsl(var(--primary))" fontWeight="bold"
+                      className="pointer-events-none select-none">↻</text>
+                    {rotationAngleDisplay !== null && rotationDrag && (
+                      <text x={cx + 14} y={handleY - 4} textAnchor="start" dominantBaseline="middle"
+                        fontSize={8} fill="hsl(var(--primary))" fontWeight="600"
+                        className="pointer-events-none select-none">
+                        {rotationAngleDisplay > 0 ? '+' : ''}{rotationAngleDisplay}°
+                      </text>
+                    )}
+                  </g>
+                );
+              })()}
 
               {/* Context menu (floating toolbar) */}
               {contextMenuLotId === lot.id && !readOnly && mode === 'select' && (
@@ -1439,7 +1567,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       {/* Keyboard shortcuts hint */}
       {!readOnly && (
         <div className="absolute bottom-1 left-1 text-[8px] text-muted-foreground/50 pointer-events-none">
-          Del: suppr • Ctrl+D: dupliquer • G: grille • S: snap • Espace: pan • Molette: zoom
+          Del: suppr • Ctrl+D: dupliquer • G: grille • S: snap • R: rotation • Flèches: déplacer • Espace: pan
         </div>
       )}
     </div>
