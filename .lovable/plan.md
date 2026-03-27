@@ -1,87 +1,122 @@
 
 
-# Revue de la configuration de paiement — Divergences et optimisations
+# Ajout du Franc Congolais (CDF) comme devise de paiement
 
-## Divergences trouvees
+## Contexte
 
-### 1. `getCurrentMode()` ne couvre pas l'etat `!enabled && !bypass_payment` (AdminPaymentMode.tsx L73-83)
+L'application utilise exclusivement le dollar americain (USD). Les prix sont stockes en `price_usd` / `amount_usd` / `total_amount_usd` dans toutes les tables. L'objectif est de permettre a l'utilisateur de choisir entre USD et CDF lors du paiement, avec un taux de change configurable par l'admin.
 
-La fonction retourne "Mode Inconnu" quand `enabled=false` et `bypass_payment=false` — qui est pourtant l'etat par defaut normal (paiement desactive). Il manque un cas :
+## Architecture retenue
 
+Les prix **restent stockes en USD** dans la base de donnees (source de verite). Le CDF est une **conversion a l'affichage et au paiement** basee sur un taux configure par l'admin. Les factures et transactions enregistrent la devise choisie et le taux applique au moment du paiement.
+
+```text
+┌─────────────────┐     ┌──────────────┐     ┌─────────────────┐
+│  Admin: taux    │────>│  Config DB   │────>│  Frontend:      │
+│  USD/CDF = 2850 │     │  (Supabase)  │     │  affiche les 2  │
+└─────────────────┘     └──────────────┘     │  devises        │
+                                              └─────────────────┘
 ```
-!enabled && !bypass_payment → devrait retourner "Paiement désactivé" (pas "Mode Inconnu")
-```
-
-### 2. Terminologie "MODE_DEV" dans les donnees (useCadastralPayment.tsx L124-125)
-
-En mode bypass, les factures sont creees avec `discount_code_used: 'MODE_DEV'` et `payment_method: 'MODE_DEV'`. Or le terme "mode developpement" n'est pas un concept utilisateur. Ces donnees polluent les rapports et la supervision admin.
-
-**Correction** : Remplacer `'MODE_DEV'` par `'BYPASS'` ou `'GRATUIT'` — terme neutre et coherent.
-
-### 3. Toast "mode test" dans le contexte bypass (useCadastralPayment.tsx L138)
-
-Le toast dit "Acces accorde (mode test)" alors qu'on est en mode bypass, pas en mode test. Ce sont deux concepts differents dans l'admin.
-
-**Correction** : Remplacer par "Acces accorde — Services accessibles gratuitement" (sans mention de mode).
-
-### 4. Commentaire "mode developpement" dans le code (useCadastralPayment.tsx L112)
-
-Le commentaire dit "Mode bypass (developpement)" — coherence mineure mais renforce la confusion terminologique.
-
-### 5. Condition `bypass_payment` non conditionnee a `enabled` dans le catalogue (CadastralBillingPanel.tsx L555)
-
-Le bouton affiche "Acceder aux services" quand `paymentMode.bypass_payment` est vrai, meme si `enabled` est false. Avec le defaut corrige a `false`, ce n'est plus un bug actif, mais la logique reste fragile. Le bypass devrait idealement etre ignore quand `enabled` est false.
-
-### 6. Edge Function : `test_mode` non valide cote serveur
-
-Dans `usePayment.tsx` L51 et `useCadastralPayment.tsx` L224, `test_mode` est envoye par le client a l'Edge Function. Le serveur fait confiance a cette valeur sans la re-verifier depuis la DB — un client malveillant pourrait envoyer `test_mode: true` pour simuler des paiements gratuits.
-
-**Correction** : L'Edge Function devrait lire `test_mode` depuis `cadastral_search_config` au lieu de faire confiance au client.
 
 ---
 
-## Plan de corrections (4 fichiers + 1 Edge Function)
+## Plan d'implementation
 
-### Correction 1 — `getCurrentMode()` complet (AdminPaymentMode.tsx)
+### 1. Migration SQL — table `currency_config`
 
-Ajouter le cas manquant avant le fallback :
-```
-if (!config.enabled && !config.bypass_payment) → "Paiement désactivé"
-```
+Creer une table dediee pour la configuration des devises :
 
-### Correction 2 — Terminologie coherente (useCadastralPayment.tsx)
-
-- L124 : `'MODE_DEV'` → `'BYPASS'`
-- L125 : `'MODE_DEV'` → `'bypass'`
-- L138 : Toast "mode test" → "Services accessibles gratuitement"
-- L112 : Commentaire → "Mode bypass — acces gratuit"
-
-### Correction 3 — Condition bypass + enabled (CadastralBillingPanel.tsx L555)
-
-Conditionner le texte du bouton a `paymentMode.enabled` en plus de `bypass_payment` :
-```tsx
-paymentMode.enabled && paymentMode.bypass_payment
-  ? 'Accéder aux services'
-  : 'Payer'
+```sql
+CREATE TABLE public.currency_config (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  currency_code TEXT NOT NULL UNIQUE,  -- 'USD', 'CDF'
+  currency_name TEXT NOT NULL,
+  symbol TEXT NOT NULL,                -- '$', 'FC'
+  exchange_rate_to_usd NUMERIC(18,4) NOT NULL DEFAULT 1,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  is_default BOOLEAN NOT NULL DEFAULT false,
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  updated_by UUID REFERENCES auth.users(id)
+);
 ```
 
-### Correction 4 — Securite : `test_mode` lu cote serveur (Edge Function process-mobile-money-payment)
+Donnees initiales : USD (taux 1, defaut) et CDF (taux ~2850, actif).
 
-Au lieu de faire confiance au `test_mode` du body, l'Edge Function doit :
-1. Lire la config `payment_mode` depuis `cadastral_search_config`
-2. Utiliser `config.test_mode` pour determiner le comportement
+Ajouter aussi `currency_code` et `exchange_rate_used` aux tables `cadastral_invoices` et `payment_transactions` pour historiser la devise choisie et le taux au moment du paiement.
 
-Idem pour `create-payment` Edge Function.
+### 2. Admin — page de gestion du taux de change
+
+Nouveau composant `AdminCurrencyConfig.tsx` dans l'espace admin :
+- Affiche les devises actives (USD, CDF)
+- Champ editable pour le taux CDF/USD (ex: 1 USD = 2850 CDF)
+- Bouton sauvegarder avec audit log
+- Integrer dans le menu admin existant
+
+### 3. Hook `useCurrencyConfig`
+
+Hook centralise qui :
+- Charge les devises actives depuis `currency_config`
+- Ecoute les changements en temps reel (Realtime)
+- Expose : `currencies`, `convertToLocal(amountUsd, currencyCode)`, `selectedCurrency`, `setSelectedCurrency`, `exchangeRate`
+
+### 4. UI — Selecteur de devise dans le catalogue (CadastralBillingPanel)
+
+- Ajouter un selecteur USD/CDF compact dans la zone recapitulative des prix
+- Quand CDF est selectionne, tous les montants affiches (sous-total, TVA, total) sont convertis
+- Le selecteur est un petit toggle ou dropdown discret pres du total
+
+### 5. UI — Dialog de paiement (CadastralPaymentDialog)
+
+- Afficher le montant dans la devise choisie
+- Passer `currency_code` et `exchange_rate` au hook de paiement
+
+### 6. Hook `useCadastralPayment` — enregistrer la devise
+
+- Ajouter `currency_code` et `exchange_rate_used` dans les inserts de factures
+- Le montant USD reste la reference ; le montant local est `amount_usd * exchange_rate`
+
+### 7. Edge Function `process-mobile-money-payment`
+
+- Accepter `currency_code` et `amount_local` dans le body
+- Verifier le taux depuis `currency_config` cote serveur (securite)
+- Enregistrer la devise dans `payment_transactions`
+
+### 8. Utilitaire `formatCurrency` etendu
+
+Mettre a jour `src/utils/formatters.ts` :
+```ts
+export const formatCurrency = (amount: number, currency: 'USD' | 'CDF' = 'USD'): string => {
+  if (currency === 'CDF') {
+    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'CDF', maximumFractionDigits: 0 }).format(amount);
+  }
+  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD' }).format(amount);
+};
+```
+
+### 9. Composant `MobileMoneyPayment`
+
+- Recevoir la devise selectionnee et afficher le montant en consequence
+- Bouton "Payer 28 500 FC" au lieu de "Payer 10 USD"
+
+### 10. Autres flux de paiement
+
+Appliquer le meme pattern aux autres flux : `PermitPaymentStep`, `MortgageCancellation`, `MutationRequest`, `ExpertiseRequest` — selecteur de devise + conversion.
 
 ---
 
-## Resume
+## Resume des fichiers
 
-| Type | Correction | Fichier |
-|------|-----------|---------|
-| Logique | `getCurrentMode()` cas manquant | `AdminPaymentMode.tsx` |
-| Terminologie | `MODE_DEV` → `BYPASS` | `useCadastralPayment.tsx` |
-| Terminologie | Toast "mode test" → neutre | `useCadastralPayment.tsx` |
-| Logique | Bouton conditionne a `enabled` | `CadastralBillingPanel.tsx` |
-| Securite | `test_mode` lu depuis DB serveur | 2 Edge Functions |
+| Action | Fichier |
+|--------|---------|
+| Migration SQL | `currency_config` + colonnes sur `cadastral_invoices` et `payment_transactions` |
+| Nouveau | `src/components/admin/AdminCurrencyConfig.tsx` |
+| Nouveau | `src/hooks/useCurrencyConfig.ts` |
+| Modifie | `src/utils/formatters.ts` |
+| Modifie | `src/components/cadastral/CadastralBillingPanel.tsx` |
+| Modifie | `src/components/cadastral/CadastralPaymentDialog.tsx` |
+| Modifie | `src/components/payment/MobileMoneyPayment.tsx` |
+| Modifie | `src/hooks/useCadastralPayment.tsx` |
+| Modifie | `supabase/functions/process-mobile-money-payment/index.ts` |
+| Modifie | `src/constants/billing.ts` (ajouter constantes devises) |
+| Modifie | Menu admin (ajouter lien vers config devises) |
 
