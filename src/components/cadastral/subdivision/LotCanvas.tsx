@@ -181,7 +181,16 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       viewport.startPan(e.clientX, e.clientY);
       return;
     }
-  }, [readOnly, viewport]);
+    // Road drawing: simple drag mode (click-drag for straight road)
+    if (mode === 'drawRoad' && e.button === 0 && !roadDrawMultiMode && roadDrawPoints.length === 0) {
+      const pos = getSvgPos(e);
+      const normalized = fromScreen(pos.x, pos.y);
+      const snapped = drag.snapToGrid(normalized);
+      setRoadDrawPoints([snapped]);
+      setIsRoadDragging(true);
+      return;
+    }
+  }, [readOnly, viewport, mode, roadDrawMultiMode, roadDrawPoints, getSvgPos, fromScreen, drag]);
 
   const handleVertexMouseDown = useCallback((lotId: string, vertexIdx: number, e: React.MouseEvent) => {
     if (readOnly || mode !== 'select') return;
