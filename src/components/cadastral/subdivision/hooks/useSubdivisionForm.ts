@@ -92,7 +92,8 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   // Undo history
   const [history, setHistory] = useState<SubdivisionLot[][]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
-  
+  const historyRef = useRef<SubdivisionLot[][]>([]);
+  const historyIndexRef = useRef(-1);
   // === Draft system ===
   const draftKey = `${DRAFT_KEY_PREFIX}${parcelNumber}`;
   
