@@ -421,11 +421,12 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     // Requester
     requester, setRequester,
     // Plan data
-    lots, setLots, roads, setRoads, commonSpaces, setCommonSpaces,
+    lots, setLots: setLotsWithHistory, setLotsRaw: setLots, setSkipHistory,
+    roads, setRoads, commonSpaces, setCommonSpaces,
     servitudes, setServitudes, planElements, setPlanElements,
     // Operations
     handleAutoSubdivide: createInitialLot, updateLot, deleteLot,
-    undo, redo, canUndo: historyIndex > 0, canRedo: historyIndex < history.length - 1,
+    undo, redo, canUndo: historyIndexRef.current > 0, canRedo: historyIndexRef.current < historyRef.current.length - 1,
     // Validation
     validation, runValidation,
     // Purpose
