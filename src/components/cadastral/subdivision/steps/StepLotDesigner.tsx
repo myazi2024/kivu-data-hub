@@ -663,12 +663,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                   <Route className="h-3.5 w-3.5" />
                   Voies ({roads.length})
                 </h4>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={handleAddRoad}
-                >
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleAddRoad}>
                   <Plus className="h-3.5 w-3.5" />
                 </Button>
               </div>
@@ -677,75 +672,39 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                   const isExisting = (road as any).isExisting;
                   const isEditing = editingRoadId === road.id;
                   return (
-                    <div
-                      key={road.id}
-                      className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs transition-colors
-                        ${isEditing ? 'bg-primary/10 ring-1 ring-primary/30' : 'hover:bg-muted/50'}
-                      `}
-                    >
+                    <div key={road.id} className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs transition-colors ${isEditing ? 'bg-primary/10 ring-1 ring-primary/30' : 'hover:bg-muted/50'}`}>
                       <span className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${isExisting ? 'bg-amber-600' : 'bg-muted-foreground'}`} />
-                      <button
-                        className="flex-1 text-left truncate"
-                        onClick={() => setEditingRoadId(isEditing ? null : road.id)}
-                      >
+                      <button className="flex-1 text-left truncate" onClick={() => setEditingRoadId(isEditing ? null : road.id)}>
                         <span className="font-medium">{road.name}</span>
                         <span className="text-muted-foreground ml-1">({road.widthM}m)</span>
                       </button>
                       {!isExisting && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-5 w-5 text-destructive hover:text-destructive"
-                          onClick={() => handleDeleteRoad(road.id)}
-                        >
+                        <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive hover:text-destructive" onClick={() => handleDeleteRoad(road.id)}>
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       )}
                     </div>
                   );
                 })}
-                {roads.length === 0 && (
-                  <p className="text-center text-muted-foreground text-[10px] py-2">
-                    Aucune voie
-                  </p>
-                )}
+                {roads.length === 0 && <p className="text-center text-muted-foreground text-[10px] py-2">Aucune voie</p>}
               </div>
-
-              {/* Road editor */}
               {editingRoad && (
                 <>
                   <Separator className="my-2" />
                   <div className="space-y-2">
                     <div>
                       <Label className="text-xs">Nom</Label>
-                      <Input
-                        value={editingRoad.name}
-                        onChange={e => updateRoad(editingRoad.id, { name: e.target.value })}
-                        className="h-7 text-xs"
-                        disabled={(editingRoad as any).isExisting}
-                      />
+                      <Input value={editingRoad.name} onChange={e => updateRoad(editingRoad.id, { name: e.target.value })} className="h-7 text-xs" disabled={(editingRoad as any).isExisting} />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <Label className="text-xs">Largeur (m)</Label>
-                        <Input
-                          type="number"
-                          min={2}
-                          max={30}
-                          value={editingRoad.widthM}
-                          onChange={e => updateRoad(editingRoad.id, { widthM: parseFloat(e.target.value) || 6 })}
-                          className="h-7 text-xs"
-                        />
+                        <Input type="number" min={2} max={30} value={editingRoad.widthM} onChange={e => updateRoad(editingRoad.id, { widthM: parseFloat(e.target.value) || 6 })} className="h-7 text-xs" />
                       </div>
                       <div>
                         <Label className="text-xs">Revêtement</Label>
-                        <Select
-                          value={editingRoad.surfaceType}
-                          onValueChange={(v: any) => updateRoad(editingRoad.id, { surfaceType: v })}
-                        >
-                          <SelectTrigger className="h-7 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
+                        <Select value={editingRoad.surfaceType} onValueChange={(v: any) => updateRoad(editingRoad.id, { surfaceType: v })}>
+                          <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             {Object.entries(ROAD_SURFACE_LABELS).map(([key, label]) => (
                               <SelectItem key={key} value={key}>{label}</SelectItem>
@@ -757,6 +716,116 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                   </div>
                 </>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Common Spaces */}
+          <Card>
+            <CardContent className="pt-3">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-semibold text-xs flex items-center gap-1">
+                  <TreePine className="h-3.5 w-3.5" />
+                  Espaces communs ({commonSpaces.length})
+                </h4>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => {
+                  const newSpace: SubdivisionCommonSpace = {
+                    id: `cs-${Date.now()}`,
+                    type: 'green_space',
+                    name: `Espace ${commonSpaces.length + 1}`,
+                    vertices: [],
+                    areaSqm: 0,
+                    color: COMMON_SPACE_COLORS.green_space,
+                  };
+                  setCommonSpaces([...commonSpaces, newSpace]);
+                }}>
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              <div className="space-y-1 max-h-[150px] overflow-y-auto">
+                {commonSpaces.map((space, idx) => (
+                  <div key={space.id} className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs hover:bg-muted/50">
+                    <span className="h-2.5 w-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: space.color }} />
+                    <div className="flex-1 space-y-1">
+                      <Input value={space.name} onChange={e => {
+                        setCommonSpaces(commonSpaces.map(s => s.id === space.id ? { ...s, name: e.target.value } : s));
+                      }} className="h-6 text-xs" />
+                      <div className="flex gap-1">
+                        <Select value={space.type} onValueChange={(v: any) => {
+                          setCommonSpaces(commonSpaces.map(s => s.id === space.id ? { ...s, type: v, color: COMMON_SPACE_COLORS[v as keyof typeof COMMON_SPACE_COLORS] || s.color } : s));
+                        }}>
+                          <SelectTrigger className="h-6 text-[10px] flex-1"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(COMMON_SPACE_LABELS).map(([key, label]) => (
+                              <SelectItem key={key} value={key}>{label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Input type="number" placeholder="m²" value={space.areaSqm || ''} onChange={e => {
+                          setCommonSpaces(commonSpaces.map(s => s.id === space.id ? { ...s, areaSqm: parseFloat(e.target.value) || 0 } : s));
+                        }} className="h-6 text-[10px] w-16" />
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive" onClick={() => setCommonSpaces(commonSpaces.filter(s => s.id !== space.id))}>
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+                {commonSpaces.length === 0 && <p className="text-center text-muted-foreground text-[10px] py-2">Aucun espace commun</p>}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Servitudes */}
+          <Card>
+            <CardContent className="pt-3">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-semibold text-xs flex items-center gap-1">
+                  <Shield className="h-3.5 w-3.5" />
+                  Servitudes ({servitudes.length})
+                </h4>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => {
+                  const newServitude: SubdivisionServitude = {
+                    id: `srv-${Date.now()}`,
+                    type: 'passage',
+                    description: '',
+                    affectedLots: [],
+                    widthM: 3,
+                  };
+                  setServitudes([...servitudes, newServitude]);
+                }}>
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              <div className="space-y-1.5 max-h-[150px] overflow-y-auto">
+                {servitudes.map(srv => (
+                  <div key={srv.id} className="px-2 py-1.5 rounded-lg text-xs hover:bg-muted/50 space-y-1">
+                    <div className="flex items-center gap-1">
+                      <Select value={srv.type} onValueChange={(v: any) => {
+                        setServitudes(servitudes.map(s => s.id === srv.id ? { ...s, type: v } : s));
+                      }}>
+                        <SelectTrigger className="h-6 text-[10px] flex-1"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="passage">Passage</SelectItem>
+                          <SelectItem value="drainage">Drainage</SelectItem>
+                          <SelectItem value="utility">Réseau (eau/élec)</SelectItem>
+                          <SelectItem value="view">Vue</SelectItem>
+                          <SelectItem value="other">Autre</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Input type="number" placeholder="m" value={srv.widthM || ''} onChange={e => {
+                        setServitudes(servitudes.map(s => s.id === srv.id ? { ...s, widthM: parseFloat(e.target.value) || 0 } : s));
+                      }} className="h-6 text-[10px] w-14" />
+                      <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive" onClick={() => setServitudes(servitudes.filter(s => s.id !== srv.id))}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <Input value={srv.description} onChange={e => {
+                      setServitudes(servitudes.map(s => s.id === srv.id ? { ...s, description: e.target.value } : s));
+                    }} className="h-6 text-[10px]" placeholder="Description de la servitude..." />
+                  </div>
+                ))}
+                {servitudes.length === 0 && <p className="text-center text-muted-foreground text-[10px] py-2">Aucune servitude</p>}
+              </div>
             </CardContent>
           </Card>
 
