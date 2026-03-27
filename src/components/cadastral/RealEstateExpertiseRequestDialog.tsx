@@ -2249,11 +2249,11 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
     // Comptage dynamique de la complétion
     const computeCompletion = () => {
-      const baseFields = [constructionType, roadAccessType];
+      const baseFields = [propertyCategory, constructionType, roadAccessType];
       const builtFields = isTerrainNu ? [] : [
-        constructionYear, constructionQuality, numberOfFloors, totalBuiltAreaSqm,
+        constructionYear, standing, numberOfFloors, totalBuiltAreaSqm,
         propertyCondition, numberOfRooms, numberOfBedrooms, numberOfBathrooms,
-        wallMaterial, roofMaterial, windowType, floorMaterial, buildingPosition, soundEnvironment,
+        constructionMaterials, roofMaterial, windowType, floorMaterial, buildingPosition, soundEnvironment,
       ];
       const equipFields = [
         hasWaterSupply, hasElectricity, hasSewageSystem, hasInternet,
