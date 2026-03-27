@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface MobileMoneyPaymentProps {
   item: CartItem;
   currency: string;
+  displayAmount?: number;
   onPaymentSuccess: (paymentData?: { provider: string; phoneNumber: string }) => void;
 }
 
