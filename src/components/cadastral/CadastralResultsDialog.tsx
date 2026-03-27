@@ -114,7 +114,8 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
             onPaymentSuccess={handlePaymentSuccess}
           />
         </div>
-      </Card>
+        </Card>
+      </div>
 
       {/* Dialog de confirmation de fermeture */}
       <AlertDialog open={showCloseConfirm} onOpenChange={setShowCloseConfirm}>
