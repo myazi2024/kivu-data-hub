@@ -12,9 +12,6 @@ export interface CadastralPaymentData {
   name: string;
 }
 
-/**
- * Insère les accès services en batch avec ON CONFLICT (upsert)
- */
 const grantServiceAccess = async (
   userId: string,
   invoiceId: string,
@@ -38,9 +35,6 @@ const grantServiceAccess = async (
   }
 };
 
-/**
- * Récupère les selected_services depuis la facture DB pour éviter les données stale du contexte
- */
 const getInvoiceServices = async (invoiceId: string): Promise<string[]> => {
   const { data, error } = await supabase
     .from('cadastral_invoices')
@@ -66,12 +60,10 @@ export const useCadastralPayment = () => {
   const { selectedServices, parcelNumber, clearServices } = useCadastralCart();
   const { paymentMode, availableMethods, isPaymentRequired } = usePaymentConfig();
 
-  // Fix #13: AbortController pour annuler le polling à la fermeture du dialog
   const pollingAbortRef = useRef<AbortController | null>(null);
 
   /**
-   * Fix #1: Utilise create_cadastral_invoice_secure (RPC) pour valider les prix côté serveur.
-   * En mode bypass, crée directement une facture gratuite + accès.
+   * Crée une facture. Si le paiement n'est pas requis → accès gratuit.
    */
   const createInvoice = useCallback(async (discountData?: {
     code: string;
@@ -99,42 +91,8 @@ export const useCadastralPayment = () => {
 
       const serviceIds = selectedServices.map(s => s.id);
 
-      // Si le paiement n'est pas activé et pas en bypass → accès gratuit
-      if (!paymentMode.enabled && !paymentMode.bypass_payment) {
-        const { data: invoice, error } = await supabase
-          .from('cadastral_invoices')
-          .insert({
-            user_id: user.id,
-            parcel_number: parcelNumber,
-            invoice_number: null as any,
-            selected_services: serviceIds,
-            total_amount_usd: 0,
-            original_amount_usd: 0,
-            discount_amount_usd: 0,
-            discount_code_used: 'FREE_ACCESS',
-            payment_method: 'free',
-            client_email: user.email || '',
-            client_name: user.user_metadata?.full_name || null,
-            geographical_zone: selectedServices[0]?.parcel_location || '',
-            status: 'paid',
-            currency_code: 'USD',
-            exchange_rate_used: 1
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-
-        await grantServiceAccess(user.id, invoice.id, parcelNumber, serviceIds);
-
-        toast({ title: "Accès accordé", description: "Services accessibles gratuitement" });
-        clearServices();
-        window.dispatchEvent(new CustomEvent('cadastralPaymentCompleted'));
-        return invoice;
-      }
-
-      // Mode bypass — accès gratuit, insert direct
-      if (paymentMode.enabled && paymentMode.bypass_payment) {
+      // Paiement non requis → accès gratuit
+      if (!isPaymentRequired()) {
         const { data: invoice, error } = await supabase
           .from('cadastral_invoices')
           .insert({
@@ -146,7 +104,7 @@ export const useCadastralPayment = () => {
             original_amount_usd: 0,
             discount_amount_usd: 0,
             discount_code_used: 'BYPASS',
-            payment_method: 'bypass',
+            payment_method: 'BYPASS',
             client_email: user.email || '',
             client_name: user.user_metadata?.full_name || null,
             geographical_zone: selectedServices[0]?.parcel_location || '',
@@ -167,7 +125,7 @@ export const useCadastralPayment = () => {
         return invoice;
       }
 
-      // Fix #1: Appel RPC sécurisé — les prix sont calculés côté serveur
+      // Paiement requis → RPC sécurisée
       const { data: rpcResult, error: rpcError } = await supabase.rpc(
         'create_cadastral_invoice_secure',
         {
@@ -217,7 +175,6 @@ export const useCadastralPayment = () => {
       return null;
     }
 
-    // Annuler un éventuel polling précédent
     pollingAbortRef.current?.abort();
     const abortController = new AbortController();
     pollingAbortRef.current = abortController;
@@ -259,14 +216,10 @@ export const useCadastralPayment = () => {
       }
 
       const transactionId = paymentResult.transaction_id;
-      
-      // Fix: Utiliser pollTransactionStatus centralisé au lieu du polling inline
+
       const status = await pollTransactionStatus(transactionId, 20, 2000, abortController.signal);
 
-      if (status === 'aborted') {
-        console.log('Polling annulé par AbortController');
-        return null;
-      }
+      if (status === 'aborted') return null;
 
       if (status === 'completed') {
         await supabase
@@ -278,15 +231,12 @@ export const useCadastralPayment = () => {
           })
           .eq('id', invoiceId);
 
-        // Fix: Utiliser les services de la facture DB, pas du contexte cart
         const invoiceServiceIds = await getInvoiceServices(invoiceId);
 
-        // Fix: Retry grantServiceAccess avec feedback utilisateur
         try {
           await grantServiceAccess(user.id, invoiceId, invoice.data.parcel_number, invoiceServiceIds);
         } catch (accessError) {
           console.error('Première tentative grantServiceAccess échouée, retry...', accessError);
-          // Retry une fois
           await new Promise(r => setTimeout(r, 1000));
           await grantServiceAccess(user.id, invoiceId, invoice.data.parcel_number, invoiceServiceIds);
         }
@@ -302,14 +252,10 @@ export const useCadastralPayment = () => {
         throw new Error('Payment failed');
       }
 
-      // timeout
       throw new Error(`Délai d'attente dépassé. ID transaction: ${transactionId}. Contactez le support si le montant a été débité.`);
 
     } catch (error: any) {
-      if (error.name === 'AbortError') {
-        console.log('Polling interrompu proprement');
-        return null;
-      }
+      if (error.name === 'AbortError') return null;
       console.error('Payment error:', error);
       toast({
         title: "Erreur de paiement",
@@ -321,7 +267,7 @@ export const useCadastralPayment = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, availableMethods, paymentMode, clearServices, toast]);
+  }, [user, availableMethods, clearServices, toast]);
 
   const processStripePayment = useCallback(async (invoiceId: string) => {
     try {
@@ -335,7 +281,6 @@ export const useCadastralPayment = () => {
         body: {
           items: [invoiceId],
           payment_type: 'cadastral_service',
-          test_mode: paymentMode.test_mode
         }
       });
 
@@ -353,10 +298,9 @@ export const useCadastralPayment = () => {
     } finally {
       setLoading(false);
     }
-  }, [availableMethods, paymentMode, toast]);
+  }, [availableMethods, toast]);
 
   const resetPaymentState = useCallback(() => {
-    // Annuler le polling en cours si existant
     pollingAbortRef.current?.abort();
     pollingAbortRef.current = null;
     setPaymentStep('form');

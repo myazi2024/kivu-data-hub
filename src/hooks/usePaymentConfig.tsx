@@ -4,8 +4,6 @@ import { useToast } from '@/hooks/use-toast';
 
 export interface PaymentMode {
   enabled: boolean;
-  bypass_payment: boolean;
-  test_mode: boolean;
 }
 
 export interface AvailablePaymentMethods {
@@ -19,23 +17,16 @@ export interface AvailablePaymentMethods {
 }
 
 /**
- * Hook unifié pour gérer la configuration des paiements
- * Centralise la logique de détection et de validation des moyens de paiement
+ * Hook unifié pour gérer la configuration des paiements.
+ * Simplifié : seul `enabled` subsiste. Le mode test est piloté par useTestMode.
  */
 export const usePaymentConfig = () => {
-  const [paymentMode, setPaymentMode] = useState<PaymentMode>({
-    enabled: false,
-    bypass_payment: false,
-    test_mode: false
-  });
+  const [paymentMode, setPaymentMode] = useState<PaymentMode>({ enabled: false });
   const [availableMethods, setAvailableMethods] = useState<AvailablePaymentMethods>({
     hasMobileMoney: false,
     hasBankCard: false,
     hasAnyMethod: false,
-    enabledProviders: {
-      mobileMoneyProviders: [],
-      bankCardProvider: null
-    }
+    enabledProviders: { mobileMoneyProviders: [], bankCardProvider: null }
   });
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -44,7 +35,6 @@ export const usePaymentConfig = () => {
     try {
       setLoading(true);
 
-      // Charger le mode de paiement
       const { data: modeData } = await supabase
         .from('cadastral_search_config')
         .select('config_value')
@@ -54,14 +44,9 @@ export const usePaymentConfig = () => {
 
       if (modeData?.config_value) {
         const mode = modeData.config_value as any;
-        setPaymentMode({
-          enabled: mode.enabled ?? false,
-          bypass_payment: mode.bypass_payment ?? false,
-          test_mode: mode.test_mode ?? false
-        });
+        setPaymentMode({ enabled: mode.enabled ?? false });
       }
 
-      // Charger les méthodes de paiement disponibles
       const { data: methodsData } = await supabase
         .from('payment_methods_config')
         .select('*')
@@ -81,10 +66,7 @@ export const usePaymentConfig = () => {
         hasMobileMoney,
         hasBankCard,
         hasAnyMethod: hasMobileMoney || hasBankCard,
-        enabledProviders: {
-          mobileMoneyProviders,
-          bankCardProvider
-        }
+        enabledProviders: { mobileMoneyProviders, bankCardProvider }
       });
     } catch (error) {
       console.error('Error loading payment configuration:', error);
@@ -101,52 +83,21 @@ export const usePaymentConfig = () => {
   useEffect(() => {
     loadPaymentConfiguration();
 
-    // Fix #19: Un seul canal Realtime avec 2 listeners
     const channel = supabase
       .channel('payment-config-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'cadastral_search_config',
-          filter: 'config_key=eq.payment_mode'
-        },
-        () => loadPaymentConfiguration()
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'payment_methods_config'
-        },
-        () => loadPaymentConfiguration()
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cadastral_search_config', filter: 'config_key=eq.payment_mode' }, () => loadPaymentConfiguration())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'payment_methods_config' }, () => loadPaymentConfiguration())
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
-  /**
-   * Détermine si le paiement est requis
-   */
-  const isPaymentRequired = (): boolean => {
-    return paymentMode.enabled && !paymentMode.bypass_payment;
-  };
+  const isPaymentRequired = (): boolean => paymentMode.enabled;
 
-  /**
-   * Détermine le meilleur moyen de paiement à utiliser
-   */
   const getBestPaymentMethod = (): 'bank_card' | 'mobile_money' | null => {
     if (!isPaymentRequired()) return null;
-    
-    // Prioriser la carte bancaire si disponible
     if (availableMethods.hasBankCard) return 'bank_card';
     if (availableMethods.hasMobileMoney) return 'mobile_money';
-    
     return null;
   };
 
