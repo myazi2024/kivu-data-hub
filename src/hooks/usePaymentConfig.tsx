@@ -25,7 +25,7 @@ export interface AvailablePaymentMethods {
 export const usePaymentConfig = () => {
   const [paymentMode, setPaymentMode] = useState<PaymentMode>({
     enabled: false,
-    bypass_payment: true,
+    bypass_payment: false,
     test_mode: false
   });
   const [availableMethods, setAvailableMethods] = useState<AvailablePaymentMethods>({

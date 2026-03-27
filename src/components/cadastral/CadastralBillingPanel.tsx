@@ -575,6 +575,11 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
               Validation des conditions requise
             </p>
           )}
+          {(paymentMode.bypass_payment || paymentMode.test_mode) && (
+            <p className="text-[10px] text-muted-foreground/60 text-right mt-1">
+              Mode test
+            </p>
+          )}
         </CardContent>
       </Card>
 
