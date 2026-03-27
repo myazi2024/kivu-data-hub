@@ -584,6 +584,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     ? 'grab'
     : mode === 'drawLine' ? 'crosshair'
     : mode === 'clipart' ? 'cell'
+    : mode === 'selectEdge' ? 'pointer'
     : 'default';
 
   const tooSmallLotIds = useMemo(() => {
