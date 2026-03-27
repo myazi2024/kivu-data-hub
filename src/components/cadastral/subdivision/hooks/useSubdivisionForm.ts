@@ -234,18 +234,20 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   }, [parentParcel, parentVertices, lots.length, pushHistory]);
   
   const undo = useCallback(() => {
-    if (historyIndex > 0) {
-      setHistoryIndex(prev => prev - 1);
-      setLots(JSON.parse(JSON.stringify(history[historyIndex - 1])));
+    if (historyIndexRef.current > 0) {
+      historyIndexRef.current -= 1;
+      setHistoryIndex(historyIndexRef.current);
+      setLots(JSON.parse(JSON.stringify(historyRef.current[historyIndexRef.current])));
     }
-  }, [history, historyIndex]);
+  }, []);
   
   const redo = useCallback(() => {
-    if (historyIndex < history.length - 1) {
-      setHistoryIndex(prev => prev + 1);
-      setLots(JSON.parse(JSON.stringify(history[historyIndex + 1])));
+    if (historyIndexRef.current < historyRef.current.length - 1) {
+      historyIndexRef.current += 1;
+      setHistoryIndex(historyIndexRef.current);
+      setLots(JSON.parse(JSON.stringify(historyRef.current[historyIndexRef.current])));
     }
-  }, [history, historyIndex]);
+  }, []);
   
   // Update lot
   const updateLot = useCallback((lotId: string, updates: Partial<SubdivisionLot>) => {
