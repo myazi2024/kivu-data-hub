@@ -125,11 +125,23 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     onUndo,
     onRedo,
     onEscape: () => {
+      if (mode === 'drawRoad' && roadDrawPoints.length > 0) {
+        setRoadDrawPoints([]);
+        setRoadDrawMousePos(null);
+        setIsRoadDragging(false);
+        setRoadDrawMultiMode(false);
+        return;
+      }
       onSelectLot(null);
       onModeChange?.('select');
       setContextMenuLotId(null);
       setShowClipartPalette(false);
       setClipartType(null);
+    },
+    onBackspace: () => {
+      if (mode === 'drawRoad' && roadDrawMultiMode && roadDrawPoints.length > 1) {
+        setRoadDrawPoints(prev => prev.slice(0, -1));
+      }
     },
     onToggleGrid: onToggleGrid,
     onToggleSnap: () => setSnapEnabled(prev => !prev),
