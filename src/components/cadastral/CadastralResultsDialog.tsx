@@ -60,10 +60,6 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
     setShowCloseConfirm(false);
     onClose();
   };
-  
-  const handleBackToMap = () => {
-    navigate('/cadastral-map');
-  };
 
   const cancelClose = () => {
     setShowCloseConfirm(false);
