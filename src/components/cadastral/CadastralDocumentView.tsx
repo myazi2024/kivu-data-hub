@@ -390,7 +390,7 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
           )}
 
           {/* ===================== OBLIGATIONS ===================== */}
-          {hasAccess('obligations') ? (
+          {hasObligationsData || paidServices.includes('obligations') ? (
             <>
               <SectionTitle number={++sectionNumber} icon={<Receipt className="h-4 w-4" />} title="Obligations financières" />
               
