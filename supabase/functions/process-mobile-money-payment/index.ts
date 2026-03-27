@@ -42,7 +42,18 @@ serve(async (req) => {
     }
 
     const body: PaymentRequest = await req.json();
-    const { payment_provider, phone_number, amount_usd, payment_type, invoice_id, test_mode } = body;
+    const { payment_provider, phone_number, amount_usd, payment_type, invoice_id } = body;
+
+    // SECURITY: Read test_mode from server-side config, never trust client
+    const { data: paymentModeConfig } = await supabase
+      .from('cadastral_search_config')
+      .select('config_value')
+      .eq('config_key', 'payment_mode')
+      .eq('is_active', true)
+      .single();
+
+    const serverTestMode = paymentModeConfig?.config_value?.test_mode === true;
+    const test_mode = serverTestMode;
 
     // Rate limiting: Check recent payment attempts
     const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
