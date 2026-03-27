@@ -1,131 +1,65 @@
 
 
-# Refonte interactive du LotCanvas — Manipulation directe des lots
+# Refonte du tracage de voies — UX simplifiee
 
-## Analyse de l'existant
+## Problemes actuels
 
-Le `LotCanvas.tsx` (905 lignes) est un SVG statique avec des interactions limitees :
+| Probleme | Detail |
+|----------|--------|
+| **Click-by-click peu intuitif** | L'utilisateur doit cliquer point par point pour tracer la voie, puis double-cliquer pour terminer. Un utilisateur non technique ne comprend pas cette mecanique. |
+| **Pas de preview de la largeur** | La voie est tracee comme une simple ligne de 4px. L'utilisateur ne voit pas la largeur reelle (6m, 8m...) pendant le tracage. |
+| **Double-clic = reset vue** | Le double-clic en mode `select` reset la vue (zoom), ce qui interfere avec la terminaison du tracage si l'utilisateur change de mode par erreur. |
+| **Aucun feedback "prochaine etape"** | Apres le trace, la voie est creee silencieusement. Pas de confirmation visuelle ni de transition vers l'edition des proprietes. |
+| **Pas d'annulation pendant le tracage** | Impossible de supprimer le dernier point place ou d'annuler le tracage en cours. |
+| **Voies = lignes droites uniquement** | Le rendu final (lignes 484-510) ne dessine qu'une seule ligne entre le premier et le dernier point, ignorant les points intermediaires. Les voies courbes sont impossibles. |
+| **Pas de drag pour repositionner** | Une voie tracee ne peut pas etre deplacee ou ajustee apres creation. Il faut la supprimer et recommencer. |
 
-| Fonctionnalite | Statut |
-|---|---|
-| Drag vertex individuel | Fonctionne |
-| Decoupe par ligne (cut) | Fonctionne |
-| Tracage de voie | Fonctionne |
-| Selection / multi-selection | Fonctionne |
-| Split lot (double-clic) | Fonctionne |
-| Fusion de lots | Fonctionne |
-| **Drag & drop lot entier** | **Absent** |
-| **Etirement d'arete (edge drag)** | **Absent** — les hit targets existent mais ne font rien |
-| **Suppression depuis le canvas** | **Absent** — uniquement dans le panneau lateral |
-| **Cliparts / icones** | **Absent** |
-| **Snap to grid / edges** | **Absent** |
-| **Zoom / pan** | **Absent** |
-| **Raccourcis clavier** | **Absent** |
-| **Touch gestures (mobile)** | **Partiel** — seul le long-press fonctionne |
-| **Duplication de lot** | **Absent** |
-| **Contrainte taille min** | **Absent** |
-| **Rotation de lot** | **Absent** |
+## Solution proposee : mode "Tracer voie" simplifie
 
-## Plan d'implementation
+### Nouveau flux utilisateur
 
-### 1. Drag & drop du lot entier
+1. **Clic sur "Tracer voie"** → Un panneau lateral s'ouvre pour configurer la largeur et le type AVANT de tracer (pas apres)
+2. **Clic-glisser sur le canvas** → La voie se trace en drag continu (start → end), avec un rectangle semi-transparent montrant la largeur reelle
+3. **Relachement** → La voie est creee instantanement, le panneau d'edition s'ouvre pour ajuster nom/surface
+4. **Alternative multi-segments** : Maintenir Shift pour ajouter des segments supplementaires (voie en L, en T)
 
-Ajouter un mode "move polygon" : quand l'utilisateur clique sur le remplissage d'un lot selectionne et le deplace, tous les vertices se translatent ensemble. Distinction entre clic sur vertex (resize) et clic sur surface (move).
+### Fonctionnalites ajoutees
 
-### 2. Etirement d'arete (edge drag)
+- **Preview de largeur en temps reel** : Pendant le tracage, afficher un rectangle translucide representant la largeur configuree
+- **Annuler dernier point** : Touche `Backspace` ou bouton pour retirer le dernier point pendant un trace multi-segments
+- **Repositionner une voie** : Drag & drop des extremites d'une voie existante en mode selection
+- **Polyline complete** : Le rendu des voies utilise `<polyline>` au lieu d'une seule `<line>` pour supporter les traces multi-segments
+- **Snap aux bords de la parcelle** : Les extremites de la voie s'accrochent aux bords de la parcelle mere et aux limites de lots
+- **Bouton "Terminer"** flottant sur le canvas (remplace le double-clic non intuitif)
 
-Les edge hit targets (lignes 601-626) existent deja avec le bon curseur mais ne declenchent aucune action. Ajouter un `onMouseDown` sur ces lignes pour deplacer les deux vertices de l'arete simultanement dans la direction perpendiculaire a l'arete.
+## Implementation technique
 
-### 3. Menu contextuel sur lot selectionne
+### 1. Panneau de pre-configuration de voie (StepLotDesigner)
 
-Quand un lot est selectionne, afficher un petit toolbar flottant SVG au-dessus du lot avec des icones :
-- Supprimer (poubelle)
-- Diviser en 2
-- Dupliquer
-- Ajouter clipart
+Quand l'utilisateur clique "Tracer voie", afficher un mini-panneau inline avec largeur (slider 3-20m) et type de surface. Ces valeurs sont passees au canvas et utilisees pour le preview.
 
-Cela remplace le bouton "Diviser" actuel et ajoute les actions manquantes.
+### 2. Refonte du mode drawRoad dans LotCanvas
 
-### 4. Systeme de cliparts
+- Remplacer le systeme click-by-click par un mode drag (mouseDown → mouseMove → mouseUp) pour les voies simples (2 points)
+- Garder le mode multi-click pour les voies complexes (activer via Shift ou un toggle)
+- Afficher un rectangle de preview avec la largeur configuree pendant le trace
+- Ajouter un bouton flottant SVG "Terminer ✓" et "Annuler ✗" visibles pendant le trace multi-segments
+- Supporter `Backspace` pour retirer le dernier point
 
-Creer un catalogue d'icones SVG inline (arbre, maison, immeuble, puits, cloture, portail, voiture/parking, antenne) que l'utilisateur peut placer sur un lot. Stockes comme `annotations` dans le type `SubdivisionLot` :
+### 3. Rendu polyline des voies
 
-```typescript
-interface LotAnnotation {
-  id: string;
-  type: 'tree' | 'house' | 'building' | 'well' | 'fence' | 'gate' | 'parking' | 'antenna';
-  position: Point2D; // relative to lot center
-  scale?: number;
-}
-```
+Remplacer la `<line>` unique (premier→dernier point) par une `<polyline>` qui suit tous les points du path. Ajouter un `<polyline>` parallele decalee pour visualiser la largeur.
 
-L'utilisateur selectionne un clipart dans la palette puis clique sur le lot pour le placer. Les cliparts sont deplacables par drag.
+### 4. Drag des extremites de voie
 
-### 5. Snap to grid et snap to edges
-
-Lors du drag de vertex/arete/lot :
-- Snap magnetique aux lignes de grille (si grille active)
-- Snap aux aretes des lots voisins (alignement)
-- Indicateur visuel (ligne pointillee bleue) quand un snap est actif
-- Tolerance de 8px
-
-### 6. Zoom et pan
-
-Ajouter un systeme de viewBox dynamique :
-- Molette souris = zoom (min 0.5x, max 4x)
-- Clic-molette ou Space+drag = pan
-- Boutons +/- en overlay
-- Double-clic sur fond = reset vue
-
-### 7. Raccourcis clavier
-
-- `Delete` / `Backspace` = supprimer lot selectionne
-- `Ctrl+D` = dupliquer lot
-- `Ctrl+Z` / `Ctrl+Y` = undo/redo (deja connectes)
-- `Escape` = deselectionner / quitter mode
-- `G` = toggle grille
-- `S` = toggle snap
-
-### 8. Support tactile complet
-
-- Touch drag sur vertex = resize
-- Touch drag sur surface = move lot
-- Pinch = zoom
-- Two-finger drag = pan
-- Long press = menu contextuel
-
-### 9. Contraintes et feedback
-
-- Surface minimale configurable (defaut 50m²) — warning visuel si un lot passe en-dessous
-- Lots ne peuvent pas sortir de la parcelle mere (clamp vertices)
-- Detection de chevauchement entre lots (bordure rouge clignotante)
-
-## Structure technique
-
-```text
-LotCanvas.tsx (refactorise)
-├── Hooks extraits :
-│   ├── useCanvasViewport.ts  — zoom, pan, viewBox
-│   ├── useCanvasDrag.ts      — vertex/edge/polygon drag + snap
-│   └── useCanvasKeyboard.ts  — raccourcis clavier
-├── Composants SVG :
-│   ├── LotPolygon.tsx        — rendu d'un lot avec vertices/aretes
-│   ├── LotContextMenu.tsx    — toolbar flottant SVG
-│   ├── ClipartIcon.tsx       — rendu d'un clipart SVG
-│   └── ClipartPalette.tsx    — palette de selection (HTML overlay)
-└── Types :
-    └── types.ts              — LotAnnotation ajoutee
-```
+En mode select, quand une voie est selectionnee, afficher des poignees (cercles) sur chaque point du path. Ces poignees sont draggables pour repositionner la voie.
 
 ## Fichiers impactes
 
 | Action | Fichier |
 |---|---|
-| Refactorise | `src/components/cadastral/subdivision/LotCanvas.tsx` — Drag lot, edge drag, zoom/pan, snap, menu contextuel, cliparts, touch |
-| Cree | `src/components/cadastral/subdivision/hooks/useCanvasViewport.ts` — Zoom/pan state |
-| Cree | `src/components/cadastral/subdivision/hooks/useCanvasDrag.ts` — Drag unifie (vertex/edge/polygon) + snap |
-| Cree | `src/components/cadastral/subdivision/hooks/useCanvasKeyboard.ts` — Raccourcis clavier |
-| Cree | `src/components/cadastral/subdivision/ClipartPalette.tsx` — Palette de cliparts |
-| Modifie | `src/components/cadastral/subdivision/types.ts` — Ajouter `LotAnnotation`, `annotations` sur `SubdivisionLot` |
-| Modifie | `src/components/cadastral/subdivision/steps/StepLotDesigner.tsx` — Connecter nouveau mode clipart, raccourcis, contraintes |
+| Modifie | `src/components/cadastral/subdivision/LotCanvas.tsx` — Nouveau mode drawRoad (drag simple + multi-click), preview largeur, polyline, poignees de voie, boutons flottants |
+| Modifie | `src/components/cadastral/subdivision/steps/StepLotDesigner.tsx` — Panneau de pre-configuration voie (largeur/surface avant trace) |
+| Modifie | `src/components/cadastral/subdivision/hooks/useCanvasDrag.ts` — Ajouter drag des extremites de voie |
+| Modifie | `src/components/cadastral/subdivision/hooks/useCanvasKeyboard.ts` — Backspace pour retirer dernier point en mode drawRoad |
 
