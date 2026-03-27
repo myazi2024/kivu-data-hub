@@ -135,7 +135,7 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
         <div className="px-6 sm:px-10 py-6 space-y-2">
 
           {/* ===================== 1. IDENTIFICATION ===================== */}
-          {hasAccess('information') ? (
+          {hasParcelData ? (
             <>
               <SectionTitle number={++sectionNumber} icon={<Building className="h-4 w-4" />} title="Identification de la parcelle" />
               <table className="doc-table">
