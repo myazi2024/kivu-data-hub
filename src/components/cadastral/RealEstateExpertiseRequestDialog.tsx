@@ -18,7 +18,7 @@ import {
   Loader2, FileSearch, MapPin, Building, Droplets, Zap, Wifi, 
   Shield, Car, Trees, AlertTriangle, Upload, X, FileText, Image, CheckCircle2,
   CreditCard, Smartphone, ArrowLeft, Receipt, DollarSign, Phone, Home,
-  Volume2, Layers, Building2, Camera, Info, Mic, MicOff, Fence, Warehouse, DoorOpen
+  Volume2, Layers, Building2, Camera, Info, Mic, MicOff, Fence, Warehouse, DoorOpen, FileCheck
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealEstateExpertise } from '@/hooks/useRealEstateExpertise';
@@ -30,6 +30,8 @@ import SuggestivePicklist from './SuggestivePicklist';
 import SectionHelpPopover from './SectionHelpPopover';
 import { useCCCFormPicklists } from '@/hooks/useCCCFormPicklists';
 import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
+import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
+import { cn } from '@/lib/utils';
 
 interface RealEstateExpertiseRequestDialogProps {
   parcelNumber: string;
@@ -268,6 +270,15 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const [floodRiskZone, setFloodRiskZone] = useState(false);
   const [erosionRiskZone, setErosionRiskZone] = useState(false);
   const [nearbyAmenities, setNearbyAmenities] = useState<string[]>([]);
+
+  // === AUTORISATION DE BÂTIR ===
+  const [hasBuildingPermit, setHasBuildingPermit] = useState<'yes' | 'no' | null>(null);
+  const [buildingPermitType, setBuildingPermitType] = useState<'construction' | 'regularization'>('construction');
+  const [buildingPermitNumber, setBuildingPermitNumber] = useState('');
+  const [buildingPermitIssueDate, setBuildingPermitIssueDate] = useState('');
+  const [buildingPermitIssuingService, setBuildingPermitIssuingService] = useState('');
+  const [buildingPermitFile, setBuildingPermitFile] = useState<File | null>(null);
+  const permitFileInputRef = useRef<HTMLInputElement>(null);
 
   // === NOTES & DOCUMENTS ===
   const [additionalNotes, setAdditionalNotes] = useState('');
@@ -637,8 +648,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
      setConstructionImageUrls(prev => prev.filter((_, i) => i !== index));
    };
 
-  const uploadFiles = async (): Promise<{ parcelDocs: string[], constructionImages: string[] }> => {
-    const result = { parcelDocs: [] as string[], constructionImages: [] as string[] };
+  const uploadFiles = async (): Promise<{ parcelDocs: string[], constructionImages: string[], permitDocUrl: string | null }> => {
+    const result = { parcelDocs: [] as string[], constructionImages: [] as string[], permitDocUrl: null as string | null };
     
     setUploadingFiles(true);
     
@@ -674,12 +685,28 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
         result.constructionImages.push(data.publicUrl);
       }
+
+      // Upload building permit document
+      if (buildingPermitFile) {
+        const fileExt = buildingPermitFile.name.split('.').pop();
+        const fileName = `permit_${Date.now()}_${crypto.randomUUID()}.${fileExt}`;
+        const filePath = `expertise-documents/${user?.id}/permits/${fileName}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('cadastral-documents')
+          .upload(filePath, buildingPermitFile);
+        
+        if (uploadError) throw uploadError;
+        
+        const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
+        result.permitDocUrl = data.publicUrl;
+      }
       
       return result;
     } catch (error: any) {
       console.error('Upload error:', error);
       toast.error('Erreur lors du téléchargement des fichiers');
-      throw error; // Propagate to block submission
+      throw error;
     } finally {
       setUploadingFiles(false);
     }
@@ -783,6 +810,12 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       monthly_charges: monthlyCharges ? parseFloat(monthlyCharges) : undefined,
       has_common_areas: hasCommonAreas,
       nearby_amenities: nearbyAmenities.length > 0 ? nearbyAmenities.join(', ') : undefined,
+      // Building permit
+      has_building_permit: hasBuildingPermit === 'yes',
+      building_permit_number: hasBuildingPermit === 'yes' && buildingPermitNumber ? buildingPermitNumber : undefined,
+      building_permit_type: hasBuildingPermit === 'yes' ? buildingPermitType : undefined,
+      building_permit_issue_date: hasBuildingPermit === 'yes' && buildingPermitIssueDate ? buildingPermitIssueDate : undefined,
+      building_permit_issuing_service: hasBuildingPermit === 'yes' && buildingPermitIssuingService ? buildingPermitIssuingService : undefined,
     });
 
     setStep('payment');
@@ -814,6 +847,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       const request = await createExpertiseRequest({
         ...formData,
         supporting_documents: allDocUrls,
+        building_permit_document_url: uploadedFiles.permitDocUrl || undefined,
       });
 
       if (!request) {
@@ -1243,6 +1277,129 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                       </SelectContent>
                     </Select>
                   </div>
+                )}
+
+                {/* Autorisation de bâtir - masqué pour Terrain nu et Appartement */}
+                {!isTerrainNu && propertyCategory !== 'Appartement' && (
+                  <>
+                    <Separator className="my-1" />
+                    <div className="flex items-start gap-2">
+                      <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                        <FileCheck className="h-3.5 w-3.5 text-primary" />
+                      </div>
+                      <Label className="text-xs font-semibold leading-tight">
+                        Avez-vous une autorisation de bâtir pour ce bien ?
+                      </Label>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => setHasBuildingPermit('yes')} className={cn("flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all", hasBuildingPermit === 'yes' ? 'bg-primary text-primary-foreground shadow-md' : 'bg-muted text-muted-foreground hover:bg-muted/80')}>Oui</button>
+                      <button type="button" onClick={() => setHasBuildingPermit('no')} className={cn("flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all", hasBuildingPermit === 'no' ? 'bg-primary text-primary-foreground shadow-md' : 'bg-muted text-muted-foreground hover:bg-muted/80')}>Non</button>
+                    </div>
+
+                    {hasBuildingPermit === 'yes' && (
+                      <div className="space-y-3 animate-fade-in border-2 rounded-2xl p-3 border-border">
+                        <div className="flex items-center gap-2 pb-2 border-b border-border/50">
+                          <FileCheck className="h-4 w-4 text-primary" />
+                          <span className="text-xs font-semibold">Informations de l'autorisation</span>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <button type="button" onClick={() => setBuildingPermitType('construction')} className={cn("flex-1 py-2 px-3 rounded-xl text-xs font-medium transition-all", buildingPermitType === 'construction' ? 'bg-primary text-primary-foreground shadow-md' : 'bg-muted text-muted-foreground hover:bg-muted/80')}>Bâtir</button>
+                          <button type="button" onClick={() => setBuildingPermitType('regularization')} className={cn("flex-1 py-2 px-3 rounded-xl text-xs font-medium transition-all", buildingPermitType === 'regularization' ? 'bg-primary text-primary-foreground shadow-md' : 'bg-muted text-muted-foreground hover:bg-muted/80')}>Régularisation</button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs">N° de l'autorisation</Label>
+                            <Input placeholder="PC-2024-001" value={buildingPermitNumber} onChange={(e) => setBuildingPermitNumber(e.target.value)} className="h-9 text-sm rounded-xl border-2" />
+                          </div>
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-1">
+                              <Label className="text-xs">Date</Label>
+                              <SectionHelpPopover
+                                title="Date de délivrance"
+                                description={buildingPermitType === 'construction'
+                                  ? "L'autorisation de bâtir est valable 3 ans en RDC. Sa date doit être dans les 3 ans précédant l'année de construction."
+                                  : "L'autorisation de régularisation est délivrée après la construction. Sa date doit être postérieure ou égale à l'année de construction."}
+                              />
+                            </div>
+                            <Input
+                              type="date"
+                              value={buildingPermitIssueDate}
+                              max={buildingPermitType === 'regularization' ? new Date().toISOString().split('T')[0] : (constructionYear ? `${constructionYear}-12-31` : undefined)}
+                              min={buildingPermitType === 'construction' && constructionYear ? `${parseInt(constructionYear) - 3}-01-01` : (buildingPermitType === 'regularization' && constructionYear ? `${constructionYear}-01-01` : undefined)}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                if (constructionYear && value) {
+                                  const permitYear = new Date(value).getFullYear();
+                                  const cYear = parseInt(constructionYear);
+                                  if (buildingPermitType === 'construction') {
+                                    if (permitYear > cYear) { toast.error(`L'autorisation de bâtir doit être antérieure ou égale à l'année de construction (${cYear}).`); return; }
+                                    if (permitYear < cYear - 3) { toast.error(`L'autorisation est valable 3 ans. La date ne peut pas être antérieure à ${cYear - 3}.`); return; }
+                                  } else {
+                                    if (permitYear < cYear) { toast.error(`L'autorisation de régularisation doit être postérieure ou égale à l'année de construction (${cYear}).`); return; }
+                                    if (new Date(value) > new Date()) { toast.error("La date ne peut pas être dans le futur."); return; }
+                                  }
+                                }
+                                setBuildingPermitIssueDate(value);
+                              }}
+                              className={cn("h-9 text-sm rounded-xl border-2", (() => {
+                                if (!buildingPermitIssueDate || !constructionYear) return false;
+                                const py = new Date(buildingPermitIssueDate).getFullYear();
+                                const cYear = parseInt(constructionYear);
+                                if (buildingPermitType === 'construction') return py > cYear || py < cYear - 3;
+                                return py < cYear || new Date(buildingPermitIssueDate) > new Date();
+                              })() && "border-destructive")}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Service émetteur</Label>
+                          <BuildingPermitIssuingServiceSelect
+                            value={buildingPermitIssuingService}
+                            onValueChange={setBuildingPermitIssuingService}
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Document (optionnel)</Label>
+                          {!buildingPermitFile ? (
+                            <Input
+                              ref={permitFileInputRef}
+                              type="file"
+                              accept=".pdf,.jpg,.jpeg,.png"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  if (file.size > 10 * 1024 * 1024) { toast.error("Fichier trop volumineux (max 10 MB)"); return; }
+                                  setBuildingPermitFile(file);
+                                }
+                              }}
+                              className="h-9 text-sm rounded-xl border-2"
+                            />
+                          ) : (
+                            <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-xl border overflow-hidden min-w-0">
+                              <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+                              <span className="text-xs flex-1 truncate">{buildingPermitFile.name}</span>
+                              <Button type="button" variant="ghost" size="sm" onClick={() => { setBuildingPermitFile(null); if (permitFileInputRef.current) permitFileInputRef.current.value = ''; }} className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 rounded-lg">
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {hasBuildingPermit === 'no' && (
+                      <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-xl p-2.5 animate-fade-in">
+                        <p className="text-xs text-green-800 dark:text-green-200 text-center">
+                          ✓ Pas de souci ! Cette information sera prise en compte dans l'expertise.
+                        </p>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 <div className="space-y-1.5">
@@ -2520,6 +2677,66 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 </div>
               </CardContent>
             </Card>
+            )}
+
+            {/* Section Autorisation de bâtir - summary */}
+            {!isTerrainNu && propertyCategory !== 'Appartement' && hasBuildingPermit !== null && (
+              <Card className="rounded-xl border-border/50 shadow-sm">
+                <CardContent className="p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <FileCheck className="h-4 w-4 text-primary" />
+                      <h4 className="text-xs font-semibold">Autorisation de bâtir</h4>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => { setActiveTab('general'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
+                      Modifier
+                    </Button>
+                  </div>
+                  <div className="divide-y divide-border/30">
+                    <div className="flex justify-between text-xs py-1.5">
+                      <span className="text-muted-foreground">Possède une autorisation</span>
+                      <Badge variant={hasBuildingPermit === 'yes' ? "default" : "secondary"} className="text-[10px]">
+                        {hasBuildingPermit === 'yes' ? 'Oui' : 'Non'}
+                      </Badge>
+                    </div>
+                    {hasBuildingPermit === 'yes' && (
+                      <>
+                        <div className="flex justify-between text-xs py-1.5">
+                          <span className="text-muted-foreground">Type</span>
+                          <span className="font-medium">{buildingPermitType === 'construction' ? 'Bâtir' : 'Régularisation'}</span>
+                        </div>
+                        {buildingPermitNumber && (
+                          <div className="flex justify-between text-xs py-1.5">
+                            <span className="text-muted-foreground">N° autorisation</span>
+                            <span className="font-medium font-mono">{buildingPermitNumber}</span>
+                          </div>
+                        )}
+                        {buildingPermitIssueDate && (
+                          <div className="flex justify-between text-xs py-1.5">
+                            <span className="text-muted-foreground">Date de délivrance</span>
+                            <span className="font-medium">{new Date(buildingPermitIssueDate).toLocaleDateString('fr-FR')}</span>
+                          </div>
+                        )}
+                        {buildingPermitIssuingService && (
+                          <div className="flex justify-between text-xs py-1.5">
+                            <span className="text-muted-foreground">Service émetteur</span>
+                            <span className="font-medium text-right max-w-[55%] truncate">{buildingPermitIssuingService}</span>
+                          </div>
+                        )}
+                        {buildingPermitFile && (
+                          <div className="flex justify-between text-xs py-1.5">
+                            <span className="text-muted-foreground">Document</span>
+                            <Badge variant="outline" className="text-[10px] text-green-600 border-green-300">
+                              <FileText className="h-3 w-3 mr-1" />
+                              {buildingPermitFile.name}
+                            </Badge>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             )}
 
             {/* Section Pièces - hidden for terrain_nu */}
