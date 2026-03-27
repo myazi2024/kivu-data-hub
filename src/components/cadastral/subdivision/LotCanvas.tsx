@@ -105,6 +105,10 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   // Context menu state
   const [contextMenuLotId, setContextMenuLotId] = useState<string | null>(null);
 
+  // Edge selection state (selectEdge mode + right-click on edges)
+  const [hoveredEdge, setHoveredEdge] = useState<EdgeInfo | null>(null);
+  const [edgeContextMenu, setEdgeContextMenu] = useState<{ edge: EdgeInfo; screenPos: Point2D } | null>(null);
+
   // Viewport (zoom/pan)
   const viewport = useCanvasViewport(CANVAS_W, CANVAS_H);
 
