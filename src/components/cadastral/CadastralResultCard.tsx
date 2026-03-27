@@ -939,7 +939,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                         </div>
                     ) : (
                       <div className="text-center text-xs text-muted-foreground py-2">
-                        Aucun historique disponible
+                        Aucun bornage enregistré
                       </div>
                     )}
                   </CardContent>
