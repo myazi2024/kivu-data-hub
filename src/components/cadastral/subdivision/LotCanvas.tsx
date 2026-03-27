@@ -4,7 +4,7 @@ import { useCanvasViewport } from './hooks/useCanvasViewport';
 import { useCanvasDrag } from './hooks/useCanvasDrag';
 import { useCanvasKeyboard } from './hooks/useCanvasKeyboard';
 import ClipartPalette from './ClipartPalette';
-import { ZoomIn, ZoomOut, Maximize2, Magnet, Scissors, Trash2, Copy, Sticker } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, Magnet, Sticker } from 'lucide-react';
 
 interface ParcelSide {
   length?: number | string;
@@ -12,7 +12,7 @@ interface ParcelSide {
   [key: string]: any;
 }
 
-export type CanvasMode = 'select' | 'cut' | 'drawRoad' | 'clipart';
+export type CanvasMode = 'select' | 'drawLine' | 'clipart';
 
 interface LotCanvasProps {
   lots: SubdivisionLot[];
@@ -77,15 +77,13 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   const [showClipartPalette, setShowClipartPalette] = useState(false);
   const [clipartType, setClipartType] = useState<LotAnnotation['type'] | null>(null);
 
-  // Cut mode state
-  const [cutPoints, setCutPoints] = useState<Point2D[]>([]);
-  const [cutMousePos, setCutMousePos] = useState<Point2D | null>(null);
-
-  // Draw road mode state
-  const [roadDrawPoints, setRoadDrawPoints] = useState<Point2D[]>([]);
-  const [roadDrawMousePos, setRoadDrawMousePos] = useState<Point2D | null>(null);
-  const [isRoadDragging, setIsRoadDragging] = useState(false); // simple drag mode
-  const [roadDrawMultiMode, setRoadDrawMultiMode] = useState(false); // multi-click mode
+  // Unified drawLine mode state
+  const [lineDrawPoints, setLineDrawPoints] = useState<Point2D[]>([]);
+  const [lineDrawMousePos, setLineDrawMousePos] = useState<Point2D | null>(null);
+  const [isLineDragging, setIsLineDragging] = useState(false);
+  const [lineDrawMultiMode, setLineDrawMultiMode] = useState(false);
+  // Post-trace choice menu
+  const [lineChoiceMenu, setLineChoiceMenu] = useState<{ path: Point2D[]; screenPos: Point2D } | null>(null);
 
   // Road endpoint drag state
   const [roadEndpointDrag, setRoadEndpointDrag] = useState<{roadId: string; pointIdx: number} | null>(null);
@@ -101,12 +99,11 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
 
   // Reset drawing states when mode changes
   useEffect(() => {
-    setCutPoints([]);
-    setCutMousePos(null);
-    setRoadDrawPoints([]);
-    setRoadDrawMousePos(null);
-    setIsRoadDragging(false);
-    setRoadDrawMultiMode(false);
+    setLineDrawPoints([]);
+    setLineDrawMousePos(null);
+    setIsLineDragging(false);
+    setLineDrawMultiMode(false);
+    setLineChoiceMenu(null);
     setRoadEndpointDrag(null);
     if (mode !== 'clipart') {
       setShowClipartPalette(false);
@@ -125,11 +122,15 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     onUndo,
     onRedo,
     onEscape: () => {
-      if (mode === 'drawRoad' && roadDrawPoints.length > 0) {
-        setRoadDrawPoints([]);
-        setRoadDrawMousePos(null);
-        setIsRoadDragging(false);
-        setRoadDrawMultiMode(false);
+      if (lineChoiceMenu) {
+        setLineChoiceMenu(null);
+        return;
+      }
+      if (mode === 'drawLine' && lineDrawPoints.length > 0) {
+        setLineDrawPoints([]);
+        setLineDrawMousePos(null);
+        setIsLineDragging(false);
+        setLineDrawMultiMode(false);
         return;
       }
       onSelectLot(null);
@@ -139,8 +140,8 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       setClipartType(null);
     },
     onBackspace: () => {
-      if (mode === 'drawRoad' && roadDrawMultiMode && roadDrawPoints.length > 1) {
-        setRoadDrawPoints(prev => prev.slice(0, -1));
+      if (mode === 'drawLine' && lineDrawMultiMode && lineDrawPoints.length > 1) {
+        setLineDrawPoints(prev => prev.slice(0, -1));
       }
     },
     onToggleGrid: onToggleGrid,
@@ -168,29 +169,109 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     return {
       x: (e.clientX - rect.left) * scaleX - viewport.viewport.panX,
       y: (e.clientY - rect.top) * scaleY - viewport.viewport.panY,
-      rawScaleX: CANVAS_W / rect.width,
-      rawScaleY: CANVAS_H / rect.height,
     };
   }, [viewport.viewport]);
 
+  const sideLength = Math.sqrt(parentAreaSqm);
+
+  // ---- Distance calculation helpers ----
+  const getParallelEdges = useCallback((lineStart: Point2D, lineEnd: Point2D) => {
+    const edges: { p1Screen: Point2D; p2Screen: Point2D; distM: number; midScreen: Point2D; lineMidScreen: Point2D }[] = [];
+    const dx = lineEnd.x - lineStart.x;
+    const dy = lineEnd.y - lineStart.y;
+    const lineLen = Math.sqrt(dx * dx + dy * dy);
+    if (lineLen < 0.001) return edges;
+
+    const lineAngle = Math.atan2(dy, dx);
+    const normalX = -dy / lineLen;
+    const normalY = dx / lineLen;
+    const lineMidNorm = { x: (lineStart.x + lineEnd.x) / 2, y: (lineStart.y + lineEnd.y) / 2 };
+    const lineMidScreen = toScreen(lineMidNorm);
+
+    // Collect all edges: lot edges + parent parcel edges
+    const allEdges: { p1: Point2D; p2: Point2D }[] = [];
+    lots.forEach(lot => {
+      lot.vertices.forEach((v, i) => {
+        const next = lot.vertices[(i + 1) % lot.vertices.length];
+        allEdges.push({ p1: v, p2: next });
+      });
+    });
+    if (parentVertices && parentVertices.length >= 3) {
+      parentVertices.forEach((v, i) => {
+        const next = parentVertices[(i + 1) % parentVertices.length];
+        allEdges.push({ p1: v, p2: next });
+      });
+    }
+
+    const ANGLE_TOLERANCE = 15 * (Math.PI / 180);
+
+    allEdges.forEach(edge => {
+      const edx = edge.p2.x - edge.p1.x;
+      const edy = edge.p2.y - edge.p1.y;
+      const edgeLen = Math.sqrt(edx * edx + edy * edy);
+      if (edgeLen < 0.001) return;
+
+      const edgeAngle = Math.atan2(edy, edx);
+      let angleDiff = Math.abs(edgeAngle - lineAngle);
+      if (angleDiff > Math.PI) angleDiff = 2 * Math.PI - angleDiff;
+      if (angleDiff > Math.PI / 2) angleDiff = Math.PI - angleDiff;
+
+      if (angleDiff < ANGLE_TOLERANCE) {
+        // Perpendicular distance from edge midpoint to the line
+        const edgeMid = { x: (edge.p1.x + edge.p2.x) / 2, y: (edge.p1.y + edge.p2.y) / 2 };
+        const distNorm = Math.abs((edgeMid.x - lineStart.x) * normalX + (edgeMid.y - lineStart.y) * normalY);
+        if (distNorm < 0.005) return; // Too close (same edge)
+        const distM = distNorm * sideLength;
+        if (distM > sideLength) return; // Too far
+
+        const edgeMidScreen = toScreen(edgeMid);
+        edges.push({
+          p1Screen: toScreen(edge.p1),
+          p2Screen: toScreen(edge.p2),
+          distM: Math.round(distM * 10) / 10,
+          midScreen: edgeMidScreen,
+          lineMidScreen,
+        });
+      }
+    });
+
+    // Deduplicate: keep only closest on each side of the line
+    const above: typeof edges = [];
+    const below: typeof edges = [];
+    edges.forEach(e => {
+      const edgeMidNorm = fromScreen(e.midScreen.x, e.midScreen.y);
+      const side = (edgeMidNorm.x - lineStart.x) * normalX + (edgeMidNorm.y - lineStart.y) * normalY;
+      if (side > 0) above.push(e);
+      else below.push(e);
+    });
+    above.sort((a, b) => a.distM - b.distM);
+    below.sort((a, b) => a.distM - b.distM);
+
+    const result: typeof edges = [];
+    if (above.length > 0) result.push(above[0]);
+    if (below.length > 0) result.push(below[0]);
+    return result;
+  }, [lots, parentVertices, toScreen, fromScreen, sideLength]);
+
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (readOnly) return;
+    if (lineChoiceMenu) return; // Don't start new actions while choice menu is open
     // Space + drag = pan
     if (viewport.isSpaceDown() || e.button === 1) {
       e.preventDefault();
       viewport.startPan(e.clientX, e.clientY);
       return;
     }
-    // Road drawing: simple drag mode (click-drag for straight road)
-    if (mode === 'drawRoad' && e.button === 0 && !roadDrawMultiMode && roadDrawPoints.length === 0) {
+    // drawLine: simple drag mode
+    if (mode === 'drawLine' && e.button === 0 && !lineDrawMultiMode && lineDrawPoints.length === 0) {
       const pos = getSvgPos(e);
       const normalized = fromScreen(pos.x, pos.y);
       const snapped = drag.snapToGrid(normalized);
-      setRoadDrawPoints([snapped]);
-      setIsRoadDragging(true);
+      setLineDrawPoints([snapped]);
+      setIsLineDragging(true);
       return;
     }
-  }, [readOnly, viewport, mode, roadDrawMultiMode, roadDrawPoints, getSvgPos, fromScreen, drag]);
+  }, [readOnly, viewport, mode, lineDrawMultiMode, lineDrawPoints, getSvgPos, fromScreen, drag, lineChoiceMenu]);
 
   const handleVertexMouseDown = useCallback((lotId: string, vertexIdx: number, e: React.MouseEvent) => {
     if (readOnly || mode !== 'select') return;
@@ -208,7 +289,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
 
   const handlePolygonMouseDown = useCallback((lotId: string, e: React.MouseEvent) => {
     if (readOnly || mode !== 'select') return;
-    if (lotId !== selectedLotId) return; // Only drag already-selected lots
+    if (lotId !== selectedLotId) return;
     e.stopPropagation();
     const pos = getSvgPos(e);
     const normalized = fromScreen(pos.x, pos.y);
@@ -230,16 +311,12 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
 
     const pos = getSvgPos(e);
 
-    if (mode === 'cut' && cutPoints.length === 1) {
-      setCutMousePos({ x: pos.x, y: pos.y });
-    }
-
-    // Road drawing: update preview
-    if (mode === 'drawRoad') {
-      if (isRoadDragging && roadDrawPoints.length === 1) {
-        setRoadDrawMousePos({ x: pos.x, y: pos.y });
-      } else if (roadDrawMultiMode && roadDrawPoints.length > 0) {
-        setRoadDrawMousePos({ x: pos.x, y: pos.y });
+    // drawLine: update preview
+    if (mode === 'drawLine') {
+      if (isLineDragging && lineDrawPoints.length === 1) {
+        setLineDrawMousePos({ x: pos.x, y: pos.y });
+      } else if (lineDrawMultiMode && lineDrawPoints.length > 0) {
+        setLineDrawMousePos({ x: pos.x, y: pos.y });
       }
     }
 
@@ -259,22 +336,49 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       const normalized = fromScreen(pos.x, pos.y);
       drag.moveDrag(normalized);
     }
-  }, [viewport, getSvgPos, fromScreen, mode, cutPoints, roadDrawPoints, drag, isRoadDragging, roadDrawMultiMode, roadEndpointDrag, roads, onUpdateRoad]);
+  }, [viewport, getSvgPos, fromScreen, mode, lineDrawPoints, drag, isLineDragging, lineDrawMultiMode, roadEndpointDrag, roads, onUpdateRoad]);
+
+  // Show choice menu after line drawing finishes
+  const showLineChoice = useCallback((path: Point2D[]) => {
+    if (path.length < 2) return;
+    const lastPt = path[path.length - 1];
+    const screenPos = toScreen(lastPt);
+    setLineChoiceMenu({ path, screenPos });
+  }, [toScreen]);
+
+  const handleChooseDivide = useCallback(() => {
+    if (!lineChoiceMenu || !onCutLot) return;
+    const { path } = lineChoiceMenu;
+    const cutStart = path[0];
+    const cutEnd = path[path.length - 1];
+    const mid = { x: (cutStart.x + cutEnd.x) / 2, y: (cutStart.y + cutEnd.y) / 2 };
+    const targetLot = lots.find(lot => pointInPolygon(mid, lot.vertices));
+    if (targetLot) {
+      onCutLot(targetLot.id, cutStart, cutEnd);
+    }
+    setLineChoiceMenu(null);
+  }, [lineChoiceMenu, onCutLot, lots]);
+
+  const handleChooseRoad = useCallback(() => {
+    if (!lineChoiceMenu || !onFinishRoadDraw) return;
+    onFinishRoadDraw(lineChoiceMenu.path);
+    setLineChoiceMenu(null);
+  }, [lineChoiceMenu, onFinishRoadDraw]);
 
   const handleMouseUp = useCallback((e: React.MouseEvent) => {
-    // Road simple drag: finish on mouse up
-    if (isRoadDragging && roadDrawPoints.length === 1 && roadDrawMousePos) {
+    // Line simple drag: finish on mouse up
+    if (isLineDragging && lineDrawPoints.length === 1 && lineDrawMousePos) {
       const pos = getSvgPos(e);
       const normalized = fromScreen(pos.x, pos.y);
       const snapped = drag.snapToGrid(normalized);
-      const startPt = roadDrawPoints[0];
+      const startPt = lineDrawPoints[0];
       const dist = Math.sqrt((snapped.x - startPt.x) ** 2 + (snapped.y - startPt.y) ** 2);
-      if (dist > 0.02 && onFinishRoadDraw) {
-        onFinishRoadDraw([startPt, snapped]);
+      if (dist > 0.02) {
+        showLineChoice([startPt, snapped]);
       }
-      setRoadDrawPoints([]);
-      setRoadDrawMousePos(null);
-      setIsRoadDragging(false);
+      setLineDrawPoints([]);
+      setLineDrawMousePos(null);
+      setIsLineDragging(false);
     }
     // Road endpoint drag end
     if (roadEndpointDrag) {
@@ -282,51 +386,29 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     }
     drag.endDrag();
     viewport.endPan();
-  }, [drag, viewport, isRoadDragging, roadDrawPoints, roadDrawMousePos, getSvgPos, fromScreen, onFinishRoadDraw, roadEndpointDrag]);
+  }, [drag, viewport, isLineDragging, lineDrawPoints, lineDrawMousePos, getSvgPos, fromScreen, showLineChoice, roadEndpointDrag]);
 
   const handleCanvasClick = useCallback((e: React.MouseEvent) => {
     if (readOnly) return;
     if (drag.isDragging) return;
+    if (lineChoiceMenu) return;
     const pos = getSvgPos(e);
     const normalized = fromScreen(pos.x, pos.y);
 
-    if (mode === 'cut') {
-      if (cutPoints.length === 0) {
-        setCutPoints([normalized]);
-        setCutMousePos(null);
-      } else if (cutPoints.length === 1) {
-        const cutStart = cutPoints[0];
-        const cutEnd = normalized;
-        const mid = { x: (cutStart.x + cutEnd.x) / 2, y: (cutStart.y + cutEnd.y) / 2 };
-        const targetLot = lots.find(lot => pointInPolygon(mid, lot.vertices));
-        if (targetLot && onCutLot) {
-          onCutLot(targetLot.id, cutStart, cutEnd);
-        }
-        setCutPoints([]);
-        setCutMousePos(null);
-      }
-      return;
-    }
-
-    if (mode === 'drawRoad') {
-      // In simple drag mode, click is handled by mouseDown/mouseUp
-      if (isRoadDragging) return;
+    if (mode === 'drawLine') {
+      if (isLineDragging) return;
       // Shift-click or already in multi-mode: add point
-      if (e.shiftKey || roadDrawMultiMode) {
-        if (!roadDrawMultiMode) setRoadDrawMultiMode(true);
+      if (e.shiftKey || lineDrawMultiMode) {
+        if (!lineDrawMultiMode) setLineDrawMultiMode(true);
         const snapped = drag.snapToGrid(normalized);
-        setRoadDrawPoints(prev => [...prev, snapped]);
+        setLineDrawPoints(prev => [...prev, snapped]);
       }
       return;
     }
 
     if (mode === 'clipart' && clipartType) {
-      // Place clipart on the lot under cursor
       const targetLot = lots.find(lot => pointInPolygon(normalized, lot.vertices));
       if (targetLot && onUpdateLotAnnotations) {
-        const cx = targetLot.vertices.reduce((s, v) => s + v.x, 0) / targetLot.vertices.length;
-        const cy = targetLot.vertices.reduce((s, v) => s + v.y, 0) / targetLot.vertices.length;
-        const relPos = { x: normalized.x - cx + 0.5, y: normalized.y - cy + 0.5 };
         const newAnnotation: LotAnnotation = {
           id: `ann-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
           type: clipartType,
@@ -343,24 +425,25 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       onSelectRoad?.(null);
       setContextMenuLotId(null);
     }
-  }, [readOnly, mode, getSvgPos, fromScreen, cutPoints, lots, onCutLot, onSelectLot, onSelectRoad, clipartType, onUpdateLotAnnotations, drag.isDragging]);
+  }, [readOnly, mode, getSvgPos, fromScreen, lots, onSelectLot, onSelectRoad, clipartType, onUpdateLotAnnotations, drag.isDragging, isLineDragging, lineDrawMultiMode, lineChoiceMenu]);
 
   const handleCanvasDoubleClick = useCallback((e: React.MouseEvent) => {
-    if (mode === 'drawRoad' && roadDrawPoints.length >= 2 && onFinishRoadDraw) {
+    if (mode === 'drawLine' && lineDrawPoints.length >= 2) {
       e.preventDefault();
       e.stopPropagation();
-      onFinishRoadDraw(roadDrawPoints);
-      setRoadDrawPoints([]);
-      setRoadDrawMousePos(null);
+      showLineChoice(lineDrawPoints);
+      setLineDrawPoints([]);
+      setLineDrawMousePos(null);
+      setLineDrawMultiMode(false);
+      return;
     }
-    // Double-click on empty = reset view
     if (mode === 'select') {
       viewport.resetView();
     }
-  }, [mode, roadDrawPoints, onFinishRoadDraw, viewport]);
+  }, [mode, lineDrawPoints, showLineChoice, viewport]);
 
   const handleLotClick = useCallback((lotId: string, e: React.MouseEvent) => {
-    if (mode === 'clipart') return; // handled in canvas click
+    if (mode === 'clipart') return;
     if (mode !== 'select') return;
     e.stopPropagation();
     if ((e.ctrlKey || e.metaKey) && onToggleLotSelection) {
@@ -396,8 +479,6 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     setContextMenuLotId(null);
   }, [selectedRoadId, onSelectRoad, onSelectLot, mode]);
 
-  const sideLength = Math.sqrt(parentAreaSqm);
-
   const getDimensionLabel = (p1: Point2D, p2: Point2D): string => {
     const dx = Math.abs(p2.x - p1.x) * sideLength;
     const dy = Math.abs(p2.y - p1.y) * sideLength;
@@ -407,14 +488,31 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
 
   const svgCursor = viewport.isSpaceDown()
     ? 'grab'
-    : mode === 'cut' || mode === 'drawRoad' ? 'crosshair'
+    : mode === 'drawLine' ? 'crosshair'
     : mode === 'clipart' ? 'cell'
     : 'default';
 
-  // Detect lots below minimum area
   const tooSmallLotIds = useMemo(() => {
     return new Set(lots.filter(l => l.areaSqm < minLotAreaSqm).map(l => l.id));
   }, [lots, minLotAreaSqm]);
+
+  // Compute parallel distance lines for current drawing
+  const distanceLines = useMemo(() => {
+    if (mode !== 'drawLine') return [];
+    let start: Point2D | null = null;
+    let end: Point2D | null = null;
+
+    if (lineDrawPoints.length >= 2) {
+      start = lineDrawPoints[0];
+      end = lineDrawPoints[lineDrawPoints.length - 1];
+    } else if (lineDrawPoints.length === 1 && lineDrawMousePos) {
+      start = lineDrawPoints[0];
+      end = fromScreen(lineDrawMousePos.x, lineDrawMousePos.y);
+    }
+
+    if (!start || !end) return [];
+    return getParallelEdges(start, end);
+  }, [mode, lineDrawPoints, lineDrawMousePos, getParallelEdges, fromScreen]);
 
   return (
     <div ref={containerRef} className="relative" tabIndex={-1}>
@@ -558,7 +656,6 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
           
           return (
             <g key={road.id}>
-              {/* Hit target */}
               <polyline
                 points={polylineStr}
                 fill="none" stroke="transparent" strokeWidth={Math.max(20, roadWidthPx + 10)}
@@ -566,7 +663,6 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 className={readOnly || mode !== 'select' ? '' : 'cursor-pointer'}
                 onClick={e => !readOnly && handleRoadClick(road.id, e)}
               />
-              {/* Width visualization (filled band) */}
               <polyline
                 points={polylineStr}
                 fill="none"
@@ -577,7 +673,6 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 opacity={isRoadSelected ? 0.35 : isExisting ? 0.25 : 0.15}
                 className="pointer-events-none"
               />
-              {/* Center line */}
               <polyline
                 points={polylineStr}
                 fill="none"
@@ -628,7 +723,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                   </g>
                 );
               })()}
-              {/* Draggable endpoint handles on selected road */}
+              {/* Draggable endpoint handles */}
               {isRoadSelected && !readOnly && mode === 'select' && pathPoints.map((pt, idx) => (
                 <circle
                   key={`road-handle-${idx}`}
@@ -676,7 +771,6 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
 
           return (
             <g key={lot.id}>
-              {/* Lot polygon fill — draggable when selected */}
               <polygon
                 points={pointsStr}
                 fill={isMultiSelected ? 'hsl(var(--primary))' : color}
@@ -695,7 +789,6 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 }}
               />
 
-              {/* Too small warning */}
               {isTooSmall && (
                 <text x={cx} y={cy - 20} textAnchor="middle" dominantBaseline="middle" fontSize={8}
                   fill="hsl(var(--destructive))" fontWeight="bold" className="select-none pointer-events-none">
@@ -753,7 +846,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 );
               })}
 
-              {/* Edge hit targets with resize cursor — now functional */}
+              {/* Edge hit targets */}
               {!readOnly && mode === 'select' && lot.vertices.map((v, i) => {
                 const next = lot.vertices[(i + 1) % lot.vertices.length];
                 const sv = toScreen(v);
@@ -805,32 +898,28 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 />
               ))}
 
-              {/* Context menu (floating toolbar) on selected lot */}
+              {/* Context menu (floating toolbar) */}
               {contextMenuLotId === lot.id && !readOnly && mode === 'select' && (
                 <g>
                   <rect x={cx - 60} y={cy - 45} width={120} height={28} rx={8}
                     fill="hsl(var(--background))" fillOpacity={0.95}
                     stroke="hsl(var(--border))" strokeWidth={1} />
-                  {/* Split */}
                   {onSplitLot && (
                     <g className="cursor-pointer" onClick={e => { e.stopPropagation(); onSplitLot(lot.id); setContextMenuLotId(null); }}>
                       <rect x={cx - 56} y={cy - 42} width={24} height={22} rx={4} fill="transparent" />
                       <text x={cx - 44} y={cy - 31} textAnchor="middle" dominantBaseline="middle" fontSize={14} className="pointer-events-none select-none">✂️</text>
                     </g>
                   )}
-                  {/* Duplicate */}
                   {onDuplicateLot && (
                     <g className="cursor-pointer" onClick={e => { e.stopPropagation(); onDuplicateLot(lot.id); setContextMenuLotId(null); }}>
                       <rect x={cx - 28} y={cy - 42} width={24} height={22} rx={4} fill="transparent" />
                       <text x={cx - 16} y={cy - 31} textAnchor="middle" dominantBaseline="middle" fontSize={14} className="pointer-events-none select-none">📋</text>
                     </g>
                   )}
-                  {/* Clipart */}
                   <g className="cursor-pointer" onClick={e => { e.stopPropagation(); setShowClipartPalette(true); setContextMenuLotId(null); onModeChange?.('clipart'); }}>
                     <rect x={cx} y={cy - 42} width={24} height={22} rx={4} fill="transparent" />
                     <text x={cx + 12} y={cy - 31} textAnchor="middle" dominantBaseline="middle" fontSize={14} className="pointer-events-none select-none">🎨</text>
                   </g>
-                  {/* Delete */}
                   {onDeleteLot && (
                     <g className="cursor-pointer" onClick={e => { e.stopPropagation(); onDeleteLot(lot.id); setContextMenuLotId(null); }}>
                       <rect x={cx + 28} y={cy - 42} width={24} height={22} rx={4} fill="transparent" />
@@ -843,7 +932,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
           );
         })}
 
-        {/* Merge button when multiple lots selected */}
+        {/* Merge button */}
         {selectedLotIds.length >= 2 && !readOnly && onMergeLots && mode === 'select' && (() => {
           const selectedLotsData = lots.filter(l => selectedLotIds.includes(l.id));
           const allCentroids = selectedLotsData.map(lot => {
@@ -865,81 +954,76 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
           );
         })()}
 
-        {/* Cut line preview */}
-        {mode === 'cut' && cutPoints.length === 1 && cutMousePos && (
-          <g className="pointer-events-none">
-            <line x1={toScreen(cutPoints[0]).x} y1={toScreen(cutPoints[0]).y} x2={cutMousePos.x} y2={cutMousePos.y}
-              stroke="hsl(var(--destructive))" strokeWidth={2} strokeDasharray="6 4" opacity={0.8} />
-            <circle cx={toScreen(cutPoints[0]).x} cy={toScreen(cutPoints[0]).y} r={5} fill="hsl(var(--destructive))" opacity={0.9} />
-            <circle cx={cutMousePos.x} cy={cutMousePos.y} r={4} fill="hsl(var(--destructive))" opacity={0.5} />
-          </g>
-        )}
-        {mode === 'cut' && cutPoints.length === 1 && !cutMousePos && (
-          <circle cx={toScreen(cutPoints[0]).x} cy={toScreen(cutPoints[0]).y} r={5} fill="hsl(var(--destructive))" opacity={0.9} className="pointer-events-none" />
-        )}
-
-        {/* Road drawing preview with width visualization */}
-        {mode === 'drawRoad' && roadDrawPoints.length > 0 && (() => {
-          const previewWidthPx = Math.max(4, (roadPresetWidth / sideLength) * (CANVAS_W - 2 * PADDING));
-          const allPts = [...roadDrawPoints];
+        {/* Line drawing preview */}
+        {mode === 'drawLine' && lineDrawPoints.length > 0 && !lineChoiceMenu && (() => {
+          const allPts = [...lineDrawPoints];
           const screenPts = allPts.map(p => toScreen(p));
           const polyStr = screenPts.map(p => `${p.x},${p.y}`).join(' ');
           const lastScreenPt = screenPts[screenPts.length - 1];
           
           return (
             <g>
-              {/* Width band preview */}
-              <polyline points={polyStr} fill="none"
-                stroke="hsl(var(--primary))" strokeWidth={previewWidthPx}
-                strokeLinecap="round" strokeLinejoin="round"
-                opacity={0.15} className="pointer-events-none" />
               {/* Center line (confirmed segments) */}
               <polyline points={polyStr} fill="none"
                 stroke="hsl(var(--primary))" strokeWidth={3}
                 strokeLinecap="round" strokeLinejoin="round"
                 opacity={0.7} className="pointer-events-none" />
               {/* Mouse follow line */}
-              {roadDrawMousePos && (
-                <>
-                  <line x1={lastScreenPt.x} y1={lastScreenPt.y}
-                    x2={roadDrawMousePos.x} y2={roadDrawMousePos.y}
-                    stroke="hsl(var(--primary))" strokeWidth={previewWidthPx}
-                    strokeLinecap="round" opacity={0.08} className="pointer-events-none" />
-                  <line x1={lastScreenPt.x} y1={lastScreenPt.y}
-                    x2={roadDrawMousePos.x} y2={roadDrawMousePos.y}
-                    stroke="hsl(var(--primary))" strokeWidth={2}
-                    strokeLinecap="round" strokeDasharray="6 4" opacity={0.5} className="pointer-events-none" />
-                </>
+              {lineDrawMousePos && (
+                <line x1={lastScreenPt.x} y1={lastScreenPt.y}
+                  x2={lineDrawMousePos.x} y2={lineDrawMousePos.y}
+                  stroke="hsl(var(--primary))" strokeWidth={2}
+                  strokeLinecap="round" strokeDasharray="6 4" opacity={0.5} className="pointer-events-none" />
               )}
               {/* Point markers */}
               {screenPts.map((s, i) => (
-                <circle key={`road-draw-pt-${i}`} cx={s.x} cy={s.y} r={4}
+                <circle key={`line-draw-pt-${i}`} cx={s.x} cy={s.y} r={4}
                   fill="white" stroke="hsl(var(--primary))" strokeWidth={2}
                   className="pointer-events-none" />
               ))}
-              {/* Width label */}
-              {screenPts.length >= 1 && (
-                <g className="pointer-events-none select-none">
-                  <rect x={screenPts[0].x - 20} y={screenPts[0].y - 22} width={40} height={14} rx={3}
-                    fill="hsl(var(--primary))" fillOpacity={0.15}
-                    stroke="hsl(var(--primary))" strokeWidth={0.5} />
-                  <text x={screenPts[0].x} y={screenPts[0].y - 15} textAnchor="middle" dominantBaseline="middle"
-                    fontSize={8} fill="hsl(var(--primary))" fontWeight="600">
-                    {roadPresetWidth}m
-                  </text>
+
+              {/* Distance labels to parallel edges */}
+              {distanceLines.map((dl, idx) => (
+                <g key={`dist-${idx}`} className="pointer-events-none select-none">
+                  <line
+                    x1={dl.lineMidScreen.x} y1={dl.lineMidScreen.y}
+                    x2={dl.midScreen.x} y2={dl.midScreen.y}
+                    stroke="hsl(var(--primary))" strokeWidth={0.8}
+                    strokeDasharray="3 2" opacity={0.6}
+                  />
+                  {/* Tick marks at ends */}
+                  <circle cx={dl.lineMidScreen.x} cy={dl.lineMidScreen.y} r={2}
+                    fill="hsl(var(--primary))" opacity={0.6} />
+                  <circle cx={dl.midScreen.x} cy={dl.midScreen.y} r={2}
+                    fill="hsl(var(--primary))" opacity={0.6} />
+                  {/* Distance label */}
+                  {(() => {
+                    const lx = (dl.lineMidScreen.x + dl.midScreen.x) / 2;
+                    const ly = (dl.lineMidScreen.y + dl.midScreen.y) / 2;
+                    return (
+                      <>
+                        <rect x={lx - 16} y={ly - 7} width={32} height={14} rx={3}
+                          fill="hsl(var(--background))" fillOpacity={0.9}
+                          stroke="hsl(var(--primary))" strokeWidth={0.5} strokeOpacity={0.5} />
+                        <text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle"
+                          fontSize={8} fontWeight="bold" fill="hsl(var(--primary))">
+                          {dl.distM}m
+                        </text>
+                      </>
+                    );
+                  })()}
                 </g>
-              )}
+              ))}
+
               {/* Floating action buttons for multi-mode */}
-              {roadDrawMultiMode && roadDrawPoints.length >= 2 && (
+              {lineDrawMultiMode && lineDrawPoints.length >= 2 && (
                 <g>
                   <g className="cursor-pointer" onClick={e => {
                     e.stopPropagation();
-                    if (onFinishRoadDraw) {
-                      onFinishRoadDraw(roadDrawPoints);
-                    }
-                    setRoadDrawPoints([]);
-                    setRoadDrawMousePos(null);
-                    setRoadDrawMultiMode(false);
+                    showLineChoice(lineDrawPoints);
+                    setLineDrawPoints([]);
+                    setLineDrawMousePos(null);
+                    setLineDrawMultiMode(false);
                   }}>
                     <rect x={lastScreenPt.x + 10} y={lastScreenPt.y - 24} width={62} height={22} rx={6}
                       fill="hsl(var(--primary))" fillOpacity={0.9} />
@@ -950,9 +1034,9 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                   </g>
                   <g className="cursor-pointer" onClick={e => {
                     e.stopPropagation();
-                    setRoadDrawPoints([]);
-                    setRoadDrawMousePos(null);
-                    setRoadDrawMultiMode(false);
+                    setLineDrawPoints([]);
+                    setLineDrawMousePos(null);
+                    setLineDrawMultiMode(false);
                   }}>
                     <rect x={lastScreenPt.x + 10} y={lastScreenPt.y + 2} width={56} height={22} rx={6}
                       fill="hsl(var(--destructive))" fillOpacity={0.9} />
@@ -967,20 +1051,64 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
           );
         })()}
 
+        {/* Post-trace choice menu */}
+        {lineChoiceMenu && (() => {
+          const { path, screenPos } = lineChoiceMenu;
+          // Draw the completed line
+          const screenPts = path.map(p => toScreen(p));
+          const polyStr = screenPts.map(p => `${p.x},${p.y}`).join(' ');
+          const menuX = screenPos.x + 15;
+          const menuY = screenPos.y - 30;
+
+          return (
+            <g>
+              {/* Show the drawn line */}
+              <polyline points={polyStr} fill="none"
+                stroke="hsl(var(--primary))" strokeWidth={3}
+                strokeLinecap="round" strokeLinejoin="round"
+                opacity={0.7} className="pointer-events-none" />
+              {screenPts.map((s, i) => (
+                <circle key={`choice-pt-${i}`} cx={s.x} cy={s.y} r={4}
+                  fill="white" stroke="hsl(var(--primary))" strokeWidth={2}
+                  className="pointer-events-none" />
+              ))}
+
+              {/* Choice menu background */}
+              <rect x={menuX - 4} y={menuY - 4} width={120} height={58} rx={8}
+                fill="hsl(var(--background))" fillOpacity={0.97}
+                stroke="hsl(var(--border))" strokeWidth={1.5}
+                filter="drop-shadow(0 2px 8px rgba(0,0,0,0.15))"
+              />
+
+              {/* Divider label */}
+              <g className="cursor-pointer" onClick={e => { e.stopPropagation(); handleChooseDivide(); }}>
+                <rect x={menuX} y={menuY} width={108} height={22} rx={5}
+                  fill="hsl(var(--accent))" fillOpacity={0.8} />
+                <text x={menuX + 54} y={menuY + 11} textAnchor="middle" dominantBaseline="middle"
+                  fontSize={10} fontWeight="600" fill="hsl(var(--foreground))">
+                  ✂️ Diviser le lot
+                </text>
+              </g>
+
+              {/* Road option */}
+              <g className="cursor-pointer" onClick={e => { e.stopPropagation(); handleChooseRoad(); }}>
+                <rect x={menuX} y={menuY + 26} width={108} height={22} rx={5}
+                  fill="hsl(var(--accent))" fillOpacity={0.8} />
+                <text x={menuX + 54} y={menuY + 37} textAnchor="middle" dominantBaseline="middle"
+                  fontSize={10} fontWeight="600" fill="hsl(var(--foreground))">
+                  🛣 Créer une voie
+                </text>
+              </g>
+            </g>
+          );
+        })()}
+
         {/* Mode instruction overlay */}
-        {mode === 'cut' && (
-          <g className="pointer-events-none">
-            <rect x={CANVAS_W / 2 - 120} y={CANVAS_H - 24} width={240} height={20} rx={4} fill="hsl(var(--destructive))" fillOpacity={0.1} />
-            <text x={CANVAS_W / 2} y={CANVAS_H - 14} textAnchor="middle" dominantBaseline="middle" fontSize={9} fill="hsl(var(--destructive))" fontWeight="600">
-              ✂ Cliquez 2 points pour tracer la ligne de découpe
-            </text>
-          </g>
-        )}
-        {mode === 'drawRoad' && (
+        {mode === 'drawLine' && !lineChoiceMenu && (
           <g className="pointer-events-none">
             <rect x={CANVAS_W / 2 - 155} y={CANVAS_H - 24} width={310} height={20} rx={4} fill="hsl(var(--primary))" fillOpacity={0.1} />
             <text x={CANVAS_W / 2} y={CANVAS_H - 14} textAnchor="middle" dominantBaseline="middle" fontSize={9} fill="hsl(var(--primary))" fontWeight="600">
-              🛣 Glissez pour tracer • Shift+clic pour multi-segments • Backspace: annuler point
+              ✏️ Glissez pour tracer • Shift+clic: multi-segments • Backspace: annuler point
             </text>
           </g>
         )}
