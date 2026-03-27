@@ -1,7 +1,5 @@
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { X, ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { X } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
 import {
@@ -22,7 +20,6 @@ interface CadastralResultsDialogProps {
   onClose: () => void;
   selectedServices?: string[];
   onPaymentSuccess?: (services: string[]) => void;
-  fromMap?: boolean;
 }
 
 const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({ 
@@ -31,9 +28,7 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
   onClose,
   selectedServices = [],
   onPaymentSuccess,
-  fromMap = false
 }) => {
-  const navigate = useNavigate();
   const [paidServices, setPaidServices] = React.useState<string[]>(selectedServices);
   const [showCloseConfirm, setShowCloseConfirm] = React.useState(false);
 
@@ -63,10 +58,6 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
     setShowCloseConfirm(false);
     onClose();
   };
-  
-  const handleBackToMap = () => {
-    navigate('/cadastral-map');
-  };
 
   const cancelClose = () => {
     setShowCloseConfirm(false);
@@ -90,7 +81,7 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
       data-results-dialog
       onClick={handleOverlayClick}
     >
-      <Card className="relative w-full h-full overflow-hidden bg-background flex flex-col md:m-4 md:max-w-4xl md:mx-auto md:max-h-[90vh] md:rounded-2xl md:shadow-2xl">
+      <Card className="relative w-full h-full overflow-hidden bg-background flex flex-col md:m-4 md:max-w-2xl md:mx-auto md:max-h-[90vh] md:rounded-2xl md:shadow-2xl">
         {/* Bouton fermer unique en haut à droite */}
         <button
           type="button"
@@ -103,16 +94,6 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
         
         {/* Header compact */}
         <div className="sticky top-0 z-[1501] flex items-center gap-2 px-3 py-2.5 border-b bg-background/95 backdrop-blur-sm shrink-0">
-          {fromMap && (
-            <Button 
-              variant="ghost"
-              size="sm"
-              onClick={handleBackToMap}
-              className="h-8 w-8 p-0 rounded-xl"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          )}
           <div className="flex-1 min-w-0 pr-8" data-service-catalog>
             <h2 className="text-sm font-semibold truncate">
               Catalogue de services

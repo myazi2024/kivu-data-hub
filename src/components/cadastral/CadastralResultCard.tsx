@@ -436,15 +436,6 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
             >
               <Printer className="h-4 w-4" />
             </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={onClose} 
-              className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive transition-all duration-200"
-              title="Fermer"
-            >
-              <XCircle className="h-4 w-4" />
-            </Button>
           </div>
         </div>
       </CardHeader>
@@ -948,7 +939,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                         </div>
                     ) : (
                       <div className="text-center text-xs text-muted-foreground py-2">
-                        Aucun historique disponible
+                        Aucun bornage enregistré
                       </div>
                     )}
                   </CardContent>
@@ -1062,7 +1053,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
 
                      {ownership_history.length === 0 && (
                        <div className="text-center text-xs text-muted-foreground py-2">
-                         Aucun historique disponible
+                         Aucun ancien propriétaire enregistré
                        </div>
                      )}
                    </div>
@@ -1157,7 +1148,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                          </div>
                       ) : (
                         <div className="text-center text-xs text-muted-foreground py-2">
-                          Aucun historique disponible
+                          Aucune taxe foncière enregistrée
                         </div>
                       )}
                     </CardContent>
@@ -1174,13 +1165,15 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                       </h4>
                       {mortgage_history.length > 0 ? (
                         <div className="space-y-2">
-                          {/* Indicateur d'hypothèque active */}
-                          <div className="flex items-center gap-2 p-2 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
-                            <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></div>
-                            <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
-                              Parcelle avec hypothèque active
-                            </span>
-                          </div>
+                          {/* Indicateur d'hypothèque active — affiché uniquement si au moins une hypothèque est active */}
+                          {mortgage_history.some(m => ['active', 'Active', 'En cours'].includes(m.mortgage_status)) && (
+                            <div className="flex items-center gap-2 p-2 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
+                              <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></div>
+                              <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                                Parcelle avec hypothèque active
+                              </span>
+                            </div>
+                          )}
                           
                            {mortgage_history.map((mortgage) => {
                              const totalPaid = mortgage.payments.reduce((sum, payment) => sum + payment.payment_amount_usd, 0);
