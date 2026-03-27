@@ -489,15 +489,85 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
           )}
 
           {/* ===================== LITIGES ===================== */}
-          {hasAccess('land_disputes') ? (
+          {hasDisputesData ? (
             <>
               <SectionTitle number={++sectionNumber} icon={<Scale className="h-4 w-4" />} title="Litiges fonciers" />
-              <DisputesSection parcelNumber={parcel.parcel_number} />
+              {land_disputes.length === 0 ? (
+                <div className="flex items-center gap-3 p-4 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-green-700 dark:text-green-300">Aucun litige foncier enregistré</p>
+                    <p className="text-xs text-green-600 dark:text-green-400 mt-0.5">Cette parcelle ne fait l'objet d'aucun litige connu</p>
+                  </div>
+                </div>
+              ) : (
+                <table className="doc-table">
+                  <thead>
+                    <tr>
+                      <th>Référence</th>
+                      <th>Nature</th>
+                      <th>Déclarant</th>
+                      <th>Statut</th>
+                      <th>Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {land_disputes.map((d) => (
+                      <tr key={d.id}>
+                        <td className="font-mono text-xs">{d.reference_number}</td>
+                        <td>{d.dispute_nature}</td>
+                        <td>{d.declarant_name}</td>
+                        <td><Badge variant="outline" className="text-xs">{d.current_status}</Badge></td>
+                        <td>{d.dispute_start_date ? new Date(d.dispute_start_date).toLocaleDateString('fr-FR') : '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </>
           ) : (
             <>
               <SectionTitle number={++sectionNumber} icon={<Scale className="h-4 w-4" />} title="Litiges fonciers" />
               <LockedPlaceholder serviceName="Litiges fonciers" />
+            </>
+          )}
+
+          {/* ===================== VÉRIFICATION JURIDIQUE ===================== */}
+          {hasLegalVerification ? (
+            <>
+              <SectionTitle number={++sectionNumber} icon={<ShieldCheck className="h-4 w-4" />} title="Vérification juridique" />
+              <table className="doc-table">
+                <tbody>
+                  <DataRow label="Type de titre" value={legal_verification.title_type} />
+                  <DataRow label="Référence du titre" value={legal_verification.title_reference ? <span className="font-mono">{legal_verification.title_reference}</span> : '—'} />
+                  <DataRow label="Date d'émission" value={formatDate(legal_verification.title_issue_date)} />
+                  <DataRow label="Litige en cours" value={
+                    legal_verification.has_dispute 
+                      ? <Badge variant="destructive" className="text-xs">⚠ Oui</Badge>
+                      : <Badge variant="default" className="text-xs">✅ Non</Badge>
+                  } />
+                  <DataRow label="Parcelle subdivisée" value={
+                    legal_verification.is_subdivided 
+                      ? <Badge variant="secondary" className="text-xs">Oui</Badge>
+                      : <Badge variant="default" className="text-xs">Non</Badge>
+                  } />
+                </tbody>
+              </table>
+              {legal_verification.title_document_url && (
+                <div className="mt-3">
+                  <DocumentAttachment documentUrl={legal_verification.title_document_url} label="Titre de propriété" description="Document officiel vérifié" />
+                </div>
+              )}
+              {legal_verification.owner_document_url && (
+                <div className="mt-2">
+                  <DocumentAttachment documentUrl={legal_verification.owner_document_url} label="Document d'identité" description="Justificatif du propriétaire" />
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <SectionTitle number={++sectionNumber} icon={<ShieldCheck className="h-4 w-4" />} title="Vérification juridique" />
+              <LockedPlaceholder serviceName="Vérification juridique" />
             </>
           )}
         </div>
