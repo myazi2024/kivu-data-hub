@@ -1,0 +1,71 @@
+import { useEffect, useCallback } from 'react';
+
+interface KeyboardActions {
+  onDelete?: () => void;
+  onDuplicate?: () => void;
+  onUndo?: () => void;
+  onRedo?: () => void;
+  onEscape?: () => void;
+  onToggleGrid?: () => void;
+  onToggleSnap?: () => void;
+  onSpaceDown?: () => void;
+  onSpaceUp?: () => void;
+}
+
+export function useCanvasKeyboard(
+  containerRef: React.RefObject<HTMLElement | null>,
+  actions: KeyboardActions,
+  enabled: boolean = true
+) {
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (!enabled) return;
+    // Don't capture when typing in inputs
+    const tag = (e.target as HTMLElement).tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      e.preventDefault();
+      actions.onDelete?.();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+      e.preventDefault();
+      actions.onDuplicate?.();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+      e.preventDefault();
+      actions.onUndo?.();
+    }
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+      e.preventDefault();
+      actions.onRedo?.();
+    }
+    if (e.key === 'Escape') {
+      actions.onEscape?.();
+    }
+    if (e.key === 'g' && !e.ctrlKey && !e.metaKey) {
+      actions.onToggleGrid?.();
+    }
+    if (e.key === 's' && !e.ctrlKey && !e.metaKey) {
+      actions.onToggleSnap?.();
+    }
+    if (e.key === ' ') {
+      e.preventDefault();
+      actions.onSpaceDown?.();
+    }
+  }, [enabled, actions]);
+
+  const handleKeyUp = useCallback((e: KeyboardEvent) => {
+    if (e.key === ' ') {
+      actions.onSpaceUp?.();
+    }
+  }, [actions]);
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keyup', handleKeyUp);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [handleKeyDown, handleKeyUp]);
+}
