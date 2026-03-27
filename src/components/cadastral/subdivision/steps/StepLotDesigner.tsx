@@ -648,7 +648,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 ))}
                 {lots.length === 0 && (
                   <p className="text-center text-muted-foreground text-[10px] py-3">
-                    Utilisez l'auto-découpage pour commencer
+                    Cliquez sur "Lot parcelle entière" puis tracez des lignes pour diviser
                   </p>
                 )}
               </div>
