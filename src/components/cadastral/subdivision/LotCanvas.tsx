@@ -227,6 +227,24 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         }
       }
     },
+    onRotate: (angleDeg) => {
+      const theta = (angleDeg * Math.PI) / 180;
+      const rotateVertices = (vertices: Point2D[]) => {
+        const cx = vertices.reduce((s, v) => s + v.x, 0) / vertices.length;
+        const cy = vertices.reduce((s, v) => s + v.y, 0) / vertices.length;
+        return vertices.map(v => ({
+          x: cx + (v.x - cx) * Math.cos(theta) - (v.y - cy) * Math.sin(theta),
+          y: cy + (v.x - cx) * Math.sin(theta) + (v.y - cy) * Math.cos(theta),
+        }));
+      };
+      if (selectedLotId) {
+        const lot = lots.find(l => l.id === selectedLotId);
+        if (lot) onUpdateLot(selectedLotId, rotateVertices(lot.vertices));
+      } else if (selectedRoadId && onUpdateRoad) {
+        const road = roads.find(r => r.id === selectedRoadId);
+        if (road) onUpdateRoad(selectedRoadId, { path: rotateVertices(road.path) });
+      }
+    },
   }, !readOnly);
 
   const toScreen = useCallback((p: Point2D) => ({
