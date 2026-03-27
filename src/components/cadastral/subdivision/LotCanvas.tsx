@@ -518,6 +518,10 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       onSelectLot(null);
       onSelectRoad?.(null);
       setContextMenuLotId(null);
+      setEdgeContextMenu(null);
+    }
+    if (mode === 'selectEdge') {
+      setEdgeContextMenu(null);
     }
   }, [readOnly, mode, getSvgPos, fromScreen, lots, onSelectLot, onSelectRoad, clipartType, onUpdateLotAnnotations, drag.isDragging, isLineDragging, lineDrawMultiMode, lineChoiceMenu]);
 
