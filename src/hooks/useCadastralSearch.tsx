@@ -167,7 +167,9 @@ export const useCadastralSearch = () => {
         tax_history: result.tax_history || [],
         mortgage_history: formattedMortgageData,
         boundary_history: result.boundary_history || [],
-        building_permits: result.building_permits || []
+        building_permits: result.building_permits || [],
+        land_disputes: result.land_disputes || [],
+        legal_verification: result.legal_verification || null,
       });
 
     } catch (err) {
