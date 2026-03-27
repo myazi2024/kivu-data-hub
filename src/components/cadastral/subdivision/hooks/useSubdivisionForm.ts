@@ -90,10 +90,10 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   const [validation, setValidation] = useState<ValidationResult>({ isValid: true, errors: [], warnings: [] });
   
   // Undo history
-  const [history, setHistory] = useState<SubdivisionLot[][]>([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
   const historyRef = useRef<SubdivisionLot[][]>([]);
   const historyIndexRef = useRef(-1);
+  const [historyVersion, setHistoryVersion] = useState(0);
+  const skipHistoryRef = useRef(false);
   // === Draft system ===
   const draftKey = `${DRAFT_KEY_PREFIX}${parcelNumber}`;
   
@@ -208,8 +208,25 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     newHistory.push(JSON.parse(JSON.stringify(newLots)));
     historyRef.current = newHistory;
     historyIndexRef.current = newHistory.length - 1;
-    setHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
+    setHistoryVersion(v => v + 1);
+  }, []);
+
+  // History-aware setLots wrapper — all external mutations go through this
+  const setLotsWithHistory = useCallback((updater: SubdivisionLot[] | ((prev: SubdivisionLot[]) => SubdivisionLot[])) => {
+    if (skipHistoryRef.current) {
+      setLots(updater);
+      return;
+    }
+    setLots(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      pushHistory(next);
+      return next;
+    });
+  }, [pushHistory]);
+
+  // Allow canvas to skip history during drag
+  const setSkipHistory = useCallback((skip: boolean) => {
+    skipHistoryRef.current = skip;
   }, []);
 
   // Create initial lot covering the entire parent parcel
@@ -236,7 +253,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   const undo = useCallback(() => {
     if (historyIndexRef.current > 0) {
       historyIndexRef.current -= 1;
-      setHistoryIndex(historyIndexRef.current);
+      setHistoryVersion(v => v + 1);
       setLots(JSON.parse(JSON.stringify(historyRef.current[historyIndexRef.current])));
     }
   }, []);
@@ -244,7 +261,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   const redo = useCallback(() => {
     if (historyIndexRef.current < historyRef.current.length - 1) {
       historyIndexRef.current += 1;
-      setHistoryIndex(historyIndexRef.current);
+      setHistoryVersion(v => v + 1);
       setLots(JSON.parse(JSON.stringify(historyRef.current[historyIndexRef.current])));
     }
   }, []);
@@ -404,11 +421,12 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     // Requester
     requester, setRequester,
     // Plan data
-    lots, setLots, roads, setRoads, commonSpaces, setCommonSpaces,
+    lots, setLots: setLotsWithHistory, setLotsRaw: setLots, setSkipHistory,
+    roads, setRoads, commonSpaces, setCommonSpaces,
     servitudes, setServitudes, planElements, setPlanElements,
     // Operations
     handleAutoSubdivide: createInitialLot, updateLot, deleteLot,
-    undo, redo, canUndo: historyIndex > 0, canRedo: historyIndex < history.length - 1,
+    undo, redo, canUndo: historyIndexRef.current > 0, canRedo: historyIndexRef.current < historyRef.current.length - 1, historyVersion,
     // Validation
     validation, runValidation,
     // Purpose
