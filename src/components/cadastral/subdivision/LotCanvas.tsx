@@ -516,9 +516,13 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     if (roadWidthDrag) {
       setRoadWidthDrag(null);
     }
+    // Rotation drag end
+    if (rotationDrag) {
+      setRotationDrag(null);
+      setRotationAngleDisplay(null);
+    }
     drag.endDrag();
     viewport.endPan();
-  }, [drag, viewport, isLineDragging, lineDrawPoints, lineDrawMousePos, getSvgPos, fromScreen, showLineChoice, roadEndpointDrag, roadWidthDrag]);
 
   const handleCanvasClick = useCallback((e: React.MouseEvent) => {
     if (readOnly) return;
