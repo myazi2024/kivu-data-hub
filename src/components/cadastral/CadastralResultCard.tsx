@@ -1148,7 +1148,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                          </div>
                       ) : (
                         <div className="text-center text-xs text-muted-foreground py-2">
-                          Aucun historique disponible
+                          Aucune taxe foncière enregistrée
                         </div>
                       )}
                     </CardContent>
