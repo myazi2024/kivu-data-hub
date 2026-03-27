@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/select';
 import { UserSearchSelect } from './users/UserSearchSelect';
 
-type AppRole = 'super_admin' | 'admin' | 'partner' | 'user' | 'expert_immobilier' | 'mortgage_officer';
+type AppRole = 'super_admin' | 'admin' | 'partner' | 'user' | 'expert_immobilier' | 'mortgage_officer' | 'notaire' | 'geometre' | 'urbaniste';
 
 interface UserRole {
   id: string;
