@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import { Card } from '@/components/ui/card';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
 import {
   AlertDialog,
