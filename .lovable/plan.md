@@ -1,79 +1,66 @@
 
 
-# Refonte du bloc "Mode de paiement" — Suppression de la redondance et améliorations
+# Revue du bloc "Moyens de Paiement" — Divergences et améliorations
 
-## Diagnostic
-
-### 1. Redondance "Mode Développement" vs "Mode Test"
-
-Le composant `AdminPaymentMode.tsx` expose 3 switches :
-- **Mode développement (Bypass)** — bypass les paiements, accès gratuit
-- **Paiement activé** — active le paiement réel
-- **Mode test** — simule les paiements sans transaction réelle
-
-Le **Mode développement** est une redondance directe avec le **Mode Test global** (`AdminTestMode`). Les deux servent à tester sans impacter les données réelles. De plus, la combinaison de 3 switches crée 8 états possibles dont certains sont contradictoires (ex: `enabled=false` + `bypass=false` + `test_mode=true`).
-
-### 2. Autres divergences identifiées
+## Divergences identifiées
 
 | Problème | Détail |
 |----------|--------|
-| `bypass_payment` redondant avec `AdminTestMode.enabled` | Deux mécanismes pour le même objectif |
-| `test_mode` dans `payment_mode` redondant avec `AdminTestMode.test_mode` | Doublon de configuration |
-| Pas de dirty-check avant sauvegarde | Le bouton "Enregistrer" est toujours actif contrairement à `AdminTestMode` qui implémente `isDirty` |
-| Pas d'audit logging structuré | L'audit existe mais ne log pas les anciennes/nouvelles valeurs de `bypass_payment` et `test_mode` |
-| `AdminPaymentMonitoring` et `AdminPaymentReconciliation` dupliquent la même requête | Les deux chargent `payment_transactions` avec la même logique |
-| Pas de lien vers le Mode Test global | L'admin ne sait pas que le bypass est piloté par le mode test global |
-| `getCurrentMode()` retourne "Mode Inconnu" pour certains états | Certaines combinaisons ne sont pas couvertes |
-
-### 3. Fonctionnalités absentes
-
-| Fonctionnalité | Description |
-|----------------|-------------|
-| Lien avec le Mode Test global | Quand le mode test est actif, le paiement devrait automatiquement refléter cet état |
-| Historique des changements de mode | Aucun log visible des changements de configuration passés |
-| Confirmation avant activation production | Pas de dialogue de confirmation quand on passe en mode production |
-| Support multi-devise dans le résumé | Le résumé des méthodes ne montre pas le support CDF |
+| **Duplication composant / hook** | `AdminPaymentMethods.tsx` gère son propre state local et ses propres requêtes Supabase, alors que le hook `usePaymentMethods.tsx` fait exactement la même chose. Le composant n'utilise pas le hook. |
+| **Pas de dirty-check** | Le bouton "Sauvegarder" est toujours actif, contrairement au pattern établi dans `AdminTestMode` et `AdminPaymentMode` qui implémentent `isDirty`. |
+| **Pas d'audit logging** | Les changements de configuration des moyens de paiement ne sont pas journalisés dans `admin_audit_logs`, contrairement aux autres modules admin qui utilisent `logAuditAction`. |
+| **Clés API stockées en clair dans la DB** | Les `api_credentials` (apiKey, secretKey, webhookSecret) sont stockées en JSON dans `payment_methods_config`. Les clés sensibles devraient être masquées après sauvegarde et idéalement stockées dans Supabase Vault ou les secrets Edge Functions. |
+| **Toast au chargement initial** | `loadConfiguration()` affiche un toast de succès à chaque chargement — bruit inutile, les autres modules ne font pas ça. |
+| **Select natif au lieu de composant UI** | Le sélecteur de fournisseur carte bancaire utilise un `<select>` HTML natif au lieu du composant `Select` de shadcn/ui. |
+| **Pas de validation des clés API** | Aucune validation de format (ex: clé Stripe commence par `pk_`/`sk_`), l'admin peut sauvegarder des clés vides ou invalides. |
+| **Pas de test de connexion** | Impossible de vérifier que les clés API fonctionnent avant de passer en production. |
+| **Résumé incomplet** | La card résumé ne montre pas les devises supportées (USD, CDF) ni le lien avec le mode de paiement (activé/désactivé). |
 
 ## Plan de correction
 
-### 1. Supprimer `bypass_payment` et `test_mode` de `payment_mode`
+### 1. Refactorer pour utiliser `usePaymentMethods`
 
-Simplifier la config à 2 états clairs :
-- **Paiement activé** (`enabled: true`) — le paiement est requis
-- **Paiement désactivé** (`enabled: false`) — accès gratuit
+Remplacer tout le state local et les requêtes directes de `AdminPaymentMethods.tsx` par le hook existant `usePaymentMethods.tsx`. Supprimer le code dupliqué.
 
-Le comportement "test" est piloté par le Mode Test global (`AdminTestMode`). Plus besoin de `bypass_payment` ni de `test_mode` dans la config paiement.
+### 2. Ajouter le dirty-check
 
-### 2. Refondre l'UI de `AdminPaymentMode`
+Comparer l'état initial (snapshot au chargement) avec l'état courant pour n'activer le bouton "Sauvegarder" que quand il y a des modifications. Pattern identique à `AdminPaymentMode`.
 
-Remplacer les 3 switches par :
-- Un seul switch principal **"Paiement requis"**
-- Un bandeau informatif qui indique si le Mode Test global est actif (avec lien vers l'onglet Mode Test)
-- Un dirty-check comme dans `AdminTestMode` pour n'activer le bouton "Enregistrer" que quand la config a changé
-- Un dialogue de confirmation avant d'activer le paiement en production
+### 3. Ajouter l'audit logging
 
-### 3. Mettre à jour `usePaymentConfig` et les consommateurs
+Utiliser `logAuditAction` de `supabaseConfigUtils.ts` pour journaliser chaque sauvegarde avec les anciennes et nouvelles valeurs (en masquant les clés sensibles dans le log).
 
-- Supprimer les champs `bypass_payment` et `test_mode` de `PaymentMode`
-- `isPaymentRequired()` devient simplement `paymentMode.enabled`
-- Le mode test est lu depuis le hook `useTestMode` là où c'est nécessaire (Edge Functions, flux de paiement)
-- Adapter `CadastralBillingPanel`, `useCadastralPayment`, et l'Edge Function `process-mobile-money-payment`
+### 4. Masquer les clés API après sauvegarde
 
-### 4. Ajouter l'historique des changements de mode
+Afficher les clés existantes sous forme masquée (`sk_****...1234`) avec un bouton "Révéler". Ne renvoyer le champ que si l'admin le modifie explicitement (éviter de réécrire les clés à chaque sauvegarde).
 
-Afficher les derniers changements de configuration depuis `admin_audit_logs` filtrés sur `PAYMENT_MODE_UPDATED`.
+### 5. Supprimer le toast de chargement initial
 
-### 5. Afficher le support multi-devise dans le résumé
+Retirer le toast de succès dans `loadConfiguration` — seul un toast d'erreur est pertinent.
 
-Ajouter une ligne "Devises supportées : USD, CDF" dans la card récapitulative des méthodes de paiement.
+### 6. Remplacer le `<select>` natif par `Select` shadcn/ui
+
+Utiliser le composant `Select` + `SelectTrigger` + `SelectContent` + `SelectItem` pour cohérence visuelle.
+
+### 7. Ajouter la validation des clés API
+
+Validation basique de format avant sauvegarde :
+- Stripe : `pk_` / `sk_` / `whsec_`
+- Champs obligatoires quand le fournisseur est activé
+
+### 8. Ajouter un bouton "Tester la connexion"
+
+Pour chaque fournisseur activé avec des clés renseignées, un bouton qui appelle une Edge Function de vérification (ping API du fournisseur) et affiche le résultat.
+
+### 9. Enrichir la card résumé
+
+Ajouter : devises supportées (USD, CDF), statut du mode de paiement (activé/désactivé avec lien), et indication du mode test global.
 
 ## Fichiers modifiés
 
 | Action | Fichier |
 |--------|---------|
-| Modifié | `src/components/admin/AdminPaymentMode.tsx` — Refonte UI, suppression bypass/test_mode, dirty-check, historique |
-| Modifié | `src/hooks/usePaymentConfig.tsx` — Suppression `bypass_payment` et `test_mode` |
-| Modifié | `src/hooks/useCadastralPayment.tsx` — Adapter la logique sans bypass |
-| Modifié | `src/components/cadastral/CadastralBillingPanel.tsx` — Adapter le flux sans bypass |
-| Modifié | `supabase/functions/process-mobile-money-payment/index.ts` — Lire test_mode depuis la config globale |
+| Modifié | `src/components/admin/AdminPaymentMethods.tsx` — Refactoring complet (hook, dirty-check, audit, masquage clés, validation, UI Select, résumé enrichi) |
+| Modifié | `src/hooks/usePaymentMethods.tsx` — Ajouter support masquage clés et méthode de test connexion |
+| Créé | `supabase/functions/test-payment-provider/index.ts` — Edge Function pour tester la connectivité d'un fournisseur |
 
