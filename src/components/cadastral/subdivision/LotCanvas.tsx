@@ -418,6 +418,10 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     if (roadEndpointDrag) {
       setRoadEndpointDrag(null);
     }
+    // Road width drag end
+    if (roadWidthDrag) {
+      setRoadWidthDrag(null);
+    }
     drag.endDrag();
     viewport.endPan();
   }, [drag, viewport, isLineDragging, lineDrawPoints, lineDrawMousePos, getSvgPos, fromScreen, showLineChoice, roadEndpointDrag]);
