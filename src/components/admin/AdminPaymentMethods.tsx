@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,209 +7,421 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { 
-  CreditCard, 
-  Smartphone, 
-  Save, 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  CreditCard,
+  Smartphone,
+  Save,
   AlertCircle,
   CheckCircle2,
-  Settings2
+  Settings2,
+  Loader2,
+  Eye,
+  EyeOff,
+  Wifi,
+  WifiOff,
+  TestTube,
+  DollarSign,
+  History,
 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
+import { usePaymentMethods, PaymentProvider, maskApiKey } from '@/hooks/usePaymentMethods';
+import { useTestMode } from '@/hooks/useTestMode';
+import { usePaymentConfig } from '@/hooks/usePaymentConfig';
+import { logAuditAction } from '@/utils/supabaseConfigUtils';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
-interface MobileMoneyProvider {
-  id: string;
-  name: string;
-  enabled: boolean;
-  apiKey?: string;
-  merchantCode?: string;
-  secretKey?: string;
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+interface LocalMobileMoney {
+  provider_id: string;
+  provider_name: string;
+  is_enabled: boolean;
+  merchantCode: string;
+  apiKey: string;
+  secretKey: string;
 }
 
-interface BankCardConfig {
-  enabled: boolean;
+interface LocalBankCard {
+  is_enabled: boolean;
   provider: 'stripe' | 'flutterwave' | 'paypal';
-  publicKey?: string;
-  secretKey?: string;
-  webhookSecret?: string;
+  publicKey: string;
+  secretKey: string;
+  webhookSecret: string;
 }
 
-const AdminPaymentMethods = () => {
-  const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
+interface AuditEntry {
+  id: string;
+  action: string;
+  created_at: string;
+  admin_name: string | null;
+  old_values: any;
+  new_values: any;
+}
+
+// ─── Validation helpers ──────────────────────────────────────────────────────
+
+const STRIPE_KEY_PATTERNS: Record<string, RegExp> = {
+  publicKey: /^pk_(test|live)_/,
+  secretKey: /^sk_(test|live)_/,
+  webhookSecret: /^whsec_/,
+};
+
+const validateCredentials = (
+  provider: string,
+  credentials: Record<string, string | undefined>,
+  isEnabled: boolean
+): string[] => {
+  if (!isEnabled) return [];
+  const errors: string[] = [];
+
+  if (provider === 'stripe') {
+    for (const [field, pattern] of Object.entries(STRIPE_KEY_PATTERNS)) {
+      const val = credentials[field];
+      if (val && !val.includes('••••') && !pattern.test(val)) {
+        errors.push(`${field}: format Stripe invalide (attendu: ${pattern.source})`);
+      }
+    }
+  }
+
+  // Generic: at least one credential must be filled when enabled
+  const hasAnyKey = Object.values(credentials).some((v) => v && v.length > 0 && !v.includes('••••'));
+  const hasOriginalKeys = Object.values(credentials).some((v) => v?.includes('••••'));
+  if (!hasAnyKey && !hasOriginalKeys) {
+    errors.push('Au moins une clé API doit être renseignée');
+  }
+
+  return errors;
+};
+
+// ─── Mask credentials for display ────────────────────────────────────────────
+
+const maskMobileMoneyFromProvider = (p: PaymentProvider): LocalMobileMoney => ({
+  provider_id: p.provider_id,
+  provider_name: p.provider_name,
+  is_enabled: p.is_enabled,
+  merchantCode: maskApiKey(p.api_credentials.merchantCode),
+  apiKey: maskApiKey(p.api_credentials.apiKey),
+  secretKey: maskApiKey(p.api_credentials.secretKey),
+});
+
+const maskBankCardFromProvider = (p: PaymentProvider): LocalBankCard => ({
+  is_enabled: p.is_enabled,
+  provider: (p.api_credentials.provider || p.provider_id || 'stripe') as LocalBankCard['provider'],
+  publicKey: maskApiKey(p.api_credentials.publicKey),
+  secretKey: maskApiKey(p.api_credentials.secretKey),
+  webhookSecret: maskApiKey(p.api_credentials.webhookSecret),
+});
+
+const DEFAULT_MOBILE_MONEY: LocalMobileMoney[] = [
+  { provider_id: 'airtel', provider_name: 'Airtel Money', is_enabled: true, apiKey: '', merchantCode: '', secretKey: '' },
+  { provider_id: 'orange', provider_name: 'Orange Money', is_enabled: true, apiKey: '', merchantCode: '', secretKey: '' },
+  { provider_id: 'mpesa', provider_name: 'M-Pesa', is_enabled: true, apiKey: '', merchantCode: '', secretKey: '' },
+];
+
+const DEFAULT_BANK_CARD: LocalBankCard = {
+  is_enabled: false,
+  provider: 'stripe',
+  publicKey: '',
+  secretKey: '',
+  webhookSecret: '',
+};
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
+const AdminPaymentMethods: React.FC = () => {
+  const { user } = useAuth();
+  const {
+    mobileMoneyProviders: serverMM,
+    bankCardProviders: serverBC,
+    loading,
+    saveAll,
+    testProviderConnection,
+    refreshPaymentMethods,
+  } = usePaymentMethods();
+  const { isTestModeActive } = useTestMode();
+  const { paymentMode } = usePaymentConfig();
+
+  // Local editable state
+  const [mobileMoney, setMobileMoney] = useState<LocalMobileMoney[]>(DEFAULT_MOBILE_MONEY);
+  const [bankCard, setBankCard] = useState<LocalBankCard>(DEFAULT_BANK_CARD);
   const [saving, setSaving] = useState(false);
+  const [revealedFields, setRevealedFields] = useState<Set<string>>(new Set());
+  const [testingProvider, setTestingProvider] = useState<string | null>(null);
+  const [testResults, setTestResults] = useState<Record<string, { success: boolean; message: string }>>({});
+  const [auditHistory, setAuditHistory] = useState<AuditEntry[]>([]);
 
-  // Mobile Money Providers
-  const [mobileMoneyProviders, setMobileMoneyProviders] = useState<MobileMoneyProvider[]>([
-    { id: 'airtel', name: 'Airtel Money', enabled: true, apiKey: '', merchantCode: '', secretKey: '' },
-    { id: 'orange', name: 'Orange Money', enabled: true, apiKey: '', merchantCode: '', secretKey: '' },
-    { id: 'mpesa', name: 'M-Pesa', enabled: true, apiKey: '', merchantCode: '', secretKey: '' },
-  ]);
+  // Snapshot for dirty-check
+  const [snapshot, setSnapshot] = useState('');
 
-  // Bank Card Config
-  const [bankCardConfig, setBankCardConfig] = useState<BankCardConfig>({
-    enabled: false,
-    provider: 'stripe',
-    publicKey: '',
-    secretKey: '',
-    webhookSecret: '',
-  });
-
+  // Sync server → local state
   useEffect(() => {
-    loadConfiguration();
+    if (loading) return;
+    const mm =
+      serverMM.length > 0 ? serverMM.map(maskMobileMoneyFromProvider) : DEFAULT_MOBILE_MONEY;
+    const bc = serverBC.length > 0 ? maskBankCardFromProvider(serverBC[0]) : DEFAULT_BANK_CARD;
+    setMobileMoney(mm);
+    setBankCard(bc);
+    setRevealedFields(new Set());
+    const snap = JSON.stringify({ mm, bc });
+    setSnapshot(snap);
+  }, [serverMM, serverBC, loading]);
+
+  // Load audit history
+  useEffect(() => {
+    const loadAudit = async () => {
+      const { data } = await supabase
+        .from('audit_logs')
+        .select('id, action, created_at, admin_name, old_values, new_values')
+        .in('action', ['PAYMENT_METHODS_UPDATED'])
+        .order('created_at', { ascending: false })
+        .limit(5);
+      if (data) setAuditHistory(data);
+    };
+    loadAudit();
+  }, [saving]);
+
+  // Dirty check
+  const isDirty = useMemo(() => {
+    const current = JSON.stringify({ mm: mobileMoney, bc: bankCard });
+    return current !== snapshot;
+  }, [mobileMoney, bankCard, snapshot]);
+
+  // ─── Handlers ────────────────────────────────────────────────────────────
+
+  const updateMM = useCallback((providerId: string, field: keyof LocalMobileMoney, value: any) => {
+    setMobileMoney((prev) =>
+      prev.map((p) => (p.provider_id === providerId ? { ...p, [field]: value } : p))
+    );
   }, []);
 
-  const loadConfiguration = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('payment_methods_config')
-        .select('*')
-        .order('display_order', { ascending: true });
+  const updateBC = useCallback((field: keyof LocalBankCard, value: any) => {
+    setBankCard((prev) => ({ ...prev, [field]: value }));
+  }, []);
 
-      if (error) throw error;
-
-      // Charger Mobile Money providers
-      const mobileMoneyData = data?.filter(p => p.config_type === 'mobile_money') || [];
-      const mobileMoney = mobileMoneyData.map(p => {
-        const credentials = p.api_credentials as any || {};
-        return {
-          id: p.provider_id,
-          name: p.provider_name,
-          enabled: p.is_enabled,
-          apiKey: credentials.apiKey || '',
-          merchantCode: credentials.merchantCode || '',
-          secretKey: credentials.secretKey || ''
-        };
-      });
-      
-      if (mobileMoney.length > 0) {
-        setMobileMoneyProviders(mobileMoney);
-      }
-
-      // Charger Bank Card config
-      const bankCardData = data?.find(p => p.config_type === 'bank_card');
-      if (bankCardData) {
-        const credentials = bankCardData.api_credentials as any || {};
-        setBankCardConfig({
-          enabled: bankCardData.is_enabled,
-          provider: (credentials.provider || 'stripe') as 'stripe' | 'flutterwave' | 'paypal',
-          publicKey: credentials.publicKey || '',
-          secretKey: credentials.secretKey || '',
-          webhookSecret: credentials.webhookSecret || ''
-        });
-      }
-
-      toast({
-        title: "Configuration chargée",
-        description: "Les paramètres de paiement ont été chargés avec succès",
-      });
-    } catch (error) {
-      console.error('Error loading configuration:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger la configuration",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+  const toggleReveal = (fieldKey: string) => {
+    setRevealedFields((prev) => {
+      const next = new Set(prev);
+      if (next.has(fieldKey)) next.delete(fieldKey);
+      else next.add(fieldKey);
+      return next;
+    });
   };
 
-  const saveConfiguration = async () => {
-    setSaving(true);
+  // ─── Validation ──────────────────────────────────────────────────────────
+
+  const validationErrors = useMemo(() => {
+    const errors: string[] = [];
+
+    // Validate bank card
+    if (bankCard.is_enabled) {
+      errors.push(
+        ...validateCredentials(bankCard.provider, {
+          publicKey: bankCard.publicKey,
+          secretKey: bankCard.secretKey,
+          webhookSecret: bankCard.webhookSecret,
+        }, true)
+      );
+    }
+
+    return errors;
+  }, [bankCard]);
+
+  // ─── Save ────────────────────────────────────────────────────────────────
+
+  const handleSave = async () => {
+    if (!isDirty) return;
+
+    if (validationErrors.length > 0) {
+      toast.error('Erreurs de validation', { description: validationErrors.join('. ') });
+      return;
+    }
+
     try {
-      // Sauvegarder Mobile Money providers
-      for (const provider of mobileMoneyProviders) {
-        await supabase
-          .from('payment_methods_config')
-          .upsert({
-            config_type: 'mobile_money',
-            provider_id: provider.id,
-            provider_name: provider.name,
-            is_enabled: provider.enabled,
-            api_credentials: {
-              apiKey: provider.apiKey,
-              merchantCode: provider.merchantCode,
-              secretKey: provider.secretKey
-            },
-            display_order: mobileMoneyProviders.indexOf(provider)
-          }, {
-            onConflict: 'config_type,provider_id'
-          });
-      }
+      setSaving(true);
 
-      // Sauvegarder Bank Card config
-      await supabase
-        .from('payment_methods_config')
-        .upsert({
-          config_type: 'bank_card',
-          provider_id: bankCardConfig.provider,
-          provider_name: bankCardConfig.provider.charAt(0).toUpperCase() + bankCardConfig.provider.slice(1),
-          is_enabled: bankCardConfig.enabled,
+      // Build PaymentProvider arrays from local state
+      const mmProviders: PaymentProvider[] = mobileMoney.map((p, i) => ({
+        id: '',
+        config_type: 'mobile_money' as const,
+        provider_id: p.provider_id,
+        provider_name: p.provider_name,
+        is_enabled: p.is_enabled,
+        api_credentials: {
+          apiKey: p.apiKey,
+          merchantCode: p.merchantCode,
+          secretKey: p.secretKey,
+        },
+        display_order: i,
+      }));
+
+      const bcProviders: PaymentProvider[] = [
+        {
+          id: '',
+          config_type: 'bank_card' as const,
+          provider_id: bankCard.provider,
+          provider_name: bankCard.provider.charAt(0).toUpperCase() + bankCard.provider.slice(1),
+          is_enabled: bankCard.is_enabled,
           api_credentials: {
-            provider: bankCardConfig.provider,
-            publicKey: bankCardConfig.publicKey,
-            secretKey: bankCardConfig.secretKey,
-            webhookSecret: bankCardConfig.webhookSecret
+            provider: bankCard.provider,
+            publicKey: bankCard.publicKey,
+            secretKey: bankCard.secretKey,
+            webhookSecret: bankCard.webhookSecret,
           },
-          display_order: 0
-        }, {
-          onConflict: 'config_type,provider_id'
-        });
+          display_order: 0,
+        },
+      ];
 
-      toast({
-        title: "Configuration sauvegardée",
-        description: "Les moyens de paiement sont maintenant actifs",
+      await saveAll(mmProviders, bcProviders, serverMM, serverBC);
+
+      // Audit log (mask sensitive keys)
+      const maskedNew = {
+        mobileMoney: mobileMoney.map((p) => ({
+          id: p.provider_id,
+          enabled: p.is_enabled,
+        })),
+        bankCard: { provider: bankCard.provider, enabled: bankCard.is_enabled },
+      };
+
+      await logAuditAction('PAYMENT_METHODS_UPDATED', 'payment_methods_config', undefined, undefined, maskedNew as any);
+
+      toast.success('Configuration sauvegardée', {
+        description: 'Les moyens de paiement ont été mis à jour',
       });
-    } catch (error) {
-      console.error('Error saving configuration:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de sauvegarder la configuration",
-        variant: "destructive",
-      });
+    } catch (error: any) {
+      console.error('Error saving:', error);
+      toast.error('Erreur de sauvegarde', { description: error.message || 'Veuillez réessayer' });
     } finally {
       setSaving(false);
     }
   };
 
-  const updateMobileMoneyProvider = (id: string, field: keyof MobileMoneyProvider, value: any) => {
-    setMobileMoneyProviders(prev =>
-      prev.map(provider =>
-        provider.id === id ? { ...provider, [field]: value } : provider
-      )
+  // ─── Test connection ─────────────────────────────────────────────────────
+
+  const handleTestConnection = async (providerId: string, configType: string) => {
+    setTestingProvider(providerId);
+    const result = await testProviderConnection(providerId, configType);
+    setTestResults((prev) => ({ ...prev, [providerId]: result }));
+    setTestingProvider(null);
+
+    if (result.success) {
+      toast.success('Connexion réussie', { description: result.message });
+    } else {
+      toast.error('Échec de connexion', { description: result.message });
+    }
+  };
+
+  // ─── Render helpers ──────────────────────────────────────────────────────
+
+  const renderSecretInput = (
+    id: string,
+    label: string,
+    value: string,
+    onChange: (val: string) => void,
+    placeholder: string
+  ) => {
+    const fieldKey = id;
+    const isRevealed = revealedFields.has(fieldKey);
+    const isMaskedValue = value?.includes('••••');
+
+    return (
+      <div className="space-y-2">
+        <Label htmlFor={id} className="text-xs md:text-sm">
+          {label}
+        </Label>
+        <div className="relative">
+          <Input
+            id={id}
+            type={isRevealed ? 'text' : 'password'}
+            placeholder={placeholder}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onFocus={() => {
+              if (isMaskedValue) onChange('');
+            }}
+            className="text-sm pr-10"
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+            onClick={() => toggleReveal(fieldKey)}
+          >
+            {isRevealed ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+          </Button>
+        </div>
+      </div>
     );
   };
 
-  const updateBankCardConfig = (field: keyof BankCardConfig, value: any) => {
-    setBankCardConfig(prev => ({ ...prev, [field]: value }));
-  };
+  // ─── Loading state ───────────────────────────────────────────────────────
 
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
     <div className="space-y-4 md:space-y-6">
+      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold">Moyens de Paiement</h1>
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Moyens de Paiement</h2>
           <p className="text-sm text-muted-foreground mt-1">
             Configuration des méthodes de paiement acceptées
           </p>
         </div>
-        <Button onClick={saveConfiguration} disabled={saving} className="w-full md:w-auto">
-          <Save className="h-4 w-4 mr-2" />
-          {saving ? 'Sauvegarde...' : 'Sauvegarder'}
+        <Button onClick={handleSave} disabled={saving || !isDirty} className="w-full md:w-auto">
+          {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+          {saving ? 'Sauvegarde...' : isDirty ? 'Sauvegarder les modifications' : 'Aucune modification'}
         </Button>
       </div>
 
+      {/* Test mode banner */}
+      {isTestModeActive && (
+        <Card className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
+          <CardContent className="flex items-center gap-3 p-4">
+            <TestTube className="h-5 w-5 text-amber-600 shrink-0" />
+            <div className="text-sm">
+              <span className="font-medium text-amber-700 dark:text-amber-400">Mode Test actif</span>
+              <span className="text-amber-600 dark:text-amber-500">
+                {' — '}Les paiements sont simulés. Les clés de test sont recommandées.
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Validation errors */}
+      {validationErrors.length > 0 && (
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="flex items-start gap-3 p-4">
+            <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+            <div className="text-sm space-y-1">
+              {validationErrors.map((err, i) => (
+                <p key={i} className="text-destructive">{err}</p>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tabs */}
       <Tabs defaultValue="mobile-money" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="mobile-money" className="text-xs md:text-sm">
@@ -224,22 +436,22 @@ const AdminPaymentMethods = () => {
 
         {/* Mobile Money Tab */}
         <TabsContent value="mobile-money" className="space-y-3 md:space-y-4">
-          {mobileMoneyProviders.map((provider) => (
-            <Card key={provider.id}>
+          {mobileMoney.map((provider) => (
+            <Card key={provider.provider_id}>
               <CardHeader className="p-4 md:p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Smartphone className="h-5 w-5 text-primary" />
                     <div>
-                      <CardTitle className="text-base md:text-lg">{provider.name}</CardTitle>
+                      <CardTitle className="text-base md:text-lg">{provider.provider_name}</CardTitle>
                       <CardDescription className="text-xs md:text-sm">
-                        Configuration API {provider.name}
+                        Configuration API {provider.provider_name}
                       </CardDescription>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant={provider.enabled ? 'default' : 'secondary'} className="text-xs">
-                      {provider.enabled ? (
+                    <Badge variant={provider.is_enabled ? 'default' : 'secondary'} className="text-xs">
+                      {provider.is_enabled ? (
                         <>
                           <CheckCircle2 className="h-3 w-3 mr-1" />
                           Actif
@@ -249,72 +461,75 @@ const AdminPaymentMethods = () => {
                       )}
                     </Badge>
                     <Switch
-                      checked={provider.enabled}
-                      onCheckedChange={(checked) =>
-                        updateMobileMoneyProvider(provider.id, 'enabled', checked)
-                      }
+                      checked={provider.is_enabled}
+                      onCheckedChange={(checked) => updateMM(provider.provider_id, 'is_enabled', checked)}
                     />
                   </div>
                 </div>
               </CardHeader>
 
-              {provider.enabled && (
+              {provider.is_enabled && (
                 <CardContent className="p-4 pt-0 md:p-6 md:pt-0 space-y-3 md:space-y-4">
                   <Separator />
-                  
                   <div className="grid gap-3 md:gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor={`${provider.id}-merchant`} className="text-xs md:text-sm">
-                        Code Marchand
-                      </Label>
-                      <Input
-                        id={`${provider.id}-merchant`}
-                        placeholder="Entrez le code marchand"
-                        value={provider.merchantCode || ''}
-                        onChange={(e) =>
-                          updateMobileMoneyProvider(provider.id, 'merchantCode', e.target.value)
-                        }
-                        className="text-sm"
-                      />
-                    </div>
+                    {renderSecretInput(
+                      `${provider.provider_id}-merchant`,
+                      'Code Marchand',
+                      provider.merchantCode,
+                      (val) => updateMM(provider.provider_id, 'merchantCode', val),
+                      'Entrez le code marchand'
+                    )}
+                    {renderSecretInput(
+                      `${provider.provider_id}-api`,
+                      'Clé API',
+                      provider.apiKey,
+                      (val) => updateMM(provider.provider_id, 'apiKey', val),
+                      'Entrez la clé API'
+                    )}
+                    {renderSecretInput(
+                      `${provider.provider_id}-secret`,
+                      'Clé Secrète',
+                      provider.secretKey,
+                      (val) => updateMM(provider.provider_id, 'secretKey', val),
+                      'Entrez la clé secrète'
+                    )}
+                  </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor={`${provider.id}-api`} className="text-xs md:text-sm">
-                        Clé API
-                      </Label>
-                      <Input
-                        id={`${provider.id}-api`}
-                        type="password"
-                        placeholder="Entrez la clé API"
-                        value={provider.apiKey || ''}
-                        onChange={(e) =>
-                          updateMobileMoneyProvider(provider.id, 'apiKey', e.target.value)
-                        }
-                        className="text-sm"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor={`${provider.id}-secret`} className="text-xs md:text-sm">
-                        Clé Secrète
-                      </Label>
-                      <Input
-                        id={`${provider.id}-secret`}
-                        type="password"
-                        placeholder="Entrez la clé secrète"
-                        value={provider.secretKey || ''}
-                        onChange={(e) =>
-                          updateMobileMoneyProvider(provider.id, 'secretKey', e.target.value)
-                        }
-                        className="text-sm"
-                      />
-                    </div>
+                  {/* Test connection button */}
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleTestConnection(provider.provider_id, 'mobile_money')}
+                      disabled={testingProvider === provider.provider_id}
+                    >
+                      {testingProvider === provider.provider_id ? (
+                        <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                      ) : testResults[provider.provider_id]?.success ? (
+                        <Wifi className="h-3.5 w-3.5 mr-1.5 text-green-600" />
+                      ) : testResults[provider.provider_id] ? (
+                        <WifiOff className="h-3.5 w-3.5 mr-1.5 text-destructive" />
+                      ) : (
+                        <Wifi className="h-3.5 w-3.5 mr-1.5" />
+                      )}
+                      Tester la connexion
+                    </Button>
+                    {testResults[provider.provider_id] && (
+                      <span
+                        className={`text-xs ${
+                          testResults[provider.provider_id].success ? 'text-green-600' : 'text-destructive'
+                        }`}
+                      >
+                        {testResults[provider.provider_id].message}
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex items-start gap-2 p-3 bg-muted rounded-lg">
                     <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                     <p className="text-xs text-muted-foreground">
-                      Ces informations sont sensibles. Assurez-vous de les obtenir depuis le portail marchand officiel de {provider.name}.
+                      Ces informations sont sensibles. Assurez-vous de les obtenir depuis le portail marchand officiel
+                      de {provider.provider_name}.
                     </p>
                   </div>
                 </CardContent>
@@ -338,8 +553,8 @@ const AdminPaymentMethods = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant={bankCardConfig.enabled ? 'default' : 'secondary'} className="text-xs">
-                    {bankCardConfig.enabled ? (
+                  <Badge variant={bankCard.is_enabled ? 'default' : 'secondary'} className="text-xs">
+                    {bankCard.is_enabled ? (
                       <>
                         <CheckCircle2 className="h-3 w-3 mr-1" />
                         Actif
@@ -349,85 +564,87 @@ const AdminPaymentMethods = () => {
                     )}
                   </Badge>
                   <Switch
-                    checked={bankCardConfig.enabled}
-                    onCheckedChange={(checked) =>
-                      updateBankCardConfig('enabled', checked)
-                    }
+                    checked={bankCard.is_enabled}
+                    onCheckedChange={(checked) => updateBC('is_enabled', checked)}
                   />
                 </div>
               </div>
             </CardHeader>
 
-            {bankCardConfig.enabled && (
+            {bankCard.is_enabled && (
               <CardContent className="p-4 pt-0 md:p-6 md:pt-0 space-y-3 md:space-y-4">
                 <Separator />
-                
                 <div className="grid gap-3 md:gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="provider" className="text-xs md:text-sm">
-                      Fournisseur de Paiement
-                    </Label>
-                    <select
-                      id="provider"
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                      value={bankCardConfig.provider}
-                      onChange={(e) =>
-                        updateBankCardConfig('provider', e.target.value as 'stripe' | 'flutterwave' | 'paypal')
-                      }
+                    <Label className="text-xs md:text-sm">Fournisseur de Paiement</Label>
+                    <Select
+                      value={bankCard.provider}
+                      onValueChange={(value) => updateBC('provider', value as LocalBankCard['provider'])}
                     >
-                      <option value="stripe">Stripe</option>
-                      <option value="flutterwave">Flutterwave</option>
-                      <option value="paypal">PayPal</option>
-                    </select>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choisir un fournisseur" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="stripe">Stripe</SelectItem>
+                        <SelectItem value="flutterwave">Flutterwave</SelectItem>
+                        <SelectItem value="paypal">PayPal</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="public-key" className="text-xs md:text-sm">
-                      Clé Publique
-                    </Label>
-                    <Input
-                      id="public-key"
-                      placeholder={`Entrez votre clé publique ${bankCardConfig.provider}`}
-                      value={bankCardConfig.publicKey || ''}
-                      onChange={(e) =>
-                        updateBankCardConfig('publicKey', e.target.value)
-                      }
-                      className="text-sm"
-                    />
-                  </div>
+                  {renderSecretInput(
+                    'bc-public-key',
+                    'Clé Publique',
+                    bankCard.publicKey,
+                    (val) => updateBC('publicKey', val),
+                    `Entrez votre clé publique ${bankCard.provider}`
+                  )}
 
-                  <div className="space-y-2">
-                    <Label htmlFor="secret-key" className="text-xs md:text-sm">
-                      Clé Secrète
-                    </Label>
-                    <Input
-                      id="secret-key"
-                      type="password"
-                      placeholder={`Entrez votre clé secrète ${bankCardConfig.provider}`}
-                      value={bankCardConfig.secretKey || ''}
-                      onChange={(e) =>
-                        updateBankCardConfig('secretKey', e.target.value)
-                      }
-                      className="text-sm"
-                    />
-                  </div>
+                  {renderSecretInput(
+                    'bc-secret-key',
+                    'Clé Secrète',
+                    bankCard.secretKey,
+                    (val) => updateBC('secretKey', val),
+                    `Entrez votre clé secrète ${bankCard.provider}`
+                  )}
 
-                  {bankCardConfig.provider === 'stripe' && (
-                    <div className="space-y-2">
-                      <Label htmlFor="webhook-secret" className="text-xs md:text-sm">
-                        Webhook Secret
-                      </Label>
-                      <Input
-                        id="webhook-secret"
-                        type="password"
-                        placeholder="Entrez le secret webhook Stripe"
-                        value={bankCardConfig.webhookSecret || ''}
-                        onChange={(e) =>
-                          updateBankCardConfig('webhookSecret', e.target.value)
-                        }
-                        className="text-sm"
-                      />
-                    </div>
+                  {bankCard.provider === 'stripe' &&
+                    renderSecretInput(
+                      'bc-webhook-secret',
+                      'Webhook Secret',
+                      bankCard.webhookSecret,
+                      (val) => updateBC('webhookSecret', val),
+                      'Entrez le secret webhook Stripe'
+                    )}
+                </div>
+
+                {/* Test connection */}
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleTestConnection(bankCard.provider, 'bank_card')}
+                    disabled={testingProvider === bankCard.provider}
+                  >
+                    {testingProvider === bankCard.provider ? (
+                      <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                    ) : testResults[bankCard.provider]?.success ? (
+                      <Wifi className="h-3.5 w-3.5 mr-1.5 text-green-600" />
+                    ) : testResults[bankCard.provider] ? (
+                      <WifiOff className="h-3.5 w-3.5 mr-1.5 text-destructive" />
+                    ) : (
+                      <Wifi className="h-3.5 w-3.5 mr-1.5" />
+                    )}
+                    Tester la connexion
+                  </Button>
+                  {testResults[bankCard.provider] && (
+                    <span
+                      className={`text-xs ${
+                        testResults[bankCard.provider].success ? 'text-green-600' : 'text-destructive'
+                      }`}
+                    >
+                      {testResults[bankCard.provider].message}
+                    </span>
                   )}
                 </div>
 
@@ -435,11 +652,19 @@ const AdminPaymentMethods = () => {
                   <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground">
-                      Utilisez les clés de test en mode développement. Ne passez en mode production qu'après avoir testé l'intégration.
+                      {isTestModeActive
+                        ? 'Le mode test est actif — utilisez les clés de test du fournisseur.'
+                        : 'Utilisez les clés de test en mode développement. Ne passez en mode production qu\'après avoir testé l\'intégration.'}
                     </p>
                     <p className="text-xs text-muted-foreground font-medium">
-                      Documentation: <a href={`https://${bankCardConfig.provider}.com/docs`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                        {bankCardConfig.provider}.com/docs
+                      Documentation :{' '}
+                      <a
+                        href={`https://${bankCard.provider}.com/docs`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        {bankCard.provider}.com/docs
                       </a>
                     </p>
                   </div>
@@ -463,24 +688,79 @@ const AdminPaymentMethods = () => {
             <div className="flex items-center justify-between py-2 border-b">
               <span className="text-muted-foreground">Mobile Money actif</span>
               <span className="font-medium">
-                {mobileMoneyProviders.filter(p => p.enabled).length} / {mobileMoneyProviders.length}
+                {mobileMoney.filter((p) => p.is_enabled).length} / {mobileMoney.length}
               </span>
             </div>
             <div className="flex items-center justify-between py-2 border-b">
               <span className="text-muted-foreground">Carte bancaire</span>
-              <Badge variant={bankCardConfig.enabled ? 'default' : 'secondary'}>
-                {bankCardConfig.enabled ? 'Activé' : 'Désactivé'}
+              <Badge variant={bankCard.is_enabled ? 'default' : 'secondary'}>
+                {bankCard.is_enabled ? 'Activé' : 'Désactivé'}
               </Badge>
             </div>
-            {bankCardConfig.enabled && (
-              <div className="flex items-center justify-between py-2">
+            {bankCard.is_enabled && (
+              <div className="flex items-center justify-between py-2 border-b">
                 <span className="text-muted-foreground">Fournisseur</span>
-                <span className="font-medium capitalize">{bankCardConfig.provider}</span>
+                <span className="font-medium capitalize">{bankCard.provider}</span>
               </div>
             )}
+            <div className="flex items-center justify-between py-2 border-b">
+              <span className="text-muted-foreground">Devises supportées</span>
+              <div className="flex gap-1.5">
+                <Badge variant="outline" className="text-xs">
+                  <DollarSign className="h-3 w-3 mr-0.5" />
+                  USD
+                </Badge>
+                <Badge variant="outline" className="text-xs">CDF</Badge>
+              </div>
+            </div>
+            <div className="flex items-center justify-between py-2 border-b">
+              <span className="text-muted-foreground">Paiement requis</span>
+              <Badge variant={paymentMode.enabled ? 'default' : 'secondary'}>
+                {paymentMode.enabled ? 'Oui' : 'Non (accès gratuit)'}
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between py-2">
+              <span className="text-muted-foreground">Mode test global</span>
+              <Badge variant={isTestModeActive ? 'default' : 'secondary'}>
+                {isTestModeActive ? 'Actif' : 'Inactif'}
+              </Badge>
+            </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Audit History */}
+      {auditHistory.length > 0 && (
+        <Card>
+          <CardHeader className="p-4 md:p-6">
+            <div className="flex items-center gap-2">
+              <History className="h-5 w-5 text-primary" />
+              <CardTitle className="text-base md:text-lg">Historique des modifications</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="p-4 pt-0 md:p-6 md:pt-0">
+            <div className="space-y-2">
+              {auditHistory.map((entry) => (
+                <div key={entry.id} className="flex items-center justify-between py-2 border-b last:border-0 text-sm">
+                  <div>
+                    <span className="font-medium">{entry.admin_name || 'Admin'}</span>
+                    <span className="text-muted-foreground"> — Configuration mise à jour</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(entry.created_at).toLocaleDateString('fr-FR', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
