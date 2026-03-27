@@ -233,20 +233,56 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     if (mode === 'cut' && cutPoints.length === 1) {
       setCutMousePos({ x: pos.x, y: pos.y });
     }
-    if (mode === 'drawRoad' && roadDrawPoints.length > 0) {
-      setRoadDrawMousePos({ x: pos.x, y: pos.y });
+
+    // Road drawing: update preview
+    if (mode === 'drawRoad') {
+      if (isRoadDragging && roadDrawPoints.length === 1) {
+        setRoadDrawMousePos({ x: pos.x, y: pos.y });
+      } else if (roadDrawMultiMode && roadDrawPoints.length > 0) {
+        setRoadDrawMousePos({ x: pos.x, y: pos.y });
+      }
+    }
+
+    // Road endpoint drag
+    if (roadEndpointDrag && onUpdateRoad) {
+      const normalized = fromScreen(pos.x, pos.y);
+      const snapped = drag.snapToGrid(normalized);
+      const road = roads.find(r => r.id === roadEndpointDrag.roadId);
+      if (road) {
+        const newPath = [...road.path];
+        newPath[roadEndpointDrag.pointIdx] = snapped;
+        onUpdateRoad(roadEndpointDrag.roadId, { path: newPath });
+      }
     }
 
     if (drag.isDragging) {
       const normalized = fromScreen(pos.x, pos.y);
       drag.moveDrag(normalized);
     }
-  }, [viewport, getSvgPos, fromScreen, mode, cutPoints, roadDrawPoints, drag]);
+  }, [viewport, getSvgPos, fromScreen, mode, cutPoints, roadDrawPoints, drag, isRoadDragging, roadDrawMultiMode, roadEndpointDrag, roads, onUpdateRoad]);
 
-  const handleMouseUp = useCallback(() => {
+  const handleMouseUp = useCallback((e: React.MouseEvent) => {
+    // Road simple drag: finish on mouse up
+    if (isRoadDragging && roadDrawPoints.length === 1 && roadDrawMousePos) {
+      const pos = getSvgPos(e);
+      const normalized = fromScreen(pos.x, pos.y);
+      const snapped = drag.snapToGrid(normalized);
+      const startPt = roadDrawPoints[0];
+      const dist = Math.sqrt((snapped.x - startPt.x) ** 2 + (snapped.y - startPt.y) ** 2);
+      if (dist > 0.02 && onFinishRoadDraw) {
+        onFinishRoadDraw([startPt, snapped]);
+      }
+      setRoadDrawPoints([]);
+      setRoadDrawMousePos(null);
+      setIsRoadDragging(false);
+    }
+    // Road endpoint drag end
+    if (roadEndpointDrag) {
+      setRoadEndpointDrag(null);
+    }
     drag.endDrag();
     viewport.endPan();
-  }, [drag, viewport]);
+  }, [drag, viewport, isRoadDragging, roadDrawPoints, roadDrawMousePos, getSvgPos, fromScreen, onFinishRoadDraw, roadEndpointDrag]);
 
   const handleCanvasClick = useCallback((e: React.MouseEvent) => {
     if (readOnly) return;
