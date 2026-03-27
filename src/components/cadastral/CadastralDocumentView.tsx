@@ -2,7 +2,8 @@ import React from 'react';
 import { 
   Download, Printer, ShoppingCart, FileText, User, MapPin, Clock, 
   Receipt, CreditCard, Building, Map, CheckCircle, CheckCircle2, 
-  XCircle, AlertCircle, Landmark, Hash, ExternalLink, Info, Scale
+  XCircle, AlertCircle, Landmark, Hash, ExternalLink, Info, Scale,
+  ShieldCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,67 +15,6 @@ import CadastralMap from './CadastralMap';
 import DocumentAttachment from './DocumentAttachment';
 import VerificationButton from './VerificationButton';
 import { PROPERTY_TITLE_TYPES } from './PropertyTitleTypeSelect';
-import { Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-
-/** Composant interne pour les litiges */
-const DisputesSection: React.FC<{ parcelNumber: string }> = ({ parcelNumber }) => {
-  const [disputes, setDisputes] = React.useState<any[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  
-  React.useEffect(() => {
-    (async () => {
-      setLoading(true);
-      try {
-        const { data } = await (supabase as any)
-          .from('cadastral_land_disputes')
-          .select('*')
-          .eq('parcel_number', parcelNumber)
-          .eq('dispute_type', 'report')
-          .order('created_at', { ascending: false });
-        if (data) setDisputes(data);
-      } catch (e) { console.error(e); }
-      finally { setLoading(false); }
-    })();
-  }, [parcelNumber]);
-  
-  if (loading) return <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
-  
-  if (disputes.length === 0) return (
-    <div className="flex items-center gap-3 p-4 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30">
-      <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
-      <div>
-        <p className="text-sm font-medium text-green-700 dark:text-green-300">Aucun litige foncier enregistré</p>
-        <p className="text-xs text-green-600 dark:text-green-400 mt-0.5">Cette parcelle ne fait l'objet d'aucun litige connu</p>
-      </div>
-    </div>
-  );
-
-  return (
-    <table className="doc-table">
-      <thead>
-        <tr>
-          <th>Référence</th>
-          <th>Nature</th>
-          <th>Déclarant</th>
-          <th>Statut</th>
-          <th>Date</th>
-        </tr>
-      </thead>
-      <tbody>
-        {disputes.map((d: any) => (
-          <tr key={d.id}>
-            <td className="font-mono text-xs">{d.reference_number}</td>
-            <td>{d.dispute_nature}</td>
-            <td>{d.declarant_name}</td>
-            <td><Badge variant="outline" className="text-xs">{d.current_status}</Badge></td>
-            <td>{d.dispute_start_date ? new Date(d.dispute_start_date).toLocaleDateString('fr-FR') : '—'}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-};
 
 interface CadastralDocumentViewProps {
   result: CadastralSearchResult;
@@ -122,9 +62,15 @@ const formatArea = (sqm: number) => {
 const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
   result, paidServices, catalogServices, onDownloadReport, onBackToCatalog,
 }) => {
-  const { parcel, ownership_history, tax_history, mortgage_history, boundary_history, building_permits } = result;
+  const { parcel, ownership_history, tax_history, mortgage_history, boundary_history, building_permits, land_disputes, legal_verification } = result;
 
-  const hasAccess = (serviceType: string) => paidServices.includes(serviceType);
+  // Data-presence gating: if the server returned data, the user has access
+  const hasParcelData = !!parcel.current_owner_name; // full parcel has owner; minimal doesn't
+  const hasLocationData = boundary_history.length > 0 || !!parcel.latitude;
+  const hasHistoryData = ownership_history.length > 0;
+  const hasObligationsData = tax_history.length > 0 || mortgage_history.length > 0;
+  const hasDisputesData = land_disputes !== undefined && land_disputes !== null;
+  const hasLegalVerification = legal_verification !== null && legal_verification !== undefined;
 
   const getPaymentStatusLabel = (status: string) => {
     switch (status) {
@@ -189,7 +135,7 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
         <div className="px-6 sm:px-10 py-6 space-y-2">
 
           {/* ===================== 1. IDENTIFICATION ===================== */}
-          {hasAccess('information') ? (
+          {hasParcelData ? (
             <>
               <SectionTitle number={++sectionNumber} icon={<Building className="h-4 w-4" />} title="Identification de la parcelle" />
               <table className="doc-table">
@@ -309,7 +255,7 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
           )}
 
           {/* ===================== LOCALISATION ===================== */}
-          {hasAccess('location_history') ? (
+          {(hasParcelData && (!!parcel.province || !!parcel.latitude)) ? (
             <>
               <SectionTitle number={++sectionNumber} icon={<MapPin className="h-4 w-4" />} title="Localisation" />
               <table className="doc-table">
@@ -394,7 +340,7 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
           )}
 
           {/* ===================== HISTORIQUE ===================== */}
-          {hasAccess('history') ? (
+          {hasHistoryData || (hasParcelData && paidServices.includes('history')) ? (
             <>
               <SectionTitle number={++sectionNumber} icon={<Clock className="h-4 w-4" />} title="Historique de propriété" />
               <table className="doc-table">
@@ -444,7 +390,7 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
           )}
 
           {/* ===================== OBLIGATIONS ===================== */}
-          {hasAccess('obligations') ? (
+          {hasObligationsData || paidServices.includes('obligations') ? (
             <>
               <SectionTitle number={++sectionNumber} icon={<Receipt className="h-4 w-4" />} title="Obligations financières" />
               
@@ -543,15 +489,85 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
           )}
 
           {/* ===================== LITIGES ===================== */}
-          {hasAccess('land_disputes') ? (
+          {hasDisputesData ? (
             <>
               <SectionTitle number={++sectionNumber} icon={<Scale className="h-4 w-4" />} title="Litiges fonciers" />
-              <DisputesSection parcelNumber={parcel.parcel_number} />
+              {land_disputes.length === 0 ? (
+                <div className="flex items-center gap-3 p-4 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-green-700 dark:text-green-300">Aucun litige foncier enregistré</p>
+                    <p className="text-xs text-green-600 dark:text-green-400 mt-0.5">Cette parcelle ne fait l'objet d'aucun litige connu</p>
+                  </div>
+                </div>
+              ) : (
+                <table className="doc-table">
+                  <thead>
+                    <tr>
+                      <th>Référence</th>
+                      <th>Nature</th>
+                      <th>Déclarant</th>
+                      <th>Statut</th>
+                      <th>Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {land_disputes.map((d) => (
+                      <tr key={d.id}>
+                        <td className="font-mono text-xs">{d.reference_number}</td>
+                        <td>{d.dispute_nature}</td>
+                        <td>{d.declarant_name}</td>
+                        <td><Badge variant="outline" className="text-xs">{d.current_status}</Badge></td>
+                        <td>{d.dispute_start_date ? new Date(d.dispute_start_date).toLocaleDateString('fr-FR') : '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </>
           ) : (
             <>
               <SectionTitle number={++sectionNumber} icon={<Scale className="h-4 w-4" />} title="Litiges fonciers" />
               <LockedPlaceholder serviceName="Litiges fonciers" />
+            </>
+          )}
+
+          {/* ===================== VÉRIFICATION JURIDIQUE ===================== */}
+          {hasLegalVerification ? (
+            <>
+              <SectionTitle number={++sectionNumber} icon={<ShieldCheck className="h-4 w-4" />} title="Vérification juridique" />
+              <table className="doc-table">
+                <tbody>
+                  <DataRow label="Type de titre" value={legal_verification.title_type} />
+                  <DataRow label="Référence du titre" value={legal_verification.title_reference ? <span className="font-mono">{legal_verification.title_reference}</span> : '—'} />
+                  <DataRow label="Date d'émission" value={formatDate(legal_verification.title_issue_date)} />
+                  <DataRow label="Litige en cours" value={
+                    legal_verification.has_dispute 
+                      ? <Badge variant="destructive" className="text-xs">⚠ Oui</Badge>
+                      : <Badge variant="default" className="text-xs">✅ Non</Badge>
+                  } />
+                  <DataRow label="Parcelle subdivisée" value={
+                    legal_verification.is_subdivided 
+                      ? <Badge variant="secondary" className="text-xs">Oui</Badge>
+                      : <Badge variant="default" className="text-xs">Non</Badge>
+                  } />
+                </tbody>
+              </table>
+              {legal_verification.title_document_url && (
+                <div className="mt-3">
+                  <DocumentAttachment documentUrl={legal_verification.title_document_url} label="Titre de propriété" description="Document officiel vérifié" />
+                </div>
+              )}
+              {legal_verification.owner_document_url && (
+                <div className="mt-2">
+                  <DocumentAttachment documentUrl={legal_verification.owner_document_url} label="Document d'identité" description="Justificatif du propriétaire" />
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <SectionTitle number={++sectionNumber} icon={<ShieldCheck className="h-4 w-4" />} title="Vérification juridique" />
+              <LockedPlaceholder serviceName="Vérification juridique" />
             </>
           )}
         </div>
