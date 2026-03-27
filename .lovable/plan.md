@@ -1,61 +1,26 @@
 
 
-# Fix Undo/Redo — Two Root Causes
+# Corrections du module Lotissement
 
-## Problem 1: `canUndo`/`canRedo` use stale state
+## Probleme 1 : Bloc "Demandeur" redondant
 
-Line 411 of `useSubdivisionForm.ts`:
-```typescript
-canUndo: historyIndex > 0, canRedo: historyIndex < history.length - 1
-```
-These use the React **state** variables, but `undo`/`redo` update the **refs** first. After an undo, `historyIndexRef` changes but `historyIndex` state may not have re-rendered yet, so the buttons stay disabled or get out of sync.
+Le bloc "Demandeur" dans `StepParentParcel.tsx` demande manuellement le prenom, nom, telephone et email alors que ces informations sont deja disponibles via l'utilisateur connecte (auto-rempli par le `useEffect` dans `useSubdivisionForm.ts`). Ce bloc est inutile et encombre l'interface.
 
-## Problem 2: Most lot mutations skip history
+**Solution** : Supprimer le bloc formulaire "Demandeur" de `StepParentParcel.tsx`. A la place, afficher un simple encadre en lecture seule montrant le nom et email de l'utilisateur connecte avec un badge "Connecte". Garder uniquement le champ "Qualite du demandeur" (proprietaire/mandataire/notaire) car c'est la seule information non derivable du profil.
 
-`setLots` is passed directly to `StepLotDesigner`, which calls it ~15 times for splitting, merging, dragging, annotations, edge-to-road conversion, etc. None of these calls go through `pushHistory`. So the history array stays nearly empty — there's nothing to undo.
+## Probleme 2 : Brouillon charge pour la mauvaise parcelle
 
-Only `createInitialLot`, `updateLot`, and `deleteLot` from the hook push history, but StepLotDesigner doesn't use those — it uses raw `setLots`.
+Le `draftKey` est bien `subdivision-draft-${parcelNumber}`, donc en theorie unique par parcelle. Mais le composant `SubdivisionRequestDialog` est **toujours monte** dans `ParcelActionsDropdown` meme quand `open=false`. Quand l'utilisateur change de parcelle, le composant ne se demonte/remonte pas — le hook garde l'ancien etat en memoire. L'effet de restauration du brouillon (`useEffect` sur `draftKey`) se declenche bien avec le nouveau `draftKey`, mais il **ajoute** les donnees du nouveau brouillon sans reinitialiser les donnees du brouillon precedent (lots, roads, etc. restent en memoire si le nouveau `draftKey` n'a pas de brouillon).
 
-## Solution
+**Solution** : 
+1. Dans `SubdivisionRequestDialog`, ajouter `key={parcelNumber}` sur le contenu interne OU conditionner le rendu a `open` pour forcer un remontage complet quand la parcelle change.
+2. Dans `useSubdivisionForm`, reinitialiser tous les etats (lots, roads, requester, etc.) quand `parcelNumber` change, avant de restaurer le brouillon.
 
-### 1. Wrap `setLots` with automatic history tracking
+## Fichiers impactes
 
-Instead of exposing raw `setLots`, expose a `setLotsWithHistory` wrapper that automatically pushes to history on every call. Keep a raw `setLotsRaw` for undo/redo to avoid infinite loops.
-
-```typescript
-const setLotsWithHistory = useCallback((updater) => {
-  setLots(prev => {
-    const next = typeof updater === 'function' ? updater(prev) : updater;
-    pushHistory(next);
-    return next;
-  });
-}, [pushHistory]);
-```
-
-### 2. Use refs for `canUndo`/`canRedo`
-
-Replace state-derived booleans with a small state counter that gets bumped whenever refs change, forcing re-render:
-
-```typescript
-const [historyVersion, setHistoryVersion] = useState(0);
-
-// In pushHistory, undo, redo — after updating refs:
-setHistoryVersion(v => v + 1);
-
-// Expose:
-canUndo: historyIndexRef.current > 0,
-canRedo: historyIndexRef.current < historyRef.current.length - 1,
-```
-
-### 3. Debounce drag operations
-
-Vertex dragging calls `setLots` on every mouse move. Add a flag `skipHistoryRef` that the canvas sets during drag, and only push history on mouseUp (already handled by `onUpdateLot` in LotCanvas which fires on mouseUp).
-
-## Files changed
-
-| File | Change |
-|------|--------|
-| `useSubdivisionForm.ts` | Wrap `setLots` → `setLotsWithHistory`, add `historyVersion` state, expose `setLotsRaw` for undo/redo only, fix `canUndo`/`canRedo` |
-| `StepLotDesigner.tsx` | No changes needed — it already receives `setLots` as prop, which will now be the history-aware wrapper |
-| `LotCanvas.tsx` | For `onUpdateLot` (drag), distinguish drag-in-progress (no history) vs drag-end (with history) — use existing mouseUp handler |
+| Action | Fichier |
+|--------|---------|
+| Modifie | `StepParentParcel.tsx` — Supprimer le formulaire "Demandeur" (inputs prenom/nom/tel/email), le remplacer par un affichage en lecture seule du profil connecte + garder uniquement le select "Qualite du demandeur" |
+| Modifie | `SubdivisionRequestDialog.tsx` — Ajouter rendu conditionnel (`open && ...`) ou `key={parcelNumber}` pour forcer le remontage |
+| Modifie | `useSubdivisionForm.ts` — Ajouter un `useEffect` sur `parcelNumber` qui reinitialise lots/roads/commonSpaces/servitudes/requester avant restauration du brouillon |
 
