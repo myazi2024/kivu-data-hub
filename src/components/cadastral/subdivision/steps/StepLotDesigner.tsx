@@ -100,6 +100,9 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   const [editingRoadId, setEditingRoadId] = useState<string | null>(null);
   const [canvasMode, setCanvasMode] = useState<CanvasMode>('select');
   const [canvasShowGrid, setCanvasShowGrid] = useState(true);
+  // Road pre-configuration
+  const [roadPresetWidth, setRoadPresetWidth] = useState(6);
+  const [roadPresetSurface, setRoadPresetSurface] = useState<SubdivisionRoad['surfaceType']>('planned');
 
   const editingRoad = roads.find(r => r.id === editingRoadId) || null;
 
@@ -370,14 +373,18 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     const newRoad: SubdivisionRoad = {
       id: `road-draw-${Date.now()}`,
       name: `Voie ${roads.length + 1}`,
-      widthM: 6,
-      surfaceType: 'planned',
+      widthM: roadPresetWidth,
+      surfaceType: roadPresetSurface,
       isExisting: false,
       path,
     };
     setRoads([...roads, newRoad]);
     setEditingRoadId(newRoad.id);
     setCanvasMode('select');
+  }, [roads, setRoads, roadPresetWidth, roadPresetSurface]);
+
+  const handleUpdateRoad = useCallback((roadId: string, updates: Partial<SubdivisionRoad>) => {
+    setRoads(roads.map(r => r.id === roadId ? { ...r, ...updates } : r));
   }, [roads, setRoads]);
 
   const totalArea = lots.reduce((s, l) => s + l.areaSqm, 0);
@@ -442,7 +449,30 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
           <Sticker className="h-3.5 w-3.5" />
           Cliparts
         </Button>
-        
+
+        {/* Road pre-config panel (inline) */}
+        {canvasMode === 'drawRoad' && (
+          <>
+            <Separator orientation="vertical" className="h-6" />
+            <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-primary/5 border border-primary/20">
+              <Label className="text-[10px] text-muted-foreground whitespace-nowrap">Largeur</Label>
+              <Input
+                type="number" min={3} max={20} value={roadPresetWidth}
+                onChange={e => setRoadPresetWidth(Math.max(3, Math.min(20, parseInt(e.target.value) || 6)))}
+                className="h-6 w-14 text-[10px]"
+              />
+              <span className="text-[10px] text-muted-foreground">m</span>
+              <Select value={roadPresetSurface} onValueChange={(v: any) => setRoadPresetSurface(v)}>
+                <SelectTrigger className="h-6 text-[10px] w-20"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(ROAD_SURFACE_LABELS).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </>
+        )}
         <Separator orientation="vertical" className="h-6" />
 
         <Button variant="outline" size="sm" onClick={onUndo} disabled={!canUndo} className="gap-1 text-xs">
@@ -563,6 +593,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 selectedRoadId={editingRoadId}
                 onSelectRoad={setEditingRoadId}
                 onDeleteRoad={handleDeleteRoad}
+                onUpdateRoad={handleUpdateRoad}
                 onDeleteLot={deleteLot}
                 onDuplicateLot={duplicateLot}
                 onUpdateLotAnnotations={updateLotAnnotations}
@@ -570,6 +601,8 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 onMergeLots={handleMergeLots}
                 onCutLot={handleCutLot}
                 onFinishRoadDraw={handleFinishRoadDraw}
+                roadPresetWidth={roadPresetWidth}
+                roadPresetSurface={roadPresetSurface}
                 mode={canvasMode}
                 onModeChange={setCanvasMode}
                 showGrid={canvasShowGrid}

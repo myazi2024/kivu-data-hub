@@ -31,6 +31,7 @@ interface LotCanvasProps {
   selectedRoadId?: string | null;
   onSelectRoad?: (id: string | null) => void;
   onDeleteRoad?: (id: string) => void;
+  onUpdateRoad?: (id: string, updates: Partial<SubdivisionRoad>) => void;
   onSplitLot?: (id: string) => void;
   onMergeLots?: (ids: string[]) => void;
   onCutLot?: (lotId: string, cutStart: Point2D, cutEnd: Point2D) => void;
@@ -51,6 +52,8 @@ interface LotCanvasProps {
   onUndo?: () => void;
   onRedo?: () => void;
   minLotAreaSqm?: number;
+  roadPresetWidth?: number;
+  roadPresetSurface?: SubdivisionRoad['surfaceType'];
 }
 
 const CANVAS_W = 600;
@@ -60,12 +63,13 @@ const PADDING = 30;
 const LotCanvas: React.FC<LotCanvasProps> = ({
   lots, roads, parentAreaSqm, parentVertices, parentSides, selectedLotId, selectedLotIds = [], onSelectLot, onToggleLotSelection, onUpdateLot,
   onUpdateLotAnnotations, onDeleteLot, onDuplicateLot,
-  selectedRoadId, onSelectRoad, onDeleteRoad, onSplitLot, onMergeLots,
+  selectedRoadId, onSelectRoad, onDeleteRoad, onUpdateRoad, onSplitLot, onMergeLots,
   onCutLot, onFinishRoadDraw, mode = 'select', onModeChange,
   showGrid = true, onToggleGrid, showDimensions = true, showLotNumbers = true,
   showAreas = true, showRoads = true, showNorth = true,
   showLegend = false, showScale = true, showOwnerNames = false,
-  readOnly = false, onUndo, onRedo, minLotAreaSqm = 50
+  readOnly = false, onUndo, onRedo, minLotAreaSqm = 50,
+  roadPresetWidth = 6, roadPresetSurface = 'planned',
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -80,6 +84,11 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   // Draw road mode state
   const [roadDrawPoints, setRoadDrawPoints] = useState<Point2D[]>([]);
   const [roadDrawMousePos, setRoadDrawMousePos] = useState<Point2D | null>(null);
+  const [isRoadDragging, setIsRoadDragging] = useState(false); // simple drag mode
+  const [roadDrawMultiMode, setRoadDrawMultiMode] = useState(false); // multi-click mode
+
+  // Road endpoint drag state
+  const [roadEndpointDrag, setRoadEndpointDrag] = useState<{roadId: string; pointIdx: number} | null>(null);
 
   // Context menu state
   const [contextMenuLotId, setContextMenuLotId] = useState<string | null>(null);
@@ -96,6 +105,9 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     setCutMousePos(null);
     setRoadDrawPoints([]);
     setRoadDrawMousePos(null);
+    setIsRoadDragging(false);
+    setRoadDrawMultiMode(false);
+    setRoadEndpointDrag(null);
     if (mode !== 'clipart') {
       setShowClipartPalette(false);
       setClipartType(null);
@@ -113,11 +125,23 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     onUndo,
     onRedo,
     onEscape: () => {
+      if (mode === 'drawRoad' && roadDrawPoints.length > 0) {
+        setRoadDrawPoints([]);
+        setRoadDrawMousePos(null);
+        setIsRoadDragging(false);
+        setRoadDrawMultiMode(false);
+        return;
+      }
       onSelectLot(null);
       onModeChange?.('select');
       setContextMenuLotId(null);
       setShowClipartPalette(false);
       setClipartType(null);
+    },
+    onBackspace: () => {
+      if (mode === 'drawRoad' && roadDrawMultiMode && roadDrawPoints.length > 1) {
+        setRoadDrawPoints(prev => prev.slice(0, -1));
+      }
     },
     onToggleGrid: onToggleGrid,
     onToggleSnap: () => setSnapEnabled(prev => !prev),
@@ -157,7 +181,16 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       viewport.startPan(e.clientX, e.clientY);
       return;
     }
-  }, [readOnly, viewport]);
+    // Road drawing: simple drag mode (click-drag for straight road)
+    if (mode === 'drawRoad' && e.button === 0 && !roadDrawMultiMode && roadDrawPoints.length === 0) {
+      const pos = getSvgPos(e);
+      const normalized = fromScreen(pos.x, pos.y);
+      const snapped = drag.snapToGrid(normalized);
+      setRoadDrawPoints([snapped]);
+      setIsRoadDragging(true);
+      return;
+    }
+  }, [readOnly, viewport, mode, roadDrawMultiMode, roadDrawPoints, getSvgPos, fromScreen, drag]);
 
   const handleVertexMouseDown = useCallback((lotId: string, vertexIdx: number, e: React.MouseEvent) => {
     if (readOnly || mode !== 'select') return;
@@ -200,20 +233,56 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     if (mode === 'cut' && cutPoints.length === 1) {
       setCutMousePos({ x: pos.x, y: pos.y });
     }
-    if (mode === 'drawRoad' && roadDrawPoints.length > 0) {
-      setRoadDrawMousePos({ x: pos.x, y: pos.y });
+
+    // Road drawing: update preview
+    if (mode === 'drawRoad') {
+      if (isRoadDragging && roadDrawPoints.length === 1) {
+        setRoadDrawMousePos({ x: pos.x, y: pos.y });
+      } else if (roadDrawMultiMode && roadDrawPoints.length > 0) {
+        setRoadDrawMousePos({ x: pos.x, y: pos.y });
+      }
+    }
+
+    // Road endpoint drag
+    if (roadEndpointDrag && onUpdateRoad) {
+      const normalized = fromScreen(pos.x, pos.y);
+      const snapped = drag.snapToGrid(normalized);
+      const road = roads.find(r => r.id === roadEndpointDrag.roadId);
+      if (road) {
+        const newPath = [...road.path];
+        newPath[roadEndpointDrag.pointIdx] = snapped;
+        onUpdateRoad(roadEndpointDrag.roadId, { path: newPath });
+      }
     }
 
     if (drag.isDragging) {
       const normalized = fromScreen(pos.x, pos.y);
       drag.moveDrag(normalized);
     }
-  }, [viewport, getSvgPos, fromScreen, mode, cutPoints, roadDrawPoints, drag]);
+  }, [viewport, getSvgPos, fromScreen, mode, cutPoints, roadDrawPoints, drag, isRoadDragging, roadDrawMultiMode, roadEndpointDrag, roads, onUpdateRoad]);
 
-  const handleMouseUp = useCallback(() => {
+  const handleMouseUp = useCallback((e: React.MouseEvent) => {
+    // Road simple drag: finish on mouse up
+    if (isRoadDragging && roadDrawPoints.length === 1 && roadDrawMousePos) {
+      const pos = getSvgPos(e);
+      const normalized = fromScreen(pos.x, pos.y);
+      const snapped = drag.snapToGrid(normalized);
+      const startPt = roadDrawPoints[0];
+      const dist = Math.sqrt((snapped.x - startPt.x) ** 2 + (snapped.y - startPt.y) ** 2);
+      if (dist > 0.02 && onFinishRoadDraw) {
+        onFinishRoadDraw([startPt, snapped]);
+      }
+      setRoadDrawPoints([]);
+      setRoadDrawMousePos(null);
+      setIsRoadDragging(false);
+    }
+    // Road endpoint drag end
+    if (roadEndpointDrag) {
+      setRoadEndpointDrag(null);
+    }
     drag.endDrag();
     viewport.endPan();
-  }, [drag, viewport]);
+  }, [drag, viewport, isRoadDragging, roadDrawPoints, roadDrawMousePos, getSvgPos, fromScreen, onFinishRoadDraw, roadEndpointDrag]);
 
   const handleCanvasClick = useCallback((e: React.MouseEvent) => {
     if (readOnly) return;
@@ -240,7 +309,14 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     }
 
     if (mode === 'drawRoad') {
-      setRoadDrawPoints(prev => [...prev, normalized]);
+      // In simple drag mode, click is handled by mouseDown/mouseUp
+      if (isRoadDragging) return;
+      // Shift-click or already in multi-mode: add point
+      if (e.shiftKey || roadDrawMultiMode) {
+        if (!roadDrawMultiMode) setRoadDrawMultiMode(true);
+        const snapped = drag.snapToGrid(normalized);
+        setRoadDrawPoints(prev => [...prev, snapped]);
+      }
       return;
     }
 
@@ -471,55 +547,73 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
           </g>
         )}
 
-        {/* Roads */}
+        {/* Roads — polyline rendering */}
         {showRoads && roads.map(road => {
           if (road.path.length < 2) return null;
           const pathPoints = road.path.map(p => toScreen(p));
-          const roadWidthPx = (road.widthM / sideLength) * (CANVAS_W - 2 * PADDING);
+          const polylineStr = pathPoints.map(p => `${p.x},${p.y}`).join(' ');
+          const roadWidthPx = Math.max(4, (road.widthM / sideLength) * (CANVAS_W - 2 * PADDING));
           const isExisting = (road as any).isExisting;
           const isRoadSelected = road.id === selectedRoadId;
           
           return (
             <g key={road.id}>
-              <line
-                x1={pathPoints[0].x} y1={pathPoints[0].y}
-                x2={pathPoints[pathPoints.length - 1].x} y2={pathPoints[pathPoints.length - 1].y}
-                stroke="transparent" strokeWidth={Math.max(20, roadWidthPx + 10)}
+              {/* Hit target */}
+              <polyline
+                points={polylineStr}
+                fill="none" stroke="transparent" strokeWidth={Math.max(20, roadWidthPx + 10)}
+                strokeLinecap="round" strokeLinejoin="round"
                 className={readOnly || mode !== 'select' ? '' : 'cursor-pointer'}
                 onClick={e => !readOnly && handleRoadClick(road.id, e)}
               />
-              <line
-                x1={pathPoints[0].x} y1={pathPoints[0].y}
-                x2={pathPoints[pathPoints.length - 1].x} y2={pathPoints[pathPoints.length - 1].y}
+              {/* Width visualization (filled band) */}
+              <polyline
+                points={polylineStr}
+                fill="none"
                 stroke={isRoadSelected ? 'hsl(var(--primary))' : isExisting ? '#92400e' : '#9ca3af'}
-                strokeWidth={Math.max(isExisting ? 6 : 4, roadWidthPx)}
-                strokeLinecap="round"
+                strokeWidth={roadWidthPx}
+                strokeLinecap="round" strokeLinejoin="round"
                 strokeDasharray={isExisting ? 'none' : '6 3'}
-                opacity={isRoadSelected ? 0.8 : isExisting ? 0.6 : 0.4}
-                className={readOnly || mode !== 'select' ? '' : 'cursor-pointer'}
+                opacity={isRoadSelected ? 0.35 : isExisting ? 0.25 : 0.15}
+                className="pointer-events-none"
+              />
+              {/* Center line */}
+              <polyline
+                points={polylineStr}
+                fill="none"
+                stroke={isRoadSelected ? 'hsl(var(--primary))' : isExisting ? '#92400e' : '#9ca3af'}
+                strokeWidth={isExisting ? 3 : 2}
+                strokeLinecap="round" strokeLinejoin="round"
+                strokeDasharray={isExisting ? 'none' : '6 3'}
+                opacity={isRoadSelected ? 0.9 : isExisting ? 0.7 : 0.5}
+                className={readOnly || mode !== 'select' ? 'pointer-events-none' : 'cursor-pointer'}
                 onClick={e => !readOnly && handleRoadClick(road.id, e)}
               />
               {isRoadSelected && (
-                <line
-                  x1={pathPoints[0].x} y1={pathPoints[0].y}
-                  x2={pathPoints[pathPoints.length - 1].x} y2={pathPoints[pathPoints.length - 1].y}
+                <polyline
+                  points={polylineStr}
+                  fill="none"
                   stroke="hsl(var(--primary))"
-                  strokeWidth={Math.max(isExisting ? 8 : 6, roadWidthPx + 4)}
-                  strokeLinecap="round" opacity={0.2} className="pointer-events-none"
+                  strokeWidth={roadWidthPx + 4}
+                  strokeLinecap="round" strokeLinejoin="round"
+                  opacity={0.12} className="pointer-events-none"
                 />
               )}
-              {/* Road label */}
+              {/* Road label at midpoint */}
               {(() => {
-                const mx = (pathPoints[0].x + pathPoints[pathPoints.length - 1].x) / 2;
-                const my = (pathPoints[0].y + pathPoints[pathPoints.length - 1].y) / 2;
-                const dx = pathPoints[pathPoints.length - 1].y - pathPoints[0].y;
-                const dy = pathPoints[0].x - pathPoints[pathPoints.length - 1].x;
+                const midIdx = Math.floor(pathPoints.length / 2);
+                const p1 = pathPoints[Math.max(0, midIdx - 1)];
+                const p2 = pathPoints[Math.min(pathPoints.length - 1, midIdx)];
+                const mx = (p1.x + p2.x) / 2;
+                const my = (p1.y + p2.y) / 2;
+                const dx = p2.y - p1.y;
+                const dy = p1.x - p2.x;
                 const len = Math.sqrt(dx * dx + dy * dy) || 1;
-                const off = isExisting ? 14 : 8;
+                const off = Math.max(roadWidthPx / 2 + 8, 14);
                 const ox = (dx / len) * off;
                 const oy = (dy / len) * off;
                 return (
-                  <g>
+                  <g className="pointer-events-none select-none">
                     <rect x={mx + ox - 35} y={my + oy - 7} width={70} height={14} rx={3}
                       fill={isRoadSelected ? 'hsl(var(--primary))' : isExisting ? 'hsl(30, 70%, 95%)' : 'hsl(var(--background))'}
                       fillOpacity={isRoadSelected ? 0.15 : 0.9}
@@ -534,6 +628,19 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                   </g>
                 );
               })()}
+              {/* Draggable endpoint handles on selected road */}
+              {isRoadSelected && !readOnly && mode === 'select' && pathPoints.map((pt, idx) => (
+                <circle
+                  key={`road-handle-${idx}`}
+                  cx={pt.x} cy={pt.y} r={5}
+                  fill="white" stroke="hsl(var(--primary))" strokeWidth={2}
+                  className="cursor-grab active:cursor-grabbing"
+                  onMouseDown={e => {
+                    e.stopPropagation();
+                    setRoadEndpointDrag({ roadId: road.id, pointIdx: idx });
+                  }}
+                />
+              ))}
               {/* Delete button on selected road */}
               {isRoadSelected && !isExisting && !readOnly && onDeleteRoad && (() => {
                 const mx = (pathPoints[0].x + pathPoints[pathPoints.length - 1].x) / 2;
@@ -541,9 +648,9 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 const dx = pathPoints[pathPoints.length - 1].y - pathPoints[0].y;
                 const dy = pathPoints[0].x - pathPoints[pathPoints.length - 1].x;
                 const len = Math.sqrt(dx * dx + dy * dy) || 1;
-                const off = 8;
-                const ox = -(dx / len) * (off + 14);
-                const oy = -(dy / len) * (off + 14);
+                const off = Math.max(roadWidthPx / 2 + 14, 22);
+                const ox = -(dx / len) * off;
+                const oy = -(dy / len) * off;
                 return (
                   <g className="cursor-pointer" onClick={e => { e.stopPropagation(); onDeleteRoad(road.id); }}>
                     <circle cx={mx + ox} cy={my + oy} r={10} fill="hsl(var(--destructive))" fillOpacity={0.9} />
@@ -771,26 +878,94 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
           <circle cx={toScreen(cutPoints[0]).x} cy={toScreen(cutPoints[0]).y} r={5} fill="hsl(var(--destructive))" opacity={0.9} className="pointer-events-none" />
         )}
 
-        {/* Road drawing preview */}
-        {mode === 'drawRoad' && roadDrawPoints.length > 0 && (
-          <g className="pointer-events-none">
-            {roadDrawPoints.map((p, i) => {
-              if (i === 0) return null;
-              const prev = toScreen(roadDrawPoints[i - 1]);
-              const curr = toScreen(p);
-              return <line key={`road-draw-seg-${i}`} x1={prev.x} y1={prev.y} x2={curr.x} y2={curr.y} stroke="hsl(var(--primary))" strokeWidth={4} strokeLinecap="round" opacity={0.7} />;
-            })}
-            {roadDrawMousePos && (
-              <line x1={toScreen(roadDrawPoints[roadDrawPoints.length - 1]).x} y1={toScreen(roadDrawPoints[roadDrawPoints.length - 1]).y}
-                x2={roadDrawMousePos.x} y2={roadDrawMousePos.y}
-                stroke="hsl(var(--primary))" strokeWidth={3} strokeLinecap="round" strokeDasharray="6 4" opacity={0.5} />
-            )}
-            {roadDrawPoints.map((p, i) => {
-              const s = toScreen(p);
-              return <circle key={`road-draw-pt-${i}`} cx={s.x} cy={s.y} r={4} fill="white" stroke="hsl(var(--primary))" strokeWidth={2} />;
-            })}
-          </g>
-        )}
+        {/* Road drawing preview with width visualization */}
+        {mode === 'drawRoad' && roadDrawPoints.length > 0 && (() => {
+          const previewWidthPx = Math.max(4, (roadPresetWidth / sideLength) * (CANVAS_W - 2 * PADDING));
+          const allPts = [...roadDrawPoints];
+          const screenPts = allPts.map(p => toScreen(p));
+          const polyStr = screenPts.map(p => `${p.x},${p.y}`).join(' ');
+          const lastScreenPt = screenPts[screenPts.length - 1];
+          
+          return (
+            <g>
+              {/* Width band preview */}
+              <polyline points={polyStr} fill="none"
+                stroke="hsl(var(--primary))" strokeWidth={previewWidthPx}
+                strokeLinecap="round" strokeLinejoin="round"
+                opacity={0.15} className="pointer-events-none" />
+              {/* Center line (confirmed segments) */}
+              <polyline points={polyStr} fill="none"
+                stroke="hsl(var(--primary))" strokeWidth={3}
+                strokeLinecap="round" strokeLinejoin="round"
+                opacity={0.7} className="pointer-events-none" />
+              {/* Mouse follow line */}
+              {roadDrawMousePos && (
+                <>
+                  <line x1={lastScreenPt.x} y1={lastScreenPt.y}
+                    x2={roadDrawMousePos.x} y2={roadDrawMousePos.y}
+                    stroke="hsl(var(--primary))" strokeWidth={previewWidthPx}
+                    strokeLinecap="round" opacity={0.08} className="pointer-events-none" />
+                  <line x1={lastScreenPt.x} y1={lastScreenPt.y}
+                    x2={roadDrawMousePos.x} y2={roadDrawMousePos.y}
+                    stroke="hsl(var(--primary))" strokeWidth={2}
+                    strokeLinecap="round" strokeDasharray="6 4" opacity={0.5} className="pointer-events-none" />
+                </>
+              )}
+              {/* Point markers */}
+              {screenPts.map((s, i) => (
+                <circle key={`road-draw-pt-${i}`} cx={s.x} cy={s.y} r={4}
+                  fill="white" stroke="hsl(var(--primary))" strokeWidth={2}
+                  className="pointer-events-none" />
+              ))}
+              {/* Width label */}
+              {screenPts.length >= 1 && (
+                <g className="pointer-events-none select-none">
+                  <rect x={screenPts[0].x - 20} y={screenPts[0].y - 22} width={40} height={14} rx={3}
+                    fill="hsl(var(--primary))" fillOpacity={0.15}
+                    stroke="hsl(var(--primary))" strokeWidth={0.5} />
+                  <text x={screenPts[0].x} y={screenPts[0].y - 15} textAnchor="middle" dominantBaseline="middle"
+                    fontSize={8} fill="hsl(var(--primary))" fontWeight="600">
+                    {roadPresetWidth}m
+                  </text>
+                </g>
+              )}
+              {/* Floating action buttons for multi-mode */}
+              {roadDrawMultiMode && roadDrawPoints.length >= 2 && (
+                <g>
+                  <g className="cursor-pointer" onClick={e => {
+                    e.stopPropagation();
+                    if (onFinishRoadDraw) {
+                      onFinishRoadDraw(roadDrawPoints);
+                    }
+                    setRoadDrawPoints([]);
+                    setRoadDrawMousePos(null);
+                    setRoadDrawMultiMode(false);
+                  }}>
+                    <rect x={lastScreenPt.x + 10} y={lastScreenPt.y - 24} width={62} height={22} rx={6}
+                      fill="hsl(var(--primary))" fillOpacity={0.9} />
+                    <text x={lastScreenPt.x + 41} y={lastScreenPt.y - 13} textAnchor="middle" dominantBaseline="middle"
+                      fontSize={9} fill="white" fontWeight="600" className="pointer-events-none select-none">
+                      ✓ Terminer
+                    </text>
+                  </g>
+                  <g className="cursor-pointer" onClick={e => {
+                    e.stopPropagation();
+                    setRoadDrawPoints([]);
+                    setRoadDrawMousePos(null);
+                    setRoadDrawMultiMode(false);
+                  }}>
+                    <rect x={lastScreenPt.x + 10} y={lastScreenPt.y + 2} width={56} height={22} rx={6}
+                      fill="hsl(var(--destructive))" fillOpacity={0.9} />
+                    <text x={lastScreenPt.x + 38} y={lastScreenPt.y + 13} textAnchor="middle" dominantBaseline="middle"
+                      fontSize={9} fill="white" fontWeight="600" className="pointer-events-none select-none">
+                      ✕ Annuler
+                    </text>
+                  </g>
+                </g>
+              )}
+            </g>
+          );
+        })()}
 
         {/* Mode instruction overlay */}
         {mode === 'cut' && (
@@ -803,9 +978,9 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         )}
         {mode === 'drawRoad' && (
           <g className="pointer-events-none">
-            <rect x={CANVAS_W / 2 - 140} y={CANVAS_H - 24} width={280} height={20} rx={4} fill="hsl(var(--primary))" fillOpacity={0.1} />
+            <rect x={CANVAS_W / 2 - 155} y={CANVAS_H - 24} width={310} height={20} rx={4} fill="hsl(var(--primary))" fillOpacity={0.1} />
             <text x={CANVAS_W / 2} y={CANVAS_H - 14} textAnchor="middle" dominantBaseline="middle" fontSize={9} fill="hsl(var(--primary))" fontWeight="600">
-              🛣 Cliquez pour tracer la voie • Double-clic pour terminer
+              🛣 Glissez pour tracer • Shift+clic pour multi-segments • Backspace: annuler point
             </text>
           </g>
         )}
