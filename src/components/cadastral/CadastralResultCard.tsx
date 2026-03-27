@@ -1053,7 +1053,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
 
                      {ownership_history.length === 0 && (
                        <div className="text-center text-xs text-muted-foreground py-2">
-                         Aucun historique disponible
+                         Aucun ancien propriétaire enregistré
                        </div>
                      )}
                    </div>
