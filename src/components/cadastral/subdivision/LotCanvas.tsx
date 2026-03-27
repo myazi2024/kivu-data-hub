@@ -12,7 +12,17 @@ interface ParcelSide {
   [key: string]: any;
 }
 
-export type CanvasMode = 'select' | 'drawLine' | 'clipart';
+export type CanvasMode = 'select' | 'drawLine' | 'clipart' | 'selectEdge';
+
+export interface EdgeInfo {
+  lotId1: string;
+  edgeIdx1: number;
+  lotId2?: string;
+  edgeIdx2?: number;
+  p1: Point2D;
+  p2: Point2D;
+  isShared: boolean;
+}
 
 interface LotCanvasProps {
   lots: SubdivisionLot[];
@@ -33,6 +43,7 @@ interface LotCanvasProps {
   onDeleteRoad?: (id: string) => void;
   onUpdateRoad?: (id: string, updates: Partial<SubdivisionRoad>) => void;
   onSplitLot?: (id: string) => void;
+  onConvertEdgeToRoad?: (edge: EdgeInfo) => void;
   onMergeLots?: (ids: string[]) => void;
   onCutLot?: (lotId: string, cutStart: Point2D, cutEnd: Point2D) => void;
   onFinishRoadDraw?: (path: Point2D[]) => void;
@@ -64,7 +75,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   lots, roads, parentAreaSqm, parentVertices, parentSides, selectedLotId, selectedLotIds = [], onSelectLot, onToggleLotSelection, onUpdateLot,
   onUpdateLotAnnotations, onDeleteLot, onDuplicateLot,
   selectedRoadId, onSelectRoad, onDeleteRoad, onUpdateRoad, onSplitLot, onMergeLots,
-  onCutLot, onFinishRoadDraw, mode = 'select', onModeChange,
+  onCutLot, onFinishRoadDraw, onConvertEdgeToRoad, mode = 'select', onModeChange,
   showGrid = true, onToggleGrid, showDimensions = true, showLotNumbers = true,
   showAreas = true, showRoads = true, showNorth = true,
   showLegend = false, showScale = true, showOwnerNames = false,
@@ -94,11 +105,46 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   // Context menu state
   const [contextMenuLotId, setContextMenuLotId] = useState<string | null>(null);
 
+  // Edge selection state (selectEdge mode + right-click on edges)
+  const [hoveredEdge, setHoveredEdge] = useState<EdgeInfo | null>(null);
+  const [edgeContextMenu, setEdgeContextMenu] = useState<{ edge: EdgeInfo; screenPos: Point2D } | null>(null);
+
   // Viewport (zoom/pan)
   const viewport = useCanvasViewport(CANVAS_W, CANVAS_H);
 
   // Drag system
   const drag = useCanvasDrag(lots, onUpdateLot, snapEnabled, showGrid);
+
+  // Detect shared edges between lots
+  const sharedEdges = useMemo(() => {
+    const TOLERANCE = 0.015;
+    const edges: EdgeInfo[] = [];
+    for (let i = 0; i < lots.length; i++) {
+      for (let ei = 0; ei < lots[i].vertices.length; ei++) {
+        const a1 = lots[i].vertices[ei];
+        const a2 = lots[i].vertices[(ei + 1) % lots[i].vertices.length];
+        for (let j = i + 1; j < lots.length; j++) {
+          for (let ej = 0; ej < lots[j].vertices.length; ej++) {
+            const b1 = lots[j].vertices[ej];
+            const b2 = lots[j].vertices[(ej + 1) % lots[j].vertices.length];
+            // Check if edges match (either direction)
+            const match1 = Math.abs(a1.x - b1.x) < TOLERANCE && Math.abs(a1.y - b1.y) < TOLERANCE &&
+                           Math.abs(a2.x - b2.x) < TOLERANCE && Math.abs(a2.y - b2.y) < TOLERANCE;
+            const match2 = Math.abs(a1.x - b2.x) < TOLERANCE && Math.abs(a1.y - b2.y) < TOLERANCE &&
+                           Math.abs(a2.x - b1.x) < TOLERANCE && Math.abs(a2.y - b1.y) < TOLERANCE;
+            if (match1 || match2) {
+              edges.push({
+                lotId1: lots[i].id, edgeIdx1: ei,
+                lotId2: lots[j].id, edgeIdx2: ej,
+                p1: a1, p2: a2, isShared: true,
+              });
+            }
+          }
+        }
+      }
+    }
+    return edges;
+  }, [lots]);
 
   // Reset drawing states when mode changes
   useEffect(() => {
@@ -108,6 +154,8 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     setLineDrawMultiMode(false);
     setLineChoiceMenu(null);
     setRoadEndpointDrag(null);
+    setHoveredEdge(null);
+    setEdgeContextMenu(null);
     if (mode !== 'clipart') {
       setShowClipartPalette(false);
       setClipartType(null);
@@ -125,6 +173,10 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     onUndo,
     onRedo,
     onEscape: () => {
+      if (edgeContextMenu) {
+        setEdgeContextMenu(null);
+        return;
+      }
       if (lineChoiceMenu) {
         setLineChoiceMenu(null);
         return;
@@ -134,6 +186,10 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         setLineDrawMousePos(null);
         setIsLineDragging(false);
         setLineDrawMultiMode(false);
+        return;
+      }
+      if (mode === 'selectEdge') {
+        onModeChange?.('select');
         return;
       }
       onSelectLot(null);
@@ -462,6 +518,10 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       onSelectLot(null);
       onSelectRoad?.(null);
       setContextMenuLotId(null);
+      setEdgeContextMenu(null);
+    }
+    if (mode === 'selectEdge') {
+      setEdgeContextMenu(null);
     }
   }, [readOnly, mode, getSvgPos, fromScreen, lots, onSelectLot, onSelectRoad, clipartType, onUpdateLotAnnotations, drag.isDragging, isLineDragging, lineDrawMultiMode, lineChoiceMenu]);
 
@@ -528,6 +588,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     ? 'grab'
     : mode === 'drawLine' ? 'crosshair'
     : mode === 'clipart' ? 'cell'
+    : mode === 'selectEdge' ? 'pointer'
     : 'default';
 
   const tooSmallLotIds = useMemo(() => {
@@ -929,10 +990,58 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
               })}
 
               {/* Edge hit targets */}
-              {!readOnly && mode === 'select' && lot.vertices.map((v, i) => {
+              {!readOnly && (mode === 'select' || mode === 'selectEdge') && lot.vertices.map((v, i) => {
                 const next = lot.vertices[(i + 1) % lot.vertices.length];
                 const sv = toScreen(v);
                 const sn = toScreen(next);
+                const isEdgeHovered = hoveredEdge && hoveredEdge.lotId1 === lot.id && hoveredEdge.edgeIdx1 === i;
+                const isSharedEdge = sharedEdges.some(se =>
+                  (se.lotId1 === lot.id && se.edgeIdx1 === i) ||
+                  (se.lotId2 === lot.id && se.edgeIdx2 === i)
+                );
+
+                if (mode === 'selectEdge') {
+                  // In selectEdge mode, highlight edges on hover
+                  return (
+                    <g key={`edge-hit-${i}`}>
+                      {isEdgeHovered && (
+                        <line x1={sv.x} y1={sv.y} x2={sn.x} y2={sn.y}
+                          stroke={isSharedEdge ? 'hsl(var(--primary))' : 'hsl(var(--accent-foreground))'}
+                          strokeWidth={6} strokeLinecap="round" opacity={0.4}
+                          className="pointer-events-none" />
+                      )}
+                      <line x1={sv.x} y1={sv.y} x2={sn.x} y2={sn.y}
+                        stroke="rgba(0,0,0,0.001)" strokeWidth={16} strokeLinecap="round"
+                        pointerEvents="stroke" style={{ cursor: 'pointer' }}
+                        onMouseEnter={() => {
+                          const shared = sharedEdges.find(se =>
+                            (se.lotId1 === lot.id && se.edgeIdx1 === i) ||
+                            (se.lotId2 === lot.id && se.edgeIdx2 === i)
+                          );
+                          if (shared) {
+                            setHoveredEdge(shared);
+                          } else {
+                            setHoveredEdge({ lotId1: lot.id, edgeIdx1: i, p1: v, p2: next, isShared: false });
+                          }
+                        }}
+                        onMouseLeave={() => setHoveredEdge(null)}
+                        onClick={e => {
+                          e.stopPropagation();
+                          const shared = sharedEdges.find(se =>
+                            (se.lotId1 === lot.id && se.edgeIdx1 === i) ||
+                            (se.lotId2 === lot.id && se.edgeIdx2 === i)
+                          );
+                          const edge = shared || { lotId1: lot.id, edgeIdx1: i, p1: v, p2: next, isShared: false };
+                          onConvertEdgeToRoad?.(edge);
+                          onModeChange?.('select');
+                          setHoveredEdge(null);
+                        }}
+                      />
+                    </g>
+                  );
+                }
+
+                // Normal select mode
                 const angle = Math.atan2(sn.y - sv.y, sn.x - sv.x) * (180 / Math.PI);
                 const normalizedAngle = ((angle % 180) + 180) % 180;
                 let cursorStyle = 'ew-resize';
@@ -946,6 +1055,22 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                     stroke="rgba(0,0,0,0.001)" strokeWidth={14} strokeLinecap="round"
                     pointerEvents="stroke" style={{ cursor: cursorStyle }}
                     onMouseDown={e => handleEdgeMouseDown(lot.id, i, e)}
+                    onContextMenu={e => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (readOnly) return;
+                      const shared = sharedEdges.find(se =>
+                        (se.lotId1 === lot.id && se.edgeIdx1 === i) ||
+                        (se.lotId2 === lot.id && se.edgeIdx2 === i)
+                      );
+                      const edge = shared || { lotId1: lot.id, edgeIdx1: i, p1: v, p2: next, isShared: false };
+                      const midScreen = {
+                        x: (sv.x + sn.x) / 2,
+                        y: (sv.y + sn.y) / 2,
+                      };
+                      setEdgeContextMenu({ edge, screenPos: midScreen });
+                      setContextMenuLotId(null);
+                    }}
                   />
                 );
               })}
@@ -983,29 +1108,39 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
               {/* Context menu (floating toolbar) */}
               {contextMenuLotId === lot.id && !readOnly && mode === 'select' && (
                 <g>
-                  <rect x={cx - 60} y={cy - 45} width={120} height={28} rx={8}
+                  <rect x={cx - 72} y={cy - 45} width={144} height={28} rx={8}
                     fill="hsl(var(--background))" fillOpacity={0.95}
                     stroke="hsl(var(--border))" strokeWidth={1} />
                   {onSplitLot && (
                     <g className="cursor-pointer" onClick={e => { e.stopPropagation(); onSplitLot(lot.id); setContextMenuLotId(null); }}>
-                      <rect x={cx - 56} y={cy - 42} width={24} height={22} rx={4} fill="transparent" />
-                      <text x={cx - 44} y={cy - 31} textAnchor="middle" dominantBaseline="middle" fontSize={14} className="pointer-events-none select-none">✂️</text>
+                      <rect x={cx - 68} y={cy - 42} width={24} height={22} rx={4} fill="transparent" />
+                      <text x={cx - 56} y={cy - 31} textAnchor="middle" dominantBaseline="middle" fontSize={14} className="pointer-events-none select-none">✂️</text>
                     </g>
                   )}
                   {onDuplicateLot && (
                     <g className="cursor-pointer" onClick={e => { e.stopPropagation(); onDuplicateLot(lot.id); setContextMenuLotId(null); }}>
-                      <rect x={cx - 28} y={cy - 42} width={24} height={22} rx={4} fill="transparent" />
-                      <text x={cx - 16} y={cy - 31} textAnchor="middle" dominantBaseline="middle" fontSize={14} className="pointer-events-none select-none">📋</text>
+                      <rect x={cx - 40} y={cy - 42} width={24} height={22} rx={4} fill="transparent" />
+                      <text x={cx - 28} y={cy - 31} textAnchor="middle" dominantBaseline="middle" fontSize={14} className="pointer-events-none select-none">📋</text>
                     </g>
                   )}
                   <g className="cursor-pointer" onClick={e => { e.stopPropagation(); setShowClipartPalette(true); setContextMenuLotId(null); onModeChange?.('clipart'); }}>
-                    <rect x={cx} y={cy - 42} width={24} height={22} rx={4} fill="transparent" />
-                    <text x={cx + 12} y={cy - 31} textAnchor="middle" dominantBaseline="middle" fontSize={14} className="pointer-events-none select-none">🎨</text>
+                    <rect x={cx - 12} y={cy - 42} width={24} height={22} rx={4} fill="transparent" />
+                    <text x={cx} y={cy - 31} textAnchor="middle" dominantBaseline="middle" fontSize={14} className="pointer-events-none select-none">🎨</text>
                   </g>
+                  {onConvertEdgeToRoad && (
+                    <g className="cursor-pointer" onClick={e => {
+                      e.stopPropagation();
+                      setContextMenuLotId(null);
+                      onModeChange?.('selectEdge');
+                    }}>
+                      <rect x={cx + 16} y={cy - 42} width={24} height={22} rx={4} fill="transparent" />
+                      <text x={cx + 28} y={cy - 31} textAnchor="middle" dominantBaseline="middle" fontSize={14} className="pointer-events-none select-none">🛣</text>
+                    </g>
+                  )}
                   {onDeleteLot && (
                     <g className="cursor-pointer" onClick={e => { e.stopPropagation(); onDeleteLot(lot.id); setContextMenuLotId(null); }}>
-                      <rect x={cx + 28} y={cy - 42} width={24} height={22} rx={4} fill="transparent" />
-                      <text x={cx + 40} y={cy - 31} textAnchor="middle" dominantBaseline="middle" fontSize={14} className="pointer-events-none select-none">🗑️</text>
+                      <rect x={cx + 44} y={cy - 42} width={24} height={22} rx={4} fill="transparent" />
+                      <text x={cx + 56} y={cy - 31} textAnchor="middle" dominantBaseline="middle" fontSize={14} className="pointer-events-none select-none">🗑️</text>
                     </g>
                   )}
                 </g>
@@ -1185,12 +1320,61 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
           );
         })()}
 
+        {/* Edge context menu (right-click on edge) */}
+        {edgeContextMenu && !readOnly && (() => {
+          const { edge, screenPos } = edgeContextMenu;
+          const menuX = screenPos.x - 60;
+          const menuY = screenPos.y - 35;
+          return (
+            <g>
+              <rect x={menuX - 4} y={menuY - 4} width={128} height={32} rx={8}
+                fill="hsl(var(--background))" fillOpacity={0.97}
+                stroke="hsl(var(--border))" strokeWidth={1.5}
+                filter="drop-shadow(0 2px 8px rgba(0,0,0,0.15))"
+              />
+              <g className="cursor-pointer" onClick={e => {
+                e.stopPropagation();
+                onConvertEdgeToRoad?.(edge);
+                setEdgeContextMenu(null);
+              }}>
+                <rect x={menuX} y={menuY} width={120} height={24} rx={5}
+                  fill="hsl(var(--accent))" fillOpacity={0.8} />
+                <text x={menuX + 60} y={menuY + 12} textAnchor="middle" dominantBaseline="middle"
+                  fontSize={10} fontWeight="600" fill="hsl(var(--foreground))">
+                  🛣 {edge.isShared ? 'Convertir en voie' : 'Créer une voie'}
+                </text>
+              </g>
+            </g>
+          );
+        })()}
+
+        {/* Shared edges highlight in selectEdge mode */}
+        {mode === 'selectEdge' && sharedEdges.map((se, idx) => {
+          const sv = toScreen(se.p1);
+          const sn = toScreen(se.p2);
+          return (
+            <line key={`shared-edge-${idx}`}
+              x1={sv.x} y1={sv.y} x2={sn.x} y2={sn.y}
+              stroke="hsl(var(--primary))" strokeWidth={3}
+              strokeDasharray="6 3" opacity={0.3}
+              className="pointer-events-none" />
+          );
+        })}
+
         {/* Mode instruction overlay */}
         {mode === 'drawLine' && !lineChoiceMenu && (
           <g className="pointer-events-none">
             <rect x={CANVAS_W / 2 - 155} y={CANVAS_H - 24} width={310} height={20} rx={4} fill="hsl(var(--primary))" fillOpacity={0.1} />
             <text x={CANVAS_W / 2} y={CANVAS_H - 14} textAnchor="middle" dominantBaseline="middle" fontSize={9} fill="hsl(var(--primary))" fontWeight="600">
               ✏️ Glissez pour tracer • Shift+clic: multi-segments • Backspace: annuler point
+            </text>
+          </g>
+        )}
+        {mode === 'selectEdge' && (
+          <g className="pointer-events-none">
+            <rect x={CANVAS_W / 2 - 165} y={CANVAS_H - 24} width={330} height={20} rx={4} fill="hsl(var(--primary))" fillOpacity={0.1} />
+            <text x={CANVAS_W / 2} y={CANVAS_H - 14} textAnchor="middle" dominantBaseline="middle" fontSize={9} fill="hsl(var(--primary))" fontWeight="600">
+              🛣 Cliquez sur une limite entre lots pour créer une voie • Échap: annuler
             </text>
           </g>
         )}
