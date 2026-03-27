@@ -80,6 +80,9 @@ const AdminPaymentMode: React.FC = () => {
     if (config.enabled && !config.test_mode) {
       return { label: 'Mode Production', variant: 'default' as const, icon: CheckCircle2 };
     }
+    if (!config.enabled && !config.bypass_payment) {
+      return { label: 'Paiement désactivé', variant: 'outline' as const, icon: AlertTriangle };
+    }
     return { label: 'Mode Inconnu', variant: 'destructive' as const, icon: AlertTriangle };
   };
 

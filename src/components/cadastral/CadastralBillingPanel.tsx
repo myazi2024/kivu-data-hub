@@ -552,7 +552,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                     ? 'Sélectionner des services' 
                     : !acceptedTerms 
                     ? 'Accepter les conditions'
-                    : paymentMode.bypass_payment
+                    : (paymentMode.enabled && paymentMode.bypass_payment)
                     ? 'Accéder aux services'
                     : 'Payer'
                   }
