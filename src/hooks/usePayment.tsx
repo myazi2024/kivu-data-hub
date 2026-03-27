@@ -143,7 +143,6 @@ export const usePayment = () => {
       const { data, error } = await supabase.functions.invoke('create-payment', {
         body: { 
           items: itemIds,
-          test_mode: paymentMode.test_mode // Utiliser la config admin
         },
       });
 
