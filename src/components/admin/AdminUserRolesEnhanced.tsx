@@ -176,39 +176,45 @@ export const AdminUserRolesEnhanced: React.FC = () => {
 
   const fetchUserRoles = async () => {
     try {
-      // Optimized: Single query with JOIN to avoid N+1
-      const { data, error } = await supabase
+      // Step 1: Fetch user_roles (no JOIN - no FK between user_roles and profiles)
+      const { data: rolesData, error: rolesError } = await supabase
         .from('user_roles')
-        .select(`
-          id,
-          user_id,
-          role,
-          created_at,
-          profiles!inner(
-            full_name,
-            email
-          )
-        `)
+        .select('id, user_id, role, created_at, created_by')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (rolesError) throw rolesError;
 
-      // Transform the data with proper null checks
-      const transformedData = (data || []).map((item: any) => {
-        // Safely access nested profile data
-        const profileData = item.profiles;
-        
-        return {
-          id: item.id,
-          user_id: item.user_id,
-          role: item.role,
-          created_at: item.created_at,
-          profiles: {
-            full_name: profileData?.full_name || null,
-            email: profileData?.email || 'Email non disponible'
-          }
-        };
+      if (!rolesData || rolesData.length === 0) {
+        setUserRoles([]);
+        setLoading(false);
+        return;
+      }
+
+      // Step 2: Fetch profiles for all user_ids
+      const userIds = [...new Set(rolesData.map(r => r.user_id))];
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, email')
+        .in('user_id', userIds);
+
+      if (profilesError) {
+        console.error('Error fetching profiles for roles:', profilesError);
+      }
+
+      // Step 3: Build a lookup map and merge
+      const profileMap = new Map<string, { full_name: string | null; email: string }>();
+      (profilesData || []).forEach(p => {
+        profileMap.set(p.user_id, { full_name: p.full_name, email: p.email || 'Email non disponible' });
       });
+
+      const transformedData = rolesData.map((item: any) => ({
+        id: item.id,
+        user_id: item.user_id,
+        role: item.role,
+        created_at: item.created_at,
+        created_by: item.created_by,
+        profiles: profileMap.get(item.user_id) || { full_name: null, email: 'Email non disponible' },
+      }));
 
       setUserRoles(transformedData);
     } catch (error) {
@@ -218,7 +224,7 @@ export const AdminUserRolesEnhanced: React.FC = () => {
         description: 'Impossible de charger les rôles',
         variant: 'destructive',
       });
-      setUserRoles([]); // Set empty array on error
+      setUserRoles([]);
     } finally {
       setLoading(false);
     }
