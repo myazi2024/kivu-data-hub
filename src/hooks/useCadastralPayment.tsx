@@ -99,14 +99,38 @@ export const useCadastralPayment = () => {
 
       const serviceIds = selectedServices.map(s => s.id);
 
-      // Correction 2: État "ni bypass ni enabled" → bloquer
-      if (!paymentMode.bypass_payment && !paymentMode.enabled) {
-        toast({
-          title: "Paiement non configuré",
-          description: "Le système de paiement n'est pas encore activé. Contactez l'administrateur.",
-          variant: "destructive"
-        });
-        return null;
+      // Si le paiement n'est pas activé et pas en bypass → accès gratuit
+      if (!paymentMode.enabled && !paymentMode.bypass_payment) {
+        const { data: invoice, error } = await supabase
+          .from('cadastral_invoices')
+          .insert({
+            user_id: user.id,
+            parcel_number: parcelNumber,
+            invoice_number: null as any,
+            selected_services: serviceIds,
+            total_amount_usd: 0,
+            original_amount_usd: 0,
+            discount_amount_usd: 0,
+            discount_code_used: 'FREE_ACCESS',
+            payment_method: 'free',
+            client_email: user.email || '',
+            client_name: user.user_metadata?.full_name || null,
+            geographical_zone: selectedServices[0]?.parcel_location || '',
+            status: 'paid',
+            currency_code: 'USD',
+            exchange_rate_used: 1
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        await grantServiceAccess(user.id, invoice.id, parcelNumber, serviceIds);
+
+        toast({ title: "Accès accordé", description: "Services accessibles gratuitement" });
+        clearServices();
+        window.dispatchEvent(new CustomEvent('cadastralPaymentCompleted'));
+        return invoice;
       }
 
       // Mode bypass — accès gratuit, insert direct
