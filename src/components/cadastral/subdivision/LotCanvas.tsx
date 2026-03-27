@@ -878,26 +878,94 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
           <circle cx={toScreen(cutPoints[0]).x} cy={toScreen(cutPoints[0]).y} r={5} fill="hsl(var(--destructive))" opacity={0.9} className="pointer-events-none" />
         )}
 
-        {/* Road drawing preview */}
-        {mode === 'drawRoad' && roadDrawPoints.length > 0 && (
-          <g className="pointer-events-none">
-            {roadDrawPoints.map((p, i) => {
-              if (i === 0) return null;
-              const prev = toScreen(roadDrawPoints[i - 1]);
-              const curr = toScreen(p);
-              return <line key={`road-draw-seg-${i}`} x1={prev.x} y1={prev.y} x2={curr.x} y2={curr.y} stroke="hsl(var(--primary))" strokeWidth={4} strokeLinecap="round" opacity={0.7} />;
-            })}
-            {roadDrawMousePos && (
-              <line x1={toScreen(roadDrawPoints[roadDrawPoints.length - 1]).x} y1={toScreen(roadDrawPoints[roadDrawPoints.length - 1]).y}
-                x2={roadDrawMousePos.x} y2={roadDrawMousePos.y}
-                stroke="hsl(var(--primary))" strokeWidth={3} strokeLinecap="round" strokeDasharray="6 4" opacity={0.5} />
-            )}
-            {roadDrawPoints.map((p, i) => {
-              const s = toScreen(p);
-              return <circle key={`road-draw-pt-${i}`} cx={s.x} cy={s.y} r={4} fill="white" stroke="hsl(var(--primary))" strokeWidth={2} />;
-            })}
-          </g>
-        )}
+        {/* Road drawing preview with width visualization */}
+        {mode === 'drawRoad' && roadDrawPoints.length > 0 && (() => {
+          const previewWidthPx = Math.max(4, (roadPresetWidth / sideLength) * (CANVAS_W - 2 * PADDING));
+          const allPts = [...roadDrawPoints];
+          const screenPts = allPts.map(p => toScreen(p));
+          const polyStr = screenPts.map(p => `${p.x},${p.y}`).join(' ');
+          const lastScreenPt = screenPts[screenPts.length - 1];
+          
+          return (
+            <g>
+              {/* Width band preview */}
+              <polyline points={polyStr} fill="none"
+                stroke="hsl(var(--primary))" strokeWidth={previewWidthPx}
+                strokeLinecap="round" strokeLinejoin="round"
+                opacity={0.15} className="pointer-events-none" />
+              {/* Center line (confirmed segments) */}
+              <polyline points={polyStr} fill="none"
+                stroke="hsl(var(--primary))" strokeWidth={3}
+                strokeLinecap="round" strokeLinejoin="round"
+                opacity={0.7} className="pointer-events-none" />
+              {/* Mouse follow line */}
+              {roadDrawMousePos && (
+                <>
+                  <line x1={lastScreenPt.x} y1={lastScreenPt.y}
+                    x2={roadDrawMousePos.x} y2={roadDrawMousePos.y}
+                    stroke="hsl(var(--primary))" strokeWidth={previewWidthPx}
+                    strokeLinecap="round" opacity={0.08} className="pointer-events-none" />
+                  <line x1={lastScreenPt.x} y1={lastScreenPt.y}
+                    x2={roadDrawMousePos.x} y2={roadDrawMousePos.y}
+                    stroke="hsl(var(--primary))" strokeWidth={2}
+                    strokeLinecap="round" strokeDasharray="6 4" opacity={0.5} className="pointer-events-none" />
+                </>
+              )}
+              {/* Point markers */}
+              {screenPts.map((s, i) => (
+                <circle key={`road-draw-pt-${i}`} cx={s.x} cy={s.y} r={4}
+                  fill="white" stroke="hsl(var(--primary))" strokeWidth={2}
+                  className="pointer-events-none" />
+              ))}
+              {/* Width label */}
+              {screenPts.length >= 1 && (
+                <g className="pointer-events-none select-none">
+                  <rect x={screenPts[0].x - 20} y={screenPts[0].y - 22} width={40} height={14} rx={3}
+                    fill="hsl(var(--primary))" fillOpacity={0.15}
+                    stroke="hsl(var(--primary))" strokeWidth={0.5} />
+                  <text x={screenPts[0].x} y={screenPts[0].y - 15} textAnchor="middle" dominantBaseline="middle"
+                    fontSize={8} fill="hsl(var(--primary))" fontWeight="600">
+                    {roadPresetWidth}m
+                  </text>
+                </g>
+              )}
+              {/* Floating action buttons for multi-mode */}
+              {roadDrawMultiMode && roadDrawPoints.length >= 2 && (
+                <g>
+                  <g className="cursor-pointer" onClick={e => {
+                    e.stopPropagation();
+                    if (onFinishRoadDraw) {
+                      onFinishRoadDraw(roadDrawPoints);
+                    }
+                    setRoadDrawPoints([]);
+                    setRoadDrawMousePos(null);
+                    setRoadDrawMultiMode(false);
+                  }}>
+                    <rect x={lastScreenPt.x + 10} y={lastScreenPt.y - 24} width={62} height={22} rx={6}
+                      fill="hsl(var(--primary))" fillOpacity={0.9} />
+                    <text x={lastScreenPt.x + 41} y={lastScreenPt.y - 13} textAnchor="middle" dominantBaseline="middle"
+                      fontSize={9} fill="white" fontWeight="600" className="pointer-events-none select-none">
+                      ✓ Terminer
+                    </text>
+                  </g>
+                  <g className="cursor-pointer" onClick={e => {
+                    e.stopPropagation();
+                    setRoadDrawPoints([]);
+                    setRoadDrawMousePos(null);
+                    setRoadDrawMultiMode(false);
+                  }}>
+                    <rect x={lastScreenPt.x + 10} y={lastScreenPt.y + 2} width={56} height={22} rx={6}
+                      fill="hsl(var(--destructive))" fillOpacity={0.9} />
+                    <text x={lastScreenPt.x + 38} y={lastScreenPt.y + 13} textAnchor="middle" dominantBaseline="middle"
+                      fontSize={9} fill="white" fontWeight="600" className="pointer-events-none select-none">
+                      ✕ Annuler
+                    </text>
+                  </g>
+                </g>
+              )}
+            </g>
+          );
+        })()}
 
         {/* Mode instruction overlay */}
         {mode === 'cut' && (
@@ -910,9 +978,9 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         )}
         {mode === 'drawRoad' && (
           <g className="pointer-events-none">
-            <rect x={CANVAS_W / 2 - 140} y={CANVAS_H - 24} width={280} height={20} rx={4} fill="hsl(var(--primary))" fillOpacity={0.1} />
+            <rect x={CANVAS_W / 2 - 155} y={CANVAS_H - 24} width={310} height={20} rx={4} fill="hsl(var(--primary))" fillOpacity={0.1} />
             <text x={CANVAS_W / 2} y={CANVAS_H - 14} textAnchor="middle" dominantBaseline="middle" fontSize={9} fill="hsl(var(--primary))" fontWeight="600">
-              🛣 Cliquez pour tracer la voie • Double-clic pour terminer
+              🛣 Glissez pour tracer • Shift+clic pour multi-segments • Backspace: annuler point
             </text>
           </g>
         )}
