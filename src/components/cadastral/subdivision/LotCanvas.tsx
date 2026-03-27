@@ -86,7 +86,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [showClipartPalette, setShowClipartPalette] = useState(false);
-  const [rotationDrag, setRotationDrag] = useState<{ startAngle: number; centerX: number; centerY: number } | null>(null);
+  const [rotationDrag, setRotationDrag] = useState<{ startAngle: number; centerX: number; centerY: number; originalVertices: Point2D[]; targetType: 'lot' | 'road'; targetId: string } | null>(null);
   const [rotationAngleDisplay, setRotationAngleDisplay] = useState<number | null>(null);
   const [clipartType, setClipartType] = useState<LotAnnotation['type'] | null>(null);
 
