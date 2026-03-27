@@ -3,9 +3,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Eye, Download, Compass, Ruler, Hash, SquareStack, Route } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import html2canvas from 'html2canvas';
 import {
   SubdivisionLot, SubdivisionRoad, SubdivisionCommonSpace, SubdivisionServitude,
   PlanElements, ParentParcelInfo, LOT_COLORS, USAGE_LABELS, Point2D
@@ -43,28 +43,25 @@ const StepPlanView: React.FC<StepPlanViewProps> = ({
     onPlanElementsChange({ ...planElements, [key]: !planElements[key] });
   };
 
-  const handleExportPNG = () => {
-    const svgElement = document.querySelector('#subdivision-canvas svg');
-    if (!svgElement) return;
+  const handleExportPNG = async () => {
+    const canvasContainer = document.getElementById('subdivision-canvas');
+    if (!canvasContainer) return;
     
-    const svgData = new XMLSerializer().serializeToString(svgElement);
-    const canvas = document.createElement('canvas');
-    canvas.width = 1200;
-    canvas.height = 800;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    const img = new Image();
-    img.onload = () => {
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    try {
+      const canvas = await html2canvas(canvasContainer, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+      
       const link = document.createElement('a');
       link.download = `lotissement-${parentParcel?.parcelNumber || 'plan'}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
-    };
-    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+    } catch (err) {
+      console.error('Export PNG error:', err);
+    }
   };
 
   return (

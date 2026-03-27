@@ -2,14 +2,14 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
-  FileText, Check, MapPin, User, Grid3X3, Loader2, 
+  FileText, MapPin, User, Grid3X3, Loader2, 
   CheckCircle, Copy, AlertTriangle, CreditCard
 } from 'lucide-react';
 import { SubdivisionLot, SubdivisionRoad, ParentParcelInfo, RequesterInfo, USAGE_LABELS, LOT_COLORS } from '../types';
 import { ValidationResult } from '../utils/geometry';
+import { SUBDIVISION_PURPOSE_LABELS } from '../constants';
 
 interface StepSummaryProps {
   parentParcel: ParentParcelInfo | null;
@@ -21,15 +21,24 @@ interface StepSummaryProps {
   submitted: boolean;
   referenceNumber: string;
   submitting: boolean;
+  submissionFee: number | null;
   onSubmit: () => void;
 }
 
+const REQUESTER_TYPE_LABELS: Record<string, string> = {
+  owner: 'Propriétaire',
+  mandatary: 'Mandataire',
+  notary: 'Notaire',
+  other: 'Autre',
+};
+
 const StepSummary: React.FC<StepSummaryProps> = ({
   parentParcel, requester, lots, roads, validation, purpose,
-  submitted, referenceNumber, submitting, onSubmit
+  submitted, referenceNumber, submitting, submissionFee, onSubmit
 }) => {
   const totalArea = lots.reduce((s, l) => s + l.areaSqm, 0);
   const parentArea = parentParcel?.areaSqm || 0;
+  const feeAmount = submissionFee ?? 20;
 
   if (submitted) {
     return (
@@ -59,7 +68,7 @@ const StepSummary: React.FC<StepSummaryProps> = ({
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Frais de dossier</span>
-              <span className="font-bold">20 USD</span>
+              <span className="font-bold">{feeAmount} USD</span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Statut</span>
@@ -78,7 +87,6 @@ const StepSummary: React.FC<StepSummaryProps> = ({
         <h3 className="font-semibold text-sm">Récapitulatif de la demande</h3>
       </div>
 
-      {/* Validation errors */}
       {validation.errors.length > 0 && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
@@ -113,12 +121,12 @@ const StepSummary: React.FC<StepSummaryProps> = ({
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div><span className="text-muted-foreground">Nom:</span> <span className="font-medium">{requester.lastName} {requester.firstName}</span></div>
             <div><span className="text-muted-foreground">Téléphone:</span> <span className="font-medium">{requester.phone}</span></div>
-            <div><span className="text-muted-foreground">Qualité:</span> <span className="font-medium">{requester.type}</span></div>
+            <div><span className="text-muted-foreground">Qualité:</span> <span className="font-medium">{REQUESTER_TYPE_LABELS[requester.type] || requester.type}</span></div>
             {requester.email && <div><span className="text-muted-foreground">Email:</span> <span className="font-medium">{requester.email}</span></div>}
           </div>
           {purpose && (
             <div className="text-xs mt-1">
-              <span className="text-muted-foreground">Motif:</span> <span>{purpose}</span>
+              <span className="text-muted-foreground">Motif:</span> <span>{SUBDIVISION_PURPOSE_LABELS[purpose] || purpose}</span>
             </div>
           )}
         </CardContent>
@@ -184,7 +192,7 @@ const StepSummary: React.FC<StepSummaryProps> = ({
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm">Frais de soumission</span>
-            <span className="text-lg font-bold text-primary">20 USD</span>
+            <span className="text-lg font-bold text-primary">{feeAmount} USD</span>
           </div>
           <p className="text-[10px] text-muted-foreground">
             Des frais de traitement supplémentaires pourront être appliqués après examen de votre dossier par notre équipe.

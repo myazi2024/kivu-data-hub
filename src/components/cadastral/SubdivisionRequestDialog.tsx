@@ -3,9 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Grid3X3, MapPin, Pencil, Eye, FileText, ChevronLeft, ChevronRight, Check, Loader2 } from 'lucide-react';
+import { Grid3X3, MapPin, Pencil, Eye, FileText, ChevronLeft, ChevronRight, Check, Loader2, Info, Trash2 } from 'lucide-react';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { useSubdivisionForm } from './subdivision/hooks/useSubdivisionForm';
@@ -77,6 +78,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
   }
   
   const currentStepIndex = form.steps.indexOf(form.currentStep);
+  const feeLabel = form.loadingFee ? '...' : `${form.submissionFee ?? 20}$`;
   
   return (
     <>
@@ -98,7 +100,22 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
             </div>
           </DialogHeader>
           
-          {/* Step navigation - sticky */}
+          {/* Draft restored notice */}
+          {form.draftRestored && !form.submitted && (
+            <div className="px-4">
+              <Alert className="py-2 border-amber-500/30 bg-amber-50/50">
+                <Info className="h-3.5 w-3.5" />
+                <AlertDescription className="text-xs flex items-center justify-between">
+                  <span>Brouillon restauré automatiquement.</span>
+                  <Button variant="ghost" size="sm" className="h-6 text-xs gap-1" onClick={form.clearDraft}>
+                    <Trash2 className="h-3 w-3" /> Effacer
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
+          
+          {/* Step navigation */}
           <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b px-4 py-2">
             <div className="flex items-center gap-1">
               {STEP_CONFIG.map((step, index) => {
@@ -151,6 +168,11 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                 setLots={form.setLots}
                 roads={form.roads}
                 setRoads={form.setRoads}
+                commonSpaces={form.commonSpaces}
+                setCommonSpaces={form.setCommonSpaces}
+                servitudes={form.servitudes}
+                setServitudes={form.setServitudes}
+                lotIds={form.lots.map(l => l.id)}
                 onAutoSubdivide={form.handleAutoSubdivide}
                 validation={form.validation}
                 canUndo={form.canUndo}
@@ -183,6 +205,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                 submitted={form.submitted}
                 referenceNumber={form.referenceNumber}
                 submitting={form.submitting}
+                submissionFee={form.submissionFee}
                 onSubmit={handleSubmit}
               />
             )}
@@ -227,11 +250,11 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                 <Button
                   size="sm"
                   onClick={handleSubmit}
-                  disabled={form.submitting || !form.isStepValid('designer')}
+                  disabled={form.submitting || !form.isStepValid('designer') || form.loadingFee}
                   className="gap-1"
                 >
                   {form.submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-                  Soumettre (20$)
+                  Soumettre ({feeLabel})
                 </Button>
               )}
             </div>
@@ -247,13 +270,13 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Modifications non enregistrées</AlertDialogTitle>
             <AlertDialogDescription>
-              Votre plan de lotissement n'a pas été soumis. Voulez-vous vraiment quitter ?
+              Votre brouillon sera sauvegardé automatiquement. Vous pourrez le retrouver en réouvrant cette demande.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Continuer l'édition</AlertDialogCancel>
             <AlertDialogAction onClick={() => { setShowCloseConfirm(false); onOpenChange(false); }}>
-              Fermer quand même
+              Fermer
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

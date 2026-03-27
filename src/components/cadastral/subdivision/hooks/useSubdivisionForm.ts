@@ -8,6 +8,8 @@ import {
 } from '../types';
 import { autoSubdivide, generateRoads, validateSubdivision, ValidationResult, gpsToNormalized } from '../utils/geometry';
 
+const DRAFT_KEY_PREFIX = 'subdivision-draft-';
+
 export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authUser?: User | null) {
   // Steps
   const [currentStep, setCurrentStep] = useState<SubdivisionStep>('parcel');
@@ -16,10 +18,17 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   const [parentParcel, setParentParcel] = useState<ParentParcelInfo | null>(null);
   const [loadingParcel, setLoadingParcel] = useState(false);
   
-  // Requester - auto-populated from auth user
+  // Dynamic pricing
+  const [submissionFee, setSubmissionFee] = useState<number | null>(null);
+  const [loadingFee, setLoadingFee] = useState(true);
+  
+  // Requester
   const [requester, setRequester] = useState<RequesterInfo>({
     firstName: '', lastName: '', phone: '', type: 'owner', isOwner: true,
   });
+  
+  // Draft restored flag
+  const [draftRestored, setDraftRestored] = useState(false);
   
   // Auto-fill requester from authenticated user
   useEffect(() => {
@@ -39,6 +48,28 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
       }));
     }
   }, [authUser]);
+  
+  // Load submission fee from config
+  useEffect(() => {
+    const loadFee = async () => {
+      try {
+        const { data } = await supabase
+          .from('cadastral_services_config')
+          .select('price_usd')
+          .eq('service_id', 'subdivision')
+          .eq('is_active', true)
+          .is('deleted_at', null)
+          .single();
+        
+        setSubmissionFee(data ? Number(data.price_usd) : 20);
+      } catch {
+        setSubmissionFee(20); // fallback
+      } finally {
+        setLoadingFee(false);
+      }
+    };
+    loadFee();
+  }, []);
   
   // Plan data
   const [lots, setLots] = useState<SubdivisionLot[]>([]);
@@ -62,13 +93,54 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   const [history, setHistory] = useState<SubdivisionLot[][]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   
+  // === Draft system ===
+  const draftKey = `${DRAFT_KEY_PREFIX}${parcelNumber}`;
+  
+  // Restore draft on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(draftKey);
+      if (saved) {
+        const draft = JSON.parse(saved);
+        if (draft.lots?.length > 0) {
+          setLots(draft.lots);
+          setRoads(draft.roads || []);
+          setCommonSpaces(draft.commonSpaces || []);
+          setServitudes(draft.servitudes || []);
+          setPurpose(draft.purpose || '');
+          if (draft.planElements) setPlanElements(draft.planElements);
+          setDraftRestored(true);
+        }
+      }
+    } catch {
+      // ignore corrupt drafts
+    }
+  }, [draftKey]);
+  
+  // Auto-save draft on changes
+  useEffect(() => {
+    if (lots.length === 0 && roads.length === 0) return;
+    try {
+      localStorage.setItem(draftKey, JSON.stringify({
+        lots, roads, commonSpaces, servitudes, purpose, planElements,
+        savedAt: new Date().toISOString(),
+      }));
+    } catch {
+      // storage full — ignore
+    }
+  }, [lots, roads, commonSpaces, servitudes, purpose, planElements, draftKey]);
+  
+  const clearDraft = useCallback(() => {
+    localStorage.removeItem(draftKey);
+    setDraftRestored(false);
+  }, [draftKey]);
+  
   // Load parent parcel data
   const loadParcelData = useCallback(async () => {
     if (!parcelNumber) return;
     setLoadingParcel(true);
     
     try {
-      // Try from props first
       if (parcelData?.area_sqm) {
         const gpsCoords = Array.isArray(parcelData.gps_coordinates) 
           ? parcelData.gps_coordinates.map((c: any) => ({ lat: c.lat, lng: c.lng }))
@@ -88,7 +160,6 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
         return;
       }
       
-      // Fetch from DB
       const { data: parcel } = await supabase
         .from('cadastral_parcels')
         .select('*')
@@ -134,7 +205,6 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   const handleAutoSubdivide = useCallback((options: AutoSubdivideOptions) => {
     if (!parentParcel) return;
     
-    // Inject parcelSides into options for road-aware subdivision
     const optionsWithSides: AutoSubdivideOptions = {
       ...options,
       parcelSides: parentParcel.parcelSides as any[] | undefined,
@@ -213,7 +283,10 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   const isStepValid = useCallback((step: SubdivisionStep): boolean => {
     switch (step) {
       case 'parcel':
-        return !!(parentParcel);
+        return !!(parentParcel) && 
+          !!(requester.firstName?.trim()) && 
+          !!(requester.lastName?.trim()) && 
+          !!(requester.phone?.trim());
       case 'designer':
         return lots.length >= 2 && validation.isValid;
       case 'plan':
@@ -238,13 +311,13 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     if (idx > 0) setCurrentStep(steps[idx - 1]);
   }, [currentStep]);
   
-  // Submit
+  // Submit — creates record with pending payment, returns ID for billing
   const submit = useCallback(async (userId: string) => {
     if (!parentParcel) return null;
     
     setSubmitting(true);
     try {
-      const refNum = `LOT-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`;
+      const feeAmount = submissionFee ?? 20;
       
       const planData: SubdivisionPlanData = {
         lots,
@@ -257,7 +330,6 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
       const { data, error } = await supabase
         .from('subdivision_requests' as any)
         .insert({
-          reference_number: refNum,
           user_id: userId,
           parcel_number: parcelNumber,
           parent_parcel_area_sqm: parentParcel.areaSqm,
@@ -275,24 +347,38 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
           lots_data: lots,
           subdivision_plan_data: planData,
           purpose_of_subdivision: purpose,
-          submission_fee_usd: 20,
-          total_amount_usd: 20,
+          submission_fee_usd: feeAmount,
+          total_amount_usd: feeAmount,
           status: 'pending',
-          submission_payment_status: 'completed',
+          submission_payment_status: 'pending',
         } as any)
         .select()
         .single();
       
       if (error) throw error;
       
+      // Build reference from returned ID
+      const record = data as any;
+      const shortId = record.id.substring(0, 8).toUpperCase();
+      const refNum = `LOT-${new Date().getFullYear()}-${shortId}`;
+      
+      // Update reference number
+      await supabase
+        .from('subdivision_requests' as any)
+        .update({ reference_number: refNum } as any)
+        .eq('id', record.id);
+      
       // Create notification
       await supabase.from('notifications').insert({
         user_id: userId,
         type: 'success',
         title: 'Demande de lotissement soumise',
-        message: `Votre demande ${refNum} a été soumise. Frais de dossier: 20$.`,
+        message: `Votre demande ${refNum} a été soumise. Frais de dossier: ${feeAmount}$.`,
         action_url: '/user-dashboard?tab=subdivisions',
       });
+      
+      // Clear draft on successful submission
+      clearDraft();
       
       setReferenceNumber(refNum);
       setSubmitted(true);
@@ -303,7 +389,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     } finally {
       setSubmitting(false);
     }
-  }, [parentParcel, requester, lots, roads, commonSpaces, servitudes, planElements, purpose, parcelNumber]);
+  }, [parentParcel, requester, lots, roads, commonSpaces, servitudes, planElements, purpose, parcelNumber, submissionFee, clearDraft]);
   
 
   return {
@@ -327,5 +413,9 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     purpose, setPurpose,
     // Submission
     submitting, submitted, referenceNumber, submit,
+    // Pricing
+    submissionFee, loadingFee,
+    // Draft
+    draftRestored, clearDraft,
   };
 }
