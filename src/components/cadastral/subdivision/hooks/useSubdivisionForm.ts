@@ -253,7 +253,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   const undo = useCallback(() => {
     if (historyIndexRef.current > 0) {
       historyIndexRef.current -= 1;
-      setHistoryIndex(historyIndexRef.current);
+      setHistoryVersion(v => v + 1);
       setLots(JSON.parse(JSON.stringify(historyRef.current[historyIndexRef.current])));
     }
   }, []);
@@ -261,7 +261,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   const redo = useCallback(() => {
     if (historyIndexRef.current < historyRef.current.length - 1) {
       historyIndexRef.current += 1;
-      setHistoryIndex(historyIndexRef.current);
+      setHistoryVersion(v => v + 1);
       setLots(JSON.parse(JSON.stringify(historyRef.current[historyIndexRef.current])));
     }
   }, []);
