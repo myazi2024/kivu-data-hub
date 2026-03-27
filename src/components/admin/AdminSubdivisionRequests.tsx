@@ -80,11 +80,25 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const PURPOSE_LABELS: Record<string, string> = {
-  sale: 'Vente de lots',
+  sale: 'Vente',
+  inheritance: 'Succession / Héritage',
+  investment: 'Investissement immobilier',
+  construction: 'Construction de logements',
+  donation: 'Donation',
+  family: 'Partage familial',
+  commercial: 'Projet commercial',
+  other: 'Autre',
+  // Legacy labels (backward compat)
   family_distribution: 'Distribution familiale',
   development: 'Aménagement immobilier',
-  investment: 'Investissement',
-  other: 'Autre',
+  'Vente': 'Vente',
+  'Succession / Héritage': 'Succession / Héritage',
+  'Investissement immobilier': 'Investissement immobilier',
+  'Construction de logements': 'Construction de logements',
+  'Donation': 'Donation',
+  'Partage familial': 'Partage familial',
+  'Projet commercial': 'Projet commercial',
+  'Autre': 'Autre',
 };
 
 const REQUESTER_TYPE_LABELS: Record<string, string> = {
