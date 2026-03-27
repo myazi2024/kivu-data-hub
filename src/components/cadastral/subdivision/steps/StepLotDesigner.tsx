@@ -10,9 +10,13 @@ import { Separator } from '@/components/ui/separator';
 import {
   Wand2, Plus, Trash2, Undo2, Redo2, AlertTriangle, CheckCircle,
   Grid3X3, ArrowLeftRight, ArrowUpDown, Info, Settings2, Route,
-  Scissors, MousePointer, Pencil
+  Scissors, MousePointer, Pencil, TreePine, Shield
 } from 'lucide-react';
-import { SubdivisionLot, SubdivisionRoad, AutoSubdivideOptions, ParentParcelInfo, LOT_COLORS, USAGE_LABELS, ROAD_SURFACE_LABELS, Point2D } from '../types';
+import { 
+  SubdivisionLot, SubdivisionRoad, SubdivisionCommonSpace, SubdivisionServitude,
+  AutoSubdivideOptions, ParentParcelInfo, LOT_COLORS, USAGE_LABELS, ROAD_SURFACE_LABELS, 
+  COMMON_SPACE_LABELS, COMMON_SPACE_COLORS, Point2D 
+} from '../types';
 import { ValidationResult, mergeLotsThroughDeletedRoad, polygonArea } from '../utils/geometry';
 import LotCanvas, { CanvasMode } from '../LotCanvas';
 
