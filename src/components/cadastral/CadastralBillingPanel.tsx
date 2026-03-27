@@ -212,11 +212,16 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
           setShowPaymentDialog(true);
         }
       } else {
-        toast({
-          title: "Paiement non configuré",
-          description: "Le système de paiement n'est pas encore configuré. Contactez l'administrateur.",
-          variant: "destructive"
-        });
+        // Paiement non activé — accès gratuit (comme bypass)
+        const invoice = await createInvoice(appliedDiscount ?? undefined);
+        if (invoice) {
+          toast({
+            title: "Accès accordé",
+            description: "Services débloqués avec succès",
+            duration: 3000
+          });
+          onPaymentSuccess(selectedServices.map(s => s.id));
+        }
       }
     } finally {
       setIsSubmitting(false);
