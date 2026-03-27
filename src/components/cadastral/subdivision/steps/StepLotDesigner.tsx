@@ -28,6 +28,11 @@ interface StepLotDesignerProps {
   setLots: (lots: SubdivisionLot[]) => void;
   roads: SubdivisionRoad[];
   setRoads: (roads: SubdivisionRoad[]) => void;
+  commonSpaces: SubdivisionCommonSpace[];
+  setCommonSpaces: (spaces: SubdivisionCommonSpace[]) => void;
+  servitudes: SubdivisionServitude[];
+  setServitudes: (servitudes: SubdivisionServitude[]) => void;
+  lotIds: string[];
   onAutoSubdivide: (options: AutoSubdivideOptions) => void;
   validation: ValidationResult;
   canUndo: boolean;
