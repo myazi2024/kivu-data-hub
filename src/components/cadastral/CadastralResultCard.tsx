@@ -46,6 +46,7 @@ import DocumentAttachment from './DocumentAttachment';
 import { PROPERTY_TITLE_TYPES } from './PropertyTitleTypeSelect';
 import CadastralContributionDialog from './CadastralContributionDialog';
 import LockedServiceOverlay from './LockedServiceOverlay';
+import CadastralDocumentView from './CadastralDocumentView';
 import VerificationButton from './VerificationButton';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';

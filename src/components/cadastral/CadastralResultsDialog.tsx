@@ -81,7 +81,7 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
       data-results-dialog
       onClick={handleOverlayClick}
     >
-      <div className="relative w-full h-full md:m-4 md:max-w-2xl md:mx-auto md:max-h-[90vh]">
+      <div className="relative w-full h-full md:m-4 md:max-w-4xl md:mx-auto md:max-h-[90vh]">
         {/* Bouton fermer unique en haut à droite — hors de la Card pour éviter overflow-hidden */}
         <button
           type="button"
