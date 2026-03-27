@@ -1,65 +1,81 @@
 
 
-# Refonte du tracage de voies — UX simplifiee
+# Refonte du tracage de lignes — Ligne universelle + affichage des distances
 
-## Problemes actuels
+## Concept
 
-| Probleme | Detail |
-|----------|--------|
-| **Click-by-click peu intuitif** | L'utilisateur doit cliquer point par point pour tracer la voie, puis double-cliquer pour terminer. Un utilisateur non technique ne comprend pas cette mecanique. |
-| **Pas de preview de la largeur** | La voie est tracee comme une simple ligne de 4px. L'utilisateur ne voit pas la largeur reelle (6m, 8m...) pendant le tracage. |
-| **Double-clic = reset vue** | Le double-clic en mode `select` reset la vue (zoom), ce qui interfere avec la terminaison du tracage si l'utilisateur change de mode par erreur. |
-| **Aucun feedback "prochaine etape"** | Apres le trace, la voie est creee silencieusement. Pas de confirmation visuelle ni de transition vers l'edition des proprietes. |
-| **Pas d'annulation pendant le tracage** | Impossible de supprimer le dernier point place ou d'annuler le tracage en cours. |
-| **Voies = lignes droites uniquement** | Le rendu final (lignes 484-510) ne dessine qu'une seule ligne entre le premier et le dernier point, ignorant les points intermediaires. Les voies courbes sont impossibles. |
-| **Pas de drag pour repositionner** | Une voie tracee ne peut pas etre deplacee ou ajustee apres creation. Il faut la supprimer et recommencer. |
+Actuellement, tracer une ligne dans le canvas a deux modes distincts et rigides :
+- **Mode "Decouper"** (`cut`) : coupe un lot en deux, pas de proprietes configurables
+- **Mode "Tracer voie"** (`drawRoad`) : cree une voie, jamais une division de lot
 
-## Solution proposee : mode "Tracer voie" simplifie
+L'utilisateur veut un **outil unique "Tracer ligne"** qui :
+1. Trace une ligne sur le canvas (drag simple ou multi-segments)
+2. Affiche en temps reel la **distance entre cette ligne et les lignes paralleles de part et d'autre** (aretes de lots voisins, bords de la parcelle mere)
+3. Apres le trace, demande a l'utilisateur : **"C'est une voie ou une division de lot ?"**
+   - Si **voie** → cree un `SubdivisionRoad` (comme aujourd'hui)
+   - Si **division** → coupe le lot traverse en deux (comme le mode `cut`)
 
-### Nouveau flux utilisateur
+## Implementation
 
-1. **Clic sur "Tracer voie"** → Un panneau lateral s'ouvre pour configurer la largeur et le type AVANT de tracer (pas apres)
-2. **Clic-glisser sur le canvas** → La voie se trace en drag continu (start → end), avec un rectangle semi-transparent montrant la largeur reelle
-3. **Relachement** → La voie est creee instantanement, le panneau d'edition s'ouvre pour ajuster nom/surface
-4. **Alternative multi-segments** : Maintenir Shift pour ajouter des segments supplementaires (voie en L, en T)
+### 1. Fusionner les modes `cut` et `drawRoad` en un seul mode `drawLine`
 
-### Fonctionnalites ajoutees
+Remplacer les deux modes par un unique mode `drawLine` dans `CanvasMode`. Le tracage utilise le meme systeme de drag simple + multi-segments deja implemente pour les voies (preview en temps reel, snap, boutons flottants).
 
-- **Preview de largeur en temps reel** : Pendant le tracage, afficher un rectangle translucide representant la largeur configuree
-- **Annuler dernier point** : Touche `Backspace` ou bouton pour retirer le dernier point pendant un trace multi-segments
-- **Repositionner une voie** : Drag & drop des extremites d'une voie existante en mode selection
-- **Polyline complete** : Le rendu des voies utilise `<polyline>` au lieu d'une seule `<line>` pour supporter les traces multi-segments
-- **Snap aux bords de la parcelle** : Les extremites de la voie s'accrochent aux bords de la parcelle mere et aux limites de lots
-- **Bouton "Terminer"** flottant sur le canvas (remplace le double-clic non intuitif)
+### 2. Afficher les distances perpendiculaires en temps reel
 
-## Implementation technique
+Pendant le tracage (mouseMove), calculer la distance perpendiculaire entre la ligne en cours et :
+- Les aretes paralleles des lots adjacents
+- Les bords de la parcelle mere
 
-### 1. Panneau de pre-configuration de voie (StepLotDesigner)
+Afficher ces distances comme des cotes (lignes fines + label "Xm") de part et d'autre de la ligne tracee. Algorithme :
+- Pour chaque arete de lot/parcelle, calculer l'angle avec la ligne tracee
+- Si l'angle est < 15 degres (quasi-parallele), calculer la distance perpendiculaire
+- Afficher un trait fin + label entre le milieu de la ligne tracee et le milieu de l'arete parallele
 
-Quand l'utilisateur clique "Tracer voie", afficher un mini-panneau inline avec largeur (slider 3-20m) et type de surface. Ces valeurs sont passees au canvas et utilisees pour le preview.
+### 3. Dialog de choix apres le trace
 
-### 2. Refonte du mode drawRoad dans LotCanvas
+Quand l'utilisateur termine le trace (mouseUp ou bouton "Terminer"), afficher un **mini-menu flottant SVG** sur le canvas avec deux options :
+- **"Diviser le lot"** (icone ciseaux) → execute la logique `handleCutLot` existante
+- **"Creer une voie"** (icone route) → execute la logique `handleFinishRoadDraw` existante
 
-- Remplacer le systeme click-by-click par un mode drag (mouseDown → mouseMove → mouseUp) pour les voies simples (2 points)
-- Garder le mode multi-click pour les voies complexes (activer via Shift ou un toggle)
-- Afficher un rectangle de preview avec la largeur configuree pendant le trace
-- Ajouter un bouton flottant SVG "Terminer ✓" et "Annuler ✗" visibles pendant le trace multi-segments
-- Supporter `Backspace` pour retirer le dernier point
+Ce menu s'affiche pres du point final de la ligne.
 
-### 3. Rendu polyline des voies
+### 4. Mettre a jour la toolbar
 
-Remplacer la `<line>` unique (premier→dernier point) par une `<polyline>` qui suit tous les points du path. Ajouter un `<polyline>` parallele decalee pour visualiser la largeur.
+- Remplacer les boutons "Decouper" et "Tracer voie" par un seul bouton **"Tracer ligne"**
+- Le panneau de pre-configuration voie (largeur/surface) s'affiche uniquement si l'utilisateur choisit "Creer une voie" dans le menu de choix (ou en option avancee dans la toolbar)
 
-### 4. Drag des extremites de voie
+## Details techniques
 
-En mode select, quand une voie est selectionnee, afficher des poignees (cercles) sur chaque point du path. Ces poignees sont draggables pour repositionner la voie.
+```text
+Flux utilisateur :
+1. Clic "Tracer ligne" dans la toolbar
+2. Drag/clic sur le canvas → ligne preview + distances affichees
+3. Relachement → mini-menu : "Diviser lot" | "Creer voie"
+4a. "Diviser" → coupe le lot, retour mode select
+4b. "Voie" → ouvre config largeur/surface, cree la voie
+```
+
+Calcul des distances perpendiculaires :
+```text
+Pour une ligne tracee AB et une arete CD quasi-parallele :
+- Direction AB : d = normalize(B - A)
+- Normale : n = perpendiculaire(d)
+- Distance = |dot(C - A, n)|
+- Afficher en metres : distance_norm * sqrt(parentAreaSqm)
+```
+
+### 5. Conserver la retrocompatibilite
+
+- Le mode `clipart` reste inchange
+- Le mode `select` reste inchange
+- Les voies existantes restent editables (poignees, suppression)
 
 ## Fichiers impactes
 
 | Action | Fichier |
 |---|---|
-| Modifie | `src/components/cadastral/subdivision/LotCanvas.tsx` — Nouveau mode drawRoad (drag simple + multi-click), preview largeur, polyline, poignees de voie, boutons flottants |
-| Modifie | `src/components/cadastral/subdivision/steps/StepLotDesigner.tsx` — Panneau de pre-configuration voie (largeur/surface avant trace) |
-| Modifie | `src/components/cadastral/subdivision/hooks/useCanvasDrag.ts` — Ajouter drag des extremites de voie |
-| Modifie | `src/components/cadastral/subdivision/hooks/useCanvasKeyboard.ts` — Backspace pour retirer dernier point en mode drawRoad |
+| Modifie | `src/components/cadastral/subdivision/LotCanvas.tsx` — Fusionner cut/drawRoad en `drawLine`, afficher distances perpendiculaires, menu de choix post-trace |
+| Modifie | `src/components/cadastral/subdivision/steps/StepLotDesigner.tsx` — Toolbar simplifiee (un seul bouton), logique de choix voie/division |
+| Modifie | `src/components/cadastral/subdivision/hooks/useCanvasKeyboard.ts` — Adapter raccourcis au nouveau mode |
 
