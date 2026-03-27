@@ -1683,26 +1683,12 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
               <CardContent className="p-3 space-y-3">
                 <h4 className="text-sm font-semibold flex items-center gap-2">
                   <Building className="h-4 w-4 text-muted-foreground" />
-                  Matériaux de construction
+                  Matériaux & finitions
                   <SectionHelpPopover
-                    title="Matériaux de construction"
-                    description="Précisez les matériaux utilisés pour les murs, la toiture, les fenêtres et le sol. La qualité des matériaux est un facteur déterminant dans l'évaluation immobilière."
+                    title="Matériaux & finitions"
+                    description="Précisez les matériaux utilisés pour la toiture, les fenêtres et le sol. Les matériaux de murs/élévation sont définis dans le bloc Construction de l'onglet Général."
                   />
                 </h4>
-
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Murs / Élévation</Label>
-                  <Select value={wallMaterial} onValueChange={setWallMaterial}>
-                    <SelectTrigger className="h-9 text-sm rounded-xl border-2">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="z-[1200]">
-                      {WALL_MATERIAL_OPTIONS.map(opt => (
-                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
 
                 <div className="space-y-1.5">
                   <Label className="text-xs">Toiture</Label>
