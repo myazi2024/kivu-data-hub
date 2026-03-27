@@ -88,7 +88,7 @@ function lineSegmentIntersection(
 const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   parentParcel, parentVertices, parentSides, lots, setLots, roads, setRoads,
   commonSpaces, setCommonSpaces, servitudes, setServitudes, lotIds,
-  onAutoSubdivide, validation, canUndo, canRedo, onUndo, onRedo
+  onCreateInitialLot, validation, canUndo, canRedo, onUndo, onRedo
 }) => {
   const [numberOfLots, setNumberOfLots] = useState(4);
   const [direction, setDirection] = useState<'horizontal' | 'vertical' | 'grid'>('horizontal');
