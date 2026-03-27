@@ -15,6 +15,8 @@ interface PaymentRequest {
   payment_type: 'publication' | 'cadastral_service' | 'expertise_fee' | 'certificate_access' | 'mutation_request' | 'mortgage_cancellation';
   invoice_id?: string;
   test_mode?: boolean;
+  currency_code?: string;
+  amount_local?: number;
 }
 
 serve(async (req) => {
