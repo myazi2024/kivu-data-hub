@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
 import {
@@ -92,7 +92,8 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   // Undo history
   const [history, setHistory] = useState<SubdivisionLot[][]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
-  
+  const historyRef = useRef<SubdivisionLot[][]>([]);
+  const historyIndexRef = useRef(-1);
   // === Draft system ===
   const draftKey = `${DRAFT_KEY_PREFIX}${parcelNumber}`;
   
@@ -203,13 +204,13 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
 
   // History management
   const pushHistory = useCallback((newLots: SubdivisionLot[]) => {
-    setHistory(prev => {
-      const newHistory = prev.slice(0, historyIndex + 1);
-      newHistory.push(JSON.parse(JSON.stringify(newLots)));
-      return newHistory;
-    });
-    setHistoryIndex(prev => prev + 1);
-  }, [historyIndex]);
+    const newHistory = historyRef.current.slice(0, historyIndexRef.current + 1);
+    newHistory.push(JSON.parse(JSON.stringify(newLots)));
+    historyRef.current = newHistory;
+    historyIndexRef.current = newHistory.length - 1;
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+  }, []);
 
   // Create initial lot covering the entire parent parcel
   const createInitialLot = useCallback(() => {
@@ -233,18 +234,20 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   }, [parentParcel, parentVertices, lots.length, pushHistory]);
   
   const undo = useCallback(() => {
-    if (historyIndex > 0) {
-      setHistoryIndex(prev => prev - 1);
-      setLots(JSON.parse(JSON.stringify(history[historyIndex - 1])));
+    if (historyIndexRef.current > 0) {
+      historyIndexRef.current -= 1;
+      setHistoryIndex(historyIndexRef.current);
+      setLots(JSON.parse(JSON.stringify(historyRef.current[historyIndexRef.current])));
     }
-  }, [history, historyIndex]);
+  }, []);
   
   const redo = useCallback(() => {
-    if (historyIndex < history.length - 1) {
-      setHistoryIndex(prev => prev + 1);
-      setLots(JSON.parse(JSON.stringify(history[historyIndex + 1])));
+    if (historyIndexRef.current < historyRef.current.length - 1) {
+      historyIndexRef.current += 1;
+      setHistoryIndex(historyIndexRef.current);
+      setLots(JSON.parse(JSON.stringify(historyRef.current[historyIndexRef.current])));
     }
-  }, [history, historyIndex]);
+  }, []);
   
   // Update lot
   const updateLot = useCallback((lotId: string, updates: Partial<SubdivisionLot>) => {
