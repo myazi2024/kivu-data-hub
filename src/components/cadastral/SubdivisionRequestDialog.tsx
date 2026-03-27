@@ -66,7 +66,9 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
     }
   };
   
-  if (showIntro && open) {
+  if (!open) return null;
+  
+  if (showIntro) {
     return (
       <FormIntroDialog
         open={open}
