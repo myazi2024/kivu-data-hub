@@ -1143,6 +1143,40 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 />
               ))}
 
+              {/* Rotation handle */}
+              {!readOnly && mode === 'select' && isSelected && (() => {
+                const minY = Math.min(...screenVertices.map(v => v.y));
+                const handleY = minY - 30;
+                return (
+                  <g>
+                    <line x1={cx} y1={minY} x2={cx} y2={handleY}
+                      stroke="hsl(var(--primary))" strokeWidth={1} strokeDasharray="3 2" opacity={0.5}
+                      className="pointer-events-none" />
+                    <circle cx={cx} cy={handleY} r={8}
+                      fill="hsl(var(--background))" stroke="hsl(var(--primary))" strokeWidth={2}
+                      className="cursor-grab active:cursor-grabbing"
+                      onMouseDown={e => {
+                        e.stopPropagation();
+                        const angle = Math.atan2(e.clientY - (svgRef.current?.getBoundingClientRect().top ?? 0) - cy,
+                          e.clientX - (svgRef.current?.getBoundingClientRect().left ?? 0) - cx);
+                        setRotationDrag({ startAngle: angle, centerX: cx, centerY: cy });
+                        setRotationAngleDisplay(0);
+                      }}
+                    />
+                    <text x={cx} y={handleY + 1} textAnchor="middle" dominantBaseline="middle"
+                      fontSize={10} fill="hsl(var(--primary))" fontWeight="bold"
+                      className="pointer-events-none select-none">↻</text>
+                    {rotationAngleDisplay !== null && rotationDrag && (
+                      <text x={cx + 14} y={handleY - 4} textAnchor="start" dominantBaseline="middle"
+                        fontSize={8} fill="hsl(var(--primary))" fontWeight="600"
+                        className="pointer-events-none select-none">
+                        {rotationAngleDisplay > 0 ? '+' : ''}{rotationAngleDisplay}°
+                      </text>
+                    )}
+                  </g>
+                );
+              })()}
+
               {/* Context menu (floating toolbar) */}
               {contextMenuLotId === lot.id && !readOnly && mode === 'select' && (
                 <g>
