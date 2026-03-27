@@ -563,14 +563,22 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 selectedRoadId={editingRoadId}
                 onSelectRoad={setEditingRoadId}
                 onDeleteRoad={handleDeleteRoad}
+                onDeleteLot={deleteLot}
+                onDuplicateLot={duplicateLot}
+                onUpdateLotAnnotations={updateLotAnnotations}
                 onSplitLot={handleSplitLot}
                 onMergeLots={handleMergeLots}
                 onCutLot={handleCutLot}
                 onFinishRoadDraw={handleFinishRoadDraw}
                 mode={canvasMode}
+                onModeChange={setCanvasMode}
+                showGrid={canvasShowGrid}
+                onToggleGrid={() => setCanvasShowGrid(prev => !prev)}
                 onUpdateLot={(id, vertices) => {
                   setLots(lots.map(l => l.id === id ? { ...l, vertices } : l));
                 }}
+                onUndo={onUndo}
+                onRedo={onRedo}
               />
               {lots.length > 1 && selectedLotIds.length === 0 && (
                 <p className="text-[10px] text-muted-foreground text-center py-1">
