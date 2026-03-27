@@ -81,17 +81,18 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
       data-results-dialog
       onClick={handleOverlayClick}
     >
-      <Card className="relative w-full h-full overflow-hidden bg-background flex flex-col md:m-4 md:max-w-2xl md:mx-auto md:max-h-[90vh] md:rounded-2xl md:shadow-2xl">
-        {/* Bouton fermer unique en haut à droite */}
+      <div className="relative w-full h-full md:m-4 md:max-w-2xl md:mx-auto md:max-h-[90vh]">
+        {/* Bouton fermer unique en haut à droite — hors de la Card pour éviter overflow-hidden */}
         <button
           type="button"
           aria-label="Fermer"
           onClick={handleClose}
-          className="absolute inline-flex items-center justify-center h-8 w-8 rounded-xl border bg-background/95 backdrop-blur-sm text-foreground shadow-sm hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring z-[1501] top-3 right-3"
+          className="absolute top-3 right-3 z-[1502] inline-flex items-center justify-center h-8 w-8 rounded-xl border bg-background/95 backdrop-blur-sm text-foreground shadow-sm hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <X className="h-4 w-4" />
         </button>
-        
+
+        <Card className="w-full h-full overflow-hidden bg-background flex flex-col md:rounded-2xl md:shadow-2xl">
         {/* Header compact */}
         <div className="sticky top-0 z-[1501] flex items-center gap-2 px-3 py-2.5 border-b bg-background/95 backdrop-blur-sm shrink-0">
           <div className="flex-1 min-w-0 pr-8" data-service-catalog>
