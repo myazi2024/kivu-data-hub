@@ -432,6 +432,16 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
           <Pencil className="h-3.5 w-3.5" />
           Tracer voie
         </Button>
+        <Button
+          variant={canvasMode === 'clipart' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setCanvasMode(canvasMode === 'clipart' ? 'select' : 'clipart')}
+          className="gap-1 text-xs"
+          title="Placer des cliparts sur les lots"
+        >
+          <Sticker className="h-3.5 w-3.5" />
+          Cliparts
+        </Button>
         
         <Separator orientation="vertical" className="h-6" />
 
