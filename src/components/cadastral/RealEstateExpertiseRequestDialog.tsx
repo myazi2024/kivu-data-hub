@@ -57,8 +57,8 @@ interface RealEstateExpertiseRequestDialogProps {
 
 import type { ExpertiseFee } from '@/types/expertise';
 import {
-  CONSTRUCTION_TYPE_LABELS, QUALITY_LABELS, CONDITION_LABELS,
-  ROAD_LABELS, WALL_LABELS, ROOF_LABELS, SOUND_LABELS,
+  CONDITION_LABELS,
+  ROAD_LABELS, ROOF_LABELS, SOUND_LABELS,
   WINDOW_LABELS, FLOOR_LABELS, FACADE_ORIENTATION_LABELS,
   BUILDING_POSITION_LABELS, ACCESSIBILITY_LABELS
 } from '@/constants/expertiseLabels';
@@ -67,11 +67,8 @@ import {
 const toOptions = (labels: Record<string, string>) =>
   Object.entries(labels).map(([value, label]) => ({ value, label }));
 
-const CONSTRUCTION_TYPE_OPTIONS = toOptions(CONSTRUCTION_TYPE_LABELS);
-const CONSTRUCTION_QUALITY_OPTIONS = toOptions(QUALITY_LABELS);
 const PROPERTY_CONDITION_OPTIONS = toOptions(CONDITION_LABELS);
 const ROAD_ACCESS_OPTIONS = toOptions(ROAD_LABELS);
-const WALL_MATERIAL_OPTIONS = toOptions(WALL_LABELS);
 const WINDOW_TYPE_OPTIONS = toOptions(WINDOW_LABELS);
 const FLOOR_MATERIAL_OPTIONS = toOptions(FLOOR_LABELS);
 const ROOF_MATERIAL_OPTIONS = toOptions(ROOF_LABELS);
