@@ -1,57 +1,58 @@
 
 
-# Fix banniere "Mode test" et revue du catalogue de services
+# Fix "Mode test" affiché à tort dans le catalogue de services
 
-## Problemes identifies
+## Diagnostic
 
-### 1. Banniere "Mode test" affichee meme quand le mode test est inactif
-`usePaymentConfig` initialise `bypass_payment: true` par defaut (L28). Tant que la config DB n'est pas chargee, la banniere s'affiche. Et meme apres chargement, si aucune config n'existe en base, le defaut reste `bypass_payment: true`. Resultat : la banniere "🧪 Mode test — Acces gratuit aux services" est toujours visible.
+**Cause racine** : La base de données contient `bypass_payment: true` dans la config `payment_mode`, même quand `enabled` est `false`. Le catalogue affiche "Mode test" dès que `bypass_payment` OU `test_mode` est vrai, sans vérifier si le système de paiement est activé.
 
-### 2. Presentation trop voyante
-L'utilisateur veut une indication discrete "Mode test" en petit dans le coin inferieur, pas une banniere prominente en haut.
+3 bugs concrets :
 
-### 3. Divergences supplementaires detectees
+| # | Localisation | Bug |
+|---|-------------|-----|
+| 1 | **Base de données** | `payment_mode.bypass_payment = true` stocké en dur — jamais réinitialisé |
+| 2 | `usePaymentConfig.tsx` L59 | `mode.bypass_payment ?? true` — le fallback est `true` au lieu de `false` |
+| 3 | `CadastralBillingPanel.tsx` L578 | Condition `paymentMode.bypass_payment \|\| paymentMode.test_mode` ne vérifie pas `paymentMode.enabled` |
 
-| Divergence | Fichier | Detail |
-|-----------|---------|--------|
-| Defaut `bypass_payment: true` | `usePaymentConfig.tsx` L28 | Doit etre `false` — le bypass ne doit etre actif que si explicitement configure par l'admin |
-| Toast "mode test" avant chargement config | `useCadastralPayment.tsx` L138 | Peut afficher "mode test" meme si le mode test n'est pas active |
-| Bouton affiche "Acceder aux services" au lieu de "Payer" | `CadastralBillingPanel.tsx` L574 | Consequence du `bypass_payment: true` par defaut |
+Bug bonus dans `AdminPaymentMode.tsx` L25-26 : état initial `bypass_payment: true, test_mode: true` — si le `useEffect` L29 s'exécute avant le chargement, l'admin voit un état faux.
 
----
+## Plan de corrections
 
-## Plan de corrections (3 fichiers)
+### 1. Corriger la donnée en base (migration SQL)
 
-### Correction 1 — Defaut `bypass_payment` a `false` (`usePaymentConfig.tsx`)
-
-Changer l'etat initial L28 de `bypass_payment: true` a `bypass_payment: false`. Ainsi, tant que la config admin n'est pas chargee, le systeme se comporte en mode production (paiement requis). Le bypass ne s'active que si l'admin l'a explicitement configure.
-
-### Correction 2 — Banniere discrete en bas (`CadastralBillingPanel.tsx`)
-
-- **Supprimer** les 2 blocs de bannieres prominentes (L273-289) — `bypass_payment` et `test_mode`
-- **Ajouter** en bas du `CardContent`, juste avant la fermeture, un petit texte discret conditionnel :
-
-```tsx
-{(paymentMode.bypass_payment || paymentMode.test_mode) && (
-  <p className="text-[10px] text-muted-foreground/60 text-right mt-1">
-    Mode test
-  </p>
-)}
+```sql
+UPDATE cadastral_search_config 
+SET config_value = jsonb_set(config_value, '{bypass_payment}', 'false')
+WHERE config_key = 'payment_mode' AND is_active = true;
 ```
 
-Pas d'emoji, pas de banniere coloree — juste un indicateur minimal en bas a droite.
+### 2. Corriger le fallback — `usePaymentConfig.tsx` L59
 
-### Correction 3 — Toast aligne sur la config reelle (`useCadastralPayment.tsx`)
+Changer `mode.bypass_payment ?? true` → `mode.bypass_payment ?? false`
 
-Le toast L138 est deja conditionne au `bypass_payment` — avec le fix du defaut a `false`, il ne s'affichera plus quand le mode test n'est pas active. Aucun changement de code necessaire ici.
+### 3. Corriger la condition d'affichage — `CadastralBillingPanel.tsx` L578
 
----
+Remplacer :
+```tsx
+{(paymentMode.bypass_payment || paymentMode.test_mode) && (
+```
+Par :
+```tsx
+{paymentMode.enabled && (paymentMode.bypass_payment || paymentMode.test_mode) && (
+```
 
-## Resume
+L'indicateur "Mode test" ne s'affiche que si le paiement est activé ET en mode bypass/test.
 
-| Correction | Fichier | Impact |
-|-----------|---------|--------|
-| Defaut `bypass_payment: false` | `usePaymentConfig.tsx` | Elimine le faux positif mode test |
-| Banniere → texte discret en bas | `CadastralBillingPanel.tsx` | UX alignee avec la demande |
-| **Total** | **2 fichiers** | |
+### 4. Corriger l'état initial admin — `AdminPaymentMode.tsx` L23-27
+
+Changer les défauts à `bypass_payment: false, test_mode: false` pour cohérence.
+
+## Résumé
+
+| Fichier | Modification |
+|---------|-------------|
+| Migration SQL | `bypass_payment` → `false` en base |
+| `usePaymentConfig.tsx` | Fallback `?? false` |
+| `CadastralBillingPanel.tsx` | Condition conditionnée à `enabled` |
+| `AdminPaymentMode.tsx` | Défauts initiaux cohérents |
 
