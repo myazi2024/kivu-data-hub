@@ -1,36 +1,39 @@
 
 
-# Deplacement au clavier des lots et voies selectionnes
+# Ajout de la rotation pour lots et voies selectionnees
 
 ## Probleme
 
-Quand un lot ou une voie est selectionne sur le canvas, les touches directionnelles (fleches haut/bas/gauche/droite) ne font rien. L'utilisateur s'attend a pouvoir nudger (deplacer finement) l'element selectionne avec le clavier.
+Quand un lot ou une voie est selectionne, il n'y a aucun moyen de le faire pivoter. L'utilisateur doit repositionner chaque sommet manuellement.
 
 ## Solution
 
-Ajouter le support des touches directionnelles dans `useCanvasKeyboard` et `LotCanvas` :
+Ajouter une poignee de rotation visuelle (icone circulaire au-dessus de l'element selectionne) + support clavier (touches `R`/`Shift+R` pour rotation par increments).
 
-- **Fleches** : deplacent l'element selectionne (lot ou voie) de 1 pixel normalise (~0.002 en coordonnees normalisees)
-- **Shift + Fleches** : deplacement x10 pour aller plus vite
-- L'historique est pousse apres chaque nudge (via `setLotsWithHistory`)
+### Interaction visuelle (poignee SVG)
 
-## Details techniques
+- Quand un lot ou une voie est selectionne, afficher un **cercle de rotation** (↻) au-dessus du centre de l'element, relie par une ligne pointillee
+- Le drag de cette poignee fait pivoter tous les sommets autour du centre de gravite de l'element
+- Pendant le drag, afficher l'angle de rotation en degres a cote de la poignee
 
-### 1. `useCanvasKeyboard.ts` — Ajouter `onArrowMove`
+### Interaction clavier
 
-Ajouter un callback `onArrowMove?: (dx: number, dy: number) => void` dans `KeyboardActions`. Intercepter `ArrowUp/Down/Left/Right`, calculer le delta (1 ou 10 si Shift), appeler `onArrowMove(dx, dy)`.
+- **R** : rotation de +5° (sens horaire)
+- **Shift+R** : rotation de -5° (sens anti-horaire)
+- Fonctionne sur le lot ou la voie selectionne
 
-### 2. `LotCanvas.tsx` — Implementer le nudge
+### Logique geometrique
 
-Dans le bloc `useCanvasKeyboard`, ajouter `onArrowMove`:
-- Si un **lot** est selectionne : deplacer tous ses vertices du delta normalise
-- Si une **voie** est selectionnee : deplacer les vertices de la voie du meme delta
-- Le pas normalise = `1 / (CANVAS_W - 2*PADDING)` pour 1px, x10 avec Shift
+Rotation de chaque sommet `(x, y)` autour du centre `(cx, cy)` par angle `θ` :
+```
+x' = cx + (x - cx) * cos(θ) - (y - cy) * sin(θ)
+y' = cy + (x - cx) * sin(θ) + (y - cy) * cos(θ)
+```
 
 ## Fichiers impactes
 
 | Fichier | Modification |
 |---------|-------------|
-| `useCanvasKeyboard.ts` | Ajouter `onArrowMove` dans l'interface et le handler keydown |
-| `LotCanvas.tsx` | Passer `onArrowMove` au hook avec la logique de deplacement lot/voie |
+| `useCanvasKeyboard.ts` | Ajouter `onRotate?: (angleDeg: number) => void` + touches `R` / `Shift+R` |
+| `LotCanvas.tsx` | Ajouter la poignee SVG de rotation (cercle + ligne), gerer le drag rotation, implementer `onRotate` dans le hook clavier, appliquer la transformation geometrique aux sommets du lot ou de la voie |
 
