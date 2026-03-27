@@ -1079,8 +1079,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     onOpenChange(false);
   };
 
-  const isTerrainNu = constructionType === 'terrain_nu';
-  const isApartmentOrBuilding = constructionType === 'appartement' || constructionType === 'immeuble' || constructionType === 'duplex' || constructionType === 'studio';
+  const isTerrainNu = propertyCategory === 'Terrain nu' || constructionType === 'Terrain nu';
+  const isApartmentOrBuilding = propertyCategory === 'Appartement';
 
   const renderForm = () => (
     <div className="space-y-3">
