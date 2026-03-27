@@ -10,6 +10,7 @@ interface KeyboardActions {
   onToggleSnap?: () => void;
   onSpaceDown?: () => void;
   onSpaceUp?: () => void;
+  onBackspace?: () => void;
 }
 
 export function useCanvasKeyboard(
@@ -19,13 +20,16 @@ export function useCanvasKeyboard(
 ) {
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (!enabled) return;
-    // Don't capture when typing in inputs
     const tag = (e.target as HTMLElement).tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
-    if (e.key === 'Delete' || e.key === 'Backspace') {
+    if (e.key === 'Delete') {
       e.preventDefault();
       actions.onDelete?.();
+    }
+    if (e.key === 'Backspace') {
+      e.preventDefault();
+      actions.onBackspace?.() || actions.onDelete?.();
     }
     if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
       e.preventDefault();
