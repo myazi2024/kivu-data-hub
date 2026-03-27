@@ -2568,10 +2568,6 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 </div>
                 <div className="divide-y divide-border/30">
                   <div className="flex justify-between text-xs py-1.5">
-                    <span className="text-muted-foreground">Murs / Élévation</span>
-                    <span className="font-medium">{WALL_LABELS[wallMaterial] || wallMaterial}</span>
-                  </div>
-                  <div className="flex justify-between text-xs py-1.5">
                     <span className="text-muted-foreground">Toiture</span>
                     <span className="font-medium">{ROOF_LABELS[roofMaterial] || roofMaterial}</span>
                   </div>
