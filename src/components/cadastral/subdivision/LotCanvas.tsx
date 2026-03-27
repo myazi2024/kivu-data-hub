@@ -370,7 +370,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       const normalized = fromScreen(pos.x, pos.y);
       drag.moveDrag(normalized);
     }
-  }, [viewport, getSvgPos, fromScreen, mode, lineDrawPoints, drag, isLineDragging, lineDrawMultiMode, roadEndpointDrag, roads, onUpdateRoad]);
+  }, [viewport, getSvgPos, fromScreen, mode, lineDrawPoints, drag, isLineDragging, lineDrawMultiMode, roadEndpointDrag, roads, onUpdateRoad, roadWidthDrag, toScreen, sideLength]);
 
   // Show choice menu after line drawing finishes
   const showLineChoice = useCallback((path: Point2D[]) => {
