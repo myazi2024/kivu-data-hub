@@ -220,7 +220,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         const road = roads.find(r => r.id === selectedRoadId);
         if (road) {
           onUpdateRoad(selectedRoadId, {
-            vertices: road.vertices.map(v => ({ x: v.x + ndx, y: v.y + ndy })),
+            path: road.path.map(v => ({ x: v.x + ndx, y: v.y + ndy })),
           });
         }
       }
