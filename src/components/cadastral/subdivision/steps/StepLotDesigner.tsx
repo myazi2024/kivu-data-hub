@@ -8,13 +8,13 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import {
-  Wand2, Plus, Trash2, Undo2, Redo2, AlertTriangle, CheckCircle,
-  Grid3X3, ArrowLeftRight, ArrowUpDown, Info, Settings2, Route,
-  Scissors, MousePointer, Pencil, TreePine, Shield, Sticker
+  Plus, Trash2, Undo2, Redo2, AlertTriangle,
+  Info, Route,
+  MousePointer, Pencil, Sticker, Shield, TreePine, Ruler
 } from 'lucide-react';
 import { 
   SubdivisionLot, SubdivisionRoad, SubdivisionCommonSpace, SubdivisionServitude,
-  AutoSubdivideOptions, ParentParcelInfo, LOT_COLORS, USAGE_LABELS, ROAD_SURFACE_LABELS, 
+  ParentParcelInfo, LOT_COLORS, USAGE_LABELS, ROAD_SURFACE_LABELS, 
   COMMON_SPACE_LABELS, COMMON_SPACE_COLORS, Point2D, LotAnnotation
 } from '../types';
 import { ValidationResult, mergeLotsThroughDeletedRoad, polygonArea } from '../utils/geometry';

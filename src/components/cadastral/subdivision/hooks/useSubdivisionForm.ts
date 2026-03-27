@@ -201,13 +201,22 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     return parentParcel.gpsCoordinates.map(gps => gpsToNormalized(gps, parentParcel.gpsCoordinates));
   }, [parentParcel]);
 
+  // History management
+  const pushHistory = useCallback((newLots: SubdivisionLot[]) => {
+    setHistory(prev => {
+      const newHistory = prev.slice(0, historyIndex + 1);
+      newHistory.push(JSON.parse(JSON.stringify(newLots)));
+      return newHistory;
+    });
+    setHistoryIndex(prev => prev + 1);
+  }, [historyIndex]);
+
   // Create initial lot covering the entire parent parcel
   const createInitialLot = useCallback(() => {
     if (!parentParcel || !parentVertices || parentVertices.length < 3) return;
     if (lots.length > 0) return;
     
     const sideLength = Math.sqrt(parentParcel.areaSqm);
-    const normArea = polygonArea(parentVertices);
     const fullLot: SubdivisionLot = {
       id: `lot-1`,
       lotNumber: '1',
@@ -222,16 +231,6 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     pushHistory([fullLot]);
     setLots([fullLot]);
   }, [parentParcel, parentVertices, lots.length, pushHistory]);
-  
-  // History management
-  const pushHistory = useCallback((newLots: SubdivisionLot[]) => {
-    setHistory(prev => {
-      const newHistory = prev.slice(0, historyIndex + 1);
-      newHistory.push(JSON.parse(JSON.stringify(newLots)));
-      return newHistory;
-    });
-    setHistoryIndex(prev => prev + 1);
-  }, [historyIndex]);
   
   const undo = useCallback(() => {
     if (historyIndex > 0) {
