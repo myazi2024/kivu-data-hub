@@ -847,6 +847,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       const request = await createExpertiseRequest({
         ...formData,
         supporting_documents: allDocUrls,
+        building_permit_document_url: uploadedFiles.permitDocUrl || undefined,
       });
 
       if (!request) {
