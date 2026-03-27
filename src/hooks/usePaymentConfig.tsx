@@ -56,7 +56,7 @@ export const usePaymentConfig = () => {
         const mode = modeData.config_value as any;
         setPaymentMode({
           enabled: mode.enabled ?? false,
-          bypass_payment: mode.bypass_payment ?? true,
+          bypass_payment: mode.bypass_payment ?? false,
           test_mode: mode.test_mode ?? false
         });
       }

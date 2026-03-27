@@ -22,8 +22,8 @@ const AdminPaymentMode: React.FC = () => {
   const { paymentMode: loadedConfig, availableMethods, refreshConfiguration } = usePaymentConfig();
   const [config, setConfig] = useState<PaymentModeConfig>({
     enabled: false,
-    bypass_payment: true,
-    test_mode: true
+    bypass_payment: false,
+    test_mode: false
   });
 
   useEffect(() => {
