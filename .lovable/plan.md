@@ -1,24 +1,57 @@
 
 
-# Fix du bouton "Quitter (X)" non visible
+# Fix banniere "Mode test" et revue du catalogue de services
 
-## Problème
+## Problemes identifies
 
-Le bouton X (L86-93) est positionné en `absolute` à l'intérieur de la `Card` qui a `overflow-hidden`. Le contenu scrollable pousse le bouton hors de la zone visible, et `overflow-hidden` le masque.
+### 1. Banniere "Mode test" affichee meme quand le mode test est inactif
+`usePaymentConfig` initialise `bypass_payment: true` par defaut (L28). Tant que la config DB n'est pas chargee, la banniere s'affiche. Et meme apres chargement, si aucune config n'existe en base, le defaut reste `bypass_payment: true`. Resultat : la banniere "🧪 Mode test — Acces gratuit aux services" est toujours visible.
 
-## Solution — `CadastralResultsDialog.tsx`
+### 2. Presentation trop voyante
+L'utilisateur veut une indication discrete "Mode test" en petit dans le coin inferieur, pas une banniere prominente en haut.
 
-Déplacer le bouton X **en dehors** de la `Card`, directement dans le `div.fixed` overlay. Il sera positionné en absolu par rapport à la Card via un wrapper `relative` autour de la Card, ou plus simplement en `fixed` avec un positionnement adaptatif :
+### 3. Divergences supplementaires detectees
 
-- Sur mobile (plein écran) : `fixed top-3 right-3 z-[1502]`
-- Sur desktop (Card centrée) : le bouton reste visuellement dans le coin haut-droit du catalogue
+| Divergence | Fichier | Detail |
+|-----------|---------|--------|
+| Defaut `bypass_payment: true` | `usePaymentConfig.tsx` L28 | Doit etre `false` — le bypass ne doit etre actif que si explicitement configure par l'admin |
+| Toast "mode test" avant chargement config | `useCadastralPayment.tsx` L138 | Peut afficher "mode test" meme si le mode test n'est pas active |
+| Bouton affiche "Acceder aux services" au lieu de "Payer" | `CadastralBillingPanel.tsx` L574 | Consequence du `bypass_payment: true` par defaut |
 
-Concrètement :
-1. Sortir le `<button>` de la `<Card>` et le placer comme enfant direct du `div.fixed` overlay
-2. Lui donner `fixed top-3 right-3 z-[1502]` pour mobile
-3. Sur desktop, ajuster avec `md:absolute` dans un wrapper `relative` englobant la Card, ou utiliser des classes responsive (`md:top-7 md:right-auto md:left-[calc(50%+theme(maxWidth.2xl)/2-2.5rem)]`) — la solution la plus simple étant d'envelopper Card + bouton dans un `div.relative` avec les mêmes classes de taille que la Card.
+---
 
-### Approche retenue (la plus propre)
+## Plan de corrections (3 fichiers)
 
-Envelopper la `Card` dans un `div` avec `relative md:m-4 md:max-w-2xl md:mx-auto md:max-h-[90vh]`, retirer ces classes de la Card (qui garde juste `w-full h-full overflow-hidden bg-background flex flex-col md:rounded-2xl md:shadow-2xl`), et placer le bouton X dans ce wrapper `relative` en `absolute top-3 right-3 z-[1502]`.
+### Correction 1 — Defaut `bypass_payment` a `false` (`usePaymentConfig.tsx`)
+
+Changer l'etat initial L28 de `bypass_payment: true` a `bypass_payment: false`. Ainsi, tant que la config admin n'est pas chargee, le systeme se comporte en mode production (paiement requis). Le bypass ne s'active que si l'admin l'a explicitement configure.
+
+### Correction 2 — Banniere discrete en bas (`CadastralBillingPanel.tsx`)
+
+- **Supprimer** les 2 blocs de bannieres prominentes (L273-289) — `bypass_payment` et `test_mode`
+- **Ajouter** en bas du `CardContent`, juste avant la fermeture, un petit texte discret conditionnel :
+
+```tsx
+{(paymentMode.bypass_payment || paymentMode.test_mode) && (
+  <p className="text-[10px] text-muted-foreground/60 text-right mt-1">
+    Mode test
+  </p>
+)}
+```
+
+Pas d'emoji, pas de banniere coloree — juste un indicateur minimal en bas a droite.
+
+### Correction 3 — Toast aligne sur la config reelle (`useCadastralPayment.tsx`)
+
+Le toast L138 est deja conditionne au `bypass_payment` — avec le fix du defaut a `false`, il ne s'affichera plus quand le mode test n'est pas active. Aucun changement de code necessaire ici.
+
+---
+
+## Resume
+
+| Correction | Fichier | Impact |
+|-----------|---------|--------|
+| Defaut `bypass_payment: false` | `usePaymentConfig.tsx` | Elimine le faux positif mode test |
+| Banniere → texte discret en bas | `CadastralBillingPanel.tsx` | UX alignee avec la demande |
+| **Total** | **2 fichiers** | |
 
