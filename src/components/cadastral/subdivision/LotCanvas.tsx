@@ -558,7 +558,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     viewport.endPan();
   }, [drag, viewport, isLineDragging, lineDrawPoints, lineDrawMousePos, getSvgPos, fromScreen, showLineChoice, roadEndpointDrag, roadWidthDrag, rotationDrag]);
 
-
+  const handleCanvasClick = useCallback((e: React.MouseEvent) => {
     if (readOnly) return;
     if (drag.isDragging) return;
     if (lineChoiceMenu) return;
@@ -599,7 +599,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     if (mode === 'selectEdge') {
       setEdgeContextMenu(null);
     }
-  }, [readOnly, mode, getSvgPos, fromScreen, lots, onSelectLot, onSelectRoad, clipartType, onUpdateLotAnnotations, drag.isDragging, isLineDragging, lineDrawMultiMode, lineChoiceMenu]);
+  }, [readOnly, mode, getSvgPos, fromScreen, lots, onSelectLot, onSelectRoad, clipartType, onUpdateLotAnnotations, drag, isLineDragging, lineDrawMultiMode, lineChoiceMenu]);
 
   const handleCanvasDoubleClick = useCallback((e: React.MouseEvent) => {
     if (mode === 'drawLine' && lineDrawPoints.length >= 2) {
