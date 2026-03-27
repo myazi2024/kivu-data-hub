@@ -88,6 +88,9 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   // Road endpoint drag state
   const [roadEndpointDrag, setRoadEndpointDrag] = useState<{roadId: string; pointIdx: number} | null>(null);
 
+  // Road width drag state
+  const [roadWidthDrag, setRoadWidthDrag] = useState<{roadId: string; startY: number; startWidth: number} | null>(null);
+
   // Context menu state
   const [contextMenuLotId, setContextMenuLotId] = useState<string | null>(null);
 
@@ -332,11 +335,42 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       }
     }
 
+    // Road width drag
+    if (roadWidthDrag && onUpdateRoad) {
+      const road = roads.find(r => r.id === roadWidthDrag.roadId);
+      if (road && road.path.length >= 2) {
+        // Calculate perpendicular distance moved in meters
+        const p0 = toScreen(road.path[0]);
+        const p1 = toScreen(road.path[road.path.length - 1]);
+        const rdx = p1.x - p0.x;
+        const rdy = p1.y - p0.y;
+        const rlen = Math.sqrt(rdx * rdx + rdy * rdy) || 1;
+        // Normal direction
+        const nx = -rdy / rlen;
+        const ny = rdx / rlen;
+        // Project mouse delta onto normal
+        const deltaPx = (pos.x - roadWidthDrag.startY) * nx + (pos.y - roadWidthDrag.startY) * ny;
+        // Actually just use simple vertical/horizontal mouse delta for intuitive feel
+        const svg = svgRef.current;
+        if (svg) {
+          const rect = svg.getBoundingClientRect();
+          const scaleY = (CANVAS_H / viewport.viewport.zoom) / rect.height;
+          const mouseScreenY = e.clientY;
+          const deltaScreenPx = mouseScreenY - roadWidthDrag.startY;
+          const deltaNorm = Math.abs(deltaScreenPx * scaleY) / (CANVAS_H - 2 * PADDING);
+          const deltaM = deltaNorm * sideLength;
+          const sign = deltaScreenPx > 0 ? 1 : -1;
+          const newWidth = Math.max(2, Math.min(30, roadWidthDrag.startWidth + sign * deltaM * 2));
+          onUpdateRoad(roadWidthDrag.roadId, { widthM: Math.round(newWidth * 2) / 2 });
+        }
+      }
+    }
+
     if (drag.isDragging) {
       const normalized = fromScreen(pos.x, pos.y);
       drag.moveDrag(normalized);
     }
-  }, [viewport, getSvgPos, fromScreen, mode, lineDrawPoints, drag, isLineDragging, lineDrawMultiMode, roadEndpointDrag, roads, onUpdateRoad]);
+  }, [viewport, getSvgPos, fromScreen, mode, lineDrawPoints, drag, isLineDragging, lineDrawMultiMode, roadEndpointDrag, roads, onUpdateRoad, roadWidthDrag, toScreen, sideLength]);
 
   // Show choice menu after line drawing finishes
   const showLineChoice = useCallback((path: Point2D[]) => {
@@ -384,9 +418,13 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     if (roadEndpointDrag) {
       setRoadEndpointDrag(null);
     }
+    // Road width drag end
+    if (roadWidthDrag) {
+      setRoadWidthDrag(null);
+    }
     drag.endDrag();
     viewport.endPan();
-  }, [drag, viewport, isLineDragging, lineDrawPoints, lineDrawMousePos, getSvgPos, fromScreen, showLineChoice, roadEndpointDrag]);
+  }, [drag, viewport, isLineDragging, lineDrawPoints, lineDrawMousePos, getSvgPos, fromScreen, showLineChoice, roadEndpointDrag, roadWidthDrag]);
 
   const handleCanvasClick = useCallback((e: React.MouseEvent) => {
     if (readOnly) return;
@@ -736,6 +774,50 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                   }}
                 />
               ))}
+              {/* Width drag handles (perpendicular to road at midpoint) */}
+              {isRoadSelected && !readOnly && mode === 'select' && (() => {
+                const midIdx = Math.floor(pathPoints.length / 2);
+                const p1 = pathPoints[Math.max(0, midIdx - 1)];
+                const p2 = pathPoints[Math.min(pathPoints.length - 1, midIdx)];
+                const mx = (p1.x + p2.x) / 2;
+                const my = (p1.y + p2.y) / 2;
+                const rdx = p2.x - p1.x;
+                const rdy = p2.y - p1.y;
+                const rlen = Math.sqrt(rdx * rdx + rdy * rdy) || 1;
+                // Normal (perpendicular) direction
+                const nx = -rdy / rlen;
+                const ny = rdx / rlen;
+                const halfW = roadWidthPx / 2;
+                const handleSize = 6;
+                return (
+                  <>
+                    {/* Top handle */}
+                    <rect
+                      x={mx + nx * halfW - handleSize / 2}
+                      y={my + ny * halfW - handleSize / 2}
+                      width={handleSize} height={handleSize} rx={1.5}
+                      fill="white" stroke="hsl(var(--primary))" strokeWidth={2}
+                      className="cursor-ns-resize"
+                      onMouseDown={e => {
+                        e.stopPropagation();
+                        setRoadWidthDrag({ roadId: road.id, startY: e.clientY, startWidth: road.widthM });
+                      }}
+                    />
+                    {/* Bottom handle */}
+                    <rect
+                      x={mx - nx * halfW - handleSize / 2}
+                      y={my - ny * halfW - handleSize / 2}
+                      width={handleSize} height={handleSize} rx={1.5}
+                      fill="white" stroke="hsl(var(--primary))" strokeWidth={2}
+                      className="cursor-ns-resize"
+                      onMouseDown={e => {
+                        e.stopPropagation();
+                        setRoadWidthDrag({ roadId: road.id, startY: e.clientY, startWidth: road.widthM });
+                      }}
+                    />
+                  </>
+                );
+              })()}
               {/* Delete button on selected road */}
               {isRoadSelected && !isExisting && !readOnly && onDeleteRoad && (() => {
                 const mx = (pathPoints[0].x + pathPoints[pathPoints.length - 1].x) / 2;
