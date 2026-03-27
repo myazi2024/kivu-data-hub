@@ -302,10 +302,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   const isStepValid = useCallback((step: SubdivisionStep): boolean => {
     switch (step) {
       case 'parcel':
-        return !!(parentParcel) && 
-          !!(requester.firstName?.trim()) && 
-          !!(requester.lastName?.trim()) && 
-          !!(requester.phone?.trim());
+        return !!(parentParcel);
       case 'designer':
         return lots.length >= 2 && validation.isValid;
       case 'plan':

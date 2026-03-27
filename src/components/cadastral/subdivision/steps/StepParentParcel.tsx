@@ -1,12 +1,11 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { MapPin, User, Loader2, CheckCircle, Info, AlertTriangle } from 'lucide-react';
+import { MapPin, User, Loader2, CheckCircle, Info } from 'lucide-react';
 import { ParentParcelInfo, RequesterInfo } from '../types';
 import { SUBDIVISION_PURPOSE_LABELS } from '../constants';
 
@@ -22,7 +21,6 @@ interface StepParentParcelProps {
 const StepParentParcel: React.FC<StepParentParcelProps> = ({
   parentParcel, loadingParcel, requester, onRequesterChange, purpose, onPurposeChange
 }) => {
-  const requesterValid = !!(requester.firstName?.trim()) && !!(requester.lastName?.trim()) && !!(requester.phone?.trim());
 
   if (loadingParcel) {
     return (
@@ -32,6 +30,8 @@ const StepParentParcel: React.FC<StepParentParcelProps> = ({
       </div>
     );
   }
+
+  const displayName = [requester.firstName, requester.lastName].filter(Boolean).join(' ') || '—';
 
   return (
     <div className="space-y-4">
@@ -84,74 +84,47 @@ const StepParentParcel: React.FC<StepParentParcelProps> = ({
       
       <Separator />
       
-      {/* Requester info - editable */}
-      <Card className={!requesterValid ? 'border-destructive/30' : ''}>
+      {/* Requester info - read-only profile + quality selector */}
+      <Card>
         <CardContent className="pt-4 space-y-3">
           <div className="flex items-center gap-2 mb-2">
             <User className="h-4 w-4 text-primary" />
             <h3 className="font-semibold text-sm">Demandeur</h3>
+            <Badge variant="secondary" className="text-[10px] bg-green-50 text-green-700 border-green-200">
+              <CheckCircle className="h-3 w-3 mr-1" /> Connecté
+            </Badge>
           </div>
           
-          {!requesterValid && (
-            <Alert variant="destructive" className="py-2">
-              <AlertTriangle className="h-3.5 w-3.5" />
-              <AlertDescription className="text-xs">
-                Veuillez renseigner votre nom, prénom et téléphone pour continuer.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
-              <Label className="text-xs">Prénom *</Label>
-              <Input
-                value={requester.firstName}
-                onChange={e => onRequesterChange({ ...requester, firstName: e.target.value })}
-                className="h-9 text-sm"
-                placeholder="Votre prénom"
-              />
+              <span className="text-muted-foreground text-xs">Nom complet</span>
+              <p className="font-medium">{displayName}</p>
             </div>
             <div>
-              <Label className="text-xs">Nom *</Label>
-              <Input
-                value={requester.lastName}
-                onChange={e => onRequesterChange({ ...requester, lastName: e.target.value })}
-                className="h-9 text-sm"
-                placeholder="Votre nom"
-              />
+              <span className="text-muted-foreground text-xs">Email</span>
+              <p className="font-medium">{requester.email || '—'}</p>
             </div>
-            <div>
-              <Label className="text-xs">Téléphone *</Label>
-              <Input
-                value={requester.phone}
-                onChange={e => onRequesterChange({ ...requester, phone: e.target.value })}
-                className="h-9 text-sm"
-                placeholder="+243..."
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Email</Label>
-              <Input
-                value={requester.email || ''}
-                onChange={e => onRequesterChange({ ...requester, email: e.target.value })}
-                className="h-9 text-sm"
-                placeholder="email@exemple.com"
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Qualité du demandeur</Label>
-              <Select value={requester.type} onValueChange={(v: any) => onRequesterChange({ ...requester, type: v })}>
-                <SelectTrigger className="h-9 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="owner">Propriétaire</SelectItem>
-                  <SelectItem value="mandatary">Mandataire</SelectItem>
-                  <SelectItem value="notary">Notaire</SelectItem>
-                  <SelectItem value="other">Autre</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {requester.phone && (
+              <div>
+                <span className="text-muted-foreground text-xs">Téléphone</span>
+                <p className="font-medium">{requester.phone}</p>
+              </div>
+            )}
+          </div>
+          
+          <div className="pt-1">
+            <Label className="text-xs">Qualité du demandeur</Label>
+            <Select value={requester.type} onValueChange={(v: any) => onRequesterChange({ ...requester, type: v })}>
+              <SelectTrigger className="mt-1 h-9 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="owner">Propriétaire</SelectItem>
+                <SelectItem value="mandatary">Mandataire</SelectItem>
+                <SelectItem value="notary">Notaire</SelectItem>
+                <SelectItem value="other">Autre</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
