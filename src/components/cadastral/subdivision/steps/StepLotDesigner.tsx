@@ -19,7 +19,7 @@ import {
   COMMON_SPACE_LABELS, COMMON_SPACE_COLORS, Point2D, LotAnnotation
 } from '../types';
 import { ValidationResult, mergeLotsThroughDeletedRoad, polygonArea } from '../utils/geometry';
-import LotCanvas, { CanvasMode } from '../LotCanvas';
+import LotCanvas, { CanvasMode, EdgeInfo } from '../LotCanvas';
 
 interface StepLotDesignerProps {
   parentParcel: ParentParcelInfo | null;
