@@ -1,52 +1,64 @@
 
 
-# Audit de la Fiche Cadastrale — Données fictives et divergences
+# Audit du service "Demande de Lotissement" — Divergences et optimisations
 
 ## Divergences identifiées
 
 | Problème | Détail | Impact |
 |----------|--------|--------|
-| **`bypass_payment` est du code mort dans la RPC** | La fonction SQL `get_cadastral_parcel_data` lit encore `bypass_payment` dans `cadastral_search_config` (ligne 36-41), mais cette clé a été supprimée de l'admin lors de la refonte du mode de paiement. | Le bypass ne fonctionne plus ; code mort à nettoyer. |
-| **Permis de bâtir : gating incohérent** | La RPC gate les permis sur le service `'permits'`, mais ce service n'existe pas dans le catalogue (`cadastral_services_config`). Le document les affiche sous `hasAccess('information')`. Résultat : la RPC ne retourne jamais les permis (aucun service `permits` ne peut être payé), mais le document les cherche dans la mauvaise clé. | **Bug actif** — les permis ne s'affichent jamais. |
-| **Données parcellaires toujours retournées par la RPC** | `v_parcel` est retourné sans aucun gating (lignes 31-33), peu importe les services payés. Mais le document les masque côté client avec `hasAccess('information')`. | Double incohérence : le serveur envoie les données même sans paiement, mais le client les cache. Le gating doit être côté serveur. |
-| **Service `legal_verification` sans section** | Le catalogue contient un service `legal_verification` (prix facturé), mais la Fiche Cadastrale n'affiche aucune section correspondante. L'utilisateur paie pour rien. | **Bug actif** — service facturé sans contenu. |
-| **Mode test non vérifié dans la RPC** | La RPC ne consulte pas le mode test global (`test_mode` dans `cadastral_search_config`). Le mode test est uniquement géré côté client. | Incohérence avec l'architecture serveur-first. |
-| **Pas de gating serveur pour `land_disputes`** | La section litiges est affichée via une requête client directe (`DisputesSection`), contournant le gating serveur de la RPC. | Faille : les litiges sont accessibles sans paiement si l'utilisateur inspecte le réseau. |
-| **`legal_verification` mappé à aucune donnée** | La RPC n'a aucune branche `WHEN ... 'legal_verification'` — ce service ne retourne aucune donnée serveur. |  |
+| **Prix en dur "20$" dans le bouton** | Le bouton "Soumettre (20$)" (ligne 234 du dialog) et le montant `submission_fee_usd: 20` (ligne 278 du hook) sont codés en dur. Il n'y a aucune lecture depuis une config admin (type `cadastral_services_config` ou table dédiée). | Si l'admin change le tarif, le code ne reflète pas le changement. |
+| **`submission_payment_status: 'completed'` sans paiement** | Le hook `submit()` (ligne 282) insère directement `submission_payment_status: 'completed'` sans aucun flux de paiement réel (Mobile Money, Stripe, etc.). L'utilisateur ne paie jamais les 20$. | **Bug critique** — les frais de dossier ne sont jamais collectés. |
+| **Référence non-unique** | `LOT-2026-XXXXX` est généré avec `Math.random()` (ligne 247). Pas de vérification d'unicité en base — collision possible. | Risque de doublon sur des volumes élevés. |
+| **`as any` sur les requêtes Supabase** | Les appels `supabase.from('subdivision_requests' as any)` et `supabase.from('subdivision_lots')` utilisent `as any`, indiquant que ces tables ne sont pas dans les types générés. | Les erreurs de typage sont masquées ; pas d'autocomplétion. |
+| **Motifs de lotissement incohérents** | Le formulaire propose des motifs en français libre ("Vente", "Succession / Héritage", etc.) tandis que l'admin affiche des clés anglaises (`sale`, `family_distribution`, `development`). Les labels ne correspondent pas. | L'admin ne reconnaît pas les motifs soumis par l'utilisateur. |
+| **Validation step 1 incomplète** | `isStepValid('parcel')` vérifie uniquement `!!parentParcel`. Le demandeur (nom, téléphone) n'est pas validé — un utilisateur sans profil complet peut avancer. | Soumission possible avec des champs demandeur vides. |
+| **Export PNG fragile** | `StepPlanView.handleExportPNG()` utilise `document.querySelector('#subdivision-canvas svg')` et `btoa(unescape(encodeURIComponent(...)))` — échoue silencieusement avec des caractères spéciaux (accents dans les noms de propriétaires). | L'export PNG peut produire une image cassée. |
+| **Pas de brouillon / sauvegarde** | Si l'utilisateur ferme accidentellement le dialog après avoir conçu 10 lots, tout est perdu. Aucune sauvegarde intermédiaire. | Perte de travail significative. |
+| **Espaces communs et servitudes jamais éditables** | Les types `SubdivisionCommonSpace` et `SubdivisionServitude` existent, sont passés au `StepPlanView`, mais aucune interface ne permet de les créer ou les modifier. Ils restent toujours `[]`. | Fonctionnalité morte. |
 
-## Plan de correction
+## Plan d'implémentation
 
-### 1. Mettre à jour la RPC `get_cadastral_parcel_data`
+### 1. Intégrer le paiement réel avant soumission
 
-- Supprimer la lecture de `bypass_payment` (code mort)
-- Remplacer par la lecture du mode test global (`test_mode.enabled`)
-- Gater les données parcellaires (`v_parcel`) derrière le service `information` (ou mode test/paiement activé=false)
-- Remplacer `'permits'` par `'information'` pour les permis (ils font partie du service Informations)
-- Ajouter une branche pour `land_disputes` : requêter `cadastral_land_disputes` côté serveur au lieu de laisser le client le faire
-- Ajouter une branche pour `legal_verification` (retourner les données de vérification juridique si elles existent, ou un objet vide structuré)
+Ajouter une étape de paiement entre le récapitulatif et la soumission finale :
+- Lire le tarif depuis `cadastral_services_config` (clé `subdivision`) ou une config admin dédiée au lieu du `20` en dur.
+- Réutiliser le flux `CadastralBillingPanel` / `useCadastralPayment` existant pour collecter le paiement.
+- Ne soumettre en base (`status: 'pending'`) qu'après confirmation du paiement.
+- Retirer le texte "(20$)" du bouton, le remplacer par le montant dynamique.
 
-### 2. Supprimer la requête client `DisputesSection`
+### 2. Corriger la génération de référence
 
-Remplacer le composant `DisputesSection` (qui fait une requête Supabase directe) par l'affichage des données `result.land_disputes` retournées par la RPC. Le gating se fait ainsi côté serveur.
+Remplacer `Math.random()` par un appel à une séquence SQL ou un UUID court côté serveur, garantissant l'unicité. Alternative : insérer d'abord sans référence, puis utiliser l'`id` retourné pour construire `LOT-2026-{id_court}`.
 
-### 3. Ajouter la section `legal_verification` dans le document
+### 3. Harmoniser les motifs de lotissement
 
-Créer une section « Vérification juridique » dans `CadastralDocumentView` affichant les données retournées par la RPC pour ce service (statut du titre, conformité, observations).
+Utiliser des clés normalisées (`sale`, `inheritance`, `investment`, `construction`, `donation`, `family`, `commercial`, `other`) avec un mapping de labels FR partagé entre le formulaire et l'admin.
 
-### 4. Synchroniser le gating client avec le serveur
+### 4. Renforcer la validation de l'étape 1
 
-Le document ne doit plus utiliser `hasAccess(serviceType)` pour décider quoi afficher. Il doit vérifier si les données sont présentes (non vides) dans le résultat RPC. Si la RPC retourne `[]` ou `null` pour une section, le placeholder verrouillé s'affiche. Le gating est ainsi entièrement piloté par le serveur.
+`isStepValid('parcel')` doit vérifier : `parentParcel` ET `requester.firstName` ET `requester.lastName` ET `requester.phone` non vides. Afficher un message d'erreur inline si les champs sont manquants.
 
-### 5. Vérifier le mode de paiement désactivé
+### 5. Ajouter la sauvegarde brouillon
 
-Quand le paiement est désactivé (`payment_mode.enabled = false`), la RPC doit retourner toutes les données (accès gratuit). Remplacer la logique `bypass_payment` supprimée par la vérification de `payment_mode.enabled`.
+Sauvegarder automatiquement le plan en `localStorage` (clé `subdivision-draft-{parcelNumber}`) à chaque modification de lots/roads. Restaurer au réouverture du dialog avec un message "Brouillon restauré". Ajouter un bouton "Effacer le brouillon".
+
+### 6. Activer l'édition des espaces communs et servitudes
+
+Ajouter un onglet ou une section dans `StepLotDesigner` permettant de créer/éditer des espaces communs (type, nom, surface) et des servitudes (type, lots affectés, largeur). Utiliser les types existants `SubdivisionCommonSpace` et `SubdivisionServitude`.
+
+### 7. Fiabiliser l'export PNG
+
+Remplacer la sérialisation SVG manuelle par `html2canvas` (déjà utilisé ailleurs dans le projet pour la carte DRC). Cela gère correctement les polices, accents et styles CSS.
 
 ## Fichiers impactés
 
 | Action | Fichier |
 |--------|---------|
-| Migration SQL | Mise à jour de `get_cadastral_parcel_data` — suppression bypass, ajout test_mode, gating parcelle, litiges serveur, legal_verification, correction permits |
-| Modifié | `src/components/cadastral/CadastralDocumentView.tsx` — Suppression `DisputesSection`, gating par données présentes, ajout section legal_verification |
-| Modifié | `src/hooks/useCadastralSearch.tsx` — Mapper `land_disputes` depuis le résultat RPC |
-| Modifié | `src/types/cadastral.ts` ou types inline — Ajouter `land_disputes` au type `CadastralSearchResult` |
+| Modifié | `src/components/cadastral/subdivision/hooks/useSubdivisionForm.ts` — Paiement dynamique, référence unique, validation renforcée, brouillon localStorage |
+| Modifié | `src/components/cadastral/SubdivisionRequestDialog.tsx` — Intégration étape paiement, montant dynamique |
+| Modifié | `src/components/cadastral/subdivision/steps/StepParentParcel.tsx` — Validation champs demandeur |
+| Modifié | `src/components/cadastral/subdivision/steps/StepSummary.tsx` — Montant dynamique, motifs harmonisés |
+| Modifié | `src/components/cadastral/subdivision/steps/StepLotDesigner.tsx` — Section espaces communs et servitudes |
+| Modifié | `src/components/cadastral/subdivision/steps/StepPlanView.tsx` — Export PNG via html2canvas |
+| Modifié | `src/components/admin/AdminSubdivisionRequests.tsx` — Labels motifs harmonisés |
 
