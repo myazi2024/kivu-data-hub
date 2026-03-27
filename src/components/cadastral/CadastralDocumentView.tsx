@@ -2,7 +2,8 @@ import React from 'react';
 import { 
   Download, Printer, ShoppingCart, FileText, User, MapPin, Clock, 
   Receipt, CreditCard, Building, Map, CheckCircle, CheckCircle2, 
-  XCircle, AlertCircle, Landmark, Hash, ExternalLink, Info, Scale
+  XCircle, AlertCircle, Landmark, Hash, ExternalLink, Info, Scale,
+  ShieldCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,67 +15,6 @@ import CadastralMap from './CadastralMap';
 import DocumentAttachment from './DocumentAttachment';
 import VerificationButton from './VerificationButton';
 import { PROPERTY_TITLE_TYPES } from './PropertyTitleTypeSelect';
-import { Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-
-/** Composant interne pour les litiges */
-const DisputesSection: React.FC<{ parcelNumber: string }> = ({ parcelNumber }) => {
-  const [disputes, setDisputes] = React.useState<any[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  
-  React.useEffect(() => {
-    (async () => {
-      setLoading(true);
-      try {
-        const { data } = await (supabase as any)
-          .from('cadastral_land_disputes')
-          .select('*')
-          .eq('parcel_number', parcelNumber)
-          .eq('dispute_type', 'report')
-          .order('created_at', { ascending: false });
-        if (data) setDisputes(data);
-      } catch (e) { console.error(e); }
-      finally { setLoading(false); }
-    })();
-  }, [parcelNumber]);
-  
-  if (loading) return <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
-  
-  if (disputes.length === 0) return (
-    <div className="flex items-center gap-3 p-4 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30">
-      <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
-      <div>
-        <p className="text-sm font-medium text-green-700 dark:text-green-300">Aucun litige foncier enregistré</p>
-        <p className="text-xs text-green-600 dark:text-green-400 mt-0.5">Cette parcelle ne fait l'objet d'aucun litige connu</p>
-      </div>
-    </div>
-  );
-
-  return (
-    <table className="doc-table">
-      <thead>
-        <tr>
-          <th>Référence</th>
-          <th>Nature</th>
-          <th>Déclarant</th>
-          <th>Statut</th>
-          <th>Date</th>
-        </tr>
-      </thead>
-      <tbody>
-        {disputes.map((d: any) => (
-          <tr key={d.id}>
-            <td className="font-mono text-xs">{d.reference_number}</td>
-            <td>{d.dispute_nature}</td>
-            <td>{d.declarant_name}</td>
-            <td><Badge variant="outline" className="text-xs">{d.current_status}</Badge></td>
-            <td>{d.dispute_start_date ? new Date(d.dispute_start_date).toLocaleDateString('fr-FR') : '—'}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-};
 
 interface CadastralDocumentViewProps {
   result: CadastralSearchResult;
