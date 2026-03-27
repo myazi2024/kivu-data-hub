@@ -1139,31 +1139,111 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
               </AlertDescription>
             </Alert>
             
-            {/* Type de construction */}
+            {/* Construction Block (CCC-aligned) */}
             <Card className="border rounded-xl">
               <CardContent className="p-3 space-y-3">
                 <h4 className="text-sm font-semibold flex items-center gap-2">
                   <Home className="h-4 w-4 text-muted-foreground" />
-                  Type de bien
+                  Construction
                   <SectionHelpPopover
-                    title="Type de bien"
-                    description="Sélectionnez la catégorie qui correspond le mieux à votre construction. Ce choix orientera l'expert dans son évaluation et déterminera les critères d'analyse."
+                    title="Construction"
+                    description="Sélectionnez la catégorie, le type, les matériaux et le standing de votre bien. Ces champs suivent la nomenclature cadastrale officielle."
                   />
                 </h4>
-                
+
+                {/* Catégorie de bien */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Type de construction</Label>
-                  <Select value={constructionType} onValueChange={setConstructionType}>
+                  <Label className="text-xs">Catégorie de bien</Label>
+                  <Select value={propertyCategory} onValueChange={setPropertyCategory}>
                     <SelectTrigger className="h-10 text-sm rounded-xl border-2">
-                      <SelectValue />
+                      <SelectValue placeholder="Sélectionner la catégorie" />
                     </SelectTrigger>
                     <SelectContent className="z-[1200]">
-                      {CONSTRUCTION_TYPE_OPTIONS.map(opt => (
-                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      {PROPERTY_CATEGORY_OPTIONS.map(opt => (
+                        <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Type de construction & Matériaux */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Type de construction</Label>
+                    {availableConstructionTypes.length <= 1 ? (
+                      <div className="h-10 px-3 flex items-center text-sm rounded-xl border-2 bg-muted text-muted-foreground">
+                        {constructionType || (propertyCategory ? '—' : "Catégorie d'abord")}
+                      </div>
+                    ) : (
+                      <Select value={constructionType} onValueChange={setConstructionType} disabled={!propertyCategory}>
+                        <SelectTrigger className="h-10 text-sm rounded-xl border-2">
+                          <SelectValue placeholder={!propertyCategory ? "Catégorie d'abord" : "Sélectionner"} />
+                        </SelectTrigger>
+                        <SelectContent className="z-[1200]">
+                          {availableConstructionTypes.map(opt => (
+                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+
+                  {availableConstructionMaterials.length > 0 ? (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Matériaux</Label>
+                      <Select value={constructionMaterials} onValueChange={setConstructionMaterials} disabled={availableConstructionMaterials.length === 0}>
+                        <SelectTrigger className="h-10 text-sm rounded-xl border-2">
+                          <SelectValue placeholder={!constructionType ? "Type d'abord" : "Sélectionner"} />
+                        </SelectTrigger>
+                        <SelectContent className="z-[1200]">
+                          {availableConstructionMaterials.map(opt => (
+                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : <div />}
+                </div>
+
+                {/* Nature (auto) & Usage */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Nature</Label>
+                    <div className="h-10 px-3 flex items-center text-sm rounded-xl border-2 bg-muted text-muted-foreground">
+                      {constructionNature ? `Construction ${constructionNature.toLowerCase()}` : (constructionMaterials ? '—' : "Matériaux d'abord")}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Usage</Label>
+                    <Select value={declaredUsage} onValueChange={setDeclaredUsage} disabled={!constructionType || !constructionNature}>
+                      <SelectTrigger className="h-10 text-sm rounded-xl border-2">
+                        <SelectValue placeholder={!constructionType || !constructionNature ? "Type et nature d'abord" : "Sélectionner"} />
+                      </SelectTrigger>
+                      <SelectContent className="z-[1200]">
+                        {availableDeclaredUsages.map(opt => (
+                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Standing */}
+                {constructionNature && constructionNature !== 'Non bâti' && availableStandings.length > 0 && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Standing</Label>
+                    <Select value={standing} onValueChange={setStanding}>
+                      <SelectTrigger className="h-10 text-sm rounded-xl border-2">
+                        <SelectValue placeholder="Sélectionner le standing" />
+                      </SelectTrigger>
+                      <SelectContent className="z-[1200]">
+                        {availableStandings.map(opt => (
+                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 <div className="space-y-1.5">
                   <Label className="text-xs">Description du bien</Label>
@@ -1216,31 +1296,16 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Surface bâtie (m²)</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      value={totalBuiltAreaSqm}
-                      onChange={handleNonNegativeChange(setTotalBuiltAreaSqm)}
-                      placeholder="Ex: 150"
-                      className="h-9 text-sm rounded-xl border-2"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Qualité</Label>
-                    <Select value={constructionQuality} onValueChange={setConstructionQuality}>
-                      <SelectTrigger className="h-9 text-sm rounded-xl border-2">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="z-[1200]">
-                        {CONSTRUCTION_QUALITY_OPTIONS.map(opt => (
-                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Surface bâtie (m²)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={totalBuiltAreaSqm}
+                    onChange={handleNonNegativeChange(setTotalBuiltAreaSqm)}
+                    placeholder="Ex: 150"
+                    className="h-9 text-sm rounded-xl border-2"
+                  />
                 </div>
 
                 <div className="grid grid-cols-3 gap-2">
