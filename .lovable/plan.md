@@ -1,66 +1,84 @@
 
 
-# Revue du bloc "Moyens de Paiement" — Divergences et améliorations
+# Test global front-end ↔ back-end — Diagnostic et orientations
 
-## Divergences identifiées
+## Résultat du diagnostic
 
-| Problème | Détail |
-|----------|--------|
-| **Duplication composant / hook** | `AdminPaymentMethods.tsx` gère son propre state local et ses propres requêtes Supabase, alors que le hook `usePaymentMethods.tsx` fait exactement la même chose. Le composant n'utilise pas le hook. |
-| **Pas de dirty-check** | Le bouton "Sauvegarder" est toujours actif, contrairement au pattern établi dans `AdminTestMode` et `AdminPaymentMode` qui implémentent `isDirty`. |
-| **Pas d'audit logging** | Les changements de configuration des moyens de paiement ne sont pas journalisés dans `admin_audit_logs`, contrairement aux autres modules admin qui utilisent `logAuditAction`. |
-| **Clés API stockées en clair dans la DB** | Les `api_credentials` (apiKey, secretKey, webhookSecret) sont stockées en JSON dans `payment_methods_config`. Les clés sensibles devraient être masquées après sauvegarde et idéalement stockées dans Supabase Vault ou les secrets Edge Functions. |
-| **Toast au chargement initial** | `loadConfiguration()` affiche un toast de succès à chaque chargement — bruit inutile, les autres modules ne font pas ça. |
-| **Select natif au lieu de composant UI** | Le sélecteur de fournisseur carte bancaire utilise un `<select>` HTML natif au lieu du composant `Select` de shadcn/ui. |
-| **Pas de validation des clés API** | Aucune validation de format (ex: clé Stripe commence par `pk_`/`sk_`), l'admin peut sauvegarder des clés vides ou invalides. |
-| **Pas de test de connexion** | Impossible de vérifier que les clés API fonctionnent avant de passer en production. |
-| **Résumé incomplet** | La card résumé ne montre pas les devises supportées (USD, CDF) ni le lien avec le mode de paiement (activé/désactivé). |
+### 1. Edge Functions — CORS incohérent (BUG ACTIF)
 
-## Plan de correction
+Deux Edge Functions utilisent un en-tête CORS **incomplet** :
 
-### 1. Refactorer pour utiliser `usePaymentMethods`
+| Edge Function | CORS `Allow-Headers` | Statut |
+|---|---|---|
+| `create-payment` | `authorization, x-client-info, apikey, content-type` | **Incomplet** — manque les headers `x-supabase-client-platform*` |
+| `process-mobile-money-payment` | idem | **Incomplet** |
+| `cleanup-test-data` | Complet (inclut `x-supabase-client-platform*`) | OK |
+| `test-payment-provider` | Complet | OK |
 
-Remplacer tout le state local et les requêtes directes de `AdminPaymentMethods.tsx` par le hook existant `usePaymentMethods.tsx`. Supprimer le code dupliqué.
+Les versions récentes du SDK Supabase envoient automatiquement les headers `x-supabase-client-platform`, `x-supabase-client-platform-version`, etc. Si le navigateur envoie ces headers non déclarés dans le preflight, **la requête CORS échoue silencieusement** sur certains navigateurs.
 
-### 2. Ajouter le dirty-check
+### 2. Edge Function `test-payment-provider` — absente du `config.toml`
 
-Comparer l'état initial (snapshot au chargement) avec l'état courant pour n'activer le bouton "Sauvegarder" que quand il y a des modifications. Pattern identique à `AdminPaymentMode`.
+La nouvelle Edge Function `test-payment-provider` n'est pas déclarée dans `supabase/config.toml`. Sans `[functions.test-payment-provider]`, `verify_jwt` est `true` par défaut, ce qui bloque les appels depuis le frontend si le token n'est pas passé correctement.
 
-### 3. Ajouter l'audit logging
+### 3. API Deno — styles de serveur incohérents
 
-Utiliser `logAuditAction` de `supabaseConfigUtils.ts` pour journaliser chaque sauvegarde avec les anciennes et nouvelles valeurs (en masquant les clés sensibles dans le log).
+| Edge Function | Serveur | Statut |
+|---|---|---|
+| `create-payment` | `serve()` (std) | Ancien |
+| `process-mobile-money-payment` | `serve()` (std) | Ancien |
+| `stripe-webhook` | `serve()` (std) | Ancien |
+| `cleanup-test-data` | `Deno.serve()` | Moderne |
+| `test-payment-provider` | `Deno.serve()` | Moderne |
 
-### 4. Masquer les clés API après sauvegarde
+`Deno.serve()` est la méthode native recommandée. Les anciennes fonctions importent `serve` depuis `deno.land/std` avec des versions variées (`0.168.0`, `0.190.0`).
 
-Afficher les clés existantes sous forme masquée (`sk_****...1234`) avec un bouton "Révéler". Ne renvoyer le champ que si l'admin le modifie explicitement (éviter de réécrire les clés à chaque sauvegarde).
+### 4. Edge Function `stripe-webhook` — pas de CORS du tout
 
-### 5. Supprimer le toast de chargement initial
+C'est correct pour un webhook (appel serveur-to-serveur), mais l'absence de gestion OPTIONS signifie qu'un appel accidentel depuis le frontend retournera une erreur non informative.
 
-Retirer le toast de succès dans `loadConfiguration` — seul un toast d'erreur est pertinent.
+### 5. `create-payment` — utilise `SUPABASE_ANON_KEY` au lieu de `SERVICE_ROLE_KEY`
 
-### 6. Remplacer le `<select>` natif par `Select` shadcn/ui
+La fonction `create-payment` crée un client Supabase avec `SUPABASE_ANON_KEY` pour la validation initiale de l'utilisateur, puis crée un **second** client avec `SERVICE_ROLE_KEY` pour les opérations admin plus loin dans le code. Cela crée une duplication et un risque : le premier client est soumis aux RLS, ce qui peut faire échouer des requêtes silencieusement.
 
-Utiliser le composant `Select` + `SelectTrigger` + `SelectContent` + `SelectItem` pour cohérence visuelle.
+### 6. Pas de validation d'entrée structurée (Zod)
 
-### 7. Ajouter la validation des clés API
+Aucune Edge Function n'utilise de validation d'entrée structurée. Le body JSON est parsé et utilisé directement avec un minimum de vérifications manuelles.
 
-Validation basique de format avant sauvegarde :
-- Stripe : `pk_` / `sk_` / `whsec_`
-- Champs obligatoires quand le fournisseur est activé
+---
 
-### 8. Ajouter un bouton "Tester la connexion"
+## Orientations et améliorations proposées
 
-Pour chaque fournisseur activé avec des clés renseignées, un bouton qui appelle une Edge Function de vérification (ping API du fournisseur) et affiche le résultat.
+### Priorité haute — Corrections de bugs
 
-### 9. Enrichir la card résumé
+1. **Harmoniser les CORS** : Mettre à jour `create-payment` et `process-mobile-money-payment` pour utiliser les mêmes headers CORS complets que `cleanup-test-data` et `test-payment-provider`.
 
-Ajouter : devises supportées (USD, CDF), statut du mode de paiement (activé/désactivé avec lien), et indication du mode test global.
+2. **Ajouter `test-payment-provider` à `config.toml`** : Déclarer `[functions.test-payment-provider]` avec `verify_jwt = false`.
 
-## Fichiers modifiés
+### Priorité moyenne — Cohérence technique
+
+3. **Migrer vers `Deno.serve()`** : Convertir `create-payment`, `process-mobile-money-payment` et `stripe-webhook` pour utiliser `Deno.serve()` natif au lieu de `serve()` importé, et supprimer les imports `deno.land/std`.
+
+4. **Client Supabase unique dans `create-payment`** : Utiliser `SERVICE_ROLE_KEY` dès le début (comme `process-mobile-money-payment`), avec validation manuelle du JWT via `supabase.auth.getUser(token)`.
+
+5. **Ajouter la validation Zod** dans les Edge Functions `create-payment` et `process-mobile-money-payment` pour valider le body JSON à l'entrée.
+
+### Priorité basse — Améliorations
+
+6. **Endpoint de health-check dédié** : Créer une Edge Function `health-check` légère (retourne `{ ok: true, timestamp }`) au lieu de détourner `cleanup-test-data` avec `dry_run: true` dans `AdminSystemHealth`.
+
+7. **Enrichir `AdminSystemHealth`** : Ajouter le test de chaque Edge Function individuellement (pas seulement `cleanup-test-data`) et afficher le statut Realtime (WebSocket).
+
+8. **Unifier les versions des dépendances esm.sh** : `@supabase/supabase-js` est importé en `@2`, `@2.38.4`, et `@2.45.0` selon les fonctions. Aligner sur une seule version.
+
+## Fichiers impactés
 
 | Action | Fichier |
-|--------|---------|
-| Modifié | `src/components/admin/AdminPaymentMethods.tsx` — Refactoring complet (hook, dirty-check, audit, masquage clés, validation, UI Select, résumé enrichi) |
-| Modifié | `src/hooks/usePaymentMethods.tsx` — Ajouter support masquage clés et méthode de test connexion |
-| Créé | `supabase/functions/test-payment-provider/index.ts` — Edge Function pour tester la connectivité d'un fournisseur |
+|---|---|
+| Modifié | `supabase/functions/create-payment/index.ts` — CORS, Deno.serve, client unique, Zod |
+| Modifié | `supabase/functions/process-mobile-money-payment/index.ts` — CORS, Deno.serve, Zod |
+| Modifié | `supabase/functions/stripe-webhook/index.ts` — Deno.serve, version esm.sh |
+| Modifié | `supabase/config.toml` — Ajouter `test-payment-provider` |
+| Créé | `supabase/functions/health-check/index.ts` — Endpoint de health-check léger |
+| Modifié | `src/components/admin/AdminSystemHealth.tsx` — Utiliser `health-check` au lieu de `cleanup-test-data` |
 
