@@ -208,8 +208,25 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     newHistory.push(JSON.parse(JSON.stringify(newLots)));
     historyRef.current = newHistory;
     historyIndexRef.current = newHistory.length - 1;
-    setHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
+    setHistoryVersion(v => v + 1);
+  }, []);
+
+  // History-aware setLots wrapper — all external mutations go through this
+  const setLotsWithHistory = useCallback((updater: SubdivisionLot[] | ((prev: SubdivisionLot[]) => SubdivisionLot[])) => {
+    if (skipHistoryRef.current) {
+      setLots(updater);
+      return;
+    }
+    setLots(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      pushHistory(next);
+      return next;
+    });
+  }, [pushHistory]);
+
+  // Allow canvas to skip history during drag
+  const setSkipHistory = useCallback((skip: boolean) => {
+    skipHistoryRef.current = skip;
   }, []);
 
   // Create initial lot covering the entire parent parcel
