@@ -2461,7 +2461,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <Home className="h-4 w-4 text-green-600" />
                     <h4 className="text-xs font-semibold">Construction</h4>
                     <Badge variant="outline" className="text-[10px] h-5">
-                      {[constructionType, constructionYear, totalBuiltAreaSqm, numberOfFloors, propertyCondition, constructionQuality].filter(Boolean).length}/6
+                      {[propertyCategory, constructionType, constructionMaterials, constructionNature, standing, constructionYear].filter(Boolean).length}/6
                     </Badge>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => { setActiveTab('general'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
