@@ -173,7 +173,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                 servitudes={form.servitudes}
                 setServitudes={form.setServitudes}
                 lotIds={form.lots.map(l => l.id)}
-                onAutoSubdivide={form.handleAutoSubdivide}
+                onCreateInitialLot={form.handleAutoSubdivide}
                 validation={form.validation}
                 canUndo={form.canUndo}
                 canRedo={form.canRedo}

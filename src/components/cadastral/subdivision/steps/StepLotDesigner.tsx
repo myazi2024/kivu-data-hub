@@ -146,16 +146,42 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     setRoads(roads.map(r => r.id === roadId ? { ...r, ...updates } : r));
   }, [roads, setRoads]);
 
-  const handleAutoGenerate = () => {
-    onAutoSubdivide({
-      numberOfLots,
-      direction,
-      includeRoad,
-      roadWidthM: roadWidth,
-      equalSize: true,
-    });
-    setShowAutoPanel(false);
-  };
+  // Add empty lot
+  const handleAddEmptyLot = useCallback(() => {
+    const parentPoly = parentVertices && parentVertices.length >= 3 ? parentVertices : null;
+    const bounds = parentPoly
+      ? parentPoly.reduce((b, p) => ({
+          minX: Math.min(b.minX, p.x), maxX: Math.max(b.maxX, p.x),
+          minY: Math.min(b.minY, p.y), maxY: Math.max(b.maxY, p.y),
+        }), { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity })
+      : { minX: 0, maxX: 1, minY: 0, maxY: 1 };
+
+    const cx = (bounds.minX + bounds.maxX) / 2;
+    const cy = (bounds.minY + bounds.maxY) / 2;
+    const w = (bounds.maxX - bounds.minX) * 0.2;
+    const h = (bounds.maxY - bounds.minY) * 0.2;
+    const maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0);
+    const sideLength = Math.sqrt(parentParcel?.areaSqm || 1000);
+
+    const newLot: SubdivisionLot = {
+      id: `lot-${Date.now()}-new`,
+      lotNumber: String(maxLotNum + 1),
+      vertices: [
+        { x: cx - w / 2, y: cy - h / 2 },
+        { x: cx + w / 2, y: cy - h / 2 },
+        { x: cx + w / 2, y: cy + h / 2 },
+        { x: cx - w / 2, y: cy + h / 2 },
+      ],
+      areaSqm: Math.round(w * h * (parentParcel?.areaSqm || 1000)),
+      perimeterM: Math.round(2 * (w + h) * sideLength),
+      intendedUse: 'residential',
+      isBuilt: false,
+      hasFence: false,
+      color: '#22c55e',
+    };
+    setLots([...lots, newLot]);
+    setSelectedLotId(newLot.id);
+  }, [lots, setLots, parentVertices, parentParcel]);
 
   const selectedLot = lots.find(l => l.id === selectedLotId);
 
