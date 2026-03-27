@@ -495,7 +495,7 @@ const CadastralSearchBar = () => {
           result={searchResult} 
           isOpen={showResultsDialog} 
           onClose={handleCloseResultsDialog} 
-          fromMap={fromMap}
+          
         />
       )}
 

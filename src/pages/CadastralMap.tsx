@@ -1552,7 +1552,7 @@ const CadastralMap = () => {
             setShowServiceCatalog(false);
             cadastralSearch.clearSearch();
           }}
-          fromMap={true}
+          
         />
       )}
     </div>
