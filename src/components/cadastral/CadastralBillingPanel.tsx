@@ -270,24 +270,6 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
         </CardHeader>
 
         <CardContent className="space-y-2.5 p-3">
-          {/* Bannière mode dev/test */}
-          {paymentMode.bypass_payment && (
-            <div className="flex items-start gap-2 p-2 rounded-xl bg-amber-50/80 border border-amber-300/60 dark:bg-amber-900/20 dark:border-amber-700/40">
-              <Info className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
-              <p className="text-xs text-amber-800 dark:text-amber-200 leading-relaxed font-medium">
-                🧪 Mode test — Accès gratuit aux services
-              </p>
-            </div>
-          )}
-          {paymentMode.test_mode && !paymentMode.bypass_payment && (
-            <div className="flex items-start gap-2 p-2 rounded-xl bg-purple-50/80 border border-purple-300/60 dark:bg-purple-900/20 dark:border-purple-700/40">
-              <Info className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400 mt-0.5 shrink-0" />
-              <p className="text-xs text-purple-800 dark:text-purple-200 leading-relaxed font-medium">
-                🧪 Mode test — Paiements simulés
-              </p>
-            </div>
-          )}
-
           {/* Message info compact */}
           <div className="flex items-start gap-2 p-2 rounded-xl bg-emerald-50/80 border border-emerald-200/60 dark:bg-emerald-900/20 dark:border-emerald-700/40">
             <CheckCircle className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
@@ -591,6 +573,11 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
           {selectedServiceIds.length > 0 && !acceptedTerms && (
             <p className="text-center text-xs text-amber-600 dark:text-amber-400">
               Validation des conditions requise
+            </p>
+          )}
+          {(paymentMode.bypass_payment || paymentMode.test_mode) && (
+            <p className="text-[10px] text-muted-foreground/60 text-right mt-1">
+              Mode test
             </p>
           )}
         </CardContent>
