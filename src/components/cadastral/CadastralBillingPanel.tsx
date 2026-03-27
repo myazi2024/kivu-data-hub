@@ -192,19 +192,6 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     
     setIsSubmitting(true);
     try {
-      if (paymentMode.bypass_payment) {
-        const invoice = await createInvoice(appliedDiscount ?? undefined);
-        if (invoice) {
-          toast({
-            title: "Accès accordé",
-            description: "Services débloqués avec succès (mode test)",
-            duration: 3000
-          });
-          onPaymentSuccess(selectedServices.map(s => s.id));
-        }
-        return;
-      }
-      
       if (isPaymentRequired()) {
         const invoice = await createInvoice(appliedDiscount ?? undefined);
         if (invoice) {
