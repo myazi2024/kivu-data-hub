@@ -30,6 +30,8 @@ import SuggestivePicklist from './SuggestivePicklist';
 import SectionHelpPopover from './SectionHelpPopover';
 import { useCCCFormPicklists } from '@/hooks/useCCCFormPicklists';
 import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
+import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
+import { cn } from '@/lib/utils';
 
 interface RealEstateExpertiseRequestDialogProps {
   parcelNumber: string;
