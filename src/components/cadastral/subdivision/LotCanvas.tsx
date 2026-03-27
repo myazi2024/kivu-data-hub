@@ -63,12 +63,13 @@ const PADDING = 30;
 const LotCanvas: React.FC<LotCanvasProps> = ({
   lots, roads, parentAreaSqm, parentVertices, parentSides, selectedLotId, selectedLotIds = [], onSelectLot, onToggleLotSelection, onUpdateLot,
   onUpdateLotAnnotations, onDeleteLot, onDuplicateLot,
-  selectedRoadId, onSelectRoad, onDeleteRoad, onSplitLot, onMergeLots,
+  selectedRoadId, onSelectRoad, onDeleteRoad, onUpdateRoad, onSplitLot, onMergeLots,
   onCutLot, onFinishRoadDraw, mode = 'select', onModeChange,
   showGrid = true, onToggleGrid, showDimensions = true, showLotNumbers = true,
   showAreas = true, showRoads = true, showNorth = true,
   showLegend = false, showScale = true, showOwnerNames = false,
-  readOnly = false, onUndo, onRedo, minLotAreaSqm = 50
+  readOnly = false, onUndo, onRedo, minLotAreaSqm = 50,
+  roadPresetWidth = 6, roadPresetSurface = 'planned',
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
