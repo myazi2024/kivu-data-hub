@@ -320,6 +320,8 @@ const Admin = () => {
         return <AdminTestMode />;
       case 'billing-config':
         return <AdminBillingConfig />;
+      case 'currency-config':
+        return <AdminCurrencyConfig />;
       case 'invoices':
         return <AdminInvoices />;
       case 'financial':
