@@ -3014,6 +3014,11 @@ export type Database = {
           apartment_number: string | null
           assigned_at: string | null
           assigned_to: string | null
+          building_permit_document_url: string | null
+          building_permit_issue_date: string | null
+          building_permit_issuing_service: string | null
+          building_permit_number: string | null
+          building_permit_type: string | null
           building_position: string | null
           certificate_expiry_date: string | null
           certificate_issue_date: string | null
@@ -3036,6 +3041,7 @@ export type Database = {
           has_air_conditioning: boolean | null
           has_automatic_gate: boolean | null
           has_borehole: boolean | null
+          has_building_permit: boolean | null
           has_ceiling: boolean | null
           has_cellar: boolean | null
           has_common_areas: boolean | null
@@ -3096,6 +3102,11 @@ export type Database = {
           apartment_number?: string | null
           assigned_at?: string | null
           assigned_to?: string | null
+          building_permit_document_url?: string | null
+          building_permit_issue_date?: string | null
+          building_permit_issuing_service?: string | null
+          building_permit_number?: string | null
+          building_permit_type?: string | null
           building_position?: string | null
           certificate_expiry_date?: string | null
           certificate_issue_date?: string | null
@@ -3118,6 +3129,7 @@ export type Database = {
           has_air_conditioning?: boolean | null
           has_automatic_gate?: boolean | null
           has_borehole?: boolean | null
+          has_building_permit?: boolean | null
           has_ceiling?: boolean | null
           has_cellar?: boolean | null
           has_common_areas?: boolean | null
@@ -3178,6 +3190,11 @@ export type Database = {
           apartment_number?: string | null
           assigned_at?: string | null
           assigned_to?: string | null
+          building_permit_document_url?: string | null
+          building_permit_issue_date?: string | null
+          building_permit_issuing_service?: string | null
+          building_permit_number?: string | null
+          building_permit_type?: string | null
           building_position?: string | null
           certificate_expiry_date?: string | null
           certificate_issue_date?: string | null
@@ -3200,6 +3217,7 @@ export type Database = {
           has_air_conditioning?: boolean | null
           has_automatic_gate?: boolean | null
           has_borehole?: boolean | null
+          has_building_permit?: boolean | null
           has_ceiling?: boolean | null
           has_cellar?: boolean | null
           has_common_areas?: boolean | null
