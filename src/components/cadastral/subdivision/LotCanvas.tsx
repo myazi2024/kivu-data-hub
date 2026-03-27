@@ -1316,12 +1316,61 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
           );
         })()}
 
+        {/* Edge context menu (right-click on edge) */}
+        {edgeContextMenu && !readOnly && (() => {
+          const { edge, screenPos } = edgeContextMenu;
+          const menuX = screenPos.x - 60;
+          const menuY = screenPos.y - 35;
+          return (
+            <g>
+              <rect x={menuX - 4} y={menuY - 4} width={128} height={32} rx={8}
+                fill="hsl(var(--background))" fillOpacity={0.97}
+                stroke="hsl(var(--border))" strokeWidth={1.5}
+                filter="drop-shadow(0 2px 8px rgba(0,0,0,0.15))"
+              />
+              <g className="cursor-pointer" onClick={e => {
+                e.stopPropagation();
+                onConvertEdgeToRoad?.(edge);
+                setEdgeContextMenu(null);
+              }}>
+                <rect x={menuX} y={menuY} width={120} height={24} rx={5}
+                  fill="hsl(var(--accent))" fillOpacity={0.8} />
+                <text x={menuX + 60} y={menuY + 12} textAnchor="middle" dominantBaseline="middle"
+                  fontSize={10} fontWeight="600" fill="hsl(var(--foreground))">
+                  🛣 {edge.isShared ? 'Convertir en voie' : 'Créer une voie'}
+                </text>
+              </g>
+            </g>
+          );
+        })()}
+
+        {/* Shared edges highlight in selectEdge mode */}
+        {mode === 'selectEdge' && sharedEdges.map((se, idx) => {
+          const sv = toScreen(se.p1);
+          const sn = toScreen(se.p2);
+          return (
+            <line key={`shared-edge-${idx}`}
+              x1={sv.x} y1={sv.y} x2={sn.x} y2={sn.y}
+              stroke="hsl(var(--primary))" strokeWidth={3}
+              strokeDasharray="6 3" opacity={0.3}
+              className="pointer-events-none" />
+          );
+        })}
+
         {/* Mode instruction overlay */}
         {mode === 'drawLine' && !lineChoiceMenu && (
           <g className="pointer-events-none">
             <rect x={CANVAS_W / 2 - 155} y={CANVAS_H - 24} width={310} height={20} rx={4} fill="hsl(var(--primary))" fillOpacity={0.1} />
             <text x={CANVAS_W / 2} y={CANVAS_H - 14} textAnchor="middle" dominantBaseline="middle" fontSize={9} fill="hsl(var(--primary))" fontWeight="600">
               ✏️ Glissez pour tracer • Shift+clic: multi-segments • Backspace: annuler point
+            </text>
+          </g>
+        )}
+        {mode === 'selectEdge' && (
+          <g className="pointer-events-none">
+            <rect x={CANVAS_W / 2 - 165} y={CANVAS_H - 24} width={330} height={20} rx={4} fill="hsl(var(--primary))" fillOpacity={0.1} />
+            <text x={CANVAS_W / 2} y={CANVAS_H - 14} textAnchor="middle" dominantBaseline="middle" fontSize={9} fill="hsl(var(--primary))" fontWeight="600">
+              🛣 Cliquez sur une limite entre lots pour créer une voie • Échap: annuler
             </text>
           </g>
         )}
