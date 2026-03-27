@@ -22,7 +22,6 @@ interface CadastralResultsDialogProps {
   onClose: () => void;
   selectedServices?: string[];
   onPaymentSuccess?: (services: string[]) => void;
-  fromMap?: boolean;
 }
 
 const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({ 
