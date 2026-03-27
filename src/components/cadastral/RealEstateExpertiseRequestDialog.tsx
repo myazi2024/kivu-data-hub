@@ -151,11 +151,42 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const [processingPayment, setProcessingPayment] = useState(false);
   const [formData, setFormData] = useState<any>(null);
 
-  // === GÉNÉRAL ===
+  // === CCC PICKLISTS ===
+  const { getOptions, getDependentOptions, loading: picklistsLoading } = useCCCFormPicklists();
+  
+  // CCC construction categories
+  const PROPERTY_CATEGORY_OPTIONS = useMemo(() => [
+    'Appartement', 'Villa', 'Maison', 'Local commercial',
+    'Immeuble/Bâtiment', 'Entrepôt/Hangar', 'Terrain nu',
+  ], []);
+
+  const CATEGORY_TO_CONSTRUCTION_TYPES: Record<string, string[]> = useMemo(() => ({
+    'Appartement': ['Résidentielle'], 'Villa': ['Résidentielle'], 'Maison': ['Résidentielle'],
+    'Local commercial': ['Commerciale'], 'Immeuble/Bâtiment': ['Résidentielle', 'Commerciale', 'Industrielle'],
+    'Entrepôt/Hangar': ['Industrielle', 'Agricole'], 'Terrain nu': ['Terrain nu'],
+  }), []);
+
+  const MATERIALS_BY_NATURE_FALLBACK: Record<string, string[]> = useMemo(() => ({
+    Durable: ['Béton armé', 'Briques cuites', 'Parpaings', 'Pierre naturelle'],
+    'Semi-durable': ['Semi-dur', 'Briques adobes', 'Bois', 'Mixte'],
+    Précaire: ['Tôles', 'Bois', 'Paille', 'Autre'],
+  }), []);
+
+  const STANDING_BY_NATURE_FALLBACK: Record<string, string[]> = useMemo(() => ({
+    Durable: ['Haut standing', 'Moyen standing', 'Économique'],
+    'Semi-durable': ['Moyen standing', 'Économique'],
+    Précaire: ['Économique'],
+  }), []);
+
+  // === GÉNÉRAL (CCC-aligned) ===
   const [propertyDescription, setPropertyDescription] = useState('');
-  const [constructionType, setConstructionType] = useState('villa');
+  const [propertyCategory, setPropertyCategory] = useState('');
+  const [constructionType, setConstructionType] = useState('');
+  const [constructionMaterials, setConstructionMaterials] = useState('');
+  const [constructionNature, setConstructionNature] = useState('');
+  const [declaredUsage, setDeclaredUsage] = useState('');
+  const [standing, setStanding] = useState('');
   const [constructionYear, setConstructionYear] = useState('');
-  const [constructionQuality, setConstructionQuality] = useState('standard');
   const [numberOfFloors, setNumberOfFloors] = useState('1');
   const [totalBuiltAreaSqm, setTotalBuiltAreaSqm] = useState('');
   const [propertyCondition, setPropertyCondition] = useState('bon');
@@ -163,8 +194,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const [numberOfBedrooms, setNumberOfBedrooms] = useState('');
   const [numberOfBathrooms, setNumberOfBathrooms] = useState('');
 
-  // === MATÉRIAUX DE CONSTRUCTION ===
-  const [wallMaterial, setWallMaterial] = useState('parpaings');
+  // CCC construction cascade state
+  const [availableConstructionTypes, setAvailableConstructionTypes] = useState<string[]>([]);
+  const [availableConstructionMaterials, setAvailableConstructionMaterials] = useState<string[]>([]);
+  const [availableConstructionNatures, setAvailableConstructionNatures] = useState<string[]>([]);
+  const [availableDeclaredUsages, setAvailableDeclaredUsages] = useState<string[]>([]);
+  const [availableStandings, setAvailableStandings] = useState<string[]>([]);
+
+  // === MATÉRIAUX DE CONSTRUCTION (expertise-specific: roof, window, floor, finishes) ===
   const [roofMaterial, setRoofMaterial] = useState('tole_bac');
   const [windowType, setWindowType] = useState('aluminium');
   const [floorMaterial, setFloorMaterial] = useState('carrelage');
