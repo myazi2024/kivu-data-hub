@@ -1244,38 +1244,62 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 />
               ))}
 
-              {/* Rotation handle */}
+              {/* Rotation ring */}
               {!readOnly && mode === 'select' && isSelected && (() => {
+                const minX = Math.min(...screenVertices.map(v => v.x));
+                const maxX = Math.max(...screenVertices.map(v => v.x));
                 const minY = Math.min(...screenVertices.map(v => v.y));
-                const handleY = minY - 30;
+                const maxY = Math.max(...screenVertices.map(v => v.y));
+                const bboxW = maxX - minX;
+                const bboxH = maxY - minY;
+                const ringRadius = Math.max(bboxW, bboxH) / 2 + 20;
+                const handleX = cx;
+                const handleY = cy - ringRadius;
+                const startRotationLot = (e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  const svgMouse = getSvgPos(e);
+                  const normCx = lot.vertices.reduce((s, v) => s + v.x, 0) / lot.vertices.length;
+                  const normCy = lot.vertices.reduce((s, v) => s + v.y, 0) / lot.vertices.length;
+                  const angle = Math.atan2(svgMouse.y - cy, svgMouse.x - cx);
+                  setRotationDrag({ startAngle: angle, centerX: normCx, centerY: normCy, svgCenterX: cx, svgCenterY: cy, originalVertices: [...lot.vertices], targetType: 'lot', targetId: lot.id });
+                  setRotationAngleDisplay(0);
+                };
                 return (
                   <g>
-                    <line x1={cx} y1={minY} x2={cx} y2={handleY}
-                      stroke="hsl(var(--primary))" strokeWidth={1} strokeDasharray="3 2" opacity={0.5}
+                    {/* Rotation ring */}
+                    <circle cx={cx} cy={cy} r={ringRadius}
+                      fill="none" stroke="hsl(var(--primary))" strokeWidth={2}
+                      strokeDasharray="4 3" opacity={0.3}
                       className="pointer-events-none" />
-                    <circle cx={cx} cy={handleY} r={8}
-                      fill="hsl(var(--background))" stroke="hsl(var(--primary))" strokeWidth={2}
+                    {/* Invisible thick ring for easier grab */}
+                    <circle cx={cx} cy={cy} r={ringRadius}
+                      fill="none" stroke="transparent" strokeWidth={14}
                       className="cursor-grab active:cursor-grabbing"
-                      onMouseDown={e => {
-                        e.stopPropagation();
-                        const svgMouse = getSvgPos(e);
-                        const normCx = lot.vertices.reduce((s, v) => s + v.x, 0) / lot.vertices.length;
-                        const normCy = lot.vertices.reduce((s, v) => s + v.y, 0) / lot.vertices.length;
-                        const svgCenter = toScreen({ x: normCx, y: normCy });
-                        const angle = Math.atan2(svgMouse.y - svgCenter.y, svgMouse.x - svgCenter.x);
-                        setRotationDrag({ startAngle: angle, centerX: normCx, centerY: normCy, svgCenterX: svgCenter.x, svgCenterY: svgCenter.y, originalVertices: [...lot.vertices], targetType: 'lot', targetId: lot.id });
-                        setRotationAngleDisplay(0);
-                      }}
-                    />
-                    <text x={cx} y={handleY + 1} textAnchor="middle" dominantBaseline="middle"
-                      fontSize={10} fill="hsl(var(--primary))" fontWeight="bold"
+                      onMouseDown={startRotationLot} />
+                    {/* Guide line center → handle */}
+                    <line x1={cx} y1={cy} x2={handleX} y2={handleY}
+                      stroke="hsl(var(--primary))" strokeWidth={1} strokeDasharray="3 2" opacity={0.3}
+                      className="pointer-events-none" />
+                    {/* Handle on ring */}
+                    <circle cx={handleX} cy={handleY} r={10}
+                      fill="hsl(var(--background))" stroke="hsl(var(--primary))" strokeWidth={2.5}
+                      className="cursor-grab active:cursor-grabbing"
+                      onMouseDown={startRotationLot} />
+                    <text x={handleX} y={handleY + 1} textAnchor="middle" dominantBaseline="middle"
+                      fontSize={12} fill="hsl(var(--primary))" fontWeight="bold"
                       className="pointer-events-none select-none">↻</text>
-                    {rotationAngleDisplay !== null && rotationDrag && (
-                      <text x={cx + 14} y={handleY - 4} textAnchor="start" dominantBaseline="middle"
-                        fontSize={8} fill="hsl(var(--primary))" fontWeight="600"
-                        className="pointer-events-none select-none">
-                        {rotationAngleDisplay > 0 ? '+' : ''}{rotationAngleDisplay}°
-                      </text>
+                    {/* Angle display */}
+                    {rotationAngleDisplay !== null && rotationDrag && rotationDrag.targetId === lot.id && (
+                      <g>
+                        <rect x={cx - 18} y={cy - 8} width={36} height={16} rx={4}
+                          fill="hsl(var(--primary))" fillOpacity={0.15} />
+                        <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle"
+                          fontSize={10} fill="hsl(var(--primary))" fontWeight="700"
+                          className="pointer-events-none select-none">
+                          {rotationAngleDisplay > 0 ? '+' : ''}{rotationAngleDisplay}°
+                        </text>
+                      </g>
                     )}
                   </g>
                 );
