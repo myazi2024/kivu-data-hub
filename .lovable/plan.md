@@ -1,39 +1,37 @@
 
 
-# Ajout de la rotation pour lots et voies selectionnees
+# Fix rotation handle — coordinate system mismatch
 
-## Probleme
+## Problem
 
-Quand un lot ou une voie est selectionne, il n'y a aucun moyen de le faire pivoter. L'utilisateur doit repositionner chaque sommet manuellement.
+The rotation handle doesn't work because mouse coordinates and center coordinates are in different spaces. The `onMouseDown` stores center in SVG viewBox coords (`cx`, `cy`), but `atan2` uses screen pixel coords mixed with those SVG coords. During `mousemove` (line 468-470), it scales by zoom but ignores pan offset, making the angle calculation wrong.
 
 ## Solution
 
-Ajouter une poignee de rotation visuelle (icone circulaire au-dessus de l'element selectionne) + support clavier (touches `R`/`Shift+R` pour rotation par increments).
+Use SVG coordinates consistently throughout the rotation flow:
 
-### Interaction visuelle (poignee SVG)
+### `LotCanvas.tsx` changes
 
-- Quand un lot ou une voie est selectionne, afficher un **cercle de rotation** (↻) au-dessus du centre de l'element, relie par une ligne pointillee
-- Le drag de cette poignee fait pivoter tous les sommets autour du centre de gravite de l'element
-- Pendant le drag, afficher l'angle de rotation en degres a cote de la poignee
+**1. onMouseDown (both lot handle ~line 1232 and road handle ~line 990):**
+- Use `getSvgPos(e)` to get the mouse position in SVG viewBox space
+- Store `centerX`/`centerY` in SVG coords (already correct)
+- Compute `startAngle` using SVG coords: `atan2(svgMouse.y - cy, svgMouse.x - cx)`
 
-### Interaction clavier
+**2. handleCanvasMouseMove rotation block (~line 463-493):**
+- Use `getSvgPos(e)` to convert current mouse to SVG coords
+- Compute `currentAngle = atan2(svgMouse.y - rotationDrag.centerY, svgMouse.x - rotationDrag.centerX)`
+- Remove the broken `rect.height / CANVAS_H * zoom` scaling
 
-- **R** : rotation de +5° (sens horaire)
-- **Shift+R** : rotation de -5° (sens anti-horaire)
-- Fonctionne sur le lot ou la voie selectionne
+**3. Add cumulative angle tracking:**
+- Change `rotationDrag` state to also store `cumulativeAngle` (total rotation since drag start)
+- Store original vertices at drag start to avoid floating-point drift from incremental rotations
+- On each move, apply full cumulative rotation from original vertices instead of incremental delta
 
-### Logique geometrique
+This ensures rotation works in all directions regardless of zoom/pan state, and eliminates precision loss from repeated small rotations.
 
-Rotation de chaque sommet `(x, y)` autour du centre `(cx, cy)` par angle `θ` :
-```
-x' = cx + (x - cx) * cos(θ) - (y - cy) * sin(θ)
-y' = cy + (x - cx) * sin(θ) + (y - cy) * cos(θ)
-```
+## Files
 
-## Fichiers impactes
-
-| Fichier | Modification |
-|---------|-------------|
-| `useCanvasKeyboard.ts` | Ajouter `onRotate?: (angleDeg: number) => void` + touches `R` / `Shift+R` |
-| `LotCanvas.tsx` | Ajouter la poignee SVG de rotation (cercle + ligne), gerer le drag rotation, implementer `onRotate` dans le hook clavier, appliquer la transformation geometrique aux sommets du lot ou de la voie |
+| File | Change |
+|------|--------|
+| `LotCanvas.tsx` | Fix coordinate system in rotation onMouseDown + mousemove, add cumulative rotation with original vertices |
 
