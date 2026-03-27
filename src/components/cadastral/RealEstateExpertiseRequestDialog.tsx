@@ -794,6 +794,12 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       monthly_charges: monthlyCharges ? parseFloat(monthlyCharges) : undefined,
       has_common_areas: hasCommonAreas,
       nearby_amenities: nearbyAmenities.length > 0 ? nearbyAmenities.join(', ') : undefined,
+      // Building permit
+      has_building_permit: hasBuildingPermit === 'yes',
+      building_permit_number: hasBuildingPermit === 'yes' && buildingPermitNumber ? buildingPermitNumber : undefined,
+      building_permit_type: hasBuildingPermit === 'yes' ? buildingPermitType : undefined,
+      building_permit_issue_date: hasBuildingPermit === 'yes' && buildingPermitIssueDate ? buildingPermitIssueDate : undefined,
+      building_permit_issuing_service: hasBuildingPermit === 'yes' && buildingPermitIssuingService ? buildingPermitIssuingService : undefined,
     });
 
     setStep('payment');
