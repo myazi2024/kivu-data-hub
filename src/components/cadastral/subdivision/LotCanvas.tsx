@@ -309,7 +309,14 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     }
 
     if (mode === 'drawRoad') {
-      setRoadDrawPoints(prev => [...prev, normalized]);
+      // In simple drag mode, click is handled by mouseDown/mouseUp
+      if (isRoadDragging) return;
+      // Shift-click or already in multi-mode: add point
+      if (e.shiftKey || roadDrawMultiMode) {
+        if (!roadDrawMultiMode) setRoadDrawMultiMode(true);
+        const snapped = drag.snapToGrid(normalized);
+        setRoadDrawPoints(prev => [...prev, snapped]);
+      }
       return;
     }
 
