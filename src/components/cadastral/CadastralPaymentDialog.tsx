@@ -6,7 +6,6 @@ import {
   Loader2,
   CreditCard,
   Smartphone,
-  RefreshCw
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -19,7 +18,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import MobileMoneyPayment from '@/components/payment/MobileMoneyPayment';
 import BankCardPayment from '@/components/payment/BankCardPayment';
 import { useToast } from '@/hooks/use-toast';
+import { formatCurrency } from '@/utils/formatters';
 import type { CadastralPaymentData } from '@/hooks/useCadastralPayment';
+import type { CurrencyCode } from '@/hooks/useCurrencyConfig';
 
 interface CadastralInvoice {
   id: string;
@@ -39,11 +40,12 @@ interface CadastralPaymentDialogProps {
     hasMobileMoney: boolean;
     hasBankCard: boolean;
   };
-  // Fix #1/#12: Recevoir les fonctions du hook parent au lieu de créer une nouvelle instance
   paymentStep: 'form' | 'processing' | 'success';
   processMobileMoneyPayment: (invoiceId: string, data: CadastralPaymentData) => Promise<any>;
   processStripePayment: (invoiceId: string) => Promise<any>;
   resetPaymentState: () => void;
+  selectedCurrency?: CurrencyCode;
+  exchangeRate?: number;
 }
 
 const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
@@ -54,12 +56,17 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
   paymentStep,
   processMobileMoneyPayment,
   processStripePayment,
-  resetPaymentState
+  resetPaymentState,
+  selectedCurrency = 'USD',
+  exchangeRate = 1,
 }) => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'mobile_money' | 'bank_card'>('mobile_money');
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const { toast } = useToast();
+
+  const displayAmount = invoice.total_amount_usd * exchangeRate;
+  const displayFormatted = formatCurrency(displayAmount, selectedCurrency);
 
   useEffect(() => {
     setIsAnimating(true);
@@ -112,7 +119,6 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
     onClose();
   };
 
-  // Fix #7: Utiliser created_at de la facture, pas la date courante
   const handleDownloadReceipt = () => {
     import('@/lib/pdf').then(({ generateInvoicePDF }) => {
       const invoiceData = {
@@ -209,7 +215,10 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
               <div className="bg-muted/30 rounded-lg p-2 space-y-1">
                 <h4 className="text-xs font-medium text-foreground">Facture #{invoice.invoice_number}</h4>
                 <div className="text-xs text-muted-foreground">
-                  Montant: {invoice.total_amount_usd.toFixed(2)} USD
+                  Montant: {displayFormatted}
+                  {selectedCurrency !== 'USD' && (
+                    <span className="ml-1 text-[10px]">(≈ {formatCurrency(invoice.total_amount_usd, 'USD')})</span>
+                  )}
                 </div>
               </div>
 
@@ -253,7 +262,8 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
                         title: `Facture ${invoice.invoice_number}`,
                         price: invoice.total_amount_usd
                       }}
-                      currency="USD"
+                      currency={selectedCurrency}
+                      displayAmount={displayAmount}
                       onPaymentSuccess={handleMobileMoneySuccess}
                     />
                   </TabsContent>
@@ -286,7 +296,8 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
                       title: `Facture ${invoice.invoice_number}`,
                       price: invoice.total_amount_usd
                     }}
-                    currency="USD"
+                    currency={selectedCurrency}
+                    displayAmount={displayAmount}
                     onPaymentSuccess={handleMobileMoneySuccess}
                   />
                 </div>

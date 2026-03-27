@@ -8,3 +8,7 @@ export const TVA_RATE = 0.16;
 
 /** Label d'affichage de la TVA */
 export const TVA_LABEL = 'TVA (16%)';
+
+/** Devises supportées */
+export const SUPPORTED_CURRENCIES = ['USD', 'CDF'] as const;
+export type SupportedCurrency = typeof SUPPORTED_CURRENCIES[number];

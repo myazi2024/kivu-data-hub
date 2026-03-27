@@ -46,6 +46,7 @@ import AdminMutationRequests from '@/components/admin/AdminMutationRequests';
 import AdminExpertiseRequests from '@/components/admin/AdminExpertiseRequests';
 import AdminExpertiseFeesConfig from '@/components/admin/AdminExpertiseFeesConfig';
 import AdminMutationFeesConfig from '@/components/admin/AdminMutationFeesConfig';
+import AdminCurrencyConfig from '@/components/admin/AdminCurrencyConfig';
 
 import AdminMortgages from '@/components/admin/AdminMortgages';
 import AdminTaxHistory from '@/components/admin/AdminTaxHistory';
@@ -319,6 +320,8 @@ const Admin = () => {
         return <AdminTestMode />;
       case 'billing-config':
         return <AdminBillingConfig />;
+      case 'currency-config':
+        return <AdminCurrencyConfig />;
       case 'invoices':
         return <AdminInvoices />;
       case 'financial':

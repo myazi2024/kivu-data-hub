@@ -87,6 +87,7 @@ const menuItems = [
       { icon: CheckSquare, label: 'Intégration Services', value: 'payment-integration', badge: null },
       { icon: TrendingUp, label: 'Monitoring Paiements', value: 'payment-monitoring', badge: null },
       { icon: Receipt, label: 'Config Facturation', value: 'billing-config', badge: null },
+      { icon: DollarSign, label: 'Devises / Taux', value: 'currency-config', badge: null },
       { icon: DollarSign, label: 'Factures', value: 'invoices', badge: null },
       { icon: FileText, label: 'Transactions', value: 'transactions', badge: null },
       { icon: Users, label: 'Commissions', value: 'commissions', badge: null },

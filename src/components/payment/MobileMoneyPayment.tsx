@@ -12,12 +12,14 @@ import { supabase } from '@/integrations/supabase/client';
 interface MobileMoneyPaymentProps {
   item: CartItem;
   currency: string;
+  displayAmount?: number;
   onPaymentSuccess: (paymentData?: { provider: string; phoneNumber: string }) => void;
 }
 
 const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
   item,
   currency,
+  displayAmount,
   onPaymentSuccess
 }) => {
   const [paymentData, setPaymentData] = useState<PaymentData>({
@@ -276,7 +278,7 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
           ) : (
             <div className="flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
-              <span>Payer {item.price} {currency}</span>
+              <span>Payer {(displayAmount ?? item.price).toLocaleString('fr-FR', { maximumFractionDigits: currency === 'CDF' ? 0 : 2 })} {currency}</span>
             </div>
           )}
         </Button>

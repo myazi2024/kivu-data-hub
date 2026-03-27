@@ -753,8 +753,10 @@ export type Database = {
           client_name: string | null
           client_organization: string | null
           created_at: string
+          currency_code: string
           discount_amount_usd: number | null
           discount_code_used: string | null
+          exchange_rate_used: number
           geographical_zone: string | null
           id: string
           invoice_number: string
@@ -774,8 +776,10 @@ export type Database = {
           client_name?: string | null
           client_organization?: string | null
           created_at?: string
+          currency_code?: string
           discount_amount_usd?: number | null
           discount_code_used?: string | null
+          exchange_rate_used?: number
           geographical_zone?: string | null
           id?: string
           invoice_number: string
@@ -795,8 +799,10 @@ export type Database = {
           client_name?: string | null
           client_organization?: string | null
           created_at?: string
+          currency_code?: string
           discount_amount_usd?: number | null
           discount_code_used?: string | null
+          exchange_rate_used?: number
           geographical_zone?: string | null
           id?: string
           invoice_number?: string
@@ -1469,6 +1475,42 @@ export type Database = {
           stamp_text?: string
           template_name?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      currency_config: {
+        Row: {
+          currency_code: string
+          currency_name: string
+          exchange_rate_to_usd: number
+          id: string
+          is_active: boolean
+          is_default: boolean
+          symbol: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          currency_code: string
+          currency_name: string
+          exchange_rate_to_usd?: number
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          symbol: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          currency_code?: string
+          currency_name?: string
+          exchange_rate_to_usd?: number
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          symbol?: string
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
@@ -2414,7 +2456,9 @@ export type Database = {
         Row: {
           amount_usd: number
           created_at: string | null
+          currency_code: string
           error_message: string | null
+          exchange_rate_used: number
           id: string
           invoice_id: string | null
           metadata: Json | null
@@ -2429,7 +2473,9 @@ export type Database = {
         Insert: {
           amount_usd?: number
           created_at?: string | null
+          currency_code?: string
           error_message?: string | null
+          exchange_rate_used?: number
           id?: string
           invoice_id?: string | null
           metadata?: Json | null
@@ -2444,7 +2490,9 @@ export type Database = {
         Update: {
           amount_usd?: number
           created_at?: string | null
+          currency_code?: string
           error_message?: string | null
+          exchange_rate_used?: number
           id?: string
           invoice_id?: string | null
           metadata?: Json | null
