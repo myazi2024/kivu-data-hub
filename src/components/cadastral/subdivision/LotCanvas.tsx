@@ -471,8 +471,8 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     if (rotationDrag) {
       const svgMouse = getSvgPos(e);
       const currentAngle = Math.atan2(
-        svgMouse.y - rotationDrag.centerY,
-        svgMouse.x - rotationDrag.centerX
+        svgMouse.y - rotationDrag.svgCenterY,
+        svgMouse.x - rotationDrag.svgCenterX
       );
       const deltaAngle = currentAngle - rotationDrag.startAngle;
       const deltaDeg = Math.round((deltaAngle * 180) / Math.PI);
