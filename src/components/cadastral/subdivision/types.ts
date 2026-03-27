@@ -140,7 +140,7 @@ export interface RequesterInfo {
 
 export type SubdivisionStep = 'parcel' | 'designer' | 'plan' | 'summary';
 
-// Auto-subdivision options
+// Parcel side info
 export interface ParcelSideInfo {
   borderType?: 'route' | 'mur_mitoyen';
   bordersRoad?: boolean;
@@ -151,15 +151,6 @@ export interface ParcelSideInfo {
   orientation?: string;
   length?: number | string;
   [key: string]: any;
-}
-
-export interface AutoSubdivideOptions {
-  numberOfLots: number;
-  direction: 'horizontal' | 'vertical' | 'grid';
-  includeRoad: boolean;
-  roadWidthM: number;
-  equalSize: boolean;
-  parcelSides?: ParcelSideInfo[];
 }
 
 // Colors for lot usage types
