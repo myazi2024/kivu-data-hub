@@ -278,7 +278,7 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
           ) : (
             <div className="flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
-              <span>Payer {item.price} {currency}</span>
+              <span>Payer {(displayAmount ?? item.price).toLocaleString('fr-FR', { maximumFractionDigits: currency === 'CDF' ? 0 : 2 })} {currency}</span>
             </div>
           )}
         </Button>
