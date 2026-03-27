@@ -166,6 +166,26 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     if (selectedLotId === id) setSelectedLotId(null);
   }, [lots, setLots, selectedLotId]);
 
+  const duplicateLot = useCallback((id: string) => {
+    const lot = lots.find(l => l.id === id);
+    if (!lot) return;
+    const maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0);
+    const offset = 0.03;
+    const newLot: SubdivisionLot = {
+      ...lot,
+      id: `lot-${Date.now()}-dup`,
+      lotNumber: String(maxLotNum + 1),
+      vertices: lot.vertices.map(v => ({ x: Math.min(1, v.x + offset), y: Math.min(1, v.y + offset) })),
+      annotations: [],
+    };
+    setLots([...lots, newLot]);
+    setSelectedLotId(newLot.id);
+  }, [lots, setLots]);
+
+  const updateLotAnnotations = useCallback((id: string, annotations: LotAnnotation[]) => {
+    setLots(lots.map(l => l.id === id ? { ...l, annotations } : l));
+  }, [lots, setLots]);
+
   const handleSplitLot = useCallback((lotId: string) => {
     const lot = lots.find(l => l.id === lotId);
     if (!lot || lot.vertices.length < 3) return;
