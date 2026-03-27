@@ -419,25 +419,15 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
           Sélection
         </Button>
         <Button
-          variant={canvasMode === 'cut' ? 'default' : 'outline'}
+          variant={canvasMode === 'drawLine' ? 'default' : 'outline'}
           size="sm"
-          onClick={() => setCanvasMode(canvasMode === 'cut' ? 'select' : 'cut')}
+          onClick={() => setCanvasMode(canvasMode === 'drawLine' ? 'select' : 'drawLine')}
           className="gap-1 text-xs"
           disabled={lots.length === 0}
-          title="Découper un lot en traçant une ligne"
-        >
-          <Scissors className="h-3.5 w-3.5" />
-          Découper
-        </Button>
-        <Button
-          variant={canvasMode === 'drawRoad' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setCanvasMode(canvasMode === 'drawRoad' ? 'select' : 'drawRoad')}
-          className="gap-1 text-xs"
-          title="Tracer une voie manuellement"
+          title="Tracer une ligne pour diviser un lot ou créer une voie"
         >
           <Pencil className="h-3.5 w-3.5" />
-          Tracer voie
+          Tracer ligne
         </Button>
         <Button
           variant={canvasMode === 'clipart' ? 'default' : 'outline'}
@@ -450,29 +440,6 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
           Cliparts
         </Button>
 
-        {/* Road pre-config panel (inline) */}
-        {canvasMode === 'drawRoad' && (
-          <>
-            <Separator orientation="vertical" className="h-6" />
-            <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-primary/5 border border-primary/20">
-              <Label className="text-[10px] text-muted-foreground whitespace-nowrap">Largeur</Label>
-              <Input
-                type="number" min={3} max={20} value={roadPresetWidth}
-                onChange={e => setRoadPresetWidth(Math.max(3, Math.min(20, parseInt(e.target.value) || 6)))}
-                className="h-6 w-14 text-[10px]"
-              />
-              <span className="text-[10px] text-muted-foreground">m</span>
-              <Select value={roadPresetSurface} onValueChange={(v: any) => setRoadPresetSurface(v)}>
-                <SelectTrigger className="h-6 text-[10px] w-20"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(ROAD_SURFACE_LABELS).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </>
-        )}
         <Separator orientation="vertical" className="h-6" />
 
         <Button variant="outline" size="sm" onClick={onUndo} disabled={!canUndo} className="gap-1 text-xs">
