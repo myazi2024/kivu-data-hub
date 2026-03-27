@@ -58,6 +58,11 @@ export function useCanvasKeyboard(
     if (e.key === 's' && !e.ctrlKey && !e.metaKey) {
       actions.onToggleSnap?.();
     }
+    if (e.key === 'r' && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      const angle = e.shiftKey ? -5 : 5;
+      actions.onRotate?.(angle);
+    }
     if (e.key === ' ') {
       e.preventDefault();
       actions.onSpaceDown?.();
