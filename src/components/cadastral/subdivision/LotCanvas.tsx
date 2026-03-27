@@ -1104,29 +1104,39 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
               {/* Context menu (floating toolbar) */}
               {contextMenuLotId === lot.id && !readOnly && mode === 'select' && (
                 <g>
-                  <rect x={cx - 60} y={cy - 45} width={120} height={28} rx={8}
+                  <rect x={cx - 72} y={cy - 45} width={144} height={28} rx={8}
                     fill="hsl(var(--background))" fillOpacity={0.95}
                     stroke="hsl(var(--border))" strokeWidth={1} />
                   {onSplitLot && (
                     <g className="cursor-pointer" onClick={e => { e.stopPropagation(); onSplitLot(lot.id); setContextMenuLotId(null); }}>
-                      <rect x={cx - 56} y={cy - 42} width={24} height={22} rx={4} fill="transparent" />
-                      <text x={cx - 44} y={cy - 31} textAnchor="middle" dominantBaseline="middle" fontSize={14} className="pointer-events-none select-none">✂️</text>
+                      <rect x={cx - 68} y={cy - 42} width={24} height={22} rx={4} fill="transparent" />
+                      <text x={cx - 56} y={cy - 31} textAnchor="middle" dominantBaseline="middle" fontSize={14} className="pointer-events-none select-none">✂️</text>
                     </g>
                   )}
                   {onDuplicateLot && (
                     <g className="cursor-pointer" onClick={e => { e.stopPropagation(); onDuplicateLot(lot.id); setContextMenuLotId(null); }}>
-                      <rect x={cx - 28} y={cy - 42} width={24} height={22} rx={4} fill="transparent" />
-                      <text x={cx - 16} y={cy - 31} textAnchor="middle" dominantBaseline="middle" fontSize={14} className="pointer-events-none select-none">📋</text>
+                      <rect x={cx - 40} y={cy - 42} width={24} height={22} rx={4} fill="transparent" />
+                      <text x={cx - 28} y={cy - 31} textAnchor="middle" dominantBaseline="middle" fontSize={14} className="pointer-events-none select-none">📋</text>
                     </g>
                   )}
                   <g className="cursor-pointer" onClick={e => { e.stopPropagation(); setShowClipartPalette(true); setContextMenuLotId(null); onModeChange?.('clipart'); }}>
-                    <rect x={cx} y={cy - 42} width={24} height={22} rx={4} fill="transparent" />
-                    <text x={cx + 12} y={cy - 31} textAnchor="middle" dominantBaseline="middle" fontSize={14} className="pointer-events-none select-none">🎨</text>
+                    <rect x={cx - 12} y={cy - 42} width={24} height={22} rx={4} fill="transparent" />
+                    <text x={cx} y={cy - 31} textAnchor="middle" dominantBaseline="middle" fontSize={14} className="pointer-events-none select-none">🎨</text>
                   </g>
+                  {onConvertEdgeToRoad && (
+                    <g className="cursor-pointer" onClick={e => {
+                      e.stopPropagation();
+                      setContextMenuLotId(null);
+                      onModeChange?.('selectEdge');
+                    }}>
+                      <rect x={cx + 16} y={cy - 42} width={24} height={22} rx={4} fill="transparent" />
+                      <text x={cx + 28} y={cy - 31} textAnchor="middle" dominantBaseline="middle" fontSize={14} className="pointer-events-none select-none">🛣</text>
+                    </g>
+                  )}
                   {onDeleteLot && (
                     <g className="cursor-pointer" onClick={e => { e.stopPropagation(); onDeleteLot(lot.id); setContextMenuLotId(null); }}>
-                      <rect x={cx + 28} y={cy - 42} width={24} height={22} rx={4} fill="transparent" />
-                      <text x={cx + 40} y={cy - 31} textAnchor="middle" dominantBaseline="middle" fontSize={14} className="pointer-events-none select-none">🗑️</text>
+                      <rect x={cx + 44} y={cy - 42} width={24} height={22} rx={4} fill="transparent" />
+                      <text x={cx + 56} y={cy - 31} textAnchor="middle" dominantBaseline="middle" fontSize={14} className="pointer-events-none select-none">🗑️</text>
                     </g>
                   )}
                 </g>
