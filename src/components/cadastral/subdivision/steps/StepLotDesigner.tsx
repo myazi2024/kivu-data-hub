@@ -8,13 +8,13 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import {
-  Wand2, Plus, Trash2, Undo2, Redo2, AlertTriangle, CheckCircle,
-  Grid3X3, ArrowLeftRight, ArrowUpDown, Info, Settings2, Route,
-  Scissors, MousePointer, Pencil, TreePine, Shield, Sticker
+  Plus, Trash2, Undo2, Redo2, AlertTriangle,
+  Info, Route,
+  MousePointer, Pencil, Sticker, Shield, TreePine, Ruler
 } from 'lucide-react';
 import { 
   SubdivisionLot, SubdivisionRoad, SubdivisionCommonSpace, SubdivisionServitude,
-  AutoSubdivideOptions, ParentParcelInfo, LOT_COLORS, USAGE_LABELS, ROAD_SURFACE_LABELS, 
+  ParentParcelInfo, LOT_COLORS, USAGE_LABELS, ROAD_SURFACE_LABELS, 
   COMMON_SPACE_LABELS, COMMON_SPACE_COLORS, Point2D, LotAnnotation
 } from '../types';
 import { ValidationResult, mergeLotsThroughDeletedRoad, polygonArea } from '../utils/geometry';
@@ -33,7 +33,7 @@ interface StepLotDesignerProps {
   servitudes: SubdivisionServitude[];
   setServitudes: (servitudes: SubdivisionServitude[]) => void;
   lotIds: string[];
-  onAutoSubdivide: (options: AutoSubdivideOptions) => void;
+  onCreateInitialLot?: () => void;
   validation: ValidationResult;
   canUndo: boolean;
   canRedo: boolean;
@@ -88,18 +88,15 @@ function lineSegmentIntersection(
 const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   parentParcel, parentVertices, parentSides, lots, setLots, roads, setRoads,
   commonSpaces, setCommonSpaces, servitudes, setServitudes, lotIds,
-  onAutoSubdivide, validation, canUndo, canRedo, onUndo, onRedo
+  onCreateInitialLot, validation, canUndo, canRedo, onUndo, onRedo
 }) => {
-  const [numberOfLots, setNumberOfLots] = useState(4);
-  const [direction, setDirection] = useState<'horizontal' | 'vertical' | 'grid'>('horizontal');
-  const [includeRoad, setIncludeRoad] = useState(true);
-  const [roadWidth, setRoadWidth] = useState(6);
   const [selectedLotId, setSelectedLotId] = useState<string | null>(null);
   const [selectedLotIds, setSelectedLotIds] = useState<string[]>([]);
-  const [showAutoPanel, setShowAutoPanel] = useState(lots.length === 0);
   const [editingRoadId, setEditingRoadId] = useState<string | null>(null);
   const [canvasMode, setCanvasMode] = useState<CanvasMode>('select');
   const [canvasShowGrid, setCanvasShowGrid] = useState(true);
+  // Measure mode state
+  const [measurePoints, setMeasurePoints] = useState<Point2D[]>([]);
   // Road pre-configuration
   const [roadPresetWidth, setRoadPresetWidth] = useState(6);
   const [roadPresetSurface, setRoadPresetSurface] = useState<SubdivisionRoad['surfaceType']>('planned');
@@ -146,16 +143,42 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     setRoads(roads.map(r => r.id === roadId ? { ...r, ...updates } : r));
   }, [roads, setRoads]);
 
-  const handleAutoGenerate = () => {
-    onAutoSubdivide({
-      numberOfLots,
-      direction,
-      includeRoad,
-      roadWidthM: roadWidth,
-      equalSize: true,
-    });
-    setShowAutoPanel(false);
-  };
+  // Add empty lot
+  const handleAddEmptyLot = useCallback(() => {
+    const parentPoly = parentVertices && parentVertices.length >= 3 ? parentVertices : null;
+    const bounds = parentPoly
+      ? parentPoly.reduce((b, p) => ({
+          minX: Math.min(b.minX, p.x), maxX: Math.max(b.maxX, p.x),
+          minY: Math.min(b.minY, p.y), maxY: Math.max(b.maxY, p.y),
+        }), { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity })
+      : { minX: 0, maxX: 1, minY: 0, maxY: 1 };
+
+    const cx = (bounds.minX + bounds.maxX) / 2;
+    const cy = (bounds.minY + bounds.maxY) / 2;
+    const w = (bounds.maxX - bounds.minX) * 0.2;
+    const h = (bounds.maxY - bounds.minY) * 0.2;
+    const maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0);
+    const sideLength = Math.sqrt(parentParcel?.areaSqm || 1000);
+
+    const newLot: SubdivisionLot = {
+      id: `lot-${Date.now()}-new`,
+      lotNumber: String(maxLotNum + 1),
+      vertices: [
+        { x: cx - w / 2, y: cy - h / 2 },
+        { x: cx + w / 2, y: cy - h / 2 },
+        { x: cx + w / 2, y: cy + h / 2 },
+        { x: cx - w / 2, y: cy + h / 2 },
+      ],
+      areaSqm: Math.round(w * h * (parentParcel?.areaSqm || 1000)),
+      perimeterM: Math.round(2 * (w + h) * sideLength),
+      intendedUse: 'residential',
+      isBuilt: false,
+      hasFence: false,
+      color: '#22c55e',
+    };
+    setLots([...lots, newLot]);
+    setSelectedLotId(newLot.id);
+  }, [lots, setLots, parentVertices, parentParcel]);
 
   const selectedLot = lots.find(l => l.id === selectedLotId);
 
@@ -395,18 +418,6 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     <div className="space-y-3">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2">
-        <Button
-          variant={showAutoPanel ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setShowAutoPanel(!showAutoPanel)}
-          className="gap-1 text-xs"
-        >
-          <Wand2 className="h-3.5 w-3.5" />
-          Auto-découpage
-        </Button>
-        
-        <Separator orientation="vertical" className="h-6" />
-        
         {/* Mode buttons */}
         <Button
           variant={canvasMode === 'select' ? 'default' : 'outline'}
@@ -442,6 +453,31 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
 
         <Separator orientation="vertical" className="h-6" />
 
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleAddEmptyLot}
+          className="gap-1 text-xs"
+          title="Ajouter un lot vide rectangulaire"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          Lot
+        </Button>
+
+        {lots.length === 0 && onCreateInitialLot && (
+          <Button
+            size="sm"
+            onClick={onCreateInitialLot}
+            className="gap-1 text-xs"
+            title="Créer le lot initial couvrant toute la parcelle"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Lot parcelle entière
+          </Button>
+        )}
+
+        <Separator orientation="vertical" className="h-6" />
+
         <Button variant="outline" size="sm" onClick={onUndo} disabled={!canUndo} className="gap-1 text-xs">
           <Undo2 className="h-3.5 w-3.5" /> Annuler
         </Button>
@@ -454,91 +490,16 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
         </Badge>
       </div>
 
-      {/* Auto-subdivide panel */}
-      {showAutoPanel && (
-        <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="pt-4 space-y-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Wand2 className="h-4 w-4 text-primary" />
-              <h4 className="font-semibold text-sm">Découpage automatique</h4>
-            </div>
-            
-            {/* Road-bordering info */}
-            {parentSides && parentSides.some((s: any) => s?.borderType === 'route') && (
-              <Alert className="border-amber-500/30 bg-amber-50/50 py-2">
-                <AlertDescription className="text-[11px] text-amber-800 flex items-center gap-1.5">
-                  <Info className="h-3.5 w-3.5 flex-shrink-0" />
-                  La parcelle borde une route — les lots adjacents seront automatiquement desservis par celle-ci.
-                </AlertDescription>
-              </Alert>
-            )}
-
-            <p className="text-xs text-muted-foreground">
-              Le système découpera automatiquement la parcelle en tenant compte des routes existantes. Vous pourrez ensuite ajuster manuellement chaque lot.
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div>
-                <Label className="text-xs">Nombre de lots</Label>
-                <Input
-                  type="number"
-                  min={2}
-                  max={20}
-                  value={numberOfLots}
-                  onChange={e => setNumberOfLots(parseInt(e.target.value) || 2)}
-                  className="h-8 text-sm"
-                />
-              </div>
-              <div>
-                <Label className="text-xs">Direction</Label>
-                <Select value={direction} onValueChange={(v: any) => setDirection(v)}>
-                  <SelectTrigger className="h-8 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="horizontal">
-                      <span className="flex items-center gap-1"><ArrowLeftRight className="h-3 w-3" /> Horizontal</span>
-                    </SelectItem>
-                    <SelectItem value="vertical">
-                      <span className="flex items-center gap-1"><ArrowUpDown className="h-3 w-3" /> Vertical</span>
-                    </SelectItem>
-                    <SelectItem value="grid">
-                      <span className="flex items-center gap-1"><Grid3X3 className="h-3 w-3" /> Grille</span>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs">Voie interne</Label>
-                <Select value={includeRoad ? 'yes' : 'no'} onValueChange={v => setIncludeRoad(v === 'yes')}>
-                  <SelectTrigger className="h-8 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="yes">Oui</SelectItem>
-                    <SelectItem value="no">Non</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {includeRoad && (
-                <div>
-                  <Label className="text-xs">Largeur voie (m)</Label>
-                  <Input
-                    type="number"
-                    min={3}
-                    max={15}
-                    value={roadWidth}
-                    onChange={e => setRoadWidth(parseInt(e.target.value) || 6)}
-                    className="h-8 text-sm"
-                  />
-                </div>
-              )}
-            </div>
-            <Button size="sm" onClick={handleAutoGenerate} className="gap-1 w-full sm:w-auto">
-              <Wand2 className="h-3.5 w-3.5" />
-              Générer {numberOfLots} lots
-            </Button>
-          </CardContent>
-        </Card>
+      {/* Guide when no lots */}
+      {lots.length === 0 && (
+        <Alert className="border-primary/20 bg-primary/5">
+          <AlertDescription className="text-xs flex items-center gap-2">
+            <Info className="h-4 w-4 text-primary flex-shrink-0" />
+            <span>
+              Commencez par créer le <strong>lot parcelle entière</strong>, puis utilisez l'outil <strong>Tracer ligne</strong> pour le diviser en plusieurs lots.
+            </span>
+          </AlertDescription>
+        </Alert>
       )}
 
       {/* Canvas + lot editor */}
@@ -687,7 +648,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 ))}
                 {lots.length === 0 && (
                   <p className="text-center text-muted-foreground text-[10px] py-3">
-                    Utilisez l'auto-découpage pour commencer
+                    Cliquez sur "Lot parcelle entière" puis tracez des lignes pour diviser
                   </p>
                 )}
               </div>
