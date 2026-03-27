@@ -976,11 +976,15 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setCreatedRequest(null);
     setFormData(null);
 
-    // General
+    // General (CCC-aligned)
     setPropertyDescription('');
-    setConstructionType('villa');
+    setPropertyCategory('');
+    setConstructionType('');
+    setConstructionMaterials('');
+    setConstructionNature('');
+    setDeclaredUsage('');
+    setStanding('');
     setConstructionYear('');
-    setConstructionQuality('standard');
     setNumberOfFloors('1');
     setTotalBuiltAreaSqm('');
     setPropertyCondition('bon');
@@ -988,8 +992,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setNumberOfBedrooms('');
     setNumberOfBathrooms('');
 
-    // Materials
-    setWallMaterial('parpaings');
+    // Materials (expertise-specific)
     setRoofMaterial('tole_bac');
     setWindowType('aluminium');
     setFloorMaterial('carrelage');
