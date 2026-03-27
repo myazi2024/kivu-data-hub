@@ -335,6 +335,37 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       }
     }
 
+    // Road width drag
+    if (roadWidthDrag && onUpdateRoad) {
+      const road = roads.find(r => r.id === roadWidthDrag.roadId);
+      if (road && road.path.length >= 2) {
+        // Calculate perpendicular distance moved in meters
+        const p0 = toScreen(road.path[0]);
+        const p1 = toScreen(road.path[road.path.length - 1]);
+        const rdx = p1.x - p0.x;
+        const rdy = p1.y - p0.y;
+        const rlen = Math.sqrt(rdx * rdx + rdy * rdy) || 1;
+        // Normal direction
+        const nx = -rdy / rlen;
+        const ny = rdx / rlen;
+        // Project mouse delta onto normal
+        const deltaPx = (pos.x - roadWidthDrag.startY) * nx + (pos.y - roadWidthDrag.startY) * ny;
+        // Actually just use simple vertical/horizontal mouse delta for intuitive feel
+        const svg = svgRef.current;
+        if (svg) {
+          const rect = svg.getBoundingClientRect();
+          const scaleY = (CANVAS_H / viewport.viewport.zoom) / rect.height;
+          const mouseScreenY = e.clientY;
+          const deltaScreenPx = mouseScreenY - roadWidthDrag.startY;
+          const deltaNorm = Math.abs(deltaScreenPx * scaleY) / (CANVAS_H - 2 * PADDING);
+          const deltaM = deltaNorm * sideLength;
+          const sign = deltaScreenPx > 0 ? 1 : -1;
+          const newWidth = Math.max(2, Math.min(30, roadWidthDrag.startWidth + sign * deltaM * 2));
+          onUpdateRoad(roadWidthDrag.roadId, { widthM: Math.round(newWidth * 2) / 2 });
+        }
+      }
+    }
+
     if (drag.isDragging) {
       const normalized = fromScreen(pos.x, pos.y);
       drag.moveDrag(normalized);
