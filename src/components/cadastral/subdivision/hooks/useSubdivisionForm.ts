@@ -201,27 +201,27 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     return parentParcel.gpsCoordinates.map(gps => gpsToNormalized(gps, parentParcel.gpsCoordinates));
   }, [parentParcel]);
 
-  // Auto-subdivide
-  const handleAutoSubdivide = useCallback((options: AutoSubdivideOptions) => {
-    if (!parentParcel) return;
+  // Create initial lot covering the entire parent parcel
+  const createInitialLot = useCallback(() => {
+    if (!parentParcel || !parentVertices || parentVertices.length < 3) return;
+    if (lots.length > 0) return;
     
-    const optionsWithSides: AutoSubdivideOptions = {
-      ...options,
-      parcelSides: parentParcel.parcelSides as any[] | undefined,
+    const sideLength = Math.sqrt(parentParcel.areaSqm);
+    const normArea = polygonArea(parentVertices);
+    const fullLot: SubdivisionLot = {
+      id: `lot-1`,
+      lotNumber: '1',
+      vertices: [...parentVertices],
+      areaSqm: parentParcel.areaSqm,
+      perimeterM: Math.round(polygonPerimeter(parentVertices, sideLength)),
+      intendedUse: 'residential',
+      isBuilt: false,
+      hasFence: false,
+      color: '#22c55e',
     };
-    
-    const newLots = autoSubdivide(optionsWithSides, parentParcel.areaSqm, parentVertices);
-    pushHistory(newLots);
-    setLots(newLots);
-    
-    if (options.includeRoad || (parentParcel.parcelSides && parentParcel.parcelSides.some((s: any) => s.borderType === 'route'))) {
-      const newRoads = generateRoads(
-        newLots, options.direction, options.roadWidthM, parentParcel.areaSqm,
-        parentVertices, parentParcel.parcelSides as any[] | undefined
-      );
-      setRoads(newRoads as SubdivisionRoad[]);
-    }
-  }, [parentParcel, parentVertices]);
+    pushHistory([fullLot]);
+    setLots([fullLot]);
+  }, [parentParcel, parentVertices, lots.length, pushHistory]);
   
   // History management
   const pushHistory = useCallback((newLots: SubdivisionLot[]) => {
