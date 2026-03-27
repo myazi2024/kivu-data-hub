@@ -255,7 +255,7 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
           )}
 
           {/* ===================== LOCALISATION ===================== */}
-          {hasAccess('location_history') ? (
+          {(hasParcelData && (!!parcel.province || !!parcel.latitude)) ? (
             <>
               <SectionTitle number={++sectionNumber} icon={<MapPin className="h-4 w-4" />} title="Localisation" />
               <table className="doc-table">
