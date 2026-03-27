@@ -173,6 +173,10 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     onUndo,
     onRedo,
     onEscape: () => {
+      if (edgeContextMenu) {
+        setEdgeContextMenu(null);
+        return;
+      }
       if (lineChoiceMenu) {
         setLineChoiceMenu(null);
         return;
@@ -182,6 +186,10 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         setLineDrawMousePos(null);
         setIsLineDragging(false);
         setLineDrawMultiMode(false);
+        return;
+      }
+      if (mode === 'selectEdge') {
+        onModeChange?.('select');
         return;
       }
       onSelectLot(null);
