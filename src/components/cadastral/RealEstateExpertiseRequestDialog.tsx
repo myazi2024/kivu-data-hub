@@ -18,7 +18,7 @@ import {
   Loader2, FileSearch, MapPin, Building, Droplets, Zap, Wifi, 
   Shield, Car, Trees, AlertTriangle, Upload, X, FileText, Image, CheckCircle2,
   CreditCard, Smartphone, ArrowLeft, Receipt, DollarSign, Phone, Home,
-  Volume2, Layers, Building2, Camera, Info, Mic, MicOff, Fence, Warehouse, DoorOpen
+  Volume2, Layers, Building2, Camera, Info, Mic, MicOff, Fence, Warehouse, DoorOpen, FileCheck
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealEstateExpertise } from '@/hooks/useRealEstateExpertise';
