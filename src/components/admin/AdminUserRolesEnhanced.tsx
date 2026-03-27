@@ -40,7 +40,7 @@ import {
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-type AppRole = 'super_admin' | 'admin' | 'partner' | 'user' | 'expert_immobilier' | 'mortgage_officer';
+type AppRole = 'super_admin' | 'admin' | 'partner' | 'user' | 'expert_immobilier' | 'mortgage_officer' | 'notaire' | 'geometre' | 'urbaniste';
 
 interface AllUserProfile {
   user_id: string;
