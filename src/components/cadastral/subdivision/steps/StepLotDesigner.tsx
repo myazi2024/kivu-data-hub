@@ -90,7 +90,6 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   commonSpaces, setCommonSpaces, servitudes, setServitudes, lotIds,
   onAutoSubdivide, validation, canUndo, canRedo, onUndo, onRedo
 }) => {
-}) => {
   const [numberOfLots, setNumberOfLots] = useState(4);
   const [direction, setDirection] = useState<'horizontal' | 'vertical' | 'grid'>('horizontal');
   const [includeRoad, setIncludeRoad] = useState(true);
