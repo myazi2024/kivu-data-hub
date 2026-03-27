@@ -85,6 +85,14 @@ export interface ExpertiseRequest {
   monthly_charges?: number;
   has_common_areas?: boolean;
   nearby_amenities?: string;
+
+  // Building permit columns
+  has_building_permit?: boolean;
+  building_permit_number?: string;
+  building_permit_type?: string;
+  building_permit_issue_date?: string;
+  building_permit_issuing_service?: string;
+  building_permit_document_url?: string;
 }
 
 export interface CreateExpertiseRequestData {
