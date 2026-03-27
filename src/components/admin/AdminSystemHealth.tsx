@@ -74,16 +74,20 @@ const AdminSystemHealth = () => {
       const { error: storageError } = await supabase.storage.getBucket('avatars');
       const storageLatency = Date.now() - storageStart;
 
-      // Test Edge Functions with a real ping
+      // Test Edge Functions with dedicated health-check endpoint
       const edgeFnStart = Date.now();
       let edgeFnStatus: 'online' | 'degraded' | 'offline' = 'offline';
       let edgeFnLatency: number | undefined;
       try {
-        const { error: fnError } = await supabase.functions.invoke('cleanup-test-data', {
-          body: { dry_run: true },
-        });
+        const { data: healthData, error: fnError } = await supabase.functions.invoke('health-check');
         edgeFnLatency = Date.now() - edgeFnStart;
-        edgeFnStatus = fnError ? 'degraded' : edgeFnLatency > 2000 ? 'degraded' : 'online';
+        if (fnError) {
+          edgeFnStatus = 'degraded';
+        } else if (healthData?.ok === false) {
+          edgeFnStatus = 'degraded';
+        } else {
+          edgeFnStatus = edgeFnLatency > 2000 ? 'degraded' : 'online';
+        }
       } catch {
         edgeFnLatency = Date.now() - edgeFnStart;
         edgeFnStatus = 'offline';
