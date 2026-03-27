@@ -1,122 +1,62 @@
 
 
-# Ajout du Franc Congolais (CDF) comme devise de paiement
+# Harmonisation du bloc "Type de bien" (Expertise) avec le bloc "Construction" (CCC)
 
-## Contexte
+## Probleme
 
-L'application utilise exclusivement le dollar americain (USD). Les prix sont stockes en `price_usd` / `amount_usd` / `total_amount_usd` dans toutes les tables. L'objectif est de permettre a l'utilisateur de choisir entre USD et CDF lors du paiement, avec un taux de change configurable par l'admin.
+Le formulaire d'expertise utilise un picklist "Type de construction" avec des valeurs internes (villa, appartement, immeuble, duplex, studio, commercial, entrepot, terrain_nu) qui ne correspondent pas aux valeurs du bloc "Construction" du formulaire CCC (Catégorie de bien, Type de construction, Matériaux, Nature, Usage, Standing — toutes issues de `useCCCFormPicklists`).
 
-## Architecture retenue
+De plus, le champ "Qualité" (Luxe/Standard/Économique) dans l'onglet Général est un doublon du "Standing" du CCC, et le champ "Murs/Élévation" de l'onglet Matériaux fait doublon avec "Matériaux" du CCC.
 
-Les prix **restent stockes en USD** dans la base de donnees (source de verite). Le CDF est une **conversion a l'affichage et au paiement** basee sur un taux configure par l'admin. Les factures et transactions enregistrent la devise choisie et le taux applique au moment du paiement.
+## Solution
 
-```text
-┌─────────────────┐     ┌──────────────┐     ┌─────────────────┐
-│  Admin: taux    │────>│  Config DB   │────>│  Frontend:      │
-│  USD/CDF = 2850 │     │  (Supabase)  │     │  affiche les 2  │
-└─────────────────┘     └──────────────┘     │  devises        │
-                                              └─────────────────┘
-```
+Remplacer le bloc "Type de bien" de l'onglet Général par une copie du bloc Construction du CCC, en utilisant les memes picklists dynamiques (`useCCCFormPicklists`). Supprimer les champs devenus redondants.
 
----
+## Plan
 
-## Plan d'implementation
+### 1. Integrer `useCCCFormPicklists` dans le formulaire d'expertise
 
-### 1. Migration SQL — table `currency_config`
+Importer le hook et reproduire la logique de dependances hierarchiques :
+- **Catégorie de bien** → `PROPERTY_CATEGORY_OPTIONS` (picklist suggestif existant)
+- **Type de construction** → dependant de la categorie (Résidentielle, Commerciale, etc.)
+- **Matériaux** → dependant de la nature
+- **Nature** → auto-determinee par les materiaux (lecture seule)
+- **Usage** → dependant du type + nature
+- **Standing** → dependant de la nature
 
-Creer une table dediee pour la configuration des devises :
+Remplacer les states `constructionType` (string key) et `constructionQuality` par des states alignes sur le CCC : `propertyCategory`, `constructionType` (valeurs CCC), `constructionNature`, `constructionMaterials`, `declaredUsage`, `standing`.
 
-```sql
-CREATE TABLE public.currency_config (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  currency_code TEXT NOT NULL UNIQUE,  -- 'USD', 'CDF'
-  currency_name TEXT NOT NULL,
-  symbol TEXT NOT NULL,                -- '$', 'FC'
-  exchange_rate_to_usd NUMERIC(18,4) NOT NULL DEFAULT 1,
-  is_active BOOLEAN NOT NULL DEFAULT true,
-  is_default BOOLEAN NOT NULL DEFAULT false,
-  updated_at TIMESTAMPTZ DEFAULT now(),
-  updated_by UUID REFERENCES auth.users(id)
-);
-```
+### 2. Supprimer les champs redondants
 
-Donnees initiales : USD (taux 1, defaut) et CDF (taux ~2850, actif).
+| Champ supprime | Raison |
+|---|---|
+| `constructionQuality` (Luxe/Standard/Économique) | Remplace par `standing` (Haut standing/Moyen standing/Économique) du bloc Construction |
+| `wallMaterial` (onglet Materiaux) | Remplace par `constructionMaterials` (Béton armé, Parpaings, etc.) du bloc Construction |
 
-Ajouter aussi `currency_code` et `exchange_rate_used` aux tables `cadastral_invoices` et `payment_transactions` pour historiser la devise choisie et le taux au moment du paiement.
+L'onglet "Matériaux" conserve : Toiture, Fenêtres, Sol/Revêtement, Finitions (crépi, peinture, plafond, double vitrage) — ces champs sont specifiques a l'expertise et n'existent pas dans le CCC.
 
-### 2. Admin — page de gestion du taux de change
+### 3. Adapter le prefill depuis parcelData
 
-Nouveau composant `AdminCurrencyConfig.tsx` dans l'espace admin :
-- Affiche les devises actives (USD, CDF)
-- Champ editable pour le taux CDF/USD (ex: 1 USD = 2850 CDF)
-- Bouton sauvegarder avec audit log
-- Integrer dans le menu admin existant
+Simplifier la logique de prefill : les valeurs CCC (`property_category`, `construction_type`, `construction_nature`, `construction_materials`) sont deja dans le bon format — plus besoin de mapping (categoryMap, materialMap). Le prefill devient un transfert direct.
 
-### 3. Hook `useCurrencyConfig`
+### 4. Adapter `isTerrainNu` et `isApartmentOrBuilding`
 
-Hook centralise qui :
-- Charge les devises actives depuis `currency_config`
-- Ecoute les changements en temps reel (Realtime)
-- Expose : `currencies`, `convertToLocal(amountUsd, currencyCode)`, `selectedCurrency`, `setSelectedCurrency`, `exchangeRate`
+- `isTerrainNu` → `propertyCategory === 'Terrain nu'` ou `constructionType === 'Terrain nu'`
+- `isApartmentOrBuilding` → `propertyCategory === 'Appartement'`
 
-### 4. UI — Selecteur de devise dans le catalogue (CadastralBillingPanel)
+### 5. Adapter la soumission et le resume
 
-- Ajouter un selecteur USD/CDF compact dans la zone recapitulative des prix
-- Quand CDF est selectionne, tous les montants affiches (sous-total, TVA, total) sont convertis
-- Le selecteur est un petit toggle ou dropdown discret pres du total
+- Mapper les nouvelles valeurs vers les colonnes DB existantes (`construction_quality` → `standing`, `wall_material` → `constructionMaterials`)
+- Mettre a jour le resume (step summary) avec les nouveaux labels
 
-### 5. UI — Dialog de paiement (CadastralPaymentDialog)
+### 6. Supprimer les constantes inutilisees
 
-- Afficher le montant dans la devise choisie
-- Passer `currency_code` et `exchange_rate` au hook de paiement
+Dans `expertiseLabels.ts`, `CONSTRUCTION_TYPE_LABELS` et `QUALITY_LABELS` ne seront plus utilisees par le formulaire d'expertise (elles restent utilisees par l'admin/analytics le cas echeant).
 
-### 6. Hook `useCadastralPayment` — enregistrer la devise
+## Fichiers modifies
 
-- Ajouter `currency_code` et `exchange_rate_used` dans les inserts de factures
-- Le montant USD reste la reference ; le montant local est `amount_usd * exchange_rate`
-
-### 7. Edge Function `process-mobile-money-payment`
-
-- Accepter `currency_code` et `amount_local` dans le body
-- Verifier le taux depuis `currency_config` cote serveur (securite)
-- Enregistrer la devise dans `payment_transactions`
-
-### 8. Utilitaire `formatCurrency` etendu
-
-Mettre a jour `src/utils/formatters.ts` :
-```ts
-export const formatCurrency = (amount: number, currency: 'USD' | 'CDF' = 'USD'): string => {
-  if (currency === 'CDF') {
-    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'CDF', maximumFractionDigits: 0 }).format(amount);
-  }
-  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD' }).format(amount);
-};
-```
-
-### 9. Composant `MobileMoneyPayment`
-
-- Recevoir la devise selectionnee et afficher le montant en consequence
-- Bouton "Payer 28 500 FC" au lieu de "Payer 10 USD"
-
-### 10. Autres flux de paiement
-
-Appliquer le meme pattern aux autres flux : `PermitPaymentStep`, `MortgageCancellation`, `MutationRequest`, `ExpertiseRequest` — selecteur de devise + conversion.
-
----
-
-## Resume des fichiers
-
-| Action | Fichier |
-|--------|---------|
-| Migration SQL | `currency_config` + colonnes sur `cadastral_invoices` et `payment_transactions` |
-| Nouveau | `src/components/admin/AdminCurrencyConfig.tsx` |
-| Nouveau | `src/hooks/useCurrencyConfig.ts` |
-| Modifie | `src/utils/formatters.ts` |
-| Modifie | `src/components/cadastral/CadastralBillingPanel.tsx` |
-| Modifie | `src/components/cadastral/CadastralPaymentDialog.tsx` |
-| Modifie | `src/components/payment/MobileMoneyPayment.tsx` |
-| Modifie | `src/hooks/useCadastralPayment.tsx` |
-| Modifie | `supabase/functions/process-mobile-money-payment/index.ts` |
-| Modifie | `src/constants/billing.ts` (ajouter constantes devises) |
-| Modifie | Menu admin (ajouter lien vers config devises) |
+| Fichier | Modification |
+|---------|-------------|
+| `RealEstateExpertiseRequestDialog.tsx` | Remplacement bloc "Type de bien" par bloc Construction CCC, suppression champs redondants, adaptation prefill/soumission/resume |
+| `expertiseLabels.ts` | Nettoyage si `CONSTRUCTION_TYPE_LABELS`/`QUALITY_LABELS` ne sont plus references ailleurs |
 
