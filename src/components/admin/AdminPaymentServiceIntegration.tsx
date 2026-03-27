@@ -133,7 +133,7 @@ const AdminPaymentServiceIntegration: React.FC = () => {
     let score = 100;
 
     // Vérifier si le paiement est activé
-    if (!paymentMode.enabled && !paymentMode.bypass_payment) {
+    if (!paymentMode.enabled) {
       issues.push('Le système de paiement n\'est pas configuré');
       score -= 50;
     }
