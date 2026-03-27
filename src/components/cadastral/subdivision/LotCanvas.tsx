@@ -774,6 +774,50 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                   }}
                 />
               ))}
+              {/* Width drag handles (perpendicular to road at midpoint) */}
+              {isRoadSelected && !readOnly && mode === 'select' && (() => {
+                const midIdx = Math.floor(pathPoints.length / 2);
+                const p1 = pathPoints[Math.max(0, midIdx - 1)];
+                const p2 = pathPoints[Math.min(pathPoints.length - 1, midIdx)];
+                const mx = (p1.x + p2.x) / 2;
+                const my = (p1.y + p2.y) / 2;
+                const rdx = p2.x - p1.x;
+                const rdy = p2.y - p1.y;
+                const rlen = Math.sqrt(rdx * rdx + rdy * rdy) || 1;
+                // Normal (perpendicular) direction
+                const nx = -rdy / rlen;
+                const ny = rdx / rlen;
+                const halfW = roadWidthPx / 2;
+                const handleSize = 6;
+                return (
+                  <>
+                    {/* Top handle */}
+                    <rect
+                      x={mx + nx * halfW - handleSize / 2}
+                      y={my + ny * halfW - handleSize / 2}
+                      width={handleSize} height={handleSize} rx={1.5}
+                      fill="white" stroke="hsl(var(--primary))" strokeWidth={2}
+                      className="cursor-ns-resize"
+                      onMouseDown={e => {
+                        e.stopPropagation();
+                        setRoadWidthDrag({ roadId: road.id, startY: e.clientY, startWidth: road.widthM });
+                      }}
+                    />
+                    {/* Bottom handle */}
+                    <rect
+                      x={mx - nx * halfW - handleSize / 2}
+                      y={my - ny * halfW - handleSize / 2}
+                      width={handleSize} height={handleSize} rx={1.5}
+                      fill="white" stroke="hsl(var(--primary))" strokeWidth={2}
+                      className="cursor-ns-resize"
+                      onMouseDown={e => {
+                        e.stopPropagation();
+                        setRoadWidthDrag({ roadId: road.id, startY: e.clientY, startWidth: road.widthM });
+                      }}
+                    />
+                  </>
+                );
+              })()}
               {/* Delete button on selected road */}
               {isRoadSelected && !isExisting && !readOnly && onDeleteRoad && (() => {
                 const mx = (pathPoints[0].x + pathPoints[pathPoints.length - 1].x) / 2;

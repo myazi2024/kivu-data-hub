@@ -699,8 +699,26 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <Label className="text-xs">Largeur (m)</Label>
-                        <Input type="number" min={2} max={30} value={editingRoad.widthM} onChange={e => updateRoad(editingRoad.id, { widthM: parseFloat(e.target.value) || 6 })} className="h-7 text-xs" />
+                        <Label className="text-xs">Largeur ({editingRoad.widthM}m)</Label>
+                        <div className="flex items-center gap-2">
+                          <Slider
+                            min={2}
+                            max={30}
+                            step={0.5}
+                            value={[editingRoad.widthM]}
+                            onValueChange={([v]) => updateRoad(editingRoad.id, { widthM: v })}
+                            className="flex-1"
+                          />
+                          <Input
+                            type="number"
+                            min={2}
+                            max={30}
+                            step={0.5}
+                            value={editingRoad.widthM}
+                            onChange={e => updateRoad(editingRoad.id, { widthM: parseFloat(e.target.value) || 6 })}
+                            className="h-7 text-xs w-16"
+                          />
+                        </div>
                       </div>
                       <div>
                         <Label className="text-xs">Revêtement</Label>
