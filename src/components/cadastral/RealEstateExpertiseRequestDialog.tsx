@@ -749,7 +749,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       requester_phone: undefined,
       requester_email: profile?.email || user.email || undefined,
       // Extended columns — stored directly in DB columns
-      wall_material: wallMaterial || undefined,
+      wall_material: constructionMaterials || undefined,
       roof_material: roofMaterial || undefined,
       window_type: windowType || undefined,
       floor_material: floorMaterial || undefined,
