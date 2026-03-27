@@ -2679,6 +2679,66 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
             </Card>
             )}
 
+            {/* Section Autorisation de bâtir - summary */}
+            {!isTerrainNu && propertyCategory !== 'Appartement' && hasBuildingPermit !== null && (
+              <Card className="rounded-xl border-border/50 shadow-sm">
+                <CardContent className="p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <FileCheck className="h-4 w-4 text-primary" />
+                      <h4 className="text-xs font-semibold">Autorisation de bâtir</h4>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => { setActiveTab('general'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
+                      Modifier
+                    </Button>
+                  </div>
+                  <div className="divide-y divide-border/30">
+                    <div className="flex justify-between text-xs py-1.5">
+                      <span className="text-muted-foreground">Possède une autorisation</span>
+                      <Badge variant={hasBuildingPermit === 'yes' ? "default" : "secondary"} className="text-[10px]">
+                        {hasBuildingPermit === 'yes' ? 'Oui' : 'Non'}
+                      </Badge>
+                    </div>
+                    {hasBuildingPermit === 'yes' && (
+                      <>
+                        <div className="flex justify-between text-xs py-1.5">
+                          <span className="text-muted-foreground">Type</span>
+                          <span className="font-medium">{buildingPermitType === 'construction' ? 'Bâtir' : 'Régularisation'}</span>
+                        </div>
+                        {buildingPermitNumber && (
+                          <div className="flex justify-between text-xs py-1.5">
+                            <span className="text-muted-foreground">N° autorisation</span>
+                            <span className="font-medium font-mono">{buildingPermitNumber}</span>
+                          </div>
+                        )}
+                        {buildingPermitIssueDate && (
+                          <div className="flex justify-between text-xs py-1.5">
+                            <span className="text-muted-foreground">Date de délivrance</span>
+                            <span className="font-medium">{new Date(buildingPermitIssueDate).toLocaleDateString('fr-FR')}</span>
+                          </div>
+                        )}
+                        {buildingPermitIssuingService && (
+                          <div className="flex justify-between text-xs py-1.5">
+                            <span className="text-muted-foreground">Service émetteur</span>
+                            <span className="font-medium text-right max-w-[55%] truncate">{buildingPermitIssuingService}</span>
+                          </div>
+                        )}
+                        {buildingPermitFile && (
+                          <div className="flex justify-between text-xs py-1.5">
+                            <span className="text-muted-foreground">Document</span>
+                            <Badge variant="outline" className="text-[10px] text-green-600 border-green-300">
+                              <FileText className="h-3 w-3 mr-1" />
+                              {buildingPermitFile.name}
+                            </Badge>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Section Pièces - hidden for terrain_nu */}
             {!isTerrainNu && (
             <Card className="rounded-xl border-border/50 shadow-sm">
