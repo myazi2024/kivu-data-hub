@@ -407,6 +407,83 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     setCanvasMode('select');
   }, [roads, setRoads, roadPresetWidth, roadPresetSurface]);
 
+  // Convert an edge between lots to a road
+  const handleConvertEdgeToRoad = useCallback((edge: EdgeInfo) => {
+    const sideLength = Math.sqrt(parentParcel?.areaSqm || 1000);
+    const widthM = roadPresetWidth;
+    const halfWidthNorm = (widthM / 2) / sideLength;
+
+    // Calculate edge normal
+    const edx = edge.p2.x - edge.p1.x;
+    const edy = edge.p2.y - edge.p1.y;
+    const edgeLen = Math.sqrt(edx * edx + edy * edy) || 1;
+    const nx = -edy / edgeLen;
+    const ny = edx / edgeLen;
+
+    // Create road along this edge
+    const newRoad: SubdivisionRoad = {
+      id: `road-edge-${Date.now()}`,
+      name: `Voie ${roads.length + 1}`,
+      widthM,
+      surfaceType: roadPresetSurface,
+      isExisting: false,
+      path: [edge.p1, edge.p2],
+    };
+
+    // Shrink adjacent lots
+    const updatedLots = lots.map(lot => {
+      const isLot1 = lot.id === edge.lotId1;
+      const isLot2 = lot.id === edge.lotId2;
+      if (!isLot1 && !isLot2) return lot;
+
+      // Determine which side of the edge this lot is on
+      const centroid = {
+        x: lot.vertices.reduce((s, v) => s + v.x, 0) / lot.vertices.length,
+        y: lot.vertices.reduce((s, v) => s + v.y, 0) / lot.vertices.length,
+      };
+      const side = (centroid.x - edge.p1.x) * nx + (centroid.y - edge.p1.y) * ny;
+      const pushDir = side > 0 ? 1 : -1;
+
+      // Move vertices that are on/near the edge
+      const TOLERANCE = 0.02;
+      const newVertices = lot.vertices.map(v => {
+        // Check if this vertex is on the shared edge
+        // Project vertex onto edge line and check distance
+        const vdx = v.x - edge.p1.x;
+        const vdy = v.y - edge.p1.y;
+        const perpDist = Math.abs(vdx * nx + vdy * ny);
+        if (perpDist < TOLERANCE) {
+          // This vertex is on/near the edge - push it away
+          return {
+            x: v.x + nx * pushDir * halfWidthNorm,
+            y: v.y + ny * pushDir * halfWidthNorm,
+          };
+        }
+        return v;
+      });
+
+      const normArea = polygonArea(newVertices);
+      const parentPoly = parentVertices && parentVertices.length >= 3
+        ? parentVertices
+        : [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }];
+      const parentNormArea = polygonArea(parentPoly);
+      const areaSqm = Math.round((normArea / parentNormArea) * (parentParcel?.areaSqm || 1000));
+      const perimeterM = Math.round(newVertices.reduce((sum, v, i) => {
+        const next = newVertices[(i + 1) % newVertices.length];
+        const dx = (next.x - v.x) * sideLength;
+        const dy = (next.y - v.y) * sideLength;
+        return sum + Math.sqrt(dx * dx + dy * dy);
+      }, 0));
+
+      return { ...lot, vertices: newVertices, areaSqm, perimeterM };
+    });
+
+    setLots(updatedLots);
+    setRoads([...roads, newRoad]);
+    setEditingRoadId(newRoad.id);
+    setCanvasMode('select');
+  }, [lots, setLots, roads, setRoads, parentParcel, parentVertices, roadPresetWidth, roadPresetSurface]);
+
   const handleUpdateRoad = useCallback((roadId: string, updates: Partial<SubdivisionRoad>) => {
     setRoads(roads.map(r => r.id === roadId ? { ...r, ...updates } : r));
   }, [roads, setRoads]);
