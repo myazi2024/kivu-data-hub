@@ -607,6 +607,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 onMergeLots={handleMergeLots}
                 onCutLot={handleCutLot}
                 onFinishRoadDraw={handleFinishRoadDraw}
+                onConvertEdgeToRoad={handleConvertEdgeToRoad}
                 roadPresetWidth={roadPresetWidth}
                 roadPresetSurface={roadPresetSurface}
                 mode={canvasMode}
