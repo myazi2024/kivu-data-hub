@@ -153,9 +153,12 @@ serve(async (req) => {
         phone_number: phone_number,
         amount_usd: amount_usd,
         status: 'pending',
+        currency_code: requestedCurrency,
+        exchange_rate_used: serverExchangeRate,
         metadata: {
           payment_type,
           test_mode: test_mode || false,
+          amount_local: amount_usd * serverExchangeRate,
         }
       })
       .select()
