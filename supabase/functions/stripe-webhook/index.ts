@@ -1,6 +1,5 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
   apiVersion: "2023-10-16",
@@ -8,7 +7,7 @@ const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
 
 const cryptoProvider = Stripe.createSubtleCryptoProvider();
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   const signature = req.headers.get("stripe-signature");
   const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
 
@@ -41,7 +40,6 @@ serve(async (req) => {
         const paymentType = metadata.payment_type;
 
         if (paymentType === "cadastral_service" && metadata.invoice_id) {
-          // Mettre à jour la transaction de paiement
           await supabase
             .from("payment_transactions")
             .update({
@@ -51,7 +49,6 @@ serve(async (req) => {
             })
             .eq("transaction_reference", session.id);
 
-          // Mettre à jour la facture cadastrale
           await supabase
             .from("cadastral_invoices")
             .update({
@@ -61,7 +58,6 @@ serve(async (req) => {
             })
             .eq("id", metadata.invoice_id);
 
-          // Créer les accès aux services
           const { data: invoice } = await supabase
             .from("cadastral_invoices")
             .select("selected_services, parcel_number, user_id")
@@ -69,8 +65,8 @@ serve(async (req) => {
             .single();
 
           if (invoice && invoice.selected_services) {
-            const services = Array.isArray(invoice.selected_services) 
-              ? invoice.selected_services 
+            const services = Array.isArray(invoice.selected_services)
+              ? invoice.selected_services
               : JSON.parse(invoice.selected_services as any);
 
             const accessRecords = services.map((serviceId: string) => ({
@@ -78,7 +74,7 @@ serve(async (req) => {
               invoice_id: metadata.invoice_id,
               parcel_number: invoice.parcel_number,
               service_type: serviceId,
-              expires_at: null // Accès permanent par défaut
+              expires_at: null
             }));
 
             await supabase
@@ -86,7 +82,6 @@ serve(async (req) => {
               .insert(accessRecords);
           }
 
-          // Créer une notification
           if (metadata.user_id) {
             await supabase.from("notifications").insert({
               user_id: metadata.user_id,
@@ -97,12 +92,10 @@ serve(async (req) => {
             });
           }
         } else if (paymentType === "expertise_fee" || paymentType === "certificate_access") {
-          // Handle expertise fee or certificate access payment
           let expertisePaymentId = metadata.expertise_payment_id as string | undefined;
           let expertiseRequestId: string | null = null;
           let expertiseUserId: string | null = metadata.user_id || null;
 
-          // Fallback lookup by Stripe session ID if metadata is missing
           if (!expertisePaymentId) {
             const { data: paymentBySession } = await supabase
               .from("expertise_payments")
@@ -118,7 +111,6 @@ serve(async (req) => {
           }
 
           if (expertisePaymentId) {
-            // Keep Stripe session id as transaction reference for deterministic frontend lookup
             await supabase
               .from("expertise_payments")
               .update({
@@ -128,7 +120,6 @@ serve(async (req) => {
               })
               .eq("id", expertisePaymentId);
 
-            // Get expertise_request_id if not already known
             if (!expertiseRequestId) {
               const { data: expertisePayment } = await supabase
                 .from("expertise_payments")
@@ -141,14 +132,12 @@ serve(async (req) => {
             }
 
             if (expertiseRequestId && paymentType === "expertise_fee") {
-              // Mark request paid only for the initial expertise fee (not certificate re-access)
               await supabase
                 .from("real_estate_expertise_requests")
                 .update({ payment_status: "paid", updated_at: new Date().toISOString() })
                 .eq("id", expertiseRequestId);
             }
 
-            // Notification
             if (expertiseUserId) {
               const notifMessage = paymentType === "certificate_access"
                 ? "Votre paiement pour l'accès au certificat d'expertise a été confirmé."
@@ -207,7 +196,6 @@ serve(async (req) => {
             });
           }
         } else if (paymentType === "publications") {
-          // Mettre à jour la commande
           await supabase
             .from("orders")
             .update({
@@ -216,7 +204,6 @@ serve(async (req) => {
             })
             .eq("stripe_session_id", session.id);
 
-          // Créer les accès de téléchargement
           const { data: order } = await supabase
             .from("orders")
             .select("items, user_id")
@@ -225,7 +212,7 @@ serve(async (req) => {
 
           if (order && order.items) {
             const items = Array.isArray(order.items) ? order.items : JSON.parse(order.items as any);
-            
+
             for (const item of items) {
               await supabase.from("publication_downloads").insert({
                 user_id: order.user_id,
@@ -235,7 +222,6 @@ serve(async (req) => {
             }
           }
 
-          // Notification pour l'utilisateur
           if (metadata.user_id) {
             await supabase.from("notifications").insert({
               user_id: metadata.user_id,
@@ -267,7 +253,6 @@ serve(async (req) => {
         }
 
         if (expertisePaymentId) {
-          // Handle expertise payment failure
           await supabase
             .from("expertise_payments")
             .update({ status: "failed" })
