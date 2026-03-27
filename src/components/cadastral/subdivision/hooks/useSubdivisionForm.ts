@@ -405,7 +405,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     lots, setLots, roads, setRoads, commonSpaces, setCommonSpaces,
     servitudes, setServitudes, planElements, setPlanElements,
     // Operations
-    handleAutoSubdivide, updateLot, deleteLot,
+    handleAutoSubdivide: createInitialLot, updateLot, deleteLot,
     undo, redo, canUndo: historyIndex > 0, canRedo: historyIndex < history.length - 1,
     // Validation
     validation, runValidation,
