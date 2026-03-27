@@ -741,9 +741,23 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                   <Route className="h-3.5 w-3.5" />
                   Voies ({roads.length})
                 </h4>
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleAddRoad}>
-                  <Plus className="h-3.5 w-3.5" />
-                </Button>
+                <div className="flex gap-1">
+                  <Button
+                    variant={canvasMode === 'selectEdge' ? 'default' : 'ghost'}
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => {
+                      if (lots.length >= 2) {
+                        setCanvasMode(canvasMode === 'selectEdge' ? 'select' : 'selectEdge');
+                      } else {
+                        handleAddRoad();
+                      }
+                    }}
+                    title={lots.length >= 2 ? 'Cliquer sur une limite entre lots' : 'Ajouter une voie'}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </div>
               <div className="space-y-1 max-h-[180px] overflow-y-auto">
                 {roads.map(road => {
