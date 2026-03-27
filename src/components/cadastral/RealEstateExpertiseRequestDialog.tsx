@@ -648,8 +648,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
      setConstructionImageUrls(prev => prev.filter((_, i) => i !== index));
    };
 
-  const uploadFiles = async (): Promise<{ parcelDocs: string[], constructionImages: string[] }> => {
-    const result = { parcelDocs: [] as string[], constructionImages: [] as string[] };
+  const uploadFiles = async (): Promise<{ parcelDocs: string[], constructionImages: string[], permitDocUrl: string | null }> => {
+    const result = { parcelDocs: [] as string[], constructionImages: [] as string[], permitDocUrl: null as string | null };
     
     setUploadingFiles(true);
     
@@ -685,12 +685,28 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
         result.constructionImages.push(data.publicUrl);
       }
+
+      // Upload building permit document
+      if (buildingPermitFile) {
+        const fileExt = buildingPermitFile.name.split('.').pop();
+        const fileName = `permit_${Date.now()}_${crypto.randomUUID()}.${fileExt}`;
+        const filePath = `expertise-documents/${user?.id}/permits/${fileName}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('cadastral-documents')
+          .upload(filePath, buildingPermitFile);
+        
+        if (uploadError) throw uploadError;
+        
+        const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
+        result.permitDocUrl = data.publicUrl;
+      }
       
       return result;
     } catch (error: any) {
       console.error('Upload error:', error);
       toast.error('Erreur lors du téléchargement des fichiers');
-      throw error; // Propagate to block submission
+      throw error;
     } finally {
       setUploadingFiles(false);
     }
