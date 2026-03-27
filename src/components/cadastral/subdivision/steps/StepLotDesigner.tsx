@@ -99,6 +99,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   const [showAutoPanel, setShowAutoPanel] = useState(lots.length === 0);
   const [editingRoadId, setEditingRoadId] = useState<string | null>(null);
   const [canvasMode, setCanvasMode] = useState<CanvasMode>('select');
+  const [canvasShowGrid, setCanvasShowGrid] = useState(true);
 
   const editingRoad = roads.find(r => r.id === editingRoadId) || null;
 
