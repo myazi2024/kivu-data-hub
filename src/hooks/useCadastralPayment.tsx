@@ -223,6 +223,7 @@ export const useCadastralPayment = () => {
             phone_number: paymentData.phoneNumber,
             amount_usd: invoice.data.total_amount_usd,
             payment_type: 'cadastral_service',
+            currency_code: invoice.data.currency_code || 'USD',
           }
         }
       );
