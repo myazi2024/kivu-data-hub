@@ -1,54 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  MapPin, 
-  User, 
-  Calendar, 
-  DollarSign, 
-  FileText, 
-  Download, 
-  Map,
-  Building,
-  Clock,
-  AlertCircle,
-  CheckCircle,
-  CheckCircle2,
-  XCircle,
-  CreditCard,
-  Landmark,
-  Receipt,
-  Calculator,
-  MapPin as Surveyor,
-  Printer,
-  Settings,
-  FileCheck,
-  ExternalLink,
-  Info,
-  Hash,
-  Scale
-} from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
+import React, { useState, useRef } from 'react';
+import { Loader2 } from 'lucide-react';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
 import { useCadastralServices } from '@/hooks/useCadastralServices';
-import { TVA_RATE } from '@/constants/billing';
 import { checkMultipleServiceAccess } from '@/utils/checkServiceAccess';
 import { useAuth } from '@/hooks/useAuth';
-import CadastralMap from './CadastralMap';
 import CadastralBillingPanel from './CadastralBillingPanel';
 import CadastralInvoice from './CadastralInvoice';
-import DocumentAttachment from './DocumentAttachment';
-import { PROPERTY_TITLE_TYPES } from './PropertyTitleTypeSelect';
 import CadastralContributionDialog from './CadastralContributionDialog';
-import LockedServiceOverlay from './LockedServiceOverlay';
 import CadastralDocumentView from './CadastralDocumentView';
-import VerificationButton from './VerificationButton';
-import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 const DisputesContent: React.FC<{ parcelNumber: string }> = ({ parcelNumber }) => {
