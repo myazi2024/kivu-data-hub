@@ -280,7 +280,7 @@ export const AdminUserRolesEnhanced: React.FC = () => {
         .from('user_roles')
         .select('role')
         .eq('user_id', selectedUserId)
-        .eq('role', selectedRole);
+        .eq('role', selectedRole as any);
 
       if (checkError) throw checkError;
 
