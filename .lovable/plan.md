@@ -1,51 +1,77 @@
 
 
-# Ajouter la section "Autorisation de bâtir" au bloc Construction du formulaire d'expertise
+# Fix: "Le système de paiement n'est pas encore configuré"
 
-## Contexte
+## Diagnostic
 
-Le bloc Construction du formulaire d'expertise a été aligné sur le CCC (Catégorie, Type, Matériaux, Nature, Usage, Standing), mais il manque la section "Autorisation de bâtir" qui suit le Standing dans le CCC (GeneralTab.tsx lignes 1063-1231).
+La table `cadastral_search_config` contient la configuration suivante pour `payment_mode` :
 
-La table `real_estate_expertise_requests` ne possède aucune colonne pour stocker les données d'autorisation.
+```text
+enabled: false
+bypass_payment: false
+test_mode: false
+```
 
-## Plan
+La fonction `isPaymentRequired()` retourne `paymentMode.enabled && !paymentMode.bypass_payment`, ce qui donne `false`. Le code dans `CadastralBillingPanel.tsx` (ligne 208-220) entre alors dans le `else` et affiche le message d'erreur.
 
-### 1. Migration SQL — colonnes autorisation
+**En résumé** : le paiement n'est pas activé dans la configuration admin, et le code ne gère pas correctement ce cas — il bloque l'accès au lieu de proposer une alternative.
 
-Ajouter à `real_estate_expertise_requests` :
-- `has_building_permit` (boolean) — Oui/Non
-- `building_permit_number` (text) — N° de l'autorisation
-- `building_permit_type` (text) — 'construction' ou 'regularization'
-- `building_permit_issue_date` (date) — date de délivrance
-- `building_permit_issuing_service` (text) — service émetteur
-- `building_permit_document_url` (text) — URL du document uploadé
+## Problème de logique
 
-### 2. UI — section Autorisation dans le formulaire d'expertise
+Le flux actuel :
 
-Dans `RealEstateExpertiseRequestDialog.tsx`, après le Standing (ligne ~1246) et avant la Description :
+```text
+bypass_payment = true  → accès gratuit (mode test) ✅
+enabled = true         → paiement réel ✅
+enabled = false        → ERREUR "non configuré" ❌
+```
 
-- Toggle Oui/Non : "Avez-vous une autorisation de bâtir ?"
-- Si Oui : formulaire avec type (Bâtir/Régularisation), N° autorisation, date, service émetteur (`BuildingPermitIssuingServiceSelect`), upload document
-- Si Non : message informatif (comme dans le CCC)
-- Masqué pour Terrain nu et Appartement (comme dans le CCC)
-- Validation date liée à l'année de construction (même logique que le CCC)
+La branche `enabled = false` + `bypass = false` signifie que l'admin n'a activé aucun mode. Le code devrait traiter cela comme un accès gratuit temporaire (comme bypass) ou donner un message plus clair.
 
-### 3. Soumission et résumé
+## Services concernés
 
-- Ajouter les champs autorisation dans la logique d'insertion DB
-- Upload du document vers Supabase Storage si fourni
-- Afficher les infos autorisation dans le résumé (étape finale)
-- Mettre à jour le calcul du score de complétion
+Tous les flux de paiement utilisent `isPaymentRequired()` du hook `usePaymentConfig` :
+- **Catalogue de services** (`CadastralBillingPanel.tsx`) — bloqué ❌
+- **Demande d'autorisation de bâtir** (`BuildingPermitRequestDialog.tsx`) — fonctionne (soumet sans paiement quand `!isPaymentRequired()`) ✅
+- **Demande d'expertise** (`RealEstateExpertiseRequestDialog.tsx`) — à vérifier
+- **Demande de mutation** — à vérifier
 
-### 4. Types Supabase
+Le catalogue est le seul à afficher une erreur ; les autres services soumettent gratuitement quand le paiement n'est pas requis.
 
-Mettre à jour `types.ts` avec les nouvelles colonnes.
+## Solution
 
-## Fichiers
+### 1. Corriger `CadastralBillingPanel.tsx` — aligner sur le comportement des autres services
 
-| Action | Fichier |
-|--------|---------|
-| Migration | Nouvelles colonnes sur `real_estate_expertise_requests` |
-| Modifié | `RealEstateExpertiseRequestDialog.tsx` — UI autorisation + soumission + résumé |
-| Modifié | `src/integrations/supabase/types.ts` — nouvelles colonnes |
+Quand `isPaymentRequired()` retourne `false` et que `bypass_payment` est aussi `false`, le catalogue devrait accorder l'accès gratuit (comme les autres services le font), pas bloquer.
+
+Remplacer le bloc `else` (lignes 214-220) par la même logique que le bypass : créer la facture à montant zéro et débloquer les services.
+
+```text
+AVANT:
+  if (isPaymentRequired()) → paiement
+  else → ERREUR
+
+APRÈS:
+  if (bypass_payment) → accès gratuit (mode test)
+  else if (isPaymentRequired()) → paiement réel
+  else → accès gratuit (paiement non activé)
+```
+
+### 2. Ajouter un indicateur discret pour l'admin
+
+Quand le paiement n'est pas activé et que des services sont débloqués gratuitement, afficher un badge discret "Paiement désactivé" dans le catalogue (visible uniquement en mode non-production) pour que l'administrateur sache qu'il faut activer le paiement.
+
+### 3. Vérifier les autres services payants
+
+Passer en revue `RealEstateExpertiseRequestDialog.tsx` et le flux de mutation pour s'assurer qu'ils gèrent aussi le cas `enabled=false` correctement (pas de blocage).
+
+## Fichiers modifiés
+
+| Fichier | Modification |
+|---------|-------------|
+| `src/components/cadastral/CadastralBillingPanel.tsx` | Remplacer le `else` bloquant par un accès gratuit + badge indicateur |
+
+## Alternative rapide
+
+Si l'intention est que le paiement soit actif, il suffit de mettre `enabled: true` dans la config admin. Mais le code doit quand même gérer le cas `enabled=false` sans bloquer l'utilisateur.
 
