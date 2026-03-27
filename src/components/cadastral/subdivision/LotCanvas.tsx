@@ -982,9 +982,11 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                       className="cursor-grab active:cursor-grabbing"
                       onMouseDown={e => {
                         e.stopPropagation();
-                        const angle = Math.atan2(e.clientY - (svgRef.current?.getBoundingClientRect().top ?? 0) - rcy,
-                          e.clientX - (svgRef.current?.getBoundingClientRect().left ?? 0) - rcx);
-                        setRotationDrag({ startAngle: angle, centerX: rcx, centerY: rcy });
+                        const svgMouse = getSvgPos(e);
+                        const normCx = allPts.reduce((s, p) => s + fromScreen(p.x, p.y).x, 0) / allPts.length;
+                        const normCy = allPts.reduce((s, p) => s + fromScreen(p.x, p.y).y, 0) / allPts.length;
+                        const angle = Math.atan2(svgMouse.y - rcy, svgMouse.x - rcx);
+                        setRotationDrag({ startAngle: angle, centerX: normCx, centerY: normCy, originalVertices: [...road.path], targetType: 'road', targetId: road.id });
                         setRotationAngleDisplay(0);
                       }}
                     />
