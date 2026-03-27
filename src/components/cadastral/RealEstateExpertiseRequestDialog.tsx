@@ -282,41 +282,18 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     if (!open || !parcelData || prefillDoneRef.current) return;
     prefillDoneRef.current = true;
 
-    // Map property_category → expertise constructionType key
-    const categoryMap: Record<string, string> = {
-      'Villa': 'villa', 'Maison individuelle': 'villa',
-      'Appartement': 'appartement',
-      'Immeuble': 'immeuble', 'Bâtiment': 'immeuble',
-      'Duplex': 'duplex', 'Triplex': 'duplex',
-      'Studio': 'studio',
-      'Local commercial': 'commercial', 'Commerce': 'commercial', 'Bureau': 'commercial',
-      'Entrepôt': 'entrepot', 'Hangar': 'entrepot',
-      'Terrain nu': 'terrain_nu', 'Terrain non bâti': 'terrain_nu', 'Non bâti': 'terrain_nu',
-    };
-
-    // Map construction_materials → expertise wallMaterial key
-    const materialMap: Record<string, string> = {
-      'Béton armé': 'beton',
-      'Briques cuites': 'briques_cuites',
-      'Briques adobe': 'briques_adobe',
-      'Parpaings': 'parpaings', 'Blocs': 'parpaings',
-      'Bois': 'bois',
-      'Tôles métalliques': 'tole',
-      'Mixte': 'mixte',
-    };
-
-    // Map construction_nature → propertyCondition
-    const natureConditionMap: Record<string, string> = {
-      'Durable': 'bon',
-      'Semi-durable': 'moyen',
-      'Précaire': 'mauvais',
-      'Construction durable': 'bon',
-      'Construction semi-durable': 'moyen',
-      'Construction précaire': 'mauvais',
-    };
-
-    if (parcelData.property_category && categoryMap[parcelData.property_category]) {
-      setConstructionType(categoryMap[parcelData.property_category]);
+    // Direct transfer of CCC values (same format)
+    if (parcelData.property_category) {
+      setPropertyCategory(parcelData.property_category);
+    }
+    if (parcelData.construction_type) {
+      setConstructionType(parcelData.construction_type);
+    }
+    if (parcelData.construction_materials) {
+      setConstructionMaterials(parcelData.construction_materials);
+    }
+    if (parcelData.construction_nature) {
+      setConstructionNature(parcelData.construction_nature);
     }
     if (parcelData.construction_year) {
       setConstructionYear(parcelData.construction_year.toString());
@@ -327,13 +304,85 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     if (parcelData.area_sqm && parcelData.area_sqm > 0) {
       setTotalBuiltAreaSqm(parcelData.area_sqm.toString());
     }
-    if (parcelData.construction_materials && materialMap[parcelData.construction_materials]) {
-      setWallMaterial(materialMap[parcelData.construction_materials]);
-    }
-    if (parcelData.construction_nature && natureConditionMap[parcelData.construction_nature]) {
-      setPropertyCondition(natureConditionMap[parcelData.construction_nature]);
-    }
   }, [open, parcelData]);
+
+  // === CCC CONSTRUCTION CASCADE EFFECTS ===
+  // Helper: build reverse mapping material -> nature
+  const buildMaterialToNatureMap = useCallback((materialsMap: Record<string, string[]>): Record<string, string> => {
+    const reverseMap: Record<string, string> = {};
+    for (const [nature, materials] of Object.entries(materialsMap)) {
+      for (const mat of materials) {
+        if (!reverseMap[mat]) reverseMap[mat] = nature;
+      }
+    }
+    return reverseMap;
+  }, []);
+
+  // propertyCategory → constructionType
+  useEffect(() => {
+    if (!propertyCategory) { setAvailableConstructionTypes([]); setConstructionType(''); return; }
+    const allowedTypes = CATEGORY_TO_CONSTRUCTION_TYPES[propertyCategory] || [];
+    setAvailableConstructionTypes(allowedTypes);
+    if (allowedTypes.length === 1) { if (constructionType !== allowedTypes[0]) setConstructionType(allowedTypes[0]); }
+    else if (constructionType && !allowedTypes.includes(constructionType)) setConstructionType('');
+  }, [propertyCategory]);
+
+  // constructionType → materials, natures
+  useEffect(() => {
+    if (!constructionType) {
+      setAvailableConstructionNatures([]); setConstructionNature('');
+      setAvailableDeclaredUsages([]); setDeclaredUsage('');
+      setAvailableConstructionMaterials([]); setConstructionMaterials('');
+      setAvailableStandings([]); setStanding('');
+      return;
+    }
+    const natureMap = getDependentOptions('picklist_construction_nature');
+    const natures = natureMap[constructionType] || [];
+    setAvailableConstructionNatures(natures);
+    const dbMaterialsMap = getDependentOptions('picklist_construction_materials');
+    const hasMaterialsInDb = Object.keys(dbMaterialsMap).length > 0;
+    const allMaterials: string[] = [];
+    const seen = new Set<string>();
+    for (const nature of natures) {
+      if (nature === 'Non bâti') continue;
+      const mats = hasMaterialsInDb ? (dbMaterialsMap[nature] || []) : (MATERIALS_BY_NATURE_FALLBACK[nature] || []);
+      for (const m of mats) { if (!seen.has(m)) { seen.add(m); allMaterials.push(m); } }
+    }
+    setAvailableConstructionMaterials(allMaterials);
+    if (constructionMaterials && !allMaterials.includes(constructionMaterials)) { setConstructionMaterials(''); setConstructionNature(''); }
+    if (constructionNature && !natures.includes(constructionNature)) setConstructionNature('');
+  }, [constructionType, getDependentOptions]);
+
+  // constructionMaterials → auto-fill constructionNature
+  useEffect(() => {
+    if (!constructionMaterials || !constructionType) {
+      if (!constructionMaterials) { setConstructionNature(''); setAvailableStandings([]); setStanding(''); }
+      return;
+    }
+    const dbMaterialsMap = getDependentOptions('picklist_construction_materials');
+    const hasMaterialsInDb = Object.keys(dbMaterialsMap).length > 0;
+    const materialsMap = hasMaterialsInDb ? dbMaterialsMap : MATERIALS_BY_NATURE_FALLBACK;
+    const reverseMap = buildMaterialToNatureMap(materialsMap);
+    const deducedNature = reverseMap[constructionMaterials];
+    if (deducedNature && deducedNature !== constructionNature) setConstructionNature(deducedNature);
+  }, [constructionMaterials, constructionType, getDependentOptions, buildMaterialToNatureMap]);
+
+  // constructionType + constructionNature → declaredUsage
+  useEffect(() => {
+    if (!constructionType || !constructionNature) { setAvailableDeclaredUsages([]); setDeclaredUsage(''); return; }
+    const usages = resolveAvailableUsages(constructionType, constructionNature, getDependentOptions);
+    setAvailableDeclaredUsages(usages);
+    if (declaredUsage && !usages.includes(declaredUsage)) setDeclaredUsage('');
+  }, [constructionType, constructionNature, getDependentOptions]);
+
+  // constructionNature → standing
+  useEffect(() => {
+    if (!constructionNature || constructionNature === 'Non bâti') { setAvailableStandings([]); setStanding(''); return; }
+    const dbStandingMap = getDependentOptions('picklist_standing');
+    const standings = (Object.keys(dbStandingMap).length > 0 ? dbStandingMap[constructionNature] : STANDING_BY_NATURE_FALLBACK[constructionNature]) || [];
+    setAvailableStandings(standings);
+    if (standing && !standings.includes(standing)) setStanding('');
+  }, [constructionNature, getDependentOptions]);
 
   // Fetch expertise fees on mount
   useEffect(() => {
