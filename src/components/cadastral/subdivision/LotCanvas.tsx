@@ -972,6 +972,42 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                   </g>
                 );
               })()}
+              {/* Rotation handle for selected road */}
+              {isRoadSelected && !readOnly && mode === 'select' && (() => {
+                const allPts = pathPoints;
+                const rcx = allPts.reduce((s, p) => s + p.x, 0) / allPts.length;
+                const rcy = allPts.reduce((s, p) => s + p.y, 0) / allPts.length;
+                const minRY = Math.min(...allPts.map(p => p.y));
+                const handleRY = minRY - 30;
+                return (
+                  <g>
+                    <line x1={rcx} y1={minRY} x2={rcx} y2={handleRY}
+                      stroke="hsl(var(--primary))" strokeWidth={1} strokeDasharray="3 2" opacity={0.5}
+                      className="pointer-events-none" />
+                    <circle cx={rcx} cy={handleRY} r={8}
+                      fill="hsl(var(--background))" stroke="hsl(var(--primary))" strokeWidth={2}
+                      className="cursor-grab active:cursor-grabbing"
+                      onMouseDown={e => {
+                        e.stopPropagation();
+                        const angle = Math.atan2(e.clientY - (svgRef.current?.getBoundingClientRect().top ?? 0) - rcy,
+                          e.clientX - (svgRef.current?.getBoundingClientRect().left ?? 0) - rcx);
+                        setRotationDrag({ startAngle: angle, centerX: rcx, centerY: rcy });
+                        setRotationAngleDisplay(0);
+                      }}
+                    />
+                    <text x={rcx} y={handleRY + 1} textAnchor="middle" dominantBaseline="middle"
+                      fontSize={10} fill="hsl(var(--primary))" fontWeight="bold"
+                      className="pointer-events-none select-none">↻</text>
+                    {rotationAngleDisplay !== null && rotationDrag && (
+                      <text x={rcx + 14} y={handleRY - 4} textAnchor="start" dominantBaseline="middle"
+                        fontSize={8} fill="hsl(var(--primary))" fontWeight="600"
+                        className="pointer-events-none select-none">
+                        {rotationAngleDisplay > 0 ? '+' : ''}{rotationAngleDisplay}°
+                      </text>
+                    )}
+                  </g>
+                );
+              })()}
             </g>
           );
         })}
