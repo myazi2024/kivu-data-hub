@@ -109,8 +109,8 @@ export const useCadastralPayment = () => {
         return null;
       }
 
-      // Mode bypass (développement) — accès gratuit, insert direct
-      if (paymentMode.bypass_payment) {
+      // Mode bypass — accès gratuit, insert direct
+      if (paymentMode.enabled && paymentMode.bypass_payment) {
         const { data: invoice, error } = await supabase
           .from('cadastral_invoices')
           .insert({
