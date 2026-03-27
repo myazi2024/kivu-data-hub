@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,8 @@ import { supabase } from '@/integrations/supabase/client';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 import SuggestivePicklist from './SuggestivePicklist';
 import SectionHelpPopover from './SectionHelpPopover';
+import { useCCCFormPicklists } from '@/hooks/useCCCFormPicklists';
+import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
 
 interface RealEstateExpertiseRequestDialogProps {
   parcelNumber: string;
@@ -55,8 +57,8 @@ interface RealEstateExpertiseRequestDialogProps {
 
 import type { ExpertiseFee } from '@/types/expertise';
 import {
-  CONSTRUCTION_TYPE_LABELS, QUALITY_LABELS, CONDITION_LABELS,
-  ROAD_LABELS, WALL_LABELS, ROOF_LABELS, SOUND_LABELS,
+  CONDITION_LABELS,
+  ROAD_LABELS, ROOF_LABELS, SOUND_LABELS,
   WINDOW_LABELS, FLOOR_LABELS, FACADE_ORIENTATION_LABELS,
   BUILDING_POSITION_LABELS, ACCESSIBILITY_LABELS
 } from '@/constants/expertiseLabels';
@@ -65,11 +67,8 @@ import {
 const toOptions = (labels: Record<string, string>) =>
   Object.entries(labels).map(([value, label]) => ({ value, label }));
 
-const CONSTRUCTION_TYPE_OPTIONS = toOptions(CONSTRUCTION_TYPE_LABELS);
-const CONSTRUCTION_QUALITY_OPTIONS = toOptions(QUALITY_LABELS);
 const PROPERTY_CONDITION_OPTIONS = toOptions(CONDITION_LABELS);
 const ROAD_ACCESS_OPTIONS = toOptions(ROAD_LABELS);
-const WALL_MATERIAL_OPTIONS = toOptions(WALL_LABELS);
 const WINDOW_TYPE_OPTIONS = toOptions(WINDOW_LABELS);
 const FLOOR_MATERIAL_OPTIONS = toOptions(FLOOR_LABELS);
 const ROOF_MATERIAL_OPTIONS = toOptions(ROOF_LABELS);
@@ -152,11 +151,42 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const [processingPayment, setProcessingPayment] = useState(false);
   const [formData, setFormData] = useState<any>(null);
 
-  // === GÉNÉRAL ===
+  // === CCC PICKLISTS ===
+  const { getOptions, getDependentOptions, loading: picklistsLoading } = useCCCFormPicklists();
+  
+  // CCC construction categories
+  const PROPERTY_CATEGORY_OPTIONS = useMemo(() => [
+    'Appartement', 'Villa', 'Maison', 'Local commercial',
+    'Immeuble/Bâtiment', 'Entrepôt/Hangar', 'Terrain nu',
+  ], []);
+
+  const CATEGORY_TO_CONSTRUCTION_TYPES: Record<string, string[]> = useMemo(() => ({
+    'Appartement': ['Résidentielle'], 'Villa': ['Résidentielle'], 'Maison': ['Résidentielle'],
+    'Local commercial': ['Commerciale'], 'Immeuble/Bâtiment': ['Résidentielle', 'Commerciale', 'Industrielle'],
+    'Entrepôt/Hangar': ['Industrielle', 'Agricole'], 'Terrain nu': ['Terrain nu'],
+  }), []);
+
+  const MATERIALS_BY_NATURE_FALLBACK: Record<string, string[]> = useMemo(() => ({
+    Durable: ['Béton armé', 'Briques cuites', 'Parpaings', 'Pierre naturelle'],
+    'Semi-durable': ['Semi-dur', 'Briques adobes', 'Bois', 'Mixte'],
+    Précaire: ['Tôles', 'Bois', 'Paille', 'Autre'],
+  }), []);
+
+  const STANDING_BY_NATURE_FALLBACK: Record<string, string[]> = useMemo(() => ({
+    Durable: ['Haut standing', 'Moyen standing', 'Économique'],
+    'Semi-durable': ['Moyen standing', 'Économique'],
+    Précaire: ['Économique'],
+  }), []);
+
+  // === GÉNÉRAL (CCC-aligned) ===
   const [propertyDescription, setPropertyDescription] = useState('');
-  const [constructionType, setConstructionType] = useState('villa');
+  const [propertyCategory, setPropertyCategory] = useState('');
+  const [constructionType, setConstructionType] = useState('');
+  const [constructionMaterials, setConstructionMaterials] = useState('');
+  const [constructionNature, setConstructionNature] = useState('');
+  const [declaredUsage, setDeclaredUsage] = useState('');
+  const [standing, setStanding] = useState('');
   const [constructionYear, setConstructionYear] = useState('');
-  const [constructionQuality, setConstructionQuality] = useState('standard');
   const [numberOfFloors, setNumberOfFloors] = useState('1');
   const [totalBuiltAreaSqm, setTotalBuiltAreaSqm] = useState('');
   const [propertyCondition, setPropertyCondition] = useState('bon');
@@ -164,8 +194,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const [numberOfBedrooms, setNumberOfBedrooms] = useState('');
   const [numberOfBathrooms, setNumberOfBathrooms] = useState('');
 
-  // === MATÉRIAUX DE CONSTRUCTION ===
-  const [wallMaterial, setWallMaterial] = useState('parpaings');
+  // CCC construction cascade state
+  const [availableConstructionTypes, setAvailableConstructionTypes] = useState<string[]>([]);
+  const [availableConstructionMaterials, setAvailableConstructionMaterials] = useState<string[]>([]);
+  const [availableConstructionNatures, setAvailableConstructionNatures] = useState<string[]>([]);
+  const [availableDeclaredUsages, setAvailableDeclaredUsages] = useState<string[]>([]);
+  const [availableStandings, setAvailableStandings] = useState<string[]>([]);
+
+  // === MATÉRIAUX DE CONSTRUCTION (expertise-specific: roof, window, floor, finishes) ===
   const [roofMaterial, setRoofMaterial] = useState('tole_bac');
   const [windowType, setWindowType] = useState('aluminium');
   const [floorMaterial, setFloorMaterial] = useState('carrelage');
@@ -246,41 +282,18 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     if (!open || !parcelData || prefillDoneRef.current) return;
     prefillDoneRef.current = true;
 
-    // Map property_category → expertise constructionType key
-    const categoryMap: Record<string, string> = {
-      'Villa': 'villa', 'Maison individuelle': 'villa',
-      'Appartement': 'appartement',
-      'Immeuble': 'immeuble', 'Bâtiment': 'immeuble',
-      'Duplex': 'duplex', 'Triplex': 'duplex',
-      'Studio': 'studio',
-      'Local commercial': 'commercial', 'Commerce': 'commercial', 'Bureau': 'commercial',
-      'Entrepôt': 'entrepot', 'Hangar': 'entrepot',
-      'Terrain nu': 'terrain_nu', 'Terrain non bâti': 'terrain_nu', 'Non bâti': 'terrain_nu',
-    };
-
-    // Map construction_materials → expertise wallMaterial key
-    const materialMap: Record<string, string> = {
-      'Béton armé': 'beton',
-      'Briques cuites': 'briques_cuites',
-      'Briques adobe': 'briques_adobe',
-      'Parpaings': 'parpaings', 'Blocs': 'parpaings',
-      'Bois': 'bois',
-      'Tôles métalliques': 'tole',
-      'Mixte': 'mixte',
-    };
-
-    // Map construction_nature → propertyCondition
-    const natureConditionMap: Record<string, string> = {
-      'Durable': 'bon',
-      'Semi-durable': 'moyen',
-      'Précaire': 'mauvais',
-      'Construction durable': 'bon',
-      'Construction semi-durable': 'moyen',
-      'Construction précaire': 'mauvais',
-    };
-
-    if (parcelData.property_category && categoryMap[parcelData.property_category]) {
-      setConstructionType(categoryMap[parcelData.property_category]);
+    // Direct transfer of CCC values (same format)
+    if (parcelData.property_category) {
+      setPropertyCategory(parcelData.property_category);
+    }
+    if (parcelData.construction_type) {
+      setConstructionType(parcelData.construction_type);
+    }
+    if (parcelData.construction_materials) {
+      setConstructionMaterials(parcelData.construction_materials);
+    }
+    if (parcelData.construction_nature) {
+      setConstructionNature(parcelData.construction_nature);
     }
     if (parcelData.construction_year) {
       setConstructionYear(parcelData.construction_year.toString());
@@ -291,13 +304,85 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     if (parcelData.area_sqm && parcelData.area_sqm > 0) {
       setTotalBuiltAreaSqm(parcelData.area_sqm.toString());
     }
-    if (parcelData.construction_materials && materialMap[parcelData.construction_materials]) {
-      setWallMaterial(materialMap[parcelData.construction_materials]);
-    }
-    if (parcelData.construction_nature && natureConditionMap[parcelData.construction_nature]) {
-      setPropertyCondition(natureConditionMap[parcelData.construction_nature]);
-    }
   }, [open, parcelData]);
+
+  // === CCC CONSTRUCTION CASCADE EFFECTS ===
+  // Helper: build reverse mapping material -> nature
+  const buildMaterialToNatureMap = useCallback((materialsMap: Record<string, string[]>): Record<string, string> => {
+    const reverseMap: Record<string, string> = {};
+    for (const [nature, materials] of Object.entries(materialsMap)) {
+      for (const mat of materials) {
+        if (!reverseMap[mat]) reverseMap[mat] = nature;
+      }
+    }
+    return reverseMap;
+  }, []);
+
+  // propertyCategory → constructionType
+  useEffect(() => {
+    if (!propertyCategory) { setAvailableConstructionTypes([]); setConstructionType(''); return; }
+    const allowedTypes = CATEGORY_TO_CONSTRUCTION_TYPES[propertyCategory] || [];
+    setAvailableConstructionTypes(allowedTypes);
+    if (allowedTypes.length === 1) { if (constructionType !== allowedTypes[0]) setConstructionType(allowedTypes[0]); }
+    else if (constructionType && !allowedTypes.includes(constructionType)) setConstructionType('');
+  }, [propertyCategory]);
+
+  // constructionType → materials, natures
+  useEffect(() => {
+    if (!constructionType) {
+      setAvailableConstructionNatures([]); setConstructionNature('');
+      setAvailableDeclaredUsages([]); setDeclaredUsage('');
+      setAvailableConstructionMaterials([]); setConstructionMaterials('');
+      setAvailableStandings([]); setStanding('');
+      return;
+    }
+    const natureMap = getDependentOptions('picklist_construction_nature');
+    const natures = natureMap[constructionType] || [];
+    setAvailableConstructionNatures(natures);
+    const dbMaterialsMap = getDependentOptions('picklist_construction_materials');
+    const hasMaterialsInDb = Object.keys(dbMaterialsMap).length > 0;
+    const allMaterials: string[] = [];
+    const seen = new Set<string>();
+    for (const nature of natures) {
+      if (nature === 'Non bâti') continue;
+      const mats = hasMaterialsInDb ? (dbMaterialsMap[nature] || []) : (MATERIALS_BY_NATURE_FALLBACK[nature] || []);
+      for (const m of mats) { if (!seen.has(m)) { seen.add(m); allMaterials.push(m); } }
+    }
+    setAvailableConstructionMaterials(allMaterials);
+    if (constructionMaterials && !allMaterials.includes(constructionMaterials)) { setConstructionMaterials(''); setConstructionNature(''); }
+    if (constructionNature && !natures.includes(constructionNature)) setConstructionNature('');
+  }, [constructionType, getDependentOptions]);
+
+  // constructionMaterials → auto-fill constructionNature
+  useEffect(() => {
+    if (!constructionMaterials || !constructionType) {
+      if (!constructionMaterials) { setConstructionNature(''); setAvailableStandings([]); setStanding(''); }
+      return;
+    }
+    const dbMaterialsMap = getDependentOptions('picklist_construction_materials');
+    const hasMaterialsInDb = Object.keys(dbMaterialsMap).length > 0;
+    const materialsMap = hasMaterialsInDb ? dbMaterialsMap : MATERIALS_BY_NATURE_FALLBACK;
+    const reverseMap = buildMaterialToNatureMap(materialsMap);
+    const deducedNature = reverseMap[constructionMaterials];
+    if (deducedNature && deducedNature !== constructionNature) setConstructionNature(deducedNature);
+  }, [constructionMaterials, constructionType, getDependentOptions, buildMaterialToNatureMap]);
+
+  // constructionType + constructionNature → declaredUsage
+  useEffect(() => {
+    if (!constructionType || !constructionNature) { setAvailableDeclaredUsages([]); setDeclaredUsage(''); return; }
+    const usages = resolveAvailableUsages(constructionType, constructionNature, getDependentOptions);
+    setAvailableDeclaredUsages(usages);
+    if (declaredUsage && !usages.includes(declaredUsage)) setDeclaredUsage('');
+  }, [constructionType, constructionNature, getDependentOptions]);
+
+  // constructionNature → standing
+  useEffect(() => {
+    if (!constructionNature || constructionNature === 'Non bâti') { setAvailableStandings([]); setStanding(''); return; }
+    const dbStandingMap = getDependentOptions('picklist_standing');
+    const standings = (Object.keys(dbStandingMap).length > 0 ? dbStandingMap[constructionNature] : STANDING_BY_NATURE_FALLBACK[constructionNature]) || [];
+    setAvailableStandings(standings);
+    if (standing && !standings.includes(standing)) setStanding('');
+  }, [constructionNature, getDependentOptions]);
 
   // Fetch expertise fees on mount
   useEffect(() => {
@@ -639,7 +724,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       parcel_id: parcelId,
       property_description: propertyDescription || undefined,
       construction_year: constructionYear ? parseInt(constructionYear) : undefined,
-      construction_quality: constructionQuality,
+      construction_quality: standing || undefined,
       number_of_floors: numberOfFloors ? parseInt(numberOfFloors) : undefined,
       total_built_area_sqm: totalBuiltAreaSqm ? parseFloat(totalBuiltAreaSqm) : undefined,
       property_condition: propertyCondition,
@@ -664,7 +749,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       requester_phone: undefined,
       requester_email: profile?.email || user.email || undefined,
       // Extended columns — stored directly in DB columns
-      wall_material: wallMaterial || undefined,
+      wall_material: constructionMaterials || undefined,
       roof_material: roofMaterial || undefined,
       window_type: windowType || undefined,
       floor_material: floorMaterial || undefined,
@@ -891,11 +976,15 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setCreatedRequest(null);
     setFormData(null);
 
-    // General
+    // General (CCC-aligned)
     setPropertyDescription('');
-    setConstructionType('villa');
+    setPropertyCategory('');
+    setConstructionType('');
+    setConstructionMaterials('');
+    setConstructionNature('');
+    setDeclaredUsage('');
+    setStanding('');
     setConstructionYear('');
-    setConstructionQuality('standard');
     setNumberOfFloors('1');
     setTotalBuiltAreaSqm('');
     setPropertyCondition('bon');
@@ -903,8 +992,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setNumberOfBedrooms('');
     setNumberOfBathrooms('');
 
-    // Materials
-    setWallMaterial('parpaings');
+    // Materials (expertise-specific)
     setRoofMaterial('tole_bac');
     setWindowType('aluminium');
     setFloorMaterial('carrelage');
@@ -994,8 +1082,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     onOpenChange(false);
   };
 
-  const isTerrainNu = constructionType === 'terrain_nu';
-  const isApartmentOrBuilding = constructionType === 'appartement' || constructionType === 'immeuble' || constructionType === 'duplex' || constructionType === 'studio';
+  const isTerrainNu = propertyCategory === 'Terrain nu' || constructionType === 'Terrain nu';
+  const isApartmentOrBuilding = propertyCategory === 'Appartement';
 
   const renderForm = () => (
     <div className="space-y-3">
@@ -1051,31 +1139,111 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
               </AlertDescription>
             </Alert>
             
-            {/* Type de construction */}
+            {/* Construction Block (CCC-aligned) */}
             <Card className="border rounded-xl">
               <CardContent className="p-3 space-y-3">
                 <h4 className="text-sm font-semibold flex items-center gap-2">
                   <Home className="h-4 w-4 text-muted-foreground" />
-                  Type de bien
+                  Construction
                   <SectionHelpPopover
-                    title="Type de bien"
-                    description="Sélectionnez la catégorie qui correspond le mieux à votre construction. Ce choix orientera l'expert dans son évaluation et déterminera les critères d'analyse."
+                    title="Construction"
+                    description="Sélectionnez la catégorie, le type, les matériaux et le standing de votre bien. Ces champs suivent la nomenclature cadastrale officielle."
                   />
                 </h4>
-                
+
+                {/* Catégorie de bien */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Type de construction</Label>
-                  <Select value={constructionType} onValueChange={setConstructionType}>
+                  <Label className="text-xs">Catégorie de bien</Label>
+                  <Select value={propertyCategory} onValueChange={setPropertyCategory}>
                     <SelectTrigger className="h-10 text-sm rounded-xl border-2">
-                      <SelectValue />
+                      <SelectValue placeholder="Sélectionner la catégorie" />
                     </SelectTrigger>
                     <SelectContent className="z-[1200]">
-                      {CONSTRUCTION_TYPE_OPTIONS.map(opt => (
-                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      {PROPERTY_CATEGORY_OPTIONS.map(opt => (
+                        <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Type de construction & Matériaux */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Type de construction</Label>
+                    {availableConstructionTypes.length <= 1 ? (
+                      <div className="h-10 px-3 flex items-center text-sm rounded-xl border-2 bg-muted text-muted-foreground">
+                        {constructionType || (propertyCategory ? '—' : "Catégorie d'abord")}
+                      </div>
+                    ) : (
+                      <Select value={constructionType} onValueChange={setConstructionType} disabled={!propertyCategory}>
+                        <SelectTrigger className="h-10 text-sm rounded-xl border-2">
+                          <SelectValue placeholder={!propertyCategory ? "Catégorie d'abord" : "Sélectionner"} />
+                        </SelectTrigger>
+                        <SelectContent className="z-[1200]">
+                          {availableConstructionTypes.map(opt => (
+                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+
+                  {availableConstructionMaterials.length > 0 ? (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Matériaux</Label>
+                      <Select value={constructionMaterials} onValueChange={setConstructionMaterials} disabled={availableConstructionMaterials.length === 0}>
+                        <SelectTrigger className="h-10 text-sm rounded-xl border-2">
+                          <SelectValue placeholder={!constructionType ? "Type d'abord" : "Sélectionner"} />
+                        </SelectTrigger>
+                        <SelectContent className="z-[1200]">
+                          {availableConstructionMaterials.map(opt => (
+                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : <div />}
+                </div>
+
+                {/* Nature (auto) & Usage */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Nature</Label>
+                    <div className="h-10 px-3 flex items-center text-sm rounded-xl border-2 bg-muted text-muted-foreground">
+                      {constructionNature ? `Construction ${constructionNature.toLowerCase()}` : (constructionMaterials ? '—' : "Matériaux d'abord")}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Usage</Label>
+                    <Select value={declaredUsage} onValueChange={setDeclaredUsage} disabled={!constructionType || !constructionNature}>
+                      <SelectTrigger className="h-10 text-sm rounded-xl border-2">
+                        <SelectValue placeholder={!constructionType || !constructionNature ? "Type et nature d'abord" : "Sélectionner"} />
+                      </SelectTrigger>
+                      <SelectContent className="z-[1200]">
+                        {availableDeclaredUsages.map(opt => (
+                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Standing */}
+                {constructionNature && constructionNature !== 'Non bâti' && availableStandings.length > 0 && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Standing</Label>
+                    <Select value={standing} onValueChange={setStanding}>
+                      <SelectTrigger className="h-10 text-sm rounded-xl border-2">
+                        <SelectValue placeholder="Sélectionner le standing" />
+                      </SelectTrigger>
+                      <SelectContent className="z-[1200]">
+                        {availableStandings.map(opt => (
+                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 <div className="space-y-1.5">
                   <Label className="text-xs">Description du bien</Label>
@@ -1128,31 +1296,16 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Surface bâtie (m²)</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      value={totalBuiltAreaSqm}
-                      onChange={handleNonNegativeChange(setTotalBuiltAreaSqm)}
-                      placeholder="Ex: 150"
-                      className="h-9 text-sm rounded-xl border-2"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Qualité</Label>
-                    <Select value={constructionQuality} onValueChange={setConstructionQuality}>
-                      <SelectTrigger className="h-9 text-sm rounded-xl border-2">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="z-[1200]">
-                        {CONSTRUCTION_QUALITY_OPTIONS.map(opt => (
-                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Surface bâtie (m²)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={totalBuiltAreaSqm}
+                    onChange={handleNonNegativeChange(setTotalBuiltAreaSqm)}
+                    placeholder="Ex: 150"
+                    className="h-9 text-sm rounded-xl border-2"
+                  />
                 </div>
 
                 <div className="grid grid-cols-3 gap-2">
@@ -1530,26 +1683,12 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
               <CardContent className="p-3 space-y-3">
                 <h4 className="text-sm font-semibold flex items-center gap-2">
                   <Building className="h-4 w-4 text-muted-foreground" />
-                  Matériaux de construction
+                  Matériaux & finitions
                   <SectionHelpPopover
-                    title="Matériaux de construction"
-                    description="Précisez les matériaux utilisés pour les murs, la toiture, les fenêtres et le sol. La qualité des matériaux est un facteur déterminant dans l'évaluation immobilière."
+                    title="Matériaux & finitions"
+                    description="Précisez les matériaux utilisés pour la toiture, les fenêtres et le sol. Les matériaux de murs/élévation sont définis dans le bloc Construction de l'onglet Général."
                   />
                 </h4>
-
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Murs / Élévation</Label>
-                  <Select value={wallMaterial} onValueChange={setWallMaterial}>
-                    <SelectTrigger className="h-9 text-sm rounded-xl border-2">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="z-[1200]">
-                      {WALL_MATERIAL_OPTIONS.map(opt => (
-                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
 
                 <div className="space-y-1.5">
                   <Label className="text-xs">Toiture</Label>
@@ -2110,11 +2249,11 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
     // Comptage dynamique de la complétion
     const computeCompletion = () => {
-      const baseFields = [constructionType, roadAccessType];
+      const baseFields = [propertyCategory, constructionType, roadAccessType];
       const builtFields = isTerrainNu ? [] : [
-        constructionYear, constructionQuality, numberOfFloors, totalBuiltAreaSqm,
+        constructionYear, standing, numberOfFloors, totalBuiltAreaSqm,
         propertyCondition, numberOfRooms, numberOfBedrooms, numberOfBathrooms,
-        wallMaterial, roofMaterial, windowType, floorMaterial, buildingPosition, soundEnvironment,
+        constructionMaterials, roofMaterial, windowType, floorMaterial, buildingPosition, soundEnvironment,
       ];
       const equipFields = [
         hasWaterSupply, hasElectricity, hasSewageSystem, hasInternet,
@@ -2322,7 +2461,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <Home className="h-4 w-4 text-green-600" />
                     <h4 className="text-xs font-semibold">Construction</h4>
                     <Badge variant="outline" className="text-[10px] h-5">
-                      {[constructionType, constructionYear, totalBuiltAreaSqm, numberOfFloors, propertyCondition, constructionQuality].filter(Boolean).length}/6
+                      {[propertyCategory, constructionType, constructionMaterials, constructionNature, standing, constructionYear].filter(Boolean).length}/6
                     </Badge>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => { setActiveTab('general'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
@@ -2331,8 +2470,30 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 </div>
                 <div className="divide-y divide-border/30">
                   <div className="flex justify-between text-xs py-1.5">
+                    <span className="text-muted-foreground">Catégorie</span>
+                    <span className="font-medium">{propertyCategory || <span className="text-orange-600">Non renseigné</span>}</span>
+                  </div>
+                  <div className="flex justify-between text-xs py-1.5">
                     <span className="text-muted-foreground">Type de construction</span>
-                    <span className="font-medium">{CONSTRUCTION_TYPE_LABELS[constructionType] || constructionType || <span className="text-orange-600">Non renseigné</span>}</span>
+                    <span className="font-medium">{constructionType || <span className="text-muted-foreground">—</span>}</span>
+                  </div>
+                  <div className="flex justify-between text-xs py-1.5">
+                    <span className="text-muted-foreground">Matériaux</span>
+                    <span className="font-medium">{constructionMaterials || <span className="text-muted-foreground">—</span>}</span>
+                  </div>
+                  <div className="flex justify-between text-xs py-1.5">
+                    <span className="text-muted-foreground">Nature</span>
+                    <span className="font-medium">{constructionNature ? `Construction ${constructionNature.toLowerCase()}` : <span className="text-muted-foreground">—</span>}</span>
+                  </div>
+                  {declaredUsage && (
+                    <div className="flex justify-between text-xs py-1.5">
+                      <span className="text-muted-foreground">Usage</span>
+                      <span className="font-medium">{declaredUsage}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-xs py-1.5">
+                    <span className="text-muted-foreground">Standing</span>
+                    <span className="font-medium">{standing || <span className="text-muted-foreground">—</span>}</span>
                   </div>
                   <div className="flex justify-between text-xs py-1.5">
                     <span className="text-muted-foreground">Année de construction</span>
@@ -2345,10 +2506,6 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                   <div className="flex justify-between text-xs py-1.5">
                     <span className="text-muted-foreground">Nombre d'étages</span>
                     <span className="font-medium">{numberOfFloors || <span className="text-muted-foreground">—</span>}</span>
-                  </div>
-                  <div className="flex justify-between text-xs py-1.5">
-                    <span className="text-muted-foreground">Standing</span>
-                    <span className="font-medium">{QUALITY_LABELS[constructionQuality] || constructionQuality}</span>
                   </div>
                   <div className="flex justify-between text-xs py-1.5">
                     <span className="text-muted-foreground">État général</span>
@@ -2410,10 +2567,6 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                   </Button>
                 </div>
                 <div className="divide-y divide-border/30">
-                  <div className="flex justify-between text-xs py-1.5">
-                    <span className="text-muted-foreground">Murs / Élévation</span>
-                    <span className="font-medium">{WALL_LABELS[wallMaterial] || wallMaterial}</span>
-                  </div>
                   <div className="flex justify-between text-xs py-1.5">
                     <span className="text-muted-foreground">Toiture</span>
                     <span className="font-medium">{ROOF_LABELS[roofMaterial] || roofMaterial}</span>
