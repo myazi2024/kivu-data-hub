@@ -30,9 +30,7 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
   onClose,
   selectedServices = [],
   onPaymentSuccess,
-  fromMap = false
 }) => {
-  const navigate = useNavigate();
   const [paidServices, setPaidServices] = React.useState<string[]>(selectedServices);
   const [showCloseConfirm, setShowCloseConfirm] = React.useState(false);
 
