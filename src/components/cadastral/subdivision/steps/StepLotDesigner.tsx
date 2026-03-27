@@ -10,12 +10,12 @@ import { Separator } from '@/components/ui/separator';
 import {
   Wand2, Plus, Trash2, Undo2, Redo2, AlertTriangle, CheckCircle,
   Grid3X3, ArrowLeftRight, ArrowUpDown, Info, Settings2, Route,
-  Scissors, MousePointer, Pencil, TreePine, Shield
+  Scissors, MousePointer, Pencil, TreePine, Shield, Sticker
 } from 'lucide-react';
 import { 
   SubdivisionLot, SubdivisionRoad, SubdivisionCommonSpace, SubdivisionServitude,
   AutoSubdivideOptions, ParentParcelInfo, LOT_COLORS, USAGE_LABELS, ROAD_SURFACE_LABELS, 
-  COMMON_SPACE_LABELS, COMMON_SPACE_COLORS, Point2D 
+  COMMON_SPACE_LABELS, COMMON_SPACE_COLORS, Point2D, LotAnnotation
 } from '../types';
 import { ValidationResult, mergeLotsThroughDeletedRoad, polygonArea } from '../utils/geometry';
 import LotCanvas, { CanvasMode } from '../LotCanvas';
@@ -99,6 +99,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   const [showAutoPanel, setShowAutoPanel] = useState(lots.length === 0);
   const [editingRoadId, setEditingRoadId] = useState<string | null>(null);
   const [canvasMode, setCanvasMode] = useState<CanvasMode>('select');
+  const [canvasShowGrid, setCanvasShowGrid] = useState(true);
 
   const editingRoad = roads.find(r => r.id === editingRoadId) || null;
 
@@ -164,6 +165,26 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     setLots(lots.filter(l => l.id !== id));
     if (selectedLotId === id) setSelectedLotId(null);
   }, [lots, setLots, selectedLotId]);
+
+  const duplicateLot = useCallback((id: string) => {
+    const lot = lots.find(l => l.id === id);
+    if (!lot) return;
+    const maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0);
+    const offset = 0.03;
+    const newLot: SubdivisionLot = {
+      ...lot,
+      id: `lot-${Date.now()}-dup`,
+      lotNumber: String(maxLotNum + 1),
+      vertices: lot.vertices.map(v => ({ x: Math.min(1, v.x + offset), y: Math.min(1, v.y + offset) })),
+      annotations: [],
+    };
+    setLots([...lots, newLot]);
+    setSelectedLotId(newLot.id);
+  }, [lots, setLots]);
+
+  const updateLotAnnotations = useCallback((id: string, annotations: LotAnnotation[]) => {
+    setLots(lots.map(l => l.id === id ? { ...l, annotations } : l));
+  }, [lots, setLots]);
 
   const handleSplitLot = useCallback((lotId: string) => {
     const lot = lots.find(l => l.id === lotId);
@@ -411,6 +432,16 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
           <Pencil className="h-3.5 w-3.5" />
           Tracer voie
         </Button>
+        <Button
+          variant={canvasMode === 'clipart' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setCanvasMode(canvasMode === 'clipart' ? 'select' : 'clipart')}
+          className="gap-1 text-xs"
+          title="Placer des cliparts sur les lots"
+        >
+          <Sticker className="h-3.5 w-3.5" />
+          Cliparts
+        </Button>
         
         <Separator orientation="vertical" className="h-6" />
 
@@ -532,14 +563,22 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 selectedRoadId={editingRoadId}
                 onSelectRoad={setEditingRoadId}
                 onDeleteRoad={handleDeleteRoad}
+                onDeleteLot={deleteLot}
+                onDuplicateLot={duplicateLot}
+                onUpdateLotAnnotations={updateLotAnnotations}
                 onSplitLot={handleSplitLot}
                 onMergeLots={handleMergeLots}
                 onCutLot={handleCutLot}
                 onFinishRoadDraw={handleFinishRoadDraw}
                 mode={canvasMode}
+                onModeChange={setCanvasMode}
+                showGrid={canvasShowGrid}
+                onToggleGrid={() => setCanvasShowGrid(prev => !prev)}
                 onUpdateLot={(id, vertices) => {
                   setLots(lots.map(l => l.id === id ? { ...l, vertices } : l));
                 }}
+                onUndo={onUndo}
+                onRedo={onRedo}
               />
               {lots.length > 1 && selectedLotIds.length === 0 && (
                 <p className="text-[10px] text-muted-foreground text-center py-1">

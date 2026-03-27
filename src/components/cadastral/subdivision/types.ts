@@ -1,5 +1,23 @@
 // Types pour le module de lotissement v2
 
+export interface LotAnnotation {
+  id: string;
+  type: 'tree' | 'house' | 'building' | 'well' | 'fence' | 'gate' | 'parking' | 'antenna';
+  position: Point2D; // relative to lot bounding box (0-1)
+  scale?: number;
+}
+
+export const CLIPART_TYPES: { type: LotAnnotation['type']; label: string; emoji: string }[] = [
+  { type: 'tree', label: 'Arbre', emoji: '🌳' },
+  { type: 'house', label: 'Maison', emoji: '🏠' },
+  { type: 'building', label: 'Immeuble', emoji: '🏢' },
+  { type: 'well', label: 'Puits', emoji: '🪣' },
+  { type: 'fence', label: 'Clôture', emoji: '🏗️' },
+  { type: 'gate', label: 'Portail', emoji: '🚪' },
+  { type: 'parking', label: 'Parking', emoji: '🚗' },
+  { type: 'antenna', label: 'Antenne', emoji: '📡' },
+];
+
 export interface SubdivisionLot {
   id: string;
   lotNumber: string;
@@ -18,6 +36,8 @@ export interface SubdivisionLot {
   notes?: string;
   // Display
   color: string;
+  // Annotations / cliparts placed on this lot
+  annotations?: LotAnnotation[];
   // GPS coordinates (computed from parent parcel)
   gpsCoordinates?: GpsPoint[];
 }
