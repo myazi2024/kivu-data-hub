@@ -986,10 +986,58 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
               })}
 
               {/* Edge hit targets */}
-              {!readOnly && mode === 'select' && lot.vertices.map((v, i) => {
+              {!readOnly && (mode === 'select' || mode === 'selectEdge') && lot.vertices.map((v, i) => {
                 const next = lot.vertices[(i + 1) % lot.vertices.length];
                 const sv = toScreen(v);
                 const sn = toScreen(next);
+                const isEdgeHovered = hoveredEdge && hoveredEdge.lotId1 === lot.id && hoveredEdge.edgeIdx1 === i;
+                const isSharedEdge = sharedEdges.some(se =>
+                  (se.lotId1 === lot.id && se.edgeIdx1 === i) ||
+                  (se.lotId2 === lot.id && se.edgeIdx2 === i)
+                );
+
+                if (mode === 'selectEdge') {
+                  // In selectEdge mode, highlight edges on hover
+                  return (
+                    <g key={`edge-hit-${i}`}>
+                      {isEdgeHovered && (
+                        <line x1={sv.x} y1={sv.y} x2={sn.x} y2={sn.y}
+                          stroke={isSharedEdge ? 'hsl(var(--primary))' : 'hsl(var(--accent-foreground))'}
+                          strokeWidth={6} strokeLinecap="round" opacity={0.4}
+                          className="pointer-events-none" />
+                      )}
+                      <line x1={sv.x} y1={sv.y} x2={sn.x} y2={sn.y}
+                        stroke="rgba(0,0,0,0.001)" strokeWidth={16} strokeLinecap="round"
+                        pointerEvents="stroke" style={{ cursor: 'pointer' }}
+                        onMouseEnter={() => {
+                          const shared = sharedEdges.find(se =>
+                            (se.lotId1 === lot.id && se.edgeIdx1 === i) ||
+                            (se.lotId2 === lot.id && se.edgeIdx2 === i)
+                          );
+                          if (shared) {
+                            setHoveredEdge(shared);
+                          } else {
+                            setHoveredEdge({ lotId1: lot.id, edgeIdx1: i, p1: v, p2: next, isShared: false });
+                          }
+                        }}
+                        onMouseLeave={() => setHoveredEdge(null)}
+                        onClick={e => {
+                          e.stopPropagation();
+                          const shared = sharedEdges.find(se =>
+                            (se.lotId1 === lot.id && se.edgeIdx1 === i) ||
+                            (se.lotId2 === lot.id && se.edgeIdx2 === i)
+                          );
+                          const edge = shared || { lotId1: lot.id, edgeIdx1: i, p1: v, p2: next, isShared: false };
+                          onConvertEdgeToRoad?.(edge);
+                          onModeChange?.('select');
+                          setHoveredEdge(null);
+                        }}
+                      />
+                    </g>
+                  );
+                }
+
+                // Normal select mode
                 const angle = Math.atan2(sn.y - sv.y, sn.x - sv.x) * (180 / Math.PI);
                 const normalizedAngle = ((angle % 180) + 180) % 180;
                 let cursorStyle = 'ew-resize';
@@ -1003,6 +1051,22 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                     stroke="rgba(0,0,0,0.001)" strokeWidth={14} strokeLinecap="round"
                     pointerEvents="stroke" style={{ cursor: cursorStyle }}
                     onMouseDown={e => handleEdgeMouseDown(lot.id, i, e)}
+                    onContextMenu={e => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (readOnly) return;
+                      const shared = sharedEdges.find(se =>
+                        (se.lotId1 === lot.id && se.edgeIdx1 === i) ||
+                        (se.lotId2 === lot.id && se.edgeIdx2 === i)
+                      );
+                      const edge = shared || { lotId1: lot.id, edgeIdx1: i, p1: v, p2: next, isShared: false };
+                      const midScreen = {
+                        x: (sv.x + sn.x) / 2,
+                        y: (sv.y + sn.y) / 2,
+                      };
+                      setEdgeContextMenu({ edge, screenPos: midScreen });
+                      setContextMenuLotId(null);
+                    }}
                   />
                 );
               })}
