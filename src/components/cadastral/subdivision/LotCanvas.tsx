@@ -31,6 +31,7 @@ interface LotCanvasProps {
   selectedRoadId?: string | null;
   onSelectRoad?: (id: string | null) => void;
   onDeleteRoad?: (id: string) => void;
+  onUpdateRoad?: (id: string, updates: Partial<SubdivisionRoad>) => void;
   onSplitLot?: (id: string) => void;
   onMergeLots?: (ids: string[]) => void;
   onCutLot?: (lotId: string, cutStart: Point2D, cutEnd: Point2D) => void;
@@ -51,6 +52,8 @@ interface LotCanvasProps {
   onUndo?: () => void;
   onRedo?: () => void;
   minLotAreaSqm?: number;
+  roadPresetWidth?: number;
+  roadPresetSurface?: SubdivisionRoad['surfaceType'];
 }
 
 const CANVAS_W = 600;
