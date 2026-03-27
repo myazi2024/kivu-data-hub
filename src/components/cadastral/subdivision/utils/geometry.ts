@@ -227,11 +227,8 @@ function polyBounds(poly: Point2D[]) {
   return { minX, maxX, minY, maxY };
 }
 
-/**
- * Determine which edges of the parent polygon border a road.
- * Returns an array of edge indices and their dominant direction.
- */
-function findRoadBorderingEdges(
+
+
   parentVertices: Point2D[],
   parcelSides?: ParcelSideInfo[]
 ): { edgeIndex: number; direction: 'top' | 'bottom' | 'left' | 'right' }[] {
