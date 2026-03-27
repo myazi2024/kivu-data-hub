@@ -463,20 +463,28 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
 
           {selectedServiceIds.length > 0 && (
             <div className="space-y-2">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-muted-foreground">Devise d'affichage</span>
+                <CurrencySelector
+                  currencies={currencies}
+                  selectedCurrency={selectedCurrency}
+                  onCurrencyChange={setSelectedCurrency}
+                />
+              </div>
               <div className="space-y-1 px-2.5 py-2 bg-muted/20 rounded-xl text-xs">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Sous-total ({selectedServiceIds.length} service{selectedServiceIds.length > 1 ? 's' : ''})</span>
-                  <span className="font-medium">${totalAmount.toFixed(2)}</span>
+                  <span className="font-medium">{formatCurrency(convertFromUsd(totalAmount), selectedCurrency)}</span>
                 </div>
                 {appliedDiscount && (
                   <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400">
                     <span>Remise ({appliedDiscount.code})</span>
-                    <span>-${appliedDiscount.amount.toFixed(2)}</span>
+                    <span>-{formatCurrency(convertFromUsd(appliedDiscount.amount), selectedCurrency)}</span>
                   </div>
                 )}
                 <div className="flex items-center justify-between text-muted-foreground">
                   <span>{`TVA (${(TVA_RATE * 100).toFixed(0)}%)`}</span>
-                  <span>${(discountedAmount * TVA_RATE).toFixed(2)}</span>
+                  <span>{formatCurrency(convertFromUsd(discountedAmount * TVA_RATE), selectedCurrency)}</span>
                 </div>
               </div>
               
@@ -484,11 +492,16 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                 <span className="text-sm font-semibold">Total TTC</span>
                 <div className="text-right">
                   <div className="text-lg font-bold text-primary">
-                    ${(discountedAmount * (1 + TVA_RATE)).toFixed(2)} USD
+                    {formatCurrency(convertFromUsd(discountedAmount * (1 + TVA_RATE)), selectedCurrency)}
                   </div>
+                  {selectedCurrency !== 'USD' && (
+                    <div className="text-[10px] text-muted-foreground">
+                      ≈ {formatCurrency(discountedAmount * (1 + TVA_RATE), 'USD')}
+                    </div>
+                  )}
                   {appliedDiscount && (
                     <div className="text-[10px] text-green-600 dark:text-green-400">
-                      Économie: ${(appliedDiscount.amount * (1 + TVA_RATE)).toFixed(2)} TTC
+                      Économie: {formatCurrency(convertFromUsd(appliedDiscount.amount * (1 + TVA_RATE)), selectedCurrency)} TTC
                     </div>
                   )}
                 </div>
