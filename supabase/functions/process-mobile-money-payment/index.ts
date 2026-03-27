@@ -44,7 +44,23 @@ serve(async (req) => {
     }
 
     const body: PaymentRequest = await req.json();
-    const { payment_provider, phone_number, amount_usd, payment_type, invoice_id } = body;
+    const { payment_provider, phone_number, amount_usd, payment_type, invoice_id, currency_code: clientCurrency } = body;
+
+    // Fetch server-side exchange rate for the requested currency
+    const requestedCurrency = clientCurrency || 'USD';
+    let serverExchangeRate = 1;
+    if (requestedCurrency !== 'USD') {
+      const { data: currencyData } = await supabase
+        .from('currency_config')
+        .select('exchange_rate_to_usd')
+        .eq('currency_code', requestedCurrency)
+        .eq('is_active', true)
+        .single();
+      
+      if (currencyData) {
+        serverExchangeRate = Number(currencyData.exchange_rate_to_usd);
+      }
+    }
 
     // SECURITY: Read test_mode from server-side config, never trust client
     const { data: paymentModeConfig } = await supabase
