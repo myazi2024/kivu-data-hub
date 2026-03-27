@@ -69,6 +69,29 @@ export interface BoundaryHistory {
   boundary_document_url: string | null;
 }
 
+export interface LandDispute {
+  id: string;
+  reference_number: string;
+  dispute_nature: string;
+  declarant_name: string;
+  current_status: string;
+  dispute_start_date: string | null;
+  dispute_type: string;
+  parcel_number: string;
+  [key: string]: any;
+}
+
+export interface LegalVerification {
+  title_type: string | null;
+  title_reference: string | null;
+  title_issue_date: string | null;
+  title_document_url: string | null;
+  owner_document_url: string | null;
+  has_dispute: boolean;
+  is_subdivided: boolean;
+  parcel_verified: boolean;
+}
+
 export interface CadastralSearchResult {
   parcel: CadastralParcel;
   ownership_history: OwnershipHistory[];
@@ -76,6 +99,8 @@ export interface CadastralSearchResult {
   mortgage_history: MortgageHistory[];
   boundary_history: BoundaryHistory[];
   building_permits: BuildingPermit[];
+  land_disputes: LandDispute[];
+  legal_verification: LegalVerification | null;
 }
 
 // Default error messages (no longer depends on useSearchConfig)
