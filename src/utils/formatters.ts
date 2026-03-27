@@ -4,7 +4,10 @@ import { fr } from 'date-fns/locale';
 /**
  * Formate un montant en USD avec le format français.
  */
-export const formatCurrency = (amount: number): string => {
+export const formatCurrency = (amount: number, currency: 'USD' | 'CDF' = 'USD'): string => {
+  if (currency === 'CDF') {
+    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'CDF', maximumFractionDigits: 0 }).format(amount);
+  }
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD' }).format(amount);
 };
 
