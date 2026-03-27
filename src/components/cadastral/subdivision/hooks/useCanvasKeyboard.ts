@@ -29,7 +29,11 @@ export function useCanvasKeyboard(
     }
     if (e.key === 'Backspace') {
       e.preventDefault();
-      actions.onBackspace?.() || actions.onDelete?.();
+      if (actions.onBackspace) {
+        actions.onBackspace();
+      } else {
+        actions.onDelete?.();
+      }
     }
     if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
       e.preventDefault();
