@@ -33,7 +33,7 @@ interface StepLotDesignerProps {
   servitudes: SubdivisionServitude[];
   setServitudes: (servitudes: SubdivisionServitude[]) => void;
   lotIds: string[];
-  onAutoSubdivide: (options: AutoSubdivideOptions) => void;
+  onCreateInitialLot?: () => void;
   validation: ValidationResult;
   canUndo: boolean;
   canRedo: boolean;
