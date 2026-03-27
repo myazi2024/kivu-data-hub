@@ -1,62 +1,51 @@
 
 
-# Harmonisation du bloc "Type de bien" (Expertise) avec le bloc "Construction" (CCC)
+# Ajouter la section "Autorisation de bâtir" au bloc Construction du formulaire d'expertise
 
-## Probleme
+## Contexte
 
-Le formulaire d'expertise utilise un picklist "Type de construction" avec des valeurs internes (villa, appartement, immeuble, duplex, studio, commercial, entrepot, terrain_nu) qui ne correspondent pas aux valeurs du bloc "Construction" du formulaire CCC (Catégorie de bien, Type de construction, Matériaux, Nature, Usage, Standing — toutes issues de `useCCCFormPicklists`).
+Le bloc Construction du formulaire d'expertise a été aligné sur le CCC (Catégorie, Type, Matériaux, Nature, Usage, Standing), mais il manque la section "Autorisation de bâtir" qui suit le Standing dans le CCC (GeneralTab.tsx lignes 1063-1231).
 
-De plus, le champ "Qualité" (Luxe/Standard/Économique) dans l'onglet Général est un doublon du "Standing" du CCC, et le champ "Murs/Élévation" de l'onglet Matériaux fait doublon avec "Matériaux" du CCC.
-
-## Solution
-
-Remplacer le bloc "Type de bien" de l'onglet Général par une copie du bloc Construction du CCC, en utilisant les memes picklists dynamiques (`useCCCFormPicklists`). Supprimer les champs devenus redondants.
+La table `real_estate_expertise_requests` ne possède aucune colonne pour stocker les données d'autorisation.
 
 ## Plan
 
-### 1. Integrer `useCCCFormPicklists` dans le formulaire d'expertise
+### 1. Migration SQL — colonnes autorisation
 
-Importer le hook et reproduire la logique de dependances hierarchiques :
-- **Catégorie de bien** → `PROPERTY_CATEGORY_OPTIONS` (picklist suggestif existant)
-- **Type de construction** → dependant de la categorie (Résidentielle, Commerciale, etc.)
-- **Matériaux** → dependant de la nature
-- **Nature** → auto-determinee par les materiaux (lecture seule)
-- **Usage** → dependant du type + nature
-- **Standing** → dependant de la nature
+Ajouter à `real_estate_expertise_requests` :
+- `has_building_permit` (boolean) — Oui/Non
+- `building_permit_number` (text) — N° de l'autorisation
+- `building_permit_type` (text) — 'construction' ou 'regularization'
+- `building_permit_issue_date` (date) — date de délivrance
+- `building_permit_issuing_service` (text) — service émetteur
+- `building_permit_document_url` (text) — URL du document uploadé
 
-Remplacer les states `constructionType` (string key) et `constructionQuality` par des states alignes sur le CCC : `propertyCategory`, `constructionType` (valeurs CCC), `constructionNature`, `constructionMaterials`, `declaredUsage`, `standing`.
+### 2. UI — section Autorisation dans le formulaire d'expertise
 
-### 2. Supprimer les champs redondants
+Dans `RealEstateExpertiseRequestDialog.tsx`, après le Standing (ligne ~1246) et avant la Description :
 
-| Champ supprime | Raison |
-|---|---|
-| `constructionQuality` (Luxe/Standard/Économique) | Remplace par `standing` (Haut standing/Moyen standing/Économique) du bloc Construction |
-| `wallMaterial` (onglet Materiaux) | Remplace par `constructionMaterials` (Béton armé, Parpaings, etc.) du bloc Construction |
+- Toggle Oui/Non : "Avez-vous une autorisation de bâtir ?"
+- Si Oui : formulaire avec type (Bâtir/Régularisation), N° autorisation, date, service émetteur (`BuildingPermitIssuingServiceSelect`), upload document
+- Si Non : message informatif (comme dans le CCC)
+- Masqué pour Terrain nu et Appartement (comme dans le CCC)
+- Validation date liée à l'année de construction (même logique que le CCC)
 
-L'onglet "Matériaux" conserve : Toiture, Fenêtres, Sol/Revêtement, Finitions (crépi, peinture, plafond, double vitrage) — ces champs sont specifiques a l'expertise et n'existent pas dans le CCC.
+### 3. Soumission et résumé
 
-### 3. Adapter le prefill depuis parcelData
+- Ajouter les champs autorisation dans la logique d'insertion DB
+- Upload du document vers Supabase Storage si fourni
+- Afficher les infos autorisation dans le résumé (étape finale)
+- Mettre à jour le calcul du score de complétion
 
-Simplifier la logique de prefill : les valeurs CCC (`property_category`, `construction_type`, `construction_nature`, `construction_materials`) sont deja dans le bon format — plus besoin de mapping (categoryMap, materialMap). Le prefill devient un transfert direct.
+### 4. Types Supabase
 
-### 4. Adapter `isTerrainNu` et `isApartmentOrBuilding`
+Mettre à jour `types.ts` avec les nouvelles colonnes.
 
-- `isTerrainNu` → `propertyCategory === 'Terrain nu'` ou `constructionType === 'Terrain nu'`
-- `isApartmentOrBuilding` → `propertyCategory === 'Appartement'`
+## Fichiers
 
-### 5. Adapter la soumission et le resume
-
-- Mapper les nouvelles valeurs vers les colonnes DB existantes (`construction_quality` → `standing`, `wall_material` → `constructionMaterials`)
-- Mettre a jour le resume (step summary) avec les nouveaux labels
-
-### 6. Supprimer les constantes inutilisees
-
-Dans `expertiseLabels.ts`, `CONSTRUCTION_TYPE_LABELS` et `QUALITY_LABELS` ne seront plus utilisees par le formulaire d'expertise (elles restent utilisees par l'admin/analytics le cas echeant).
-
-## Fichiers modifies
-
-| Fichier | Modification |
-|---------|-------------|
-| `RealEstateExpertiseRequestDialog.tsx` | Remplacement bloc "Type de bien" par bloc Construction CCC, suppression champs redondants, adaptation prefill/soumission/resume |
-| `expertiseLabels.ts` | Nettoyage si `CONSTRUCTION_TYPE_LABELS`/`QUALITY_LABELS` ne sont plus references ailleurs |
+| Action | Fichier |
+|--------|---------|
+| Migration | Nouvelles colonnes sur `real_estate_expertise_requests` |
+| Modifié | `RealEstateExpertiseRequestDialog.tsx` — UI autorisation + soumission + résumé |
+| Modifié | `src/integrations/supabase/types.ts` — nouvelles colonnes |
 
