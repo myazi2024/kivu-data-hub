@@ -1,64 +1,131 @@
 
 
-# Audit du service "Demande de Lotissement" — Divergences et optimisations
+# Refonte interactive du LotCanvas — Manipulation directe des lots
 
-## Divergences identifiées
+## Analyse de l'existant
 
-| Problème | Détail | Impact |
-|----------|--------|--------|
-| **Prix en dur "20$" dans le bouton** | Le bouton "Soumettre (20$)" (ligne 234 du dialog) et le montant `submission_fee_usd: 20` (ligne 278 du hook) sont codés en dur. Il n'y a aucune lecture depuis une config admin (type `cadastral_services_config` ou table dédiée). | Si l'admin change le tarif, le code ne reflète pas le changement. |
-| **`submission_payment_status: 'completed'` sans paiement** | Le hook `submit()` (ligne 282) insère directement `submission_payment_status: 'completed'` sans aucun flux de paiement réel (Mobile Money, Stripe, etc.). L'utilisateur ne paie jamais les 20$. | **Bug critique** — les frais de dossier ne sont jamais collectés. |
-| **Référence non-unique** | `LOT-2026-XXXXX` est généré avec `Math.random()` (ligne 247). Pas de vérification d'unicité en base — collision possible. | Risque de doublon sur des volumes élevés. |
-| **`as any` sur les requêtes Supabase** | Les appels `supabase.from('subdivision_requests' as any)` et `supabase.from('subdivision_lots')` utilisent `as any`, indiquant que ces tables ne sont pas dans les types générés. | Les erreurs de typage sont masquées ; pas d'autocomplétion. |
-| **Motifs de lotissement incohérents** | Le formulaire propose des motifs en français libre ("Vente", "Succession / Héritage", etc.) tandis que l'admin affiche des clés anglaises (`sale`, `family_distribution`, `development`). Les labels ne correspondent pas. | L'admin ne reconnaît pas les motifs soumis par l'utilisateur. |
-| **Validation step 1 incomplète** | `isStepValid('parcel')` vérifie uniquement `!!parentParcel`. Le demandeur (nom, téléphone) n'est pas validé — un utilisateur sans profil complet peut avancer. | Soumission possible avec des champs demandeur vides. |
-| **Export PNG fragile** | `StepPlanView.handleExportPNG()` utilise `document.querySelector('#subdivision-canvas svg')` et `btoa(unescape(encodeURIComponent(...)))` — échoue silencieusement avec des caractères spéciaux (accents dans les noms de propriétaires). | L'export PNG peut produire une image cassée. |
-| **Pas de brouillon / sauvegarde** | Si l'utilisateur ferme accidentellement le dialog après avoir conçu 10 lots, tout est perdu. Aucune sauvegarde intermédiaire. | Perte de travail significative. |
-| **Espaces communs et servitudes jamais éditables** | Les types `SubdivisionCommonSpace` et `SubdivisionServitude` existent, sont passés au `StepPlanView`, mais aucune interface ne permet de les créer ou les modifier. Ils restent toujours `[]`. | Fonctionnalité morte. |
+Le `LotCanvas.tsx` (905 lignes) est un SVG statique avec des interactions limitees :
 
-## Plan d'implémentation
+| Fonctionnalite | Statut |
+|---|---|
+| Drag vertex individuel | Fonctionne |
+| Decoupe par ligne (cut) | Fonctionne |
+| Tracage de voie | Fonctionne |
+| Selection / multi-selection | Fonctionne |
+| Split lot (double-clic) | Fonctionne |
+| Fusion de lots | Fonctionne |
+| **Drag & drop lot entier** | **Absent** |
+| **Etirement d'arete (edge drag)** | **Absent** — les hit targets existent mais ne font rien |
+| **Suppression depuis le canvas** | **Absent** — uniquement dans le panneau lateral |
+| **Cliparts / icones** | **Absent** |
+| **Snap to grid / edges** | **Absent** |
+| **Zoom / pan** | **Absent** |
+| **Raccourcis clavier** | **Absent** |
+| **Touch gestures (mobile)** | **Partiel** — seul le long-press fonctionne |
+| **Duplication de lot** | **Absent** |
+| **Contrainte taille min** | **Absent** |
+| **Rotation de lot** | **Absent** |
 
-### 1. Intégrer le paiement réel avant soumission
+## Plan d'implementation
 
-Ajouter une étape de paiement entre le récapitulatif et la soumission finale :
-- Lire le tarif depuis `cadastral_services_config` (clé `subdivision`) ou une config admin dédiée au lieu du `20` en dur.
-- Réutiliser le flux `CadastralBillingPanel` / `useCadastralPayment` existant pour collecter le paiement.
-- Ne soumettre en base (`status: 'pending'`) qu'après confirmation du paiement.
-- Retirer le texte "(20$)" du bouton, le remplacer par le montant dynamique.
+### 1. Drag & drop du lot entier
 
-### 2. Corriger la génération de référence
+Ajouter un mode "move polygon" : quand l'utilisateur clique sur le remplissage d'un lot selectionne et le deplace, tous les vertices se translatent ensemble. Distinction entre clic sur vertex (resize) et clic sur surface (move).
 
-Remplacer `Math.random()` par un appel à une séquence SQL ou un UUID court côté serveur, garantissant l'unicité. Alternative : insérer d'abord sans référence, puis utiliser l'`id` retourné pour construire `LOT-2026-{id_court}`.
+### 2. Etirement d'arete (edge drag)
 
-### 3. Harmoniser les motifs de lotissement
+Les edge hit targets (lignes 601-626) existent deja avec le bon curseur mais ne declenchent aucune action. Ajouter un `onMouseDown` sur ces lignes pour deplacer les deux vertices de l'arete simultanement dans la direction perpendiculaire a l'arete.
 
-Utiliser des clés normalisées (`sale`, `inheritance`, `investment`, `construction`, `donation`, `family`, `commercial`, `other`) avec un mapping de labels FR partagé entre le formulaire et l'admin.
+### 3. Menu contextuel sur lot selectionne
 
-### 4. Renforcer la validation de l'étape 1
+Quand un lot est selectionne, afficher un petit toolbar flottant SVG au-dessus du lot avec des icones :
+- Supprimer (poubelle)
+- Diviser en 2
+- Dupliquer
+- Ajouter clipart
 
-`isStepValid('parcel')` doit vérifier : `parentParcel` ET `requester.firstName` ET `requester.lastName` ET `requester.phone` non vides. Afficher un message d'erreur inline si les champs sont manquants.
+Cela remplace le bouton "Diviser" actuel et ajoute les actions manquantes.
 
-### 5. Ajouter la sauvegarde brouillon
+### 4. Systeme de cliparts
 
-Sauvegarder automatiquement le plan en `localStorage` (clé `subdivision-draft-{parcelNumber}`) à chaque modification de lots/roads. Restaurer au réouverture du dialog avec un message "Brouillon restauré". Ajouter un bouton "Effacer le brouillon".
+Creer un catalogue d'icones SVG inline (arbre, maison, immeuble, puits, cloture, portail, voiture/parking, antenne) que l'utilisateur peut placer sur un lot. Stockes comme `annotations` dans le type `SubdivisionLot` :
 
-### 6. Activer l'édition des espaces communs et servitudes
+```typescript
+interface LotAnnotation {
+  id: string;
+  type: 'tree' | 'house' | 'building' | 'well' | 'fence' | 'gate' | 'parking' | 'antenna';
+  position: Point2D; // relative to lot center
+  scale?: number;
+}
+```
 
-Ajouter un onglet ou une section dans `StepLotDesigner` permettant de créer/éditer des espaces communs (type, nom, surface) et des servitudes (type, lots affectés, largeur). Utiliser les types existants `SubdivisionCommonSpace` et `SubdivisionServitude`.
+L'utilisateur selectionne un clipart dans la palette puis clique sur le lot pour le placer. Les cliparts sont deplacables par drag.
 
-### 7. Fiabiliser l'export PNG
+### 5. Snap to grid et snap to edges
 
-Remplacer la sérialisation SVG manuelle par `html2canvas` (déjà utilisé ailleurs dans le projet pour la carte DRC). Cela gère correctement les polices, accents et styles CSS.
+Lors du drag de vertex/arete/lot :
+- Snap magnetique aux lignes de grille (si grille active)
+- Snap aux aretes des lots voisins (alignement)
+- Indicateur visuel (ligne pointillee bleue) quand un snap est actif
+- Tolerance de 8px
 
-## Fichiers impactés
+### 6. Zoom et pan
+
+Ajouter un systeme de viewBox dynamique :
+- Molette souris = zoom (min 0.5x, max 4x)
+- Clic-molette ou Space+drag = pan
+- Boutons +/- en overlay
+- Double-clic sur fond = reset vue
+
+### 7. Raccourcis clavier
+
+- `Delete` / `Backspace` = supprimer lot selectionne
+- `Ctrl+D` = dupliquer lot
+- `Ctrl+Z` / `Ctrl+Y` = undo/redo (deja connectes)
+- `Escape` = deselectionner / quitter mode
+- `G` = toggle grille
+- `S` = toggle snap
+
+### 8. Support tactile complet
+
+- Touch drag sur vertex = resize
+- Touch drag sur surface = move lot
+- Pinch = zoom
+- Two-finger drag = pan
+- Long press = menu contextuel
+
+### 9. Contraintes et feedback
+
+- Surface minimale configurable (defaut 50m²) — warning visuel si un lot passe en-dessous
+- Lots ne peuvent pas sortir de la parcelle mere (clamp vertices)
+- Detection de chevauchement entre lots (bordure rouge clignotante)
+
+## Structure technique
+
+```text
+LotCanvas.tsx (refactorise)
+├── Hooks extraits :
+│   ├── useCanvasViewport.ts  — zoom, pan, viewBox
+│   ├── useCanvasDrag.ts      — vertex/edge/polygon drag + snap
+│   └── useCanvasKeyboard.ts  — raccourcis clavier
+├── Composants SVG :
+│   ├── LotPolygon.tsx        — rendu d'un lot avec vertices/aretes
+│   ├── LotContextMenu.tsx    — toolbar flottant SVG
+│   ├── ClipartIcon.tsx       — rendu d'un clipart SVG
+│   └── ClipartPalette.tsx    — palette de selection (HTML overlay)
+└── Types :
+    └── types.ts              — LotAnnotation ajoutee
+```
+
+## Fichiers impactes
 
 | Action | Fichier |
-|--------|---------|
-| Modifié | `src/components/cadastral/subdivision/hooks/useSubdivisionForm.ts` — Paiement dynamique, référence unique, validation renforcée, brouillon localStorage |
-| Modifié | `src/components/cadastral/SubdivisionRequestDialog.tsx` — Intégration étape paiement, montant dynamique |
-| Modifié | `src/components/cadastral/subdivision/steps/StepParentParcel.tsx` — Validation champs demandeur |
-| Modifié | `src/components/cadastral/subdivision/steps/StepSummary.tsx` — Montant dynamique, motifs harmonisés |
-| Modifié | `src/components/cadastral/subdivision/steps/StepLotDesigner.tsx` — Section espaces communs et servitudes |
-| Modifié | `src/components/cadastral/subdivision/steps/StepPlanView.tsx` — Export PNG via html2canvas |
-| Modifié | `src/components/admin/AdminSubdivisionRequests.tsx` — Labels motifs harmonisés |
+|---|---|
+| Refactorise | `src/components/cadastral/subdivision/LotCanvas.tsx` — Drag lot, edge drag, zoom/pan, snap, menu contextuel, cliparts, touch |
+| Cree | `src/components/cadastral/subdivision/hooks/useCanvasViewport.ts` — Zoom/pan state |
+| Cree | `src/components/cadastral/subdivision/hooks/useCanvasDrag.ts` — Drag unifie (vertex/edge/polygon) + snap |
+| Cree | `src/components/cadastral/subdivision/hooks/useCanvasKeyboard.ts` — Raccourcis clavier |
+| Cree | `src/components/cadastral/subdivision/ClipartPalette.tsx` — Palette de cliparts |
+| Modifie | `src/components/cadastral/subdivision/types.ts` — Ajouter `LotAnnotation`, `annotations` sur `SubdivisionLot` |
+| Modifie | `src/components/cadastral/subdivision/steps/StepLotDesigner.tsx` — Connecter nouveau mode clipart, raccourcis, contraintes |
 
