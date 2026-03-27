@@ -29,8 +29,11 @@ import { useCadastralServices } from '@/hooks/useCadastralServices';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
 import { useToast } from '@/hooks/use-toast';
 import { usePaymentConfig } from '@/hooks/usePaymentConfig';
+import { useCurrencyConfig } from '@/hooks/useCurrencyConfig';
 import CadastralPaymentDialog from './CadastralPaymentDialog';
 import DiscountCodeInput from './DiscountCodeInput';
+import CurrencySelector from '@/components/payment/CurrencySelector';
+import { formatCurrency } from '@/utils/formatters';
 import { TVA_RATE } from '@/constants/billing';
 
 interface CadastralBillingPanelProps {
