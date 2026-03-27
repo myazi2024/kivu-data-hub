@@ -993,7 +993,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                         const normCx = allPts.reduce((s, p) => s + fromScreen(p.x, p.y).x, 0) / allPts.length;
                         const normCy = allPts.reduce((s, p) => s + fromScreen(p.x, p.y).y, 0) / allPts.length;
                         const angle = Math.atan2(svgMouse.y - rcy, svgMouse.x - rcx);
-                        setRotationDrag({ startAngle: angle, centerX: normCx, centerY: normCy, originalVertices: [...road.path], targetType: 'road', targetId: road.id });
+                        setRotationDrag({ startAngle: angle, centerX: normCx, centerY: normCy, svgCenterX: rcx, svgCenterY: rcy, originalVertices: [...road.path], targetType: 'road', targetId: road.id });
                         setRotationAngleDisplay(0);
                       }}
                     />
