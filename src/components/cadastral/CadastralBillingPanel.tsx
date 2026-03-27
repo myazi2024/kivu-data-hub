@@ -193,7 +193,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
         if (invoice) {
           toast({
             title: "Accès accordé",
-            description: "Services débloqués avec succès (mode développement)",
+            description: "Services débloqués avec succès (mode test)",
             duration: 3000
           });
           onPaymentSuccess(selectedServices.map(s => s.id));
