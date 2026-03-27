@@ -1567,7 +1567,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       {/* Keyboard shortcuts hint */}
       {!readOnly && (
         <div className="absolute bottom-1 left-1 text-[8px] text-muted-foreground/50 pointer-events-none">
-          Del: suppr • Ctrl+D: dupliquer • G: grille • S: snap • Espace: pan • Molette: zoom
+          Del: suppr • Ctrl+D: dupliquer • G: grille • S: snap • R: rotation • Flèches: déplacer • Espace: pan
         </div>
       )}
     </div>
