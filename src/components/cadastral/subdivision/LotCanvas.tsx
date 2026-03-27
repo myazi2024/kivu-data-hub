@@ -115,6 +115,37 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   // Drag system
   const drag = useCanvasDrag(lots, onUpdateLot, snapEnabled, showGrid);
 
+  // Detect shared edges between lots
+  const sharedEdges = useMemo(() => {
+    const TOLERANCE = 0.015;
+    const edges: EdgeInfo[] = [];
+    for (let i = 0; i < lots.length; i++) {
+      for (let ei = 0; ei < lots[i].vertices.length; ei++) {
+        const a1 = lots[i].vertices[ei];
+        const a2 = lots[i].vertices[(ei + 1) % lots[i].vertices.length];
+        for (let j = i + 1; j < lots.length; j++) {
+          for (let ej = 0; ej < lots[j].vertices.length; ej++) {
+            const b1 = lots[j].vertices[ej];
+            const b2 = lots[j].vertices[(ej + 1) % lots[j].vertices.length];
+            // Check if edges match (either direction)
+            const match1 = Math.abs(a1.x - b1.x) < TOLERANCE && Math.abs(a1.y - b1.y) < TOLERANCE &&
+                           Math.abs(a2.x - b2.x) < TOLERANCE && Math.abs(a2.y - b2.y) < TOLERANCE;
+            const match2 = Math.abs(a1.x - b2.x) < TOLERANCE && Math.abs(a1.y - b2.y) < TOLERANCE &&
+                           Math.abs(a2.x - b1.x) < TOLERANCE && Math.abs(a2.y - b1.y) < TOLERANCE;
+            if (match1 || match2) {
+              edges.push({
+                lotId1: lots[i].id, edgeIdx1: ei,
+                lotId2: lots[j].id, edgeIdx2: ej,
+                p1: a1, p2: a2, isShared: true,
+              });
+            }
+          }
+        }
+      }
+    }
+    return edges;
+  }, [lots]);
+
   // Reset drawing states when mode changes
   useEffect(() => {
     setLineDrawPoints([]);
@@ -123,6 +154,8 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     setLineDrawMultiMode(false);
     setLineChoiceMenu(null);
     setRoadEndpointDrag(null);
+    setHoveredEdge(null);
+    setEdgeContextMenu(null);
     if (mode !== 'clipart') {
       setShowClipartPalette(false);
       setClipartType(null);
