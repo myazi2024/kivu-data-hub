@@ -1,31 +1,42 @@
 
 
-# Suppression de l'auto-decoupage et ajout d'outils manuels pratiques
+# Ajustement visuel de la largeur des voies sur le canvas
 
-## Ce qui change
+## Probleme
 
-1. **Supprimer l'auto-decoupage** : Le panneau "Decouvpage automatique", le bouton toolbar, la fonction `autoSubdivide` dans geometry.ts, `generateRoads`, le type `AutoSubdivideOptions`, et `handleAutoSubdivide` dans le hook.
+La largeur d'une voie peut etre modifiee via l'input numerique dans le panneau lateral (quand la voie est selectionnee), mais l'utilisateur ne peut pas ajuster visuellement la largeur directement sur le canvas par drag. Ce n'est pas intuitif — l'utilisateur s'attend a pouvoir etirer les bords de la voie.
 
-2. **Creer le premier lot automatiquement** : Quand l'utilisateur arrive sur l'etape designer et qu'il n'y a aucun lot, creer automatiquement un lot unique couvrant toute la parcelle mere (utilisant `parentVertices`). L'utilisateur le decoupe ensuite manuellement avec l'outil "Tracer ligne".
+## Solution
 
-3. **Ajouter des outils pratiques manquants** :
+### 1. Poignees de largeur sur les voies selectionnees
 
-| Outil | Description |
-|-------|-------------|
-| **Ajouter un lot vide** | Bouton "+" dans la toolbar pour creer un petit lot rectangulaire au centre, que l'utilisateur positionne ensuite |
-| **Mesurer une distance** | Mode "regle" : clic sur deux points pour afficher la distance en metres sans tracer de ligne permanente |
-| **Aligner les lots** | Bouton pour aligner horizontalement ou verticalement les aretes selectionnees de lots adjacents |
-| **Repartir egalement** | Quand plusieurs lots sont selectionnes (Ctrl+clic), un bouton permet d'egaliser leurs surfaces en ajustant les limites communes |
+Quand une voie est selectionnee en mode `select`, afficher **deux poignees laterales** (petits carres) au milieu de la voie, perpendiculaires a la direction. L'utilisateur les drag pour elargir ou retrecir la voie. Le `widthM` est mis a jour en temps reel.
 
-4. **Ameliorer le message d'etat vide** : Remplacer "Utilisez l'auto-decoupage pour commencer" par un guide contextuel expliquant comment tracer une premiere ligne pour diviser la parcelle.
+```text
+     ◻ ← poignee haut (drag perpendiculaire)
+     |
+  ═══════  ← voie (polyline)
+     |
+     ◻ ← poignee bas
+```
+
+- Position : au milieu du segment central, decalees de `roadWidthPx/2` dans la direction perpendiculaire
+- Drag : mouvement projete sur la normale → delta converti en metres via `sideLength`
+- Contrainte : largeur min 2m, max 30m
+- Feedback : le rectangle de largeur se redimensionne en temps reel pendant le drag
+
+### 2. Slider de largeur dans le panneau lateral
+
+Remplacer l'input numerique seul par un **Slider + Input** combines pour un ajustement plus fluide (range 2-30m, step 0.5m). L'input reste pour la saisie precise.
+
+### 3. Preview de largeur pendant le trace
+
+Pendant le mode `drawLine` quand l'utilisateur choisit "Creer une voie", afficher la bande de largeur preset en preview semi-transparente autour de la ligne tracee (deja partiellement implemente, a verifier et corriger).
 
 ## Fichiers impactes
 
 | Action | Fichier |
 |--------|---------|
-| Modifie | `StepLotDesigner.tsx` — Supprimer panneau auto-decoupage, bouton toolbar, props `onAutoSubdivide`. Ajouter boutons "Ajouter lot", "Mesurer", "Aligner", "Egaliser". Creer lot initial si aucun lot. |
-| Modifie | `useSubdivisionForm.ts` — Supprimer `handleAutoSubdivide`, import `autoSubdivide`/`generateRoads`. Ajouter logique creation lot initial couvrant la parcelle. |
-| Modifie | `types.ts` — Supprimer `AutoSubdivideOptions` |
-| Modifie | `utils/geometry.ts` — Supprimer `autoSubdivide` et `generateRoads` |
-| Modifie | `LotCanvas.tsx` — Ajouter mode `measure` (regle) : affiche distance entre 2 points cliques sans creer d'objet |
+| Modifie | `LotCanvas.tsx` — Ajouter poignees de largeur (rects SVG) sur voie selectionnee, gerer le drag perpendiculaire, mettre a jour `widthM` en temps reel |
+| Modifie | `StepLotDesigner.tsx` — Remplacer input largeur par Slider + Input combines |
 
