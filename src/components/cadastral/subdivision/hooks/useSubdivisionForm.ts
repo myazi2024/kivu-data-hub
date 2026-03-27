@@ -4,9 +4,9 @@ import { User } from '@supabase/supabase-js';
 import {
   SubdivisionLot, SubdivisionRoad, SubdivisionCommonSpace, SubdivisionServitude,
   PlanElements, DEFAULT_PLAN_ELEMENTS, ParentParcelInfo, RequesterInfo,
-  SubdivisionStep, AutoSubdivideOptions, SubdivisionPlanData, Point2D
+  SubdivisionStep, SubdivisionPlanData, Point2D
 } from '../types';
-import { autoSubdivide, generateRoads, validateSubdivision, ValidationResult, gpsToNormalized } from '../utils/geometry';
+import { validateSubdivision, ValidationResult, gpsToNormalized, polygonArea, polygonPerimeter } from '../utils/geometry';
 
 const DRAFT_KEY_PREFIX = 'subdivision-draft-';
 
