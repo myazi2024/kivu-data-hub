@@ -108,7 +108,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   const [roadEndpointDrag, setRoadEndpointDrag] = useState<{roadId: string; pointIdx: number} | null>(null);
 
   // Road width drag state
-  const [roadWidthDrag, setRoadWidthDrag] = useState<{roadId: string; startY: number; startWidth: number} | null>(null);
+  const [roadWidthDrag, setRoadWidthDrag] = useState<{roadId: string; startX: number; startY: number; startWidth: number} | null>(null);
 
   // Context menu state
   const [contextMenuLotId, setContextMenuLotId] = useState<string | null>(null);
