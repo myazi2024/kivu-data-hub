@@ -819,6 +819,8 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
           </g>
         )}
 
+        {/* Layer order: selected element type renders last (on top) */}
+        {selectedRoadId ? <></> : null}
         {/* Roads — polygon rendering with clear borders */}
         {showRoads && [...roads].sort((a, b) => (a.id === selectedRoadId ? 1 : 0) - (b.id === selectedRoadId ? 1 : 0)).map(road => {
           if (road.path.length < 2) return null;
