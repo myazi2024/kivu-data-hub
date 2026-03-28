@@ -201,7 +201,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       setClipartType(null);
     },
     onBackspace: () => {
-      if (mode === 'drawLine' && lineDrawMultiMode && lineDrawPoints.length > 1) {
+      if ((mode === 'drawLine' || mode === 'drawRoad') && lineDrawMultiMode && lineDrawPoints.length > 1) {
         setLineDrawPoints(prev => prev.slice(0, -1));
       }
     },
