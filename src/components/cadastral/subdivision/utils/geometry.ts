@@ -395,6 +395,87 @@ export function getAllRoadIntersectionPoints(roads: { path: Point2D[] }[]): Poin
 }
 
 /**
+ * Snap nearby lot vertices that are within 0.5m of each other or of an edge.
+ * Returns { lots, changed } — lots with snapped vertices and recalculated areas.
+ */
+export function snapNearbyLotVertices(
+  lots: SubdivisionLot[],
+  parentAreaSqm: number,
+  parentVertices?: Point2D[]
+): { lots: SubdivisionLot[]; changed: boolean } {
+  const sideLength = Math.sqrt(parentAreaSqm);
+  const threshold = 0.5 / sideLength; // 0.5m in normalized coords
+  const parentPoly = parentVertices && parentVertices.length >= 3
+    ? parentVertices
+    : [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }];
+  const parentNormArea = polygonArea(parentPoly);
+
+  // Deep clone lots
+  const snapped: SubdivisionLot[] = lots.map(l => ({
+    ...l,
+    vertices: l.vertices.map(v => ({ ...v })),
+  }));
+
+  let changed = false;
+
+  // 1. Snap vertex-to-vertex across lots
+  for (let a = 0; a < snapped.length; a++) {
+    for (let b = a + 1; b < snapped.length; b++) {
+      for (let i = 0; i < snapped[a].vertices.length; i++) {
+        for (let j = 0; j < snapped[b].vertices.length; j++) {
+          const va = snapped[a].vertices[i];
+          const vb = snapped[b].vertices[j];
+          const d = distance(va, vb);
+          if (d > 0 && d < threshold) {
+            const mid = { x: (va.x + vb.x) / 2, y: (va.y + vb.y) / 2 };
+            snapped[a].vertices[i] = { ...mid };
+            snapped[b].vertices[j] = { ...mid };
+            changed = true;
+          }
+        }
+      }
+    }
+  }
+
+  // 2. Snap vertex-to-edge across lots
+  for (let a = 0; a < snapped.length; a++) {
+    for (let b = 0; b < snapped.length; b++) {
+      if (a === b) continue;
+      const polyB = snapped[b].vertices;
+      for (let i = 0; i < snapped[a].vertices.length; i++) {
+        const va = snapped[a].vertices[i];
+        for (let e = 0; e < polyB.length; e++) {
+          const e1 = polyB[e];
+          const e2 = polyB[(e + 1) % polyB.length];
+          const d = pointToSegmentDistance(va, e1, e2);
+          if (d > 1e-8 && d < threshold) {
+            // Project onto edge
+            const dx = e2.x - e1.x, dy = e2.y - e1.y;
+            const lenSq = dx * dx + dy * dy;
+            if (lenSq === 0) continue;
+            const t = Math.max(0, Math.min(1, ((va.x - e1.x) * dx + (va.y - e1.y) * dy) / lenSq));
+            const proj = { x: e1.x + t * dx, y: e1.y + t * dy };
+            snapped[a].vertices[i] = { ...proj };
+            changed = true;
+          }
+        }
+      }
+    }
+  }
+
+  // Recalculate area and perimeter for changed lots
+  if (changed) {
+    for (const lot of snapped) {
+      const normArea = polygonArea(lot.vertices);
+      lot.areaSqm = Math.round((normArea / parentNormArea) * parentAreaSqm);
+      lot.perimeterM = Math.round(polygonPerimeter(lot.vertices, sideLength));
+    }
+  }
+
+  return { lots: snapped, changed };
+}
+
+/**
  * Validate subdivision plan
  */
 export interface ValidationResult {

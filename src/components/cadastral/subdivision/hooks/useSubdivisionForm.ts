@@ -6,7 +6,7 @@ import {
   PlanElements, DEFAULT_PLAN_ELEMENTS, ParentParcelInfo, RequesterInfo,
   SubdivisionStep, SubdivisionPlanData, Point2D
 } from '../types';
-import { validateSubdivision, ValidationResult, gpsToNormalized, polygonArea, polygonPerimeter } from '../utils/geometry';
+import { validateSubdivision, ValidationResult, gpsToNormalized, polygonArea, polygonPerimeter, snapNearbyLotVertices } from '../utils/geometry';
 
 const DRAFT_KEY_PREFIX = 'subdivision-draft-';
 
@@ -287,10 +287,17 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   // Validate
   const runValidation = useCallback(() => {
     if (!parentParcel) return;
-    const result = validateSubdivision(lots, parentParcel.areaSqm);
+    
+    // Snap nearby vertices (< 0.5m) before validating
+    const { lots: snappedLots, changed } = snapNearbyLotVertices(lots, parentParcel.areaSqm, parentVertices);
+    if (changed) {
+      setLots(snappedLots);
+    }
+    
+    const result = validateSubdivision(snappedLots, parentParcel.areaSqm);
     setValidation(result);
     return result;
-  }, [lots, parentParcel]);
+  }, [lots, parentParcel, parentVertices]);
   
   useEffect(() => {
     if (lots.length > 0 && parentParcel) {
