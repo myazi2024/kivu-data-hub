@@ -415,7 +415,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     const cutStart = path[0];
     const cutEnd = path[path.length - 1];
 
-    // 1. Create the road
+    // 1. Create the road (affectedLotIds will be set below)
     const newRoad: SubdivisionRoad = {
       id: `road-draw-${Date.now()}`,
       name: `Voie ${roads.length + 1}`,
@@ -423,6 +423,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       surfaceType: roadPresetSurface,
       isExisting: false,
       path,
+      affectedLotIds: [],
     };
     // Split existing roads at intersection points with the new road
     const allRoads = [...roads, newRoad];
