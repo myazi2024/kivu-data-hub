@@ -12,7 +12,7 @@ interface ParcelSide {
   [key: string]: any;
 }
 
-export type CanvasMode = 'select' | 'drawLine' | 'clipart' | 'selectEdge';
+export type CanvasMode = 'select' | 'drawLine' | 'drawRoad' | 'clipart' | 'selectEdge';
 
 export interface EdgeInfo {
   lotId1: string;
