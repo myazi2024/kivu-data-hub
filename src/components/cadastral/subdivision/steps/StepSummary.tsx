@@ -7,7 +7,7 @@ import {
   FileText, MapPin, User, Grid3X3, Loader2, 
   CheckCircle, Copy, AlertTriangle, CreditCard
 } from 'lucide-react';
-import { SubdivisionLot, SubdivisionRoad, ParentParcelInfo, RequesterInfo, USAGE_LABELS, LOT_COLORS } from '../types';
+import { SubdivisionLot, SubdivisionRoad, ParentParcelInfo, RequesterInfo, USAGE_LABELS, LOT_COLORS, FeeBreakdown } from '../types';
 import { ValidationResult } from '../utils/geometry';
 import { SUBDIVISION_PURPOSE_LABELS } from '../constants';
 
