@@ -819,7 +819,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
           </g>
         )}
 
-        {/* Roads — polyline rendering */}
+        {/* Roads — polygon rendering with clear borders */}
         {showRoads && roads.map(road => {
           if (road.path.length < 2) return null;
           const pathPoints = road.path.map(p => toScreen(p));
@@ -827,9 +827,30 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
           const roadWidthPx = Math.max(4, (road.widthM / sideLength) * (CANVAS_W - 2 * PADDING));
           const isExisting = (road as any).isExisting;
           const isRoadSelected = road.id === selectedRoadId;
+
+          // Build road polygon (rectangle) from first and last path points
+          const p0 = pathPoints[0];
+          const pN = pathPoints[pathPoints.length - 1];
+          const rdx = pN.x - p0.x;
+          const rdy = pN.y - p0.y;
+          const rlen = Math.sqrt(rdx * rdx + rdy * rdy) || 1;
+          const nx = -rdy / rlen; // normal x
+          const ny = rdx / rlen;  // normal y
+          const halfW = roadWidthPx / 2;
+
+          // Four corners of the road footprint
+          const TL = { x: p0.x + nx * halfW, y: p0.y + ny * halfW };
+          const TR = { x: pN.x + nx * halfW, y: pN.y + ny * halfW };
+          const BR = { x: pN.x - nx * halfW, y: pN.y - ny * halfW };
+          const BL = { x: p0.x - nx * halfW, y: p0.y - ny * halfW };
+
+          const polygonStr = `${TL.x},${TL.y} ${TR.x},${TR.y} ${BR.x},${BR.y} ${BL.x},${BL.y}`;
+          const borderColorBase = isRoadSelected ? 'hsl(var(--primary))' : isExisting ? '#92400e' : '#6b7280';
+          const fillColor = isRoadSelected ? 'hsl(var(--primary))' : isExisting ? '#d4a574' : '#e5e7eb';
           
           return (
             <g key={road.id}>
+              {/* Invisible wide hit area for click */}
               <polyline
                 points={polylineStr}
                 fill="none" stroke="transparent" strokeWidth={Math.max(20, roadWidthPx + 10)}
@@ -837,62 +858,77 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 className={readOnly || mode !== 'select' ? '' : 'cursor-pointer'}
                 onClick={e => !readOnly && handleRoadClick(road.id, e)}
               />
-              <polyline
-                points={polylineStr}
-                fill="none"
-                stroke={isRoadSelected ? 'hsl(var(--primary))' : isExisting ? '#92400e' : '#9ca3af'}
-                strokeWidth={roadWidthPx}
-                strokeLinecap="round" strokeLinejoin="round"
-                strokeDasharray={isExisting ? 'none' : '6 3'}
-                opacity={isRoadSelected ? 0.35 : isExisting ? 0.25 : 0.15}
-                className="pointer-events-none"
-              />
-              <polyline
-                points={polylineStr}
-                fill="none"
-                stroke={isRoadSelected ? 'hsl(var(--primary))' : isExisting ? '#92400e' : '#9ca3af'}
-                strokeWidth={isExisting ? 3 : 2}
-                strokeLinecap="round" strokeLinejoin="round"
-                strokeDasharray={isExisting ? 'none' : '6 3'}
-                opacity={isRoadSelected ? 0.9 : isExisting ? 0.7 : 0.5}
+              {/* Road fill polygon */}
+              <polygon
+                points={polygonStr}
+                fill={fillColor}
+                fillOpacity={isRoadSelected ? 0.2 : isExisting ? 0.2 : 0.12}
+                stroke="none"
                 className={readOnly || mode !== 'select' ? 'pointer-events-none' : 'cursor-pointer'}
                 onClick={e => !readOnly && handleRoadClick(road.id, e)}
               />
+              {/* Left border line (TL → TR) */}
+              <line
+                x1={TL.x} y1={TL.y} x2={TR.x} y2={TR.y}
+                stroke={borderColorBase}
+                strokeWidth={isRoadSelected ? 2 : 1.5}
+                strokeDasharray={isExisting ? 'none' : '6 3'}
+                opacity={isRoadSelected ? 0.9 : isExisting ? 0.7 : 0.6}
+                className="pointer-events-none"
+              />
+              {/* Right border line (BL → BR) */}
+              <line
+                x1={BL.x} y1={BL.y} x2={BR.x} y2={BR.y}
+                stroke={borderColorBase}
+                strokeWidth={isRoadSelected ? 2 : 1.5}
+                strokeDasharray={isExisting ? 'none' : '6 3'}
+                opacity={isRoadSelected ? 0.9 : isExisting ? 0.7 : 0.6}
+                className="pointer-events-none"
+              />
+              {/* Selection glow */}
               {isRoadSelected && (
-                <polyline
-                  points={polylineStr}
+                <polygon
+                  points={polygonStr}
                   fill="none"
                   stroke="hsl(var(--primary))"
-                  strokeWidth={roadWidthPx + 4}
-                  strokeLinecap="round" strokeLinejoin="round"
-                  opacity={0.12} className="pointer-events-none"
+                  strokeWidth={2}
+                  opacity={0.3} className="pointer-events-none"
                 />
               )}
-              {/* Road label at midpoint */}
+              {/* Road label: name along axis + width perpendicular */}
               {(() => {
-                const midIdx = Math.floor(pathPoints.length / 2);
-                const p1 = pathPoints[Math.max(0, midIdx - 1)];
-                const p2 = pathPoints[Math.min(pathPoints.length - 1, midIdx)];
-                const mx = (p1.x + p2.x) / 2;
-                const my = (p1.y + p2.y) / 2;
-                const dx = p2.y - p1.y;
-                const dy = p1.x - p2.x;
-                const len = Math.sqrt(dx * dx + dy * dy) || 1;
-                const off = Math.max(roadWidthPx / 2 + 8, 14);
-                const ox = (dx / len) * off;
-                const oy = (dy / len) * off;
+                const mx = (p0.x + pN.x) / 2;
+                const my = (p0.y + pN.y) / 2;
+                // Angle of road axis in degrees
+                let axisAngleDeg = Math.atan2(rdy, rdx) * (180 / Math.PI);
+                // Keep text readable (not upside down)
+                if (axisAngleDeg > 90) axisAngleDeg -= 180;
+                if (axisAngleDeg < -90) axisAngleDeg += 180;
+                // Perpendicular angle for width label
+                const perpAngleDeg = axisAngleDeg + 90;
+
                 return (
                   <g className="pointer-events-none select-none">
-                    <rect x={mx + ox - 35} y={my + oy - 7} width={70} height={14} rx={3}
-                      fill={isRoadSelected ? 'hsl(var(--primary))' : isExisting ? 'hsl(30, 70%, 95%)' : 'hsl(var(--background))'}
-                      fillOpacity={isRoadSelected ? 0.15 : 0.9}
-                      stroke={isRoadSelected ? 'hsl(var(--primary))' : isExisting ? '#92400e' : '#9ca3af'}
-                      strokeWidth={isRoadSelected ? 1.5 : 0.5} strokeOpacity={isRoadSelected ? 0.8 : 0.5}
-                    />
-                    <text x={mx + ox} y={my + oy} textAnchor="middle" dominantBaseline="middle" fontSize={7}
+                    {/* Road name along the axis */}
+                    <text
+                      x={mx} y={my - 5}
+                      textAnchor="middle" dominantBaseline="middle"
+                      fontSize={6.5}
                       fontWeight={isRoadSelected || isExisting ? 'bold' : 'normal'}
-                      fill={isRoadSelected ? 'hsl(var(--primary))' : isExisting ? '#92400e' : '#6b7280'}>
-                      {road.name} ({road.widthM}m)
+                      fill={isRoadSelected ? 'hsl(var(--primary))' : isExisting ? '#92400e' : '#6b7280'}
+                      transform={`rotate(${axisAngleDeg}, ${mx}, ${my - 5})`}
+                    >
+                      {road.name}
+                    </text>
+                    {/* Width measurement perpendicular */}
+                    <text
+                      x={mx} y={my + 5}
+                      textAnchor="middle" dominantBaseline="middle"
+                      fontSize={7} fontWeight="bold"
+                      fill={isRoadSelected ? 'hsl(var(--primary))' : isExisting ? '#92400e' : '#4b5563'}
+                      transform={`rotate(${perpAngleDeg}, ${mx}, ${my + 5})`}
+                    >
+                      {road.widthM}m
                     </text>
                   </g>
                 );
