@@ -183,7 +183,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         setEdgeContextMenu(null);
         return;
       }
-      if (mode === 'drawLine' && lineDrawPoints.length > 0) {
+      if ((mode === 'drawLine' || mode === 'drawRoad') && lineDrawPoints.length > 0) {
         setLineDrawPoints([]);
         setLineDrawMousePos(null);
         setIsLineDragging(false);
