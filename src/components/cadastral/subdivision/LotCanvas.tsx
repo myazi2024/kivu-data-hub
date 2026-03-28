@@ -102,8 +102,6 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   const [lineDrawMousePos, setLineDrawMousePos] = useState<Point2D | null>(null);
   const [isLineDragging, setIsLineDragging] = useState(false);
   const [lineDrawMultiMode, setLineDrawMultiMode] = useState(false);
-  // Post-trace choice menu
-  const [lineChoiceMenu, setLineChoiceMenu] = useState<{ path: Point2D[]; screenPos: Point2D } | null>(null);
 
   // Road endpoint drag state
   const [roadEndpointDrag, setRoadEndpointDrag] = useState<{roadId: string; pointIdx: number} | null>(null);
