@@ -590,6 +590,12 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       vertices: shrunk2, areaSqm: computeArea(shrunk2),
     };
 
+    // Store affectedLotIds on the new road for future width adjustments
+    const updatedRoads = splitRoads.map(r =>
+      r.id === newRoad.id ? { ...r, affectedLotIds: [newLot1.id, newLot2.id] } : r
+    );
+    setRoads(updatedRoads);
+
     setLots(lots.map(l => l.id === targetLot!.id ? newLot1 : l).concat(newLot2));
     setSelectedLotId(newLot1.id);
     setCanvasMode('select');
