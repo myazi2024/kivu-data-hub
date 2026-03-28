@@ -702,8 +702,12 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
         const ny = edx / edgeLen;
         const oldHalfNorm = (oldWidthM / sideLength) / 2;
         const TOLERANCE = oldHalfNorm + 0.025;
+        const hasAffectedIds = road.affectedLotIds && road.affectedLotIds.length > 0;
 
         const updatedLots = lots.map(lot => {
+          // If affectedLotIds is set, only adjust those lots; otherwise fallback to proximity
+          if (hasAffectedIds && !road.affectedLotIds!.includes(lot.id)) return lot;
+
           const centroid = {
             x: lot.vertices.reduce((s, v) => s + v.x, 0) / lot.vertices.length,
             y: lot.vertices.reduce((s, v) => s + v.y, 0) / lot.vertices.length,
