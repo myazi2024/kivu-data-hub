@@ -6,7 +6,7 @@ import {
   PlanElements, DEFAULT_PLAN_ELEMENTS, ParentParcelInfo, RequesterInfo,
   SubdivisionStep, SubdivisionPlanData, Point2D
 } from '../types';
-import { validateSubdivision, ValidationResult, gpsToNormalized, polygonArea, polygonPerimeter } from '../utils/geometry';
+import { validateSubdivision, ValidationResult, gpsToNormalized, polygonArea, polygonPerimeter, snapNearbyLotVertices } from '../utils/geometry';
 
 const DRAFT_KEY_PREFIX = 'subdivision-draft-';
 
