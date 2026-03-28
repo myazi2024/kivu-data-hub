@@ -1379,6 +1379,11 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
             </g>
           );
         })}
+            </g>
+          );
+
+          return selectedRoadId ? <>{lotsBlock}{roadsBlock}</> : <>{roadsBlock}{lotsBlock}</>;
+        })()}
 
         {/* Merge button */}
         {selectedLotIds.length >= 2 && !readOnly && onMergeLots && mode === 'select' && (() => {
