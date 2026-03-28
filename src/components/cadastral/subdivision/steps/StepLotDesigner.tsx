@@ -485,8 +485,76 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   }, [lots, setLots, roads, setRoads, parentParcel, parentVertices, roadPresetWidth, roadPresetSurface]);
 
   const handleUpdateRoad = useCallback((roadId: string, updates: Partial<SubdivisionRoad>) => {
+    const road = roads.find(r => r.id === roadId);
+    if (!road) return;
+
+    const newWidthM = updates.widthM;
+    const oldWidthM = road.widthM;
+
+    // If width changed, adjust adjacent lots
+    if (newWidthM !== undefined && newWidthM !== oldWidthM && road.path.length >= 2) {
+      const sideLength = Math.sqrt(parentParcel?.areaSqm || 1000);
+      const deltaHalfNorm = ((newWidthM - oldWidthM) / 2) / sideLength;
+
+      // Road direction and normal
+      const p0 = road.path[0];
+      const p1 = road.path[road.path.length - 1];
+      const edx = p1.x - p0.x;
+      const edy = p1.y - p0.y;
+      const edgeLen = Math.sqrt(edx * edx + edy * edy);
+      if (edgeLen > 0.001) {
+        const nx = -edy / edgeLen;
+        const ny = edx / edgeLen;
+        const oldHalfNorm = (oldWidthM / sideLength) / 2;
+        const TOLERANCE = oldHalfNorm + 0.025;
+
+        const updatedLots = lots.map(lot => {
+          const centroid = {
+            x: lot.vertices.reduce((s, v) => s + v.x, 0) / lot.vertices.length,
+            y: lot.vertices.reduce((s, v) => s + v.y, 0) / lot.vertices.length,
+          };
+          const side = (centroid.x - p0.x) * nx + (centroid.y - p0.y) * ny;
+          const pushDir = side > 0 ? 1 : -1;
+
+          let modified = false;
+          const newVertices = lot.vertices.map(v => {
+            const vdx = v.x - p0.x;
+            const vdy = v.y - p0.y;
+            const perpDist = Math.abs(vdx * nx + vdy * ny);
+            if (perpDist < TOLERANCE) {
+              modified = true;
+              return {
+                x: v.x + nx * pushDir * deltaHalfNorm,
+                y: v.y + ny * pushDir * deltaHalfNorm,
+              };
+            }
+            return v;
+          });
+
+          if (!modified) return lot;
+
+          const parentPoly = parentVertices && parentVertices.length >= 3
+            ? parentVertices
+            : [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }];
+          const parentNormArea = polygonArea(parentPoly);
+          const normArea = polygonArea(newVertices);
+          const areaSqm = Math.round((normArea / parentNormArea) * (parentParcel?.areaSqm || 1000));
+          const perimeterM = Math.round(newVertices.reduce((sum, v, i) => {
+            const next = newVertices[(i + 1) % newVertices.length];
+            const dx2 = (next.x - v.x) * sideLength;
+            const dy2 = (next.y - v.y) * sideLength;
+            return sum + Math.sqrt(dx2 * dx2 + dy2 * dy2);
+          }, 0));
+
+          return { ...lot, vertices: newVertices, areaSqm, perimeterM };
+        });
+
+        setLots(updatedLots);
+      }
+    }
+
     setRoads(roads.map(r => r.id === roadId ? { ...r, ...updates } : r));
-  }, [roads, setRoads]);
+  }, [roads, setRoads, lots, setLots, parentParcel, parentVertices]);
 
   const totalArea = lots.reduce((s, l) => s + l.areaSqm, 0);
   const parentArea = parentParcel?.areaSqm || 0;
