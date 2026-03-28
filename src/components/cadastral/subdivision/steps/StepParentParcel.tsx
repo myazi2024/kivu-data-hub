@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { MapPin, User, Loader2, CheckCircle, Info } from 'lucide-react';
+import { MapPin, Loader2, CheckCircle, Info } from 'lucide-react';
 import { ParentParcelInfo, RequesterInfo } from '../types';
 import { SUBDIVISION_PURPOSE_LABELS } from '../constants';
 
@@ -30,8 +30,6 @@ const StepParentParcel: React.FC<StepParentParcelProps> = ({
       </div>
     );
   }
-
-  const displayName = [requester.firstName, requester.lastName].filter(Boolean).join(' ') || '—';
 
   return (
     <div className="space-y-4">
@@ -84,55 +82,28 @@ const StepParentParcel: React.FC<StepParentParcelProps> = ({
       
       <Separator />
       
-      {/* Requester info - read-only profile + quality selector */}
+      {/* Qualité du demandeur */}
       <Card>
-        <CardContent className="pt-4 space-y-3">
-          <div className="flex items-center gap-2 mb-2">
-            <User className="h-4 w-4 text-primary" />
-            <h3 className="font-semibold text-sm">Demandeur</h3>
-            <Badge variant="secondary" className="text-[10px] bg-green-50 text-green-700 border-green-200">
-              <CheckCircle className="h-3 w-3 mr-1" /> Connecté
-            </Badge>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div>
-              <span className="text-muted-foreground text-xs">Nom complet</span>
-              <p className="font-medium">{displayName}</p>
-            </div>
-            <div>
-              <span className="text-muted-foreground text-xs">Email</span>
-              <p className="font-medium">{requester.email || '—'}</p>
-            </div>
-            {requester.phone && (
-              <div>
-                <span className="text-muted-foreground text-xs">Téléphone</span>
-                <p className="font-medium">{requester.phone}</p>
-              </div>
-            )}
-          </div>
-          
-          <div className="pt-1">
-            <Label className="text-xs">Qualité du demandeur</Label>
-            <Select value={requester.type} onValueChange={(v: any) => onRequesterChange({ ...requester, type: v })}>
-              <SelectTrigger className="mt-1 h-9 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="owner">Propriétaire</SelectItem>
-                <SelectItem value="mandatary">Mandataire</SelectItem>
-                <SelectItem value="notary">Notaire</SelectItem>
-                <SelectItem value="other">Autre</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <CardContent className="pt-4">
+          <Label className="text-xs">Qualité du demandeur <span className="text-destructive">*</span></Label>
+          <Select value={requester.type} onValueChange={(v: any) => onRequesterChange({ ...requester, type: v })}>
+            <SelectTrigger className="mt-1 h-9 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="owner">Propriétaire</SelectItem>
+              <SelectItem value="mandatary">Mandataire</SelectItem>
+              <SelectItem value="notary">Notaire</SelectItem>
+              <SelectItem value="other">Autre</SelectItem>
+            </SelectContent>
+          </Select>
         </CardContent>
       </Card>
       
       {/* Purpose */}
       <Card>
         <CardContent className="pt-4">
-          <Label className="text-xs">Motif du lotissement</Label>
+          <Label className="text-xs">Motif du lotissement <span className="text-destructive">*</span></Label>
           <Select value={purpose || '_none'} onValueChange={(v) => onPurposeChange(v === '_none' ? '' : v)}>
             <SelectTrigger className="mt-1 h-9 text-sm">
               <SelectValue placeholder="Sélectionnez le motif" />
