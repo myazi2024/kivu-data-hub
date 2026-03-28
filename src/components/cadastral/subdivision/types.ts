@@ -57,6 +57,8 @@ export interface SubdivisionRoad {
   isExisting: boolean;
   // Path as series of points (normalized 0-1)
   path: Point2D[];
+  // IDs of lots that border this road and should be adjusted when width changes
+  affectedLotIds?: string[];
 }
 
 export interface SubdivisionCommonSpace {

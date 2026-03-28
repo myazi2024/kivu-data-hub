@@ -415,7 +415,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     const cutStart = path[0];
     const cutEnd = path[path.length - 1];
 
-    // 1. Create the road
+    // 1. Create the road (affectedLotIds will be set below)
     const newRoad: SubdivisionRoad = {
       id: `road-draw-${Date.now()}`,
       name: `Voie ${roads.length + 1}`,
@@ -423,6 +423,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       surfaceType: roadPresetSurface,
       isExisting: false,
       path,
+      affectedLotIds: [],
     };
     // Split existing roads at intersection points with the new road
     const allRoads = [...roads, newRoad];
@@ -464,6 +465,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       const TOLERANCE = 0.02;
 
       let anyBordering = false;
+      const borderingLotIds: string[] = [];
       const updatedLots = lots.map(lot => {
         const nearCount = lot.vertices.filter(v => {
           const perpDist = Math.abs((v.x - cutStart.x) * nx + (v.y - cutStart.y) * ny);
@@ -472,6 +474,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
         if (nearCount < 2) return lot;
 
         anyBordering = true;
+        borderingLotIds.push(lot.id);
         const centroid = {
           x: lot.vertices.reduce((s, v) => s + v.x, 0) / lot.vertices.length,
           y: lot.vertices.reduce((s, v) => s + v.y, 0) / lot.vertices.length,
@@ -504,6 +507,11 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       });
 
       if (anyBordering) {
+        // Store affectedLotIds on the new road
+        const updatedRoads = splitRoads.map(r =>
+          r.id === newRoad.id ? { ...r, affectedLotIds: borderingLotIds } : r
+        );
+        setRoads(updatedRoads);
         setLots(updatedLots);
       }
       setCanvasMode('select');
@@ -582,6 +590,12 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       vertices: shrunk2, areaSqm: computeArea(shrunk2),
     };
 
+    // Store affectedLotIds on the new road for future width adjustments
+    const updatedRoads = splitRoads.map(r =>
+      r.id === newRoad.id ? { ...r, affectedLotIds: [newLot1.id, newLot2.id] } : r
+    );
+    setRoads(updatedRoads);
+
     setLots(lots.map(l => l.id === targetLot!.id ? newLot1 : l).concat(newLot2));
     setSelectedLotId(newLot1.id);
     setCanvasMode('select');
@@ -608,6 +622,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       surfaceType: roadPresetSurface,
       isExisting: false,
       path: [edge.p1, edge.p2],
+      affectedLotIds: [edge.lotId1, ...(edge.lotId2 ? [edge.lotId2] : [])],
     };
 
     // Shrink adjacent lots
@@ -687,8 +702,12 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
         const ny = edx / edgeLen;
         const oldHalfNorm = (oldWidthM / sideLength) / 2;
         const TOLERANCE = oldHalfNorm + 0.025;
+        const hasAffectedIds = road.affectedLotIds && road.affectedLotIds.length > 0;
 
         const updatedLots = lots.map(lot => {
+          // If affectedLotIds is set, only adjust those lots; otherwise fallback to proximity
+          if (hasAffectedIds && !road.affectedLotIds!.includes(lot.id)) return lot;
+
           const centroid = {
             x: lot.vertices.reduce((s, v) => s + v.x, 0) / lot.vertices.length,
             y: lot.vertices.reduce((s, v) => s + v.y, 0) / lot.vertices.length,

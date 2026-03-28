@@ -108,7 +108,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   const [roadEndpointDrag, setRoadEndpointDrag] = useState<{roadId: string; pointIdx: number} | null>(null);
 
   // Road width drag state
-  const [roadWidthDrag, setRoadWidthDrag] = useState<{roadId: string; startY: number; startWidth: number} | null>(null);
+  const [roadWidthDrag, setRoadWidthDrag] = useState<{roadId: string; startX: number; startY: number; startWidth: number} | null>(null);
 
   // Context menu state
   const [contextMenuLotId, setContextMenuLotId] = useState<string | null>(null);
@@ -471,18 +471,22 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         const rdx = p1.x - p0.x;
         const rdy = p1.y - p0.y;
         const rlen = Math.sqrt(rdx * rdx + rdy * rdy) || 1;
+        // Normal (perpendicular) direction in screen space
         const nx = -rdy / rlen;
         const ny = rdx / rlen;
-        const deltaPx = (pos.x - roadWidthDrag.startY) * nx + (pos.y - roadWidthDrag.startY) * ny;
+
+        // Project mouse delta onto the road normal for proper angled roads
+        const deltaX = e.clientX - roadWidthDrag.startX;
+        const deltaY = e.clientY - roadWidthDrag.startY;
+        const projectedPx = deltaX * nx + deltaY * ny;
+
         const svg = svgRef.current;
         if (svg) {
           const rect = svg.getBoundingClientRect();
-          const scaleY = (CANVAS_H / viewport.viewport.zoom) / rect.height;
-          const mouseScreenY = e.clientY;
-          const deltaScreenPx = mouseScreenY - roadWidthDrag.startY;
-          const deltaNorm = Math.abs(deltaScreenPx * scaleY) / (CANVAS_H - 2 * PADDING);
+          const scale = (CANVAS_W / viewport.viewport.zoom) / rect.width;
+          const deltaNorm = Math.abs(projectedPx * scale) / (CANVAS_W - 2 * PADDING);
           const deltaM = deltaNorm * sideLength;
-          const sign = deltaScreenPx > 0 ? 1 : -1;
+          const sign = projectedPx > 0 ? 1 : -1;
           const newWidth = Math.max(2, Math.min(30, roadWidthDrag.startWidth + sign * deltaM * 2));
           onUpdateRoad(roadWidthDrag.roadId, { widthM: Math.round(newWidth * 2) / 2 });
         }
@@ -964,7 +968,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                       className="cursor-ns-resize"
                       onMouseDown={e => {
                         e.stopPropagation();
-                        setRoadWidthDrag({ roadId: road.id, startY: e.clientY, startWidth: road.widthM });
+                        setRoadWidthDrag({ roadId: road.id, startX: e.clientX, startY: e.clientY, startWidth: road.widthM });
                       }}
                     />
                     {/* Bottom handle */}
@@ -976,7 +980,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                       className="cursor-ns-resize"
                       onMouseDown={e => {
                         e.stopPropagation();
-                        setRoadWidthDrag({ roadId: road.id, startY: e.clientY, startWidth: road.widthM });
+                        setRoadWidthDrag({ roadId: road.id, startX: e.clientX, startY: e.clientY, startWidth: road.widthM });
                       }}
                     />
                   </>
