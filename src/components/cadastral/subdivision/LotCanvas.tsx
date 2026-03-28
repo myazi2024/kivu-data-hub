@@ -584,10 +584,10 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   }, [readOnly, mode, getSvgPos, fromScreen, lots, onSelectLot, onSelectRoad, clipartType, onUpdateLotAnnotations, drag, isLineDragging, lineDrawMultiMode]);
 
   const handleCanvasDoubleClick = useCallback((e: React.MouseEvent) => {
-    if (mode === 'drawLine' && lineDrawPoints.length >= 2) {
+    if ((mode === 'drawLine' || mode === 'drawRoad') && lineDrawPoints.length >= 2) {
       e.preventDefault();
       e.stopPropagation();
-      showLineChoice(lineDrawPoints);
+      finishLineDraw(lineDrawPoints);
       setLineDrawPoints([]);
       setLineDrawMousePos(null);
       setLineDrawMultiMode(false);
@@ -596,7 +596,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     if (mode === 'select') {
       viewport.resetView();
     }
-  }, [mode, lineDrawPoints, showLineChoice, viewport]);
+  }, [mode, lineDrawPoints, finishLineDraw, viewport]);
 
   const handleLotClick = useCallback((lotId: string, e: React.MouseEvent) => {
     if (mode === 'clipart') return;
