@@ -208,6 +208,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                 referenceNumber={form.referenceNumber}
                 submitting={form.submitting}
                 submissionFee={form.submissionFee}
+                feeBreakdown={form.feeBreakdown}
                 onSubmit={handleSubmit}
               />
             )}
