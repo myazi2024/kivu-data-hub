@@ -1490,57 +1490,6 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
           );
         })()}
 
-        {/* Post-trace choice menu */}
-        {lineChoiceMenu && (() => {
-          const { path, screenPos } = lineChoiceMenu;
-          // Draw the completed line
-          const screenPts = path.map(p => toScreen(p));
-          const polyStr = screenPts.map(p => `${p.x},${p.y}`).join(' ');
-          const menuX = screenPos.x + 15;
-          const menuY = screenPos.y - 30;
-
-          return (
-            <g>
-              {/* Show the drawn line */}
-              <polyline points={polyStr} fill="none"
-                stroke="hsl(var(--primary))" strokeWidth={3}
-                strokeLinecap="round" strokeLinejoin="round"
-                opacity={0.7} className="pointer-events-none" />
-              {screenPts.map((s, i) => (
-                <circle key={`choice-pt-${i}`} cx={s.x} cy={s.y} r={4}
-                  fill="white" stroke="hsl(var(--primary))" strokeWidth={2}
-                  className="pointer-events-none" />
-              ))}
-
-              {/* Choice menu background */}
-              <rect x={menuX - 4} y={menuY - 4} width={120} height={58} rx={8}
-                fill="hsl(var(--background))" fillOpacity={0.97}
-                stroke="hsl(var(--border))" strokeWidth={1.5}
-                filter="drop-shadow(0 2px 8px rgba(0,0,0,0.15))"
-              />
-
-              {/* Divider label */}
-              <g className="cursor-pointer" onClick={e => { e.stopPropagation(); handleChooseDivide(); }}>
-                <rect x={menuX} y={menuY} width={108} height={22} rx={5}
-                  fill="hsl(var(--accent))" fillOpacity={0.8} />
-                <text x={menuX + 54} y={menuY + 11} textAnchor="middle" dominantBaseline="middle"
-                  fontSize={10} fontWeight="600" fill="hsl(var(--foreground))">
-                  ✂️ Diviser le lot
-                </text>
-              </g>
-
-              {/* Road option */}
-              <g className="cursor-pointer" onClick={e => { e.stopPropagation(); handleChooseRoad(); }}>
-                <rect x={menuX} y={menuY + 26} width={108} height={22} rx={5}
-                  fill="hsl(var(--accent))" fillOpacity={0.8} />
-                <text x={menuX + 54} y={menuY + 37} textAnchor="middle" dominantBaseline="middle"
-                  fontSize={10} fontWeight="600" fill="hsl(var(--foreground))">
-                  🛣 Créer une voie
-                </text>
-              </g>
-            </g>
-          );
-        })()}
 
         {/* Edge context menu (right-click on edge) */}
         {edgeContextMenu && !readOnly && (() => {
