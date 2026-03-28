@@ -3498,6 +3498,42 @@ export type Database = {
           },
         ]
       }
+      subdivision_rate_config: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          location_name: string
+          max_fee_per_lot_usd: number | null
+          min_fee_per_lot_usd: number | null
+          rate_per_sqm_usd: number
+          section_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          location_name: string
+          max_fee_per_lot_usd?: number | null
+          min_fee_per_lot_usd?: number | null
+          rate_per_sqm_usd?: number
+          section_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          location_name?: string
+          max_fee_per_lot_usd?: number | null
+          min_fee_per_lot_usd?: number | null
+          rate_per_sqm_usd?: number
+          section_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       subdivision_requests: {
         Row: {
           additional_documents: Json | null

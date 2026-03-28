@@ -7,7 +7,7 @@ import {
   FileText, MapPin, User, Grid3X3, Loader2, 
   CheckCircle, Copy, AlertTriangle, CreditCard
 } from 'lucide-react';
-import { SubdivisionLot, SubdivisionRoad, ParentParcelInfo, RequesterInfo, USAGE_LABELS, LOT_COLORS } from '../types';
+import { SubdivisionLot, SubdivisionRoad, ParentParcelInfo, RequesterInfo, USAGE_LABELS, LOT_COLORS, FeeBreakdown } from '../types';
 import { ValidationResult } from '../utils/geometry';
 import { SUBDIVISION_PURPOSE_LABELS } from '../constants';
 
@@ -22,6 +22,7 @@ interface StepSummaryProps {
   referenceNumber: string;
   submitting: boolean;
   submissionFee: number | null;
+  feeBreakdown: FeeBreakdown | null;
   onSubmit: () => void;
 }
 
@@ -34,7 +35,7 @@ const REQUESTER_TYPE_LABELS: Record<string, string> = {
 
 const StepSummary: React.FC<StepSummaryProps> = ({
   parentParcel, requester, lots, roads, validation, purpose,
-  submitted, referenceNumber, submitting, submissionFee, onSubmit
+  submitted, referenceNumber, submitting, submissionFee, feeBreakdown, onSubmit
 }) => {
   const totalArea = lots.reduce((s, l) => s + l.areaSqm, 0);
   const parentArea = parentParcel?.areaSqm || 0;
@@ -184,16 +185,57 @@ const StepSummary: React.FC<StepSummaryProps> = ({
         </CardContent>
       </Card>
 
-      {/* Payment */}
+      {/* Payment — fee breakdown */}
       <Card className="border-primary/20">
         <CardContent className="pt-3 space-y-2">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
             <CreditCard className="h-3 w-3" /> Frais de dossier
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm">Frais de soumission</span>
-            <span className="text-lg font-bold text-primary">{feeAmount} USD</span>
-          </div>
+
+          {feeBreakdown ? (
+            <>
+              <div className="text-xs text-muted-foreground mb-1">
+                Tarif : <span className="font-medium text-foreground">{feeBreakdown.ratePerSqm} USD/m²</span>
+                {' — '}
+                {feeBreakdown.isDefault
+                  ? <span className="italic">tarif par défaut ({feeBreakdown.sectionType === 'urban' ? 'Urbain' : 'Rural'})</span>
+                  : <span>{feeBreakdown.locationName} ({feeBreakdown.sectionType === 'urban' ? 'Urbain' : 'Rural'})</span>
+                }
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-1 px-2 font-medium">Lot</th>
+                      <th className="text-right py-1 px-2 font-medium">Surface</th>
+                      <th className="text-right py-1 px-2 font-medium">Frais</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {feeBreakdown.items.map(item => (
+                      <tr key={item.lotId} className="border-b border-dashed last:border-0">
+                        <td className="py-1 px-2">Lot {item.lotNumber}</td>
+                        <td className="py-1 px-2 text-right font-mono">{item.areaSqm.toLocaleString()} m²</td>
+                        <td className="py-1 px-2 text-right font-mono">{item.fee.toFixed(2)} USD</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t-2">
+                      <td className="py-1 px-2 font-bold" colSpan={2}>Total</td>
+                      <td className="py-1 px-2 text-right font-mono font-bold text-primary">{feeBreakdown.total.toFixed(2)} USD</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Frais de soumission</span>
+              <span className="text-lg font-bold text-primary">{feeAmount} USD</span>
+            </div>
+          )}
+
           <p className="text-[10px] text-muted-foreground">
             Des frais de traitement supplémentaires pourront être appliqués après examen de votre dossier par notre équipe.
           </p>

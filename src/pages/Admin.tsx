@@ -66,6 +66,7 @@ import AdminDisputeAnalytics from '@/components/admin/AdminDisputeAnalytics';
 import AdminCertificates from '@/components/admin/AdminCertificates';
 import AdminMapProviders from '@/components/admin/AdminMapProviders';
 import AdminAnalyticsChartsConfig from '@/components/admin/AdminAnalyticsChartsConfig';
+import AdminSubdivisionFeesConfig from '@/components/admin/AdminSubdivisionFeesConfig';
 const Admin = () => {
   const { user, profile, loading } = useAuth();
   const [searchParams] = useSearchParams();
@@ -358,6 +359,8 @@ const Admin = () => {
         return <AdminMutationRequests />;
       case 'subdivision-requests':
         return <AdminSubdivisionRequests />;
+      case 'subdivision-fees-config':
+        return <AdminSubdivisionFeesConfig />;
       case 'expertise-requests':
         return <AdminExpertiseRequests />;
       case 'expertise-fees-config':
