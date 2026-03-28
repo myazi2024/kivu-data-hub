@@ -66,6 +66,7 @@ import AdminDisputeAnalytics from '@/components/admin/AdminDisputeAnalytics';
 import AdminCertificates from '@/components/admin/AdminCertificates';
 import AdminMapProviders from '@/components/admin/AdminMapProviders';
 import AdminAnalyticsChartsConfig from '@/components/admin/AdminAnalyticsChartsConfig';
+import AdminSubdivisionFeesConfig from '@/components/admin/AdminSubdivisionFeesConfig';
 const Admin = () => {
   const { user, profile, loading } = useAuth();
   const [searchParams] = useSearchParams();
