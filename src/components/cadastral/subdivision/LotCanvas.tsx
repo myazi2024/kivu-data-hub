@@ -491,32 +491,22 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     }
   }, [viewport, getSvgPos, fromScreen, mode, lineDrawPoints, drag, isLineDragging, lineDrawMultiMode, roadEndpointDrag, roads, onUpdateRoad, roadWidthDrag, toScreen, sideLength, rotationDrag, selectedLotId, selectedRoadId, lots, onUpdateLot]);
 
-  // Show choice menu after line drawing finishes
-  const showLineChoice = useCallback((path: Point2D[]) => {
+  // Directly execute action after line drawing finishes
+  const finishLineDraw = useCallback((path: Point2D[]) => {
     if (path.length < 2) return;
-    const lastPt = path[path.length - 1];
-    const screenPos = toScreen(lastPt);
-    setLineChoiceMenu({ path, screenPos });
-  }, [toScreen]);
-
-  const handleChooseDivide = useCallback(() => {
-    if (!lineChoiceMenu || !onCutLot) return;
-    const { path } = lineChoiceMenu;
-    const cutStart = path[0];
-    const cutEnd = path[path.length - 1];
-    const mid = { x: (cutStart.x + cutEnd.x) / 2, y: (cutStart.y + cutEnd.y) / 2 };
-    const targetLot = lots.find(lot => pointInPolygon(mid, lot.vertices));
-    if (targetLot) {
-      onCutLot(targetLot.id, cutStart, cutEnd);
+    if (mode === 'drawRoad') {
+      onFinishRoadDraw?.(path);
+    } else {
+      // drawLine mode: cut lot
+      const cutStart = path[0];
+      const cutEnd = path[path.length - 1];
+      const mid = { x: (cutStart.x + cutEnd.x) / 2, y: (cutStart.y + cutEnd.y) / 2 };
+      const targetLot = lots.find(lot => pointInPolygon(mid, lot.vertices));
+      if (targetLot && onCutLot) {
+        onCutLot(targetLot.id, cutStart, cutEnd);
+      }
     }
-    setLineChoiceMenu(null);
-  }, [lineChoiceMenu, onCutLot, lots]);
-
-  const handleChooseRoad = useCallback(() => {
-    if (!lineChoiceMenu || !onFinishRoadDraw) return;
-    onFinishRoadDraw(lineChoiceMenu.path);
-    setLineChoiceMenu(null);
-  }, [lineChoiceMenu, onFinishRoadDraw]);
+  }, [mode, onFinishRoadDraw, onCutLot, lots]);
 
   const handleMouseUp = useCallback((e: React.MouseEvent) => {
     // Line simple drag: finish on mouse up
