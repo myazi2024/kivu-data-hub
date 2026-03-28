@@ -1,5 +1,6 @@
 import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import { SubdivisionLot, SubdivisionRoad, LOT_COLORS, USAGE_LABELS, Point2D, LotAnnotation, CLIPART_TYPES } from './types';
+import { getAllRoadIntersectionPoints } from './utils/geometry';
 import { useCanvasViewport } from './hooks/useCanvasViewport';
 import { useCanvasDrag } from './hooks/useCanvasDrag';
 import { useCanvasKeyboard } from './hooks/useCanvasKeyboard';
@@ -1431,6 +1432,24 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
             </g>
           );
         })}
+
+        {/* Road intersection markers */}
+        {showRoads && roads.length >= 2 && (() => {
+          const intersectionPts = getAllRoadIntersectionPoints(roads);
+          return intersectionPts.map((pt, i) => {
+            const sp = toScreen(pt);
+            return (
+              <circle
+                key={`isect-${i}`}
+                cx={sp.x} cy={sp.y} r={5}
+                fill="hsl(var(--destructive))"
+                stroke="hsl(var(--background))"
+                strokeWidth={1.5}
+                pointerEvents="none"
+              />
+            );
+          });
+        })()}
 
         {/* Merge button */}
         {selectedLotIds.length >= 2 && !readOnly && onMergeLots && mode === 'select' && (() => {

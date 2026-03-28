@@ -18,7 +18,7 @@ import {
   ParentParcelInfo, LOT_COLORS, USAGE_LABELS, ROAD_SURFACE_LABELS, 
   COMMON_SPACE_LABELS, COMMON_SPACE_COLORS, Point2D, LotAnnotation
 } from '../types';
-import { ValidationResult, mergeLotsThroughDeletedRoad, polygonArea } from '../utils/geometry';
+import { ValidationResult, mergeLotsThroughDeletedRoad, polygonArea, insertAllRoadIntersections } from '../utils/geometry';
 import LotCanvas, { CanvasMode, EdgeInfo } from '../LotCanvas';
 
 interface StepLotDesignerProps {
@@ -424,7 +424,10 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       isExisting: false,
       path,
     };
-    setRoads([...roads, newRoad]);
+    // Insert intersection points between all roads (including the new one)
+    const allRoads = [...roads, newRoad];
+    const roadsWithIntersections = insertAllRoadIntersections(allRoads) as SubdivisionRoad[];
+    setRoads(roadsWithIntersections);
     setEditingRoadId(newRoad.id);
 
     // 2. Find lot traversed by the drawn line
