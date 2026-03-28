@@ -18,7 +18,7 @@ import {
   ParentParcelInfo, LOT_COLORS, USAGE_LABELS, ROAD_SURFACE_LABELS, 
   COMMON_SPACE_LABELS, COMMON_SPACE_COLORS, Point2D, LotAnnotation
 } from '../types';
-import { ValidationResult, mergeLotsThroughDeletedRoad, polygonArea, insertAllRoadIntersections } from '../utils/geometry';
+import { ValidationResult, mergeLotsThroughDeletedRoad, polygonArea, splitRoadsAtIntersections } from '../utils/geometry';
 import LotCanvas, { CanvasMode, EdgeInfo } from '../LotCanvas';
 
 interface StepLotDesignerProps {
