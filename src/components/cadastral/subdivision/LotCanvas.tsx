@@ -968,7 +968,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                       className="cursor-ns-resize"
                       onMouseDown={e => {
                         e.stopPropagation();
-                        setRoadWidthDrag({ roadId: road.id, startY: e.clientY, startWidth: road.widthM });
+                        setRoadWidthDrag({ roadId: road.id, startX: e.clientX, startY: e.clientY, startWidth: road.widthM });
                       }}
                     />
                     {/* Bottom handle */}
