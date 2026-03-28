@@ -437,7 +437,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       const intersections: { point: Point2D; edgeIdx: number; t: number }[] = [];
       for (let i = 0; i < verts.length; i++) {
         const j = (i + 1) % verts.length;
-        const inter = lineSegmentIntersection(cutStart, cutEnd, verts[i], verts[j]);
+        const inter = segmentSegmentIntersection(cutStart, cutEnd, verts[i], verts[j]);
         if (inter) {
           intersections.push({ point: inter.point, edgeIdx: i, t: inter.t });
         }
