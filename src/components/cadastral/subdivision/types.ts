@@ -123,6 +123,24 @@ export interface ParentParcelInfo {
   titleIssueDate: string;
   gpsCoordinates: GpsPoint[];
   parcelSides?: any;
+  sectionType?: string;
+  locationName?: string;
+}
+
+export interface FeeBreakdownItem {
+  lotId: string;
+  lotNumber: string;
+  areaSqm: number;
+  fee: number;
+}
+
+export interface FeeBreakdown {
+  ratePerSqm: number;
+  locationName: string;
+  sectionType: string;
+  isDefault: boolean;
+  items: FeeBreakdownItem[];
+  total: number;
 }
 
 export interface RequesterInfo {

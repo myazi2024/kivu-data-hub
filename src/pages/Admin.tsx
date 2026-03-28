@@ -359,6 +359,8 @@ const Admin = () => {
         return <AdminMutationRequests />;
       case 'subdivision-requests':
         return <AdminSubdivisionRequests />;
+      case 'subdivision-fees-config':
+        return <AdminSubdivisionFeesConfig />;
       case 'expertise-requests':
         return <AdminExpertiseRequests />;
       case 'expertise-fees-config':

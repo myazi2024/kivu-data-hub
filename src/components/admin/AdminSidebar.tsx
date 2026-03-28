@@ -113,6 +113,7 @@ const menuItems = [
       { icon: FileText, label: 'Demandes Mutation', value: 'mutations', badge: 'mutations' },
       { icon: DollarSign, label: 'Config Frais Mutation', value: 'mutation-fees-config', badge: null },
       { icon: Grid3X3, label: 'Demandes Lotissement', value: 'subdivision-requests', badge: 'subdivisions' },
+      { icon: DollarSign, label: 'Config Frais Lotissement', value: 'subdivision-fees-config', badge: null },
       { icon: FileCheck, label: 'Expertises foncières', value: 'expertise-requests', badge: 'expertise' },
       { icon: DollarSign, label: 'Config Frais Expert.', value: 'expertise-fees-config', badge: null },
       
