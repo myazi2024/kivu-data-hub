@@ -171,7 +171,11 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   // Keyboard shortcuts
   useCanvasKeyboard(containerRef, {
     onDelete: () => {
-      if (selectedLotId && onDeleteLot) onDeleteLot(selectedLotId);
+      if (selectedRoadId && onDeleteRoad) {
+        onDeleteRoad(selectedRoadId);
+      } else if (selectedLotId && onDeleteLot) {
+        onDeleteLot(selectedLotId);
+      }
     },
     onDuplicate: () => {
       if (selectedLotId && onDuplicateLot) onDuplicateLot(selectedLotId);
