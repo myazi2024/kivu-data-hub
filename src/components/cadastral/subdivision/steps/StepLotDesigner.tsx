@@ -391,9 +391,13 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     setCanvasMode('select');
   }, [lots, setLots]);
 
-  // Handle finished road drawing
+  // Handle finished road drawing — also split the traversed lot
   const handleFinishRoadDraw = useCallback((path: Point2D[]) => {
     if (path.length < 2) return;
+    const cutStart = path[0];
+    const cutEnd = path[path.length - 1];
+
+    // 1. Create the road
     const newRoad: SubdivisionRoad = {
       id: `road-draw-${Date.now()}`,
       name: `Voie ${roads.length + 1}`,
@@ -404,8 +408,110 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     };
     setRoads([...roads, newRoad]);
     setEditingRoadId(newRoad.id);
+
+    // 2. Find lot traversed by the drawn line
+    let targetLot: SubdivisionLot | null = null;
+    let bestIntersections: { point: Point2D; edgeIdx: number; t: number }[] = [];
+
+    for (const lot of lots) {
+      const verts = lot.vertices;
+      if (verts.length < 3) continue;
+      const intersections: { point: Point2D; edgeIdx: number; t: number }[] = [];
+      for (let i = 0; i < verts.length; i++) {
+        const j = (i + 1) % verts.length;
+        const inter = lineSegmentIntersection(cutStart, cutEnd, verts[i], verts[j]);
+        if (inter) {
+          intersections.push({ point: inter.point, edgeIdx: i, t: inter.t });
+        }
+      }
+      if (intersections.length >= 2) {
+        targetLot = lot;
+        bestIntersections = intersections;
+        break;
+      }
+    }
+
+    if (!targetLot || bestIntersections.length < 2) {
+      setCanvasMode('select');
+      return;
+    }
+
+    // 3. Cut the lot in two (same algo as handleCutLot)
+    const verts = targetLot.vertices;
+    bestIntersections.sort((a, b) => a.edgeIdx - b.edgeIdx || a.t - b.t);
+    const int1 = bestIntersections[0];
+    const int2 = bestIntersections[1];
+
+    const poly1: Point2D[] = [int1.point];
+    for (let i = (int1.edgeIdx + 1) % verts.length; i !== (int2.edgeIdx + 1) % verts.length; i = (i + 1) % verts.length) {
+      poly1.push(verts[i]);
+    }
+    poly1.push(int2.point);
+
+    const poly2: Point2D[] = [int2.point];
+    for (let i = (int2.edgeIdx + 1) % verts.length; i !== (int1.edgeIdx + 1) % verts.length; i = (i + 1) % verts.length) {
+      poly2.push(verts[i]);
+    }
+    poly2.push(int1.point);
+
+    if (poly1.length < 3 || poly2.length < 3) {
+      setCanvasMode('select');
+      return;
+    }
+
+    // 4. Shrink both polygons away from the road centerline by halfWidth
+    const sideLength = Math.sqrt(parentParcel?.areaSqm || 1000);
+    const halfWidthNorm = (roadPresetWidth / 2) / sideLength;
+    const rdx = cutEnd.x - cutStart.x;
+    const rdy = cutEnd.y - cutStart.y;
+    const roadLen = Math.sqrt(rdx * rdx + rdy * rdy) || 1;
+    const nx = -rdy / roadLen;
+    const ny = rdx / roadLen;
+    const TOLERANCE = 0.02;
+
+    const shrinkPoly = (poly: Point2D[]): Point2D[] => {
+      const centroid = {
+        x: poly.reduce((s, v) => s + v.x, 0) / poly.length,
+        y: poly.reduce((s, v) => s + v.y, 0) / poly.length,
+      };
+      const side = (centroid.x - cutStart.x) * nx + (centroid.y - cutStart.y) * ny;
+      const pushDir = side > 0 ? 1 : -1;
+
+      return poly.map(v => {
+        const perpDist = Math.abs((v.x - cutStart.x) * nx + (v.y - cutStart.y) * ny);
+        if (perpDist < TOLERANCE) {
+          return { x: v.x + nx * pushDir * halfWidthNorm, y: v.y + ny * pushDir * halfWidthNorm };
+        }
+        return v;
+      });
+    };
+
+    const shrunk1 = shrinkPoly(poly1);
+    const shrunk2 = shrinkPoly(poly2);
+
+    const parentPoly = parentVertices && parentVertices.length >= 3
+      ? parentVertices
+      : [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }];
+    const parentNormArea = polygonArea(parentPoly);
+    const totalParentArea = parentParcel?.areaSqm || 1000;
+
+    const computeArea = (poly: Point2D[]) => Math.max(1, Math.round((polygonArea(poly) / parentNormArea) * totalParentArea));
+
+    const maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0);
+
+    const newLot1: SubdivisionLot = {
+      ...targetLot, id: `lot-${Date.now()}-a`, lotNumber: String(maxLotNum + 1),
+      vertices: shrunk1, areaSqm: computeArea(shrunk1),
+    };
+    const newLot2: SubdivisionLot = {
+      ...targetLot, id: `lot-${Date.now()}-b`, lotNumber: String(maxLotNum + 2),
+      vertices: shrunk2, areaSqm: computeArea(shrunk2),
+    };
+
+    setLots(lots.map(l => l.id === targetLot!.id ? newLot1 : l).concat(newLot2));
+    setSelectedLotId(newLot1.id);
     setCanvasMode('select');
-  }, [roads, setRoads, roadPresetWidth, roadPresetSurface]);
+  }, [lots, setLots, roads, setRoads, roadPresetWidth, roadPresetSurface, parentParcel, parentVertices]);
 
   // Convert an edge between lots to a road
   const handleConvertEdgeToRoad = useCallback((edge: EdgeInfo) => {
