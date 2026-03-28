@@ -1,37 +1,37 @@
 
 
-# Remplacer les cliparts emoji par des formes géométriques de bâtiments
+# Corriger les faux positifs de chevauchement entre lots adjacents
 
 ## Problème
-Le bouton "Cliparts" ouvre une palette d'emojis (arbre, maison, etc.). L'utilisateur souhaite plutôt une liste de **formes géométriques de construction** (cercle, carré, rectangle, trapèze, polygone) — le même système que celui déjà implémenté dans `ParcelMapPreview.tsx` (SHAPE_OPTIONS) — afin de placer une forme dans un lot.
+Quand deux lots partagent une arête commune (limite mitoyenne), la fonction `doPolygonsOverlap` détecte les sommets partagés comme étant "à l'intérieur" du lot voisin (ray-casting sur un point exactement sur le bord). Cela produit des erreurs de validation faussement positives en rouge.
 
 ## Solution
-Réutiliser le concept de `SHAPE_OPTIONS` de `ParcelMapPreview.tsx` dans le module de lotissement. Quand l'utilisateur clique sur "Cliparts", il voit les 5 formes géométriques. Il en sélectionne une, puis clique dans un lot pour y placer la forme (rendue en SVG au lieu d'un emoji).
+Modifier `doPolygonsOverlap` pour tolérer les arêtes partagées : avant de conclure à un chevauchement, exclure les sommets qui se trouvent **sur une arête** du polygone voisin (distance point-segment < epsilon). Seuls les points strictement à l'intérieur comptent comme chevauchement réel.
 
 ## Changements
 
-### 1. `types.ts` — Adapter le type d'annotation
-- Modifier `LotAnnotation['type']` pour inclure les formes géométriques : `'circle' | 'square' | 'rectangle' | 'trapeze' | 'polygon'` (remplacer les types emoji actuels ou les garder en complément)
-- Mettre à jour `CLIPART_TYPES` avec les 5 formes géométriques (icône Lucide au lieu d'emoji) : Cercle, Carré, Rectangle, Trapèze, Polygone
+### `utils/geometry.ts`
 
-### 2. `ClipartPalette.tsx` — Afficher les formes géométriques
-- Remplacer le contenu de la grille par les 5 formes avec icônes Lucide (Circle, Square, Triangle, Hexagon) au lieu d'emojis
-- Titre changé en "Formes de construction"
+1. **Ajouter `pointToSegmentDistance(point, segA, segB)`** — calcule la distance minimale entre un point et un segment.
 
-### 3. `LotCanvas.tsx` — Rendu SVG des formes
-- Dans le bloc annotations (ligne 1154), remplacer le `<text>` emoji par un rendu SVG conditionnel selon le type :
-  - `circle` → `<circle>` SVG
-  - `square` → `<rect>` SVG (carré)
-  - `rectangle` → `<rect>` SVG (allongé)
-  - `trapeze` → `<polygon>` SVG (trapèze)
-  - `polygon` → `<polygon>` SVG (hexagone)
-- Couleur de remplissage semi-transparente (rouge/gris) avec contour
+2. **Ajouter `isPointOnPolygonEdge(point, polygon, epsilon)`** — retourne `true` si le point est sur une arête du polygone (distance < epsilon, ex: `1e-6`).
 
-## Fichiers impactés
+3. **Modifier `doPolygonsOverlap`** — ne considérer un sommet comme chevauchant que s'il est à l'intérieur du polygone ET pas sur une arête :
+```typescript
+export function doPolygonsOverlap(poly1: Point2D[], poly2: Point2D[]): boolean {
+  for (const p of poly1) {
+    if (isPointInPolygon(p, poly2) && !isPointOnPolygonEdge(p, poly2, 1e-6)) return true;
+  }
+  for (const p of poly2) {
+    if (isPointInPolygon(p, poly1) && !isPointOnPolygonEdge(p, poly1, 1e-6)) return true;
+  }
+  return false;
+}
+```
+
+### Fichier impacté
 
 | Fichier | Modification |
 |---------|-------------|
-| `types.ts` | Mettre à jour `LotAnnotation['type']` et `CLIPART_TYPES` avec les formes géométriques |
-| `ClipartPalette.tsx` | Afficher les formes avec icônes Lucide au lieu d'emojis |
-| `LotCanvas.tsx` | Rendre les annotations en formes SVG au lieu d'emojis texte |
+| `utils/geometry.ts` | Ajouter `pointToSegmentDistance`, `isPointOnPolygonEdge`, modifier `doPolygonsOverlap` pour exclure les points sur les arêtes partagées |
 
