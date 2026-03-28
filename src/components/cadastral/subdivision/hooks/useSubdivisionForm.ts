@@ -50,27 +50,70 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     }
   }, [authUser]);
   
-  // Load submission fee from config
-  useEffect(() => {
-    const loadFee = async () => {
-      try {
-        const { data } = await supabase
-          .from('cadastral_services_config')
-          .select('price_usd')
-          .eq('service_id', 'subdivision')
-          .eq('is_active', true)
-          .is('deleted_at', null)
-          .single();
-        
-        setSubmissionFee(data ? Number(data.price_usd) : 20);
-      } catch {
-        setSubmissionFee(20); // fallback
-      } finally {
-        setLoadingFee(false);
+  // Load subdivision rate from config based on location
+  const computeFee = useCallback(async (currentLots: SubdivisionLot[]) => {
+    try {
+      // Determine section type and location from parcelData
+      const sectionType = parcelData?.province && !parcelData?.quartier ? 'rural' : 'urban';
+      const locationName = sectionType === 'urban'
+        ? (parcelData?.quartier || '')
+        : (parcelData?.village || '');
+
+      // Fetch matching rates (specific + fallback *)
+      const candidates = [locationName, '*'].filter(Boolean);
+      const { data } = await supabase
+        .from('subdivision_rate_config' as any)
+        .select('*')
+        .eq('section_type', sectionType)
+        .in('location_name', candidates)
+        .eq('is_active', true);
+
+      const ratesData = (data as any[]) || [];
+      const specificRate = ratesData.find(r => r.location_name === locationName);
+      const fallbackRate = ratesData.find(r => r.location_name === '*');
+      const rate = specificRate || fallbackRate;
+
+      if (!rate) {
+        setSubmissionFee(20);
+        setFeeBreakdown(null);
+        return;
       }
-    };
-    loadFee();
-  }, []);
+
+      const ratePerSqm = Number(rate.rate_per_sqm_usd);
+      const minPerLot = rate.min_fee_per_lot_usd != null ? Number(rate.min_fee_per_lot_usd) : 0;
+      const maxPerLot = rate.max_fee_per_lot_usd != null ? Number(rate.max_fee_per_lot_usd) : Infinity;
+
+      const items = currentLots.map(lot => {
+        const raw = lot.areaSqm * ratePerSqm;
+        const fee = Math.round(Math.max(minPerLot, Math.min(raw, maxPerLot)) * 100) / 100;
+        return { lotId: lot.id, lotNumber: lot.lotNumber, areaSqm: lot.areaSqm, fee };
+      });
+
+      const total = Math.round(items.reduce((s, i) => s + i.fee, 0) * 100) / 100;
+
+      setFeeBreakdown({
+        ratePerSqm,
+        locationName: specificRate ? locationName : '*',
+        sectionType,
+        isDefault: !specificRate,
+        items,
+        total,
+      });
+      setSubmissionFee(total);
+    } catch {
+      setSubmissionFee(20);
+      setFeeBreakdown(null);
+    } finally {
+      setLoadingFee(false);
+    }
+  }, [parcelData]);
+
+  // Recompute fee when lots change
+  useEffect(() => {
+    if (lots.length > 0) {
+      computeFee(lots);
+    }
+  }, [lots, computeFee]);
   
   // Plan data
   const [lots, setLots] = useState<SubdivisionLot[]>([]);
