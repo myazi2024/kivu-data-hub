@@ -465,6 +465,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       const TOLERANCE = 0.02;
 
       let anyBordering = false;
+      const borderingLotIds: string[] = [];
       const updatedLots = lots.map(lot => {
         const nearCount = lot.vertices.filter(v => {
           const perpDist = Math.abs((v.x - cutStart.x) * nx + (v.y - cutStart.y) * ny);
@@ -473,6 +474,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
         if (nearCount < 2) return lot;
 
         anyBordering = true;
+        borderingLotIds.push(lot.id);
         const centroid = {
           x: lot.vertices.reduce((s, v) => s + v.x, 0) / lot.vertices.length,
           y: lot.vertices.reduce((s, v) => s + v.y, 0) / lot.vertices.length,
@@ -505,6 +507,11 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       });
 
       if (anyBordering) {
+        // Store affectedLotIds on the new road
+        const updatedRoads = splitRoads.map(r =>
+          r.id === newRoad.id ? { ...r, affectedLotIds: borderingLotIds } : r
+        );
+        setRoads(updatedRoads);
         setLots(updatedLots);
       }
       setCanvasMode('select');
