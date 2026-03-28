@@ -1,27 +1,35 @@
 
 
-# Séparer "Tracer une voie" et "Tracer une ligne"
+# Tracer une voie = créer la voie + diviser le lot
 
-## Situation actuelle
-Un seul bouton **"Tracer ligne"** entre en mode `drawLine`. Après le tracé, un menu contextuel propose "Diviser le lot" ou "Créer une voie". L'utilisateur veut deux boutons distincts pour éviter cette étape intermédiaire.
+## Probleme
+Actuellement, "Tracer voie" crée uniquement la voie sans couper le lot traversé. L'utilisateur s'attend à ce que tracer une voie à travers un lot le divise automatiquement en deux, avec la voie entre les deux.
 
 ## Solution
 
-### 1. Nouveau mode canvas `drawRoad`
-Ajouter `'drawRoad'` au type `CanvasMode` dans `LotCanvas.tsx`. Ce mode réutilise toute la mécanique de tracé existante (points, preview, distances perpendiculaires) mais appelle directement `onFinishRoadDraw` à la fin du tracé — sans afficher le menu de choix.
+Modifier `handleFinishRoadDraw` dans `StepLotDesigner.tsx` pour :
 
-### 2. Deux boutons dans la toolbar
-Dans `StepLotDesigner.tsx`, remplacer le bouton unique par :
-- **Tracer ligne** (icône Pencil) → mode `drawLine` → à la fin du tracé, coupe directement le lot (pas de menu)
-- **Tracer voie** (icône Route/Road) → mode `drawRoad` → à la fin du tracé, crée directement une voie (pas de menu)
+1. **Créer la voie** (comme actuellement)
+2. **Trouver le lot traversé** par le tracé (en testant les intersections du chemin avec les arêtes de chaque lot)
+3. **Couper ce lot en deux** le long de la ligne de tracé (réutiliser la logique de `handleCutLot`)
+4. **Rétrécir les deux lots résultants** de `halfWidth` perpendiculairement à la voie, pour laisser la place à l'emprise de la voie (réutiliser la logique d'auto-shrink existante)
 
-### 3. Suppression du menu de choix post-tracé
-Le `lineChoiceMenu` n'est plus nécessaire pour ces deux modes. En mode `drawLine`, la fin du tracé appelle directement `onCutLot`. En mode `drawRoad`, elle appelle directement `onFinishRoadDraw`.
-
-### Fichiers impactés
+### Fichier impacté
 
 | Fichier | Modification |
 |---------|-------------|
-| `LotCanvas.tsx` | Ajouter `'drawRoad'` à `CanvasMode`, dupliquer la logique de tracé pour ce mode, supprimer le `lineChoiceMenu` au profit d'appels directs selon le mode |
-| `StepLotDesigner.tsx` | Remplacer le bouton unique par deux boutons séparés, importer une icône route (ex: `Route` de lucide) |
+| `StepLotDesigner.tsx` | Enrichir `handleFinishRoadDraw` (~ligne 395) pour détecter le lot traversé, le couper en deux, et rétrécir les résultats selon la largeur de la voie |
+
+### Logique
+
+```text
+handleFinishRoadDraw(path):
+  1. Créer la voie (inchangé)
+  2. Pour chaque lot, chercher 2 intersections du path avec ses arêtes
+  3. Si un lot est traversé :
+     a. Couper le lot en poly1 et poly2 (même algo que handleCutLot)
+     b. Pour chaque polygone, décaler les sommets proches de la voie
+        de halfWidthNorm vers l'extérieur (perpendiculaire à la voie)
+     c. Remplacer le lot original par les deux nouveaux lots
+```
 
