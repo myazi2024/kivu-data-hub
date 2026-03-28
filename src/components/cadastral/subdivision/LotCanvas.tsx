@@ -408,8 +408,8 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
 
     const pos = getSvgPos(e);
 
-    // drawLine: update preview
-    if (mode === 'drawLine') {
+    // drawLine/drawRoad: update preview
+    if (mode === 'drawLine' || mode === 'drawRoad') {
       if (isLineDragging && lineDrawPoints.length === 1) {
         setLineDrawMousePos({ x: pos.x, y: pos.y });
       } else if (lineDrawMultiMode && lineDrawPoints.length > 0) {
