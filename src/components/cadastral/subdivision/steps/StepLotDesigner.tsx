@@ -581,10 +581,21 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
           onClick={() => setCanvasMode(canvasMode === 'drawLine' ? 'select' : 'drawLine')}
           className="gap-1 text-xs"
           disabled={lots.length === 0}
-          title="Tracer une ligne pour diviser un lot ou créer une voie"
+          title="Tracer une ligne pour diviser un lot"
         >
           <Pencil className="h-3.5 w-3.5" />
           Tracer ligne
+        </Button>
+        <Button
+          variant={canvasMode === 'drawRoad' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setCanvasMode(canvasMode === 'drawRoad' ? 'select' : 'drawRoad')}
+          className="gap-1 text-xs"
+          disabled={lots.length === 0}
+          title="Tracer une voie directement"
+        >
+          <Route className="h-3.5 w-3.5" />
+          Tracer voie
         </Button>
         <Button
           variant={canvasMode === 'clipart' ? 'default' : 'outline'}
