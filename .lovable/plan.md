@@ -1,31 +1,51 @@
 
 
-# Ajustement automatique des lots lors du redimensionnement d'une voie
+# Amelioration du rendu visuel des voies
 
-## Probleme
-Quand on etire une voie pour modifier sa largeur (`widthM`), seule la voie est mise a jour. Les lots adjacents ne bougent pas, ce qui cree des chevauchements ou des espaces vides entre la voie et les lots.
+## Problemes identifies
+
+1. **Limites de voie floues** : La voie est rendue comme une polyline semi-transparente sans bords nets. Il n'y a pas de lignes de bordure visibles delimitant les deux cotes de la voie.
+
+2. **Mesures mal orientees** : Le label `{road.name} ({road.widthM}m)` est place a cote de la voie avec un offset, mais n'est pas oriente perpendiculairement a la longueur de la voie. Il devrait etre ecrit a l'interieur de la voie, perpendiculairement a son axe.
 
 ## Solution
-Modifier `handleUpdateRoad` dans `StepLotDesigner.tsx` pour detecter un changement de `widthM` et ajuster automatiquement les sommets des lots adjacents.
 
-### Logique
-1. Quand `updates.widthM` est present et different de l'ancien `widthM` :
-   - Calculer le delta de demi-largeur en coordonnees normalisees : `deltaHalfNorm = ((newWidth - oldWidth) / 2) / sideLength`
-   - Calculer la normale perpendiculaire a la voie (`nx`, `ny`)
-   - Pour chaque lot, determiner de quel cote de la voie il se trouve (via son centroide)
-   - Pousser les sommets du lot qui sont proches de la bordure de la voie de `deltaHalfNorm` dans la direction opposee a la voie
-   - Recalculer `areaSqm` et `perimeterM`
+### 1. Bordures nettes de la voie
+Remplacer le rendu actuel (polyline epaisse semi-transparente) par un **polygone ferme** representant l'emprise reelle de la voie, avec deux lignes de bordure distinctes :
+- Calculer les 4 coins du rectangle de la voie en decalant les extremites de `halfWidth` dans la direction normale
+- Dessiner un `polygon` rempli (fond clair) avec un contour net
+- Ajouter deux `polyline` pour les bordures gauche et droite (trait plein, opacite forte)
 
-2. Cette logique reprend exactement le pattern deja utilise dans `handleConvertEdgeToRoad` (lignes 433-478) mais applique un delta incremental au lieu d'une demi-largeur absolue.
+### 2. Mesure perpendiculaire dans la voie
+Remplacer le label actuel par un texte place au centre de la voie, oriente perpendiculairement a l'axe :
+- Calculer l'angle de la voie : `angle = atan2(dy, dx)`
+- Appliquer une rotation de 90° au texte via `transform="rotate(...)"`
+- Placer le texte au milieu de la voie (sans offset)
+- Afficher uniquement la largeur (`{road.widthM}m`) en perpendiculaire, et le nom au-dessus
 
-### Fichier impacte
+## Fichier impacte
 
 | Fichier | Modification |
 |---------|-------------|
-| `StepLotDesigner.tsx` | Enrichir `handleUpdateRoad` pour detecter un changement de `widthM` et ajuster les sommets des lots adjacents a la voie |
+| `LotCanvas.tsx` (lignes ~822-960) | Refaire le rendu SVG des voies : polygone avec bordures nettes + texte de mesure perpendiculaire |
 
-### Detail technique
-- Identifier les lots adjacents : un lot est adjacent si au moins un de ses sommets est a une distance perpendiculaire < tolerance de la ligne centrale de la voie
-- Tolerance dynamique : basee sur l'ancienne demi-largeur normalisee + marge
-- Reutiliser `polygonArea` pour recalculer les superficies
+## Detail technique
+
+Pour construire le polygone de la voie a partir d'un segment `p0→p1` :
+```text
+  TL -------- TR
+  |   voie    |
+  BL -------- BR
+
+TL = p0 + normal * halfW
+TR = p1 + normal * halfW
+BR = p1 - normal * halfW
+BL = p0 - normal * halfW
+```
+
+Pour le texte perpendiculaire :
+```text
+transform="rotate(roadAngle + 90, mx, my)"
+```
+Avec correction pour eviter le texte a l'envers (si angle > 90° ou < -90°, ajouter 180°).
 
