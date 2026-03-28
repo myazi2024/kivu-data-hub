@@ -655,7 +655,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
 
   // Compute parallel distance lines for current drawing
   const distanceLines = useMemo(() => {
-    if (mode !== 'drawLine') return [];
+    if (mode !== 'drawLine' && mode !== 'drawRoad') return [];
     let start: Point2D | null = null;
     let end: Point2D | null = null;
 
