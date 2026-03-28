@@ -1,38 +1,93 @@
 
+# Ajuster la largeur d'une voie mitoyenne et recalculer les lots riverains
 
-# Corriger le tracé de voie sur une limite mitoyenne
+## Objectif
+Faire en sorte que lorsqu'une voie créée sur une limite mitoyenne est redimensionnée, les deux lots qui la bordent soient automatiquement mis à jour :
+- leurs limites suivent la nouvelle largeur de la voie
+- leurs surfaces et périmètres sont recalculés
+- le comportement reste cohérent pour agrandir comme pour réduire la voie
 
-## Problème
+## Constat dans le code
+Le redimensionnement existe déjà, mais il est incomplet pour le cas des voies mitoyennes :
+- `LotCanvas.tsx` gère bien les poignées de largeur
+- `StepLotDesigner.tsx` possède déjà `handleUpdateRoad` qui tente de déplacer les sommets proches de la voie
+- toutefois la détection des lots impactés repose surtout sur une proximité au centre de la voie, sans mémoriser explicitement quels lots sont riverains d'une voie créée sur une limite partagée
+- résultat : l'ajustement peut ne rien faire, ou ne pas modifier proprement les mesures des lots concernés
 
-Quand on trace une voie sur la ligne séparant deux lots, le code cherche un lot **traversé** par la ligne (2 intersections dans un même lot). Sur une arête partagée, la ligne longe le bord sans traverser aucun lot → aucun lot n'est modifié, la voie se superpose simplement.
+## Plan d’implémentation
 
-## Solution
+### 1. Mémoriser les lots bordant une voie
+Étendre le modèle de `SubdivisionRoad` pour enregistrer les lots adjacents à une voie créée :
+- au minimum `affectedLotIds: string[]`
+- remplir ce champ :
+  - lors du tracé d’une voie sur une limite mitoyenne
+  - lors de la conversion d’une arête partagée en voie
+  - éventuellement lors d’une voie qui traverse un lot puis crée deux lots
 
-Dans `handleFinishRoadDraw`, après la recherche d'un lot traversé (cas existant qui fonctionne), ajouter un **fallback** : si aucun lot n'est traversé, détecter si la ligne coïncide avec une arête partagée entre deux lots. Si oui, appliquer la même logique de retrait (shrink) que `handleConvertEdgeToRoad` — pousser les sommets proches de la ligne vers l'extérieur de chaque côté par `halfWidthNorm`.
+Cela permettra de savoir exactement quels lots doivent bouger quand la largeur change.
 
-## Changement unique — `StepLotDesigner.tsx`
+### 2. Centraliser la logique géométrique d’ajustement
+Extraire une fonction utilitaire réutilisable du type :
+- entrée : voie, ancienne largeur, nouvelle largeur, lots, parcelle mère
+- sortie : nouveaux lots recalculés
 
-Dans `handleFinishRoadDraw`, après le bloc `if (!targetLot || bestIntersections.length < 2)` (ligne 455), au lieu de retourner immédiatement :
+Cette fonction devra :
+- calculer `deltaHalfWidth`
+- retrouver la normale de la voie
+- ne modifier que les lots réellement liés à la voie
+- déplacer uniquement les sommets/arêtes situés sur la bordure de la voie
+- recalculer `areaSqm` et `perimeterM`
 
-1. Calculer la direction et la normale de la ligne tracée
-2. Pour chaque lot, vérifier si au moins 2 sommets sont proches de la ligne (distance perpendiculaire < tolérance) → ce lot **borde** la voie
-3. Pour chaque lot bordant la voie, pousser ces sommets vers l'extérieur (comme dans `shrinkPoly` / `handleConvertEdgeToRoad`)
-4. Recalculer `areaSqm` et `perimeterM`
+L’idée est d’éviter d’avoir une logique différente entre :
+- création de voie mitoyenne
+- conversion d’arête en voie
+- redimensionnement ultérieur
 
+### 3. Corriger le redimensionnement interactif dans le canvas
+Revoir la logique de drag de largeur dans `LotCanvas.tsx` :
+- conserver quel handle est saisi (côté positif/négatif)
+- projeter correctement le mouvement souris sur la normale de la voie
+- rendre le calcul indépendant d’un simple `clientY`, pour qu’il fonctionne aussi sur des voies inclinées
+- continuer à appeler `onUpdateRoad` en temps réel pour un retour visuel immédiat
+
+### 4. Recalculer automatiquement les lots riverains pendant l’ajustement
+Dans `StepLotDesigner.tsx`, faire en sorte que `handleUpdateRoad` :
+- mette à jour la largeur de la voie
+- applique le recalage géométrique aux lots référencés par `affectedLotIds`
+- recalcule leurs mesures à chaque changement de largeur
+- conserve les autres lots inchangés
+
+### 5. Préserver la cohérence après suppression / fusion
+Adapter aussi les cas secondaires :
+- si la voie est supprimée, la fusion/restauration des lots doit rester compatible avec les lots affectés mémorisés
+- si une voie est segmentée ou intersectée, chaque segment doit garder ou dériver correctement ses lots adjacents
+
+## Fichiers impactés
+| Fichier | Modification |
+|---|---|
+| `src/components/cadastral/subdivision/types.ts` | Ajouter les lots adjacents dans `SubdivisionRoad` |
+| `src/components/cadastral/subdivision/steps/StepLotDesigner.tsx` | Enregistrer les lots riverains lors de la création et recalculer leurs géométries pendant le resize |
+| `src/components/cadastral/subdivision/LotCanvas.tsx` | Corriger le drag de largeur pour les voies orientées dans n’importe quelle direction |
+| `src/components/cadastral/subdivision/utils/geometry.ts` | Extraire/ajouter un utilitaire commun pour ajuster les lots bordant une voie |
+
+## Détails techniques
 ```text
-handleFinishRoadDraw(path):
-  1. Créer la voie (existant)
-  2. Chercher lot traversé (existant)
-  3. SI lot traversé → couper + shrink (existant)
-  4. SINON (NOUVEAU) →
-     - Pour chaque lot: compter sommets proches de la ligne
-     - Si ≥ 2 sommets proches → shrink ce lot
-     - Mettre à jour tous les lots modifiés
+Créer voie mitoyenne
+  -> détecter lots A et B
+  -> stocker affectedLotIds = [A, B]
+
+Resize voie
+  -> delta = nouvelle demi-largeur - ancienne demi-largeur
+  -> pour chaque lot affecté
+       -> identifier les sommets/arêtes sur le bord de la voie
+       -> les translater suivant la normale, du bon côté
+       -> recalculer surface + périmètre
+  -> mettre à jour le rendu en direct
 ```
 
-## Fichier impacté
-
-| Fichier | Modification |
-|---------|-------------|
-| `src/components/cadastral/subdivision/steps/StepLotDesigner.tsx` | Ajouter le fallback "shrink adjacent lots" dans `handleFinishRoadDraw` quand aucun lot n'est traversé |
-
+## Résultat attendu
+Après cette modification, si vous sélectionnez une voie tracée sur une limite mitoyenne et changez sa largeur :
+- la voie s’élargit/rétrécit réellement
+- les lots de part et d’autre suivent automatiquement
+- leurs mesures sont mises à jour immédiatement
+- le plan reste géométriquement cohérent
