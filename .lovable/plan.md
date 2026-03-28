@@ -1,84 +1,79 @@
 
 
-# Tarification du lotissement par m² et par emplacement
+# Tarification du lotissement par m², par lot et par emplacement
 
-## Problème
-Le frais de lotissement est actuellement un montant fixe (ex: 20 USD) chargé depuis `cadastral_services_config`. Il devrait être calculé **par mètre carré** avec un tarif qui varie selon l'emplacement (quartier pour les sections urbaines, village pour les sections rurales), configurable depuis l'admin.
+## Résumé
 
-## Solution
+Remplacer le frais fixe de lotissement par un calcul dynamique : **tarif/m² × surface de chaque lot × nombre de lots**, avec un tarif qui varie selon l'emplacement (quartier en zone urbaine, village en zone rurale). Les tarifs sont configurables depuis l'espace admin.
 
-### 1. Nouvelle table `subdivision_rate_config`
+## Changements
 
-Migration SQL pour créer une table de tarification par zone :
+### 1. Migration SQL — Table `subdivision_rate_config`
 
 ```sql
 CREATE TABLE public.subdivision_rate_config (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   section_type TEXT NOT NULL CHECK (section_type IN ('urban', 'rural')),
-  location_name TEXT NOT NULL,        -- nom du quartier ou village
+  location_name TEXT NOT NULL,         -- quartier/village ou '*' (défaut)
   rate_per_sqm_usd NUMERIC NOT NULL DEFAULT 0.5,
-  min_fee_usd NUMERIC DEFAULT 10,     -- frais minimum
-  max_fee_usd NUMERIC DEFAULT NULL,   -- plafond optionnel
+  min_fee_per_lot_usd NUMERIC DEFAULT 5,
+  max_fee_per_lot_usd NUMERIC DEFAULT NULL,
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now(),
   UNIQUE(section_type, location_name)
 );
+ALTER TABLE public.subdivision_rate_config ENABLE ROW LEVEL SECURITY;
+-- Lecture pour authentifiés, écriture pour admins via has_role
 ```
 
-- RLS : lecture pour tous les authentifiés, écriture réservée aux admins (via `has_role`)
-- Un tarif par défaut (fallback) avec `location_name = '*'` pour chaque type de section
+Insérer deux tarifs par défaut (`*`) pour urban et rural.
 
-### 2. Interface admin `AdminSubdivisionRatesConfig`
+### 2. Admin — `AdminSubdivisionFeesConfig.tsx` (nouveau)
 
-Nouveau composant dans `src/components/admin/` :
-- Tableau filtrable par type de section (Urbain/Rural)
-- Colonnes : Emplacement, Tarif/m² (USD), Frais min, Plafond, Actif
-- CRUD complet (ajouter, modifier, supprimer un tarif)
-- Bouton pour ajouter un tarif par défaut (`*`) si absent
-- Intégré dans le panneau admin existant
+CRUD complet similaire à `AdminExpertiseFeesConfig` :
+- Filtrage par type de section (Urbain/Rural)
+- Colonnes : Emplacement, Tarif/m² (USD), Min/lot, Max/lot, Actif
+- Ajout, modification, suppression de tarifs
+- Possibilité d'ajouter un tarif par défaut (`*`)
 
-### 3. Calcul dynamique du frais dans `useSubdivisionForm.ts`
-
-Remplacer le chargement depuis `cadastral_services_config` :
-
-```typescript
-// Extraire quartier/village et section_type depuis parcelData
-const sectionType = parcelData?.section_type === 'SR' ? 'rural' : 'urban';
-const locationName = sectionType === 'urban' 
-  ? parcelData?.quartier 
-  : parcelData?.village;
-
-// Chercher le tarif : d'abord par location exacte, puis fallback '*'
-const { data } = await supabase
-  .from('subdivision_rate_config')
-  .select('*')
-  .eq('section_type', sectionType)
-  .in('location_name', [locationName, '*'].filter(Boolean))
-  .eq('is_active', true);
-
-// Prioriser le tarif spécifique
-const rate = data?.find(r => r.location_name === locationName) 
-  || data?.find(r => r.location_name === '*');
-
-const rawFee = parentAreaSqm * rate.rate_per_sqm_usd;
-const fee = Math.max(rate.min_fee_usd, rate.max_fee_usd ? Math.min(rawFee, rate.max_fee_usd) : rawFee);
-```
-
-### 4. Affichage dans `StepSummary.tsx`
-
-- Afficher le détail du calcul : `{areaSqm} m² × {rate}/m² = {total} USD`
-- Afficher le quartier/village et le type de section
-- Mentionner si c'est le tarif par défaut ou spécifique
-
-## Fichiers impactés
+### 3. Intégration admin
 
 | Fichier | Modification |
 |---------|-------------|
-| Migration SQL | Créer `subdivision_rate_config` avec RLS et données par défaut |
-| `src/components/admin/AdminSubdivisionRatesConfig.tsx` | Nouveau — CRUD admin des tarifs par zone |
-| `src/components/cadastral/subdivision/hooks/useSubdivisionForm.ts` | Calcul du frais par m² selon l'emplacement |
-| `src/components/cadastral/subdivision/steps/StepSummary.tsx` | Afficher le détail du calcul (tarif × surface) |
-| `src/components/cadastral/subdivision/types.ts` | Ajouter `ratePerSqm`, `locationName`, `sectionType` à `ParentParcelInfo` |
-| Intégration admin (router/menu) | Ajouter le lien vers `AdminSubdivisionRatesConfig` |
+| `AdminSidebar.tsx` | Ajouter entrée `{ label: 'Config Frais Lotissement', value: 'subdivision-fees-config' }` après la ligne lotissement |
+| `Admin.tsx` | Importer `AdminSubdivisionFeesConfig` + ajouter `case 'subdivision-fees-config'` |
+
+### 4. Calcul dynamique — `useSubdivisionForm.ts`
+
+Remplacer le chargement depuis `cadastral_services_config` par :
+- Extraire `section_type` (`parcelData.section_type === 'SR' ? 'rural' : 'urban'`) et `location_name` (`quartier` ou `village`) depuis `parcelData`
+- Requête sur `subdivision_rate_config` pour trouver le tarif spécifique ou fallback `*`
+- **Calcul par lot** : pour chaque lot, `fee = clamp(lot.areaSqm × rate, min_per_lot, max_per_lot)`
+- **Total** = somme des frais de tous les lots
+- Exposer `ratePerSqm`, `feeBreakdown` (détail par lot) en plus de `submissionFee`
+
+### 5. Affichage — `StepSummary.tsx`
+
+- Afficher le tarif appliqué : `{rate}/m² — {locationName} ({sectionType})`
+- Tableau des frais par lot : Lot N° | Surface | Frais
+- Total en bas
+- Mention si tarif par défaut ou spécifique à l'emplacement
+
+### 6. Types — `types.ts`
+
+Ajouter à `ParentParcelInfo` : `sectionType?: string`, `locationName?: string`
+Ajouter interface `FeeBreakdown` : `{ lotId, lotNumber, areaSqm, fee }[]`
+
+## Fichiers impactés
+
+| Fichier | Action |
+|---------|--------|
+| Migration SQL | Créer `subdivision_rate_config` + RLS + données par défaut |
+| `src/components/admin/AdminSubdivisionFeesConfig.tsx` | Nouveau — CRUD admin |
+| `src/components/admin/AdminSidebar.tsx` | Ajouter entrée menu |
+| `src/pages/Admin.tsx` | Ajouter import + case |
+| `src/components/cadastral/subdivision/hooks/useSubdivisionForm.ts` | Calcul dynamique par lot |
+| `src/components/cadastral/subdivision/steps/StepSummary.tsx` | Détail frais par lot |
+| `src/components/cadastral/subdivision/types.ts` | Ajouter champs pricing |
 
