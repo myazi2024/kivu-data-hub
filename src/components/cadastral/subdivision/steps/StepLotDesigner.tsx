@@ -453,6 +453,59 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     }
 
     if (!targetLot || bestIntersections.length < 2) {
+      // Fallback: road drawn along a shared edge — shrink bordering lots
+      const sideLength = Math.sqrt(parentParcel?.areaSqm || 1000);
+      const halfWidthNorm = (roadPresetWidth / 2) / sideLength;
+      const rdx = cutEnd.x - cutStart.x;
+      const rdy = cutEnd.y - cutStart.y;
+      const roadLen = Math.sqrt(rdx * rdx + rdy * rdy) || 1;
+      const nx = -rdy / roadLen;
+      const ny = rdx / roadLen;
+      const TOLERANCE = 0.02;
+
+      let anyBordering = false;
+      const updatedLots = lots.map(lot => {
+        const nearCount = lot.vertices.filter(v => {
+          const perpDist = Math.abs((v.x - cutStart.x) * nx + (v.y - cutStart.y) * ny);
+          return perpDist < TOLERANCE;
+        }).length;
+        if (nearCount < 2) return lot;
+
+        anyBordering = true;
+        const centroid = {
+          x: lot.vertices.reduce((s, v) => s + v.x, 0) / lot.vertices.length,
+          y: lot.vertices.reduce((s, v) => s + v.y, 0) / lot.vertices.length,
+        };
+        const side = (centroid.x - cutStart.x) * nx + (centroid.y - cutStart.y) * ny;
+        const pushDir = side > 0 ? 1 : -1;
+
+        const newVertices = lot.vertices.map(v => {
+          const perpDist = Math.abs((v.x - cutStart.x) * nx + (v.y - cutStart.y) * ny);
+          if (perpDist < TOLERANCE) {
+            return { x: v.x + nx * pushDir * halfWidthNorm, y: v.y + ny * pushDir * halfWidthNorm };
+          }
+          return v;
+        });
+
+        const parentPoly = parentVertices && parentVertices.length >= 3
+          ? parentVertices
+          : [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }];
+        const parentNormArea = polygonArea(parentPoly);
+        const totalParentArea = parentParcel?.areaSqm || 1000;
+        const areaSqm = Math.max(1, Math.round((polygonArea(newVertices) / parentNormArea) * totalParentArea));
+        const perimeterM = Math.round(newVertices.reduce((sum, v, i) => {
+          const next = newVertices[(i + 1) % newVertices.length];
+          const dx2 = (next.x - v.x) * sideLength;
+          const dy2 = (next.y - v.y) * sideLength;
+          return sum + Math.sqrt(dx2 * dx2 + dy2 * dy2);
+        }, 0));
+
+        return { ...lot, vertices: newVertices, areaSqm, perimeterM };
+      });
+
+      if (anyBordering) {
+        setLots(updatedLots);
+      }
       setCanvasMode('select');
       return;
     }
