@@ -547,7 +547,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     const pos = getSvgPos(e);
     const normalized = fromScreen(pos.x, pos.y);
 
-    if (mode === 'drawLine') {
+    if (mode === 'drawLine' || mode === 'drawRoad') {
       if (isLineDragging) return;
       // Shift-click or already in multi-mode: add point
       if (e.shiftKey || lineDrawMultiMode) {
