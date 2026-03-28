@@ -1151,16 +1151,28 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 </g>
               )}
 
-              {/* Annotations / cliparts */}
+              {/* Annotations / formes géométriques */}
               {lot.annotations?.map(ann => {
                 const sp = toScreen(ann.position);
-                const clipart = CLIPART_TYPES.find(c => c.type === ann.type);
+                const s = (ann.scale || 1) * 12;
                 return (
-                  <text key={ann.id} x={sp.x} y={sp.y} textAnchor="middle" dominantBaseline="middle"
-                    fontSize={ann.scale ? 14 * ann.scale : 14}
-                    className="select-none pointer-events-none">
-                    {clipart?.emoji || '📍'}
-                  </text>
+                  <g key={ann.id} transform={`translate(${sp.x},${sp.y})`} className="select-none pointer-events-none">
+                    {ann.type === 'circle' && (
+                      <circle r={s} fill="rgba(239,68,68,0.25)" stroke="#ef4444" strokeWidth={1.5} />
+                    )}
+                    {ann.type === 'square' && (
+                      <rect x={-s} y={-s} width={s * 2} height={s * 2} fill="rgba(59,130,246,0.25)" stroke="#3b82f6" strokeWidth={1.5} />
+                    )}
+                    {ann.type === 'rectangle' && (
+                      <rect x={-s * 1.5} y={-s * 0.8} width={s * 3} height={s * 1.6} fill="rgba(34,197,94,0.25)" stroke="#22c55e" strokeWidth={1.5} />
+                    )}
+                    {ann.type === 'trapeze' && (
+                      <polygon points={`${-s * 0.6},${-s} ${s * 0.6},${-s} ${s},${s} ${-s},${s}`} fill="rgba(245,158,11,0.25)" stroke="#f59e0b" strokeWidth={1.5} />
+                    )}
+                    {ann.type === 'polygon' && (
+                      <polygon points={`0,${-s} ${s * 0.87},${-s * 0.5} ${s * 0.87},${s * 0.5} 0,${s} ${-s * 0.87},${s * 0.5} ${-s * 0.87},${-s * 0.5}`} fill="rgba(139,92,246,0.25)" stroke="#8b5cf6" strokeWidth={1.5} />
+                    )}
+                  </g>
                 );
               })}
 

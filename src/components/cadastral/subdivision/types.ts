@@ -2,20 +2,17 @@
 
 export interface LotAnnotation {
   id: string;
-  type: 'tree' | 'house' | 'building' | 'well' | 'fence' | 'gate' | 'parking' | 'antenna';
+  type: 'circle' | 'square' | 'rectangle' | 'trapeze' | 'polygon';
   position: Point2D; // relative to lot bounding box (0-1)
   scale?: number;
 }
 
-export const CLIPART_TYPES: { type: LotAnnotation['type']; label: string; emoji: string }[] = [
-  { type: 'tree', label: 'Arbre', emoji: '🌳' },
-  { type: 'house', label: 'Maison', emoji: '🏠' },
-  { type: 'building', label: 'Immeuble', emoji: '🏢' },
-  { type: 'well', label: 'Puits', emoji: '🪣' },
-  { type: 'fence', label: 'Clôture', emoji: '🏗️' },
-  { type: 'gate', label: 'Portail', emoji: '🚪' },
-  { type: 'parking', label: 'Parking', emoji: '🚗' },
-  { type: 'antenna', label: 'Antenne', emoji: '📡' },
+export const CLIPART_TYPES: { type: LotAnnotation['type']; label: string; icon: string }[] = [
+  { type: 'circle', label: 'Cercle', icon: 'Circle' },
+  { type: 'square', label: 'Carré', icon: 'Square' },
+  { type: 'rectangle', label: 'Rectangle', icon: 'RectangleHorizontal' },
+  { type: 'trapeze', label: 'Trapèze', icon: 'Triangle' },
+  { type: 'polygon', label: 'Polygone', icon: 'Hexagon' },
 ];
 
 export interface SubdivisionLot {
