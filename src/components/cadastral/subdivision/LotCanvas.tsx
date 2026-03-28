@@ -1389,6 +1389,49 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
           return selectedRoadId ? <>{lotsBlock}{roadsBlock}</> : <>{roadsBlock}{lotsBlock}</>;
         })()}
 
+        {/* Invisible hit-areas for roads — always on top for clickability */}
+        {showRoads && mode === 'select' && !readOnly && roads.map(road => {
+          if (road.path.length < 2) return null;
+          const pathPoints = road.path.map(p => toScreen(p));
+          const polylineStr = pathPoints.map(p => `${p.x},${p.y}`).join(' ');
+          const roadWidthPx = Math.max(4, (road.widthM / sideLength) * (CANVAS_W - 2 * PADDING));
+
+          const p0 = pathPoints[0];
+          const pN = pathPoints[pathPoints.length - 1];
+          const rdx = pN.x - p0.x;
+          const rdy = pN.y - p0.y;
+          const rlen = Math.sqrt(rdx * rdx + rdy * rdy) || 1;
+          const nx = -rdy / rlen;
+          const ny = rdx / rlen;
+          const halfW = roadWidthPx / 2;
+
+          const TL = { x: p0.x + nx * halfW, y: p0.y + ny * halfW };
+          const TR = { x: pN.x + nx * halfW, y: pN.y + ny * halfW };
+          const BR = { x: pN.x - nx * halfW, y: pN.y - ny * halfW };
+          const BL = { x: p0.x - nx * halfW, y: p0.y - ny * halfW };
+          const polygonStr = `${TL.x},${TL.y} ${TR.x},${TR.y} ${BR.x},${BR.y} ${BL.x},${BL.y}`;
+
+          return (
+            <g key={`road-hit-${road.id}`}>
+              <polyline
+                points={polylineStr}
+                fill="none" stroke="transparent" strokeWidth={Math.max(20, roadWidthPx + 10)}
+                strokeLinecap="round" strokeLinejoin="round"
+                pointerEvents="all"
+                className="cursor-pointer"
+                onClick={e => handleRoadClick(road.id, e)}
+              />
+              <polygon
+                points={polygonStr}
+                fill="transparent"
+                pointerEvents="all"
+                className="cursor-pointer"
+                onClick={e => handleRoadClick(road.id, e)}
+              />
+            </g>
+          );
+        })}
+
         {/* Merge button */}
         {selectedLotIds.length >= 2 && !readOnly && onMergeLots && mode === 'select' && (() => {
           const selectedLotsData = lots.filter(l => selectedLotIds.includes(l.id));
