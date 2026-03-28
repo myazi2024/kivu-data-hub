@@ -1394,7 +1394,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         })()}
 
         {/* Line drawing preview */}
-        {mode === 'drawLine' && lineDrawPoints.length > 0 && !lineChoiceMenu && (() => {
+        {(mode === 'drawLine' || mode === 'drawRoad') && lineDrawPoints.length > 0 && (() => {
           const allPts = [...lineDrawPoints];
           const screenPts = allPts.map(p => toScreen(p));
           const polyStr = screenPts.map(p => `${p.x},${p.y}`).join(' ');
