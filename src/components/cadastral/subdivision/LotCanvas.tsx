@@ -644,7 +644,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
 
   const svgCursor = viewport.isSpaceDown()
     ? 'grab'
-    : mode === 'drawLine' ? 'crosshair'
+    : (mode === 'drawLine' || mode === 'drawRoad') ? 'crosshair'
     : mode === 'clipart' ? 'cell'
     : mode === 'selectEdge' ? 'pointer'
     : 'default';
