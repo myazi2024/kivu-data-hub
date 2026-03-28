@@ -1,35 +1,35 @@
 
 
-# Tracer une voie = créer la voie + diviser le lot
+# Correction : impossible de sélectionner une voie
 
-## Probleme
-Actuellement, "Tracer voie" crée uniquement la voie sans couper le lot traversé. L'utilisateur s'attend à ce que tracer une voie à travers un lot le divise automatiquement en deux, avec la voie entre les deux.
+## Problème
+Les lots sont **toujours** rendus après les voies dans le SVG (ligne 1060). Les polygones des lots couvrent donc entièrement la zone cliquable des voies, empêchant leur sélection.
 
 ## Solution
+Inverser l'ordre de rendu des couches selon le type d'élément sélectionné, comme prévu dans le plan précédent mais non implémenté :
 
-Modifier `handleFinishRoadDraw` dans `StepLotDesigner.tsx` pour :
+- **Par défaut** (aucun road sélectionné) : Roads → Lots (les lots sont au-dessus, cliquables normalement)
+- **Quand une voie est sélectionnée** : Lots → Roads (la voie passe au-dessus)
 
-1. **Créer la voie** (comme actuellement)
-2. **Trouver le lot traversé** par le tracé (en testant les intersections du chemin avec les arêtes de chaque lot)
-3. **Couper ce lot en deux** le long de la ligne de tracé (réutiliser la logique de `handleCutLot`)
-4. **Rétrécir les deux lots résultants** de `halfWidth` perpendiculairement à la voie, pour laisser la place à l'emprise de la voie (réutiliser la logique d'auto-shrink existante)
+De plus, ajouter `pointer-events: all` sur le hit-area invisible des voies et s'assurer que le polygone de hit-area de la voie a une priorité de clic suffisante.
 
 ### Fichier impacté
 
 | Fichier | Modification |
 |---------|-------------|
-| `StepLotDesigner.tsx` | Enrichir `handleFinishRoadDraw` (~ligne 395) pour détecter le lot traversé, le couper en deux, et rétrécir les résultats selon la largeur de la voie |
+| `LotCanvas.tsx` | Extraire le rendu des roads et des lots en deux blocs séparés, puis conditionner leur ordre avec `{selectedRoadId ? <>{lotsBlock}{roadsBlock}</> : <>{roadsBlock}{lotsBlock}</>}` |
 
-### Logique
+### Détail technique
 
-```text
-handleFinishRoadDraw(path):
-  1. Créer la voie (inchangé)
-  2. Pour chaque lot, chercher 2 intersections du path avec ses arêtes
-  3. Si un lot est traversé :
-     a. Couper le lot en poly1 et poly2 (même algo que handleCutLot)
-     b. Pour chaque polygone, décaler les sommets proches de la voie
-        de halfWidthNorm vers l'extérieur (perpendiculaire à la voie)
-     c. Remplacer le lot original par les deux nouveaux lots
+Extraire les deux blocs de rendu (~lignes 805-1058 pour roads, ~lignes 1060-1180 pour lots) dans des variables `roadsBlock` et `lotsBlock`, puis :
+
+```typescript
+{selectedRoadId ? (
+  <>{lotsBlock}{roadsBlock}</>
+) : (
+  <>{roadsBlock}{lotsBlock}</>
+)}
 ```
+
+Cela garantit que la couche contenant l'élément sélectionné est toujours au-dessus et reste cliquable.
 
