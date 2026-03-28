@@ -622,6 +622,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       surfaceType: roadPresetSurface,
       isExisting: false,
       path: [edge.p1, edge.p2],
+      affectedLotIds: [edge.lotId1, ...(edge.lotId2 ? [edge.lotId2] : [])],
     };
 
     // Shrink adjacent lots
