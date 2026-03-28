@@ -1433,6 +1433,24 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
           );
         })}
 
+        {/* Road intersection markers */}
+        {showRoads && roads.length >= 2 && (() => {
+          const intersectionPts = getAllRoadIntersectionPoints(roads);
+          return intersectionPts.map((pt, i) => {
+            const sp = toScreen(pt);
+            return (
+              <circle
+                key={`isect-${i}`}
+                cx={sp.x} cy={sp.y} r={5}
+                fill="hsl(var(--destructive))"
+                stroke="hsl(var(--background))"
+                strokeWidth={1.5}
+                pointerEvents="none"
+              />
+            );
+          });
+        })()}
+
         {/* Merge button */}
         {selectedLotIds.length >= 2 && !readOnly && onMergeLots && mode === 'select' && (() => {
           const selectedLotsData = lots.filter(l => selectedLotIds.includes(l.id));
