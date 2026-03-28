@@ -35,7 +35,7 @@ const REQUESTER_TYPE_LABELS: Record<string, string> = {
 
 const StepSummary: React.FC<StepSummaryProps> = ({
   parentParcel, requester, lots, roads, validation, purpose,
-  submitted, referenceNumber, submitting, submissionFee, onSubmit
+  submitted, referenceNumber, submitting, submissionFee, feeBreakdown, onSubmit
 }) => {
   const totalArea = lots.reduce((s, l) => s + l.areaSqm, 0);
   const parentArea = parentParcel?.areaSqm || 0;
