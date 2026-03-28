@@ -195,6 +195,112 @@ export function mergeLotsThroughDeletedRoad(
 }
 
 /**
+ * Segment-segment intersection: both t and u must be in [0,1]
+ */
+export function segmentSegmentIntersection(
+  p1: Point2D, p2: Point2D, p3: Point2D, p4: Point2D
+): { point: Point2D; t: number; u: number } | null {
+  const d1x = p2.x - p1.x, d1y = p2.y - p1.y;
+  const d2x = p4.x - p3.x, d2y = p4.y - p3.y;
+  const denom = d1x * d2y - d1y * d2x;
+  if (Math.abs(denom) < 1e-10) return null;
+  const t = ((p3.x - p1.x) * d2y - (p3.y - p1.y) * d2x) / denom;
+  const u = ((p3.x - p1.x) * d1y - (p3.y - p1.y) * d1x) / denom;
+  if (t < 0 || t > 1 || u < 0 || u > 1) return null;
+  return {
+    point: { x: p1.x + t * d1x, y: p1.y + t * d1y },
+    t, u,
+  };
+}
+
+/**
+ * Find all intersection points between two road paths (segment-segment)
+ */
+export function findRoadIntersections(
+  path1: Point2D[], path2: Point2D[]
+): { point: Point2D; seg1Idx: number; t1: number; seg2Idx: number; t2: number }[] {
+  const results: { point: Point2D; seg1Idx: number; t1: number; seg2Idx: number; t2: number }[] = [];
+  for (let i = 0; i < path1.length - 1; i++) {
+    for (let j = 0; j < path2.length - 1; j++) {
+      const inter = segmentSegmentIntersection(path1[i], path1[i + 1], path2[j], path2[j + 1]);
+      if (inter) {
+        // Avoid duplicates at endpoints
+        const isDup = results.some(r =>
+          Math.abs(r.point.x - inter.point.x) < 1e-8 && Math.abs(r.point.y - inter.point.y) < 1e-8
+        );
+        if (!isDup) {
+          results.push({ point: inter.point, seg1Idx: i, t1: inter.t, seg2Idx: j, t2: inter.u });
+        }
+      }
+    }
+  }
+  return results;
+}
+
+/**
+ * Insert a point into a path at a given segment index, maintaining order by t parameter
+ */
+export function insertPointInPath(path: Point2D[], point: Point2D, segIdx: number): Point2D[] {
+  const newPath = [...path];
+  newPath.splice(segIdx + 1, 0, point);
+  return newPath;
+}
+
+/**
+ * Insert all intersection points between a set of roads, mutating their paths.
+ * Returns updated roads array with intersection points injected into paths.
+ */
+export function insertAllRoadIntersections(roads: { id: string; path: Point2D[]; [key: string]: any }[]): typeof roads {
+  const updatedRoads = roads.map(r => ({ ...r, path: [...r.path] }));
+
+  for (let a = 0; a < updatedRoads.length; a++) {
+    for (let b = a + 1; b < updatedRoads.length; b++) {
+      const intersections = findRoadIntersections(updatedRoads[a].path, updatedRoads[b].path);
+      // Sort by seg index descending so insertions don't shift subsequent indices
+      const sortedForA = [...intersections].sort((x, y) => y.seg1Idx - x.seg1Idx || y.t1 - x.t1);
+      const sortedForB = [...intersections].sort((x, y) => y.seg2Idx - x.seg2Idx || y.t2 - x.t2);
+
+      for (const inter of sortedForA) {
+        const alreadyExists = updatedRoads[a].path.some(p =>
+          Math.abs(p.x - inter.point.x) < 1e-8 && Math.abs(p.y - inter.point.y) < 1e-8
+        );
+        if (!alreadyExists) {
+          updatedRoads[a].path = insertPointInPath(updatedRoads[a].path, inter.point, inter.seg1Idx);
+        }
+      }
+      for (const inter of sortedForB) {
+        const alreadyExists = updatedRoads[b].path.some(p =>
+          Math.abs(p.x - inter.point.x) < 1e-8 && Math.abs(p.y - inter.point.y) < 1e-8
+        );
+        if (!alreadyExists) {
+          updatedRoads[b].path = insertPointInPath(updatedRoads[b].path, inter.point, inter.seg2Idx);
+        }
+      }
+    }
+  }
+  return updatedRoads;
+}
+
+/**
+ * Compute all intersection points between all roads (for rendering markers)
+ */
+export function getAllRoadIntersectionPoints(roads: { path: Point2D[] }[]): Point2D[] {
+  const points: Point2D[] = [];
+  for (let a = 0; a < roads.length; a++) {
+    for (let b = a + 1; b < roads.length; b++) {
+      const inters = findRoadIntersections(roads[a].path, roads[b].path);
+      for (const inter of inters) {
+        const isDup = points.some(p =>
+          Math.abs(p.x - inter.point.x) < 1e-6 && Math.abs(p.y - inter.point.y) < 1e-6
+        );
+        if (!isDup) points.push(inter.point);
+      }
+    }
+  }
+  return points;
+}
+
+/**
  * Validate subdivision plan
  */
 export interface ValidationResult {
