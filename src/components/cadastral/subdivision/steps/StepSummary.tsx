@@ -22,6 +22,7 @@ interface StepSummaryProps {
   referenceNumber: string;
   submitting: boolean;
   submissionFee: number | null;
+  feeBreakdown: FeeBreakdown | null;
   onSubmit: () => void;
 }
 
