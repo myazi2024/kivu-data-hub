@@ -1,79 +1,38 @@
 
 
-# Tarification du lotissement par m², par lot et par emplacement
+# Corriger le tracé de voie sur une limite mitoyenne
 
-## Résumé
+## Problème
 
-Remplacer le frais fixe de lotissement par un calcul dynamique : **tarif/m² × surface de chaque lot × nombre de lots**, avec un tarif qui varie selon l'emplacement (quartier en zone urbaine, village en zone rurale). Les tarifs sont configurables depuis l'espace admin.
+Quand on trace une voie sur la ligne séparant deux lots, le code cherche un lot **traversé** par la ligne (2 intersections dans un même lot). Sur une arête partagée, la ligne longe le bord sans traverser aucun lot → aucun lot n'est modifié, la voie se superpose simplement.
 
-## Changements
+## Solution
 
-### 1. Migration SQL — Table `subdivision_rate_config`
+Dans `handleFinishRoadDraw`, après la recherche d'un lot traversé (cas existant qui fonctionne), ajouter un **fallback** : si aucun lot n'est traversé, détecter si la ligne coïncide avec une arête partagée entre deux lots. Si oui, appliquer la même logique de retrait (shrink) que `handleConvertEdgeToRoad` — pousser les sommets proches de la ligne vers l'extérieur de chaque côté par `halfWidthNorm`.
 
-```sql
-CREATE TABLE public.subdivision_rate_config (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  section_type TEXT NOT NULL CHECK (section_type IN ('urban', 'rural')),
-  location_name TEXT NOT NULL,         -- quartier/village ou '*' (défaut)
-  rate_per_sqm_usd NUMERIC NOT NULL DEFAULT 0.5,
-  min_fee_per_lot_usd NUMERIC DEFAULT 5,
-  max_fee_per_lot_usd NUMERIC DEFAULT NULL,
-  is_active BOOLEAN DEFAULT true,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(section_type, location_name)
-);
-ALTER TABLE public.subdivision_rate_config ENABLE ROW LEVEL SECURITY;
--- Lecture pour authentifiés, écriture pour admins via has_role
+## Changement unique — `StepLotDesigner.tsx`
+
+Dans `handleFinishRoadDraw`, après le bloc `if (!targetLot || bestIntersections.length < 2)` (ligne 455), au lieu de retourner immédiatement :
+
+1. Calculer la direction et la normale de la ligne tracée
+2. Pour chaque lot, vérifier si au moins 2 sommets sont proches de la ligne (distance perpendiculaire < tolérance) → ce lot **borde** la voie
+3. Pour chaque lot bordant la voie, pousser ces sommets vers l'extérieur (comme dans `shrinkPoly` / `handleConvertEdgeToRoad`)
+4. Recalculer `areaSqm` et `perimeterM`
+
+```text
+handleFinishRoadDraw(path):
+  1. Créer la voie (existant)
+  2. Chercher lot traversé (existant)
+  3. SI lot traversé → couper + shrink (existant)
+  4. SINON (NOUVEAU) →
+     - Pour chaque lot: compter sommets proches de la ligne
+     - Si ≥ 2 sommets proches → shrink ce lot
+     - Mettre à jour tous les lots modifiés
 ```
 
-Insérer deux tarifs par défaut (`*`) pour urban et rural.
-
-### 2. Admin — `AdminSubdivisionFeesConfig.tsx` (nouveau)
-
-CRUD complet similaire à `AdminExpertiseFeesConfig` :
-- Filtrage par type de section (Urbain/Rural)
-- Colonnes : Emplacement, Tarif/m² (USD), Min/lot, Max/lot, Actif
-- Ajout, modification, suppression de tarifs
-- Possibilité d'ajouter un tarif par défaut (`*`)
-
-### 3. Intégration admin
+## Fichier impacté
 
 | Fichier | Modification |
 |---------|-------------|
-| `AdminSidebar.tsx` | Ajouter entrée `{ label: 'Config Frais Lotissement', value: 'subdivision-fees-config' }` après la ligne lotissement |
-| `Admin.tsx` | Importer `AdminSubdivisionFeesConfig` + ajouter `case 'subdivision-fees-config'` |
-
-### 4. Calcul dynamique — `useSubdivisionForm.ts`
-
-Remplacer le chargement depuis `cadastral_services_config` par :
-- Extraire `section_type` (`parcelData.section_type === 'SR' ? 'rural' : 'urban'`) et `location_name` (`quartier` ou `village`) depuis `parcelData`
-- Requête sur `subdivision_rate_config` pour trouver le tarif spécifique ou fallback `*`
-- **Calcul par lot** : pour chaque lot, `fee = clamp(lot.areaSqm × rate, min_per_lot, max_per_lot)`
-- **Total** = somme des frais de tous les lots
-- Exposer `ratePerSqm`, `feeBreakdown` (détail par lot) en plus de `submissionFee`
-
-### 5. Affichage — `StepSummary.tsx`
-
-- Afficher le tarif appliqué : `{rate}/m² — {locationName} ({sectionType})`
-- Tableau des frais par lot : Lot N° | Surface | Frais
-- Total en bas
-- Mention si tarif par défaut ou spécifique à l'emplacement
-
-### 6. Types — `types.ts`
-
-Ajouter à `ParentParcelInfo` : `sectionType?: string`, `locationName?: string`
-Ajouter interface `FeeBreakdown` : `{ lotId, lotNumber, areaSqm, fee }[]`
-
-## Fichiers impactés
-
-| Fichier | Action |
-|---------|--------|
-| Migration SQL | Créer `subdivision_rate_config` + RLS + données par défaut |
-| `src/components/admin/AdminSubdivisionFeesConfig.tsx` | Nouveau — CRUD admin |
-| `src/components/admin/AdminSidebar.tsx` | Ajouter entrée menu |
-| `src/pages/Admin.tsx` | Ajouter import + case |
-| `src/components/cadastral/subdivision/hooks/useSubdivisionForm.ts` | Calcul dynamique par lot |
-| `src/components/cadastral/subdivision/steps/StepSummary.tsx` | Détail frais par lot |
-| `src/components/cadastral/subdivision/types.ts` | Ajouter champs pricing |
+| `src/components/cadastral/subdivision/steps/StepLotDesigner.tsx` | Ajouter le fallback "shrink adjacent lots" dans `handleFinishRoadDraw` quand aucun lot n'est traversé |
 
