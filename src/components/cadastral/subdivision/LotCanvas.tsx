@@ -352,7 +352,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (readOnly) return;
-    if (lineChoiceMenu) return; // Don't start new actions while choice menu is open
+    
     // Space + drag = pan
     if (viewport.isSpaceDown() || e.button === 1) {
       e.preventDefault();
