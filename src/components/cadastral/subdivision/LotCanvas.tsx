@@ -1533,11 +1533,11 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         })}
 
         {/* Mode instruction overlay */}
-        {mode === 'drawLine' && !lineChoiceMenu && (
+        {(mode === 'drawLine' || mode === 'drawRoad') && (
           <g className="pointer-events-none">
             <rect x={CANVAS_W / 2 - 155} y={CANVAS_H - 24} width={310} height={20} rx={4} fill="hsl(var(--primary))" fillOpacity={0.1} />
             <text x={CANVAS_W / 2} y={CANVAS_H - 14} textAnchor="middle" dominantBaseline="middle" fontSize={9} fill="hsl(var(--primary))" fontWeight="600">
-              ✏️ Glissez pour tracer • Shift+clic: multi-segments • Backspace: annuler point
+              {mode === 'drawRoad' ? '🛣' : '✏️'} Glissez pour tracer • Shift+clic: multi-segments • Backspace: annuler point
             </text>
           </g>
         )}
