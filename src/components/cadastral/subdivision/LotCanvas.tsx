@@ -517,7 +517,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       const startPt = lineDrawPoints[0];
       const dist = Math.sqrt((snapped.x - startPt.x) ** 2 + (snapped.y - startPt.y) ** 2);
       if (dist > 0.02) {
-        showLineChoice([startPt, snapped]);
+        finishLineDraw([startPt, snapped]);
       }
       setLineDrawPoints([]);
       setLineDrawMousePos(null);
