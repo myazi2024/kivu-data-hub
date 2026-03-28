@@ -108,15 +108,16 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     }
   }, [parcelData]);
 
+  // Plan data
+  const [lots, setLots] = useState<SubdivisionLot[]>([]);
+
   // Recompute fee when lots change
   useEffect(() => {
     if (lots.length > 0) {
       computeFee(lots);
     }
   }, [lots, computeFee]);
-  
-  // Plan data
-  const [lots, setLots] = useState<SubdivisionLot[]>([]);
+
   const [roads, setRoads] = useState<SubdivisionRoad[]>([]);
   const [commonSpaces, setCommonSpaces] = useState<SubdivisionCommonSpace[]>([]);
   const [servitudes, setServitudes] = useState<SubdivisionServitude[]>([]);
