@@ -1061,6 +1061,11 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
           );
         })}
 
+            </g>
+          );
+
+          const lotsBlock = (
+            <g key="lots-layer">
         {/* Lots */}
         {[...lots].sort((a, b) => {
           const aS = a.id === selectedLotId || selectedLotIds.includes(a.id) ? 1 : 0;
