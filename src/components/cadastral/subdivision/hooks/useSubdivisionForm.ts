@@ -312,7 +312,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
       default:
         return false;
     }
-  }, [parentParcel, requester, lots, validation]);
+  }, [parentParcel, requester, lots, validation, purpose]);
   
   // Navigation
   const steps: SubdivisionStep[] = ['parcel', 'designer', 'plan', 'summary'];
