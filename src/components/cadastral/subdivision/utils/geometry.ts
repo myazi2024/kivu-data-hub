@@ -108,14 +108,35 @@ export function isPointInPolygon(point: Point2D, polygon: Point2D[]): boolean {
 }
 
 /**
- * Check if two polygons overlap
+ * Distance from a point to a line segment
+ */
+export function pointToSegmentDistance(p: Point2D, a: Point2D, b: Point2D): number {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const lenSq = dx * dx + dy * dy;
+  if (lenSq === 0) return distance(p, a);
+  const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / lenSq));
+  return distance(p, { x: a.x + t * dx, y: a.y + t * dy });
+}
+
+/**
+ * Check if a point lies on any edge of a polygon
+ */
+export function isPointOnPolygonEdge(point: Point2D, polygon: Point2D[], epsilon = 1e-6): boolean {
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    if (pointToSegmentDistance(point, polygon[j], polygon[i]) < epsilon) return true;
+  }
+  return false;
+}
+
+/**
+ * Check if two polygons overlap (excludes shared edges)
  */
 export function doPolygonsOverlap(poly1: Point2D[], poly2: Point2D[]): boolean {
   for (const p of poly1) {
-    if (isPointInPolygon(p, poly2)) return true;
+    if (isPointInPolygon(p, poly2) && !isPointOnPolygonEdge(p, poly2, 1e-6)) return true;
   }
   for (const p of poly2) {
-    if (isPointInPolygon(p, poly1)) return true;
+    if (isPointInPolygon(p, poly1) && !isPointOnPolygonEdge(p, poly1, 1e-6)) return true;
   }
   return false;
 }
