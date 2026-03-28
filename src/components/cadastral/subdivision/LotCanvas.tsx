@@ -820,7 +820,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         )}
 
         {/* Roads — polygon rendering with clear borders */}
-        {showRoads && roads.map(road => {
+        {showRoads && [...roads].sort((a, b) => (a.id === selectedRoadId ? 1 : 0) - (b.id === selectedRoadId ? 1 : 0)).map(road => {
           if (road.path.length < 2) return null;
           const pathPoints = road.path.map(p => toScreen(p));
           const polylineStr = pathPoints.map(p => `${p.x},${p.y}`).join(' ');
@@ -1075,7 +1075,11 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         })}
 
         {/* Lots */}
-        {lots.map(lot => {
+        {[...lots].sort((a, b) => {
+          const aS = a.id === selectedLotId || selectedLotIds.includes(a.id) ? 1 : 0;
+          const bS = b.id === selectedLotId || selectedLotIds.includes(b.id) ? 1 : 0;
+          return aS - bS;
+        }).map(lot => {
           const screenVertices = lot.vertices.map(v => toScreen(v));
           const pointsStr = screenVertices.map(p => `${p.x},${p.y}`).join(' ');
           const isSelected = lot.id === selectedLotId;
