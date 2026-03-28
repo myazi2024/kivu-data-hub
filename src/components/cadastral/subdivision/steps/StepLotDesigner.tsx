@@ -424,10 +424,10 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       isExisting: false,
       path,
     };
-    // Insert intersection points between all roads (including the new one)
+    // Split existing roads at intersection points with the new road
     const allRoads = [...roads, newRoad];
-    const roadsWithIntersections = insertAllRoadIntersections(allRoads) as SubdivisionRoad[];
-    setRoads(roadsWithIntersections);
+    const splitRoads = splitRoadsAtIntersections(allRoads) as SubdivisionRoad[];
+    setRoads(splitRoads);
     setEditingRoadId(newRoad.id);
 
     // 2. Find lot traversed by the drawn line
