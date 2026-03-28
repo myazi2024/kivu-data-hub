@@ -20,6 +20,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   
   // Dynamic pricing
   const [submissionFee, setSubmissionFee] = useState<number | null>(null);
+  const [feeBreakdown, setFeeBreakdown] = useState<FeeBreakdown | null>(null);
   const [loadingFee, setLoadingFee] = useState(true);
   
   // Requester
