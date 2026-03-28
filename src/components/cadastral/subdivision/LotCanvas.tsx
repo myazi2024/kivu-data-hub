@@ -543,7 +543,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   const handleCanvasClick = useCallback((e: React.MouseEvent) => {
     if (readOnly) return;
     if (drag.isDragging) return;
-    if (lineChoiceMenu) return;
+    
     const pos = getSvgPos(e);
     const normalized = fromScreen(pos.x, pos.y);
 
