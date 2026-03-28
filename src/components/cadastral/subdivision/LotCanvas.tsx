@@ -359,8 +359,8 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       viewport.startPan(e.clientX, e.clientY);
       return;
     }
-    // drawLine: simple drag mode
-    if (mode === 'drawLine' && e.button === 0 && !lineDrawMultiMode && lineDrawPoints.length === 0) {
+    // drawLine/drawRoad: simple drag mode
+    if ((mode === 'drawLine' || mode === 'drawRoad') && e.button === 0 && !lineDrawMultiMode && lineDrawPoints.length === 0) {
       const pos = getSvgPos(e);
       const normalized = fromScreen(pos.x, pos.y);
       const snapped = drag.snapToGrid(normalized);
@@ -368,7 +368,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       setIsLineDragging(true);
       return;
     }
-  }, [readOnly, viewport, mode, lineDrawMultiMode, lineDrawPoints, getSvgPos, fromScreen, drag, lineChoiceMenu]);
+  }, [readOnly, viewport, mode, lineDrawMultiMode, lineDrawPoints, getSvgPos, fromScreen, drag]);
 
   const handleVertexMouseDown = useCallback((lotId: string, vertexIdx: number, e: React.MouseEvent) => {
     if (readOnly || mode !== 'select') return;
