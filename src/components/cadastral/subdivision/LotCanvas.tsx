@@ -1075,7 +1075,11 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         })}
 
         {/* Lots */}
-        {lots.map(lot => {
+        {[...lots].sort((a, b) => {
+          const aS = a.id === selectedLotId || selectedLotIds.includes(a.id) ? 1 : 0;
+          const bS = b.id === selectedLotId || selectedLotIds.includes(b.id) ? 1 : 0;
+          return aS - bS;
+        }).map(lot => {
           const screenVertices = lot.vertices.map(v => toScreen(v));
           const pointsStr = screenVertices.map(p => `${p.x},${p.y}`).join(' ');
           const isSelected = lot.id === selectedLotId;
