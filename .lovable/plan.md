@@ -1,35 +1,25 @@
 
 
-# Correction : impossible de cliquer sur une voie pour la sélectionner
+# Simplifier l'onglet Parcelle : supprimer le bloc Demandeur, garder Qualité + Motif obligatoires
 
-## Problème
-Le swap de couches (`selectedRoadId ? lotsBlock→roadsBlock : roadsBlock→lotsBlock`) ne résout pas le problème initial : quand aucune voie n'est sélectionnée, les lots sont rendus **au-dessus** des voies, donc le clic sur une voie est intercepté par le polygone du lot.
+## Changements
 
-## Solution
-Ajouter une couche de **hit-areas invisibles des voies** qui est **toujours rendue au-dessus de tout**, indépendamment de la sélection. Cela permet de cliquer sur une voie même quand les lots sont au premier plan.
+### 1. `StepParentParcel.tsx` — Supprimer le bloc Demandeur
+- Supprimer le bloc `<Card>` "Demandeur" (lignes 87-130) qui affiche nom, email, téléphone et le badge "Connecté"
+- Conserver uniquement le `<Select>` "Qualité du demandeur" en le déplaçant dans une carte autonome entre la parcelle mère et le motif
+- Ajouter un indicateur obligatoire (`*`) sur "Qualité du demandeur" et "Motif du lotissement"
+- Supprimer l'import `User` et la variable `displayName` devenus inutiles
 
-### Détail technique
+### 2. `useSubdivisionForm.ts` — Validation obligatoire
+- Modifier `isStepValid('parcel')` (ligne 305) pour exiger aussi que `requester.type` soit renseigné et que `purpose` ne soit pas vide :
+  ```
+  return !!(parentParcel && requester.type && purpose);
+  ```
 
-Après le rendu conditionnel `roadsBlock/lotsBlock`, ajouter un bloc supplémentaire qui rend uniquement les zones de clic invisibles des voies (polylines transparentes larges + polygones transparents) — toujours au-dessus :
-
-```typescript
-{/* Hit areas for roads — always on top for clickability */}
-{showRoads && mode === 'select' && !readOnly && roads.map(road => {
-  // Même calcul de polylineStr et polygonStr que dans roadsBlock
-  return (
-    <g key={`road-hit-${road.id}`}>
-      <polyline ... fill="none" stroke="transparent" strokeWidth={Math.max(20, roadWidthPx + 10)}
-        pointerEvents="all" onClick={e => handleRoadClick(road.id, e)} />
-      <polygon ... fill="transparent" pointerEvents="all"
-        onClick={e => handleRoadClick(road.id, e)} />
-    </g>
-  );
-})}
-```
-
-### Fichier impacté
+### Fichiers impactés
 
 | Fichier | Modification |
 |---------|-------------|
-| `LotCanvas.tsx` | Ajouter un bloc de hit-areas de voies toujours rendu après `lotsBlock`/`roadsBlock` (~10 lignes après la ligne 1389) |
+| `StepParentParcel.tsx` | Supprimer bloc Demandeur, garder Select qualité dans sa propre carte, marquer champs obligatoires |
+| `useSubdivisionForm.ts` | Ajouter `requester.type && purpose` à la validation de l'étape `parcel` |
 
