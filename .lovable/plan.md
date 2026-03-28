@@ -1,20 +1,31 @@
 
-# Refonte de la rotation omnidirectionnelle
 
-## Constat
-La rotation actuelle est trop fragile car elle repose sur une petite poignée externe au-dessus de la forme, branchée dans le flux général de `mousemove`. Même si le calcul d’angle a été corrigé, l’intégration UX reste mauvaise :
-- la poignée est difficile à attraper,
-- elle peut sortir de la zone visible,
-- son comportement entre lots et voies n’est pas assez robuste,
-- elle entre en concurrence avec les autres interactions du canvas.
+# Ajustement automatique des lots lors du redimensionnement d'une voie
 
-## Refonte proposée
-Remplacer la logique actuelle par une interaction de rotation plus directe et plus fiable, basée sur un **mode de rotation actif sur la sélection** plutôt que sur une petite poignée isolée.
+## Probleme
+Quand on etire une voie pour modifier sa largeur (`widthM`), seule la voie est mise a jour. Les lots adjacents ne bougent pas, ce qui cree des chevauchements ou des espaces vides entre la voie et les lots.
 
-### 1. Nouveau principe d’interaction
-Quand une **voie**, une **ligne** ou un **lot** est sélectionné :
-- afficher un **anneau de rotation** centré sur l’élément sélectionné,
-- afficher une **poignée plus grande** positionnée sur ce cercle,
-- permettre la rotation en cliquant-glissant sur :
-  - la poignée,
-  - ou directement l
+## Solution
+Modifier `handleUpdateRoad` dans `StepLotDesigner.tsx` pour detecter un changement de `widthM` et ajuster automatiquement les sommets des lots adjacents.
+
+### Logique
+1. Quand `updates.widthM` est present et different de l'ancien `widthM` :
+   - Calculer le delta de demi-largeur en coordonnees normalisees : `deltaHalfNorm = ((newWidth - oldWidth) / 2) / sideLength`
+   - Calculer la normale perpendiculaire a la voie (`nx`, `ny`)
+   - Pour chaque lot, determiner de quel cote de la voie il se trouve (via son centroide)
+   - Pousser les sommets du lot qui sont proches de la bordure de la voie de `deltaHalfNorm` dans la direction opposee a la voie
+   - Recalculer `areaSqm` et `perimeterM`
+
+2. Cette logique reprend exactement le pattern deja utilise dans `handleConvertEdgeToRoad` (lignes 433-478) mais applique un delta incremental au lieu d'une demi-largeur absolue.
+
+### Fichier impacte
+
+| Fichier | Modification |
+|---------|-------------|
+| `StepLotDesigner.tsx` | Enrichir `handleUpdateRoad` pour detecter un changement de `widthM` et ajuster les sommets des lots adjacents a la voie |
+
+### Detail technique
+- Identifier les lots adjacents : un lot est adjacent si au moins un de ses sommets est a une distance perpendiculaire < tolerance de la ligne centrale de la voie
+- Tolerance dynamique : basee sur l'ancienne demi-largeur normalisee + marge
+- Reutiliser `polygonArea` pour recalculer les superficies
+
