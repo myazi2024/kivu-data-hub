@@ -482,7 +482,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     // Submission
     submitting, submitted, referenceNumber, submit,
     // Pricing
-    submissionFee, loadingFee,
+    submissionFee, loadingFee, feeBreakdown,
     // Draft
     draftRestored, clearDraft,
   };
