@@ -256,7 +256,6 @@ export function insertAllRoadIntersections(roads: { id: string; path: Point2D[];
   for (let a = 0; a < updatedRoads.length; a++) {
     for (let b = a + 1; b < updatedRoads.length; b++) {
       const intersections = findRoadIntersections(updatedRoads[a].path, updatedRoads[b].path);
-      // Sort by seg index descending so insertions don't shift subsequent indices
       const sortedForA = [...intersections].sort((x, y) => y.seg1Idx - x.seg1Idx || y.t1 - x.t1);
       const sortedForB = [...intersections].sort((x, y) => y.seg2Idx - x.seg2Idx || y.t2 - x.t2);
 
@@ -279,6 +278,80 @@ export function insertAllRoadIntersections(roads: { id: string; path: Point2D[];
     }
   }
   return updatedRoads;
+}
+
+/**
+ * Split roads at intersection points: when a new road crosses an existing road,
+ * the existing road is split into two independent road objects at the intersection point.
+ * Each tronçon becomes a separate SubdivisionRoad that can be selected/deleted independently.
+ */
+export function splitRoadsAtIntersections(
+  roads: { id: string; name?: string; path: Point2D[]; [key: string]: any }[]
+): typeof roads {
+  let result = roads.map(r => ({ ...r, path: [...r.path] }));
+  
+  // We process the last road (newest) against all previous ones
+  // This avoids re-splitting already split roads
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (let newIdx = 0; newIdx < result.length && !changed; newIdx++) {
+      for (let existIdx = 0; existIdx < result.length && !changed; existIdx++) {
+        if (newIdx === existIdx) continue;
+        
+        const intersections = findRoadIntersections(result[newIdx].path, result[existIdx].path);
+        if (intersections.length === 0) continue;
+        
+        // Take the first intersection to split the existing road
+        const inter = intersections[0];
+        const existRoad = result[existIdx];
+        const existPath = existRoad.path;
+        
+        // Build path A: from start to intersection point
+        const pathA = [...existPath.slice(0, inter.seg2Idx + 1), inter.point];
+        // Build path B: from intersection point to end
+        const pathB = [inter.point, ...existPath.slice(inter.seg2Idx + 1)];
+        
+        // Only split if both parts have at least 2 points (a valid segment)
+        if (pathA.length < 2 || pathB.length < 2) continue;
+        
+        const baseName = existRoad.name || 'Voie';
+        const roadA = {
+          ...existRoad,
+          id: `${existRoad.id}-a-${Date.now()}`,
+          name: `${baseName} (a)`,
+          path: pathA,
+        };
+        const roadB = {
+          ...existRoad,
+          id: `${existRoad.id}-b-${Date.now()}`,
+          name: `${baseName} (b)`,
+          path: pathB,
+        };
+        
+        // Also insert intersection point into the new road's path
+        const newRoad = result[newIdx];
+        const alreadyInNew = newRoad.path.some(p =>
+          Math.abs(p.x - inter.point.x) < 1e-8 && Math.abs(p.y - inter.point.y) < 1e-8
+        );
+        if (!alreadyInNew) {
+          newRoad.path = insertPointInPath(newRoad.path, inter.point, inter.seg1Idx);
+        }
+        
+        // Replace existRoad with roadA and roadB
+        result = [
+          ...result.slice(0, existIdx),
+          roadA,
+          roadB,
+          ...result.slice(existIdx + 1),
+        ];
+        
+        changed = true; // restart to handle cascading splits
+      }
+    }
+  }
+  
+  return result;
 }
 
 /**
