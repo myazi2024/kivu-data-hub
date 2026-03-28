@@ -1459,7 +1459,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 <g>
                   <g className="cursor-pointer" onClick={e => {
                     e.stopPropagation();
-                    showLineChoice(lineDrawPoints);
+                    finishLineDraw(lineDrawPoints);
                     setLineDrawPoints([]);
                     setLineDrawMousePos(null);
                     setLineDrawMultiMode(false);
