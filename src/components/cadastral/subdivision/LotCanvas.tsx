@@ -159,7 +159,6 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     setLineDrawMousePos(null);
     setIsLineDragging(false);
     setLineDrawMultiMode(false);
-    setLineChoiceMenu(null);
     setRoadEndpointDrag(null);
     setHoveredEdge(null);
     setEdgeContextMenu(null);
