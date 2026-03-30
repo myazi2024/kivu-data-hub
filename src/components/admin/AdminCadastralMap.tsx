@@ -63,19 +63,21 @@ const AdminCadastralMap = () => {
     try {
       setLoading(true);
       
-      // Compter le total des contributions validées
+      // Compter le total des contributions validées (exclure TEST-% en production)
       const { count } = await supabase
         .from('cadastral_contributions')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'approved');
+        .eq('status', 'approved')
+        .not('parcel_number', 'ilike', 'TEST-%');
       
       setTotalCount(count || 0);
 
-      // Récupérer les contributions validées avec pagination
+      // Récupérer les contributions validées avec pagination (exclure TEST-%)
       const { data, error } = await supabase
         .from('cadastral_contributions')
         .select('id, parcel_number, current_owner_name, area_sqm, property_title_type, province, ville, commune, quartier, gps_coordinates, created_at, verified_at')
         .eq('status', 'approved')
+        .not('parcel_number', 'ilike', 'TEST-%')
         .order('verified_at', { ascending: false })
         .range((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE - 1);
 

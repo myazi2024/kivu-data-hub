@@ -131,6 +131,18 @@ export const useCadastralSearch = () => {
       return;
     }
 
+    // Validate test/production environment match
+    const trimmedNumber = parcelNumber.trim();
+    const isTestParcel = trimmedNumber.toUpperCase().startsWith('TEST-');
+    if (isTestRoute && !isTestParcel) {
+      setError("En mode test, seules les parcelles TEST-% sont accessibles.");
+      return;
+    }
+    if (!isTestRoute && isTestParcel) {
+      setError("Les parcelles de test ne sont pas accessibles en mode production.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
