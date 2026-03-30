@@ -1,40 +1,74 @@
 
 
-# Ajouter les tables manquantes au nettoyage des données test
+# Environnement test isolé via routes `/test/*`
 
 ## Problème
-La fonction `cleanup_all_test_data()` ne supprime pas :
-- `expertise_payments` (liée par FK à `real_estate_expertise_requests`)
-- `real_estate_expertise_requests` (données test avec `reference_number ILIKE 'TEST-%'`)
-- `payment_transactions` (données test avec `metadata->>'test_mode' = 'true'`)
+Les données test (`TEST-%`) et les données réelles coexistent dans les mêmes vues. Il n'y a aucune séparation : les utilisateurs voient les données test, et les testeurs voient les données de production.
 
 ## Solution
-Nouvelle migration SQL qui recrée `cleanup_all_test_data()` en ajoutant ces 3 DELETE dans le bon ordre FK :
 
-1. **`expertise_payments`** : supprimer ceux dont `expertise_request_id` pointe vers une expertise `TEST-%` (enfant → avant le parent)
-2. **`payment_transactions`** : supprimer ceux avec `metadata->>'test_mode' = 'true'` OU liés à des factures `TEST-%`
-3. **`real_estate_expertise_requests`** : supprimer ceux avec `reference_number ILIKE 'TEST-%'`
+Créer un contexte React `TestEnvironmentContext` qui détermine si l'utilisateur navigue dans l'environnement test (`/test/*`) ou dans l'environnement de production. Toutes les requêtes Supabase seront filtrées automatiquement selon le contexte.
 
-Ces suppressions seront placées **avant** la suppression des parcelles et factures pour respecter l'ordre FK.
+### Architecture
 
-## Détails techniques
+```text
+/cadastral-map  ──► TestEnvironmentContext (mode=production)
+                      └─ Exclut parcel_number ILIKE 'TEST-%'
 
-Ajouts dans la fonction, juste après la suppression de `cadastral_service_access` (ligne 32) et avant `cadastral_invoices` :
-
-```sql
--- expertise_payments (FK → real_estate_expertise_requests)
-DELETE FROM public.expertise_payments WHERE expertise_request_id IN (
-  SELECT id FROM public.real_estate_expertise_requests WHERE reference_number ILIKE 'TEST-%'
-);
-
--- payment_transactions (test data)
-DELETE FROM public.payment_transactions WHERE metadata->>'test_mode' = 'true';
-
--- real_estate_expertise_requests
-DELETE FROM public.real_estate_expertise_requests WHERE reference_number ILIKE 'TEST-%';
+/test/cadastral-map ──► TestEnvironmentContext (mode=test)
+                          └─ Inclut UNIQUEMENT parcel_number ILIKE 'TEST-%'
 ```
 
-| Fichier | Modification |
-|---------|-------------|
-| Nouvelle migration SQL | `CREATE OR REPLACE FUNCTION cleanup_all_test_data()` avec les 3 tables manquantes |
+### Étapes
+
+**1. Créer `TestEnvironmentContext` + hook `useTestEnvironment`**
+- Fichier : `src/hooks/useTestEnvironment.tsx`
+- Détecte si le pathname commence par `/test/`
+- Expose `isTestRoute: boolean` et une fonction helper `applyTestFilter(query, column)` qui ajoute `.ilike(column, 'TEST-%')` ou `.not(column, 'ilike', 'TEST-%')` selon le contexte
+
+**2. Wrapper l'app avec le provider**
+- Dans `App.tsx`, ajouter `<TestEnvironmentProvider>` autour des routes
+
+**3. Ajouter les routes miroir `/test/*`**
+- Dans `App.tsx`, dupliquer les routes principales sous `/test/` :
+  - `/test/cadastral-map` → `<CadastralMap />`
+  - `/test/map` → `<Map />`
+  - `/test/mon-compte` → `<UserDashboard />` (protégé)
+- Ces routes utilisent les mêmes composants — le filtrage est piloté par le contexte
+
+**4. Filtrer les requêtes dans les hooks/composants clés**
+- Modifier les principaux points de requête (~10 fichiers critiques) pour appliquer le filtre test/production :
+  - `src/pages/CadastralMap.tsx` (recherche de parcelles)
+  - `src/components/cadastral/CadastralSearchBar.tsx`
+  - `src/components/cadastral/LandTitleRequestDialog.tsx`
+  - `src/hooks/useCadastralSearch.ts`
+  - `src/hooks/useAdvancedCadastralSearch.ts`
+  - `src/components/admin/AdminCadastralMap.tsx`
+  - `src/components/admin/AdminCCCContributions.tsx`
+  - `src/pages/UserDashboard.tsx` (factures, contributions)
+- Pattern : importer `useTestEnvironment()`, appeler `applyTestFilter(query, 'parcel_number')` sur chaque requête `.from('cadastral_parcels')` / `.from('cadastral_contributions')` / `.from('cadastral_invoices')`
+
+**5. Indicateur visuel sur les routes test**
+- Afficher un bandeau fixe en haut ("Environnement de test — les données affichées sont fictives") avec fond amber sur les routes `/test/*`
+- Accessible depuis la page admin Mode Test via un lien direct vers `/test/cadastral-map`
+
+### Avantage collatéral
+Les routes de production (`/cadastral-map`, `/map`, etc.) **excluront désormais** les données `TEST-%`, résolvant le problème initial de contamination des données.
+
+### Fichiers impactés
+
+| Fichier | Action |
+|---------|--------|
+| `src/hooks/useTestEnvironment.tsx` | Nouveau — contexte + hook + helper de filtrage |
+| `src/App.tsx` | Provider + routes `/test/*` |
+| `src/components/TestEnvironmentBanner.tsx` | Nouveau — bandeau visuel |
+| `src/pages/CadastralMap.tsx` | Ajouter filtre test |
+| `src/components/cadastral/CadastralSearchBar.tsx` | Ajouter filtre test |
+| `src/hooks/useCadastralSearch.ts` | Ajouter filtre test |
+| `src/hooks/useAdvancedCadastralSearch.ts` | Ajouter filtre test |
+| `src/components/cadastral/LandTitleRequestDialog.tsx` | Ajouter filtre test |
+| `src/components/admin/AdminCadastralMap.tsx` | Ajouter filtre test |
+| `src/components/admin/AdminCCCContributions.tsx` | Ajouter filtre test |
+| `src/pages/UserDashboard.tsx` | Ajouter filtre test |
+| `src/components/admin/test-mode/TestModeGuide.tsx` | Ajouter lien vers `/test/cadastral-map` |
 
