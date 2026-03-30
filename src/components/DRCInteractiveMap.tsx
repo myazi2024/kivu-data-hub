@@ -182,7 +182,8 @@ const DRCInteractiveMap = () => {
       setExternalProvinceId(null);
       return;
     }
-    const province = provincesData.find(p => p.name === provinceName);
+    const normalize = (s: string) => s.toLowerCase().replace(/[-\s]/g, '');
+    const province = provincesData.find(p => normalize(p.name) === normalize(provinceName));
     if (province) {
       setSelectedProvince(province);
       setExternalProvinceId(province.id);
