@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { logAuditAction } from '@/utils/supabaseConfigUtils';
 import { toast } from 'sonner';
-import type { TestDataStats, GenerationStep } from './types';
+import type { GenerationStep } from './types';
 import { toRecord } from './types';
 import {
   uniqueSuffix,
