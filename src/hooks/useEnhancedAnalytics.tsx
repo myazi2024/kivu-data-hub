@@ -25,6 +25,7 @@ export const useEnhancedAnalytics = (startDate?: Date, endDate?: Date) => {
         .from('cadastral_invoices')
         .select('total_amount_usd, created_at')
         .eq('status', 'paid')
+        .not('parcel_number', 'ilike', 'TEST-%')
         .order('created_at', { ascending: true });
 
       const historicalRevenue = groupByDate(revenueData || [], 'created_at', 'total_amount_usd');
