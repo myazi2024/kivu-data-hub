@@ -112,12 +112,17 @@ const CadastralSearchBar = () => {
     const fetchSuggestions = async () => {
       setLoadingSuggestions(true);
       try {
-        const { data, error } = await supabase
+        let query = supabase
           .from('cadastral_parcels')
           .select('id, parcel_number, current_owner_name, ville, commune, quartier')
           .ilike('parcel_number', `%${trimmed}%`)
-          .is('deleted_at', null)
-          .limit(predictiveSettings.max_results);
+          .is('deleted_at', null);
+        if (isTestRoute) {
+          query = query.ilike('parcel_number', 'TEST-%');
+        } else {
+          query = query.not('parcel_number', 'ilike', 'TEST-%');
+        }
+        const { data, error } = await query.limit(predictiveSettings.max_results);
 
         if (error) {
           console.error('Erreur recherche suggestions:', error);

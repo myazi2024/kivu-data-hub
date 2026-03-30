@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useCatalogConfig } from './useCatalogConfig';
+import { useTestEnvironment } from '@/hooks/useTestEnvironment';
+import { CadastralParcel } from '@/types/cadastral';
 import { CadastralParcel } from '@/types/cadastral';
 
 // Ré-exporter CadastralParcel pour rétrocompatibilité
