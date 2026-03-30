@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { MapPin, DollarSign, BarChart3, Info, FileText, Database, AlertTriangle, Loader2, Copy, Check } from 'lucide-react';
+import { MapPin, DollarSign, BarChart3, Info, FileText, Database, AlertTriangle, Loader2, Copy, Check, Maximize, Minimize } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { toast } from 'sonner';
 import DRCMapWithTooltip from './DRCMapWithTooltip';
@@ -63,6 +63,7 @@ const DRCInteractiveMap = () => {
   const [activeMobilePanel, setActiveMobilePanel] = useState<'map' | 'details' | 'analytics'>('map');
   const [isMapZoomed, setIsMapZoomed] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [externalProvinceId, setExternalProvinceId] = useState<string | null>(null);
   const mapCardRef = React.useRef<HTMLDivElement>(null);
 
@@ -189,6 +190,23 @@ const DRCInteractiveMap = () => {
       setExternalProvinceId(province.id);
     }
   }, [provincesData]);
+
+  // Fullscreen sync
+  React.useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handler);
+    return () => document.removeEventListener('fullscreenchange', handler);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {
+        toast.error('Le mode plein écran n\'est pas disponible');
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
 
   const handleCopyImage = async () => {
     if (!mapCardRef.current || isCopying) return;
@@ -330,6 +348,15 @@ const DRCInteractiveMap = () => {
                         {isCopying ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3 text-muted-foreground" />}
                       </Button>
                     )}
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-6 w-6 rounded-full bg-background/80 backdrop-blur-sm border-border/50 shadow-sm"
+                      onClick={toggleFullscreen}
+                      title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
+                    >
+                      {isFullscreen ? <Minimize className="h-3 w-3 text-muted-foreground" /> : <Maximize className="h-3 w-3 text-muted-foreground" />}
+                    </Button>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button variant="outline" size="icon" className="h-6 w-6 rounded-full bg-background/80 backdrop-blur-sm border-border/50 shadow-sm">
