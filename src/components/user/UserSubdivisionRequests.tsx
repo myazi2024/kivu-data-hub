@@ -28,6 +28,7 @@ const statusConfig: Record<string, { label: string; variant: 'default' | 'second
 
 export const UserSubdivisionRequests: React.FC = () => {
   const { user } = useAuth();
+  const { isTestRoute } = useTestEnvironment();
   const [requests, setRequests] = useState<SubdivisionRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
