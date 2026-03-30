@@ -32,7 +32,6 @@ import {
 
 interface UseTestDataActionsProps {
   userId?: string;
-  stats: TestDataStats;
   onComplete: () => Promise<void>;
 }
 
