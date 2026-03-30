@@ -229,17 +229,19 @@ const AdminTestMode: React.FC = () => {
         onSave={saveConfiguration}
       />
 
+      {/* Progression de génération automatique */}
+      <GenerationProgress
+        steps={generationSteps}
+        currentStep={currentStep}
+        visible={generatingData}
+      />
+
       {/* Statistiques */}
       <TestDataStatsCard
         stats={stats}
         total={total}
-        isTestModeActive={isTestModeActive}
         cleaningUp={cleaningUp}
-        generatingData={generatingData}
         statsLoading={statsLoading}
-        generationSteps={generationSteps}
-        currentStep={currentStep}
-        onGenerate={generateTestData}
         onCleanup={cleanupTestData}
         onRefresh={refreshStats}
       />
