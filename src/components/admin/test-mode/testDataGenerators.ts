@@ -435,10 +435,36 @@ export const generateExpertiseRequests = async (userId: string, parcelNumbers: s
   const { data, error } = await supabase
     .from('real_estate_expertise_requests')
     .insert(records)
-    .select('id');
+    .select('id, reference_number');
 
   if (error) throw new Error(`Expertises: ${error.message}`);
   return assertInserted(data, 'Expertises');
+};
+
+/** Step 6b: Generate expertise payments for test expertise requests */
+export const generateExpertisePayments = async (userId: string, expertiseRequests: Array<{ id: string }>) => {
+  if (!expertiseRequests || expertiseRequests.length === 0) return [];
+  
+  const records = expertiseRequests.map((req, i) => ({
+    expertise_request_id: req.id,
+    user_id: userId,
+    total_amount_usd: [150, 200, 175][i % 3],
+    status: ['pending', 'paid', 'pending'][i % 3],
+    payment_method: ['mobile_money', 'bank_transfer', 'mobile_money'][i % 3],
+    fee_items: [
+      { fee_name: 'Frais d\'expertise', amount_usd: [100, 150, 125][i % 3] },
+      { fee_name: 'Frais de déplacement', amount_usd: 50 },
+    ],
+    paid_at: i === 1 ? new Date().toISOString() : null,
+  }));
+
+  const { data, error } = await supabase
+    .from('expertise_payments')
+    .insert(records)
+    .select('id');
+
+  if (error) throw new Error(`Expertise payments: ${error.message}`);
+  return data ?? [];
 };
 
 /** Step 7: Generate land disputes (including one with lifting data) */

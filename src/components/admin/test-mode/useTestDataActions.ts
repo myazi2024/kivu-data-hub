@@ -14,6 +14,7 @@ import {
   generateServiceAccess,
   generateTitleRequests,
   generateExpertiseRequests,
+  generateExpertisePayments,
   generateDisputes,
   generateContributorCodes,
   generateFraudAttempts,
