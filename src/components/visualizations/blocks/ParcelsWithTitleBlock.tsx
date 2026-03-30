@@ -7,7 +7,7 @@ import { FileText, Users, Building, Shield, Landmark, TrendingUp, Ruler, Home, C
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, ColorMappedPieCard, StackedBarCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
-
+import { MapProvinceContext } from '../filters/AnalyticsFilters';
 import { generateInsight, generateStackedInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { normalizeTitleType } from '@/utils/titleTypeNormalizer';
