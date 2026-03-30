@@ -71,6 +71,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     calculateFees: calculateDynamicFees
   } = useLandTitleDynamicFees();
   
+  const { isTestRoute } = useTestEnvironment();
   const [activeTab, setActiveTab] = useState('requester');
   const [showQuickAuth, setShowQuickAuth] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
