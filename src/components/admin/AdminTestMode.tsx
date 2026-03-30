@@ -129,14 +129,36 @@ const AdminTestMode: React.FC = () => {
     }
   };
 
-  const handleDisableWithCleanup = () => {
+  const handleDisableWithCleanup = async () => {
     setShowCleanupDialog(false);
     setCleanupOnDisable(true);
-    // Trigger save with cleanup flag set
-    setTimeout(() => {
-      // Use a ref-like approach: set state then call
+    // Small delay to let state update, then save
+    const validatedConfig = {
+      ...config,
+      auto_cleanup: false,
+      test_data_retention_days: Math.min(30, Math.max(1, config.test_data_retention_days)),
+    };
+    try {
+      setSaving(true);
+      toast.info('Suppression des données test en cours…');
+      const { error: rpcError } = await supabase.rpc('cleanup_all_test_data');
+      if (rpcError) throw rpcError;
+      toast.success('Données test supprimées');
+
+      const oldConfig = { ...savedConfig };
+      await upsertSearchConfig('test_mode', toRecord(validatedConfig), "Configuration du mode test global pour l'admin");
+      await logAuditAction('TEST_MODE_DISABLED', 'cadastral_search_config', undefined, toRecord(oldConfig), toRecord(validatedConfig));
+      toast.success('Configuration enregistrée', { description: 'Mode test désactivé et données supprimées' });
+      await refreshConfiguration();
+      await refreshStats();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Veuillez réessayer';
+      console.error("Erreur lors de l'enregistrement:", error);
+      toast.error("Erreur lors de l'enregistrement", { description: message });
+    } finally {
       setSaving(false);
-    }, 0);
+      setCleanupOnDisable(false);
+    }
   };
 
   const handleDisableWithoutCleanup = () => {
