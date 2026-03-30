@@ -37,11 +37,13 @@ export const UserSubdivisionRequests: React.FC = () => {
 
     const fetchRequests = async () => {
       try {
-        const { data, error } = await (supabase as any)
+        let query = (supabase as any)
           .from('subdivision_requests')
           .select('id, reference_number, parcel_number, number_of_lots, purpose_of_subdivision, status, created_at, reviewed_at')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
+        query = applyTestFilter(query, 'reference_number', isTestRoute);
+        const { data, error } = await query;
 
         if (error) throw error;
         setRequests(data || []);

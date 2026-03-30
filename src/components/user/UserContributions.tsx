@@ -126,11 +126,13 @@ export const UserContributions: React.FC = () => {
   const fetchContributions = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from('cadastral_contributions')
         .select('*')
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
+      query = applyTestFilter(query, 'parcel_number', isTestRoute);
+      const { data, error } = await query;
 
       if (error) throw error;
       setContributions(data || []);

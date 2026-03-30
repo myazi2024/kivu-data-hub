@@ -67,13 +67,15 @@ export function UserBuildingPermits() {
       if (err1) throw err1;
 
       // Fetch update contributions that specifically have building_permits data
-      const { data: updateContribs, error: err2 } = await supabase
+      let q2 = supabase
         .from('cadastral_contributions')
         .select('*')
         .eq('user_id', user.id)
         .eq('contribution_type', 'update')
         .not('building_permits', 'is', null)
         .order('created_at', { ascending: false });
+      q2 = applyTestFilter(q2, 'parcel_number', isTestRoute);
+      const { data: updateContribs, error: err2 } = await q2;
 
       if (err2) throw err2;
 

@@ -68,7 +68,7 @@ const AdminCadastralMap = () => {
         .from('cadastral_contributions')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'approved')
-        .not('parcel_number', 'ilike', 'TEST-%');
+        .not('parcel_number', 'ilike', 'TEST-%') as any;
       
       setTotalCount(count || 0);
 

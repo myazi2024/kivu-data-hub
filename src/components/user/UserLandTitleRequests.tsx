@@ -47,11 +47,13 @@ export const UserLandTitleRequests: React.FC = () => {
   const fetchRequests = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from('land_title_requests')
         .select('id, reference_number, status, payment_status, section_type, province, ville, commune, quartier, territoire, total_amount_usd, created_at, reviewed_at, rejection_reason, requester_first_name, requester_last_name, area_sqm, fee_items')
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
+      query = applyTestFilter(query, 'reference_number', isTestRoute);
+      const { data, error } = await query;
 
       if (error) throw error;
       setRequests(data || []);

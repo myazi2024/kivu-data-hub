@@ -70,6 +70,7 @@ const AdminInvoices = () => {
       const { data, error } = await supabase
         .from('cadastral_invoices')
         .select('*')
+        .not('parcel_number', 'ilike', 'TEST-%')
         .order('created_at', { ascending: false });
 
       if (error) throw error;

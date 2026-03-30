@@ -58,11 +58,13 @@ export const UserLandDisputes: React.FC = () => {
   const fetchDisputes = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from('cadastral_land_disputes' as any)
         .select('*')
         .eq('reported_by', user?.id)
         .order('created_at', { ascending: false });
+      query = applyTestFilter(query, 'parcel_number', isTestRoute);
+      const { data, error } = await query;
 
       if (error) throw error;
       setDisputes((data as any[]) || []);

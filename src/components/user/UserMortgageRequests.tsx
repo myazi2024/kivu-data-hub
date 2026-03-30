@@ -44,12 +44,14 @@ export const UserMortgageRequests: React.FC = () => {
     if (!user) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('cadastral_contributions')
         .select('id, parcel_number, contribution_type, status, mortgage_history, change_justification, rejection_reason, created_at, updated_at')
         .eq('user_id', user.id)
         .in('contribution_type', ['mortgage_registration', 'mortgage_cancellation'])
         .order('created_at', { ascending: false });
+      query = applyTestFilter(query, 'parcel_number', isTestRoute);
+      const { data, error } = await query;
 
       if (error) throw error;
       setRequests((data || []) as MortgageContribution[]);

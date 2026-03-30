@@ -33,11 +33,13 @@ export const UserExpertiseRequests: React.FC = () => {
     if (!user) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('real_estate_expertise_requests')
         .select('id, reference_number, parcel_number, status, payment_status, market_value_usd, certificate_url, certificate_issue_date, certificate_expiry_date, rejection_reason, created_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
+      query = applyTestFilter(query, 'reference_number', isTestRoute);
+      const { data, error } = await query;
 
       if (error) throw error;
       setRequests((data || []) as ExpertiseRequest[]);

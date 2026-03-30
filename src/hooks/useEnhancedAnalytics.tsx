@@ -315,6 +315,7 @@ async function generateCohortData() {
       .from('cadastral_invoices')
       .select('user_id, created_at')
       .eq('status', 'paid')
+      .not('parcel_number', 'ilike', 'TEST-%')
       .order('created_at');
 
     if (!invoices) return [];
