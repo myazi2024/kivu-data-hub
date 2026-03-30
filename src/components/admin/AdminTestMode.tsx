@@ -126,7 +126,6 @@ const AdminTestMode: React.FC = () => {
 
   const handleDisableWithCleanup = async () => {
     setShowCleanupDialog(false);
-    setCleanupOnDisable(true);
     // Small delay to let state update, then save
     const validatedConfig = {
       ...config,
