@@ -114,13 +114,7 @@ export const useTestDataActions = ({
     }
 
     const suffix = uniqueSuffix();
-    const parcelNumbers = [
-      `TEST-001-${suffix}`,
-      `TEST-002-${suffix}`,
-      `TEST-003-${suffix}`,
-      `TEST-004-${suffix}`,
-      `TEST-005-${suffix}`,
-    ];
+    const parcelNumbers = generateParcelNumbers(suffix);
 
     try {
       setGeneratingData(true);
