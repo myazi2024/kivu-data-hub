@@ -39,6 +39,7 @@ const STAT_ITEMS: { key: keyof TestDataStats; label: string }[] = [
   { key: 'serviceAccess', label: 'Accès services' },
   { key: 'titleRequests', label: 'Demandes titres' },
   { key: 'expertiseRequests', label: 'Expertises' },
+  { key: 'expertisePayments', label: 'Paiem. expertises' },
   { key: 'disputes', label: 'Litiges' },
   { key: 'boundaryConflicts', label: 'Conflits limites' },
   

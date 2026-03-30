@@ -198,6 +198,19 @@ const AdminTestMode: React.FC = () => {
               {isTestModeActive ? 'Actif' : 'Inactif'}
             </Badge>
           </div>
+          {isTestModeActive && (
+            <div className="mt-3">
+              <a
+                href="/test/cadastral-map"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+              >
+                🔗 Accéder à l'environnement de test
+              </a>
+            </div>
+          )}
+          </div>
         </CardHeader>
       </Card>
 

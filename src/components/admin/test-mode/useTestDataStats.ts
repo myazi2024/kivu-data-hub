@@ -74,6 +74,7 @@ export const useTestDataStats = () => {
         serviceAccess: count(5),
         titleRequests: count(6),
         expertiseRequests: count(7),
+        expertisePayments: count(19),
         disputes: count(8),
         boundaryConflicts: count(9),
         ownershipHistory: count(10),
