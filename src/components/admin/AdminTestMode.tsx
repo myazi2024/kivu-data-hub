@@ -13,6 +13,7 @@ import { useTestDataActions } from './test-mode/useTestDataActions';
 import TestModeConfigCard from './test-mode/TestModeConfigCard';
 import TestDataStatsCard from './test-mode/TestDataStatsCard';
 import TestModeGuide from './test-mode/TestModeGuide';
+import GenerationProgress from './test-mode/GenerationProgress';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -113,8 +114,14 @@ const AdminTestMode: React.FC = () => {
         description: 'Le mode test a été mis à jour',
       });
 
+      const wasJustEnabled = !savedConfig.enabled && validatedConfig.enabled;
+
       await refreshConfiguration();
       await refreshStats();
+
+      if (wasJustEnabled) {
+        generateTestData();
+      }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Veuillez réessayer';
       console.error("Erreur lors de l'enregistrement:", error);
@@ -223,17 +230,19 @@ const AdminTestMode: React.FC = () => {
         onSave={saveConfiguration}
       />
 
+      {/* Progression de génération automatique */}
+      <GenerationProgress
+        steps={generationSteps}
+        currentStep={currentStep}
+        visible={generatingData}
+      />
+
       {/* Statistiques */}
       <TestDataStatsCard
         stats={stats}
         total={total}
-        isTestModeActive={isTestModeActive}
         cleaningUp={cleaningUp}
-        generatingData={generatingData}
         statsLoading={statsLoading}
-        generationSteps={generationSteps}
-        currentStep={currentStep}
-        onGenerate={generateTestData}
         onCleanup={cleanupTestData}
         onRefresh={refreshStats}
       />
