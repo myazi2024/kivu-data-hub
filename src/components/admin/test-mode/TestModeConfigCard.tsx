@@ -5,17 +5,6 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { Loader2, Database, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import type { TestModeConfig } from '@/hooks/useTestMode';
 
@@ -36,8 +25,6 @@ const TestModeConfigCard: React.FC<TestModeConfigCardProps> = ({
   onConfigChange,
   onSave,
 }) => {
-  const isDisablingTestMode = savedConfig.enabled && !config.enabled;
-
   return (
     <Card>
       <CardHeader>
@@ -66,7 +53,6 @@ const TestModeConfigCard: React.FC<TestModeConfigCardProps> = ({
             onCheckedChange={(checked) =>
               onConfigChange({
                 enabled: checked,
-                // Reset auto_cleanup when disabling test mode
                 ...(checked ? {} : { auto_cleanup: false }),
               })
             }
@@ -140,42 +126,17 @@ const TestModeConfigCard: React.FC<TestModeConfigCardProps> = ({
           </Alert>
         )}
 
-        {/* Save button with dirty-check */}
+        {/* Save button — always a simple button, dialogs are handled by parent */}
         <div className="flex justify-end pt-4">
-          {isDisablingTestMode ? (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button size="lg" variant="destructive" disabled={saving || !isDirty}>
-                  {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Désactiver le mode test
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle className="flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-destructive" />
-                    Désactiver le mode test ?
-                  </AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Vous êtes sur le point de <strong>désactiver le mode test</strong>.
-                    Toutes les opérations affecteront les <strong>données de production</strong>.
-                    Cette action nécessite votre confirmation explicite.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Annuler</AlertDialogCancel>
-                  <AlertDialogAction onClick={onSave} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                    Confirmer la désactivation
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          ) : (
-            <Button onClick={onSave} disabled={saving || !isDirty} size="lg">
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Enregistrer la configuration
-            </Button>
-          )}
+          <Button
+            onClick={onSave}
+            disabled={saving || !isDirty}
+            size="lg"
+            variant={savedConfig.enabled && !config.enabled ? 'destructive' : 'default'}
+          >
+            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {savedConfig.enabled && !config.enabled ? 'Désactiver le mode test' : 'Enregistrer la configuration'}
+          </Button>
         </div>
       </CardContent>
     </Card>

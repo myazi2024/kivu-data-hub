@@ -27,6 +27,7 @@ import {
 const AdminTestMode: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [showCleanupDialog, setShowCleanupDialog] = useState(false);
+  const [showDisableConfirmDialog, setShowDisableConfirmDialog] = useState(false);
   const [cleanupOnDisable, setCleanupOnDisable] = useState(false);
   const { testMode: savedConfig, loading, isTestModeActive, refreshConfiguration } = useTestMode();
   const { user } = useAuth();
@@ -74,9 +75,13 @@ const AdminTestMode: React.FC = () => {
   const saveConfiguration = async (skipCleanupCheck = false) => {
     if (!isDirty) return;
 
-    // Intercept: disabling test mode with remaining test data
-    if (!skipCleanupCheck && savedConfig.enabled && !config.enabled && total > 0) {
-      setShowCleanupDialog(true);
+    // Intercept: disabling test mode
+    if (!skipCleanupCheck && savedConfig.enabled && !config.enabled) {
+      if (total > 0) {
+        setShowCleanupDialog(true);
+      } else {
+        setShowDisableConfirmDialog(true);
+      }
       return;
     }
 
@@ -260,6 +265,40 @@ const AdminTestMode: React.FC = () => {
               onClick={handleDisableWithCleanup}
             >
               Désactiver et supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialogue de confirmation simple (total === 0) */}
+      <AlertDialog open={showDisableConfirmDialog} onOpenChange={setShowDisableConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Désactiver le mode test ?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Vous êtes sur le point de <strong>désactiver le mode test</strong>.
+              Toutes les opérations affecteront les <strong>données de production</strong>.
+              Cette action nécessite votre confirmation explicite.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowDisableConfirmDialog(false);
+              setConfig(prev => ({ ...prev, enabled: true }));
+            }}>
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                setShowDisableConfirmDialog(false);
+                saveConfiguration(true);
+              }}
+            >
+              Confirmer la désactivation
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
