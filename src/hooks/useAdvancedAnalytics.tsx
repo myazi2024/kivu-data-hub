@@ -284,7 +284,8 @@ export const useAdvancedAnalytics = (startDate: Date, endDate: Date) => {
     try {
       const { data: parcels } = await supabase
         .from('cadastral_parcels')
-        .select('province');
+        .select('province')
+        .not('parcel_number', 'ilike', 'TEST-%');
 
       const { data: invoices } = await supabase
         .from('cadastral_invoices')
