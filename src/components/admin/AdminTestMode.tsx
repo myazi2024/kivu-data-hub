@@ -26,6 +26,8 @@ import {
 
 const AdminTestMode: React.FC = () => {
   const [saving, setSaving] = useState(false);
+  const [showCleanupDialog, setShowCleanupDialog] = useState(false);
+  const [cleanupOnDisable, setCleanupOnDisable] = useState(false);
   const { testMode: savedConfig, loading, isTestModeActive, refreshConfiguration } = useTestMode();
   const { user } = useAuth();
 
