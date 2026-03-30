@@ -42,7 +42,8 @@ export const useEnhancedAnalytics = (startDate?: Date, endDate?: Date) => {
       // Fetch contribution performance
       const { data: contributionsData } = await supabase
         .from('cadastral_contributions')
-        .select('status, created_at, reviewed_at, fraud_score');
+        .select('status, created_at, reviewed_at, fraud_score')
+        .not('parcel_number', 'ilike', 'TEST-%');
 
       const contributionPerf = calculateContributionPerformance(contributionsData || []);
 
