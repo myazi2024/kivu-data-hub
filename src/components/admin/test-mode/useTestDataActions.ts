@@ -55,7 +55,6 @@ const GENERATION_STEPS: GenerationStep[] = [
 
 export const useTestDataActions = ({
   userId,
-  stats,
   onComplete,
 }: UseTestDataActionsProps) => {
   const [cleaningUp, setCleaningUp] = useState(false);
