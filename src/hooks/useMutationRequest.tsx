@@ -13,6 +13,7 @@ export const useMutationRequest = () => {
   const [fees, setFees] = useState<MutationFee[]>([]);
   const [userRequests, setUserRequests] = useState<MutationRequest[]>([]);
   const { user, profile } = useAuth();
+  const { isTestRoute } = useTestEnvironment();
   const { toast } = useToast();
 
   const fetchFees = useCallback(async () => {
