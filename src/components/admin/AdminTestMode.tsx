@@ -227,6 +227,43 @@ const AdminTestMode: React.FC = () => {
 
       {/* Guide */}
       <TestModeGuide />
+
+      {/* Dialogue de confirmation nettoyage à la désactivation */}
+      <AlertDialog open={showCleanupDialog} onOpenChange={setShowCleanupDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Données test détectées
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Il reste <strong>{total}</strong> enregistrement(s) de test dans la base de données.
+              Si vous désactivez le mode test sans les supprimer, ces données resteront visibles
+              dans l'application.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel onClick={() => {
+              setShowCleanupDialog(false);
+              setConfig(prev => ({ ...prev, enabled: true }));
+            }}>
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction
+              variant="outline"
+              onClick={handleDisableWithoutCleanup}
+            >
+              Désactiver uniquement
+            </AlertDialogAction>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={handleDisableWithCleanup}
+            >
+              Désactiver et supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
