@@ -25,6 +25,7 @@ import { useAdvancedCadastralSearch } from '@/hooks/useAdvancedCadastralSearch';
 import { useSearchHistory } from '@/hooks/useSearchHistory';
 import { useSearchBarConfig } from '@/hooks/useSearchBarConfig';
 import { useCadastralSearch } from '@/hooks/useCadastralSearch';
+import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
 import CadastralResultsDialog from '@/components/cadastral/CadastralResultsDialog';
 import 'leaflet/dist/leaflet.css';
 
