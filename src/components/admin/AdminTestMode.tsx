@@ -42,7 +42,6 @@ const AdminTestMode: React.FC = () => {
     generateTestData,
   } = useTestDataActions({
     userId: user?.id,
-    stats,
     onComplete: refreshStats,
   });
 
