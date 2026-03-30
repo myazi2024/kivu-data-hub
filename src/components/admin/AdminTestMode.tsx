@@ -113,8 +113,14 @@ const AdminTestMode: React.FC = () => {
         description: 'Le mode test a été mis à jour',
       });
 
+      const wasJustEnabled = !savedConfig.enabled && validatedConfig.enabled;
+
       await refreshConfiguration();
       await refreshStats();
+
+      if (wasJustEnabled) {
+        generateTestData();
+      }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Veuillez réessayer';
       console.error("Erreur lors de l'enregistrement:", error);
