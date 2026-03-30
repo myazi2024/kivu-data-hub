@@ -19,7 +19,7 @@ const PROVINCE_META: { id: string; name: string }[] = [
   { id: 'CDKN', name: 'Kinshasa' },
   { id: 'CDNK', name: 'Nord-Kivu' },
   { id: 'CDSK', name: 'Sud-Kivu' },
-  { id: 'CDBC', name: 'Kongo Central' },
+  { id: 'CDBC', name: 'Kongo-Central' },
   { id: 'CDHK', name: 'Haut-Katanga' },
   { id: 'CDLU', name: 'Lualaba' },
   { id: 'CDKC', name: 'Kasaï-Central' },
@@ -182,7 +182,8 @@ const DRCInteractiveMap = () => {
       setExternalProvinceId(null);
       return;
     }
-    const province = provincesData.find(p => p.name === provinceName);
+    const normalize = (s: string) => s.toLowerCase().replace(/[-\s]/g, '');
+    const province = provincesData.find(p => normalize(p.name) === normalize(provinceName));
     if (province) {
       setSelectedProvince(province);
       setExternalProvinceId(province.id);
