@@ -11,6 +11,8 @@ import CookieBanner from "@/components/CookieBanner";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { CartButton } from '@/components/cart/CartButton';
+import { TestEnvironmentProvider } from '@/hooks/useTestEnvironment';
+import TestEnvironmentBanner from '@/components/TestEnvironmentBanner';
 import React, { Suspense } from "react";
 import { Loader2 } from "lucide-react";
 
@@ -63,8 +65,10 @@ const App = () => (
           <CartProvider>
             <CadastralCartProvider>
               <TooltipProvider>
+              <TestEnvironmentProvider>
               <Toaster />
               <Sonner />
+              <TestEnvironmentBanner />
               <Suspense fallback={<PageLoader />}>
                 <Routes>
                   <Route path="/" element={<Index />} />
@@ -103,6 +107,16 @@ const App = () => (
                   <Route path="/articles/:slug" element={<ArticleDetail />} />
                   <Route path="/about-ccc" element={<AboutCCC />} />
                   <Route path="/about-discount-codes" element={<AboutDiscountCodes />} />
+
+                  {/* Test environment mirror routes */}
+                  <Route path="/test/map" element={<Map />} />
+                  <Route path="/test/cadastral-map" element={<CadastralMap />} />
+                  <Route path="/test/mon-compte" element={
+                    <ProtectedRoute>
+                      <UserDashboard />
+                    </ProtectedRoute>
+                  } />
+
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
@@ -110,6 +124,7 @@ const App = () => (
               {/* Global floating cart button */}
               <CartButton />
               <CookieBanner />
+              </TestEnvironmentProvider>
               </TooltipProvider>
             </CadastralCartProvider>
           </CartProvider>

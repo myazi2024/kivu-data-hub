@@ -15,6 +15,7 @@ import SearchHistory from './SearchHistory';
 import AdvancedSearchFilters from './AdvancedSearchFilters';
 import { useAdvancedCadastralSearch } from '@/hooks/useAdvancedCadastralSearch';
 import { cn } from '@/lib/utils';
+import { useTestEnvironment } from '@/hooks/useTestEnvironment';
 
 const FIXED_TEXT = "Ex: ";
 
@@ -31,6 +32,7 @@ interface ParcelSuggestion {
 }
 
 const CadastralSearchBar = () => {
+  const { isTestRoute } = useTestEnvironment();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [showContributionDialog, setShowContributionDialog] = useState(false);
@@ -112,12 +114,17 @@ const CadastralSearchBar = () => {
     const fetchSuggestions = async () => {
       setLoadingSuggestions(true);
       try {
-        const { data, error } = await supabase
+        let query = supabase
           .from('cadastral_parcels')
           .select('id, parcel_number, current_owner_name, ville, commune, quartier')
           .ilike('parcel_number', `%${trimmed}%`)
-          .is('deleted_at', null)
-          .limit(predictiveSettings.max_results);
+          .is('deleted_at', null);
+        if (isTestRoute) {
+          query = query.ilike('parcel_number', 'TEST-%');
+        } else {
+          query = query.not('parcel_number', 'ilike', 'TEST-%');
+        }
+        const { data, error } = await query.limit(predictiveSettings.max_results);
 
         if (error) {
           console.error('Erreur recherche suggestions:', error);

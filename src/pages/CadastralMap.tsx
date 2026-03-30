@@ -25,6 +25,7 @@ import { useAdvancedCadastralSearch } from '@/hooks/useAdvancedCadastralSearch';
 import { useSearchHistory } from '@/hooks/useSearchHistory';
 import { useSearchBarConfig } from '@/hooks/useSearchBarConfig';
 import { useCadastralSearch } from '@/hooks/useCadastralSearch';
+import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
 import CadastralResultsDialog from '@/components/cadastral/CadastralResultsDialog';
 import 'leaflet/dist/leaflet.css';
 
@@ -52,6 +53,7 @@ interface ParcelHistoryData {
 }
 
 const CadastralMap = () => {
+  const { isTestRoute: isTestEnv } = useTestEnvironment();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const isMobile = useIsMobile();
@@ -343,11 +345,12 @@ const CadastralMap = () => {
     const loadParcels = async () => {
       try {
         setLoading(true);
-        const { data, error } = await supabase
+        let query = supabase
           .from('cadastral_parcels')
           .select('id, parcel_number, gps_coordinates, parcel_sides, current_owner_name, area_sqm, province, ville, commune, quartier, latitude, longitude, is_subdivided')
-          .is('deleted_at', null)
-          .limit(500); // Limiter à 500 parcelles pour performance
+          .is('deleted_at', null);
+        query = applyTestFilter(query, 'parcel_number', isTestEnv);
+        const { data, error } = await query.limit(500);
 
         if (error) {
           console.error('Erreur chargement parcelles:', error);

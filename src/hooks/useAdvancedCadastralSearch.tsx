@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
 
 export interface SearchFilters {
   province?: string;
@@ -51,6 +52,7 @@ export interface ParcelSearchResult {
 const PAGE_SIZE = 50;
 
 export const useAdvancedCadastralSearch = () => {
+  const { isTestRoute } = useTestEnvironment();
   const [filters, setFilters] = useState<SearchFilters>({});
   const [results, setResults] = useState<ParcelSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -79,6 +81,9 @@ export const useAdvancedCadastralSearch = () => {
       .select('*', { count: 'exact' })
       .is('deleted_at', null)
       .order('created_at', { ascending: false });
+
+    // Test/production filter
+    query = applyTestFilter(query, 'parcel_number', isTestRoute);
 
     // Filtres géographiques
     if (activeFilters.province) {

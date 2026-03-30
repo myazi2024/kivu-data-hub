@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useCatalogConfig } from './useCatalogConfig';
+import { useTestEnvironment } from '@/hooks/useTestEnvironment';
 import { CadastralParcel } from '@/types/cadastral';
 
 // Ré-exporter CadastralParcel pour rétrocompatibilité
@@ -116,6 +117,7 @@ export const useCadastralSearch = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const { isTestRoute } = useTestEnvironment();
 
   const errorMessages = DEFAULT_ERROR_MESSAGES;
 
@@ -126,6 +128,18 @@ export const useCadastralSearch = () => {
   const searchParcel = async (parcelNumber: string) => {
     if (!validateParcelNumber(parcelNumber)) {
       setError('Veuillez saisir un numéro de parcelle');
+      return;
+    }
+
+    // Validate test/production environment match
+    const trimmedNumber = parcelNumber.trim();
+    const isTestParcel = trimmedNumber.toUpperCase().startsWith('TEST-');
+    if (isTestRoute && !isTestParcel) {
+      setError("En mode test, seules les parcelles TEST-% sont accessibles.");
+      return;
+    }
+    if (!isTestRoute && isTestParcel) {
+      setError("Les parcelles de test ne sont pas accessibles en mode production.");
       return;
     }
 
