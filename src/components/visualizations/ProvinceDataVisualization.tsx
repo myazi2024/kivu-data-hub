@@ -55,7 +55,7 @@ const BLOCK_MAP: Record<string, React.ComponentType<{ data: any }>> = {
   'invoices': InvoicesBlock,
 };
 
-const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({ onProvinceFilter }) => {
+const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({ selectedProvince, onProvinceFilter }) => {
   const { visibleTabs, isLoading: tabsLoading } = useAnalyticsTabsConfig();
   const [activeTab, setActiveTab] = useState('');
   const { data: analytics, isLoading, error } = useLandDataAnalytics();
