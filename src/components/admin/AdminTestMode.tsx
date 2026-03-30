@@ -269,6 +269,40 @@ const AdminTestMode: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialogue de confirmation simple (total === 0) */}
+      <AlertDialog open={showDisableConfirmDialog} onOpenChange={setShowDisableConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Désactiver le mode test ?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Vous êtes sur le point de <strong>désactiver le mode test</strong>.
+              Toutes les opérations affecteront les <strong>données de production</strong>.
+              Cette action nécessite votre confirmation explicite.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowDisableConfirmDialog(false);
+              setConfig(prev => ({ ...prev, enabled: true }));
+            }}>
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                setShowDisableConfirmDialog(false);
+                saveConfiguration(true);
+              }}
+            >
+              Confirmer la désactivation
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
