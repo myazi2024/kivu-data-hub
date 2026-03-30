@@ -7,6 +7,7 @@ import {
   Landmark, Loader2, Clock, CheckCircle2, XCircle, AlertTriangle, FileX2, MapPin, DollarSign
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
