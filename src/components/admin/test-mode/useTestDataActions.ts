@@ -76,70 +76,23 @@ export const useTestDataActions = ({
     setCurrentStep(-1);
   };
 
-  /** Helper: delete with error logging */
-  const safeDelete = async (label: string, query: PromiseLike<{ error: any }>) => {
-    const { error } = await query;
-    if (error) console.error(`Cleanup ${label}:`, error.message);
-  };
-
   const cleanupTestData = useCallback(async () => {
     try {
       setCleaningUp(true);
 
-      // FK-safe cleanup: proper order with join-based deletions
-      // 1. Fraud attempts (FK → contributions)
-      const contribIds = (await supabase.from('cadastral_contributions').select('id').ilike('parcel_number', 'TEST-%')).data?.map(r => r.id) ?? [];
-      if (contribIds.length > 0) {
-        await safeDelete('fraud_attempts', supabase.from('fraud_attempts').delete().in('contribution_id', contribIds));
+      const { data, error } = await supabase.rpc('cleanup_all_test_data');
+
+      if (error) {
+        throw new Error(error.message);
       }
 
-      // 2. Contributor codes
-      await safeDelete('contributor_codes', supabase.from('cadastral_contributor_codes').delete().ilike('parcel_number', 'TEST-%'));
-
-      // 3. Service access (FK → invoices)
-      await safeDelete('service_access', supabase.from('cadastral_service_access').delete().ilike('parcel_number', 'TEST-%'));
-
-      // 4. Payments (before invoices)
-      await safeDelete('payments', supabase.from('payment_transactions').delete().filter('metadata->>test_mode', 'eq', 'true'));
-
-      // 5. Invoices
-      await safeDelete('invoices', supabase.from('cadastral_invoices').delete().ilike('parcel_number', 'TEST-%'));
-
-      // 6. Contributions
-      await safeDelete('contributions', supabase.from('cadastral_contributions').delete().ilike('parcel_number', 'TEST-%'));
-
-      // 7. Parcel children
-      const parcelIds = (await supabase.from('cadastral_parcels').select('id').ilike('parcel_number', 'TEST-%')).data?.map(r => r.id) ?? [];
-      if (parcelIds.length > 0) {
-        await safeDelete('ownership_history', supabase.from('cadastral_ownership_history').delete().in('parcel_id', parcelIds));
-        await safeDelete('tax_history', supabase.from('cadastral_tax_history').delete().in('parcel_id', parcelIds));
-        await safeDelete('boundary_history', supabase.from('cadastral_boundary_history').delete().in('parcel_id', parcelIds));
-        await safeDelete('mortgages', supabase.from('cadastral_mortgages').delete().in('parcel_id', parcelIds));
-        await safeDelete('building_permits', supabase.from('cadastral_building_permits').delete().in('parcel_id', parcelIds));
-      }
-
-      // 8. Parcels
-      await safeDelete('parcels', supabase.from('cadastral_parcels').delete().ilike('parcel_number', 'TEST-%'));
-
-      // 9. Independent tables
-      await safeDelete('expertise_requests', supabase.from('real_estate_expertise_requests').delete().ilike('reference_number', 'TEST-%'));
-      await safeDelete('disputes', supabase.from('cadastral_land_disputes').delete().ilike('parcel_number', 'TEST-%'));
-      await safeDelete('title_requests', supabase.from('land_title_requests').delete().ilike('reference_number', 'TEST-%'));
-      await safeDelete('boundary_conflicts', supabase.from('cadastral_boundary_conflicts').delete().ilike('reporting_parcel_number', 'TEST-%'));
-      await safeDelete('certificates', supabase.from('generated_certificates').delete().ilike('reference_number', 'TEST-%'));
-      await safeDelete('mutation_requests', supabase.from('mutation_requests').delete().ilike('reference_number', 'TEST-%'));
-      await safeDelete('subdivision_requests', supabase.from('subdivision_requests').delete().ilike('reference_number', 'TEST-%'));
-
-      await logAuditAction(
-        'TEST_DATA_CLEANUP',
-        'cadastral_contributions',
-        undefined,
-        toRecord({ stats_before: stats }),
-        toRecord({ cleaned: true })
-      );
+      const deleted = data as Record<string, number> | null;
+      const totalDeleted = deleted
+        ? Object.values(deleted).reduce((sum, v) => sum + (v || 0), 0)
+        : 0;
 
       toast.success('Données de test supprimées', {
-        description: 'Toutes les données de test ont été nettoyées',
+        description: `${totalDeleted} enregistrements supprimés dans ${deleted ? Object.keys(deleted).length : 0} tables`,
       });
 
       await onComplete();
@@ -150,7 +103,7 @@ export const useTestDataActions = ({
     } finally {
       setCleaningUp(false);
     }
-  }, [stats, onComplete]);
+  }, [onComplete]);
 
   const generateTestData = useCallback(async () => {
     if (!userId) {
