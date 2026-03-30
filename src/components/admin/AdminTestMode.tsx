@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, TestTube } from 'lucide-react';
+import { Loader2, TestTube, AlertTriangle } from 'lucide-react';
 import { useTestMode, TestModeConfig } from '@/hooks/useTestMode';
 import { useAuth } from '@/hooks/useAuth';
 import { upsertSearchConfig, logAuditAction } from '@/utils/supabaseConfigUtils';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { toRecord } from './test-mode/types';
 import { useTestDataStats } from './test-mode/useTestDataStats';
@@ -12,6 +13,16 @@ import { useTestDataActions } from './test-mode/useTestDataActions';
 import TestModeConfigCard from './test-mode/TestModeConfigCard';
 import TestDataStatsCard from './test-mode/TestDataStatsCard';
 import TestModeGuide from './test-mode/TestModeGuide';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog';
 
 const AdminTestMode: React.FC = () => {
   const [saving, setSaving] = useState(false);
