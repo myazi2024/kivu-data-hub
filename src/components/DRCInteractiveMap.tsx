@@ -191,6 +191,23 @@ const DRCInteractiveMap = () => {
     }
   }, [provincesData]);
 
+  // Fullscreen sync
+  React.useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handler);
+    return () => document.removeEventListener('fullscreenchange', handler);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {
+        toast.error('Le mode plein écran n\'est pas disponible');
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
   const handleCopyImage = async () => {
     if (!mapCardRef.current || isCopying) return;
     setIsCopying(true);
