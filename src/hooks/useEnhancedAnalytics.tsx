@@ -237,6 +237,7 @@ async function calculateBusinessMetrics() {
     .from('cadastral_invoices')
     .select('user_id')
     .eq('status', 'paid')
+    .not('parcel_number', 'ilike', 'TEST-%')
     .gte('created_at', oneMonthAgo.toISOString());
 
   const oldUserIds = new Set(oldUsers?.map(u => u.user_id).filter(Boolean));
