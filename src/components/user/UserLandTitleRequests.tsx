@@ -30,6 +30,7 @@ import { fr } from 'date-fns/locale';
 
 export const UserLandTitleRequests: React.FC = () => {
   const { user } = useAuth();
+  const { isTestRoute } = useTestEnvironment();
   const [requests, setRequests] = useState<LandTitleRequestSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<LandTitleRequestSummary | null>(null);
