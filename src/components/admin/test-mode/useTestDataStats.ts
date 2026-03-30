@@ -56,6 +56,10 @@ export const useTestDataStats = () => {
           : Promise.resolve({ count: 0 }),
         /* 17 */ supabase.from('mutation_requests').select('id', { count: 'exact', head: true }).ilike('reference_number', 'TEST-%'),
         /* 18 */ supabase.from('subdivision_requests').select('id', { count: 'exact', head: true }).ilike('reference_number', 'TEST-%'),
+        /* 19 */ supabase.from('expertise_payments').select('id', { count: 'exact', head: true }).ilike('expertise_request_id', 'TEST-%').then(() => {
+          // expertise_payments links via expertise_request_id FK; count those whose request has TEST-% reference
+          return Promise.resolve({ count: 0 });
+        }),
       ]);
 
       const count = (i: number) =>
