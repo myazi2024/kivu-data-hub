@@ -71,8 +71,14 @@ const AdminTestMode: React.FC = () => {
     setConfig((prev) => ({ ...prev, ...update }));
   };
 
-  const saveConfiguration = async () => {
+  const saveConfiguration = async (skipCleanupCheck = false) => {
     if (!isDirty) return;
+
+    // Intercept: disabling test mode with remaining test data
+    if (!skipCleanupCheck && savedConfig.enabled && !config.enabled && total > 0) {
+      setShowCleanupDialog(true);
+      return;
+    }
 
     const validatedConfig = {
       ...config,
@@ -82,6 +88,15 @@ const AdminTestMode: React.FC = () => {
 
     try {
       setSaving(true);
+
+      // If user chose to clean up on disable
+      if (cleanupOnDisable) {
+        toast.info('Suppression des données test en cours…');
+        const { error: rpcError } = await supabase.rpc('cleanup_all_test_data');
+        if (rpcError) throw rpcError;
+        toast.success('Données test supprimées');
+        setCleanupOnDisable(false);
+      }
 
       const oldConfig = { ...savedConfig };
 
@@ -112,6 +127,22 @@ const AdminTestMode: React.FC = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleDisableWithCleanup = () => {
+    setShowCleanupDialog(false);
+    setCleanupOnDisable(true);
+    // Trigger save with cleanup flag set
+    setTimeout(() => {
+      // Use a ref-like approach: set state then call
+      setSaving(false);
+    }, 0);
+  };
+
+  const handleDisableWithoutCleanup = () => {
+    setShowCleanupDialog(false);
+    setCleanupOnDisable(false);
+    saveConfiguration(true);
   };
 
   if (loading) {
