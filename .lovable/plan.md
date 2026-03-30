@@ -1,48 +1,36 @@
 
 
-# Corriger le changement de province depuis le filtre Analytics
+# Corriger la synchronisation filtre-carte pour Kongo-Central (et robustifier le matching)
 
-## Problème
+## Problème identifié
 
-Quand on passe d'une province à une autre via le filtre lieu, la carte ne suit pas. La raison : lors du `zoomOut` intermédiaire (nécessaire avant de zoomer sur la nouvelle province), deux callbacks remettent `externalProvinceId` à `null` dans le parent :
+Le filtre lieu envoie les noms de provinces depuis `geographicData.ts` (ex: `"Kongo-Central"` avec trait d'union), mais la carte utilise `PROVINCE_META` qui a `"Kongo Central"` (sans trait d'union). La recherche exacte dans `handleProvinceFilter` échoue silencieusement :
 
-1. `onProvinceDeselect()` (appelé à la fin de l'animation de zoom out)
-2. `onZoomChange(false)` → qui exécute `if (!zoomed) setExternalProvinceId(null)`
+```
+// ligne 185 — match exact qui échoue
+const province = provincesData.find(p => p.name === provinceName);
+```
 
-Cela annule le nouvel `externalProvinceId` qui vient d'être défini, et le useEffect ne relance jamais le zoom vers la nouvelle province.
+Pour Kwilu, les noms correspondent dans les deux sources — le problème est peut-être un bug d'animation similaire déjà corrigé, ou un autre comportement intermittent.
 
 ## Solution
 
-Modifier `DRCMapWithTooltip.tsx` pour gérer proprement la transition province→province sans que le zoom out intermédiaire n'efface l'état du parent.
+**Fichier : `src/components/DRCInteractiveMap.tsx`**
 
-### Changements dans `DRCMapWithTooltip.tsx`
+1. **Ligne 22** — Corriger le nom dans `PROVINCE_META` pour qu'il soit cohérent avec `geographicData.ts` :
+   - `"Kongo Central"` → `"Kongo-Central"`
 
-**1. useEffect (lignes 359-377)** — Quand on passe d'une province à une autre via `externalZoomProvinceId`, ne pas appeler `zoomOut()` standard (qui déclenche les callbacks de reset). À la place, faire un zoom out "silencieux" qui ne notifie pas le parent, puis enchaîner avec le zoom vers la nouvelle province :
-
+2. **Ligne 185** — Rendre le matching robuste avec une normalisation (retirer tirets, espaces, casse) pour éviter tout problème futur :
 ```tsx
-useEffect(() => {
-  if (externalZoomProvinceId && svgContent && !isAnimating) {
-    if (externalZoomProvinceId !== zoomedProvinceId) {
-      if (zoomedProvinceId) {
-        // Zoom out silencieux (sans appeler onProvinceDeselect/onZoomChange)
-        silentZoomOut(() => {
-          zoomToProvince(externalZoomProvinceId);
-        });
-      } else {
-        zoomToProvince(externalZoomProvinceId);
-      }
-    }
-  } else if (!externalZoomProvinceId && zoomedProvinceId && !isAnimating) {
-    zoomOut();
-  }
-}, [externalZoomProvinceId, svgContent]);
+const normalize = (s: string) => s.toLowerCase().replace(/[-\s]/g, '');
+const province = provincesData.find(p => normalize(p.name) === normalize(provinceName));
 ```
 
-**2. Nouvelle fonction `silentZoomOut`** — Identique à `zoomOut` mais sans appeler `onProvinceDeselect()` ni `onZoomChange(false)`. Elle accepte un callback `onComplete` pour enchaîner le zoom suivant.
+Cela garantit que même si d'autres légères différences existent entre les deux sources de noms, le matching fonctionnera toujours.
 
 ## Fichier impacté
 
 | Fichier | Modification |
 |---------|-------------|
-| `src/components/DRCMapWithTooltip.tsx` | Ajouter `silentZoomOut`, modifier le useEffect de sync externe |
+| `src/components/DRCInteractiveMap.tsx` | Ligne 22 : corriger nom, Ligne 185 : matching normalisé |
 
