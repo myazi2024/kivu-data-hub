@@ -209,6 +209,7 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
       setZoomedProvinceId(null);
       setIsAnimating(false);
       onZoomChange?.(false);
+      onProvinceDeselect?.();
     });
   }, [isAnimating, provincesData, getProvinceColor, animateViewBox, onZoomChange]);
 
