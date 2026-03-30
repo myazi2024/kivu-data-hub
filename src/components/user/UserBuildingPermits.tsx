@@ -36,6 +36,7 @@ interface BuildingPermitRequest {
 
 export function UserBuildingPermits() {
   const { user } = useAuth();
+  const { isTestRoute } = useTestEnvironment();
   const [permits, setPermits] = useState<BuildingPermitRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [appealDialogOpen, setAppealDialogOpen] = useState(false);
