@@ -1,25 +1,40 @@
 
 
-# Ajouter `subdivision_requests` à la fonction de nettoyage
+# Nettoyer automatiquement les données test à la désactivation du mode test
 
 ## Problème
-La table `subdivision_requests` a une FK `parcel_id` vers `cadastral_parcels`, mais elle n'est pas supprimée dans la fonction `cleanup_all_test_data()`. Cela provoque l'erreur de contrainte FK lors de la suppression des parcelles.
+Quand le mode test est désactivé, les données préfixées `TEST-%` restent dans la base et sont visibles dans toute l'application (parcelles, contributions, factures, etc.). Aucun filtre ne les exclut des requêtes normales.
 
-## Solution
-Ajouter un DELETE de `subdivision_requests` juste après `mutation_requests` (ligne 95), avant la suppression des parcelles.
+## Solution retenue
+Deux actions complémentaires :
 
-### Migration SQL
+### 1. Nettoyage automatique à la désactivation
+Dans `AdminTestMode.tsx`, lors de la sauvegarde de la configuration avec `enabled: false` alors qu'il était `true` avant, appeler automatiquement `cleanup_all_test_data()` via RPC avant d'enregistrer la config. Afficher un dialogue de confirmation prévenant l'utilisateur que les données test seront supprimées.
 
-Recréer la fonction en ajoutant entre les lignes 95 et 97 :
+### 2. Dialogue de confirmation
+Ajouter un `AlertDialog` qui s'affiche quand l'utilisateur passe de activé → désactivé et qu'il reste des données test (total > 0). Le dialogue propose :
+- **Désactiver et supprimer** : appelle `cleanup_all_test_data()` puis sauvegarde
+- **Désactiver sans supprimer** : sauvegarde sans nettoyage (mais affiche un avertissement)
+- **Annuler**
 
-```sql
--- subdivision_requests (FK parcel_id -> cadastral_parcels)
-DELETE FROM public.subdivision_requests WHERE parcel_id = ANY(parcel_ids) OR reference_number ILIKE 'TEST-%';
-GET DIAGNOSTICS cnt = ROW_COUNT;
-result := result || jsonb_build_object('subdivision_requests', cnt);
-```
+## Fichiers impactés
 
 | Fichier | Modification |
 |---------|-------------|
-| Nouvelle migration SQL | `CREATE OR REPLACE FUNCTION cleanup_all_test_data()` avec `subdivision_requests` ajouté avant la suppression des parcelles |
+| `src/components/admin/AdminTestMode.tsx` | Ajouter la logique de détection (désactivation + données restantes) et le dialogue de confirmation avant sauvegarde |
+
+## Détails techniques
+
+Dans `saveConfiguration()` :
+```typescript
+// Si on désactive et qu'il reste des données test
+if (savedConfig.enabled && !config.enabled && total > 0) {
+  setShowCleanupDialog(true);
+  return;
+}
+```
+
+Nouveau dialogue avec deux options :
+- "Désactiver et nettoyer" → `supabase.rpc('cleanup_all_test_data')` puis sauvegarde
+- "Désactiver uniquement" → sauvegarde directe
 
