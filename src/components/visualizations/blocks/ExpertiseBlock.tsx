@@ -7,7 +7,7 @@ import { Search, TrendingUp, DollarSign, Building, Zap, ShieldAlert, MapPin, Rul
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
-
+import { MapProvinceContext } from '../filters/AnalyticsFilters';
 import { generateInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { WALL_LABELS, ROOF_LABELS, SOUND_LABELS, BUILDING_POSITION_LABELS } from '@/constants/expertiseLabels';
