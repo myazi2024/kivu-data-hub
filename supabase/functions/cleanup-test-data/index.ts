@@ -143,7 +143,21 @@ Deno.serve(async (req) => {
       supabase.from("cadastral_parcels").delete().ilike("parcel_number", "TEST-%").lt("created_at", cutoffISO).select("id")
     );
 
-    // 9. Independent tables
+    // 9. expertise_payments (FK → real_estate_expertise_requests) — must be deleted first
+    const { data: expReqRows } = await supabase
+      .from("real_estate_expertise_requests")
+      .select("id")
+      .ilike("reference_number", "TEST-%")
+      .lt("created_at", cutoffISO);
+    const expReqIds = expReqRows?.map((r: any) => r.id) ?? [];
+    if (expReqIds.length > 0) {
+      await safeDelete(
+        "expertise_payments",
+        supabase.from("expertise_payments").delete().in("expertise_request_id", expReqIds).select("id")
+      );
+    }
+
+    // 10. Independent tables
     await safeDelete(
       "real_estate_expertise_requests",
       supabase.from("real_estate_expertise_requests").delete().ilike("reference_number", "TEST-%").lt("created_at", cutoffISO).select("id")

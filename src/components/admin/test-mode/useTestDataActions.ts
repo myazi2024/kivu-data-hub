@@ -14,6 +14,7 @@ import {
   generateServiceAccess,
   generateTitleRequests,
   generateExpertiseRequests,
+  generateExpertisePayments,
   generateDisputes,
   generateContributorCodes,
   generateFraudAttempts,
@@ -207,14 +208,15 @@ export const useTestDataActions = ({
         console.error('Title requests failed (non-blocking):', titleError);
       }
 
-      // Step 8: Expertise requests
+      // Step 8: Expertise requests + payments
       updateStep(8, 'running');
       try {
-        await generateExpertiseRequests(userId, parcelNumbers, suffix);
+        const expertiseRequests = await generateExpertiseRequests(userId, parcelNumbers, suffix);
+        await generateExpertisePayments(userId, expertiseRequests);
         updateStep(8, 'done');
       } catch (expError) {
         updateStep(8, 'error');
-        console.error('Expertise requests failed (non-blocking):', expError);
+        console.error('Expertise requests/payments failed (non-blocking):', expError);
       }
 
       // Step 9: Disputes (with lifting data)

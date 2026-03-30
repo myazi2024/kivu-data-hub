@@ -18,6 +18,7 @@ import {
 import { AlertCircle, MapPin, AlertTriangle, Info, Move, Hand, Plus, Trash2, Target, Pencil, Check, Navigation, Eye, Square, Circle, Triangle, Hexagon, Building2, Layers, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, X, RotateCw, RotateCcw, Compass } from 'lucide-react';
 import { BoundaryConflictDialog } from './BoundaryConflictDialog';
 import { supabase } from '@/integrations/supabase/client';
+import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
 import { RoadSideInfo } from './RoadBorderingSidesPanel';
 import { ParcelSidesDimensionsPanel, ServitudeInfo } from './ParcelSidesDimensionsPanel';
 import { useMapConfig, MapConfig } from '@/hooks/useMapConfig';
@@ -93,6 +94,7 @@ export const ParcelMapPreview = ({
   servitude,
   onServitudeChange
 }: ParcelMapPreviewProps) => {
+  const { isTestRoute } = useTestEnvironment();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
@@ -697,7 +699,7 @@ export const ParcelMapPreview = ({
     const bounds = calculateBounds(latLngs);
     
     try {
-      const { data: nearbyParcels, error } = await supabase
+      let nearbyQuery = supabase
         .from('cadastral_parcels')
         .select('*')
         .neq('parcel_number', currentParcelNumber || '')
@@ -706,6 +708,8 @@ export const ParcelMapPreview = ({
         .gte('longitude', bounds.minLng)
         .lte('longitude', bounds.maxLng)
         .not('gps_coordinates', 'is', null);
+      nearbyQuery = applyTestFilter(nearbyQuery, 'parcel_number', isTestRoute);
+      const { data: nearbyParcels, error } = await nearbyQuery;
 
       if (error) throw error;
 

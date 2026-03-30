@@ -12,6 +12,7 @@ import { Loader2, CheckCircle2, Upload, X, Info, ChevronRight, User, MapPin, Fil
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -70,6 +71,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     calculateFees: calculateDynamicFees
   } = useLandTitleDynamicFees();
   
+  const { isTestRoute } = useTestEnvironment();
   const [activeTab, setActiveTab] = useState('requester');
   const [showQuickAuth, setShowQuickAuth] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
@@ -243,12 +245,14 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     }
     setParcelSearchLoading(true);
     try {
-      const { data, error } = await supabase
+      let parcelQuery = supabase
         .from('cadastral_parcels')
         .select('parcel_number, id')
         .ilike('parcel_number', `%${query}%`)
         .is('deleted_at', null)
         .limit(10);
+      parcelQuery = applyTestFilter(parcelQuery, 'parcel_number', isTestRoute);
+      const { data, error } = await parcelQuery;
       if (error) throw error;
       setParcelSearchResults(data || []);
     } catch (err) {
