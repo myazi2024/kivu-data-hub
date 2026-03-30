@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
+import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -22,6 +23,7 @@ import DisputeStatusBadge from '@/components/cadastral/DisputeStatusBadge';
 
 export const UserLandDisputes: React.FC = () => {
   const { user } = useAuth();
+  const { isTestRoute } = useTestEnvironment();
   const [disputes, setDisputes] = useState<LandDispute[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -56,11 +58,13 @@ export const UserLandDisputes: React.FC = () => {
   const fetchDisputes = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from('cadastral_land_disputes' as any)
         .select('*')
         .eq('reported_by', user?.id)
         .order('created_at', { ascending: false });
+      query = applyTestFilter(query, 'parcel_number', isTestRoute);
+      const { data, error } = await query;
 
       if (error) throw error;
       setDisputes((data as any[]) || []);

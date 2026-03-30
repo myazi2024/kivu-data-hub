@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
+import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { Eye, FileText, CheckCircle, XCircle, Clock, AlertTriangle, ChevronLeft, ChevronRight, Search, Plus, Pencil, Trash2, RotateCcw } from 'lucide-react';
@@ -50,6 +51,7 @@ interface Contribution {
 
 export const UserContributions: React.FC = () => {
   const { user } = useAuth();
+  const { isTestRoute } = useTestEnvironment();
   const navigate = useNavigate();
   const [contributions, setContributions] = useState<Contribution[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,11 +126,13 @@ export const UserContributions: React.FC = () => {
   const fetchContributions = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from('cadastral_contributions')
         .select('*')
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
+      query = applyTestFilter(query, 'parcel_number', isTestRoute);
+      const { data, error } = await query;
 
       if (error) throw error;
       setContributions(data || []);

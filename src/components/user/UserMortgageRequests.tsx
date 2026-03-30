@@ -7,6 +7,7 @@ import {
   Landmark, Loader2, Clock, CheckCircle2, XCircle, AlertTriangle, FileX2, MapPin, DollarSign
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -35,6 +36,7 @@ const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secon
 // Fix #11: User dashboard component for mortgage requests
 export const UserMortgageRequests: React.FC = () => {
   const { user } = useAuth();
+  const { isTestRoute } = useTestEnvironment();
   const [requests, setRequests] = useState<MortgageContribution[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -42,12 +44,14 @@ export const UserMortgageRequests: React.FC = () => {
     if (!user) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('cadastral_contributions')
         .select('id, parcel_number, contribution_type, status, mortgage_history, change_justification, rejection_reason, created_at, updated_at')
         .eq('user_id', user.id)
         .in('contribution_type', ['mortgage_registration', 'mortgage_cancellation'])
         .order('created_at', { ascending: false });
+      query = applyTestFilter(query, 'parcel_number', isTestRoute);
+      const { data, error } = await query;
 
       if (error) throw error;
       setRequests((data || []) as MortgageContribution[]);

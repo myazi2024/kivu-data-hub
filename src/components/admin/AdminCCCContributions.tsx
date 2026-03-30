@@ -161,6 +161,7 @@ const AdminCCCContributions: React.FC = () => {
         const { data, error } = await supabase
           .from('cadastral_contributions')
           .select('*')
+          .not('parcel_number', 'ilike', 'TEST-%')
           .order('created_at', { ascending: false })
           .range(from, from + batchSize - 1);
 

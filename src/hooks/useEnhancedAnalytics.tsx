@@ -25,6 +25,7 @@ export const useEnhancedAnalytics = (startDate?: Date, endDate?: Date) => {
         .from('cadastral_invoices')
         .select('total_amount_usd, created_at')
         .eq('status', 'paid')
+        .not('parcel_number', 'ilike', 'TEST-%')
         .order('created_at', { ascending: true });
 
       const historicalRevenue = groupByDate(revenueData || [], 'created_at', 'total_amount_usd');
@@ -33,14 +34,16 @@ export const useEnhancedAnalytics = (startDate?: Date, endDate?: Date) => {
       const { data: geoData } = await supabase
         .from('cadastral_invoices')
         .select('geographical_zone, total_amount_usd, created_at')
-        .eq('status', 'paid');
+        .eq('status', 'paid')
+        .not('parcel_number', 'ilike', 'TEST-%');
 
       const zonesData = await groupByZone(geoData || []);
 
       // Fetch contribution performance
       const { data: contributionsData } = await supabase
         .from('cadastral_contributions')
-        .select('status, created_at, reviewed_at, fraud_score');
+        .select('status, created_at, reviewed_at, fraud_score')
+        .not('parcel_number', 'ilike', 'TEST-%');
 
       const contributionPerf = calculateContributionPerformance(contributionsData || []);
 
@@ -117,6 +120,7 @@ async function groupByZone(data: any[]) {
       .from('cadastral_invoices')
       .select('geographical_zone, total_amount_usd')
       .eq('status', 'paid')
+      .not('parcel_number', 'ilike', 'TEST-%')
       .gte('created_at', sixtyDaysAgo.toISOString())
       .lt('created_at', thirtyDaysAgo.toISOString());
 
@@ -207,7 +211,8 @@ async function calculateBusinessMetrics() {
   const { data: invoices } = await supabase
     .from('cadastral_invoices')
     .select('total_amount_usd, user_id, created_at')
-    .eq('status', 'paid');
+    .eq('status', 'paid')
+    .not('parcel_number', 'ilike', 'TEST-%');
 
   const totalRevenue = invoices?.reduce((sum, inv) => sum + parseFloat(String(inv.total_amount_usd || '0')), 0) || 0;
   const uniqueUsers = new Set(invoices?.map(inv => inv.user_id).filter(Boolean)).size;
@@ -225,12 +230,14 @@ async function calculateBusinessMetrics() {
     .from('cadastral_invoices')
     .select('user_id')
     .eq('status', 'paid')
+    .not('parcel_number', 'ilike', 'TEST-%')
     .lt('created_at', twoMonthsAgo.toISOString());
 
   const { data: recentUsers } = await supabase
     .from('cadastral_invoices')
     .select('user_id')
     .eq('status', 'paid')
+    .not('parcel_number', 'ilike', 'TEST-%')
     .gte('created_at', oneMonthAgo.toISOString());
 
   const oldUserIds = new Set(oldUsers?.map(u => u.user_id).filter(Boolean));
@@ -308,6 +315,7 @@ async function generateCohortData() {
       .from('cadastral_invoices')
       .select('user_id, created_at')
       .eq('status', 'paid')
+      .not('parcel_number', 'ilike', 'TEST-%')
       .order('created_at');
 
     if (!invoices) return [];

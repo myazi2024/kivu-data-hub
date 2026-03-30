@@ -7,6 +7,7 @@ export interface TestDataStats {
   serviceAccess: number;
   titleRequests: number;
   expertiseRequests: number;
+  expertisePayments: number;
   disputes: number;
   boundaryConflicts: number;
   
@@ -30,6 +31,7 @@ export const EMPTY_STATS: TestDataStats = {
   serviceAccess: 0,
   titleRequests: 0,
   expertiseRequests: 0,
+  expertisePayments: 0,
   disputes: 0,
   boundaryConflicts: 0,
   

@@ -22,7 +22,8 @@ export const useCadastralStats = () => {
       const { data: invoices, error } = await supabase
         .from('cadastral_invoices')
         .select('selected_services')
-        .eq('status', 'paid');
+        .eq('status', 'paid')
+        .not('parcel_number', 'ilike', 'TEST-%');
 
       if (error) throw error;
 

@@ -28,7 +28,6 @@ const AdminTestMode: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [showCleanupDialog, setShowCleanupDialog] = useState(false);
   const [showDisableConfirmDialog, setShowDisableConfirmDialog] = useState(false);
-  const [cleanupOnDisable, setCleanupOnDisable] = useState(false);
   const { testMode: savedConfig, loading, isTestModeActive, refreshConfiguration } = useTestMode();
   const { user } = useAuth();
 
@@ -127,7 +126,6 @@ const AdminTestMode: React.FC = () => {
 
   const handleDisableWithCleanup = async () => {
     setShowCleanupDialog(false);
-    setCleanupOnDisable(true);
     // Small delay to let state update, then save
     const validatedConfig = {
       ...config,
@@ -153,13 +151,11 @@ const AdminTestMode: React.FC = () => {
       toast.error("Erreur lors de l'enregistrement", { description: message });
     } finally {
       setSaving(false);
-      setCleanupOnDisable(false);
     }
   };
 
   const handleDisableWithoutCleanup = () => {
     setShowCleanupDialog(false);
-    setCleanupOnDisable(false);
     saveConfiguration(true);
   };
 
@@ -202,6 +198,18 @@ const AdminTestMode: React.FC = () => {
               {isTestModeActive ? 'Actif' : 'Inactif'}
             </Badge>
           </div>
+          {isTestModeActive && (
+            <div className="mt-3">
+              <a
+                href="/test/cadastral-map"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+              >
+                🔗 Accéder à l'environnement de test
+              </a>
+            </div>
+          )}
         </CardHeader>
       </Card>
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
@@ -12,6 +13,7 @@ export const useMutationRequest = () => {
   const [fees, setFees] = useState<MutationFee[]>([]);
   const [userRequests, setUserRequests] = useState<MutationRequest[]>([]);
   const { user, profile } = useAuth();
+  const { isTestRoute } = useTestEnvironment();
   const { toast } = useToast();
 
   const fetchFees = useCallback(async () => {
@@ -41,11 +43,13 @@ export const useMutationRequest = () => {
     
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from('mutation_requests')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
+      query = applyTestFilter(query, 'reference_number', isTestRoute);
+      const { data, error } = await query;
 
       if (error) throw error;
       setUserRequests((data || []) as MutationRequest[]);

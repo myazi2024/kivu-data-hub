@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
 import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -35,6 +36,7 @@ interface BuildingPermitRequest {
 
 export function UserBuildingPermits() {
   const { user } = useAuth();
+  const { isTestRoute } = useTestEnvironment();
   const [permits, setPermits] = useState<BuildingPermitRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [appealDialogOpen, setAppealDialogOpen] = useState(false);
@@ -53,23 +55,27 @@ export function UserBuildingPermits() {
       setLoading(true);
 
       // Fetch permit_request contributions
-      const { data: permitRequests, error: err1 } = await supabase
+      let q1 = supabase
         .from('cadastral_contributions')
         .select('*')
         .eq('user_id', user.id)
         .eq('contribution_type', 'permit_request')
         .order('created_at', { ascending: false });
+      q1 = applyTestFilter(q1, 'parcel_number', isTestRoute);
+      const { data: permitRequests, error: err1 } = await q1;
 
       if (err1) throw err1;
 
       // Fetch update contributions that specifically have building_permits data
-      const { data: updateContribs, error: err2 } = await supabase
+      let q2 = supabase
         .from('cadastral_contributions')
         .select('*')
         .eq('user_id', user.id)
         .eq('contribution_type', 'update')
         .not('building_permits', 'is', null)
         .order('created_at', { ascending: false });
+      q2 = applyTestFilter(q2, 'parcel_number', isTestRoute);
+      const { data: updateContribs, error: err2 } = await q2;
 
       if (err2) throw err2;
 

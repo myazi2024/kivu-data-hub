@@ -177,6 +177,7 @@ export const useAdvancedAnalytics = (startDate: Date, endDate: Date) => {
       const { data: invoices } = await supabase
         .from('cadastral_invoices')
         .select('*')
+        .not('parcel_number', 'ilike', 'TEST-%')
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString());
 
@@ -249,7 +250,8 @@ export const useAdvancedAnalytics = (startDate: Date, endDate: Date) => {
       const { data: invoices } = await supabase
         .from('cadastral_invoices')
         .select('*')
-        .eq('status', 'paid');
+        .eq('status', 'paid')
+        .not('parcel_number', 'ilike', 'TEST-%');
 
       const { data: users } = await supabase
         .from('profiles')
@@ -282,11 +284,13 @@ export const useAdvancedAnalytics = (startDate: Date, endDate: Date) => {
     try {
       const { data: parcels } = await supabase
         .from('cadastral_parcels')
-        .select('province');
+        .select('province')
+        .not('parcel_number', 'ilike', 'TEST-%');
 
       const { data: invoices } = await supabase
         .from('cadastral_invoices')
-        .select('geographical_zone, total_amount_usd');
+        .select('geographical_zone, total_amount_usd')
+        .not('parcel_number', 'ilike', 'TEST-%');
 
     const provinces = ['Kinshasa', 'Nord-Kivu', 'Sud-Kivu', 'Katanga', 'Kasaï', 'Équateur', 'Bandundu'];
     
@@ -338,6 +342,7 @@ export const useAdvancedAnalytics = (startDate: Date, endDate: Date) => {
     const { data: invoices } = await supabase
       .from('cadastral_invoices')
       .select('*')
+      .not('parcel_number', 'ilike', 'TEST-%')
       .gte('created_at', start.toISOString())
       .lte('created_at', end.toISOString());
 

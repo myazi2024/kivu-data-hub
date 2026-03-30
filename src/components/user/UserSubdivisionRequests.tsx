@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
 import { Loader2, LayoutGrid, MapPin, Calendar, Hash } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -27,6 +28,7 @@ const statusConfig: Record<string, { label: string; variant: 'default' | 'second
 
 export const UserSubdivisionRequests: React.FC = () => {
   const { user } = useAuth();
+  const { isTestRoute } = useTestEnvironment();
   const [requests, setRequests] = useState<SubdivisionRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -35,11 +37,13 @@ export const UserSubdivisionRequests: React.FC = () => {
 
     const fetchRequests = async () => {
       try {
-        const { data, error } = await (supabase as any)
+        let query = (supabase as any)
           .from('subdivision_requests')
           .select('id, reference_number, parcel_number, number_of_lots, purpose_of_subdivision, status, created_at, reviewed_at')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
+        query = applyTestFilter(query, 'reference_number', isTestRoute);
+        const { data, error } = await query;
 
         if (error) throw error;
         setRequests(data || []);

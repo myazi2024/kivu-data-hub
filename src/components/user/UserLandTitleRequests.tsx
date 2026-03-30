@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
+import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { StatusBadge, StatusType } from '@/components/shared/StatusBadge';
@@ -29,6 +30,7 @@ import { fr } from 'date-fns/locale';
 
 export const UserLandTitleRequests: React.FC = () => {
   const { user } = useAuth();
+  const { isTestRoute } = useTestEnvironment();
   const [requests, setRequests] = useState<LandTitleRequestSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<LandTitleRequestSummary | null>(null);
@@ -45,11 +47,13 @@ export const UserLandTitleRequests: React.FC = () => {
   const fetchRequests = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from('land_title_requests')
         .select('id, reference_number, status, payment_status, section_type, province, ville, commune, quartier, territoire, total_amount_usd, created_at, reviewed_at, rejection_reason, requester_first_name, requester_last_name, area_sqm, fee_items')
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
+      query = applyTestFilter(query, 'reference_number', isTestRoute);
+      const { data, error } = await query;
 
       if (error) throw error;
       setRequests(data || []);
