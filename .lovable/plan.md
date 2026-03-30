@@ -1,25 +1,40 @@
 
 
-# Corriger le dialogue d'avertissement à la désactivation du mode test
+# Ajouter les tables manquantes au nettoyage des données test
 
 ## Problème
-Il y a deux dialogues qui se superposent :
-1. **TestModeConfigCard** (lignes 146-172) : un AlertDialog non contrôlé qui s'ouvre au clic sur "Désactiver le mode test", puis appelle `onSave`
-2. **AdminTestMode** (lignes 232-266) : le dialogue de nettoyage qui s'ouvre si `total > 0`
-
-Le premier dialogue se ferme quand l'utilisateur confirme, puis `saveConfiguration()` tente d'ouvrir le second. Ce chevauchement empêche le second dialogue d'apparaître correctement. De plus, si `total === 0`, aucun avertissement ne s'affiche du tout.
+La fonction `cleanup_all_test_data()` ne supprime pas :
+- `expertise_payments` (liée par FK à `real_estate_expertise_requests`)
+- `real_estate_expertise_requests` (données test avec `reference_number ILIKE 'TEST-%'`)
+- `payment_transactions` (données test avec `metadata->>'test_mode' = 'true'`)
 
 ## Solution
-Supprimer le dialogue de confirmation redondant dans `TestModeConfigCard` et centraliser toute la logique dans `AdminTestMode.tsx` via `saveConfiguration()` :
+Nouvelle migration SQL qui recrée `cleanup_all_test_data()` en ajoutant ces 3 DELETE dans le bon ordre FK :
 
-- **Si `total > 0`** : afficher le dialogue existant (nettoyage proposé)
-- **Si `total === 0`** : afficher un dialogue de confirmation simple ("Vous allez désactiver le mode test, les opérations affecteront la production")
-- **Pas de double dialogue** : `TestModeConfigCard` affiche toujours un bouton simple qui appelle `onSave`
+1. **`expertise_payments`** : supprimer ceux dont `expertise_request_id` pointe vers une expertise `TEST-%` (enfant → avant le parent)
+2. **`payment_transactions`** : supprimer ceux avec `metadata->>'test_mode' = 'true'` OU liés à des factures `TEST-%`
+3. **`real_estate_expertise_requests`** : supprimer ceux avec `reference_number ILIKE 'TEST-%'`
 
-## Fichiers impactés
+Ces suppressions seront placées **avant** la suppression des parcelles et factures pour respecter l'ordre FK.
+
+## Détails techniques
+
+Ajouts dans la fonction, juste après la suppression de `cadastral_service_access` (ligne 32) et avant `cadastral_invoices` :
+
+```sql
+-- expertise_payments (FK → real_estate_expertise_requests)
+DELETE FROM public.expertise_payments WHERE expertise_request_id IN (
+  SELECT id FROM public.real_estate_expertise_requests WHERE reference_number ILIKE 'TEST-%'
+);
+
+-- payment_transactions (test data)
+DELETE FROM public.payment_transactions WHERE metadata->>'test_mode' = 'true';
+
+-- real_estate_expertise_requests
+DELETE FROM public.real_estate_expertise_requests WHERE reference_number ILIKE 'TEST-%';
+```
 
 | Fichier | Modification |
 |---------|-------------|
-| `src/components/admin/test-mode/TestModeConfigCard.tsx` | Supprimer le AlertDialog conditionnel (lignes 145-178), toujours afficher un bouton simple qui appelle `onSave` |
-| `src/components/admin/AdminTestMode.tsx` | Ajouter un second état `showDisableConfirmDialog` pour le cas `total === 0`. Dans `saveConfiguration`, si on désactive : si `total > 0` → cleanup dialog, sinon → confirm dialog simple |
+| Nouvelle migration SQL | `CREATE OR REPLACE FUNCTION cleanup_all_test_data()` avec les 3 tables manquantes |
 
