@@ -89,15 +89,6 @@ const AdminTestMode: React.FC = () => {
     try {
       setSaving(true);
 
-      // If user chose to clean up on disable
-      if (cleanupOnDisable) {
-        toast.info('Suppression des données test en cours…');
-        const { error: rpcError } = await supabase.rpc('cleanup_all_test_data');
-        if (rpcError) throw rpcError;
-        toast.success('Données test supprimées');
-        setCleanupOnDisable(false);
-      }
-
       const oldConfig = { ...savedConfig };
 
       await upsertSearchConfig(
