@@ -120,6 +120,7 @@ async function groupByZone(data: any[]) {
       .from('cadastral_invoices')
       .select('geographical_zone, total_amount_usd')
       .eq('status', 'paid')
+      .not('parcel_number', 'ilike', 'TEST-%')
       .gte('created_at', sixtyDaysAgo.toISOString())
       .lt('created_at', thirtyDaysAgo.toISOString());
 
