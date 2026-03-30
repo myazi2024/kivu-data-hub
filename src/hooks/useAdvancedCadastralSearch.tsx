@@ -82,6 +82,9 @@ export const useAdvancedCadastralSearch = () => {
       .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
+    // Test/production filter
+    query = applyTestFilter(query, 'parcel_number', isTestRoute);
+
     // Filtres géographiques
     if (activeFilters.province) {
       query = query.ilike('province', `%${activeFilters.province}%`);

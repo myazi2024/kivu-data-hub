@@ -117,6 +117,7 @@ export const useCadastralSearch = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const { isTestRoute } = useTestEnvironment();
 
   const errorMessages = DEFAULT_ERROR_MESSAGES;
 
