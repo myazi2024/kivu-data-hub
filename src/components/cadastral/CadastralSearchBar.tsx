@@ -15,6 +15,7 @@ import SearchHistory from './SearchHistory';
 import AdvancedSearchFilters from './AdvancedSearchFilters';
 import { useAdvancedCadastralSearch } from '@/hooks/useAdvancedCadastralSearch';
 import { cn } from '@/lib/utils';
+import { useTestEnvironment } from '@/hooks/useTestEnvironment';
 
 const FIXED_TEXT = "Ex: ";
 
