@@ -13,6 +13,7 @@ import { useTestDataActions } from './test-mode/useTestDataActions';
 import TestModeConfigCard from './test-mode/TestModeConfigCard';
 import TestDataStatsCard from './test-mode/TestDataStatsCard';
 import TestModeGuide from './test-mode/TestModeGuide';
+import GenerationProgress from './test-mode/GenerationProgress';
 import {
   AlertDialog,
   AlertDialogContent,
