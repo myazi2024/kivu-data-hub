@@ -1,31 +1,22 @@
 
 
-# Adapter la note explicative à la sélection de province
+# Réinitialiser le titre au retour à la carte complète
 
 ## Problème
-La note sous le titre affiche toujours le total global (63 parcelles) même quand une province est sélectionnée. Elle doit refléter le contexte actuel.
+Le bouton "retour" dans `DRCMapWithTooltip.tsx` appelle `zoomOut` qui réinitialise `zoomedProvinceId` en interne, mais ne notifie jamais le parent (`DRCInteractiveMap`) de remettre `selectedProvince` à `null`. Le titre et la note restent donc bloqués sur la province.
 
-## Changement — `src/components/DRCInteractiveMap.tsx` (ligne 257-259)
+## Solution
 
-Remplacer le texte statique par une version conditionnelle :
+Dans `DRCMapWithTooltip.tsx`, ajouter un callback `onProvinceDeselect` (ou réutiliser un prop existant) pour signaler au parent que la province est désélectionnée lors du zoom out.
 
-- **Carte entière** : `"Répartition géographique des données foncières cadastrales — Total : {totalParcels} parcelles enregistrées"`
-- **Province sélectionnée** : `"Données foncières cadastrales de {selectedProvince.name} — Total : {selectedProvince.parcelsCount} parcelles enregistrées"`
+### Changements
 
-`selectedProvince` contient déjà `parcelsCount` (issu de `provincesData`), donc aucune donnée supplémentaire n'est nécessaire.
+**`DRCMapWithTooltip.tsx`** :
+- Ajouter une prop `onProvinceDeselect?: () => void` dans l'interface
+- Dans `zoomOut`, appeler `onProvinceDeselect?.()` dans le callback d'animation (à côté de `setZoomedProvinceId(null)`)
 
-```tsx
-<p className="text-[7px] text-muted-foreground leading-tight">
-  {selectedProvince
-    ? `Données foncières cadastrales de ${selectedProvince.name} — Total : ${formatNumber(selectedProvince.parcelsCount)} parcelles enregistrées`
-    : `${getChartConfig('map-header-note')?.custom_title || 'Répartition géographique des données foncières cadastrales'} — Total : ${formatNumber(totalParcels)} parcelles enregistrées`
-  }
-</p>
-```
+**`DRCInteractiveMap.tsx`** :
+- Passer `onProvinceDeselect={() => setSelectedProvince(null)}` au composant `DRCMapWithTooltip`
 
-## Fichier impacté
-
-| Fichier | Modification |
-|---------|-------------|
-| `src/components/DRCInteractiveMap.tsx` | Ligne 257-259 — note contextuelle selon `selectedProvince` |
+C'est un changement de 3-4 lignes au total.
 
