@@ -11,6 +11,8 @@ import CookieBanner from "@/components/CookieBanner";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { CartButton } from '@/components/cart/CartButton';
+import { TestEnvironmentProvider } from '@/hooks/useTestEnvironment';
+import TestEnvironmentBanner from '@/components/TestEnvironmentBanner';
 import React, { Suspense } from "react";
 import { Loader2 } from "lucide-react";
 
