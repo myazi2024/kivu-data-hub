@@ -23,6 +23,7 @@ import DisputeStatusBadge from '@/components/cadastral/DisputeStatusBadge';
 
 export const UserLandDisputes: React.FC = () => {
   const { user } = useAuth();
+  const { isTestRoute } = useTestEnvironment();
   const [disputes, setDisputes] = useState<LandDispute[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
