@@ -250,13 +250,13 @@ const AdminTestMode: React.FC = () => {
               Annuler
             </AlertDialogCancel>
             <AlertDialogAction
-              variant="outline"
+              className="border border-input bg-background hover:bg-accent hover:text-accent-foreground"
               onClick={handleDisableWithoutCleanup}
             >
               Désactiver uniquement
             </AlertDialogAction>
             <AlertDialogAction
-              variant="destructive"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={handleDisableWithCleanup}
             >
               Désactiver et supprimer
