@@ -12,20 +12,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Loader2, Info, Trash2, Upload, RefreshCw } from 'lucide-react';
-import type { TestDataStats, GenerationStep } from './types';
-import GenerationProgress from './GenerationProgress';
+import { Loader2, Info, Trash2, RefreshCw } from 'lucide-react';
+import type { TestDataStats } from './types';
 
 interface TestDataStatsCardProps {
   stats: TestDataStats;
   total: number;
-  isTestModeActive: boolean;
   cleaningUp: boolean;
-  generatingData: boolean;
   statsLoading: boolean;
-  generationSteps: GenerationStep[];
-  currentStep: number;
-  onGenerate: () => void;
   onCleanup: () => void;
   onRefresh: () => void;
 }
@@ -42,7 +36,6 @@ const STAT_ITEMS: { key: keyof TestDataStats; label: string }[] = [
   { key: 'expertisePayments', label: 'Paiem. expertises' },
   { key: 'disputes', label: 'Litiges' },
   { key: 'boundaryConflicts', label: 'Conflits limites' },
-  
   { key: 'ownershipHistory', label: 'Hist. propriété' },
   { key: 'taxHistory', label: 'Hist. taxes' },
   { key: 'boundaryHistory', label: 'Hist. bornages' },
@@ -57,13 +50,8 @@ const STAT_ITEMS: { key: keyof TestDataStats; label: string }[] = [
 const TestDataStatsCard: React.FC<TestDataStatsCardProps> = ({
   stats,
   total,
-  isTestModeActive,
   cleaningUp,
-  generatingData,
   statsLoading,
-  generationSteps,
-  currentStep,
-  onGenerate,
   onCleanup,
   onRefresh,
 }) => {
@@ -85,56 +73,7 @@ const TestDataStatsCard: React.FC<TestDataStatsCardProps> = ({
           ))}
         </div>
 
-        {/* Generation progress */}
-        <GenerationProgress
-          steps={generationSteps}
-          currentStep={currentStep}
-          visible={generatingData}
-        />
-
         <div className="flex flex-wrap gap-2">
-          {/* Generate button */}
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="outline"
-                disabled={generatingData || !isTestModeActive}
-              >
-                {generatingData ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Upload className="mr-2 h-4 w-4" />
-                )}
-                Générer données de test
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Générer des données de test ?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Cette action créera un jeu complet de données de test incluant :
-                  <br />
-                  <strong>5 parcelles</strong>, <strong>5 contributions</strong>,{' '}
-                  <strong>3 factures</strong>, <strong>paiements</strong>,{' '}
-                  <strong>3 codes CCC</strong>, <strong>3 demandes de titres</strong>,{' '}
-                   <strong>3 expertises</strong>, <strong>3 litiges</strong>,{' '}
-                   <strong>historique de propriété et taxes</strong>,{' '}
-                   <strong>tentatives de fraude</strong>, <strong>certificats</strong>,{' '}
-                   <strong>3 mutations</strong> et <strong>2 lotissements</strong>.
-                  <br /><br />
-                  Toutes les données seront préfixées <strong>TEST-</strong> et pourront être
-                  nettoyées facilement.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Annuler</AlertDialogCancel>
-                <AlertDialogAction onClick={onGenerate}>
-                  Générer
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-
           <Button variant="outline" onClick={onRefresh} disabled={statsLoading}>
             {statsLoading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
