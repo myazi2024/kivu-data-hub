@@ -1,48 +1,49 @@
 
 
-# Synchroniser le filtre Lieu avec le bouton "Retour" de la carte
+# Ajouter le mode plein écran aux Données foncières
 
-## Problème
-Quand on clique "Retour" sur la carte, `selectedProvince` est remis à `null` dans `DRCInteractiveMap`, mais chaque bloc Analytics (Parcelles, Titres, etc.) gère son propre état `filter` localement avec `useState`. Il n'existe aucun mécanisme pour remettre `filter.province` à `undefined` depuis la carte.
+## Objectif
+Permettre aux partenaires d'afficher la page Données foncières en plein écran pour les grands écrans (salons, présentations).
 
 ## Solution
-
-Créer un second contexte `MapProvinceContext` qui expose la province actuellement sélectionnée sur la carte. Chaque bloc écoute ce contexte via un `useEffect` et synchronise son filtre local quand la carte change de province (y compris quand elle revient à `null`).
+Utiliser l'API native `document.documentElement.requestFullscreen()` avec un bouton bascule dans l'en-tête de la carte.
 
 ### Changements
 
-**1. `src/components/visualizations/filters/AnalyticsFilters.tsx`**
-- Ajouter un nouveau contexte exporté : `MapProvinceContext` (type `string | null`)
+**`src/components/DRCInteractiveMap.tsx`**
 
-**2. `src/components/visualizations/ProvinceDataVisualization.tsx`**
-- Importer `MapProvinceContext`
-- Envelopper le contenu avec `<MapProvinceContext.Provider value={selectedProvince?.name || null}>`
-- (`selectedProvince` est déjà passé en prop depuis `DRCInteractiveMap`)
+1. Importer `Maximize, Minimize` depuis `lucide-react`
+2. Ajouter un état `isFullscreen` + un `useEffect` qui écoute l'événement `fullscreenchange` pour synchroniser l'état
+3. Fonction `toggleFullscreen` : appelle `requestFullscreen()` ou `exitFullscreen()`
+4. Ajouter un bouton icône à côté du bouton "copier en image" (zone `bottom-5 right-2`) :
+   - Icône `Maximize` → `Minimize` selon l'état
+   - Tooltip "Plein écran" / "Quitter le plein écran"
 
-**3. Chaque bloc** (ParcelsBlock, TitleRequestsBlock, etc. — ~10 fichiers)
-- Ajouter un `useEffect` qui écoute `MapProvinceContext` :
+### Détail technique
+
 ```tsx
-const mapProvince = useContext(MapProvinceContext);
-useEffect(() => {
-  setFilter(f => ({ ...defaultFilter, province: mapProvince || undefined }));
-}, [mapProvince]);
-```
-Quand la carte revient à la vue nationale (`mapProvince = null`), le filtre se réinitialise. Quand une province est sélectionnée depuis la carte, le filtre se met à jour aussi.
+const [isFullscreen, setIsFullscreen] = useState(false);
 
-## Fichiers impactés
+useEffect(() => {
+  const handler = () => setIsFullscreen(!!document.fullscreenElement);
+  document.addEventListener('fullscreenchange', handler);
+  return () => document.removeEventListener('fullscreenchange', handler);
+}, []);
+
+const toggleFullscreen = () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen();
+  } else {
+    document.exitFullscreen();
+  }
+};
+```
+
+Le bouton sera placé dans la zone d'actions en bas à droite de la carte, avec le même style que le bouton copie existant.
+
+## Fichier impacté
 
 | Fichier | Modification |
 |---------|-------------|
-| `AnalyticsFilters.tsx` | Ajouter export `MapProvinceContext` |
-| `ProvinceDataVisualization.tsx` | Provider avec `selectedProvince?.name` |
-| `ParcelsBlock.tsx` | useEffect sync province |
-| `TitleRequestsBlock.tsx` | useEffect sync province |
-| `ContributionsBlock.tsx` | useEffect sync province |
-| `SubdivisionBlock.tsx` | useEffect sync province |
-| `DisputesBlock.tsx` | useEffect sync province |
-| `OwnershipHistoryBlock.tsx` | useEffect sync province |
-| `FraudAttemptsBlock.tsx` | useEffect sync province |
-| `CertificatesBlock.tsx` | useEffect sync province |
-| `InvoicesBlock.tsx` | useEffect sync province |
-| `MutationsBlock.tsx` | useEffect sync province |
+| `src/components/DRCInteractiveMap.tsx` | État fullscreen, listener, bouton bascule |
 
