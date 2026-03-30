@@ -151,7 +151,6 @@ const AdminTestMode: React.FC = () => {
       toast.error("Erreur lors de l'enregistrement", { description: message });
     } finally {
       setSaving(false);
-      setCleanupOnDisable(false);
     }
   };
 
