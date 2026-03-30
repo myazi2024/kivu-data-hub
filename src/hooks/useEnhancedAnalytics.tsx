@@ -211,7 +211,8 @@ async function calculateBusinessMetrics() {
   const { data: invoices } = await supabase
     .from('cadastral_invoices')
     .select('total_amount_usd, user_id, created_at')
-    .eq('status', 'paid');
+    .eq('status', 'paid')
+    .not('parcel_number', 'ilike', 'TEST-%');
 
   const totalRevenue = invoices?.reduce((sum, inv) => sum + parseFloat(String(inv.total_amount_usd || '0')), 0) || 0;
   const uniqueUsers = new Set(invoices?.map(inv => inv.user_id).filter(Boolean)).size;
