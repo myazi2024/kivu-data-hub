@@ -56,7 +56,11 @@ function sumForProvince(records: any[], provinceName: string, field: string): nu
     .reduce((s, r) => s + (r[field] || 0), 0);
 }
 
-const DRCInteractiveMap = () => {
+interface DRCInteractiveMapProps {
+  onFullscreenChange?: (isFullscreen: boolean) => void;
+}
+
+const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const [selectedProvince, setSelectedProvince] = useState<ProvinceData | null>(null);
   const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
   const [mapInstance, setMapInstance] = useState<any>(null);
@@ -193,10 +197,14 @@ const DRCInteractiveMap = () => {
 
   // Fullscreen sync
   React.useEffect(() => {
-    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    const handler = () => {
+      const fs = !!document.fullscreenElement;
+      setIsFullscreen(fs);
+      onFullscreenChange?.(fs);
+    };
     document.addEventListener('fullscreenchange', handler);
     return () => document.removeEventListener('fullscreenchange', handler);
-  }, []);
+  }, [onFullscreenChange]);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
