@@ -1,6 +1,8 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
 
+// ─── Helpers ───────────────────────────────────────────────────────────────────
+
 /** Generate a unique suffix to avoid duplicate parcel_number on repeated clicks */
 export const uniqueSuffix = () => {
   const ts = Date.now().toString(36).toUpperCase();
@@ -30,6 +32,24 @@ function assertInserted<T>(data: T[] | null, entity: string): T[] {
   return data;
 }
 
+/** Pick a deterministic item from an array based on index */
+function pick<T>(arr: T[], i: number): T {
+  return arr[i % arr.length];
+}
+
+/** Random int between min and max (inclusive) */
+function randInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+/** Return a random date between two years ago offset and now, formatted YYYY-MM-DD */
+function randomDateInPast(yearsBack: number): string {
+  const now = Date.now();
+  const past = now - yearsBack * 365.25 * 24 * 3600 * 1000;
+  const d = new Date(past + Math.random() * (now - past));
+  return d.toISOString().split('T')[0];
+}
+
 export interface GeneratedIds {
   parcelNumbers: string[];
   contributionIds: string[];
@@ -43,133 +63,183 @@ export interface GeneratedIds {
   certificateIds: string[];
 }
 
+// ─── Constants ─────────────────────────────────────────────────────────────────
+
 const PROVINCES = [
-  { province: 'Kinshasa', ville: 'Kinshasa', commune: 'Gombe', quartier: 'Socimat', avenue: 'Av. du Commerce' },
-  { province: 'Nord-Kivu', ville: 'Goma', commune: 'Goma', quartier: 'Himbi', avenue: 'Av. du Rond-Point' },
-  { province: 'Sud-Kivu', ville: 'Bukavu', commune: 'Ibanda', quartier: 'Ndendere', avenue: 'Av. Patrice Lumumba' },
-  { province: 'Haut-Katanga', ville: 'Lubumbashi', commune: 'Lubumbashi', quartier: 'Centre-ville', avenue: 'Av. Mobutu' },
-  { province: 'Kongo-Central', ville: 'Matadi', commune: 'Matadi', quartier: 'Ville-Basse', avenue: 'Av. du Port' },
+  { province: 'Kinshasa', ville: 'Kinshasa', commune: 'Gombe', quartier: 'Socimat', avenue: 'Av. du Commerce', lat: -4.3250, lng: 15.3222 },
+  { province: 'Nord-Kivu', ville: 'Goma', commune: 'Goma', quartier: 'Himbi', avenue: 'Av. du Rond-Point', lat: -1.6580, lng: 29.2205 },
+  { province: 'Sud-Kivu', ville: 'Bukavu', commune: 'Ibanda', quartier: 'Ndendere', avenue: 'Av. Patrice Lumumba', lat: -2.5083, lng: 28.8608 },
+  { province: 'Haut-Katanga', ville: 'Lubumbashi', commune: 'Lubumbashi', quartier: 'Centre-ville', avenue: 'Av. Mobutu', lat: -11.6647, lng: 27.4794 },
+  { province: 'Kongo-Central', ville: 'Matadi', commune: 'Matadi', quartier: 'Ville-Basse', avenue: 'Av. du Port', lat: -5.8243, lng: 13.4531 },
 ];
 
-/** Step 0b: Generate cadastral parcels (required by FK joins) */
+const PARCELS_PER_PROVINCE = 20; // 15 SU + 5 SR
+const DECLARED_USAGES = ['Résidentiel', 'Commercial', 'Mixte', 'Institutionnel', 'Industriel', 'Agricole'];
+const CONSTRUCTION_NATURES: (string | null)[] = ['Durable', 'Semi-durable', 'Précaire', 'Durable', null]; // ~20% null
+const TITLE_TYPES = ['Certificat d\'enregistrement', 'Contrat de location (Contrat d\'occupation provisoire)', 'Fiche parcellaire'];
+const LEGAL_STATUSES = ['Personne physique', 'Personne morale'];
+const CONSTRUCTION_TYPES = ['Résidentielle', 'Commerciale', 'Industrielle', 'Institutionnelle', 'Terrain nu'];
+const OWNER_NAMES = [
+  'Kabongo Mwamba', 'Amani Baraka', 'Mukendi Tshiala', 'Ilunga Kasongo', 'Birindwa Ciza',
+  'Ngoy Mwenze', 'Bashige Furaha', 'Mbuyi Kalala', 'Kyungu Mutombo', 'Lwamba Ngandu',
+  'Banza Mukalay', 'Kikuni Shabani', 'Assumani Ramazani', 'Mapendo Sifa', 'Mbayo Ndaye',
+  'Tshibangu Kazadi', 'Kapinga Nkulu', 'Lukusa Bondo', 'Kabeya Cibangu', 'Mwepu Kasanda',
+];
+
+// ─── Parcel Number Generator ───────────────────────────────────────────────────
+
+export function generateParcelNumbers(suffix: string): string[] {
+  const numbers: string[] = [];
+  for (let pIdx = 0; pIdx < PROVINCES.length; pIdx++) {
+    for (let i = 0; i < PARCELS_PER_PROVINCE; i++) {
+      numbers.push(`TEST-${pIdx}-${String(i).padStart(2, '0')}-${suffix}`);
+    }
+  }
+  return numbers;
+}
+
+// ─── Step 0b: Generate 100 cadastral parcels ──────────────────────────────────
+
 export const generateParcels = async (parcelNumbers: string[]) => {
-  const areas = [500, 1000, 750, 2000, 350];
-  const parcelTypes = ['SU', 'SU', 'SR', 'SU', 'SU'];
-  const titleTypes = ['Certificat d\'enregistrement', 'Contrat de location (Contrat d\'occupation provisoire)', 'Fiche parcellaire', 'Certificat d\'enregistrement', 'Contrat de location (Contrat d\'occupation provisoire)'];
+  const records = parcelNumbers.map((pn, idx) => {
+    const pIdx = Math.floor(idx / PARCELS_PER_PROVINCE);
+    const localIdx = idx % PARCELS_PER_PROVINCE;
+    const prov = PROVINCES[pIdx];
+    const isSR = localIdx >= 15;
+    const parcelType = isSR ? 'SR' : 'SU';
+    const constructionNature = pick(CONSTRUCTION_NATURES, idx);
+    const ownerSinceDate = randomDateInPast(10);
 
-  const records = parcelNumbers.map((pn, i) => ({
-    parcel_number: pn,
-    parcel_type: parcelTypes[i],
-    property_title_type: titleTypes[i],
-    location: `${PROVINCES[i].quartier}, ${PROVINCES[i].commune}`,
-    area_sqm: areas[i],
-    current_owner_name: `Test Propriétaire ${i + 1}`,
-    current_owner_since: '2020-01-01',
-    current_owner_legal_status: i % 2 === 0 ? 'Personne physique' : 'Personne morale',
-    province: PROVINCES[i].province,
-    ville: PROVINCES[i].ville,
-    commune: PROVINCES[i].commune,
-    quartier: PROVINCES[i].quartier,
-    avenue: PROVINCES[i].avenue,
-    declared_usage: ['Résidentiel', 'Commercial', 'Agricole', 'Mixte', 'Industriel'][i],
-    construction_type: ['Résidentielle', 'Commerciale', 'Terrain nu', 'Résidentielle', 'Industrielle'][i],
-    construction_nature: ['Durable', 'Durable', null, 'Semi-durable', 'Durable'][i] as string | null,
-    construction_year: [2010, 2018, null, 2005, 2015][i],
-    lease_type: [null, 'initial', null, null, 'renewal'][i],
-    gps_coordinates: [
-      [{ lat: -4.3250, lng: 15.3222 }, { lat: -4.3240, lng: 15.3232 }, { lat: -4.3245, lng: 15.3240 }, { lat: -4.3255, lng: 15.3230 }],
-      [{ lat: -1.6580, lng: 29.2205 }, { lat: -1.6570, lng: 29.2215 }, { lat: -1.6575, lng: 29.2225 }, { lat: -1.6585, lng: 29.2210 }],
-      [{ lat: -2.5083, lng: 28.8608 }, { lat: -2.5073, lng: 28.8618 }, { lat: -2.5078, lng: 28.8628 }, { lat: -2.5088, lng: 28.8615 }],
-      [{ lat: -11.6647, lng: 27.4794 }, { lat: -11.6637, lng: 27.4804 }, { lat: -11.6642, lng: 27.4814 }, { lat: -11.6652, lng: 27.4800 }],
-      [{ lat: -5.8243, lng: 13.4531 }, { lat: -5.8233, lng: 13.4541 }, { lat: -5.8238, lng: 13.4551 }, { lat: -5.8248, lng: 13.4538 }],
-    ][i] as unknown as Json,
-  }));
+    return {
+      parcel_number: pn,
+      parcel_type: parcelType,
+      property_title_type: pick(TITLE_TYPES, idx),
+      location: `${prov.quartier}, ${prov.commune}`,
+      area_sqm: randInt(200, 5000),
+      current_owner_name: `Test ${pick(OWNER_NAMES, idx)}`,
+      current_owner_since: ownerSinceDate,
+      current_owner_legal_status: pick(LEGAL_STATUSES, idx),
+      province: prov.province,
+      ville: prov.ville,
+      commune: prov.commune,
+      quartier: prov.quartier,
+      avenue: prov.avenue,
+      declared_usage: pick(DECLARED_USAGES, idx),
+      construction_type: constructionNature ? pick(CONSTRUCTION_TYPES.filter(t => t !== 'Terrain nu'), idx) : 'Terrain nu',
+      construction_nature: constructionNature,
+      construction_year: constructionNature ? randInt(1990, 2024) : null,
+      lease_type: localIdx % 7 === 0 ? 'initial' : localIdx % 11 === 0 ? 'renewal' : null,
+      gps_coordinates: [
+        { lat: prov.lat + (Math.random() - 0.5) * 0.01, lng: prov.lng + (Math.random() - 0.5) * 0.01 },
+        { lat: prov.lat + (Math.random() - 0.5) * 0.01, lng: prov.lng + (Math.random() - 0.5) * 0.01 },
+        { lat: prov.lat + (Math.random() - 0.5) * 0.01, lng: prov.lng + (Math.random() - 0.5) * 0.01 },
+        { lat: prov.lat + (Math.random() - 0.5) * 0.01, lng: prov.lng + (Math.random() - 0.5) * 0.01 },
+      ] as unknown as Json,
+    };
+  });
 
-  const { data, error } = await supabase
-    .from('cadastral_parcels')
-    .insert(records)
-    .select('id, parcel_number');
-
-  if (error) throw new Error(`Parcelles: ${error.message}`);
-  return assertInserted(data, 'Parcelles');
+  // Insert in batches of 50 to stay under payload limits
+  const allInserted: Array<{ id: string; parcel_number: string }> = [];
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { data, error } = await supabase
+      .from('cadastral_parcels')
+      .insert(batch)
+      .select('id, parcel_number');
+    if (error) throw new Error(`Parcelles (batch ${i}): ${error.message}`);
+    allInserted.push(...assertInserted(data, 'Parcelles'));
+  }
+  return allInserted;
 };
 
-/** Step 1: Generate contributions with diverse data */
+// ─── Step 1: Generate 100 contributions ────────────────────────────────────────
+
 export const generateContributions = async (userId: string, parcelNumbers: string[]) => {
-  // Bug 14 fix: Insert all as 'pending' first to avoid triggering auto_generate_ccc_code,
-  // then update specific ones to 'approved'/'rejected' afterward.
-  const finalStatuses = ['approved', 'pending', 'rejected', 'pending', 'approved'];
-  const types: Array<'creation' | 'update'> = ['creation', 'creation', 'update', 'creation', 'creation'];
-  const areas = [500, 1000, 750, 2000, 350];
-  const titleTypes = ['Certificat d\'enregistrement', 'Contrat de location (Contrat d\'occupation provisoire)', 'Fiche parcellaire', 'Certificat d\'enregistrement', 'Contrat de location (Contrat d\'occupation provisoire)'];
+  const STATUSES_CYCLE = ['approved', 'pending', 'rejected', 'pending', 'approved'];
+  const TYPES_CYCLE: Array<'creation' | 'update'> = ['creation', 'creation', 'update', 'creation', 'creation'];
 
-  const records = parcelNumbers.map((pn, i) => ({
-    parcel_number: pn,
-    property_title_type: titleTypes[i],
-    current_owner_name: `Test User ${i + 1}`,
-    area_sqm: areas[i],
-    province: PROVINCES[i].province,
-    ville: PROVINCES[i].ville,
-    commune: PROVINCES[i].commune,
-    quartier: PROVINCES[i].quartier,
-    avenue: PROVINCES[i].avenue,
-    territoire: i === 1 ? 'Nyiragongo' : null,
-    village: i === 4 ? 'Test Village' : null,
-    
-    status: 'pending', // All start pending to avoid CCC trigger
-    contribution_type: types[i],
-    user_id: userId,
-    is_suspicious: i === 2,
-    fraud_score: i === 2 ? 75 : 0,
-    fraud_reason: i === 2 ? 'Test: score de fraude élevé simulé' : null,
-    declared_usage: ['Résidentiel', 'Commercial', 'Agricole', 'Mixte', 'Industriel'][i],
-    construction_type: ['Résidentielle', 'Commerciale', 'Terrain nu', 'Résidentielle', 'Industrielle'][i],
-    construction_nature: ['Durable', 'Durable', null, 'Semi-durable', 'Durable'][i],
-    construction_year: [2010, 2018, null, 2005, 2015][i],
-    current_owner_legal_status: i % 2 === 0 ? 'Personne physique' : 'Personne morale',
-  }));
+  const records = parcelNumbers.map((pn, idx) => {
+    const pIdx = Math.floor(idx / PARCELS_PER_PROVINCE);
+    const prov = PROVINCES[pIdx];
+    const constructionNature = pick(CONSTRUCTION_NATURES, idx);
+    const isSuspicious = idx % 13 === 0; // ~8% suspicious
 
-  const { data, error } = await supabase
-    .from('cadastral_contributions')
-    .insert(records)
-    .select('id, parcel_number');
+    return {
+      parcel_number: pn,
+      property_title_type: pick(TITLE_TYPES, idx),
+      current_owner_name: `Test ${pick(OWNER_NAMES, idx)}`,
+      area_sqm: randInt(200, 5000),
+      province: prov.province,
+      ville: prov.ville,
+      commune: prov.commune,
+      quartier: prov.quartier,
+      avenue: prov.avenue,
+      territoire: idx % 8 === 1 ? 'Nyiragongo' : null,
+      village: idx % 12 === 0 ? 'Test Village' : null,
+      status: 'pending', // All start pending to avoid CCC trigger
+      contribution_type: pick(TYPES_CYCLE, idx),
+      user_id: userId,
+      is_suspicious: isSuspicious,
+      fraud_score: isSuspicious ? randInt(50, 95) : 0,
+      fraud_reason: isSuspicious ? 'Test: score de fraude élevé simulé' : null,
+      declared_usage: pick(DECLARED_USAGES, idx),
+      construction_type: constructionNature ? pick(CONSTRUCTION_TYPES.filter(t => t !== 'Terrain nu'), idx) : 'Terrain nu',
+      construction_nature: constructionNature,
+      construction_year: constructionNature ? randInt(1990, 2024) : null,
+      current_owner_legal_status: pick(LEGAL_STATUSES, idx),
+      created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
+    };
+  });
 
-  if (error) throw new Error(`Contributions: ${error.message}`);
-  const inserted = assertInserted(data, 'Contributions');
+  // Insert in batches
+  const allInserted: Array<{ id: string; parcel_number: string }> = [];
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { data, error } = await supabase
+      .from('cadastral_contributions')
+      .insert(batch)
+      .select('id, parcel_number');
+    if (error) throw new Error(`Contributions (batch ${i}): ${error.message}`);
+    allInserted.push(...assertInserted(data, 'Contributions'));
+  }
 
-  // Now update non-pending statuses directly (bypasses the pending→approved trigger)
-  for (let i = 0; i < inserted.length; i++) {
-    if (finalStatuses[i] !== 'pending') {
+  // Now update non-pending statuses
+  for (let i = 0; i < allInserted.length; i++) {
+    const finalStatus = pick(STATUSES_CYCLE, i);
+    if (finalStatus !== 'pending') {
       await supabase
         .from('cadastral_contributions')
-        .update({ status: finalStatuses[i] })
-        .eq('id', inserted[i].id);
+        .update({ status: finalStatus })
+        .eq('id', allInserted[i].id);
     }
   }
 
-  return inserted;
+  return allInserted;
 };
 
-/** Step 2: Generate invoices linked to contributions */
+// ─── Step 2: Generate ~30 invoices (30% of parcels) ───────────────────────────
+
 export const generateInvoices = async (userId: string, parcelNumbers: string[]) => {
-  const services: Json[][] = [
+  const SERVICES_POOL: Json[][] = [
     ['carte_cadastrale', 'fiche_identification'],
     ['carte_cadastrale'],
     ['fiche_identification', 'certificat_bornage'],
+    ['carte_cadastrale', 'certificat_bornage'],
   ];
-  const statuses = ['paid', 'pending', 'paid'];
-  const amounts = [10, 5, 15];
+  const INV_STATUSES = ['paid', 'pending', 'paid', 'paid', 'pending'];
+  const selectedParcels = parcelNumbers.filter((_, i) => i % 3 === 0); // ~33%
 
-  const records = parcelNumbers.slice(0, 3).map((pn, i) => ({
+  const records = selectedParcels.map((pn, i) => ({
     parcel_number: pn,
-    invoice_number: `TEST-INV-${Date.now().toString(36)}-${i}`, // Unique test invoice number
-    selected_services: services[i] as unknown as Json,
-    total_amount_usd: amounts[i],
+    invoice_number: `TEST-INV-${Date.now().toString(36)}-${i}`,
+    selected_services: pick(SERVICES_POOL, i) as unknown as Json,
+    total_amount_usd: randInt(5, 25),
     client_email: `test${i + 1}@example.com`,
     client_name: `Test User ${i + 1}`,
-    status: statuses[i],
+    status: pick(INV_STATUSES, i),
     user_id: userId,
-    geographical_zone: PROVINCES[i].province,
+    geographical_zone: PROVINCES[Math.floor(i / (selectedParcels.length / 5))  % 5]?.province ?? 'Kinshasa',
+    created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
   }));
 
   const { data, error } = await supabase
@@ -181,7 +251,8 @@ export const generateInvoices = async (userId: string, parcelNumbers: string[]) 
   return assertInserted(data, 'Factures');
 };
 
-/** Step 3: Generate payment transactions for paid invoices */
+// ─── Step 3: Generate payments for paid invoices ──────────────────────────────
+
 export const generatePayments = async (
   userId: string,
   invoices: Array<{ id: string; parcel_number: string; status: string }>
@@ -189,16 +260,20 @@ export const generatePayments = async (
   const paidInvoices = invoices.filter((inv) => inv.status === 'paid');
   if (paidInvoices.length === 0) return [];
 
+  const METHODS = ['mobile_money', 'card', 'bank_transfer'];
+  const PROVIDERS = ['airtel_money', 'stripe', 'orange_money', 'vodacom_mpesa'];
+
   const records = paidInvoices.map((inv, i) => ({
     invoice_id: inv.id,
-    amount_usd: i === 0 ? 10 : 15,
-    payment_method: i === 0 ? 'mobile_money' : 'card',
-    provider: i === 0 ? 'airtel_money' : 'stripe',
+    amount_usd: randInt(5, 25),
+    payment_method: pick(METHODS, i),
+    provider: pick(PROVIDERS, i),
     status: 'completed',
-    phone_number: i === 0 ? '+243800000001' : null,
+    phone_number: i % 2 === 0 ? `+24380000${String(i).padStart(4, '0')}` : null,
     transaction_reference: `TEST-TXN-${Date.now()}-${i}`,
     user_id: userId,
     metadata: { test_mode: 'true', generated_at: new Date().toISOString() } as unknown as Json,
+    created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
   }));
 
   const { data, error } = await supabase
@@ -210,7 +285,8 @@ export const generatePayments = async (
   return assertInserted(data, 'Paiements');
 };
 
-/** Step 4: Generate service access records based on actual invoice services */
+// ─── Step 4: Generate service access for paid invoices ────────────────────────
+
 export const generateServiceAccess = async (
   userId: string,
   invoices: Array<{ id: string; parcel_number: string; status: string }>
@@ -218,15 +294,11 @@ export const generateServiceAccess = async (
   const paidInvoices = invoices.filter((inv) => inv.status === 'paid');
   if (paidInvoices.length === 0) return;
 
-  // Map invoice index to its actual services
-  const serviceMap: Record<number, string[]> = {
-    0: ['carte_cadastrale', 'fiche_identification'],
-    2: ['fiche_identification', 'certificat_bornage'],
-  };
+  const SERVICE_TYPES = ['carte_cadastrale', 'fiche_identification', 'certificat_bornage'];
 
   const records = paidInvoices.flatMap((inv, i) => {
-    const services = serviceMap[i === 0 ? 0 : 2] || ['carte_cadastrale'];
-    return services.map((svc) => ({
+    const count = (i % 2) + 1; // 1 or 2 services
+    return SERVICE_TYPES.slice(0, count).map((svc) => ({
       parcel_number: inv.parcel_number,
       invoice_id: inv.id,
       service_type: svc,
@@ -241,99 +313,50 @@ export const generateServiceAccess = async (
   if (error) console.error('Accès services (non bloquant):', error);
 };
 
-/** Step 5: Generate land title requests with full fields for analytics */
+// ─── Step 5: Title requests — 10 total (2/province) ──────────────────────────
+
 export const generateTitleRequests = async (userId: string, suffix: string) => {
-  const records = [
-    {
-      reference_number: `TEST-LTR-001-${suffix}`,
+  const FIRST_NAMES = ['Jean', 'Marie', 'Patrick', 'Chantal', 'Pierre', 'Grace', 'David', 'Sophie', 'Joseph', 'Alice'];
+  const LAST_NAMES = ['Kabongo', 'Amani', 'Mwamba', 'Furaha', 'Mukendi', 'Baraka', 'Ilunga', 'Sifa', 'Ngoy', 'Mapendo'];
+  const REQ_STATUSES = ['pending', 'approved', 'rejected', 'pending', 'approved', 'pending', 'rejected', 'approved', 'pending', 'approved'];
+  const PAY_STATUSES = ['pending', 'paid', 'paid', 'pending', 'paid', 'pending', 'paid', 'paid', 'pending', 'paid'];
+
+  const records = Array.from({ length: 10 }, (_, i) => {
+    const prov = PROVINCES[Math.floor(i / 2)];
+    const isRural = i % 3 === 0;
+    return {
+      reference_number: `TEST-LTR-${String(i + 1).padStart(3, '0')}-${suffix}`,
       user_id: userId,
-      requester_first_name: 'Jean',
-      requester_last_name: 'Kabongo',
-      requester_middle_name: 'Pierre',
-      requester_phone: '+243800000010',
-      requester_email: 'test-titre1@example.com',
-      requester_type: 'proprietaire',
-      requester_gender: 'M',
-      requester_legal_status: 'Personne physique',
-      nationality: 'RDC',
-      section_type: 'urbain',
-      province: 'Kinshasa',
-      ville: 'Kinshasa',
-      commune: 'Gombe',
-      quartier: 'Socimat',
-      
-      declared_usage: 'Résidentiel',
-      area_sqm: 500,
-      construction_nature: 'Durable',
-      occupation_duration: '5_ans_plus',
-      estimated_processing_days: 30,
-      status: 'pending',
-      payment_status: 'pending',
-      total_amount_usd: 50,
-      fee_items: [{ fee_name: 'Frais de dossier', amount_usd: 50 }] as unknown as Json,
-    },
-    {
-      reference_number: `TEST-LTR-002-${suffix}`,
-      user_id: userId,
-      requester_first_name: 'Marie',
-      requester_last_name: 'Amani',
-      requester_phone: '+243800000011',
-      requester_type: 'mandataire',
-      requester_gender: 'F',
-      requester_legal_status: 'Personne physique',
-      nationality: 'RDC',
-      is_owner_same_as_requester: false,
-      owner_first_name: 'Paul',
-      owner_last_name: 'Mukendi',
-      owner_gender: 'M',
-      owner_legal_status: 'Personne physique',
-      section_type: 'rural',
-      province: 'Sud-Kivu',
-      ville: 'Bukavu',
-      territoire: 'Kabare',
-      
-      declared_usage: 'Agricole',
-      area_sqm: 2000,
-      occupation_duration: '3_5_ans',
-      estimated_processing_days: 45,
-      status: 'approved',
-      payment_status: 'paid',
-      total_amount_usd: 75,
+      requester_first_name: FIRST_NAMES[i],
+      requester_last_name: LAST_NAMES[i],
+      requester_phone: `+24380000${String(10 + i).padStart(4, '0')}`,
+      requester_email: `test-titre${i + 1}@example.com`,
+      requester_type: i % 3 === 0 ? 'mandataire' : 'proprietaire',
+      requester_gender: i % 2 === 0 ? 'M' : 'F',
+      requester_legal_status: pick(LEGAL_STATUSES, i),
+      nationality: i % 5 === 0 ? 'Belgique' : 'RDC',
+      section_type: isRural ? 'rural' : 'urbain',
+      province: prov.province,
+      ville: prov.ville,
+      commune: prov.commune,
+      quartier: isRural ? null : prov.quartier,
+      territoire: isRural ? 'Kabare' : null,
+      declared_usage: pick(DECLARED_USAGES, i),
+      area_sqm: randInt(200, 3000),
+      construction_nature: i % 4 === 0 ? null : pick(['Durable', 'Semi-durable', 'Précaire'], i),
+      occupation_duration: pick(['moins_1_an', '1_3_ans', '3_5_ans', '5_ans_plus'], i),
+      estimated_processing_days: randInt(20, 90),
+      status: REQ_STATUSES[i],
+      rejection_reason: REQ_STATUSES[i] === 'rejected' ? 'Documents incomplets (données de test)' : null,
+      payment_status: PAY_STATUSES[i],
+      total_amount_usd: randInt(50, 150),
       fee_items: [
         { fee_name: 'Frais de dossier', amount_usd: 50 },
-        { fee_name: 'Frais de mesurage', amount_usd: 25 },
+        ...(i % 2 === 0 ? [{ fee_name: 'Frais de mesurage', amount_usd: 25 }] : []),
       ] as unknown as Json,
-    },
-    {
-      reference_number: `TEST-LTR-003-${suffix}`,
-      user_id: userId,
-      requester_first_name: 'Patrick',
-      requester_last_name: 'Mwamba',
-      requester_phone: '+243800000012',
-      requester_type: 'proprietaire',
-      requester_gender: 'M',
-      nationality: 'Belgique',
-      section_type: 'urbain',
-      province: 'Haut-Katanga',
-      ville: 'Lubumbashi',
-      commune: 'Lubumbashi',
-      
-      declared_usage: 'Commercial',
-      area_sqm: 1200,
-      construction_nature: 'Durable',
-      occupation_duration: '1_3_ans',
-      estimated_processing_days: 60,
-      status: 'rejected',
-      rejection_reason: 'Documents incomplets (données de test)',
-      payment_status: 'paid',
-      total_amount_usd: 100,
-      fee_items: [
-        { fee_name: 'Frais de dossier', amount_usd: 50 },
-        { fee_name: 'Frais de mesurage', amount_usd: 25 },
-        { fee_name: 'Frais d\'expertise', amount_usd: 25 },
-      ] as unknown as Json,
-    },
-  ];
+      created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
+    };
+  });
 
   const { data, error } = await supabase
     .from('land_title_requests')
@@ -344,93 +367,46 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
   return assertInserted(data, 'Demandes de titres');
 };
 
-/** Step 6: Generate expertise requests with full analytics fields */
+// ─── Step 6: Expertise requests — 10 total (2/province) ──────────────────────
+
 export const generateExpertiseRequests = async (userId: string, parcelNumbers: string[], suffix: string) => {
-  const records = [
-    {
-      reference_number: `TEST-EXP-001-${suffix}`,
-      parcel_number: parcelNumbers[0],
-      user_id: userId,
-      requester_name: 'Test Expert 1',
-      requester_email: 'test-exp1@example.com',
-      requester_phone: '+243800000020',
-      status: 'pending',
-      property_description: 'Parcelle test pour expertise immobilière',
-      construction_year: 2015,
-      number_of_floors: 2,
-      total_built_area_sqm: 320,
-      has_garden: true,
-      garden_area_sqm: 150,
-      has_electricity: true,
-      has_water_supply: true,
-      has_internet: true,
-      has_parking: true,
-      parking_spaces: 2,
-      has_security_system: false,
-      construction_quality: 'standard',
-      road_access_type: 'asphalte',
-      distance_to_main_road_m: 50,
-      distance_to_market_km: 1.2,
-      distance_to_school_km: 0.8,
-      distance_to_hospital_km: 2.5,
-      flood_risk_zone: false,
-      erosion_risk_zone: false,
-    },
-    {
-      reference_number: `TEST-EXP-002-${suffix}`,
-      parcel_number: parcelNumbers[1],
-      user_id: userId,
-      requester_name: 'Test Expert 2',
-      requester_email: 'test-exp2@example.com',
-      requester_phone: '+243800000021',
-      status: 'completed',
-      property_description: 'Terrain vide test',
-      market_value_usd: 45000,
-      property_condition: 'bon',
-      total_built_area_sqm: 0,
-      has_garden: false,
-      garden_area_sqm: 0,
-      has_electricity: false,
-      has_water_supply: false,
-      construction_quality: 'luxe',
-      road_access_type: 'terre',
-      distance_to_main_road_m: 500,
-      distance_to_market_km: 3.5,
-      distance_to_school_km: 2.1,
-      distance_to_hospital_km: 5.0,
-      flood_risk_zone: true,
-      erosion_risk_zone: false,
-    },
-    {
-      reference_number: `TEST-EXP-003-${suffix}`,
-      parcel_number: parcelNumbers[3],
-      user_id: userId,
-      requester_name: 'Test Expert 3',
-      requester_email: 'test-exp3@example.com',
-      requester_phone: '+243800000022',
-      status: 'in_progress',
-      property_description: 'Villa test avec grand jardin',
-      construction_year: 2005,
-      number_of_floors: 1,
-      total_built_area_sqm: 180,
-      has_garden: true,
-      garden_area_sqm: 800,
-      has_electricity: true,
-      has_water_supply: true,
-      has_internet: false,
-      has_parking: true,
-      parking_spaces: 4,
-      has_sewage_system: true,
-      construction_quality: 'economique',
-      road_access_type: 'piste',
-      distance_to_main_road_m: 200,
-      distance_to_market_km: 2.0,
-      distance_to_school_km: 1.5,
-      distance_to_hospital_km: 3.0,
-      flood_risk_zone: false,
-      erosion_risk_zone: true,
-    },
-  ];
+  const EXP_STATUSES = ['pending', 'completed', 'in_progress', 'pending', 'completed', 'pending', 'in_progress', 'completed', 'pending', 'completed'];
+  const ROAD_TYPES = ['asphalte', 'terre', 'piste', 'asphalte', 'terre'];
+
+  // Pick 10 parcels spread across provinces
+  const selectedParcels = parcelNumbers.filter((_, i) => i % 10 === 0).slice(0, 10);
+
+  const records = selectedParcels.map((pn, i) => ({
+    reference_number: `TEST-EXP-${String(i + 1).padStart(3, '0')}-${suffix}`,
+    parcel_number: pn,
+    user_id: userId,
+    requester_name: `Test Expert ${i + 1}`,
+    requester_email: `test-exp${i + 1}@example.com`,
+    requester_phone: `+24380000${String(20 + i).padStart(4, '0')}`,
+    status: EXP_STATUSES[i],
+    property_description: `Parcelle test ${i + 1} pour expertise immobilière`,
+    construction_year: i % 3 === 0 ? null : randInt(1995, 2023),
+    number_of_floors: i % 3 === 0 ? 0 : randInt(1, 4),
+    total_built_area_sqm: i % 3 === 0 ? 0 : randInt(80, 500),
+    has_garden: i % 2 === 0,
+    garden_area_sqm: i % 2 === 0 ? randInt(50, 300) : 0,
+    has_electricity: i % 3 !== 2,
+    has_water_supply: i % 4 !== 3,
+    has_internet: i % 3 === 0,
+    has_parking: i % 2 === 0,
+    parking_spaces: i % 2 === 0 ? randInt(1, 4) : 0,
+    has_security_system: i % 5 === 0,
+    construction_quality: pick(['standard', 'luxe', 'economique'], i),
+    road_access_type: pick(ROAD_TYPES, i),
+    distance_to_main_road_m: randInt(10, 1000),
+    distance_to_market_km: Math.round(Math.random() * 5 * 10) / 10,
+    distance_to_school_km: Math.round(Math.random() * 3 * 10) / 10,
+    distance_to_hospital_km: Math.round(Math.random() * 8 * 10) / 10,
+    flood_risk_zone: i % 6 === 0,
+    erosion_risk_zone: i % 7 === 0,
+    market_value_usd: EXP_STATUSES[i] === 'completed' ? randInt(15000, 200000) : null,
+    created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
+  }));
 
   const { data, error } = await supabase
     .from('real_estate_expertise_requests')
@@ -441,21 +417,23 @@ export const generateExpertiseRequests = async (userId: string, parcelNumbers: s
   return assertInserted(data, 'Expertises');
 };
 
-/** Step 6b: Generate expertise payments for test expertise requests */
+// ─── Step 6b: Expertise payments ──────────────────────────────────────────────
+
 export const generateExpertisePayments = async (userId: string, expertiseRequests: Array<{ id: string }>) => {
   if (!expertiseRequests || expertiseRequests.length === 0) return [];
-  
+
   const records = expertiseRequests.map((req, i) => ({
     expertise_request_id: req.id,
     user_id: userId,
-    total_amount_usd: [150, 200, 175][i % 3],
-    status: ['pending', 'paid', 'pending'][i % 3],
-    payment_method: ['mobile_money', 'bank_transfer', 'mobile_money'][i % 3],
+    total_amount_usd: randInt(100, 300),
+    status: pick(['pending', 'paid', 'pending'], i),
+    payment_method: pick(['mobile_money', 'bank_transfer', 'mobile_money'], i),
     fee_items: [
-      { fee_name: 'Frais d\'expertise', amount_usd: [100, 150, 125][i % 3] },
+      { fee_name: 'Frais d\'expertise', amount_usd: randInt(80, 200) },
       { fee_name: 'Frais de déplacement', amount_usd: 50 },
     ],
-    paid_at: i === 1 ? new Date().toISOString() : null,
+    paid_at: i % 3 === 1 ? new Date().toISOString() : null,
+    created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
   }));
 
   const { data, error } = await supabase
@@ -467,59 +445,43 @@ export const generateExpertisePayments = async (userId: string, expertiseRequest
   return data ?? [];
 };
 
-/** Step 7: Generate land disputes (including one with lifting data) */
+// ─── Step 7: Disputes — 10 total (2/province) ────────────────────────────────
+
 export const generateDisputes = async (parcelNumbers: string[], suffix: string, userId?: string) => {
-  const records = [
-    {
-      reference_number: `TEST-DISP-001-${suffix}`,
-      parcel_number: parcelNumbers[0],
+  const DISPUTE_NATURES = ['delimitation', 'double_vente', 'occupation_illegale', 'succession', 'delimitation'];
+  const DISPUTE_STATUSES = ['en_cours', 'resolu', 'demande_levee', 'en_cours', 'resolu', 'en_cours', 'demande_levee', 'resolu', 'en_cours', 'resolu'];
+  const QUALITIES = ['proprietaire', 'occupant', 'heritier', 'mandataire', 'proprietaire'];
+
+  // Pick 10 parcels spread across provinces
+  const selectedParcels = parcelNumbers.filter((_, i) => i % 10 === 5).slice(0, 10);
+
+  const records = selectedParcels.map((pn, i) => {
+    const status = DISPUTE_STATUSES[i];
+    return {
+      reference_number: `TEST-DISP-${String(i + 1).padStart(3, '0')}-${suffix}`,
+      parcel_number: pn,
       dispute_type: 'report',
-      dispute_nature: 'delimitation',
-      declarant_name: 'Test Déclarant 1',
-      declarant_quality: 'proprietaire',
-      declarant_phone: '+243800000030',
-      declarant_email: 'test-decl1@example.com',
-      current_status: 'en_cours',
+      dispute_nature: pick(DISPUTE_NATURES, i),
+      declarant_name: `Test Déclarant ${i + 1}`,
+      declarant_quality: pick(QUALITIES, i),
+      declarant_phone: `+24380000${String(30 + i).padStart(4, '0')}`,
+      declarant_email: `test-decl${i + 1}@example.com`,
+      current_status: status,
       reported_by: userId ?? null,
-      dispute_start_date: '2025-06-15',
-      dispute_description: 'Litige de test: contestation des bornes entre deux parcelles adjacentes',
+      dispute_start_date: randomDateInPast(8),
+      dispute_description: `Litige de test #${i + 1}: ${pick(DISPUTE_NATURES, i)}`,
+      resolution_level: status === 'resolu' ? 'conciliation_amiable' : null,
+      resolution_details: status === 'resolu' ? 'Résolu à l\'amiable (données de test)' : null,
+      lifting_status: status === 'demande_levee' ? 'en_cours' : null,
+      lifting_reason: status === 'demande_levee' ? 'conciliation_reussie' : null,
+      lifting_request_reference: status === 'demande_levee' ? `TEST-LEV-${String(i + 1).padStart(3, '0')}-${suffix}` : null,
       parties_involved: [
-        { name: 'Test Partie 1', role: 'demandeur' },
-        { name: 'Test Partie 2', role: 'défendeur' },
+        { name: `Test Partie ${i * 2 + 1}`, role: 'demandeur' },
+        { name: `Test Partie ${i * 2 + 2}`, role: 'défendeur' },
       ] as unknown as Json,
-    },
-    {
-      reference_number: `TEST-DISP-002-${suffix}`,
-      parcel_number: parcelNumbers[2],
-      dispute_type: 'report',
-      dispute_nature: 'double_vente',
-      declarant_name: 'Test Déclarant 2',
-      declarant_quality: 'occupant',
-      declarant_phone: '+243800000031',
-      current_status: 'resolu',
-      resolution_level: 'conciliation_amiable',
-      resolution_details: 'Résolu à l\'amiable entre les parties (données de test)',
-      reported_by: userId ?? null,
-      dispute_start_date: '2025-03-01',
-    },
-    {
-      reference_number: `TEST-DISP-003-${suffix}`,
-      parcel_number: parcelNumbers[3],
-      dispute_type: 'report',
-      dispute_nature: 'occupation_illegale',
-      declarant_name: 'Test Déclarant 3',
-      declarant_quality: 'proprietaire',
-      declarant_phone: '+243800000032',
-      current_status: 'demande_levee',
-      reported_by: userId ?? null,
-      dispute_start_date: '2025-09-10',
-      dispute_description: 'Litige de test: demande de levée d\'opposition en cours',
-      lifting_status: 'en_cours',
-      lifting_reason: 'conciliation_reussie',
-      lifting_request_reference: `TEST-LEV-001-${suffix}`,
-      lifting_documents: [{ name: 'PV de médiation', url: 'test://mediation-pv.pdf' }] as unknown as Json,
-    },
-  ];
+      created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
+    };
+  });
 
   const { data, error } = await supabase
     .from('cadastral_land_disputes')
@@ -530,20 +492,23 @@ export const generateDisputes = async (parcelNumbers: string[], suffix: string, 
   return assertInserted(data, 'Litiges');
 };
 
-/** Step 8: Generate contributor codes linked to contributions */
+// ─── Step 8: Contributor codes — ~30 (30% of contributions) ──────────────────
+
 export const generateContributorCodes = async (
   userId: string,
   contributions: Array<{ id: string; parcel_number: string }>
 ) => {
   const codeSuffix = Date.now().toString(36).toUpperCase();
-  const records = contributions.slice(0, 3).map((c, i) => ({
+  const selected = contributions.filter((_, i) => i % 3 === 0); // ~33%
+
+  const records = selected.map((c, i) => ({
     code: `TEST-CCC-${codeSuffix}-${String(i + 1).padStart(3, '0')}`,
     contribution_id: c.id,
     parcel_number: c.parcel_number,
     user_id: userId,
-    value_usd: [5, 10, 15][i],
-    is_used: i === 0,
-    used_at: i === 0 ? new Date().toISOString() : null,
+    value_usd: randInt(5, 20),
+    is_used: i % 4 === 0,
+    used_at: i % 4 === 0 ? new Date().toISOString() : null,
     expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
   }));
 
@@ -556,27 +521,25 @@ export const generateContributorCodes = async (
   return assertInserted(data, 'Codes CCC');
 };
 
-/** Step 9: Generate fraud attempts linked to suspicious contributions */
+// ─── Step 9: Fraud attempts — 10 (2/province) ────────────────────────────────
+
 export const generateFraudAttempts = async (
   userId: string,
   contributions: Array<{ id: string; parcel_number: string }>
 ) => {
-  const records = [
-    {
-      user_id: userId,
-      contribution_id: contributions[2]?.id ?? contributions[0].id,
-      fraud_type: 'duplication',
-      severity: 'high',
-      description: 'Test: tentative de soumission en double détectée',
-    },
-    {
-      user_id: userId,
-      contribution_id: contributions[0].id,
-      fraud_type: 'document_falsifie',
-      severity: 'medium',
-      description: 'Test: document suspect détecté par le système',
-    },
-  ];
+  const FRAUD_TYPES = ['duplication', 'document_falsifie', 'identite_usurpee', 'coordonnees_falsifiees', 'duplication'];
+  const SEVERITIES = ['high', 'medium', 'critical', 'low', 'high'];
+
+  const selected = contributions.filter((_, i) => i % 10 === 0).slice(0, 10);
+
+  const records = selected.map((c, i) => ({
+    user_id: userId,
+    contribution_id: c.id,
+    fraud_type: pick(FRAUD_TYPES, i),
+    severity: pick(SEVERITIES, i),
+    description: `Test: tentative de fraude ${pick(FRAUD_TYPES, i)} détectée`,
+    created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
+  }));
 
   const { data, error } = await supabase
     .from('fraud_attempts')
@@ -587,30 +550,44 @@ export const generateFraudAttempts = async (
   return data ?? [];
 };
 
-/** Step 10: Generate boundary conflicts */
+// ─── Step 10: Boundary conflicts ──────────────────────────────────────────────
+
 export const generateBoundaryConflicts = async (parcelNumbers: string[], userId?: string) => {
-  const records = [
-    {
-      reporting_parcel_number: parcelNumbers[0],
-      conflicting_parcel_number: parcelNumbers[1],
-      conflict_type: 'chevauchement',
-      description: 'Test: chevauchement de limites entre deux parcelles adjacentes',
-      status: 'en_cours',
-      reported_by: userId ?? null,
-    },
-    {
-      reporting_parcel_number: parcelNumbers[3],
-      conflicting_parcel_number: parcelNumbers[4],
-      conflict_type: 'borne_deplacee',
-      description: 'Test: borne de délimitation déplacée',
-      status: 'resolu',
-      reported_by: userId ?? null,
-      proposed_solution: 'Repose de bornes par le géomètre assermenté',
-      resolution_notes: 'Résolu après intervention du conservateur (test)',
-      resolved_at: new Date().toISOString(),
-      resolved_by: userId ?? null,
-    },
-  ];
+  const CONFLICT_TYPES = ['chevauchement', 'borne_deplacee', 'empiétement', 'chevauchement'];
+  const STATUSES = ['en_cours', 'resolu', 'en_cours', 'resolu'];
+
+  // Create conflicts between neighboring parcels within each province
+  const records: Array<{
+    reporting_parcel_number: string;
+    conflicting_parcel_number: string;
+    conflict_type: string;
+    description: string;
+    status: string;
+    reported_by: string | null;
+    proposed_solution?: string | null;
+    resolution_notes?: string | null;
+    resolved_at?: string | null;
+    resolved_by?: string | null;
+  }> = [];
+  for (let pIdx = 0; pIdx < PROVINCES.length; pIdx++) {
+    const base = pIdx * PARCELS_PER_PROVINCE;
+    for (let j = 0; j < 2; j++) {
+      const idx = pIdx * 2 + j;
+      const status = pick(STATUSES, idx);
+      records.push({
+        reporting_parcel_number: parcelNumbers[base + j * 2],
+        conflicting_parcel_number: parcelNumbers[base + j * 2 + 1],
+        conflict_type: pick(CONFLICT_TYPES, idx),
+        description: `Test: ${pick(CONFLICT_TYPES, idx)} entre parcelles adjacentes`,
+        status,
+        reported_by: userId ?? null,
+        proposed_solution: status === 'resolu' ? 'Repose de bornes par le géomètre assermenté' : null,
+        resolution_notes: status === 'resolu' ? 'Résolu après intervention (test)' : null,
+        resolved_at: status === 'resolu' ? new Date().toISOString() : null,
+        resolved_by: status === 'resolu' ? (userId ?? null) : null,
+      });
+    }
+  }
 
   const { data, error } = await supabase
     .from('cadastral_boundary_conflicts')
@@ -621,28 +598,36 @@ export const generateBoundaryConflicts = async (parcelNumbers: string[], userId?
   return data ?? [];
 };
 
-/** Step 11: Generate ownership history for parcels */
+// ─── Step 11: Ownership history — 20 parcels × 2 owners ─────────────────────
+
 export const generateOwnershipHistory = async (
   parcels: Array<{ id: string; parcel_number: string }>
 ) => {
-  const records = parcels.slice(0, 3).flatMap((p, i) => [
-    {
-      parcel_id: p.id,
-      owner_name: `Ancien Propriétaire ${i + 1}A`,
-      ownership_start_date: '2010-01-01',
-      ownership_end_date: '2018-06-15',
-      legal_status: 'Personne physique',
-      mutation_type: 'Vente',
-    },
-    {
-      parcel_id: p.id,
-      owner_name: `Propriétaire Actuel ${i + 1}`,
-      ownership_start_date: '2018-06-15',
-      ownership_end_date: null,
-      legal_status: i % 2 === 0 ? 'Personne physique' : 'Personne morale',
-      mutation_type: 'Donation',
-    },
-  ]);
+  const selected = parcels.filter((_, i) => i % 5 === 0); // 20 parcels
+  const MUTATION_TYPES = ['Vente', 'Donation', 'Succession', 'Vente', 'Donation'];
+
+  const records = selected.flatMap((p, i) => {
+    const startDate = randomDateInPast(10);
+    const midDate = randomDateInPast(5);
+    return [
+      {
+        parcel_id: p.id,
+        owner_name: `Ancien Propriétaire ${i + 1}`,
+        ownership_start_date: startDate,
+        ownership_end_date: midDate,
+        legal_status: pick(LEGAL_STATUSES, i),
+        mutation_type: pick(MUTATION_TYPES, i),
+      },
+      {
+        parcel_id: p.id,
+        owner_name: `Propriétaire Actuel ${i + 1}`,
+        ownership_start_date: midDate,
+        ownership_end_date: null,
+        legal_status: pick(LEGAL_STATUSES, i + 1),
+        mutation_type: pick(MUTATION_TYPES, i + 1),
+      },
+    ];
+  });
 
   const { data, error } = await supabase
     .from('cadastral_ownership_history')
@@ -653,34 +638,23 @@ export const generateOwnershipHistory = async (
   return data ?? [];
 };
 
-/** Step 12: Generate tax history for parcels */
+// ─── Step 12: Tax history — 20 parcels × 3 years ────────────────────────────
+
 export const generateTaxHistory = async (
   parcels: Array<{ id: string; parcel_number: string }>
 ) => {
   const currentYear = new Date().getFullYear();
-  const records = parcels.slice(0, 4).flatMap((p, i) => [
-    {
+  const selected = parcels.filter((_, i) => i % 5 === 0); // 20 parcels
+
+  const records = selected.flatMap((p, i) =>
+    [0, 1, 2].map((yearOffset) => ({
       parcel_id: p.id,
-      tax_year: currentYear - 2,
-      amount_usd: [50, 120, 30, 200][i],
-      payment_status: 'paid',
-      payment_date: `${currentYear - 2}-03-15`,
-    },
-    {
-      parcel_id: p.id,
-      tax_year: currentYear - 1,
-      amount_usd: [55, 130, 35, 220][i],
-      payment_status: i === 3 ? 'unpaid' : 'paid',
-      payment_date: i === 3 ? null : `${currentYear - 1}-04-20`,
-    },
-    {
-      parcel_id: p.id,
-      tax_year: currentYear,
-      amount_usd: [60, 140, 40, 240][i],
-      payment_status: i < 2 ? 'paid' : 'unpaid',
-      payment_date: i < 2 ? `${currentYear}-02-10` : null,
-    },
-  ]);
+      tax_year: currentYear - 2 + yearOffset,
+      amount_usd: randInt(20, 300),
+      payment_status: (yearOffset === 2 && i % 3 !== 0) ? 'unpaid' : 'paid',
+      payment_date: (yearOffset === 2 && i % 3 !== 0) ? null : `${currentYear - 2 + yearOffset}-${String(randInt(1, 6)).padStart(2, '0')}-${String(randInt(1, 28)).padStart(2, '0')}`,
+    }))
+  );
 
   const { data, error } = await supabase
     .from('cadastral_tax_history')
@@ -691,16 +665,20 @@ export const generateTaxHistory = async (
   return data ?? [];
 };
 
-/** Step 13: Generate boundary history for parcels (Bug 17) */
+// ─── Step 13: Boundary history — 10 parcels ─────────────────────────────────
+
 export const generateBoundaryHistory = async (
   parcels: Array<{ id: string; parcel_number: string }>
 ) => {
-  const records = parcels.slice(0, 3).map((p, i) => ({
+  const selected = parcels.filter((_, i) => i % 10 === 0).slice(0, 10);
+  const PURPOSES = ['Réajustement ou rectification', 'Morcellement ou fusion', 'Mise en valeur ou mutation'];
+
+  const records = selected.map((p, i) => ({
     parcel_id: p.id,
     pv_reference_number: `TEST-PV-${Date.now().toString(36)}-${i}`,
     surveyor_name: `Géomètre Test ${i + 1}`,
-    survey_date: ['2020-03-15', '2021-06-20', '2022-09-10'][i],
-    boundary_purpose: ['Réajustement ou rectification', 'Morcellement ou fusion', 'Mise en valeur ou mutation'][i],
+    survey_date: randomDateInPast(8),
+    boundary_purpose: pick(PURPOSES, i),
   }));
 
   const { data, error } = await supabase
@@ -712,18 +690,24 @@ export const generateBoundaryHistory = async (
   return data ?? [];
 };
 
-/** Step 14: Generate mortgages for parcels (Bug 17) */
+// ─── Step 14: Mortgages — 10 parcels ────────────────────────────────────────
+
 export const generateMortgages = async (
   parcels: Array<{ id: string; parcel_number: string }>
 ) => {
-  const records = parcels.slice(0, 2).map((p, i) => ({
+  const selected = parcels.filter((_, i) => i % 10 === 3).slice(0, 10);
+  const CREDITORS = ['Banque Commerciale du Congo', 'Trust Merchant Bank', 'Rawbank', 'Equity BCDC', 'KCB Bank'];
+  const CREDITOR_TYPES = ['Banque', 'Microfinance', 'Banque', 'Banque', 'Microfinance'];
+  const STATUSES = ['Active', 'Renégociée', 'Soldée', 'Active', 'Active'];
+
+  const records = selected.map((p, i) => ({
     parcel_id: p.id,
-    creditor_name: [`Banque Commerciale du Congo`, `Trust Merchant Bank`][i],
-    creditor_type: ['Banque', 'Microfinance'][i],
-    mortgage_amount_usd: [25000, 50000][i],
-    duration_months: [60, 120][i],
-    contract_date: ['2022-01-15', '2023-06-01'][i],
-    mortgage_status: ['Active', 'Renégociée'][i],
+    creditor_name: pick(CREDITORS, i),
+    creditor_type: pick(CREDITOR_TYPES, i),
+    mortgage_amount_usd: randInt(10000, 100000),
+    duration_months: pick([36, 60, 120, 84, 48], i),
+    contract_date: randomDateInPast(8),
+    mortgage_status: pick(STATUSES, i),
     reference_number: `TEST-HYP-${Date.now().toString(36)}-${i}`,
   }));
 
@@ -736,18 +720,29 @@ export const generateMortgages = async (
   return data ?? [];
 };
 
-/** Step 15: Generate building permits for parcels (Bug 17) */
+// ─── Step 15: Building permits — 10 parcels ─────────────────────────────────
+
 export const generateBuildingPermits = async (
   parcels: Array<{ id: string; parcel_number: string }>
 ) => {
-  const records = parcels.slice(0, 2).map((p, i) => ({
+  const selected = parcels.filter((_, i) => i % 10 === 7).slice(0, 10);
+  const SERVICES = [
+    'Division Provinciale de l\'Urbanisme et Habitat - Kinshasa',
+    'Service Communal d\'Urbanisme - Goma',
+    'Division Provinciale Urbanisme - Bukavu',
+    'Service Urbanisme - Lubumbashi',
+    'Division Urbanisme - Matadi',
+  ];
+  const ADM_STATUSES = ['Approuvé', 'Rejeté', 'Approuvé', 'Approuvé', 'Rejeté'];
+
+  const records = selected.map((p, i) => ({
     parcel_id: p.id,
     permit_number: `TEST-PC-${Date.now().toString(36)}-${i}`,
-    issue_date: ['2023-01-10', '2024-03-15'][i],
-    issuing_service: [`Division Provinciale de l'Urbanisme et Habitat - Kinshasa`, `Service Communal d'Urbanisme - Goma`][i],
-    validity_period_months: [24, 12][i],
-    administrative_status: ['Approuvé', 'Rejeté'][i],
-    is_current: [true, false][i],
+    issue_date: randomDateInPast(5),
+    issuing_service: pick(SERVICES, i),
+    validity_period_months: pick([12, 24, 36], i),
+    administrative_status: pick(ADM_STATUSES, i),
+    is_current: i % 3 !== 1,
   }));
 
   const { data, error } = await supabase
@@ -759,32 +754,26 @@ export const generateBuildingPermits = async (
   return data ?? [];
 };
 
-/** Step 16: Generate certificates */
+// ─── Step 16: Certificates — 10 total (2/province) ──────────────────────────
+
 export const generateCertificates = async (
   parcelNumbers: string[],
   suffix: string,
   userId?: string
 ) => {
-  const records = [
-    {
-      reference_number: `TEST-CERT-001-${suffix}`,
-      certificate_type: 'titre_foncier',
-      parcel_number: parcelNumbers[0],
-      recipient_name: 'Test Propriétaire 1',
-      status: 'generated',
-      generated_by: userId ?? null,
-      metadata: { test_mode: true } as unknown as Json,
-    },
-    {
-      reference_number: `TEST-CERT-002-${suffix}`,
-      certificate_type: 'mutation_fonciere',
-      parcel_number: parcelNumbers[1],
-      recipient_name: 'Test Propriétaire 2',
-      status: 'generated',
-      generated_by: userId ?? null,
-      metadata: { test_mode: true } as unknown as Json,
-    },
-  ];
+  const CERT_TYPES = ['titre_foncier', 'mutation_fonciere', 'certificat_enregistrement', 'titre_foncier', 'mutation_fonciere'];
+  const selectedParcels = parcelNumbers.filter((_, i) => i % 10 === 2).slice(0, 10);
+
+  const records = selectedParcels.map((pn, i) => ({
+    reference_number: `TEST-CERT-${String(i + 1).padStart(3, '0')}-${suffix}`,
+    certificate_type: pick(CERT_TYPES, i),
+    parcel_number: pn,
+    recipient_name: `Test Propriétaire ${i + 1}`,
+    status: 'generated',
+    generated_by: userId ?? null,
+    metadata: { test_mode: true } as unknown as Json,
+    generated_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
+  }));
 
   const { data, error } = await supabase
     .from('generated_certificates')
@@ -794,6 +783,106 @@ export const generateCertificates = async (
   if (error) console.error('Certificats (non-bloquant):', error);
   return data ?? [];
 };
+
+// ─── Step 17a: Mutation requests — 10 total (2/province) ────────────────────
+
+export const generateMutationRequests = async (
+  userId: string,
+  parcels: Array<{ id: string; parcel_number: string }>,
+  suffix: string
+) => {
+  const MUT_TYPES = ['vente', 'donation', 'succession', 'vente', 'donation'];
+  const MUT_STATUSES = ['pending', 'approved', 'rejected', 'pending', 'approved', 'pending', 'rejected', 'approved', 'pending', 'approved'];
+  const selected = parcels.filter((_, i) => i % 10 === 4).slice(0, 10);
+
+  const records = selected.map((p, i) => {
+    const status = MUT_STATUSES[i];
+    return {
+      reference_number: `TEST-MUT-${String(i + 1).padStart(3, '0')}-${suffix}`,
+      parcel_number: p.parcel_number,
+      parcel_id: p.id,
+      mutation_type: pick(MUT_TYPES, i),
+      requester_type: i % 3 === 0 ? 'heritier' : 'proprietaire',
+      requester_name: `Test Requérant Mutation ${i + 1}`,
+      beneficiary_name: i % 2 === 0 ? `Test Bénéficiaire ${i + 1}` : null,
+      status,
+      payment_status: 'paid',
+      total_amount_usd: randInt(80, 200),
+      market_value_usd: randInt(10000, 80000),
+      mutation_fee_amount: randInt(40, 100),
+      user_id: userId,
+      proposed_changes: { new_owner_name: `Test Nouveau Propriétaire ${i + 1}`, new_owner_legal_status: pick(LEGAL_STATUSES, i) } as unknown as Json,
+      fee_items: [
+        { fee_name: 'Frais de dossier', amount_usd: 83, is_mandatory: true },
+        ...(i % 2 === 0 ? [{ fee_name: 'Frais de mutation', amount_usd: 83, is_mandatory: true }] : []),
+      ] as unknown as Json,
+      rejection_reason: status === 'rejected' ? 'Documents insuffisants (test)' : null,
+      reviewed_at: status !== 'pending' ? new Date().toISOString() : null,
+      created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
+    };
+  });
+
+  const { data, error } = await supabase
+    .from('mutation_requests')
+    .insert(records)
+    .select('id');
+
+  if (error) console.error('Mutations (non-bloquant):', error);
+  return data ?? [];
+};
+
+// ─── Step 17b: Subdivision requests — 5 total (1/province) ──────────────────
+
+export const generateSubdivisionRequests = async (
+  userId: string,
+  parcels: Array<{ id: string; parcel_number: string }>,
+  suffix: string
+) => {
+  const SUB_STATUSES = ['pending', 'approved', 'pending', 'approved', 'rejected'];
+  const PURPOSES = ['Résidentielle', 'Commerciale', 'Mixte', 'Résidentielle', 'Commerciale'];
+  const selected = parcels.filter((_, i) => i % 20 === 8).slice(0, 5); // 1 per province
+
+  const records = selected.map((p, i) => {
+    const numLots = randInt(2, 5);
+    const parentArea = randInt(800, 3000);
+    const lotArea = Math.floor(parentArea / numLots);
+    const status = SUB_STATUSES[i];
+
+    return {
+      reference_number: `TEST-SUB-${String(i + 1).padStart(3, '0')}-${suffix}`,
+      parcel_number: p.parcel_number,
+      parcel_id: p.id,
+      number_of_lots: numLots,
+      parent_parcel_area_sqm: parentArea,
+      parent_parcel_owner_name: `Test Propriétaire Lotissement ${i + 1}`,
+      requester_first_name: 'Test',
+      requester_last_name: `Lotisseur ${i + 1}`,
+      requester_phone: `+24381000000${i + 1}`,
+      requester_type: i % 2 === 0 ? 'proprietaire' : 'mandataire',
+      status,
+      purpose_of_subdivision: pick(PURPOSES, i),
+      user_id: userId,
+      lots_data: Array.from({ length: numLots }, (_, j) => ({
+        lot_number: j + 1,
+        area_sqm: lotArea,
+        intended_use: pick(PURPOSES, j),
+      })) as unknown as Json,
+      reviewed_at: status !== 'pending' ? new Date().toISOString() : null,
+      approved_at: status === 'approved' ? new Date().toISOString() : null,
+      created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
+    };
+  });
+
+  const { data, error } = await supabase
+    .from('subdivision_requests')
+    .insert(records)
+    .select('id');
+
+  if (error) console.error('Lotissements (non-bloquant):', error);
+  return data ?? [];
+};
+
+// ─── Rollback ─────────────────────────────────────────────────────────────────
 
 /** Rollback all generated test data by parcel numbers and suffix — FK-safe order */
 export const rollbackTestData = async (parcelNumbers: string[], suffix: string) => {
@@ -840,137 +929,4 @@ export const rollbackTestData = async (parcelNumbers: string[], suffix: string) 
   await supabase.from('generated_certificates').delete().ilike('reference_number', `TEST-CERT-%-${suffix}`);
   await supabase.from('mutation_requests').delete().ilike('reference_number', `TEST-MUT-%-${suffix}`);
   await supabase.from('subdivision_requests').delete().ilike('reference_number', `TEST-SUB-%-${suffix}`);
-};
-
-/** Step 13a: Generate mutation requests */
-export const generateMutationRequests = async (
-  userId: string,
-  parcels: Array<{ id: string; parcel_number: string }>,
-  suffix: string
-) => {
-  const records = [
-    {
-      reference_number: `TEST-MUT-001-${suffix}`,
-      parcel_number: parcels[0].parcel_number,
-      parcel_id: parcels[0].id,
-      mutation_type: 'vente',
-      requester_type: 'proprietaire',
-      requester_name: 'Test Vendeur Alpha',
-      beneficiary_name: 'Test Acheteur Beta',
-      status: 'pending',
-      payment_status: 'paid',
-      total_amount_usd: 166,
-      market_value_usd: 25000,
-      mutation_fee_amount: 83,
-      user_id: userId,
-      proposed_changes: { new_owner_name: 'Test Acheteur Beta', new_owner_legal_status: 'Personne physique' } as unknown as Json,
-      fee_items: [
-        { fee_name: 'Frais de dossier', amount_usd: 83, is_mandatory: true },
-        { fee_name: 'Frais de mutation (1.5%)', amount_usd: 83, is_mandatory: true },
-      ] as unknown as Json,
-    },
-    {
-      reference_number: `TEST-MUT-002-${suffix}`,
-      parcel_number: parcels[1].parcel_number,
-      parcel_id: parcels[1].id,
-      mutation_type: 'donation',
-      requester_type: 'proprietaire',
-      requester_name: 'Test Donateur Gamma',
-      beneficiary_name: 'Test Donataire Delta',
-      status: 'approved',
-      payment_status: 'paid',
-      total_amount_usd: 83,
-      user_id: userId,
-      proposed_changes: { new_owner_name: 'Test Donataire Delta', new_owner_legal_status: 'Personne physique' } as unknown as Json,
-      fee_items: [
-        { fee_name: 'Frais de dossier', amount_usd: 83, is_mandatory: true },
-      ] as unknown as Json,
-      reviewed_at: new Date().toISOString(),
-    },
-    {
-      reference_number: `TEST-MUT-003-${suffix}`,
-      parcel_number: parcels[2].parcel_number,
-      parcel_id: parcels[2].id,
-      mutation_type: 'succession',
-      requester_type: 'heritier',
-      requester_name: 'Test Héritier Epsilon',
-      status: 'rejected',
-      payment_status: 'paid',
-      total_amount_usd: 83,
-      user_id: userId,
-      proposed_changes: { new_owner_name: 'Test Héritier Epsilon', new_owner_legal_status: 'Personne physique' } as unknown as Json,
-      fee_items: [
-        { fee_name: 'Frais de dossier', amount_usd: 83, is_mandatory: true },
-      ] as unknown as Json,
-      rejection_reason: 'Documents insuffisants (test)',
-      reviewed_at: new Date().toISOString(),
-    },
-  ];
-
-  const { data, error } = await supabase
-    .from('mutation_requests')
-    .insert(records)
-    .select('id');
-
-  if (error) console.error('Mutations (non-bloquant):', error);
-  return data ?? [];
-};
-
-/** Step 13b: Generate subdivision requests */
-export const generateSubdivisionRequests = async (
-  userId: string,
-  parcels: Array<{ id: string; parcel_number: string }>,
-  suffix: string
-) => {
-  const records = [
-    {
-      reference_number: `TEST-SUB-001-${suffix}`,
-      parcel_number: parcels[3].parcel_number,
-      parcel_id: parcels[3].id,
-      number_of_lots: 3,
-      parent_parcel_area_sqm: 1500,
-      parent_parcel_owner_name: 'Test Propriétaire Lotissement',
-      requester_first_name: 'Test',
-      requester_last_name: 'Lotisseur Alpha',
-      requester_phone: '+243810000001',
-      requester_type: 'proprietaire',
-      status: 'pending',
-      purpose_of_subdivision: 'Résidentielle',
-      user_id: userId,
-      lots_data: [
-        { lot_number: 1, area_sqm: 500, intended_use: 'Résidentielle' },
-        { lot_number: 2, area_sqm: 500, intended_use: 'Résidentielle' },
-        { lot_number: 3, area_sqm: 500, intended_use: 'Commerciale' },
-      ] as unknown as Json,
-    },
-    {
-      reference_number: `TEST-SUB-002-${suffix}`,
-      parcel_number: parcels[4].parcel_number,
-      parcel_id: parcels[4].id,
-      number_of_lots: 2,
-      parent_parcel_area_sqm: 800,
-      parent_parcel_owner_name: 'Test Propriétaire Subdivision',
-      requester_first_name: 'Test',
-      requester_last_name: 'Lotisseur Beta',
-      requester_phone: '+243810000002',
-      requester_type: 'mandataire',
-      status: 'approved',
-      purpose_of_subdivision: 'Commerciale',
-      user_id: userId,
-      lots_data: [
-        { lot_number: 1, area_sqm: 400, intended_use: 'Commerciale' },
-        { lot_number: 2, area_sqm: 400, intended_use: 'Commerciale' },
-      ] as unknown as Json,
-      reviewed_at: new Date().toISOString(),
-      approved_at: new Date().toISOString(),
-    },
-  ];
-
-  const { data, error } = await supabase
-    .from('subdivision_requests')
-    .insert(records)
-    .select('id');
-
-  if (error) console.error('Lotissements (non-bloquant):', error);
-  return data ?? [];
 };
