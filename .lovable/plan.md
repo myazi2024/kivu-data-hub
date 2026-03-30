@@ -1,40 +1,25 @@
 
 
-# Nettoyer automatiquement les données test à la désactivation du mode test
+# Corriger le dialogue d'avertissement à la désactivation du mode test
 
 ## Problème
-Quand le mode test est désactivé, les données préfixées `TEST-%` restent dans la base et sont visibles dans toute l'application (parcelles, contributions, factures, etc.). Aucun filtre ne les exclut des requêtes normales.
+Il y a deux dialogues qui se superposent :
+1. **TestModeConfigCard** (lignes 146-172) : un AlertDialog non contrôlé qui s'ouvre au clic sur "Désactiver le mode test", puis appelle `onSave`
+2. **AdminTestMode** (lignes 232-266) : le dialogue de nettoyage qui s'ouvre si `total > 0`
 
-## Solution retenue
-Deux actions complémentaires :
+Le premier dialogue se ferme quand l'utilisateur confirme, puis `saveConfiguration()` tente d'ouvrir le second. Ce chevauchement empêche le second dialogue d'apparaître correctement. De plus, si `total === 0`, aucun avertissement ne s'affiche du tout.
 
-### 1. Nettoyage automatique à la désactivation
-Dans `AdminTestMode.tsx`, lors de la sauvegarde de la configuration avec `enabled: false` alors qu'il était `true` avant, appeler automatiquement `cleanup_all_test_data()` via RPC avant d'enregistrer la config. Afficher un dialogue de confirmation prévenant l'utilisateur que les données test seront supprimées.
+## Solution
+Supprimer le dialogue de confirmation redondant dans `TestModeConfigCard` et centraliser toute la logique dans `AdminTestMode.tsx` via `saveConfiguration()` :
 
-### 2. Dialogue de confirmation
-Ajouter un `AlertDialog` qui s'affiche quand l'utilisateur passe de activé → désactivé et qu'il reste des données test (total > 0). Le dialogue propose :
-- **Désactiver et supprimer** : appelle `cleanup_all_test_data()` puis sauvegarde
-- **Désactiver sans supprimer** : sauvegarde sans nettoyage (mais affiche un avertissement)
-- **Annuler**
+- **Si `total > 0`** : afficher le dialogue existant (nettoyage proposé)
+- **Si `total === 0`** : afficher un dialogue de confirmation simple ("Vous allez désactiver le mode test, les opérations affecteront la production")
+- **Pas de double dialogue** : `TestModeConfigCard` affiche toujours un bouton simple qui appelle `onSave`
 
 ## Fichiers impactés
 
 | Fichier | Modification |
 |---------|-------------|
-| `src/components/admin/AdminTestMode.tsx` | Ajouter la logique de détection (désactivation + données restantes) et le dialogue de confirmation avant sauvegarde |
-
-## Détails techniques
-
-Dans `saveConfiguration()` :
-```typescript
-// Si on désactive et qu'il reste des données test
-if (savedConfig.enabled && !config.enabled && total > 0) {
-  setShowCleanupDialog(true);
-  return;
-}
-```
-
-Nouveau dialogue avec deux options :
-- "Désactiver et nettoyer" → `supabase.rpc('cleanup_all_test_data')` puis sauvegarde
-- "Désactiver uniquement" → sauvegarde directe
+| `src/components/admin/test-mode/TestModeConfigCard.tsx` | Supprimer le AlertDialog conditionnel (lignes 145-178), toujours afficher un bouton simple qui appelle `onSave` |
+| `src/components/admin/AdminTestMode.tsx` | Ajouter un second état `showDisableConfirmDialog` pour le cas `total === 0`. Dans `saveConfiguration`, si on désactive : si `total > 0` → cleanup dialog, sinon → confirm dialog simple |
 
