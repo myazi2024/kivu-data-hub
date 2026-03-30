@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, TestTube } from 'lucide-react';
+import { Loader2, TestTube, AlertTriangle } from 'lucide-react';
 import { useTestMode, TestModeConfig } from '@/hooks/useTestMode';
 import { useAuth } from '@/hooks/useAuth';
 import { upsertSearchConfig, logAuditAction } from '@/utils/supabaseConfigUtils';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { toRecord } from './test-mode/types';
 import { useTestDataStats } from './test-mode/useTestDataStats';
@@ -12,9 +13,21 @@ import { useTestDataActions } from './test-mode/useTestDataActions';
 import TestModeConfigCard from './test-mode/TestModeConfigCard';
 import TestDataStatsCard from './test-mode/TestDataStatsCard';
 import TestModeGuide from './test-mode/TestModeGuide';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog';
 
 const AdminTestMode: React.FC = () => {
   const [saving, setSaving] = useState(false);
+  const [showCleanupDialog, setShowCleanupDialog] = useState(false);
+  const [cleanupOnDisable, setCleanupOnDisable] = useState(false);
   const { testMode: savedConfig, loading, isTestModeActive, refreshConfiguration } = useTestMode();
   const { user } = useAuth();
 
@@ -58,8 +71,14 @@ const AdminTestMode: React.FC = () => {
     setConfig((prev) => ({ ...prev, ...update }));
   };
 
-  const saveConfiguration = async () => {
+  const saveConfiguration = async (skipCleanupCheck = false) => {
     if (!isDirty) return;
+
+    // Intercept: disabling test mode with remaining test data
+    if (!skipCleanupCheck && savedConfig.enabled && !config.enabled && total > 0) {
+      setShowCleanupDialog(true);
+      return;
+    }
 
     const validatedConfig = {
       ...config,
@@ -99,6 +118,44 @@ const AdminTestMode: React.FC = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleDisableWithCleanup = async () => {
+    setShowCleanupDialog(false);
+    setCleanupOnDisable(true);
+    // Small delay to let state update, then save
+    const validatedConfig = {
+      ...config,
+      auto_cleanup: false,
+      test_data_retention_days: Math.min(30, Math.max(1, config.test_data_retention_days)),
+    };
+    try {
+      setSaving(true);
+      toast.info('Suppression des données test en cours…');
+      const { error: rpcError } = await supabase.rpc('cleanup_all_test_data');
+      if (rpcError) throw rpcError;
+      toast.success('Données test supprimées');
+
+      const oldConfig = { ...savedConfig };
+      await upsertSearchConfig('test_mode', toRecord(validatedConfig), "Configuration du mode test global pour l'admin");
+      await logAuditAction('TEST_MODE_DISABLED', 'cadastral_search_config', undefined, toRecord(oldConfig), toRecord(validatedConfig));
+      toast.success('Configuration enregistrée', { description: 'Mode test désactivé et données supprimées' });
+      await refreshConfiguration();
+      await refreshStats();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Veuillez réessayer';
+      console.error("Erreur lors de l'enregistrement:", error);
+      toast.error("Erreur lors de l'enregistrement", { description: message });
+    } finally {
+      setSaving(false);
+      setCleanupOnDisable(false);
+    }
+  };
+
+  const handleDisableWithoutCleanup = () => {
+    setShowCleanupDialog(false);
+    setCleanupOnDisable(false);
+    saveConfiguration(true);
   };
 
   if (loading) {
@@ -170,6 +227,43 @@ const AdminTestMode: React.FC = () => {
 
       {/* Guide */}
       <TestModeGuide />
+
+      {/* Dialogue de confirmation nettoyage à la désactivation */}
+      <AlertDialog open={showCleanupDialog} onOpenChange={setShowCleanupDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Données test détectées
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Il reste <strong>{total}</strong> enregistrement(s) de test dans la base de données.
+              Si vous désactivez le mode test sans les supprimer, ces données resteront visibles
+              dans l'application.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel onClick={() => {
+              setShowCleanupDialog(false);
+              setConfig(prev => ({ ...prev, enabled: true }));
+            }}>
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="border border-input bg-background hover:bg-accent hover:text-accent-foreground"
+              onClick={handleDisableWithoutCleanup}
+            >
+              Désactiver uniquement
+            </AlertDialogAction>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDisableWithCleanup}
+            >
+              Désactiver et supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
