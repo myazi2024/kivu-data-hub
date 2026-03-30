@@ -1,65 +1,69 @@
 
 
-# Revue du mode test — Bugs, fonctionnalités manquantes et optimisations
+# Revue du mode test — Bugs, logique manquante et optimisations
 
 ## Bugs identifiés
 
-### Bug 1 : Filtrage test absent sur la majorité des pages utilisateur
-Le filtre `applyTestFilter` n'est appliqué que dans 3 fichiers (CadastralMap, CadastralSearchBar, useAdvancedCadastralSearch). **Toutes les autres pages qui requêtent des tables test-sensibles ne filtrent pas les données TEST-%** :
-- `UserContributions.tsx` — affiche les contributions TEST-% en production
-- `UserBuildingPermits.tsx` — idem
-- `UserLandTitleRequests.tsx` — idem
-- `UserExpertiseRequests.tsx` — idem
-- `UserLandDisputes.tsx` — idem
-- `UserMutationRequests.tsx` — idem
-- `UserMortgageRequests.tsx` — idem
-- `UserSubdivisionRequests.tsx` — idem
-- `AdminInvoices.tsx` — liste toutes les factures y compris TEST-%
-- `AdminCCCContributions.tsx` — idem (prévu dans le plan initial mais non implémenté)
-- `useCadastralStats.tsx` — statistiques faussées par les données TEST-%
-- `useAdvancedAnalytics.tsx` — analytics de revenus incluent les factures TEST-%
-- `useEnhancedAnalytics.tsx` — idem
-- `ParcelMapPreview.tsx` — parcelles voisines TEST-% visibles
-- `LandTitleRequestDialog.tsx` — recherche parcelles inclut TEST-%
+### Bug 1 : `useTestDataStats` — compteur `expertisePayments` toujours à 0
+Ligne 59-62 de `useTestDataStats.ts` : la requête fait un `.ilike('expertise_request_id', 'TEST-%')` (l'ID est un UUID, pas un texte TEST-%), puis `.then(() => Promise.resolve({ count: 0 }))` qui écrase le résultat. Le compteur retournera **toujours 0**.
 
-### Bug 2 : AdminCadastralMap utilise un filtre hardcodé au lieu de `applyTestFilter`
-Lignes 71 et 80 de `AdminCadastralMap.tsx` utilisent `.not('parcel_number', 'ilike', 'TEST-%')` en dur au lieu du helper contextuel. Si un admin navigue vers `/test/admin`, le filtre sera inversé.
+**Fix** : Joindre via les IDs des expertise requests TEST-%, comme pour les fraud_attempts :
+```typescript
+const expertiseReqIds = (await supabase.from('real_estate_expertise_requests')
+  .select('id').ilike('reference_number', 'TEST-%')).data?.map(r => r.id) ?? [];
+// puis .in('expertise_request_id', expertiseReqIds)
+```
 
-### Bug 3 : `useTestDataStats` ne compte pas `expertise_payments`
-La table `expertise_payments` a été ajoutée au cleanup RPC mais n'est pas comptée dans les statistiques. Le total affiché est donc potentiellement inférieur au nombre réel de données test.
+### Bug 2 : Edge function `cleanup-test-data` ne supprime pas `expertise_payments`
+La fonction SQL `cleanup_all_test_data` (migration) supprime correctement `expertise_payments` avant `real_estate_expertise_requests`. Mais l'Edge Function de nettoyage automatique (cron) ne les supprime pas du tout — lignes 146-175 de `cleanup-test-data/index.ts` passent directement à `real_estate_expertise_requests`. La suppression échouera silencieusement si des `expertise_payments` existent (FK constraint).
 
-### Bug 4 : `cleanupOnDisable` est set mais jamais lu
-Dans `AdminTestMode.tsx` ligne 130, `setCleanupOnDisable(true)` est appelé mais `cleanupOnDisable` n'est jamais utilisé dans le rendu ou la logique.
+**Fix** : Ajouter la suppression `expertise_payments` **avant** `real_estate_expertise_requests` dans l'Edge Function.
 
-## Fonctionnalités manquantes
+### Bug 3 : `ParcelMapPreview` — parcelles voisines non filtrées
+Ligne 700-708 de `ParcelMapPreview.tsx` : la requête `cadastral_parcels` pour les parcelles voisines n'applique pas `applyTestFilter`. En production, les parcelles TEST-% apparaîtront sur la carte.
 
-### F1 : Pas de route test pour le dashboard utilisateur complet
-Seuls `/test/cadastral-map`, `/test/map` et `/test/mon-compte` sont miroirs. Les pages d'admin ne sont pas accessibles en mode test (pas de `/test/admin/*`), donc les admins ne peuvent pas tester les flux admin avec uniquement les données TEST-%.
+### Bug 4 : `LandTitleRequestDialog` — recherche parcelles non filtrée
+Ligne 246-249 : la recherche de parcelles dans le dialogue de demande de titre foncier n'applique pas `applyTestFilter`.
 
-### F2 : Pas d'indicateur du nombre de données test dans le header/sidebar admin
-L'admin doit naviguer jusqu'à l'onglet "Mode Test" pour voir s'il reste des données test. Un badge dans la sidebar serait utile.
+### Bug 5 : Ordre FK incorrect dans `cleanup_all_test_data` SQL
+Ligne 26 : `cadastral_contributions` est supprimé **avant** `cadastral_invoices` (ligne 51). Or `cadastral_invoices` pourrait avoir des FK vers contributions, et `payment_transactions` (ligne 42) est supprimé après les contributions. L'ordre actuel est :
+1. fraud_attempts ✓
+2. contributor_codes ✓  
+3. **contributions** ← trop tôt
+4. service_access
+5. expertise_payments
+6. payment_transactions
+7. expertise_requests
+8. **invoices** ← devrait être avant contributions
 
-### F3 : Pas de bouton "Accéder à l'env test" contextuel
-Les liens test sont uniquement dans le guide. Un bouton visible dans le bandeau d'état du mode test (la Card en haut) serait plus accessible.
+**Fix** : Déplacer la suppression de `cadastral_contributions` après `cadastral_invoices`.
 
-### F4 : Pas de compteur `expertise_payments` dans les stats
-Table présente dans le cleanup mais absente de `TestDataStats`, `STAT_ITEMS` et `useTestDataStats`.
+### Bug 6 : `rollbackTestData` — `expertise_payments` non supprimé
+Le rollback client-side (ligne 773-811) ne supprime pas `expertise_payments` avant `real_estate_expertise_requests`, ce qui fera échouer le rollback si des paiements d'expertise existent.
 
-## Optimisations
+## Erreurs de logique
 
-### O1 : Centraliser le filtrage test via un wrapper de requêtes
-Au lieu d'ajouter `applyTestFilter` manuellement dans 20+ fichiers, créer un hook `useFilteredQuery` qui wrap automatiquement les requêtes Supabase avec le bon filtre test/production.
+### L1 : Nettoyage automatique (cron) ne supprime pas les `mutation_requests`/`subdivision_requests` liés par `parcel_id`
+La fonction SQL (lignes 93-99) utilise `parcel_id = ANY(parcel_ids) OR reference_number ILIKE 'TEST-%'` mais l'Edge Function (lignes 168-175) ne filtre que par `reference_number`. Si des mutations/subdivisions sont liées par `parcel_id` sans `TEST-%` dans leur reference, elles seront orphelines.
 
-### O2 : Consolidation des variables d'état inutiles
-Supprimer `cleanupOnDisable` qui n'est jamais lu.
+### L2 : Pre-fetch `parcelIds`/`contribIds` inutile dans `useTestDataStats`
+Lignes 19-24 : on fetch les IDs complets des parcelles/contributions, puis on refait un `count` sur les mêmes tables (lignes 28-29). Le pre-fetch est nécessaire pour les tables enfant (ownership_history, etc.) mais les 2 count queries initiales (index 0 et 1) sont redondantes avec le pre-fetch.
 
-## Plan d'implémentation (prioritaire)
+## Fonctionnalité manquante
+
+### F1 : Pas de génération de `expertise_payments` test
+Le générateur (`testDataGenerators.ts`) crée des `real_estate_expertise_requests` mais ne génère aucun `expertise_payments` associé. Le compteur dans les stats sera donc toujours 0 même si le bug 1 est corrigé.
+
+## Plan d'implémentation
 
 | Priorité | Action | Fichiers |
 |----------|--------|----------|
-| **P0** | Ajouter `applyTestFilter` dans les 10+ composants utilisateur/admin qui requêtent sans filtre (Bug 1) | `UserContributions.tsx`, `UserBuildingPermits.tsx`, `UserLandTitleRequests.tsx`, `UserExpertiseRequests.tsx`, `UserLandDisputes.tsx`, `UserMutationRequests.tsx`, `UserMortgageRequests.tsx`, `UserSubdivisionRequests.tsx`, `AdminInvoices.tsx`, `useCadastralStats.tsx`, `useAdvancedAnalytics.tsx`, `useEnhancedAnalytics.tsx`, `LandTitleRequestDialog.tsx`, `ParcelMapPreview.tsx` |
-| **P0** | Remplacer le filtre hardcodé de `AdminCadastralMap.tsx` par `applyTestFilter` contextuel (Bug 2) | `AdminCadastralMap.tsx` |
-| **P1** | Ajouter `expertise_payments` dans stats + types (Bug 3, F4) | `types.ts`, `useTestDataStats.ts`, `TestDataStatsCard.tsx` |
-| **P2** | Supprimer `cleanupOnDisable` inutile (Bug 4, O2) | `AdminTestMode.tsx` |
-| **P2** | Ajouter un lien "Accéder à l'env test" dans la Card d'état du mode test (F3) | `AdminTestMode.tsx` |
+| **P0** | Fix compteur `expertisePayments` : pre-fetch `expertiseReqIds`, utiliser `.in()` | `useTestDataStats.ts` |
+| **P0** | Fix ordre FK dans `cleanup_all_test_data` : déplacer contributions après invoices | Nouvelle migration SQL |
+| **P0** | Ajouter suppression `expertise_payments` dans Edge Function cron | `cleanup-test-data/index.ts` |
+| **P0** | Ajouter suppression `expertise_payments` dans `rollbackTestData` | `testDataGenerators.ts` |
+| **P1** | Ajouter `applyTestFilter` dans `ParcelMapPreview.tsx` (parcelles voisines) | `ParcelMapPreview.tsx` |
+| **P1** | Ajouter `applyTestFilter` dans `LandTitleRequestDialog.tsx` (recherche parcelles) | `LandTitleRequestDialog.tsx` |
+| **P1** | Générer des `expertise_payments` test dans le générateur | `testDataGenerators.ts`, `useTestDataActions.ts` |
+| **P2** | Éliminer les count queries redondantes (index 0/1) dans `useTestDataStats` | `useTestDataStats.ts` |
 
