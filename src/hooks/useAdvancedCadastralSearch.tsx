@@ -52,6 +52,7 @@ export interface ParcelSearchResult {
 const PAGE_SIZE = 50;
 
 export const useAdvancedCadastralSearch = () => {
+  const { isTestRoute } = useTestEnvironment();
   const [filters, setFilters] = useState<SearchFilters>({});
   const [results, setResults] = useState<ParcelSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
