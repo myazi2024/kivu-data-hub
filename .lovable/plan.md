@@ -1,36 +1,48 @@
 
 
-# Corriger la synchronisation filtre-carte pour Kongo-Central (et robustifier le matching)
+# Synchroniser le filtre Lieu avec le bouton "Retour" de la carte
 
-## Problème identifié
-
-Le filtre lieu envoie les noms de provinces depuis `geographicData.ts` (ex: `"Kongo-Central"` avec trait d'union), mais la carte utilise `PROVINCE_META` qui a `"Kongo Central"` (sans trait d'union). La recherche exacte dans `handleProvinceFilter` échoue silencieusement :
-
-```
-// ligne 185 — match exact qui échoue
-const province = provincesData.find(p => p.name === provinceName);
-```
-
-Pour Kwilu, les noms correspondent dans les deux sources — le problème est peut-être un bug d'animation similaire déjà corrigé, ou un autre comportement intermittent.
+## Problème
+Quand on clique "Retour" sur la carte, `selectedProvince` est remis à `null` dans `DRCInteractiveMap`, mais chaque bloc Analytics (Parcelles, Titres, etc.) gère son propre état `filter` localement avec `useState`. Il n'existe aucun mécanisme pour remettre `filter.province` à `undefined` depuis la carte.
 
 ## Solution
 
-**Fichier : `src/components/DRCInteractiveMap.tsx`**
+Créer un second contexte `MapProvinceContext` qui expose la province actuellement sélectionnée sur la carte. Chaque bloc écoute ce contexte via un `useEffect` et synchronise son filtre local quand la carte change de province (y compris quand elle revient à `null`).
 
-1. **Ligne 22** — Corriger le nom dans `PROVINCE_META` pour qu'il soit cohérent avec `geographicData.ts` :
-   - `"Kongo Central"` → `"Kongo-Central"`
+### Changements
 
-2. **Ligne 185** — Rendre le matching robuste avec une normalisation (retirer tirets, espaces, casse) pour éviter tout problème futur :
+**1. `src/components/visualizations/filters/AnalyticsFilters.tsx`**
+- Ajouter un nouveau contexte exporté : `MapProvinceContext` (type `string | null`)
+
+**2. `src/components/visualizations/ProvinceDataVisualization.tsx`**
+- Importer `MapProvinceContext`
+- Envelopper le contenu avec `<MapProvinceContext.Provider value={selectedProvince?.name || null}>`
+- (`selectedProvince` est déjà passé en prop depuis `DRCInteractiveMap`)
+
+**3. Chaque bloc** (ParcelsBlock, TitleRequestsBlock, etc. — ~10 fichiers)
+- Ajouter un `useEffect` qui écoute `MapProvinceContext` :
 ```tsx
-const normalize = (s: string) => s.toLowerCase().replace(/[-\s]/g, '');
-const province = provincesData.find(p => normalize(p.name) === normalize(provinceName));
+const mapProvince = useContext(MapProvinceContext);
+useEffect(() => {
+  setFilter(f => ({ ...defaultFilter, province: mapProvince || undefined }));
+}, [mapProvince]);
 ```
+Quand la carte revient à la vue nationale (`mapProvince = null`), le filtre se réinitialise. Quand une province est sélectionnée depuis la carte, le filtre se met à jour aussi.
 
-Cela garantit que même si d'autres légères différences existent entre les deux sources de noms, le matching fonctionnera toujours.
-
-## Fichier impacté
+## Fichiers impactés
 
 | Fichier | Modification |
 |---------|-------------|
-| `src/components/DRCInteractiveMap.tsx` | Ligne 22 : corriger nom, Ligne 185 : matching normalisé |
+| `AnalyticsFilters.tsx` | Ajouter export `MapProvinceContext` |
+| `ProvinceDataVisualization.tsx` | Provider avec `selectedProvince?.name` |
+| `ParcelsBlock.tsx` | useEffect sync province |
+| `TitleRequestsBlock.tsx` | useEffect sync province |
+| `ContributionsBlock.tsx` | useEffect sync province |
+| `SubdivisionBlock.tsx` | useEffect sync province |
+| `DisputesBlock.tsx` | useEffect sync province |
+| `OwnershipHistoryBlock.tsx` | useEffect sync province |
+| `FraudAttemptsBlock.tsx` | useEffect sync province |
+| `CertificatesBlock.tsx` | useEffect sync province |
+| `InvoicesBlock.tsx` | useEffect sync province |
+| `MutationsBlock.tsx` | useEffect sync province |
 
