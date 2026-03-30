@@ -94,6 +94,7 @@ export const ParcelMapPreview = ({
   servitude,
   onServitudeChange
 }: ParcelMapPreviewProps) => {
+  const { isTestRoute } = useTestEnvironment();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
