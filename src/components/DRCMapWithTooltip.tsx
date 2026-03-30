@@ -388,13 +388,10 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
   useEffect(() => {
     if (externalZoomProvinceId && svgContent && !isAnimating) {
       if (externalZoomProvinceId !== zoomedProvinceId) {
-        // If already zoomed on another province, zoom out first then zoom in
         if (zoomedProvinceId) {
-          zoomOut();
-          const timer = setTimeout(() => {
+          silentZoomOut(() => {
             zoomToProvince(externalZoomProvinceId);
-          }, 550);
-          return () => clearTimeout(timer);
+          });
         } else {
           zoomToProvince(externalZoomProvinceId);
         }
