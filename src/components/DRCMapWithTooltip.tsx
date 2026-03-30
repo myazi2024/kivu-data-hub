@@ -22,6 +22,7 @@ interface DRCMapWithTooltipProps {
   onMapReady?: (map: any) => void;
   tooltipLineConfigs?: TooltipLineConfig[];
   onZoomChange?: (isZoomed: boolean) => void;
+  onProvinceDeselect?: () => void;
 }
 
 /** Linearly interpolate between two values */
@@ -44,7 +45,8 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
   getProvinceColor,
   onMapReady,
   tooltipLineConfigs,
-  onZoomChange
+  onZoomChange,
+  onProvinceDeselect
 }) => {
   const [svgContent, setSvgContent] = useState<string>('');
   const [hoveredProvinceData, setHoveredProvinceData] = useState<ProvinceData | null>(null);
@@ -207,6 +209,7 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
       setZoomedProvinceId(null);
       setIsAnimating(false);
       onZoomChange?.(false);
+      onProvinceDeselect?.();
     });
   }, [isAnimating, provincesData, getProvinceColor, animateViewBox, onZoomChange]);
 
