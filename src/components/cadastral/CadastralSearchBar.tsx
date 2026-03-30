@@ -32,6 +32,7 @@ interface ParcelSuggestion {
 }
 
 const CadastralSearchBar = () => {
+  const { isTestRoute } = useTestEnvironment();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [showContributionDialog, setShowContributionDialog] = useState(false);

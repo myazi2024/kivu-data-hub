@@ -53,6 +53,7 @@ interface ParcelHistoryData {
 }
 
 const CadastralMap = () => {
+  const { isTestRoute: isTestEnv } = useTestEnvironment();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const isMobile = useIsMobile();
