@@ -123,9 +123,11 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({ s
       {/* Content - scrolls independently */}
       <div className="flex-1 min-w-0 min-h-0 overflow-y-auto overflow-x-hidden p-1 lg:p-0 lg:mt-1.5">
         <WatermarkContext.Provider value={watermarkText}>
-          <ProvinceFilterContext.Provider value={onProvinceFilter || null}>
-            {BlockComponent ? <BlockComponent data={analytics} /> : null}
-          </ProvinceFilterContext.Provider>
+          <MapProvinceContext.Provider value={selectedProvince?.name || null}>
+            <ProvinceFilterContext.Provider value={onProvinceFilter || null}>
+              {BlockComponent ? <BlockComponent data={analytics} /> : null}
+            </ProvinceFilterContext.Provider>
+          </MapProvinceContext.Provider>
         </WatermarkContext.Provider>
       </div>
     </div>

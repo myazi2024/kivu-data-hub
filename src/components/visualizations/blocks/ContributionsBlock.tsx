@@ -21,6 +21,8 @@ const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TAB
 
 export const ContributionsBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
+  const mapProvince = useContext(MapProvinceContext);
+  useEffect(() => { setFilter(f => ({ ...defaultFilter, province: mapProvince || undefined })); }, [mapProvince]);
   const filterLabel = useMemo(() => buildFilterLabel(filter), [filter]);
   const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
   const filtered = useMemo(() => applyFilters(data.contributions, filter), [data.contributions, filter]);
