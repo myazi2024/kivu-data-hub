@@ -75,9 +75,13 @@ const AdminTestMode: React.FC = () => {
   const saveConfiguration = async (skipCleanupCheck = false) => {
     if (!isDirty) return;
 
-    // Intercept: disabling test mode with remaining test data
-    if (!skipCleanupCheck && savedConfig.enabled && !config.enabled && total > 0) {
-      setShowCleanupDialog(true);
+    // Intercept: disabling test mode
+    if (!skipCleanupCheck && savedConfig.enabled && !config.enabled) {
+      if (total > 0) {
+        setShowCleanupDialog(true);
+      } else {
+        setShowDisableConfirmDialog(true);
+      }
       return;
     }
 
