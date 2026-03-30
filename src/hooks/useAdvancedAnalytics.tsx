@@ -177,6 +177,7 @@ export const useAdvancedAnalytics = (startDate: Date, endDate: Date) => {
       const { data: invoices } = await supabase
         .from('cadastral_invoices')
         .select('*')
+        .not('parcel_number', 'ilike', 'TEST-%')
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString());
 
