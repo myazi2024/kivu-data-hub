@@ -800,7 +800,13 @@ export const rollbackTestData = async (parcelNumbers: string[], suffix: string) 
   }
   await supabase.from('cadastral_parcels').delete().in('parcel_number', parcelNumbers);
 
-  // 7. Independent tables by reference/parcel
+  // 7. expertise_payments (FK → real_estate_expertise_requests) — must delete before requests
+  const expReqIds = (await supabase.from('real_estate_expertise_requests').select('id').ilike('reference_number', `TEST-EXP-%-${suffix}`)).data?.map(r => r.id) ?? [];
+  if (expReqIds.length > 0) {
+    await supabase.from('expertise_payments').delete().in('expertise_request_id', expReqIds);
+  }
+
+  // 8. Independent tables by reference/parcel
   await supabase.from('real_estate_expertise_requests').delete().ilike('reference_number', `TEST-EXP-%-${suffix}`);
   await supabase.from('cadastral_land_disputes').delete().ilike('reference_number', `TEST-DISP-%-${suffix}`);
   await supabase.from('land_title_requests').delete().ilike('reference_number', `TEST-LTR-%-${suffix}`);

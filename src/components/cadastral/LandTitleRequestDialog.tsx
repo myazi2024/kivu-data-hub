@@ -243,12 +243,14 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     }
     setParcelSearchLoading(true);
     try {
-      const { data, error } = await supabase
+      let parcelQuery = supabase
         .from('cadastral_parcels')
         .select('parcel_number, id')
         .ilike('parcel_number', `%${query}%`)
         .is('deleted_at', null)
         .limit(10);
+      parcelQuery = applyTestFilter(parcelQuery, 'parcel_number', isTestRoute);
+      const { data, error } = await parcelQuery;
       if (error) throw error;
       setParcelSearchResults(data || []);
     } catch (err) {

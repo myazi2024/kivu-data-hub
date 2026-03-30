@@ -697,7 +697,7 @@ export const ParcelMapPreview = ({
     const bounds = calculateBounds(latLngs);
     
     try {
-      const { data: nearbyParcels, error } = await supabase
+      let nearbyQuery = supabase
         .from('cadastral_parcels')
         .select('*')
         .neq('parcel_number', currentParcelNumber || '')
@@ -706,6 +706,8 @@ export const ParcelMapPreview = ({
         .gte('longitude', bounds.minLng)
         .lte('longitude', bounds.maxLng)
         .not('gps_coordinates', 'is', null);
+      nearbyQuery = applyTestFilter(nearbyQuery, 'parcel_number', isTestRoute);
+      const { data: nearbyParcels, error } = await nearbyQuery;
 
       if (error) throw error;
 
