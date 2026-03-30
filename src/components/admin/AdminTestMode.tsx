@@ -156,7 +156,6 @@ const AdminTestMode: React.FC = () => {
 
   const handleDisableWithoutCleanup = () => {
     setShowCleanupDialog(false);
-    setCleanupOnDisable(false);
     saveConfiguration(true);
   };
 
