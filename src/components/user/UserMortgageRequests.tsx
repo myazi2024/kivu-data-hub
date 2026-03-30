@@ -36,6 +36,7 @@ const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secon
 // Fix #11: User dashboard component for mortgage requests
 export const UserMortgageRequests: React.FC = () => {
   const { user } = useAuth();
+  const { isTestRoute } = useTestEnvironment();
   const [requests, setRequests] = useState<MortgageContribution[]>([]);
   const [loading, setLoading] = useState(true);
 
