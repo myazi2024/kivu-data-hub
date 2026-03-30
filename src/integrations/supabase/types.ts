@@ -4143,6 +4143,7 @@ export type Database = {
         }[]
       }
       check_service_usage: { Args: { service_id_param: string }; Returns: Json }
+      cleanup_all_test_data: { Args: never; Returns: Json }
       cleanup_expired_data: { Args: never; Returns: undefined }
       create_cadastral_invoice_secure: {
         Args: {
