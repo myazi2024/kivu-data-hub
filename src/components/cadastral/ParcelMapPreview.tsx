@@ -18,6 +18,7 @@ import {
 import { AlertCircle, MapPin, AlertTriangle, Info, Move, Hand, Plus, Trash2, Target, Pencil, Check, Navigation, Eye, Square, Circle, Triangle, Hexagon, Building2, Layers, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, X, RotateCw, RotateCcw, Compass } from 'lucide-react';
 import { BoundaryConflictDialog } from './BoundaryConflictDialog';
 import { supabase } from '@/integrations/supabase/client';
+import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
 import { RoadSideInfo } from './RoadBorderingSidesPanel';
 import { ParcelSidesDimensionsPanel, ServitudeInfo } from './ParcelSidesDimensionsPanel';
 import { useMapConfig, MapConfig } from '@/hooks/useMapConfig';
