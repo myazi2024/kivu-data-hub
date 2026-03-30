@@ -1,22 +1,48 @@
 
 
-# Réinitialiser le titre au retour à la carte complète
+# Corriger le changement de province depuis le filtre Analytics
 
 ## Problème
-Le bouton "retour" dans `DRCMapWithTooltip.tsx` appelle `zoomOut` qui réinitialise `zoomedProvinceId` en interne, mais ne notifie jamais le parent (`DRCInteractiveMap`) de remettre `selectedProvince` à `null`. Le titre et la note restent donc bloqués sur la province.
+
+Quand on passe d'une province à une autre via le filtre lieu, la carte ne suit pas. La raison : lors du `zoomOut` intermédiaire (nécessaire avant de zoomer sur la nouvelle province), deux callbacks remettent `externalProvinceId` à `null` dans le parent :
+
+1. `onProvinceDeselect()` (appelé à la fin de l'animation de zoom out)
+2. `onZoomChange(false)` → qui exécute `if (!zoomed) setExternalProvinceId(null)`
+
+Cela annule le nouvel `externalProvinceId` qui vient d'être défini, et le useEffect ne relance jamais le zoom vers la nouvelle province.
 
 ## Solution
 
-Dans `DRCMapWithTooltip.tsx`, ajouter un callback `onProvinceDeselect` (ou réutiliser un prop existant) pour signaler au parent que la province est désélectionnée lors du zoom out.
+Modifier `DRCMapWithTooltip.tsx` pour gérer proprement la transition province→province sans que le zoom out intermédiaire n'efface l'état du parent.
 
-### Changements
+### Changements dans `DRCMapWithTooltip.tsx`
 
-**`DRCMapWithTooltip.tsx`** :
-- Ajouter une prop `onProvinceDeselect?: () => void` dans l'interface
-- Dans `zoomOut`, appeler `onProvinceDeselect?.()` dans le callback d'animation (à côté de `setZoomedProvinceId(null)`)
+**1. useEffect (lignes 359-377)** — Quand on passe d'une province à une autre via `externalZoomProvinceId`, ne pas appeler `zoomOut()` standard (qui déclenche les callbacks de reset). À la place, faire un zoom out "silencieux" qui ne notifie pas le parent, puis enchaîner avec le zoom vers la nouvelle province :
 
-**`DRCInteractiveMap.tsx`** :
-- Passer `onProvinceDeselect={() => setSelectedProvince(null)}` au composant `DRCMapWithTooltip`
+```tsx
+useEffect(() => {
+  if (externalZoomProvinceId && svgContent && !isAnimating) {
+    if (externalZoomProvinceId !== zoomedProvinceId) {
+      if (zoomedProvinceId) {
+        // Zoom out silencieux (sans appeler onProvinceDeselect/onZoomChange)
+        silentZoomOut(() => {
+          zoomToProvince(externalZoomProvinceId);
+        });
+      } else {
+        zoomToProvince(externalZoomProvinceId);
+      }
+    }
+  } else if (!externalZoomProvinceId && zoomedProvinceId && !isAnimating) {
+    zoomOut();
+  }
+}, [externalZoomProvinceId, svgContent]);
+```
 
-C'est un changement de 3-4 lignes au total.
+**2. Nouvelle fonction `silentZoomOut`** — Identique à `zoomOut` mais sans appeler `onProvinceDeselect()` ni `onZoomChange(false)`. Elle accepte un callback `onComplete` pour enchaîner le zoom suivant.
+
+## Fichier impacté
+
+| Fichier | Modification |
+|---------|-------------|
+| `src/components/DRCMapWithTooltip.tsx` | Ajouter `silentZoomOut`, modifier le useEffect de sync externe |
 
