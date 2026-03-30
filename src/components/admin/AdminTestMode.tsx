@@ -210,7 +210,6 @@ const AdminTestMode: React.FC = () => {
               </a>
             </div>
           )}
-          </div>
         </CardHeader>
       </Card>
 
