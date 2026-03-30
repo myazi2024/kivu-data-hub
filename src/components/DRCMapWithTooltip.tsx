@@ -22,6 +22,7 @@ interface DRCMapWithTooltipProps {
   onMapReady?: (map: any) => void;
   tooltipLineConfigs?: TooltipLineConfig[];
   onZoomChange?: (isZoomed: boolean) => void;
+  onProvinceDeselect?: () => void;
 }
 
 /** Linearly interpolate between two values */
