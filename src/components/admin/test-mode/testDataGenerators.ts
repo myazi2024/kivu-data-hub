@@ -557,7 +557,18 @@ export const generateBoundaryConflicts = async (parcelNumbers: string[], userId?
   const STATUSES = ['en_cours', 'resolu', 'en_cours', 'resolu'];
 
   // Create conflicts between neighboring parcels within each province
-  const records: Array<Record<string, unknown>> = [];
+  const records: Array<{
+    reporting_parcel_number: string;
+    conflicting_parcel_number: string;
+    conflict_type: string;
+    description: string;
+    status: string;
+    reported_by: string | null;
+    proposed_solution?: string | null;
+    resolution_notes?: string | null;
+    resolved_at?: string | null;
+    resolved_by?: string | null;
+  }> = [];
   for (let pIdx = 0; pIdx < PROVINCES.length; pIdx++) {
     const base = pIdx * PARCELS_PER_PROVINCE;
     for (let j = 0; j < 2; j++) {

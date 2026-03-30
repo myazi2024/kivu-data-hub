@@ -6,6 +6,7 @@ import type { GenerationStep } from './types';
 import { toRecord } from './types';
 import {
   uniqueSuffix,
+  generateParcelNumbers,
   verifyTestModeEnabled,
   generateParcels,
   generateContributions,
