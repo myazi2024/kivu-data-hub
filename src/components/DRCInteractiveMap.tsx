@@ -56,7 +56,11 @@ function sumForProvince(records: any[], provinceName: string, field: string): nu
     .reduce((s, r) => s + (r[field] || 0), 0);
 }
 
-const DRCInteractiveMap = () => {
+interface DRCInteractiveMapProps {
+  onFullscreenChange?: (isFullscreen: boolean) => void;
+}
+
+const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const [selectedProvince, setSelectedProvince] = useState<ProvinceData | null>(null);
   const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
   const [mapInstance, setMapInstance] = useState<any>(null);
