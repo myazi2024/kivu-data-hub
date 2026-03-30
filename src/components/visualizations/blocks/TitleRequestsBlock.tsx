@@ -7,7 +7,7 @@ import { FileText, Users, DollarSign, TrendingUp, Building, Globe, Ruler, Clock,
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, ColorMappedPieCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
-
+import { MapProvinceContext } from '../filters/AnalyticsFilters';
 import { generateInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { normalizeConstructionType } from '@/utils/constructionTypeNormalizer';
