@@ -230,6 +230,7 @@ async function calculateBusinessMetrics() {
     .from('cadastral_invoices')
     .select('user_id')
     .eq('status', 'paid')
+    .not('parcel_number', 'ilike', 'TEST-%')
     .lt('created_at', twoMonthsAgo.toISOString());
 
   const { data: recentUsers } = await supabase
