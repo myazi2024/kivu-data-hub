@@ -25,6 +25,7 @@ const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secon
 
 export const UserExpertiseRequests: React.FC = () => {
   const { user } = useAuth();
+  const { isTestRoute } = useTestEnvironment();
   const [requests, setRequests] = useState<ExpertiseRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
