@@ -289,7 +289,8 @@ export const useAdvancedAnalytics = (startDate: Date, endDate: Date) => {
 
       const { data: invoices } = await supabase
         .from('cadastral_invoices')
-        .select('geographical_zone, total_amount_usd');
+        .select('geographical_zone, total_amount_usd')
+        .not('parcel_number', 'ilike', 'TEST-%');
 
     const provinces = ['Kinshasa', 'Nord-Kivu', 'Sud-Kivu', 'Katanga', 'Kasaï', 'Équateur', 'Bandundu'];
     
