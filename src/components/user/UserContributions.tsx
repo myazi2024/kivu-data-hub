@@ -51,6 +51,7 @@ interface Contribution {
 
 export const UserContributions: React.FC = () => {
   const { user } = useAuth();
+  const { isTestRoute } = useTestEnvironment();
   const navigate = useNavigate();
   const [contributions, setContributions] = useState<Contribution[]>([]);
   const [loading, setLoading] = useState(true);
