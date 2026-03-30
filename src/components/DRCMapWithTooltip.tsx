@@ -213,6 +213,34 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
     });
   }, [isAnimating, provincesData, getProvinceColor, animateViewBox, onZoomChange]);
 
+  const silentZoomOut = useCallback((onComplete?: () => void) => {
+    if (isAnimating || !mapRef.current || !originalViewBox.current) return;
+    const svg = mapRef.current.querySelector('svg');
+    if (!svg) return;
+
+    setIsAnimating(true);
+
+    const allPaths = svg.querySelectorAll('path[data-province]');
+    allPaths.forEach(p => {
+      (p as SVGElement).style.opacity = '1';
+      (p as SVGElement).style.pointerEvents = 'auto';
+      const provinceId = p.getAttribute('data-province');
+      const province = provinceId ? provincesData.find(pr => pr.id === provinceId) : null;
+      (p as SVGElement).setAttribute('stroke-width', '2');
+      (p as SVGElement).setAttribute('fill', province ? getProvinceColor(province) : 'hsl(210, 20%, 82%)');
+    });
+
+    const currentVBStr = svg.getAttribute('viewBox') || '0 0 1000 1000';
+    const fromVB = currentVBStr.split(/[\s,]+/).map(Number);
+    const toVB = originalViewBox.current.split(/[\s,]+/).map(Number);
+
+    animateViewBox(svg, fromVB, toVB, 500, () => {
+      setZoomedProvinceId(null);
+      setIsAnimating(false);
+      onComplete?.();
+    });
+  }, [isAnimating, provincesData, getProvinceColor, animateViewBox]);
+
   // Attach events after SVG is rendered
   useEffect(() => {
     if (svgContent && mapRef.current) {
@@ -360,13 +388,10 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
   useEffect(() => {
     if (externalZoomProvinceId && svgContent && !isAnimating) {
       if (externalZoomProvinceId !== zoomedProvinceId) {
-        // If already zoomed on another province, zoom out first then zoom in
         if (zoomedProvinceId) {
-          zoomOut();
-          const timer = setTimeout(() => {
+          silentZoomOut(() => {
             zoomToProvince(externalZoomProvinceId);
-          }, 550);
-          return () => clearTimeout(timer);
+          });
         } else {
           zoomToProvince(externalZoomProvinceId);
         }
