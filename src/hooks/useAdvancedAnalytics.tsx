@@ -250,7 +250,8 @@ export const useAdvancedAnalytics = (startDate: Date, endDate: Date) => {
       const { data: invoices } = await supabase
         .from('cadastral_invoices')
         .select('*')
-        .eq('status', 'paid');
+        .eq('status', 'paid')
+        .not('parcel_number', 'ilike', 'TEST-%');
 
       const { data: users } = await supabase
         .from('profiles')
