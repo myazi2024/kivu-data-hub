@@ -7,6 +7,9 @@ import { AnalyticsFilter, defaultFilter, extractUnique, getAvailableYears, getSe
 
 /** Context to propagate province filter changes up to the map */
 export const ProvinceFilterContext = createContext<((province: string | undefined) => void) | null>(null);
+
+/** Context to receive the currently selected province from the map */
+export const MapProvinceContext = createContext<string | null>(null);
 import {
   getAllProvinces,
   getVillesForProvince,
