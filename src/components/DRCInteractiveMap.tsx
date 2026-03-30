@@ -197,10 +197,14 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
 
   // Fullscreen sync
   React.useEffect(() => {
-    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    const handler = () => {
+      const fs = !!document.fullscreenElement;
+      setIsFullscreen(fs);
+      onFullscreenChange?.(fs);
+    };
     document.addEventListener('fullscreenchange', handler);
     return () => document.removeEventListener('fullscreenchange', handler);
-  }, []);
+  }, [onFullscreenChange]);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
