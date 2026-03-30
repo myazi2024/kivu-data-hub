@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
 import { Loader2, LayoutGrid, MapPin, Calendar, Hash } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
