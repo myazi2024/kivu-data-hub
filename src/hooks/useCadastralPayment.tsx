@@ -213,7 +213,7 @@ export const useCadastralPayment = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, selectedServices, parcelNumber, isPaymentRequired, clearServices, toast]);
+  }, [user, selectedServices, parcelNumber, isPaymentRequired, isTestModeActive, clearServices, toast]);
 
   const processMobileMoneyPayment = useCallback(async (invoiceId: string, paymentData: CadastralPaymentData) => {
     if (!user) {
