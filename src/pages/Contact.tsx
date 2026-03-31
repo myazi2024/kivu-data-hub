@@ -17,7 +17,7 @@ const Contact = () => {
           <div className="text-center mb-16">
             <h1 className="text-4xl font-bold text-foreground mb-6">Contact</h1>
             <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-              Contactez le Bureau de l'Immobilier du Congo pour toute question concernant nos services, 
+              Contactez le Bureau d'Informations Cadastrales pour toute question concernant nos services, 
               publications ou possibilités de partenariat.
             </p>
           </div>
