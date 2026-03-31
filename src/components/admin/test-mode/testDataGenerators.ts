@@ -1098,7 +1098,7 @@ export const generateMutationRequests = async (
   return data ?? [];
 };
 
-// ─── Step 17b: Subdivision requests — 26 total (1/province) ─────────────────
+// ─── Step 17b: Subdivision requests — 26 total (1/province) — enriched ──────
 
 export const generateSubdivisionRequests = async (
   userId: string,
@@ -1107,6 +1107,7 @@ export const generateSubdivisionRequests = async (
 ) => {
   const SUB_STATUSES = ['pending', 'approved', 'pending', 'approved', 'rejected'];
   const PURPOSES = ['Résidentielle', 'Commerciale', 'Mixte', 'Résidentielle', 'Commerciale'];
+  const SUB_PAYMENT_STATUSES = ['paid', 'pending', 'paid', 'paid', 'pending'];
   const selected = parcels.filter((_, i) => {
     const info = getProvinceInfo(i);
     return info.localIdx === 8;
@@ -1117,6 +1118,8 @@ export const generateSubdivisionRequests = async (
     const parentArea = randInt(800, 3000);
     const lotArea = Math.floor(parentArea / numLots);
     const status = pick(SUB_STATUSES, i);
+    const submissionFee = randInt(30, 80);
+    const remainingFee = randInt(50, 150);
 
     return {
       reference_number: `TEST-SUB-${String(i + 1).padStart(3, '0')}-${suffix}`,
@@ -1132,6 +1135,10 @@ export const generateSubdivisionRequests = async (
       status,
       purpose_of_subdivision: pick(PURPOSES, i),
       user_id: userId,
+      submission_payment_status: pick(SUB_PAYMENT_STATUSES, i),
+      submission_fee_usd: submissionFee,
+      remaining_fee_usd: remainingFee,
+      total_amount_usd: submissionFee + remainingFee,
       lots_data: Array.from({ length: numLots }, (_, j) => ({
         lot_number: j + 1,
         area_sqm: lotArea,
