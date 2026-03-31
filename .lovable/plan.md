@@ -1,123 +1,163 @@
 
 
-# Distribution non-uniforme des parcelles test par province
+# Données test insuffisamment variées pour couvrir tous les visuels "Données foncières"
 
-## Objectif
+## Analyse croisée : champs utilisés par les blocs vs champs générés
 
-Remplacer la distribution uniforme (20 parcelles/province) par une distribution pondérée avec un multiplicateur de 1 à 26 par province, classé par densité réaliste. Cela permet de tester la visualisation "Densité parcelles cadastrées" sur la carte d'accueil.
+### 1. TitleRequestsBlock — `land_title_requests`
 
-## Distribution proposée
+| Champ visualisé | Généré ? | Problème |
+|---|---|---|
+| `request_type` | **Non** | Toujours `null` → graphique "Type de demande" vide |
+| `requester_type` | **Non** | Toujours `null` → graphique "Demandeur" vide |
+| `requester_gender` | **Non** | → graphique "Genre" vide |
+| `owner_gender` | **Non** | → idem |
+| `nationality` | **Non** | → graphique "Nationalité" vide |
+| `construction_type` | **Non** | → graphique "Type construction" vide |
+| `owner_legal_status` | **Non** | → graphique "Statut juridique" vide |
+| `deduced_title_type` | **Non** | → graphique "Titre déduit" vide |
+| `is_owner_same_as_requester` | **Non** | → graphique "Demandeur = Proprio" vide |
+| `reviewed_at` | **Non** | → KPI "Délai moy." toujours N/A |
+| `section_type` | **Non** (déduit via enrichissement) | Pas de `parcel_type` dans title requests |
 
-| Province | Multiplicateur | Parcelles (20 × mult) | 15 SU × mult | 5 SR × mult |
-|---|---|---|---|---|
-| Kinshasa | ×26 | 520 | 390 | 130 |
-| Haut-Katanga | ×25 | 500 | 375 | 125 |
-| Sud-Kivu | ×24 | 480 | 360 | 120 |
-| Nord-Kivu | ×23 | 460 | 345 | 115 |
-| Ituri | ×22 | 440 | 330 | 110 |
-| Kongo-Central | ×21 | 420 | 315 | 105 |
-| Lualaba | ×20 | 400 | 300 | 100 |
-| Tanganyika | ×19 | 380 | 285 | 95 |
-| Tshopo | ×18 | 360 | 270 | 90 |
-| Kasaï-Oriental | ×17 | 340 | 255 | 85 |
-| Kwilu | ×16 | 320 | 240 | 80 |
-| Équateur | ×15 | 300 | 225 | 75 |
-| Kasaï-Central | ×14 | 280 | 210 | 70 |
-| Haut-Lomami | ×13 | 260 | 195 | 65 |
-| Maniema | ×12 | 240 | 180 | 60 |
-| Lomami | ×11 | 220 | 165 | 55 |
-| Kasaï | ×10 | 200 | 150 | 50 |
-| Mongala | ×9 | 180 | 135 | 45 |
-| Kwango | ×8 | 160 | 120 | 40 |
-| Mai-Ndombe | ×7 | 140 | 105 | 35 |
-| Sankuru | ×6 | 120 | 90 | 30 |
-| Nord-Ubangi | ×5 | 100 | 75 | 25 |
-| Sud-Ubangi | ×4 | 80 | 60 | 20 |
-| Haut-Uélé | ×3 | 60 | 45 | 15 |
-| Bas-Uélé | ×2 | 40 | 30 | 10 |
-| Tshuapa | ×1 | 20 | 15 | 5 |
+**Résultat : ~10 graphiques vides sur 16 dans cet onglet.**
 
-**Total : 7 020 parcelles** (contre 520 actuellement).
+### 2. ParcelsWithTitleBlock — `cadastral_parcels` + relations
 
-## Détails techniques
+| Champ visualisé | Généré ? |
+|---|---|
+| `property_title_type` | Oui |
+| `current_owner_legal_status` | Oui |
+| `construction_type/nature` | Oui |
+| `declared_usage` | Oui |
+| `lease_type` | Oui |
+| `construction_year` | Oui |
+| `area_sqm` | Oui |
+| Gender (via contributions `current_owners_details`) | Oui |
+| Building permits (`cadastral_building_permits`) | **Seulement 10 records** → très peu de données |
+| Tax history (`cadastral_tax_history`) | **Seulement ~60 records** (20 parcels × 3 ans) |
+| Mortgages (`cadastral_mortgages`) | **Seulement 10 records** |
 
-### Fichier modifié : `testDataGenerators.ts`
+**Problème : les sous-tables (permits, taxes, mortgages) ont un volume fixe de 10-60 records indépendamment des 7 020 parcelles. Pas proportionnel.**
 
-**1. Ajouter un champ `multiplier` au tableau `PROVINCES`**
+### 3. ExpertiseBlock — `real_estate_expertise_requests`
 
-Réordonner le tableau par densité décroissante et ajouter un multiplicateur :
+| Champ visualisé | Généré ? |
+|---|---|
+| `status`, `payment_status` | **`payment_status` non généré** → graphique "Paiement" vide |
+| `property_condition` | **Non** → graphique "État du bien" vide |
+| `wall_material` | **Non** → graphique "Matériau murs" vide |
+| `roof_material` | **Non** → graphique "Matériau toiture" vide |
+| `sound_environment` | **Non** → graphique "Env. sonore" vide |
+| `building_position` | **Non** → graphique "Position bâtiment" vide |
+| `has_sewage_system` | **Non** |
+| `has_pool`, `has_air_conditioning`, `has_solar_panels`, `has_generator`, `has_water_tank`, `has_borehole`, `has_garage`, `has_electric_fence`, `has_cellar`, `has_automatic_gate` | **Non** → graphique "Équipements" incomplet |
+| `assigned_at` | **Non** → KPI "Délai assign." toujours N/A |
+| `expertise_date` | **Non** → KPI "Délai total" toujours N/A |
 
-```typescript
-const PROVINCES = [
-  { province: 'Kinshasa', multiplier: 26, ville: 'Kinshasa', ... },
-  { province: 'Haut-Katanga', multiplier: 25, ... },
-  // ... jusqu'à
-  { province: 'Tshuapa', multiplier: 1, ... },
-];
-```
+**Résultat : ~8 graphiques vides et KPIs N/A.**
 
-**2. Remplacer `PARCELS_PER_PROVINCE` par un calcul dynamique**
+### 4. MutationBlock — `mutation_requests`
 
-Supprimer la constante `PARCELS_PER_PROVINCE = 20` et utiliser :
-```typescript
-const BASE_PARCELS = 20;
-const getParcelsForProvince = (pIdx: number) => BASE_PARCELS * PROVINCES[pIdx].multiplier;
-```
+| Champ visualisé | Généré ? |
+|---|---|
+| Tous les champs de base | Oui |
+| `market_value_usd` | Oui (direct) |
+| `title_age` | **Non** (ni direct ni dans `proposed_changes`) → graphique "Ancienneté titre" vide |
+| `late_fee_amount` | **Non** → graphique "Retard mutation" vide |
 
-**3. Refactorer `generateParcelNumbers`**
+### 5. DisputesBlock — `cadastral_land_disputes`
 
-Boucle dynamique par province avec le nombre variable de parcelles :
-```typescript
-export function generateParcelNumbers(suffix: string): string[] {
-  const numbers: string[] = [];
-  for (let pIdx = 0; pIdx < PROVINCES.length; pIdx++) {
-    const count = getParcelsForProvince(pIdx);
-    for (let i = 0; i < count; i++) {
-      numbers.push(`TEST-${pIdx}-${String(i).padStart(3, '0')}-${suffix}`);
-    }
-  }
-  return numbers;
-}
-```
+| Champ visualisé | Généré ? |
+|---|---|
+| `dispute_type` | **Toujours `'report'`** → graphique "Type litige" monotone |
+| `lifting_status` | Partiellement (seulement `'en_cours'`) → section "Levées" avec un seul statut |
+| `lifting_reason` | Seulement `'conciliation_reussie'` → un seul motif |
+| `resolution_level` | Seulement pour résolus → distribution pauvre |
 
-**4. Refactorer `generateParcels` et `generateContributions`**
+### 6. InvoicesBlock — `cadastral_invoices`
 
-Remplacer `Math.floor(idx / PARCELS_PER_PROVINCE)` par une logique de recherche du province-index basée sur des offsets cumulés :
-```typescript
-// Pré-calculer les offsets
-const PROVINCE_OFFSETS = PROVINCES.reduce((acc, p, i) => {
-  acc.push((acc[i - 1] || 0) + getParcelsForProvince(i));
-  return acc;
-}, [] as number[]);
+| Champ visualisé | Généré ? |
+|---|---|
+| `payment_method` | **Non** → graphique "Moyen paiement" vide |
+| `discount_amount_usd` | **Non** → KPI "Remises" toujours $0 |
+| `geographical_zone` | Oui |
+| `total_amount_usd` | Oui |
 
-function getProvinceIndex(globalIdx: number): { pIdx: number; localIdx: number } {
-  let cumul = 0;
-  for (let p = 0; p < PROVINCES.length; p++) {
-    const count = getParcelsForProvince(p);
-    if (globalIdx < cumul + count) return { pIdx: p, localIdx: globalIdx - cumul };
-    cumul += count;
-  }
-  return { pIdx: PROVINCES.length - 1, localIdx: 0 };
-}
-```
+### 7. SubdivisionBlock — `subdivision_requests`
 
-**5. Adapter le ratio SU/SR**
+| Champ visualisé | Généré ? |
+|---|---|
+| `submission_payment_status` | **Non** → graphique "Paiement" vide |
+| `total_amount_usd` | **Non** → KPI "Surface tot." et revenue = 0 |
 
-Pour chaque province, les premiers 75% sont SU, les derniers 25% sont SR :
-```typescript
-const isSR = localIdx >= Math.floor(count * 0.75);
-```
+### 8. OwnershipHistoryBlock — `cadastral_ownership_history`
+- Seulement 40 records (20 parcels × 2). Volume insuffisant pour des tendances mensuelles visibles.
 
-**6. Adapter les entités enfant proportionnellement**
+### 9. CertificatesBlock — `generated_certificates`
+- Statut toujours `'generated'` → graphique "Statut" monotone, pas de `'pending'` ni `'completed'`.
 
-Les fonctions qui créent des entités enfant (factures, titres, expertises, litiges, mutations, etc.) utilisent déjà `parcelNumbers.length` ou `PROVINCES.length`. Les volumes s'adaptent automatiquement au nouveau total (7 020). Le batching existant (par 50) gère le volume.
+### 10. FraudAttemptsBlock — `fraud_attempts`
+- OK globalement, mais seulement 52 records.
 
-**7. Mettre à jour le message de succès** dans `useTestDataActions.ts` : remplacer le texte par `"7 020 parcelles test générées (26 provinces, densité variable)"`.
+## Plan de correction
+
+### Fichier unique : `testDataGenerators.ts`
+
+**A. `generateTitleRequests` — Ajouter les 10 champs manquants :**
+- `request_type`: cycle entre `'nouveau_titre'`, `'renouvellement'`, `'duplicata'`, `'conversion'`
+- `requester_type`: cycle entre `'proprietaire'`, `'mandataire'`, `'heritier'`
+- `requester_gender` / `owner_gender`: alternance `'Masculin'`/`'Féminin'`
+- `nationality`: ~90% `'Congolaise'`, ~10% `'Étrangère'`
+- `construction_type`: via `pick(CONSTRUCTION_TYPES, i)`
+- `owner_legal_status`: via `pick(LEGAL_STATUSES, i)`
+- `deduced_title_type`: via `pick(TITLE_TYPES, i)`
+- `is_owner_same_as_requester`: alternance `true`/`false`
+- `reviewed_at`: pour les non-pending, date aléatoire après `created_at`
+
+**B. `generateExpertiseRequests` — Ajouter les 12+ champs manquants :**
+- `payment_status`: cycle `'pending'`/`'paid'`
+- `property_condition`: cycle `'bon'`, `'moyen'`, `'mauvais'`, `'neuf'`
+- `wall_material`, `roof_material`, `sound_environment`, `building_position`
+- `has_sewage_system`, `has_pool`, `has_air_conditioning`, `has_solar_panels`, `has_generator`, `has_water_tank`, `has_borehole`, `has_garage`, `has_electric_fence`, `has_cellar`, `has_automatic_gate`
+- `assigned_at`, `expertise_date`: dates cohérentes pour les `completed`/`in_progress`
+
+**C. `generateInvoices` — Ajouter :**
+- `payment_method`: cycle `'mobile_money'`, `'card'`, `'bank_transfer'`
+- `discount_amount_usd`: ~20% des factures avec une remise de $1-5
+
+**D. `generateSubdivisionRequests` — Ajouter :**
+- `submission_payment_status`: cycle `'paid'`/`'pending'`
+- `total_amount_usd`: `randInt(100, 500)`
+
+**E. `generateDisputes` — Varier :**
+- `dispute_type`: cycle `'report'`, `'lifting'`, `'mediation'`
+- `lifting_status`: varier entre `'en_cours'`, `'approved'`, `'rejected'`, `'pending'`
+- `lifting_reason`: varier entre `'conciliation_reussie'`, `'decision_justice'`, `'accord_parties'`
+- `resolution_level`: varier pour tous, pas seulement résolus
+
+**F. `generateCertificates` — Varier :**
+- `status`: cycle `'generated'`, `'pending'`, `'completed'`
+
+**G. `generateMutationRequests` — Ajouter :**
+- `title_age` dans `proposed_changes`: `'less_than_10'` ou `'10_or_more'`
+- `late_fee_amount` dans `proposed_changes.late_fees.fee`: ~30% des mutations
+
+**H. Proportionnaliser les sous-tables :**
+- `generateBuildingPermits`: passer de 10 à `~10% des parcelles` (700+)
+- `generateTaxHistory`: passer de 20 parcelles à `~15%` (1 050+) × 3 ans
+- `generateMortgages`: passer de 10 à `~8%` (560+)
+- `generateOwnershipHistory`: passer de 20 parcelles à `~15%` (1 050+)
+- Ajouter du batching (par 50) dans ces fonctions qui ne l'ont pas encore
+
+**I. Augmenter le volume des entités 2/province :**
+- Expertises : passer de 52 à `~5% des parcelles` (351)
+- Title requests : passer de 52 à `~5%` (351)
+- Les autres (disputes, mutations, certificates, fraud) restent à 52 (suffisant pour la variété)
 
 ### Fichiers modifiés
 
-| Fichier | Modification |
-|---------|-------------|
-| `testDataGenerators.ts` | Multiplicateurs, refactoring de la distribution, calcul dynamique des offsets |
-| `useTestDataActions.ts` | Message de succès |
+| Fichier | Modifications |
+|---------|---------------|
+| `testDataGenerators.ts` | Tous les ajouts A-I ci-dessus |
 
