@@ -42,6 +42,13 @@ function randInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+/** Seeded deterministic int for consistent values across generators */
+function seededInt(seed: number, min: number, max: number): number {
+  // Simple hash for determinism
+  const h = ((seed * 2654435761) >>> 0) % (max - min + 1);
+  return min + h;
+}
+
 /** Return a random date between two years ago offset and now, formatted YYYY-MM-DD */
 function randomDateInPast(yearsBack: number): string {
   const now = Date.now();
