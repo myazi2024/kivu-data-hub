@@ -41,7 +41,7 @@ export const useNotifications = () => {
 
       const typedData = (data || []).map(n => ({
         ...n,
-        type: n.type as 'info' | 'success' | 'warning' | 'error'
+        type: n.type as 'info' | 'success' | 'warning' | 'error' | 'account'
       }));
 
       setNotifications(typedData);
