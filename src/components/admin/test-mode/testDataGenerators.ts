@@ -937,12 +937,12 @@ export const generateBoundaryHistory = async (
   return data ?? [];
 };
 
-// ─── Step 14: Mortgages — 10 parcels ────────────────────────────────────────
+// ─── Step 14: Mortgages — ~8% parcels ───────────────────────────────────────
 
 export const generateMortgages = async (
   parcels: Array<{ id: string; parcel_number: string }>
 ) => {
-  const selected = parcels.filter((_, i) => i % 10 === 3).slice(0, 10);
+  const selected = parcels.filter((_, i) => i % 12 === 3); // ~8%
   const CREDITORS = ['Banque Commerciale du Congo', 'Trust Merchant Bank', 'Rawbank', 'Equity BCDC', 'KCB Bank'];
   const CREDITOR_TYPES = ['Banque', 'Microfinance', 'Banque', 'Banque', 'Microfinance'];
   const STATUSES = ['Active', 'Renégociée', 'Soldée', 'Active', 'Active'];
@@ -958,13 +958,18 @@ export const generateMortgages = async (
     reference_number: `TEST-HYP-${Date.now().toString(36)}-${i}`,
   }));
 
-  const { data, error } = await supabase
-    .from('cadastral_mortgages')
-    .insert(records)
-    .select('id');
-
-  if (error) console.error('Hypothèques (non-bloquant):', error);
-  return data ?? [];
+  // Insert in batches
+  const allInserted: Array<{ id: string }> = [];
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { data, error } = await supabase
+      .from('cadastral_mortgages')
+      .insert(batch)
+      .select('id');
+    if (error) console.error(`Hypothèques (batch ${i}, non-bloquant):`, error);
+    if (data) allInserted.push(...data);
+  }
+  return allInserted;
 };
 
 // ─── Step 15: Building permits — 10 parcels ─────────────────────────────────
