@@ -220,6 +220,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     if (!mapCardRef.current || isCopying) return;
     setIsCopying(true);
     try {
+      const html2canvas = (await import('html2canvas')).default;
       const canvas = await html2canvas(mapCardRef.current, { backgroundColor: null, scale: 2, borderRadius: 12 } as any);
       canvas.toBlob(async (blob) => {
         if (blob) {
