@@ -221,7 +221,9 @@ const Admin = () => {
       case 'dispute-analytics': return <AdminDisputeAnalytics />;
       case 'certificates': return <AdminCertificates />;
       case 'analytics-charts-config': return <AdminAnalyticsChartsConfig />;
+      case 'partners': return <AdminPartners />;
       case 'audit-logs': return <AdminAuditLogs />;
+      default: return <AdminDashboardOverview />;
       default: return <AdminDashboardOverview />;
     }
   };

@@ -136,6 +136,7 @@ const menuItems = [
   {
     category: 'Contenu',
     items: [
+      { icon: Handshake, label: 'Partenaires', value: 'partners', badge: null },
       { icon: FileText, label: 'Publications', value: 'publications', badge: null },
       { icon: FileText, label: 'Articles', value: 'articles', badge: null },
       { icon: Tag, label: 'Thèmes Articles', value: 'article-themes', badge: null },
