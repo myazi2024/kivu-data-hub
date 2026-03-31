@@ -11,7 +11,7 @@ const Footer = () => {
     { name: 'Nos services', href: '/services' },
     { name: 'Publications', href: '/publications' },
     { name: 'Données foncières', href: '/map' },
-    { name: 'Contact', href: '/contact' },
+    
   ];
 
   const resources = [
