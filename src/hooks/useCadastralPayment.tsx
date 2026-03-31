@@ -300,6 +300,77 @@ export const useCadastralPayment = () => {
     }
   }, [availableMethods, toast]);
 
+  /**
+   * Paiement simulé en mode test — crée une transaction completed + accorde l'accès.
+   */
+  const processTestPayment = useCallback(async (invoiceId: string) => {
+    if (!user) {
+      toast({ title: "Authentification requise", variant: "destructive" });
+      return null;
+    }
+
+    try {
+      setLoading(true);
+      setPaymentStep('processing');
+
+      // Créer une transaction simulée
+      const { data: txn, error: txnError } = await supabase
+        .from('payment_transactions')
+        .insert({
+          user_id: user.id,
+          invoice_id: invoiceId,
+          payment_method: 'TEST',
+          provider: 'TEST_SIMULATION',
+          phone_number: '0000000000',
+          amount_usd: 0,
+          currency_code: 'USD',
+          status: 'completed',
+          transaction_reference: `TEST-${Date.now()}`,
+        })
+        .select('id')
+        .single();
+
+      if (txnError) throw txnError;
+
+      // Marquer la facture comme payée
+      await supabase
+        .from('cadastral_invoices')
+        .update({
+          status: 'paid',
+          payment_method: 'TEST',
+          payment_id: txn.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', invoiceId);
+
+      // Accorder l'accès aux services
+      const invoice = await supabase
+        .from('cadastral_invoices')
+        .select('parcel_number, selected_services')
+        .eq('id', invoiceId)
+        .single();
+
+      if (invoice.data) {
+        const serviceIds = await getInvoiceServices(invoiceId);
+        await grantServiceAccess(user.id, invoiceId, invoice.data.parcel_number, serviceIds);
+      }
+
+      setPaymentStep('success');
+      toast({ title: "Paiement test simulé", description: "Services débloqués (mode test)" });
+      clearServices();
+      window.dispatchEvent(new CustomEvent('cadastralPaymentCompleted'));
+
+      return invoice.data;
+    } catch (error: any) {
+      console.error('Test payment error:', error);
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      setPaymentStep('form');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [user, clearServices, toast]);
+
   const resetPaymentState = useCallback(() => {
     pollingAbortRef.current?.abort();
     pollingAbortRef.current = null;
@@ -313,6 +384,7 @@ export const useCadastralPayment = () => {
     createInvoice,
     processMobileMoneyPayment,
     processStripePayment,
+    processTestPayment,
     resetPaymentState
   };
 };

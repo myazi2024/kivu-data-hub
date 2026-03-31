@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { usePaymentConfig } from '@/hooks/usePaymentConfig';
 import { usePaymentProviders } from '@/hooks/usePaymentProviders';
+import { useTestMode } from '@/hooks/useTestMode';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { Building2 } from 'lucide-react';
@@ -39,6 +40,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
   const isMobile = useIsMobile();
   const { isPaymentRequired } = usePaymentConfig();
   const { providers: availableProviders } = usePaymentProviders();
+  const { isTestModeActive } = useTestMode();
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const [showIntro, setShowIntro] = useState(true);
@@ -51,6 +53,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
 
   // Payment UI state
   const [paymentMethod, setPaymentMethod] = useState<'mobile_money' | 'bank_card'>('mobile_money');
+  const [isTestSimulation, setIsTestSimulation] = useState(false);
   const [paymentProvider, setPaymentProvider] = useState('');
   const [paymentPhone, setPaymentPhone] = useState('');
 
@@ -220,6 +223,39 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
       return;
     }
 
+    // Step 2b: Test mode — simulate payment
+    if (isTestModeActive && isTestSimulation) {
+      try {
+        // Create a test transaction
+        const { data: txn } = await supabase
+          .from('payment_transactions')
+          .insert({
+            user_id: user.id,
+            payment_method: 'TEST',
+            provider: 'TEST_SIMULATION',
+            amount_usd: form.totalFeeUSD,
+            currency_code: 'USD',
+            status: 'completed',
+            transaction_reference: `TEST-PERMIT-${Date.now()}`,
+          })
+          .select('id')
+          .single();
+
+        const contributionId = await savePermitRequest(uploadedUrls, txn?.id);
+        setSavedContributionId(contributionId);
+        setSavedTransactionId(txn?.id || null);
+        form.clearDraft();
+        setStep('confirmation');
+        toast({ title: "Paiement test simulé", description: "Demande enregistrée (mode test)" });
+      } catch (err: any) {
+        await cleanupUploadedFiles(uploadedUrls);
+        toast({ title: 'Erreur', description: err.message, variant: 'destructive' });
+      } finally {
+        setProcessingPayment(false);
+      }
+      return;
+    }
+
     // Step 3: Process Mobile Money payment
     abortControllerRef.current?.abort();
     const controller = new AbortController();
@@ -315,6 +351,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     setPaymentProvider('');
     setPaymentPhone('');
     setPaymentMethod('mobile_money');
+    setIsTestSimulation(false);
     onOpenChange(false);
   };
 
@@ -393,6 +430,8 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
               availableProviders={availableProviders}
               onPay={handlePayment} onBack={() => setStep('preview')}
               onCancelPayment={() => { abortControllerRef.current?.abort(); setProcessingPayment(false); }}
+              isTestModeActive={isTestModeActive}
+              onTestPay={() => { setIsTestSimulation(true); setTimeout(() => handlePayment(), 0); }}
             />
           )}
           {step === 'confirmation' && (
