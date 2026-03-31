@@ -35,6 +35,49 @@ export function AdminDashboardHeader({ onMenuClick }: AdminDashboardHeaderProps)
   const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
   const { testMode } = useTestMode();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showResults, setShowResults] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  const flatItems = useMemo(() => 
+    menuItems.flatMap(section => 
+      section.items.map(item => ({ ...item, category: section.category }))
+    ), []
+  );
+
+  const filteredItems = useMemo(() => {
+    if (!searchTerm.trim()) return [];
+    const term = searchTerm.toLowerCase();
+    return flatItems.filter(item => 
+      item.label.toLowerCase().includes(term) || 
+      item.category.toLowerCase().includes(term)
+    ).slice(0, 8);
+  }, [searchTerm, flatItems]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowResults(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSearchSelect = (value: string) => {
+    navigate(`/admin?tab=${value}`);
+    setSearchTerm('');
+    setShowResults(false);
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      setShowResults(false);
+      setSearchTerm('');
+    } else if (e.key === 'Enter' && filteredItems.length > 0) {
+      handleSearchSelect(filteredItems[0].value);
+    }
+  };
 
   const handleLogout = async () => {
     try {
