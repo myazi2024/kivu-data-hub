@@ -63,8 +63,8 @@ const AdminDisputeAnalytics: React.FC = () => {
 
   const analytics = useMemo(() => {
     const total = disputes.length;
-    const signalements = disputes.filter(d => d.dispute_type === 'signalement').length;
-    const levees = disputes.filter(d => d.dispute_type === 'levee').length;
+    const signalements = disputes.filter(d => d.dispute_type === 'report').length;
+    const levees = disputes.filter(d => d.dispute_type === 'lifting').length;
     const resolved = disputes.filter(d => RESOLVED_STATUSES.includes(d.current_status)).length;
     const enCours = total - resolved;
     const resolutionRate = total > 0 ? ((resolved / total) * 100).toFixed(1) : '0';
