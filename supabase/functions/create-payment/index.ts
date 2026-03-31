@@ -363,6 +363,20 @@ Deno.serve(async (req) => {
           mutation_request_id: invoice_id,
         },
       });
+    } else if ((payment_type === 'land_title_request' || payment_type === 'permit_request' || payment_type === 'mortgage_cancellation') && invoice_id) {
+      await supabase.from("payment_transactions").insert({
+        user_id: user.id,
+        invoice_id,
+        payment_method: 'bank_card',
+        provider: 'stripe',
+        amount_usd: amount_usd!,
+        status: 'pending',
+        transaction_reference: session.id,
+        metadata: {
+          stripe_session_id: session.id,
+          payment_type,
+        },
+      });
     }
 
     return new Response(JSON.stringify({ url: session.url }), {
