@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Menu, X, User, LogOut, ChevronDown, Shield } from 'lucide-react';
+import { Menu, X, User, LogOut, ChevronDown, Shield, Newspaper, BookOpen, Briefcase, Tag, Heart, Building2, Handshake, Scale } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -14,26 +14,44 @@ import {
 } from '@/components/ui/navigation-menu';
 import bicLogo from '@/assets/bic-logo.png';
 
+const mediaColumns = [
+  {
+    title: 'Actualités',
+    items: [
+      { name: 'Articles', href: '/articles', icon: Newspaper, description: 'Analyses et actualités foncières' },
+    ],
+  },
+  {
+    title: 'Ressources',
+    items: [
+      { name: 'Kiosque', href: '/publications', icon: BookOpen, description: 'Publications et documents' },
+      { name: 'Nos Services', href: '/services', icon: Briefcase, description: 'Catalogue des services cadastraux' },
+      { name: 'Codes Promo', href: '/discount-codes', icon: Tag, description: 'Codes de réduction disponibles' },
+      { name: 'Contributions CCC', href: '/about-ccc', icon: Heart, description: 'Comprendre les contributions' },
+    ],
+  },
+  {
+    title: 'À propos',
+    items: [
+      { name: 'Le BIC', href: '/about', icon: Building2, description: 'Notre mission et notre équipe' },
+      { name: 'Partenariat', href: '/partnership', icon: Handshake, description: 'Devenir partenaire' },
+      { name: 'Mentions légales', href: '/legal', icon: Scale, description: 'CGU et politique de confidentialité' },
+    ],
+  },
+];
+
+const simpleNavItems = [
+  { name: 'Accueil', href: '/' },
+  { name: 'Données foncières', href: '/map' },
+  { name: 'Carte Cadastrale', href: '/cadastral-map' },
+];
+
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [mediaMenuOpen, setMediaMenuOpen] = useState(false);
+  const [mobileMediaOpen, setMobileMediaOpen] = useState(false);
   const { user, profile, signOut, loading } = useAuth();
 
   const isAdminOrSuperAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
-
-  const navigation = [
-    { name: 'Accueil', href: '/' },
-    { 
-      name: 'Media', 
-      subItems: [
-        { name: 'Articles', href: '/articles' },
-        { name: 'Kiosque', href: '/publications' },
-      ]
-    },
-    { name: 'Données foncières', href: '/map' },
-    { name: 'Carte Cadastrale', href: '/cadastral-map' },
-    
-  ];
 
   return (
     <nav className="bg-background/95 backdrop-blur-sm border-b border-border sticky top-0 z-50">
@@ -52,44 +70,68 @@ const Navigation = () => {
           <div className="hidden lg:flex items-center space-x-1 xl:space-x-2">
             <NavigationMenu>
               <NavigationMenuList>
-                {navigation.map((item) => (
-                  <NavigationMenuItem key={item.name}>
-                    {item.subItems ? (
-                      <>
-                        <NavigationMenuTrigger className="px-3 xl:px-4 py-2 text-sm font-medium">
-                          {item.name}
-                        </NavigationMenuTrigger>
-                        <NavigationMenuContent>
-                          <ul className="grid w-48 gap-1 p-2">
-                            {item.subItems.map((subItem) => (
-                              <li key={subItem.name}>
+                {/* Accueil */}
+                <NavigationMenuItem>
+                  <Link
+                    to="/"
+                    className="px-3 xl:px-4 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors duration-200 hover:bg-secondary/50 rounded-md whitespace-nowrap inline-block"
+                  >
+                    Accueil
+                  </Link>
+                </NavigationMenuItem>
+
+                {/* Media Mega-Menu */}
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className="px-3 xl:px-4 py-2 text-sm font-medium">
+                    Media
+                  </NavigationMenuTrigger>
+                  <NavigationMenuContent>
+                    <div className="grid grid-cols-3 gap-0 w-[550px] p-4">
+                      {mediaColumns.map((column) => (
+                        <div key={column.title} className="space-y-2">
+                          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">
+                            {column.title}
+                          </h4>
+                          <ul className="space-y-0.5">
+                            {column.items.map((item) => (
+                              <li key={item.name}>
                                 <NavigationMenuLink asChild>
                                   <Link
-                                    to={subItem.href}
-                                    className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                    to={item.href}
+                                    className="group flex items-start gap-2.5 rounded-md p-2 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                                   >
-                                    <div className="text-sm font-medium">{subItem.name}</div>
+                                    <item.icon className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground group-hover:text-accent-foreground" />
+                                    <div className="space-y-0.5">
+                                      <div className="text-sm font-medium leading-none">{item.name}</div>
+                                      <p className="text-xs leading-snug text-muted-foreground group-hover:text-accent-foreground/70">
+                                        {item.description}
+                                      </p>
+                                    </div>
                                   </Link>
                                 </NavigationMenuLink>
                               </li>
                             ))}
                           </ul>
-                        </NavigationMenuContent>
-                      </>
-                    ) : (
-                      <Link
-                        to={item.href}
-                        className="px-3 xl:px-4 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors duration-200 hover:bg-secondary/50 rounded-md whitespace-nowrap inline-block"
-                      >
-                        {item.name}
-                      </Link>
-                    )}
+                        </div>
+                      ))}
+                    </div>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+
+                {/* Simple nav items */}
+                {simpleNavItems.slice(1).map((item) => (
+                  <NavigationMenuItem key={item.name}>
+                    <Link
+                      to={item.href}
+                      className="px-3 xl:px-4 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors duration-200 hover:bg-secondary/50 rounded-md whitespace-nowrap inline-block"
+                    >
+                      {item.name}
+                    </Link>
                   </NavigationMenuItem>
                 ))}
               </NavigationMenuList>
             </NavigationMenu>
-            
-            {/* Admin Link - Desktop only */}
+
             {isAdminOrSuperAdmin && (
               <Link to="/admin">
                 <Button variant="ghost" size="sm" className="gap-2 text-sm font-medium">
@@ -107,12 +149,7 @@ const Navigation = () => {
                 {user ? (
                   <>
                     <div className="hidden sm:flex items-center space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        asChild
-                        className="text-xs"
-                      >
+                      <Button variant="ghost" size="sm" asChild className="text-xs">
                         <Link to="/mon-compte" className="flex items-center space-x-1">
                           <User className="h-3 w-3 sm:h-4 sm:w-4" />
                           <span className="truncate max-w-24 sm:max-w-32">
@@ -121,14 +158,10 @@ const Navigation = () => {
                         </Link>
                       </Button>
                       {isAdminOrSuperAdmin && (
-                        <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">
-                          Admin
-                        </span>
+                        <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">Admin</span>
                       )}
                       {profile?.role === 'partner' && (
-                        <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded">
-                          Partenaire
-                        </span>
+                        <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded">Partenaire</span>
                       )}
                     </div>
                     <Button
@@ -142,12 +175,7 @@ const Navigation = () => {
                     </Button>
                   </>
                 ) : (
-                  <Button
-                    variant="default"
-                    size="sm"
-                    asChild
-                    className="hidden sm:flex text-xs"
-                  >
+                  <Button variant="default" size="sm" asChild className="hidden sm:flex text-xs">
                     <Link to="/auth">
                       <User className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                       <span className="hidden md:inline">Connexion</span>
@@ -173,99 +201,107 @@ const Navigation = () => {
         {/* Mobile Navigation */}
         <div className={cn(
           "lg:hidden transition-all duration-300 ease-in-out overflow-hidden bg-background/95 backdrop-blur-sm border-t border-border",
-          isOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+          isOpen ? "max-h-[700px] opacity-100" : "max-h-0 opacity-0"
         )}>
-        <div className="pb-3 sm:pb-4 space-y-1 px-2">
-            {navigation.map((item) => (
-              <div key={item.name}>
-                {item.subItems ? (
-                  <div>
-                    <button
-                      onClick={() => setMediaMenuOpen(!mediaMenuOpen)}
-                      className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-foreground hover:text-primary-foreground hover:bg-primary/90 rounded-md transition-colors duration-200"
-                    >
-                      {item.name}
-                      <ChevronDown className={cn("h-4 w-4 transition-transform", mediaMenuOpen && "rotate-180")} />
-                    </button>
-                    {mediaMenuOpen && (
-                      <div className="pl-4 space-y-1 mt-1">
-                        {item.subItems.map((subItem) => (
+          <div className="pb-3 sm:pb-4 space-y-1 px-2">
+            {/* Accueil */}
+            <Link
+              to="/"
+              className="block px-3 py-2 text-sm font-medium text-foreground hover:text-primary-foreground hover:bg-primary/90 rounded-md transition-colors duration-200"
+              onClick={() => setIsOpen(false)}
+            >
+              Accueil
+            </Link>
+
+            {/* Media - Mobile Accordion */}
+            <div>
+              <button
+                onClick={() => setMobileMediaOpen(!mobileMediaOpen)}
+                className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-foreground hover:text-primary-foreground hover:bg-primary/90 rounded-md transition-colors duration-200"
+              >
+                Media
+                <ChevronDown className={cn("h-4 w-4 transition-transform", mobileMediaOpen && "rotate-180")} />
+              </button>
+              {mobileMediaOpen && (
+                <div className="pl-2 space-y-3 mt-1 pb-1">
+                  {mediaColumns.map((column) => (
+                    <div key={column.title}>
+                      <p className="px-3 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        {column.title}
+                      </p>
+                      <div className="space-y-0.5">
+                        {column.items.map((item) => (
                           <Link
-                            key={subItem.name}
-                            to={subItem.href}
-                            className="block px-3 py-2 text-sm font-medium text-muted-foreground hover:text-primary-foreground hover:bg-primary/90 rounded-md transition-colors duration-200"
+                            key={item.name}
+                            to={item.href}
+                            className="flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-primary-foreground hover:bg-primary/90 rounded-md transition-colors duration-200"
                             onClick={() => setIsOpen(false)}
                           >
-                            {subItem.name}
+                            <item.icon className="h-4 w-4 shrink-0" />
+                            {item.name}
                           </Link>
                         ))}
                       </div>
-                    )}
-                  </div>
-                ) : (
-                  <Link
-                    to={item.href}
-                    className="block px-3 py-2 text-sm font-medium text-foreground hover:text-primary-foreground hover:bg-primary/90 rounded-md transition-colors duration-200"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    {item.name}
-                  </Link>
-                )}
-              </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Other simple items */}
+            {simpleNavItems.slice(1).map((item) => (
+              <Link
+                key={item.name}
+                to={item.href}
+                className="block px-3 py-2 text-sm font-medium text-foreground hover:text-primary-foreground hover:bg-primary/90 rounded-md transition-colors duration-200"
+                onClick={() => setIsOpen(false)}
+              >
+                {item.name}
+              </Link>
             ))}
+
+            {/* Auth section */}
             <div className="border-t border-border pt-2 mt-2 space-y-1">
               {!loading && (
                 <>
-              {user ? (
-                <>
-                  <div className="px-3 py-2 border-b border-border mb-2">
-                    <Link
-                      to="/mon-compte"
-                      className="flex items-center space-x-3 text-sm font-medium"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      <User className="h-4 w-4 text-primary" />
-                      <span className="truncate">{profile?.full_name || user.email}</span>
-                    </Link>
-                    {profile?.role && (
-                      <p className="text-xs text-muted-foreground capitalize mt-1 ml-7">
-                        {isAdminOrSuperAdmin ? 'Administrateur' : 
-                         profile.role === 'partner' ? 'Partenaire' : 'Utilisateur'}
-                      </p>
-                    )}
-                  </div>
-                  
-                  {/* Admin Link - Mobile */}
-                  {isAdminOrSuperAdmin && (
-                    <Link to="/admin" onClick={() => setIsOpen(false)}>
+                  {user ? (
+                    <>
+                      <div className="px-3 py-2 border-b border-border mb-2">
+                        <Link
+                          to="/mon-compte"
+                          className="flex items-center space-x-3 text-sm font-medium"
+                          onClick={() => setIsOpen(false)}
+                        >
+                          <User className="h-4 w-4 text-primary" />
+                          <span className="truncate">{profile?.full_name || user.email}</span>
+                        </Link>
+                        {profile?.role && (
+                          <p className="text-xs text-muted-foreground capitalize mt-1 ml-7">
+                            {isAdminOrSuperAdmin ? 'Administrateur' :
+                             profile.role === 'partner' ? 'Partenaire' : 'Utilisateur'}
+                          </p>
+                        )}
+                      </div>
+                      {isAdminOrSuperAdmin && (
+                        <Link to="/admin" onClick={() => setIsOpen(false)}>
+                          <Button variant="ghost" size="sm" className="flex items-center space-x-1 px-3 py-2 w-full justify-start text-sm">
+                            <Shield className="h-4 w-4" />
+                            <span>Admin</span>
+                          </Button>
+                        </Link>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"
+                        onClick={signOut}
                         className="flex items-center space-x-1 px-3 py-2 w-full justify-start text-sm"
                       >
-                        <Shield className="h-4 w-4" />
-                        <span>Admin</span>
+                        <LogOut className="h-4 w-4" />
+                        <span>Déconnexion</span>
                       </Button>
-                    </Link>
-                  )}
-                  
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={signOut}
-                    className="flex items-center space-x-1 px-3 py-2 w-full justify-start text-sm"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span>Déconnexion</span>
-                  </Button>
-                </>
-              ) : (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      asChild
-                      className="flex items-center space-x-1 px-3 py-2 w-full justify-start text-sm"
-                    >
+                    </>
+                  ) : (
+                    <Button variant="ghost" size="sm" asChild className="flex items-center space-x-1 px-3 py-2 w-full justify-start text-sm">
                       <Link to="/auth" onClick={() => setIsOpen(false)}>
                         <User className="h-4 w-4" />
                         <span>Connexion</span>
