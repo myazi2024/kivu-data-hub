@@ -1305,6 +1305,7 @@ const CadastralMap = () => {
               <ParcelActionsDropdown
                 parcelNumber={selectedParcel.parcel_number}
                 parcelId={selectedParcel.id}
+                parcelData={selectedParcel}
                 expanded={actionsExpanded}
                 onCollapse={() => setActionsExpanded(false)}
               />

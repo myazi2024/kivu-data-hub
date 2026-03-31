@@ -33,7 +33,8 @@ const CATEGORIES = [
   { value: 'mortgage', label: 'Hypothèque' },
   { value: 'permit', label: 'Permis' },
   { value: 'tax', label: 'Taxes' },
-  { value: 'subdivision', label: 'Lotissement' }
+  { value: 'subdivision', label: 'Lotissement' },
+  { value: 'dispute', label: 'Litige' }
 ];
 
 const AdminParcelActionsConfig: React.FC = () => {

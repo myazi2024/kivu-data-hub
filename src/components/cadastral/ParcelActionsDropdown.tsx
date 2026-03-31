@@ -157,6 +157,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
                     className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-left transition-all duration-150
                       ${action.isActive ? 'hover:bg-primary/5 hover:shadow-sm active:scale-[0.98] cursor-pointer' : 'opacity-35 cursor-not-allowed'}`}
                   >
+                    <ActionIcon iconName={action.iconName} actionKey={action.key} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-[13px] text-foreground truncate">{action.label}</span>
