@@ -1,13 +1,27 @@
 
 
-# Suppression de toutes les références à "Myazi"
+# Réécriture des cartes de la page Services
 
-## Fichiers concernés (4 fichiers, 5 occurrences)
+## Résumé
 
-| Fichier | Modification |
-|---------|-------------|
-| `src/pages/About.tsx` (l.37) | Supprimer le `<li>` "Collecte numérique via l'application Myazi" |
-| `src/pages/Careers.tsx` (l.23) | Réécrire la description du poste Développeur Mobile sans mention de Myazi → "Participez au développement des outils numériques innovants pour le secteur foncier." |
-| `src/components/admin/AdminNotifications.tsx` (l.398) | Changer le placeholder `/myazi ou https://exemple.com` → `/tableau-de-bord ou https://exemple.com` |
-| `NOTIFICATIONS_GUIDE.md` (l.120, 145, 168) | Remplacer les 3 chemins `/myazi?tab=...` → `/tableau-de-bord?tab=...` |
+Réécrire le contenu statique des cartes dans `src/pages/Services.tsx` pour refléter les vrais services numériques de BIC : consultation cadastrale en ligne, carte interactive, rapports fonciers, etc.
+
+## Modifications
+
+**Fichier unique : `src/pages/Services.tsx`**
+
+Remplacer les 8 services actuels (cartographie dynamique, analyse cadastrale, recettes fiscales, etc.) par des services correspondant à ce que l'application propose réellement :
+
+| Icone | Titre | Description |
+|-------|-------|-------------|
+| Search | Recherche cadastrale | Recherchez n'importe quelle parcelle en RDC par numéro, propriétaire ou localisation |
+| Map | Carte interactive | Visualisez les parcelles et données foncières sur une carte dynamique |
+| FileText | Fiche parcellaire | Consultez les informations détaillées d'une parcelle : propriétaire, superficie, titre |
+| Scale | Litiges fonciers | Accédez aux informations sur les litiges enregistrés sur une parcelle |
+| Receipt | Contributions cadastrales | Historique des paiements et contributions liés à une parcelle |
+| ShieldCheck | Certificat cadastral | Obtenez un certificat officiel avec les données cadastrales vérifiées |
+
+Mise à jour du texte d'introduction :
+- Titre : "Nos Services"
+- Description : "Accédez aux informations cadastrales de n'importe quelle propriété en RDC. Nos services numériques vous permettent de consulter, vérifier et documenter les données foncières en quelques clics."
 
