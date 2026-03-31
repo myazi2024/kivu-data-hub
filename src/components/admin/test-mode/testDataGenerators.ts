@@ -173,7 +173,7 @@ export const generateParcels = async (parcelNumbers: string[]) => {
   return allInserted;
 };
 
-// ─── Step 1: Generate 100 contributions ────────────────────────────────────────
+// ─── Step 1: Generate 520 contributions (1 per parcel) ─────────────────────────
 
 export const generateContributions = async (userId: string, parcelNumbers: string[]) => {
   const STATUSES_CYCLE = ['approved', 'pending', 'rejected', 'pending', 'approved'];
