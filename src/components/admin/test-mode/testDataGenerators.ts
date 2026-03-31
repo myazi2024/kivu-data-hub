@@ -562,7 +562,7 @@ export const generateFraudAttempts = async (
   const FRAUD_TYPES = ['duplication', 'document_falsifie', 'identite_usurpee', 'coordonnees_falsifiees', 'duplication'];
   const SEVERITIES = ['high', 'medium', 'critical', 'low', 'high'];
 
-  const selected = contributions.filter((_, i) => i % 10 === 0).slice(0, 10);
+  const selected = contributions.filter((_, i) => i % 10 === 0).slice(0, PROVINCES.length * 2);
 
   const records = selected.map((c, i) => ({
     user_id: userId,
