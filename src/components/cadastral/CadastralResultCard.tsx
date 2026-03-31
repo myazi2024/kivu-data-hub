@@ -68,11 +68,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   const handlePaymentSuccess = (services: string[]) => {
     const updatedServices = [...new Set([...paidServices, ...services])];
     setPaidServices(updatedServices);
-    
-    if (updatedServices.length >= catalogServiceIdsRef.current.length) {
-      setShowBillingPanel(false);
-    }
-    
+    setShowBillingPanel(false);
     setShowInvoice(true);
     
     if (onPaymentSuccess) {
