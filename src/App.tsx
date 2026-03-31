@@ -15,6 +15,7 @@ import { TestEnvironmentProvider } from '@/hooks/useTestEnvironment';
 import TestEnvironmentBanner from '@/components/TestEnvironmentBanner';
 import React, { Suspense } from "react";
 import { Loader2 } from "lucide-react";
+import { Navigate } from "react-router-dom";
 
 // Eagerly loaded pages
 import Index from "./pages/Index";
