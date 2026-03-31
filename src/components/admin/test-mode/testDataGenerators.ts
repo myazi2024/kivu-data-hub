@@ -786,7 +786,7 @@ export const generateBuildingPermits = async (
   return data ?? [];
 };
 
-// ─── Step 16: Certificates — 10 total (2/province) ──────────────────────────
+// ─── Step 16: Certificates — 52 total (2/province) ─────────────────────────
 
 export const generateCertificates = async (
   parcelNumbers: string[],
@@ -794,7 +794,7 @@ export const generateCertificates = async (
   userId?: string
 ) => {
   const CERT_TYPES = ['titre_foncier', 'mutation_fonciere', 'certificat_enregistrement', 'titre_foncier', 'mutation_fonciere'];
-  const selectedParcels = parcelNumbers.filter((_, i) => i % 10 === 2).slice(0, 10);
+  const selectedParcels = parcelNumbers.filter((_, i) => i % 10 === 2).slice(0, PROVINCES.length * 2);
 
   const records = selectedParcels.map((pn, i) => ({
     reference_number: `TEST-CERT-${String(i + 1).padStart(3, '0')}-${suffix}`,
