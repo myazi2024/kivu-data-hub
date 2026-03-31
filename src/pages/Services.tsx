@@ -9,8 +9,10 @@ import {
   Map, 
   FileText, 
   Scale, 
-  Receipt, 
-  ShieldCheck 
+  Home,
+  ArrowRightLeft,
+  ShieldCheck,
+  History
 } from 'lucide-react';
 
 const Services = () => {
@@ -40,8 +42,20 @@ const Services = () => {
     },
     {
       icon: FileText,
-      title: "Fiche parcellaire",
-      description: "Consultez les informations détaillées d'une parcelle : propriétaire, superficie, titre",
+      title: "Demande de titre foncier",
+      description: "Soumettez une demande de titre foncier initial ou de renouvellement en ligne",
+      variant: "primary"
+    },
+    {
+      icon: Home,
+      title: "Expertise immobilière",
+      description: "Demandez une expertise officielle pour évaluer la valeur d'un bien immobilier",
+      variant: "secondary"
+    },
+    {
+      icon: ArrowRightLeft,
+      title: "Demande de mutation",
+      description: "Initiez une procédure de transfert de propriété foncière",
       variant: "accent"
     },
     {
@@ -51,15 +65,15 @@ const Services = () => {
       variant: "primary"
     },
     {
-      icon: Receipt,
-      title: "Contributions cadastrales",
-      description: "Historique des paiements et contributions liés à une parcelle",
+      icon: ShieldCheck,
+      title: "Vérifier hypothèque",
+      description: "Vérifiez si une parcelle est grevée d'une hypothèque avant toute transaction",
       variant: "secondary"
     },
     {
-      icon: ShieldCheck,
-      title: "Certificat cadastral",
-      description: "Obtenez un certificat officiel avec les données cadastrales vérifiées",
+      icon: History,
+      title: "Historique fiscal",
+      description: "Consultez l'historique des taxes et obligations fiscales liées à une parcelle",
       variant: "accent"
     }
   ];
