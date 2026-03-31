@@ -238,7 +238,7 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
   return allInserted;
 };
 
-// ─── Step 2: Generate ~30 invoices (30% of parcels) ───────────────────────────
+// ─── Step 2: Generate invoices (~30% of parcels) ──────────────────────────────
 
 export const generateInvoices = async (userId: string, parcelNumbers: string[]) => {
   const SERVICES_POOL: Json[][] = [
