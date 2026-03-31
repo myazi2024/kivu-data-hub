@@ -170,7 +170,7 @@ function generateA4InvoicePDF(
   
   doc.setFontSize(8);
   doc.setTextColor(127, 140, 141);
-  doc.text("Bureau de l'Immobilier du Congo", margin + 20, cursorY);
+  doc.text("Bureau d'Informations Cadastrales", margin + 20, cursorY);
   
   // Date et numéro à droite
   doc.text(`${new Date(invoice.search_date).toLocaleDateString('fr-FR')}`, pageWidth - margin, cursorY, { align: 'right' });
