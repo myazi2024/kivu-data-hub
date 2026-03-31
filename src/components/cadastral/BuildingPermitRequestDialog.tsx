@@ -224,7 +224,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     }
 
     // Step 2b: Test mode — simulate payment
-    if (isTestModeActive && paymentMethod === 'test_simulation') {
+    if (isTestModeActive && isTestSimulation) {
       try {
         // Create a test transaction
         const { data: txn } = await supabase
