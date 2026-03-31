@@ -30,7 +30,7 @@ const Footer = () => {
             <div className="flex items-center space-x-2 mb-2">
               <img src={bicLogo} alt="BIC" className="h-6 w-6 brightness-0 invert" />
               <div>
-                <h3 className="text-sm font-bold leading-tight">Bureau de l'Immobilier du Congo</h3>
+                <h3 className="text-sm font-bold leading-tight">Bureau d'Informations Cadastrales</h3>
                 <p className="text-primary text-xs font-semibold">BIC</p>
               </div>
             </div>
