@@ -430,7 +430,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
               onPay={handlePayment} onBack={() => setStep('preview')}
               onCancelPayment={() => { abortControllerRef.current?.abort(); setProcessingPayment(false); }}
               isTestModeActive={isTestModeActive}
-              onTestPay={() => { setPaymentMethod('test_simulation' as any); setTimeout(() => handlePayment(), 0); }}
+              onTestPay={() => { setIsTestSimulation(true); setTimeout(() => handlePayment(), 0); }}
             />
           )}
           {step === 'confirmation' && (
