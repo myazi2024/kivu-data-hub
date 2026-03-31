@@ -860,7 +860,7 @@ export const generateMutationRequests = async (
   const selected = parcels.filter((_, i) => i % 10 === 4).slice(0, PROVINCES.length * 2);
 
   const records = selected.map((p, i) => {
-    const status = MUT_STATUSES[i];
+    const status = pick(MUT_STATUSES, i);
     return {
       reference_number: `TEST-MUT-${String(i + 1).padStart(3, '0')}-${suffix}`,
       parcel_number: p.parcel_number,
