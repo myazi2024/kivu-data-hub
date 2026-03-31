@@ -40,6 +40,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
   const isMobile = useIsMobile();
   const { isPaymentRequired } = usePaymentConfig();
   const { providers: availableProviders } = usePaymentProviders();
+  const { isTestModeActive } = useTestMode();
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const [showIntro, setShowIntro] = useState(true);
