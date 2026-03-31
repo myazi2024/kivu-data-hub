@@ -273,7 +273,7 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
       property_category: pick(PROPERTY_CATEGORIES, idx),
       title_reference_number: `REF-${prov.province.substring(0, 3).toUpperCase()}-${String(idx).padStart(4, '0')}`,
       title_issue_date: randomDateInPast(10),
-      house_number: idx % 2 === 0 ? String(randInt(1, 200)) : null,
+      house_number: houseNumber,
       floor_number: constructionNature ? String(randInt(0, 3)) : null,
       apartment_number: idx % 15 === 0 ? `A${randInt(1, 20)}` : null,
       whatsapp_number: `+243${randInt(810000000, 899999999)}`,
