@@ -33,7 +33,7 @@ const UserDashboard = React.lazy(() => import("./pages/UserDashboard"));
 const ResellerDashboard = React.lazy(() => import("./pages/ResellerDashboard"));
 const About = React.lazy(() => import("./pages/About"));
 const Services = React.lazy(() => import("./pages/Services"));
-const Contact = React.lazy(() => import("./pages/Contact"));
+
 const Partnership = React.lazy(() => import("./pages/Partnership"));
 const Legal = React.lazy(() => import("./pages/Legal"));
 const Articles = React.lazy(() => import("./pages/Articles"));
