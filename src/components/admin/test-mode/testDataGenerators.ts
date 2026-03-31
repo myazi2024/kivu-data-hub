@@ -816,7 +816,7 @@ export const generateCertificates = async (
   return data ?? [];
 };
 
-// ─── Step 17a: Mutation requests — 10 total (2/province) ────────────────────
+// ─── Step 17a: Mutation requests — 52 total (2/province) ────────────────────
 
 export const generateMutationRequests = async (
   userId: string,
@@ -825,7 +825,7 @@ export const generateMutationRequests = async (
 ) => {
   const MUT_TYPES = ['vente', 'donation', 'succession', 'vente', 'donation'];
   const MUT_STATUSES = ['pending', 'approved', 'rejected', 'pending', 'approved', 'pending', 'rejected', 'approved', 'pending', 'approved'];
-  const selected = parcels.filter((_, i) => i % 10 === 4).slice(0, 10);
+  const selected = parcels.filter((_, i) => i % 10 === 4).slice(0, PROVINCES.length * 2);
 
   const records = selected.map((p, i) => {
     const status = MUT_STATUSES[i];
