@@ -192,7 +192,7 @@ Deno.serve(async (req) => {
               type: "success",
               title: "Paiement mutation confirmé",
               message: "Votre paiement de mutation a été confirmé et la demande est en cours d'examen.",
-              action_url: "/user-dashboard?tab=mutations",
+              action_url: "/mon-compte?tab=mutations",
             });
           }
         } else if (paymentType === "publications") {

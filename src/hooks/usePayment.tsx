@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { CartItem } from '@/hooks/useCart';
 import { usePaymentConfig } from '@/hooks/usePaymentConfig';
+import { pollTransactionStatus } from '@/utils/pollTransactionStatus';
 
 export interface PaymentData {
   provider: string;
@@ -19,7 +20,6 @@ export const usePayment = () => {
   const { paymentMode, availableMethods } = usePaymentConfig();
 
   const createPayment = async (item: CartItem, paymentData: PaymentData) => {
-    // SECURITY: Vérifier l'authentification pour tous les paiements
     if (!user) {
       toast({
         title: "Erreur d'authentification",
@@ -33,12 +33,10 @@ export const usePayment = () => {
       setLoading(true);
       setPaymentStep('processing');
 
-      // Vérifier si Mobile Money est configuré
       if (!availableMethods.hasMobileMoney) {
         throw new Error('Aucun moyen de paiement Mobile Money configuré');
       }
 
-      // Appeler la fonction edge de paiement Mobile Money
       const { data: paymentResult, error: paymentError } = await supabase.functions.invoke(
         'process-mobile-money-payment',
         {
@@ -58,61 +56,55 @@ export const usePayment = () => {
         throw new Error(paymentResult.error || 'Payment failed');
       }
 
-      // Poll transaction status
       const transactionId = paymentResult.transaction_id;
-      let attempts = 0;
-      const maxAttempts = 20;
-      
-      while (attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        const { data: transaction } = await supabase
-          .from('payment_transactions')
-          .select('status, transaction_reference')
-          .eq('id', transactionId)
-          .single();
+      const result = await pollTransactionStatus(transactionId);
 
-        if (transaction?.status === 'completed') {
-          // Create payment record for compatibility
-          const { data: paymentRecord } = await supabase
-            .from('payments')
-            .insert({
-              user_id: user.id,
-              publication_id: item.id,
-              amount_usd: item.price,
-              payment_method: 'mobile_money',
-              payment_provider: paymentData.provider,
-              phone_number: paymentData.phoneNumber,
-              status: 'completed',
-              transaction_id: transaction.transaction_reference
-            })
-            .select()
-            .single();
-
-          // Create download access
-          await supabase
-            .from('publication_downloads')
-            .insert({
-              user_id: user.id,
-              publication_id: item.id,
-              payment_id: paymentRecord.id
-            });
-
-          setPaymentStep('success');
-          toast({
-          title: "Paiement réussi",
-          description: "Votre publication est maintenant disponible"
-        });
-
-          return paymentRecord;
-        } else if (transaction?.status === 'failed') {
-          throw new Error('Payment failed');
-        }
-        
-        attempts++;
+      if (result === 'failed') throw new Error('Le paiement a échoué');
+      if (result === 'timeout') throw new Error('Délai de paiement dépassé');
+      if (result === 'aborted') {
+        setPaymentStep('form');
+        return null;
       }
 
-      throw new Error('Payment timeout - please check your transaction status');
+      // Fetch transaction reference for the completed payment
+      const { data: transaction } = await supabase
+        .from('payment_transactions')
+        .select('transaction_reference')
+        .eq('id', transactionId)
+        .single();
+
+      // Create payment record for compatibility
+      const { data: paymentRecord } = await supabase
+        .from('payments')
+        .insert({
+          user_id: user.id,
+          publication_id: item.id,
+          amount_usd: item.price,
+          payment_method: 'mobile_money',
+          payment_provider: paymentData.provider,
+          phone_number: paymentData.phoneNumber,
+          status: 'completed',
+          transaction_id: transaction?.transaction_reference || transactionId
+        })
+        .select()
+        .single();
+
+      // Create download access
+      await supabase
+        .from('publication_downloads')
+        .insert({
+          user_id: user.id,
+          publication_id: item.id,
+          payment_id: paymentRecord.id
+        });
+
+      setPaymentStep('success');
+      toast({
+        title: "Paiement réussi",
+        description: "Votre publication est maintenant disponible"
+      });
+
+      return paymentRecord;
 
     } catch (error: any) {
       console.error('Erreur de paiement:', error);
@@ -132,12 +124,10 @@ export const usePayment = () => {
     try {
       setLoading(true);
       
-      // Vérifier si Stripe est configuré
       if (!availableMethods.hasBankCard) {
         throw new Error('Aucun moyen de paiement par carte bancaire configuré');
       }
       
-      // SECURITY: Send only item IDs, prices will be fetched from database
       const itemIds = items.map(item => item.id);
       
       const { data, error } = await supabase.functions.invoke('create-payment', {
