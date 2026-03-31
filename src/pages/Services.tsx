@@ -82,8 +82,8 @@ const Services = () => {
                 Nos Services
               </h1>
               <p className="text-sm sm:text-base text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-                Nos outils et livrables sont conçus pour répondre aux enjeux urbains concrets. 
-                Nous proposons des solutions adaptées aux besoins des territoires congolais.
+                Accédez aux informations cadastrales de n'importe quelle propriété en RDC. 
+                Nos services numériques vous permettent de consulter, vérifier et documenter les données foncières en quelques clics.
               </p>
             </div>
           )}
