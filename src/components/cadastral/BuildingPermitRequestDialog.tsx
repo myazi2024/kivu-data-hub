@@ -222,6 +222,39 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
       return;
     }
 
+    // Step 2b: Test mode — simulate payment
+    if (isTestModeActive && paymentMethod === 'test_simulation') {
+      try {
+        // Create a test transaction
+        const { data: txn } = await supabase
+          .from('payment_transactions')
+          .insert({
+            user_id: user.id,
+            payment_method: 'TEST',
+            provider: 'TEST_SIMULATION',
+            amount_usd: form.totalFeeUSD,
+            currency_code: 'USD',
+            status: 'completed',
+            transaction_reference: `TEST-PERMIT-${Date.now()}`,
+          })
+          .select('id')
+          .single();
+
+        const contributionId = await savePermitRequest(uploadedUrls, txn?.id);
+        setSavedContributionId(contributionId);
+        setSavedTransactionId(txn?.id || null);
+        form.clearDraft();
+        setStep('confirmation');
+        toast({ title: "Paiement test simulé", description: "Demande enregistrée (mode test)" });
+      } catch (err: any) {
+        await cleanupUploadedFiles(uploadedUrls);
+        toast({ title: 'Erreur', description: err.message, variant: 'destructive' });
+      } finally {
+        setProcessingPayment(false);
+      }
+      return;
+    }
+
     // Step 3: Process Mobile Money payment
     abortControllerRef.current?.abort();
     const controller = new AbortController();
