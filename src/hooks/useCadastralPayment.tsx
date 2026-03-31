@@ -59,6 +59,7 @@ export const useCadastralPayment = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { selectedServices, parcelNumber, clearServices } = useCadastralCart();
+  const { isTestModeActive } = useTestMode();
   const { paymentMode, availableMethods, isPaymentRequired } = usePaymentConfig();
 
   const pollingAbortRef = useRef<AbortController | null>(null);
