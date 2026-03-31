@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import PhoneNumberInput from '@/components/ui/phone-number-input';
-import { ArrowLeft, CreditCard, Loader2, Smartphone, Shield } from 'lucide-react';
+import { ArrowLeft, CreditCard, Loader2, Smartphone, Shield, FlaskConical } from 'lucide-react';
 import { PaymentProvider } from './types';
 
 interface PermitPaymentStepProps {
@@ -23,6 +23,8 @@ interface PermitPaymentStepProps {
   onPay: () => void;
   onBack: () => void;
   onCancelPayment: () => void;
+  isTestModeActive?: boolean;
+  onTestPay?: () => void;
 }
 
 const PermitPaymentStep: React.FC<PermitPaymentStepProps> = ({
