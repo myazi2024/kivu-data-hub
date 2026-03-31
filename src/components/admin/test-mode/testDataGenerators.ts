@@ -165,14 +165,16 @@ export const generateParcels = async (parcelNumbers: string[]) => {
     const constructionNature = pick(CONSTRUCTION_NATURES, idx);
     const ownerSinceDate = randomDateInPast(10);
 
-    const sideN = randInt(10, 50), sideS = randInt(10, 50), sideE = randInt(10, 50), sideO = randInt(10, 50);
+    const areaSqm = seededInt(idx * 7 + 1, 200, 5000);
+    const sideN = seededInt(idx * 7 + 2, 10, 50), sideS = seededInt(idx * 7 + 3, 10, 50), sideE = seededInt(idx * 7 + 4, 10, 50), sideO = seededInt(idx * 7 + 5, 10, 50);
+    const houseNumber = idx % 2 === 0 ? String(seededInt(idx * 7 + 6, 1, 200)) : null;
 
     return {
       parcel_number: pn,
       parcel_type: parcelType,
       property_title_type: pick(TITLE_TYPES, idx),
       location: `${prov.quartier}, ${prov.commune}`,
-      area_sqm: randInt(200, 5000),
+      area_sqm: areaSqm,
       current_owner_name: `Test ${pick(OWNER_NAMES, idx)}`,
       current_owner_since: ownerSinceDate,
       current_owner_legal_status: pick(LEGAL_STATUSES, idx),
