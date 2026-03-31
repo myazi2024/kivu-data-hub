@@ -93,7 +93,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   const { paymentMode, isPaymentRequired, availableMethods } = usePaymentConfig();
   const { services: catalogServices, loading: catalogLoading, error: catalogError } = useCadastralServices();
   const { selectedServices, addService, addServices, removeService, toggleService, getTotalAmount, setParcelNumber, isSelected, updateServicePrices } = useCadastralCart();
-  const { loading, createInvoice, processMobileMoneyPayment, processStripePayment, paymentStep, resetPaymentState } = useCadastralPayment();
+  const { loading, createInvoice, processMobileMoneyPayment, processStripePayment, processTestPayment, paymentStep, resetPaymentState } = useCadastralPayment();
   const { currencies, selectedCurrency, setSelectedCurrency, convertFromUsd, exchangeRate } = useCurrencyConfig();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
