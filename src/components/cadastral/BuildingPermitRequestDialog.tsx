@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { usePaymentConfig } from '@/hooks/usePaymentConfig';
 import { usePaymentProviders } from '@/hooks/usePaymentProviders';
+import { useTestMode } from '@/hooks/useTestMode';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { Building2 } from 'lucide-react';
