@@ -537,13 +537,18 @@ export const generateDisputes = async (parcelNumbers: string[], suffix: string, 
     };
   });
 
-  const { data, error } = await supabase
-    .from('cadastral_land_disputes')
-    .insert(records)
-    .select('id');
-
-  if (error) throw new Error(`Litiges: ${error.message}`);
-  return assertInserted(data, 'Litiges');
+  // Insert in batches
+  const allInserted: Array<{ id: string }> = [];
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { data, error } = await supabase
+      .from('cadastral_land_disputes')
+      .insert(batch)
+      .select('id');
+    if (error) throw new Error(`Litiges (batch ${i}): ${error.message}`);
+    allInserted.push(...assertInserted(data, 'Litiges'));
+  }
+  return allInserted;
 };
 
 // ─── Step 8: Contributor codes — ~30 (30% of contributions) ──────────────────
