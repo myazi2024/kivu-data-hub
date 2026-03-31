@@ -673,7 +673,11 @@ export const generateExpertisePayments = async (userId: string, expertiseRequest
 export const generateDisputes = async (parcelNumbers: string[], suffix: string, userId?: string) => {
   const DISPUTE_NATURES = ['delimitation', 'double_vente', 'occupation_illegale', 'succession', 'delimitation'];
   const DISPUTE_STATUSES = ['en_cours', 'resolu', 'demande_levee', 'en_cours', 'resolu', 'en_cours', 'demande_levee', 'resolu', 'en_cours', 'resolu'];
+  const DISPUTE_TYPES = ['report', 'lifting', 'mediation', 'report', 'lifting'];
   const QUALITIES = ['proprietaire', 'occupant', 'heritier', 'mandataire', 'proprietaire'];
+  const LIFTING_STATUSES = ['en_cours', 'approved', 'rejected', 'pending'];
+  const LIFTING_REASONS = ['conciliation_reussie', 'decision_justice', 'accord_parties'];
+  const RESOLUTION_LEVELS = ['conciliation_amiable', 'mediation_communautaire', 'tribunal_paix', 'tribunal_grande_instance'];
 
   // Pick 2 parcels per province (52 total)
   const selectedParcels = parcelNumbers.filter((_, i) => i % 10 === 5).slice(0, PROVINCES.length * 2);
@@ -683,7 +687,7 @@ export const generateDisputes = async (parcelNumbers: string[], suffix: string, 
     return {
       reference_number: `TEST-DISP-${String(i + 1).padStart(3, '0')}-${suffix}`,
       parcel_number: pn,
-      dispute_type: 'report',
+      dispute_type: pick(DISPUTE_TYPES, i),
       dispute_nature: pick(DISPUTE_NATURES, i),
       declarant_name: `Test Déclarant ${i + 1}`,
       declarant_quality: pick(QUALITIES, i),
@@ -693,10 +697,10 @@ export const generateDisputes = async (parcelNumbers: string[], suffix: string, 
       reported_by: userId ?? null,
       dispute_start_date: randomDateInPast(8),
       dispute_description: `Litige de test #${i + 1}: ${pick(DISPUTE_NATURES, i)}`,
-      resolution_level: status === 'resolu' ? 'conciliation_amiable' : null,
+      resolution_level: pick(RESOLUTION_LEVELS, i),
       resolution_details: status === 'resolu' ? 'Résolu à l\'amiable (données de test)' : null,
-      lifting_status: status === 'demande_levee' ? 'en_cours' : null,
-      lifting_reason: status === 'demande_levee' ? 'conciliation_reussie' : null,
+      lifting_status: status === 'demande_levee' ? pick(LIFTING_STATUSES, i) : null,
+      lifting_reason: status === 'demande_levee' ? pick(LIFTING_REASONS, i) : null,
       lifting_request_reference: status === 'demande_levee' ? `TEST-LEV-${String(i + 1).padStart(3, '0')}-${suffix}` : null,
       parties_involved: [
         { name: `Test Partie ${i * 2 + 1}`, role: 'demandeur' },
