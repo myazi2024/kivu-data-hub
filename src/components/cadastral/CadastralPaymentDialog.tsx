@@ -67,7 +67,9 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
   const [isAnimating, setIsAnimating] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'mobile_money' | 'bank_card'>('mobile_money');
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [isProcessingTestPayment, setIsProcessingTestPayment] = useState(false);
   const { toast } = useToast();
+  const { isTestModeActive } = useTestMode();
 
   const displayAmount = invoice.total_amount_usd * exchangeRate;
   const displayFormatted = formatCurrency(displayAmount, selectedCurrency);
