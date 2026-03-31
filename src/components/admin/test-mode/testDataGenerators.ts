@@ -224,14 +224,23 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
     allInserted.push(...assertInserted(data, 'Contributions'));
   }
 
-  // Now update non-pending statuses
+  // Now update non-pending statuses — grouped by status to avoid N+1 queries
+  const statusGroups: Record<string, string[]> = {};
   for (let i = 0; i < allInserted.length; i++) {
     const finalStatus = pick(STATUSES_CYCLE, i);
     if (finalStatus !== 'pending') {
+      if (!statusGroups[finalStatus]) statusGroups[finalStatus] = [];
+      statusGroups[finalStatus].push(allInserted[i].id);
+    }
+  }
+  for (const [status, ids] of Object.entries(statusGroups)) {
+    // Batch the .in() calls in chunks of 200 to stay under Supabase limits
+    for (let i = 0; i < ids.length; i += 200) {
+      const chunk = ids.slice(i, i + 200);
       await supabase
         .from('cadastral_contributions')
-        .update({ status: finalStatus })
-        .eq('id', allInserted[i].id);
+        .update({ status })
+        .in('id', chunk);
     }
   }
 
@@ -302,13 +311,18 @@ export const generatePayments = async (
     created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
   }));
 
-  const { data, error } = await supabase
-    .from('payment_transactions')
-    .insert(records)
-    .select('id');
-
-  if (error) throw new Error(`Paiements: ${error.message}`);
-  return assertInserted(data, 'Paiements');
+  // Insert in batches
+  const allInserted: Array<{ id: string }> = [];
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { data, error } = await supabase
+      .from('payment_transactions')
+      .insert(batch)
+      .select('id');
+    if (error) throw new Error(`Paiements (batch ${i}): ${error.message}`);
+    allInserted.push(...assertInserted(data, 'Paiements'));
+  }
+  return allInserted;
 };
 
 // ─── Step 4: Generate service access for paid invoices ────────────────────────
@@ -332,11 +346,14 @@ export const generateServiceAccess = async (
     }));
   });
 
-  const { error } = await supabase
-    .from('cadastral_service_access')
-    .insert(records);
-
-  if (error) console.error('Accès services (non bloquant):', error);
+  // Insert in batches
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { error } = await supabase
+      .from('cadastral_service_access')
+      .insert(batch);
+    if (error) console.error(`Accès services (batch ${i}, non bloquant):`, error);
+  }
 };
 
 // ─── Step 5: Title requests — 52 total (2/province) ─────────────────────────
@@ -520,13 +537,18 @@ export const generateDisputes = async (parcelNumbers: string[], suffix: string, 
     };
   });
 
-  const { data, error } = await supabase
-    .from('cadastral_land_disputes')
-    .insert(records)
-    .select('id');
-
-  if (error) throw new Error(`Litiges: ${error.message}`);
-  return assertInserted(data, 'Litiges');
+  // Insert in batches
+  const allInserted: Array<{ id: string }> = [];
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { data, error } = await supabase
+      .from('cadastral_land_disputes')
+      .insert(batch)
+      .select('id');
+    if (error) throw new Error(`Litiges (batch ${i}): ${error.message}`);
+    allInserted.push(...assertInserted(data, 'Litiges'));
+  }
+  return allInserted;
 };
 
 // ─── Step 8: Contributor codes — ~30 (30% of contributions) ──────────────────
@@ -549,13 +571,18 @@ export const generateContributorCodes = async (
     expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
   }));
 
-  const { data, error } = await supabase
-    .from('cadastral_contributor_codes')
-    .insert(records)
-    .select('id');
-
-  if (error) throw new Error(`Codes CCC: ${error.message}`);
-  return assertInserted(data, 'Codes CCC');
+  // Insert in batches
+  const allInserted: Array<{ id: string }> = [];
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { data, error } = await supabase
+      .from('cadastral_contributor_codes')
+      .insert(batch)
+      .select('id');
+    if (error) throw new Error(`Codes CCC (batch ${i}): ${error.message}`);
+    allInserted.push(...assertInserted(data, 'Codes CCC'));
+  }
+  return allInserted;
 };
 
 // ─── Step 9: Fraud attempts — 52 (2/province) ───────────────────────────────
@@ -833,7 +860,7 @@ export const generateMutationRequests = async (
   const selected = parcels.filter((_, i) => i % 10 === 4).slice(0, PROVINCES.length * 2);
 
   const records = selected.map((p, i) => {
-    const status = MUT_STATUSES[i];
+    const status = pick(MUT_STATUSES, i);
     return {
       reference_number: `TEST-MUT-${String(i + 1).padStart(3, '0')}-${suffix}`,
       parcel_number: p.parcel_number,
@@ -883,7 +910,7 @@ export const generateSubdivisionRequests = async (
     const numLots = randInt(2, 5);
     const parentArea = randInt(800, 3000);
     const lotArea = Math.floor(parentArea / numLots);
-    const status = SUB_STATUSES[i];
+    const status = pick(SUB_STATUSES, i);
 
     return {
       reference_number: `TEST-SUB-${String(i + 1).padStart(3, '0')}-${suffix}`,

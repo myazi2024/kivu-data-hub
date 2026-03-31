@@ -119,7 +119,7 @@ const AdminTestMode: React.FC = () => {
       await refreshConfiguration();
       await refreshStats();
 
-      if (wasJustEnabled) {
+      if (wasJustEnabled && total === 0) {
         generateTestData();
       }
     } catch (error: unknown) {
