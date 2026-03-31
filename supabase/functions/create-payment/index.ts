@@ -291,7 +291,7 @@ Deno.serve(async (req) => {
     let successUrl: string;
     let cancelUrl: string;
 
-    if (payment_type === 'expertise_fee' || payment_type === 'certificate_access' || payment_type === 'mutation_request') {
+    if (payment_type === 'expertise_fee' || payment_type === 'certificate_access' || payment_type === 'mutation_request' || payment_type === 'permit_request' || payment_type === 'mortgage_cancellation' || payment_type === 'land_title_request') {
       successUrl = `${origin}/cadastral-map?payment=success&type=${payment_type}&session_id={CHECKOUT_SESSION_ID}`;
       cancelUrl = `${origin}/cadastral-map?payment=cancelled`;
     } else if (payment_type === 'cadastral_service') {
