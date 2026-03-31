@@ -142,7 +142,7 @@ BEGIN
     'Vous avez reçu un code CCC d''une valeur de ' || NEW.value_usd || ' USD valable jusqu''au ' || 
     TO_CHAR(NEW.expires_at, 'DD/MM/YYYY') || '. Code: ' || NEW.code,
     'success',
-    '/myazi?tab=codes'
+    '/tableau-de-bord?tab=codes'
   );
   RETURN NEW;
 END;
