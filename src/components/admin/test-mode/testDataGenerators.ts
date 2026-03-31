@@ -1042,7 +1042,7 @@ export const generateCertificates = async (
   return data ?? [];
 };
 
-// ─── Step 17a: Mutation requests — 52 total (2/province) ────────────────────
+// ─── Step 17a: Mutation requests — 52 total (2/province) — enriched ─────────
 
 export const generateMutationRequests = async (
   userId: string,
@@ -1051,10 +1051,12 @@ export const generateMutationRequests = async (
 ) => {
   const MUT_TYPES = ['vente', 'donation', 'succession', 'vente', 'donation'];
   const MUT_STATUSES = ['pending', 'approved', 'rejected', 'pending', 'approved', 'pending', 'rejected', 'approved', 'pending', 'approved'];
+  const TITLE_AGES = ['less_than_10', '10_or_more'];
   const selected = parcels.filter((_, i) => i % 10 === 4).slice(0, PROVINCES.length * 2);
 
   const records = selected.map((p, i) => {
     const status = pick(MUT_STATUSES, i);
+    const hasLateFee = i % 3 === 0;
     return {
       reference_number: `TEST-MUT-${String(i + 1).padStart(3, '0')}-${suffix}`,
       parcel_number: p.parcel_number,
@@ -1068,8 +1070,15 @@ export const generateMutationRequests = async (
       total_amount_usd: randInt(80, 200),
       market_value_usd: randInt(10000, 80000),
       mutation_fee_amount: randInt(40, 100),
+      late_fee_amount: hasLateFee ? randInt(10, 50) : null,
+      title_age: pick(TITLE_AGES, i),
       user_id: userId,
-      proposed_changes: { new_owner_name: `Test Nouveau Propriétaire ${i + 1}`, new_owner_legal_status: pick(LEGAL_STATUSES, i) } as unknown as Json,
+      proposed_changes: {
+        new_owner_name: `Test Nouveau Propriétaire ${i + 1}`,
+        new_owner_legal_status: pick(LEGAL_STATUSES, i),
+        title_age: pick(TITLE_AGES, i),
+        ...(hasLateFee ? { late_fees: { fee: randInt(10, 50), reason: 'Retard de mutation' } } : {}),
+      } as unknown as Json,
       fee_items: [
         { fee_name: 'Frais de dossier', amount_usd: 83, is_mandatory: true },
         ...(i % 2 === 0 ? [{ fee_name: 'Frais de mutation', amount_usd: 83, is_mandatory: true }] : []),
