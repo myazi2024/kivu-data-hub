@@ -174,7 +174,7 @@ const Legal = () => {
                     <li>• Droit d'opposition au traitement</li>
                   </ul>
                   <p className="text-muted-foreground leading-relaxed mt-3">
-                    Pour exercer ces droits, contactez-nous à : contact@bic.myazi.net.org
+                    Pour exercer ces droits, contactez-nous à : contact@bic.cd
                   </p>
                 </div>
 
