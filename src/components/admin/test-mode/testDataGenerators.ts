@@ -239,8 +239,10 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
     const isSR = localIdx >= Math.floor(count * 0.75);
     const ownerName = pick(OWNER_NAMES, idx);
     const ownerParts = ownerName.split(' ');
-    const constructionYear = constructionNature ? randInt(1990, 2024) : null;
-    const sideN = randInt(10, 50), sideS = randInt(10, 50), sideE = randInt(10, 50), sideO = randInt(10, 50);
+    const constructionYear = constructionNature ? seededInt(idx * 11 + 1, 1990, 2024) : null;
+    const areaSqm = seededInt(idx * 7 + 1, 200, 5000);
+    const sideN = seededInt(idx * 7 + 2, 10, 50), sideS = seededInt(idx * 7 + 3, 10, 50), sideE = seededInt(idx * 7 + 4, 10, 50), sideO = seededInt(idx * 7 + 5, 10, 50);
+    const houseNumber = idx % 2 === 0 ? String(seededInt(idx * 7 + 6, 1, 200)) : null;
 
     return {
       parcel_number: pn,
