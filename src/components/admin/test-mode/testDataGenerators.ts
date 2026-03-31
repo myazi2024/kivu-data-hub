@@ -835,12 +835,12 @@ export const generateBoundaryConflicts = async (parcelNumbers: string[], userId?
   return data ?? [];
 };
 
-// ─── Step 11: Ownership history — 20 parcels × 2 owners ─────────────────────
+// ─── Step 11: Ownership history — ~15% parcels × 2 owners ──────────────────
 
 export const generateOwnershipHistory = async (
   parcels: Array<{ id: string; parcel_number: string }>
 ) => {
-  const selected = parcels.filter((_, i) => i % 5 === 0); // 20 parcels
+  const selected = parcels.filter((_, i) => i % 7 === 0); // ~15%
   const MUTATION_TYPES = ['Vente', 'Donation', 'Succession', 'Vente', 'Donation'];
 
   const records = selected.flatMap((p, i) => {
@@ -866,13 +866,18 @@ export const generateOwnershipHistory = async (
     ];
   });
 
-  const { data, error } = await supabase
-    .from('cadastral_ownership_history')
-    .insert(records)
-    .select('id');
-
-  if (error) console.error('Historique propriété (non-bloquant):', error);
-  return data ?? [];
+  // Insert in batches
+  const allInserted: Array<{ id: string }> = [];
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { data, error } = await supabase
+      .from('cadastral_ownership_history')
+      .insert(batch)
+      .select('id');
+    if (error) console.error(`Historique propriété (batch ${i}, non-bloquant):`, error);
+    if (data) allInserted.push(...data);
+  }
+  return allInserted;
 };
 
 // ─── Step 12: Tax history — 20 parcels × 3 years ────────────────────────────
