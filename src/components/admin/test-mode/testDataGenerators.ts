@@ -346,11 +346,14 @@ export const generateServiceAccess = async (
     }));
   });
 
-  const { error } = await supabase
-    .from('cadastral_service_access')
-    .insert(records);
-
-  if (error) console.error('Accès services (non bloquant):', error);
+  // Insert in batches
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { error } = await supabase
+      .from('cadastral_service_access')
+      .insert(batch);
+    if (error) console.error(`Accès services (batch ${i}, non bloquant):`, error);
+  }
 };
 
 // ─── Step 5: Title requests — 52 total (2/province) ─────────────────────────
