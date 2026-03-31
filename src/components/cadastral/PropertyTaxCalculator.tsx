@@ -210,14 +210,14 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
         throw error;
       }
 
-      // Fire-and-forget notification
+      // Fire-and-forget notification with error logging
       supabase.from('notifications').insert({
         user_id: user.id,
         title: 'Déclaration impôt foncier',
         message: `Déclaration impôt foncier pour ${parcelNumber} (exercice ${input.fiscalYear}). Montant: ${result.grandTotal.toFixed(2)} USD.`,
         type: 'info',
-        action_url: '/user-dashboard',
-      }).then(() => {});
+        action_url: '/mon-compte',
+      }).then(({ error: e }) => { if (e) console.warn('Notification failed:', e.message); });
 
       toast.success('Déclaration soumise avec succès');
       // #3 fix: Show confirmation step instead of going back to questions

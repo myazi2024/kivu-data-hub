@@ -248,14 +248,14 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
         throw error;
       }
 
-      // Fire-and-forget notification
+      // Fire-and-forget notification with error logging
       supabase.from('notifications').insert({
         user_id: user.id,
         title: 'Déclaration taxe de bâtisse',
         message: `Déclaration taxe de bâtisse pour ${parcelNumber} (exercice ${fiscalYear}). Montant: ${calculation.totalTaxUSD.toFixed(2)} USD.`,
         type: 'info',
-        action_url: '/user-dashboard',
-      }).then(() => {});
+        action_url: '/mon-compte',
+      }).then(({ error: e }) => { if (e) console.warn('Notification failed:', e.message); });
 
       toast.success('Déclaration soumise avec succès');
       setCalcStep('confirmation');
