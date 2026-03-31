@@ -224,14 +224,23 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
     allInserted.push(...assertInserted(data, 'Contributions'));
   }
 
-  // Now update non-pending statuses
+  // Now update non-pending statuses — grouped by status to avoid N+1 queries
+  const statusGroups: Record<string, string[]> = {};
   for (let i = 0; i < allInserted.length; i++) {
     const finalStatus = pick(STATUSES_CYCLE, i);
     if (finalStatus !== 'pending') {
+      if (!statusGroups[finalStatus]) statusGroups[finalStatus] = [];
+      statusGroups[finalStatus].push(allInserted[i].id);
+    }
+  }
+  for (const [status, ids] of Object.entries(statusGroups)) {
+    // Batch the .in() calls in chunks of 200 to stay under Supabase limits
+    for (let i = 0; i < ids.length; i += 200) {
+      const chunk = ids.slice(i, i + 200);
       await supabase
         .from('cadastral_contributions')
-        .update({ status: finalStatus })
-        .eq('id', allInserted[i].id);
+        .update({ status })
+        .in('id', chunk);
     }
   }
 
