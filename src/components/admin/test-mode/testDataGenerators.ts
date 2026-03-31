@@ -400,8 +400,8 @@ export const generateExpertiseRequests = async (userId: string, parcelNumbers: s
   const EXP_STATUSES = ['pending', 'completed', 'in_progress', 'pending', 'completed', 'pending', 'in_progress', 'completed', 'pending', 'completed'];
   const ROAD_TYPES = ['asphalte', 'terre', 'piste', 'asphalte', 'terre'];
 
-  // Pick 10 parcels spread across provinces
-  const selectedParcels = parcelNumbers.filter((_, i) => i % 10 === 0).slice(0, 10);
+  // Pick 2 parcels per province (52 total)
+  const selectedParcels = parcelNumbers.filter((_, i) => i % 10 === 0).slice(0, PROVINCES.length * 2);
 
   const records = selectedParcels.map((pn, i) => ({
     reference_number: `TEST-EXP-${String(i + 1).padStart(3, '0')}-${suffix}`,
