@@ -13,12 +13,12 @@ const PartnersSection = () => {
 
   useEffect(() => {
     const fetchPartners = async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('partners')
         .select('id, name, logo_url, website_url')
         .eq('is_active', true)
         .order('display_order', { ascending: true });
-      if (data) setPartners(data);
+      if (data) setPartners(data as Partner[]);
     };
     fetchPartners();
   }, []);
