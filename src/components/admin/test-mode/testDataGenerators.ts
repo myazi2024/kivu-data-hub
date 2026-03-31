@@ -1058,13 +1058,17 @@ export const generateCertificates = async (
     generated_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
   }));
 
-  const { data, error } = await supabase
-    .from('generated_certificates')
-    .insert(records)
-    .select('id');
-
-  if (error) console.error('Certificats (non-bloquant):', error);
-  return data ?? [];
+  const allInserted: Array<{ id: string }> = [];
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { data, error } = await supabase
+      .from('generated_certificates')
+      .insert(batch)
+      .select('id');
+    if (error) console.error(`Certificats (batch ${i}, non-bloquant):`, error);
+    if (data) allInserted.push(...data);
+  }
+  return allInserted;
 };
 
 // ─── Step 17a: Mutation requests — 52 total (2/province) — enriched ─────────

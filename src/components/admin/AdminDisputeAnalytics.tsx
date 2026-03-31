@@ -109,7 +109,7 @@ const AdminDisputeAnalytics: React.FC = () => {
       const month = d.created_at.slice(0, 7);
       if (!monthMap.has(month)) monthMap.set(month, { signalements: 0, levees: 0 });
       const entry = monthMap.get(month)!;
-      if (d.dispute_type === 'levee') entry.levees++;
+      if (d.dispute_type === 'lifting') entry.levees++;
       else entry.signalements++;
     });
     const trendData = Array.from(monthMap.entries())
