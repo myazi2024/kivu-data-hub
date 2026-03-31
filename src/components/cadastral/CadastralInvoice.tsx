@@ -161,7 +161,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm p-1 md:p-4 flex items-start justify-center overflow-auto">
+    <div className="fixed inset-0 z-[1700] bg-black/80 backdrop-blur-sm p-1 md:p-4 flex items-start justify-center overflow-auto">
       <Card className="w-full max-w-xl my-1 md:my-0 md:max-h-[95vh] bg-background border shadow-2xl rounded-lg flex flex-col">
         {/* Header - Mobile optimized */}
         <CardHeader className="pb-2 md:pb-4 p-2 md:p-6">
