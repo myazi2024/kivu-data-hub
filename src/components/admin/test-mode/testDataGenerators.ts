@@ -553,7 +553,7 @@ export const generateContributorCodes = async (
   return assertInserted(data, 'Codes CCC');
 };
 
-// ─── Step 9: Fraud attempts — 10 (2/province) ────────────────────────────────
+// ─── Step 9: Fraud attempts — 52 (2/province) ───────────────────────────────
 
 export const generateFraudAttempts = async (
   userId: string,
