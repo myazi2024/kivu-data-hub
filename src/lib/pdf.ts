@@ -260,7 +260,7 @@ function generateA4InvoicePDF(
   doc.setTextColor(127, 140, 141);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7);
-  doc.text("BIC - Bureau de l'Immobilier du Congo", pageWidth / 2, 280, { align: 'center' });
+  doc.text("BIC - Bureau d'Informations Cadastrales", pageWidth / 2, 280, { align: 'center' });
 
   saveDocument(doc, filename || `justificatif_BIC_${formatDateForFilename()}_${invoice.invoice_number.replace(/[^0-9A-Za-z]/g, '_')}.pdf`);
 }
