@@ -1011,7 +1011,7 @@ export const generateBuildingPermits = async (
   return allInserted;
 };
 
-// ─── Step 16: Certificates — 52 total (2/province) ─────────────────────────
+// ─── Step 16: Certificates — 52 total (2/province) — varied statuses ───────
 
 export const generateCertificates = async (
   parcelNumbers: string[],
@@ -1019,6 +1019,7 @@ export const generateCertificates = async (
   userId?: string
 ) => {
   const CERT_TYPES = ['titre_foncier', 'mutation_fonciere', 'certificat_enregistrement', 'titre_foncier', 'mutation_fonciere'];
+  const CERT_STATUSES = ['generated', 'pending', 'completed', 'generated', 'completed'];
   const selectedParcels = parcelNumbers.filter((_, i) => i % 10 === 2).slice(0, PROVINCES.length * 2);
 
   const records = selectedParcels.map((pn, i) => ({
@@ -1026,7 +1027,7 @@ export const generateCertificates = async (
     certificate_type: pick(CERT_TYPES, i),
     parcel_number: pn,
     recipient_name: `Test Propriétaire ${i + 1}`,
-    status: 'generated',
+    status: pick(CERT_STATUSES, i),
     generated_by: userId ?? null,
     metadata: { test_mode: true } as unknown as Json,
     generated_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
