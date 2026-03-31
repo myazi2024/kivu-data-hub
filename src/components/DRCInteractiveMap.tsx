@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { MapPin, DollarSign, BarChart3, Info, FileText, Database, AlertTriangle, Loader2, Copy, Check, Maximize, Minimize } from 'lucide-react';
-import html2canvas from 'html2canvas';
+// html2canvas is lazy-imported in handleCopyImage
 import { toast } from 'sonner';
 import DRCMapWithTooltip from './DRCMapWithTooltip';
 
@@ -220,6 +220,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     if (!mapCardRef.current || isCopying) return;
     setIsCopying(true);
     try {
+      const html2canvas = (await import('html2canvas')).default;
       const canvas = await html2canvas(mapCardRef.current, { backgroundColor: null, scale: 2, borderRadius: 12 } as any);
       canvas.toBlob(async (blob) => {
         if (blob) {
@@ -551,7 +552,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
               <CardContent className="flex-1 p-0 overflow-hidden charts-compact text-[10px] min-h-0">
                 <div className="h-full p-1.5 sm:p-2">
                   <ProvinceDataVisualization 
-                    provinces={provincesData} 
+                    analytics={analytics!}
                     selectedProvince={selectedProvince}
                     onProvinceFilter={handleProvinceFilter}
                   />
