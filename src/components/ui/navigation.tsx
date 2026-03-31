@@ -44,7 +44,7 @@ const Navigation = () => {
             <img src={bicLogo} alt="BIC Logo" className="h-8 w-8 sm:h-10 sm:w-10" />
             <div className="flex flex-col">
               <span className="text-base sm:text-lg font-bold text-foreground">BIC</span>
-              <span className="text-xs text-muted-foreground hidden sm:block">Bureau de l'Immobilier du Congo</span>
+              <span className="text-xs text-muted-foreground hidden sm:block">Bureau d'Informations Cadastrales</span>
             </div>
           </Link>
 

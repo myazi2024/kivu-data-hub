@@ -28,9 +28,9 @@ export type { CadastralInvoice };
 
 // Informations légales complètes de BIC
 const BIC_COMPANY_INFO = {
-  name: "Bureau de l'Immobilier du Congo",
+  name: "Bureau d'Informations Cadastrales",
   abbreviation: "BIC",
-  fullLegalName: "Bureau de l'Immobilier du Congo S.A.R.L.",
+  fullLegalName: "Bureau d'Informations Cadastrales S.A.R.L.",
   address: "Avenue Patrice Lumumba, Quartier Himbi II",
   city: "Goma, Province du Nord-Kivu",
   country: "République Démocratique du Congo",
@@ -170,7 +170,7 @@ function generateA4InvoicePDF(
   
   doc.setFontSize(8);
   doc.setTextColor(127, 140, 141);
-  doc.text("Bureau de l'Immobilier du Congo", margin + 20, cursorY);
+  doc.text("Bureau d'Informations Cadastrales", margin + 20, cursorY);
   
   // Date et numéro à droite
   doc.text(`${new Date(invoice.search_date).toLocaleDateString('fr-FR')}`, pageWidth - margin, cursorY, { align: 'right' });
@@ -260,7 +260,7 @@ function generateA4InvoicePDF(
   doc.setTextColor(127, 140, 141);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7);
-  doc.text("BIC - Bureau de l'Immobilier du Congo", pageWidth / 2, 280, { align: 'center' });
+  doc.text("BIC - Bureau d'Informations Cadastrales", pageWidth / 2, 280, { align: 'center' });
 
   saveDocument(doc, filename || `justificatif_BIC_${formatDateForFilename()}_${invoice.invoice_number.replace(/[^0-9A-Za-z]/g, '_')}.pdf`);
 }
@@ -372,7 +372,7 @@ export async function generateCadastralReport(
     doc.setTextColor(0, 51, 102);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
-    doc.text("BIC - Bureau de l'Immobilier du Congo", margin, 10);
+    doc.text("BIC - Bureau d'Informations Cadastrales", margin, 10);
     
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);

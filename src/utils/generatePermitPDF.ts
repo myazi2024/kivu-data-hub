@@ -118,7 +118,7 @@ export async function generatePermitPDF(permitData: PermitData): Promise<Blob> {
   }
 
   // QR Code de vérification
-  const qrCodeData = `https://bic-rdc.com/verify-permit/${permitData.permitNumber}`;
+  const qrCodeData = `https://bic.cd/verify-permit/${permitData.permitNumber}`;
   const qrCodeImage = await QRCode.toDataURL(qrCodeData, { width: 200 });
   doc.addImage(qrCodeImage, 'PNG', pageWidth - 50, pageHeight - 70, 35, 35);
   

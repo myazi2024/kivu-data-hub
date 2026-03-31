@@ -43,7 +43,7 @@ const Legal = () => {
               <CardContent className="space-y-4">
                 <div>
                   <h3 className="font-semibold text-foreground mb-2">Dénomination sociale</h3>
-                  <p className="text-muted-foreground">Bureau de l'Immobilier du Congo (BIC)</p>
+                  <p className="text-muted-foreground">Bureau d'Informations Cadastrales (BIC)</p>
                 </div>
                 <div>
                   <h3 className="font-semibold text-foreground mb-2">Siège social</h3>
@@ -56,7 +56,7 @@ const Legal = () => {
                 <div>
                   <h3 className="font-semibold text-foreground mb-2">Contact</h3>
                   <p className="text-muted-foreground">
-                    Email : contact@bic.myazi.net.org<br />
+                    Email : contact@bic.cd<br />
                     Téléphone : +243 816 996 077
                   </p>
                 </div>
@@ -174,7 +174,7 @@ const Legal = () => {
                     <li>• Droit d'opposition au traitement</li>
                   </ul>
                   <p className="text-muted-foreground leading-relaxed mt-3">
-                    Pour exercer ces droits, contactez-nous à : contact@bic.myazi.net.org
+                    Pour exercer ces droits, contactez-nous à : contact@bic.cd
                   </p>
                 </div>
 
@@ -217,7 +217,7 @@ const Legal = () => {
                   Pour toute question concernant ces mentions légales ou nos pratiques de protection des données
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Contactez-nous à : <span className="font-medium">contact@bic.myazi.net.org</span>
+                  Contactez-nous à : <span className="font-medium">contact@bic.cd</span>
                 </p>
               </CardContent>
             </Card>

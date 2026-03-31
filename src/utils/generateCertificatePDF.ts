@@ -175,7 +175,7 @@ export async function generateCertificatePDF(options: GenerateOptions): Promise<
 
   // QR Code
   if (template.show_qr_code) {
-    const qrUrl = `https://bic-rdc.com/verify/${data.referenceNumber}`;
+    const qrUrl = `https://bic.cd/verify/${data.referenceNumber}`;
     try {
       const qrImg = await QRCode.toDataURL(qrUrl, { width: 200 });
       doc.addImage(qrImg, 'PNG', pw - 52, ph - 65, 32, 32);
