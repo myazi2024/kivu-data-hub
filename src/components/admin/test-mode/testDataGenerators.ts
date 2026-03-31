@@ -863,7 +863,7 @@ export const generateMutationRequests = async (
   return data ?? [];
 };
 
-// ─── Step 17b: Subdivision requests — 5 total (1/province) ──────────────────
+// ─── Step 17b: Subdivision requests — 26 total (1/province) ─────────────────
 
 export const generateSubdivisionRequests = async (
   userId: string,
@@ -872,7 +872,7 @@ export const generateSubdivisionRequests = async (
 ) => {
   const SUB_STATUSES = ['pending', 'approved', 'pending', 'approved', 'rejected'];
   const PURPOSES = ['Résidentielle', 'Commerciale', 'Mixte', 'Résidentielle', 'Commerciale'];
-  const selected = parcels.filter((_, i) => i % 20 === 8).slice(0, 5); // 1 per province
+  const selected = parcels.filter((_, i) => i % PARCELS_PER_PROVINCE === 8).slice(0, PROVINCES.length);
 
   const records = selected.map((p, i) => {
     const numLots = randInt(2, 5);
