@@ -551,7 +551,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
               <CardContent className="flex-1 p-0 overflow-hidden charts-compact text-[10px] min-h-0">
                 <div className="h-full p-1.5 sm:p-2">
                   <ProvinceDataVisualization 
-                    provinces={provincesData} 
+                    analytics={analytics!}
                     selectedProvince={selectedProvince}
                     onProvinceFilter={handleProvinceFilter}
                   />
