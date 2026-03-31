@@ -7,7 +7,7 @@ import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { AdminDashboardHeader } from '@/components/admin/AdminDashboardHeader';
 
 // Lazy-loaded admin components
-const AdminDashboardOverview = lazy(() => import('@/components/admin/AdminDashboardOverview'));
+const AdminDashboardOverview = lazy(() => import('@/components/admin/AdminDashboardOverview').then(m => ({ default: m.AdminDashboardOverview })));
 const AdminPublications = lazy(() => import('@/components/admin/AdminPublications'));
 const AdminPayments = lazy(() => import('@/components/admin/AdminPayments'));
 const AnalyticsDashboard = lazy(() => import('@/components/analytics/AnalyticsDashboard'));
