@@ -263,13 +263,18 @@ export const generateInvoices = async (userId: string, parcelNumbers: string[]) 
     created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
   }));
 
-  const { data, error } = await supabase
-    .from('cadastral_invoices')
-    .insert(records)
-    .select('id, parcel_number, status');
-
-  if (error) throw new Error(`Factures: ${error.message}`);
-  return assertInserted(data, 'Factures');
+  // Insert in batches
+  const allInserted: Array<{ id: string; parcel_number: string; status: string }> = [];
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { data, error } = await supabase
+      .from('cadastral_invoices')
+      .insert(batch)
+      .select('id, parcel_number, status');
+    if (error) throw new Error(`Factures (batch ${i}): ${error.message}`);
+    allInserted.push(...assertInserted(data, 'Factures'));
+  }
+  return allInserted;
 };
 
 // ─── Step 3: Generate payments for paid invoices ──────────────────────────────
