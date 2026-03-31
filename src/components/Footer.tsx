@@ -16,7 +16,7 @@ const Footer = () => {
 
   const resources = [
     { name: 'Partenariat', href: '/partnership' },
-    { name: 'Rejoignez-nous', href: '/careers' },
+    
     { name: 'Mentions légales', href: '/legal' },
   ];
 
