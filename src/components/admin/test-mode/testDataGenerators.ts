@@ -131,6 +131,8 @@ export const generateParcels = async (parcelNumbers: string[]) => {
     const constructionNature = pick(CONSTRUCTION_NATURES, idx);
     const ownerSinceDate = randomDateInPast(10);
 
+    const sideN = randInt(10, 50), sideS = randInt(10, 50), sideE = randInt(10, 50), sideO = randInt(10, 50);
+
     return {
       parcel_number: pn,
       parcel_type: parcelType,
@@ -149,7 +151,20 @@ export const generateParcels = async (parcelNumbers: string[]) => {
       construction_type: constructionNature ? pick(CONSTRUCTION_TYPES.filter(t => t !== 'Terrain nu'), idx) : 'Terrain nu',
       construction_nature: constructionNature,
       construction_year: constructionNature ? randInt(1990, 2024) : null,
+      construction_materials: constructionNature ? pick(CONSTRUCTION_MATERIALS, idx) : null,
+      standing: constructionNature ? pick(STANDINGS, idx) : null,
       lease_type: localIdx % 7 === 0 ? 'initial' : localIdx % 11 === 0 ? 'renewal' : null,
+      title_reference_number: `REF-${prov.province.substring(0, 3).toUpperCase()}-${String(idx).padStart(4, '0')}`,
+      title_issue_date: randomDateInPast(10),
+      house_number: idx % 2 === 0 ? String(randInt(1, 200)) : null,
+      whatsapp_number: `+243${randInt(810000000, 899999999)}`,
+      has_dispute: idx % 10 === 0,
+      parcel_sides: [
+        { name: 'Nord', length: String(sideN) },
+        { name: 'Sud', length: String(sideS) },
+        { name: 'Est', length: String(sideE) },
+        { name: 'Ouest', length: String(sideO) },
+      ] as unknown as Json,
       gps_coordinates: [
         { lat: prov.lat + (Math.random() - 0.5) * 0.01, lng: prov.lng + (Math.random() - 0.5) * 0.01 },
         { lat: prov.lat + (Math.random() - 0.5) * 0.01, lng: prov.lng + (Math.random() - 0.5) * 0.01 },
