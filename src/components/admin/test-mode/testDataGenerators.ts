@@ -1018,7 +1018,10 @@ export const generateSubdivisionRequests = async (
 ) => {
   const SUB_STATUSES = ['pending', 'approved', 'pending', 'approved', 'rejected'];
   const PURPOSES = ['Résidentielle', 'Commerciale', 'Mixte', 'Résidentielle', 'Commerciale'];
-  const selected = parcels.filter((_, i) => i % PARCELS_PER_PROVINCE === 8).slice(0, PROVINCES.length);
+  const selected = parcels.filter((_, i) => {
+    const info = getProvinceInfo(i);
+    return info.localIdx === 8;
+  }).slice(0, PROVINCES.length);
 
   const records = selected.map((p, i) => {
     const numLots = randInt(2, 5);
