@@ -571,13 +571,18 @@ export const generateContributorCodes = async (
     expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
   }));
 
-  const { data, error } = await supabase
-    .from('cadastral_contributor_codes')
-    .insert(records)
-    .select('id');
-
-  if (error) throw new Error(`Codes CCC: ${error.message}`);
-  return assertInserted(data, 'Codes CCC');
+  // Insert in batches
+  const allInserted: Array<{ id: string }> = [];
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { data, error } = await supabase
+      .from('cadastral_contributor_codes')
+      .insert(batch)
+      .select('id');
+    if (error) throw new Error(`Codes CCC (batch ${i}): ${error.message}`);
+    allInserted.push(...assertInserted(data, 'Codes CCC'));
+  }
+  return allInserted;
 };
 
 // ─── Step 9: Fraud attempts — 52 (2/province) ───────────────────────────────
