@@ -1,9 +1,13 @@
 
 
-# Mise à jour du texte de la section Partenaires
+# Suppression de toutes les références à "Myazi"
 
-Modifier `src/components/PartnersSection.tsx` (lignes 72-77) :
-- Remplacer le titre `Nos Partenaires` et le sous-titre `Ils nous font confiance` par un texte unique : **"Ce projet trouve écho auprès de"**
+## Fichiers concernés (4 fichiers, 5 occurrences)
 
-Le h2 contiendra le nouveau texte, et la balise `<p>` du sous-titre sera supprimée.
+| Fichier | Modification |
+|---------|-------------|
+| `src/pages/About.tsx` (l.37) | Supprimer le `<li>` "Collecte numérique via l'application Myazi" |
+| `src/pages/Careers.tsx` (l.23) | Réécrire la description du poste Développeur Mobile sans mention de Myazi → "Participez au développement des outils numériques innovants pour le secteur foncier." |
+| `src/components/admin/AdminNotifications.tsx` (l.398) | Changer le placeholder `/myazi ou https://exemple.com` → `/tableau-de-bord ou https://exemple.com` |
+| `NOTIFICATIONS_GUIDE.md` (l.120, 145, 168) | Remplacer les 3 chemins `/myazi?tab=...` → `/tableau-de-bord?tab=...` |
 
