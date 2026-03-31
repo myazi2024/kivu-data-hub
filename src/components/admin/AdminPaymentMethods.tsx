@@ -125,8 +125,8 @@ const maskBankCardFromProvider = (p: PaymentProvider): LocalBankCard => ({
 });
 
 const DEFAULT_MOBILE_MONEY: LocalMobileMoney[] = [
-  { provider_id: 'airtel', provider_name: 'Airtel Money', is_enabled: true, apiKey: '', merchantCode: '', secretKey: '' },
-  { provider_id: 'orange', provider_name: 'Orange Money', is_enabled: true, apiKey: '', merchantCode: '', secretKey: '' },
+  { provider_id: 'airtel_money', provider_name: 'Airtel Money', is_enabled: true, apiKey: '', merchantCode: '', secretKey: '' },
+  { provider_id: 'orange_money', provider_name: 'Orange Money', is_enabled: true, apiKey: '', merchantCode: '', secretKey: '' },
   { provider_id: 'mpesa', provider_name: 'M-Pesa', is_enabled: true, apiKey: '', merchantCode: '', secretKey: '' },
 ];
 
