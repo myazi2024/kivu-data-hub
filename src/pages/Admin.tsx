@@ -224,7 +224,6 @@ const Admin = () => {
       case 'partners': return <AdminPartners />;
       case 'audit-logs': return <AdminAuditLogs />;
       default: return <AdminDashboardOverview />;
-      default: return <AdminDashboardOverview />;
     }
   };
 
