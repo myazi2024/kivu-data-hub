@@ -473,18 +473,25 @@ export const generateServiceAccess = async (
   }
 };
 
-// ─── Step 5: Title requests — 52 total (2/province) ─────────────────────────
+// ─── Step 5: Title requests — ~5% of parcels (351) ──────────────────────────
 
 export const generateTitleRequests = async (userId: string, suffix: string) => {
   const FIRST_NAMES = ['Jean', 'Marie', 'Patrick', 'Chantal', 'Pierre', 'Grace', 'David', 'Sophie', 'Joseph', 'Alice'];
   const LAST_NAMES = ['Kabongo', 'Amani', 'Mwamba', 'Furaha', 'Mukendi', 'Baraka', 'Ilunga', 'Sifa', 'Ngoy', 'Mapendo'];
   const REQ_STATUSES = ['pending', 'approved', 'rejected', 'pending', 'approved', 'pending', 'rejected', 'approved', 'pending', 'approved'];
   const PAY_STATUSES = ['pending', 'paid', 'paid', 'pending', 'paid', 'pending', 'paid', 'paid', 'pending', 'paid'];
+  const REQUEST_TYPES = ['nouveau_titre', 'renouvellement', 'duplicata', 'conversion'];
+  const REQUESTER_TYPES = ['proprietaire', 'mandataire', 'heritier'];
+  const NATIONALITIES = ['RDC', 'RDC', 'RDC', 'RDC', 'RDC', 'RDC', 'RDC', 'RDC', 'Belgique', 'France'];
 
-  const totalCount = PROVINCES.length * 2; // 2 per province
+  // ~5% of total parcels, spread across provinces proportionally
+  const totalCount = Math.max(PROVINCES.length * 2, Math.round(TOTAL_PARCELS * 0.05));
   const records = Array.from({ length: totalCount }, (_, i) => {
-    const prov = PROVINCES[Math.floor(i / 2)];
+    const prov = PROVINCES[i % PROVINCES.length];
     const isRural = i % 3 === 0;
+    const status = pick(REQ_STATUSES, i);
+    const createdAt = new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000);
+    const reviewedAt = status !== 'pending' ? new Date(createdAt.getTime() + randInt(5, 60) * 24 * 3600 * 1000) : null;
     return {
       reference_number: `TEST-LTR-${String(i + 1).padStart(3, '0')}-${suffix}`,
       user_id: userId,
@@ -492,10 +499,14 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
       requester_last_name: pick(LAST_NAMES, i),
       requester_phone: `+24380000${String(10 + i).padStart(4, '0')}`,
       requester_email: `test-titre${i + 1}@example.com`,
-      requester_type: i % 3 === 0 ? 'mandataire' : 'proprietaire',
+      request_type: pick(REQUEST_TYPES, i),
+      requester_type: pick(REQUESTER_TYPES, i),
       requester_gender: i % 2 === 0 ? 'M' : 'F',
+      owner_gender: i % 3 === 0 ? 'F' : 'M',
       requester_legal_status: pick(LEGAL_STATUSES, i),
-      nationality: i % 5 === 0 ? 'Belgique' : 'RDC',
+      owner_legal_status: pick(LEGAL_STATUSES, i + 1),
+      nationality: pick(NATIONALITIES, i),
+      is_owner_same_as_requester: i % 2 === 0,
       section_type: isRural ? 'rural' : 'urbain',
       province: prov.province,
       ville: prov.ville,
@@ -503,19 +514,22 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
       quartier: isRural ? null : prov.quartier,
       territoire: isRural ? 'Kabare' : null,
       declared_usage: pick(DECLARED_USAGES, i),
-      area_sqm: randInt(200, 3000),
+      construction_type: pick(CONSTRUCTION_TYPES, i),
       construction_nature: i % 4 === 0 ? null : pick(['Durable', 'Semi-durable', 'Précaire'], i),
+      deduced_title_type: pick(TITLE_TYPES, i),
+      area_sqm: randInt(200, 3000),
       occupation_duration: pick(['moins_1_an', '1_3_ans', '3_5_ans', '5_ans_plus'], i),
       estimated_processing_days: randInt(20, 90),
-      status: pick(REQ_STATUSES, i),
-      rejection_reason: pick(REQ_STATUSES, i) === 'rejected' ? 'Documents incomplets (données de test)' : null,
+      status,
+      rejection_reason: status === 'rejected' ? 'Documents incomplets (données de test)' : null,
+      reviewed_at: reviewedAt?.toISOString() ?? null,
       payment_status: pick(PAY_STATUSES, i),
       total_amount_usd: randInt(50, 150),
       fee_items: [
         { fee_name: 'Frais de dossier', amount_usd: 50 },
         ...(i % 2 === 0 ? [{ fee_name: 'Frais de mesurage', amount_usd: 25 }] : []),
       ] as unknown as Json,
-      created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
+      created_at: createdAt.toISOString(),
     };
   });
 
