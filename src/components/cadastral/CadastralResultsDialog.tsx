@@ -97,7 +97,7 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
         <div className="sticky top-0 z-[1501] flex items-center gap-2 px-3 py-2.5 border-b bg-background/95 backdrop-blur-sm shrink-0">
           <div className="flex-1 min-w-0 pr-8" data-service-catalog>
             <h2 className="text-sm font-semibold truncate">
-              Catalogue de services
+              {paidServices.length > 0 ? 'Fiche Cadastrale' : 'Catalogue de services'}
             </h2>
             <p className="text-xs text-muted-foreground truncate">
               Parcelle <span className="font-mono">{result.parcel.parcel_number}</span>
