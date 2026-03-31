@@ -4,6 +4,7 @@ import { pollTransactionStatus } from '@/utils/pollTransactionStatus';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useCadastralCart } from './useCadastralCart';
+import { useTestMode } from './useTestMode';
 import { usePaymentConfig } from './usePaymentConfig';
 
 export interface CadastralPaymentData {
