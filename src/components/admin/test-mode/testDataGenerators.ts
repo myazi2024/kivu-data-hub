@@ -795,13 +795,17 @@ export const generateFraudAttempts = async (
     created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
   }));
 
-  const { data, error } = await supabase
-    .from('fraud_attempts')
-    .insert(records)
-    .select('id');
-
-  if (error) console.error('Fraud attempts (non-bloquant):', error);
-  return data ?? [];
+  const allInserted: Array<{ id: string }> = [];
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { data, error } = await supabase
+      .from('fraud_attempts')
+      .insert(batch)
+      .select('id');
+    if (error) console.error(`Fraud attempts (batch ${i}, non-bloquant):`, error);
+    if (data) allInserted.push(...data);
+  }
+  return allInserted;
 };
 
 // ─── Step 10: Boundary conflicts ──────────────────────────────────────────────
