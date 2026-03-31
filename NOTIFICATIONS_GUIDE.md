@@ -117,7 +117,7 @@ BEGIN
       'Contribution approuvée',
       'Votre contribution pour la parcelle ' || NEW.parcel_number || ' a été validée. Votre code CCC sera généré sous peu.',
       'success',
-      '/myazi?tab=contributions'
+      '/tableau-de-bord?tab=contributions'
     );
   END IF;
   RETURN NEW;
