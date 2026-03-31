@@ -28,9 +28,9 @@ export type { CadastralInvoice };
 
 // Informations légales complètes de BIC
 const BIC_COMPANY_INFO = {
-  name: "Bureau de l'Immobilier du Congo",
+  name: "Bureau d'Informations Cadastrales",
   abbreviation: "BIC",
-  fullLegalName: "Bureau de l'Immobilier du Congo S.A.R.L.",
+  fullLegalName: "Bureau d'Informations Cadastrales S.A.R.L.",
   address: "Avenue Patrice Lumumba, Quartier Himbi II",
   city: "Goma, Province du Nord-Kivu",
   country: "République Démocratique du Congo",
