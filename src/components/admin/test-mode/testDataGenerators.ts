@@ -488,7 +488,7 @@ export const generateDisputes = async (parcelNumbers: string[], suffix: string, 
   const selectedParcels = parcelNumbers.filter((_, i) => i % 10 === 5).slice(0, PROVINCES.length * 2);
 
   const records = selectedParcels.map((pn, i) => {
-    const status = DISPUTE_STATUSES[i];
+    const status = pick(DISPUTE_STATUSES, i);
     return {
       reference_number: `TEST-DISP-${String(i + 1).padStart(3, '0')}-${suffix}`,
       parcel_number: pn,
