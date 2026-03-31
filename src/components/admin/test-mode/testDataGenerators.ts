@@ -119,7 +119,7 @@ export function generateParcelNumbers(suffix: string): string[] {
   return numbers;
 }
 
-// ─── Step 0b: Generate 100 cadastral parcels ──────────────────────────────────
+// ─── Step 0b: Generate 520 cadastral parcels (26 provinces × 20) ──────────────
 
 export const generateParcels = async (parcelNumbers: string[]) => {
   const records = parcelNumbers.map((pn, idx) => {
