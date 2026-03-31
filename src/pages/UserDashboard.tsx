@@ -1,5 +1,5 @@
-import React from 'react';
-import { Navigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/Footer';
@@ -19,8 +19,34 @@ import { UserMortgageRequests } from '@/components/user/UserMortgageRequests';
 import { UserSubdivisionRequests } from '@/components/user/UserSubdivisionRequests';
 import { User, FileText, Building, CreditCard, Settings, ScrollText, Scale, FileSearch, FileEdit, Landmark, LayoutGrid } from 'lucide-react';
 
+const VALID_TABS = [
+  'profile', 'contributions', 'titles', 'permits', 'expertise',
+  'mutations', 'mortgages', 'subdivisions', 'disputes', 'invoices', 'settings'
+];
+
 const UserDashboard = () => {
   const { user, loading } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(
+    tabFromUrl && VALID_TABS.includes(tabFromUrl) ? tabFromUrl : 'profile'
+  );
+
+  useEffect(() => {
+    if (tabFromUrl && VALID_TABS.includes(tabFromUrl) && tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [tabFromUrl]);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    if (value === 'profile') {
+      searchParams.delete('tab');
+    } else {
+      searchParams.set('tab', value);
+    }
+    setSearchParams(searchParams, { replace: true });
+  };
 
   if (loading) {
     return (
@@ -46,7 +72,7 @@ const UserDashboard = () => {
             <NotificationBell />
           </div>
 
-          <Tabs defaultValue="profile" className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             {/* Navigation compacte - scrollable horizontally */}
             <div className="overflow-x-auto -mx-1 px-1 pb-1">
               <TabsList className="w-max min-w-full h-auto p-1 flex gap-1 bg-background shadow-sm rounded-2xl border">

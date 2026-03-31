@@ -92,7 +92,7 @@ const PermitConfirmationStep: React.FC<PermitConfirmationStepProps> = ({
       </Alert>
       {/* Fix #12: Direct link to dashboard */}
       <div className="flex gap-2">
-        <Button variant="outline" onClick={() => { onClose(); navigate('/user-dashboard?tab=building-permits'); }} className="flex-1 h-10 text-xs rounded-xl">
+        <Button variant="outline" onClick={() => { onClose(); navigate('/mon-compte?tab=permits'); }} className="flex-1 h-10 text-xs rounded-xl">
           Suivre ma demande
         </Button>
         <Button onClick={onClose} className="flex-1 h-10 text-sm rounded-xl">Fermer</Button>

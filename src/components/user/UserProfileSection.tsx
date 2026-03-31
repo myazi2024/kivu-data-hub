@@ -90,10 +90,18 @@ const UserProfileSection: React.FC = () => {
 
   const getRoleBadge = (role?: string) => {
     switch (role) {
+      case 'super_admin':
+        return <Badge className="bg-destructive text-destructive-foreground text-[10px] px-1.5 py-0">Super Admin</Badge>;
       case 'admin':
-        return <Badge className="bg-primary text-[10px] px-1.5 py-0">Admin</Badge>;
+        return <Badge className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0">Admin</Badge>;
       case 'partner':
         return <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Revendeur</Badge>;
+      case 'notaire':
+        return <Badge className="bg-accent text-accent-foreground text-[10px] px-1.5 py-0">Notaire</Badge>;
+      case 'geometre':
+        return <Badge className="bg-accent text-accent-foreground text-[10px] px-1.5 py-0">Géomètre</Badge>;
+      case 'agent_urbanisme':
+        return <Badge className="bg-accent text-accent-foreground text-[10px] px-1.5 py-0">Agent d'urbanisme</Badge>;
       default:
         return <Badge variant="outline" className="text-[10px] px-1.5 py-0">Utilisateur</Badge>;
     }

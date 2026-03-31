@@ -116,7 +116,7 @@ const CancellationConfirmationStep: React.FC<CancellationConfirmationStepProps> 
         <Button variant="outline" onClick={handleDownloadReceipt} className="w-full h-11 rounded-xl gap-2">
           <Download className="h-4 w-4" /> Télécharger le reçu PDF
         </Button>
-        <Button variant="outline" onClick={() => navigate('/user-dashboard')} className="w-full h-11 rounded-xl gap-2">
+        <Button variant="outline" onClick={() => navigate('/mon-compte?tab=mortgages')} className="w-full h-11 rounded-xl gap-2">
           <ExternalLink className="h-4 w-4" /> Voir mes demandes
         </Button>
         <Button onClick={onClose} className="w-full h-11 rounded-xl">Fermer</Button>

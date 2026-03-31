@@ -284,7 +284,7 @@ export function AdminDashboardHeader({ onMenuClick }: AdminDashboardHeaderProps)
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate('/user-dashboard')}>
+              <DropdownMenuItem onClick={() => navigate('/mon-compte')}>
                 Mon profil
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate('/admin?tab=settings')}>
