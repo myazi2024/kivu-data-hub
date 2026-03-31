@@ -62,6 +62,27 @@ const ActionBadge: React.FC<{ badge: ParcelAction['badge'] }> = ({ badge }) => {
   );
 };
 
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  Award, FileText, ArrowRightLeft, Landmark, ShieldCheck, Calculator, LayoutGrid, AlertTriangle,
+};
+
+const DEFAULT_ACTION_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  expertise: Award,
+  mutation: ArrowRightLeft,
+  mortgage_management: Landmark,
+  permit_add: ShieldCheck,
+  tax: Calculator,
+  permit_request: FileText,
+  subdivision: LayoutGrid,
+  land_dispute: AlertTriangle,
+};
+
+const ActionIcon: React.FC<{ iconName?: string; actionKey: string }> = ({ iconName, actionKey }) => {
+  const Icon = (iconName && ICON_MAP[iconName]) || DEFAULT_ACTION_ICONS[actionKey];
+  if (!Icon) return null;
+  return <Icon className="h-4 w-4 text-muted-foreground shrink-0" />;
+};
+
 const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
   parcelNumber, parcelId, parcelData, expanded, onCollapse
 }) => {
