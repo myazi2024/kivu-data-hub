@@ -27,7 +27,7 @@ const Publications = React.lazy(() => import("./pages/Publications"));
 const Map = React.lazy(() => import("./pages/Map"));
 const CadastralMap = React.lazy(() => import("./pages/CadastralMap"));
 const Admin = React.lazy(() => import("./pages/Admin"));
-const JoinUs = React.lazy(() => import("./pages/JoinUs"));
+
 
 const UserDashboard = React.lazy(() => import("./pages/UserDashboard"));
 const ResellerDashboard = React.lazy(() => import("./pages/ResellerDashboard"));
