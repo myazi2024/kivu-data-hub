@@ -209,8 +209,8 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
         title: 'Déclaration IRL',
         message: `Déclaration IRL pour ${parcelNumber} (exercice ${input.fiscalYear}). Montant: ${result.grandTotal.toFixed(2)} USD.`,
         type: 'info',
-        action_url: '/user-dashboard',
-      }).then(() => {});
+        action_url: '/mon-compte',
+      }).then(({ error: e }) => { if (e) console.warn('Notification failed:', e.message); });
 
       toast.success('Déclaration IRL soumise avec succès');
       setCalcStep('confirmation');

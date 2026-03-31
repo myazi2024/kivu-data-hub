@@ -52,7 +52,7 @@ export const useBulkUserActions = () => {
             type: 'account',
             title: 'Compte bloqué',
             message: `Votre compte a été bloqué. Raison: ${reason}`,
-            action_url: '/user-dashboard?tab=security'
+            action_url: '/mon-compte?tab=security'
           });
 
           success++;
@@ -105,7 +105,7 @@ export const useBulkUserActions = () => {
             type: 'account',
             title: 'Compte débloqué',
             message: 'Votre compte a été débloqué. Vous pouvez à nouveau accéder à la plateforme.',
-            action_url: '/user-dashboard'
+            action_url: '/mon-compte'
           });
 
           success++;

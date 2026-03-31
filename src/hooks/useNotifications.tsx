@@ -7,7 +7,7 @@ export interface Notification {
   id: string;
   title: string;
   message: string;
-  type: 'info' | 'success' | 'warning' | 'error';
+  type: 'info' | 'success' | 'warning' | 'error' | 'account';
   is_read: boolean;
   action_url?: string;
   created_at: string;
@@ -41,7 +41,7 @@ export const useNotifications = () => {
 
       const typedData = (data || []).map(n => ({
         ...n,
-        type: n.type as 'info' | 'success' | 'warning' | 'error'
+        type: n.type as 'info' | 'success' | 'warning' | 'error' | 'account'
       }));
 
       setNotifications(typedData);
@@ -57,7 +57,7 @@ export const useNotifications = () => {
     if (!user) return;
 
     const channel = supabase
-      .channel('user-notifications')
+      .channel(`user-notifications-${user.id}`)
       .on(
         'postgres_changes',
         {
