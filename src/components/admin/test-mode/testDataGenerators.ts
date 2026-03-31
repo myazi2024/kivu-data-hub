@@ -204,10 +204,17 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
     const constructionNature = pick(CONSTRUCTION_NATURES, idx);
     const isSuspicious = idx % 13 === 0; // ~8% suspicious
 
+    const localIdx = idx % PARCELS_PER_PROVINCE;
+    const isSR = localIdx >= 15;
+    const ownerName = pick(OWNER_NAMES, idx);
+    const ownerParts = ownerName.split(' ');
+    const constructionYear = constructionNature ? randInt(1990, 2024) : null;
+    const sideN = randInt(10, 50), sideS = randInt(10, 50), sideE = randInt(10, 50), sideO = randInt(10, 50);
+
     return {
       parcel_number: pn,
       property_title_type: pick(TITLE_TYPES, idx),
-      current_owner_name: `Test ${pick(OWNER_NAMES, idx)}`,
+      current_owner_name: `Test ${ownerName}`,
       area_sqm: randInt(200, 5000),
       province: prov.province,
       ville: prov.ville,
@@ -216,7 +223,8 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
       avenue: prov.avenue,
       territoire: idx % 8 === 1 ? 'Nyiragongo' : null,
       village: idx % 12 === 0 ? 'Test Village' : null,
-      status: 'pending', // All start pending to avoid CCC trigger
+      collectivite: isSR ? pick(COLLECTIVITES_SR, idx) : null,
+      status: 'pending',
       contribution_type: pick(TYPES_CYCLE, idx),
       user_id: userId,
       is_suspicious: isSuspicious,
@@ -225,8 +233,73 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
       declared_usage: pick(DECLARED_USAGES, idx),
       construction_type: constructionNature ? pick(CONSTRUCTION_TYPES.filter(t => t !== 'Terrain nu'), idx) : 'Terrain nu',
       construction_nature: constructionNature,
-      construction_year: constructionNature ? randInt(1990, 2024) : null,
+      construction_year: constructionYear,
+      construction_materials: constructionNature ? pick(CONSTRUCTION_MATERIALS, idx) : null,
+      standing: constructionNature ? pick(STANDINGS, idx) : null,
       current_owner_legal_status: pick(LEGAL_STATUSES, idx),
+      property_category: pick(PROPERTY_CATEGORIES, idx),
+      title_reference_number: `REF-${prov.province.substring(0, 3).toUpperCase()}-${String(idx).padStart(4, '0')}`,
+      title_issue_date: randomDateInPast(10),
+      house_number: idx % 2 === 0 ? String(randInt(1, 200)) : null,
+      floor_number: constructionNature ? String(randInt(0, 3)) : null,
+      apartment_number: idx % 15 === 0 ? `A${randInt(1, 20)}` : null,
+      whatsapp_number: `+243${randInt(810000000, 899999999)}`,
+      current_owners_details: [{
+        lastName: ownerParts[0] || 'Test',
+        firstName: ownerParts[1] || 'Utilisateur',
+        middleName: idx % 3 === 0 ? 'Mutombo' : '',
+        gender: idx % 2 === 0 ? 'Masculin' : 'Féminin',
+        legalStatus: pick(LEGAL_STATUSES, idx),
+        since: randomDateInPast(10),
+        entityType: '', entitySubType: '', entitySubTypeOther: '',
+        stateExploitedBy: '', rightType: '',
+      }] as unknown as Json,
+      building_permits: constructionNature ? [{
+        permitType: idx % 3 === 0 ? 'regularization' : 'construction',
+        permitNumber: `PC-${randInt(2018, 2025)}-${String(randInt(1, 999)).padStart(3, '0')}`,
+        issueDate: randomDateInPast(5),
+        validityMonths: '36',
+        issuingService: "Division Provinciale de l'Urbanisme",
+      }] as unknown as Json : null,
+      parcel_sides: [
+        { name: 'Nord', length: String(sideN) },
+        { name: 'Sud', length: String(sideS) },
+        { name: 'Est', length: String(sideE) },
+        { name: 'Ouest', length: String(sideO) },
+      ] as unknown as Json,
+      road_sides: [{ sideIndex: 0, roadName: prov.avenue }] as unknown as Json,
+      servitude_data: (idx % 4 === 0
+        ? { hasServitude: true, width: randInt(1, 3) }
+        : { hasServitude: false }) as unknown as Json,
+      building_shapes: constructionNature
+        ? [{ type: 'rectangle', x: 50, y: 50, width: randInt(30, 80), height: randInt(20, 60) }] as unknown as Json
+        : [] as unknown as Json,
+      ownership_history: idx % 3 === 0 ? [{
+        name: `Ancien ${pick(OWNER_NAMES, idx + 5)}`,
+        legalStatus: 'Personne physique',
+        startDate: randomDateInPast(10),
+        endDate: randomDateInPast(5),
+        mutationType: pick(['Vente', 'Donation', 'Succession'], idx),
+      }] as unknown as Json : [] as unknown as Json,
+      tax_history: [{
+        taxType: 'Impôt foncier annuel',
+        taxYear: String(new Date().getFullYear() - 1),
+        taxAmount: String(randInt(20, 200)),
+        paymentStatus: 'Payé',
+        paymentDate: randomDateInPast(1),
+      }] as unknown as Json,
+      has_dispute: idx % 10 === 0,
+      dispute_data: idx % 10 === 0
+        ? { type: 'delimitation', description: 'Test litige de délimitation' } as unknown as Json
+        : null,
+      mortgage_history: idx % 8 === 0 ? [{
+        mortgageAmount: String(randInt(5000, 50000)),
+        duration: '60',
+        creditorName: 'Rawbank',
+        creditorType: 'Banque',
+        contractDate: randomDateInPast(5),
+        mortgageStatus: 'Active',
+      }] as unknown as Json : [] as unknown as Json,
       created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
     };
   });
