@@ -269,6 +269,7 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
       construction_year: constructionYear,
       construction_materials: constructionNature ? pick(CONSTRUCTION_MATERIALS, idx) : null,
       standing: constructionNature ? pick(STANDINGS, idx) : null,
+      lease_type: localIdx % 7 === 0 ? 'initial' : localIdx % 11 === 0 ? 'renewal' : null,
       current_owner_legal_status: pick(LEGAL_STATUSES, idx),
       property_category: pick(PROPERTY_CATEGORIES, idx),
       title_reference_number: `REF-${prov.province.substring(0, 3).toUpperCase()}-${String(idx).padStart(4, '0')}`,
