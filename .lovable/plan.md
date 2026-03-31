@@ -1,154 +1,123 @@
 
 
-# Données manquantes dans le mode test par rapport au formulaire CCC
+# Distribution non-uniforme des parcelles test par province
 
-## Constat
+## Objectif
 
-Après comparaison exhaustive des champs du formulaire CCC (GeneralTab, LocationTab, HistoryTab, ObligationsTab) avec les données générées dans `testDataGenerators.ts`, **de nombreux champs collectés ne sont pas du tout générés** dans les données test. Le genre du propriétaire en est un exemple, mais il y en a beaucoup d'autres.
+Remplacer la distribution uniforme (20 parcelles/province) par une distribution pondérée avec un multiplicateur de 1 à 26 par province, classé par densité réaliste. Cela permet de tester la visualisation "Densité parcelles cadastrées" sur la carte d'accueil.
 
-## Champs manquants identifiés
+## Distribution proposée
 
-### Onglet Général (GeneralTab)
+| Province | Multiplicateur | Parcelles (20 × mult) | 15 SU × mult | 5 SR × mult |
+|---|---|---|---|---|
+| Kinshasa | ×26 | 520 | 390 | 130 |
+| Haut-Katanga | ×25 | 500 | 375 | 125 |
+| Sud-Kivu | ×24 | 480 | 360 | 120 |
+| Nord-Kivu | ×23 | 460 | 345 | 115 |
+| Ituri | ×22 | 440 | 330 | 110 |
+| Kongo-Central | ×21 | 420 | 315 | 105 |
+| Lualaba | ×20 | 400 | 300 | 100 |
+| Tanganyika | ×19 | 380 | 285 | 95 |
+| Tshopo | ×18 | 360 | 270 | 90 |
+| Kasaï-Oriental | ×17 | 340 | 255 | 85 |
+| Kwilu | ×16 | 320 | 240 | 80 |
+| Équateur | ×15 | 300 | 225 | 75 |
+| Kasaï-Central | ×14 | 280 | 210 | 70 |
+| Haut-Lomami | ×13 | 260 | 195 | 65 |
+| Maniema | ×12 | 240 | 180 | 60 |
+| Lomami | ×11 | 220 | 165 | 55 |
+| Kasaï | ×10 | 200 | 150 | 50 |
+| Mongala | ×9 | 180 | 135 | 45 |
+| Kwango | ×8 | 160 | 120 | 40 |
+| Mai-Ndombe | ×7 | 140 | 105 | 35 |
+| Sankuru | ×6 | 120 | 90 | 30 |
+| Nord-Ubangi | ×5 | 100 | 75 | 25 |
+| Sud-Ubangi | ×4 | 80 | 60 | 20 |
+| Haut-Uélé | ×3 | 60 | 45 | 15 |
+| Bas-Uélé | ×2 | 40 | 30 | 10 |
+| Tshuapa | ×1 | 20 | 15 | 5 |
 
-| Champ formulaire | Colonne DB | Généré ? |
-|---|---|---|
-| Genre propriétaire | `current_owners_details` (JSON) | Non |
-| `current_owners_details` complet (nom, prénom, post-nom, statut, entité, genre, since) | `current_owners_details` (JSON) | Non |
-| `propertyCategory` | `property_category` | Non |
-| `titleReferenceNumber` | `title_reference_number` | Non |
-| `titleIssueDate` | `title_issue_date` | Non |
-| `isTitleInCurrentOwnerName` | `is_title_in_current_owner_name` | Non |
-| `constructionMaterials` | `construction_materials` | Non |
-| `standing` | `standing` | Non |
-| `floorNumber` | `floor_number` | Non |
-| `apartmentNumber` | `apartment_number` | Non |
-| `buildingPermits` (JSON) | `building_permits` | Non |
-| `whatsappNumber` | `whatsapp_number` | Non |
-| `houseNumber` | `house_number` | Non |
-| `leaseYears` | (dans metadata/JSON) | Non |
+**Total : 7 020 parcelles** (contre 520 actuellement).
 
-### Onglet Localisation (LocationTab)
+## Détails techniques
 
-| Champ formulaire | Colonne DB | Généré ? |
-|---|---|---|
-| `parcelSides` (dimensions) | `parcel_sides` | Non |
-| `roadSides` (côtés route) | `road_sides` | Non |
-| `servitudeData` | `servitude_data` | Non |
-| `buildingShapes` (croquis) | `building_shapes` | Non |
-| `collectivite` (SR) | `collectivite` | Non |
+### Fichier modifié : `testDataGenerators.ts`
 
-### Onglet Historique (HistoryTab)
+**1. Ajouter un champ `multiplier` au tableau `PROVINCES`**
 
-| Champ formulaire | Colonne DB | Généré ? |
-|---|---|---|
-| `ownershipHistory` (anciens propriétaires JSON) | `ownership_history` | Non |
-
-### Onglet Obligations (ObligationsTab)
-
-| Champ formulaire | Colonne DB | Généré ? |
-|---|---|---|
-| `taxHistory` (historique fiscal JSON) | `tax_history` | Non |
-| `mortgageHistory` (hypothèques JSON) | `mortgage_history` | Non |
-| `hasDispute` | `has_dispute` | Non |
-| `disputeData` (détail litige JSON) | `dispute_data` | Non |
-
-## Implémentation
-
-### 1. `testDataGenerators.ts` — `generateContributions` : ajouter tous les champs manquants
-
-Pour chaque contribution générée, ajouter :
+Réordonner le tableau par densité décroissante et ajouter un multiplicateur :
 
 ```typescript
-// Général
-property_category: pick(['Maison', 'Appartement', 'Terrain nu', 'Immeuble'], idx),
-title_reference_number: `REF-${prov.province.substring(0,3).toUpperCase()}-${String(idx).padStart(4,'0')}`,
-title_issue_date: randomDateInPast(10),
-is_title_in_current_owner_name: idx % 3 !== 0, // ~66% oui
-construction_materials: constructionNature ? pick(['Briques cuites', 'Parpaings', 'Bois', 'Tôles'], idx) : null,
-standing: constructionNature ? pick(['Haut standing', 'Moyen standing', 'Économique'], idx) : null,
-floor_number: constructionNature ? String(randInt(0, 3)) : null,
-apartment_number: idx % 15 === 0 ? `A${randInt(1,20)}` : null,
-whatsapp_number: `+243${randInt(810000000, 899999999)}`,
-house_number: idx % 2 === 0 ? String(randInt(1, 200)) : null,
-
-// current_owners_details (JSON avec genre)
-current_owners_details: [{
-  lastName: pick(OWNER_NAMES, idx).split(' ')[0],
-  firstName: pick(OWNER_NAMES, idx).split(' ')[1] || 'Test',
-  middleName: idx % 3 === 0 ? 'Mutombo' : '',
-  gender: idx % 2 === 0 ? 'Masculin' : 'Féminin',
-  legalStatus: pick(LEGAL_STATUSES, idx),
-  since: randomDateInPast(10),
-  entityType: '', entitySubType: '', entitySubTypeOther: '',
-  stateExploitedBy: '', rightType: '',
-}],
-
-// Building permits (JSON)
-building_permits: constructionNature ? [{
-  permitType: idx % 3 === 0 ? 'regularization' : 'construction',
-  permitNumber: `PC-${randInt(2018,2025)}-${String(randInt(1,999)).padStart(3,'0')}`,
-  issueDate: randomDateInPast(5),
-  validityMonths: '36',
-  issuingService: "Division Provinciale de l'Urbanisme",
-}] : null,
+const PROVINCES = [
+  { province: 'Kinshasa', multiplier: 26, ville: 'Kinshasa', ... },
+  { province: 'Haut-Katanga', multiplier: 25, ... },
+  // ... jusqu'à
+  { province: 'Tshuapa', multiplier: 1, ... },
+];
 ```
 
-### 2. `testDataGenerators.ts` — `generateContributions` : ajouter champs localisation
+**2. Remplacer `PARCELS_PER_PROVINCE` par un calcul dynamique**
 
+Supprimer la constante `PARCELS_PER_PROVINCE = 20` et utiliser :
 ```typescript
-// Localisation
-parcel_sides: [
-  { name: 'Nord', length: String(randInt(10, 50)) },
-  { name: 'Sud', length: String(randInt(10, 50)) },
-  { name: 'Est', length: String(randInt(10, 50)) },
-  { name: 'Ouest', length: String(randInt(10, 50)) },
-],
-road_sides: [{ sideIndex: 0, roadName: prov.avenue }],
-servitude_data: idx % 4 === 0 ? { hasServitude: true, width: randInt(1, 3) } : { hasServitude: false },
-building_shapes: constructionNature ? [{ type: 'rectangle', points: [...] }] : [],
-collectivite: isSR ? 'Kabare' : null,
+const BASE_PARCELS = 20;
+const getParcelsForProvince = (pIdx: number) => BASE_PARCELS * PROVINCES[pIdx].multiplier;
 ```
 
-### 3. `testDataGenerators.ts` — `generateContributions` : ajouter champs historique/obligations
+**3. Refactorer `generateParcelNumbers`**
 
+Boucle dynamique par province avec le nombre variable de parcelles :
 ```typescript
-// Historique
-ownership_history: idx % 3 === 0 ? [{
-  name: `Ancien ${pick(OWNER_NAMES, idx + 5)}`,
-  legalStatus: 'Personne physique',
-  startDate: randomDateInPast(10),
-  endDate: randomDateInPast(5),
-  mutationType: pick(['Vente', 'Donation', 'Succession'], idx),
-}] : [],
-
-// Obligations
-tax_history: [{
-  taxType: 'Impôt foncier annuel',
-  taxYear: String(new Date().getFullYear() - 1),
-  taxAmount: String(randInt(20, 200)),
-  paymentStatus: 'Payé',
-  paymentDate: randomDateInPast(1),
-}],
-has_dispute: idx % 10 === 0,
-dispute_data: idx % 10 === 0 ? { type: 'delimitation', description: 'Test litige' } : null,
-mortgage_history: idx % 8 === 0 ? [{
-  mortgageAmount: String(randInt(5000, 50000)),
-  duration: '60',
-  creditorName: 'Rawbank',
-  creditorType: 'Banque',
-  contractDate: randomDateInPast(5),
-  mortgageStatus: 'Active',
-}] : [],
+export function generateParcelNumbers(suffix: string): string[] {
+  const numbers: string[] = [];
+  for (let pIdx = 0; pIdx < PROVINCES.length; pIdx++) {
+    const count = getParcelsForProvince(pIdx);
+    for (let i = 0; i < count; i++) {
+      numbers.push(`TEST-${pIdx}-${String(i).padStart(3, '0')}-${suffix}`);
+    }
+  }
+  return numbers;
+}
 ```
 
-### 4. `testDataGenerators.ts` — `generateParcels` : ajouter champs manquants
+**4. Refactorer `generateParcels` et `generateContributions`**
 
-Ajouter aux parcelles générées les colonnes correspondantes :
-- `title_reference_number`, `title_issue_date`, `standing`, `house_number`, `whatsapp_number`, `parcel_sides`
+Remplacer `Math.floor(idx / PARCELS_PER_PROVINCE)` par une logique de recherche du province-index basée sur des offsets cumulés :
+```typescript
+// Pré-calculer les offsets
+const PROVINCE_OFFSETS = PROVINCES.reduce((acc, p, i) => {
+  acc.push((acc[i - 1] || 0) + getParcelsForProvince(i));
+  return acc;
+}, [] as number[]);
+
+function getProvinceIndex(globalIdx: number): { pIdx: number; localIdx: number } {
+  let cumul = 0;
+  for (let p = 0; p < PROVINCES.length; p++) {
+    const count = getParcelsForProvince(p);
+    if (globalIdx < cumul + count) return { pIdx: p, localIdx: globalIdx - cumul };
+    cumul += count;
+  }
+  return { pIdx: PROVINCES.length - 1, localIdx: 0 };
+}
+```
+
+**5. Adapter le ratio SU/SR**
+
+Pour chaque province, les premiers 75% sont SU, les derniers 25% sont SR :
+```typescript
+const isSR = localIdx >= Math.floor(count * 0.75);
+```
+
+**6. Adapter les entités enfant proportionnellement**
+
+Les fonctions qui créent des entités enfant (factures, titres, expertises, litiges, mutations, etc.) utilisent déjà `parcelNumbers.length` ou `PROVINCES.length`. Les volumes s'adaptent automatiquement au nouveau total (7 020). Le batching existant (par 50) gère le volume.
+
+**7. Mettre à jour le message de succès** dans `useTestDataActions.ts` : remplacer le texte par `"7 020 parcelles test générées (26 provinces, densité variable)"`.
 
 ### Fichiers modifiés
 
 | Fichier | Modification |
 |---------|-------------|
-| `testDataGenerators.ts` | Enrichir `generateContributions` et `generateParcels` avec tous les champs manquants listés ci-dessus |
+| `testDataGenerators.ts` | Multiplicateurs, refactoring de la distribution, calcul dynamique des offsets |
+| `useTestDataActions.ts` | Message de succès |
 
