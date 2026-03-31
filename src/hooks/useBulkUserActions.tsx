@@ -52,7 +52,7 @@ export const useBulkUserActions = () => {
             type: 'account',
             title: 'Compte bloqué',
             message: `Votre compte a été bloqué. Raison: ${reason}`,
-            action_url: '/user-dashboard?tab=security'
+            action_url: '/mon-compte?tab=security'
           });
 
           success++;
