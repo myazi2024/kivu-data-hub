@@ -139,13 +139,40 @@ export function AdminDashboardHeader({ onMenuClick }: AdminDashboardHeaderProps)
         </Button>
 
         <div className="flex-1">
-          <div className="relative max-w-md">
+          <div className="relative max-w-md" ref={searchRef}>
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Rechercher dans l'admin..."
               className="pl-8 w-full h-8 md:h-9 text-xs md:text-sm rounded-xl"
+              value={searchTerm}
+              onChange={(e) => { setSearchTerm(e.target.value); setShowResults(true); }}
+              onFocus={() => searchTerm.trim() && setShowResults(true)}
+              onKeyDown={handleSearchKeyDown}
             />
+            {showResults && filteredItems.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-popover border rounded-lg shadow-lg z-50 overflow-hidden">
+                {filteredItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.value}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left hover:bg-accent transition-colors"
+                      onClick={() => handleSearchSelect(item.value)}
+                    >
+                      <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <span className="flex-1 truncate">{item.label}</span>
+                      <span className="text-xs text-muted-foreground truncate">{item.category}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {showResults && searchTerm.trim() && filteredItems.length === 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-popover border rounded-lg shadow-lg z-50 p-3 text-sm text-muted-foreground text-center">
+                Aucun résultat
+              </div>
+            )}
           </div>
         </div>
 
