@@ -32,6 +32,7 @@ const PermitPaymentStep: React.FC<PermitPaymentStepProps> = ({
   paymentMethod, setPaymentMethod, paymentProvider, setPaymentProvider,
   paymentPhone, setPaymentPhone, availableProviders,
   onPay, onBack, onCancelPayment,
+  isTestModeActive, onTestPay,
 }) => {
   if (processingPayment) {
     return (
