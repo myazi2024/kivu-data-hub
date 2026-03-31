@@ -147,14 +147,13 @@ export function generateParcelNumbers(suffix: string): string[] {
   return numbers; // Total: 7 020
 }
 
-// ─── Step 0b: Generate 520 cadastral parcels (26 provinces × 20) ──────────────
+// ─── Step 0b: Generate 7 020 cadastral parcels (26 provinces × variable) ──────
 
 export const generateParcels = async (parcelNumbers: string[]) => {
   const records = parcelNumbers.map((pn, idx) => {
-    const pIdx = Math.floor(idx / PARCELS_PER_PROVINCE);
-    const localIdx = idx % PARCELS_PER_PROVINCE;
+    const { pIdx, localIdx, count } = getProvinceInfo(idx);
     const prov = PROVINCES[pIdx];
-    const isSR = localIdx >= 15;
+    const isSR = localIdx >= Math.floor(count * 0.75);
     const parcelType = isSR ? 'SR' : 'SU';
     const constructionNature = pick(CONSTRUCTION_NATURES, idx);
     const ownerSinceDate = randomDateInPast(10);
