@@ -34,7 +34,7 @@ const About = () => {
               Nous combinons plusieurs sources pour produire des diagnostics complets :
             </p>
             <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
-              <li>Collecte numérique via l'application <strong>Myazi</strong></li>
+              <li>Collecte numérique via nos outils dédiés</li>
               <li>Enquêtes terrain et remontées communautaires</li>
               <li>Imagerie satellite (OSM, Mapbox)</li>
               <li>Modélisation statistique et cartographie interactive</li>
