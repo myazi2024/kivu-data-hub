@@ -82,7 +82,7 @@ const App = () => (
                   } />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
-                  <Route path="/careers" element={<JoinUs />} />
+                  
                   <Route path="/mon-compte" element={
                     <ProtectedRoute>
                       <UserDashboard />

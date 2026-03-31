@@ -32,7 +32,7 @@ const Navigation = () => {
     },
     { name: 'Données foncières', href: '/map' },
     { name: 'Carte Cadastrale', href: '/cadastral-map' },
-    { name: 'Rejoignez-nous', href: '/careers' },
+    
   ];
 
   return (
