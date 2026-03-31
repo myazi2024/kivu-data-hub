@@ -56,7 +56,7 @@ const Legal = () => {
                 <div>
                   <h3 className="font-semibold text-foreground mb-2">Contact</h3>
                   <p className="text-muted-foreground">
-                    Email : contact@bic.myazi.net.org<br />
+                    Email : contact@bic.cd<br />
                     Téléphone : +243 816 996 077
                   </p>
                 </div>
