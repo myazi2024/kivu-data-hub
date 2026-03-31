@@ -322,6 +322,7 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
         contractDate: randomDateInPast(5),
         mortgageStatus: 'Active',
       }] as unknown as Json : [] as unknown as Json,
+      is_title_in_current_owner_name: idx % 3 !== 0,
       created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
     };
   });
