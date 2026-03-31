@@ -575,7 +575,7 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
         {/* Footer / Disclaimer */}
         <div className="px-6 sm:px-10 py-5 border-t-2 border-primary/10 bg-muted/30 print:bg-transparent">
           <p className="text-xs text-muted-foreground leading-relaxed mb-2">
-            <strong>Avis de non-responsabilité :</strong> Le Bureau de l'Immobilier du Congo (BIC) n'assume aucune responsabilité quant à l'exactitude des données affichées, 
+            <strong>Avis de non-responsabilité :</strong> Le Bureau d'Informations Cadastrales (BIC) n'assume aucune responsabilité quant à l'exactitude des données affichées, 
             car elles proviennent des archives du Ministère des Affaires Foncières. BIC agit de bonne foi dans son travail de compilation et de présentation de ces informations.
           </p>
           <p className="text-xs text-muted-foreground leading-relaxed">

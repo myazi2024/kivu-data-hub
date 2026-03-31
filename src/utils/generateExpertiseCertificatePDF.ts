@@ -245,7 +245,7 @@ export async function generateExpertiseCertificatePDF(data: ExpertiseCertificate
   y += legalLines.length * 4 + 8;
 
   // QR Code
-  const qrUrl = `https://bic-rdc.com/verify-expertise/${data.referenceNumber}`;
+  const qrUrl = `https://bic.cd/verify-expertise/${data.referenceNumber}`;
   const qrImg = await QRCode.toDataURL(qrUrl, { width: 200 });
   doc.addImage(qrImg, 'PNG', pw - 52, ph - 65, 32, 32);
   doc.setFontSize(7);

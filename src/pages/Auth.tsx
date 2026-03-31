@@ -257,7 +257,7 @@ const Auth = () => {
           <div className="flex items-center justify-center mb-4">
             <Building2 className="h-12 w-12 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Bureau de l'Immobilier du Congo</h1>
+          <h1 className="text-2xl font-bold text-foreground">Bureau d'Informations Cadastrales</h1>
           <p className="text-muted-foreground mt-2">Connectez-vous à votre espace</p>
         </div>
 

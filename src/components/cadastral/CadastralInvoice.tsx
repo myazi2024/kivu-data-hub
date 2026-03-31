@@ -175,7 +175,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
                   Justificatif de Paiement Services Cadastraux
                 </CardTitle>
                 <p className="text-xs text-muted-foreground">
-                  Bureau de l'Immobilier du Congo
+                  Bureau d'Informations Cadastrales
                 </p>
               </div>
             </div>

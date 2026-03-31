@@ -372,7 +372,7 @@ export async function generateCadastralReport(
     doc.setTextColor(0, 51, 102);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
-    doc.text("BIC - Bureau de l'Immobilier du Congo", margin, 10);
+    doc.text("BIC - Bureau d'Informations Cadastrales", margin, 10);
     
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);

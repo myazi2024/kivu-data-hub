@@ -217,7 +217,7 @@ const Legal = () => {
                   Pour toute question concernant ces mentions légales ou nos pratiques de protection des données
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Contactez-nous à : <span className="font-medium">contact@bic.myazi.net.org</span>
+                  Contactez-nous à : <span className="font-medium">contact@bic.cd</span>
                 </p>
               </CardContent>
             </Card>

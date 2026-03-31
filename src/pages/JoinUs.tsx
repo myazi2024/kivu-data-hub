@@ -111,7 +111,7 @@ const JoinUs = () => {
                     <Mail className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                     <div>
                       <p className="text-xs font-medium mb-1">Email</p>
-                      <p className="text-xs text-muted-foreground">contact@bic.myazi.net.org</p>
+                      <p className="text-xs text-muted-foreground">contact@bic.cd</p>
                     </div>
                   </div>
 
