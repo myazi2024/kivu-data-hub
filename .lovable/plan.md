@@ -1,99 +1,96 @@
 
 
-# Audit détaillé — Espace Utilisateur (/user-dashboard, /mon-compte)
+# Audit — Espace Utilisateur (/mon-compte)
 
 ## Architecture
 
 ```text
-┌──────────────────────────────────────────────────────┐
-│ UserDashboard (page)                                  │
-│  ├─ Navigation + NotificationBell                     │
-│  └─ Tabs (11 onglets)                                 │
-│      ├─ Profil        → UserProfileSection            │
-│      ├─ Données       → UserContributions (897 lignes)│
-│      ├─ Titres        → UserLandTitleRequests         │
-│      ├─ Autorisations → UserBuildingPermits            │
-│      ├─ Expertises    → UserExpertiseRequests          │
-│      ├─ Mutations     → UserMutationRequests           │
-│      ├─ Hypothèques   → UserMortgageRequests           │
-│      ├─ Lotissements  → UserSubdivisionRequests        │
-│      ├─ Litiges       → UserLandDisputes               │
-│      ├─ Factures      → CadastralDashboardTabs         │
-│      └─ Réglages      → UserPreferences + Security     │
-└──────────────────────────────────────────────────────┘
+UserDashboard.tsx
+ ├─ NotificationBell (useNotifications hook)
+ └─ Tabs (11 onglets)
+     ├─ profile       → UserProfileSection
+     ├─ contributions → UserContributions (897 lignes)
+     ├─ titles        → UserLandTitleRequests
+     ├─ permits       → UserBuildingPermits
+     ├─ expertise     → UserExpertiseRequests
+     ├─ mutations     → UserMutationRequests
+     ├─ mortgages     → UserMortgageRequests
+     ├─ subdivisions  → UserSubdivisionRequests
+     ├─ disputes      → UserLandDisputes (seul avec Realtime)
+     ├─ invoices      → CadastralDashboardTabs
+     └─ settings      → UserPreferences + UserAccountSecurity
 ```
 
-11 onglets, 16 fichiers dans `src/components/user/`.
+16 fichiers dans `src/components/user/`.
 
 ---
 
-## Problèmes identifiés
+## Problemes identifies
 
-### 1. CRITIQUE — Paramètre `?tab=` des notifications jamais lu
+### 1. CRITIQUE — Parametre `?tab=` jamais lu
 
-**Fichiers** : `UserDashboard.tsx`, `NotificationBell.tsx`, 11+ fichiers envoyant des notifications
-**Problème** : Les notifications (mutations, litiges, autorisations, lotissements) envoient des `action_url` avec `?tab=mutations`, `?tab=disputes`, `?tab=building-permits`, etc. Le `NotificationBell` résout correctement la route (`/user-dashboard` → `/mon-compte`), mais **le `UserDashboard` ne lit jamais le paramètre `tab` de l'URL**. Le `<Tabs>` a toujours `defaultValue="profile"`.
-**Impact** : Quand un utilisateur clique sur une notification « Votre mutation a été approuvée » → il arrive sur l'onglet Profil au lieu de l'onglet Mutations. L'utilisateur doit manuellement naviguer vers le bon onglet. Toutes les 30+ notifications envoyées par le système sont concernées.
+**Fichier** : `UserDashboard.tsx` ligne 49
+**Probleme** : `<Tabs defaultValue="profile">` est statique. Le composant n'utilise pas `useSearchParams`. Or, 125+ occurrences dans 18 fichiers envoient des `action_url` avec `?tab=contributions`, `?tab=mutations`, `?tab=building-permits`, etc. La page Admin utilise correctement `useSearchParams` (ligne 117 de `Admin.tsx`), mais le dashboard utilisateur ne le fait pas.
+**Impact** : Cliquer sur une notification "Votre mutation a ete approuvee" amene sur l'onglet Profil au lieu de Mutations. Les 30+ types de notifications sont concernes.
 
-### 2. CRITIQUE — Route dupliquée `/user-dashboard` et `/mon-compte`
+### 2. CRITIQUE — Route `/user-dashboard` dupliquee et liens hardcodes
 
-**Fichier** : `App.tsx` lignes 86-95
-**Problème** : Les deux routes rendent le même composant `UserDashboard`. De plus, toutes les `action_url` des notifications pointent encore vers `/user-dashboard` (ancienne route), et `NotificationBell` contient un mapping de conversion. Mais les liens directs dans les dialogs (ex: `MutationRequestDialog`, `PermitConfirmationStep`, `MortgageFormDialog`) utilisent `window.location.href = '/user-dashboard?tab=...'` ou `navigate('/user-dashboard')`.
-**Impact** : Incohérence de navigation, URL obsolètes dans le navigateur, et effort de maintenance pour maintenir le mapping.
+**Fichiers** : `App.tsx` (2 routes identiques), 18 fichiers avec `action_url: '/user-dashboard?tab=...'`, 4 fichiers avec `navigate('/user-dashboard')`
+**Probleme** : `/user-dashboard` et `/mon-compte` rendent le meme composant. `NotificationBell` contient un mapping de conversion, mais les `navigate()` directs dans `MortgageFormDialog`, `PermitConfirmationStep`, `CancellationConfirmationStep` et `AdminDashboardHeader` ne passent pas par ce mapping — ils naviguent vers `/user-dashboard` directement.
+**Impact** : URL inconsistantes. Le mapping dans `NotificationBell` ne couvre que les clics sur notifications, pas les redirections programmatiques.
 
-### 3. MOYEN — Rôle affiché depuis `profile.role` (lecture client)
+### 3. MOYEN — `getRoleBadge` ignore `super_admin`
 
-**Fichier** : `UserProfileSection.tsx` ligne 278
-**Problème** : Le badge de rôle est affiché via `profile?.role` qui est calculé côté client dans `useAuth.tsx` (lecture de la table `user_roles` + hiérarchisation). C'est correct pour l'affichage, mais `getRoleBadge` ne gère pas le rôle `super_admin` — il tombe dans le `default` et affiche « Utilisateur ».
-**Impact** : Un super_admin voit le badge « Utilisateur » au lieu de « Super Admin ».
+**Fichier** : `UserProfileSection.tsx` lignes 91-99
+**Probleme** : Le switch ne gere que `admin` et `partner`. Les roles `super_admin`, `notaire`, `geometre`, `agent_urbanisme` tombent dans le `default` → badge "Utilisateur".
+**Impact** : Un super_admin ou un geometre voit un badge incorrect.
 
-### 4. MOYEN — `deleteAccount` fait un soft-delete insuffisant
+### 4. MOYEN — `deleteAccount` = soft-delete insuffisant
 
 **Fichier** : `UserPreferences.tsx` lignes 124-149
-**Problème** : La suppression de compte met simplement `deleted_at` sur le profil puis fait un `signOut`. Le compte Supabase Auth reste actif — l'utilisateur peut se reconnecter. Aucune suppression réelle des données (contributions, litiges, factures, codes CCC, etc.). Le message dit « irréversible » alors que c'est un simple flag.
-**Impact** : Violation potentielle du RGPD. L'utilisateur pense que ses données sont supprimées alors qu'elles restent intactes.
+**Probleme** : Met `deleted_at` sur le profil puis `signOut()`. Le compte Auth reste actif (reconnexion possible). Aucune suppression de donnees (contributions, litiges, factures, codes CCC). Le message dit "irreversible" et "toutes vos donnees seront supprimees" — c'est faux.
+**Impact** : Non-conformite RGPD. L'utilisateur croit ses donnees supprimees.
 
-### 5. MOYEN — Statistiques du profil incomplètes
+### 5. MOYEN — Statistiques profil incompletes
 
-**Fichier** : `UserProfileSection.tsx` lignes 46-72
-**Problème** : Le profil affiche 4 compteurs (Contributions, Titres, Factures, Litiges) mais l'utilisateur a aussi des Mutations, Hypothèques, Expertises, Lotissements et Autorisations. Ces 5 catégories ne sont pas comptées.
-**Impact** : Le profil donne une vue partielle de l'activité de l'utilisateur.
+**Fichier** : `UserProfileSection.tsx` lignes 28-33, 46-72
+**Probleme** : 4 compteurs seulement (Contributions, Titres, Factures, Litiges). Il manque Mutations, Hypotheques, Expertises, Lotissements, Autorisations — soit 5 categories presentes comme onglets mais absentes des stats.
+**Impact** : Vue partielle de l'activite.
 
-### 6. MOYEN — `UserContributions` : composant monolithique (897 lignes)
+### 6. MOYEN — Pas de Realtime sur 10 onglets sur 11
 
-**Fichier** : `UserContributions.tsx`
-**Problème** : Ce composant gère listing, détails, édition (4 types de formulaires), suppression, pagination, recherche, et formatage — tout dans un seul fichier de 897 lignes.
-**Impact** : Difficile à maintenir, tester et refactorer.
+**Fichiers** : Tous sauf `UserLandDisputes`
+**Probleme** : Seul `UserLandDisputes` souscrit aux changements Realtime. Les autres onglets chargent les donnees au montage uniquement. Si un admin approuve une mutation pendant que l'utilisateur est sur le dashboard, le statut ne se met pas a jour.
+**Impact** : L'utilisateur doit recharger la page.
 
-### 7. MOYEN — Pas de Realtime sur la plupart des onglets
-
-**Fichiers** : `UserLandTitleRequests`, `UserMutationRequests`, `UserBuildingPermits`, `UserExpertiseRequests`, `UserMortgageRequests`, `UserSubdivisionRequests`
-**Problème** : Seul `UserLandDisputes` utilise un abonnement Realtime pour les mises à jour. Les autres onglets ne se rafraîchissent qu'au montage du composant. Si un admin approuve une mutation pendant que l'utilisateur consulte son dashboard, le statut ne se met pas à jour.
-**Impact** : L'utilisateur doit recharger la page pour voir les changements.
-
-### 8. MOYEN — `UserSubdivisionRequests` utilise `(supabase as any)`
+### 7. MOYEN — `UserSubdivisionRequests` utilise `(supabase as any)`
 
 **Fichier** : `UserSubdivisionRequests.tsx` ligne 40
-**Problème** : La table `subdivision_requests` n'est probablement pas dans les types générés, d'où le cast `as any`. Cela contourne toute vérification TypeScript.
-**Impact** : Erreurs silencieuses si la table ou les colonnes changent.
+**Probleme** : Cast `as any` pour contourner le typage. La table `subdivision_requests` n'est pas dans les types generes.
+**Impact** : Aucune verification TypeScript sur les colonnes.
 
-### 9. MINEUR — Pas de lien « Retour » ou navigation entre onglets
+### 8. MOYEN — `UserContributions` monolithique (897 lignes)
 
-**Fichier** : `UserDashboard.tsx`
-**Problème** : La barre d'onglets a 11 éléments dans un scroll horizontal. Sur mobile, c'est difficile à naviguer — l'utilisateur doit scroller horizontalement pour trouver les derniers onglets (Litiges, Factures, Réglages).
-**Impact** : UX dégradée sur mobile.
+**Fichier** : `UserContributions.tsx`
+**Probleme** : Listing, details, edition (4 types de formulaires), suppression, pagination, recherche, formatage — tout dans un fichier.
+**Impact** : Maintenabilite degradee.
 
-### 10. MINEUR — Liens de parrainage non traçables
+### 9. MINEUR — Lien de parrainage non fonctionnel
 
 **Fichier** : `UserProfileSection.tsx` ligne 198
-**Problème** : Le lien de parrainage est construit avec `window.location.origin/auth?ref=${user.id}`. Mais rien dans le code d'authentification ne traite le paramètre `ref`. Le parrainage n'est pas comptabilisé.
-**Impact** : Fonctionnalité affichée mais non fonctionnelle.
+**Probleme** : Le lien genere `/auth?ref=${user.id}` mais la page `Auth.tsx` ne traite pas le parametre `ref` (confirme par recherche — 0 match). Le parrainage n'est jamais comptabilise.
+**Impact** : Fonctionnalite affichee mais inoperante.
 
-### 11. MINEUR — `export_user_data` RPC non vérifiable
+### 10. MINEUR — Navigation mobile difficile
+
+**Fichier** : `UserDashboard.tsx` lignes 51-131
+**Probleme** : 11 onglets dans un scroll horizontal. Les derniers (Litiges, Factures, Reglages) sont invisibles sans scroller.
+**Impact** : UX degradee sur petit ecran.
+
+### 11. MINEUR — `export_user_data` RPC non verifiable
 
 **Fichier** : `UserPreferences.tsx` ligne 96
-**Problème** : L'export de données appelle `supabase.rpc('export_user_data', { target_user_id: user.id })`. Cette fonction RPC doit être définie côté Supabase mais n'est pas vérifiable ici. Si elle n'existe pas, l'export échoue silencieusement avec un toast d'erreur.
-**Impact** : Fonctionnalité RGPD potentiellement non fonctionnelle.
+**Probleme** : Appel a `supabase.rpc('export_user_data')`. Si la fonction n'existe pas cote Supabase, l'export echoue avec un toast d'erreur generique.
 
 ---
 
@@ -101,20 +98,25 @@
 
 ### Corrections prioritaires
 
-1. **Lire le paramètre `?tab=` de l'URL** dans `UserDashboard.tsx` et l'utiliser comme `defaultValue` des `<Tabs>`. Utiliser `useSearchParams` de react-router-dom.
+1. **Lire `?tab=` dans `UserDashboard.tsx`** avec `useSearchParams` (comme `Admin.tsx` le fait deja). Utiliser la valeur comme `value` controlé du `<Tabs>` au lieu de `defaultValue`.
 
-2. **Ajouter `super_admin`** dans `getRoleBadge` de `UserProfileSection.tsx`.
+2. **Unifier les routes** : remplacer la route `/user-dashboard` par un `<Navigate to="/mon-compte" replace />` dans `App.tsx`. Mettre a jour les 4 fichiers qui utilisent `navigate('/user-dashboard')`.
 
-3. **Rediriger `/user-dashboard` vers `/mon-compte`** au lieu de dupliquer la route. Mettre à jour les `action_url` des notifications pour utiliser `/mon-compte`.
+3. **Ajouter `super_admin`** et les roles metier (`notaire`, `geometre`, `agent_urbanisme`) dans `getRoleBadge`.
 
-### Améliorations
+### Ameliorations
 
-4. **Enrichir les statistiques du profil** avec les compteurs manquants (mutations, expertises, hypothèques, lotissements, autorisations).
+4. **Enrichir les stats du profil** avec les 5 compteurs manquants (mutations, hypotheques, expertises, lotissements, autorisations).
 
-5. **Implémenter le Realtime** sur les onglets critiques (Mutations, Titres, Autorisations) ou au minimum ajouter un bouton "Rafraîchir".
+5. **Ajouter Realtime** sur les onglets critiques (Mutations, Titres, Autorisations) ou au minimum un bouton "Rafraichir".
 
-6. **Refactorer `UserContributions`** en sous-composants (ContributionsList, ContributionDetails, ContributionEditDialog).
+6. **Refactorer `UserContributions`** en sous-composants.
 
-7. **Corriger la suppression de compte** : soit supprimer réellement les données via une edge function, soit clarifier dans le message que c'est une désactivation.
+7. **Corriger la suppression de compte** : soit implementer une edge function qui supprime reellement les donnees, soit reformuler le message en "desactivation".
 
-8. **Supprimer le lien de parrainage** ou implémenter le tracking du paramètre `ref` à l'inscription.
+8. **Supprimer le lien de parrainage** ou implementer le tracking du `ref` dans `Auth.tsx`.
+
+### Technique
+
+- Fichiers a modifier pour les corrections 1-3 : `UserDashboard.tsx`, `App.tsx`, `UserProfileSection.tsx`, `MortgageFormDialog.tsx`, `PermitConfirmationStep.tsx`, `CancellationConfirmationStep.tsx`, `AdminDashboardHeader.tsx`
+
