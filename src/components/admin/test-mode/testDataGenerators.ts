@@ -371,6 +371,7 @@ export const generateInvoices = async (userId: string, parcelNumbers: string[]) 
     ['carte_cadastrale', 'certificat_bornage'],
   ];
   const INV_STATUSES = ['paid', 'pending', 'paid', 'paid', 'pending'];
+  const PAYMENT_METHODS = ['mobile_money', 'card', 'bank_transfer', 'mobile_money', 'mobile_money'];
   const selectedParcels = parcelNumbers.filter((_, i) => i % 3 === 0); // ~33%
 
   const records = selectedParcels.map((pn, i) => ({
@@ -382,6 +383,8 @@ export const generateInvoices = async (userId: string, parcelNumbers: string[]) 
     client_name: `Test User ${i + 1}`,
     status: pick(INV_STATUSES, i),
     user_id: userId,
+    payment_method: pick(PAYMENT_METHODS, i),
+    discount_amount_usd: i % 5 === 0 ? randInt(1, 5) : null,
     geographical_zone: PROVINCES[Math.floor(i / (selectedParcels.length / PROVINCES.length)) % PROVINCES.length]?.province ?? 'Kinshasa',
     created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
   }));
