@@ -186,14 +186,14 @@ export const generateParcels = async (parcelNumbers: string[]) => {
       declared_usage: pick(DECLARED_USAGES, idx),
       construction_type: constructionNature ? pick(CONSTRUCTION_TYPES.filter(t => t !== 'Terrain nu'), idx) : 'Terrain nu',
       construction_nature: constructionNature,
-      construction_year: constructionNature ? randInt(1990, 2024) : null,
+      construction_year: constructionNature ? seededInt(idx * 11 + 1, 1990, 2024) : null,
       construction_materials: constructionNature ? pick(CONSTRUCTION_MATERIALS, idx) : null,
       standing: constructionNature ? pick(STANDINGS, idx) : null,
       lease_type: localIdx % 7 === 0 ? 'initial' : localIdx % 11 === 0 ? 'renewal' : null,
       title_reference_number: `REF-${prov.province.substring(0, 3).toUpperCase()}-${String(idx).padStart(4, '0')}`,
       title_issue_date: randomDateInPast(10),
       house_number: houseNumber,
-      whatsapp_number: `+243${randInt(810000000, 899999999)}`,
+      whatsapp_number: `+243${seededInt(idx * 13 + 1, 810000000, 899999999)}`,
       has_dispute: idx % 10 === 0,
       parcel_sides: [
         { name: 'Nord', length: String(sideN) },
@@ -269,6 +269,7 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
       construction_year: constructionYear,
       construction_materials: constructionNature ? pick(CONSTRUCTION_MATERIALS, idx) : null,
       standing: constructionNature ? pick(STANDINGS, idx) : null,
+      lease_type: localIdx % 7 === 0 ? 'initial' : localIdx % 11 === 0 ? 'renewal' : null,
       current_owner_legal_status: pick(LEGAL_STATUSES, idx),
       property_category: pick(PROPERTY_CATEGORIES, idx),
       title_reference_number: `REF-${prov.province.substring(0, 3).toUpperCase()}-${String(idx).padStart(4, '0')}`,
@@ -276,7 +277,7 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
       house_number: houseNumber,
       floor_number: constructionNature ? String(randInt(0, 3)) : null,
       apartment_number: idx % 15 === 0 ? `A${randInt(1, 20)}` : null,
-      whatsapp_number: `+243${randInt(810000000, 899999999)}`,
+      whatsapp_number: `+243${seededInt(idx * 13 + 1, 810000000, 899999999)}`,
       current_owners_details: [{
         lastName: ownerParts[0] || 'Test',
         firstName: ownerParts[1] || 'Utilisateur',
@@ -494,7 +495,7 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
   const PAY_STATUSES = ['pending', 'paid', 'paid', 'pending', 'paid', 'pending', 'paid', 'paid', 'pending', 'paid'];
   const REQUEST_TYPES = ['nouveau_titre', 'renouvellement', 'duplicata', 'conversion'];
   const REQUESTER_TYPES = ['proprietaire', 'mandataire', 'heritier'];
-  const NATIONALITIES = ['RDC', 'RDC', 'RDC', 'RDC', 'RDC', 'RDC', 'RDC', 'RDC', 'Belgique', 'France'];
+  const NATIONALITIES = ['congolais', 'congolais', 'congolais', 'congolais', 'congolais', 'congolais', 'congolais', 'congolais', 'etranger', 'etranger'];
 
   // ~5% of total parcels, spread across provinces proportionally
   const totalCount = Math.max(PROVINCES.length * 2, Math.round(TOTAL_PARCELS * 0.05));
@@ -671,13 +672,17 @@ export const generateExpertisePayments = async (userId: string, expertiseRequest
     created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
   }));
 
-  const { data, error } = await supabase
-    .from('expertise_payments')
-    .insert(records)
-    .select('id');
-
-  if (error) throw new Error(`Expertise payments: ${error.message}`);
-  return data ?? [];
+  const allInserted: Array<{ id: string }> = [];
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { data, error } = await supabase
+      .from('expertise_payments')
+      .insert(batch)
+      .select('id');
+    if (error) throw new Error(`Expertise payments (batch ${i}): ${error.message}`);
+    allInserted.push(...assertInserted(data, 'Expertise payments'));
+  }
+  return allInserted;
 };
 
 // ─── Step 7: Disputes — 52 total (2/province) ───────────────────────────────
@@ -790,13 +795,17 @@ export const generateFraudAttempts = async (
     created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
   }));
 
-  const { data, error } = await supabase
-    .from('fraud_attempts')
-    .insert(records)
-    .select('id');
-
-  if (error) console.error('Fraud attempts (non-bloquant):', error);
-  return data ?? [];
+  const allInserted: Array<{ id: string }> = [];
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { data, error } = await supabase
+      .from('fraud_attempts')
+      .insert(batch)
+      .select('id');
+    if (error) console.error(`Fraud attempts (batch ${i}, non-bloquant):`, error);
+    if (data) allInserted.push(...data);
+  }
+  return allInserted;
 };
 
 // ─── Step 10: Boundary conflicts ──────────────────────────────────────────────
@@ -929,7 +938,7 @@ export const generateTaxHistory = async (
 export const generateBoundaryHistory = async (
   parcels: Array<{ id: string; parcel_number: string }>
 ) => {
-  const selected = parcels.filter((_, i) => i % 10 === 0).slice(0, 10);
+  const selected = parcels.filter((_, i) => i % 15 === 0); // ~7%
   const PURPOSES = ['Réajustement ou rectification', 'Morcellement ou fusion', 'Mise en valeur ou mutation'];
 
   const records = selected.map((p, i) => ({
@@ -940,13 +949,17 @@ export const generateBoundaryHistory = async (
     boundary_purpose: pick(PURPOSES, i),
   }));
 
-  const { data, error } = await supabase
-    .from('cadastral_boundary_history')
-    .insert(records)
-    .select('id');
-
-  if (error) console.error('Historique bornages (non-bloquant):', error);
-  return data ?? [];
+  const allInserted: Array<{ id: string }> = [];
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { data, error } = await supabase
+      .from('cadastral_boundary_history')
+      .insert(batch)
+      .select('id');
+    if (error) console.error(`Historique bornages (batch ${i}, non-bloquant):`, error);
+    if (data) allInserted.push(...data);
+  }
+  return allInserted;
 };
 
 // ─── Step 14: Mortgages — ~8% parcels ───────────────────────────────────────
@@ -1045,13 +1058,17 @@ export const generateCertificates = async (
     generated_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
   }));
 
-  const { data, error } = await supabase
-    .from('generated_certificates')
-    .insert(records)
-    .select('id');
-
-  if (error) console.error('Certificats (non-bloquant):', error);
-  return data ?? [];
+  const allInserted: Array<{ id: string }> = [];
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { data, error } = await supabase
+      .from('generated_certificates')
+      .insert(batch)
+      .select('id');
+    if (error) console.error(`Certificats (batch ${i}, non-bloquant):`, error);
+    if (data) allInserted.push(...data);
+  }
+  return allInserted;
 };
 
 // ─── Step 17a: Mutation requests — 52 total (2/province) — enriched ─────────
