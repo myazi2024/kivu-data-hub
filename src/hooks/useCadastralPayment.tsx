@@ -4,6 +4,7 @@ import { pollTransactionStatus } from '@/utils/pollTransactionStatus';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useCadastralCart } from './useCadastralCart';
+import { useTestMode } from './useTestMode';
 import { usePaymentConfig } from './usePaymentConfig';
 
 export interface CadastralPaymentData {
@@ -58,6 +59,7 @@ export const useCadastralPayment = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { selectedServices, parcelNumber, clearServices } = useCadastralCart();
+  const { isTestModeActive } = useTestMode();
   const { paymentMode, availableMethods, isPaymentRequired } = usePaymentConfig();
 
   const pollingAbortRef = useRef<AbortController | null>(null);
@@ -125,6 +127,50 @@ export const useCadastralPayment = () => {
         return invoice;
       }
 
+      // Mode test actif → INSERT direct sans RPC sécurisée
+      if (isTestModeActive) {
+        const totalAmount = selectedServices.reduce((sum, s) => sum + (s.price || 0), 0);
+        const { data: testInvoice, error: testError } = await supabase
+          .from('cadastral_invoices')
+          .insert({
+            user_id: user.id,
+            parcel_number: parcelNumber,
+            invoice_number: `TEST-${Date.now()}`,
+            selected_services: serviceIds,
+            total_amount_usd: totalAmount,
+            original_amount_usd: totalAmount,
+            discount_amount_usd: 0,
+            payment_method: 'TEST',
+            client_email: user.email || '',
+            client_name: user.user_metadata?.full_name || null,
+            geographical_zone: selectedServices[0]?.parcel_location || '',
+            status: 'pending',
+            currency_code: 'USD',
+            exchange_rate_used: 1
+          })
+          .select()
+          .single();
+
+        if (testError) throw testError;
+
+        toast({
+          title: "Facture test créée",
+          description: `Facture ${testInvoice.invoice_number} créée (mode test)`
+        });
+
+        return {
+          id: testInvoice.id,
+          invoice_number: testInvoice.invoice_number,
+          total_amount_usd: testInvoice.total_amount_usd,
+          original_amount_usd: testInvoice.original_amount_usd,
+          discount_amount_usd: testInvoice.discount_amount_usd,
+          selected_services: serviceIds,
+          status: 'pending',
+          parcel_number: parcelNumber,
+          created_at: testInvoice.created_at
+        };
+      }
+
       // Paiement requis → RPC sécurisée
       const { data: rpcResult, error: rpcError } = await supabase.rpc(
         'create_cadastral_invoice_secure',
@@ -167,7 +213,7 @@ export const useCadastralPayment = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, selectedServices, parcelNumber, isPaymentRequired, clearServices, toast]);
+  }, [user, selectedServices, parcelNumber, isPaymentRequired, isTestModeActive, clearServices, toast]);
 
   const processMobileMoneyPayment = useCallback(async (invoiceId: string, paymentData: CadastralPaymentData) => {
     if (!user) {
