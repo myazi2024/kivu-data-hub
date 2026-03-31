@@ -880,13 +880,13 @@ export const generateOwnershipHistory = async (
   return allInserted;
 };
 
-// ─── Step 12: Tax history — 20 parcels × 3 years ────────────────────────────
+// ─── Step 12: Tax history — ~15% parcels × 3 years ─────────────────────────
 
 export const generateTaxHistory = async (
   parcels: Array<{ id: string; parcel_number: string }>
 ) => {
   const currentYear = new Date().getFullYear();
-  const selected = parcels.filter((_, i) => i % 5 === 0); // 20 parcels
+  const selected = parcels.filter((_, i) => i % 7 === 0); // ~15%
 
   const records = selected.flatMap((p, i) =>
     [0, 1, 2].map((yearOffset) => ({
@@ -898,13 +898,18 @@ export const generateTaxHistory = async (
     }))
   );
 
-  const { data, error } = await supabase
-    .from('cadastral_tax_history')
-    .insert(records)
-    .select('id');
-
-  if (error) console.error('Historique taxes (non-bloquant):', error);
-  return data ?? [];
+  // Insert in batches
+  const allInserted: Array<{ id: string }> = [];
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { data, error } = await supabase
+      .from('cadastral_tax_history')
+      .insert(batch)
+      .select('id');
+    if (error) console.error(`Historique taxes (batch ${i}, non-bloquant):`, error);
+    if (data) allInserted.push(...data);
+  }
+  return allInserted;
 };
 
 // ─── Step 13: Boundary history — 10 parcels ─────────────────────────────────
