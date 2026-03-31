@@ -748,7 +748,7 @@ export const generateBoundaryConflicts = async (parcelNumbers: string[], userId?
     resolved_by?: string | null;
   }> = [];
   for (let pIdx = 0; pIdx < PROVINCES.length; pIdx++) {
-    const base = pIdx * PARCELS_PER_PROVINCE;
+    const base = PROVINCE_OFFSETS[pIdx];
     for (let j = 0; j < 2; j++) {
       const idx = pIdx * 2 + j;
       const status = pick(STATUSES, idx);
