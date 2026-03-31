@@ -1,40 +1,66 @@
 
 
-# Renommage "Bureau de l'Immobilier du Congo" → "Bureau d'Informations Cadastrales" + mise a jour domaine/email
+# Remplacement "Nos Services" par un carrousel de partenaires configurable
 
-## Portee
+## Résumé
 
-Remplacement global dans 11 fichiers :
+Remplacer `ServicesSection` sur la page d'accueil par un défilement horizontal automatique des logos/noms des partenaires BIC. Les partenaires seront gérés depuis l'admin via une nouvelle table Supabase.
 
-| Remplacement | Ancien | Nouveau |
-|---|---|---|
-| Nom complet | Bureau de l'Immobilier du Congo | Bureau d'Informations Cadastrales |
-| Nom legal | Bureau de l'Immobilier du Congo S.A.R.L. | Bureau d'Informations Cadastrales S.A.R.L. |
-| Email | contact@bic.myazi.net.org | contact@bic.cd |
-| mailto | mailto:contact@bic.myazi.net.org | mailto:contact@bic.cd |
-| Domaine | bic-rdc.com | bic.cd |
-| URL canonique | https://bic-rdc.com | https://bic.cd |
-| QR codes | https://bic-rdc.com/verify-... | https://bic.cd/verify-... |
+## 1. Base de données
 
-## Fichiers concernes
+Créer une table `partners` :
 
-1. **index.html** — title, meta description, author, og:title, twitter:title, canonical URL
-2. **src/components/ui/navigation.tsx** — sous-titre navigation
-3. **src/components/Footer.tsx** — nom + email + mailto
-4. **src/pages/Auth.tsx** — titre page login
-5. **src/pages/About.tsx** — texte "Qui sommes-nous"
-6. **src/pages/Contact.tsx** — description + email
-7. **src/pages/Legal.tsx** — denomination sociale + 3 occurrences email
-8. **src/pages/JoinUs.tsx** — email contact (les mentions generiques "l'immobilier congolais" restent inchangees car elles ne designent pas le nom de l'entreprise)
-9. **src/lib/pdf.ts** — BIC_COMPANY_INFO (name, fullLegalName) + 3 textes dans les PDF
-10. **src/components/cadastral/CadastralInvoice.tsx** — BIC_COMPANY_INFO name + texte facture
-11. **src/components/cadastral/CadastralDocumentView.tsx** — en-tete + disclaimer
-12. **src/utils/generatePermitPDF.ts** — QR code URL
-13. **src/utils/generateMortgageReceiptPDF.ts** — QR code URL
-14. **src/utils/generateExpertiseCertificatePDF.ts** — QR code URL
-15. **src/utils/generateCertificatePDF.ts** — QR code URL
+```sql
+CREATE TABLE public.partners (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  logo_url TEXT,
+  website_url TEXT,
+  display_order INT DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
 
-## Notes
-- L'acronyme **BIC** reste inchange
-- Les mentions generiques de "l'immobilier" (ex: "Developpons ensemble l'immobilier congolais") ne sont pas modifiees
+ALTER TABLE public.partners ENABLE ROW LEVEL SECURITY;
+
+-- Lecture publique (logos visibles par tous)
+CREATE POLICY "Partners visible par tous" ON public.partners
+  FOR SELECT USING (is_active = true);
+
+-- CRUD admin uniquement
+CREATE POLICY "Admin gère les partenaires" ON public.partners
+  FOR ALL TO authenticated
+  USING (public.has_role(auth.uid(), 'admin'))
+  WITH CHECK (public.has_role(auth.uid(), 'admin'));
+```
+
+Créer un bucket Storage `partners` (public) pour les logos.
+
+## 2. Composant frontend — `PartnersSection.tsx`
+
+Remplace `ServicesSection` dans `Index.tsx`. Affiche un défilement horizontal infini automatique (CSS animation `marquee` ou Embla carousel en mode autoplay). Chaque item = logo + nom du partenaire. Fallback texte si pas de logo. Lien cliquable vers `website_url` si renseigné.
+
+## 3. Admin — `AdminPartners.tsx`
+
+Interface CRUD pour gérer les partenaires :
+- Liste avec drag-and-drop ou champ `display_order`
+- Formulaire : nom, logo (upload vers Storage `partners`), URL site web, actif/inactif
+- Prévisualisation du logo
+
+## 4. Intégration Admin
+
+- Ajouter un lazy import `AdminPartners` dans `Admin.tsx`
+- Ajouter un case `'partners'` dans `renderContent()`
+- Ajouter l'entrée dans `AdminSidebar.tsx` sous la catégorie "Contenu" (icône `Handshake` ou `Building2`)
+
+## 5. Fichiers modifiés/créés
+
+| Action | Fichier |
+|--------|---------|
+| Créer | `supabase/migrations/xxx_create_partners.sql` |
+| Créer | `src/components/PartnersSection.tsx` |
+| Créer | `src/components/admin/AdminPartners.tsx` |
+| Modifier | `src/pages/Index.tsx` — remplacer `ServicesSection` par `PartnersSection` |
+| Modifier | `src/pages/Admin.tsx` — ajouter lazy import + case |
+| Modifier | `src/components/admin/AdminSidebar.tsx` — ajouter entrée "Partenaires" |
 
