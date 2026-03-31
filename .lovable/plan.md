@@ -1,77 +1,154 @@
 
 
-# Audit du mode test — Bugs, erreurs de logique et optimisations
+# Données manquantes dans le mode test par rapport au formulaire CCC
 
-## Bugs identifiés
+## Constat
 
-### Bug 1 — `MUT_STATUSES[i]` : index out of bounds (crash silencieux)
-**Fichier** : `testDataGenerators.ts` ligne 836
-**Problème** : `MUT_STATUSES` a 10 éléments, mais `selected` peut avoir jusqu'à 52 entrées. L'accès `MUT_STATUSES[i]` (sans `pick()`) retourne `undefined` pour `i >= 10`, ce qui insère `status: undefined` dans la base.
-**Fix** : Remplacer `MUT_STATUSES[i]` par `pick(MUT_STATUSES, i)`.
+Après comparaison exhaustive des champs du formulaire CCC (GeneralTab, LocationTab, HistoryTab, ObligationsTab) avec les données générées dans `testDataGenerators.ts`, **de nombreux champs collectés ne sont pas du tout générés** dans les données test. Le genre du propriétaire en est un exemple, mais il y en a beaucoup d'autres.
 
-### Bug 2 — `SUB_STATUSES[i]` : même problème
-**Fichier** : `testDataGenerators.ts` ligne 886
-**Problème** : `SUB_STATUSES` a 5 éléments, `selected` peut avoir 26 entrées. `SUB_STATUSES[i]` retourne `undefined` pour `i >= 5`.
-**Fix** : Remplacer par `pick(SUB_STATUSES, i)`.
+## Champs manquants identifiés
 
-### Bug 3 — Payments non batchés : payload trop gros
-**Fichier** : `testDataGenerators.ts` lignes 305-311
-**Problème** : `generatePayments` insère toutes les factures payées (~100+) en un seul appel, sans batching. Avec 520 parcelles, ~100+ paiements peuvent dépasser les limites de payload.
-**Fix** : Ajouter le même pattern de batch de 50.
+### Onglet Général (GeneralTab)
 
-### Bug 4 — Contributor codes non batchés
-**Fichier** : `testDataGenerators.ts` lignes 552-555
-**Problème** : ~173 codes CCC insérés en un seul appel, risque similaire.
-**Fix** : Batching par 50.
+| Champ formulaire | Colonne DB | Généré ? |
+|---|---|---|
+| Genre propriétaire | `current_owners_details` (JSON) | Non |
+| `current_owners_details` complet (nom, prénom, post-nom, statut, entité, genre, since) | `current_owners_details` (JSON) | Non |
+| `propertyCategory` | `property_category` | Non |
+| `titleReferenceNumber` | `title_reference_number` | Non |
+| `titleIssueDate` | `title_issue_date` | Non |
+| `isTitleInCurrentOwnerName` | `is_title_in_current_owner_name` | Non |
+| `constructionMaterials` | `construction_materials` | Non |
+| `standing` | `standing` | Non |
+| `floorNumber` | `floor_number` | Non |
+| `apartmentNumber` | `apartment_number` | Non |
+| `buildingPermits` (JSON) | `building_permits` | Non |
+| `whatsappNumber` | `whatsapp_number` | Non |
+| `houseNumber` | `house_number` | Non |
+| `leaseYears` | (dans metadata/JSON) | Non |
 
-### Bug 5 — Disputes non batchées
-**Fichier** : `testDataGenerators.ts` lignes 523-528
-**Problème** : 52 litiges insérés d'un coup (acceptable mais inconsistant).
-**Fix** : Batching pour cohérence.
+### Onglet Localisation (LocationTab)
 
-### Bug 6 — Rollback : `fraud_attempts` query peut échouer si > 1000 contributions
-**Fichier** : `testDataGenerators.ts` ligne 928
-**Problème** : La sub-query `supabase.from('cadastral_contributions').select('id').in('parcel_number', parcelNumbers)` peut retourner max 1000 rows (limite Supabase par défaut), mais on a 520 parcelNumbers. Le `.in()` avec 520 valeurs fonctionne, mais le retour est tronqué à 1000.
-**Fix** : Ce n'est pas un problème ici car on a 520 contributions (< 1000), mais si le volume augmente, il faudra paginer. Pas de fix immédiat nécessaire.
+| Champ formulaire | Colonne DB | Généré ? |
+|---|---|---|
+| `parcelSides` (dimensions) | `parcel_sides` | Non |
+| `roadSides` (côtés route) | `road_sides` | Non |
+| `servitudeData` | `servitude_data` | Non |
+| `buildingShapes` (croquis) | `building_shapes` | Non |
+| `collectivite` (SR) | `collectivite` | Non |
 
-## Données fictives / texte obsolète
+### Onglet Historique (HistoryTab)
 
-### Problème 7 — Guide mentionne "Générer données de test" (bouton supprimé)
-**Fichier** : `TestModeGuide.tsx` ligne 9
-**Problème** : Le texte `Utilisez "Générer données de test"` fait référence à un bouton qui n'existe plus (la génération est maintenant automatique à l'activation).
-**Fix** : Mettre à jour le texte pour refléter la génération automatique.
+| Champ formulaire | Colonne DB | Généré ? |
+|---|---|---|
+| `ownershipHistory` (anciens propriétaires JSON) | `ownership_history` | Non |
 
-## Erreurs de logique
+### Onglet Obligations (ObligationsTab)
 
-### Problème 8 — Double génération possible
-**Fichier** : `AdminTestMode.tsx` lignes 117-124
-**Problème** : Si l'admin active le mode test, les données sont générées. S'il clique de nouveau sur "Enregistrer" sans changer la config, `isDirty` est false donc rien ne se passe — c'est correct. Mais si l'admin désactive puis réactive rapidement, il y aura potentiellement des données test existantes ET une nouvelle génération par-dessus, créant des doublons.
-**Fix** : Vérifier si `total > 0` avant de lancer `generateTestData()`, ou nettoyer avant de régénérer.
+| Champ formulaire | Colonne DB | Généré ? |
+|---|---|---|
+| `taxHistory` (historique fiscal JSON) | `tax_history` | Non |
+| `mortgageHistory` (hypothèques JSON) | `mortgage_history` | Non |
+| `hasDispute` | `has_dispute` | Non |
+| `disputeData` (détail litige JSON) | `dispute_data` | Non |
 
-### Problème 9 — Contributions `status: 'pending'` puis update individuel : N+1 queries
-**Fichier** : `testDataGenerators.ts` lignes 228-236
-**Problème** : Après l'insertion batch, chaque contribution non-pending est mise à jour individuellement (loop await). Avec 520 contributions et ~60% non-pending, cela fait ~312 requêtes séquentielles.
-**Fix** : Grouper les updates par statut — une seule requête `.in('id', ids).update({ status })` par statut distinct.
+## Implémentation
 
-### Problème 10 — `generateServiceAccess` non batché et `flatMap` peut exploser
-**Fichier** : `testDataGenerators.ts` lignes 325-339
-**Problème** : Peut produire jusqu'à ~200+ records en un seul insert.
-**Fix** : Batching par 50.
+### 1. `testDataGenerators.ts` — `generateContributions` : ajouter tous les champs manquants
 
-## Optimisations
+Pour chaque contribution générée, ajouter :
 
-### Optimisation 1 — Contribution status updates : batch par statut
-Remplacer la boucle N+1 (312 requêtes) par 2-3 requêtes groupées.
+```typescript
+// Général
+property_category: pick(['Maison', 'Appartement', 'Terrain nu', 'Immeuble'], idx),
+title_reference_number: `REF-${prov.province.substring(0,3).toUpperCase()}-${String(idx).padStart(4,'0')}`,
+title_issue_date: randomDateInPast(10),
+is_title_in_current_owner_name: idx % 3 !== 0, // ~66% oui
+construction_materials: constructionNature ? pick(['Briques cuites', 'Parpaings', 'Bois', 'Tôles'], idx) : null,
+standing: constructionNature ? pick(['Haut standing', 'Moyen standing', 'Économique'], idx) : null,
+floor_number: constructionNature ? String(randInt(0, 3)) : null,
+apartment_number: idx % 15 === 0 ? `A${randInt(1,20)}` : null,
+whatsapp_number: `+243${randInt(810000000, 899999999)}`,
+house_number: idx % 2 === 0 ? String(randInt(1, 200)) : null,
 
-### Optimisation 2 — `useTestDataStats` : expertise requests filtrées par `reference_number` et non `parcel_number`
-**Fichier** : `useTestDataStats.ts` ligne 25
-**Problème mineur** : Le pre-fetch utilise `.ilike('reference_number', 'TEST-%')` ce qui est correct, pas de bug ici.
+// current_owners_details (JSON avec genre)
+current_owners_details: [{
+  lastName: pick(OWNER_NAMES, idx).split(' ')[0],
+  firstName: pick(OWNER_NAMES, idx).split(' ')[1] || 'Test',
+  middleName: idx % 3 === 0 ? 'Mutombo' : '',
+  gender: idx % 2 === 0 ? 'Masculin' : 'Féminin',
+  legalStatus: pick(LEGAL_STATUSES, idx),
+  since: randomDateInPast(10),
+  entityType: '', entitySubType: '', entitySubTypeOther: '',
+  stateExploitedBy: '', rightType: '',
+}],
 
-## Résumé des fichiers à modifier
+// Building permits (JSON)
+building_permits: constructionNature ? [{
+  permitType: idx % 3 === 0 ? 'regularization' : 'construction',
+  permitNumber: `PC-${randInt(2018,2025)}-${String(randInt(1,999)).padStart(3,'0')}`,
+  issueDate: randomDateInPast(5),
+  validityMonths: '36',
+  issuingService: "Division Provinciale de l'Urbanisme",
+}] : null,
+```
 
-| Fichier | Corrections |
+### 2. `testDataGenerators.ts` — `generateContributions` : ajouter champs localisation
+
+```typescript
+// Localisation
+parcel_sides: [
+  { name: 'Nord', length: String(randInt(10, 50)) },
+  { name: 'Sud', length: String(randInt(10, 50)) },
+  { name: 'Est', length: String(randInt(10, 50)) },
+  { name: 'Ouest', length: String(randInt(10, 50)) },
+],
+road_sides: [{ sideIndex: 0, roadName: prov.avenue }],
+servitude_data: idx % 4 === 0 ? { hasServitude: true, width: randInt(1, 3) } : { hasServitude: false },
+building_shapes: constructionNature ? [{ type: 'rectangle', points: [...] }] : [],
+collectivite: isSR ? 'Kabare' : null,
+```
+
+### 3. `testDataGenerators.ts` — `generateContributions` : ajouter champs historique/obligations
+
+```typescript
+// Historique
+ownership_history: idx % 3 === 0 ? [{
+  name: `Ancien ${pick(OWNER_NAMES, idx + 5)}`,
+  legalStatus: 'Personne physique',
+  startDate: randomDateInPast(10),
+  endDate: randomDateInPast(5),
+  mutationType: pick(['Vente', 'Donation', 'Succession'], idx),
+}] : [],
+
+// Obligations
+tax_history: [{
+  taxType: 'Impôt foncier annuel',
+  taxYear: String(new Date().getFullYear() - 1),
+  taxAmount: String(randInt(20, 200)),
+  paymentStatus: 'Payé',
+  paymentDate: randomDateInPast(1),
+}],
+has_dispute: idx % 10 === 0,
+dispute_data: idx % 10 === 0 ? { type: 'delimitation', description: 'Test litige' } : null,
+mortgage_history: idx % 8 === 0 ? [{
+  mortgageAmount: String(randInt(5000, 50000)),
+  duration: '60',
+  creditorName: 'Rawbank',
+  creditorType: 'Banque',
+  contractDate: randomDateInPast(5),
+  mortgageStatus: 'Active',
+}] : [],
+```
+
+### 4. `testDataGenerators.ts` — `generateParcels` : ajouter champs manquants
+
+Ajouter aux parcelles générées les colonnes correspondantes :
+- `title_reference_number`, `title_issue_date`, `standing`, `house_number`, `whatsapp_number`, `parcel_sides`
+
+### Fichiers modifiés
+
+| Fichier | Modification |
 |---------|-------------|
-| `testDataGenerators.ts` | Bugs #1-2 (`pick()` manquant), #3-5 (batching), #9 (N+1 updates groupés), #10 (batching service access) |
-| `TestModeGuide.tsx` | #7 (texte obsolète sur le bouton de génération) |
-| `AdminTestMode.tsx` | #8 (vérifier `total > 0` avant génération auto) |
+| `testDataGenerators.ts` | Enrichir `generateContributions` et `generateParcels` avec tous les champs manquants listés ci-dessus |
 
