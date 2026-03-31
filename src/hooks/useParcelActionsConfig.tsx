@@ -67,7 +67,7 @@ const DEFAULT_ACTIONS: ParcelAction[] = [
     id: '5',
     key: 'permit_add',
     label: 'Ajouter une autorisation',
-    description: 'Autorisation de bâtir ou de régularisation',
+    description: 'Enregistrer un permis existant sur cette parcelle',
     isActive: true,
     isVisible: true,
     displayOrder: 5,
