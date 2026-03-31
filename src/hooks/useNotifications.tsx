@@ -7,7 +7,7 @@ export interface Notification {
   id: string;
   title: string;
   message: string;
-  type: 'info' | 'success' | 'warning' | 'error';
+  type: 'info' | 'success' | 'warning' | 'error' | 'account';
   is_read: boolean;
   action_url?: string;
   created_at: string;
