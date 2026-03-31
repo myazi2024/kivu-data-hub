@@ -394,7 +394,7 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
   return allInserted;
 };
 
-// ─── Step 6: Expertise requests — 10 total (2/province) ──────────────────────
+// ─── Step 6: Expertise requests — 52 total (2/province) ─────────────────────
 
 export const generateExpertiseRequests = async (userId: string, parcelNumbers: string[], suffix: string) => {
   const EXP_STATUSES = ['pending', 'completed', 'in_progress', 'pending', 'completed', 'pending', 'in_progress', 'completed', 'pending', 'completed'];
