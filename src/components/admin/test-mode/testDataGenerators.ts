@@ -477,7 +477,7 @@ export const generateExpertisePayments = async (userId: string, expertiseRequest
   return data ?? [];
 };
 
-// ─── Step 7: Disputes — 10 total (2/province) ────────────────────────────────
+// ─── Step 7: Disputes — 52 total (2/province) ───────────────────────────────
 
 export const generateDisputes = async (parcelNumbers: string[], suffix: string, userId?: string) => {
   const DISPUTE_NATURES = ['delimitation', 'double_vente', 'occupation_illegale', 'succession', 'delimitation'];
