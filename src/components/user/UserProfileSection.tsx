@@ -351,7 +351,7 @@ const UserProfileSection: React.FC = () => {
           </div>
 
           {/* Support */}
-          <Link to="/contact" className="block">
+          <Link to="/partnership" className="block">
             <Button variant="outline" size="sm" className="w-full justify-start gap-2 h-9 rounded-xl text-xs">
               <HelpCircle className="h-3.5 w-3.5" />
               <span>Contacter le support</span>
