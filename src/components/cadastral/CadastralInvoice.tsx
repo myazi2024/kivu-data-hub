@@ -126,7 +126,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
 
   // Informations légales de BIC
   const BIC_COMPANY_INFO = {
-    name: "Bureau de l'Immobilier du Congo",
+    name: "Bureau d'Informations Cadastrales",
     abbreviation: "BIC",
     address: "Avenue Patrice Lumumba, Goma, Nord-Kivu, RDC",
     rccm: "RCCM/GOMA/2024/B/001234",
