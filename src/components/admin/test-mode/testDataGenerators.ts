@@ -410,7 +410,7 @@ export const generateExpertiseRequests = async (userId: string, parcelNumbers: s
     requester_name: `Test Expert ${i + 1}`,
     requester_email: `test-exp${i + 1}@example.com`,
     requester_phone: `+24380000${String(20 + i).padStart(4, '0')}`,
-    status: EXP_STATUSES[i],
+    status: pick(EXP_STATUSES, i),
     property_description: `Parcelle test ${i + 1} pour expertise immobilière`,
     construction_year: i % 3 === 0 ? null : randInt(1995, 2023),
     number_of_floors: i % 3 === 0 ? 0 : randInt(1, 4),
