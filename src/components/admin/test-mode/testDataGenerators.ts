@@ -100,6 +100,10 @@ const CONSTRUCTION_NATURES: (string | null)[] = ['Durable', 'Semi-durable', 'Pr�
 const TITLE_TYPES = ['Certificat d\'enregistrement', 'Contrat de location (Contrat d\'occupation provisoire)', 'Fiche parcellaire'];
 const LEGAL_STATUSES = ['Personne physique', 'Personne morale'];
 const CONSTRUCTION_TYPES = ['Résidentielle', 'Commerciale', 'Industrielle', 'Institutionnelle', 'Terrain nu'];
+const CONSTRUCTION_MATERIALS = ['Briques cuites', 'Parpaings', 'Bois', 'Tôles', 'Briques adobe'];
+const STANDINGS = ['Haut standing', 'Moyen standing', 'Économique'];
+const PROPERTY_CATEGORIES = ['Maison', 'Appartement', 'Terrain nu', 'Immeuble'];
+const COLLECTIVITES_SR = ['Kabare', 'Ngweshe', 'Kaziba', 'Buhavu', 'Kalehe'];
 const OWNER_NAMES = [
   'Kabongo Mwamba', 'Amani Baraka', 'Mukendi Tshiala', 'Ilunga Kasongo', 'Birindwa Ciza',
   'Ngoy Mwenze', 'Bashige Furaha', 'Mbuyi Kalala', 'Kyungu Mutombo', 'Lwamba Ngandu',
