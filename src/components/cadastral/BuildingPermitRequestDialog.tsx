@@ -52,7 +52,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 
   // Payment UI state
-  const [paymentMethod, setPaymentMethod] = useState<'mobile_money' | 'bank_card'>('mobile_money');
+  const [paymentMethod, setPaymentMethod] = useState<'mobile_money' | 'bank_card' | 'test_simulation'>('mobile_money');
   const [paymentProvider, setPaymentProvider] = useState('');
   const [paymentPhone, setPaymentPhone] = useState('');
 
