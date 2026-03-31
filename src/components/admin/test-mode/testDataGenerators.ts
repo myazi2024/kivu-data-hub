@@ -673,7 +673,7 @@ export const generateExpertisePayments = async (userId: string, expertiseRequest
 export const generateDisputes = async (parcelNumbers: string[], suffix: string, userId?: string) => {
   const DISPUTE_NATURES = ['delimitation', 'double_vente', 'occupation_illegale', 'succession', 'delimitation'];
   const DISPUTE_STATUSES = ['en_cours', 'resolu', 'demande_levee', 'en_cours', 'resolu', 'en_cours', 'demande_levee', 'resolu', 'en_cours', 'resolu'];
-  const DISPUTE_TYPES = ['report', 'lifting', 'mediation', 'report', 'lifting'];
+  const DISPUTE_TYPES = ['report', 'lifting', 'report', 'lifting', 'report'];
   const QUALITIES = ['proprietaire', 'occupant', 'heritier', 'mandataire', 'proprietaire'];
   const LIFTING_STATUSES = ['en_cours', 'approved', 'rejected', 'pending'];
   const LIFTING_REASONS = ['conciliation_reussie', 'decision_justice', 'accord_parties'];
