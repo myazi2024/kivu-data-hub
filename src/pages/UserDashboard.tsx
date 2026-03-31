@@ -19,8 +19,34 @@ import { UserMortgageRequests } from '@/components/user/UserMortgageRequests';
 import { UserSubdivisionRequests } from '@/components/user/UserSubdivisionRequests';
 import { User, FileText, Building, CreditCard, Settings, ScrollText, Scale, FileSearch, FileEdit, Landmark, LayoutGrid } from 'lucide-react';
 
+const VALID_TABS = [
+  'profile', 'contributions', 'titles', 'permits', 'expertise',
+  'mutations', 'mortgages', 'subdivisions', 'disputes', 'invoices', 'settings'
+];
+
 const UserDashboard = () => {
   const { user, loading } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(
+    tabFromUrl && VALID_TABS.includes(tabFromUrl) ? tabFromUrl : 'profile'
+  );
+
+  useEffect(() => {
+    if (tabFromUrl && VALID_TABS.includes(tabFromUrl) && tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [tabFromUrl]);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    if (value === 'profile') {
+      searchParams.delete('tab');
+    } else {
+      searchParams.set('tab', value);
+    }
+    setSearchParams(searchParams, { replace: true });
+  };
 
   if (loading) {
     return (
