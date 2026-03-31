@@ -259,7 +259,7 @@ export const generateInvoices = async (userId: string, parcelNumbers: string[]) 
     client_name: `Test User ${i + 1}`,
     status: pick(INV_STATUSES, i),
     user_id: userId,
-    geographical_zone: PROVINCES[Math.floor(i / (selectedParcels.length / 5))  % 5]?.province ?? 'Kinshasa',
+    geographical_zone: PROVINCES[Math.floor(i / (selectedParcels.length / PROVINCES.length)) % PROVINCES.length]?.province ?? 'Kinshasa',
     created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
   }));
 
