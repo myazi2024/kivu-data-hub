@@ -486,6 +486,7 @@ export type Database = {
           house_number: string | null
           id: string
           is_suspicious: boolean | null
+          is_title_in_current_owner_name: boolean | null
           lease_type: string | null
           mortgage_history: Json | null
           original_parcel_id: string | null
@@ -560,6 +561,7 @@ export type Database = {
           house_number?: string | null
           id?: string
           is_suspicious?: boolean | null
+          is_title_in_current_owner_name?: boolean | null
           lease_type?: string | null
           mortgage_history?: Json | null
           original_parcel_id?: string | null
@@ -634,6 +636,7 @@ export type Database = {
           house_number?: string | null
           id?: string
           is_suspicious?: boolean | null
+          is_title_in_current_owner_name?: boolean | null
           lease_type?: string | null
           mortgage_history?: Json | null
           original_parcel_id?: string | null
