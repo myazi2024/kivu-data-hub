@@ -1,49 +1,48 @@
 
 
-# Fix — Paiement test dans le catalogue de services
+# Fix — Paiement test : "Impossible de créer la facture"
 
-## Probleme
+## Cause
 
-Quand le mode test est actif et le paiement est active, le flux de paiement echoue car :
-1. `isPaymentRequired()` ne tient pas compte du mode test — il exige un vrai paiement
-2. Si aucun fournisseur Mobile Money n'est configure dans `payment_methods_config` (ou si les IDs ne correspondent pas), le dialog affiche "Aucun moyen de paiement configure" et bloque l'utilisateur
-3. L'Edge Function `process-mobile-money-payment` gere deja le mode test (auto-complete apres 3s), mais le frontend ne laisse pas l'utilisateur atteindre cette etape
+En mode test avec paiement activé, `createInvoice()` appelle la RPC `create_cadastral_invoice_secure` qui échoue (probablement une erreur interne liée aux prix ou séquences). Le `processTestPayment` a besoin d'un `invoiceId` pour fonctionner, mais il ne reçoit jamais cet ID car la création de facture échoue en amont.
 
 ## Solution
 
-Ajouter une logique **test mode bypass** dans le flux de paiement cadastral : quand le mode test global est actif, proposer un bouton "Paiement test (simulation)" qui cree la facture et simule le paiement sans exiger de fournisseur reel.
+Quand le mode test est actif, `createInvoice` doit contourner la RPC sécurisée et créer la facture directement via un INSERT simple (comme le chemin bypass gratuit), mais avec le statut `'pending'` pour que le dialog de paiement test puisse ensuite la marquer comme `'paid'`.
 
-## Plan d'implementation
+## Modification
 
-### 1. `useCadastralPayment.tsx` — Ajouter une methode `processTestPayment`
+**Fichier** : `src/hooks/useCadastralPayment.tsx`
 
-Nouvelle fonction qui :
-- Cree une transaction `payment_transactions` avec `status: 'completed'`, `payment_method: 'TEST'`
-- Met a jour la facture en `paid`
-- Accorde l'acces aux services via `grantServiceAccess`
+Dans `createInvoice`, ajouter un paramètre `isTestMode` ou importer `useTestMode`, puis avant l'appel RPC (ligne 128), ajouter une branche :
 
-### 2. `CadastralPaymentDialog.tsx` — Afficher l'option test
+```
+if (isTestModeActive) {
+  // Insert direct sans RPC — facture pending pour simulation
+  const { data: invoice, error } = await supabase
+    .from('cadastral_invoices')
+    .insert({
+      user_id: user.id,
+      parcel_number: parcelNumber,
+      selected_services: serviceIds,
+      total_amount_usd: totalAmount,
+      original_amount_usd: totalAmount,
+      discount_amount_usd: 0,
+      payment_method: 'TEST',
+      client_email: user.email || '',
+      status: 'pending',
+      currency_code: 'USD',
+      exchange_rate_used: 1
+    })
+    .select()
+    .single();
 
-- Importer `useTestMode`
-- Quand `isTestModeActive` est vrai, afficher un bandeau jaune "Mode Test" et un bouton "Simuler le paiement" qui appelle `processTestPayment`
-- Ce bouton est affiche meme si aucun moyen de paiement n'est configure
+  if (error) throw error;
+  return { id: invoice.id, invoice_number: invoice.invoice_number || 'TEST-...', ... };
+}
+```
 
-### 3. `CadastralBillingPanel.tsx` — Passer la methode test au dialog
+Cela permet au dialog de paiement test de recevoir un `invoiceId` valide, puis `processTestPayment` complète le flux normalement.
 
-- Transmettre `processTestPayment` au `CadastralPaymentDialog`
-
-### 4. Appliquer la meme logique aux autres flux de paiement
-
-- `BuildingPermitRequestDialog.tsx` — ajouter bypass test dans le flux autorisations
-- `PermitPaymentStep.tsx` — ajouter bouton simulation test
-
-## Fichiers modifies
-
-| Fichier | Modification |
-|---|---|
-| `src/hooks/useCadastralPayment.tsx` | Ajouter `processTestPayment` |
-| `src/components/cadastral/CadastralPaymentDialog.tsx` | Bandeau test + bouton simulation |
-| `src/components/cadastral/CadastralBillingPanel.tsx` | Passer `processTestPayment` au dialog |
-| `src/components/cadastral/BuildingPermitRequestDialog.tsx` | Bypass test pour autorisations |
-| `src/components/cadastral/building-permit-request/PermitPaymentStep.tsx` | Bouton simulation test |
+**Fichier secondaire** : aucun autre changement nécessaire — le dialog et `processTestPayment` sont déjà câblés correctement.
 
