@@ -276,7 +276,7 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
       house_number: houseNumber,
       floor_number: constructionNature ? String(randInt(0, 3)) : null,
       apartment_number: idx % 15 === 0 ? `A${randInt(1, 20)}` : null,
-      whatsapp_number: `+243${randInt(810000000, 899999999)}`,
+      whatsapp_number: `+243${seededInt(idx * 13 + 1, 810000000, 899999999)}`,
       current_owners_details: [{
         lastName: ownerParts[0] || 'Test',
         firstName: ownerParts[1] || 'Utilisateur',
