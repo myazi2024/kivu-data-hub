@@ -5,14 +5,12 @@ import Footer from '@/components/Footer';
 import CadastralSearchBar from '@/components/cadastral/CadastralSearchBar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
+  Search, 
   Map, 
-  BarChart3, 
-  Calculator, 
-  Users, 
   FileText, 
-  Building2,
-  GraduationCap,
-  TrendingUp 
+  Scale, 
+  Receipt, 
+  ShieldCheck 
 } from 'lucide-react';
 
 const Services = () => {
