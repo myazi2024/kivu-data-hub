@@ -351,6 +351,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     setPaymentProvider('');
     setPaymentPhone('');
     setPaymentMethod('mobile_money');
+    setIsTestSimulation(false);
     onOpenChange(false);
   };
 
