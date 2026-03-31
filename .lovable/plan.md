@@ -1,27 +1,25 @@
 
 
-# Réécriture des cartes de la page Services
+# Mise à jour des cartes de la page Services
 
-## Résumé
+## Modifications dans `src/pages/Services.tsx`
 
-Réécrire le contenu statique des cartes dans `src/pages/Services.tsx` pour refléter les vrais services numériques de BIC : consultation cadastrale en ligne, carte interactive, rapports fonciers, etc.
+**Supprimer** les 3 services suivants :
+- Contributions cadastrales (Receipt)
+- Certificat cadastral (ShieldCheck)
+- Fiche parcellaire (FileText)
 
-## Modifications
+**Ajouter** les 5 services suivants :
 
-**Fichier unique : `src/pages/Services.tsx`**
-
-Remplacer les 8 services actuels (cartographie dynamique, analyse cadastrale, recettes fiscales, etc.) par des services correspondant à ce que l'application propose réellement :
-
-| Icone | Titre | Description |
+| Icône | Titre | Description |
 |-------|-------|-------------|
-| Search | Recherche cadastrale | Recherchez n'importe quelle parcelle en RDC par numéro, propriétaire ou localisation |
-| Map | Carte interactive | Visualisez les parcelles et données foncières sur une carte dynamique |
-| FileText | Fiche parcellaire | Consultez les informations détaillées d'une parcelle : propriétaire, superficie, titre |
-| Scale | Litiges fonciers | Accédez aux informations sur les litiges enregistrés sur une parcelle |
-| Receipt | Contributions cadastrales | Historique des paiements et contributions liés à une parcelle |
-| ShieldCheck | Certificat cadastral | Obtenez un certificat officiel avec les données cadastrales vérifiées |
+| FileText | Demande de titre foncier | Soumettez une demande de titre foncier initial ou de renouvellement en ligne |
+| Home | Expertise immobilière | Demandez une expertise officielle pour évaluer la valeur d'un bien immobilier |
+| ArrowRightLeft | Demande de mutation | Initiez une procédure de transfert de propriété foncière |
+| ShieldCheck | Vérifier hypothèque | Vérifiez si une parcelle est grevée d'une hypothèque avant toute transaction |
+| History | Historique fiscal | Consultez l'historique des taxes et obligations fiscales liées à une parcelle |
 
-Mise à jour du texte d'introduction :
-- Titre : "Nos Services"
-- Description : "Accédez aux informations cadastrales de n'importe quelle propriété en RDC. Nos services numériques vous permettent de consulter, vérifier et documenter les données foncières en quelques clics."
+**Résultat final** : 8 cartes de services (3 existantes conservées + 5 nouvelles).
+
+Services conservés : Recherche cadastrale, Carte interactive, Litiges fonciers.
 
