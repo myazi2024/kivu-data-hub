@@ -934,7 +934,7 @@ export const generateTaxHistory = async (
 export const generateBoundaryHistory = async (
   parcels: Array<{ id: string; parcel_number: string }>
 ) => {
-  const selected = parcels.filter((_, i) => i % 10 === 0).slice(0, 10);
+  const selected = parcels.filter((_, i) => i % 15 === 0); // ~7%
   const PURPOSES = ['Réajustement ou rectification', 'Morcellement ou fusion', 'Mise en valeur ou mutation'];
 
   const records = selected.map((p, i) => ({
@@ -945,13 +945,17 @@ export const generateBoundaryHistory = async (
     boundary_purpose: pick(PURPOSES, i),
   }));
 
-  const { data, error } = await supabase
-    .from('cadastral_boundary_history')
-    .insert(records)
-    .select('id');
-
-  if (error) console.error('Historique bornages (non-bloquant):', error);
-  return data ?? [];
+  const allInserted: Array<{ id: string }> = [];
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { data, error } = await supabase
+      .from('cadastral_boundary_history')
+      .insert(batch)
+      .select('id');
+    if (error) console.error(`Historique bornages (batch ${i}, non-bloquant):`, error);
+    if (data) allInserted.push(...data);
+  }
+  return allInserted;
 };
 
 // ─── Step 14: Mortgages — ~8% parcels ───────────────────────────────────────
