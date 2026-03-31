@@ -484,8 +484,8 @@ export const generateDisputes = async (parcelNumbers: string[], suffix: string, 
   const DISPUTE_STATUSES = ['en_cours', 'resolu', 'demande_levee', 'en_cours', 'resolu', 'en_cours', 'demande_levee', 'resolu', 'en_cours', 'resolu'];
   const QUALITIES = ['proprietaire', 'occupant', 'heritier', 'mandataire', 'proprietaire'];
 
-  // Pick 10 parcels spread across provinces
-  const selectedParcels = parcelNumbers.filter((_, i) => i % 10 === 5).slice(0, 10);
+  // Pick 2 parcels per province (52 total)
+  const selectedParcels = parcelNumbers.filter((_, i) => i % 10 === 5).slice(0, PROVINCES.length * 2);
 
   const records = selectedParcels.map((pn, i) => {
     const status = DISPUTE_STATUSES[i];
