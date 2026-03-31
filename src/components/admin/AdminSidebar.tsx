@@ -49,7 +49,7 @@ interface AdminSidebarProps {
   onNavigate?: () => void;
 }
 
-const menuItems = [
+export const menuItems = [
   {
     category: 'Vue d\'ensemble',
     items: [

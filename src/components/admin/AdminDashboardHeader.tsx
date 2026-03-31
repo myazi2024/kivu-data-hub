@@ -19,10 +19,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useTestMode } from '@/hooks/useTestMode';
+import { menuItems } from '@/components/admin/AdminSidebar';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { useState } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 
 interface AdminDashboardHeaderProps {
   onMenuClick: () => void;
