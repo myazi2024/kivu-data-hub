@@ -248,7 +248,7 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
       parcel_number: pn,
       property_title_type: pick(TITLE_TYPES, idx),
       current_owner_name: `Test ${ownerName}`,
-      area_sqm: randInt(200, 5000),
+      area_sqm: areaSqm,
       province: prov.province,
       ville: prov.ville,
       commune: prov.commune,
