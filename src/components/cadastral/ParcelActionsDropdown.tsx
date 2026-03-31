@@ -110,13 +110,25 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
     lastCategory = action.category;
   });
 
-  const handleActionClick = (action: ParcelAction) => {
+  const handleActionClick = async (action: ParcelAction) => {
     const handler = getActionHandler(action.key);
-    if (handler) {
-      triggerHapticFeedback();
-      handler();
-      onCollapse();
+    if (!handler) return;
+
+    // Auth guard
+    if (action.requiresAuth) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('Connexion requise', {
+          description: 'Veuillez vous connecter pour accéder à ce service.',
+          action: { label: 'Se connecter', onClick: () => window.location.href = '/auth' },
+        });
+        return;
+      }
     }
+
+    triggerHapticFeedback();
+    handler();
+    onCollapse();
   };
 
   return (
