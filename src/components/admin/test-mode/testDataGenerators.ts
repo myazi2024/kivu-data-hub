@@ -552,11 +552,11 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
 export const generateExpertiseRequests = async (userId: string, parcelNumbers: string[], suffix: string) => {
   const EXP_STATUSES = ['pending', 'completed', 'in_progress', 'pending', 'completed', 'pending', 'in_progress', 'completed', 'pending', 'completed'];
   const ROAD_TYPES = ['asphalte', 'terre', 'piste', 'asphalte', 'terre'];
-  const PROPERTY_CONDITIONS = ['bon', 'moyen', 'mauvais', 'neuf', 'bon', 'moyen'];
-  const WALL_MATERIALS = ['Briques cuites', 'Parpaings', 'Bois', 'Tôles', 'Briques adobe', 'Pierre'];
-  const ROOF_MATERIALS = ['Tôles galvanisées', 'Tuiles', 'Dalle béton', 'Chaume', 'Tôles galvanisées'];
-  const SOUND_ENVS = ['calme', 'modéré', 'bruyant', 'calme', 'modéré'];
-  const BUILDING_POSITIONS = ['isolé', 'en_bande', 'angle', 'mitoyen', 'isolé'];
+  const PROPERTY_CONDITIONS = ['neuf', 'bon', 'moyen', 'mauvais', 'a_renover'];
+  const WALL_MATERIALS = ['beton', 'briques_cuites', 'briques_adobe', 'parpaings', 'bois', 'tole', 'mixte'];
+  const ROOF_MATERIALS = ['tole_bac', 'tuiles', 'dalle_beton', 'ardoise', 'chaume', 'autre'];
+  const SOUND_ENVS = ['tres_calme', 'calme', 'modere', 'bruyant', 'tres_bruyant'];
+  const BUILDING_POSITIONS = ['premiere_position', 'deuxieme_position', 'fond_parcelle', 'dans_servitude', 'coin_parcelle'];
   const PAYMENT_STATUSES_EXP = ['pending', 'paid', 'paid', 'pending', 'paid'];
 
   // ~5% of total parcels
