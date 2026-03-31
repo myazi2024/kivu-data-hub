@@ -342,14 +342,15 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
   const REQ_STATUSES = ['pending', 'approved', 'rejected', 'pending', 'approved', 'pending', 'rejected', 'approved', 'pending', 'approved'];
   const PAY_STATUSES = ['pending', 'paid', 'paid', 'pending', 'paid', 'pending', 'paid', 'paid', 'pending', 'paid'];
 
-  const records = Array.from({ length: 10 }, (_, i) => {
+  const totalCount = PROVINCES.length * 2; // 2 per province
+  const records = Array.from({ length: totalCount }, (_, i) => {
     const prov = PROVINCES[Math.floor(i / 2)];
     const isRural = i % 3 === 0;
     return {
       reference_number: `TEST-LTR-${String(i + 1).padStart(3, '0')}-${suffix}`,
       user_id: userId,
-      requester_first_name: FIRST_NAMES[i],
-      requester_last_name: LAST_NAMES[i],
+      requester_first_name: pick(FIRST_NAMES, i),
+      requester_last_name: pick(LAST_NAMES, i),
       requester_phone: `+24380000${String(10 + i).padStart(4, '0')}`,
       requester_email: `test-titre${i + 1}@example.com`,
       requester_type: i % 3 === 0 ? 'mandataire' : 'proprietaire',
@@ -367,9 +368,9 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
       construction_nature: i % 4 === 0 ? null : pick(['Durable', 'Semi-durable', 'Précaire'], i),
       occupation_duration: pick(['moins_1_an', '1_3_ans', '3_5_ans', '5_ans_plus'], i),
       estimated_processing_days: randInt(20, 90),
-      status: REQ_STATUSES[i],
-      rejection_reason: REQ_STATUSES[i] === 'rejected' ? 'Documents incomplets (données de test)' : null,
-      payment_status: PAY_STATUSES[i],
+      status: pick(REQ_STATUSES, i),
+      rejection_reason: pick(REQ_STATUSES, i) === 'rejected' ? 'Documents incomplets (données de test)' : null,
+      payment_status: pick(PAY_STATUSES, i),
       total_amount_usd: randInt(50, 150),
       fee_items: [
         { fee_name: 'Frais de dossier', amount_usd: 50 },
@@ -379,13 +380,18 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
     };
   });
 
-  const { data, error } = await supabase
-    .from('land_title_requests')
-    .insert(records)
-    .select('id');
-
-  if (error) throw new Error(`Demandes de titres: ${error.message}`);
-  return assertInserted(data, 'Demandes de titres');
+  // Insert in batches
+  const allInserted: Array<{ id: string }> = [];
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { data, error } = await supabase
+      .from('land_title_requests')
+      .insert(batch)
+      .select('id');
+    if (error) throw new Error(`Demandes de titres (batch ${i}): ${error.message}`);
+    allInserted.push(...assertInserted(data, 'Demandes de titres'));
+  }
+  return allInserted;
 };
 
 // ─── Step 6: Expertise requests — 10 total (2/province) ──────────────────────
