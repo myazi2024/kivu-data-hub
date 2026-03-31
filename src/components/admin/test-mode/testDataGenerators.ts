@@ -71,6 +71,27 @@ const PROVINCES = [
   { province: 'Sud-Kivu', ville: 'Bukavu', commune: 'Ibanda', quartier: 'Ndendere', avenue: 'Av. Patrice Lumumba', lat: -2.5083, lng: 28.8608 },
   { province: 'Haut-Katanga', ville: 'Lubumbashi', commune: 'Lubumbashi', quartier: 'Centre-ville', avenue: 'Av. Mobutu', lat: -11.6647, lng: 27.4794 },
   { province: 'Kongo-Central', ville: 'Matadi', commune: 'Matadi', quartier: 'Ville-Basse', avenue: 'Av. du Port', lat: -5.8243, lng: 13.4531 },
+  { province: 'Lualaba', ville: 'Kolwezi', commune: 'Dilala', quartier: 'Centre', avenue: 'Av. Lumumba', lat: -10.7167, lng: 25.4667 },
+  { province: 'Tanganyika', ville: 'Kalemie', commune: 'Kalemie', quartier: 'Régideso', avenue: 'Av. des Palmiers', lat: -5.9333, lng: 29.1833 },
+  { province: 'Haut-Lomami', ville: 'Kamina', commune: 'Kamina', quartier: 'Camp Vangu', avenue: 'Av. de la Gare', lat: -8.7333, lng: 25.0000 },
+  { province: 'Lomami', ville: 'Kabinda', commune: 'Kabinda', quartier: 'Centre', avenue: 'Av. Mobutu', lat: -6.1333, lng: 24.4833 },
+  { province: 'Kasaï-Central', ville: 'Kananga', commune: 'Kananga', quartier: 'Katoka', avenue: 'Av. de l\'Indépendance', lat: -5.8960, lng: 22.4166 },
+  { province: 'Kasaï-Oriental', ville: 'Mbuji-Mayi', commune: 'Bipemba', quartier: 'Bonzola', avenue: 'Av. Laurent-Désiré Kabila', lat: -6.1500, lng: 23.6000 },
+  { province: 'Kasaï', ville: 'Tshikapa', commune: 'Tshikapa', quartier: 'Kanzala', avenue: 'Av. de la Paix', lat: -6.4167, lng: 20.8000 },
+  { province: 'Kwilu', ville: 'Kikwit', commune: 'Kikwit-Sud', quartier: 'Nzinda', avenue: 'Av. du Kwilu', lat: -5.0333, lng: 18.8167 },
+  { province: 'Kwango', ville: 'Kenge', commune: 'Kenge', quartier: 'Centre', avenue: 'Av. Principale', lat: -4.8000, lng: 17.0333 },
+  { province: 'Mai-Ndombe', ville: 'Inongo', commune: 'Inongo', quartier: 'Centre', avenue: 'Av. du Lac', lat: -1.9500, lng: 18.2667 },
+  { province: 'Équateur', ville: 'Mbandaka', commune: 'Mbandaka', quartier: 'Basoko', avenue: 'Av. du Fleuve', lat: 0.0478, lng: 18.2603 },
+  { province: 'Mongala', ville: 'Lisala', commune: 'Lisala', quartier: 'Centre', avenue: 'Av. Mobutu', lat: 2.1500, lng: 21.5167 },
+  { province: 'Nord-Ubangi', ville: 'Gbadolite', commune: 'Gbadolite', quartier: 'Centre', avenue: 'Av. du Président', lat: 4.2833, lng: 21.0167 },
+  { province: 'Sud-Ubangi', ville: 'Gemena', commune: 'Gemena', quartier: 'Centre', avenue: 'Av. de la Libération', lat: 3.2500, lng: 19.7667 },
+  { province: 'Tshuapa', ville: 'Boende', commune: 'Boende', quartier: 'Centre', avenue: 'Av. de la Tshuapa', lat: -0.2833, lng: 20.8667 },
+  { province: 'Tshopo', ville: 'Kisangani', commune: 'Makiso', quartier: 'Mangobo', avenue: 'Av. du 30 Juin', lat: 0.5167, lng: 25.2000 },
+  { province: 'Bas-Uélé', ville: 'Buta', commune: 'Buta', quartier: 'Centre', avenue: 'Av. de l\'Uélé', lat: 2.7833, lng: 24.7333 },
+  { province: 'Haut-Uélé', ville: 'Isiro', commune: 'Isiro', quartier: 'Centre', avenue: 'Av. de la Paix', lat: 2.7667, lng: 27.6167 },
+  { province: 'Ituri', ville: 'Bunia', commune: 'Bunia', quartier: 'Nyakasanza', avenue: 'Av. du Lac Albert', lat: 1.5667, lng: 30.2500 },
+  { province: 'Maniema', ville: 'Kindu', commune: 'Kindu', quartier: 'Basoko', avenue: 'Av. du Congo', lat: -2.9500, lng: 25.9500 },
+  { province: 'Sankuru', ville: 'Lusambo', commune: 'Lusambo', quartier: 'Centre', avenue: 'Av. du Sankuru', lat: -4.9667, lng: 23.4333 },
 ];
 
 const PARCELS_PER_PROVINCE = 20; // 15 SU + 5 SR
@@ -98,7 +119,7 @@ export function generateParcelNumbers(suffix: string): string[] {
   return numbers;
 }
 
-// ─── Step 0b: Generate 100 cadastral parcels ──────────────────────────────────
+// ─── Step 0b: Generate 520 cadastral parcels (26 provinces × 20) ──────────────
 
 export const generateParcels = async (parcelNumbers: string[]) => {
   const records = parcelNumbers.map((pn, idx) => {
@@ -152,7 +173,7 @@ export const generateParcels = async (parcelNumbers: string[]) => {
   return allInserted;
 };
 
-// ─── Step 1: Generate 100 contributions ────────────────────────────────────────
+// ─── Step 1: Generate 520 contributions (1 per parcel) ─────────────────────────
 
 export const generateContributions = async (userId: string, parcelNumbers: string[]) => {
   const STATUSES_CYCLE = ['approved', 'pending', 'rejected', 'pending', 'approved'];
@@ -217,7 +238,7 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
   return allInserted;
 };
 
-// ─── Step 2: Generate ~30 invoices (30% of parcels) ───────────────────────────
+// ─── Step 2: Generate invoices (~30% of parcels) ──────────────────────────────
 
 export const generateInvoices = async (userId: string, parcelNumbers: string[]) => {
   const SERVICES_POOL: Json[][] = [
@@ -238,17 +259,22 @@ export const generateInvoices = async (userId: string, parcelNumbers: string[]) 
     client_name: `Test User ${i + 1}`,
     status: pick(INV_STATUSES, i),
     user_id: userId,
-    geographical_zone: PROVINCES[Math.floor(i / (selectedParcels.length / 5))  % 5]?.province ?? 'Kinshasa',
+    geographical_zone: PROVINCES[Math.floor(i / (selectedParcels.length / PROVINCES.length)) % PROVINCES.length]?.province ?? 'Kinshasa',
     created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
   }));
 
-  const { data, error } = await supabase
-    .from('cadastral_invoices')
-    .insert(records)
-    .select('id, parcel_number, status');
-
-  if (error) throw new Error(`Factures: ${error.message}`);
-  return assertInserted(data, 'Factures');
+  // Insert in batches
+  const allInserted: Array<{ id: string; parcel_number: string; status: string }> = [];
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { data, error } = await supabase
+      .from('cadastral_invoices')
+      .insert(batch)
+      .select('id, parcel_number, status');
+    if (error) throw new Error(`Factures (batch ${i}): ${error.message}`);
+    allInserted.push(...assertInserted(data, 'Factures'));
+  }
+  return allInserted;
 };
 
 // ─── Step 3: Generate payments for paid invoices ──────────────────────────────
@@ -313,7 +339,7 @@ export const generateServiceAccess = async (
   if (error) console.error('Accès services (non bloquant):', error);
 };
 
-// ─── Step 5: Title requests — 10 total (2/province) ──────────────────────────
+// ─── Step 5: Title requests — 52 total (2/province) ─────────────────────────
 
 export const generateTitleRequests = async (userId: string, suffix: string) => {
   const FIRST_NAMES = ['Jean', 'Marie', 'Patrick', 'Chantal', 'Pierre', 'Grace', 'David', 'Sophie', 'Joseph', 'Alice'];
@@ -321,14 +347,15 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
   const REQ_STATUSES = ['pending', 'approved', 'rejected', 'pending', 'approved', 'pending', 'rejected', 'approved', 'pending', 'approved'];
   const PAY_STATUSES = ['pending', 'paid', 'paid', 'pending', 'paid', 'pending', 'paid', 'paid', 'pending', 'paid'];
 
-  const records = Array.from({ length: 10 }, (_, i) => {
+  const totalCount = PROVINCES.length * 2; // 2 per province
+  const records = Array.from({ length: totalCount }, (_, i) => {
     const prov = PROVINCES[Math.floor(i / 2)];
     const isRural = i % 3 === 0;
     return {
       reference_number: `TEST-LTR-${String(i + 1).padStart(3, '0')}-${suffix}`,
       user_id: userId,
-      requester_first_name: FIRST_NAMES[i],
-      requester_last_name: LAST_NAMES[i],
+      requester_first_name: pick(FIRST_NAMES, i),
+      requester_last_name: pick(LAST_NAMES, i),
       requester_phone: `+24380000${String(10 + i).padStart(4, '0')}`,
       requester_email: `test-titre${i + 1}@example.com`,
       requester_type: i % 3 === 0 ? 'mandataire' : 'proprietaire',
@@ -346,9 +373,9 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
       construction_nature: i % 4 === 0 ? null : pick(['Durable', 'Semi-durable', 'Précaire'], i),
       occupation_duration: pick(['moins_1_an', '1_3_ans', '3_5_ans', '5_ans_plus'], i),
       estimated_processing_days: randInt(20, 90),
-      status: REQ_STATUSES[i],
-      rejection_reason: REQ_STATUSES[i] === 'rejected' ? 'Documents incomplets (données de test)' : null,
-      payment_status: PAY_STATUSES[i],
+      status: pick(REQ_STATUSES, i),
+      rejection_reason: pick(REQ_STATUSES, i) === 'rejected' ? 'Documents incomplets (données de test)' : null,
+      payment_status: pick(PAY_STATUSES, i),
       total_amount_usd: randInt(50, 150),
       fee_items: [
         { fee_name: 'Frais de dossier', amount_usd: 50 },
@@ -358,23 +385,28 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
     };
   });
 
-  const { data, error } = await supabase
-    .from('land_title_requests')
-    .insert(records)
-    .select('id');
-
-  if (error) throw new Error(`Demandes de titres: ${error.message}`);
-  return assertInserted(data, 'Demandes de titres');
+  // Insert in batches
+  const allInserted: Array<{ id: string }> = [];
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { data, error } = await supabase
+      .from('land_title_requests')
+      .insert(batch)
+      .select('id');
+    if (error) throw new Error(`Demandes de titres (batch ${i}): ${error.message}`);
+    allInserted.push(...assertInserted(data, 'Demandes de titres'));
+  }
+  return allInserted;
 };
 
-// ─── Step 6: Expertise requests — 10 total (2/province) ──────────────────────
+// ─── Step 6: Expertise requests — 52 total (2/province) ─────────────────────
 
 export const generateExpertiseRequests = async (userId: string, parcelNumbers: string[], suffix: string) => {
   const EXP_STATUSES = ['pending', 'completed', 'in_progress', 'pending', 'completed', 'pending', 'in_progress', 'completed', 'pending', 'completed'];
   const ROAD_TYPES = ['asphalte', 'terre', 'piste', 'asphalte', 'terre'];
 
-  // Pick 10 parcels spread across provinces
-  const selectedParcels = parcelNumbers.filter((_, i) => i % 10 === 0).slice(0, 10);
+  // Pick 2 parcels per province (52 total)
+  const selectedParcels = parcelNumbers.filter((_, i) => i % 10 === 0).slice(0, PROVINCES.length * 2);
 
   const records = selectedParcels.map((pn, i) => ({
     reference_number: `TEST-EXP-${String(i + 1).padStart(3, '0')}-${suffix}`,
@@ -383,7 +415,7 @@ export const generateExpertiseRequests = async (userId: string, parcelNumbers: s
     requester_name: `Test Expert ${i + 1}`,
     requester_email: `test-exp${i + 1}@example.com`,
     requester_phone: `+24380000${String(20 + i).padStart(4, '0')}`,
-    status: EXP_STATUSES[i],
+    status: pick(EXP_STATUSES, i),
     property_description: `Parcelle test ${i + 1} pour expertise immobilière`,
     construction_year: i % 3 === 0 ? null : randInt(1995, 2023),
     number_of_floors: i % 3 === 0 ? 0 : randInt(1, 4),
@@ -404,17 +436,22 @@ export const generateExpertiseRequests = async (userId: string, parcelNumbers: s
     distance_to_hospital_km: Math.round(Math.random() * 8 * 10) / 10,
     flood_risk_zone: i % 6 === 0,
     erosion_risk_zone: i % 7 === 0,
-    market_value_usd: EXP_STATUSES[i] === 'completed' ? randInt(15000, 200000) : null,
+    market_value_usd: pick(EXP_STATUSES, i) === 'completed' ? randInt(15000, 200000) : null,
     created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
   }));
 
-  const { data, error } = await supabase
-    .from('real_estate_expertise_requests')
-    .insert(records)
-    .select('id, reference_number');
-
-  if (error) throw new Error(`Expertises: ${error.message}`);
-  return assertInserted(data, 'Expertises');
+  // Insert in batches
+  const allInserted: Array<{ id: string; reference_number: string }> = [];
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { data, error } = await supabase
+      .from('real_estate_expertise_requests')
+      .insert(batch)
+      .select('id, reference_number');
+    if (error) throw new Error(`Expertises (batch ${i}): ${error.message}`);
+    allInserted.push(...assertInserted(data, 'Expertises'));
+  }
+  return allInserted;
 };
 
 // ─── Step 6b: Expertise payments ──────────────────────────────────────────────
@@ -445,18 +482,18 @@ export const generateExpertisePayments = async (userId: string, expertiseRequest
   return data ?? [];
 };
 
-// ─── Step 7: Disputes — 10 total (2/province) ────────────────────────────────
+// ─── Step 7: Disputes — 52 total (2/province) ───────────────────────────────
 
 export const generateDisputes = async (parcelNumbers: string[], suffix: string, userId?: string) => {
   const DISPUTE_NATURES = ['delimitation', 'double_vente', 'occupation_illegale', 'succession', 'delimitation'];
   const DISPUTE_STATUSES = ['en_cours', 'resolu', 'demande_levee', 'en_cours', 'resolu', 'en_cours', 'demande_levee', 'resolu', 'en_cours', 'resolu'];
   const QUALITIES = ['proprietaire', 'occupant', 'heritier', 'mandataire', 'proprietaire'];
 
-  // Pick 10 parcels spread across provinces
-  const selectedParcels = parcelNumbers.filter((_, i) => i % 10 === 5).slice(0, 10);
+  // Pick 2 parcels per province (52 total)
+  const selectedParcels = parcelNumbers.filter((_, i) => i % 10 === 5).slice(0, PROVINCES.length * 2);
 
   const records = selectedParcels.map((pn, i) => {
-    const status = DISPUTE_STATUSES[i];
+    const status = pick(DISPUTE_STATUSES, i);
     return {
       reference_number: `TEST-DISP-${String(i + 1).padStart(3, '0')}-${suffix}`,
       parcel_number: pn,
@@ -521,7 +558,7 @@ export const generateContributorCodes = async (
   return assertInserted(data, 'Codes CCC');
 };
 
-// ─── Step 9: Fraud attempts — 10 (2/province) ────────────────────────────────
+// ─── Step 9: Fraud attempts — 52 (2/province) ───────────────────────────────
 
 export const generateFraudAttempts = async (
   userId: string,
@@ -530,7 +567,7 @@ export const generateFraudAttempts = async (
   const FRAUD_TYPES = ['duplication', 'document_falsifie', 'identite_usurpee', 'coordonnees_falsifiees', 'duplication'];
   const SEVERITIES = ['high', 'medium', 'critical', 'low', 'high'];
 
-  const selected = contributions.filter((_, i) => i % 10 === 0).slice(0, 10);
+  const selected = contributions.filter((_, i) => i % 10 === 0).slice(0, PROVINCES.length * 2);
 
   const records = selected.map((c, i) => ({
     user_id: userId,
@@ -754,7 +791,7 @@ export const generateBuildingPermits = async (
   return data ?? [];
 };
 
-// ─── Step 16: Certificates — 10 total (2/province) ──────────────────────────
+// ─── Step 16: Certificates — 52 total (2/province) ─────────────────────────
 
 export const generateCertificates = async (
   parcelNumbers: string[],
@@ -762,7 +799,7 @@ export const generateCertificates = async (
   userId?: string
 ) => {
   const CERT_TYPES = ['titre_foncier', 'mutation_fonciere', 'certificat_enregistrement', 'titre_foncier', 'mutation_fonciere'];
-  const selectedParcels = parcelNumbers.filter((_, i) => i % 10 === 2).slice(0, 10);
+  const selectedParcels = parcelNumbers.filter((_, i) => i % 10 === 2).slice(0, PROVINCES.length * 2);
 
   const records = selectedParcels.map((pn, i) => ({
     reference_number: `TEST-CERT-${String(i + 1).padStart(3, '0')}-${suffix}`,
@@ -784,7 +821,7 @@ export const generateCertificates = async (
   return data ?? [];
 };
 
-// ─── Step 17a: Mutation requests — 10 total (2/province) ────────────────────
+// ─── Step 17a: Mutation requests — 52 total (2/province) ────────────────────
 
 export const generateMutationRequests = async (
   userId: string,
@@ -793,7 +830,7 @@ export const generateMutationRequests = async (
 ) => {
   const MUT_TYPES = ['vente', 'donation', 'succession', 'vente', 'donation'];
   const MUT_STATUSES = ['pending', 'approved', 'rejected', 'pending', 'approved', 'pending', 'rejected', 'approved', 'pending', 'approved'];
-  const selected = parcels.filter((_, i) => i % 10 === 4).slice(0, 10);
+  const selected = parcels.filter((_, i) => i % 10 === 4).slice(0, PROVINCES.length * 2);
 
   const records = selected.map((p, i) => {
     const status = MUT_STATUSES[i];
@@ -831,7 +868,7 @@ export const generateMutationRequests = async (
   return data ?? [];
 };
 
-// ─── Step 17b: Subdivision requests — 5 total (1/province) ──────────────────
+// ─── Step 17b: Subdivision requests — 26 total (1/province) ─────────────────
 
 export const generateSubdivisionRequests = async (
   userId: string,
@@ -840,7 +877,7 @@ export const generateSubdivisionRequests = async (
 ) => {
   const SUB_STATUSES = ['pending', 'approved', 'pending', 'approved', 'rejected'];
   const PURPOSES = ['Résidentielle', 'Commerciale', 'Mixte', 'Résidentielle', 'Commerciale'];
-  const selected = parcels.filter((_, i) => i % 20 === 8).slice(0, 5); // 1 per province
+  const selected = parcels.filter((_, i) => i % PARCELS_PER_PROVINCE === 8).slice(0, PROVINCES.length);
 
   const records = selected.map((p, i) => {
     const numLots = randInt(2, 5);
