@@ -371,6 +371,7 @@ export const generateInvoices = async (userId: string, parcelNumbers: string[]) 
     ['carte_cadastrale', 'certificat_bornage'],
   ];
   const INV_STATUSES = ['paid', 'pending', 'paid', 'paid', 'pending'];
+  const PAYMENT_METHODS = ['mobile_money', 'card', 'bank_transfer', 'mobile_money', 'mobile_money'];
   const selectedParcels = parcelNumbers.filter((_, i) => i % 3 === 0); // ~33%
 
   const records = selectedParcels.map((pn, i) => ({
@@ -382,6 +383,8 @@ export const generateInvoices = async (userId: string, parcelNumbers: string[]) 
     client_name: `Test User ${i + 1}`,
     status: pick(INV_STATUSES, i),
     user_id: userId,
+    payment_method: pick(PAYMENT_METHODS, i),
+    discount_amount_usd: i % 5 === 0 ? randInt(1, 5) : null,
     geographical_zone: PROVINCES[Math.floor(i / (selectedParcels.length / PROVINCES.length)) % PROVINCES.length]?.province ?? 'Kinshasa',
     created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
   }));
@@ -470,18 +473,25 @@ export const generateServiceAccess = async (
   }
 };
 
-// ─── Step 5: Title requests — 52 total (2/province) ─────────────────────────
+// ─── Step 5: Title requests — ~5% of parcels (351) ──────────────────────────
 
 export const generateTitleRequests = async (userId: string, suffix: string) => {
   const FIRST_NAMES = ['Jean', 'Marie', 'Patrick', 'Chantal', 'Pierre', 'Grace', 'David', 'Sophie', 'Joseph', 'Alice'];
   const LAST_NAMES = ['Kabongo', 'Amani', 'Mwamba', 'Furaha', 'Mukendi', 'Baraka', 'Ilunga', 'Sifa', 'Ngoy', 'Mapendo'];
   const REQ_STATUSES = ['pending', 'approved', 'rejected', 'pending', 'approved', 'pending', 'rejected', 'approved', 'pending', 'approved'];
   const PAY_STATUSES = ['pending', 'paid', 'paid', 'pending', 'paid', 'pending', 'paid', 'paid', 'pending', 'paid'];
+  const REQUEST_TYPES = ['nouveau_titre', 'renouvellement', 'duplicata', 'conversion'];
+  const REQUESTER_TYPES = ['proprietaire', 'mandataire', 'heritier'];
+  const NATIONALITIES = ['RDC', 'RDC', 'RDC', 'RDC', 'RDC', 'RDC', 'RDC', 'RDC', 'Belgique', 'France'];
 
-  const totalCount = PROVINCES.length * 2; // 2 per province
+  // ~5% of total parcels, spread across provinces proportionally
+  const totalCount = Math.max(PROVINCES.length * 2, Math.round(TOTAL_PARCELS * 0.05));
   const records = Array.from({ length: totalCount }, (_, i) => {
-    const prov = PROVINCES[Math.floor(i / 2)];
+    const prov = PROVINCES[i % PROVINCES.length];
     const isRural = i % 3 === 0;
+    const status = pick(REQ_STATUSES, i);
+    const createdAt = new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000);
+    const reviewedAt = status !== 'pending' ? new Date(createdAt.getTime() + randInt(5, 60) * 24 * 3600 * 1000) : null;
     return {
       reference_number: `TEST-LTR-${String(i + 1).padStart(3, '0')}-${suffix}`,
       user_id: userId,
@@ -489,10 +499,14 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
       requester_last_name: pick(LAST_NAMES, i),
       requester_phone: `+24380000${String(10 + i).padStart(4, '0')}`,
       requester_email: `test-titre${i + 1}@example.com`,
-      requester_type: i % 3 === 0 ? 'mandataire' : 'proprietaire',
+      request_type: pick(REQUEST_TYPES, i),
+      requester_type: pick(REQUESTER_TYPES, i),
       requester_gender: i % 2 === 0 ? 'M' : 'F',
+      owner_gender: i % 3 === 0 ? 'F' : 'M',
       requester_legal_status: pick(LEGAL_STATUSES, i),
-      nationality: i % 5 === 0 ? 'Belgique' : 'RDC',
+      owner_legal_status: pick(LEGAL_STATUSES, i + 1),
+      nationality: pick(NATIONALITIES, i),
+      is_owner_same_as_requester: i % 2 === 0,
       section_type: isRural ? 'rural' : 'urbain',
       province: prov.province,
       ville: prov.ville,
@@ -500,19 +514,22 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
       quartier: isRural ? null : prov.quartier,
       territoire: isRural ? 'Kabare' : null,
       declared_usage: pick(DECLARED_USAGES, i),
-      area_sqm: randInt(200, 3000),
+      construction_type: pick(CONSTRUCTION_TYPES, i),
       construction_nature: i % 4 === 0 ? null : pick(['Durable', 'Semi-durable', 'Précaire'], i),
+      deduced_title_type: pick(TITLE_TYPES, i),
+      area_sqm: randInt(200, 3000),
       occupation_duration: pick(['moins_1_an', '1_3_ans', '3_5_ans', '5_ans_plus'], i),
       estimated_processing_days: randInt(20, 90),
-      status: pick(REQ_STATUSES, i),
-      rejection_reason: pick(REQ_STATUSES, i) === 'rejected' ? 'Documents incomplets (données de test)' : null,
+      status,
+      rejection_reason: status === 'rejected' ? 'Documents incomplets (données de test)' : null,
+      reviewed_at: reviewedAt?.toISOString() ?? null,
       payment_status: pick(PAY_STATUSES, i),
       total_amount_usd: randInt(50, 150),
       fee_items: [
         { fee_name: 'Frais de dossier', amount_usd: 50 },
         ...(i % 2 === 0 ? [{ fee_name: 'Frais de mesurage', amount_usd: 25 }] : []),
       ] as unknown as Json,
-      created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
+      created_at: createdAt.toISOString(),
     };
   });
 
@@ -530,46 +547,84 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
   return allInserted;
 };
 
-// ─── Step 6: Expertise requests — 52 total (2/province) ─────────────────────
+// ─── Step 6: Expertise requests — ~5% of parcels (351) ──────────────────────
 
 export const generateExpertiseRequests = async (userId: string, parcelNumbers: string[], suffix: string) => {
   const EXP_STATUSES = ['pending', 'completed', 'in_progress', 'pending', 'completed', 'pending', 'in_progress', 'completed', 'pending', 'completed'];
   const ROAD_TYPES = ['asphalte', 'terre', 'piste', 'asphalte', 'terre'];
+  const PROPERTY_CONDITIONS = ['bon', 'moyen', 'mauvais', 'neuf', 'bon', 'moyen'];
+  const WALL_MATERIALS = ['Briques cuites', 'Parpaings', 'Bois', 'Tôles', 'Briques adobe', 'Pierre'];
+  const ROOF_MATERIALS = ['Tôles galvanisées', 'Tuiles', 'Dalle béton', 'Chaume', 'Tôles galvanisées'];
+  const SOUND_ENVS = ['calme', 'modéré', 'bruyant', 'calme', 'modéré'];
+  const BUILDING_POSITIONS = ['isolé', 'en_bande', 'angle', 'mitoyen', 'isolé'];
+  const PAYMENT_STATUSES_EXP = ['pending', 'paid', 'paid', 'pending', 'paid'];
 
-  // Pick 2 parcels per province (52 total)
-  const selectedParcels = parcelNumbers.filter((_, i) => i % 10 === 0).slice(0, PROVINCES.length * 2);
+  // ~5% of total parcels
+  const totalCount = Math.max(PROVINCES.length * 2, Math.round(TOTAL_PARCELS * 0.05));
+  const step = Math.max(1, Math.floor(parcelNumbers.length / totalCount));
+  const selectedParcels = parcelNumbers.filter((_, i) => i % step === 0).slice(0, totalCount);
 
-  const records = selectedParcels.map((pn, i) => ({
-    reference_number: `TEST-EXP-${String(i + 1).padStart(3, '0')}-${suffix}`,
-    parcel_number: pn,
-    user_id: userId,
-    requester_name: `Test Expert ${i + 1}`,
-    requester_email: `test-exp${i + 1}@example.com`,
-    requester_phone: `+24380000${String(20 + i).padStart(4, '0')}`,
-    status: pick(EXP_STATUSES, i),
-    property_description: `Parcelle test ${i + 1} pour expertise immobilière`,
-    construction_year: i % 3 === 0 ? null : randInt(1995, 2023),
-    number_of_floors: i % 3 === 0 ? 0 : randInt(1, 4),
-    total_built_area_sqm: i % 3 === 0 ? 0 : randInt(80, 500),
-    has_garden: i % 2 === 0,
-    garden_area_sqm: i % 2 === 0 ? randInt(50, 300) : 0,
-    has_electricity: i % 3 !== 2,
-    has_water_supply: i % 4 !== 3,
-    has_internet: i % 3 === 0,
-    has_parking: i % 2 === 0,
-    parking_spaces: i % 2 === 0 ? randInt(1, 4) : 0,
-    has_security_system: i % 5 === 0,
-    construction_quality: pick(['standard', 'luxe', 'economique'], i),
-    road_access_type: pick(ROAD_TYPES, i),
-    distance_to_main_road_m: randInt(10, 1000),
-    distance_to_market_km: Math.round(Math.random() * 5 * 10) / 10,
-    distance_to_school_km: Math.round(Math.random() * 3 * 10) / 10,
-    distance_to_hospital_km: Math.round(Math.random() * 8 * 10) / 10,
-    flood_risk_zone: i % 6 === 0,
-    erosion_risk_zone: i % 7 === 0,
-    market_value_usd: pick(EXP_STATUSES, i) === 'completed' ? randInt(15000, 200000) : null,
-    created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
-  }));
+  const records = selectedParcels.map((pn, i) => {
+    const status = pick(EXP_STATUSES, i);
+    const createdAt = new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000);
+    const assignedAt = status !== 'pending' ? new Date(createdAt.getTime() + randInt(1, 15) * 24 * 3600 * 1000) : null;
+    const expertiseDate = status === 'completed' ? new Date((assignedAt?.getTime() ?? createdAt.getTime()) + randInt(5, 30) * 24 * 3600 * 1000) : null;
+
+    return {
+      reference_number: `TEST-EXP-${String(i + 1).padStart(3, '0')}-${suffix}`,
+      parcel_number: pn,
+      user_id: userId,
+      requester_name: `Test Expert ${i + 1}`,
+      requester_email: `test-exp${i + 1}@example.com`,
+      requester_phone: `+24380000${String(20 + i).padStart(4, '0')}`,
+      status,
+      payment_status: pick(PAYMENT_STATUSES_EXP, i),
+      property_description: `Parcelle test ${i + 1} pour expertise immobilière`,
+      property_condition: pick(PROPERTY_CONDITIONS, i),
+      wall_material: pick(WALL_MATERIALS, i),
+      roof_material: pick(ROOF_MATERIALS, i),
+      floor_material: pick(['Carrelage', 'Ciment lissé', 'Parquet', 'Terre battue'], i),
+      sound_environment: pick(SOUND_ENVS, i),
+      building_position: pick(BUILDING_POSITIONS, i),
+      construction_year: i % 3 === 0 ? null : randInt(1995, 2023),
+      number_of_floors: i % 3 === 0 ? 0 : randInt(1, 4),
+      total_built_area_sqm: i % 3 === 0 ? 0 : randInt(80, 500),
+      number_of_rooms: randInt(3, 12),
+      number_of_bedrooms: randInt(1, 6),
+      number_of_bathrooms: randInt(1, 3),
+      has_garden: i % 2 === 0,
+      garden_area_sqm: i % 2 === 0 ? randInt(50, 300) : 0,
+      has_electricity: i % 3 !== 2,
+      has_water_supply: i % 4 !== 3,
+      has_internet: i % 3 === 0,
+      has_parking: i % 2 === 0,
+      parking_spaces: i % 2 === 0 ? randInt(1, 4) : 0,
+      has_security_system: i % 5 === 0,
+      has_sewage_system: i % 4 === 0,
+      has_pool: i % 12 === 0,
+      has_air_conditioning: i % 6 === 0,
+      has_solar_panels: i % 8 === 0,
+      has_generator: i % 5 === 0,
+      has_water_tank: i % 4 === 0,
+      has_borehole: i % 7 === 0,
+      has_garage: i % 3 === 0,
+      has_electric_fence: i % 9 === 0,
+      has_cellar: i % 15 === 0,
+      has_automatic_gate: i % 10 === 0,
+      construction_quality: pick(['standard', 'luxe', 'economique'], i),
+      road_access_type: pick(ROAD_TYPES, i),
+      distance_to_main_road_m: randInt(10, 1000),
+      distance_to_market_km: Math.round(Math.random() * 5 * 10) / 10,
+      distance_to_school_km: Math.round(Math.random() * 3 * 10) / 10,
+      distance_to_hospital_km: Math.round(Math.random() * 8 * 10) / 10,
+      flood_risk_zone: i % 6 === 0,
+      erosion_risk_zone: i % 7 === 0,
+      market_value_usd: status === 'completed' ? randInt(15000, 200000) : null,
+      assigned_at: assignedAt?.toISOString() ?? null,
+      expertise_date: expertiseDate?.toISOString().split('T')[0] ?? null,
+      created_at: createdAt.toISOString(),
+    };
+  });
 
   // Insert in batches
   const allInserted: Array<{ id: string; reference_number: string }> = [];
@@ -618,7 +673,11 @@ export const generateExpertisePayments = async (userId: string, expertiseRequest
 export const generateDisputes = async (parcelNumbers: string[], suffix: string, userId?: string) => {
   const DISPUTE_NATURES = ['delimitation', 'double_vente', 'occupation_illegale', 'succession', 'delimitation'];
   const DISPUTE_STATUSES = ['en_cours', 'resolu', 'demande_levee', 'en_cours', 'resolu', 'en_cours', 'demande_levee', 'resolu', 'en_cours', 'resolu'];
+  const DISPUTE_TYPES = ['report', 'lifting', 'mediation', 'report', 'lifting'];
   const QUALITIES = ['proprietaire', 'occupant', 'heritier', 'mandataire', 'proprietaire'];
+  const LIFTING_STATUSES = ['en_cours', 'approved', 'rejected', 'pending'];
+  const LIFTING_REASONS = ['conciliation_reussie', 'decision_justice', 'accord_parties'];
+  const RESOLUTION_LEVELS = ['conciliation_amiable', 'mediation_communautaire', 'tribunal_paix', 'tribunal_grande_instance'];
 
   // Pick 2 parcels per province (52 total)
   const selectedParcels = parcelNumbers.filter((_, i) => i % 10 === 5).slice(0, PROVINCES.length * 2);
@@ -628,7 +687,7 @@ export const generateDisputes = async (parcelNumbers: string[], suffix: string, 
     return {
       reference_number: `TEST-DISP-${String(i + 1).padStart(3, '0')}-${suffix}`,
       parcel_number: pn,
-      dispute_type: 'report',
+      dispute_type: pick(DISPUTE_TYPES, i),
       dispute_nature: pick(DISPUTE_NATURES, i),
       declarant_name: `Test Déclarant ${i + 1}`,
       declarant_quality: pick(QUALITIES, i),
@@ -638,10 +697,10 @@ export const generateDisputes = async (parcelNumbers: string[], suffix: string, 
       reported_by: userId ?? null,
       dispute_start_date: randomDateInPast(8),
       dispute_description: `Litige de test #${i + 1}: ${pick(DISPUTE_NATURES, i)}`,
-      resolution_level: status === 'resolu' ? 'conciliation_amiable' : null,
+      resolution_level: pick(RESOLUTION_LEVELS, i),
       resolution_details: status === 'resolu' ? 'Résolu à l\'amiable (données de test)' : null,
-      lifting_status: status === 'demande_levee' ? 'en_cours' : null,
-      lifting_reason: status === 'demande_levee' ? 'conciliation_reussie' : null,
+      lifting_status: status === 'demande_levee' ? pick(LIFTING_STATUSES, i) : null,
+      lifting_reason: status === 'demande_levee' ? pick(LIFTING_REASONS, i) : null,
       lifting_request_reference: status === 'demande_levee' ? `TEST-LEV-${String(i + 1).padStart(3, '0')}-${suffix}` : null,
       parties_involved: [
         { name: `Test Partie ${i * 2 + 1}`, role: 'demandeur' },
@@ -776,12 +835,12 @@ export const generateBoundaryConflicts = async (parcelNumbers: string[], userId?
   return data ?? [];
 };
 
-// ─── Step 11: Ownership history — 20 parcels × 2 owners ─────────────────────
+// ─── Step 11: Ownership history — ~15% parcels × 2 owners ──────────────────
 
 export const generateOwnershipHistory = async (
   parcels: Array<{ id: string; parcel_number: string }>
 ) => {
-  const selected = parcels.filter((_, i) => i % 5 === 0); // 20 parcels
+  const selected = parcels.filter((_, i) => i % 7 === 0); // ~15%
   const MUTATION_TYPES = ['Vente', 'Donation', 'Succession', 'Vente', 'Donation'];
 
   const records = selected.flatMap((p, i) => {
@@ -807,22 +866,27 @@ export const generateOwnershipHistory = async (
     ];
   });
 
-  const { data, error } = await supabase
-    .from('cadastral_ownership_history')
-    .insert(records)
-    .select('id');
-
-  if (error) console.error('Historique propriété (non-bloquant):', error);
-  return data ?? [];
+  // Insert in batches
+  const allInserted: Array<{ id: string }> = [];
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { data, error } = await supabase
+      .from('cadastral_ownership_history')
+      .insert(batch)
+      .select('id');
+    if (error) console.error(`Historique propriété (batch ${i}, non-bloquant):`, error);
+    if (data) allInserted.push(...data);
+  }
+  return allInserted;
 };
 
-// ─── Step 12: Tax history — 20 parcels × 3 years ────────────────────────────
+// ─── Step 12: Tax history — ~15% parcels × 3 years ─────────────────────────
 
 export const generateTaxHistory = async (
   parcels: Array<{ id: string; parcel_number: string }>
 ) => {
   const currentYear = new Date().getFullYear();
-  const selected = parcels.filter((_, i) => i % 5 === 0); // 20 parcels
+  const selected = parcels.filter((_, i) => i % 7 === 0); // ~15%
 
   const records = selected.flatMap((p, i) =>
     [0, 1, 2].map((yearOffset) => ({
@@ -834,13 +898,18 @@ export const generateTaxHistory = async (
     }))
   );
 
-  const { data, error } = await supabase
-    .from('cadastral_tax_history')
-    .insert(records)
-    .select('id');
-
-  if (error) console.error('Historique taxes (non-bloquant):', error);
-  return data ?? [];
+  // Insert in batches
+  const allInserted: Array<{ id: string }> = [];
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { data, error } = await supabase
+      .from('cadastral_tax_history')
+      .insert(batch)
+      .select('id');
+    if (error) console.error(`Historique taxes (batch ${i}, non-bloquant):`, error);
+    if (data) allInserted.push(...data);
+  }
+  return allInserted;
 };
 
 // ─── Step 13: Boundary history — 10 parcels ─────────────────────────────────
@@ -868,12 +937,12 @@ export const generateBoundaryHistory = async (
   return data ?? [];
 };
 
-// ─── Step 14: Mortgages — 10 parcels ────────────────────────────────────────
+// ─── Step 14: Mortgages — ~8% parcels ───────────────────────────────────────
 
 export const generateMortgages = async (
   parcels: Array<{ id: string; parcel_number: string }>
 ) => {
-  const selected = parcels.filter((_, i) => i % 10 === 3).slice(0, 10);
+  const selected = parcels.filter((_, i) => i % 12 === 3); // ~8%
   const CREDITORS = ['Banque Commerciale du Congo', 'Trust Merchant Bank', 'Rawbank', 'Equity BCDC', 'KCB Bank'];
   const CREDITOR_TYPES = ['Banque', 'Microfinance', 'Banque', 'Banque', 'Microfinance'];
   const STATUSES = ['Active', 'Renégociée', 'Soldée', 'Active', 'Active'];
@@ -889,21 +958,26 @@ export const generateMortgages = async (
     reference_number: `TEST-HYP-${Date.now().toString(36)}-${i}`,
   }));
 
-  const { data, error } = await supabase
-    .from('cadastral_mortgages')
-    .insert(records)
-    .select('id');
-
-  if (error) console.error('Hypothèques (non-bloquant):', error);
-  return data ?? [];
+  // Insert in batches
+  const allInserted: Array<{ id: string }> = [];
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { data, error } = await supabase
+      .from('cadastral_mortgages')
+      .insert(batch)
+      .select('id');
+    if (error) console.error(`Hypothèques (batch ${i}, non-bloquant):`, error);
+    if (data) allInserted.push(...data);
+  }
+  return allInserted;
 };
 
-// ─── Step 15: Building permits — 10 parcels ─────────────────────────────────
+// ─── Step 15: Building permits — ~10% parcels ──────────────────────────────
 
 export const generateBuildingPermits = async (
   parcels: Array<{ id: string; parcel_number: string }>
 ) => {
-  const selected = parcels.filter((_, i) => i % 10 === 7).slice(0, 10);
+  const selected = parcels.filter((_, i) => i % 10 === 7); // ~10%
   const SERVICES = [
     'Division Provinciale de l\'Urbanisme et Habitat - Kinshasa',
     'Service Communal d\'Urbanisme - Goma',
@@ -923,16 +997,21 @@ export const generateBuildingPermits = async (
     is_current: i % 3 !== 1,
   }));
 
-  const { data, error } = await supabase
-    .from('cadastral_building_permits')
-    .insert(records)
-    .select('id');
-
-  if (error) console.error('Autorisation de bâtir (non-bloquant):', error);
-  return data ?? [];
+  // Insert in batches
+  const allInserted: Array<{ id: string }> = [];
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { data, error } = await supabase
+      .from('cadastral_building_permits')
+      .insert(batch)
+      .select('id');
+    if (error) console.error(`Autorisation de bâtir (batch ${i}, non-bloquant):`, error);
+    if (data) allInserted.push(...data);
+  }
+  return allInserted;
 };
 
-// ─── Step 16: Certificates — 52 total (2/province) ─────────────────────────
+// ─── Step 16: Certificates — 52 total (2/province) — varied statuses ───────
 
 export const generateCertificates = async (
   parcelNumbers: string[],
@@ -940,6 +1019,7 @@ export const generateCertificates = async (
   userId?: string
 ) => {
   const CERT_TYPES = ['titre_foncier', 'mutation_fonciere', 'certificat_enregistrement', 'titre_foncier', 'mutation_fonciere'];
+  const CERT_STATUSES = ['generated', 'pending', 'completed', 'generated', 'completed'];
   const selectedParcels = parcelNumbers.filter((_, i) => i % 10 === 2).slice(0, PROVINCES.length * 2);
 
   const records = selectedParcels.map((pn, i) => ({
@@ -947,7 +1027,7 @@ export const generateCertificates = async (
     certificate_type: pick(CERT_TYPES, i),
     parcel_number: pn,
     recipient_name: `Test Propriétaire ${i + 1}`,
-    status: 'generated',
+    status: pick(CERT_STATUSES, i),
     generated_by: userId ?? null,
     metadata: { test_mode: true } as unknown as Json,
     generated_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
@@ -962,7 +1042,7 @@ export const generateCertificates = async (
   return data ?? [];
 };
 
-// ─── Step 17a: Mutation requests — 52 total (2/province) ────────────────────
+// ─── Step 17a: Mutation requests — 52 total (2/province) — enriched ─────────
 
 export const generateMutationRequests = async (
   userId: string,
@@ -971,10 +1051,12 @@ export const generateMutationRequests = async (
 ) => {
   const MUT_TYPES = ['vente', 'donation', 'succession', 'vente', 'donation'];
   const MUT_STATUSES = ['pending', 'approved', 'rejected', 'pending', 'approved', 'pending', 'rejected', 'approved', 'pending', 'approved'];
+  const TITLE_AGES = ['less_than_10', '10_or_more'];
   const selected = parcels.filter((_, i) => i % 10 === 4).slice(0, PROVINCES.length * 2);
 
   const records = selected.map((p, i) => {
     const status = pick(MUT_STATUSES, i);
+    const hasLateFee = i % 3 === 0;
     return {
       reference_number: `TEST-MUT-${String(i + 1).padStart(3, '0')}-${suffix}`,
       parcel_number: p.parcel_number,
@@ -988,8 +1070,15 @@ export const generateMutationRequests = async (
       total_amount_usd: randInt(80, 200),
       market_value_usd: randInt(10000, 80000),
       mutation_fee_amount: randInt(40, 100),
+      late_fee_amount: hasLateFee ? randInt(10, 50) : null,
+      title_age: pick(TITLE_AGES, i),
       user_id: userId,
-      proposed_changes: { new_owner_name: `Test Nouveau Propriétaire ${i + 1}`, new_owner_legal_status: pick(LEGAL_STATUSES, i) } as unknown as Json,
+      proposed_changes: {
+        new_owner_name: `Test Nouveau Propriétaire ${i + 1}`,
+        new_owner_legal_status: pick(LEGAL_STATUSES, i),
+        title_age: pick(TITLE_AGES, i),
+        ...(hasLateFee ? { late_fees: { fee: randInt(10, 50), reason: 'Retard de mutation' } } : {}),
+      } as unknown as Json,
       fee_items: [
         { fee_name: 'Frais de dossier', amount_usd: 83, is_mandatory: true },
         ...(i % 2 === 0 ? [{ fee_name: 'Frais de mutation', amount_usd: 83, is_mandatory: true }] : []),
@@ -1009,7 +1098,7 @@ export const generateMutationRequests = async (
   return data ?? [];
 };
 
-// ─── Step 17b: Subdivision requests — 26 total (1/province) ─────────────────
+// ─── Step 17b: Subdivision requests — 26 total (1/province) — enriched ──────
 
 export const generateSubdivisionRequests = async (
   userId: string,
@@ -1018,6 +1107,7 @@ export const generateSubdivisionRequests = async (
 ) => {
   const SUB_STATUSES = ['pending', 'approved', 'pending', 'approved', 'rejected'];
   const PURPOSES = ['Résidentielle', 'Commerciale', 'Mixte', 'Résidentielle', 'Commerciale'];
+  const SUB_PAYMENT_STATUSES = ['paid', 'pending', 'paid', 'paid', 'pending'];
   const selected = parcels.filter((_, i) => {
     const info = getProvinceInfo(i);
     return info.localIdx === 8;
@@ -1028,6 +1118,8 @@ export const generateSubdivisionRequests = async (
     const parentArea = randInt(800, 3000);
     const lotArea = Math.floor(parentArea / numLots);
     const status = pick(SUB_STATUSES, i);
+    const submissionFee = randInt(30, 80);
+    const remainingFee = randInt(50, 150);
 
     return {
       reference_number: `TEST-SUB-${String(i + 1).padStart(3, '0')}-${suffix}`,
@@ -1043,6 +1135,10 @@ export const generateSubdivisionRequests = async (
       status,
       purpose_of_subdivision: pick(PURPOSES, i),
       user_id: userId,
+      submission_payment_status: pick(SUB_PAYMENT_STATUSES, i),
+      submission_fee_usd: submissionFee,
+      remaining_fee_usd: remainingFee,
+      total_amount_usd: submissionFee + remainingFee,
       lots_data: Array.from({ length: numLots }, (_, j) => ({
         lot_number: j + 1,
         area_sqm: lotArea,
