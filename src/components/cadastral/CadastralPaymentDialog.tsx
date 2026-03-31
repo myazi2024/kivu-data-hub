@@ -108,6 +108,16 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
     }
   };
 
+  const handleTestPayment = async () => {
+    if (!processTestPayment) return;
+    setIsProcessingTestPayment(true);
+    const result = await processTestPayment(invoice.id);
+    setIsProcessingTestPayment(false);
+    if (result) {
+      onPaymentSuccess(getSelectedServices());
+    }
+  };
+
   const handleStripePayment = async () => {
     setIsProcessingPayment(true);
     const result = await processStripePayment(invoice.id);
