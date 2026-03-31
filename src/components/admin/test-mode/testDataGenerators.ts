@@ -222,13 +222,12 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
   const TYPES_CYCLE: Array<'creation' | 'update'> = ['creation', 'creation', 'update', 'creation', 'creation'];
 
   const records = parcelNumbers.map((pn, idx) => {
-    const pIdx = Math.floor(idx / PARCELS_PER_PROVINCE);
+    const { pIdx, localIdx, count } = getProvinceInfo(idx);
     const prov = PROVINCES[pIdx];
     const constructionNature = pick(CONSTRUCTION_NATURES, idx);
     const isSuspicious = idx % 13 === 0; // ~8% suspicious
 
-    const localIdx = idx % PARCELS_PER_PROVINCE;
-    const isSR = localIdx >= 15;
+    const isSR = localIdx >= Math.floor(count * 0.75);
     const ownerName = pick(OWNER_NAMES, idx);
     const ownerParts = ownerName.split(' ');
     const constructionYear = constructionNature ? randInt(1990, 2024) : null;
