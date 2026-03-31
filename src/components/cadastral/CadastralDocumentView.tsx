@@ -115,7 +115,7 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
         <div className="px-6 sm:px-10 py-6 border-b-2 border-primary/20 bg-gradient-to-r from-primary/5 to-transparent print:bg-transparent">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold text-primary uppercase tracking-widest">Bureau de l'Immobilier du Congo</p>
+              <p className="text-xs font-semibold text-primary uppercase tracking-widest">Bureau d'Informations Cadastrales</p>
               <h1 className="text-xl sm:text-2xl font-extrabold text-foreground mt-1 tracking-tight">Fiche Cadastrale</h1>
               <p className="text-sm text-muted-foreground mt-1">
                 Parcelle N° <span className="font-mono font-bold text-foreground">{parcel.parcel_number}</span>
