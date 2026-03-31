@@ -189,9 +189,9 @@ const Legal = () => {
 
                 <div>
                   <h3 className="font-semibold text-foreground mb-2">3.2 — Utilisation des données cadastrales</h3>
-                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 mb-4">
+                  <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mb-4">
                     <div className="flex items-start gap-3">
-                      <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                      <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
                       <p className="text-sm text-muted-foreground leading-relaxed">
                         <strong className="text-foreground">Avertissement important :</strong> Les données 
                         cadastrales diffusées par le BIC ont un caractère strictement informatif. Elles ne 
