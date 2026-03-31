@@ -453,3 +453,17 @@ All colors MUST be HSL.
 .user-location-popup .leaflet-popup-tip {
   background: #dc2626 !important;
 }
+
+/* Marquee animation for partners carousel */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
