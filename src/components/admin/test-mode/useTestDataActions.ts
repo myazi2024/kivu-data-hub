@@ -292,7 +292,7 @@ export const useTestDataActions = ({
       );
 
       toast.success('Données de test générées', {
-        description: `${parcels.length} parcelles (26 provinces × 20), ${contributions.length} contributions, ${invoices.length} factures et 10+ entités associées — étalonnées sur 10 ans`,
+        description: `${parcels.length} parcelles (26 provinces, densité variable ×1 à ×26), ${contributions.length} contributions, ${invoices.length} factures et 10+ entités associées — étalonnées sur 10 ans`,
       });
 
       await onComplete();
