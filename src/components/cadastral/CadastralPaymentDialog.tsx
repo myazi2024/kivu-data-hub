@@ -238,6 +238,32 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
                 </div>
               </div>
 
+              {/* Test mode banner + button */}
+              {isTestModeActive && processTestPayment && (
+                <div className="rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50/80 dark:bg-amber-900/20 p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <FlaskConical className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    <span className="text-xs font-semibold text-amber-800 dark:text-amber-200">Mode Test actif</span>
+                  </div>
+                  <p className="text-[10px] text-amber-700 dark:text-amber-300">
+                    Simulez un paiement sans frais réels pour tester le flux complet.
+                  </p>
+                  <Button
+                    onClick={handleTestPayment}
+                    disabled={isProcessingTestPayment}
+                    variant="outline"
+                    size="sm"
+                    className="w-full border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/40 text-xs h-9"
+                  >
+                    {isProcessingTestPayment ? (
+                      <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> Simulation...</>
+                    ) : (
+                      <><FlaskConical className="h-3.5 w-3.5 mr-1.5" /> Simuler le paiement (test)</>
+                    )}
+                  </Button>
+                </div>
+              )}
+
               {availableMethods.hasMobileMoney && availableMethods.hasBankCard ? (
                 <Tabs value={selectedPaymentMethod} onValueChange={(v) => setSelectedPaymentMethod(v as any)} className="w-full">
                   <TabsList className="grid w-full grid-cols-2 mb-3">
