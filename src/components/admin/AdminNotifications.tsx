@@ -122,7 +122,8 @@ export const AdminNotifications: React.FC = () => {
       const { data: notifData, error: notifError } = await supabase
         .from('notifications')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(500);
 
       if (notifError) throw notifError;
 

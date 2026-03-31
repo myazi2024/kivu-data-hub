@@ -50,6 +50,7 @@ export const NotificationBell: React.FC = () => {
       case 'success': return 'bg-green-500';
       case 'warning': return 'bg-yellow-500';
       case 'error': return 'bg-destructive';
+      case 'account': return 'bg-orange-500';
       default: return 'bg-primary';
     }
   };

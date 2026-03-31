@@ -127,17 +127,8 @@ export const sendDisputeNotification = async (
   message: string,
   actionUrl: string
 ): Promise<void> => {
-  try {
-    await supabase.from('notifications' as any).insert({
-      user_id: userId,
-      title,
-      message,
-      type: 'success',
-      action_url: actionUrl,
-    });
-  } catch (e) {
-    console.warn('Notification non envoyée:', e);
-  }
+  const { createNotification } = await import('@/utils/notificationHelper');
+  await createNotification({ userId, title, message, type: 'success', actionUrl });
 };
 
 /**
@@ -151,21 +142,22 @@ export const notifyAdminsAboutDispute = async (
 ): Promise<void> => {
   try {
     const { data: adminRoles } = await supabase
-      .from('user_roles' as any)
+      .from('user_roles')
       .select('user_id')
-      .in('role', ['admin', 'super_admin']);
+      .in('role', ['admin', 'super_admin'] as any);
 
     if (!adminRoles || adminRoles.length === 0) return;
 
-    const notifications = (adminRoles as any[]).map((r: any) => ({
-      user_id: r.user_id,
-      title,
-      message,
-      type: 'info',
-      action_url: actionUrl,
-    }));
-
-    await supabase.from('notifications' as any).insert(notifications);
+    const { createBulkNotifications } = await import('@/utils/notificationHelper');
+    await createBulkNotifications(
+      adminRoles.map((r) => ({
+        userId: r.user_id,
+        title,
+        message,
+        type: 'info' as const,
+        actionUrl,
+      }))
+    );
   } catch (e) {
     console.warn('Notifications admin non envoyées:', e);
   }
