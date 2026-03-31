@@ -89,11 +89,7 @@ const App = () => (
                       <UserDashboard />
                     </ProtectedRoute>
                   } />
-                  <Route path="/user-dashboard" element={
-                    <ProtectedRoute>
-                      <UserDashboard />
-                    </ProtectedRoute>
-                  } />
+                  <Route path="/user-dashboard" element={<Navigate to="/mon-compte" replace />} />
                   <Route path="/reseller" element={
                     <ProtectedRoute requiredRoles={['partner', 'admin', 'super_admin']}>
                       <ResellerDashboard />

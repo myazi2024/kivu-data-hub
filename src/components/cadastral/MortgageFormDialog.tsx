@@ -726,7 +726,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
         {!embedded && (
           <Button
             variant="outline"
-            onClick={() => { performClose(); navigate('/user-dashboard'); }}
+            onClick={() => { performClose(); navigate('/mon-compte?tab=mortgages'); }}
             className="w-full h-11 rounded-xl gap-2"
           >
             <ExternalLink className="h-4 w-4" />

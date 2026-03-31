@@ -72,7 +72,7 @@ const UserDashboard = () => {
             <NotificationBell />
           </div>
 
-          <Tabs defaultValue="profile" className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             {/* Navigation compacte - scrollable horizontally */}
             <div className="overflow-x-auto -mx-1 px-1 pb-1">
               <TabsList className="w-max min-w-full h-auto p-1 flex gap-1 bg-background shadow-sm rounded-2xl border">
