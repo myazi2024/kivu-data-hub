@@ -1,78 +1,63 @@
 
 
-# Audit du mode test — Redondances, désalignements et erreurs de logique
+# Audit du mode test — Résultats
 
 ## Problèmes identifiés
 
-### Bug 1 — Genre dans `generateTitleRequests` : `'M'`/`'F'` au lieu de `'Masculin'`/`'Féminin'`
-**Fichier** : `testDataGenerators.ts` lignes 504-505
-**Problème** : Le formulaire `LandTitleRequestDialog.tsx` utilise les valeurs `'Masculin'` et `'Féminin'` (SelectItem). Le test génère `'M'`/`'F'`, ce qui rend les graphiques "Genre" dans `TitleRequestsBlock` incohérents avec les vraies données collectées.
-**Correction** : Remplacer `'M'`/`'F'` par `'Masculin'`/`'Féminin'`.
+### Bug 1 — `AdminDisputeAnalytics` : filtre par `'signalement'`/`'levee'` au lieu de `'report'`/`'lifting'`
+**Fichier** : `AdminDisputeAnalytics.tsx` lignes 66-67, 112
+**Problème** : Les formulaires (`LandDisputeReportForm`, `LandDisputeLiftingForm`) et le test data insèrent `dispute_type = 'report'` ou `'lifting'`. Mais `AdminDisputeAnalytics` filtre par `'signalement'` et `'levee'` → les KPIs "Signalements" et "Levées" affichent toujours **0**, et le graphique de tendance mensuelle est entièrement faux (tout est compté comme "signalements" dans le `else`).
+**Correction** : Remplacer `'signalement'` par `'report'` et `'levee'` par `'lifting'`.
 
-### Bug 2 — `property_condition` expertise : valeurs désalignées
-**Fichier** : `testDataGenerators.ts` ligne 555
-**Problème** : Le générateur utilise `['bon', 'moyen', 'mauvais', 'neuf']`. Les constantes officielles dans `expertiseLabels.ts` sont `'neuf'`, `'bon'`, `'moyen'`, `'mauvais'`, `'a_renover'`. La valeur `'a_renover'` n'est jamais générée → le graphique "État du bien" ne montre jamais "À rénover".
-**Correction** : Ajouter `'a_renover'` au cycle.
+### Bug 2 — `nationality` dans `generateTitleRequests` : `'RDC'`/`'Belgique'`/`'France'` au lieu de `'congolais'`/`'etranger'`
+**Fichier** : `testDataGenerators.ts` ligne 497, 520
+**Problème** : Le formulaire (`LandTitleRequestDialog`) utilise `NATIONALITY_OPTIONS` avec les valeurs `'congolais'` et `'etranger'` (cf. `landTitleDeduction.ts`). Le test génère `'RDC'`, `'Belgique'`, `'France'` → le graphique "Nationalité" dans `TitleRequestsBlock` ne matche jamais les données réelles.
+**Correction** : Utiliser `['congolais', 'congolais', 'congolais', 'congolais', 'congolais', 'congolais', 'congolais', 'congolais', 'etranger', 'etranger']`.
 
-### Bug 3 — `wall_material` expertise : labels humains au lieu de clés techniques
-**Fichier** : `testDataGenerators.ts` ligne 556
-**Problème** : Le générateur utilise `['Briques cuites', 'Parpaings', 'Bois', 'Tôles', 'Briques adobe', 'Pierre']`. Les clés réelles du formulaire sont `'beton'`, `'briques_cuites'`, `'briques_adobe'`, `'parpaings'`, `'bois'`, `'tole'`, `'mixte'` (cf. `WALL_LABELS`). La visualisation utilise ces clés pour les labels. Les données test ne matcheront jamais.
-**Correction** : Utiliser les clés : `['beton', 'briques_cuites', 'briques_adobe', 'parpaings', 'bois', 'tole', 'mixte']`.
+### Bug 3 — `construction_year` incohérent entre `generateParcels` et `generateContributions`
+**Fichier** : `testDataGenerators.ts` lignes 189 vs 242
+**Problème** : Parcelles utilisent `randInt(1990, 2024)` (aléatoire), contributions utilisent `seededInt(idx * 11 + 1, 1990, 2024)` (déterministe). Pour la même parcelle, les deux tables auront des années de construction différentes.
+**Correction** : Utiliser `seededInt` dans les deux fonctions avec la même formule de seed.
 
-### Bug 4 — `roof_material` expertise : même problème que wall
-**Fichier** : `testDataGenerators.ts` ligne 557
-**Problème** : Utilise `['Tôles galvanisées', 'Tuiles', 'Dalle béton', 'Chaume']`. Les clés réelles sont `'tole_bac'`, `'tuiles'`, `'dalle_beton'`, `'ardoise'`, `'chaume'`, `'autre'`.
-**Correction** : Utiliser les clés techniques.
+### Bug 4 — `whatsapp_number` incohérent entre parcelles et contributions
+**Fichier** : `testDataGenerators.ts` lignes 196 vs 279
+**Problème** : Les deux fonctions appellent `randInt()` indépendamment → numéros différents pour la même parcelle.
+**Correction** : Utiliser `seededInt` avec un seed commun.
 
-### Bug 5 — `sound_environment` expertise : valeurs partielles
-**Fichier** : `testDataGenerators.ts` ligne 558
-**Problème** : Utilise `['calme', 'modéré', 'bruyant']`. Les clés réelles sont `'tres_calme'`, `'calme'`, `'modere'` (sans accent), `'bruyant'`, `'tres_bruyant'`. `'modéré'` (avec accent) ne matchera pas `'modere'`.
-**Correction** : Utiliser `['tres_calme', 'calme', 'modere', 'bruyant', 'tres_bruyant']`.
+### Bug 5 — `lease_type` absent des contributions
+**Fichier** : `testDataGenerators.ts` (generateContributions)
+**Problème** : Le champ `lease_type` est généré pour les parcelles (ligne 192) mais jamais pour les contributions. Le formulaire CCC le lit/écrit (`useCCCFormState.ts` ligne 1075), et il est affiché dans `AdminCCCContributions` (ligne 1113) et utilisé dans les analytics (`ParcelsWithTitleBlock`).
+**Correction** : Ajouter `lease_type` aux contributions avec la même logique.
 
-### Bug 6 — `building_position` expertise : valeurs inventées
-**Fichier** : `testDataGenerators.ts` ligne 559
-**Problème** : Utilise `['isolé', 'en_bande', 'angle', 'mitoyen']`. Les clés réelles sont `'premiere_position'`, `'deuxieme_position'`, `'fond_parcelle'`, `'dans_servitude'`, `'coin_parcelle'` (cf. `BUILDING_POSITION_LABELS`). Aucune correspondance.
-**Correction** : Utiliser les clés de `BUILDING_POSITION_LABELS`.
+### Bug 6 — `expertise_payments` sans batching
+**Fichier** : `testDataGenerators.ts` lignes 674-680
+**Problème** : Insère tous les records (351+) en un seul appel. Avec le volume actuel (~351 expertises), cela peut dépasser les limites payload de Supabase.
+**Correction** : Ajouter le batching par 50 comme les autres fonctions.
 
-### Bug 7 — `floor_material` expertise : labels humains
-**Fichier** : `testDataGenerators.ts` ligne 586
-**Problème** : Utilise `['Carrelage', 'Ciment lissé', 'Parquet', 'Terre battue']`. Les clés réelles sont `'carrelage'`, `'ciment_lisse'`, `'parquet'`, `'marbre'`, `'terre_battue'`, `'autre'`.
-**Correction** : Utiliser les clés techniques.
+### Bug 7 — `boundary_history` limité à 10 parcelles fixes
+**Fichier** : `testDataGenerators.ts` ligne 932
+**Problème** : `.slice(0, 10)` — seulement 10 bornages, indépendamment des 7 020 parcelles. Disproportionné par rapport aux autres sous-tables qui utilisent ~8-15%.
+**Correction** : Supprimer le `.slice(0, 10)`, utiliser `i % 15 === 0` (~7%) et ajouter du batching.
 
-### Bug 8 — `construction_quality` expertise : labels non-alignés
-**Fichier** : `testDataGenerators.ts` ligne 614
-**Problème** : Utilise `['standard', 'luxe', 'economique']`. Les clés de `QUALITY_LABELS` sont `'luxe'`, `'standard'`, `'economique'` — ici c'est correct mais manque de variété (seulement 3 valeurs, pas de `'autre'`). Mineur.
+### Bug 8 — `fraud_attempts` sans batching
+**Fichier** : `testDataGenerators.ts` lignes 793-796
+**Problème** : Insère tous les records en un seul appel. Avec 52 records c'est acceptable, mais incohérent avec le pattern des autres fonctions.
+**Correction mineur** : Ajouter le batching pour cohérence.
 
-### Bug 9 — `dispute_type` : valeur `'mediation'` n'existe pas dans les formulaires
-**Fichier** : `testDataGenerators.ts` ligne 676
-**Problème** : Le générateur utilise `['report', 'lifting', 'mediation']`. Les formulaires ne produisent que `'report'` (LandDisputeReportForm) et `'lifting'` (LandDisputeLiftingForm). La valeur `'mediation'` n'existe pas dans l'application — c'est une donnée fictive inventée qui ne correspond à aucun outil de collecte.
-**Correction** : Supprimer `'mediation'`, utiliser seulement `['report', 'lifting']`.
-
-### Bug 10 — `is_title_in_current_owner_name` absent des contributions
-**Fichier** : `testDataGenerators.ts` lignes 220-327
-**Problème** : Le plan précédent prévoyait d'ajouter ce champ mais il n'a pas été implémenté. Le formulaire CCC (`UserContributions.tsx`) le lit/écrit, et `MutationRequestDialog.tsx` le vérifie pour afficher un avertissement.
-**Correction** : Ajouter `is_title_in_current_owner_name: idx % 3 !== 0` aux contributions.
-
-### Redondance 11 — Données dupliquées entre `cadastral_parcels` et `cadastral_contributions`
-**Fichier** : `testDataGenerators.ts`
-**Problème** : Les deux générateurs (`generateParcels` et `generateContributions`) produisent les mêmes champs (parcel_sides, construction_materials, standing, title_reference_number, etc.) avec des valeurs potentiellement **différentes** pour le même `parcel_number` car `randInt()` est appelé séparément. Cela crée des incohérences : une parcelle peut avoir `area_sqm: 3500` dans `cadastral_parcels` et `area_sqm: 1200` dans `cadastral_contributions`.
-**Correction** : Utiliser un seeded random ou extraire les valeurs communes dans un objet partagé entre les deux fonctions. Alternativement, fixer un seed basé sur `idx` pour les champs partagés.
-
-### Bug 12 — `lease_type` dans parcelles utilise `'initial'`/`'renewal'` sans vérification
-**Fichier** : `testDataGenerators.ts` ligne 183
-**Problème mineur** : Valeurs non vérifiées contre le schéma DB. Si le schéma attend d'autres valeurs, l'insertion échouera silencieusement. À vérifier.
+### Bug 9 — `certificates` sans batching
+**Fichier** : `testDataGenerators.ts` lignes 1048-1051
+**Problème** : Même problème que fraud_attempts.
 
 ## Résumé des corrections
 
 | # | Fichier | Correction |
 |---|---------|------------|
-| 1 | `testDataGenerators.ts` | Genre title requests: `'M'`→`'Masculin'`, `'F'`→`'Féminin'` |
-| 2 | `testDataGenerators.ts` | Ajouter `'a_renover'` à property_condition |
-| 3-4 | `testDataGenerators.ts` | wall_material et roof_material: utiliser clés techniques |
-| 5 | `testDataGenerators.ts` | sound_environment: corriger `'modéré'`→`'modere'`, ajouter valeurs manquantes |
-| 6 | `testDataGenerators.ts` | building_position: remplacer par clés de BUILDING_POSITION_LABELS |
-| 7 | `testDataGenerators.ts` | floor_material: utiliser clés techniques |
-| 9 | `testDataGenerators.ts` | dispute_type: supprimer `'mediation'` |
-| 10 | `testDataGenerators.ts` | Ajouter `is_title_in_current_owner_name` aux contributions |
-| 11 | `testDataGenerators.ts` | Synchroniser les valeurs communes entre parcelles et contributions |
+| 1 | `AdminDisputeAnalytics.tsx` | `'signalement'`→`'report'`, `'levee'`→`'lifting'` |
+| 2 | `testDataGenerators.ts` | nationality: `'RDC'`→`'congolais'`, `'Belgique'`/`'France'`→`'etranger'` |
+| 3 | `testDataGenerators.ts` | Synchroniser `construction_year` avec `seededInt` dans `generateParcels` |
+| 4 | `testDataGenerators.ts` | Synchroniser `whatsapp_number` avec `seededInt` |
+| 5 | `testDataGenerators.ts` | Ajouter `lease_type` à `generateContributions` |
+| 6 | `testDataGenerators.ts` | Ajouter batching à `generateExpertisePayments` |
+| 7 | `testDataGenerators.ts` | Proportionnaliser `boundary_history` (~7%) + batching |
+| 8-9 | `testDataGenerators.ts` | Ajouter batching à `fraud_attempts` et `certificates` |
 
