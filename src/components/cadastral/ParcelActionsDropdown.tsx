@@ -1,8 +1,10 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Sparkles, Clock, Beaker, Tag } from 'lucide-react';
+import { Sparkles, Clock, Beaker, Tag, FileText, ArrowRightLeft, Landmark, ShieldCheck, Calculator, LayoutGrid, AlertTriangle, Award } from 'lucide-react';
 import { useParcelActionsConfig, ParcelAction } from '@/hooks/useParcelActionsConfig';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import MutationRequestDialog from './MutationRequestDialog';
 import MortgageManagementDialog from './MortgageManagementDialog';
 import BuildingPermitManagementDialog from './BuildingPermitManagementDialog';
