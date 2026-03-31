@@ -186,7 +186,7 @@ export const generateParcels = async (parcelNumbers: string[]) => {
       declared_usage: pick(DECLARED_USAGES, idx),
       construction_type: constructionNature ? pick(CONSTRUCTION_TYPES.filter(t => t !== 'Terrain nu'), idx) : 'Terrain nu',
       construction_nature: constructionNature,
-      construction_year: constructionNature ? randInt(1990, 2024) : null,
+      construction_year: constructionNature ? seededInt(idx * 11 + 1, 1990, 2024) : null,
       construction_materials: constructionNature ? pick(CONSTRUCTION_MATERIALS, idx) : null,
       standing: constructionNature ? pick(STANDINGS, idx) : null,
       lease_type: localIdx % 7 === 0 ? 'initial' : localIdx % 11 === 0 ? 'renewal' : null,
