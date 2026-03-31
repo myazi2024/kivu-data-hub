@@ -42,6 +42,13 @@ function randInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+/** Seeded deterministic int for consistent values across generators */
+function seededInt(seed: number, min: number, max: number): number {
+  // Simple hash for determinism
+  const h = ((seed * 2654435761) >>> 0) % (max - min + 1);
+  return min + h;
+}
+
 /** Return a random date between two years ago offset and now, formatted YYYY-MM-DD */
 function randomDateInPast(yearsBack: number): string {
   const now = Date.now();
@@ -158,14 +165,16 @@ export const generateParcels = async (parcelNumbers: string[]) => {
     const constructionNature = pick(CONSTRUCTION_NATURES, idx);
     const ownerSinceDate = randomDateInPast(10);
 
-    const sideN = randInt(10, 50), sideS = randInt(10, 50), sideE = randInt(10, 50), sideO = randInt(10, 50);
+    const areaSqm = seededInt(idx * 7 + 1, 200, 5000);
+    const sideN = seededInt(idx * 7 + 2, 10, 50), sideS = seededInt(idx * 7 + 3, 10, 50), sideE = seededInt(idx * 7 + 4, 10, 50), sideO = seededInt(idx * 7 + 5, 10, 50);
+    const houseNumber = idx % 2 === 0 ? String(seededInt(idx * 7 + 6, 1, 200)) : null;
 
     return {
       parcel_number: pn,
       parcel_type: parcelType,
       property_title_type: pick(TITLE_TYPES, idx),
       location: `${prov.quartier}, ${prov.commune}`,
-      area_sqm: randInt(200, 5000),
+      area_sqm: areaSqm,
       current_owner_name: `Test ${pick(OWNER_NAMES, idx)}`,
       current_owner_since: ownerSinceDate,
       current_owner_legal_status: pick(LEGAL_STATUSES, idx),
@@ -183,7 +192,7 @@ export const generateParcels = async (parcelNumbers: string[]) => {
       lease_type: localIdx % 7 === 0 ? 'initial' : localIdx % 11 === 0 ? 'renewal' : null,
       title_reference_number: `REF-${prov.province.substring(0, 3).toUpperCase()}-${String(idx).padStart(4, '0')}`,
       title_issue_date: randomDateInPast(10),
-      house_number: idx % 2 === 0 ? String(randInt(1, 200)) : null,
+      house_number: houseNumber,
       whatsapp_number: `+243${randInt(810000000, 899999999)}`,
       has_dispute: idx % 10 === 0,
       parcel_sides: [
@@ -230,14 +239,16 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
     const isSR = localIdx >= Math.floor(count * 0.75);
     const ownerName = pick(OWNER_NAMES, idx);
     const ownerParts = ownerName.split(' ');
-    const constructionYear = constructionNature ? randInt(1990, 2024) : null;
-    const sideN = randInt(10, 50), sideS = randInt(10, 50), sideE = randInt(10, 50), sideO = randInt(10, 50);
+    const constructionYear = constructionNature ? seededInt(idx * 11 + 1, 1990, 2024) : null;
+    const areaSqm = seededInt(idx * 7 + 1, 200, 5000);
+    const sideN = seededInt(idx * 7 + 2, 10, 50), sideS = seededInt(idx * 7 + 3, 10, 50), sideE = seededInt(idx * 7 + 4, 10, 50), sideO = seededInt(idx * 7 + 5, 10, 50);
+    const houseNumber = idx % 2 === 0 ? String(seededInt(idx * 7 + 6, 1, 200)) : null;
 
     return {
       parcel_number: pn,
       property_title_type: pick(TITLE_TYPES, idx),
       current_owner_name: `Test ${ownerName}`,
-      area_sqm: randInt(200, 5000),
+      area_sqm: areaSqm,
       province: prov.province,
       ville: prov.ville,
       commune: prov.commune,
@@ -262,7 +273,7 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
       property_category: pick(PROPERTY_CATEGORIES, idx),
       title_reference_number: `REF-${prov.province.substring(0, 3).toUpperCase()}-${String(idx).padStart(4, '0')}`,
       title_issue_date: randomDateInPast(10),
-      house_number: idx % 2 === 0 ? String(randInt(1, 200)) : null,
+      house_number: houseNumber,
       floor_number: constructionNature ? String(randInt(0, 3)) : null,
       apartment_number: idx % 15 === 0 ? `A${randInt(1, 20)}` : null,
       whatsapp_number: `+243${randInt(810000000, 899999999)}`,
@@ -322,6 +333,7 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
         contractDate: randomDateInPast(5),
         mortgageStatus: 'Active',
       }] as unknown as Json : [] as unknown as Json,
+      is_title_in_current_owner_name: idx % 3 !== 0,
       created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
     };
   });
@@ -501,8 +513,8 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
       requester_email: `test-titre${i + 1}@example.com`,
       request_type: pick(REQUEST_TYPES, i),
       requester_type: pick(REQUESTER_TYPES, i),
-      requester_gender: i % 2 === 0 ? 'M' : 'F',
-      owner_gender: i % 3 === 0 ? 'F' : 'M',
+      requester_gender: i % 2 === 0 ? 'Masculin' : 'Féminin',
+      owner_gender: i % 3 === 0 ? 'Féminin' : 'Masculin',
       requester_legal_status: pick(LEGAL_STATUSES, i),
       owner_legal_status: pick(LEGAL_STATUSES, i + 1),
       nationality: pick(NATIONALITIES, i),
@@ -552,11 +564,11 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
 export const generateExpertiseRequests = async (userId: string, parcelNumbers: string[], suffix: string) => {
   const EXP_STATUSES = ['pending', 'completed', 'in_progress', 'pending', 'completed', 'pending', 'in_progress', 'completed', 'pending', 'completed'];
   const ROAD_TYPES = ['asphalte', 'terre', 'piste', 'asphalte', 'terre'];
-  const PROPERTY_CONDITIONS = ['bon', 'moyen', 'mauvais', 'neuf', 'bon', 'moyen'];
-  const WALL_MATERIALS = ['Briques cuites', 'Parpaings', 'Bois', 'Tôles', 'Briques adobe', 'Pierre'];
-  const ROOF_MATERIALS = ['Tôles galvanisées', 'Tuiles', 'Dalle béton', 'Chaume', 'Tôles galvanisées'];
-  const SOUND_ENVS = ['calme', 'modéré', 'bruyant', 'calme', 'modéré'];
-  const BUILDING_POSITIONS = ['isolé', 'en_bande', 'angle', 'mitoyen', 'isolé'];
+  const PROPERTY_CONDITIONS = ['neuf', 'bon', 'moyen', 'mauvais', 'a_renover'];
+  const WALL_MATERIALS = ['beton', 'briques_cuites', 'briques_adobe', 'parpaings', 'bois', 'tole', 'mixte'];
+  const ROOF_MATERIALS = ['tole_bac', 'tuiles', 'dalle_beton', 'ardoise', 'chaume', 'autre'];
+  const SOUND_ENVS = ['tres_calme', 'calme', 'modere', 'bruyant', 'tres_bruyant'];
+  const BUILDING_POSITIONS = ['premiere_position', 'deuxieme_position', 'fond_parcelle', 'dans_servitude', 'coin_parcelle'];
   const PAYMENT_STATUSES_EXP = ['pending', 'paid', 'paid', 'pending', 'paid'];
 
   // ~5% of total parcels
@@ -583,7 +595,7 @@ export const generateExpertiseRequests = async (userId: string, parcelNumbers: s
       property_condition: pick(PROPERTY_CONDITIONS, i),
       wall_material: pick(WALL_MATERIALS, i),
       roof_material: pick(ROOF_MATERIALS, i),
-      floor_material: pick(['Carrelage', 'Ciment lissé', 'Parquet', 'Terre battue'], i),
+      floor_material: pick(['carrelage', 'ciment_lisse', 'parquet', 'marbre', 'terre_battue', 'autre'], i),
       sound_environment: pick(SOUND_ENVS, i),
       building_position: pick(BUILDING_POSITIONS, i),
       construction_year: i % 3 === 0 ? null : randInt(1995, 2023),
@@ -673,7 +685,7 @@ export const generateExpertisePayments = async (userId: string, expertiseRequest
 export const generateDisputes = async (parcelNumbers: string[], suffix: string, userId?: string) => {
   const DISPUTE_NATURES = ['delimitation', 'double_vente', 'occupation_illegale', 'succession', 'delimitation'];
   const DISPUTE_STATUSES = ['en_cours', 'resolu', 'demande_levee', 'en_cours', 'resolu', 'en_cours', 'demande_levee', 'resolu', 'en_cours', 'resolu'];
-  const DISPUTE_TYPES = ['report', 'lifting', 'mediation', 'report', 'lifting'];
+  const DISPUTE_TYPES = ['report', 'lifting', 'report', 'lifting', 'report'];
   const QUALITIES = ['proprietaire', 'occupant', 'heritier', 'mandataire', 'proprietaire'];
   const LIFTING_STATUSES = ['en_cours', 'approved', 'rejected', 'pending'];
   const LIFTING_REASONS = ['conciliation_reussie', 'decision_justice', 'accord_parties'];
