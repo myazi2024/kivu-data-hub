@@ -5,14 +5,12 @@ import Footer from '@/components/Footer';
 import CadastralSearchBar from '@/components/cadastral/CadastralSearchBar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
+  Search, 
   Map, 
-  BarChart3, 
-  Calculator, 
-  Users, 
   FileText, 
-  Building2,
-  GraduationCap,
-  TrendingUp 
+  Scale, 
+  Receipt, 
+  ShieldCheck 
 } from 'lucide-react';
 
 const Services = () => {
@@ -29,52 +27,40 @@ const Services = () => {
   
   const services = [
     {
-      icon: Map,
-      title: "Cartographie dynamique",
-      description: "Visualisation des données cadastrales et foncières par zone géographique",
+      icon: Search,
+      title: "Recherche cadastrale",
+      description: "Recherchez n'importe quelle parcelle en RDC par numéro, propriétaire ou localisation",
       variant: "primary"
     },
     {
-      icon: BarChart3,
-      title: "Analyse cadastrale",
-      description: "Statistiques sur les parcelles, titres et contributions par territoire",
+      icon: Map,
+      title: "Carte interactive",
+      description: "Visualisez les parcelles et données foncières sur une carte dynamique",
       variant: "secondary"
-    },
-    {
-      icon: Calculator,
-      title: "Recettes fiscales",
-      description: "Estimation des recettes fiscales cadastrales par zone",
-      variant: "accent"
-    },
-    {
-      icon: TrendingUp,
-      title: "Analyse comparative",
-      description: "Analyse comparative par quartier / commune",
-      variant: "muted"
     },
     {
       icon: FileText,
-      title: "Diagnostic foncier",
-      description: "Diagnostic foncier : titres, risques, régularité",
-      variant: "primary"
-    },
-    {
-      icon: Building2,
-      title: "Projets fonciers",
-      description: "Appui aux projets fonciers : faisabilité, développement, data urbaine",
-      variant: "secondary"
-    },
-    {
-      icon: GraduationCap,
-      title: "Formation",
-      description: "Formation : collecte mobile, SIG, analyse territoriale, gestion d'indicateurs",
+      title: "Fiche parcellaire",
+      description: "Consultez les informations détaillées d'une parcelle : propriétaire, superficie, titre",
       variant: "accent"
     },
     {
-      icon: Users,
-      title: "Conseil stratégique",
-      description: "Accompagnement des acteurs publics et privés",
-      variant: "muted"
+      icon: Scale,
+      title: "Litiges fonciers",
+      description: "Accédez aux informations sur les litiges enregistrés sur une parcelle",
+      variant: "primary"
+    },
+    {
+      icon: Receipt,
+      title: "Contributions cadastrales",
+      description: "Historique des paiements et contributions liés à une parcelle",
+      variant: "secondary"
+    },
+    {
+      icon: ShieldCheck,
+      title: "Certificat cadastral",
+      description: "Obtenez un certificat officiel avec les données cadastrales vérifiées",
+      variant: "accent"
     }
   ];
 
@@ -96,8 +82,8 @@ const Services = () => {
                 Nos Services
               </h1>
               <p className="text-sm sm:text-base text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-                Nos outils et livrables sont conçus pour répondre aux enjeux urbains concrets. 
-                Nous proposons des solutions adaptées aux besoins des territoires congolais.
+                Accédez aux informations cadastrales de n'importe quelle propriété en RDC. 
+                Nos services numériques vous permettent de consulter, vérifier et documenter les données foncières en quelques clics.
               </p>
             </div>
           )}
