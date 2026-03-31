@@ -45,6 +45,7 @@ interface CadastralPaymentDialogProps {
   paymentStep: 'form' | 'processing' | 'success';
   processMobileMoneyPayment: (invoiceId: string, data: CadastralPaymentData) => Promise<any>;
   processStripePayment: (invoiceId: string) => Promise<any>;
+  processTestPayment?: (invoiceId: string) => Promise<any>;
   resetPaymentState: () => void;
   selectedCurrency?: CurrencyCode;
   exchangeRate?: number;
