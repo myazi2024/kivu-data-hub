@@ -1,84 +1,99 @@
 
 
-# Audit — Menu "Données foncières" (/map)
+# Audit détaillé — Espace Utilisateur (/user-dashboard, /mon-compte)
 
 ## Architecture
 
 ```text
-┌────────────────────────────────┐
-│ /map (Map.tsx)                 │
-│  └─ DRCInteractiveMap          │
-│      ├─ Carte SVG (DRCMapWithTooltip) │
-│      ├─ Panneau détails province      │
-│      └─ ProvinceDataVisualization     │
-│           ├─ Onglets (11 blocks)      │
-│           ├─ AnalyticsFilters         │
-│           └─ useTabChartsConfig       │
-└────────────────────────────────┘
-         ↕ données
-┌────────────────────────────────┐
-│ useLandDataAnalytics           │
-│ (14 tables Supabase, fetchAll) │
-└────────────────────────────────┘
-         ↕ config
-┌────────────────────────────────┐
-│ useAnalyticsChartsConfig       │
-│ (analytics_charts_config table)│
-│ ANALYTICS_TABS_REGISTRY (14 tabs) │
-└────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│ UserDashboard (page)                                  │
+│  ├─ Navigation + NotificationBell                     │
+│  └─ Tabs (11 onglets)                                 │
+│      ├─ Profil        → UserProfileSection            │
+│      ├─ Données       → UserContributions (897 lignes)│
+│      ├─ Titres        → UserLandTitleRequests         │
+│      ├─ Autorisations → UserBuildingPermits            │
+│      ├─ Expertises    → UserExpertiseRequests          │
+│      ├─ Mutations     → UserMutationRequests           │
+│      ├─ Hypothèques   → UserMortgageRequests           │
+│      ├─ Lotissements  → UserSubdivisionRequests        │
+│      ├─ Litiges       → UserLandDisputes               │
+│      ├─ Factures      → CadastralDashboardTabs         │
+│      └─ Réglages      → UserPreferences + Security     │
+└──────────────────────────────────────────────────────┘
 ```
+
+11 onglets, 16 fichiers dans `src/components/user/`.
 
 ---
 
-## Problemes identifies
+## Problèmes identifiés
 
-### 1. CRITIQUE — 3 onglets registrés sans composant Block
+### 1. CRITIQUE — Paramètre `?tab=` des notifications jamais lu
 
-Le `ANALYTICS_TABS_REGISTRY` declare 14 onglets (hors `_global` et `rdc-map`), mais le `BLOCK_MAP` dans `ProvinceDataVisualization.tsx` n'en mappe que 11. Trois onglets n'ont pas de composant :
+**Fichiers** : `UserDashboard.tsx`, `NotificationBell.tsx`, 11+ fichiers envoyant des notifications
+**Problème** : Les notifications (mutations, litiges, autorisations, lotissements) envoient des `action_url` avec `?tab=mutations`, `?tab=disputes`, `?tab=building-permits`, etc. Le `NotificationBell` résout correctement la route (`/user-dashboard` → `/mon-compte`), mais **le `UserDashboard` ne lit jamais le paramètre `tab` de l'URL**. Le `<Tabs>` a toujours `defaultValue="profile"`.
+**Impact** : Quand un utilisateur clique sur une notification « Votre mutation a été approuvée » → il arrive sur l'onglet Profil au lieu de l'onglet Mutations. L'utilisateur doit manuellement naviguer vers le bon onglet. Toutes les 30+ notifications envoyées par le système sont concernées.
 
-| Tab key | Label | Block existant ? |
-|---|---|---|
-| `mortgages` | Hypotheques | Non |
-| `building-permits` | Autorisations | Non |
-| `taxes` | Taxes foncieres | Non |
+### 2. CRITIQUE — Route dupliquée `/user-dashboard` et `/mon-compte`
 
-**Impact** : Si un admin rend ces onglets visibles, cliquer dessus affiche un panneau vide (`BlockComponent` sera `undefined`, le rendu sera `null`). Les donnees sont pourtant deja fetchees par `useLandDataAnalytics` (`buildingPermits`, `taxHistory`, `mortgages`).
+**Fichier** : `App.tsx` lignes 86-95
+**Problème** : Les deux routes rendent le même composant `UserDashboard`. De plus, toutes les `action_url` des notifications pointent encore vers `/user-dashboard` (ancienne route), et `NotificationBell` contient un mapping de conversion. Mais les liens directs dans les dialogs (ex: `MutationRequestDialog`, `PermitConfirmationStep`, `MortgageFormDialog`) utilisent `window.location.href = '/user-dashboard?tab=...'` ou `navigate('/user-dashboard')`.
+**Impact** : Incohérence de navigation, URL obsolètes dans le navigateur, et effort de maintenance pour maintenir le mapping.
 
-### 2. MOYEN — Prop `provinces` declaree mais jamais utilisee
+### 3. MOYEN — Rôle affiché depuis `profile.role` (lecture client)
 
-`ProvinceDataVisualization` accepte une prop `provinces: ProvinceData[]` mais ne l'utilise nulle part dans le composant. Le composant re-fetche ses propres donnees via `useLandDataAnalytics()`, ce qui cree un **double fetch** : une fois dans `DRCInteractiveMap` et une fois dans `ProvinceDataVisualization`.
+**Fichier** : `UserProfileSection.tsx` ligne 278
+**Problème** : Le badge de rôle est affiché via `profile?.role` qui est calculé côté client dans `useAuth.tsx` (lecture de la table `user_roles` + hiérarchisation). C'est correct pour l'affichage, mais `getRoleBadge` ne gère pas le rôle `super_admin` — il tombe dans le `default` et affiche « Utilisateur ».
+**Impact** : Un super_admin voit le badge « Utilisateur » au lieu de « Super Admin ».
 
-**Impact** : Deux appels identiques a `useLandDataAnalytics` (14 tables). Grace a React Query et la meme `queryKey`, le deuxieme est servi du cache, donc pas de requete reseau supplementaire. Mais le code est trompeur et la prop est inutile.
+### 4. MOYEN — `deleteAccount` fait un soft-delete insuffisant
 
-### 3. MOYEN — Typage `any[]` partout dans les donnees analytics
+**Fichier** : `UserPreferences.tsx` lignes 124-149
+**Problème** : La suppression de compte met simplement `deleted_at` sur le profil puis fait un `signOut`. Le compte Supabase Auth reste actif — l'utilisateur peut se reconnecter. Aucune suppression réelle des données (contributions, litiges, factures, codes CCC, etc.). Le message dit « irréversible » alors que c'est un simple flag.
+**Impact** : Violation potentielle du RGPD. L'utilisateur pense que ses données sont supprimées alors qu'elles restent intactes.
 
-`LandAnalyticsData` declare toutes ses proprietes comme `any[]`. Les 11 blocks travaillent avec des `any` sans aucune verification de type. La fonction `fetchAll` utilise `(supabase.from as any)(table)` pour contourner le typage.
+### 5. MOYEN — Statistiques du profil incomplètes
 
-**Impact** : Aucune protection contre les changements de schema. Si une colonne est renommee ou supprimee, le code echoue silencieusement (valeurs `undefined` dans les graphiques).
+**Fichier** : `UserProfileSection.tsx` lignes 46-72
+**Problème** : Le profil affiche 4 compteurs (Contributions, Titres, Factures, Litiges) mais l'utilisateur a aussi des Mutations, Hypothèques, Expertises, Lotissements et Autorisations. Ces 5 catégories ne sont pas comptées.
+**Impact** : Le profil donne une vue partielle de l'activité de l'utilisateur.
 
-### 4. MOYEN — Donnees chargees mais pas exploitees dans les blocs
+### 6. MOYEN — `UserContributions` : composant monolithique (897 lignes)
 
-`useLandDataAnalytics` fetche `buildingPermits` et `taxHistory` comme entites a part entiere, mais elles ne sont consommees que de maniere secondaire dans `ParcelsWithTitleBlock` (comme sous-donnees de parcelles). Il n'y a pas de bloc dedie pour analyser ces donnees independamment, malgre la config complete dans le registry.
+**Fichier** : `UserContributions.tsx`
+**Problème** : Ce composant gère listing, détails, édition (4 types de formulaires), suppression, pagination, recherche, et formatage — tout dans un seul fichier de 897 lignes.
+**Impact** : Difficile à maintenir, tester et refactorer.
 
-### 5. MOYEN — Performance : `countForProvince` est O(n) par province
+### 7. MOYEN — Pas de Realtime sur la plupart des onglets
 
-Dans `DRCInteractiveMap`, la construction de `provincesData` appelle `countForProvince` (filtre lineaire) pour chaque type de donnee x 26 provinces. Pour 7 compteurs, cela fait 182 passes lineaires sur les tableaux. Avec des volumes importants, cela peut ralentir le rendu.
+**Fichiers** : `UserLandTitleRequests`, `UserMutationRequests`, `UserBuildingPermits`, `UserExpertiseRequests`, `UserMortgageRequests`, `UserSubdivisionRequests`
+**Problème** : Seul `UserLandDisputes` utilise un abonnement Realtime pour les mises à jour. Les autres onglets ne se rafraîchissent qu'au montage du composant. Si un admin approuve une mutation pendant que l'utilisateur consulte son dashboard, le statut ne se met pas à jour.
+**Impact** : L'utilisateur doit recharger la page pour voir les changements.
 
-**Impact** : Negligeable avec peu de donnees, mais degrade avec la croissance.
+### 8. MOYEN — `UserSubdivisionRequests` utilise `(supabase as any)`
 
-### 6. MINEUR — Double instanciation de `useLandDataAnalytics`
+**Fichier** : `UserSubdivisionRequests.tsx` ligne 40
+**Problème** : La table `subdivision_requests` n'est probablement pas dans les types générés, d'où le cast `as any`. Cela contourne toute vérification TypeScript.
+**Impact** : Erreurs silencieuses si la table ou les colonnes changent.
 
-Le hook est appele dans `DRCInteractiveMap` (ligne 74) ET dans `ProvinceDataVisualization` (ligne 61). React Query deduplique les requetes, mais c'est du code redondant. Les donnees de la carte pourraient etre passees en prop.
+### 9. MINEUR — Pas de lien « Retour » ou navigation entre onglets
 
-### 7. MINEUR — Pas de gestion d'erreur visible pour l'utilisateur
+**Fichier** : `UserDashboard.tsx`
+**Problème** : La barre d'onglets a 11 éléments dans un scroll horizontal. Sur mobile, c'est difficile à naviguer — l'utilisateur doit scroller horizontalement pour trouver les derniers onglets (Litiges, Factures, Réglages).
+**Impact** : UX dégradée sur mobile.
 
-Si `useLandDataAnalytics` echoue, `DRCInteractiveMap` ne montre aucun message d'erreur — il affiche simplement les provinces avec 0 partout (via `buildEmptyProvince`). L'erreur n'est geree que dans `ProvinceDataVisualization` (message texte discret).
+### 10. MINEUR — Liens de parrainage non traçables
 
-### 8. MINEUR — `html2canvas` importe en entier pour un seul bouton
+**Fichier** : `UserProfileSection.tsx` ligne 198
+**Problème** : Le lien de parrainage est construit avec `window.location.origin/auth?ref=${user.id}`. Mais rien dans le code d'authentification ne traite le paramètre `ref`. Le parrainage n'est pas comptabilisé.
+**Impact** : Fonctionnalité affichée mais non fonctionnelle.
 
-La dependance `html2canvas` (~400 KB) est importee statiquement en haut de `DRCInteractiveMap.tsx` pour le bouton "Copier en image", utilise rarement.
+### 11. MINEUR — `export_user_data` RPC non vérifiable
 
-**Impact** : Augmente le bundle initial.
+**Fichier** : `UserPreferences.tsx` ligne 96
+**Problème** : L'export de données appelle `supabase.rpc('export_user_data', { target_user_id: user.id })`. Cette fonction RPC doit être définie côté Supabase mais n'est pas vérifiable ici. Si elle n'existe pas, l'export échoue silencieusement avec un toast d'erreur.
+**Impact** : Fonctionnalité RGPD potentiellement non fonctionnelle.
 
 ---
 
@@ -86,19 +101,20 @@ La dependance `html2canvas` (~400 KB) est importee statiquement en haut de `DRCI
 
 ### Corrections prioritaires
 
-1. **Creer les 3 blocs manquants** (`MortgagesBlock`, `BuildingPermitsBlock`, `TaxesBlock`) et les ajouter au `BLOCK_MAP` et `ICON_MAP` dans `ProvinceDataVisualization.tsx`. Les donnees sont deja fetchees — il suffit de creer les composants de visualisation.
+1. **Lire le paramètre `?tab=` de l'URL** dans `UserDashboard.tsx` et l'utiliser comme `defaultValue` des `<Tabs>`. Utiliser `useSearchParams` de react-router-dom.
 
-2. **Supprimer la prop `provinces` inutilisee** de `ProvinceDataVisualization` et l'appel correspondant dans `DRCInteractiveMap` pour eviter la confusion.
+2. **Ajouter `super_admin`** dans `getRoleBadge` de `UserProfileSection.tsx`.
 
-3. **Passer les donnees analytics en prop** au lieu du double hook, pour eliminer la redondance.
+3. **Rediriger `/user-dashboard` vers `/mon-compte`** au lieu de dupliquer la route. Mettre à jour les `action_url` des notifications pour utiliser `/mon-compte`.
 
-### Ameliorations
+### Améliorations
 
-4. **Pre-indexer les compteurs par province** avec un `Map<string, number>` en une seule passe au lieu de 182 filtres lineaires.
+4. **Enrichir les statistiques du profil** avec les compteurs manquants (mutations, expertises, hypothèques, lotissements, autorisations).
 
-5. **Lazy-importer `html2canvas`** : `const html2canvas = (await import('html2canvas')).default` dans le handler `handleCopyImage`.
+5. **Implémenter le Realtime** sur les onglets critiques (Mutations, Titres, Autorisations) ou au minimum ajouter un bouton "Rafraîchir".
 
-6. **Ajouter un etat d'erreur** dans `DRCInteractiveMap` quand le fetch echoue.
+6. **Refactorer `UserContributions`** en sous-composants (ContributionsList, ContributionDetails, ContributionEditDialog).
 
-7. **Typer les entites analytics** au lieu de `any[]` pour beneficier de la verification TypeScript.
+7. **Corriger la suppression de compte** : soit supprimer réellement les données via une edge function, soit clarifier dans le message que c'est une désactivation.
 
+8. **Supprimer le lien de parrainage** ou implémenter le tracking du paramètre `ref` à l'inscription.
