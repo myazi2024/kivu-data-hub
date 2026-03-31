@@ -1,67 +1,84 @@
 
 
-# Audit du menu "Actions" de la carte cadastrale
+# Audit — Menu "Données foncières" (/map)
 
 ## Architecture
 
 ```text
-┌──────────────────────────────────┐
-│ parcel_actions_config (Supabase) │
-│ action_key, label, description,  │
-│ is_active, is_visible, badge_*,  │
-│ display_order, category, ...     │
-└──────────┬───────────────────────┘
-           │ Realtime sync
-    ┌──────▼──────────────────┐
-    │ useParcelActionsConfig  │
-    │ (fetch, map, fallback)  │
-    └──────┬──────────┬───────┘
-           │          │
-  ┌────────▼───┐  ┌───▼────────────────────┐
-  │ CadastralMap│  │ AdminParcelActionsConfig│
-  │ └─ ParcelActionsDropdown │             │
-  └────────────┘  └────────────────────────┘
+┌────────────────────────────────┐
+│ /map (Map.tsx)                 │
+│  └─ DRCInteractiveMap          │
+│      ├─ Carte SVG (DRCMapWithTooltip) │
+│      ├─ Panneau détails province      │
+│      └─ ProvinceDataVisualization     │
+│           ├─ Onglets (11 blocks)      │
+│           ├─ AnalyticsFilters         │
+│           └─ useTabChartsConfig       │
+└────────────────────────────────┘
+         ↕ données
+┌────────────────────────────────┐
+│ useLandDataAnalytics           │
+│ (14 tables Supabase, fetchAll) │
+└────────────────────────────────┘
+         ↕ config
+┌────────────────────────────────┐
+│ useAnalyticsChartsConfig       │
+│ (analytics_charts_config table)│
+│ ANALYTICS_TABS_REGISTRY (14 tabs) │
+└────────────────────────────────┘
 ```
-
-8 actions configurées : Expertise, Mutation, Hypothèque, Ajout autorisation, Taxe foncière, Demande autorisation, Lotissement, Litige foncier.
 
 ---
 
-## Problèmes identifiés
+## Problemes identifies
 
-### 1. CRITIQUE — `parcelData` non transmis au menu Actions
-**Fichier** : `CadastralMap.tsx` lignes 1305-1310
-**Problème** : Le composant `ParcelActionsDropdown` accepte une prop `parcelData` mais elle n'est **jamais passée** depuis `CadastralMap`. Le dropdown reçoit `parcelData={undefined}`.
-**Impact** : Tous les dialogs enfants (MutationRequestDialog, TaxManagementDialog, BuildingPermitRequestDialog, etc.) reçoivent `parcelData={undefined}`. Les formulaires qui dépendent de ces données (type de construction, propriétaire, zone géographique) ne peuvent pas pré-remplir leurs champs. `BuildingPermitRequestDialog` reçoit aussi `hasExistingConstruction={false}` systématiquement.
+### 1. CRITIQUE — 3 onglets registrés sans composant Block
 
-### 2. MOYEN — `requiresAuth` déclaré mais jamais vérifié
-**Fichiers** : `useParcelActionsConfig.tsx`, `ParcelActionsDropdown.tsx`
-**Problème** : Chaque action a une propriété `requiresAuth: true` mais le dropdown ne vérifie jamais si l'utilisateur est authentifié avant d'autoriser le clic. Un utilisateur non connecté peut ouvrir les dialogs, puis échouer au moment de l'insertion en base.
-**Impact** : Mauvaise UX — l'utilisateur remplit un formulaire complet avant de découvrir qu'il doit se connecter.
+Le `ANALYTICS_TABS_REGISTRY` declare 14 onglets (hors `_global` et `rdc-map`), mais le `BLOCK_MAP` dans `ProvinceDataVisualization.tsx` n'en mappe que 11. Trois onglets n'ont pas de composant :
 
-### 3. MOYEN — Catégorie "dispute" absente de la config admin
-**Fichier** : `AdminParcelActionsConfig.tsx` ligne 30-37
-**Problème** : La liste `CATEGORIES` ne contient que 6 valeurs (expertise, mutation, mortgage, permit, tax, subdivision). La catégorie `dispute` (utilisée par l'action "Litige foncier") est absente. Si un admin modifie cette action, il ne peut pas sélectionner sa catégorie correcte.
-**Impact** : Risque de mauvais classement de l'action litige dans l'interface admin.
+| Tab key | Label | Block existant ? |
+|---|---|---|
+| `mortgages` | Hypotheques | Non |
+| `building-permits` | Autorisations | Non |
+| `taxes` | Taxes foncieres | Non |
 
-### 4. MOYEN — Pas de gestion des icônes
-**Fichiers** : `useParcelActionsConfig.tsx` (champ `iconName`), `ParcelActionsDropdown.tsx`
-**Problème** : Le schéma supporte un champ `icon_name` et le hook le mappe vers `iconName`, mais le dropdown ne l'utilise jamais. Aucune icône n'est affichée à côté des actions dans le menu.
-**Impact** : Le menu est moins lisible — pas de repère visuel par action, juste du texte.
+**Impact** : Si un admin rend ces onglets visibles, cliquer dessus affiche un panneau vide (`BlockComponent` sera `undefined`, le rendu sera `null`). Les donnees sont pourtant deja fetchees par `useLandDataAnalytics` (`buildingPermits`, `taxHistory`, `mortgages`).
 
-### 5. MINEUR — Descriptions identiques pour deux actions de permis
-**Actions** : `permit_add` et `permit_request`
-**Problème** : Les deux ont la description "Autorisation de bâtir ou de régularisation". Leurs libellés ("Ajouter une autorisation" vs "Demander une autorisation") sont proches, ce qui crée de la confusion.
-**Impact** : L'utilisateur ne sait pas quelle action choisir.
+### 2. MOYEN — Prop `provinces` declaree mais jamais utilisee
 
-### 6. MINEUR — `saveConfig` fait N requêtes séquentielles
-**Fichier** : `useParcelActionsConfig.tsx` lignes 237-260
-**Problème** : La sauvegarde itère sur chaque action avec un `await` dans une boucle `for`. Pour 8 actions, cela fait 8 requêtes HTTP séquentielles.
-**Impact** : Sauvegarde lente (~2-3s). Un `Promise.all` ou un upsert batch serait plus efficace.
+`ProvinceDataVisualization` accepte une prop `provinces: ProvinceData[]` mais ne l'utilise nulle part dans le composant. Le composant re-fetche ses propres donnees via `useLandDataAnalytics()`, ce qui cree un **double fetch** : une fois dans `DRCInteractiveMap` et une fois dans `ProvinceDataVisualization`.
 
-### 7. MINEUR — Ordre de tri appliqué deux fois
-**Fichiers** : Le hook fetche avec `.order('display_order')`, puis le dropdown re-trie avec `.sort((a, b) => a.displayOrder - b.displayOrder)`.
-**Impact** : Négligeable en performance, mais code redondant.
+**Impact** : Deux appels identiques a `useLandDataAnalytics` (14 tables). Grace a React Query et la meme `queryKey`, le deuxieme est servi du cache, donc pas de requete reseau supplementaire. Mais le code est trompeur et la prop est inutile.
+
+### 3. MOYEN — Typage `any[]` partout dans les donnees analytics
+
+`LandAnalyticsData` declare toutes ses proprietes comme `any[]`. Les 11 blocks travaillent avec des `any` sans aucune verification de type. La fonction `fetchAll` utilise `(supabase.from as any)(table)` pour contourner le typage.
+
+**Impact** : Aucune protection contre les changements de schema. Si une colonne est renommee ou supprimee, le code echoue silencieusement (valeurs `undefined` dans les graphiques).
+
+### 4. MOYEN — Donnees chargees mais pas exploitees dans les blocs
+
+`useLandDataAnalytics` fetche `buildingPermits` et `taxHistory` comme entites a part entiere, mais elles ne sont consommees que de maniere secondaire dans `ParcelsWithTitleBlock` (comme sous-donnees de parcelles). Il n'y a pas de bloc dedie pour analyser ces donnees independamment, malgre la config complete dans le registry.
+
+### 5. MOYEN — Performance : `countForProvince` est O(n) par province
+
+Dans `DRCInteractiveMap`, la construction de `provincesData` appelle `countForProvince` (filtre lineaire) pour chaque type de donnee x 26 provinces. Pour 7 compteurs, cela fait 182 passes lineaires sur les tableaux. Avec des volumes importants, cela peut ralentir le rendu.
+
+**Impact** : Negligeable avec peu de donnees, mais degrade avec la croissance.
+
+### 6. MINEUR — Double instanciation de `useLandDataAnalytics`
+
+Le hook est appele dans `DRCInteractiveMap` (ligne 74) ET dans `ProvinceDataVisualization` (ligne 61). React Query deduplique les requetes, mais c'est du code redondant. Les donnees de la carte pourraient etre passees en prop.
+
+### 7. MINEUR — Pas de gestion d'erreur visible pour l'utilisateur
+
+Si `useLandDataAnalytics` echoue, `DRCInteractiveMap` ne montre aucun message d'erreur — il affiche simplement les provinces avec 0 partout (via `buildEmptyProvince`). L'erreur n'est geree que dans `ProvinceDataVisualization` (message texte discret).
+
+### 8. MINEUR — `html2canvas` importe en entier pour un seul bouton
+
+La dependance `html2canvas` (~400 KB) est importee statiquement en haut de `DRCInteractiveMap.tsx` pour le bouton "Copier en image", utilise rarement.
+
+**Impact** : Augmente le bundle initial.
 
 ---
 
@@ -69,17 +86,19 @@
 
 ### Corrections prioritaires
 
-1. **Passer `parcelData` au `ParcelActionsDropdown`** dans `CadastralMap.tsx`. Les données de la parcelle sélectionnée existent déjà (`selectedParcel`) — il suffit de les transmettre.
+1. **Creer les 3 blocs manquants** (`MortgagesBlock`, `BuildingPermitsBlock`, `TaxesBlock`) et les ajouter au `BLOCK_MAP` et `ICON_MAP` dans `ProvinceDataVisualization.tsx`. Les donnees sont deja fetchees — il suffit de creer les composants de visualisation.
 
-2. **Vérifier l'authentification** avant d'ouvrir un dialog quand `requiresAuth` est true. Si l'utilisateur n'est pas connecté, afficher un toast avec un lien vers la connexion au lieu d'ouvrir le formulaire.
+2. **Supprimer la prop `provinces` inutilisee** de `ProvinceDataVisualization` et l'appel correspondant dans `DRCInteractiveMap` pour eviter la confusion.
 
-3. **Ajouter la catégorie `dispute`** dans la liste `CATEGORIES` de `AdminParcelActionsConfig.tsx`.
+3. **Passer les donnees analytics en prop** au lieu du double hook, pour eliminer la redondance.
 
-### Améliorations
+### Ameliorations
 
-4. **Afficher les icônes** dans le dropdown en mappant `iconName` vers les composants lucide-react correspondants.
+4. **Pre-indexer les compteurs par province** avec un `Map<string, number>` en une seule passe au lieu de 182 filtres lineaires.
 
-5. **Différencier les descriptions** des deux actions de permis pour lever l'ambiguïté.
+5. **Lazy-importer `html2canvas`** : `const html2canvas = (await import('html2canvas')).default` dans le handler `handleCopyImage`.
 
-6. **Optimiser `saveConfig`** avec un `Promise.all` au lieu d'une boucle séquentielle.
+6. **Ajouter un etat d'erreur** dans `DRCInteractiveMap` quand le fetch echoue.
+
+7. **Typer les entites analytics** au lieu de `any[]` pour beneficier de la verification TypeScript.
 
