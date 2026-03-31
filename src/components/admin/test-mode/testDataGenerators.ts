@@ -583,7 +583,7 @@ export const generateExpertiseRequests = async (userId: string, parcelNumbers: s
       property_condition: pick(PROPERTY_CONDITIONS, i),
       wall_material: pick(WALL_MATERIALS, i),
       roof_material: pick(ROOF_MATERIALS, i),
-      floor_material: pick(['Carrelage', 'Ciment lissé', 'Parquet', 'Terre battue'], i),
+      floor_material: pick(['carrelage', 'ciment_lisse', 'parquet', 'marbre', 'terre_battue', 'autre'], i),
       sound_environment: pick(SOUND_ENVS, i),
       building_position: pick(BUILDING_POSITIONS, i),
       construction_year: i % 3 === 0 ? null : randInt(1995, 2023),
