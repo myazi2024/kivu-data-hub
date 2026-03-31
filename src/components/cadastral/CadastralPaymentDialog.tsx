@@ -6,7 +6,9 @@ import {
   Loader2,
   CreditCard,
   Smartphone,
+  FlaskConical,
 } from 'lucide-react';
+import { useTestMode } from '@/hooks/useTestMode';
 import { 
   Dialog, 
   DialogContent, 
