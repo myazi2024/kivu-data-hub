@@ -70,11 +70,8 @@ const PartnersSection = () => {
     <section className="py-10 md:py-16 bg-muted/30 overflow-hidden">
       <div className="container mx-auto px-4 mb-6 md:mb-8">
         <h2 className="text-xl md:text-2xl font-bold text-center text-foreground">
-          Nos Partenaires
+          Ce projet trouve écho auprès de
         </h2>
-        <p className="text-sm text-muted-foreground text-center mt-2">
-          Ils nous font confiance
-        </p>
       </div>
       <div className="relative">
         <div className="flex animate-marquee">
