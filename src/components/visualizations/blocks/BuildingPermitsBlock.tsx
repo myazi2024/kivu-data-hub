@@ -1,6 +1,6 @@
 import React, { useState, useMemo, memo, useContext, useEffect } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
-import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, CHART_COLORS, buildFilterLabel } from '@/utils/analyticsHelpers';
+import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, buildFilterLabel } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { FileCheck, CheckCircle, Clock, XCircle, TrendingUp } from 'lucide-react';
@@ -19,9 +19,9 @@ const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TAB
 export const BuildingPermitsBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
   const mapProvince = useContext(MapProvinceContext);
-  useEffect(() => { setFilter(f => ({ ...defaultFilter, province: mapProvince || undefined })); }, [mapProvince]);
+  useEffect(() => { setFilter(() => ({ ...defaultFilter, province: mapProvince || undefined })); }, [mapProvince]);
   const filterLabel = useMemo(() => buildFilterLabel(filter), [filter]);
-  const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
+  const { isChartVisible: v, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
   const filtered = useMemo(() => applyFilters(data.buildingPermits, filter), [data.buildingPermits, filter]);
 
   const byStatus = useMemo(() => countBy(filtered, 'administrative_status'), [filtered]);
@@ -50,33 +50,33 @@ export const BuildingPermitsBlock: React.FC<Props> = memo(({ data }) => {
     })).filter(b => b.value > 0);
   }, [filtered]);
 
-  const approved = filtered.filter(p => p.administrative_status === 'approved' || p.administrative_status === 'approuvé').length;
-  const pending = filtered.filter(p => p.administrative_status === 'pending' || p.administrative_status === 'en_attente').length;
-  const rejected = filtered.filter(p => p.administrative_status === 'rejected' || p.administrative_status === 'rejeté').length;
+  const approved = filtered.filter(p => ['approved', 'approuvé'].includes(p.administrative_status)).length;
+  const pending = filtered.filter(p => ['pending', 'en_attente'].includes(p.administrative_status)).length;
+  const rejected = filtered.filter(p => ['rejected', 'rejeté'].includes(p.administrative_status)).length;
   const approvalRate = filtered.length > 0 ? Math.round((approved / filtered.length) * 100) : 0;
 
-  const dt = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
+  const t = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
 
-  const kpis = [
-    { key: 'kpi-total', label: dt('kpi-total', 'Total'), value: filtered.length, icon: FileCheck },
-    { key: 'kpi-approved', label: dt('kpi-approved', 'Approuvées'), value: approved, icon: CheckCircle },
-    { key: 'kpi-pending', label: dt('kpi-pending', 'En attente'), value: pending, icon: Clock },
-    { key: 'kpi-rejected', label: dt('kpi-rejected', 'Rejetées'), value: rejected, icon: XCircle },
-    { key: 'kpi-approval-rate', label: dt('kpi-approval-rate', 'Taux approbation'), value: `${approvalRate}%`, icon: TrendingUp },
-  ].filter(k => isChartVisible(k.key));
+  const kpiItems = useMemo(() => [
+    { key: 'kpi-total', label: t('kpi-total', 'Total'), value: filtered.length, cls: 'text-teal-600' },
+    { key: 'kpi-approved', label: t('kpi-approved', 'Approuvées'), value: approved, cls: 'text-emerald-600', tooltip: pct(approved, filtered.length) },
+    { key: 'kpi-pending', label: t('kpi-pending', 'En attente'), value: pending, cls: 'text-amber-600', tooltip: pct(pending, filtered.length) },
+    { key: 'kpi-rejected', label: t('kpi-rejected', 'Rejetées'), value: rejected, cls: 'text-red-600', tooltip: pct(rejected, filtered.length) },
+    { key: 'kpi-approval-rate', label: t('kpi-approval-rate', 'Taux approbation'), value: `${approvalRate}%`, cls: 'text-blue-600' },
+  ].filter(k => v(k.key)), [filtered, approved, pending, rejected, approvalRate, v, getChartConfig]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
-      <div className="space-y-3">
+      <div className="space-y-2">
         <AnalyticsFilters data={data.buildingPermits} filter={filter} onChange={setFilter} />
-        <KpiGrid kpis={kpis} />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {isChartVisible('status') && <ChartCard title={dt('status', 'Statut')} data={byStatus} config={getChartConfig('status')} insight={generateInsight(byStatus, dt('status', 'Statut'))} />}
-          {isChartVisible('request-type') && <ChartCard title={dt('request-type', 'En cours vs Expiré')} data={byCurrent} config={getChartConfig('request-type')} insight={generateInsight(byCurrent, dt('request-type', 'En cours vs Expiré'))} />}
-          {isChartVisible('construction-type') && <ChartCard title={dt('construction-type', 'Service émetteur')} data={byService} config={getChartConfig('construction-type')} insight={generateInsight(byService, dt('construction-type', 'Service émetteur'))} />}
-          {isChartVisible('declared-usage') && <ChartCard title={dt('declared-usage', 'Validité')} data={validityBrackets} config={getChartConfig('declared-usage')} insight={generateInsight(validityBrackets, dt('declared-usage', 'Validité'))} />}
-          {isChartVisible('geo') && <GeoCharts data={filtered} title={dt('geo', 'Géographie')} />}
-          {isChartVisible('evolution') && <ChartCard title={dt('evolution', 'Évolution')} data={trend} config={getChartConfig('evolution')} className="md:col-span-2" insight={generateInsight(trend, dt('evolution', 'Évolution'))} />}
+        <KpiGrid items={kpiItems} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          {v('status') && <ChartCard title={t('status', 'Statut administratif')} data={byStatus} type="bar-v" colorIndex={0} insight={generateInsight(byStatus, 'bar-v', 'les statuts des autorisations')} />}
+          {v('request-type') && <ChartCard title={t('request-type', 'En cours vs Expiré')} data={byCurrent} type="pie" colorIndex={1} insight={generateInsight(byCurrent, 'pie', 'la validité des permis')} />}
+          {v('construction-type') && <ChartCard title={t('construction-type', 'Service émetteur')} data={byService} type="bar-h" colorIndex={2} labelWidth={100} insight={generateInsight(byService, 'bar-h', 'les services émetteurs')} />}
+          {v('declared-usage') && <ChartCard title={t('declared-usage', 'Période de validité')} data={validityBrackets} type="bar-v" colorIndex={3} insight={generateInsight(validityBrackets, 'bar-v', 'les périodes de validité')} />}
+          {v('geo') && <GeoCharts records={filtered} />}
+          {v('evolution') && <ChartCard title={t('evolution', 'Évolution')} data={trend} type="area" colorIndex={4} colSpan={2} icon={TrendingUp} insight={generateInsight(trend, 'area', "l'évolution des autorisations")} />}
         </div>
       </div>
     </FilterLabelContext.Provider>

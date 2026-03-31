@@ -1,6 +1,6 @@
 import React, { useState, useMemo, memo, useContext, useEffect } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
-import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, CHART_COLORS, buildFilterLabel } from '@/utils/analyticsHelpers';
+import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, buildFilterLabel } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { Landmark, TrendingUp, DollarSign, Clock } from 'lucide-react';
@@ -19,9 +19,9 @@ const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TAB
 export const MortgagesBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
   const mapProvince = useContext(MapProvinceContext);
-  useEffect(() => { setFilter(f => ({ ...defaultFilter, province: mapProvince || undefined })); }, [mapProvince]);
+  useEffect(() => { setFilter(() => ({ ...defaultFilter, province: mapProvince || undefined })); }, [mapProvince]);
   const filterLabel = useMemo(() => buildFilterLabel(filter), [filter]);
-  const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
+  const { isChartVisible: v, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
   const filtered = useMemo(() => applyFilters(data.mortgages, filter), [data.mortgages, filter]);
 
   const byCreditorType = useMemo(() => countBy(filtered, 'creditor_type'), [filtered]);
@@ -31,10 +31,10 @@ export const MortgagesBlock: React.FC<Props> = memo(({ data }) => {
   const amountBrackets = useMemo(() => {
     const brackets = [
       { name: '< 5 000 $', min: 0, max: 5000 },
-      { name: '5 000 – 20 000 $', min: 5000, max: 20000 },
-      { name: '20 000 – 50 000 $', min: 20000, max: 50000 },
-      { name: '50 000 – 100 000 $', min: 50000, max: 100000 },
-      { name: '> 100 000 $', min: 100000, max: Infinity },
+      { name: '5k – 20k $', min: 5000, max: 20000 },
+      { name: '20k – 50k $', min: 20000, max: 50000 },
+      { name: '50k – 100k $', min: 50000, max: 100000 },
+      { name: '> 100k $', min: 100000, max: Infinity },
     ];
     return brackets.map(b => ({
       name: b.name,
@@ -57,30 +57,30 @@ export const MortgagesBlock: React.FC<Props> = memo(({ data }) => {
 
   const active = filtered.filter(m => m.mortgage_status === 'active').length;
   const paid = filtered.filter(m => m.mortgage_status === 'paid' || m.mortgage_status === 'soldée').length;
-  const totalAmount = filtered.reduce((s, m) => s + (m.mortgage_amount_usd || 0), 0);
+  const totalAmount = filtered.reduce((s: number, m: any) => s + (m.mortgage_amount_usd || 0), 0);
 
-  const dt = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
+  const t = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
 
-  const kpis = [
-    { key: 'kpi-total', label: dt('kpi-total', 'Total'), value: filtered.length, icon: Landmark },
-    { key: 'kpi-active', label: dt('kpi-active', 'Actives'), value: active, icon: TrendingUp },
-    { key: 'kpi-paid', label: dt('kpi-paid', 'Soldées'), value: paid, icon: Clock },
-    { key: 'kpi-amount', label: dt('kpi-amount', 'Montant total'), value: `${(totalAmount / 1000).toFixed(0)}k $`, icon: DollarSign },
-  ].filter(k => isChartVisible(k.key));
+  const kpiItems = useMemo(() => [
+    { key: 'kpi-total', label: t('kpi-total', 'Total'), value: filtered.length, cls: 'text-indigo-600' },
+    { key: 'kpi-active', label: t('kpi-active', 'Actives'), value: active, cls: 'text-emerald-600', tooltip: pct(active, filtered.length) },
+    { key: 'kpi-paid', label: t('kpi-paid', 'Soldées'), value: paid, cls: 'text-blue-600', tooltip: pct(paid, filtered.length) },
+    { key: 'kpi-amount', label: t('kpi-amount', 'Montant total'), value: `$${totalAmount.toLocaleString()}`, cls: 'text-amber-600' },
+  ].filter(k => v(k.key)), [filtered, active, paid, totalAmount, v, getChartConfig]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
-      <div className="space-y-3">
+      <div className="space-y-2">
         <AnalyticsFilters data={data.mortgages} filter={filter} onChange={setFilter} />
-        <KpiGrid kpis={kpis} />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {isChartVisible('creditor-type') && <ChartCard title={dt('creditor-type', 'Type créancier')} data={byCreditorType} config={getChartConfig('creditor-type')} insight={generateInsight(byCreditorType, dt('creditor-type', 'Type créancier'))} />}
-          {isChartVisible('amount-brackets') && <ChartCard title={dt('amount-brackets', 'Montants')} data={amountBrackets} config={getChartConfig('amount-brackets')} insight={generateInsight(amountBrackets, dt('amount-brackets', 'Montants'))} />}
-          {isChartVisible('status') && <ChartCard title={dt('status', 'Statut')} data={byStatus} config={getChartConfig('status')} insight={generateInsight(byStatus, dt('status', 'Statut'))} />}
-          {isChartVisible('duration') && <ChartCard title={dt('duration', 'Durée (mois)')} data={durationBrackets} config={getChartConfig('duration')} insight={generateInsight(durationBrackets, dt('duration', 'Durée (mois)'))} />}
-          {isChartVisible('trend') && <ChartCard title={dt('trend', 'Contrats/mois')} data={trend} config={getChartConfig('trend')} insight={generateInsight(trend, dt('trend', 'Contrats/mois'))} />}
-          {isChartVisible('geo') && <GeoCharts data={filtered} title={dt('geo', 'Géographie')} />}
-          {isChartVisible('evolution') && <ChartCard title={dt('evolution', 'Évolution')} data={trend} config={getChartConfig('evolution')} className="md:col-span-2" insight={generateInsight(trend, dt('evolution', 'Évolution'))} />}
+        <KpiGrid items={kpiItems} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          {v('creditor-type') && <ChartCard title={t('creditor-type', 'Type créancier')} data={byCreditorType} type="donut" colorIndex={0} insight={generateInsight(byCreditorType, 'donut', 'les types de créancier')} />}
+          {v('amount-brackets') && <ChartCard title={t('amount-brackets', 'Montants')} data={amountBrackets} type="bar-v" colorIndex={1} insight={generateInsight(amountBrackets, 'bar-v', 'les montants hypothécaires')} />}
+          {v('status') && <ChartCard title={t('status', 'Statut')} data={byStatus} type="pie" colorIndex={2} insight={generateInsight(byStatus, 'pie', 'les statuts hypothécaires')} />}
+          {v('duration') && <ChartCard title={t('duration', 'Durée (mois)')} data={durationBrackets} type="bar-v" colorIndex={3} insight={generateInsight(durationBrackets, 'bar-v', 'les durées hypothécaires')} />}
+          {v('trend') && <ChartCard title={t('trend', 'Contrats/mois')} data={trend} type="area" colorIndex={4} icon={TrendingUp} insight={generateInsight(trend, 'area', 'les contrats hypothécaires')} />}
+          {v('geo') && <GeoCharts records={filtered} />}
+          {v('evolution') && <ChartCard title={t('evolution', 'Évolution')} data={trend} type="area" colorIndex={5} colSpan={2} icon={TrendingUp} insight={generateInsight(trend, 'area', "l'évolution des hypothèques")} />}
         </div>
       </div>
     </FilterLabelContext.Provider>

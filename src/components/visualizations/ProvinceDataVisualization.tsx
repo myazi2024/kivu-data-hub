@@ -1,6 +1,6 @@
 import React, { useState, memo } from 'react';
-import { FileText, Map, Search, ArrowRightLeft, Scissors, AlertTriangle, Loader2, Database, History, ShieldAlert, Award, Receipt } from 'lucide-react';
-import { useLandDataAnalytics } from '@/hooks/useLandDataAnalytics';
+import { FileText, Map, Search, ArrowRightLeft, Scissors, AlertTriangle, Loader2, Database, History, ShieldAlert, Award, Receipt, Landmark, FileCheck, DollarSign } from 'lucide-react';
+import { useLandDataAnalytics, LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { TitleRequestsBlock } from './blocks/TitleRequestsBlock';
 import { ParcelsWithTitleBlock } from './blocks/ParcelsWithTitleBlock';
 import { ContributionsBlock } from './blocks/ContributionsBlock';
@@ -8,8 +8,9 @@ import { ExpertiseBlock } from './blocks/ExpertiseBlock';
 import { MutationBlock } from './blocks/MutationBlock';
 import { SubdivisionBlock } from './blocks/SubdivisionBlock';
 import { DisputesBlock } from './blocks/DisputesBlock';
-
-
+import { MortgagesBlock } from './blocks/MortgagesBlock';
+import { BuildingPermitsBlock } from './blocks/BuildingPermitsBlock';
+import { TaxesBlock } from './blocks/TaxesBlock';
 import { OwnershipHistoryBlock } from './blocks/OwnershipHistoryBlock';
 import { FraudAttemptsBlock } from './blocks/FraudAttemptsBlock';
 import { CertificatesBlock } from './blocks/CertificatesBlock';
@@ -20,7 +21,7 @@ import { ProvinceFilterContext, MapProvinceContext } from './filters/AnalyticsFi
 import { WatermarkContext } from './shared/ChartCard';
 
 interface ProvinceDataVisualizationProps {
-  provinces: ProvinceData[];
+  analytics: LandAnalyticsData;
   selectedProvince?: ProvinceData | null;
   onProvinceFilter?: (provinceName: string | undefined) => void;
 }
@@ -33,7 +34,9 @@ const ICON_MAP: Record<string, React.ComponentType<any>> = {
   'mutations': ArrowRightLeft,
   'subdivision': Scissors,
   'disputes': AlertTriangle,
-  
+  'mortgages': Landmark,
+  'building-permits': FileCheck,
+  'taxes': DollarSign,
   'ownership': History,
   'fraud': ShieldAlert,
   'certificates': Award,
@@ -48,17 +51,18 @@ const BLOCK_MAP: Record<string, React.ComponentType<{ data: any }>> = {
   'mutations': MutationBlock,
   'subdivision': SubdivisionBlock,
   'disputes': DisputesBlock,
-  
+  'mortgages': MortgagesBlock,
+  'building-permits': BuildingPermitsBlock,
+  'taxes': TaxesBlock,
   'ownership': OwnershipHistoryBlock,
   'fraud': FraudAttemptsBlock,
   'certificates': CertificatesBlock,
   'invoices': InvoicesBlock,
 };
 
-const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({ selectedProvince, onProvinceFilter }) => {
+const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({ analytics, selectedProvince, onProvinceFilter }) => {
   const { visibleTabs, isLoading: tabsLoading } = useAnalyticsTabsConfig();
   const [activeTab, setActiveTab] = useState('');
-  const { data: analytics, isLoading, error } = useLandDataAnalytics();
 
   // Load global watermark config
   const globalDefaults = ANALYTICS_TABS_REGISTRY['_global']
@@ -74,19 +78,11 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({ s
     }
   }, [visibleTabs, activeTab]);
 
-  if (isLoading || tabsLoading) {
+  if (tabsLoading) {
     return (
       <div className="flex items-center justify-center p-4">
         <Loader2 className="h-4 w-4 animate-spin text-primary" />
         <span className="ml-2 text-xs text-muted-foreground">Chargement...</span>
-      </div>
-    );
-  }
-
-  if (error || !analytics) {
-    return (
-      <div className="text-center p-3 text-muted-foreground text-xs">
-        Impossible de charger les données foncières.
       </div>
     );
   }
