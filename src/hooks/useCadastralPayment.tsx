@@ -318,14 +318,14 @@ export const useCadastralPayment = () => {
         .from('payment_transactions')
         .insert({
           user_id: user.id,
-          item_id: invoiceId,
-          payment_type: 'cadastral_service',
-          payment_provider: 'TEST_SIMULATION',
+          invoice_id: invoiceId,
+          payment_method: 'TEST',
+          provider: 'TEST_SIMULATION',
           phone_number: '0000000000',
           amount_usd: 0,
           currency_code: 'USD',
           status: 'completed',
-          provider_transaction_id: `TEST-${Date.now()}`,
+          transaction_reference: `TEST-${Date.now()}`,
         })
         .select('id')
         .single();
