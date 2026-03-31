@@ -171,6 +171,71 @@ Deno.serve(async (req) => {
       orderMetadata.invoice_id = invoice_id;
       orderMetadata.parcel_number = mutationRequest.parcel_number;
     }
+    // Handle Land Title Request payment
+    else if (payment_type === 'land_title_request' && invoice_id && amount_usd) {
+      const { data: titleRequest, error: titleError } = await supabase
+        .from("land_title_requests")
+        .select("id, reference_number, total_amount_usd, user_id, province")
+        .eq("id", invoice_id)
+        .eq("user_id", user.id)
+        .single();
+
+      if (titleError || !titleRequest) {
+        throw new Error("Invalid land title request");
+      }
+
+      lineItems = [{
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: `Demande de titre foncier ${titleRequest.reference_number}`,
+            description: `Titre foncier — ${titleRequest.province}`,
+          },
+          unit_amount: Math.round(Number(titleRequest.total_amount_usd) * 100),
+        },
+        quantity: 1,
+      }];
+
+      totalAmount = Math.round(Number(titleRequest.total_amount_usd) * 100);
+      orderMetadata.land_title_request_id = invoice_id;
+      orderMetadata.invoice_id = invoice_id;
+    }
+    // Handle Building Permit Request payment
+    else if (payment_type === 'permit_request' && invoice_id && amount_usd) {
+      lineItems = [{
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: `Demande d'autorisation de bâtir`,
+            description: `Paiement frais d'autorisation`,
+          },
+          unit_amount: Math.round(amount_usd * 100),
+        },
+        quantity: 1,
+      }];
+
+      totalAmount = Math.round(amount_usd * 100);
+      orderMetadata.permit_request_id = invoice_id;
+      orderMetadata.invoice_id = invoice_id;
+    }
+    // Handle Mortgage Cancellation payment
+    else if (payment_type === 'mortgage_cancellation' && invoice_id && amount_usd) {
+      lineItems = [{
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: `Mainlevée hypothécaire`,
+            description: `Paiement frais de mainlevée`,
+          },
+          unit_amount: Math.round(amount_usd * 100),
+        },
+        quantity: 1,
+      }];
+
+      totalAmount = Math.round(amount_usd * 100);
+      orderMetadata.mortgage_cancellation_id = invoice_id;
+      orderMetadata.invoice_id = invoice_id;
+    }
     else {
       throw new Error("Invalid payment request: missing items or invoice_id");
     }
