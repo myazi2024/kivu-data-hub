@@ -334,7 +334,7 @@ export const generateServiceAccess = async (
   if (error) console.error('Accès services (non bloquant):', error);
 };
 
-// ─── Step 5: Title requests — 10 total (2/province) ──────────────────────────
+// ─── Step 5: Title requests — 52 total (2/province) ─────────────────────────
 
 export const generateTitleRequests = async (userId: string, suffix: string) => {
   const FIRST_NAMES = ['Jean', 'Marie', 'Patrick', 'Chantal', 'Pierre', 'Grace', 'David', 'Sophie', 'Joseph', 'Alice'];
