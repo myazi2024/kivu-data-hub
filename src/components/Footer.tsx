@@ -10,7 +10,6 @@ const Footer = () => {
     { name: 'À propos', href: '/about' },
     { name: 'Nos services', href: '/services' },
     { name: 'Publications', href: '/publications' },
-    { name: 'Données foncières', href: '/map' },
     
   ];
 
