@@ -1,163 +1,78 @@
 
 
-# Données test insuffisamment variées pour couvrir tous les visuels "Données foncières"
+# Audit du mode test — Redondances, désalignements et erreurs de logique
 
-## Analyse croisée : champs utilisés par les blocs vs champs générés
+## Problèmes identifiés
 
-### 1. TitleRequestsBlock — `land_title_requests`
+### Bug 1 — Genre dans `generateTitleRequests` : `'M'`/`'F'` au lieu de `'Masculin'`/`'Féminin'`
+**Fichier** : `testDataGenerators.ts` lignes 504-505
+**Problème** : Le formulaire `LandTitleRequestDialog.tsx` utilise les valeurs `'Masculin'` et `'Féminin'` (SelectItem). Le test génère `'M'`/`'F'`, ce qui rend les graphiques "Genre" dans `TitleRequestsBlock` incohérents avec les vraies données collectées.
+**Correction** : Remplacer `'M'`/`'F'` par `'Masculin'`/`'Féminin'`.
 
-| Champ visualisé | Généré ? | Problème |
-|---|---|---|
-| `request_type` | **Non** | Toujours `null` → graphique "Type de demande" vide |
-| `requester_type` | **Non** | Toujours `null` → graphique "Demandeur" vide |
-| `requester_gender` | **Non** | → graphique "Genre" vide |
-| `owner_gender` | **Non** | → idem |
-| `nationality` | **Non** | → graphique "Nationalité" vide |
-| `construction_type` | **Non** | → graphique "Type construction" vide |
-| `owner_legal_status` | **Non** | → graphique "Statut juridique" vide |
-| `deduced_title_type` | **Non** | → graphique "Titre déduit" vide |
-| `is_owner_same_as_requester` | **Non** | → graphique "Demandeur = Proprio" vide |
-| `reviewed_at` | **Non** | → KPI "Délai moy." toujours N/A |
-| `section_type` | **Non** (déduit via enrichissement) | Pas de `parcel_type` dans title requests |
+### Bug 2 — `property_condition` expertise : valeurs désalignées
+**Fichier** : `testDataGenerators.ts` ligne 555
+**Problème** : Le générateur utilise `['bon', 'moyen', 'mauvais', 'neuf']`. Les constantes officielles dans `expertiseLabels.ts` sont `'neuf'`, `'bon'`, `'moyen'`, `'mauvais'`, `'a_renover'`. La valeur `'a_renover'` n'est jamais générée → le graphique "État du bien" ne montre jamais "À rénover".
+**Correction** : Ajouter `'a_renover'` au cycle.
 
-**Résultat : ~10 graphiques vides sur 16 dans cet onglet.**
+### Bug 3 — `wall_material` expertise : labels humains au lieu de clés techniques
+**Fichier** : `testDataGenerators.ts` ligne 556
+**Problème** : Le générateur utilise `['Briques cuites', 'Parpaings', 'Bois', 'Tôles', 'Briques adobe', 'Pierre']`. Les clés réelles du formulaire sont `'beton'`, `'briques_cuites'`, `'briques_adobe'`, `'parpaings'`, `'bois'`, `'tole'`, `'mixte'` (cf. `WALL_LABELS`). La visualisation utilise ces clés pour les labels. Les données test ne matcheront jamais.
+**Correction** : Utiliser les clés : `['beton', 'briques_cuites', 'briques_adobe', 'parpaings', 'bois', 'tole', 'mixte']`.
 
-### 2. ParcelsWithTitleBlock — `cadastral_parcels` + relations
+### Bug 4 — `roof_material` expertise : même problème que wall
+**Fichier** : `testDataGenerators.ts` ligne 557
+**Problème** : Utilise `['Tôles galvanisées', 'Tuiles', 'Dalle béton', 'Chaume']`. Les clés réelles sont `'tole_bac'`, `'tuiles'`, `'dalle_beton'`, `'ardoise'`, `'chaume'`, `'autre'`.
+**Correction** : Utiliser les clés techniques.
 
-| Champ visualisé | Généré ? |
-|---|---|
-| `property_title_type` | Oui |
-| `current_owner_legal_status` | Oui |
-| `construction_type/nature` | Oui |
-| `declared_usage` | Oui |
-| `lease_type` | Oui |
-| `construction_year` | Oui |
-| `area_sqm` | Oui |
-| Gender (via contributions `current_owners_details`) | Oui |
-| Building permits (`cadastral_building_permits`) | **Seulement 10 records** → très peu de données |
-| Tax history (`cadastral_tax_history`) | **Seulement ~60 records** (20 parcels × 3 ans) |
-| Mortgages (`cadastral_mortgages`) | **Seulement 10 records** |
+### Bug 5 — `sound_environment` expertise : valeurs partielles
+**Fichier** : `testDataGenerators.ts` ligne 558
+**Problème** : Utilise `['calme', 'modéré', 'bruyant']`. Les clés réelles sont `'tres_calme'`, `'calme'`, `'modere'` (sans accent), `'bruyant'`, `'tres_bruyant'`. `'modéré'` (avec accent) ne matchera pas `'modere'`.
+**Correction** : Utiliser `['tres_calme', 'calme', 'modere', 'bruyant', 'tres_bruyant']`.
 
-**Problème : les sous-tables (permits, taxes, mortgages) ont un volume fixe de 10-60 records indépendamment des 7 020 parcelles. Pas proportionnel.**
+### Bug 6 — `building_position` expertise : valeurs inventées
+**Fichier** : `testDataGenerators.ts` ligne 559
+**Problème** : Utilise `['isolé', 'en_bande', 'angle', 'mitoyen']`. Les clés réelles sont `'premiere_position'`, `'deuxieme_position'`, `'fond_parcelle'`, `'dans_servitude'`, `'coin_parcelle'` (cf. `BUILDING_POSITION_LABELS`). Aucune correspondance.
+**Correction** : Utiliser les clés de `BUILDING_POSITION_LABELS`.
 
-### 3. ExpertiseBlock — `real_estate_expertise_requests`
+### Bug 7 — `floor_material` expertise : labels humains
+**Fichier** : `testDataGenerators.ts` ligne 586
+**Problème** : Utilise `['Carrelage', 'Ciment lissé', 'Parquet', 'Terre battue']`. Les clés réelles sont `'carrelage'`, `'ciment_lisse'`, `'parquet'`, `'marbre'`, `'terre_battue'`, `'autre'`.
+**Correction** : Utiliser les clés techniques.
 
-| Champ visualisé | Généré ? |
-|---|---|
-| `status`, `payment_status` | **`payment_status` non généré** → graphique "Paiement" vide |
-| `property_condition` | **Non** → graphique "État du bien" vide |
-| `wall_material` | **Non** → graphique "Matériau murs" vide |
-| `roof_material` | **Non** → graphique "Matériau toiture" vide |
-| `sound_environment` | **Non** → graphique "Env. sonore" vide |
-| `building_position` | **Non** → graphique "Position bâtiment" vide |
-| `has_sewage_system` | **Non** |
-| `has_pool`, `has_air_conditioning`, `has_solar_panels`, `has_generator`, `has_water_tank`, `has_borehole`, `has_garage`, `has_electric_fence`, `has_cellar`, `has_automatic_gate` | **Non** → graphique "Équipements" incomplet |
-| `assigned_at` | **Non** → KPI "Délai assign." toujours N/A |
-| `expertise_date` | **Non** → KPI "Délai total" toujours N/A |
+### Bug 8 — `construction_quality` expertise : labels non-alignés
+**Fichier** : `testDataGenerators.ts` ligne 614
+**Problème** : Utilise `['standard', 'luxe', 'economique']`. Les clés de `QUALITY_LABELS` sont `'luxe'`, `'standard'`, `'economique'` — ici c'est correct mais manque de variété (seulement 3 valeurs, pas de `'autre'`). Mineur.
 
-**Résultat : ~8 graphiques vides et KPIs N/A.**
+### Bug 9 — `dispute_type` : valeur `'mediation'` n'existe pas dans les formulaires
+**Fichier** : `testDataGenerators.ts` ligne 676
+**Problème** : Le générateur utilise `['report', 'lifting', 'mediation']`. Les formulaires ne produisent que `'report'` (LandDisputeReportForm) et `'lifting'` (LandDisputeLiftingForm). La valeur `'mediation'` n'existe pas dans l'application — c'est une donnée fictive inventée qui ne correspond à aucun outil de collecte.
+**Correction** : Supprimer `'mediation'`, utiliser seulement `['report', 'lifting']`.
 
-### 4. MutationBlock — `mutation_requests`
+### Bug 10 — `is_title_in_current_owner_name` absent des contributions
+**Fichier** : `testDataGenerators.ts` lignes 220-327
+**Problème** : Le plan précédent prévoyait d'ajouter ce champ mais il n'a pas été implémenté. Le formulaire CCC (`UserContributions.tsx`) le lit/écrit, et `MutationRequestDialog.tsx` le vérifie pour afficher un avertissement.
+**Correction** : Ajouter `is_title_in_current_owner_name: idx % 3 !== 0` aux contributions.
 
-| Champ visualisé | Généré ? |
-|---|---|
-| Tous les champs de base | Oui |
-| `market_value_usd` | Oui (direct) |
-| `title_age` | **Non** (ni direct ni dans `proposed_changes`) → graphique "Ancienneté titre" vide |
-| `late_fee_amount` | **Non** → graphique "Retard mutation" vide |
+### Redondance 11 — Données dupliquées entre `cadastral_parcels` et `cadastral_contributions`
+**Fichier** : `testDataGenerators.ts`
+**Problème** : Les deux générateurs (`generateParcels` et `generateContributions`) produisent les mêmes champs (parcel_sides, construction_materials, standing, title_reference_number, etc.) avec des valeurs potentiellement **différentes** pour le même `parcel_number` car `randInt()` est appelé séparément. Cela crée des incohérences : une parcelle peut avoir `area_sqm: 3500` dans `cadastral_parcels` et `area_sqm: 1200` dans `cadastral_contributions`.
+**Correction** : Utiliser un seeded random ou extraire les valeurs communes dans un objet partagé entre les deux fonctions. Alternativement, fixer un seed basé sur `idx` pour les champs partagés.
 
-### 5. DisputesBlock — `cadastral_land_disputes`
+### Bug 12 — `lease_type` dans parcelles utilise `'initial'`/`'renewal'` sans vérification
+**Fichier** : `testDataGenerators.ts` ligne 183
+**Problème mineur** : Valeurs non vérifiées contre le schéma DB. Si le schéma attend d'autres valeurs, l'insertion échouera silencieusement. À vérifier.
 
-| Champ visualisé | Généré ? |
-|---|---|
-| `dispute_type` | **Toujours `'report'`** → graphique "Type litige" monotone |
-| `lifting_status` | Partiellement (seulement `'en_cours'`) → section "Levées" avec un seul statut |
-| `lifting_reason` | Seulement `'conciliation_reussie'` → un seul motif |
-| `resolution_level` | Seulement pour résolus → distribution pauvre |
+## Résumé des corrections
 
-### 6. InvoicesBlock — `cadastral_invoices`
-
-| Champ visualisé | Généré ? |
-|---|---|
-| `payment_method` | **Non** → graphique "Moyen paiement" vide |
-| `discount_amount_usd` | **Non** → KPI "Remises" toujours $0 |
-| `geographical_zone` | Oui |
-| `total_amount_usd` | Oui |
-
-### 7. SubdivisionBlock — `subdivision_requests`
-
-| Champ visualisé | Généré ? |
-|---|---|
-| `submission_payment_status` | **Non** → graphique "Paiement" vide |
-| `total_amount_usd` | **Non** → KPI "Surface tot." et revenue = 0 |
-
-### 8. OwnershipHistoryBlock — `cadastral_ownership_history`
-- Seulement 40 records (20 parcels × 2). Volume insuffisant pour des tendances mensuelles visibles.
-
-### 9. CertificatesBlock — `generated_certificates`
-- Statut toujours `'generated'` → graphique "Statut" monotone, pas de `'pending'` ni `'completed'`.
-
-### 10. FraudAttemptsBlock — `fraud_attempts`
-- OK globalement, mais seulement 52 records.
-
-## Plan de correction
-
-### Fichier unique : `testDataGenerators.ts`
-
-**A. `generateTitleRequests` — Ajouter les 10 champs manquants :**
-- `request_type`: cycle entre `'nouveau_titre'`, `'renouvellement'`, `'duplicata'`, `'conversion'`
-- `requester_type`: cycle entre `'proprietaire'`, `'mandataire'`, `'heritier'`
-- `requester_gender` / `owner_gender`: alternance `'Masculin'`/`'Féminin'`
-- `nationality`: ~90% `'Congolaise'`, ~10% `'Étrangère'`
-- `construction_type`: via `pick(CONSTRUCTION_TYPES, i)`
-- `owner_legal_status`: via `pick(LEGAL_STATUSES, i)`
-- `deduced_title_type`: via `pick(TITLE_TYPES, i)`
-- `is_owner_same_as_requester`: alternance `true`/`false`
-- `reviewed_at`: pour les non-pending, date aléatoire après `created_at`
-
-**B. `generateExpertiseRequests` — Ajouter les 12+ champs manquants :**
-- `payment_status`: cycle `'pending'`/`'paid'`
-- `property_condition`: cycle `'bon'`, `'moyen'`, `'mauvais'`, `'neuf'`
-- `wall_material`, `roof_material`, `sound_environment`, `building_position`
-- `has_sewage_system`, `has_pool`, `has_air_conditioning`, `has_solar_panels`, `has_generator`, `has_water_tank`, `has_borehole`, `has_garage`, `has_electric_fence`, `has_cellar`, `has_automatic_gate`
-- `assigned_at`, `expertise_date`: dates cohérentes pour les `completed`/`in_progress`
-
-**C. `generateInvoices` — Ajouter :**
-- `payment_method`: cycle `'mobile_money'`, `'card'`, `'bank_transfer'`
-- `discount_amount_usd`: ~20% des factures avec une remise de $1-5
-
-**D. `generateSubdivisionRequests` — Ajouter :**
-- `submission_payment_status`: cycle `'paid'`/`'pending'`
-- `total_amount_usd`: `randInt(100, 500)`
-
-**E. `generateDisputes` — Varier :**
-- `dispute_type`: cycle `'report'`, `'lifting'`, `'mediation'`
-- `lifting_status`: varier entre `'en_cours'`, `'approved'`, `'rejected'`, `'pending'`
-- `lifting_reason`: varier entre `'conciliation_reussie'`, `'decision_justice'`, `'accord_parties'`
-- `resolution_level`: varier pour tous, pas seulement résolus
-
-**F. `generateCertificates` — Varier :**
-- `status`: cycle `'generated'`, `'pending'`, `'completed'`
-
-**G. `generateMutationRequests` — Ajouter :**
-- `title_age` dans `proposed_changes`: `'less_than_10'` ou `'10_or_more'`
-- `late_fee_amount` dans `proposed_changes.late_fees.fee`: ~30% des mutations
-
-**H. Proportionnaliser les sous-tables :**
-- `generateBuildingPermits`: passer de 10 à `~10% des parcelles` (700+)
-- `generateTaxHistory`: passer de 20 parcelles à `~15%` (1 050+) × 3 ans
-- `generateMortgages`: passer de 10 à `~8%` (560+)
-- `generateOwnershipHistory`: passer de 20 parcelles à `~15%` (1 050+)
-- Ajouter du batching (par 50) dans ces fonctions qui ne l'ont pas encore
-
-**I. Augmenter le volume des entités 2/province :**
-- Expertises : passer de 52 à `~5% des parcelles` (351)
-- Title requests : passer de 52 à `~5%` (351)
-- Les autres (disputes, mutations, certificates, fraud) restent à 52 (suffisant pour la variété)
-
-### Fichiers modifiés
-
-| Fichier | Modifications |
-|---------|---------------|
-| `testDataGenerators.ts` | Tous les ajouts A-I ci-dessus |
+| # | Fichier | Correction |
+|---|---------|------------|
+| 1 | `testDataGenerators.ts` | Genre title requests: `'M'`→`'Masculin'`, `'F'`→`'Féminin'` |
+| 2 | `testDataGenerators.ts` | Ajouter `'a_renover'` à property_condition |
+| 3-4 | `testDataGenerators.ts` | wall_material et roof_material: utiliser clés techniques |
+| 5 | `testDataGenerators.ts` | sound_environment: corriger `'modéré'`→`'modere'`, ajouter valeurs manquantes |
+| 6 | `testDataGenerators.ts` | building_position: remplacer par clés de BUILDING_POSITION_LABELS |
+| 7 | `testDataGenerators.ts` | floor_material: utiliser clés techniques |
+| 9 | `testDataGenerators.ts` | dispute_type: supprimer `'mediation'` |
+| 10 | `testDataGenerators.ts` | Ajouter `is_title_in_current_owner_name` aux contributions |
+| 11 | `testDataGenerators.ts` | Synchroniser les valeurs communes entre parcelles et contributions |
 
