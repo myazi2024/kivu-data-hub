@@ -311,13 +311,18 @@ export const generatePayments = async (
     created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
   }));
 
-  const { data, error } = await supabase
-    .from('payment_transactions')
-    .insert(records)
-    .select('id');
-
-  if (error) throw new Error(`Paiements: ${error.message}`);
-  return assertInserted(data, 'Paiements');
+  // Insert in batches
+  const allInserted: Array<{ id: string }> = [];
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { data, error } = await supabase
+      .from('payment_transactions')
+      .insert(batch)
+      .select('id');
+    if (error) throw new Error(`Paiements (batch ${i}): ${error.message}`);
+    allInserted.push(...assertInserted(data, 'Paiements'));
+  }
+  return allInserted;
 };
 
 // ─── Step 4: Generate service access for paid invoices ────────────────────────
