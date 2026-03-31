@@ -602,6 +602,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
           paymentStep={paymentStep}
           processMobileMoneyPayment={processMobileMoneyPayment}
           processStripePayment={processStripePayment}
+          processTestPayment={processTestPayment}
           resetPaymentState={resetPaymentState}
           selectedCurrency={selectedCurrency}
           exchangeRate={exchangeRate}
