@@ -1,0 +1,1 @@
+ALTER TABLE public.cadastral_contributions ADD COLUMN IF NOT EXISTS is_title_in_current_owner_name BOOLEAN;
