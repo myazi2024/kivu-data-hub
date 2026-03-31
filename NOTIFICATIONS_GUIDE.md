@@ -165,7 +165,7 @@ SELECT
   EXTRACT(day FROM expires_at - NOW()) || ' jour(s). Utilisez-le avant le ' ||
   TO_CHAR(expires_at, 'DD/MM/YYYY'),
   'warning',
-  '/myazi?tab=codes'
+  '/tableau-de-bord?tab=codes'
 FROM cadastral_contributor_codes
 WHERE is_used = false 
   AND is_valid = true

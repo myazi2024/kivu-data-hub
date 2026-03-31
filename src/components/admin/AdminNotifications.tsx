@@ -395,7 +395,7 @@ export const AdminNotifications: React.FC = () => {
               id="action_url"
               value={newNotification.action_url}
               onChange={(e) => setNewNotification({ ...newNotification, action_url: e.target.value })}
-              placeholder="/myazi ou https://exemple.com"
+              placeholder="/tableau-de-bord ou https://exemple.com"
             />
           </div>
 
