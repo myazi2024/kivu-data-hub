@@ -192,7 +192,7 @@ export const generateParcels = async (parcelNumbers: string[]) => {
       lease_type: localIdx % 7 === 0 ? 'initial' : localIdx % 11 === 0 ? 'renewal' : null,
       title_reference_number: `REF-${prov.province.substring(0, 3).toUpperCase()}-${String(idx).padStart(4, '0')}`,
       title_issue_date: randomDateInPast(10),
-      house_number: idx % 2 === 0 ? String(randInt(1, 200)) : null,
+      house_number: houseNumber,
       whatsapp_number: `+243${randInt(810000000, 899999999)}`,
       has_dispute: idx % 10 === 0,
       parcel_sides: [
