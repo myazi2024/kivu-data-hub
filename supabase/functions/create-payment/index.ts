@@ -10,7 +10,7 @@ const corsHeaders = {
 interface PaymentRequest {
   items?: string[];
   invoice_id?: string;
-  payment_type: 'publications' | 'cadastral_service' | 'expertise_fee' | 'certificate_access' | 'mutation_request';
+  payment_type: 'publications' | 'cadastral_service' | 'expertise_fee' | 'certificate_access' | 'mutation_request' | 'permit_request' | 'mortgage_cancellation' | 'land_title_request';
   amount_usd?: number;
 }
 
