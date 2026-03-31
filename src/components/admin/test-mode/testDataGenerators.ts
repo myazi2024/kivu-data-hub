@@ -431,17 +431,22 @@ export const generateExpertiseRequests = async (userId: string, parcelNumbers: s
     distance_to_hospital_km: Math.round(Math.random() * 8 * 10) / 10,
     flood_risk_zone: i % 6 === 0,
     erosion_risk_zone: i % 7 === 0,
-    market_value_usd: EXP_STATUSES[i] === 'completed' ? randInt(15000, 200000) : null,
+    market_value_usd: pick(EXP_STATUSES, i) === 'completed' ? randInt(15000, 200000) : null,
     created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
   }));
 
-  const { data, error } = await supabase
-    .from('real_estate_expertise_requests')
-    .insert(records)
-    .select('id, reference_number');
-
-  if (error) throw new Error(`Expertises: ${error.message}`);
-  return assertInserted(data, 'Expertises');
+  // Insert in batches
+  const allInserted: Array<{ id: string; reference_number: string }> = [];
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { data, error } = await supabase
+      .from('real_estate_expertise_requests')
+      .insert(batch)
+      .select('id, reference_number');
+    if (error) throw new Error(`Expertises (batch ${i}): ${error.message}`);
+    allInserted.push(...assertInserted(data, 'Expertises'));
+  }
+  return allInserted;
 };
 
 // ─── Step 6b: Expertise payments ──────────────────────────────────────────────
