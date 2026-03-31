@@ -1,8 +1,10 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Sparkles, Clock, Beaker, Tag } from 'lucide-react';
+import { Sparkles, Clock, Beaker, Tag, FileText, ArrowRightLeft, Landmark, ShieldCheck, Calculator, LayoutGrid, AlertTriangle, Award } from 'lucide-react';
 import { useParcelActionsConfig, ParcelAction } from '@/hooks/useParcelActionsConfig';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import MutationRequestDialog from './MutationRequestDialog';
 import MortgageManagementDialog from './MortgageManagementDialog';
 import BuildingPermitManagementDialog from './BuildingPermitManagementDialog';
@@ -60,6 +62,27 @@ const ActionBadge: React.FC<{ badge: ParcelAction['badge'] }> = ({ badge }) => {
   );
 };
 
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  Award, FileText, ArrowRightLeft, Landmark, ShieldCheck, Calculator, LayoutGrid, AlertTriangle,
+};
+
+const DEFAULT_ACTION_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  expertise: Award,
+  mutation: ArrowRightLeft,
+  mortgage_management: Landmark,
+  permit_add: ShieldCheck,
+  tax: Calculator,
+  permit_request: FileText,
+  subdivision: LayoutGrid,
+  land_dispute: AlertTriangle,
+};
+
+const ActionIcon: React.FC<{ iconName?: string; actionKey: string }> = ({ iconName, actionKey }) => {
+  const Icon = (iconName && ICON_MAP[iconName]) || DEFAULT_ACTION_ICONS[actionKey];
+  if (!Icon) return null;
+  return <Icon className="h-4 w-4 text-muted-foreground shrink-0" />;
+};
+
 const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
   parcelNumber, parcelId, parcelData, expanded, onCollapse
 }) => {
@@ -108,13 +131,25 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
     lastCategory = action.category;
   });
 
-  const handleActionClick = (action: ParcelAction) => {
+  const handleActionClick = async (action: ParcelAction) => {
     const handler = getActionHandler(action.key);
-    if (handler) {
-      triggerHapticFeedback();
-      handler();
-      onCollapse();
+    if (!handler) return;
+
+    // Auth guard
+    if (action.requiresAuth) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('Connexion requise', {
+          description: 'Veuillez vous connecter pour accéder à ce service.',
+          action: { label: 'Se connecter', onClick: () => window.location.href = '/auth' },
+        });
+        return;
+      }
     }
+
+    triggerHapticFeedback();
+    handler();
+    onCollapse();
   };
 
   return (
@@ -143,6 +178,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
                     className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-left transition-all duration-150
                       ${action.isActive ? 'hover:bg-primary/5 hover:shadow-sm active:scale-[0.98] cursor-pointer' : 'opacity-35 cursor-not-allowed'}`}
                   >
+                    <ActionIcon iconName={action.iconName} actionKey={action.key} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-[13px] text-foreground truncate">{action.label}</span>

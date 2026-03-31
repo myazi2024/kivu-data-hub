@@ -67,7 +67,7 @@ const DEFAULT_ACTIONS: ParcelAction[] = [
     id: '5',
     key: 'permit_add',
     label: 'Ajouter une autorisation',
-    description: 'Autorisation de bâtir ou de régularisation',
+    description: 'Enregistrer un permis existant sur cette parcelle',
     isActive: true,
     isVisible: true,
     displayOrder: 5,
@@ -91,7 +91,7 @@ const DEFAULT_ACTIONS: ParcelAction[] = [
     id: '8',
     key: 'permit_request',
     label: 'Demander une autorisation',
-    description: 'Autorisation de bâtir ou de régularisation',
+    description: 'Soumettre une nouvelle demande de permis',
     isActive: true,
     isVisible: true,
     displayOrder: 8,
@@ -236,19 +236,21 @@ export const useParcelActionsConfig = () => {
 
   const saveConfig = useCallback(async (newActions: ParcelAction[]) => {
     try {
-      for (const action of newActions) {
-        const dbData = mapParcelActionToDb(action);
-        const { id: _, ...updatePayload } = dbData;
+      const results = await Promise.all(
+        newActions.map(action => {
+          const dbData = mapParcelActionToDb(action);
+          const { id: _, ...updatePayload } = dbData;
+          return supabase
+            .from('parcel_actions_config')
+            .update(updatePayload)
+            .eq('id', action.id);
+        })
+      );
 
-        const { error } = await supabase
-          .from('parcel_actions_config')
-          .update(updatePayload)
-          .eq('id', action.id);
-
-        if (error) {
-          console.error('Error saving action:', error);
-          throw error;
-        }
+      const failed = results.find(r => r.error);
+      if (failed?.error) {
+        console.error('Error saving action:', failed.error);
+        throw failed.error;
       }
       
       setActions(newActions);
