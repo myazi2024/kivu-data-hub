@@ -10,7 +10,7 @@ const corsHeaders = {
 interface PaymentRequest {
   items?: string[];
   invoice_id?: string;
-  payment_type: 'publications' | 'cadastral_service' | 'expertise_fee' | 'certificate_access' | 'mutation_request';
+  payment_type: 'publications' | 'cadastral_service' | 'expertise_fee' | 'certificate_access' | 'mutation_request' | 'permit_request' | 'mortgage_cancellation' | 'land_title_request';
   amount_usd?: number;
 }
 
@@ -171,6 +171,71 @@ Deno.serve(async (req) => {
       orderMetadata.invoice_id = invoice_id;
       orderMetadata.parcel_number = mutationRequest.parcel_number;
     }
+    // Handle Land Title Request payment
+    else if (payment_type === 'land_title_request' && invoice_id && amount_usd) {
+      const { data: titleRequest, error: titleError } = await supabase
+        .from("land_title_requests")
+        .select("id, reference_number, total_amount_usd, user_id, province")
+        .eq("id", invoice_id)
+        .eq("user_id", user.id)
+        .single();
+
+      if (titleError || !titleRequest) {
+        throw new Error("Invalid land title request");
+      }
+
+      lineItems = [{
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: `Demande de titre foncier ${titleRequest.reference_number}`,
+            description: `Titre foncier — ${titleRequest.province}`,
+          },
+          unit_amount: Math.round(Number(titleRequest.total_amount_usd) * 100),
+        },
+        quantity: 1,
+      }];
+
+      totalAmount = Math.round(Number(titleRequest.total_amount_usd) * 100);
+      orderMetadata.land_title_request_id = invoice_id;
+      orderMetadata.invoice_id = invoice_id;
+    }
+    // Handle Building Permit Request payment
+    else if (payment_type === 'permit_request' && invoice_id && amount_usd) {
+      lineItems = [{
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: `Demande d'autorisation de bâtir`,
+            description: `Paiement frais d'autorisation`,
+          },
+          unit_amount: Math.round(amount_usd * 100),
+        },
+        quantity: 1,
+      }];
+
+      totalAmount = Math.round(amount_usd * 100);
+      orderMetadata.permit_request_id = invoice_id;
+      orderMetadata.invoice_id = invoice_id;
+    }
+    // Handle Mortgage Cancellation payment
+    else if (payment_type === 'mortgage_cancellation' && invoice_id && amount_usd) {
+      lineItems = [{
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: `Mainlevée hypothécaire`,
+            description: `Paiement frais de mainlevée`,
+          },
+          unit_amount: Math.round(amount_usd * 100),
+        },
+        quantity: 1,
+      }];
+
+      totalAmount = Math.round(amount_usd * 100);
+      orderMetadata.mortgage_cancellation_id = invoice_id;
+      orderMetadata.invoice_id = invoice_id;
+    }
     else {
       throw new Error("Invalid payment request: missing items or invoice_id");
     }
@@ -226,7 +291,7 @@ Deno.serve(async (req) => {
     let successUrl: string;
     let cancelUrl: string;
 
-    if (payment_type === 'expertise_fee' || payment_type === 'certificate_access' || payment_type === 'mutation_request') {
+    if (payment_type === 'expertise_fee' || payment_type === 'certificate_access' || payment_type === 'mutation_request' || payment_type === 'permit_request' || payment_type === 'mortgage_cancellation' || payment_type === 'land_title_request') {
       successUrl = `${origin}/cadastral-map?payment=success&type=${payment_type}&session_id={CHECKOUT_SESSION_ID}`;
       cancelUrl = `${origin}/cadastral-map?payment=cancelled`;
     } else if (payment_type === 'cadastral_service') {
@@ -296,6 +361,20 @@ Deno.serve(async (req) => {
           stripe_session_id: session.id,
           payment_type: 'mutation_request',
           mutation_request_id: invoice_id,
+        },
+      });
+    } else if ((payment_type === 'land_title_request' || payment_type === 'permit_request' || payment_type === 'mortgage_cancellation') && invoice_id) {
+      await supabase.from("payment_transactions").insert({
+        user_id: user.id,
+        invoice_id,
+        payment_method: 'bank_card',
+        provider: 'stripe',
+        amount_usd: amount_usd!,
+        status: 'pending',
+        transaction_reference: session.id,
+        metadata: {
+          stripe_session_id: session.id,
+          payment_type,
         },
       });
     }

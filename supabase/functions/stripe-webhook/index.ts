@@ -192,7 +192,50 @@ Deno.serve(async (req) => {
               type: "success",
               title: "Paiement mutation confirmé",
               message: "Votre paiement de mutation a été confirmé et la demande est en cours d'examen.",
-              action_url: "/user-dashboard?tab=mutations",
+              action_url: "/mon-compte?tab=mutations",
+            });
+          }
+        } else if (paymentType === "land_title_request" || paymentType === "permit_request" || paymentType === "mortgage_cancellation") {
+          // Generic handler for cadastral service payment types
+          await supabase
+            .from("payment_transactions")
+            .update({
+              status: "completed",
+              transaction_reference: session.payment_intent as string,
+              metadata: {
+                stripe_session_id: session.id,
+                completed_at: new Date().toISOString(),
+                payment_type: paymentType,
+              },
+            })
+            .eq("transaction_reference", session.id);
+
+          // Update the corresponding request table
+          if (paymentType === "land_title_request" && (metadata.land_title_request_id || metadata.invoice_id)) {
+            const requestId = metadata.land_title_request_id || metadata.invoice_id;
+            await supabase
+              .from("land_title_requests")
+              .update({
+                payment_status: "paid",
+                status: "in_review",
+                paid_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", requestId);
+          }
+
+          if (metadata.user_id) {
+            const typeLabels: Record<string, string> = {
+              land_title_request: "titre foncier",
+              permit_request: "autorisation de bâtir",
+              mortgage_cancellation: "mainlevée hypothécaire",
+            };
+            await supabase.from("notifications").insert({
+              user_id: metadata.user_id,
+              type: "success",
+              title: "Paiement confirmé",
+              message: `Votre paiement pour la demande de ${typeLabels[paymentType] || paymentType} a été confirmé.`,
+              action_url: "/mon-compte",
             });
           }
         } else if (paymentType === "publications") {

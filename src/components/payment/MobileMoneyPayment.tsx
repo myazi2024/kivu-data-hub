@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import PhoneNumberInput from '@/components/ui/phone-number-input';
 import { usePayment, PaymentData } from '@/hooks/usePayment';
 import { Smartphone, DollarSign, CheckCircle, Loader2, Shield } from 'lucide-react';
 import { CartItem } from '@/hooks/useCart';
-import { supabase } from '@/integrations/supabase/client';
+import { usePaymentProviders } from '@/hooks/usePaymentProviders';
 
 interface MobileMoneyPaymentProps {
   item: CartItem;
@@ -29,55 +28,9 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
   });
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [showProviderReminder, setShowProviderReminder] = useState(false);
-  const [availableProviders, setAvailableProviders] = useState<Array<{
-    value: string;
-    label: string;
-    prefix: string;
-    color: string;
-  }>>([]);
 
+  const { providers: availableProviders } = usePaymentProviders();
   const { loading, paymentStep, createPayment, resetPaymentState } = usePayment();
-
-  // Charger les providers actifs depuis la configuration
-  useEffect(() => {
-    const loadActiveProviders = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('payment_methods_config')
-          .select('*')
-          .eq('config_type', 'mobile_money')
-          .eq('is_enabled', true)
-          .order('display_order', { ascending: true });
-
-        if (error) throw error;
-
-        const providerMap: Record<string, { prefix: string; color: string }> = {
-          'airtel_money': { prefix: '+243 97', color: 'from-red-500 to-red-600' },
-          'orange_money': { prefix: '+243 84', color: 'from-orange-500 to-orange-600' },
-          'mpesa': { prefix: '+243 99', color: 'from-green-500 to-green-600' }
-        };
-
-        const providers = data?.map(p => ({
-          value: p.provider_id,
-          label: p.provider_name,
-          prefix: providerMap[p.provider_id]?.prefix || '+243 XX',
-          color: providerMap[p.provider_id]?.color || 'from-blue-500 to-blue-600'
-        })) || [];
-
-        setAvailableProviders(providers);
-      } catch (error) {
-        console.error('Error loading payment providers:', error);
-        // Fallback aux providers par défaut si erreur
-        setAvailableProviders([
-          { value: 'airtel_money', label: 'Airtel Money', prefix: '+243 97', color: 'from-red-500 to-red-600' },
-          { value: 'orange_money', label: 'Orange Money', prefix: '+243 84', color: 'from-orange-500 to-orange-600' },
-          { value: 'mpesa', label: 'M-Pesa', prefix: '+243 99', color: 'from-green-500 to-green-600' }
-        ]);
-      }
-    };
-
-    loadActiveProviders();
-  }, []);
 
   // Animation d'apparition du formulaire
   useEffect(() => {
@@ -102,9 +55,7 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
 
   const handleProviderReminderClick = () => {
     if (!paymentData.provider) {
-      // Force reset de l'animation
       setShowProviderReminder(false);
-      // Petit délai pour s'assurer que le reset est appliqué
       requestAnimationFrame(() => {
         setTimeout(() => {
           setShowProviderReminder(true);
@@ -237,29 +188,6 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
             onDisabledClick={handleProviderReminderClick}
           />
         </div>
-
-        {/* Code secret */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-foreground">
-            Code secret
-          </label>
-          <div className="relative">
-            <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-            <Input
-              type="tel"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              placeholder="Votre code PIN"
-              value={paymentData.name}
-              onChange={(e) => {
-                const numericValue = e.target.value.replace(/[^0-9]/g, '');
-                setPaymentData({ ...paymentData, name: numericValue });
-              }}
-              required
-              className="h-10 pl-9 border-border/20 bg-background/50 hover:bg-background/80 transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary"
-            />
-          </div>
-        </div>
       </div>
 
       {/* Bouton de paiement sticky sur mobile */}
@@ -268,7 +196,7 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
           type="submit" 
           onClick={handlePayment}
           className="w-full h-10 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl transition-all duration-200 hover:scale-[1.02] hover:shadow-hover focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={loading || !paymentData.provider || !paymentData.phoneNumber || !paymentData.name}
+          disabled={loading || !paymentData.provider || !paymentData.phoneNumber}
         >
           {loading ? (
             <div className="flex items-center gap-2">
