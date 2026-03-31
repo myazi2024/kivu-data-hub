@@ -972,12 +972,12 @@ export const generateMortgages = async (
   return allInserted;
 };
 
-// ─── Step 15: Building permits — 10 parcels ─────────────────────────────────
+// ─── Step 15: Building permits — ~10% parcels ──────────────────────────────
 
 export const generateBuildingPermits = async (
   parcels: Array<{ id: string; parcel_number: string }>
 ) => {
-  const selected = parcels.filter((_, i) => i % 10 === 7).slice(0, 10);
+  const selected = parcels.filter((_, i) => i % 10 === 7); // ~10%
   const SERVICES = [
     'Division Provinciale de l\'Urbanisme et Habitat - Kinshasa',
     'Service Communal d\'Urbanisme - Goma',
@@ -997,13 +997,18 @@ export const generateBuildingPermits = async (
     is_current: i % 3 !== 1,
   }));
 
-  const { data, error } = await supabase
-    .from('cadastral_building_permits')
-    .insert(records)
-    .select('id');
-
-  if (error) console.error('Autorisation de bâtir (non-bloquant):', error);
-  return data ?? [];
+  // Insert in batches
+  const allInserted: Array<{ id: string }> = [];
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { data, error } = await supabase
+      .from('cadastral_building_permits')
+      .insert(batch)
+      .select('id');
+    if (error) console.error(`Autorisation de bâtir (batch ${i}, non-bloquant):`, error);
+    if (data) allInserted.push(...data);
+  }
+  return allInserted;
 };
 
 // ─── Step 16: Certificates — 52 total (2/province) ─────────────────────────
