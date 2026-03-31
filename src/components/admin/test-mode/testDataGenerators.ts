@@ -910,7 +910,7 @@ export const generateSubdivisionRequests = async (
     const numLots = randInt(2, 5);
     const parentArea = randInt(800, 3000);
     const lotArea = Math.floor(parentArea / numLots);
-    const status = SUB_STATUSES[i];
+    const status = pick(SUB_STATUSES, i);
 
     return {
       reference_number: `TEST-SUB-${String(i + 1).padStart(3, '0')}-${suffix}`,
