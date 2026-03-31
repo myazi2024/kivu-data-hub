@@ -43,7 +43,7 @@ const Legal = () => {
               <CardContent className="space-y-4">
                 <div>
                   <h3 className="font-semibold text-foreground mb-2">Dénomination sociale</h3>
-                  <p className="text-muted-foreground">Bureau de l'Immobilier du Congo (BIC)</p>
+                  <p className="text-muted-foreground">Bureau d'Informations Cadastrales (BIC)</p>
                 </div>
                 <div>
                   <h3 className="font-semibold text-foreground mb-2">Siège social</h3>
