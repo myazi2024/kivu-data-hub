@@ -59,6 +59,7 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
   paymentStep,
   processMobileMoneyPayment,
   processStripePayment,
+  processTestPayment,
   resetPaymentState,
   selectedCurrency = 'USD',
   exchangeRate = 1,
