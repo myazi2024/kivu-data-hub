@@ -522,10 +522,24 @@ const Auth = () => {
                     />
                   </div>
                   
+                  <div className="flex items-start space-x-2">
+                    <Checkbox 
+                      id="accept-terms" 
+                      checked={acceptedTerms}
+                      onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
+                    />
+                    <label htmlFor="accept-terms" className="text-sm text-muted-foreground leading-tight cursor-pointer">
+                      J'ai lu et j'accepte les{' '}
+                      <Link to="/legal" target="_blank" className="text-primary underline hover:text-primary/80">
+                        conditions d'utilisation et mentions légales
+                      </Link>
+                    </label>
+                  </div>
+
                   <Button 
                     type="submit" 
                     className="w-full" 
-                    disabled={isLoading}
+                    disabled={isLoading || !acceptedTerms}
                   >
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Créer un compte
