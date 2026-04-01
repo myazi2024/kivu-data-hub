@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Building, MapPin, Clock, Receipt, Scale, ShieldCheck } from 'lucide-react';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
 import { CadastralService } from '@/hooks/useCadastralServices';
+import { createDocumentVerification } from '@/lib/documentVerification';
 
 import DocumentToolbar from './DocumentToolbar';
 import DocumentHeader from './DocumentHeader';
@@ -31,6 +32,23 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
   result, paidServices, catalogServices, onDownloadReport, onBackToCatalog,
 }) => {
   const { parcel, ownership_history, tax_history, mortgage_history, boundary_history, building_permits, land_disputes, legal_verification } = result;
+
+  const [verificationCode, setVerificationCode] = useState<string | null>(null);
+  const [verifyUrl, setVerifyUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    createDocumentVerification({
+      documentType: 'report',
+      parcelNumber: parcel.parcel_number,
+    }).then((result) => {
+      if (!cancelled && result) {
+        setVerificationCode(result.verificationCode);
+        setVerifyUrl(result.verifyUrl);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [parcel.parcel_number]);
 
   const hasParcelData = !!parcel.current_owner_name;
   const hasConstruction = !!(parcel.construction_type || parcel.construction_nature || parcel.construction_materials || parcel.construction_year) || building_permits.length > 0;
@@ -129,7 +147,7 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
           )}
         </div>
 
-        <DocumentFooter parcelNumber={parcel.parcel_number} />
+        <DocumentFooter parcelNumber={parcel.parcel_number} verificationCode={verificationCode} verifyUrl={verifyUrl} />
       </div>
     </div>
   );
