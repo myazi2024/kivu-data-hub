@@ -26,7 +26,7 @@ interface CadastralDocumentViewProps {
   onBackToCatalog: () => void;
 }
 
-type SectionKey = 'identification' | 'owner' | 'construction' | 'location' | 'history' | 'obligations' | 'disputes' | 'legal';
+type SectionKey = 'identification' | 'owner' | 'construction' | 'location' | 'history' | 'obligations' | 'disputes';
 
 const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
   result, paidServices, catalogServices, onDownloadReport, onBackToCatalog,
