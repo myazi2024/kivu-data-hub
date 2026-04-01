@@ -1,25 +1,63 @@
 
 
-# Réduire de moitié la taille de la légende sur la carte cadastrale
+# Gestion de la Légende depuis l'espace Admin
 
-## Modifications dans `src/pages/CadastralMap.tsx`
+## Objectif
 
-### Desktop (lignes 1437-1467)
-- Padding du bloc : `p-3` → `p-1.5`
-- Titre "Légende" : `text-[10px] mb-2` → `text-[7px] mb-1`
-- Chaque item : `text-xs gap-2 space-y-1.5` → `text-[7px] gap-1 space-y-0.5`
-- Icônes/indicateurs : `w-3.5 h-3.5` → `w-2 h-2`, bordures et dimensions proportionnelles
-- Badge "12m" : `text-[8px]` → `text-[5px]`
-- Coin arrondi : `rounded-xl` → `rounded-lg`
+Rendre le bloc "Légende" de la carte cadastrale configurable depuis l'admin, en ajoutant une section dédiée dans les paramètres de carte existants (`map_preview_settings`).
 
-### Mobile popover (lignes 1469-1502)
-- Mêmes réductions appliquées au contenu du `PopoverContent`
-- `w-52` → `w-36`
-- Bouton trigger : `h-9 w-9` → `h-7 w-7`, icône `h-4 w-4` → `h-3 w-3`
+## Ce qui sera configurable
 
-### Fichier impacté
+- **Afficher/masquer la légende** (switch global)
+- **Éléments individuels** : activer/désactiver chaque entrée de la légende (Bornage GPS, Sans bornage, Limites parcellaires, Dimensions côtés, Données incomplètes, Parcelle favorite)
+- **Labels personnalisables** : modifier le texte affiché pour chaque élément
+
+## Plan technique
+
+### 1. Étendre le type `MapConfig` (`src/hooks/useMapConfig.tsx`)
+
+Ajouter un champ `legend` au type `MapConfig` :
+
+```ts
+legend?: {
+  enabled: boolean;
+  items: Array<{
+    key: string;
+    label: string;
+    mobileLabel: string;
+    enabled: boolean;
+  }>;
+};
+```
+
+Ajouter les valeurs par défaut correspondantes dans `DEFAULT_MAP_CONFIG`.
+
+### 2. Ajouter la section admin "Légende" (`src/components/admin/AdminContributionConfig.tsx`)
+
+Dans l'onglet "Carte" des paramètres, ajouter un bloc après les paramètres de dimensions (avant le bouton Enregistrer, ~ligne 1375) :
+
+- Switch global "Afficher la légende"
+- Liste des éléments avec pour chacun : switch activé/désactivé + champ texte pour le label
+- Bouton de réordonnancement optionnel
+
+### 3. Rendre la légende dynamique dans `CadastralMap.tsx`
+
+Remplacer les éléments de légende codés en dur (lignes 1437-1502) par un rendu conditionnel basé sur `mapConfig.legend` :
+
+- Si `legend.enabled === false`, masquer le bloc entier
+- Filtrer les items où `enabled === true`
+- Utiliser les labels configurés au lieu des textes en dur
+- Conserver les icônes associées à chaque `key` via un mapping local
+
+### 4. Valeurs par défaut dans le reset
+
+Ajouter la config légende dans le bloc de réinitialisation (~ligne 1394) de `AdminContributionConfig.tsx`.
+
+## Fichiers impactés
 
 | Fichier | Modification |
 |---|---|
-| `src/pages/CadastralMap.tsx` | Réduire tailles police, icônes, padding et gaps dans les deux blocs légende (desktop + mobile) |
+| `src/hooks/useMapConfig.tsx` | Ajouter `legend` au type + valeurs par défaut |
+| `src/components/admin/AdminContributionConfig.tsx` | Ajouter section UI de gestion de la légende dans l'onglet Carte |
+| `src/pages/CadastralMap.tsx` | Rendre la légende dynamique depuis la config |
 
