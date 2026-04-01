@@ -1,14 +1,17 @@
 
 
-# Suppression de "Kiosque" du menu Media
+# Fix 404 — Route "Codes Promo"
 
-## Modification
+## Probleme
 
-**Fichier** : `src/components/ui/navigation.tsx`, ligne 27
+Le lien dans le menu Media pointe vers `/discount-codes` mais la route dans `App.tsx` est `/about-discount-codes`. D'ou le 404.
 
-Supprimer l'entrée `{ name: 'Kiosque', href: '/publications', icon: BookOpen, description: 'Publications et documents' }` de la colonne "Ressources" du mega-menu Media.
+## Solution
 
-L'import `BookOpen` sera aussi supprimé s'il n'est plus utilisé ailleurs dans ce fichier.
+Ajouter une route `/discount-codes` dans `App.tsx` qui redirige vers `/about-discount-codes` (via `<Navigate>`), et corriger le lien dans la navigation pour pointer directement vers `/about-discount-codes`.
 
-La route `/publications` et le composant `CartSidebar.tsx` (qui mentionne "kiosque" dans un texte d'aide) ne sont pas affectés — seul le lien de navigation est retiré.
+| Fichier | Modification |
+|---|---|
+| `src/components/ui/navigation.tsx` (ligne 29) | Changer `href: '/discount-codes'` → `href: '/about-discount-codes'` |
+| `src/App.tsx` | Ajouter `<Route path="/discount-codes" element={<Navigate to="/about-discount-codes" replace />} />` pour couvrir les anciens liens |
 
