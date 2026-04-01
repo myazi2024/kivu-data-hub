@@ -5,7 +5,7 @@ import { ResponsiveTable, ResponsiveTableBody, ResponsiveTableCell, ResponsiveTa
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, User, Search, Download, ArrowUpDown, AlertTriangle } from 'lucide-react';
+import { Users, User, Search, Download, ArrowUpDown, AlertTriangle, Shield, Ban } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { useUserManagement } from '@/hooks/useUserManagement';
@@ -15,7 +15,6 @@ import { PaginationControls } from '@/components/shared/PaginationControls';
 import { UserDetailsDialog } from './users/UserDetailsDialog';
 import { BulkActionsDialog } from './users/BulkActionsDialog';
 import { exportToCSV } from '@/utils/csvExport';
-import { Shield, Users as UsersIcon, User as UserIcon, Ban } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Checkbox } from '@/components/ui/checkbox';
 
