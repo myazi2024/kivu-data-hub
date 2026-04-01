@@ -69,6 +69,7 @@ const AdminMapProviders = lazy(() => import('@/components/admin/AdminMapProvider
 const AdminAnalyticsChartsConfig = lazy(() => import('@/components/admin/AdminAnalyticsChartsConfig'));
 const AdminSubdivisionFeesConfig = lazy(() => import('@/components/admin/AdminSubdivisionFeesConfig'));
 const AdminPartners = lazy(() => import('@/components/admin/AdminPartners'));
+const AdminHR = lazy(() => import('@/components/admin/hr/AdminHR'));
 
 const LazyFallback = () => (
   <div className="flex items-center justify-center py-12">
@@ -191,6 +192,7 @@ const Admin = () => {
       case 'certificates': return <AdminCertificates />;
       case 'analytics-charts-config': return <AdminAnalyticsChartsConfig />;
       case 'partners': return <AdminPartners />;
+      case 'hr': return <AdminHR />;
       case 'audit-logs': return <AdminAuditLogs />;
       default: return <AdminDashboardOverview />;
     }
