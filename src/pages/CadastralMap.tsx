@@ -1469,31 +1469,31 @@ const CadastralMap = () => {
         <div className="absolute bottom-48 left-3 z-[800] md:hidden">
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="secondary" size="sm" className="h-9 w-9 rounded-xl shadow-lg p-0">
-                <HelpCircle className="h-4 w-4" />
+              <Button variant="secondary" size="sm" className="h-7 w-7 rounded-lg shadow-lg p-0">
+                <HelpCircle className="h-3 w-3" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent side="top" align="start" sideOffset={8} className="w-52 rounded-xl p-3">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">Légende</p>
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2 text-xs">
-                  <div className="w-3.5 h-3.5 bg-red-500/20 border-2 border-red-500 rounded shrink-0" />
+            <PopoverContent side="top" align="start" sideOffset={8} className="w-36 rounded-lg p-1.5">
+              <p className="text-[7px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Légende</p>
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-1 text-[7px]">
+                  <div className="w-2 h-2 bg-red-500/20 border border-red-500 rounded-sm shrink-0" />
                   <span className="text-muted-foreground">Bornage GPS</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <MapPin className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                <div className="flex items-center gap-1 text-[7px]">
+                  <MapPin className="h-2 w-2 text-blue-500 shrink-0" />
                   <span className="text-muted-foreground">Sans bornage</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <div className="w-3.5 h-0.5 bg-red-500 shrink-0" />
+                <div className="flex items-center gap-1 text-[7px]">
+                  <div className="w-2 h-px bg-red-500 shrink-0" />
                   <span className="text-muted-foreground">Limites</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <div className="px-1 py-0.5 text-[8px] font-bold text-red-500 border border-red-500 rounded bg-white leading-none shrink-0">12m</div>
+                <div className="flex items-center gap-1 text-[7px]">
+                  <div className="px-0.5 text-[5px] font-bold text-red-500 border border-red-500 rounded bg-white leading-none shrink-0">12m</div>
                   <span className="text-muted-foreground">Dimensions</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <AlertTriangle className="h-3.5 w-3.5 text-orange-500 shrink-0" />
+                <div className="flex items-center gap-1 text-[7px]">
+                  <AlertTriangle className="h-2 w-2 text-orange-500 shrink-0" />
                   <span className="text-muted-foreground">Incomplètes</span>
                 </div>
               </div>
