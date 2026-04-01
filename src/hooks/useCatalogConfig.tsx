@@ -59,7 +59,8 @@ const DEFAULT_CONFIG: CatalogConfig = {
     minimal_available: 'Cette parcelle dispose d\'informations limitées.',
     data_missing: 'Données manquantes',
     data_available: 'Données disponibles'
-  }
+  },
+  available_provinces: []
 };
 
 export const useCatalogConfig = () => {

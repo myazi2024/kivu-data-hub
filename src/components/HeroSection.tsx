@@ -70,6 +70,15 @@ const HeroSection = () => {
             </Button>
           </Link>
         </div>
+
+        {/* Available Provinces */}
+        {provinces.length > 0 && (
+          <div className="mt-6 px-4">
+            <p className="text-[11px] text-primary-foreground/60 leading-relaxed">
+              Service disponible pour : {provinces.join(', ')}
+            </p>
+          </div>
+        )}
       </div>
     </section>
   );
