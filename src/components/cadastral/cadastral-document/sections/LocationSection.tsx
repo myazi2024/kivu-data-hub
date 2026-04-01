@@ -3,7 +3,7 @@ import { MapPin, Map, Ruler } from 'lucide-react';
 import { SectionCard, DataGrid, DataField, DocTable } from '../primitives';
 import { CadastralParcel } from '@/types/cadastral';
 import { BoundaryHistory } from '@/hooks/useCadastralSearch';
-import CadastralMap from '../../CadastralMap';
+import ParcelSketchSVG from '../../ParcelSketchSVG';
 import DocumentAttachment from '../../DocumentAttachment';
 
 interface LocationSectionProps {
