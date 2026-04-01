@@ -12,6 +12,7 @@ import {
   Bell,
   ClipboardList,
   Search,
+  LayoutList,
   CheckSquare,
   DollarSign,
   ShoppingCart,
