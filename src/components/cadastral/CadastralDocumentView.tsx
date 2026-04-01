@@ -13,7 +13,7 @@ import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
 import { CadastralService } from '@/hooks/useCadastralServices';
 import CadastralMap from './CadastralMap';
 import DocumentAttachment from './DocumentAttachment';
-import VerificationButton from './VerificationButton';
+
 import { PROPERTY_TITLE_TYPES } from './PropertyTitleTypeSelect';
 
 interface CadastralDocumentViewProps {
