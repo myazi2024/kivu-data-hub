@@ -30,7 +30,7 @@ const AboutCCC = () => {
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="mb-6">
         <Link to="/" className="text-sm text-muted-foreground hover:text-primary">
-          ← Retour au catalogue
+          ← Retour à l'accueil
         </Link>
       </div>
 
@@ -744,18 +744,18 @@ const AboutCCC = () => {
             </p>
             <div className="grid md:grid-cols-3 gap-4">
               <a 
-                href="tel:+243123456789" 
+                href="tel:+243816996077" 
                 className="flex items-center gap-3 p-4 bg-background rounded-lg border hover:border-primary transition-colors"
               >
                 <Phone className="h-5 w-5 text-primary" />
                 <div>
                   <p className="font-medium text-sm">Téléphone</p>
-                  <p className="text-xs text-muted-foreground">+243 123 456 789</p>
+                  <p className="text-xs text-muted-foreground">+243 816 996 077</p>
                 </div>
               </a>
               
               <a 
-                href="https://wa.me/243123456789" 
+                href="https://wa.me/243816996077" 
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-3 p-4 bg-background rounded-lg border hover:border-primary transition-colors"
@@ -763,18 +763,18 @@ const AboutCCC = () => {
                 <MessageCircle className="h-5 w-5 text-primary" />
                 <div>
                   <p className="font-medium text-sm">WhatsApp</p>
-                  <p className="text-xs text-muted-foreground">+243 123 456 789</p>
+                  <p className="text-xs text-muted-foreground">+243 816 996 077</p>
                 </div>
               </a>
               
               <a 
-                href="mailto:support@example.cd" 
+                href="mailto:contact@bfrdc.cd" 
                 className="flex items-center gap-3 p-4 bg-background rounded-lg border hover:border-primary transition-colors"
               >
                 <Mail className="h-5 w-5 text-primary" />
                 <div>
                   <p className="font-medium text-sm">Email</p>
-                  <p className="text-xs text-muted-foreground">support@example.cd</p>
+                  <p className="text-xs text-muted-foreground">contact@bfrdc.cd</p>
                 </div>
               </a>
             </div>
@@ -782,10 +782,10 @@ const AboutCCC = () => {
 
           <div className="flex gap-3 pt-4">
             <Button asChild>
-              <Link to="/">Commencer une recherche</Link>
+              <Link to="/cadastral-map">Commencer une recherche</Link>
             </Button>
             <Button variant="outline" asChild>
-              <Link to="/billing-dashboard">Voir mes codes CCC</Link>
+              <Link to="/mon-compte?tab=contributions">Voir mes contributions</Link>
             </Button>
           </div>
         </CardContent>
