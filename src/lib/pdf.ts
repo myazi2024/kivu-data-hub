@@ -278,6 +278,20 @@ async function generateA4InvoicePDF(
   
   cursorY += 15;
 
+  // QR code de vérification
+  if (verifyUrl) {
+    try {
+      const qrDataUrl = await QRCode.toDataURL(verifyUrl);
+      doc.addImage(qrDataUrl, 'PNG', margin, 265, 12, 12);
+      doc.setTextColor(127, 140, 141);
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(6);
+      doc.text("Scannez pour vérifier", margin + 6, 279, { align: 'center' });
+    } catch (e) {
+      console.error('QR code generation failed:', e);
+    }
+  }
+
   // Pied de page minimaliste
   doc.setTextColor(127, 140, 141);
   doc.setFont('helvetica', 'normal');
