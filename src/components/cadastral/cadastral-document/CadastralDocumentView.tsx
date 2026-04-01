@@ -147,7 +147,7 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
           )}
         </div>
 
-        <DocumentFooter parcelNumber={parcel.parcel_number} />
+        <DocumentFooter parcelNumber={parcel.parcel_number} verificationCode={verificationCode} verifyUrl={verifyUrl} />
       </div>
     </div>
   );
