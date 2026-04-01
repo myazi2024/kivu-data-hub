@@ -26,7 +26,7 @@ const mediaColumns = [
     items: [
       
       { name: 'Nos Services', href: '/services', icon: Briefcase, description: 'Catalogue des services cadastraux' },
-      { name: 'Codes Promo', href: '/discount-codes', icon: Tag, description: 'Codes de réduction disponibles' },
+      { name: 'Codes Promo', href: '/about-discount-codes', icon: Tag, description: 'Codes de réduction disponibles' },
       { name: 'Contributions CCC', href: '/about-ccc', icon: Heart, description: 'Comprendre les contributions' },
     ],
   },
