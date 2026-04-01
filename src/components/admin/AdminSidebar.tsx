@@ -150,6 +150,12 @@ export const menuItems = [
     ]
   },
   {
+    category: 'Ressources Humaines',
+    items: [
+      { icon: BarChart, label: 'Espace RH', value: 'hr', badge: null },
+    ]
+  },
+  {
     category: 'Système',
     items: [
       { icon: Settings, label: 'Actions Parcelle', value: 'parcel-actions-config', badge: null },
