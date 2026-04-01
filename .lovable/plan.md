@@ -1,117 +1,84 @@
+# Audit — Fiche Cadastrale : Informations manquantes
+
+(Données ficitives : Ne pas ajouter les données et indicateurs qui ne sont pas collectés par les outils de collecte de l'application)
+
+## Champs DB présents mais absents de la fiche
+
+En comparant les colonnes de `cadastral_parcels` avec les sections affichées, voici les données existantes en base mais **jamais affichées** :
 
 
-# Refonte complète — Fiche Cadastrale
+| Champ DB                  | Description                                 | Section concernée              |
+| ------------------------- | ------------------------------------------- | ------------------------------ |
+| `location`                | Adresse textuelle libre (obligatoire en DB) | Identification ou Localisation |
+| `parcel_sides`            | JSONB — dimensions et orientation des côtés | Localisation                   |
+| `surface_calculee_bornes` | Surface recalculée à partir des bornes GPS  | Identification                 |
+| `has_dispute`             | Boolean — flag litige sur la parcelle       | Vérification juridique         |
+| `is_subdivided`           | Boolean — parcelle lotie/subdivisée         | Identification                 |
 
-## Objectif
 
-Reconstruire `CadastralDocumentView.tsx` from scratch avec une architecture modulaire, un design moderne type document officiel, et une meilleure lisibilité à l'écran et à l'impression.
+## Données relationnelles manquantes
 
-## Problèmes actuels
 
-- **Fichier monolithique** (636 lignes, tout dans un seul composant)
-- **Design générique** : tableaux HTML bruts stylisés via `<style>` inline, pas d'identité visuelle forte
-- **Styles inline** : bloc `<style>` de 40 lignes injecté dans le JSX au lieu de CSS/Tailwind
-- **Pas de structure modulaire** : sections non extraites en sous-composants
-- **Compteur mutable** (`let sectionNumber = 0; ++sectionNumber`) — anti-pattern React
+| Donnée                       | Problème                                                                                                         |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| **Paiements hypothécaires**  | Les `MortgagePayment[]` sont récupérés mais seul le **total remboursé** est affiché — pas de détail par échéance |
+| **Documents de bornage**     | Affichés uniquement s'ils ont une URL — pas d'indication "document manquant"                                     |
+| **Reçus de taxe**            | `receipt_document_url` existe dans `TaxHistory` mais n'est jamais affiché                                        |
+| **Documents de permis**      | `permit_document_url` existe dans `BuildingPermit` mais n'est jamais affiché                                     |
+| **Contact service émetteur** | `issuing_service_contact` existe dans `BuildingPermit` mais n'est jamais affiché                                 |
+| **Type de litige**           | `dispute_type` existe dans `LandDispute` mais n'est pas dans le tableau                                          |
+| **Parcelle du litige**       | `parcel_number` existe dans `LandDispute` mais n'est pas affiché                                                 |
 
-## Nouveau design
 
-### Identité visuelle "Document officiel"
+## Informations contextuelles absentes
 
-```text
-┌──────────────────────────────────────────┐
-│ ══ TOOLBAR (sticky, print:hidden) ══     │
-├──────────────────────────────────────────┤
-│  ┌─ HEADER ──────────────────────────┐   │
-│  │  🏛  RÉPUBLIQUE DÉMOCRATIQUE      │   │
-│  │      DU CONGO                     │   │
-│  │  Bureau d'Informations Cadastrales│   │
-│  │  ─────────────────────────────    │   │
-│  │  FICHE CADASTRALE                 │   │
-│  │  Parcelle N° XX/XXXX             │   │
-│  │  Section Urbaine | Générée le ... │   │
-│  └───────────────────────────────────┘   │
-│                                          │
-│  ┌─ Section Card ────────────────────┐   │
-│  │ ▌1. IDENTIFICATION               │   │
-│  │  ┌────────┬───────────────────┐   │   │
-│  │  │ Label  │ Valeur            │   │   │
-│  │  ├────────┼───────────────────┤   │   │
-│  │  │ ...    │ ...               │   │   │
-│  │  └────────┴───────────────────┘   │   │
-│  └───────────────────────────────────┘   │
-│                                          │
-│  ┌─ Section Card ────────────────────┐   │
-│  │ ▌2. PROPRIÉTAIRE ACTUEL          │   │
-│  │  ...                              │   │
-│  └───────────────────────────────────┘   │
-│  ...                                     │
-│  ┌─ FOOTER ──────────────────────────┐   │
-│  │  Code de vérification: BIC-XXXX  │   │
-│  │  QR Code  |  Disclaimer          │   │
-│  └───────────────────────────────────┘   │
-└──────────────────────────────────────────┘
-```
 
-### Changements de design clés
+| Information                 | Impact                                                                                                                  |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **Durée du bail**           | `lease_type` est affiché mais pas la durée restante ni les années de bail (La donnée Bail n'est pas par l'application). |
+| **Surface GPS vs déclarée** | `surface_calculee_bornes` permettrait d'afficher un écart entre surface déclarée et mesurée                             |
+| **Dimensions des côtés**    | `parcel_sides` contient les longueurs et orientations — utile pour un croquis ou tableau                                |
+| **Statut de subdivision**   | `is_subdivided` est utilisé dans `LegalSection` via `legal_verification` mais pas dans `IdentificationSection`          |
+| **Indicateur de litige**    | `has_dispute` est un flag direct sur la parcelle, redondant avec `LegalSection` mais absent de l'en-tête/identification |
 
-- **Header officiel** : titre "République Démocratique du Congo", sous-titre BIC, filigrane subtil, bordure dorée/primaire en haut
-- **Section cards** : chaque section dans une carte avec bordure gauche colorée (accent bar), titre avec numéro intégré, fond légèrement différencié
-- **Tableaux modernisés** : lignes alternées via Tailwind (`even:bg-muted/20`), pas de `<style>` inline
-- **Alertes visuelles améliorées** : hypothèques actives, litiges — icônes + couleurs sémantiques cohérentes
-- **Footer avec code de vérification** : intégration du système de vérification existant (`documentVerification.ts`)
-- **Print-first** : styles d'impression via classes Tailwind `print:*` uniquement, pas de `<style>` block
 
-## Architecture modulaire
+## Corrections proposées
 
-### Nouveaux fichiers
+### 1. IdentificationSection — ajouter 3 champs
 
-| Fichier | Contenu |
-|---|---|
-| `cadastral-document/CadastralDocumentView.tsx` | Composant principal (orchestrateur ~150 lignes) |
-| `cadastral-document/DocumentHeader.tsx` | Header officiel avec titre RDC, parcelle, date |
-| `cadastral-document/DocumentToolbar.tsx` | Barre d'actions (Catalogue, PDF, Imprimer) |
-| `cadastral-document/DocumentFooter.tsx` | Disclaimer + code de vérification |
-| `cadastral-document/sections/IdentificationSection.tsx` | Parcelle + titre + construction |
-| `cadastral-document/sections/OwnerSection.tsx` | Propriétaire actuel |
-| `cadastral-document/sections/LocationSection.tsx` | Localisation + carte + bornage |
-| `cadastral-document/sections/HistorySection.tsx` | Historique de propriété |
-| `cadastral-document/sections/ObligationsSection.tsx` | Taxes + hypothèques |
-| `cadastral-document/sections/DisputesSection.tsx` | Litiges fonciers |
-| `cadastral-document/sections/LegalSection.tsx` | Vérification juridique |
-| `cadastral-document/primitives.tsx` | `SectionCard`, `DataField`, `DocTable`, `LockedSection`, `StatusAlert` |
+- `location` (adresse textuelle)
+- `surface_calculee_bornes` avec écart vs `area_sqm` si disponible
+- `is_subdivided` (badge Oui/Non)
 
-### Composants primitifs réutilisables
+### 2. LocationSection — ajouter dimensions des côtés
 
-- **`SectionCard`** : wrapper avec bordure gauche accent, numéro, icône, titre — remplace `SectionTitle` + table brut
-- **`DataField`** : remplace `DataRow` — affichage label/valeur en grille CSS responsive (2 colonnes desktop, 1 mobile) au lieu de `<table>`
-- **`DocTable`** : wrapper table avec styles Tailwind intégrés (alternance, hover, responsive)
-- **`LockedSection`** : placeholder amélioré avec bouton "Débloquer" qui callback vers le catalogue
-- **`StatusAlert`** : alerte verte (aucun litige/hypothèque) ou orange (alerte active)
+- Afficher `parcel_sides` sous forme de tableau (Côté, Longueur, Orientation) si le JSONB est non vide
 
-### Calcul des sections
+### 3. ConstructionSection — ajouter documents et contact
 
-Remplacer le compteur mutable `let sectionNumber = 0` par un tableau déclaratif de sections visibles :
+- `permit_document_url` : lien DocumentAttachment par permis
+- `issuing_service_contact` : champ texte sous le service émetteur
 
-```typescript
-const visibleSections = [
-  hasParcelData && 'identification',
-  hasParcelData && 'owner',
-  hasParcelData && hasConstruction && 'construction',
-  // ...
-].filter(Boolean);
+### 4. ObligationsSection — ajouter reçus fiscaux
 
-// Chaque section reçoit son index via props
-<IdentificationSection number={visibleSections.indexOf('identification') + 1} />
-```
+- `receipt_document_url` : lien DocumentAttachment par ligne de taxe
+
+### 5. DisputesSection — ajouter type de litige
+
+- Colonne `dispute_type` dans le tableau
+
+### 6. DocumentHeader — indicateur visuel litige
+
+- Si `parcel.has_dispute === true`, afficher un badge orange "⚠ Litige" à côté du type de parcelle
 
 ## Fichiers impactés
 
-| Action | Fichier |
-|---|---|
-| **Supprimer** | `src/components/cadastral/CadastralDocumentView.tsx` (ancien monolithe) |
-| **Créer** | `src/components/cadastral/cadastral-document/` (12 fichiers ci-dessus) |
-| **Modifier** | `src/components/cadastral/CadastralResultCard.tsx` (import path) |
 
-L'ancien `CadastralDocumentView.tsx` est remplacé par un réexport depuis le nouveau dossier pour ne casser aucun import externe.
-
+| Fichier                              | Modifications                                           |
+| ------------------------------------ | ------------------------------------------------------- |
+| `sections/IdentificationSection.tsx` | +3 DataFields (location, surface bornes, is_subdivided) |
+| `sections/LocationSection.tsx`       | +tableau parcel_sides                                   |
+| `sections/ConstructionSection.tsx`   | +DocumentAttachment par permis, +contact service        |
+| `sections/ObligationsSection.tsx`    | +DocumentAttachment par reçu fiscal                     |
+| `sections/DisputesSection.tsx`       | +colonne dispute_type                                   |
+| `DocumentHeader.tsx`                 | +badge litige conditionnel                              |
