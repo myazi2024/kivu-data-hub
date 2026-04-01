@@ -55,7 +55,6 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
   const hasHistoryData = ownership_history.length > 0;
   const hasObligationsData = tax_history.length > 0 || mortgage_history.length > 0;
   const hasDisputesAccess = paidServices.includes('disputes') || (Array.isArray(land_disputes) && land_disputes.length > 0);
-  const hasLegalVerification = legal_verification !== null && legal_verification !== undefined;
   const hasLocationData = hasParcelData && (!!parcel.province || !!parcel.latitude);
 
   // Declarative visible sections for numbering
