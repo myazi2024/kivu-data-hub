@@ -7,7 +7,9 @@ import {
   Receipt,
   Eye,
   Filter,
-  Search
+  Search,
+  Loader2,
+  FileDown
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -55,6 +57,7 @@ const CadastralClientDashboard: React.FC = () => {
   const [showInvoiceDetails, setShowInvoiceDetails] = useState(false);
   const [invoices, setInvoices] = useState<CadastralInvoice[]>([]);
   const [loading, setLoading] = useState(false);
+  const [generatingReport, setGeneratingReport] = useState<string | null>(null);
   
   const { user } = useAuth();
   // Fix #2: Utiliser le hook réactif au lieu de CADASTRAL_SERVICES
@@ -123,6 +126,66 @@ const CadastralClientDashboard: React.FC = () => {
     import('@/lib/pdf').then(({ generateInvoicePDF }) => {
       generateInvoicePDF(invoice as any, catalogServices);
     });
+  };
+
+  const generateCadastralReportPDF = async (invoice: CadastralInvoice) => {
+    if (!user) return;
+    setGeneratingReport(invoice.id);
+    try {
+      // 1. Fetch parcel
+      const { data: parcel, error: parcelError } = await supabase
+        .from('cadastral_parcels')
+        .select('*')
+        .eq('parcel_number', invoice.parcel_number)
+        .maybeSingle();
+
+      if (parcelError || !parcel) {
+        throw new Error('Parcelle introuvable');
+      }
+
+      // 2. Fetch related data in parallel
+      const [ownership, tax, mortgage, boundary, permits, disputes] = await Promise.all([
+        supabase.from('cadastral_ownership_history').select('*').eq('parcel_id', parcel.id),
+        supabase.from('cadastral_tax_history').select('*').eq('parcel_id', parcel.id),
+        supabase.from('cadastral_mortgages').select('*, cadastral_mortgage_payments(*)').eq('parcel_id', parcel.id),
+        supabase.from('cadastral_boundary_history').select('*').eq('parcel_id', parcel.id),
+        supabase.from('cadastral_building_permits').select('*').eq('parcel_id', parcel.id),
+        supabase.from('cadastral_land_disputes').select('*').eq('parcel_number', invoice.parcel_number),
+      ]);
+
+      // 3. Fetch paid services for this user + parcel
+      const { data: accessData } = await supabase
+        .from('cadastral_service_access')
+        .select('service_type')
+        .eq('user_id', user.id)
+        .eq('parcel_number', invoice.parcel_number);
+
+      const paidServices = (accessData || []).map(a => a.service_type);
+
+      const formattedMortgages = (mortgage.data || []).map((m: any) => ({
+        ...m,
+        payments: m.cadastral_mortgage_payments || []
+      }));
+
+      const cadastralResult = {
+        parcel,
+        ownership_history: ownership.data || [],
+        tax_history: tax.data || [],
+        mortgage_history: formattedMortgages,
+        boundary_history: boundary.data || [],
+        building_permits: permits.data || [],
+        land_disputes: disputes.data || [],
+        legal_verification: null,
+      };
+
+      // 4. Generate PDF
+      const { generateCadastralReport } = await import('@/lib/pdf');
+      await generateCadastralReport(cadastralResult, paidServices, catalogServices);
+    } catch (err) {
+      console.error('Erreur génération fiche cadastrale:', err);
+    } finally {
+      setGeneratingReport(null);
+    }
   };
 
   const viewInvoiceDetails = (invoice: CadastralInvoice) => {
@@ -298,8 +361,25 @@ const CadastralClientDashboard: React.FC = () => {
                             <Button
                               variant="ghost"
                               size="sm"
+                              onClick={() => generateCadastralReportPDF(invoice)}
+                              disabled={generatingReport === invoice.id}
+                              aria-label={`Télécharger la fiche cadastrale ${invoice.parcel_number}`}
+                              title="Fiche cadastrale PDF"
+                            >
+                              {generatingReport === invoice.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <FileDown className="h-4 w-4" />
+                              )}
+                            </Button>
+                          )}
+                          {invoice.status === 'paid' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => generatePDFInvoice(invoice)}
                               aria-label={`Télécharger la facture ${invoice.invoice_number}`}
+                              title="Facture PDF"
                             >
                               <Download className="h-4 w-4" />
                             </Button>
