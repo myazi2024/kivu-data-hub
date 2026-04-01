@@ -58,7 +58,7 @@ const FormIntroDialog: React.FC<FormIntroDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent <DialogContent className="max-w-[320px] max-h-[85vh] overflow-hidden p-0 rounded-2xl">>
+      <DialogContent className="max-w-[320px] max-h-[85vh] overflow-hidden p-0 rounded-2xl">
         <div className="px-4 pt-8 pb-2">
           <DialogHeader className="space-y-1">
             <DialogTitle className="text-lg font-bold text-center text-primary">

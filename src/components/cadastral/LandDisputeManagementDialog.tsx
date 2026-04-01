@@ -97,7 +97,7 @@ const LandDisputeManagementDialog: React.FC<LandDisputeManagementDialogProps> = 
   return (
     <>
       <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) handleAttemptClose(); }}>
-        <DialogContent <DialogContent className="max-w-[400px] max-h-[90vh] p-0 rounded-2xl flex flex-col overflow-hidden">>
+        <DialogContent className="max-w-[400px] max-h-[90vh] p-0 rounded-2xl flex flex-col overflow-hidden">
           <div className="px-4 pt-4 pb-2 flex-shrink-0">
             <DialogHeader className="space-y-1">
               <div className="flex items-center justify-center gap-2 mb-1">
