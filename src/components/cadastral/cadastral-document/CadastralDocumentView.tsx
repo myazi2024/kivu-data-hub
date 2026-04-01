@@ -135,14 +135,6 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
             </SectionCard>
           )}
 
-          {/* Legal */}
-          {hasLegalVerification ? (
-            <LegalSection number={sn('legal')} legalVerification={legal_verification} />
-          ) : (
-            <SectionCard number={sn('legal')} icon={<ShieldCheck className="h-4 w-4" />} title="Vérification juridique">
-              <LockedSection serviceName="Vérification juridique" onUnlock={onBackToCatalog} />
-            </SectionCard>
-          )}
         </div>
 
         <DocumentFooter parcelNumber={parcel.parcel_number} verificationCode={verificationCode} verifyUrl={verifyUrl} />

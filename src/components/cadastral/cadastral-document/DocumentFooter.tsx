@@ -69,12 +69,10 @@ const DocumentFooter: React.FC<DocumentFooterProps> = ({ parcelNumber, verificat
       {/* Disclaimer */}
       <div className="border-t border-border/50 pt-3">
         <p className="text-xs text-muted-foreground leading-relaxed mb-2">
-          <strong>Avis de non-responsabilité :</strong> Le Bureau d'Informations Cadastrales (BIC) n'assume aucune responsabilité quant à l'exactitude des données affichées,
-          car elles proviennent des archives du Ministère des Affaires Foncières. BIC agit de bonne foi dans son travail de compilation et de présentation de ces informations.
+          <strong>Avis de non-responsabilité :</strong> Les informations contenues dans ce document proviennent de sources officielles (services cadastraux, conservation des titres immobiliers) et de contributions communautaires vérifiées. Le Bureau d'Informations Cadastrales (BIC) ne saurait garantir l'exhaustivité, l'exactitude absolue ou l'actualité permanente de l'ensemble des données. BIC agit de bonne foi dans son travail de compilation et de présentation de ces informations.
         </p>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Si vous n'êtes pas satisfait des informations affichées, veuillez contacter le bureau des Affaires Foncières le plus proche de vous
-          pour solliciter une mise à jour des informations concernant la parcelle <span className="font-mono font-semibold">{parcelNumber}</span>.
+          En cas de divergence avec la situation réelle, veuillez vous rapprocher du service des Affaires Foncières compétent pour solliciter une mise à jour des informations relatives à la parcelle <span className="font-mono font-semibold">{parcelNumber}</span>.
         </p>
       </div>
     </div>
