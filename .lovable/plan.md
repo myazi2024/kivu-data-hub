@@ -1,76 +1,71 @@
 
 
-# Audit de fonctionnalité — Fiche Cadastrale (`CadastralDocumentView`)
+# Audit — Fiche Cadastrale : Design, Sécurité & Authentification
 
-## Architecture
+## 1. Sécurité & Authentification
 
-La fiche cadastrale est un document A4 structuré en sections numérotées, affiché dans `CadastralDocumentView.tsx` (634 lignes). Elle est rendue par `CadastralResultCard` après paiement réussi, dans le dialogue overlay `CadastralResultsDialog`.
+### S1 — Route `/cadastral-map` non protégée (P1)
+La route `/cadastral-map` dans `App.tsx` n'est **pas enveloppée dans `ProtectedRoute`**. Un utilisateur non authentifié peut accéder à la carte, effectuer une recherche et consulter les données de base renvoyées par la RPC `get_cadastral_parcel_data`. La RPC ne vérifie probablement pas `auth.uid()` pour les données non-premium.
 
-```text
-CadastralResultsDialog (overlay z-1500)
-  └─ CadastralResultCard (logique paiement/affichage)
-       ├─ CadastralBillingPanel (avant paiement)
-       └─ CadastralDocumentView (après paiement) ← objet de l'audit
-            ├─ Toolbar (Catalogue, Télécharger PDF, Imprimer)
-            ├─ Header (Bureau d'Informations Cadastrales + parcelle)
-            ├─ Sections numérotées dynamiques
-            └─ Footer (disclaimer)
-```
+**Correction** : Envelopper la route dans `<ProtectedRoute>` (idem pour `/test/cadastral-map`).
 
-## Sections de la fiche
+### S2 — `useAuth` retourne un contexte vide hors Provider (P2)
+`useAuth()` (ligne 236) retourne un objet factice (`user: null`) si appelé hors du `AuthProvider`, au lieu de lever une erreur. Cela signifie que tout composant mal monté **ne détectera jamais l'absence d'authentification** et continuera silencieusement sans utilisateur.
 
-| # | Section | Source de données | Gating |
-|---|---|---|---|
-| 1 | Identification de la parcelle | `parcel.*` | `hasParcelData` (current_owner_name présent) |
-| 2 | Propriétaire actuel | `parcel.current_owner_*` | Idem |
-| 3 | Construction | `parcel.construction_*` | Conditionnel (champs non-null) |
-| 4 | Autorisations de bâtir | `building_permits[]` | `building_permits.length > 0` |
-| 5 | Localisation | `parcel.province/commune/...` | `hasParcelData && parcel.province` |
-| 6 | Croquis du terrain | `CadastralMap` + `gps_coordinates` | Toujours rendu si localisation visible |
-| 7 | Historique de bornage | `boundary_history[]` | `boundary_history.length > 0` |
-| 8 | Historique de propriété | `ownership_history[]` | `hasHistoryData` ou `paidServices.includes('history')` |
-| 9 | Obligations financières | `tax_history[]` + `mortgage_history[]` | `hasObligationsData` ou `paidServices.includes('obligations')` |
-| 10 | Litiges fonciers | `land_disputes[]` | `hasDisputesData` (non-null/undefined) |
-| 11 | Vérification juridique | `legal_verification` | `hasLegalVerification` (non-null) |
+**Correction** : Lever une erreur (`throw new Error`) si le contexte est `undefined`, sauf pour les composants de navigation explicitement exclus.
 
-## Résultats de l'audit
+### S3 — Pas de vérification d'authentification dans `CadastralResultCard` (P2)
+Le composant fait `checkMultipleServiceAccess` avec `user?.id` mais si `user` est `null` (contexte vide hors Provider, cf. S2), la vérification est simplement ignorée (`if (!user) return`). Aucun message d'erreur ni redirection vers `/auth`.
 
-### Ce qui fonctionne bien
+### S4 — `cleanupAuthState` supprime les clés localStorage par pattern (P3)
+La fonction `signOut` (ligne 113-118) supprime toutes les clés contenant `supabase.auth.` ou `sb-`. C'est un nettoyage agressif qui pourrait supprimer des données d'autres projets Supabase sur le même domaine en développement. Risque faible en production.
 
-- **Gating server-side** : La fiche ne montre que les données renvoyées par la RPC `get_cadastral_parcel_data`. Pas de fuite côté client.
-- **Numérotation dynamique** : Le compteur `sectionNumber` s'incrémente uniquement pour les sections affichées — la numérotation est toujours séquentielle.
-- **Sections verrouillées** : Chaque section non-payée affiche un placeholder `🔒 Section « X » non incluse`.
-- **Impression** : Styles `@media print` dédiés avec `page-break-inside: avoid`, taille 11pt, toolbar masquée.
-- **Documents joints** : Composant `DocumentAttachment` réutilisable avec boutons Voir/Télécharger.
-- **Hypothèques** : Alerte visuelle animée pour les hypothèques actives + calcul du total remboursé.
-- **Disclaimer** : Footer juridique clair sur la non-responsabilité du BIC.
-- **Protection UX** : Dialogue de confirmation avant fermeture + `beforeunload` sur le navigateur.
+### S5 — Cache de profil en mémoire sans invalidation cross-tab (P3)
+Le cache `profileCache` (Map en state) n'est pas synchronisé entre les onglets. Si un admin change le rôle d'un utilisateur, celui-ci garde son ancien rôle pendant 5 minutes dans les onglets déjà ouverts.
 
-### Bugs et problèmes identifiés
+## 2. Design & UX
 
-| ID | Sévérité | Problème | Détail |
-|---|---|---|---|
-| B1 | **P2** | Import inutilisé : `VerificationButton` | Importé ligne 16 mais jamais utilisé dans le composant. Code mort. |
-| B2 | **P2** | Doublon Superficie/Hectares | Ligne 159 affiche `formatArea(area_sqm)` qui inclut déjà les hectares si ≥ 10000 m². Ligne 160 affiche à nouveau `area_hectares` séparément → doublon d'information quand area_sqm ≥ 10000. |
-| B3 | **P2** | Gating incohérent pour Litiges | `hasDisputesData` vérifie `land_disputes !== undefined && !== null`, mais la RPC renvoie toujours un tableau (même vide `[]`). Donc `hasDisputesData` est **toujours true** si le serveur gate correctement → la section Litiges s'affiche systématiquement, même si le service n'est pas payé. Le placeholder `🔒` ne s'affichera jamais. |
-| B4 | **P3** | Gating Localisation non aligné | `hasLocationData` (ligne 69) est déclaré mais non utilisé. La condition réelle (ligne 258) est `hasParcelData && (!!parcel.province || !!parcel.latitude)` — logique correcte mais la variable `hasLocationData` est du code mort. |
-| B5 | **P3** | Croquis rendu même sans coordonnées | Si `gps_coordinates` est un tableau vide et `latitude/longitude` sont null, `CadastralMap` est quand même rendu (ligne 295-300), potentiellement affichant une carte vide. |
-| B6 | **P3** | Pas de lazy loading pour la carte | `CadastralMap` (Leaflet) est chargé immédiatement même si la section Localisation n'est pas visible (scroll long). Impact performance sur mobile. |
+### D1 — Carte rendue sans coordonnées (P2)
+`CadastralMap` est toujours rendu si la section Localisation est visible, même quand `gps_coordinates` est `[]` et `latitude/longitude` sont `null`. Résultat : carte vide sans intérêt.
 
-### Améliorations suggérées
+**Correction** : Conditionner le rendu à `(parcel.latitude && parcel.longitude) || (Array.isArray(parcel.gps_coordinates) && parcel.gps_coordinates.length > 0)`.
 
-| Priorité | Amélioration | Impact |
+### D2 — Pas de lazy loading pour Leaflet (P3)
+`CadastralMap` (Leaflet ~200KB) est importé statiquement. Sur mobile avec scroll long, la carte peut ne jamais être visible mais impacte le temps de chargement.
+
+**Correction** : `React.lazy(() => import('./CadastralMap'))` avec `Suspense`.
+
+### D3 — Styles `doc-table` en `<style>` inline (P3)
+Les styles de la table sont injectés via une balise `<style>` dans le JSX (lignes 588-628). Cela crée un doublon à chaque montage et n'est pas purgé par Tailwind.
+
+**Correction** : Migrer vers un fichier CSS dédié ou des classes Tailwind.
+
+### D4 — Couleurs hardcodées en print (P3)
+Ligne 623 : `background: #f3f4f6 !important` dans `@media print` — couleur hardcodée au lieu d'utiliser un jeton sémantique. Incompatible avec le standard de theming du projet.
+
+### D5 — Header non responsive sur très petit écran (P3)
+Le header (lignes 114-131) utilise `px-6 sm:px-10` mais le badge type parcelle (SU/SR) peut être tronqué sur écrans < 360px car `shrink-0` empêche le rétrécissement.
+
+### D6 — Section Litiges : logique morte après fix B3 (P2)
+Après la correction précédente (B3), `hasDisputesData` vérifie `land_disputes.length > 0`. Mais la ligne 494 teste à nouveau `land_disputes.length === 0` à l'intérieur du bloc `hasDisputesData === true` — ce bloc est donc **mort** (jamais atteint). Le message "Aucun litige foncier enregistré" ne s'affichera plus jamais.
+
+**Correction** : Aligner le gating sur `paidServices.includes('disputes')` (comme pour history/obligations) pour distinguer "service payé mais aucun litige" de "service non payé".
+
+## 3. Améliorations recommandées
+
+| Priorité | Action | Impact |
 |---|---|---|
-| P2 | Corriger le gating des Litiges : vérifier si le service litiges est payé (comme pour `history` et `obligations`) | Sécurité des données |
-| P2 | Supprimer la ligne doublon Hectares (ligne 160) | Clarté du document |
-| P2 | Supprimer l'import `VerificationButton` inutilisé | Propreté du code |
-| P3 | Ajouter une condition pour ne pas rendre `CadastralMap` si les coordonnées sont absentes | UX |
-| P3 | Supprimer la variable `hasLocationData` non utilisée | Propreté du code |
-| P3 | Lazy-load `CadastralMap` avec `React.lazy` ou intersection observer | Performance mobile |
+| **P1** | Protéger la route `/cadastral-map` avec `ProtectedRoute` | Sécurité critique |
+| **P2** | Corriger le gating Litiges : utiliser `paidServices.includes('disputes')` | Logique métier |
+| **P2** | Conditionner le rendu de `CadastralMap` à la présence de coordonnées | UX |
+| **P2** | Lever une erreur dans `useAuth` hors Provider | Détection de bugs |
+| **P3** | Lazy-load `CadastralMap` | Performance mobile |
+| **P3** | Migrer les styles `doc-table` hors du JSX | Propreté du code |
+| **P3** | Remplacer la couleur print hardcodée par un jeton sémantique | Cohérence design |
 
 ## Conclusion
 
-La fiche cadastrale est **bien structurée et fonctionnelle** dans l'ensemble, avec un bon gating server-side et une UX soignée pour l'impression. Le **bug le plus important (B3)** concerne le gating des litiges fonciers qui ne bloque jamais l'affichage car la RPC retourne toujours un tableau. Cela pourrait exposer la section Litiges sans paiement.
+Le problème le plus critique est la **route non protégée** (S1) qui permet l'accès à la carte cadastrale sans authentification. Le second enjeu est la **logique morte des litiges** (D6) introduite par le fix précédent B3, qui empêche d'afficher "aucun litige" pour les utilisateurs ayant payé le service.
 
-**Souhaitez-vous approuver pour corriger les bugs P2 (B1, B2, B3) ?**
+**Souhaitez-vous approuver pour corriger P1 (S1) et P2 (D1, D6, S2) ?**
 
