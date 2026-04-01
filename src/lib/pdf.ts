@@ -2,6 +2,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import QRCode from 'qrcode';
 import type { CadastralService } from '@/hooks/useCadastralServices';
+import { createDocumentVerification } from '@/lib/documentVerification';
 
 // Type minimal pour les factures dans le PDF
 interface CadastralInvoice {
