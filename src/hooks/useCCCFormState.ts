@@ -267,7 +267,7 @@ export const useCCCFormState = ({
   };
 
   const clearSavedFormData = () => {
-    try { localStorage.removeItem(STORAGE_KEY); } catch (error) { console.error(error); }
+    try { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem('auth_redirect_url'); } catch (error) { console.error(error); }
   };
 
   // ─── File handling ───
@@ -1530,7 +1530,7 @@ export const useCCCFormState = ({
     availableConstructionMaterials, availableDeclaredUsages, availableStandings,
     constructionMode, setConstructionMode, additionalConstructions, setAdditionalConstructions,
     // Permits
-    permitMode, setPermitMode, buildingPermits, addBuildingPermit, updateBuildingPermit, updateBuildingPermitFile, removeBuildingPermitFile,
+    permitMode, setPermitMode, buildingPermits, addBuildingPermit, removeBuildingPermit, updateBuildingPermit, updateBuildingPermitFile, removeBuildingPermitFile,
     getPermitTypeRestrictions, showPermitWarning, highlightIncompletePermit,
     // Location
     sectionType, sectionTypeAutoDetected, handleSectionTypeChange,
