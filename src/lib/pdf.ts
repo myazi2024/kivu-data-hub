@@ -294,7 +294,7 @@ function saveDocument(doc: jsPDF, filename: string) {
   }
 }
 
-// Générateur d'ID unique pour les rapports
+// Legacy fallback ID generator (used only if verification persistence fails)
 function generateReportId(): string {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(7);
