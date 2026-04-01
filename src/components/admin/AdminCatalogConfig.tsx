@@ -190,12 +190,13 @@ const AdminCatalogConfig = () => {
       </div>
 
       <Tabs defaultValue="search" className="space-y-4">
-        <TabsList className="grid grid-cols-5 w-full">
+        <TabsList className="grid grid-cols-6 w-full">
           <TabsTrigger value="search"><Search className="h-4 w-4 mr-2" />Recherche</TabsTrigger>
           <TabsTrigger value="discounts"><Tag className="h-4 w-4 mr-2" />Remises</TabsTrigger>
           <TabsTrigger value="ccc"><Gift className="h-4 w-4 mr-2" />Codes CCC</TabsTrigger>
           <TabsTrigger value="ui"><Eye className="h-4 w-4 mr-2" />Interface</TabsTrigger>
           <TabsTrigger value="messages"><AlertCircle className="h-4 w-4 mr-2" />Messages</TabsTrigger>
+          <TabsTrigger value="provinces"><MapPin className="h-4 w-4 mr-2" />Provinces</TabsTrigger>
         </TabsList>
 
         {/* Onglet Recherche */}
