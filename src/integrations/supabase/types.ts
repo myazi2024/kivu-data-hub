@@ -1559,6 +1559,60 @@ export type Database = {
         }
         Relationships: []
       }
+      document_verifications: {
+        Row: {
+          client_email: string | null
+          client_name: string | null
+          created_at: string
+          document_type: Database["public"]["Enums"]["document_type"]
+          generated_at: string
+          id: string
+          invalidated_at: string | null
+          invalidated_by: string | null
+          invalidation_reason: string | null
+          is_valid: boolean
+          metadata: Json | null
+          parcel_number: string
+          updated_at: string
+          user_id: string | null
+          verification_code: string
+        }
+        Insert: {
+          client_email?: string | null
+          client_name?: string | null
+          created_at?: string
+          document_type: Database["public"]["Enums"]["document_type"]
+          generated_at?: string
+          id?: string
+          invalidated_at?: string | null
+          invalidated_by?: string | null
+          invalidation_reason?: string | null
+          is_valid?: boolean
+          metadata?: Json | null
+          parcel_number: string
+          updated_at?: string
+          user_id?: string | null
+          verification_code: string
+        }
+        Update: {
+          client_email?: string | null
+          client_name?: string | null
+          created_at?: string
+          document_type?: Database["public"]["Enums"]["document_type"]
+          generated_at?: string
+          id?: string
+          invalidated_at?: string | null
+          invalidated_by?: string | null
+          invalidation_reason?: string | null
+          is_valid?: boolean
+          metadata?: Json | null
+          parcel_number?: string
+          updated_at?: string
+          user_id?: string | null
+          verification_code?: string
+        }
+        Relationships: []
+      }
       expertise_fees_config: {
         Row: {
           amount_usd: number
@@ -4221,6 +4275,7 @@ export type Database = {
       }
       generate_reseller_code: { Args: never; Returns: string }
       generate_service_id: { Args: { service_name: string }; Returns: string }
+      generate_verification_code: { Args: never; Returns: string }
       get_admin_statistics: {
         Args: { end_date?: string; start_date?: string; stat_type?: string }
         Returns: Json
@@ -4408,6 +4463,13 @@ export type Database = {
         | "notaire"
         | "geometre"
         | "urbaniste"
+      document_type:
+        | "report"
+        | "invoice"
+        | "permit"
+        | "certificate"
+        | "expertise"
+        | "mortgage_receipt"
       user_role: "admin" | "partner" | "user"
     }
     CompositeTypes: {
@@ -4546,6 +4608,14 @@ export const Constants = {
         "notaire",
         "geometre",
         "urbaniste",
+      ],
+      document_type: [
+        "report",
+        "invoice",
+        "permit",
+        "certificate",
+        "expertise",
+        "mortgage_receipt",
       ],
       user_role: ["admin", "partner", "user"],
     },
