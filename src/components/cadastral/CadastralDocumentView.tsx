@@ -489,7 +489,7 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
           )}
 
           {/* ===================== LITIGES ===================== */}
-          {hasDisputesData ? (
+          {hasDisputesAccess ? (
             <>
               <SectionTitle number={++sectionNumber} icon={<Scale className="h-4 w-4" />} title="Litiges fonciers" />
               {land_disputes.length === 0 ? (
