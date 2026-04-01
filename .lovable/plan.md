@@ -1,48 +1,25 @@
 
 
-# Fix : Clic sur "Paramètres" ne fait rien dans l'admin
+# Réduire de moitié la taille de la légende sur la carte cadastrale
 
-## Problème
+## Modifications dans `src/pages/CadastralMap.tsx`
 
-Le bouton "Paramètres" dans le dropdown du header admin appelle `navigate('/admin?tab=test-mode')`. Quand l'utilisateur est **déjà sur cette URL** (ce qui est le cas ici), React Router ignore la navigation identique — rien ne se passe visuellement.
+### Desktop (lignes 1437-1467)
+- Padding du bloc : `p-3` → `p-1.5`
+- Titre "Légende" : `text-[10px] mb-2` → `text-[7px] mb-1`
+- Chaque item : `text-xs gap-2 space-y-1.5` → `text-[7px] gap-1 space-y-0.5`
+- Icônes/indicateurs : `w-3.5 h-3.5` → `w-2 h-2`, bordures et dimensions proportionnelles
+- Badge "12m" : `text-[8px]` → `text-[5px]`
+- Coin arrondi : `rounded-xl` → `rounded-lg`
 
-De plus, "Paramètres" devrait logiquement mener vers une section de paramètres généraux, pas uniquement vers "Mode Test".
-
-## Correction proposée
-
-Deux options :
-
-**Option A (rapide)** : Forcer le re-render même si l'URL est identique, en utilisant `navigate('/admin?tab=test-mode', { replace: true })` combiné avec un state unique pour forcer React Router à traiter la navigation.
-
-**Option B (recommandée)** : Créer un onglet dédié "Paramètres" dans la sidebar qui regroupe les configurations système (Mode Test, Actions Parcelle, Logs d'Audit, etc.), et y rediriger depuis le dropdown.
-
-## Plan retenu — Option A (correction immédiate)
-
-### `AdminDashboardHeader.tsx`
-
-Remplacer le `navigate('/admin?tab=test-mode')` du dropdown "Paramètres" par une navigation qui fonctionne même depuis la même page :
-
-```tsx
-<DropdownMenuItem onClick={() => {
-  const target = '/admin?tab=test-mode';
-  if (window.location.pathname + window.location.search === target) {
-    // Force scroll to top / visual feedback when already on page
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  } else {
-    navigate(target);
-  }
-}}>
-  Paramètres
-</DropdownMenuItem>
-```
+### Mobile popover (lignes 1469-1502)
+- Mêmes réductions appliquées au contenu du `PopoverContent`
+- `w-52` → `w-36`
+- Bouton trigger : `h-9 w-9` → `h-7 w-7`, icône `h-4 w-4` → `h-3 w-3`
 
 ### Fichier impacté
 
 | Fichier | Modification |
 |---|---|
-| `AdminDashboardHeader.tsx` | Gérer le cas où l'utilisateur est déjà sur la page cible |
-
-### Note sur les erreurs de build
-
-Les 10 erreurs TS listées (`>` expected) semblent provenir d'un état précédent du build. Les fichiers actuels sont syntaxiquement corrects. Si les erreurs persistent après ce changement, un rebuild propre les résoudra.
+| `src/pages/CadastralMap.tsx` | Réduire tailles police, icônes, padding et gaps dans les deux blocs légende (desktop + mobile) |
 
