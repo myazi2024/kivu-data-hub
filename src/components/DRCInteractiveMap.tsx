@@ -431,7 +431,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                           )}
                           {isChartVisible('detail-contributions') && (
                             <Card className="p-1 border-border/30">
-                              <div className="text-[9px] text-muted-foreground truncate">{dt('detail-contributions', 'Contributions')}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-contributions', 'Contributions')}</div>
                               <div className="text-[11px] font-bold text-emerald-600">{formatNumber(selectedProvince.contributionsCount)}</div>
                             </Card>
                           )}
