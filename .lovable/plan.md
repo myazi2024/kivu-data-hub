@@ -1,37 +1,36 @@
 
 
-# Ajouter le QR code de vérification sur la fiche cadastrale
+# Remplacer CadastralMap par ParcelSketchSVG dans la fiche cadastrale
 
 ## Constat
 
-Le système de vérification (`createDocumentVerification`) est appelé uniquement lors du téléchargement PDF dans `pdf.ts`. La fiche cadastrale affichée à l'écran n'a **aucun QR code ni code de vérification** — le `DocumentFooter` ne contient que le disclaimer.
+La section "Croquis du terrain" dans `LocationSection.tsx` utilise `CadastralMap` (carte interactive Leaflet). L'utilisateur veut un croquis SVG statique comme dans le service de lotissement, via le composant `ParcelSketchSVG` déjà existant.
 
-## Solution
+## Données disponibles
 
-Générer un code de vérification au montage de la fiche et afficher un QR code + code textuel dans le footer du document à l'écran.
+`ParcelSketchSVG` accepte :
+- `coordinates` (requis) → disponible via `parcel.gps_coordinates`
+- `parcelSides` (requis) → disponible via `parcel.parcel_sides`
+- `buildingShapes` (optionnel) → **pas sur `cadastral_parcels`**, passer `[]`
+- `roadSides` (optionnel) → **pas sur `cadastral_parcels`**, passer `[]`
+- `servitude` (optionnel) → pas disponible, omis
 
-## Modifications
+Les deux champs essentiels (coordonnées GPS + côtés) sont présents sur la parcelle, ce qui suffit pour un croquis fidèle avec bornes, dimensions et orientations.
 
-### 1. `CadastralDocumentView.tsx` — Générer le code au montage
+## Modification
 
-- Appeler `createDocumentVerification({ documentType: 'report', parcelNumber })` via `useEffect` au premier rendu
-- Stocker `{ verificationCode, verifyUrl }` dans un state
-- Passer ces valeurs à `DocumentFooter`
+### `sections/LocationSection.tsx`
 
-### 2. `DocumentFooter.tsx` — Afficher QR code + code de vérification
+1. Remplacer l'import `CadastralMap` par `ParcelSketchSVG`
+2. Adapter le bloc "Croquis du terrain" :
+   - Mapper `parcel.gps_coordinates` au format `{ lat, lng, borne }[]`
+   - Mapper `parcel.parcel_sides` au format `{ name, length, orientation }[]` attendu par `ParcelSketchSVG`
+   - Passer `buildingShapes={[]}` (données non disponibles sur la table parcelle)
+3. Supprimer la condition `hasMap` basée sur lat/lng seuls → la baser sur `gps_coordinates.length >= 3`
 
-- Ajouter une section visuelle au-dessus du disclaimer :
-  - QR code généré via `qrcode` (librairie déjà utilisée dans `pdf.ts`)
-  - Code de vérification en texte mono (`BIC-2026-XXXX`)
-  - Lien cliquable vers `/verify/{code}`
-- Layout : QR code à gauche, texte + disclaimer à droite
-- Le QR code est visible à l'écran ET à l'impression (`print:block`)
-- Si le code n'est pas encore chargé, afficher un skeleton/placeholder
-
-### Fichiers impactés
+### Fichier impacté
 
 | Fichier | Modification |
 |---|---|
-| `cadastral-document/CadastralDocumentView.tsx` | +useEffect pour créer la vérification, +state, +props vers footer |
-| `cadastral-document/DocumentFooter.tsx` | +QR code canvas, +code textuel, +layout redesign |
+| `sections/LocationSection.tsx` | Remplacer `CadastralMap` par `ParcelSketchSVG`, adapter le mapping des props |
 
