@@ -93,6 +93,7 @@ const CadastralMap = () => {
   const advancedSearch = useAdvancedCadastralSearch();
   const searchHistory = useSearchHistory();
   const { config: searchBarConfig, buildAllowedRegex } = useSearchBarConfig();
+  const { config: mapConfig } = useMapConfig();
   
   // Hook pour la recherche cadastrale (catalogue de services)
   const cadastralSearch = useCadastralSearch();
