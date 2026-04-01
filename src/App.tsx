@@ -75,7 +75,11 @@ const App = () => (
                   <Route path="/" element={<Index />} />
                   <Route path="/publications" element={<Publications />} />
                   <Route path="/map" element={<Map />} />
-                  <Route path="/cadastral-map" element={<CadastralMap />} />
+                  <Route path="/cadastral-map" element={
+                    <ProtectedRoute>
+                      <CadastralMap />
+                    </ProtectedRoute>
+                  } />
                   <Route path="/admin" element={
                     <ProtectedRoute requiredRoles={['admin', 'super_admin']}>
                       <Admin />
