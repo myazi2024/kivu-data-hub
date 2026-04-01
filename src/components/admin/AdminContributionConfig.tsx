@@ -1385,7 +1385,7 @@ const AdminContributionConfig = ({ initialTab, scrollToLegend }: { initialTab?: 
 
               {/* Section Légende */}
               <div className="space-y-4">
-                <h4 className="text-sm font-semibold flex items-center gap-2">
+                <h4 ref={legendRef} className="text-sm font-semibold flex items-center gap-2">
                   <span>📋</span> Légende de la carte
                 </h4>
 
