@@ -287,7 +287,14 @@ export function AdminDashboardHeader({ onMenuClick }: AdminDashboardHeaderProps)
               <DropdownMenuItem onClick={() => navigate('/mon-compte')}>
                 Mon profil
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/admin?tab=test-mode')}>
+              <DropdownMenuItem onClick={() => {
+                const target = '/admin?tab=test-mode';
+                if (window.location.pathname + window.location.search === target) {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                } else {
+                  navigate(target);
+                }
+              }}>
                 Paramètres
               </DropdownMenuItem>
               <DropdownMenuSeparator />
