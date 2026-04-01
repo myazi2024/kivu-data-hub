@@ -2,6 +2,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import QRCode from 'qrcode';
 import type { CadastralService } from '@/hooks/useCadastralServices';
+import { createDocumentVerification } from '@/lib/documentVerification';
 
 // Type minimal pour les factures dans le PDF
 interface CadastralInvoice {
@@ -53,7 +54,7 @@ export type InvoiceFormat = 'mini' | 'a4';
 /**
  * Génère un PDF de justificatif de paiement avec format sélectionnable
  */
-export function generateInvoicePDF(
+export async function generateInvoicePDF(
   invoice: CadastralInvoice,
   servicesCatalog: CadastralService[],
   format: InvoiceFormat = 'a4',
@@ -152,11 +153,32 @@ function generateMiniInvoicePDF(
 /**
  * Génère un justificatif de paiement A4 complet
  */
-function generateA4InvoicePDF(
+async function generateA4InvoicePDF(
   invoice: CadastralInvoice,
   servicesCatalog: CadastralService[],
   filename?: string
 ) {
+  // Persist verification
+  let verifyUrl = '';
+  try {
+    const verification = await createDocumentVerification({
+      documentType: 'invoice',
+      parcelNumber: invoice.parcel_number,
+      clientName: invoice.client_name || null,
+      clientEmail: invoice.client_email,
+      metadata: {
+        invoiceNumber: invoice.invoice_number,
+        totalAmount: invoice.total_amount_usd,
+        status: invoice.status,
+      },
+    });
+    if (verification) {
+      verifyUrl = verification.verifyUrl;
+    }
+  } catch (e) {
+    console.error('Failed to persist invoice verification:', e);
+  }
+
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 20;
@@ -256,6 +278,20 @@ function generateA4InvoicePDF(
   
   cursorY += 15;
 
+  // QR code de vérification
+  if (verifyUrl) {
+    try {
+      const qrDataUrl = await QRCode.toDataURL(verifyUrl);
+      doc.addImage(qrDataUrl, 'PNG', margin, 265, 12, 12);
+      doc.setTextColor(127, 140, 141);
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(6);
+      doc.text("Scannez pour vérifier", margin + 6, 279, { align: 'center' });
+    } catch (e) {
+      console.error('QR code generation failed:', e);
+    }
+  }
+
   // Pied de page minimaliste
   doc.setTextColor(127, 140, 141);
   doc.setFont('helvetica', 'normal');
@@ -293,7 +329,7 @@ function saveDocument(doc: jsPDF, filename: string) {
   }
 }
 
-// Générateur d'ID unique pour les rapports
+// Legacy fallback ID generator (used only if verification persistence fails)
 function generateReportId(): string {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(7);
@@ -353,15 +389,35 @@ export async function generateCadastralReport(
   const building_permits = contributionData?.building_permits || cadastralResult.building_permits || [];
   
   
-  // Générer un ID unique pour ce rapport et QR code
-  const reportId = generateReportId();
+  // Persist verification and generate QR code
+  let reportId = generateReportId();
+  let verifyUrl = `https://bic.cd/verify-report/${reportId}`;
+  
+  try {
+    const verification = await createDocumentVerification({
+      documentType: 'report',
+      parcelNumber: parcel.parcel_number,
+      clientName: parcel.current_owner_name || null,
+      metadata: {
+        paidServices,
+        serviceNames: paidServices.map(id => servicesCatalog.find(s => s.id === id)?.name).filter(Boolean),
+      },
+    });
+    if (verification) {
+      reportId = verification.verificationCode;
+      verifyUrl = verification.verifyUrl;
+    }
+  } catch (e) {
+    console.error('Failed to persist verification, using fallback ID:', e);
+  }
+
   const reportDate = new Date();
   const reportDateTime = reportDate.toLocaleDateString('fr-FR') + ' à ' + reportDate.toLocaleTimeString('fr-FR');
   
   // Générer QR code pour vérification
   let qrCodeDataUrl = '';
   try {
-    qrCodeDataUrl = await QRCode.toDataURL(`https://bic.cd/verify-report/${reportId}`);
+    qrCodeDataUrl = await QRCode.toDataURL(verifyUrl);
   } catch (error) {
     console.error('Failed to generate QR code:', error);
   }
@@ -401,7 +457,7 @@ export async function generateCadastralReport(
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
     doc.text(`Rapport N° ${reportId} - Généré le ${reportDate.toLocaleDateString('fr-FR')}`, margin, footerY + 4);
-    doc.text("Vérifiez ce rapport sur bic.cd/verify", margin, footerY + 8);
+    doc.text("Scannez le QR code pour vérifier ce document", margin, footerY + 8);
     
     // QR Code compact
     if (qrCodeDataUrl) {
@@ -738,7 +794,7 @@ export async function generateCadastralReport(
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(7);
   doc.setTextColor(100, 100, 100);
-  doc.text("Ce document a été généré par BIC. Vérifiez son authenticité sur bic.cd/verify-report", margin, currentY, { maxWidth: pageWidth - 2 * margin });
+  doc.text("Ce document a été généré par BIC. Scannez le QR code pour vérifier son authenticité.", margin, currentY, { maxWidth: pageWidth - 2 * margin });
   
   // Note sur les données
   currentY += 6;
