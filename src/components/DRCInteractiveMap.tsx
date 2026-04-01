@@ -328,8 +328,8 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   {/* Légende contextuelle province zoomée */}
                   {isMapZoomed && selectedProvince && (
                     <div className="absolute bottom-5 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30 animate-fade-in">
-                      <div className="text-[8px] font-medium text-foreground mb-0.5">{selectedProvince.name}</div>
-                      <div className="flex flex-col gap-0.5 text-[7px] text-muted-foreground">
+                      <div className="text-[10px] font-medium text-foreground mb-0.5">{selectedProvince.name}</div>
+                      <div className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
                         <div className="flex justify-between gap-2"><span>Parcelles</span><span className="font-medium text-foreground">{formatNumber(selectedProvince.parcelsCount)}</span></div>
                         <div className="flex justify-between gap-2"><span>Titres dem.</span><span className="font-medium text-foreground">{formatNumber(selectedProvince.titleRequestsCount)}</span></div>
                         <div className="flex justify-between gap-2"><span>Revenus</span><span className="font-medium text-foreground">{formatCurrency(selectedProvince.revenueUsd)}</span></div>
