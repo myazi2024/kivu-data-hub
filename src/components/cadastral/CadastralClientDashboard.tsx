@@ -57,6 +57,7 @@ const CadastralClientDashboard: React.FC = () => {
   const [showInvoiceDetails, setShowInvoiceDetails] = useState(false);
   const [invoices, setInvoices] = useState<CadastralInvoice[]>([]);
   const [loading, setLoading] = useState(false);
+  const [generatingReport, setGeneratingReport] = useState<string | null>(null);
   
   const { user } = useAuth();
   // Fix #2: Utiliser le hook réactif au lieu de CADASTRAL_SERVICES
