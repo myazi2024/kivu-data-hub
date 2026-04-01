@@ -9,6 +9,8 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Building2, ArrowLeft, Smartphone } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Link } from "react-router-dom";
 import { FcGoogle } from "react-icons/fc";
 import { FaFacebook, FaApple } from "react-icons/fa";
 
@@ -20,6 +22,7 @@ const Auth = () => {
   const [organization, setOrganization] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [showPhoneAuth, setShowPhoneAuth] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -519,10 +522,24 @@ const Auth = () => {
                     />
                   </div>
                   
+                  <div className="flex items-start space-x-2">
+                    <Checkbox 
+                      id="accept-terms" 
+                      checked={acceptedTerms}
+                      onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
+                    />
+                    <label htmlFor="accept-terms" className="text-sm text-muted-foreground leading-tight cursor-pointer">
+                      J'ai lu et j'accepte les{' '}
+                      <Link to="/legal" target="_blank" className="text-primary underline hover:text-primary/80">
+                        conditions d'utilisation et mentions légales
+                      </Link>
+                    </label>
+                  </div>
+
                   <Button 
                     type="submit" 
                     className="w-full" 
-                    disabled={isLoading}
+                    disabled={isLoading || !acceptedTerms}
                   >
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Créer un compte
@@ -534,7 +551,11 @@ const Auth = () => {
         </Card>
 
         <div className="text-center mt-6 text-sm text-muted-foreground">
-          <p>En vous connectant, vous acceptez nos conditions d'utilisation</p>
+          <p>En vous connectant, vous acceptez nos{' '}
+            <Link to="/legal" className="text-primary underline hover:text-primary/80">
+              conditions d'utilisation
+            </Link>
+          </p>
         </div>
       </div>
     </div>
