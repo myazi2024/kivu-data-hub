@@ -1,63 +1,117 @@
 
 
-# Système de vérification d'authenticité des documents cadastraux
+# Refonte complète — Fiche Cadastrale
 
-## Constat actuel
+## Objectif
 
-Les PDFs générés (rapport cadastral, factures, certificats, permis) contiennent tous un **QR code pointant vers des URLs inexistantes** :
-- `https://bic.cd/verify-report/{id}` — aucune route
-- `https://bic.cd/verify-permit/{id}` — aucune route
-- `https://bic.cd/verify/{id}` — aucune route
+Reconstruire `CadastralDocumentView.tsx` from scratch avec une architecture modulaire, un design moderne type document officiel, et une meilleure lisibilité à l'écran et à l'impression.
 
-Le `reportId` est généré côté client avec `Date.now() + Math.random()` et **n'est jamais persisté en base**. Le QR code est donc purement décoratif.
+## Problèmes actuels
 
-## Solution proposée
+- **Fichier monolithique** (636 lignes, tout dans un seul composant)
+- **Design générique** : tableaux HTML bruts stylisés via `<style>` inline, pas d'identité visuelle forte
+- **Styles inline** : bloc `<style>` de 40 lignes injecté dans le JSX au lieu de CSS/Tailwind
+- **Pas de structure modulaire** : sections non extraites en sous-composants
+- **Compteur mutable** (`let sectionNumber = 0; ++sectionNumber`) — anti-pattern React
 
-Créer un système complet de vérification en 3 parties :
+## Nouveau design
 
-### 1. Table `document_verifications` (migration SQL)
+### Identité visuelle "Document officiel"
 
-Stocke chaque document généré avec son ID unique, type, métadonnées et hash de contenu.
+```text
+┌──────────────────────────────────────────┐
+│ ══ TOOLBAR (sticky, print:hidden) ══     │
+├──────────────────────────────────────────┤
+│  ┌─ HEADER ──────────────────────────┐   │
+│  │  🏛  RÉPUBLIQUE DÉMOCRATIQUE      │   │
+│  │      DU CONGO                     │   │
+│  │  Bureau d'Informations Cadastrales│   │
+│  │  ─────────────────────────────    │   │
+│  │  FICHE CADASTRALE                 │   │
+│  │  Parcelle N° XX/XXXX             │   │
+│  │  Section Urbaine | Générée le ... │   │
+│  └───────────────────────────────────┘   │
+│                                          │
+│  ┌─ Section Card ────────────────────┐   │
+│  │ ▌1. IDENTIFICATION               │   │
+│  │  ┌────────┬───────────────────┐   │   │
+│  │  │ Label  │ Valeur            │   │   │
+│  │  ├────────┼───────────────────┤   │   │
+│  │  │ ...    │ ...               │   │   │
+│  │  └────────┴───────────────────┘   │   │
+│  └───────────────────────────────────┘   │
+│                                          │
+│  ┌─ Section Card ────────────────────┐   │
+│  │ ▌2. PROPRIÉTAIRE ACTUEL          │   │
+│  │  ...                              │   │
+│  └───────────────────────────────────┘   │
+│  ...                                     │
+│  ┌─ FOOTER ──────────────────────────┐   │
+│  │  Code de vérification: BIC-XXXX  │   │
+│  │  QR Code  |  Disclaimer          │   │
+│  └───────────────────────────────────┘   │
+└──────────────────────────────────────────┘
+```
 
-| Colonne | Type | Description |
-|---|---|---|
-| `id` | uuid | PK |
-| `verification_code` | text unique | Code court (ex: `BIC-2026-A3F9K2`) |
-| `document_type` | enum | `report`, `invoice`, `permit`, `certificate`, `expertise`, `mortgage_receipt` |
-| `parcel_number` | text | Parcelle associée |
-| `user_id` | uuid | Utilisateur ayant généré le document |
-| `generated_at` | timestamptz | Date de génération |
-| `metadata` | jsonb | Services payés, montants, etc. |
-| `is_valid` | boolean | Permet l'invalidation admin |
+### Changements de design clés
 
-RLS : lecture publique (pour la page de vérification), écriture authentifiée.
+- **Header officiel** : titre "République Démocratique du Congo", sous-titre BIC, filigrane subtil, bordure dorée/primaire en haut
+- **Section cards** : chaque section dans une carte avec bordure gauche colorée (accent bar), titre avec numéro intégré, fond légèrement différencié
+- **Tableaux modernisés** : lignes alternées via Tailwind (`even:bg-muted/20`), pas de `<style>` inline
+- **Alertes visuelles améliorées** : hypothèques actives, litiges — icônes + couleurs sémantiques cohérentes
+- **Footer avec code de vérification** : intégration du système de vérification existant (`documentVerification.ts`)
+- **Print-first** : styles d'impression via classes Tailwind `print:*` uniquement, pas de `<style>` block
 
-### 2. Page publique `/verify/:code` (nouvelle route)
+## Architecture modulaire
 
-Page accessible **sans authentification** qui :
-- Accepte un code de vérification (saisi manuellement ou via QR code)
-- Interroge `document_verifications` par `verification_code`
-- Affiche : statut (valide/invalide), type de document, parcelle, date de génération, nom du bénéficiaire
-- Affiche un badge visuel vert "Document authentique" ou rouge "Document non reconnu"
+### Nouveaux fichiers
 
-### 3. Persistance à la génération (modification `src/lib/pdf.ts`)
+| Fichier | Contenu |
+|---|---|
+| `cadastral-document/CadastralDocumentView.tsx` | Composant principal (orchestrateur ~150 lignes) |
+| `cadastral-document/DocumentHeader.tsx` | Header officiel avec titre RDC, parcelle, date |
+| `cadastral-document/DocumentToolbar.tsx` | Barre d'actions (Catalogue, PDF, Imprimer) |
+| `cadastral-document/DocumentFooter.tsx` | Disclaimer + code de vérification |
+| `cadastral-document/sections/IdentificationSection.tsx` | Parcelle + titre + construction |
+| `cadastral-document/sections/OwnerSection.tsx` | Propriétaire actuel |
+| `cadastral-document/sections/LocationSection.tsx` | Localisation + carte + bornage |
+| `cadastral-document/sections/HistorySection.tsx` | Historique de propriété |
+| `cadastral-document/sections/ObligationsSection.tsx` | Taxes + hypothèques |
+| `cadastral-document/sections/DisputesSection.tsx` | Litiges fonciers |
+| `cadastral-document/sections/LegalSection.tsx` | Vérification juridique |
+| `cadastral-document/primitives.tsx` | `SectionCard`, `DataField`, `DocTable`, `LockedSection`, `StatusAlert` |
 
-Modifier `generateCadastralReport` et `generateInvoicePDF` pour :
-- Générer un `verification_code` lisible (ex: `BIC-2026-XXXX`)
-- Insérer une ligne dans `document_verifications` avant de générer le PDF
-- Utiliser le code persisté dans le QR code : `https://{origin}/verify/{code}`
+### Composants primitifs réutilisables
 
-### 4. Admin : liste des documents vérifiables
+- **`SectionCard`** : wrapper avec bordure gauche accent, numéro, icône, titre — remplace `SectionTitle` + table brut
+- **`DataField`** : remplace `DataRow` — affichage label/valeur en grille CSS responsive (2 colonnes desktop, 1 mobile) au lieu de `<table>`
+- **`DocTable`** : wrapper table avec styles Tailwind intégrés (alternance, hover, responsive)
+- **`LockedSection`** : placeholder amélioré avec bouton "Débloquer" qui callback vers le catalogue
+- **`StatusAlert`** : alerte verte (aucun litige/hypothèque) ou orange (alerte active)
 
-Ajouter dans l'espace admin une section pour consulter et invalider des documents.
+### Calcul des sections
+
+Remplacer le compteur mutable `let sectionNumber = 0` par un tableau déclaratif de sections visibles :
+
+```typescript
+const visibleSections = [
+  hasParcelData && 'identification',
+  hasParcelData && 'owner',
+  hasParcelData && hasConstruction && 'construction',
+  // ...
+].filter(Boolean);
+
+// Chaque section reçoit son index via props
+<IdentificationSection number={visibleSections.indexOf('identification') + 1} />
+```
 
 ## Fichiers impactés
 
-| Fichier | Action |
+| Action | Fichier |
 |---|---|
-| Migration SQL | Créer table `document_verifications` + enum + RLS |
-| `src/lib/pdf.ts` | Persister le code avant génération, mettre à jour les URLs QR |
-| `src/pages/VerifyDocument.tsx` | Nouvelle page publique de vérification |
-| `src/App.tsx` | Ajouter route `/verify/:code` (publique) |
-| `src/components/admin/AdminDocumentVerifications.tsx` | Panel admin pour consulter/invalider |
+| **Supprimer** | `src/components/cadastral/CadastralDocumentView.tsx` (ancien monolithe) |
+| **Créer** | `src/components/cadastral/cadastral-document/` (12 fichiers ci-dessus) |
+| **Modifier** | `src/components/cadastral/CadastralResultCard.tsx` (import path) |
+
+L'ancien `CadastralDocumentView.tsx` est remplacé par un réexport depuis le nouveau dossier pour ne casser aucun import externe.
 
