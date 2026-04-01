@@ -1,35 +1,26 @@
 
 
-# Fix : Erreur de validation latitude négative sur toggle légende
+# Fix : Crash sur "Légende Carte" — `Cannot read properties of null (reading 'key')`
 
 ## Problème
 
-`validateNumericRange` (ligne 20 de `useConfigValidation.tsx`) contient un check générique `if (value < 0)` qui rejette toute valeur négative **avant** de vérifier les bornes min/max. La latitude par défaut étant `-4.0383`, elle déclenche systématiquement l'erreur "Latitude ne peut pas être négatif" — même si la plage valide est [-90, 90].
+Dans `AdminContributionConfig.tsx` (ligne 1430), le `.map()` itère sur `mapPreviewSettings.legend?.items` qui peut contenir des entrées `null` ou `undefined`. Quand on accède à `item.key`, ça crash.
 
-Ce check est redondant quand `min` est défini (le check `value < min` suffit), et incorrect pour les champs qui acceptent des valeurs négatives (latitude, longitude).
+De plus, dans le `onCheckedChange` (ligne 1437), `items[index]` utilise l'index du tableau affiché (qui inclut les valeurs par défaut), mais copie uniquement `legend.items` (qui peut être vide ou plus court). Cela crée un décalage d'index et des valeurs `undefined`.
 
 ## Solution
 
-Supprimer le check `if (value < 0)` générique dans `validateNumericRange`. Les validations `min`/`max` couvrent déjà tous les cas nécessaires.
+1. **Filtrer les items null** dans le `.map()` : ajouter `.filter(Boolean)` avant `.map()`
+2. **Fusionner les items sauvegardés avec les defaults** au lieu de fallback complet — pour que les index correspondent toujours
+3. **Protéger le `onCheckedChange`** avec une vérification que `items[index]` existe
 
 ## Modification
 
-### `src/hooks/useConfigValidation.tsx` — lignes 20-26
+### `src/components/admin/AdminContributionConfig.tsx`
 
-Supprimer le bloc :
-```ts
-if (value < 0) {
-  validationErrors.push({
-    field,
-    message: `${field} ne peut pas être négatif`,
-    severity: 'error'
-  });
-}
-```
-
-Les champs qui ne doivent pas être négatifs ont déjà `min: 0` passé explicitement (surface, valeur de base, etc.), donc aucune régression.
+**Ligne 1423-1443** : Remplacer la logique de fallback par une fusion correcte des items par défaut avec les items sauvegardés (merge par `key`), et ajouter `.filter(Boolean)` avant `.map()`. Dans le handler `onCheckedChange`, construire le tableau `items` à partir de la même source fusionnée pour éviter le décalage d'index.
 
 | Fichier | Modification |
 |---|---|
-| `src/hooks/useConfigValidation.tsx` | Supprimer le check générique `value < 0` (lignes 20-26) |
+| `src/components/admin/AdminContributionConfig.tsx` | Fusionner defaults + items sauvegardés par `key`, filtrer null, protéger handler |
 
