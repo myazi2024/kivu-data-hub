@@ -1,32 +1,27 @@
 
 
-# Suppression section juridique + correction disclaimer
+# Fix : Dialogues des services cachés derrière l'overlay
 
-## 1. Supprimer la section "Vérification juridique"
+## Problème identifié
 
-**`CadastralDocumentView.tsx`** :
-- Retirer l'import de `LegalSection`
-- Retirer `'legal'` du type `SectionKey` et du tableau `visibleSections`
-- Retirer `hasLegalVerification` et le bloc JSX de la section Legal (lignes 140-147)
-- Retirer `ShieldCheck` des imports lucide (déjà utilisé dans le footer, pas ici)
-- Retirer `legal_verification` de la destructuration de `result`
+Le `DialogOverlay` (fond noir semi-transparent) est à `z-[1600]`. Les dialogues des services dans le menu Actions utilisent `z-[1200]` sur leur `DialogContent`, ce qui place le contenu du formulaire **derrière** l'overlay. Résultat : l'utilisateur voit un écran sombre sans pouvoir interagir avec le formulaire.
 
-**Fichier `sections/LegalSection.tsx`** : conservé mais plus utilisé par la fiche (peut servir ailleurs).
+## Cause
 
-## 2. Corriger l'avis de non-responsabilité
+L'overlay et le contenu par défaut du composant `DialogContent` sont tous les deux à `z-[1600]`. Or, 6 dialogues de services écrasent cette valeur avec `z-[1200]`, les faisant passer sous l'overlay.
 
-**`DocumentFooter.tsx`** — Le texte actuel dit que les données viennent "des archives du Ministère des Affaires Foncières", ce qui est incorrect. Selon l'Article 6 des CGU (Legal.tsx), les données proviennent de **sources officielles et de contributions communautaires vérifiées**.
+## Correction
 
-Nouveau texte aligné sur les CGU :
+Retirer `z-[1200]` de la className de `DialogContent` dans les 6 fichiers suivants pour qu'ils héritent du `z-[1600]` par défaut :
 
-> **Avis de non-responsabilité :** Les informations contenues dans ce document proviennent de sources officielles (services cadastraux, conservation des titres immobiliers) et de contributions communautaires vérifiées. Le Bureau d'Informations Cadastrales (BIC) ne saurait garantir l'exhaustivité, l'exactitude absolue ou l'actualité permanente de l'ensemble des données. BIC agit de bonne foi dans son travail de compilation et de présentation de ces informations.
-
-> En cas de divergence avec la situation réelle, veuillez vous rapprocher du service des Affaires Foncières compétent pour solliciter une mise à jour des informations relatives à la parcelle {parcelNumber}.
-
-## Fichiers impactés
-
-| Fichier | Modification |
+| Fichier | Ligne concernée |
 |---|---|
-| `CadastralDocumentView.tsx` | Retirer section Legal (import, type, logique, JSX) |
-| `DocumentFooter.tsx` | Réécrire le disclaimer pour aligner sur les CGU |
+| `MortgageManagementDialog.tsx` | `z-[1200]` → supprimé |
+| `LandDisputeManagementDialog.tsx` | `z-[1200]` → supprimé |
+| `BuildingPermitRequestDialog.tsx` | `z-[1200]` → supprimé |
+| `RealEstateExpertiseRequestDialog.tsx` | `z-[1200]` sur DialogContent + 8 SelectContent → supprimé |
+| `MutationRequestDialog.tsx` | `z-[1200]` → supprimé |
+| `TaxManagementDialog.tsx` | `z-[1200]` → supprimé |
+
+Aucun changement structurel — suppression d'une classe CSS redondante uniquement.
 
