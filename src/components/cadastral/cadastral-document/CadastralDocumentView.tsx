@@ -31,7 +31,7 @@ type SectionKey = 'identification' | 'owner' | 'construction' | 'location' | 'hi
 const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
   result, paidServices, catalogServices, onDownloadReport, onBackToCatalog,
 }) => {
-  const { parcel, ownership_history, tax_history, mortgage_history, boundary_history, building_permits, land_disputes, legal_verification } = result;
+  const { parcel, ownership_history, tax_history, mortgage_history, boundary_history, building_permits, land_disputes } = result;
 
   const [verificationCode, setVerificationCode] = useState<string | null>(null);
   const [verifyUrl, setVerifyUrl] = useState<string | null>(null);
