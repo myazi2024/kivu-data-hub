@@ -68,6 +68,7 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
   const hasParcelData = !!parcel.current_owner_name; // full parcel has owner; minimal doesn't
   const hasHistoryData = ownership_history.length > 0;
   const hasObligationsData = tax_history.length > 0 || mortgage_history.length > 0;
+  const hasDisputesAccess = paidServices.includes('disputes') || (Array.isArray(land_disputes) && land_disputes.length > 0);
   const hasDisputesData = Array.isArray(land_disputes) && land_disputes.length > 0;
   const hasLegalVerification = legal_verification !== null && legal_verification !== undefined;
 
