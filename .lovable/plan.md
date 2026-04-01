@@ -1,36 +1,35 @@
 
 
-# Rendre la configuration de la Légende trouvable dans l'admin
+# Fix : Erreur de validation latitude négative sur toggle légende
 
 ## Problème
 
-La configuration de la légende de la carte cadastrale est cachée à l'intérieur de "Config Contributions" (onglet Carte), ce qui la rend introuvable via la sidebar ou une recherche intuitive.
+`validateNumericRange` (ligne 20 de `useConfigValidation.tsx`) contient un check générique `if (value < 0)` qui rejette toute valeur négative **avant** de vérifier les bornes min/max. La latitude par défaut étant `-4.0383`, elle déclenche systématiquement l'erreur "Latitude ne peut pas être négatif" — même si la plage valide est [-90, 90].
+
+Ce check est redondant quand `min` est défini (le check `value < min` suffit), et incorrect pour les champs qui acceptent des valeurs négatives (latitude, longitude).
 
 ## Solution
 
-Ajouter une entrée dédiée dans la sidebar admin sous la catégorie "Cadastre & Services" qui pointe directement vers la section légende.
+Supprimer le check `if (value < 0)` générique dans `validateNumericRange`. Les validations `min`/`max` couvrent déjà tous les cas nécessaires.
 
-## Modifications
+## Modification
 
-### `src/components/admin/AdminSidebar.tsx`
+### `src/hooks/useConfigValidation.tsx` — lignes 20-26
 
-Ajouter une entrée dans la catégorie "Cadastre & Services" :
+Supprimer le bloc :
+```ts
+if (value < 0) {
+  validationErrors.push({
+    field,
+    message: `${field} ne peut pas être négatif`,
+    severity: 'error'
+  });
+}
 ```
-{ icon: LayoutList, label: 'Légende Carte', value: 'map-legend', badge: null }
-```
 
-### `src/pages/Admin.tsx`
-
-Ajouter un case `'map-legend'` qui rend `AdminContributionConfig` avec une prop ou qui redirige directement vers l'onglet Carte avec la section Légende pré-ouverte. L'approche la plus simple : faire pointer `map-legend` vers le même composant `AdminContributionConfig` en passant un prop `initialTab="carte"` et un scroll automatique vers la section Légende.
-
-### `src/components/admin/AdminContributionConfig.tsx`
-
-- Accepter une prop optionnelle `initialTab?: string` pour ouvrir directement sur l'onglet Carte
-- Ajouter un `id="legend-section"` sur le div de la section Légende pour permettre un scroll automatique via `scrollIntoView` au montage quand on arrive depuis `map-legend`
+Les champs qui ne doivent pas être négatifs ont déjà `min: 0` passé explicitement (surface, valeur de base, etc.), donc aucune régression.
 
 | Fichier | Modification |
 |---|---|
-| `src/components/admin/AdminSidebar.tsx` | Ajouter entrée "Légende Carte" |
-| `src/pages/Admin.tsx` | Ajouter case `map-legend` → AdminContributionConfig avec initialTab |
-| `src/components/admin/AdminContributionConfig.tsx` | Accepter `initialTab`, ajouter `id` sur section légende, scroll auto |
+| `src/hooks/useConfigValidation.tsx` | Supprimer le check générique `value < 0` (lignes 20-26) |
 
