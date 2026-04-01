@@ -1435,31 +1435,31 @@ const CadastralMap = () => {
         {/* Légende - Desktop: top-right below nav, Mobile: bottom-left toggle */}
         {/* Desktop legend */}
         <div className="absolute top-16 right-3 z-[800] hidden md:block">
-          <div className="bg-background/95 backdrop-blur-md rounded-xl shadow-lg border border-border/50 p-3">
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">Légende</p>
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2 text-xs">
-                <div className="w-3.5 h-3.5 bg-red-500/20 border-2 border-red-500 rounded" />
+          <div className="bg-background/95 backdrop-blur-md rounded-lg shadow-lg border border-border/50 p-1.5">
+            <p className="text-[7px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Légende</p>
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-1 text-[7px]">
+                <div className="w-2 h-2 bg-red-500/20 border border-red-500 rounded-sm" />
                 <span className="text-muted-foreground">Parcelle avec bornage GPS</span>
               </div>
-              <div className="flex items-center gap-2 text-xs">
-                <MapPin className="h-3.5 w-3.5 text-blue-500" />
+              <div className="flex items-center gap-1 text-[7px]">
+                <MapPin className="h-2 w-2 text-blue-500" />
                 <span className="text-muted-foreground">Parcelle sans bornage</span>
               </div>
-              <div className="flex items-center gap-2 text-xs">
-                <div className="w-3.5 h-0.5 bg-red-500" />
+              <div className="flex items-center gap-1 text-[7px]">
+                <div className="w-2 h-px bg-red-500" />
                 <span className="text-muted-foreground">Limites parcellaires</span>
               </div>
-              <div className="flex items-center gap-2 text-xs">
-                <div className="px-1 py-0.5 text-[8px] font-bold text-red-500 border border-red-500 rounded bg-white leading-none">12m</div>
+              <div className="flex items-center gap-1 text-[7px]">
+                <div className="px-0.5 text-[5px] font-bold text-red-500 border border-red-500 rounded bg-white leading-none">12m</div>
                 <span className="text-muted-foreground">Dimensions côtés</span>
               </div>
-              <div className="flex items-center gap-2 text-xs">
-                <AlertTriangle className="h-3.5 w-3.5 text-orange-500" />
+              <div className="flex items-center gap-1 text-[7px]">
+                <AlertTriangle className="h-2 w-2 text-orange-500" />
                 <span className="text-muted-foreground">Données incomplètes</span>
               </div>
-              <div className="flex items-center gap-2 text-xs">
-                <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />
+              <div className="flex items-center gap-1 text-[7px]">
+                <Star className="h-2 w-2 text-yellow-500 fill-yellow-500" />
                 <span className="text-muted-foreground">Parcelle favorite</span>
               </div>
             </div>
