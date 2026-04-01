@@ -30,7 +30,7 @@ const AboutCCC = () => {
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="mb-6">
         <Link to="/" className="text-sm text-muted-foreground hover:text-primary">
-          ← Retour au catalogue
+          ← Retour à l'accueil
         </Link>
       </div>
 
