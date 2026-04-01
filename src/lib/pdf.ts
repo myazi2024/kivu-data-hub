@@ -153,11 +153,32 @@ function generateMiniInvoicePDF(
 /**
  * Génère un justificatif de paiement A4 complet
  */
-function generateA4InvoicePDF(
+async function generateA4InvoicePDF(
   invoice: CadastralInvoice,
   servicesCatalog: CadastralService[],
   filename?: string
 ) {
+  // Persist verification
+  let verifyUrl = '';
+  try {
+    const verification = await createDocumentVerification({
+      documentType: 'invoice',
+      parcelNumber: invoice.parcel_number,
+      clientName: invoice.client_name || null,
+      clientEmail: invoice.client_email,
+      metadata: {
+        invoiceNumber: invoice.invoice_number,
+        totalAmount: invoice.total_amount_usd,
+        status: invoice.status,
+      },
+    });
+    if (verification) {
+      verifyUrl = verification.verifyUrl;
+    }
+  } catch (e) {
+    console.error('Failed to persist invoice verification:', e);
+  }
+
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 20;
