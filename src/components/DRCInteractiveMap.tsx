@@ -282,7 +282,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                       <MapPin className="h-3 w-3 text-primary" />
                       <span>{selectedProvince ? selectedProvince.name : 'République Démocratique du Congo'}</span>
                     </h2>
-                    <p className="text-[7px] text-muted-foreground leading-tight">
+                    <p className="text-[10px] text-muted-foreground leading-tight">
                       {selectedProvince
                         ? `Données foncières cadastrales de ${selectedProvince.name} — Total : ${formatNumber(selectedProvince.parcelsCount)} parcelles enregistrées`
                         : `${getChartConfig('map-header-note')?.custom_title || 'Répartition géographique des données foncières cadastrales'} — Total : ${formatNumber(totalParcels)} parcelles enregistrées`
