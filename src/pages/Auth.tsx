@@ -22,6 +22,7 @@ const Auth = () => {
   const [organization, setOrganization] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [showPhoneAuth, setShowPhoneAuth] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
