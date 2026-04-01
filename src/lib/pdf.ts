@@ -422,7 +422,7 @@ export async function generateCadastralReport(
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
     doc.text(`Rapport N° ${reportId} - Généré le ${reportDate.toLocaleDateString('fr-FR')}`, margin, footerY + 4);
-    doc.text("Vérifiez ce rapport sur bic.cd/verify", margin, footerY + 8);
+    doc.text("Scannez le QR code pour vérifier ce document", margin, footerY + 8);
     
     // QR Code compact
     if (qrCodeDataUrl) {
