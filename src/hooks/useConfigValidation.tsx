@@ -17,13 +17,6 @@ export const useConfigValidation = () => {
   ): ValidationError[] => {
     const validationErrors: ValidationError[] = [];
 
-    if (value < 0) {
-      validationErrors.push({
-        field,
-        message: `${field} ne peut pas être négatif`,
-        severity: 'error'
-      });
-    }
 
     if (min !== undefined && value < min) {
       validationErrors.push({
