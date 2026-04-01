@@ -75,7 +75,11 @@ const App = () => (
                   <Route path="/" element={<Index />} />
                   <Route path="/publications" element={<Publications />} />
                   <Route path="/map" element={<Map />} />
-                  <Route path="/cadastral-map" element={<CadastralMap />} />
+                  <Route path="/cadastral-map" element={
+                    <ProtectedRoute>
+                      <CadastralMap />
+                    </ProtectedRoute>
+                  } />
                   <Route path="/admin" element={
                     <ProtectedRoute requiredRoles={['admin', 'super_admin']}>
                       <Admin />
@@ -108,7 +112,11 @@ const App = () => (
 
                   {/* Test environment mirror routes */}
                   <Route path="/test/map" element={<Map />} />
-                  <Route path="/test/cadastral-map" element={<CadastralMap />} />
+                  <Route path="/test/cadastral-map" element={
+                    <ProtectedRoute>
+                      <CadastralMap />
+                    </ProtectedRoute>
+                  } />
                   <Route path="/test/mon-compte" element={
                     <ProtectedRoute>
                       <UserDashboard />

@@ -68,6 +68,7 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
   const hasParcelData = !!parcel.current_owner_name; // full parcel has owner; minimal doesn't
   const hasHistoryData = ownership_history.length > 0;
   const hasObligationsData = tax_history.length > 0 || mortgage_history.length > 0;
+  const hasDisputesAccess = paidServices.includes('disputes') || (Array.isArray(land_disputes) && land_disputes.length > 0);
   const hasDisputesData = Array.isArray(land_disputes) && land_disputes.length > 0;
   const hasLegalVerification = legal_verification !== null && legal_verification !== undefined;
 
@@ -285,19 +286,21 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
                 </tbody>
               </table>
 
-              {/* Croquis */}
-              <div className="mt-4 print:break-before-page">
-                <h4 className="text-sm font-semibold text-primary mb-2 flex items-center gap-1.5">
-                  <Map className="h-4 w-4" /> Croquis du terrain
-                </h4>
-                <div className="relative z-0 rounded-lg overflow-hidden border border-border/50">
-                  <CadastralMap
-                    coordinates={Array.isArray(parcel.gps_coordinates) ? parcel.gps_coordinates as Array<{ lat: number; lng: number; borne: string }> : []}
-                    center={{ lat: parcel.latitude, lng: parcel.longitude }}
-                    parcelNumber={parcel.parcel_number}
-                  />
+              {/* Croquis — rendu uniquement si des coordonnées existent */}
+              {((parcel.latitude && parcel.longitude) || (Array.isArray(parcel.gps_coordinates) && (parcel.gps_coordinates as any[]).length > 0)) && (
+                <div className="mt-4 print:break-before-page">
+                  <h4 className="text-sm font-semibold text-primary mb-2 flex items-center gap-1.5">
+                    <Map className="h-4 w-4" /> Croquis du terrain
+                  </h4>
+                  <div className="relative z-0 rounded-lg overflow-hidden border border-border/50">
+                    <CadastralMap
+                      coordinates={Array.isArray(parcel.gps_coordinates) ? parcel.gps_coordinates as Array<{ lat: number; lng: number; borne: string }> : []}
+                      center={{ lat: parcel.latitude, lng: parcel.longitude }}
+                      parcelNumber={parcel.parcel_number}
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Bornage */}
               {boundary_history.length > 0 && (
@@ -488,7 +491,7 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
           )}
 
           {/* ===================== LITIGES ===================== */}
-          {hasDisputesData ? (
+          {hasDisputesAccess ? (
             <>
               <SectionTitle number={++sectionNumber} icon={<Scale className="h-4 w-4" />} title="Litiges fonciers" />
               {land_disputes.length === 0 ? (
