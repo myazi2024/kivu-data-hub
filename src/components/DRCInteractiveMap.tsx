@@ -447,7 +447,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1">
                           {isChartVisible('detail-mutations') && (
                             <Card className="p-1 border-border/30">
-                              <div className="text-[9px] text-muted-foreground truncate">{dt('detail-mutations', 'Mutations')}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-mutations', 'Mutations')}</div>
                               <div className="text-[11px] font-bold text-violet-600">{formatNumber(selectedProvince.mutationsCount)}</div>
                             </Card>
                           )}
