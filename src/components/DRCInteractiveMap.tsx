@@ -481,7 +481,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                         <div className="grid grid-cols-3 gap-1">
                           {isChartVisible('detail-revenue') && (
                             <Card className="p-1 border-border/30">
-                              <div className="text-[9px] text-muted-foreground truncate">{dt('detail-revenue', 'Revenus')}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-revenue', 'Revenus')}</div>
                               <div className="text-[11px] font-bold text-primary">{formatCurrency(selectedProvince.revenueUsd)}</div>
                             </Card>
                           )}
