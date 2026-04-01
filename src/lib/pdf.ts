@@ -759,7 +759,7 @@ export async function generateCadastralReport(
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(7);
   doc.setTextColor(100, 100, 100);
-  doc.text("Ce document a été généré par BIC. Vérifiez son authenticité sur bic.cd/verify-report", margin, currentY, { maxWidth: pageWidth - 2 * margin });
+  doc.text("Ce document a été généré par BIC. Scannez le QR code pour vérifier son authenticité.", margin, currentY, { maxWidth: pageWidth - 2 * margin });
   
   // Note sur les données
   currentY += 6;
