@@ -25,7 +25,7 @@ const HeroSection = () => {
         {/* Main Heading */}
         <div className="mb-8 sm:mb-10">
           <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 sm:mb-3 leading-tight">
-            Accédez aux informations de n'importe quelle propriété en RDC, sans quitter votre canapé.
+            Consultez les informations cadastrales des parcelles depuis chez vous.
           </h1>
           
           <TypewriterAnimation />
