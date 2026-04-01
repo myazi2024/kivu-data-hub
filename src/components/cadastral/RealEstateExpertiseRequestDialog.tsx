@@ -1433,7 +1433,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                       <SelectTrigger className="h-9 text-sm rounded-xl border-2">
                         <SelectValue placeholder="Sélectionner..." />
                       </SelectTrigger>
-                      <SelectContent className="z-[1200] max-h-[200px]">
+                      <SelectContent className="max-h-[200px]">
                         {YEAR_OPTIONS.map(opt => (
                           <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                         ))}
@@ -3497,7 +3497,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) { handleClose(); } else { onOpenChange(true); } }}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className="max-w-[95vw] sm:max-w-[420px] max-h-[90vh] p-4 rounded-2xl z-[1200]">
+      <DialogContent className="max-w-[95vw] sm:max-w-[420px] max-h-[90vh] p-4 rounded-2xl">
         <DialogHeader className="pb-2">
           <DialogTitle className="text-base flex items-center gap-2">
             <FileSearch className="h-5 w-5 text-primary" />
