@@ -55,7 +55,7 @@ const HeroSection = () => {
               className="w-full bg-primary-foreground/10 backdrop-blur-sm border-2 border-primary-foreground/30 text-primary-foreground hover:bg-background hover:text-primary hover:scale-[1.02] font-semibold px-6 sm:px-8 py-6 sm:py-7 text-base sm:text-lg transition-all duration-300 rounded-xl shadow-lg"
             >
               <BarChart3 className="mr-3 h-5 w-5 sm:h-6 sm:w-6" />
-              <span>Nos Publications</span>
+              <span>Media</span>
             </Button>
           </Link>
           
