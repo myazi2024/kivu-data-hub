@@ -33,6 +33,23 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
 }) => {
   const { parcel, ownership_history, tax_history, mortgage_history, boundary_history, building_permits, land_disputes, legal_verification } = result;
 
+  const [verificationCode, setVerificationCode] = useState<string | null>(null);
+  const [verifyUrl, setVerifyUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    createDocumentVerification({
+      documentType: 'report',
+      parcelNumber: parcel.parcel_number,
+    }).then((result) => {
+      if (!cancelled && result) {
+        setVerificationCode(result.verificationCode);
+        setVerifyUrl(result.verifyUrl);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [parcel.parcel_number]);
+
   const hasParcelData = !!parcel.current_owner_name;
   const hasConstruction = !!(parcel.construction_type || parcel.construction_nature || parcel.construction_materials || parcel.construction_year) || building_permits.length > 0;
   const hasHistoryData = ownership_history.length > 0;
