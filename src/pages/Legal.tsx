@@ -99,6 +99,9 @@ const Legal = () => {
                   <p><strong className="text-foreground">Email :</strong> contact@bic.cd</p>
                   <p><strong className="text-foreground">Téléphone :</strong> +243 816 996 077</p>
                   <p><strong className="text-foreground">Directeur de publication :</strong> Direction Générale du BIC</p>
+                  <p><strong className="text-foreground">RCCM :</strong> CD/GOM/RCCM/25-XXXXX <span className="text-xs italic">(en cours d'enregistrement)</span></p>
+                  <p><strong className="text-foreground">IDNAT :</strong> En cours d'obtention</p>
+                  <p><strong className="text-foreground">NIF :</strong> En cours d'obtention</p>
                 </div>
 
                 <Separator />
