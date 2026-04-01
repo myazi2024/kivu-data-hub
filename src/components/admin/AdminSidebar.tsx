@@ -31,10 +31,17 @@ import {
   Key,
   Scale,
   Award,
-  Handshake
+  Handshake,
+  ChevronDown
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import { useState } from 'react';
 
 interface AdminSidebarProps {
   pendingCount?: number;
@@ -117,7 +124,6 @@ export const menuItems = [
       { icon: DollarSign, label: 'Config Frais Lotissement', value: 'subdivision-fees-config', badge: null },
       { icon: FileCheck, label: 'Expertises foncières', value: 'expertise-requests', badge: 'expertise' },
       { icon: DollarSign, label: 'Config Frais Expert.', value: 'expertise-fees-config', badge: null },
-      
       { icon: Scale, label: 'Litiges Fonciers', value: 'land-disputes', badge: 'disputes' },
       { icon: BarChart, label: 'Analytics Litiges', value: 'dispute-analytics', badge: null },
       { icon: Database, label: 'Hypothèques', value: 'mortgages', badge: 'mortgages' },
@@ -158,6 +164,24 @@ export function AdminSidebar({ pendingCount, pendingLandTitleCount, pendingPermi
   const location = useLocation();
   const currentTab = new URLSearchParams(location.search).get('tab') || 'dashboard';
 
+  // Determine which categories should be open (active tab's category + default first two)
+  const activeCategoryIndex = menuItems.findIndex(section =>
+    section.items.some(item => item.value === currentTab)
+  );
+
+  const [openSections, setOpenSections] = useState<Record<number, boolean>>(() => {
+    const initial: Record<number, boolean> = {};
+    menuItems.forEach((_, idx) => {
+      // Open first category + the one containing active tab
+      initial[idx] = idx === 0 || idx === activeCategoryIndex;
+    });
+    return initial;
+  });
+
+  const toggleSection = (idx: number) => {
+    setOpenSections(prev => ({ ...prev, [idx]: !prev[idx] }));
+  };
+
   const handleClick = () => {
     if (onNavigate) onNavigate();
   };
@@ -177,51 +201,72 @@ export function AdminSidebar({ pendingCount, pendingLandTitleCount, pendingPermi
     }
   };
 
+  const getSectionBadgeTotal = (section: typeof menuItems[0]) => {
+    return section.items.reduce((total, item) => total + getBadgeCount(item.badge), 0);
+  };
+
   return (
     <ScrollArea className="h-full py-2 md:py-4">
-      <div className="space-y-4 md:space-y-6 px-2 md:px-3">
-        {menuItems.map((section) => (
-          <div key={section.category}>
-            <h3 className="mb-1.5 md:mb-2 px-2 md:px-3 text-[10px] md:text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              {section.category}
-            </h3>
-            <div className="space-y-0.5 md:space-y-1">
-              {section.items.map((item) => {
-                const isActive = currentTab === item.value;
-                const Icon = item.icon;
-                const badgeCount = getBadgeCount(item.badge);
-                const showPendingBadge = badgeCount > 0;
+      <div className="space-y-1 md:space-y-1.5 px-2 md:px-3">
+        {menuItems.map((section, sectionIdx) => {
+          const isOpen = openSections[sectionIdx] ?? false;
+          const sectionBadgeTotal = getSectionBadgeTotal(section);
 
-                return (
-                  <Link
-                    key={item.value}
-                    to={`/admin?tab=${item.value}`}
-                    onClick={handleClick}
-                    className={cn(
-                      'flex items-center gap-2 md:gap-3 rounded-lg px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm transition-all hover:bg-accent',
-                      isActive
-                        ? 'bg-accent text-accent-foreground font-medium'
-                        : 'text-muted-foreground hover:text-foreground'
-                    )}
-                  >
-                    <Icon className="h-3.5 w-3.5 md:h-4 md:w-4 shrink-0" />
-                    <span className="flex-1 truncate">{item.label}</span>
-                    {showPendingBadge && (
-                      <Badge variant="destructive" className="ml-auto text-[10px] md:text-xs px-1 md:px-1.5 py-0 md:py-0.5 h-4 md:h-5">
-                        {badgeCount}
-                      </Badge>
-                    )}
-                    {item.badge === 'new' && (
-                      <Badge variant="secondary" className="text-[10px] md:text-xs px-1 md:px-2 py-0 md:py-0.5 h-4 md:h-5">
-                        New
-                      </Badge>
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        ))}
+          return (
+            <Collapsible
+              key={section.category}
+              open={isOpen}
+              onOpenChange={() => toggleSection(sectionIdx)}
+            >
+              <CollapsibleTrigger className="flex items-center justify-between w-full px-2 md:px-3 py-1.5 md:py-2 rounded-md hover:bg-accent/50 transition-colors group">
+                <span className="text-[10px] md:text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  {section.category}
+                </span>
+                <div className="flex items-center gap-1">
+                  {!isOpen && sectionBadgeTotal > 0 && (
+                    <Badge variant="destructive" className="text-[9px] md:text-[10px] px-1 py-0 h-4">
+                      {sectionBadgeTotal}
+                    </Badge>
+                  )}
+                  <ChevronDown className={cn(
+                    "h-3 w-3 text-muted-foreground transition-transform duration-200",
+                    isOpen && "rotate-180"
+                  )} />
+                </div>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-0.5 md:space-y-1 mt-0.5">
+                {section.items.map((item) => {
+                  const isActive = currentTab === item.value;
+                  const Icon = item.icon;
+                  const badgeCount = getBadgeCount(item.badge);
+                  const showPendingBadge = badgeCount > 0;
+
+                  return (
+                    <Link
+                      key={item.value}
+                      to={`/admin?tab=${item.value}`}
+                      onClick={handleClick}
+                      className={cn(
+                        'flex items-center gap-2 md:gap-3 rounded-lg px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm transition-all hover:bg-accent',
+                        isActive
+                          ? 'bg-accent text-accent-foreground font-medium'
+                          : 'text-muted-foreground hover:text-foreground'
+                      )}
+                    >
+                      <Icon className="h-3.5 w-3.5 md:h-4 md:w-4 shrink-0" />
+                      <span className="flex-1 truncate">{item.label}</span>
+                      {showPendingBadge && (
+                        <Badge variant="destructive" className="ml-auto text-[10px] md:text-xs px-1 md:px-1.5 py-0 md:py-0.5 h-4 md:h-5">
+                          {badgeCount}
+                        </Badge>
+                      )}
+                    </Link>
+                  );
+                })}
+              </CollapsibleContent>
+            </Collapsible>
+          );
+        })}
       </div>
     </ScrollArea>
   );
