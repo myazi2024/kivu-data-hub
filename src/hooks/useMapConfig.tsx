@@ -29,6 +29,15 @@ export interface MapConfig {
   enableConflictDetection?: boolean;
   enableRoadBorderingFeature?: boolean;
   roadTypes?: Array<{ value: string; label: string }>;
+  legend?: {
+    enabled: boolean;
+    items: Array<{
+      key: string;
+      label: string;
+      mobileLabel: string;
+      enabled: boolean;
+    }>;
+  };
 }
 
 // Configuration par défaut de secours (garantit toujours des valeurs valides)
