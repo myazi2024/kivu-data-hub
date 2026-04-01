@@ -54,7 +54,7 @@ export type InvoiceFormat = 'mini' | 'a4';
 /**
  * Génère un PDF de justificatif de paiement avec format sélectionnable
  */
-export function generateInvoicePDF(
+export async function generateInvoicePDF(
   invoice: CadastralInvoice,
   servicesCatalog: CadastralService[],
   format: InvoiceFormat = 'a4',
