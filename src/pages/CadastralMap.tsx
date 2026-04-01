@@ -1433,73 +1433,75 @@ const CadastralMap = () => {
         )}
 
         {/* Légende - Desktop: top-right below nav, Mobile: bottom-left toggle */}
-        {/* Desktop legend */}
-        <div className="absolute top-16 right-3 z-[800] hidden md:block">
-          <div className="bg-background/95 backdrop-blur-md rounded-lg shadow-lg border border-border/50 p-1.5">
-            <p className="text-[7px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Légende</p>
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-1 text-[7px]">
-                <div className="w-2 h-2 bg-red-500/20 border border-red-500 rounded-sm" />
-                <span className="text-muted-foreground">Parcelle avec bornage GPS</span>
-              </div>
-              <div className="flex items-center gap-1 text-[7px]">
-                <MapPin className="h-2 w-2 text-blue-500" />
-                <span className="text-muted-foreground">Parcelle sans bornage</span>
-              </div>
-              <div className="flex items-center gap-1 text-[7px]">
-                <div className="w-2 h-px bg-red-500" />
-                <span className="text-muted-foreground">Limites parcellaires</span>
-              </div>
-              <div className="flex items-center gap-1 text-[7px]">
-                <div className="px-0.5 text-[5px] font-bold text-red-500 border border-red-500 rounded bg-white leading-none">12m</div>
-                <span className="text-muted-foreground">Dimensions côtés</span>
-              </div>
-              <div className="flex items-center gap-1 text-[7px]">
-                <AlertTriangle className="h-2 w-2 text-orange-500" />
-                <span className="text-muted-foreground">Données incomplètes</span>
-              </div>
-              <div className="flex items-center gap-1 text-[7px]">
-                <Star className="h-2 w-2 text-yellow-500 fill-yellow-500" />
-                <span className="text-muted-foreground">Parcelle favorite</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        {/* Mobile legend toggle */}
-        <div className="absolute bottom-48 left-3 z-[800] md:hidden">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="secondary" size="sm" className="h-7 w-7 rounded-lg shadow-lg p-0">
-                <HelpCircle className="h-3 w-3" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent side="top" align="start" sideOffset={8} className="w-36 rounded-lg p-1.5">
-              <p className="text-[7px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Légende</p>
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-1 text-[7px]">
-                  <div className="w-2 h-2 bg-red-500/20 border border-red-500 rounded-sm shrink-0" />
-                  <span className="text-muted-foreground">Bornage GPS</span>
-                </div>
-                <div className="flex items-center gap-1 text-[7px]">
-                  <MapPin className="h-2 w-2 text-blue-500 shrink-0" />
-                  <span className="text-muted-foreground">Sans bornage</span>
-                </div>
-                <div className="flex items-center gap-1 text-[7px]">
-                  <div className="w-2 h-px bg-red-500 shrink-0" />
-                  <span className="text-muted-foreground">Limites</span>
-                </div>
-                <div className="flex items-center gap-1 text-[7px]">
-                  <div className="px-0.5 text-[5px] font-bold text-red-500 border border-red-500 rounded bg-white leading-none shrink-0">12m</div>
-                  <span className="text-muted-foreground">Dimensions</span>
-                </div>
-                <div className="flex items-center gap-1 text-[7px]">
-                  <AlertTriangle className="h-2 w-2 text-orange-500 shrink-0" />
-                  <span className="text-muted-foreground">Incomplètes</span>
+        {mapConfig?.legend?.enabled !== false && (() => {
+          const legendItems = (mapConfig?.legend?.items || []).filter(item => item.enabled);
+          const legendIconMap: Record<string, { desktop: React.ReactNode; mobile: React.ReactNode }> = {
+            bornage_gps: {
+              desktop: <div className="w-2 h-2 bg-red-500/20 border border-red-500 rounded-sm" />,
+              mobile: <div className="w-2 h-2 bg-red-500/20 border border-red-500 rounded-sm shrink-0" />
+            },
+            sans_bornage: {
+              desktop: <MapPin className="h-2 w-2 text-blue-500" />,
+              mobile: <MapPin className="h-2 w-2 text-blue-500 shrink-0" />
+            },
+            limites: {
+              desktop: <div className="w-2 h-px bg-red-500" />,
+              mobile: <div className="w-2 h-px bg-red-500 shrink-0" />
+            },
+            dimensions: {
+              desktop: <div className="px-0.5 text-[5px] font-bold text-red-500 border border-red-500 rounded bg-white leading-none">12m</div>,
+              mobile: <div className="px-0.5 text-[5px] font-bold text-red-500 border border-red-500 rounded bg-white leading-none shrink-0">12m</div>
+            },
+            incompletes: {
+              desktop: <AlertTriangle className="h-2 w-2 text-orange-500" />,
+              mobile: <AlertTriangle className="h-2 w-2 text-orange-500 shrink-0" />
+            },
+            favorite: {
+              desktop: <Star className="h-2 w-2 text-yellow-500 fill-yellow-500" />,
+              mobile: <Star className="h-2 w-2 text-yellow-500 fill-yellow-500 shrink-0" />
+            }
+          };
+          if (legendItems.length === 0) return null;
+          return (
+            <>
+              {/* Desktop legend */}
+              <div className="absolute top-16 right-3 z-[800] hidden md:block">
+                <div className="bg-background/95 backdrop-blur-md rounded-lg shadow-lg border border-border/50 p-1.5">
+                  <p className="text-[7px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Légende</p>
+                  <div className="space-y-0.5">
+                    {legendItems.map(item => (
+                      <div key={item.key} className="flex items-center gap-1 text-[7px]">
+                        {legendIconMap[item.key]?.desktop}
+                        <span className="text-muted-foreground">{item.label}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </PopoverContent>
-          </Popover>
-        </div>
+              {/* Mobile legend toggle */}
+              <div className="absolute bottom-48 left-3 z-[800] md:hidden">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="secondary" size="sm" className="h-7 w-7 rounded-lg shadow-lg p-0">
+                      <HelpCircle className="h-3 w-3" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent side="top" align="start" sideOffset={8} className="w-36 rounded-lg p-1.5">
+                    <p className="text-[7px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Légende</p>
+                    <div className="space-y-0.5">
+                      {legendItems.map(item => (
+                        <div key={item.key} className="flex items-center gap-1 text-[7px]">
+                          {legendIconMap[item.key]?.mobile}
+                          <span className="text-muted-foreground">{item.mobileLabel}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </>
+          );
+        })()}
       </main>
 
       {/* Dialog d'introduction CCC */}

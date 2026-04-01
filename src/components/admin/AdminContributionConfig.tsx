@@ -1525,7 +1525,18 @@ const AdminContributionConfig = () => {
                         { value: 'ruelle', label: 'Ruelle' },
                         { value: 'chemin', label: 'Chemin' },
                         { value: 'piste', label: 'Piste' },
-                      ]
+                      ],
+                      legend: {
+                        enabled: true,
+                        items: [
+                          { key: 'bornage_gps', label: 'Parcelle avec bornage GPS', mobileLabel: 'Bornage GPS', enabled: true },
+                          { key: 'sans_bornage', label: 'Parcelle sans bornage', mobileLabel: 'Sans bornage', enabled: true },
+                          { key: 'limites', label: 'Limites parcellaires', mobileLabel: 'Limites', enabled: true },
+                          { key: 'dimensions', label: 'Dimensions côtés', mobileLabel: 'Dimensions', enabled: true },
+                          { key: 'incompletes', label: 'Données incomplètes', mobileLabel: 'Incomplètes', enabled: true },
+                          { key: 'favorite', label: 'Parcelle favorite', mobileLabel: 'Favorite', enabled: true },
+                        ]
+                      }
                     };
                     setMapPreviewSettings(defaultSettings);
                     toast({
