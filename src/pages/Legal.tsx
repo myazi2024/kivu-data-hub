@@ -537,6 +537,336 @@ const Legal = () => {
               </CardContent>
             </Card>
 
+            {/* Article 8 — CGV */}
+            <Card id="cgv">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Article 8 — Conditions Générales de Vente (CGV)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">8.1 — Objet et champ d'application</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Les présentes Conditions Générales de Vente (CGV) régissent l'ensemble des transactions 
+                    commerciales effectuées sur la plateforme BIC. Elles s'appliquent à tout achat de services 
+                    numériques cadastraux, incluant mais sans s'y limiter : la recherche cadastrale, la 
+                    génération de certificats, les demandes de titres fonciers, les vérifications d'hypothèques, 
+                    les expertises immobilières et les déclarations fiscales.
+                  </p>
+                  <p className="text-muted-foreground leading-relaxed mt-2">
+                    Toute commande implique l'acceptation sans réserve des présentes CGV. En cas de 
+                    contradiction entre les CGV et les CGU, les CGV prévalent pour les aspects commerciaux.
+                  </p>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">8.2 — Tarification et devises</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Les prix des services sont affichés en <strong>Dollar américain (USD)</strong>, devise de 
+                    référence de la plateforme. L'utilisateur peut également régler en <strong>Franc congolais (CDF)</strong> 
+                    selon le taux de change configuré par l'administration du BIC et affiché au moment de la transaction.
+                  </p>
+                  <p className="text-muted-foreground leading-relaxed mt-2">
+                    Les tarifs sont susceptibles d'être modifiés à tout moment. Le prix applicable est celui 
+                    en vigueur au moment de la validation de la commande. Les prix incluent les frais de 
+                    traitement et de mise à disposition numérique des résultats.
+                  </p>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">8.3 — Moyens de paiement</h3>
+                  <p className="text-muted-foreground leading-relaxed mb-3">
+                    La plateforme accepte les moyens de paiement suivants :
+                  </p>
+                  <ul className="text-muted-foreground space-y-1.5 ml-4">
+                    <li>• <strong>Mobile Money</strong> : Airtel Money, Orange Money, M-Pesa (opérateurs RDC)</li>
+                    <li>• <strong>Carte bancaire</strong> : via les prestataires de paiement intégrés</li>
+                    <li>• <strong>Codes de réduction CCC</strong> : codes obtenus via les contributions citoyennes, utilisables comme monnaie virtuelle sur la plateforme</li>
+                  </ul>
+                  <p className="text-muted-foreground leading-relaxed mt-3">
+                    Le paiement est exigible au moment de la commande. Aucun service payant n'est délivré 
+                    avant confirmation du paiement. La saisie du code PIN Mobile Money est exclusivement 
+                    gérée par l'opérateur télécom via USSD — le BIC ne collecte jamais les codes PIN.
+                  </p>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">8.4 — Politique de non-remboursement</h3>
+                  <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mb-4">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        <strong className="text-foreground">Important :</strong> Tous les services proposés sur 
+                        la plateforme BIC sont des services numériques d'accès à l'information cadastrale. 
+                        <strong> Aucun service n'est remboursable une fois acheté.</strong>
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Cette politique se justifie par le fait que la plateforme met en œuvre des mécanismes 
+                    préventifs empêchant la sélection et l'achat de services dont les informations ne sont 
+                    pas disponibles dans le catalogue. L'utilisateur est informé de la disponibilité des 
+                    données avant tout achat.
+                  </p>
+                  <p className="text-muted-foreground leading-relaxed mt-2">
+                    <strong>Exceptions :</strong> En cas de double paiement avéré (erreur technique) ou de 
+                    non-délivrance totale du service due à une défaillance du BIC, l'utilisateur peut 
+                    adresser une réclamation à <strong>contact@bic.cd</strong> dans un délai de 
+                    <strong> 7 jours ouvrables</strong> suivant la transaction. Le BIC statuera au cas par cas.
+                  </p>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">8.5 — Droit de rétractation</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Conformément à la nature numérique des services proposés et à leur exécution immédiate 
+                    dès la confirmation du paiement, <strong>le droit de rétractation ne s'applique pas</strong> aux 
+                    services du BIC. L'utilisateur reconnaît expressément renoncer à tout droit de 
+                    rétractation dès la validation de sa commande et la mise à disposition immédiate des résultats.
+                  </p>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">8.6 — Facturation et preuves d'achat</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Une facture numérique est générée pour chaque transaction et accessible depuis l'espace 
+                    utilisateur. Chaque facture comporte : le numéro de facture, la date de la transaction, 
+                    le détail des services achetés, le montant en devise de référence (USD), le taux de change 
+                    appliqué le cas échéant, et le mode de paiement utilisé.
+                  </p>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">8.7 — Réclamations commerciales</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Toute réclamation relative à une transaction doit être adressée à <strong>contact@bic.cd</strong> en 
+                    indiquant le numéro de facture, la date de la transaction et la description du problème 
+                    rencontré. Le BIC s'engage à accuser réception dans un délai de <strong>48 heures</strong> et 
+                    à apporter une réponse dans un délai de <strong>15 jours ouvrables</strong>.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Article 9 — Contributions Citoyennes */}
+            <Card id="contributions">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-primary" />
+                  Article 9 — Contributions Citoyennes et Propriété des Données
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">9.1 — Nature des contributions</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Le programme de Contribution Cadastrale Citoyenne (CCC) permet aux utilisateurs de 
+                    soumettre volontairement des informations cadastrales concernant des parcelles situées 
+                    en République Démocratique du Congo. Ces contributions visent à enrichir et à fiabiliser 
+                    la base de données cadastrale du BIC.
+                  </p>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">9.2 — Cession de droits et licence</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    En soumettant une contribution, l'utilisateur accorde au BIC une <strong>licence non-exclusive, 
+                    mondiale, gratuite et perpétuelle</strong> d'utiliser, modifier, traiter, intégrer et diffuser 
+                    les données soumises dans le cadre de ses activités d'information cadastrale. Le contributeur 
+                    conserve un droit moral sur sa contribution mais ne peut en revendiquer l'exploitation exclusive.
+                  </p>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">9.3 — Responsabilité du contributeur</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Le contributeur garantit que les informations soumises sont, à sa connaissance, exactes 
+                    et véridiques. Il s'engage à ne pas soumettre de données intentionnellement fausses, 
+                    frauduleuses ou de nature à porter atteinte aux droits de tiers. En cas de soumission 
+                    de données frauduleuses, le BIC se réserve le droit de suspendre le compte du contributeur, 
+                    d'invalider les codes CCC associés et de poursuivre en justice le cas échéant.
+                  </p>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">9.4 — Codes CCC et monnaie virtuelle</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    En contrepartie d'une contribution validée, le contributeur reçoit un <strong>code CCC</strong> d'une 
+                    valeur de 5 USD. Ce code constitue une <strong>monnaie virtuelle</strong> utilisable exclusivement 
+                    sur la plateforme BIC pour obtenir des réductions sur l'achat de services cadastraux.
+                  </p>
+                  <ul className="text-muted-foreground space-y-1.5 ml-4 mt-3">
+                    <li>• Les codes CCC ne sont <strong>pas échangeables</strong> contre de l'argent réel</li>
+                    <li>• Les codes CCC ne sont <strong>pas transférables</strong> entre comptes utilisateurs</li>
+                    <li>• Les codes CCC ont une <strong>durée de validité limitée</strong> indiquée lors de leur émission</li>
+                    <li>• Le BIC se réserve le droit d'invalider tout code obtenu de manière frauduleuse</li>
+                    <li>• Les codes CCC ne constituent en aucun cas une rémunération au sens du droit du travail</li>
+                  </ul>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">9.5 — Vérification et modération</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Le BIC se réserve le droit de vérifier, valider, modifier ou rejeter toute contribution 
+                    soumise. La validation d'une contribution est soumise à un processus de vérification 
+                    interne. Le BIC n'est pas tenu de justifier le rejet d'une contribution. L'utilisateur 
+                    dispose d'un droit d'appel en cas de rejet, selon la procédure indiquée dans son espace utilisateur.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Article 10 — Conditions par service */}
+            <Card id="services">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Gavel className="h-5 w-5 text-primary" />
+                  Article 10 — Conditions Spécifiques par Service
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">10.1 — Recherche cadastrale</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    La recherche cadastrale donne accès aux informations disponibles dans la base de données 
+                    du BIC à la date de la requête. Le BIC ne garantit pas l'exhaustivité des résultats ni 
+                    leur conformité avec les registres officiels de l'État. Les résultats sont fournis 
+                    à titre informatif uniquement.
+                  </p>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">10.2 — Demandes de titres fonciers</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Le BIC facilite la soumission de demandes de titres fonciers en qualité d'intermédiaire 
+                    technique. La délivrance effective du titre foncier relève de la compétence exclusive 
+                    des autorités congolaises compétentes (Conservation des Titres Immobiliers). Le BIC ne 
+                    garantit ni les délais de traitement ni l'aboutissement favorable de la demande. Les 
+                    frais de service versés au BIC couvrent le traitement administratif numérique et ne 
+                    sont pas remboursables, indépendamment de l'issue de la demande.
+                  </p>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">10.3 — Vérification d'hypothèques et servitudes</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Les informations relatives aux hypothèques et servitudes sont fournies sur la base 
+                    des données collectées par le BIC. Elles ne se substituent pas à un certificat officiel 
+                    délivré par la Conservation des Titres Immobiliers. Le BIC décline toute responsabilité 
+                    en cas d'omission ou d'erreur dans les données d'hypothèques.
+                  </p>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">10.4 — Mutations foncières</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Les informations sur les mutations foncières (transferts de propriété) sont fournies 
+                    à titre historique et informatif. Elles ne constituent pas une preuve juridique de la 
+                    validité d'un transfert de propriété. Toute transaction foncière doit être vérifiée 
+                    auprès des services compétents de l'État.
+                  </p>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">10.5 — Expertise immobilière</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Les certificats d'expertise immobilière délivrés par la plateforme sont établis sur 
+                    la base de modèles statistiques et d'analyses comparatives. Ils constituent une 
+                    estimation indicative et ne remplacent pas une expertise agréée par un professionnel 
+                    assermenté. Le BIC ne saurait être tenu responsable des écarts entre l'estimation 
+                    fournie et la valeur réelle du bien.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Article 11 — Programme Revendeurs */}
+            <Card id="revendeurs">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Scale className="h-5 w-5 text-primary" />
+                  Article 11 — Programme Partenaires Revendeurs
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">11.1 — Conditions d'adhésion</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Le programme Partenaires Revendeurs permet à des personnes physiques ou morales de 
+                    promouvoir les services du BIC auprès de leur réseau et de bénéficier de commissions 
+                    sous forme de codes de réduction. L'adhésion au programme est soumise à l'approbation 
+                    du BIC.
+                  </p>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">11.2 — Obligations du revendeur</h3>
+                  <ul className="text-muted-foreground space-y-1.5 ml-4">
+                    <li>• Promouvoir les services du BIC de manière loyale et conforme à la réglementation en vigueur</li>
+                    <li>• Ne pas diffuser d'informations fausses ou trompeuses sur les services du BIC</li>
+                    <li>• Informer ses clients que les services sont fournis par le BIC et soumis aux présentes CGU et CGV</li>
+                    <li>• Ne pas utiliser les codes de réduction de manière frauduleuse</li>
+                  </ul>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">11.3 — Responsabilité</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Le revendeur agit en qualité d'apporteur d'affaires indépendant. Il n'est pas un 
+                    employé, agent ou représentant légal du BIC. Le BIC ne saurait être tenu responsable 
+                    des engagements pris par le revendeur vis-à-vis de ses clients au-delà des conditions 
+                    prévues par les présentes.
+                  </p>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">11.4 — Résiliation</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Le BIC se réserve le droit de résilier le partenariat à tout moment, sans préavis, 
+                    en cas de manquement aux obligations du revendeur ou pour tout motif légitime. Les 
+                    codes de réduction non utilisés au moment de la résiliation restent valides jusqu'à 
+                    leur date d'expiration.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Contact */}
             <Card className="bg-primary/5 border-primary/20">
               <CardContent className="p-6 text-center">

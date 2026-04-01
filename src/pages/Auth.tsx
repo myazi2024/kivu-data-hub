@@ -551,7 +551,11 @@ const Auth = () => {
         </Card>
 
         <div className="text-center mt-6 text-sm text-muted-foreground">
-          <p>En vous connectant, vous acceptez nos conditions d'utilisation</p>
+          <p>En vous connectant, vous acceptez nos{' '}
+            <Link to="/legal" className="text-primary underline hover:text-primary/80">
+              conditions d'utilisation
+            </Link>
+          </p>
         </div>
       </div>
     </div>
