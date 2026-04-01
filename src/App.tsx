@@ -112,7 +112,11 @@ const App = () => (
 
                   {/* Test environment mirror routes */}
                   <Route path="/test/map" element={<Map />} />
-                  <Route path="/test/cadastral-map" element={<CadastralMap />} />
+                  <Route path="/test/cadastral-map" element={
+                    <ProtectedRoute>
+                      <CadastralMap />
+                    </ProtectedRoute>
+                  } />
                   <Route path="/test/mon-compte" element={
                     <ProtectedRoute>
                       <UserDashboard />
