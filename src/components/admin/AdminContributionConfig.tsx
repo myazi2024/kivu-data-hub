@@ -1420,21 +1420,41 @@ const AdminContributionConfig = ({ initialTab, scrollToLegend }: { initialTab?: 
 
                 {mapPreviewSettings.legend?.enabled !== false && (
                   <div className="space-y-2">
-                    {(mapPreviewSettings.legend?.items || [
-                      { key: 'bornage_gps', label: 'Parcelle avec bornage GPS', mobileLabel: 'Bornage GPS', enabled: true },
-                      { key: 'sans_bornage', label: 'Parcelle sans bornage', mobileLabel: 'Sans bornage', enabled: true },
-                      { key: 'limites', label: 'Limites parcellaires', mobileLabel: 'Limites', enabled: true },
-                      { key: 'dimensions', label: 'Dimensions côtés', mobileLabel: 'Dimensions', enabled: true },
-                      { key: 'incompletes', label: 'Données incomplètes', mobileLabel: 'Incomplètes', enabled: true },
-                      { key: 'favorite', label: 'Parcelle favorite', mobileLabel: 'Favorite', enabled: true },
-                    ]).map((item: any, index: number) => (
+                    {(() => {
+                      const defaultLegendItems = [
+                        { key: 'bornage_gps', label: 'Parcelle avec bornage GPS', mobileLabel: 'Bornage GPS', enabled: true },
+                        { key: 'sans_bornage', label: 'Parcelle sans bornage', mobileLabel: 'Sans bornage', enabled: true },
+                        { key: 'limites', label: 'Limites parcellaires', mobileLabel: 'Limites', enabled: true },
+                        { key: 'dimensions', label: 'Dimensions côtés', mobileLabel: 'Dimensions', enabled: true },
+                        { key: 'incompletes', label: 'Données incomplètes', mobileLabel: 'Incomplètes', enabled: true },
+                        { key: 'favorite', label: 'Parcelle favorite', mobileLabel: 'Favorite', enabled: true },
+                      ];
+                      const savedItems = (mapPreviewSettings.legend?.items || []).filter(Boolean);
+                      const mergedItems = defaultLegendItems.map(def => {
+                        const saved = savedItems.find((s: any) => s?.key === def.key);
+                        return saved ? { ...def, ...saved } : def;
+                      });
+                      return mergedItems;
+                    })().map((item: any, index: number) => (
                       <div key={item.key} className="p-3 bg-muted/20 rounded-lg space-y-2">
                         <div className="flex items-center justify-between">
                           <Label className="text-xs font-medium">{item.key}</Label>
                           <Switch
                             checked={item.enabled}
                             onCheckedChange={(checked) => {
-                              const items = [...(mapPreviewSettings.legend?.items || [])];
+                              const defaultLegendItems = [
+                                { key: 'bornage_gps', label: 'Parcelle avec bornage GPS', mobileLabel: 'Bornage GPS', enabled: true },
+                                { key: 'sans_bornage', label: 'Parcelle sans bornage', mobileLabel: 'Sans bornage', enabled: true },
+                                { key: 'limites', label: 'Limites parcellaires', mobileLabel: 'Limites', enabled: true },
+                                { key: 'dimensions', label: 'Dimensions côtés', mobileLabel: 'Dimensions', enabled: true },
+                                { key: 'incompletes', label: 'Données incomplètes', mobileLabel: 'Incomplètes', enabled: true },
+                                { key: 'favorite', label: 'Parcelle favorite', mobileLabel: 'Favorite', enabled: true },
+                              ];
+                              const savedItems = (mapPreviewSettings.legend?.items || []).filter(Boolean);
+                              const items = defaultLegendItems.map(def => {
+                                const saved = savedItems.find((s: any) => s?.key === def.key);
+                                return saved ? { ...def, ...saved } : def;
+                              });
                               items[index] = { ...items[index], enabled: checked };
                               setMapPreviewSettings({
                                 ...mapPreviewSettings,
