@@ -3,7 +3,7 @@ import { MapPin, Map, Ruler } from 'lucide-react';
 import { SectionCard, DataGrid, DataField, DocTable } from '../primitives';
 import { CadastralParcel } from '@/types/cadastral';
 import { BoundaryHistory } from '@/hooks/useCadastralSearch';
-import CadastralMap from '../../CadastralMap';
+import ParcelSketchSVG from '../../ParcelSketchSVG';
 import DocumentAttachment from '../../DocumentAttachment';
 
 interface LocationSectionProps {
@@ -25,11 +25,20 @@ interface ParcelSide {
 }
 
 const LocationSection: React.FC<LocationSectionProps> = ({ number, parcel, boundaryHistory }) => {
-  const hasMap = (parcel.latitude && parcel.longitude) || (Array.isArray(parcel.gps_coordinates) && (parcel.gps_coordinates as any[]).length > 0);
+  const gpsCoords = Array.isArray(parcel.gps_coordinates)
+    ? (parcel.gps_coordinates as Array<{ lat: number | string; lng: number | string; borne: string }>)
+    : [];
+  const hasSketch = gpsCoords.length >= 3;
 
   const parcelSides: ParcelSide[] = Array.isArray(parcel.parcel_sides)
     ? (parcel.parcel_sides as ParcelSide[]).filter(s => s && (s.side || s.length))
     : [];
+
+  const sketchSides = parcelSides.map(s => ({
+    name: s.side || '',
+    length: String(s.length ?? ''),
+    orientation: s.orientation,
+  }));
 
   return (
     <SectionCard number={number} icon={<MapPin className="h-4 w-4" />} title="Localisation">
@@ -75,17 +84,18 @@ const LocationSection: React.FC<LocationSectionProps> = ({ number, parcel, bound
         </div>
       )}
 
-      {/* Map */}
-      {hasMap && (
+      {/* Sketch SVG */}
+      {hasSketch && (
         <div className="mt-4 print:break-before-page">
           <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Map className="h-3.5 w-3.5" /> Croquis du terrain
           </h4>
-          <div className="relative z-0 rounded-lg overflow-hidden border border-border/50">
-            <CadastralMap
-              coordinates={Array.isArray(parcel.gps_coordinates) ? parcel.gps_coordinates as Array<{ lat: number; lng: number; borne: string }> : []}
-              center={{ lat: parcel.latitude, lng: parcel.longitude }}
-              parcelNumber={parcel.parcel_number}
+          <div className="relative z-0 rounded-lg overflow-hidden border border-border/50 bg-background p-2">
+            <ParcelSketchSVG
+              coordinates={gpsCoords}
+              parcelSides={sketchSides}
+              buildingShapes={[]}
+              roadSides={[]}
             />
           </div>
         </div>
