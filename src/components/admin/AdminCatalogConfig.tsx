@@ -8,8 +8,10 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { getAllProvinces } from '@/lib/geographicData';
 import { 
   Search, 
   Tag, 
@@ -20,7 +22,8 @@ import {
   Plus,
   X,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  MapPin
 } from 'lucide-react';
 
 interface CatalogConfig {
@@ -65,6 +68,7 @@ const AdminCatalogConfig = () => {
     data_missing: '',
     data_available: ''
   });
+  const [availableProvinces, setAvailableProvinces] = useState<string[]>([]);
 
   const loadConfigs = async () => {
     try {
@@ -99,6 +103,9 @@ const AdminCatalogConfig = () => {
             break;
           case 'service_availability_messages':
             setAvailabilityMessages((config.config_value || availabilityMessages) as typeof availabilityMessages);
+            break;
+          case 'available_provinces':
+            setAvailableProvinces((config.config_value || []) as string[]);
             break;
         }
       });
@@ -183,12 +190,13 @@ const AdminCatalogConfig = () => {
       </div>
 
       <Tabs defaultValue="search" className="space-y-4">
-        <TabsList className="grid grid-cols-5 w-full">
+        <TabsList className="grid grid-cols-6 w-full">
           <TabsTrigger value="search"><Search className="h-4 w-4 mr-2" />Recherche</TabsTrigger>
           <TabsTrigger value="discounts"><Tag className="h-4 w-4 mr-2" />Remises</TabsTrigger>
           <TabsTrigger value="ccc"><Gift className="h-4 w-4 mr-2" />Codes CCC</TabsTrigger>
           <TabsTrigger value="ui"><Eye className="h-4 w-4 mr-2" />Interface</TabsTrigger>
           <TabsTrigger value="messages"><AlertCircle className="h-4 w-4 mr-2" />Messages</TabsTrigger>
+          <TabsTrigger value="provinces"><MapPin className="h-4 w-4 mr-2" />Provinces</TabsTrigger>
         </TabsList>
 
         {/* Onglet Recherche */}
@@ -488,6 +496,49 @@ const AdminCatalogConfig = () => {
                 <Save className="h-4 w-4 mr-2" />
                 Enregistrer
               </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Onglet Provinces */}
+        <TabsContent value="provinces" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Provinces disponibles</CardTitle>
+              <CardDescription>
+                Sélectionnez les provinces dont les données sont disponibles. Cette liste s'affiche sur la page d'accueil.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {getAllProvinces().map((province) => (
+                  <div key={province} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`province-${province}`}
+                      checked={availableProvinces.includes(province)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setAvailableProvinces([...availableProvinces, province]);
+                        } else {
+                          setAvailableProvinces(availableProvinces.filter(p => p !== province));
+                        }
+                      }}
+                    />
+                    <Label htmlFor={`province-${province}`} className="text-sm cursor-pointer">
+                      {province}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center justify-between pt-4 border-t">
+                <p className="text-sm text-muted-foreground">
+                  {availableProvinces.length} province(s) sélectionnée(s)
+                </p>
+                <Button onClick={() => saveConfig('available_provinces', availableProvinces)} disabled={saving}>
+                  <Save className="h-4 w-4 mr-2" />
+                  Enregistrer
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

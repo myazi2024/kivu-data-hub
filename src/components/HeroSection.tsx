@@ -4,8 +4,12 @@ import { ArrowRight, MapPin, BarChart3, Map } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import heroSkyline from '@/assets/hero-skyline.webp';
 import TypewriterAnimation from '@/components/TypewriterAnimation';
+import { useCatalogConfig } from '@/hooks/useCatalogConfig';
 
 const HeroSection = () => {
+  const { config } = useCatalogConfig();
+  const provinces = config.available_provinces || [];
+
   return (
     <section className="relative min-h-[85dvh] flex items-center justify-center overflow-hidden">
       {/* Background Image with Overlay */}
@@ -66,6 +70,15 @@ const HeroSection = () => {
             </Button>
           </Link>
         </div>
+
+        {/* Available Provinces */}
+        {provinces.length > 0 && (
+          <div className="mt-6 px-4">
+            <p className="text-[11px] text-primary-foreground/60 leading-relaxed">
+              Service disponible pour : {provinces.join(', ')}
+            </p>
+          </div>
+        )}
       </div>
     </section>
   );
