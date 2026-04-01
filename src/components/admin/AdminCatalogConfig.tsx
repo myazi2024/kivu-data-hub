@@ -104,6 +104,9 @@ const AdminCatalogConfig = () => {
           case 'service_availability_messages':
             setAvailabilityMessages((config.config_value || availabilityMessages) as typeof availabilityMessages);
             break;
+          case 'available_provinces':
+            setAvailableProvinces((config.config_value || []) as string[]);
+            break;
         }
       });
 
