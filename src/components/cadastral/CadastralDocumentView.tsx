@@ -13,7 +13,7 @@ import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
 import { CadastralService } from '@/hooks/useCadastralServices';
 import CadastralMap from './CadastralMap';
 import DocumentAttachment from './DocumentAttachment';
-import VerificationButton from './VerificationButton';
+
 import { PROPERTY_TITLE_TYPES } from './PropertyTitleTypeSelect';
 
 interface CadastralDocumentViewProps {
@@ -66,10 +66,9 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
 
   // Data-presence gating: if the server returned data, the user has access
   const hasParcelData = !!parcel.current_owner_name; // full parcel has owner; minimal doesn't
-  const hasLocationData = boundary_history.length > 0 || !!parcel.latitude;
   const hasHistoryData = ownership_history.length > 0;
   const hasObligationsData = tax_history.length > 0 || mortgage_history.length > 0;
-  const hasDisputesData = land_disputes !== undefined && land_disputes !== null;
+  const hasDisputesData = Array.isArray(land_disputes) && land_disputes.length > 0;
   const hasLegalVerification = legal_verification !== null && legal_verification !== undefined;
 
   const getPaymentStatusLabel = (status: string) => {
@@ -157,7 +156,7 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
                   {parcel.title_reference_number && <DataRow label="Référence du titre" value={<span className="font-mono">{parcel.title_reference_number}</span>} />}
                   {parcel.title_issue_date && <DataRow label="Date d'émission" value={formatDate(parcel.title_issue_date)} />}
                   <DataRow label="Superficie" value={formatArea(parcel.area_sqm)} highlight />
-                  {parcel.area_hectares && parcel.area_hectares > 0 && <DataRow label="Hectares" value={`${parcel.area_hectares.toFixed(2)} ha`} />}
+                  
                   {parcel.declared_usage && <DataRow label="Usage déclaré" value={parcel.declared_usage} />}
                   {parcel.lease_type && <DataRow label="Type de bail" value={parcel.lease_type} />}
                   {parcel.standing && <DataRow label="Standing" value={parcel.standing} />}
