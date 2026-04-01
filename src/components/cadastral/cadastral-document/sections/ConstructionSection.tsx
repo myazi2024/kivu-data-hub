@@ -2,8 +2,9 @@ import React from 'react';
 import { Building, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { SectionCard, DataGrid, DataField, DocTable } from '../primitives';
-import { CadastralParcel, } from '@/types/cadastral';
+import { CadastralParcel } from '@/types/cadastral';
 import { BuildingPermit } from '@/hooks/useCadastralSearch';
+import DocumentAttachment from '../../DocumentAttachment';
 
 interface ConstructionSectionProps {
   number: number;
@@ -60,6 +61,26 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({ number, parce
               );
             })}
           </DocTable>
+
+          {/* Permit documents & contacts */}
+          {buildingPermits.map((permit) => (
+            <React.Fragment key={`doc-${permit.id}`}>
+              {permit.issuing_service_contact && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Contact — {permit.issuing_service}: <span className="font-medium text-foreground">{permit.issuing_service_contact}</span>
+                </p>
+              )}
+              {permit.permit_document_url && (
+                <div className="mt-2">
+                  <DocumentAttachment
+                    documentUrl={permit.permit_document_url}
+                    label={`Autorisation ${permit.permit_number}`}
+                    description="Document d'autorisation de bâtir"
+                  />
+                </div>
+              )}
+            </React.Fragment>
+          ))}
         </div>
       )}
     </SectionCard>

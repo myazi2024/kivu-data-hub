@@ -19,10 +19,11 @@ const DisputesSection: React.FC<DisputesSectionProps> = ({ number, landDisputes 
         description="Cette parcelle ne fait l'objet d'aucun litige connu"
       />
     ) : (
-      <DocTable headers={['Référence', 'Nature', 'Déclarant', 'Statut', 'Date']}>
+      <DocTable headers={['Référence', 'Type', 'Nature', 'Déclarant', 'Statut', 'Date']}>
         {landDisputes.map((d) => (
           <tr key={d.id}>
             <td className="font-mono text-xs">{d.reference_number}</td>
+            <td className="text-xs">{d.dispute_type}</td>
             <td className="text-xs">{d.dispute_nature}</td>
             <td className="text-xs">{d.declarant_name}</td>
             <td><Badge variant="outline" className="text-xs">{d.current_status}</Badge></td>
