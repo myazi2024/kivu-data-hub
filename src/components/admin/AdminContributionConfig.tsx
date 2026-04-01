@@ -1374,6 +1374,104 @@ const AdminContributionConfig = () => {
                 </div>
               </div>
 
+              {/* Section Légende */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <span>📋</span> Légende de la carte
+                </h4>
+
+                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                  <div className="space-y-1">
+                    <Label>Afficher la légende</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Afficher le bloc légende sur la carte cadastrale
+                    </p>
+                  </div>
+                  <Switch
+                    checked={mapPreviewSettings.legend?.enabled !== false}
+                    onCheckedChange={(checked) => {
+                      setMapPreviewSettings({
+                        ...mapPreviewSettings,
+                        legend: {
+                          ...mapPreviewSettings.legend,
+                          enabled: checked,
+                          items: mapPreviewSettings.legend?.items || [
+                            { key: 'bornage_gps', label: 'Parcelle avec bornage GPS', mobileLabel: 'Bornage GPS', enabled: true },
+                            { key: 'sans_bornage', label: 'Parcelle sans bornage', mobileLabel: 'Sans bornage', enabled: true },
+                            { key: 'limites', label: 'Limites parcellaires', mobileLabel: 'Limites', enabled: true },
+                            { key: 'dimensions', label: 'Dimensions côtés', mobileLabel: 'Dimensions', enabled: true },
+                            { key: 'incompletes', label: 'Données incomplètes', mobileLabel: 'Incomplètes', enabled: true },
+                            { key: 'favorite', label: 'Parcelle favorite', mobileLabel: 'Favorite', enabled: true },
+                          ]
+                        }
+                      });
+                    }}
+                  />
+                </div>
+
+                {mapPreviewSettings.legend?.enabled !== false && (
+                  <div className="space-y-2">
+                    {(mapPreviewSettings.legend?.items || [
+                      { key: 'bornage_gps', label: 'Parcelle avec bornage GPS', mobileLabel: 'Bornage GPS', enabled: true },
+                      { key: 'sans_bornage', label: 'Parcelle sans bornage', mobileLabel: 'Sans bornage', enabled: true },
+                      { key: 'limites', label: 'Limites parcellaires', mobileLabel: 'Limites', enabled: true },
+                      { key: 'dimensions', label: 'Dimensions côtés', mobileLabel: 'Dimensions', enabled: true },
+                      { key: 'incompletes', label: 'Données incomplètes', mobileLabel: 'Incomplètes', enabled: true },
+                      { key: 'favorite', label: 'Parcelle favorite', mobileLabel: 'Favorite', enabled: true },
+                    ]).map((item: any, index: number) => (
+                      <div key={item.key} className="p-3 bg-muted/20 rounded-lg space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-medium">{item.key}</Label>
+                          <Switch
+                            checked={item.enabled}
+                            onCheckedChange={(checked) => {
+                              const items = [...(mapPreviewSettings.legend?.items || [])];
+                              items[index] = { ...items[index], enabled: checked };
+                              setMapPreviewSettings({
+                                ...mapPreviewSettings,
+                                legend: { ...mapPreviewSettings.legend, enabled: mapPreviewSettings.legend?.enabled !== false, items }
+                              });
+                            }}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-[10px] text-muted-foreground">Label desktop</Label>
+                            <Input
+                              value={item.label}
+                              onChange={(e) => {
+                                const items = [...(mapPreviewSettings.legend?.items || [])];
+                                items[index] = { ...items[index], label: e.target.value };
+                                setMapPreviewSettings({
+                                  ...mapPreviewSettings,
+                                  legend: { ...mapPreviewSettings.legend, enabled: mapPreviewSettings.legend?.enabled !== false, items }
+                                });
+                              }}
+                              className="h-7 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-[10px] text-muted-foreground">Label mobile</Label>
+                            <Input
+                              value={item.mobileLabel}
+                              onChange={(e) => {
+                                const items = [...(mapPreviewSettings.legend?.items || [])];
+                                items[index] = { ...items[index], mobileLabel: e.target.value };
+                                setMapPreviewSettings({
+                                  ...mapPreviewSettings,
+                                  legend: { ...mapPreviewSettings.legend, enabled: mapPreviewSettings.legend?.enabled !== false, items }
+                                });
+                              }}
+                              className="h-7 text-xs"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className="flex gap-2">
                 <Button onClick={handleSaveMapPreviewSettings} disabled={saving === 'map_preview_settings'} className="flex-1">
                   {saving === 'map_preview_settings' ? (
