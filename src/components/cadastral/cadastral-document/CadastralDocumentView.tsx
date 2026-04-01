@@ -16,7 +16,7 @@ import LocationSection from './sections/LocationSection';
 import HistorySection from './sections/HistorySection';
 import ObligationsSection from './sections/ObligationsSection';
 import DisputesSection from './sections/DisputesSection';
-import LegalSection from './sections/LegalSection';
+
 
 interface CadastralDocumentViewProps {
   result: CadastralSearchResult;
