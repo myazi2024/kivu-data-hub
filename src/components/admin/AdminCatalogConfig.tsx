@@ -499,6 +499,49 @@ const AdminCatalogConfig = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Onglet Provinces */}
+        <TabsContent value="provinces" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Provinces disponibles</CardTitle>
+              <CardDescription>
+                Sélectionnez les provinces dont les données sont disponibles. Cette liste s'affiche sur la page d'accueil.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {getAllProvinces().map((province) => (
+                  <div key={province} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`province-${province}`}
+                      checked={availableProvinces.includes(province)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setAvailableProvinces([...availableProvinces, province]);
+                        } else {
+                          setAvailableProvinces(availableProvinces.filter(p => p !== province));
+                        }
+                      }}
+                    />
+                    <Label htmlFor={`province-${province}`} className="text-sm cursor-pointer">
+                      {province}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center justify-between pt-4 border-t">
+                <p className="text-sm text-muted-foreground">
+                  {availableProvinces.length} province(s) sélectionnée(s)
+                </p>
+                <Button onClick={() => saveConfig('available_provinces', availableProvinces)} disabled={saving}>
+                  <Save className="h-4 w-4 mr-2" />
+                  Enregistrer
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
   );
