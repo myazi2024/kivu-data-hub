@@ -123,9 +123,12 @@ export const useAdminStatistics = (
     }
   };
 
+  const startStr = startDate?.toISOString() || '';
+  const endStr = endDate?.toISOString() || '';
+
   useEffect(() => {
     fetchStatistics();
-  }, [startDate, endDate, statType]);
+  }, [startStr, endStr, statType]);
 
   return {
     loading,

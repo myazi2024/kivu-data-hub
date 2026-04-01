@@ -1,10 +1,11 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { AdminDashboardHeader } from '@/components/admin/AdminDashboardHeader';
+import { usePendingCount } from '@/hooks/usePendingCount';
 
 // Lazy-loaded admin components
 const AdminDashboardOverview = lazy(() => import('@/components/admin/AdminDashboardOverview').then(m => ({ default: m.AdminDashboardOverview })));
@@ -75,41 +76,6 @@ const LazyFallback = () => (
   </div>
 );
 
-// Generic hook for pending counts
-const usePendingCount = (table: string, filter: Record<string, any>, enabled: boolean) => {
-  const [count, setCount] = useState(0);
-  
-  useEffect(() => {
-    if (!enabled) return;
-    const fetchCount = async () => {
-      try {
-        let query = (supabase as any).from(table).select('*', { count: 'exact', head: true });
-        if (filter.in) {
-          for (const [col, vals] of Object.entries(filter.in)) {
-            query = query.in(col, vals as string[]);
-          }
-        }
-        if (filter.eq) {
-          for (const [col, val] of Object.entries(filter.eq)) {
-            query = query.eq(col, val);
-          }
-        }
-        if (filter.not) {
-          for (const [col, op, val] of filter.not as [string, string, any][]) {
-            query = query.not(col, op, val);
-          }
-        }
-        const { count: c, error } = await query;
-        if (!error) setCount(c || 0);
-      } catch {
-        setCount(0);
-      }
-    };
-    fetchCount();
-  }, [enabled, table]);
-
-  return count;
-};
 
 const Admin = () => {
   const { user, loading } = useAuth();
@@ -117,11 +83,14 @@ const Admin = () => {
   const activeTab = searchParams.get('tab') || 'dashboard';
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [hasAdminRole, setHasAdminRole] = useState<boolean | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     const verifyAdminRole = async () => {
       if (!user) { setHasAdminRole(false); return; }
       try {
+        // Note: La sécurité réelle est assurée par les politiques RLS de Supabase.
+        // Cette vérification côté client sert uniquement à l'UX (redirection).
         const { data, error } = await supabase
           .from('user_roles').select('role')
           .eq('user_id', user.id).in('role', ['admin', 'super_admin']);
@@ -134,15 +103,19 @@ const Admin = () => {
 
   const isAdmin = hasAdminRole === true;
 
-  const pendingCount = usePendingCount('cadastral_contributions', { in: { status: ['pending', 'under_review'] } }, isAdmin);
-  const pendingLandTitleCount = usePendingCount('land_title_requests', { in: { status: ['pending', 'in_review'] } }, isAdmin);
-  const pendingPermitsCount = usePendingCount('cadastral_contributions', { not: [['permit_request_data', 'is', null]], eq: { status: 'pending' } }, isAdmin);
-  const pendingMutationsCount = usePendingCount('mutation_requests', { eq: { status: 'pending' } }, isAdmin);
-  const pendingExpertiseCount = usePendingCount('real_estate_expertise_requests', { eq: { status: 'pending' } }, isAdmin);
-  const pendingSubdivisionsCount = usePendingCount('subdivision_requests', { eq: { status: 'pending' } }, isAdmin);
-  const pendingPaymentsCount = usePendingCount('payments', { eq: { status: 'pending' } }, isAdmin);
-  const pendingDisputesCount = usePendingCount('cadastral_land_disputes', { in: { current_status: ['pending', 'under_investigation'] } }, isAdmin);
-  const pendingMortgagesCount = usePendingCount('cadastral_mortgages', { eq: { mortgage_status: 'pending' } }, isAdmin);
+  const pendingCount = usePendingCount('cadastral_contributions', { in: { status: ['pending', 'under_review'] } }, isAdmin, refreshKey);
+  const pendingLandTitleCount = usePendingCount('land_title_requests', { in: { status: ['pending', 'in_review'] } }, isAdmin, refreshKey);
+  const pendingPermitsCount = usePendingCount('cadastral_contributions', { not: [['permit_request_data', 'is', null]], eq: { status: 'pending' } }, isAdmin, refreshKey);
+  const pendingMutationsCount = usePendingCount('mutation_requests', { eq: { status: 'pending' } }, isAdmin, refreshKey);
+  const pendingExpertiseCount = usePendingCount('real_estate_expertise_requests', { eq: { status: 'pending' } }, isAdmin, refreshKey);
+  const pendingSubdivisionsCount = usePendingCount('subdivision_requests', { eq: { status: 'pending' } }, isAdmin, refreshKey);
+  const pendingPaymentsCount = usePendingCount('payments', { eq: { status: 'pending' } }, isAdmin, refreshKey);
+  const pendingDisputesCount = usePendingCount('cadastral_land_disputes', { in: { current_status: ['pending', 'under_investigation'] } }, isAdmin, refreshKey);
+  const pendingMortgagesCount = usePendingCount('cadastral_mortgages', { eq: { mortgage_status: 'pending' } }, isAdmin, refreshKey);
+
+  const refreshCounts = useCallback(() => {
+    setRefreshKey(k => k + 1);
+  }, []);
 
   if (loading || hasAdminRole === null) {
     return (
@@ -155,10 +128,6 @@ const Admin = () => {
   if (!user || !hasAdminRole) {
     return <Navigate to="/auth" replace />;
   }
-
-  const refreshCounts = () => {
-    // Counts auto-refresh on mount via usePendingCount
-  };
 
   const renderContent = () => {
     switch (activeTab) {
