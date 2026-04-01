@@ -1,90 +1,118 @@
 
 
-# Audit de l'Espace Admin
+# Audit — Documentations Absentes
 
-## Architecture Generale
+## Etat Actuel
 
-L'espace admin est un SPA monolithique dans `src/pages/Admin.tsx` avec 63 onglets geres par un `switch` sur le query param `?tab=`. La sidebar (`AdminSidebar.tsx`) organise les modules en 8 categories. Tous les composants sont lazy-loaded via `React.lazy`.
+Le projet contient 13 fichiers `.md` a la racine, mais la majorite sont des rapports de test ou des correctifs ponctuels, pas de la documentation structurelle. Le `README.md` est le template Lovable par defaut, sans aucune information specifique au projet.
 
----
+## Documentations Manquantes Identifiees
 
-## Problemes Identifies
+### 1. README.md — A reecrire completement (P0)
 
-### 1. CRITIQUE — Lien "Parametres" pointe vers un onglet inexistant
+Le README actuel est generique. Il devrait contenir :
+- Description du projet (plateforme cadastrale RDC)
+- Architecture technique (React + Supabase, structure des dossiers)
+- Modules fonctionnels (cadastre, hypotheques, lotissements, permis, litiges, mutations, expertise, fiscalite, CCC, revendeurs)
+- Variables d'environnement requises
+- Instructions de deploiement specifiques
 
-**Fichier** : `AdminDashboardHeader.tsx` ligne 290
-Le menu utilisateur contient `navigate('/admin?tab=settings')` mais aucun `case 'settings'` n'existe dans le switch de `Admin.tsx`. Cliquer sur "Parametres" affiche le Dashboard par defaut (cas `default`).
+### 2. ARCHITECTURE.md — Inexistant (P0)
 
-**Fix** : Supprimer l'item ou le rediriger vers un onglet existant (ex: `test-mode` ou `parcel-actions-config`).
+Aucun document ne decrit :
+- La structure des dossiers (`src/components/admin/`, `src/components/cadastral/`, `src/components/user/`, etc.)
+- Le flux de donnees (Supabase → hooks → composants)
+- Les 18 pages et leurs roles
+- Les 65+ hooks et leur organisation
+- Les 6 Edge Functions et leurs responsabilites
+- Le systeme de providers (Auth, Cart, CadastralCart, Cookie, TestEnvironment)
 
-### 2. CRITIQUE — `refreshCounts` est une fonction vide
+### 3. DATABASE_SCHEMA.md — Inexistant (P0)
 
-**Fichier** : `Admin.tsx` lignes 159-161
-```tsx
-const refreshCounts = () => {
-  // Counts auto-refresh on mount via usePendingCount
-};
-```
-Les composants `AdminUsers`, `AdminPayments`, `AdminPublications` recoivent cette callback mais elle ne fait rien. `usePendingCount` ne se re-execute que si `enabled` ou `table` changent (ses deps `useEffect`). Apres une action admin (bloquer un user, valider un paiement), les badges de la sidebar ne se mettent pas a jour sans rechargement de page.
+Il y a 140+ fichiers de migration SQL mais aucun document qui :
+- Liste les tables principales et leurs relations
+- Decrit les RPCs disponibles (`get_admin_statistics`, `create_cadastral_invoice_secure`, etc.)
+- Documente les politiques RLS
+- Explique les colonnes generees (ex: `area_hectares`)
+- Note : `CADASTRAL_PARCELS_GUIDE.md` couvre uniquement `area_hectares`, pas le schema global
 
-**Fix** : Ajouter un state `refreshKey` incremente par `refreshCounts`, et l'inclure dans les deps de `usePendingCount`.
+### 4. EDGE_FUNCTIONS.md — Inexistant (P1)
 
-### 3. MOYEN — `usePendingCount` defini dans le fichier page, pas extrait
+6 Edge Functions non documentees :
+- `cleanup-test-data` — pas de doc sur les conditions de declenchement
+- `create-payment` — pas de doc sur les providers supportes, les parametres attendus
+- `health-check` — pas de doc sur le format de reponse
+- `process-mobile-money-payment` — pas de doc sur l'integration mobile money
+- `stripe-webhook` — pas de doc sur les evenements geres
+- `test-payment-provider` — pas de doc sur le comportement simule
 
-Le hook generique `usePendingCount` (lignes 79-112 de `Admin.tsx`) est defini directement dans le fichier de la page au lieu d'etre dans `src/hooks/`. Cela viole la convention du projet et empeche sa reutilisation.
+### 5. PAYMENT_FLOW.md — Inexistant (P1)
 
-**Fix** : Extraire dans `src/hooks/usePendingCount.tsx`.
+Le systeme de paiement est complexe (3 composants payment, hooks dedies, mode test, providers multiples) mais non documente :
+- Flux de paiement complet (creation facture → paiement → validation)
+- Providers supportes (Stripe, Mobile Money, carte bancaire)
+- Mode test vs production
+- Gestion des devises et taux de change
 
-### 4. MOYEN — 7 appels `useAdminStatistics` simultanes au chargement du Dashboard
+### 6. MODULES_GUIDE.md — Inexistant (P1)
 
-`AdminDashboardOverview` instancie 5 appels `useAdminStatistics` + `useDashboardData` + `useEnhancedAnalytics` au montage. Chacun declenche un `useEffect` avec appel RPC. Cela genere 7+ requetes Supabase simultanees au chargement.
+Les modules fonctionnels majeurs n'ont pas de documentation utilisateur/developpeur :
+- **Lotissement** (`subdivision/`) — 25+ types, workflow complexe
+- **Hypotheques** — enregistrement, radiation, workflow admin
+- **Permis de construire** — formulaire multi-etapes, frais, pieces jointes
+- **Mutations foncieres** — workflow et frais
+- **Litiges fonciers** — signalement, levee, suivi
+- **Expertise immobiliere** — demande, certificat PDF
+- **Declarations fiscales** — calcul IRL, taxe batiment
+- **Codes CCC** — generation, validation, utilisation
 
-**Impact** : Latence perceptible, surtout sur mobile. Les RPCs `get_admin_statistics` sont appelees avec des `stat_type` differents — un seul appel RPC polyvalent reduirait la charge.
+### 7. RESELLER_GUIDE.md — Inexistant (P2)
 
-### 5. MOYEN — Duplication d'icones importees
+Module revendeur (dashboard, commissions, codes promo) sans documentation.
 
-`AdminUsers.tsx` importe `Users` et `User` deux fois (lignes 8 et 18) avec des alias differents (`Users`/`UsersIcon`, `User`/`UserIcon`). Pas d'erreur runtime mais code confus.
+### 8. API_TYPES.md — Inexistant (P2)
 
-### 6. MINEUR — Verification admin cote client uniquement
+Les types sont repartis dans 6 fichiers `src/types/` + types locaux dans les composants, sans index ni documentation des interfaces principales.
 
-`Admin.tsx` verifie le role admin via une requete client (lignes 122-133). C'est correct pour l'UX, mais la vraie securite repose sur les politiques RLS de Supabase. Cela est deja en place selon le contexte memoire, donc pas de faille, mais un commentaire clarifiant serait utile.
+### 9. TEST_MODE.md — Inexistant (P2)
 
-### 7. MINEUR — `useAdminStatistics` n'a pas de deps stables dans useEffect
+Le mode test est un systeme transversal (provider, banner, nettoyage des donnees) sans documentation unifiee. Les fichiers `TEST_*.md` existants sont des rapports de validation, pas de la documentation d'utilisation.
 
-Ligne 128 : `useEffect` depend de `startDate` et `endDate` qui sont des objets `Date`. A chaque re-render du parent, de nouvelles instances sont creees, ce qui peut provoquer des appels en boucle si le parent re-render frequemment.
+### 10. DEPLOYMENT.md — Inexistant (P2)
 
-**Fix** : Convertir les dates en strings ISO dans le `useEffect` deps, ou utiliser `useMemo` dans le parent.
+Pas de guide de deploiement specifique :
+- Configuration Supabase requise
+- Migrations a executer
+- Variables d'environnement
+- Ordre de deploiement (migrations → edge functions → frontend)
 
-### 8. MINEUR — Sidebar trop longue (60+ items)
+## Fichiers .md Existants a Nettoyer
 
-La sidebar contient 60+ liens dans 8 categories. Sur un ecran standard, cela necessite un scroll important. Certaines categories comme "Cadastre & Services" ont 20+ items.
+Les fichiers suivants sont des rapports de test/verification ponctuels, pas de la documentation permanente. Ils pourraient etre deplaces dans un dossier `docs/reports/` :
+- `TEST_CCC_RAPPORT.md`
+- `TEST_USER_BUILDING_PERMITS.md`
+- `TEST_USER_DASHBOARD_INTEGRATION.md`
+- `TEST_VALIDATION_NOTIFICATIONS.md`
+- `VERIFICATION_CCC_FINALE.md`
+- `VERIFICATION_GESTION_UTILISATEURS.md`
+- `BUGS_FIXED.md`
+- `BACKEND_CCC_CORRECTIONS.md`
+- `CORRECTIONS_USER_MANAGEMENT.md`
 
-**Suggestion** : Ajouter des sous-menus repliables (accordeon) par categorie.
+## Plan de Creation
 
----
+| Priorite | Document | Contenu |
+|---|---|---|
+| P0 | `README.md` | Reecriture complete avec description projet, architecture, modules |
+| P0 | `docs/ARCHITECTURE.md` | Structure dossiers, flux de donnees, providers, pages |
+| P0 | `docs/DATABASE_SCHEMA.md` | Tables, relations, RPCs, RLS, colonnes generees |
+| P1 | `docs/EDGE_FUNCTIONS.md` | 6 fonctions avec parametres, reponses, declencheurs |
+| P1 | `docs/PAYMENT_FLOW.md` | Flux complet, providers, mode test, devises |
+| P1 | `docs/MODULES.md` | Guide de chaque module fonctionnel |
+| P2 | `docs/RESELLER.md` | Module revendeur |
+| P2 | `docs/TEST_MODE.md` | Mode test unifie |
+| P2 | `docs/DEPLOYMENT.md` | Guide de deploiement |
+| P2 | `docs/API_TYPES.md` | Index des types et interfaces |
 
-## Points Positifs
-
-- Lazy-loading systematique de tous les composants admin
-- Hook generique `usePendingCount` pour les badges de notification
-- Recherche dans la sidebar via le header
-- Indicateur visuel du mode test dans le header
-- Notifications en temps reel avec Supabase Realtime
-- Cache de profil (5 min) dans `useAuth`
-- Bonne separation des responsabilites (1 composant = 1 module)
-- Export CSV/JSON fonctionnel sur le dashboard
-
----
-
-## Plan de Corrections Propose
-
-| Priorite | Probleme | Fichier(s) | Action |
-|---|---|---|---|
-| P0 | Lien "Parametres" mort | `AdminDashboardHeader.tsx` | Supprimer ou rediriger |
-| P0 | `refreshCounts` vide | `Admin.tsx` | Ajouter refresh key |
-| P1 | `usePendingCount` non extrait | `Admin.tsx` → `hooks/` | Extraire le hook |
-| P1 | 7 requetes simultanees | `AdminDashboardOverview.tsx` | Batch ou lazy-load par onglet |
-| P2 | Imports dupliques | `AdminUsers.tsx` | Nettoyer |
-| P2 | useEffect deps instables | `useAdminStatistics.tsx` | Stabiliser les deps |
-| P3 | Sidebar trop longue | `AdminSidebar.tsx` | Accordeons repliables |
+Total : 10 documents a creer, 9 fichiers de rapports a reorganiser.
 
