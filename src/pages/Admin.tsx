@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { AdminDashboardHeader } from '@/components/admin/AdminDashboardHeader';
+import { usePendingCount } from '@/hooks/usePendingCount';
 
 // Lazy-loaded admin components
 const AdminDashboardOverview = lazy(() => import('@/components/admin/AdminDashboardOverview').then(m => ({ default: m.AdminDashboardOverview })));
