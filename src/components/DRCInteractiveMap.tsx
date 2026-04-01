@@ -282,7 +282,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                       <MapPin className="h-3 w-3 text-primary" />
                       <span>{selectedProvince ? selectedProvince.name : 'République Démocratique du Congo'}</span>
                     </h2>
-                    <p className="text-[7px] text-muted-foreground leading-tight">
+                    <p className="text-[10px] text-muted-foreground leading-tight">
                       {selectedProvince
                         ? `Données foncières cadastrales de ${selectedProvince.name} — Total : ${formatNumber(selectedProvince.parcelsCount)} parcelles enregistrées`
                         : `${getChartConfig('map-header-note')?.custom_title || 'Répartition géographique des données foncières cadastrales'} — Total : ${formatNumber(totalParcels)} parcelles enregistrées`
@@ -291,7 +291,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   </div>
                   
                   <div className="flex-1 min-h-0 overflow-hidden flex items-center justify-center p-1">
-                    <div className="w-full h-full flex items-center justify-center" style={{ transform: 'scale(0.8)', transformOrigin: 'center center' }}>
+                    <div className="w-full h-full flex items-center justify-center" style={{ transform: 'scale(0.9)', transformOrigin: 'center center' }}>
                       <DRCMapWithTooltip
                         provincesData={provincesData}
                         selectedProvince={selectedProvince?.id || null}
@@ -311,12 +311,12 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   {/* Légende choroplèthe à 4 paliers — masquée pendant le zoom */}
                   {!isMapZoomed && (
                     <div className="absolute bottom-5 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30">
-                      <div className="text-[8px] text-muted-foreground mb-0.5">{getChartConfig('map-legend-title')?.custom_title || 'Densité parcelles cadastrées'}</div>
+                      <div className="text-[10px] text-muted-foreground mb-0.5">{getChartConfig('map-legend-title')?.custom_title || 'Densité parcelles cadastrées'}</div>
                       <div className="flex flex-col gap-0.5">
                         {DENSITY_TIERS.map(tier => (
                           <div key={tier.label} className="flex items-center gap-1">
                             <div className="w-3 h-2 rounded-sm flex-shrink-0" style={{ background: tier.color }} />
-                            <span className="text-[7px] text-muted-foreground">
+                            <span className="text-[10px] text-muted-foreground">
                               {tier.label} ({tier.min}{tier.max === Infinity ? '+' : `–${tier.max}`})
                             </span>
                           </div>
@@ -328,8 +328,8 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   {/* Légende contextuelle province zoomée */}
                   {isMapZoomed && selectedProvince && (
                     <div className="absolute bottom-5 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30 animate-fade-in">
-                      <div className="text-[8px] font-medium text-foreground mb-0.5">{selectedProvince.name}</div>
-                      <div className="flex flex-col gap-0.5 text-[7px] text-muted-foreground">
+                      <div className="text-[10px] font-medium text-foreground mb-0.5">{selectedProvince.name}</div>
+                      <div className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
                         <div className="flex justify-between gap-2"><span>Parcelles</span><span className="font-medium text-foreground">{formatNumber(selectedProvince.parcelsCount)}</span></div>
                         <div className="flex justify-between gap-2"><span>Titres dem.</span><span className="font-medium text-foreground">{formatNumber(selectedProvince.titleRequestsCount)}</span></div>
                         <div className="flex justify-between gap-2"><span>Revenus</span><span className="font-medium text-foreground">{formatCurrency(selectedProvince.revenueUsd)}</span></div>
@@ -340,7 +340,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
 
                   {/* Pied de carte : date + copyright */}
                   <div className="absolute bottom-0 left-0 right-0 z-10 text-center py-0.5">
-                    <span className="text-[7px] text-muted-foreground">{todayStr} — {watermarkText}</span>
+                    <span className="text-[10px] text-muted-foreground">{todayStr} — {watermarkText}</span>
                   </div>
                   
                   <div className="absolute bottom-5 right-2 z-10 flex gap-1">
@@ -419,19 +419,19 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                         <div className="grid grid-cols-3 gap-1">
                           {isChartVisible('detail-parcels') && (
                             <Card className="p-1 border-border/30">
-                              <div className="text-[9px] text-muted-foreground truncate">{dt('detail-parcels', 'Parcelles')}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-parcels', 'Parcelles')}</div>
                               <div className="text-[11px] font-bold text-primary">{formatNumber(selectedProvince.parcelsCount)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-titles') && (
                             <Card className="p-1 border-border/30">
-                              <div className="text-[9px] text-muted-foreground truncate">{dt('detail-titles', 'Titres dem.')}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-titles', 'Titres dem.')}</div>
                               <div className="text-[11px] font-bold text-blue-600">{formatNumber(selectedProvince.titleRequestsCount)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-contributions') && (
                             <Card className="p-1 border-border/30">
-                              <div className="text-[9px] text-muted-foreground truncate">{dt('detail-contributions', 'Contributions')}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-contributions', 'Contributions')}</div>
                               <div className="text-[11px] font-bold text-emerald-600">{formatNumber(selectedProvince.contributionsCount)}</div>
                             </Card>
                           )}
@@ -447,25 +447,25 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1">
                           {isChartVisible('detail-mutations') && (
                             <Card className="p-1 border-border/30">
-                              <div className="text-[9px] text-muted-foreground truncate">{dt('detail-mutations', 'Mutations')}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-mutations', 'Mutations')}</div>
                               <div className="text-[11px] font-bold text-violet-600">{formatNumber(selectedProvince.mutationsCount)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-disputes') && (
                             <Card className="p-1 border-border/30">
-                              <div className="text-[9px] text-muted-foreground truncate">{dt('detail-disputes', 'Litiges')}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-disputes', 'Litiges')}</div>
                               <div className="text-[11px] font-bold text-orange-500">{formatNumber(selectedProvince.disputesCount)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-certificates') && (
                             <Card className="p-1 border-border/30">
-                              <div className="text-[9px] text-muted-foreground truncate">{dt('detail-certificates', 'Certificats')}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-certificates', 'Certificats')}</div>
                               <div className="text-[11px] font-bold text-emerald-600">{formatNumber(selectedProvince.certificatesCount)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-expertises') && (
                             <Card className="p-1 border-border/30">
-                              <div className="text-[9px] text-muted-foreground truncate">{dt('detail-expertises', 'Expertises')}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-expertises', 'Expertises')}</div>
                               <div className="text-[11px] font-bold text-blue-600">{formatNumber(selectedProvince.expertisesCount)}</div>
                             </Card>
                           )}
@@ -481,19 +481,19 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                         <div className="grid grid-cols-3 gap-1">
                           {isChartVisible('detail-revenue') && (
                             <Card className="p-1 border-border/30">
-                              <div className="text-[9px] text-muted-foreground truncate">{dt('detail-revenue', 'Revenus')}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-revenue', 'Revenus')}</div>
                               <div className="text-[11px] font-bold text-primary">{formatCurrency(selectedProvince.revenueUsd)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-fiscal') && (
                             <Card className="p-1 border-border/30">
-                              <div className="text-[9px] text-muted-foreground truncate">{dt('detail-fiscal', 'Recettes fisc.')}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-fiscal', 'Recettes fisc.')}</div>
                               <div className="text-[11px] font-bold text-emerald-600">{formatCurrency(selectedProvince.fiscalRevenueUsd)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-invoices') && (
                             <Card className="p-1 border-border/30">
-                              <div className="text-[9px] text-muted-foreground truncate">{dt('detail-invoices', 'Factures')}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-invoices', 'Factures')}</div>
                               <div className="text-[11px] font-bold text-blue-600">{formatNumber(selectedProvince.invoicesCount)}</div>
                             </Card>
                           )}
@@ -504,13 +504,13 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                       <div className="grid grid-cols-3 gap-1">
                         {isChartVisible('detail-density') && (
                           <Card className="p-1 border-border/30">
-                            <div className="text-[9px] text-muted-foreground truncate">{dt('detail-density', 'Densité')}</div>
+                            <div className="text-[10px] text-muted-foreground truncate">{dt('detail-density', 'Densité')}</div>
                             <Badge 
                               variant={
                                 selectedProvince.densityLevel === 'Très élevé' ? 'destructive' :
                                 selectedProvince.densityLevel === 'Élevé' ? 'secondary' : 'outline'
                               }
-                              className="text-[8px] px-1 py-0"
+                              className="text-[10px] px-1 py-0"
                             >
                               {selectedProvince.densityLevel}
                             </Badge>
@@ -518,13 +518,13 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                         )}
                         {isChartVisible('detail-surface') && (
                           <Card className="p-1 border-border/30">
-                            <div className="text-[9px] text-muted-foreground truncate">{dt('detail-surface', 'Surface (ha)')}</div>
+                            <div className="text-[10px] text-muted-foreground truncate">{dt('detail-surface', 'Surface (ha)')}</div>
                             <div className="text-[11px] font-bold text-accent">{formatNumber(selectedProvince.totalSurfaceHa || 0)}</div>
                           </Card>
                         )}
                         {isChartVisible('detail-resolution') && (
                           <Card className="p-1 border-border/30">
-                            <div className="text-[9px] text-muted-foreground truncate">{dt('detail-resolution', 'Résol. litiges')}</div>
+                            <div className="text-[10px] text-muted-foreground truncate">{dt('detail-resolution', 'Résol. litiges')}</div>
                             <div className="text-[11px] font-bold text-emerald-600">{selectedProvince.disputeResolutionRate || 0}%</div>
                           </Card>
                         )}
