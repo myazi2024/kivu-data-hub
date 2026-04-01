@@ -504,13 +504,13 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                       <div className="grid grid-cols-3 gap-1">
                         {isChartVisible('detail-density') && (
                           <Card className="p-1 border-border/30">
-                            <div className="text-[9px] text-muted-foreground truncate">{dt('detail-density', 'Densité')}</div>
+                            <div className="text-[10px] text-muted-foreground truncate">{dt('detail-density', 'Densité')}</div>
                             <Badge 
                               variant={
                                 selectedProvince.densityLevel === 'Très élevé' ? 'destructive' :
                                 selectedProvince.densityLevel === 'Élevé' ? 'secondary' : 'outline'
                               }
-                              className="text-[8px] px-1 py-0"
+                              className="text-[10px] px-1 py-0"
                             >
                               {selectedProvince.densityLevel}
                             </Badge>
