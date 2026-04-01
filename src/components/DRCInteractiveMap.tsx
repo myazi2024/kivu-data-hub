@@ -425,7 +425,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                           )}
                           {isChartVisible('detail-titles') && (
                             <Card className="p-1 border-border/30">
-                              <div className="text-[9px] text-muted-foreground truncate">{dt('detail-titles', 'Titres dem.')}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-titles', 'Titres dem.')}</div>
                               <div className="text-[11px] font-bold text-blue-600">{formatNumber(selectedProvince.titleRequestsCount)}</div>
                             </Card>
                           )}
