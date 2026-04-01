@@ -3,6 +3,7 @@ import { Receipt, CreditCard, CheckCircle2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { SectionCard, DocTable, StatusAlert } from '../primitives';
 import { TaxHistory, MortgageHistory } from '@/hooks/useCadastralSearch';
+import DocumentAttachment from '../../DocumentAttachment';
 
 interface ObligationsSectionProps {
   number: number;
@@ -42,20 +43,32 @@ const ObligationsSection: React.FC<ObligationsSectionProps> = ({ number, taxHist
         <Receipt className="h-3.5 w-3.5" /> Taxes foncières
       </h4>
       {taxHistory.length > 0 ? (
-        <DocTable headers={['Année', 'Montant (USD)', 'Statut', 'Date de paiement']}>
-          {taxHistory.map((tax) => (
-            <tr key={tax.id}>
-              <td className="font-semibold text-sm">{tax.tax_year}</td>
-              <td className="text-sm">${tax.amount_usd.toLocaleString()}</td>
-              <td>
-                <Badge variant={getPaymentStatusVariant(tax.payment_status)} className="text-xs">
-                  {getPaymentStatusLabel(tax.payment_status)}
-                </Badge>
-              </td>
-              <td className="text-xs">{tax.payment_date ? formatDate(tax.payment_date) : '—'}</td>
-            </tr>
+        <>
+          <DocTable headers={['Année', 'Montant (USD)', 'Statut', 'Date de paiement']}>
+            {taxHistory.map((tax) => (
+              <tr key={tax.id}>
+                <td className="font-semibold text-sm">{tax.tax_year}</td>
+                <td className="text-sm">${tax.amount_usd.toLocaleString()}</td>
+                <td>
+                  <Badge variant={getPaymentStatusVariant(tax.payment_status)} className="text-xs">
+                    {getPaymentStatusLabel(tax.payment_status)}
+                  </Badge>
+                </td>
+                <td className="text-xs">{tax.payment_date ? formatDate(tax.payment_date) : '—'}</td>
+              </tr>
+            ))}
+          </DocTable>
+          {/* Tax receipts */}
+          {taxHistory.filter(t => t.receipt_document_url).map(tax => (
+            <div key={`receipt-${tax.id}`} className="mt-2">
+              <DocumentAttachment
+                documentUrl={tax.receipt_document_url}
+                label={`Reçu fiscal ${tax.tax_year}`}
+                description={`Montant: $${tax.amount_usd.toLocaleString()}`}
+              />
+            </div>
           ))}
-        </DocTable>
+        </>
       ) : (
         <p className="text-sm text-muted-foreground italic">Aucune taxe foncière enregistrée</p>
       )}

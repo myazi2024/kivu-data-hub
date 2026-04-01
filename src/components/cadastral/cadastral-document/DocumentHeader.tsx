@@ -1,6 +1,6 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Landmark } from 'lucide-react';
+import { Landmark, AlertTriangle } from 'lucide-react';
 import { CadastralParcel } from '@/types/cadastral';
 
 interface DocumentHeaderProps {
@@ -48,9 +48,17 @@ const DocumentHeader: React.FC<DocumentHeaderProps> = ({ parcel }) => {
               <p>Générée le</p>
               <p className="font-semibold text-foreground">{today}</p>
             </div>
-            <Badge variant={parcel.parcel_type === 'SU' ? 'default' : 'secondary'} className="text-xs">
-              {parcel.parcel_type === 'SU' ? 'Section Urbaine' : 'Section Rurale'}
-            </Badge>
+            <div className="flex items-center gap-1.5 justify-end flex-wrap">
+              <Badge variant={parcel.parcel_type === 'SU' ? 'default' : 'secondary'} className="text-xs">
+                {parcel.parcel_type === 'SU' ? 'Section Urbaine' : 'Section Rurale'}
+              </Badge>
+              {parcel.has_dispute && (
+                <Badge variant="destructive" className="text-xs flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  Litige
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
       </div>
