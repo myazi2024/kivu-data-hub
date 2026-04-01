@@ -1,36 +1,32 @@
 
 
-# Remplacer CadastralMap par ParcelSketchSVG dans la fiche cadastrale
+# Suppression section juridique + correction disclaimer
 
-## Constat
+## 1. Supprimer la section "Vérification juridique"
 
-La section "Croquis du terrain" dans `LocationSection.tsx` utilise `CadastralMap` (carte interactive Leaflet). L'utilisateur veut un croquis SVG statique comme dans le service de lotissement, via le composant `ParcelSketchSVG` déjà existant.
+**`CadastralDocumentView.tsx`** :
+- Retirer l'import de `LegalSection`
+- Retirer `'legal'` du type `SectionKey` et du tableau `visibleSections`
+- Retirer `hasLegalVerification` et le bloc JSX de la section Legal (lignes 140-147)
+- Retirer `ShieldCheck` des imports lucide (déjà utilisé dans le footer, pas ici)
+- Retirer `legal_verification` de la destructuration de `result`
 
-## Données disponibles
+**Fichier `sections/LegalSection.tsx`** : conservé mais plus utilisé par la fiche (peut servir ailleurs).
 
-`ParcelSketchSVG` accepte :
-- `coordinates` (requis) → disponible via `parcel.gps_coordinates`
-- `parcelSides` (requis) → disponible via `parcel.parcel_sides`
-- `buildingShapes` (optionnel) → **pas sur `cadastral_parcels`**, passer `[]`
-- `roadSides` (optionnel) → **pas sur `cadastral_parcels`**, passer `[]`
-- `servitude` (optionnel) → pas disponible, omis
+## 2. Corriger l'avis de non-responsabilité
 
-Les deux champs essentiels (coordonnées GPS + côtés) sont présents sur la parcelle, ce qui suffit pour un croquis fidèle avec bornes, dimensions et orientations.
+**`DocumentFooter.tsx`** — Le texte actuel dit que les données viennent "des archives du Ministère des Affaires Foncières", ce qui est incorrect. Selon l'Article 6 des CGU (Legal.tsx), les données proviennent de **sources officielles et de contributions communautaires vérifiées**.
 
-## Modification
+Nouveau texte aligné sur les CGU :
 
-### `sections/LocationSection.tsx`
+> **Avis de non-responsabilité :** Les informations contenues dans ce document proviennent de sources officielles (services cadastraux, conservation des titres immobiliers) et de contributions communautaires vérifiées. Le Bureau d'Informations Cadastrales (BIC) ne saurait garantir l'exhaustivité, l'exactitude absolue ou l'actualité permanente de l'ensemble des données. BIC agit de bonne foi dans son travail de compilation et de présentation de ces informations.
 
-1. Remplacer l'import `CadastralMap` par `ParcelSketchSVG`
-2. Adapter le bloc "Croquis du terrain" :
-   - Mapper `parcel.gps_coordinates` au format `{ lat, lng, borne }[]`
-   - Mapper `parcel.parcel_sides` au format `{ name, length, orientation }[]` attendu par `ParcelSketchSVG`
-   - Passer `buildingShapes={[]}` (données non disponibles sur la table parcelle)
-3. Supprimer la condition `hasMap` basée sur lat/lng seuls → la baser sur `gps_coordinates.length >= 3`
+> En cas de divergence avec la situation réelle, veuillez vous rapprocher du service des Affaires Foncières compétent pour solliciter une mise à jour des informations relatives à la parcelle {parcelNumber}.
 
-### Fichier impacté
+## Fichiers impactés
 
 | Fichier | Modification |
 |---|---|
-| `sections/LocationSection.tsx` | Remplacer `CadastralMap` par `ParcelSketchSVG`, adapter le mapping des props |
+| `CadastralDocumentView.tsx` | Retirer section Legal (import, type, logique, JSX) |
+| `DocumentFooter.tsx` | Réécrire le disclaimer pour aligner sur les CGU |
 
