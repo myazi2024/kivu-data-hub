@@ -7,6 +7,9 @@ import TypewriterAnimation from '@/components/TypewriterAnimation';
 import { useCatalogConfig } from '@/hooks/useCatalogConfig';
 
 const HeroSection = () => {
+  const { config } = useCatalogConfig();
+  const provinces = config.available_provinces || [];
+
   return (
     <section className="relative min-h-[85dvh] flex items-center justify-center overflow-hidden">
       {/* Background Image with Overlay */}
