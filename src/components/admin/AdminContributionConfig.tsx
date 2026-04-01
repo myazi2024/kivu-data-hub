@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,12 +21,21 @@ import { useConfigValidation } from '@/hooks/useConfigValidation';
 import AdminPicklistManager from './config/AdminPicklistManager';
 import AdminStaticPicklistManager from './config/AdminStaticPicklistManager';
 
-const AdminContributionConfig = () => {
+const AdminContributionConfig = ({ initialTab, scrollToLegend }: { initialTab?: string; scrollToLegend?: boolean } = {}) => {
   const { configs, loading, updateConfig } = useContributionConfig();
   const { toast } = useToast();
   const { saveToHistory } = useConfigHistory();
   const { validateMapPreviewSettings, validateValidationRules, validateCccCalculation } = useConfigValidation();
   const [saving, setSaving] = useState<string | null>(null);
+  const legendRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollToLegend && !loading) {
+      setTimeout(() => {
+        legendRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 300);
+    }
+  }, [scrollToLegend, loading]);
 
   // Trouver les configurations spécifiques
   const formSectionsConfig = configs.find(c => c.config_key === 'form_sections');
@@ -346,7 +355,7 @@ const AdminContributionConfig = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="p-3 sm:p-6">
-              <Tabs defaultValue="sections">
+              <Tabs defaultValue={initialTab || "sections"}>
                 <TabsList className="grid w-full grid-cols-9 h-8 sm:h-10 text-[10px] sm:text-xs p-0.5 sm:p-1">
                   <TabsTrigger value="sections" className="text-[10px] sm:text-xs px-1 sm:px-3">Sections</TabsTrigger>
                   <TabsTrigger value="required" className="text-[10px] sm:text-xs px-1 sm:px-3">Requis</TabsTrigger>
@@ -1376,7 +1385,7 @@ const AdminContributionConfig = () => {
 
               {/* Section Légende */}
               <div className="space-y-4">
-                <h4 className="text-sm font-semibold flex items-center gap-2">
+                <h4 ref={legendRef} className="text-sm font-semibold flex items-center gap-2">
                   <span>📋</span> Légende de la carte
                 </h4>
 
