@@ -522,7 +522,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
   // Standalone mode with Dialog
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-[380px] rounded-2xl p-0 gap-0 max-h-[85vh] overflow-hidden flex flex-col">>
+      <DialogContent className="max-w-[380px] rounded-2xl p-0 gap-0 max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader className="p-4 pb-2 border-b flex-shrink-0">
           <DialogTitle className="flex items-center gap-2 text-base">
             <IconComponent className={`h-4 w-4 ${iconColor}`} />
