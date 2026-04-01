@@ -291,7 +291,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   </div>
                   
                   <div className="flex-1 min-h-0 overflow-hidden flex items-center justify-center p-1">
-                    <div className="w-full h-full flex items-center justify-center" style={{ transform: 'scale(0.8)', transformOrigin: 'center center' }}>
+                    <div className="w-full h-full flex items-center justify-center" style={{ transform: 'scale(0.9)', transformOrigin: 'center center' }}>
                       <DRCMapWithTooltip
                         provincesData={provincesData}
                         selectedProvince={selectedProvince?.id || null}
