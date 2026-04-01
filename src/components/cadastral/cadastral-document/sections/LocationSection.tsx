@@ -25,11 +25,20 @@ interface ParcelSide {
 }
 
 const LocationSection: React.FC<LocationSectionProps> = ({ number, parcel, boundaryHistory }) => {
-  const hasMap = (parcel.latitude && parcel.longitude) || (Array.isArray(parcel.gps_coordinates) && (parcel.gps_coordinates as any[]).length > 0);
+  const gpsCoords = Array.isArray(parcel.gps_coordinates)
+    ? (parcel.gps_coordinates as Array<{ lat: number | string; lng: number | string; borne: string }>)
+    : [];
+  const hasSketch = gpsCoords.length >= 3;
 
   const parcelSides: ParcelSide[] = Array.isArray(parcel.parcel_sides)
     ? (parcel.parcel_sides as ParcelSide[]).filter(s => s && (s.side || s.length))
     : [];
+
+  const sketchSides = parcelSides.map(s => ({
+    name: s.side || '',
+    length: String(s.length ?? ''),
+    orientation: s.orientation,
+  }));
 
   return (
     <SectionCard number={number} icon={<MapPin className="h-4 w-4" />} title="Localisation">
