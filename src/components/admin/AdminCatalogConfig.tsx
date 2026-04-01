@@ -68,6 +68,7 @@ const AdminCatalogConfig = () => {
     data_missing: '',
     data_available: ''
   });
+  const [availableProvinces, setAvailableProvinces] = useState<string[]>([]);
 
   const loadConfigs = async () => {
     try {
