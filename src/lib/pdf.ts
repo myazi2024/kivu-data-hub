@@ -354,15 +354,35 @@ export async function generateCadastralReport(
   const building_permits = contributionData?.building_permits || cadastralResult.building_permits || [];
   
   
-  // Générer un ID unique pour ce rapport et QR code
-  const reportId = generateReportId();
+  // Persist verification and generate QR code
+  let reportId = generateReportId();
+  let verifyUrl = `https://bic.cd/verify-report/${reportId}`;
+  
+  try {
+    const verification = await createDocumentVerification({
+      documentType: 'report',
+      parcelNumber: parcel.parcel_number,
+      clientName: parcel.current_owner_name || null,
+      metadata: {
+        paidServices,
+        serviceNames: paidServices.map(id => servicesCatalog.find(s => s.id === id)?.name).filter(Boolean),
+      },
+    });
+    if (verification) {
+      reportId = verification.verificationCode;
+      verifyUrl = verification.verifyUrl;
+    }
+  } catch (e) {
+    console.error('Failed to persist verification, using fallback ID:', e);
+  }
+
   const reportDate = new Date();
   const reportDateTime = reportDate.toLocaleDateString('fr-FR') + ' à ' + reportDate.toLocaleTimeString('fr-FR');
   
   // Générer QR code pour vérification
   let qrCodeDataUrl = '';
   try {
-    qrCodeDataUrl = await QRCode.toDataURL(`https://bic.cd/verify-report/${reportId}`);
+    qrCodeDataUrl = await QRCode.toDataURL(verifyUrl);
   } catch (error) {
     console.error('Failed to generate QR code:', error);
   }
