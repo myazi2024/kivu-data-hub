@@ -66,7 +66,6 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
     'history',
     'obligations',
     'disputes',
-    'legal',
   ].filter(Boolean) as SectionKey[];
 
   // If parcel data is missing, collapse identification + owner into one locked section
