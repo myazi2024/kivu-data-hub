@@ -41,6 +41,7 @@ const Articles = React.lazy(() => import("./pages/Articles"));
 const ArticleDetail = React.lazy(() => import("./pages/ArticleDetail"));
 const AboutCCC = React.lazy(() => import("./pages/AboutCCC"));
 const AboutDiscountCodes = React.lazy(() => import("./pages/AboutDiscountCodes"));
+const VerifyDocument = React.lazy(() => import("./pages/VerifyDocument"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
