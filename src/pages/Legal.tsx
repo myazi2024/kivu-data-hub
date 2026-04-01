@@ -13,6 +13,10 @@ const legalSections = [
   { id: 'cookies', label: 'Article 5 — Cookies' },
   { id: 'droit', label: 'Article 6 — Droit applicable' },
   { id: 'modifications', label: 'Article 7 — Modifications' },
+  { id: 'cgv', label: 'Article 8 — Conditions Générales de Vente' },
+  { id: 'contributions', label: 'Article 9 — Contributions Citoyennes' },
+  { id: 'services', label: 'Article 10 — Conditions par service' },
+  { id: 'revendeurs', label: 'Article 11 — Programme Revendeurs' },
 ];
 
 const Legal = () => {
