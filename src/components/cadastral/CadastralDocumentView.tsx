@@ -66,10 +66,9 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
 
   // Data-presence gating: if the server returned data, the user has access
   const hasParcelData = !!parcel.current_owner_name; // full parcel has owner; minimal doesn't
-  const hasLocationData = boundary_history.length > 0 || !!parcel.latitude;
   const hasHistoryData = ownership_history.length > 0;
   const hasObligationsData = tax_history.length > 0 || mortgage_history.length > 0;
-  const hasDisputesData = land_disputes !== undefined && land_disputes !== null;
+  const hasDisputesData = Array.isArray(land_disputes) && land_disputes.length > 0;
   const hasLegalVerification = legal_verification !== null && legal_verification !== undefined;
 
   const getPaymentStatusLabel = (status: string) => {
