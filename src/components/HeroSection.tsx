@@ -4,6 +4,7 @@ import { ArrowRight, MapPin, BarChart3, Map } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import heroSkyline from '@/assets/hero-skyline.webp';
 import TypewriterAnimation from '@/components/TypewriterAnimation';
+import { useCatalogConfig } from '@/hooks/useCatalogConfig';
 
 const HeroSection = () => {
   return (
