@@ -142,6 +142,7 @@ const Admin = () => {
       case 'validation': return <AdminValidation />;
       case 'ccc-codes': return <AdminCCCCodes />;
       case 'contribution-config': return <AdminContributionConfig />;
+      case 'map-legend': return <AdminContributionConfig initialTab="map" scrollToLegend />;
       case 'payments': return <AdminPayments onRefresh={refreshCounts} />;
       case 'payment-methods': return <AdminPaymentMethods />;
       case 'payment-mode': return <AdminPaymentMode />;
