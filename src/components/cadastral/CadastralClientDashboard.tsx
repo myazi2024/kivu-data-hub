@@ -361,8 +361,25 @@ const CadastralClientDashboard: React.FC = () => {
                             <Button
                               variant="ghost"
                               size="sm"
+                              onClick={() => generateCadastralReportPDF(invoice)}
+                              disabled={generatingReport === invoice.id}
+                              aria-label={`Télécharger la fiche cadastrale ${invoice.parcel_number}`}
+                              title="Fiche cadastrale PDF"
+                            >
+                              {generatingReport === invoice.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <FileDown className="h-4 w-4" />
+                              )}
+                            </Button>
+                          )}
+                          {invoice.status === 'paid' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => generatePDFInvoice(invoice)}
                               aria-label={`Télécharger la facture ${invoice.invoice_number}`}
+                              title="Facture PDF"
                             >
                               <Download className="h-4 w-4" />
                             </Button>
