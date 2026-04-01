@@ -29,6 +29,7 @@ interface CatalogConfig {
     data_missing: string;
     data_available: string;
   };
+  available_provinces: string[];
 }
 
 const DEFAULT_CONFIG: CatalogConfig = {
