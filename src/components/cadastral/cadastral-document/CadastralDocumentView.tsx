@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Building, MapPin, Clock, Receipt, Scale, ShieldCheck } from 'lucide-react';
+import { Building, MapPin, Clock, Receipt, Scale } from 'lucide-react';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
 import { CadastralService } from '@/hooks/useCadastralServices';
 import { createDocumentVerification } from '@/lib/documentVerification';
