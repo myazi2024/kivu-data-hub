@@ -27,6 +27,15 @@ const AdminContributionConfig = ({ initialTab, scrollToLegend }: { initialTab?: 
   const { saveToHistory } = useConfigHistory();
   const { validateMapPreviewSettings, validateValidationRules, validateCccCalculation } = useConfigValidation();
   const [saving, setSaving] = useState<string | null>(null);
+  const legendRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollToLegend && !loading) {
+      setTimeout(() => {
+        legendRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 300);
+    }
+  }, [scrollToLegend, loading]);
 
   // Trouver les configurations spécifiques
   const formSectionsConfig = configs.find(c => c.config_key === 'form_sections');
