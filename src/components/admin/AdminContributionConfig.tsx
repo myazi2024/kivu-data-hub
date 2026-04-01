@@ -21,7 +21,7 @@ import { useConfigValidation } from '@/hooks/useConfigValidation';
 import AdminPicklistManager from './config/AdminPicklistManager';
 import AdminStaticPicklistManager from './config/AdminStaticPicklistManager';
 
-const AdminContributionConfig = () => {
+const AdminContributionConfig = ({ initialTab, scrollToLegend }: { initialTab?: string; scrollToLegend?: boolean } = {}) => {
   const { configs, loading, updateConfig } = useContributionConfig();
   const { toast } = useToast();
   const { saveToHistory } = useConfigHistory();
