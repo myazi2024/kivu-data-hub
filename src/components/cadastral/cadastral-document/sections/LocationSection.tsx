@@ -84,17 +84,18 @@ const LocationSection: React.FC<LocationSectionProps> = ({ number, parcel, bound
         </div>
       )}
 
-      {/* Map */}
-      {hasMap && (
+      {/* Sketch SVG */}
+      {hasSketch && (
         <div className="mt-4 print:break-before-page">
           <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Map className="h-3.5 w-3.5" /> Croquis du terrain
           </h4>
-          <div className="relative z-0 rounded-lg overflow-hidden border border-border/50">
-            <CadastralMap
-              coordinates={Array.isArray(parcel.gps_coordinates) ? parcel.gps_coordinates as Array<{ lat: number; lng: number; borne: string }> : []}
-              center={{ lat: parcel.latitude, lng: parcel.longitude }}
-              parcelNumber={parcel.parcel_number}
+          <div className="relative z-0 rounded-lg overflow-hidden border border-border/50 bg-background p-2">
+            <ParcelSketchSVG
+              coordinates={gpsCoords}
+              parcelSides={sketchSides}
+              buildingShapes={[]}
+              roadSides={[]}
             />
           </div>
         </div>
