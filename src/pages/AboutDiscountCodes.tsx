@@ -254,13 +254,13 @@ const AboutDiscountCodes = () => {
               </a>
               
               <a 
-                href="mailto:contact@bfrdc.cd" 
+                href="mailto:contact@bic.cd" 
                 className="flex items-center gap-3 p-4 bg-background rounded-lg border hover:border-primary transition-colors"
               >
                 <Mail className="h-5 w-5 text-primary" />
                 <div>
                   <p className="font-medium text-sm">Email</p>
-                  <p className="text-xs text-muted-foreground">contact@bfrdc.cd</p>
+                  <p className="text-xs text-muted-foreground">contact@bic.cd</p>
                 </div>
               </a>
             </div>
