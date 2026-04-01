@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Building, MapPin, Clock, Receipt, Scale, ShieldCheck } from 'lucide-react';
+import { Building, MapPin, Clock, Receipt, Scale } from 'lucide-react';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
 import { CadastralService } from '@/hooks/useCadastralServices';
 import { createDocumentVerification } from '@/lib/documentVerification';
@@ -16,7 +16,7 @@ import LocationSection from './sections/LocationSection';
 import HistorySection from './sections/HistorySection';
 import ObligationsSection from './sections/ObligationsSection';
 import DisputesSection from './sections/DisputesSection';
-import LegalSection from './sections/LegalSection';
+
 
 interface CadastralDocumentViewProps {
   result: CadastralSearchResult;
@@ -26,12 +26,12 @@ interface CadastralDocumentViewProps {
   onBackToCatalog: () => void;
 }
 
-type SectionKey = 'identification' | 'owner' | 'construction' | 'location' | 'history' | 'obligations' | 'disputes' | 'legal';
+type SectionKey = 'identification' | 'owner' | 'construction' | 'location' | 'history' | 'obligations' | 'disputes';
 
 const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
   result, paidServices, catalogServices, onDownloadReport, onBackToCatalog,
 }) => {
-  const { parcel, ownership_history, tax_history, mortgage_history, boundary_history, building_permits, land_disputes, legal_verification } = result;
+  const { parcel, ownership_history, tax_history, mortgage_history, boundary_history, building_permits, land_disputes } = result;
 
   const [verificationCode, setVerificationCode] = useState<string | null>(null);
   const [verifyUrl, setVerifyUrl] = useState<string | null>(null);
@@ -55,7 +55,6 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
   const hasHistoryData = ownership_history.length > 0;
   const hasObligationsData = tax_history.length > 0 || mortgage_history.length > 0;
   const hasDisputesAccess = paidServices.includes('disputes') || (Array.isArray(land_disputes) && land_disputes.length > 0);
-  const hasLegalVerification = legal_verification !== null && legal_verification !== undefined;
   const hasLocationData = hasParcelData && (!!parcel.province || !!parcel.latitude);
 
   // Declarative visible sections for numbering
@@ -67,7 +66,6 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
     'history',
     'obligations',
     'disputes',
-    'legal',
   ].filter(Boolean) as SectionKey[];
 
   // If parcel data is missing, collapse identification + owner into one locked section
@@ -137,14 +135,6 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
             </SectionCard>
           )}
 
-          {/* Legal */}
-          {hasLegalVerification ? (
-            <LegalSection number={sn('legal')} legalVerification={legal_verification} />
-          ) : (
-            <SectionCard number={sn('legal')} icon={<ShieldCheck className="h-4 w-4" />} title="Vérification juridique">
-              <LockedSection serviceName="Vérification juridique" onUnlock={onBackToCatalog} />
-            </SectionCard>
-          )}
         </div>
 
         <DocumentFooter parcelNumber={parcel.parcel_number} verificationCode={verificationCode} verifyUrl={verifyUrl} />
