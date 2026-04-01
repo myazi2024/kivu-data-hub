@@ -1,73 +1,92 @@
-# Welcome to your Lovable project
+# CadastreRDC — Plateforme Cadastrale de la République Démocratique du Congo
 
-## Project info
+Plateforme numérique de gestion cadastrale pour la RDC : recherche de parcelles, contributions citoyennes, services fonciers, paiements en ligne et administration complète.
 
-**URL**: https://lovable.dev/projects/bee4d138-def6-42cb-81c8-f5965006e0e1
+## Stack technique
 
-## How can I edit this code?
+| Couche | Technologie |
+|--------|-------------|
+| Frontend | React 18 + TypeScript 5, Vite 5 |
+| UI | Tailwind CSS 3, shadcn/ui, Lucide icons |
+| État | TanStack React Query, Context API |
+| Cartographie | Leaflet / React-Leaflet |
+| Backend | Supabase (PostgreSQL, Auth, Storage, Edge Functions) |
+| Paiements | Stripe (carte bancaire), Mobile Money (Airtel, Orange, M-Pesa) |
+| PDF | jsPDF + jspdf-autotable |
 
-There are several ways of editing your application.
+## Modules fonctionnels
 
-**Use Lovable**
+| Module | Description |
+|--------|-------------|
+| **Cadastre** | Recherche, visualisation et contribution de données parcellaires |
+| **Titres fonciers** | Demande de titre (urbain/rural), frais dynamiques, suivi |
+| **Mutations** | Transfert de propriété avec frais et validation admin |
+| **Hypothèques** | Enregistrement, suivi, mainlevée hypothécaire |
+| **Permis de bâtir** | Demande multi-étapes avec pièces jointes |
+| **Lotissement** | Subdivision de parcelles, frais configurables |
+| **Expertise immobilière** | Demande d'expertise, certificat PDF généré |
+| **Litiges fonciers** | Signalement, suivi, levée de litige |
+| **Fiscalité** | Calculateur IRL, taxe bâtiment, historique fiscal |
+| **Codes CCC** | Codes contributeur cadastral : génération, validation, utilisation |
+| **Publications** | Kiosque de documents avec panier d'achat |
+| **Revendeurs** | Dashboard partenaire, commissions, codes promo |
+| **Articles** | Blog thématique avec gestion admin |
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/bee4d138-def6-42cb-81c8-f5965006e0e1) and start prompting.
+## Structure des dossiers
 
-Changes made via Lovable will be committed automatically to this repo.
+```
+src/
+├── pages/          # 18 pages (Index, Admin, CadastralMap, UserDashboard…)
+├── components/     
+│   ├── admin/      # 70+ composants d'administration
+│   ├── cadastral/  # Formulaires, dialogs, cartes cadastrales
+│   ├── user/       # Tableau de bord utilisateur (15 onglets)
+│   ├── payment/    # BankCardPayment, MobileMoneyPayment, CurrencySelector
+│   ├── cart/        # Panier publications
+│   └── ui/         # shadcn/ui (Button, Dialog, Toast…)
+├── hooks/          # 65+ hooks (useAuth, useCadastralSearch, usePayment…)
+├── types/          # Types partagés (cadastral, mutation, expertise…)
+├── integrations/   # Client Supabase, types auto-générés
+└── utils/          # Helpers (formatage, validation, PDF)
 
-**Use your preferred IDE**
+supabase/
+├── functions/      # 6 Edge Functions (paiement, webhook, nettoyage…)
+├── migrations/     # 140+ migrations SQL
+└── config.toml     # Configuration Supabase
+```
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Variables d'environnement
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+| Variable | Description |
+|----------|-------------|
+| `VITE_SUPABASE_URL` | URL du projet Supabase (auto-configuré) |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Clé anon Supabase (auto-configuré) |
+| `STRIPE_SECRET_KEY` | Clé secrète Stripe (Edge Function secret) |
+| `STRIPE_WEBHOOK_SECRET` | Secret webhook Stripe (Edge Function secret) |
 
-Follow these steps:
+## Développement local
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+git clone <URL_DU_REPO>
+cd <NOM_DU_PROJET>
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Documentation
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Voir le dossier [`docs/`](./docs/) :
 
-**Use GitHub Codespaces**
+- [ARCHITECTURE.md](./docs/ARCHITECTURE.md) — Architecture technique détaillée
+- [DATABASE_SCHEMA.md](./docs/DATABASE_SCHEMA.md) — Schéma de base de données
+- [EDGE_FUNCTIONS.md](./docs/EDGE_FUNCTIONS.md) — Documentation des Edge Functions
+- [PAYMENT_FLOW.md](./docs/PAYMENT_FLOW.md) — Flux de paiement complet
+- [MODULES.md](./docs/MODULES.md) — Guide des modules fonctionnels
+- [TEST_MODE.md](./docs/TEST_MODE.md) — Mode test et données de test
+- [DEPLOYMENT.md](./docs/DEPLOYMENT.md) — Guide de déploiement
+- [API_TYPES.md](./docs/API_TYPES.md) — Index des types TypeScript
+- [RESELLER.md](./docs/RESELLER.md) — Module revendeur
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Déploiement
 
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/bee4d138-def6-42cb-81c8-f5965006e0e1) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+Via Lovable : cliquer sur **Share → Publish**. Les Edge Functions et migrations se déploient automatiquement. Le frontend nécessite un clic sur « Update » dans le dialogue de publication.
