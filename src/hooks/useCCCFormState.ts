@@ -267,7 +267,7 @@ export const useCCCFormState = ({
   };
 
   const clearSavedFormData = () => {
-    try { localStorage.removeItem(STORAGE_KEY); } catch (error) { console.error(error); }
+    try { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem('auth_redirect_url'); } catch (error) { console.error(error); }
   };
 
   // ─── File handling ───
