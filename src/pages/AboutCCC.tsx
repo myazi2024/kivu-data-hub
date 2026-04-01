@@ -782,10 +782,10 @@ const AboutCCC = () => {
 
           <div className="flex gap-3 pt-4">
             <Button asChild>
-              <Link to="/">Commencer une recherche</Link>
+              <Link to="/cadastral-map">Commencer une recherche</Link>
             </Button>
             <Button variant="outline" asChild>
-              <Link to="/billing-dashboard">Voir mes codes CCC</Link>
+              <Link to="/mon-compte?tab=contributions">Voir mes contributions</Link>
             </Button>
           </div>
         </CardContent>

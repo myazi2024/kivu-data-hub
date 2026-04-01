@@ -230,18 +230,18 @@ const AboutDiscountCodes = () => {
             </p>
             <div className="grid md:grid-cols-3 gap-4">
               <a 
-                href="tel:+243123456789" 
+                href="tel:+243816996077" 
                 className="flex items-center gap-3 p-4 bg-background rounded-lg border hover:border-primary transition-colors"
               >
                 <Phone className="h-5 w-5 text-primary" />
                 <div>
                   <p className="font-medium text-sm">Téléphone</p>
-                  <p className="text-xs text-muted-foreground">+243 123 456 789</p>
+                  <p className="text-xs text-muted-foreground">+243 816 996 077</p>
                 </div>
               </a>
               
               <a 
-                href="https://wa.me/243123456789" 
+                href="https://wa.me/243816996077" 
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-3 p-4 bg-background rounded-lg border hover:border-primary transition-colors"
@@ -249,18 +249,18 @@ const AboutDiscountCodes = () => {
                 <MessageCircle className="h-5 w-5 text-primary" />
                 <div>
                   <p className="font-medium text-sm">WhatsApp</p>
-                  <p className="text-xs text-muted-foreground">+243 123 456 789</p>
+                  <p className="text-xs text-muted-foreground">+243 816 996 077</p>
                 </div>
               </a>
               
               <a 
-                href="mailto:support@example.cd" 
+                href="mailto:contact@bfrdc.cd" 
                 className="flex items-center gap-3 p-4 bg-background rounded-lg border hover:border-primary transition-colors"
               >
                 <Mail className="h-5 w-5 text-primary" />
                 <div>
                   <p className="font-medium text-sm">Email</p>
-                  <p className="text-xs text-muted-foreground">support@example.cd</p>
+                  <p className="text-xs text-muted-foreground">contact@bfrdc.cd</p>
                 </div>
               </a>
             </div>
