@@ -156,7 +156,7 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
                   {parcel.title_reference_number && <DataRow label="Référence du titre" value={<span className="font-mono">{parcel.title_reference_number}</span>} />}
                   {parcel.title_issue_date && <DataRow label="Date d'émission" value={formatDate(parcel.title_issue_date)} />}
                   <DataRow label="Superficie" value={formatArea(parcel.area_sqm)} highlight />
-                  {parcel.area_hectares && parcel.area_hectares > 0 && <DataRow label="Hectares" value={`${parcel.area_hectares.toFixed(2)} ha`} />}
+                  
                   {parcel.declared_usage && <DataRow label="Usage déclaré" value={parcel.declared_usage} />}
                   {parcel.lease_type && <DataRow label="Type de bail" value={parcel.lease_type} />}
                   {parcel.standing && <DataRow label="Standing" value={parcel.standing} />}
