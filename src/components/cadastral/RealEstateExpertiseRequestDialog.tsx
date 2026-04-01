@@ -1192,7 +1192,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <SelectTrigger className="h-10 text-sm rounded-xl border-2">
                       <SelectValue placeholder="Sélectionner la catégorie" />
                     </SelectTrigger>
-                    <SelectContent className="z-[1200]">
+                    <SelectContent>
                       {PROPERTY_CATEGORY_OPTIONS.map(opt => (
                         <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                       ))}
@@ -1213,7 +1213,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                         <SelectTrigger className="h-10 text-sm rounded-xl border-2">
                           <SelectValue placeholder={!propertyCategory ? "Catégorie d'abord" : "Sélectionner"} />
                         </SelectTrigger>
-                        <SelectContent className="z-[1200]">
+                        <SelectContent>
                           {availableConstructionTypes.map(opt => (
                             <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                           ))}
@@ -1229,7 +1229,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                         <SelectTrigger className="h-10 text-sm rounded-xl border-2">
                           <SelectValue placeholder={!constructionType ? "Type d'abord" : "Sélectionner"} />
                         </SelectTrigger>
-                        <SelectContent className="z-[1200]">
+                        <SelectContent>
                           {availableConstructionMaterials.map(opt => (
                             <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                           ))}
@@ -1253,7 +1253,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                       <SelectTrigger className="h-10 text-sm rounded-xl border-2">
                         <SelectValue placeholder={!constructionType || !constructionNature ? "Type et nature d'abord" : "Sélectionner"} />
                       </SelectTrigger>
-                      <SelectContent className="z-[1200]">
+                      <SelectContent>
                         {availableDeclaredUsages.map(opt => (
                           <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                         ))}
@@ -1270,7 +1270,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                       <SelectTrigger className="h-10 text-sm rounded-xl border-2">
                         <SelectValue placeholder="Sélectionner le standing" />
                       </SelectTrigger>
-                      <SelectContent className="z-[1200]">
+                      <SelectContent>
                         {availableStandings.map(opt => (
                           <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                         ))}
@@ -1433,7 +1433,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                       <SelectTrigger className="h-9 text-sm rounded-xl border-2">
                         <SelectValue placeholder="Sélectionner..." />
                       </SelectTrigger>
-                      <SelectContent className="z-[1200] max-h-[200px]">
+                      <SelectContent className="max-h-[200px]">
                         {YEAR_OPTIONS.map(opt => (
                           <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                         ))}
@@ -1507,7 +1507,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <SelectTrigger className="h-9 text-sm rounded-xl border-2">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="z-[1200]">
+                    <SelectContent>
                       {PROPERTY_CONDITION_OPTIONS.map(opt => (
                         <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                       ))}
@@ -1559,7 +1559,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                       <SelectTrigger className="h-9 text-sm rounded-xl border-2">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="z-[1200]">
+                      <SelectContent>
                         {ACCESSIBILITY_OPTIONS.map(opt => (
                           <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                         ))}
@@ -1615,7 +1615,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <SelectTrigger className="h-9 text-sm rounded-xl border-2">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="z-[1200]">
+                    <SelectContent>
                       {BUILDING_POSITION_OPTIONS.map(opt => (
                         <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                       ))}
@@ -1630,7 +1630,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                       <SelectTrigger className="h-9 text-sm rounded-xl border-2">
                         <SelectValue placeholder="Sélectionner..." />
                       </SelectTrigger>
-                      <SelectContent className="z-[1200]">
+                      <SelectContent>
                         {FACADE_ORIENTATION_OPTIONS.map(opt => (
                           <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                         ))}
@@ -1713,7 +1713,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                           <SelectTrigger className="h-8 text-xs">
                             <SelectValue placeholder="Fournisseur d'accès internet" />
                           </SelectTrigger>
-                          <SelectContent className="z-[1200]">
+                          <SelectContent>
                             <SelectItem value="canalbox">Canalbox</SelectItem>
                             <SelectItem value="starlink">Starlink</SelectItem>
                             <SelectItem value="vodacom">Vodacom</SelectItem>
@@ -1853,7 +1853,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <SelectTrigger className="h-9 text-sm rounded-xl border-2">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="z-[1200]">
+                    <SelectContent>
                       {ROOF_MATERIAL_OPTIONS.map(opt => (
                         <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                       ))}
@@ -1867,7 +1867,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <SelectTrigger className="h-9 text-sm rounded-xl border-2">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="z-[1200]">
+                    <SelectContent>
                       {WINDOW_TYPE_OPTIONS.map(opt => (
                         <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                       ))}
@@ -1881,7 +1881,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <SelectTrigger className="h-9 text-sm rounded-xl border-2">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="z-[1200]">
+                    <SelectContent>
                       {FLOOR_MATERIAL_OPTIONS.map(opt => (
                         <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                       ))}
@@ -2045,7 +2045,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                       <SelectTrigger className="h-9 text-sm rounded-xl border-2">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="z-[1200]">
+                      <SelectContent>
                         {SOUND_ENVIRONMENT_OPTIONS.map(opt => (
                           <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                         ))}
@@ -2093,7 +2093,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <SelectTrigger className="h-9 text-sm rounded-xl border-2">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="z-[1200]">
+                    <SelectContent>
                       {ROAD_ACCESS_OPTIONS.map(opt => (
                         <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                       ))}
@@ -3182,7 +3182,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 <SelectTrigger className="h-9 rounded-xl text-sm">
                   <SelectValue placeholder="Choisir..." />
                 </SelectTrigger>
-                <SelectContent className="z-[1200]">
+                <SelectContent>
                   <SelectItem value="airtel_money">Airtel Money</SelectItem>
                   <SelectItem value="orange_money">Orange Money</SelectItem>
                    <SelectItem value="mpesa">M-Pesa</SelectItem>
@@ -3443,7 +3443,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
             <div className="space-y-2">
               <Select value={certPaymentProvider} onValueChange={setCertPaymentProvider}>
                 <SelectTrigger className="h-9 rounded-xl text-sm"><SelectValue placeholder="Opérateur" /></SelectTrigger>
-                 <SelectContent className="z-[1200]">
+                 <SelectContent>
                   <SelectItem value="airtel_money">Airtel Money</SelectItem>
                   <SelectItem value="orange_money">Orange Money</SelectItem>
                   <SelectItem value="mpesa">M-Pesa</SelectItem>
@@ -3497,7 +3497,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) { handleClose(); } else { onOpenChange(true); } }}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className="max-w-[95vw] sm:max-w-[420px] max-h-[90vh] p-4 rounded-2xl z-[1200]">
+      <DialogContent className="max-w-[95vw] sm:max-w-[420px] max-h-[90vh] p-4 rounded-2xl">
         <DialogHeader className="pb-2">
           <DialogTitle className="text-base flex items-center gap-2">
             <FileSearch className="h-5 w-5 text-primary" />

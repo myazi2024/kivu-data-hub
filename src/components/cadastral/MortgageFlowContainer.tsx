@@ -34,7 +34,7 @@ const MortgageFlowContainer: React.FC<MortgageFlowContainerProps> = ({
         if (!nextOpen) onClose();
       }}
     >
-      <DialogContent className={`z-[1200] ${isMobile ? 'w-[92vw] max-w-[380px] max-h-[88vh]' : 'max-w-lg max-h-[85vh]'} rounded-2xl p-0 overflow-hidden`}>
+      <DialogContent className={`${isMobile ? 'w-[92vw] max-w-[380px] max-h-[88vh]' : 'max-w-lg max-h-[85vh]'} rounded-2xl p-0 overflow-hidden`}>
         <DialogHeader className="p-4 pb-2">
           <DialogTitle className="flex items-center gap-2 text-base font-bold">
             {icon}

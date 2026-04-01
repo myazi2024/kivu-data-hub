@@ -1389,7 +1389,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) handleClose(); else onOpenChange(true); }}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className={`z-[1200] ${isMobile ? 'w-[92vw] max-w-[360px] max-h-[88vh] rounded-2xl' : 'max-w-md rounded-2xl'} p-4 overflow-hidden`}>
+      <DialogContent className={`${isMobile ? 'w-[92vw] max-w-[360px] max-h-[88vh] rounded-2xl' : 'max-w-md rounded-2xl'} p-4 overflow-hidden`}>
         <DialogHeader className="pb-2">
           <DialogTitle className="flex items-center gap-2 text-base font-bold">
             <div className="p-1.5 bg-primary/10 rounded-lg"><FileEdit className="h-4 w-4 text-primary" /></div>

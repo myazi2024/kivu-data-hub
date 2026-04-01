@@ -106,7 +106,7 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
   // After intro, show the tabbed form
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) handleClose(); }}>
-      <DialogContent className="max-w-[380px] max-h-[85vh] p-0 rounded-2xl z-[1200] flex flex-col overflow-hidden">
+      <DialogContent className="max-w-[380px] max-h-[85vh] p-0 rounded-2xl flex flex-col overflow-hidden">
         <div className="px-4 pt-5 pb-2 flex-shrink-0">
           <DialogHeader className="space-y-1">
             <div className="flex items-center justify-center gap-2 mb-1">

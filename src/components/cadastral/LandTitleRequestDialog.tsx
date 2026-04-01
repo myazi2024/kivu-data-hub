@@ -798,7 +798,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
     return (
       <Dialog open={open} onOpenChange={handleConfirmClose}>
-          <DialogContent className={`z-[1200] ${isMobile ? 'w-[92vw] max-w-[360px] max-h-[88vh] rounded-2xl' : 'max-w-md rounded-2xl'} p-4 overflow-hidden`}>
+          <DialogContent className={`${isMobile ? 'w-[92vw] max-w-[360px] max-h-[88vh] rounded-2xl' : 'max-w-md rounded-2xl'} p-4 overflow-hidden`}>
             <DialogHeader className="pb-2">
               <DialogTitle className="flex items-center gap-2 text-base font-bold">
                 <div className="p-1.5 bg-primary/10 rounded-lg">
@@ -832,7 +832,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   if (showSuccess) {
     return (
       <Dialog open={open} onOpenChange={handleConfirmClose}>
-          <DialogContent className={`z-[1200] ${isMobile ? 'w-[92vw] max-w-[360px] max-h-[88vh] rounded-2xl' : 'max-w-md rounded-2xl'} p-4 overflow-hidden`}>
+          <DialogContent className={`${isMobile ? 'w-[92vw] max-w-[360px] max-h-[88vh] rounded-2xl' : 'max-w-md rounded-2xl'} p-4 overflow-hidden`}>
             <div className="space-y-3 text-center py-2">
               <div className="mx-auto w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
                 <CheckCircle2 className="h-6 w-6 text-green-600" />
@@ -898,7 +898,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       </AlertDialog>
 
       <Dialog open={open} onOpenChange={handleCloseRequest}>
-          <DialogContent className={`z-[1200] ${isMobile ? 'w-[92vw] max-w-[360px] max-h-[88vh] rounded-2xl' : 'max-w-md rounded-2xl'} p-4 overflow-hidden`}>
+          <DialogContent className={`${isMobile ? 'w-[92vw] max-w-[360px] max-h-[88vh] rounded-2xl' : 'max-w-md rounded-2xl'} p-4 overflow-hidden`}>
             <DialogHeader className="pb-2">
               <DialogTitle className="flex items-center gap-2 text-base font-bold">
                 <div className="p-1.5 bg-primary/10 rounded-lg">
