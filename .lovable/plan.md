@@ -1,41 +1,68 @@
 
 
-# Page Pitch Partenaires — sous Media > Ressources
+# Refonte complète — Présentation BIC en mode slides
 
-## Résumé
+## Concept
 
-Créer une page `/pitch-partenaires` présentant l'application BIC aux partenaires d'affaires, avec 6 sections : hero/pitch, problème & solution, fonctionnalités clés, valeur ajoutée (chiffres/graphiques), business model, et appel à l'action avec formulaire de contact. Ajoutée au menu Media > Ressources et au routeur.
+Transformer la page `/pitch-partenaires` en une **présentation interactive multi-slides** (style PowerPoint) avec navigation par pages, mode plein écran, contenu riche tiré des fonctionnalités réelles de l'application, et visuels intégrés (images assets existantes, icones, schémas CSS).
 
-## Modifications
+## Architecture
 
-### 1. Nouvelle page `src/pages/PitchPartenaires.tsx`
+```text
+┌──────────────────────────────────────┐
+│  PitchPartenaires.tsx (orchestrateur) │
+│  - state: currentSlide, isFullscreen │
+│  - navigation clavier (←→, Esc, F)  │
+│  - barre de navigation bas/overlay   │
+│  - bouton plein écran               │
+│  - indicateur de slide (dots)        │
+│                                      │
+│  ┌─ Slide 1: Couverture            │
+│  ├─ Slide 2: Le Contexte (problème) │
+│  ├─ Slide 3: La Solution BIC       │
+│  ├─ Slide 4: Carte interactive     │
+│  ├─ Slide 5: Services numériques   │
+│  ├─ Slide 6: Recherche cadastrale  │
+│  ├─ Slide 7: Vérification foncière │
+│  ├─ Slide 8: Programme CCC         │
+│  ├─ Slide 9: Chiffres clés        │
+│  ├─ Slide 10: Business model       │
+│  ├─ Slide 11: Partenaires actuels  │
+│  ├─ Slide 12: Témoignages          │
+│  ├─ Slide 13: Environnement test   │
+│  └─ Slide 14: Contact / CTA       │
+└──────────────────────────────────────┘
+```
 
-Page complète avec Navigation + Footer, contenant :
+## Slides - Contenu détaillé
 
-- **Hero** : logo BIC + pitch one-liner + badge "Présentation Partenaires"
-- **Problème & Solution** : deux colonnes (problème à gauche, solution à droite) avec icônes illustratives (AlertTriangle, CheckCircle2) et un schéma visuel simplifié (avant/après)
-- **Fonctionnalités clés** : grille 3 colonnes avec icônes Lucide (Map, Search, Shield, FileText, BarChart3, Globe) — 6 fonctionnalités principales
-- **Valeur ajoutée** : chiffres clés en cartes (parcelles numérisées, réduction litiges, temps de vérification) + section témoignages partenaires actuels
-- **Business model / Opportunités** : 3 colonnes présentant les modèles (accès API, licence institutionnelle, co-développement) avec avantages partenaires
-- **Appel à l'action** : bouton "Accéder à l'environnement test" (lien vers `/test/map`), bouton "Nous contacter" (mailto:contact@bic.cd), + formulaire de contact intégré (nom, email, organisation, message) avec validation
-- **Zone vidéo** : placeholder avec icône Play pour intégrer une démo vidéo (iframe-ready)
+1. **Couverture** : Logo BIC, titre "Bureau d'Information Cadastrale", sous-titre "Le cadastre congolais, enfin numérique", image hero-skyline en fond
+2. **Le Contexte** : Problèmes fonciers en RDC — registres papier, 70% litiges, pas de base centralisée, fraude aux titres. Visuels : icones avec stats chocs
+3. **La Solution BIC** : Plateforme numérique centralisée — 4 piliers avec icones grandes et descriptions. Image territorial-map-illustration en fond
+4. **Carte interactive des 26 provinces** : Visuel de la carte DRC (image map-data-visualization.jpg), description de l'analytique par province, données en temps réel
+5. **8 Services numériques** : Grille des 8 services réels (recherche cadastrale, carte interactive, titre foncier, expertise, mutation, litiges, hypothèque, historique fiscal) avec icones
+6. **Recherche cadastrale** : Focus sur la fonctionnalité phare — recherche par parcelle, propriétaire, localisation. Filtres avancés, historique de recherche. Visuel mockup
+7. **Vérification & Certificats** : QR code anti-fraude, vérification instantanée des documents, 6 types de documents (rapport, facture, permis, certificat, expertise, reçu hypothécaire)
+8. **Programme Contributeur (CCC)** : Contribution citoyenne aux données cadastrales, codes promo, réductions. Gamification foncière
+9. **Chiffres clés** : 50 000+ parcelles, 26 provinces, -60% litiges, < 5 min vérification, 8 services, 4 types de partenariats. Grandes stats visuelles
+10. **Business Model** : 4 modèles (institutionnel, commercial, académique, technologique) avec détails tirés de Partnership.tsx
+11. **Partenaires actuels** : Université de Goma, Ville de Goma, Actors of Change — avec descriptions
+12. **Témoignages** : Citations notaire et architecte, visuels quotes
+13. **Démo live** : Lien vers environnement test `/test/map`, placeholder vidéo, screenshots
+14. **Contact & CTA** : Formulaire de contact intégré, téléphone, email, boutons d'action
 
-Design : palette existante (primary/secondary du projet), typographie cohérente, responsive via Tailwind grid.
+## Fonctionnalités UI
 
-### 2. Route dans `src/App.tsx`
+- **Navigation** : Flèches gauche/droite en overlay, dots indicateurs en bas, clavier (← → pour naviguer, F pour fullscreen, Esc pour quitter)
+- **Mode plein écran** : Bouton toggle, utilise l'API Fullscreen du navigateur. En fullscreen : masque Navigation/Footer, fond sombre, slide centré
+- **Transitions** : Animation slide-in horizontale entre les pages (CSS transition transform)
+- **Responsive** : Contenu adapté mobile (textes plus petits, layouts en colonnes)
+- **Barre de progression** : Fine barre en haut indiquant la progression
+- **Visuels** : Utilisation des 5 images assets existantes (hero-skyline, map-data-visualization, territorial-map-illustration, goma-city-hero, bic-logo)
 
-- Ajouter lazy import `PitchPartenaires`
-- Ajouter `<Route path="/pitch-partenaires" element={<PitchPartenaires />} />`
-
-### 3. Lien dans le menu Media > Ressources (`src/components/ui/navigation.tsx`)
-
-- Ajouter dans `mediaColumns[1].items` (Ressources) : `{ name: 'Présentation BIC', href: '/pitch-partenaires', icon: Briefcase, description: 'Pitch pour partenaires d\'affaires' }`
-
-## Fichiers impactés
+## Fichier modifie
 
 | Fichier | Action |
 |---|---|
-| `src/pages/PitchPartenaires.tsx` | Créer |
-| `src/App.tsx` | Ajouter route + lazy import |
-| `src/components/ui/navigation.tsx` | Ajouter lien dans Ressources |
+| `src/pages/PitchPartenaires.tsx` | Réécriture complète |
 
