@@ -1,102 +1,129 @@
 
 
-# Plan de correction de la Présentation BIC
+# Révision pédagogique et complétude de la Présentation BIC
 
-## Rappel des 6 points identifiés lors de l'audit
+## Diagnostic
 
-1. **Formats de parcelle fictifs** dans le mockup recherche (Slide 6)
-2. **Fiche cadastrale absente** de la présentation
-3. **Routes fonctionnelles non mentionnées** (dashboard, reseller, carte)
-4. **Contenu manquant** : Equipe/Fondateurs, Roadmap/Vision, Tarification, Securite
-5. **Statistiques non sourcées** (50 000+, -60%)
-6. **Formulaire de contact simulé** (setTimeout, pas d'envoi réel)
+Après analyse des 19 slides actuels, deux problèmes principaux :
+
+1. **Manque de pédagogie** : les slides listent des fonctionnalités sans expliquer le "pourquoi", le bénéfice concret pour le partenaire, ni raconter une histoire. Le ton est technique et descriptif plutôt qu'engageant.
+2. **Slides manquants** : il manque un parcours utilisateur concret ("Comment ça marche"), une slide d'urgence/timing ("Pourquoi maintenant") et un appel à l'action final clair.
 
 ---
 
-## Modifications prévues
+## A. Révisions pédagogiques des textes existants (19 slides)
 
-### 1. Corriger les formats de parcelle (Slide 6 — SlideSearch, ligne 220)
+### Slide 1 — Couverture
+- Sous-titre actuel trop neutre ("Projet collaboratif de numérisation"). Remplacer par une accroche à impact : **"Sécuriser chaque parcelle. Protéger chaque propriétaire."**
 
-Remplacer les exemples fictifs `KIN/GOMBE/AV.COLONEL/P-2847` par les vrais formats BIC :
-- `SU/2130/KIN`
-- `SR/01/0987/BEN`
-- `SU/0456/GOM`
+### Slide 2 — Le Contexte
+- Ajouter une phrase d'introduction narrative : *"En RDC, acheter un terrain c'est souvent acheter un litige. Voici pourquoi."*
+- Sous chaque statistique, ajouter une conséquence humaine (ex: "70% de litiges → des familles expulsées de terrains qu'elles occupent depuis des générations")
 
-### 2. Ajouter un slide "Fiche Cadastrale" (nouveau — SlideFicheCadastrale)
+### Slide 3 — La Solution
+- Reformuler les 4 piliers avec un format "Avant → Après" pour chacun :
+  - Centralisation : "Avant : courir entre 3 bureaux. Après : tout en un clic."
+  - Sécurisation : "Avant : faux titres indétectables. Après : QR code vérifiable en 10 secondes."
+  - Transparence : "Avant : information réservée aux initiés. Après : tout citoyen peut vérifier."
+  - Interopérabilité : "Avant : systèmes cloisonnés. Après : une API pour tous."
 
-Nouveau slide entre Recherche (6) et Verification (7) montrant un mockup visuel de la fiche cadastrale avec :
-- Croquis SVG de la parcelle
-- Coordonnees GPS et dimensions des cotes
-- QR code d'authenticite
-- Badge litige
-- Sections : propriete, historique fiscal, hypotheques, bornage
+### Slide 4 — Carte interactive
+- Ajouter une phrase pédagogique : *"Pour la première fois, les données cadastrales de la RDC sont visualisables sur une carte. Zoomez de la province jusqu'à la parcelle individuelle."*
 
-### 3. Ajouter un slide "Roadmap & Vision" (nouveau — SlideRoadmap)
+### Slide 5 — 8 Services
+- Ajouter un chapeau explicatif : *"Chaque service répond à un besoin concret des citoyens, notaires, banques et administrations. Voici l'écosystème complet."*
 
-Nouveau slide apres Business Model (10) avec 3 phases :
-- Phase 1 : Goma & Nord-Kivu (actuel)
-- Phase 2 : Extension Kinshasa & 5 provinces
-- Phase 3 : Couverture nationale 26 provinces + API publique
+### Slide 6 — Recherche cadastrale
+- Reformuler le texte d'intro : *"Vous cherchez une parcelle ? Entrez son numéro, le nom du propriétaire ou une adresse. Le BIC vous retourne la fiche complète en moins de 5 secondes."*
 
-### 4. Ajouter un slide "Equipe" (nouveau — SlideTeam)
+### Slide 7 — Fiche Cadastrale
+- Ajouter un paragraphe pédagogique : *"La fiche cadastrale numérique remplace les documents papier éparpillés dans les bureaux. Elle regroupe TOUTES les informations d'une parcelle en un seul document vérifiable."*
 
-Nouveau slide apres Roadmap, presentant les profils cles du projet (placeholders generiques : Fondateur/CEO, Directeur Technique, Responsable Operations, Responsable Partenariats).
+### Slide 8 — Vérification
+- Ajouter le contexte du problème résolu : *"La fraude documentaire est endémique dans le secteur foncier congolais. Chaque document BIC porte un QR code unique — scannez-le pour vérifier instantanément son authenticité."*
 
-### 5. Ajouter un slide "Tarification" (nouveau — SlidePricing)
+### Slide 9 — Programme CCC
+- Ajouter une phrase d'accroche : *"Le cadastre ne peut pas être numérisé uniquement par en haut. Le programme CCC mobilise les citoyens pour collecter les données terrain — et les récompense pour leur contribution."*
 
-Nouveau slide apres Team, avec les modeles de revenus :
-- Recherche unitaire (par consultation)
-- Abonnement mensuel/annuel (acces illimite)
-- API commerciale (par appel)
-- Commissions sur services (mutations, expertises)
+### Slide 10 — Chiffres clés
+- Transformer en "Impact & Objectifs" avec deux colonnes : "Aujourd'hui" vs "Objectif 2027" pour chaque métrique
 
-### 6. Ajouter un slide "Securite & Conformite" (nouveau — SlideSecurity)
+### Slide 11 — Business Model
+- Ajouter une intro : *"Le BIC n'est pas un projet subventionné. C'est un modèle économique viable, avec 4 types de partenariats qui génèrent de la valeur pour toutes les parties."*
 
-Nouveau slide apres Pricing, couvrant :
-- Chiffrement des donnees (TLS, RLS Supabase)
-- Conformite legislation RDC
-- Audit trail complet
-- Donnees communautaires verifiees
+### Slide 12 — Roadmap
+- Ajouter un fil narratif : *"Nous avons commencé petit, à Goma, pour prouver le concept. Voici comment nous comptons passer à l'échelle nationale."*
 
-### 7. Corriger les statistiques (Slide 9 — SlideStats)
+### Slide 13 — Équipe
+- Reformuler l'intro : *"Le BIC est porté par une équipe pluridisciplinaire alliant expertise technique, connaissance du terrain et vision stratégique."*
 
-- `50 000+` → `1 000+` avec mention "objectif 2026 : 50 000" (plus realiste pour un projet en phase initiale)
-- `-60%` → remplacer par `100%` + "Traçabilité des mutations" (impact verifiable)
+### Slide 14 — Tarification
+- Ajouter : *"Des prix accessibles, adaptés au contexte congolais. Chaque modèle cible un segment différent : le citoyen, le professionnel, l'entreprise."*
 
-### 8. Connecter le formulaire de contact (Slide Contact)
+### Slide 15 — Sécurité
+- Ajouter : *"La confiance est le fondement du BIC. Voici les mesures concrètes qui protègent les données et garantissent la conformité."*
 
-Remplacer le `setTimeout` simulé par un insert Supabase dans une nouvelle table `partner_inquiries` (ou a defaut, un appel a une edge function d'envoi d'email). Si la table n'existe pas, creer une migration.
+### Slide 16 — Partenaires
+- Ajouter : *"Le BIC ne travaille pas seul. Nos partenaires fondateurs valident notre approche et contribuent à notre crédibilité."*
+
+### Slide 17 — Témoignages
+- Ajouter le contexte : *"Ce ne sont pas nos mots, mais ceux de nos utilisateurs. Voici comment le BIC change concrètement leur quotidien."*
+
+### Slide 18 — Démo
+- Reformuler : *"Pas de promesses abstraites. Testez vous-même la plateforme avec des données réelles de Goma."*
+
+### Slide 19 — Contact
+- Reformuler l'intro : *"Prêt à rejoindre le mouvement ? Que vous soyez institution, entreprise, université ou ONG — nous avons un partenariat pour vous."*
 
 ---
 
-## Ordre final des slides (14 → 20)
+## B. Slides manquants à ajouter
+
+### Nouveau Slide : "Comment ça marche" (après Slide 5 — Services, avant Recherche)
+Un parcours utilisateur en 4 étapes visuelles :
+1. **Créer un compte** — inscription gratuite en 30 secondes
+2. **Rechercher** — entrez un numéro de parcelle ou une adresse
+3. **Consulter** — recevez la fiche cadastrale complète
+4. **Vérifier** — scannez le QR code pour authentifier
+
+### Nouveau Slide : "Pourquoi maintenant" (avant Contact, après Démo)
+Slide d'urgence avec 3-4 arguments temporels :
+- La RDC urbanise à un rythme record — les litiges explosent
+- Le gouvernement pousse la modernisation du cadastre
+- Les premiers partenaires ont un avantage compétitif
+- Les données collectées maintenant constituent un actif stratégique
+
+---
+
+## C. Ordre final des slides (19 → 21)
 
 | # | ID | Titre |
 |---|---|---|
-| 1 | cover | Couverture |
-| 2 | context | Le Contexte |
-| 3 | solution | La Solution |
-| 4 | map | Carte interactive |
-| 5 | services | 8 Services numeriques |
-| 6 | search | Recherche cadastrale |
-| 7 | **fiche** | **Fiche Cadastrale** |
-| 8 | verification | Verification & Certificats |
-| 9 | ccc | Programme CCC |
-| 10 | stats | Chiffres cles (corrigés) |
-| 11 | business | Business Model |
-| 12 | **roadmap** | **Roadmap & Vision** |
-| 13 | **team** | **Equipe** |
-| 14 | **pricing** | **Tarification** |
-| 15 | **security** | **Securite & Conformite** |
-| 16 | partners | Partenaires actuels |
-| 17 | testimonials | Temoignages |
-| 18 | demo | Demo |
-| 19 | contact | Contact (formulaire fonctionnel) |
+| 1 | cover | Couverture (texte révisé) |
+| 2 | context | Le Contexte (narratif enrichi) |
+| 3 | solution | La Solution (format Avant/Après) |
+| 4 | map | Carte interactive (contexte ajouté) |
+| 5 | services | 8 Services (chapeau ajouté) |
+| 6 | **how-it-works** | **Comment ça marche (NOUVEAU)** |
+| 7 | search | Recherche cadastrale (reformulée) |
+| 8 | fiche | Fiche Cadastrale (contexte ajouté) |
+| 9 | verification | Vérification (problème posé) |
+| 10 | ccc | Programme CCC (accroche ajoutée) |
+| 11 | stats | Impact & Objectifs (restructuré) |
+| 12 | business | Business Model (intro ajoutée) |
+| 13 | roadmap | Roadmap (fil narratif) |
+| 14 | team | Équipe (reformulée) |
+| 15 | pricing | Tarification (contexte ajouté) |
+| 16 | security | Sécurité (intro ajoutée) |
+| 17 | partners | Partenaires (intro ajoutée) |
+| 18 | testimonials | Témoignages (contexte ajouté) |
+| 19 | demo | Démo (reformulée) |
+| 20 | **why-now** | **Pourquoi maintenant (NOUVEAU)** |
+| 21 | contact | Contact (reformulée) |
 
-## Fichiers concernes
+## Fichier concerné
 
 | Fichier | Action |
 |---|---|
-| `src/pages/PitchPartenaires.tsx` | Tous les ajouts/corrections de slides |
-| Migration SQL (nouvelle) | Table `partner_inquiries` pour le formulaire |
+| `src/pages/PitchPartenaires.tsx` | Toutes les révisions textuelles + 2 nouveaux slides |
 
