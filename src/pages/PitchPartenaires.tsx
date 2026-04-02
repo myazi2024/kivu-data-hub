@@ -609,7 +609,7 @@ const PitchPartenaires = () => {
   return (
     <>
       <Helmet>
-        <title>Présentation BIC — Pitch Partenaires | Bureau d'Information Cadastrale</title>
+        <title>Présentation BIC — Pitch Partenaires | Bureau d'Informations Cadastrales</title>
         <meta name="description" content="Découvrez comment le BIC numérise le cadastre en RDC. Présentation interactive pour les partenaires d'affaires." />
       </Helmet>
 
