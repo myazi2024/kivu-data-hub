@@ -112,6 +112,7 @@ const App = () => (
                   <Route path="/about-discount-codes" element={<AboutDiscountCodes />} />
                   <Route path="/discount-codes" element={<Navigate to="/about-discount-codes" replace />} />
                   <Route path="/verify/:code?" element={<VerifyDocument />} />
+                  <Route path="/pitch-partenaires" element={<PitchPartenaires />} />
 
                   {/* Test environment mirror routes */}
                   <Route path="/test/map" element={<Map />} />

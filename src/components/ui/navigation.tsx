@@ -25,6 +25,7 @@ const mediaColumns = [
     title: 'Ressources',
     items: [
       
+      { name: 'Présentation BIC', href: '/pitch-partenaires', icon: Briefcase, description: 'Pitch pour partenaires d\'affaires' },
       { name: 'Nos Services', href: '/services', icon: Briefcase, description: 'Catalogue des services cadastraux' },
       { name: 'Codes Promo', href: '/about-discount-codes', icon: Tag, description: 'Codes de réduction disponibles' },
       { name: 'Contributions CCC', href: '/about-ccc', icon: Heart, description: 'Comprendre les contributions' },
