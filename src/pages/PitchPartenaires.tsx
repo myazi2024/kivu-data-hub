@@ -7,13 +7,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import {
   AlertTriangle, CheckCircle2, Map, Search, Shield, FileText, BarChart3, Globe,
   Play, Send, ArrowRight, ArrowLeft, TrendingUp, Users, Clock, Zap, Building2, Code2,
   GraduationCap, Phone, Mail, Maximize, Minimize, ChevronLeft, ChevronRight,
   MapPin, Scale, Landmark, Home, Receipt, History, QrCode, Award, UserCheck,
   Database, Lock, Eye, Layers, FileCheck, BookOpen, Handshake, Target, Briefcase,
-  GanttChart, CircleDollarSign, BadgeCheck, Gauge, MonitorSmartphone
+  GanttChart, CircleDollarSign, BadgeCheck, Gauge, MonitorSmartphone,
+  Rocket, Flag, Globe2, User, Cpu, ShieldCheck, DollarSign, CreditCard, Activity
 } from 'lucide-react';
 import bicLogo from '@/assets/bic-logo.png';
 import heroSkyline from '@/assets/hero-skyline.webp';
@@ -217,7 +219,7 @@ const SlideSearch = () => (
             </div>
           </div>
           <div className="p-4 space-y-3">
-            {['KIN/GOMBE/AV.COLONEL/P-2847', 'LUB/KATUBA/AV.KASAI/P-1523', 'GOM/KARISIMBI/AV.RONDS-POINTS/P-0891'].map((p) => (
+            {['SU/2130/KIN', 'SR/01/0987/BEN', 'SU/0456/GOM'].map((p) => (
               <div key={p} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20 hover:bg-muted/40 transition-colors">
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-primary" />
@@ -233,7 +235,88 @@ const SlideSearch = () => (
   </SlideWrapper>
 );
 
-/* ── Slide 7: Vérification & Certificats ── */
+/* ── Slide 7: Fiche Cadastrale ── */
+const SlideFicheCadastrale = () => (
+  <SlideWrapper>
+    <div className="flex-1 flex flex-col bg-gradient-to-br from-blue-50/50 via-background to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 px-6 md:px-16 py-10 md:py-14">
+      <div className="mb-6 text-center">
+        <span className="text-sm font-semibold text-primary uppercase tracking-wider">Document officiel</span>
+        <h2 className="text-3xl md:text-4xl font-bold text-foreground mt-2">La Fiche Cadastrale numérique</h2>
+        <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">Un document complet et vérifiable généré automatiquement pour chaque parcelle enregistrée dans le système BIC.</p>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto flex-1">
+        {/* Mockup visuel */}
+        <div className="bg-card rounded-xl border p-6 shadow-sm">
+          <div className="border-2 border-primary/20 rounded-lg p-4 space-y-3">
+            <div className="flex items-center justify-between border-b pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center">
+                  <FileText className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-foreground">FICHE CADASTRALE</p>
+                  <p className="text-[10px] text-muted-foreground">Parcelle SU/2130/KIN</p>
+                </div>
+              </div>
+              <div className="px-2 py-0.5 rounded bg-orange-100 dark:bg-orange-900/30">
+                <span className="text-[10px] font-medium text-orange-600 dark:text-orange-400">⚠ Litige</span>
+              </div>
+            </div>
+            {/* SVG Sketch mockup */}
+            <div className="bg-muted/30 rounded-lg p-3 flex items-center justify-center h-28">
+              <svg viewBox="0 0 200 100" className="w-full h-full">
+                <polygon points="20,80 60,15 170,20 180,85" fill="none" stroke="hsl(var(--primary))" strokeWidth="2" strokeDasharray="4" />
+                <circle cx="20" cy="80" r="3" fill="hsl(var(--primary))" />
+                <circle cx="60" cy="15" r="3" fill="hsl(var(--primary))" />
+                <circle cx="170" cy="20" r="3" fill="hsl(var(--primary))" />
+                <circle cx="180" cy="85" r="3" fill="hsl(var(--primary))" />
+                <text x="30" y="50" fontSize="7" fill="hsl(var(--muted-foreground))">15.2m</text>
+                <text x="110" y="12" fontSize="7" fill="hsl(var(--muted-foreground))">22.8m</text>
+                <text x="175" y="55" fontSize="7" fill="hsl(var(--muted-foreground))">13.5m</text>
+                <text x="85" y="90" fontSize="7" fill="hsl(var(--muted-foreground))">25.1m</text>
+                <text x="80" y="55" fontSize="8" fontWeight="bold" fill="hsl(var(--foreground))">345 m²</text>
+              </svg>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-[10px]">
+              <div className="bg-muted/20 rounded p-1.5">
+                <span className="text-muted-foreground">GPS:</span>
+                <span className="text-foreground ml-1 font-mono">-1.6801, 29.2264</span>
+              </div>
+              <div className="bg-muted/20 rounded p-1.5">
+                <span className="text-muted-foreground">QR:</span>
+                <span className="text-foreground ml-1 font-mono">BIC-2026-A3F9K2</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* Sections de la fiche */}
+        <div className="space-y-3">
+          <h3 className="font-semibold text-foreground mb-2">Contenu de la fiche cadastrale</h3>
+          {[
+            { icon: MapPin, name: 'Localisation & croquis SVG', desc: 'Adresse textuelle, coordonnées GPS des bornes, croquis automatique avec dimensions' },
+            { icon: UserCheck, name: 'Propriété & historique', desc: 'Propriétaire actuel, statut juridique, historique complet des mutations foncières' },
+            { icon: Receipt, name: 'Historique fiscal', desc: 'Taxes foncières payées/impayées par année avec montants et reçus' },
+            { icon: Scale, name: 'Hypothèques & charges', desc: 'Charges hypothécaires actives, créancier, montant et statut de remboursement' },
+            { icon: AlertTriangle, name: 'Litiges & bornage', desc: 'Conflits fonciers déclarés, historique des opérations de bornage avec PV' },
+            { icon: QrCode, name: 'Vérification authentique', desc: 'QR code unique et code de vérification BIC pour validation publique en ligne' },
+          ].map((s) => (
+            <div key={s.name} className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/30 transition-colors">
+              <div className="p-1.5 rounded-md bg-primary/10 shrink-0">
+                <s.icon className="h-3.5 w-3.5 text-primary" />
+              </div>
+              <div>
+                <h4 className="font-medium text-foreground text-xs">{s.name}</h4>
+                <p className="text-[11px] text-muted-foreground">{s.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </SlideWrapper>
+);
+
+/* ── Slide 8: Vérification & Certificats ── */
 const SlideVerification = () => (
   <SlideWrapper>
     <div className="flex-1 flex flex-col bg-gradient-to-br from-green-50/50 via-background to-emerald-50/50 dark:from-green-950/20 dark:to-emerald-950/20 px-6 md:px-16 py-10 md:py-14">
@@ -287,7 +370,7 @@ const SlideVerification = () => (
   </SlideWrapper>
 );
 
-/* ── Slide 8: Programme CCC ── */
+/* ── Slide 9: Programme CCC ── */
 const SlideCCC = () => (
   <SlideWrapper bg={gomaHero} overlay>
     <div className="flex-1 flex flex-col px-6 md:px-16 py-10 md:py-16">
@@ -315,7 +398,7 @@ const SlideCCC = () => (
   </SlideWrapper>
 );
 
-/* ── Slide 9: Chiffres clés ── */
+/* ── Slide 10: Chiffres clés ── */
 const SlideStats = () => (
   <SlideWrapper>
     <div className="flex-1 flex flex-col bg-gradient-to-br from-primary/10 via-background to-primary/5 px-6 md:px-16 py-10 md:py-16 items-center justify-center">
@@ -323,17 +406,18 @@ const SlideStats = () => (
       <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-10 text-center">Chiffres clés</h2>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-6 max-w-4xl w-full">
         {[
-          { value: '50 000+', label: 'Parcelles numérisées', icon: Map },
-          { value: '26', label: 'Provinces couvertes', icon: Globe },
-          { value: '-60%', label: 'Réduction des litiges fonciers', icon: TrendingUp },
-          { value: '< 5 min', label: 'Vérification d\'un titre', icon: Clock },
-          { value: '8', label: 'Services numériques intégrés', icon: Zap },
-          { value: '4', label: 'Types de partenariats', icon: Handshake },
+          { value: '1 000+', label: 'Parcelles numérisées', sublabel: 'Objectif 2026 : 50 000', icon: Map },
+          { value: '26', label: 'Provinces couvertes', sublabel: 'Territoire national complet', icon: Globe },
+          { value: '100%', label: 'Traçabilité des mutations', sublabel: 'Historique complet et vérifiable', icon: TrendingUp },
+          { value: '< 5 min', label: 'Vérification d\'un titre', sublabel: 'Contre 2 mois en procédure manuelle', icon: Clock },
+          { value: '8', label: 'Services numériques intégrés', sublabel: 'Écosystème cadastral complet', icon: Zap },
+          { value: '4', label: 'Types de partenariats', sublabel: 'Institutionnel, commercial, académique, tech', icon: Handshake },
         ].map((m) => (
           <div key={m.label} className="bg-card rounded-xl border p-6 text-center shadow-sm hover:shadow-md transition-shadow">
             <m.icon className="h-6 w-6 text-primary mx-auto mb-3" />
             <div className="text-3xl md:text-4xl font-bold text-primary mb-1">{m.value}</div>
-            <p className="text-sm text-muted-foreground">{m.label}</p>
+            <p className="text-sm text-foreground font-medium">{m.label}</p>
+            {m.sublabel && <p className="text-[11px] text-muted-foreground mt-1">{m.sublabel}</p>}
           </div>
         ))}
       </div>
@@ -341,7 +425,7 @@ const SlideStats = () => (
   </SlideWrapper>
 );
 
-/* ── Slide 10: Business Model ── */
+/* ── Slide 11: Business Model ── */
 const SlideBusiness = () => (
   <SlideWrapper>
     <div className="flex-1 flex flex-col bg-background px-6 md:px-16 py-10 md:py-14">
@@ -378,7 +462,169 @@ const SlideBusiness = () => (
   </SlideWrapper>
 );
 
-/* ── Slide 11: Partenaires actuels ── */
+/* ── Slide 12: Roadmap & Vision ── */
+const SlideRoadmap = () => (
+  <SlideWrapper>
+    <div className="flex-1 flex flex-col bg-gradient-to-br from-indigo-50/50 via-background to-violet-50/50 dark:from-indigo-950/20 dark:to-violet-950/20 px-6 md:px-16 py-10 md:py-14">
+      <div className="mb-8 text-center">
+        <span className="text-sm font-semibold text-primary uppercase tracking-wider">Vision</span>
+        <h2 className="text-3xl md:text-4xl font-bold text-foreground mt-2">Roadmap & Déploiement</h2>
+        <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">Un plan de déploiement progressif pour couvrir l'ensemble du territoire congolais en 3 phases.</p>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto flex-1">
+        {[
+          {
+            icon: Flag,
+            phase: 'Phase 1 — 2024-2025',
+            title: 'Goma & Nord-Kivu',
+            status: 'En cours',
+            statusColor: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+            items: ['Déploiement de la plateforme à Goma', 'Partenariat avec la Ville de Goma et UNIGOM', 'Numérisation de 1 000+ parcelles pilotes', 'Programme CCC opérationnel', 'Validation du modèle économique'],
+          },
+          {
+            icon: Rocket,
+            phase: 'Phase 2 — 2026-2027',
+            title: 'Extension nationale',
+            status: 'Planifié',
+            statusColor: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+            items: ['Extension à Kinshasa et 5 provinces clés', 'Objectif : 50 000 parcelles numérisées', 'Recrutement d\'équipes provinciales', 'Lancement de l\'API commerciale', 'Partenariats bancaires et notariaux'],
+          },
+          {
+            icon: Globe2,
+            phase: 'Phase 3 — 2028+',
+            title: 'Couverture nationale',
+            status: 'Vision',
+            statusColor: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400',
+            items: ['Couverture des 26 provinces', 'Objectif : 500 000+ parcelles', 'API publique pour développeurs tiers', 'Interopérabilité avec les SIG nationaux', 'Modèle réplicable dans d\'autres pays africains'],
+          },
+        ].map((p) => (
+          <div key={p.phase} className="bg-card rounded-xl border p-6 flex flex-col hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-2.5 rounded-lg bg-primary/10">
+                <p.icon className="h-5 w-5 text-primary" />
+              </div>
+              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${p.statusColor}`}>{p.status}</span>
+            </div>
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">{p.phase}</p>
+            <h3 className="text-lg font-bold text-foreground mb-3">{p.title}</h3>
+            <ul className="space-y-2 flex-1">
+              {p.items.map((item) => (
+                <li key={item} className="flex items-start gap-2 text-xs text-muted-foreground">
+                  <CheckCircle2 className="h-3 w-3 text-primary shrink-0 mt-0.5" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+  </SlideWrapper>
+);
+
+/* ── Slide 13: Équipe ── */
+const SlideTeam = () => (
+  <SlideWrapper>
+    <div className="flex-1 flex flex-col bg-background px-6 md:px-16 py-10 md:py-16 items-center justify-center">
+      <span className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">L'équipe</span>
+      <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-8 text-center">Les porteurs du projet</h2>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl w-full">
+        {[
+          { icon: Briefcase, name: 'Fondateur / CEO', desc: 'Vision stratégique, relations institutionnelles et développement des partenariats en RDC et à l\'international.' },
+          { icon: Cpu, name: 'Directeur Technique', desc: 'Architecture de la plateforme, développement full-stack, sécurité des données et infrastructure cloud.' },
+          { icon: Target, name: 'Responsable Opérations', desc: 'Coordination des équipes terrain, gestion du programme CCC et contrôle qualité des données.' },
+          { icon: Handshake, name: 'Responsable Partenariats', desc: 'Développement commercial, relations avec les institutions et expansion du réseau de revendeurs.' },
+        ].map((m) => (
+          <div key={m.name} className="bg-card rounded-xl border p-5 text-center shadow-sm hover:shadow-md transition-shadow flex flex-col items-center">
+            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+              <m.icon className="h-6 w-6 text-primary" />
+            </div>
+            <h3 className="font-semibold text-foreground text-sm mb-1">{m.name}</h3>
+            <p className="text-[11px] text-muted-foreground leading-snug">{m.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </SlideWrapper>
+);
+
+/* ── Slide 14: Tarification ── */
+const SlidePricing = () => (
+  <SlideWrapper>
+    <div className="flex-1 flex flex-col bg-gradient-to-br from-emerald-50/50 via-background to-teal-50/50 dark:from-emerald-950/20 dark:to-teal-950/20 px-6 md:px-16 py-10 md:py-14">
+      <div className="mb-8 text-center">
+        <span className="text-sm font-semibold text-primary uppercase tracking-wider">Revenus</span>
+        <h2 className="text-3xl md:text-4xl font-bold text-foreground mt-2">Modèle de tarification</h2>
+        <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">Quatre sources de revenus complémentaires pour un modèle économique durable et scalable.</p>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 max-w-5xl mx-auto flex-1">
+        {[
+          { icon: Search, title: 'Recherche unitaire', price: '2 — 10 $', unit: 'par consultation', desc: 'Recherche et consultation de la fiche cadastrale complète d\'une parcelle avec export PDF.', features: ['Fiche cadastrale complète', 'Export PDF téléchargeable', 'Certificat vérifiable'] },
+          { icon: CreditCard, title: 'Abonnement', price: '25 — 100 $', unit: 'par mois', desc: 'Accès illimité aux recherches et consultations pour les professionnels du foncier.', features: ['Recherches illimitées', 'Tableau de bord analytique', 'Support prioritaire'] },
+          { icon: Code2, title: 'API commerciale', price: '0,50 $', unit: 'par appel', desc: 'Intégration des données cadastrales dans vos systèmes via notre API REST sécurisée.', features: ['Documentation complète', 'Webhooks temps réel', 'SLA garanti'] },
+          { icon: DollarSign, title: 'Commissions services', price: '5 — 15%', unit: 'du montant', desc: 'Commission sur les services payants : demandes de titres, mutations, expertises immobilières.', features: ['Titres fonciers', 'Mutations foncières', 'Expertises immobilières'] },
+        ].map((p) => (
+          <div key={p.title} className="bg-card rounded-xl border p-5 flex flex-col hover:shadow-md transition-shadow">
+            <div className="p-2.5 rounded-lg bg-primary/10 w-fit mb-3">
+              <p.icon className="h-5 w-5 text-primary" />
+            </div>
+            <h3 className="font-semibold text-foreground text-sm mb-1">{p.title}</h3>
+            <div className="text-2xl font-bold text-primary mb-0.5">{p.price}</div>
+            <p className="text-[10px] text-muted-foreground mb-3">{p.unit}</p>
+            <p className="text-xs text-muted-foreground mb-3 flex-1">{p.desc}</p>
+            <ul className="space-y-1.5">
+              {p.features.map((f) => (
+                <li key={f} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <CheckCircle2 className="h-3 w-3 text-primary shrink-0" />{f}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+  </SlideWrapper>
+);
+
+/* ── Slide 15: Sécurité & Conformité ── */
+const SlideSecurity = () => (
+  <SlideWrapper>
+    <div className="flex-1 flex flex-col bg-gradient-to-br from-slate-50/50 via-background to-gray-50/50 dark:from-slate-950/20 dark:to-gray-950/20 px-6 md:px-16 py-10 md:py-14">
+      <div className="mb-8 text-center">
+        <span className="text-sm font-semibold text-primary uppercase tracking-wider">Confiance</span>
+        <h2 className="text-3xl md:text-4xl font-bold text-foreground mt-2">Sécurité & Conformité</h2>
+        <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">Une architecture de sécurité robuste, conforme à la législation congolaise et aux standards internationaux.</p>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto flex-1">
+        {[
+          { icon: Lock, title: 'Chiffrement des données', items: ['Communications TLS/SSL de bout en bout', 'Row Level Security (RLS) sur chaque table', 'Tokens JWT avec renouvellement automatique', 'Clés API rotatives pour les intégrations'] },
+          { icon: ShieldCheck, title: 'Conformité légale RDC', items: ['Respect de la loi foncière congolaise', 'Hébergement conforme aux exigences souveraines', 'Identifiants légaux : RCCM, IDNAT, NIF', 'CGU et politique de confidentialité conformes'] },
+          { icon: Activity, title: 'Audit trail complet', items: ['Journalisation de chaque action utilisateur', 'Historique immuable des modifications', 'Système de détection de fraude automatisé', 'Alertes en temps réel sur activités suspectes'] },
+          { icon: Users, title: 'Données communautaires vérifiées', items: ['Score anti-fraude sur chaque contribution', 'Double vérification par les équipes terrain', 'Avis de non-responsabilité clair sur les sources', 'Données officielles + communautaires distinguées'] },
+        ].map((s) => (
+          <div key={s.title} className="bg-card rounded-xl border p-5 hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2.5 rounded-lg bg-primary/10">
+                <s.icon className="h-5 w-5 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground">{s.title}</h3>
+            </div>
+            <ul className="space-y-2">
+              {s.items.map((item) => (
+                <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+  </SlideWrapper>
+);
+
+/* ── Slide 16: Partenaires actuels ── */
 const SlidePartners = () => (
   <SlideWrapper>
     <div className="flex-1 flex flex-col bg-gradient-to-br from-secondary/5 via-background to-primary/5 px-6 md:px-16 py-10 md:py-16 items-center justify-center">
@@ -392,11 +638,11 @@ const SlidePartners = () => (
         ].map((p) => (
           <div key={p.name} className="bg-card rounded-xl border p-6 text-center shadow-sm hover:shadow-md transition-shadow">
             <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-              <p.icon className="h-7 w-7 text-primary" />
+              <p.icon className="h-6 w-6 text-primary" />
             </div>
-            <span className="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium mb-3">{p.type}</span>
+            <span className="inline-block px-3 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-2">{p.type}</span>
             <h3 className="text-lg font-semibold text-foreground mb-2">{p.name}</h3>
-            <p className="text-sm text-muted-foreground">{p.desc}</p>
+            <p className="text-sm text-muted-foreground leading-relaxed">{p.desc}</p>
           </div>
         ))}
       </div>
@@ -404,7 +650,7 @@ const SlidePartners = () => (
   </SlideWrapper>
 );
 
-/* ── Slide 12: Témoignages ── */
+/* ── Slide 17: Témoignages ── */
 const SlideTestimonials = () => (
   <SlideWrapper>
     <div className="flex-1 flex flex-col bg-background px-6 md:px-16 py-10 md:py-16 items-center justify-center">
@@ -436,7 +682,7 @@ const SlideTestimonials = () => (
   </SlideWrapper>
 );
 
-/* ── Slide 13: Démo ── */
+/* ── Slide 18: Démo ── */
 const SlideDemo = () => (
   <SlideWrapper>
     <div className="flex-1 flex flex-col bg-gradient-to-br from-primary/5 via-background to-secondary/5 px-6 md:px-16 py-10 md:py-16 items-center justify-center">
@@ -462,24 +708,37 @@ const SlideDemo = () => (
   </SlideWrapper>
 );
 
-/* ── Slide 14: Contact ── */
+/* ── Slide 19: Contact ── */
 const SlideContact: React.FC = () => {
   const { toast } = useToast();
   const [formData, setFormData] = useState({ name: '', email: '', organization: '', message: '' });
   const [sending, setSending] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim() || !formData.email.trim() || !formData.message.trim()) {
       toast({ title: 'Champs requis', description: 'Veuillez remplir tous les champs obligatoires.', variant: 'destructive' });
       return;
     }
     setSending(true);
-    setTimeout(() => {
+    try {
+      const { error } = await supabase
+        .from('partner_inquiries')
+        .insert({
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          organization: formData.organization.trim() || null,
+          message: formData.message.trim(),
+        });
+      if (error) throw error;
       toast({ title: 'Message envoyé', description: 'Nous vous répondrons dans les plus brefs délais.' });
       setFormData({ name: '', email: '', organization: '', message: '' });
+    } catch (err) {
+      console.error('Error submitting partner inquiry:', err);
+      toast({ title: 'Erreur', description: 'Impossible d\'envoyer le message. Veuillez réessayer.', variant: 'destructive' });
+    } finally {
       setSending(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -551,10 +810,15 @@ const slides = [
   { id: 'map', title: 'Carte interactive', component: SlideMap },
   { id: 'services', title: 'Services', component: SlideServices },
   { id: 'search', title: 'Recherche', component: SlideSearch },
+  { id: 'fiche', title: 'Fiche Cadastrale', component: SlideFicheCadastrale },
   { id: 'verification', title: 'Vérification', component: SlideVerification },
   { id: 'ccc', title: 'Programme CCC', component: SlideCCC },
   { id: 'stats', title: 'Chiffres clés', component: SlideStats },
   { id: 'business', title: 'Business Model', component: SlideBusiness },
+  { id: 'roadmap', title: 'Roadmap', component: SlideRoadmap },
+  { id: 'team', title: 'Équipe', component: SlideTeam },
+  { id: 'pricing', title: 'Tarification', component: SlidePricing },
+  { id: 'security', title: 'Sécurité', component: SlideSecurity },
   { id: 'partners', title: 'Partenaires', component: SlidePartners },
   { id: 'testimonials', title: 'Témoignages', component: SlideTestimonials },
   { id: 'demo', title: 'Démo', component: SlideDemo },
