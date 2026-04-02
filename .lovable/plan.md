@@ -1,19 +1,28 @@
 
 
-# Corriger "Bureau d'Information Cadastrale" → "Bureau d'Informations Cadastrales"
+# Rogner l'image de la carte BIC
 
-## Modifications
+## Approche
 
-Remplacer toutes les occurrences dans `src/pages/PitchPartenaires.tsx` :
+Plutôt que de re-traiter le fichier image (impossible en mode lecture seule), on utilise CSS pour masquer la partie gauche et haute de l'image via `object-fit: cover` combiné avec `object-position`.
 
-| Ligne | Avant | Après |
-|---|---|---|
-| 43 | Bureau d'Information Cadastrale | Bureau d'Informations Cadastrales |
-| 612 | Bureau d'Information Cadastrale | Bureau d'Informations Cadastrales |
+## Modification
 
-**Note** : Les fichiers `CertificateTemplateEditor.tsx`, `CertificatePreview.tsx` et `Partnership.tsx` contiennent aussi cette graphie. Seule la page Présentation est corrigée selon la demande.
+### `src/pages/PitchPartenaires.tsx` — Ligne 142
 
-| Fichier | Action |
+Ajouter `object-position` pour décaler l'image vers le bas-droite, ce qui "rogne" visuellement le haut et la gauche :
+
+```tsx
+// Avant
+<img src={mapViz} alt="Carte interactive BIC" className="w-full h-full object-cover" />
+
+// Après
+<img src={mapViz} alt="Carte interactive BIC" className="w-full h-full object-cover object-right-bottom" />
+```
+
+Cela utilise `object-position: right bottom` avec `object-cover` pour ne montrer que la partie droite-basse de l'image, masquant ainsi le bord gauche et le haut.
+
+| Fichier | Modification |
 |---|---|
-| `src/pages/PitchPartenaires.tsx` | 2 remplacements |
+| `src/pages/PitchPartenaires.tsx` | Ligne 142 : ajouter `object-right-bottom` |
 
