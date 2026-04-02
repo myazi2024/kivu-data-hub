@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import bicLogo from '@/assets/bic-logo.png';
 import heroSkyline from '@/assets/hero-skyline.webp';
-import mapViz from '@/assets/map-data-visualization.jpg';
+import mapViz from '@/assets/bic-map-screenshot.jpg';
 import territorialMap from '@/assets/territorial-map-illustration.webp';
 import gomaHero from '@/assets/goma-city-hero.jpg';
 
