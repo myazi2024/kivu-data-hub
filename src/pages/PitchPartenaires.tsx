@@ -15,7 +15,8 @@ import {
   MapPin, Scale, Landmark, Home, Receipt, History, QrCode, Award, UserCheck,
   Database, Lock, Eye, Layers, FileCheck, BookOpen, Handshake, Target, Briefcase,
   GanttChart, CircleDollarSign, BadgeCheck, Gauge, MonitorSmartphone,
-  Rocket, Flag, Globe2, User, Cpu, ShieldCheck, DollarSign, CreditCard, Activity
+  Rocket, Flag, Globe2, User, Cpu, ShieldCheck, DollarSign, CreditCard, Activity,
+  LogIn, MousePointerClick, ScanLine, Timer
 } from 'lucide-react';
 import bicLogo from '@/assets/bic-logo.png';
 import heroSkyline from '@/assets/hero-skyline.webp';
@@ -45,7 +46,7 @@ const SlideCover = () => (
         Bureau d'Informations Cadastrales
       </h1>
       <p className="text-xl md:text-2xl text-white/90 max-w-2xl mb-10 font-light">
-        Projet collaboratif de numérisation du cadastre congolais.
+        Sécuriser chaque parcelle. Protéger chaque propriétaire.
       </p>
       <div className="flex items-center gap-3 text-white/70 text-sm">
         <MonitorSmartphone className="h-4 w-4" />
@@ -62,21 +63,24 @@ const SlideContext = () => (
       <div className="mb-8">
         <span className="text-sm font-semibold text-destructive uppercase tracking-wider">Le Problème</span>
         <h2 className="text-3xl md:text-5xl font-bold text-foreground mt-2">La crise foncière en RDC</h2>
-        <p className="text-lg text-muted-foreground mt-3 max-w-3xl">Un système cadastral hérité de l'époque coloniale, resté sur papier, fragmenté entre 26 provinces et source de conflits majeurs.</p>
+        <p className="text-lg text-muted-foreground mt-3 max-w-3xl italic">
+          En RDC, acheter un terrain c'est souvent acheter un litige. Voici pourquoi.
+        </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 flex-1">
         {[
-          { icon: AlertTriangle, value: '70%', label: 'des litiges judiciaires en RDC sont liés au foncier', color: 'text-destructive' },
-          { icon: FileText, value: '0%', label: 'de numérisation du cadastre avant le BIC', color: 'text-orange-500' },
-          { icon: Clock, value: '2 mois', label: 'en moyenne pour vérifier un titre foncier manuellement', color: 'text-amber-500' },
-          { icon: Shield, value: '45%', label: 'des titres fonciers contiennent des irrégularités', color: 'text-red-500' },
+          { icon: AlertTriangle, value: '70%', label: 'des litiges judiciaires sont liés au foncier', consequence: 'Des familles expulsées de terrains qu\'elles occupent depuis des générations', color: 'text-destructive' },
+          { icon: FileText, value: '0%', label: 'de numérisation du cadastre avant le BIC', consequence: 'Des millions de documents papier fragiles dispersés dans 26 provinces', color: 'text-orange-500' },
+          { icon: Clock, value: '2 mois', label: 'pour vérifier un titre foncier manuellement', consequence: 'Des transactions bloquées, des projets immobiliers retardés indéfiniment', color: 'text-amber-500' },
+          { icon: Shield, value: '45%', label: 'des titres fonciers contiennent des irrégularités', consequence: 'Des propriétaires légitimes privés de leurs droits par des faux documents', color: 'text-red-500' },
         ].map((s) => (
           <div key={s.label} className="bg-card rounded-xl border p-6 flex flex-col items-center text-center shadow-sm hover:shadow-md transition-shadow">
             <div className="p-3 rounded-full bg-destructive/10 mb-4">
               <s.icon className={`h-7 w-7 ${s.color}`} />
             </div>
             <div className={`text-4xl md:text-5xl font-bold ${s.color} mb-2`}>{s.value}</div>
-            <p className="text-sm text-muted-foreground">{s.label}</p>
+            <p className="text-sm text-muted-foreground mb-2">{s.label}</p>
+            <p className="text-xs text-destructive/70 italic leading-snug">{s.consequence}</p>
           </div>
         ))}
       </div>
@@ -91,23 +95,32 @@ const SlideSolution = () => (
       <div className="mb-8">
         <span className="text-sm font-semibold text-primary uppercase tracking-wider">La Solution</span>
         <h2 className="text-3xl md:text-5xl font-bold text-white mt-2">La plateforme BIC</h2>
-        <p className="text-lg text-white/80 mt-3 max-w-3xl">Une infrastructure numérique souveraine qui centralise, sécurise et démocratise l'accès aux données cadastrales de la RDC.</p>
+        <p className="text-lg text-white/80 mt-3 max-w-3xl">Une infrastructure numérique souveraine qui transforme radicalement l'accès aux données cadastrales de la RDC.</p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 flex-1 max-w-5xl">
         {[
-          { icon: Database, title: 'Centralisation', desc: 'Toutes les données foncières de 26 provinces réunies dans une base de données unique, structurée et interrogeable en temps réel.' },
-          { icon: Lock, title: 'Sécurisation', desc: 'Certificats numériques avec QR code infalsifiable, traçabilité complète des mutations et historique de propriété immuable.' },
-          { icon: Eye, title: 'Transparence', desc: 'Accès public aux informations cadastrales via une interface web moderne. Chaque citoyen peut vérifier un titre foncier en moins de 5 minutes.' },
-          { icon: Layers, title: 'Interopérabilité', desc: 'API REST documentée pour l\'intégration avec les systèmes existants : SIG, administrations, banques, notaires et promoteurs immobiliers.' },
+          { icon: Database, title: 'Centralisation', before: 'Courir entre 3 bureaux et attendre des semaines', after: 'Tout en un clic, depuis n\'importe où' },
+          { icon: Lock, title: 'Sécurisation', before: 'Faux titres indétectables, fraude généralisée', after: 'QR code vérifiable en 10 secondes' },
+          { icon: Eye, title: 'Transparence', before: 'Information réservée aux initiés et intermédiaires', after: 'Tout citoyen peut vérifier un titre gratuitement' },
+          { icon: Layers, title: 'Interopérabilité', before: 'Systèmes cloisonnés, données inaccessibles', after: 'Une API ouverte pour banques, notaires et institutions' },
         ].map((p) => (
           <div key={p.title} className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/15 p-6 hover:bg-white/15 transition-colors">
-            <div className="flex items-center gap-3 mb-3">
+            <div className="flex items-center gap-3 mb-4">
               <div className="p-2.5 rounded-lg bg-primary/20">
                 <p.icon className="h-6 w-6 text-primary" />
               </div>
               <h3 className="text-xl font-semibold text-white">{p.title}</h3>
             </div>
-            <p className="text-white/75 text-sm leading-relaxed">{p.desc}</p>
+            <div className="space-y-2">
+              <div className="flex items-start gap-2">
+                <span className="text-red-400 text-xs font-bold mt-0.5 shrink-0">AVANT</span>
+                <p className="text-white/60 text-sm line-through">{p.before}</p>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-green-400 text-xs font-bold mt-0.5 shrink-0">APRÈS</span>
+                <p className="text-white text-sm font-medium">{p.after}</p>
+              </div>
+            </div>
           </div>
         ))}
       </div>
@@ -122,8 +135,8 @@ const SlideMap = () => (
       <div className="md:w-1/2 flex flex-col justify-center px-6 md:px-16 py-10">
         <span className="text-sm font-semibold text-primary uppercase tracking-wider">Cartographie</span>
         <h2 className="text-3xl md:text-4xl font-bold text-foreground mt-2 mb-4">Carte interactive des 26 provinces</h2>
-        <p className="text-muted-foreground mb-6 leading-relaxed">
-          Visualisez l'ensemble du territoire congolais avec des données cadastrales géolocalisées. Chaque province est cartographiée avec ses communes, quartiers et parcelles individuelles.
+        <p className="text-muted-foreground mb-4 leading-relaxed italic">
+          Pour la première fois, les données cadastrales de la RDC sont visualisables sur une carte. Zoomez de la province jusqu'à la parcelle individuelle.
         </p>
         <ul className="space-y-3">
           {[
@@ -155,6 +168,9 @@ const SlideServices = () => (
       <div className="mb-6 text-center">
         <span className="text-sm font-semibold text-primary uppercase tracking-wider">Écosystème complet</span>
         <h2 className="text-3xl md:text-4xl font-bold text-foreground mt-2">8 Services numériques intégrés</h2>
+        <p className="text-muted-foreground mt-2 max-w-2xl mx-auto italic">
+          Chaque service répond à un besoin concret des citoyens, notaires, banques et administrations. Voici l'écosystème complet.
+        </p>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1 max-w-5xl mx-auto w-full">
         {[
@@ -180,15 +196,49 @@ const SlideServices = () => (
   </SlideWrapper>
 );
 
-/* ── Slide 6: Recherche cadastrale ── */
+/* ── Slide 6: Comment ça marche (NOUVEAU) ── */
+const SlideHowItWorks = () => (
+  <SlideWrapper>
+    <div className="flex-1 flex flex-col bg-gradient-to-br from-primary/5 via-background to-accent/5 px-6 md:px-16 py-10 md:py-14 items-center justify-center">
+      <div className="mb-10 text-center">
+        <span className="text-sm font-semibold text-primary uppercase tracking-wider">Parcours utilisateur</span>
+        <h2 className="text-3xl md:text-5xl font-bold text-foreground mt-2">Comment ça marche ?</h2>
+        <p className="text-muted-foreground mt-3 max-w-2xl mx-auto italic">
+          De l'inscription à la vérification, tout le processus cadastral se fait en 4 étapes simples — sans se déplacer.
+        </p>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 max-w-5xl w-full">
+        {[
+          { step: '1', icon: LogIn, title: 'Créez un compte', desc: 'Inscription gratuite en 30 secondes avec votre email. Aucun document requis pour commencer.', color: 'bg-blue-500' },
+          { step: '2', icon: Search, title: 'Recherchez', desc: 'Entrez un numéro de parcelle, le nom d\'un propriétaire ou une adresse. Résultats en moins de 5 secondes.', color: 'bg-emerald-500' },
+          { step: '3', icon: FileText, title: 'Consultez', desc: 'Recevez la fiche cadastrale complète : croquis, propriétaire, historique, hypothèques, litiges. Tout en un document.', color: 'bg-amber-500' },
+          { step: '4', icon: ScanLine, title: 'Vérifiez', desc: 'Scannez le QR code pour authentifier le document. La vérification est publique, gratuite et instantanée.', color: 'bg-violet-500' },
+        ].map((s, i) => (
+          <div key={s.step} className="relative flex flex-col items-center text-center">
+            {/* Connector line */}
+            {i < 3 && <div className="hidden md:block absolute top-10 left-[60%] w-[80%] h-0.5 bg-gradient-to-r from-primary/30 to-primary/10" />}
+            <div className={`w-16 h-16 rounded-2xl ${s.color} flex items-center justify-center mb-4 shadow-lg`}>
+              <s.icon className="h-7 w-7 text-white" />
+            </div>
+            <span className="text-xs font-bold text-primary mb-1">ÉTAPE {s.step}</span>
+            <h3 className="font-bold text-foreground text-lg mb-2">{s.title}</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </SlideWrapper>
+);
+
+/* ── Slide 7: Recherche cadastrale ── */
 const SlideSearch = () => (
   <SlideWrapper>
     <div className="flex-1 flex flex-col md:flex-row bg-background">
       <div className="md:w-1/2 flex flex-col justify-center px-6 md:px-16 py-10">
         <span className="text-sm font-semibold text-primary uppercase tracking-wider">Fonctionnalité phare</span>
         <h2 className="text-3xl md:text-4xl font-bold text-foreground mt-2 mb-4">Recherche cadastrale intelligente</h2>
-        <p className="text-muted-foreground mb-6 leading-relaxed">
-          Le moteur de recherche le plus avancé pour les données cadastrales congolaises. Trouvez n'importe quelle parcelle en quelques secondes.
+        <p className="text-muted-foreground mb-6 leading-relaxed italic">
+          Vous cherchez une parcelle ? Entrez son numéro, le nom du propriétaire ou une adresse. Le BIC vous retourne la fiche complète en moins de 5 secondes.
         </p>
         <div className="space-y-4">
           {[
@@ -210,7 +260,6 @@ const SlideSearch = () => (
         </div>
       </div>
       <div className="md:w-1/2 bg-muted/30 flex items-center justify-center p-8">
-        {/* Mockup de la recherche */}
         <div className="w-full max-w-sm bg-card rounded-2xl shadow-xl border overflow-hidden">
           <div className="bg-primary p-4">
             <div className="flex items-center gap-2 bg-white/20 rounded-lg px-3 py-2">
@@ -235,17 +284,18 @@ const SlideSearch = () => (
   </SlideWrapper>
 );
 
-/* ── Slide 7: Fiche Cadastrale ── */
+/* ── Slide 8: Fiche Cadastrale ── */
 const SlideFicheCadastrale = () => (
   <SlideWrapper>
     <div className="flex-1 flex flex-col bg-gradient-to-br from-blue-50/50 via-background to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 px-6 md:px-16 py-10 md:py-14">
       <div className="mb-6 text-center">
         <span className="text-sm font-semibold text-primary uppercase tracking-wider">Document officiel</span>
         <h2 className="text-3xl md:text-4xl font-bold text-foreground mt-2">La Fiche Cadastrale numérique</h2>
-        <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">Un document complet et vérifiable généré automatiquement pour chaque parcelle enregistrée dans le système BIC.</p>
+        <p className="text-muted-foreground mt-2 max-w-2xl mx-auto italic">
+          La fiche cadastrale numérique remplace les documents papier éparpillés dans les bureaux. Elle regroupe TOUTES les informations d'une parcelle en un seul document vérifiable.
+        </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto flex-1">
-        {/* Mockup visuel */}
         <div className="bg-card rounded-xl border p-6 shadow-sm">
           <div className="border-2 border-primary/20 rounded-lg p-4 space-y-3">
             <div className="flex items-center justify-between border-b pb-3">
@@ -262,7 +312,6 @@ const SlideFicheCadastrale = () => (
                 <span className="text-[10px] font-medium text-orange-600 dark:text-orange-400">⚠ Litige</span>
               </div>
             </div>
-            {/* SVG Sketch mockup */}
             <div className="bg-muted/30 rounded-lg p-3 flex items-center justify-center h-28">
               <svg viewBox="0 0 200 100" className="w-full h-full">
                 <polygon points="20,80 60,15 170,20 180,85" fill="none" stroke="hsl(var(--primary))" strokeWidth="2" strokeDasharray="4" />
@@ -289,7 +338,6 @@ const SlideFicheCadastrale = () => (
             </div>
           </div>
         </div>
-        {/* Sections de la fiche */}
         <div className="space-y-3">
           <h3 className="font-semibold text-foreground mb-2">Contenu de la fiche cadastrale</h3>
           {[
@@ -316,14 +364,16 @@ const SlideFicheCadastrale = () => (
   </SlideWrapper>
 );
 
-/* ── Slide 8: Vérification & Certificats ── */
+/* ── Slide 9: Vérification & Certificats ── */
 const SlideVerification = () => (
   <SlideWrapper>
     <div className="flex-1 flex flex-col bg-gradient-to-br from-green-50/50 via-background to-emerald-50/50 dark:from-green-950/20 dark:to-emerald-950/20 px-6 md:px-16 py-10 md:py-14">
       <div className="mb-8 text-center">
         <span className="text-sm font-semibold text-primary uppercase tracking-wider">Anti-fraude</span>
         <h2 className="text-3xl md:text-4xl font-bold text-foreground mt-2">Vérification & Certificats numériques</h2>
-        <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">Chaque document généré par le BIC est vérifiable instantanément grâce à un QR code unique et un code de vérification cryptographique.</p>
+        <p className="text-muted-foreground mt-2 max-w-2xl mx-auto italic">
+          La fraude documentaire est endémique dans le secteur foncier congolais. Chaque document BIC porte un QR code unique — scannez-le pour vérifier instantanément son authenticité.
+        </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto flex-1">
         <div className="bg-card rounded-xl border p-6 flex flex-col">
@@ -370,14 +420,16 @@ const SlideVerification = () => (
   </SlideWrapper>
 );
 
-/* ── Slide 9: Programme CCC ── */
+/* ── Slide 10: Programme CCC ── */
 const SlideCCC = () => (
   <SlideWrapper bg={gomaHero} overlay>
     <div className="flex-1 flex flex-col px-6 md:px-16 py-10 md:py-16">
       <div className="mb-8">
         <span className="text-sm font-semibold text-primary uppercase tracking-wider">Innovation sociale</span>
         <h2 className="text-3xl md:text-5xl font-bold text-white mt-2">Programme Contributeur CCC</h2>
-        <p className="text-lg text-white/80 mt-3 max-w-3xl">Les citoyens contribuent à la numérisation du cadastre et sont récompensés par des codes de réduction sur les services BIC.</p>
+        <p className="text-lg text-white/80 mt-3 max-w-3xl italic">
+          Le cadastre ne peut pas être numérisé uniquement par en haut. Le programme CCC mobilise les citoyens pour collecter les données terrain — et les récompense pour leur contribution.
+        </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 flex-1 max-w-5xl">
         {[
@@ -398,26 +450,38 @@ const SlideCCC = () => (
   </SlideWrapper>
 );
 
-/* ── Slide 10: Chiffres clés ── */
+/* ── Slide 11: Impact & Objectifs ── */
 const SlideStats = () => (
   <SlideWrapper>
-    <div className="flex-1 flex flex-col bg-gradient-to-br from-primary/10 via-background to-primary/5 px-6 md:px-16 py-10 md:py-16 items-center justify-center">
+    <div className="flex-1 flex flex-col bg-gradient-to-br from-primary/10 via-background to-primary/5 px-6 md:px-16 py-10 md:py-14 items-center justify-center">
       <span className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">Impact</span>
-      <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-10 text-center">Chiffres clés</h2>
+      <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4 text-center">Impact & Objectifs</h2>
+      <p className="text-muted-foreground mb-8 text-center max-w-2xl italic">
+        Des résultats concrets aujourd'hui, et une ambition claire pour demain. Voici où nous en sommes — et où nous allons.
+      </p>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-6 max-w-4xl w-full">
         {[
-          { value: '1 000+', label: 'Parcelles numérisées', sublabel: 'Objectif 2026 : 50 000', icon: Map },
-          { value: '26', label: 'Provinces couvertes', sublabel: 'Territoire national complet', icon: Globe },
-          { value: '100%', label: 'Traçabilité des mutations', sublabel: 'Historique complet et vérifiable', icon: TrendingUp },
-          { value: '< 5 min', label: 'Vérification d\'un titre', sublabel: 'Contre 2 mois en procédure manuelle', icon: Clock },
-          { value: '8', label: 'Services numériques intégrés', sublabel: 'Écosystème cadastral complet', icon: Zap },
-          { value: '4', label: 'Types de partenariats', sublabel: 'Institutionnel, commercial, académique, tech', icon: Handshake },
+          { today: '1 000+', target: '50 000', label: 'Parcelles numérisées', icon: Map },
+          { today: '3', target: '26', label: 'Provinces actives', icon: Globe },
+          { today: '100%', target: '100%', label: 'Traçabilité mutations', icon: TrendingUp },
+          { today: '< 5 min', target: '< 1 min', label: 'Vérification d\'un titre', icon: Clock },
+          { today: '8', target: '12+', label: 'Services numériques', icon: Zap },
+          { today: '3', target: '50+', label: 'Partenaires actifs', icon: Handshake },
         ].map((m) => (
-          <div key={m.label} className="bg-card rounded-xl border p-6 text-center shadow-sm hover:shadow-md transition-shadow">
-            <m.icon className="h-6 w-6 text-primary mx-auto mb-3" />
-            <div className="text-3xl md:text-4xl font-bold text-primary mb-1">{m.value}</div>
-            <p className="text-sm text-foreground font-medium">{m.label}</p>
-            {m.sublabel && <p className="text-[11px] text-muted-foreground mt-1">{m.sublabel}</p>}
+          <div key={m.label} className="bg-card rounded-xl border p-5 text-center shadow-sm hover:shadow-md transition-shadow">
+            <m.icon className="h-5 w-5 text-primary mx-auto mb-3" />
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <div>
+                <div className="text-2xl font-bold text-foreground">{m.today}</div>
+                <p className="text-[10px] text-muted-foreground">Aujourd'hui</p>
+              </div>
+              <ArrowRight className="h-4 w-4 text-primary" />
+              <div>
+                <div className="text-2xl font-bold text-primary">{m.target}</div>
+                <p className="text-[10px] text-muted-foreground">Objectif 2027</p>
+              </div>
+            </div>
+            <p className="text-xs text-foreground font-medium">{m.label}</p>
           </div>
         ))}
       </div>
@@ -425,13 +489,16 @@ const SlideStats = () => (
   </SlideWrapper>
 );
 
-/* ── Slide 11: Business Model ── */
+/* ── Slide 12: Business Model ── */
 const SlideBusiness = () => (
   <SlideWrapper>
     <div className="flex-1 flex flex-col bg-background px-6 md:px-16 py-10 md:py-14">
       <div className="mb-6 text-center">
         <span className="text-sm font-semibold text-primary uppercase tracking-wider">Modèle économique</span>
         <h2 className="text-3xl md:text-4xl font-bold text-foreground mt-2">Business Model & Opportunités</h2>
+        <p className="text-muted-foreground mt-2 max-w-2xl mx-auto italic">
+          Le BIC n'est pas un projet subventionné. C'est un modèle économique viable, avec 4 types de partenariats qui génèrent de la valeur pour toutes les parties.
+        </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-5xl mx-auto flex-1 w-full">
         {[
@@ -462,14 +529,16 @@ const SlideBusiness = () => (
   </SlideWrapper>
 );
 
-/* ── Slide 12: Roadmap & Vision ── */
+/* ── Slide 13: Roadmap & Vision ── */
 const SlideRoadmap = () => (
   <SlideWrapper>
     <div className="flex-1 flex flex-col bg-gradient-to-br from-indigo-50/50 via-background to-violet-50/50 dark:from-indigo-950/20 dark:to-violet-950/20 px-6 md:px-16 py-10 md:py-14">
       <div className="mb-8 text-center">
         <span className="text-sm font-semibold text-primary uppercase tracking-wider">Vision</span>
         <h2 className="text-3xl md:text-4xl font-bold text-foreground mt-2">Roadmap & Déploiement</h2>
-        <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">Un plan de déploiement progressif pour couvrir l'ensemble du territoire congolais en 3 phases.</p>
+        <p className="text-muted-foreground mt-2 max-w-2xl mx-auto italic">
+          Nous avons commencé petit, à Goma, pour prouver le concept. Voici comment nous comptons passer à l'échelle nationale.
+        </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto flex-1">
         {[
@@ -522,12 +591,15 @@ const SlideRoadmap = () => (
   </SlideWrapper>
 );
 
-/* ── Slide 13: Équipe ── */
+/* ── Slide 14: Équipe ── */
 const SlideTeam = () => (
   <SlideWrapper>
     <div className="flex-1 flex flex-col bg-background px-6 md:px-16 py-10 md:py-16 items-center justify-center">
       <span className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">L'équipe</span>
-      <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-8 text-center">Les porteurs du projet</h2>
+      <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3 text-center">Les porteurs du projet</h2>
+      <p className="text-muted-foreground mb-8 text-center max-w-2xl italic">
+        Le BIC est porté par une équipe pluridisciplinaire alliant expertise technique, connaissance du terrain et vision stratégique.
+      </p>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl w-full">
         {[
           { icon: Briefcase, name: 'Fondateur / CEO', desc: 'Vision stratégique, relations institutionnelles et développement des partenariats en RDC et à l\'international.' },
@@ -548,14 +620,16 @@ const SlideTeam = () => (
   </SlideWrapper>
 );
 
-/* ── Slide 14: Tarification ── */
+/* ── Slide 15: Tarification ── */
 const SlidePricing = () => (
   <SlideWrapper>
     <div className="flex-1 flex flex-col bg-gradient-to-br from-emerald-50/50 via-background to-teal-50/50 dark:from-emerald-950/20 dark:to-teal-950/20 px-6 md:px-16 py-10 md:py-14">
       <div className="mb-8 text-center">
         <span className="text-sm font-semibold text-primary uppercase tracking-wider">Revenus</span>
         <h2 className="text-3xl md:text-4xl font-bold text-foreground mt-2">Modèle de tarification</h2>
-        <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">Quatre sources de revenus complémentaires pour un modèle économique durable et scalable.</p>
+        <p className="text-muted-foreground mt-2 max-w-2xl mx-auto italic">
+          Des prix accessibles, adaptés au contexte congolais. Chaque modèle cible un segment différent : le citoyen, le professionnel, l'entreprise.
+        </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 max-w-5xl mx-auto flex-1">
         {[
@@ -586,14 +660,16 @@ const SlidePricing = () => (
   </SlideWrapper>
 );
 
-/* ── Slide 15: Sécurité & Conformité ── */
+/* ── Slide 16: Sécurité & Conformité ── */
 const SlideSecurity = () => (
   <SlideWrapper>
     <div className="flex-1 flex flex-col bg-gradient-to-br from-slate-50/50 via-background to-gray-50/50 dark:from-slate-950/20 dark:to-gray-950/20 px-6 md:px-16 py-10 md:py-14">
       <div className="mb-8 text-center">
         <span className="text-sm font-semibold text-primary uppercase tracking-wider">Confiance</span>
         <h2 className="text-3xl md:text-4xl font-bold text-foreground mt-2">Sécurité & Conformité</h2>
-        <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">Une architecture de sécurité robuste, conforme à la législation congolaise et aux standards internationaux.</p>
+        <p className="text-muted-foreground mt-2 max-w-2xl mx-auto italic">
+          La confiance est le fondement du BIC. Voici les mesures concrètes qui protègent les données et garantissent la conformité.
+        </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto flex-1">
         {[
@@ -624,12 +700,15 @@ const SlideSecurity = () => (
   </SlideWrapper>
 );
 
-/* ── Slide 16: Partenaires actuels ── */
+/* ── Slide 17: Partenaires actuels ── */
 const SlidePartners = () => (
   <SlideWrapper>
     <div className="flex-1 flex flex-col bg-gradient-to-br from-secondary/5 via-background to-primary/5 px-6 md:px-16 py-10 md:py-16 items-center justify-center">
       <span className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">Réseau</span>
-      <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-8 text-center">Nos partenaires actuels</h2>
+      <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3 text-center">Nos partenaires actuels</h2>
+      <p className="text-muted-foreground mb-8 text-center max-w-2xl italic">
+        Le BIC ne travaille pas seul. Nos partenaires fondateurs valident notre approche et contribuent à notre crédibilité.
+      </p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl w-full">
         {[
           { icon: GraduationCap, name: 'Université de Goma (UNIGOM)', type: 'Académique', desc: 'Partenariat pour la recherche sur le foncier, accès aux données anonymisées pour les mémoires et thèses, formations conjointes en géomatique.' },
@@ -650,12 +729,15 @@ const SlidePartners = () => (
   </SlideWrapper>
 );
 
-/* ── Slide 17: Témoignages ── */
+/* ── Slide 18: Témoignages ── */
 const SlideTestimonials = () => (
   <SlideWrapper>
     <div className="flex-1 flex flex-col bg-background px-6 md:px-16 py-10 md:py-16 items-center justify-center">
       <span className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">Retours terrain</span>
-      <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-10 text-center">Ce que disent nos utilisateurs</h2>
+      <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3 text-center">Ce que disent nos utilisateurs</h2>
+      <p className="text-muted-foreground mb-8 text-center max-w-2xl italic">
+        Ce ne sont pas nos mots, mais ceux de nos utilisateurs. Voici comment le BIC change concrètement leur quotidien.
+      </p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl w-full">
         {[
           { name: 'Me. Kabongo', role: 'Notaire — Lubumbashi', quote: 'Le BIC a transformé notre processus de vérification foncière. Ce qui prenait des semaines de déplacements entre les bureaux du cadastre se fait maintenant en quelques minutes depuis mon cabinet. La vérification par QR code nous donne une assurance totale sur l\'authenticité des documents.' },
@@ -682,14 +764,14 @@ const SlideTestimonials = () => (
   </SlideWrapper>
 );
 
-/* ── Slide 18: Démo ── */
+/* ── Slide 19: Démo ── */
 const SlideDemo = () => (
   <SlideWrapper>
     <div className="flex-1 flex flex-col bg-gradient-to-br from-primary/5 via-background to-secondary/5 px-6 md:px-16 py-10 md:py-16 items-center justify-center">
       <span className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">Démonstration</span>
       <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4 text-center">Testez la plateforme</h2>
-      <p className="text-lg text-muted-foreground mb-8 text-center max-w-2xl">
-        Accédez à notre environnement de test avec des données réelles et explorez toutes les fonctionnalités de la plateforme BIC.
+      <p className="text-lg text-muted-foreground mb-8 text-center max-w-2xl italic">
+        Pas de promesses abstraites. Testez vous-même la plateforme avec des données réelles de Goma.
       </p>
       <div className="max-w-3xl w-full aspect-video bg-muted rounded-xl flex items-center justify-center border-2 border-dashed border-border mb-8 cursor-pointer hover:border-primary/50 transition-colors">
         <div className="text-center">
@@ -708,7 +790,40 @@ const SlideDemo = () => (
   </SlideWrapper>
 );
 
-/* ── Slide 19: Contact ── */
+/* ── Slide 20: Pourquoi maintenant (NOUVEAU) ── */
+const SlideWhyNow = () => (
+  <SlideWrapper bg={gomaHero} overlay>
+    <div className="flex-1 flex flex-col px-6 md:px-16 py-10 md:py-16 items-center justify-center">
+      <div className="mb-10 text-center">
+        <span className="text-sm font-semibold text-primary uppercase tracking-wider">Urgence</span>
+        <h2 className="text-3xl md:text-5xl font-bold text-white mt-2">Pourquoi maintenant ?</h2>
+        <p className="text-lg text-white/80 mt-3 max-w-2xl mx-auto italic">
+          Le moment est critique. Chaque jour sans cadastre numérique, ce sont des droits perdus, des litiges créés, des investissements bloqués.
+        </p>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl w-full">
+        {[
+          { icon: TrendingUp, title: 'Urbanisation record', desc: 'La RDC urbanise à un rythme parmi les plus rapides d\'Afrique. Sans données cadastrales fiables, les litiges fonciers explosent dans chaque nouvelle zone urbanisée.' },
+          { icon: Landmark, title: 'Volonté politique', desc: 'Le gouvernement congolais pousse activement la modernisation du cadastre. Les partenaires qui s\'engagent maintenant bénéficient d\'un alignement stratégique rare.' },
+          { icon: Flag, title: 'Avantage du premier entrant', desc: 'Les premiers partenaires accèdent à un marché vierge de 90 millions d\'habitants. Ceux qui attendent devront rattraper un retard coûteux.' },
+          { icon: Database, title: 'Actif stratégique', desc: 'Les données cadastrales collectées maintenant constituent un actif unique et irremplaçable. Chaque parcelle numérisée aujourd\'hui est une valeur créée pour demain.' },
+        ].map((s) => (
+          <div key={s.title} className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/15 p-6 hover:bg-white/15 transition-colors">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2.5 rounded-lg bg-primary/20">
+                <s.icon className="h-5 w-5 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold text-white">{s.title}</h3>
+            </div>
+            <p className="text-white/70 text-sm leading-relaxed">{s.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </SlideWrapper>
+);
+
+/* ── Slide 21: Contact ── */
 const SlideContact: React.FC = () => {
   const { toast } = useToast();
   const [formData, setFormData] = useState({ name: '', email: '', organization: '', message: '' });
@@ -747,8 +862,8 @@ const SlideContact: React.FC = () => {
         <div className="md:w-1/2 flex flex-col justify-center px-6 md:px-16 py-10">
           <span className="text-sm font-semibold text-primary uppercase tracking-wider">Rejoignez-nous</span>
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mt-2 mb-4">Devenez partenaire du BIC</h2>
-          <p className="text-muted-foreground mb-6 leading-relaxed">
-            Rejoignez notre réseau et contribuez à la modernisation du cadastre en RDC. Accédez à des données uniques et créez de la valeur pour vos clients et votre organisation.
+          <p className="text-muted-foreground mb-6 leading-relaxed italic">
+            Prêt à rejoindre le mouvement ? Que vous soyez institution, entreprise, université ou ONG — nous avons un partenariat pour vous.
           </p>
           <div className="space-y-4 mb-8">
             <Button asChild size="lg" variant="seloger" className="w-full sm:w-auto">
@@ -809,11 +924,12 @@ const slides = [
   { id: 'solution', title: 'La Solution', component: SlideSolution },
   { id: 'map', title: 'Carte interactive', component: SlideMap },
   { id: 'services', title: 'Services', component: SlideServices },
+  { id: 'how-it-works', title: 'Comment ça marche', component: SlideHowItWorks },
   { id: 'search', title: 'Recherche', component: SlideSearch },
   { id: 'fiche', title: 'Fiche Cadastrale', component: SlideFicheCadastrale },
   { id: 'verification', title: 'Vérification', component: SlideVerification },
   { id: 'ccc', title: 'Programme CCC', component: SlideCCC },
-  { id: 'stats', title: 'Chiffres clés', component: SlideStats },
+  { id: 'stats', title: 'Impact & Objectifs', component: SlideStats },
   { id: 'business', title: 'Business Model', component: SlideBusiness },
   { id: 'roadmap', title: 'Roadmap', component: SlideRoadmap },
   { id: 'team', title: 'Équipe', component: SlideTeam },
@@ -822,6 +938,7 @@ const slides = [
   { id: 'partners', title: 'Partenaires', component: SlidePartners },
   { id: 'testimonials', title: 'Témoignages', component: SlideTestimonials },
   { id: 'demo', title: 'Démo', component: SlideDemo },
+  { id: 'why-now', title: 'Pourquoi maintenant', component: SlideWhyNow },
   { id: 'contact', title: 'Contact', component: SlideContact },
 ];
 
