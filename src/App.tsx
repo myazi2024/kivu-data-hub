@@ -42,6 +42,7 @@ const ArticleDetail = React.lazy(() => import("./pages/ArticleDetail"));
 const AboutCCC = React.lazy(() => import("./pages/AboutCCC"));
 const AboutDiscountCodes = React.lazy(() => import("./pages/AboutDiscountCodes"));
 const VerifyDocument = React.lazy(() => import("./pages/VerifyDocument"));
+const PitchPartenaires = React.lazy(() => import("./pages/PitchPartenaires"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
