@@ -40,7 +40,7 @@ const SlideCover = () => (
         Présentation aux Partenaires d'Affaires
       </span>
       <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-4 leading-tight max-w-4xl">
-        Bureau d'Information Cadastrale
+        Bureau d'Informations Cadastrales
       </h1>
       <p className="text-xl md:text-2xl text-white/90 max-w-2xl mb-10 font-light">
         Le cadastre congolais, enfin numérique.
