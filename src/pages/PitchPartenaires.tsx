@@ -66,7 +66,7 @@ const SlideContext = () => (
         {[
           { icon: AlertTriangle, value: '70%', label: 'des litiges judiciaires en RDC sont liés au foncier', color: 'text-destructive' },
           { icon: FileText, value: '0%', label: 'de numérisation du cadastre avant le BIC', color: 'text-orange-500' },
-          { icon: Clock, value: '6 mois', label: 'en moyenne pour vérifier un titre foncier manuellement', color: 'text-amber-500' },
+          { icon: Clock, value: '2 mois', label: 'en moyenne pour vérifier un titre foncier manuellement', color: 'text-amber-500' },
           { icon: Shield, value: '45%', label: 'des titres fonciers contiennent des irrégularités', color: 'text-red-500' },
         ].map((s) => (
           <div key={s.label} className="bg-card rounded-xl border p-6 flex flex-col items-center text-center shadow-sm hover:shadow-md transition-shadow">
