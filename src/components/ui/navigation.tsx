@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Menu, X, User, LogOut, ChevronDown, Shield, Newspaper, Briefcase, Tag, Heart, Building2, Handshake, Scale } from 'lucide-react';
+import { Menu, X, User, LogOut, ChevronDown, Shield, Newspaper, Briefcase, Tag, Heart, Building2, Handshake, Scale, Presentation } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -25,6 +25,7 @@ const mediaColumns = [
     title: 'Ressources',
     items: [
       
+      { name: 'Présentation BIC', href: '/pitch-partenaires', icon: Presentation, description: 'Pitch pour partenaires d\'affaires' },
       { name: 'Nos Services', href: '/services', icon: Briefcase, description: 'Catalogue des services cadastraux' },
       { name: 'Codes Promo', href: '/about-discount-codes', icon: Tag, description: 'Codes de réduction disponibles' },
       { name: 'Contributions CCC', href: '/about-ccc', icon: Heart, description: 'Comprendre les contributions' },
