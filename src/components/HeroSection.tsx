@@ -48,7 +48,7 @@ const HeroSection = () => {
             </Button>
           </Link>
           
-          <Link to="/publications" className="w-full sm:flex-1">
+          <Link to="/articles" className="w-full sm:flex-1">
             <Button 
               variant="outline"
               size="lg"
