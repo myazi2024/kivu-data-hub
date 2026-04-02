@@ -139,7 +139,7 @@ const SlideMap = () => (
         </ul>
       </div>
       <div className="md:w-1/2 relative">
-        <img src={mapViz} alt="Carte interactive BIC" className="w-full h-full object-cover" />
+        <img src={mapViz} alt="Carte interactive BIC" className="w-full h-full object-cover object-right-bottom" />
         <div className="absolute inset-0 bg-gradient-to-l from-transparent to-background/50 md:block hidden" />
       </div>
     </div>
