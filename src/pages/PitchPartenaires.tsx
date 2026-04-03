@@ -27,7 +27,7 @@ import gomaHero from '@/assets/goma-city-hero.jpg';
 /* ──────────────────── SLIDE COMPONENTS ──────────────────── */
 
 const SlideWrapper: React.FC<{ bg?: string; overlay?: boolean; children: React.ReactNode; className?: string }> = ({ bg, overlay = false, children, className = '' }) => (
-  <div className={`relative w-full h-full flex flex-col overflow-hidden ${className}`}>
+  <div className={`relative w-full h-full flex flex-col overflow-y-auto md:overflow-hidden ${className}`}>
     {bg && <img src={bg} alt="" className="absolute inset-0 w-full h-full object-cover" />}
     {bg && overlay && <div className="absolute inset-0 bg-black/60" />}
     <div className="relative z-10 flex-1 flex flex-col">{children}</div>
@@ -209,20 +209,20 @@ const ServiceSlideLayout: React.FC<{
   iconBg: string;
 }> = ({ num, name, description, features, audience, MainIcon, gradient, iconBg }) => (
   <SlideWrapper>
-    <div className={`flex-1 flex flex-col md:flex-row ${gradient}`}>
-      <div className="md:w-3/5 flex flex-col justify-center px-6 md:px-16 py-10">
-        <span className="inline-block mb-3 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold w-fit">
+    <div className={`flex-1 flex flex-col-reverse md:flex-row ${gradient}`}>
+      <div className="md:w-3/5 flex flex-col justify-center px-4 md:px-16 py-4 md:py-10">
+        <span className="inline-block mb-2 md:mb-3 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold w-fit">
           Service {num}/8
         </span>
-        <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">{name}</h2>
-        <p className="text-muted-foreground mb-6 leading-relaxed italic">{description}</p>
-        <ul className="space-y-3 mb-6">
+        <h2 className="text-xl md:text-4xl font-bold text-foreground mb-2 md:mb-4">{name}</h2>
+        <p className="text-muted-foreground mb-3 md:mb-6 leading-relaxed italic text-sm md:text-base">{description}</p>
+        <ul className="space-y-2 md:space-y-3 mb-4 md:mb-6">
           {features.map((f, i) => (
-            <li key={i} className="flex items-start gap-3">
-              <div className="p-1.5 rounded-lg bg-primary/10 shrink-0 mt-0.5">
-                <f.icon className="h-4 w-4 text-primary" />
+            <li key={i} className="flex items-start gap-2 md:gap-3">
+              <div className="p-1 md:p-1.5 rounded-lg bg-primary/10 shrink-0 mt-0.5">
+                <f.icon className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
               </div>
-              <span className="text-sm text-foreground">{f.text}</span>
+              <span className="text-xs md:text-sm text-foreground">{f.text}</span>
             </li>
           ))}
         </ul>
@@ -232,9 +232,9 @@ const ServiceSlideLayout: React.FC<{
           <span>{audience}</span>
         </div>
       </div>
-      <div className="md:w-2/5 flex items-center justify-center p-8">
-        <div className={`w-40 h-40 md:w-56 md:h-56 rounded-3xl ${iconBg} flex items-center justify-center shadow-2xl`}>
-          <MainIcon className="h-20 w-20 md:h-28 md:w-28 text-white" strokeWidth={1.5} />
+      <div className="md:w-2/5 flex items-center justify-center p-4 md:p-8">
+        <div className={`w-20 h-20 md:w-56 md:h-56 rounded-2xl md:rounded-3xl ${iconBg} flex items-center justify-center shadow-2xl`}>
+          <MainIcon className="h-10 w-10 md:h-28 md:w-28 text-white" strokeWidth={1.5} />
         </div>
       </div>
     </div>
@@ -1213,7 +1213,7 @@ const PitchPartenaires = () => {
           {current > 0 && (
             <button
               onClick={prev}
-              className="absolute left-3 bottom-1/2 translate-y-1/2 p-2 rounded-full bg-background/80 backdrop-blur border shadow-lg hover:bg-background transition-colors"
+              className="absolute left-2 md:left-3 bottom-1/2 translate-y-1/2 p-3 md:p-2 rounded-full bg-background/80 backdrop-blur border shadow-lg hover:bg-background transition-colors"
               aria-label="Slide précédente"
             >
               <ChevronLeft className="h-5 w-5 text-foreground" />
@@ -1222,7 +1222,7 @@ const PitchPartenaires = () => {
           {current < slides.length - 1 && (
             <button
               onClick={next}
-              className="absolute right-3 bottom-1/2 translate-y-1/2 p-2 rounded-full bg-background/80 backdrop-blur border shadow-lg hover:bg-background transition-colors"
+              className="absolute right-2 md:right-3 bottom-1/2 translate-y-1/2 p-3 md:p-2 rounded-full bg-background/80 backdrop-blur border shadow-lg hover:bg-background transition-colors"
               aria-label="Slide suivante"
             >
               <ChevronRight className="h-5 w-5 text-foreground" />
@@ -1230,9 +1230,9 @@ const PitchPartenaires = () => {
           )}
 
           {/* Bottom bar */}
-          <div className="flex items-center justify-center gap-3 py-3 px-4 bg-background/80 backdrop-blur border-t">
-            {/* Dots */}
-            <div className="flex items-center gap-1.5">
+          <div className="flex items-center justify-center gap-3 py-2 md:py-3 px-4 bg-background/80 backdrop-blur border-t">
+            {/* Dots — hidden on mobile */}
+            <div className="hidden md:flex items-center gap-1.5">
               {slides.map((s, i) => (
                 <button
                   key={s.id}
