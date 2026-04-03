@@ -46,7 +46,7 @@ const SlideCover = () => (
         Bureau d'Informations Cadastrales
       </h1>
       <p className="text-xl md:text-2xl text-white/90 max-w-2xl mb-10 font-light">
-        Sécuriser chaque parcelle. Protéger chaque propriétaire.
+        Cadastre numérique collaboratif.
       </p>
       <div className="flex items-center gap-3 text-white/70 text-sm">
         <MonitorSmartphone className="h-4 w-4" />
