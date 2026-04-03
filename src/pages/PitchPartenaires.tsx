@@ -27,7 +27,7 @@ import gomaHero from '@/assets/goma-city-hero.jpg';
 /* ──────────────────── SLIDE COMPONENTS ──────────────────── */
 
 const SlideWrapper: React.FC<{ bg?: string; overlay?: boolean; children: React.ReactNode; className?: string }> = ({ bg, overlay = false, children, className = '' }) => (
-  <div className={`relative w-full h-full flex flex-col overflow-hidden ${className}`}>
+  <div className={`relative w-full h-full flex flex-col overflow-y-auto md:overflow-hidden ${className}`}>
     {bg && <img src={bg} alt="" className="absolute inset-0 w-full h-full object-cover" />}
     {bg && overlay && <div className="absolute inset-0 bg-black/60" />}
     <div className="relative z-10 flex-1 flex flex-col">{children}</div>
