@@ -933,14 +933,19 @@ const CadastralMap = () => {
       <Navigation />
       
       <main className="flex-1 relative" style={{ height: 'calc(100vh - 4rem)' }}>
-        {/* Mobile: move Leaflet zoom controls up ~5cm */}
-        {isMobile && (
-          <style>{`
-            .leaflet-bottom.leaflet-right .leaflet-control-zoom {
-              margin-bottom: 12rem !important;
-            }
-          `}</style>
-        )}
+        {/* Dynamic zoom control positioning based on panel state */}
+        <style>{`
+          .leaflet-bottom.leaflet-right .leaflet-control-zoom {
+            margin-bottom: ${
+              selectedParcel
+                ? isMobile
+                  ? actionsExpanded ? '26rem' : '11rem'
+                  : actionsExpanded ? '24rem' : '10rem'
+                : isMobile ? '1rem' : '1rem'
+            } !important;
+            transition: margin-bottom 0.3s ease !important;
+          }
+        `}</style>
         {/* Carte en plein écran */}
         {loading ? (
           <div className="absolute inset-0 flex items-center justify-center bg-muted/50">
