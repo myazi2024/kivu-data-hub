@@ -4685,6 +4685,7 @@ export type Database = {
         Args: { allowed_types: string[]; file_name: string; file_size: number }
         Returns: Json
       }
+      verify_document_by_code: { Args: { p_code: string }; Returns: Json }
     }
     Enums: {
       app_role:
