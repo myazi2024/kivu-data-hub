@@ -52,14 +52,10 @@ const VerifyDocument: React.FC = () => {
     setResult(null);
 
     try {
-      const { data, error } = await supabase
-        .from('document_verifications')
-        .select('verification_code, document_type, parcel_number, generated_at, is_valid, client_name, metadata, invalidated_at, invalidation_reason')
-        .eq('verification_code', trimmed)
-        .maybeSingle();
+      const { data, error } = await supabase.rpc('verify_document_by_code', { p_code: trimmed });
 
       if (error) throw error;
-      setResult(data as VerificationResult | null);
+      setResult(data as unknown as VerificationResult | null);
     } catch (err) {
       console.error('Verification error:', err);
     } finally {
