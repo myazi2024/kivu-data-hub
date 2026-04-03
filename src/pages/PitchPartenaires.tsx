@@ -753,7 +753,7 @@ const SlideRoadmap = () => (
             title: 'Couverture nationale',
             status: 'Vision',
             statusColor: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400',
-            items: ['Couverture des 26 provinces', 'Objectif : 500 000+ parcelles', 'API publique pour développeurs tiers', 'Interopérabilité avec les SIG nationaux', 'Modèle réplicable dans d\'autres pays africains'],
+            items: ['Couverture des 26 provinces', 'Objectif : 500 000+ parcelles', 'Permissions étendues pour tous les acteurs du foncier', 'Intégration des données SIG nationales dans la plateforme', 'Modèle réplicable dans d\'autres pays africains'],
           },
         ].map((p) => (
           <div key={p.phase} className="bg-card rounded-xl border p-6 flex flex-col hover:shadow-md transition-shadow">
