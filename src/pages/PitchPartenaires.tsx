@@ -1213,7 +1213,7 @@ const PitchPartenaires = () => {
           {current > 0 && (
             <button
               onClick={prev}
-              className="absolute left-3 bottom-1/2 translate-y-1/2 p-2 rounded-full bg-background/80 backdrop-blur border shadow-lg hover:bg-background transition-colors"
+              className="absolute left-2 md:left-3 bottom-1/2 translate-y-1/2 p-3 md:p-2 rounded-full bg-background/80 backdrop-blur border shadow-lg hover:bg-background transition-colors"
               aria-label="Slide précédente"
             >
               <ChevronLeft className="h-5 w-5 text-foreground" />
@@ -1222,7 +1222,7 @@ const PitchPartenaires = () => {
           {current < slides.length - 1 && (
             <button
               onClick={next}
-              className="absolute right-3 bottom-1/2 translate-y-1/2 p-2 rounded-full bg-background/80 backdrop-blur border shadow-lg hover:bg-background transition-colors"
+              className="absolute right-2 md:right-3 bottom-1/2 translate-y-1/2 p-3 md:p-2 rounded-full bg-background/80 backdrop-blur border shadow-lg hover:bg-background transition-colors"
               aria-label="Slide suivante"
             >
               <ChevronRight className="h-5 w-5 text-foreground" />
