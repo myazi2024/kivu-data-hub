@@ -1,39 +1,47 @@
 
 
-# Insertion de 8 slides de services dans la Présentation BIC
+# Adaptation mobile de la Présentation BIC
 
-## Résumé
+## Problème
 
-Ajouter 8 nouveaux slides après le slide "Services" (id: `services`), chacun dédié à un des 8 services numériques du BIC. Ces slides reprendront le même pattern visuel que les slides existants (SlideWrapper, layout deux colonnes texte/visuel).
+Les slides sont rendus dans un conteneur à hauteur fixe (`h-[calc(100dvh-4rem)]`) avec `overflow-hidden` sur le `SlideWrapper`. Sur mobile (390px), le contenu déborde et est coupé : textes, grilles et cartes sont invisibles. De plus, les 29 points de navigation débordent horizontalement.
 
-## Les 8 services (un slide chacun)
+## Solution
 
-1. **Recherche cadastrale** — Recherche par numéro, nom, GPS. Résultats instantanés.
-2. **Carte interactive** — Visualisation satellite avec couches cadastrales.
-3. **Titre foncier** — Demande en ligne de certificat avec suivi temps réel.
-4. **Expertise immobilière** — Évaluation professionnelle de la valeur marchande.
-5. **Mutation foncière** — Transfert de propriété numérisé.
-6. **Litiges fonciers** — Déclaration et suivi des conflits avec médiation.
-7. **Vérification d'hypothèque** — Vérification des charges hypothécaires.
-8. **Historique fiscal** — Consultation de l'historique taxes et quittances.
+Deux axes : (1) rendre les slides scrollables sur mobile, (2) adapter la navigation.
 
-## Design de chaque slide
+### 1. SlideWrapper — scroll mobile
 
-Chaque slide suivra un layout cohérent :
-- **En-tête** : badge "Service N/8" + nom du service
-- **Colonne gauche** : description détaillée, 3-4 points clés avec icônes CheckCircle2, public cible
-- **Colonne droite** : icône principale grande dans un cadre stylisé avec gradient
-- Alternance de gradients de fond pour varier visuellement (bleu, vert, ambre, violet, etc.)
+Remplacer `overflow-hidden` par `overflow-y-auto` sur mobile pour permettre le défilement vertical du contenu de chaque slide :
 
-## Modifications techniques
+```
+// Avant
+<div className="relative w-full h-full flex flex-col overflow-hidden">
 
-### Fichier : `src/pages/PitchPartenaires.tsx`
+// Après  
+<div className="relative w-full h-full flex flex-col overflow-y-auto md:overflow-hidden">
+```
 
-1. **Créer 8 composants** (`SlideServiceRecherche`, `SlideServiceCarte`, `SlideServiceTitre`, `SlideServiceExpertise`, `SlideServiceMutation`, `SlideServiceLitiges`, `SlideServiceHypotheque`, `SlideServiceHistorique`) — insérés après le composant `SlideServices` (~ligne 197).
+### 2. Navigation bottom bar — dots → compteur sur mobile
 
-2. **Mettre à jour le tableau `slides`** (~ligne 921) pour insérer les 8 nouveaux slides entre `services` et `how-it-works`.
+Remplacer les 29 dots par un simple compteur texte sur mobile (les dots restent visibles sur `md+`) :
 
-3. **Mettre à jour `DEFAULT_SLIDES`** dans `src/components/admin/AdminPitchConfig.tsx` pour ajouter les 8 nouveaux slide IDs afin qu'ils soient configurables dans l'admin.
+- Masquer les dots avec `hidden md:flex`
+- Le compteur `{current+1}/{slides.length}` est déjà affiché — il suffira sur mobile
 
-### Aucune nouvelle dépendance — toutes les icônes nécessaires sont déjà importées.
+### 3. Réductions typographiques et padding sur mobile
+
+Ajuster les slides les plus denses pour que le contenu tienne mieux sur petit écran :
+
+- `ServiceSlideLayout` : réduire l'icône de `w-40 h-40` à `w-24 h-24` sur mobile, et passer le layout en colonne inversée (icône en haut, texte en dessous)
+- Réduire les `py-10` en `py-4` et `px-6` en `px-4` sur les slides les plus denses
+- Réduire les titres `text-3xl` en `text-xl` sur mobile
+
+### 4. Boutons de navigation latéraux
+
+Augmenter la zone de touche (44px minimum) et ajuster le positionnement pour ne pas chevaucher le contenu sur mobile.
+
+### Fichier modifié
+
+- **`src/pages/PitchPartenaires.tsx`** : SlideWrapper, ServiceSlideLayout, navigation bar, et ajustements de padding/taille sur les slides les plus denses.
 
