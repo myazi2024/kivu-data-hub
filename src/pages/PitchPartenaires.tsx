@@ -24,6 +24,27 @@ import mapViz from '@/assets/bic-map-screenshot.jpg';
 import territorialMap from '@/assets/territorial-map-illustration.webp';
 import gomaHero from '@/assets/goma-city-hero.jpg';
 
+/* ──────────────────── ANIMATION HELPERS ──────────────────── */
+
+type AnimVariant = 'fade-up' | 'scale-in';
+
+const AnimateIn: React.FC<{
+  children: React.ReactNode;
+  variant?: AnimVariant;
+  delay?: number;
+  className?: string;
+}> = ({ children, variant = 'fade-up', delay = 0, className = '' }) => {
+  const animClass = variant === 'scale-in' ? 'animate-pitch-scale-in' : 'animate-pitch-fade-up';
+  return (
+    <div
+      className={`${animClass} ${className}`}
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      {children}
+    </div>
+  );
+};
+
 /* ──────────────────── SLIDE COMPONENTS ──────────────────── */
 
 const SlideWrapper: React.FC<{ bg?: string; overlay?: boolean; children: React.ReactNode; className?: string }> = ({ bg, overlay = false, children, className = '' }) => (
@@ -38,20 +59,30 @@ const SlideWrapper: React.FC<{ bg?: string; overlay?: boolean; children: React.R
 const SlideCover = () => (
   <SlideWrapper bg={heroSkyline} overlay>
     <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
-      <img src={bicLogo} alt="Logo BIC" className="h-20 md:h-28 mb-8 drop-shadow-xl" />
-      <span className="inline-block mb-4 px-5 py-1.5 rounded-full bg-white/15 backdrop-blur text-white text-sm font-medium border border-white/20">
-        Présentation aux Partenaires d'Affaires
-      </span>
-      <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-4 leading-tight max-w-4xl">
-        Bureau d'Informations Cadastrales
-      </h1>
-      <p className="text-xl md:text-2xl text-white/90 max-w-2xl mb-10 font-light">
-        Cadastre numérique collaboratif.
-      </p>
-      <div className="flex items-center gap-3 text-white/70 text-sm">
-        <MonitorSmartphone className="h-4 w-4" />
-        <span>Utilisez les flèches ← → ou cliquez pour naviguer • Appuyez sur <kbd className="px-1.5 py-0.5 bg-white/20 rounded text-xs">F</kbd> pour le plein écran</span>
-      </div>
+      <AnimateIn variant="scale-in" delay={100}>
+        <img src={bicLogo} alt="Logo BIC" className="h-20 md:h-28 mb-8 drop-shadow-xl" />
+      </AnimateIn>
+      <AnimateIn delay={300}>
+        <span className="inline-block mb-4 px-5 py-1.5 rounded-full bg-white/15 backdrop-blur text-white text-sm font-medium border border-white/20">
+          Présentation aux Partenaires d'Affaires
+        </span>
+      </AnimateIn>
+      <AnimateIn delay={500}>
+        <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-4 leading-tight max-w-4xl">
+          Bureau d'Informations Cadastrales
+        </h1>
+      </AnimateIn>
+      <AnimateIn delay={700}>
+        <p className="text-xl md:text-2xl text-white/90 max-w-2xl mb-10 font-light">
+          Cadastre numérique collaboratif.
+        </p>
+      </AnimateIn>
+      <AnimateIn delay={900}>
+        <div className="flex items-center gap-3 text-white/70 text-sm">
+          <MonitorSmartphone className="h-4 w-4" />
+          <span>Utilisez les flèches ← → ou cliquez pour naviguer • Appuyez sur <kbd className="px-1.5 py-0.5 bg-white/20 rounded text-xs">F</kbd> pour le plein écran</span>
+        </div>
+      </AnimateIn>
     </div>
   </SlideWrapper>
 );
@@ -60,28 +91,30 @@ const SlideCover = () => (
 const SlideContext = () => (
   <SlideWrapper>
     <div className="flex-1 flex flex-col bg-gradient-to-br from-destructive/5 via-background to-destructive/10 px-6 md:px-16 py-10 md:py-16">
-      <div className="mb-8">
+      <AnimateIn delay={100} className="mb-8">
         <span className="text-sm font-semibold text-destructive uppercase tracking-wider">Le Problème</span>
         <h2 className="text-3xl md:text-5xl font-bold text-foreground mt-2">La crise foncière en RDC</h2>
         <p className="text-lg text-muted-foreground mt-3 max-w-3xl italic">
           En RDC, acheter un terrain c'est souvent acheter un litige. Voici pourquoi.
         </p>
-      </div>
+      </AnimateIn>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 flex-1">
         {[
           { icon: AlertTriangle, value: '70%', label: 'des litiges judiciaires sont liés au foncier', consequence: 'Des familles expulsées de terrains qu\'elles occupent depuis des générations', color: 'text-destructive' },
           { icon: FileText, value: '0%', label: 'de numérisation du cadastre avant le BIC', consequence: 'Des millions de documents papier fragiles dispersés dans 26 provinces', color: 'text-orange-500' },
           { icon: Clock, value: '2 mois', label: 'pour vérifier un titre foncier manuellement', consequence: 'Des transactions bloquées, des projets immobiliers retardés indéfiniment', color: 'text-amber-500' },
           { icon: Shield, value: '45%', label: 'des titres fonciers contiennent des irrégularités', consequence: 'Des propriétaires légitimes privés de leurs droits par des faux documents', color: 'text-red-500' },
-        ].map((s) => (
-          <div key={s.label} className="bg-card rounded-xl border p-6 flex flex-col items-center text-center shadow-sm hover:shadow-md transition-shadow">
-            <div className="p-3 rounded-full bg-destructive/10 mb-4">
-              <s.icon className={`h-7 w-7 ${s.color}`} />
+        ].map((s, i) => (
+          <AnimateIn key={s.label} delay={300 + i * 120}>
+            <div className="bg-card rounded-xl border p-6 flex flex-col items-center text-center shadow-sm hover:shadow-md transition-shadow h-full">
+              <div className="p-3 rounded-full bg-destructive/10 mb-4">
+                <s.icon className={`h-7 w-7 ${s.color}`} />
+              </div>
+              <div className={`text-4xl md:text-5xl font-bold ${s.color} mb-2`}>{s.value}</div>
+              <p className="text-sm text-muted-foreground mb-2">{s.label}</p>
+              <p className="text-xs text-destructive/70 italic leading-snug">{s.consequence}</p>
             </div>
-            <div className={`text-4xl md:text-5xl font-bold ${s.color} mb-2`}>{s.value}</div>
-            <p className="text-sm text-muted-foreground mb-2">{s.label}</p>
-            <p className="text-xs text-destructive/70 italic leading-snug">{s.consequence}</p>
-          </div>
+          </AnimateIn>
         ))}
       </div>
     </div>
@@ -92,19 +125,20 @@ const SlideContext = () => (
 const SlideSolution = () => (
   <SlideWrapper bg={territorialMap} overlay>
     <div className="flex-1 flex flex-col px-6 md:px-16 py-10 md:py-16">
-      <div className="mb-8">
+      <AnimateIn delay={100} className="mb-8">
         <span className="text-sm font-semibold text-primary uppercase tracking-wider">La Solution</span>
         <h2 className="text-3xl md:text-5xl font-bold text-white mt-2">La plateforme BIC</h2>
         <p className="text-lg text-white/80 mt-3 max-w-3xl">Une infrastructure numérique souveraine qui transforme radicalement l'accès aux données cadastrales de la RDC.</p>
-      </div>
+      </AnimateIn>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 flex-1 max-w-5xl">
         {[
           { icon: Database, title: 'Centralisation', before: 'Courir entre 3 bureaux et attendre des semaines', after: 'Tout en un clic, depuis n\'importe où' },
           { icon: Lock, title: 'Sécurisation', before: 'Faux titres indétectables, fraude généralisée', after: 'QR code vérifiable en 10 secondes' },
           { icon: Eye, title: 'Transparence', before: 'Information réservée aux initiés et intermédiaires', after: 'Tout citoyen peut vérifier un titre gratuitement' },
           { icon: Layers, title: 'Accessibilité', before: 'Systèmes cloisonnés, données inaccessibles', after: 'Accès personnalisé par permissions pour chaque professionnel et institution' },
-        ].map((p) => (
-          <div key={p.title} className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/15 p-6 hover:bg-white/15 transition-colors">
+        ].map((p, i) => (
+          <AnimateIn key={p.title} delay={300 + i * 120}>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/15 p-6 hover:bg-white/15 transition-colors">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2.5 rounded-lg bg-primary/20">
                 <p.icon className="h-6 w-6 text-primary" />
@@ -121,7 +155,8 @@ const SlideSolution = () => (
                 <p className="text-white text-sm font-medium">{p.after}</p>
               </div>
             </div>
-          </div>
+           </div>
+          </AnimateIn>
         ))}
       </div>
     </div>
@@ -165,13 +200,13 @@ const SlideMap = () => (
 const SlideServices = () => (
   <SlideWrapper>
     <div className="flex-1 flex flex-col bg-gradient-to-br from-primary/5 via-background to-secondary/5 px-6 md:px-16 py-10 md:py-14">
-      <div className="mb-6 text-center">
+      <AnimateIn delay={100} className="mb-6 text-center">
         <span className="text-sm font-semibold text-primary uppercase tracking-wider">Écosystème complet</span>
         <h2 className="text-3xl md:text-4xl font-bold text-foreground mt-2">8 Services numériques intégrés</h2>
         <p className="text-muted-foreground mt-2 max-w-2xl mx-auto italic">
           Chaque service répond à un besoin concret des citoyens, notaires, banques et administrations. Voici l'écosystème complet.
         </p>
-      </div>
+      </AnimateIn>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1 max-w-5xl mx-auto w-full">
         {[
           { icon: Search, name: 'Recherche cadastrale', desc: 'Recherche par numéro de parcelle, nom du propriétaire ou localisation GPS' },
@@ -182,14 +217,16 @@ const SlideServices = () => (
           { icon: AlertTriangle, name: 'Litiges fonciers', desc: 'Déclaration et suivi des conflits fonciers avec médiation intégrée' },
           { icon: Receipt, name: 'Hypothèque', desc: 'Vérification et gestion des charges hypothécaires sur les parcelles' },
           { icon: History, name: 'Historique fiscal', desc: 'Consultation de l\'historique des taxes foncières et quittances' },
-        ].map((s) => (
-          <div key={s.name} className="bg-card rounded-xl border p-4 flex flex-col items-center text-center shadow-sm hover:shadow-md hover:border-primary/30 transition-all group">
-            <div className="p-3 rounded-xl bg-primary/10 mb-3 group-hover:bg-primary/20 transition-colors">
-              <s.icon className="h-6 w-6 text-primary" />
+        ].map((s, i) => (
+          <AnimateIn key={s.name} delay={300 + i * 80} variant="scale-in">
+            <div className="bg-card rounded-xl border p-4 flex flex-col items-center text-center shadow-sm hover:shadow-md hover:border-primary/30 transition-all group h-full">
+              <div className="p-3 rounded-xl bg-primary/10 mb-3 group-hover:bg-primary/20 transition-colors">
+                <s.icon className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="font-semibold text-foreground text-sm mb-1">{s.name}</h3>
+              <p className="text-xs text-muted-foreground leading-snug">{s.desc}</p>
             </div>
-            <h3 className="font-semibold text-foreground text-sm mb-1">{s.name}</h3>
-            <p className="text-xs text-muted-foreground leading-snug">{s.desc}</p>
-          </div>
+          </AnimateIn>
         ))}
       </div>
     </div>
@@ -211,31 +248,39 @@ const ServiceSlideLayout: React.FC<{
   <SlideWrapper>
     <div className={`flex-1 flex flex-col-reverse md:flex-row ${gradient}`}>
       <div className="md:w-3/5 flex flex-col justify-center px-4 md:px-16 py-4 md:py-10">
-        <span className="inline-block mb-2 md:mb-3 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold w-fit">
-          Service {num}/8
-        </span>
-        <h2 className="text-xl md:text-4xl font-bold text-foreground mb-2 md:mb-4">{name}</h2>
-        <p className="text-muted-foreground mb-3 md:mb-6 leading-relaxed italic text-sm md:text-base">{description}</p>
+        <AnimateIn delay={100}>
+          <span className="inline-block mb-2 md:mb-3 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold w-fit">
+            Service {num}/8
+          </span>
+          <h2 className="text-xl md:text-4xl font-bold text-foreground mb-2 md:mb-4">{name}</h2>
+          <p className="text-muted-foreground mb-3 md:mb-6 leading-relaxed italic text-sm md:text-base">{description}</p>
+        </AnimateIn>
         <ul className="space-y-2 md:space-y-3 mb-4 md:mb-6">
           {features.map((f, i) => (
-            <li key={i} className="flex items-start gap-2 md:gap-3">
-              <div className="p-1 md:p-1.5 rounded-lg bg-primary/10 shrink-0 mt-0.5">
-                <f.icon className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
-              </div>
-              <span className="text-xs md:text-sm text-foreground">{f.text}</span>
-            </li>
+            <AnimateIn key={i} delay={300 + i * 100}>
+              <li className="flex items-start gap-2 md:gap-3">
+                <div className="p-1 md:p-1.5 rounded-lg bg-primary/10 shrink-0 mt-0.5">
+                  <f.icon className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
+                </div>
+                <span className="text-xs md:text-sm text-foreground">{f.text}</span>
+              </li>
+            </AnimateIn>
           ))}
         </ul>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Users className="h-3.5 w-3.5" />
-          <span className="font-medium">Public cible :</span>
-          <span>{audience}</span>
-        </div>
+        <AnimateIn delay={700}>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Users className="h-3.5 w-3.5" />
+            <span className="font-medium">Public cible :</span>
+            <span>{audience}</span>
+          </div>
+        </AnimateIn>
       </div>
       <div className="md:w-2/5 flex items-center justify-center p-4 md:p-8">
-        <div className={`w-20 h-20 md:w-56 md:h-56 rounded-2xl md:rounded-3xl ${iconBg} flex items-center justify-center shadow-2xl`}>
-          <MainIcon className="h-10 w-10 md:h-28 md:w-28 text-white" strokeWidth={1.5} />
-        </div>
+        <AnimateIn variant="scale-in" delay={200}>
+          <div className={`w-20 h-20 md:w-56 md:h-56 rounded-2xl md:rounded-3xl ${iconBg} flex items-center justify-center shadow-2xl`}>
+            <MainIcon className="h-10 w-10 md:h-28 md:w-28 text-white" strokeWidth={1.5} />
+          </div>
+        </AnimateIn>
       </div>
     </div>
   </SlideWrapper>
@@ -1144,11 +1189,16 @@ const slides = [
 const PitchPartenaires = () => {
   const [current, setCurrent] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [slideDirection, setSlideDirection] = useState<'forward' | 'backward'>('forward');
   const containerRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const goTo = useCallback((idx: number) => {
-    setCurrent(Math.max(0, Math.min(slides.length - 1, idx)));
+    const clamped = Math.max(0, Math.min(slides.length - 1, idx));
+    setCurrent((prev) => {
+      setSlideDirection(clamped >= prev ? 'forward' : 'backward');
+      return clamped;
+    });
   }, []);
 
   const prev = useCallback(() => goTo(current - 1), [current, goTo]);
@@ -1222,7 +1272,12 @@ const PitchPartenaires = () => {
             }
           }}
         >
-          <CurrentSlide />
+          <div
+            key={current}
+            className={`w-full h-full ${slideDirection === 'forward' ? 'animate-pitch-slide-in-right' : 'animate-pitch-slide-in-left'}`}
+          >
+            <CurrentSlide />
+          </div>
         </div>
 
         {/* Navigation overlay */}
