@@ -745,7 +745,7 @@ const SlideRoadmap = () => (
             title: 'Extension nationale',
             status: 'Planifié',
             statusColor: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-            items: ['Extension à Kinshasa et 5 provinces clés', 'Objectif : 50 000 parcelles numérisées', 'Recrutement d\'équipes provinciales', 'Lancement de l\'API commerciale', 'Partenariats bancaires et notariaux'],
+            items: ['Extension à Kinshasa et 5 provinces clés', 'Objectif : 50 000 parcelles numérisées', 'Recrutement d\'équipes provinciales', 'Ouverture des comptes professionnels à grande échelle', 'Partenariats bancaires et notariaux'],
           },
           {
             icon: Globe2,
