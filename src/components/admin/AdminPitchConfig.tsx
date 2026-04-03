@@ -71,10 +71,9 @@ const SlidesTab = () => {
 
     if (error) {
       console.error(error);
-      // Use defaults if no config yet
-      setSlides(DEFAULT_SLIDES.map(s => ({ ...s, subtitle: null, enabled: true })));
+      setSlides(DEFAULT_SLIDES.map(s => ({ slide_id: s.id, title: s.title, sort_order: s.sort_order, subtitle: null, enabled: true })));
     } else if (!data || data.length === 0) {
-      setSlides(DEFAULT_SLIDES.map(s => ({ ...s, subtitle: null, enabled: true })));
+      setSlides(DEFAULT_SLIDES.map(s => ({ slide_id: s.id, title: s.title, sort_order: s.sort_order, subtitle: null, enabled: true })));
     } else {
       // Merge with defaults to catch any new slides
       const merged = DEFAULT_SLIDES.map(def => {
