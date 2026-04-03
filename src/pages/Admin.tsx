@@ -3,81 +3,94 @@ import { useAuth } from '@/hooks/useAuth';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
-import { AdminSidebar } from '@/components/admin/AdminSidebar';
+import { AdminSidebar, getTabLabel, getTabCategory } from '@/components/admin/AdminSidebar';
 import { AdminDashboardHeader } from '@/components/admin/AdminDashboardHeader';
 import { usePendingCount } from '@/hooks/usePendingCount';
+import { ChevronRight } from 'lucide-react';
 
-// Lazy-loaded admin components
-const AdminDashboardOverview = lazy(() => import('@/components/admin/AdminDashboardOverview').then(m => ({ default: m.AdminDashboardOverview })));
-const AdminPublications = lazy(() => import('@/components/admin/AdminPublications'));
-const AdminPayments = lazy(() => import('@/components/admin/AdminPayments'));
-const AnalyticsDashboard = lazy(() => import('@/components/analytics/AnalyticsDashboard'));
-const AdminUserRolesEnhanced = lazy(() => import('@/components/admin/AdminUserRolesEnhanced').then(m => ({ default: m.AdminUserRolesEnhanced })));
-const AdminUsers = lazy(() => import('@/components/admin/AdminUsers'));
-const AdminResellers = lazy(() => import('@/components/admin/AdminResellers'));
-const AdminTerritorialZones = lazy(() => import('@/components/admin/AdminTerritorialZones'));
-const AdminCadastralServices = lazy(() => import('@/components/admin/AdminCadastralServices'));
-const AdminCatalogConfig = lazy(() => import('@/components/admin/AdminCatalogConfig'));
-const AdminCadastralMap = lazy(() => import('@/components/admin/AdminCadastralMap'));
-const AdminCadastralTooltip = lazy(() => import('@/components/admin/AdminCadastralTooltip'));
-const AdminCCCContributions = lazy(() => import('@/components/admin/AdminCCCContributions'));
-const AdminValidation = lazy(() => import('@/components/admin/AdminValidation'));
-const AdminNotifications = lazy(() => import('@/components/admin/AdminNotifications').then(m => ({ default: m.AdminNotifications })));
-const AdminSearchBarConfig = lazy(() => import('@/components/admin/AdminSearchBarConfig'));
-const AdminResultsConfig = lazy(() => import('@/components/admin/AdminResultsConfig'));
-const AdminContributionConfig = lazy(() => import('@/components/admin/AdminContributionConfig'));
-const AdminCCCCodes = lazy(() => import('@/components/admin/AdminCCCCodes'));
-const AdminAuditLogs = lazy(() => import('@/components/admin/AdminAuditLogs'));
-const AdminArticles = lazy(() => import('@/components/admin/AdminArticles'));
-const AdminArticleThemes = lazy(() => import('@/components/admin/AdminArticleThemes'));
-const AdminFraudDetection = lazy(() => import('@/components/admin/AdminFraudDetection'));
-const AdminInvoices = lazy(() => import('@/components/admin/AdminInvoices'));
-const AdminFinancialDashboard = lazy(() => import('@/components/admin/AdminFinancialDashboard'));
-const AdminTransactions = lazy(() => import('@/components/admin/AdminTransactions'));
-const AdminCommissions = lazy(() => import('@/components/admin/AdminCommissions'));
-const AdminDiscountCodes = lazy(() => import('@/components/admin/AdminDiscountCodes'));
-const AdminBuildingPermits = lazy(() => import('@/components/admin/AdminBuildingPermits'));
-const AdminPermitFeesConfig = lazy(() => import('@/components/admin/AdminPermitFeesConfig'));
-const AdminPaymentMethods = lazy(() => import('@/components/admin/AdminPaymentMethods'));
-const AdminPaymentMode = lazy(() => import('@/components/admin/AdminPaymentMode'));
-const AdminBillingConfig = lazy(() => import('@/components/admin/AdminBillingConfig'));
-const AdminPaymentMonitoring = lazy(() => import('@/components/admin/AdminPaymentMonitoring').then(m => ({ default: m.AdminPaymentMonitoring })));
-const AdminPaymentServiceIntegration = lazy(() => import('@/components/admin/AdminPaymentServiceIntegration'));
-const AdminTestMode = lazy(() => import('@/components/admin/AdminTestMode'));
-const AdminMutationRequests = lazy(() => import('@/components/admin/AdminMutationRequests'));
-const AdminExpertiseRequests = lazy(() => import('@/components/admin/AdminExpertiseRequests'));
-const AdminExpertiseFeesConfig = lazy(() => import('@/components/admin/AdminExpertiseFeesConfig'));
-const AdminMutationFeesConfig = lazy(() => import('@/components/admin/AdminMutationFeesConfig'));
-const AdminCurrencyConfig = lazy(() => import('@/components/admin/AdminCurrencyConfig'));
-const AdminMortgages = lazy(() => import('@/components/admin/AdminMortgages'));
-const AdminTaxHistory = lazy(() => import('@/components/admin/AdminTaxHistory'));
-const AdminTaxDeclarations = lazy(() => import('@/components/admin/AdminTaxDeclarations'));
-const AdminOwnershipHistory = lazy(() => import('@/components/admin/AdminOwnershipHistory'));
-const AdminBoundaryHistory = lazy(() => import('@/components/admin/AdminBoundaryHistory'));
-const AdminCCCUsage = lazy(() => import('@/components/admin/AdminCCCUsage'));
-const AdminPaymentReconciliation = lazy(() => import('@/components/admin/AdminPaymentReconciliation'));
-const AdminResellerCommissions = lazy(() => import('@/components/admin/AdminResellerCommissions'));
-const AdminSystemHealth = lazy(() => import('@/components/admin/AdminSystemHealth'));
-const AdminLandTitleRequests = lazy(() => import('@/components/admin/AdminLandTitleRequests'));
-const AdminPermissions = lazy(() => import('@/components/admin/AdminPermissions').then(m => ({ default: m.AdminPermissions })));
-const AdminSubdivisionRequests = lazy(() => import('@/components/admin/AdminSubdivisionRequests'));
-const AdminParcelActionsConfig = lazy(() => import('@/components/admin/AdminParcelActionsConfig'));
-const AdminLandDisputes = lazy(() => import('@/components/admin/AdminLandDisputes'));
-const AdminDisputeAnalytics = lazy(() => import('@/components/admin/AdminDisputeAnalytics'));
-const AdminCertificates = lazy(() => import('@/components/admin/AdminCertificates'));
-const AdminMapProviders = lazy(() => import('@/components/admin/AdminMapProviders'));
-const AdminAnalyticsChartsConfig = lazy(() => import('@/components/admin/AdminAnalyticsChartsConfig'));
-const AdminSubdivisionFeesConfig = lazy(() => import('@/components/admin/AdminSubdivisionFeesConfig'));
-const AdminPartners = lazy(() => import('@/components/admin/AdminPartners'));
-const AdminPitchConfig = lazy(() => import('@/components/admin/AdminPitchConfig'));
-const AdminHR = lazy(() => import('@/components/admin/hr/AdminHR'));
+// Lazy-loaded admin components — object mapping
+const tabComponents: Record<string, React.LazyExoticComponent<any>> = {
+  'dashboard': lazy(() => import('@/components/admin/AdminDashboardOverview').then(m => ({ default: m.AdminDashboardOverview }))),
+  'analytics': lazy(() => import('@/components/analytics/AnalyticsDashboard')),
+  'analytics-charts-config': lazy(() => import('@/components/admin/AdminAnalyticsChartsConfig')),
+  'users': lazy(() => import('@/components/admin/AdminUsers')),
+  'roles': lazy(() => import('@/components/admin/AdminUserRolesEnhanced').then(m => ({ default: m.AdminUserRolesEnhanced }))),
+  'permissions': lazy(() => import('@/components/admin/AdminPermissions').then(m => ({ default: m.AdminPermissions }))),
+  'fraud': lazy(() => import('@/components/admin/AdminFraudDetection')),
+  'ccc': lazy(() => import('@/components/admin/AdminCCCContributions')),
+  'validation': lazy(() => import('@/components/admin/AdminValidation')),
+  'ccc-codes': lazy(() => import('@/components/admin/AdminCCCCodes')),
+  'ccc-usage': lazy(() => import('@/components/admin/AdminCCCUsage')),
+  'contribution-config': lazy(() => import('@/components/admin/AdminContributionConfig')),
+  'financial': lazy(() => import('@/components/admin/AdminFinancialDashboard')),
+  'payments': lazy(() => import('@/components/admin/AdminPayments')),
+  'payment-reconciliation': lazy(() => import('@/components/admin/AdminPaymentReconciliation')),
+  'payment-methods': lazy(() => import('@/components/admin/AdminPaymentMethods')),
+  'payment-mode': lazy(() => import('@/components/admin/AdminPaymentMode')),
+  'payment-integration': lazy(() => import('@/components/admin/AdminPaymentServiceIntegration')),
+  'payment-monitoring': lazy(() => import('@/components/admin/AdminPaymentMonitoring').then(m => ({ default: m.AdminPaymentMonitoring }))),
+  'billing-config': lazy(() => import('@/components/admin/AdminBillingConfig')),
+  'currency-config': lazy(() => import('@/components/admin/AdminCurrencyConfig')),
+  'invoices': lazy(() => import('@/components/admin/AdminInvoices')),
+  'transactions': lazy(() => import('@/components/admin/AdminTransactions')),
+  'commissions': lazy(() => import('@/components/admin/AdminCommissions')),
+  'reseller-commissions': lazy(() => import('@/components/admin/AdminResellerCommissions')),
+  'resellers': lazy(() => import('@/components/admin/AdminResellers')),
+  'discount-codes': lazy(() => import('@/components/admin/AdminDiscountCodes')),
+  'cadastral-map': lazy(() => import('@/components/admin/AdminCadastralMap')),
+  'map-providers': lazy(() => import('@/components/admin/AdminMapProviders')),
+  'services': lazy(() => import('@/components/admin/AdminCadastralServices')),
+  'catalog-config': lazy(() => import('@/components/admin/AdminCatalogConfig')),
+  'cadastral-tooltip': lazy(() => import('@/components/admin/AdminCadastralTooltip')),
+  'map-legend': lazy(() => import('@/components/admin/AdminContributionConfig')),
+  'search-config': lazy(() => import('@/components/admin/AdminSearchBarConfig')),
+  'results-config': lazy(() => import('@/components/admin/AdminResultsConfig')),
+  'zones': lazy(() => import('@/components/admin/AdminTerritorialZones')),
+  'permits': lazy(() => import('@/components/admin/AdminBuildingPermits')),
+  'permit-fees-config': lazy(() => import('@/components/admin/AdminPermitFeesConfig')),
+  'land-title-requests': lazy(() => import('@/components/admin/AdminLandTitleRequests')),
+  'mutations': lazy(() => import('@/components/admin/AdminMutationRequests')),
+  'mutation-fees-config': lazy(() => import('@/components/admin/AdminMutationFeesConfig')),
+  'subdivision-requests': lazy(() => import('@/components/admin/AdminSubdivisionRequests')),
+  'subdivision-fees-config': lazy(() => import('@/components/admin/AdminSubdivisionFeesConfig')),
+  'expertise-requests': lazy(() => import('@/components/admin/AdminExpertiseRequests')),
+  'expertise-fees-config': lazy(() => import('@/components/admin/AdminExpertiseFeesConfig')),
+  'certificates': lazy(() => import('@/components/admin/AdminCertificates')),
+  'land-disputes': lazy(() => import('@/components/admin/AdminLandDisputes')),
+  'dispute-analytics': lazy(() => import('@/components/admin/AdminDisputeAnalytics')),
+  'mortgages': lazy(() => import('@/components/admin/AdminMortgages')),
+  'tax-history': lazy(() => import('@/components/admin/AdminTaxHistory')),
+  'tax-declarations': lazy(() => import('@/components/admin/AdminTaxDeclarations')),
+  'ownership-history': lazy(() => import('@/components/admin/AdminOwnershipHistory')),
+  'boundary-history': lazy(() => import('@/components/admin/AdminBoundaryHistory')),
+  'partners': lazy(() => import('@/components/admin/AdminPartners')),
+  'pitch-config': lazy(() => import('@/components/admin/AdminPitchConfig')),
+  'publications': lazy(() => import('@/components/admin/AdminPublications')),
+  'articles': lazy(() => import('@/components/admin/AdminArticles')),
+  'article-themes': lazy(() => import('@/components/admin/AdminArticleThemes')),
+  'notifications': lazy(() => import('@/components/admin/AdminNotifications').then(m => ({ default: m.AdminNotifications }))),
+  'parcel-actions-config': lazy(() => import('@/components/admin/AdminParcelActionsConfig')),
+  'test-mode': lazy(() => import('@/components/admin/AdminTestMode')),
+  'audit-logs': lazy(() => import('@/components/admin/AdminAuditLogs')),
+  'system-health': lazy(() => import('@/components/admin/AdminSystemHealth')),
+  'hr': lazy(() => import('@/components/admin/hr/AdminHR')),
+};
+
+// Tabs that receive onRefresh prop
+const REFRESHABLE_TABS = new Set(['users', 'payments', 'publications']);
+
+// Special case: map-legend needs extra props
+const getComponentProps = (tab: string, refreshCounts: () => void) => {
+  if (REFRESHABLE_TABS.has(tab)) return { onRefresh: refreshCounts };
+  if (tab === 'map-legend') return { initialTab: 'map', scrollToLegend: true };
+  return {};
+};
 
 const LazyFallback = () => (
   <div className="flex items-center justify-center py-12">
     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
   </div>
 );
-
 
 const Admin = () => {
   const { user, loading } = useAuth();
@@ -91,8 +104,6 @@ const Admin = () => {
     const verifyAdminRole = async () => {
       if (!user) { setHasAdminRole(false); return; }
       try {
-        // Note: La sécurité réelle est assurée par les politiques RLS de Supabase.
-        // Cette vérification côté client sert uniquement à l'UX (redirection).
         const { data, error } = await supabase
           .from('user_roles').select('role')
           .eq('user_id', user.id).in('role', ['admin', 'super_admin']);
@@ -132,74 +143,14 @@ const Admin = () => {
   }
 
   const renderContent = () => {
-    switch (activeTab) {
-      case 'dashboard': return <AdminDashboardOverview />;
-      case 'analytics': return <AnalyticsDashboard />;
-      case 'users': return <AdminUsers onRefresh={refreshCounts} />;
-      case 'roles': return <AdminUserRolesEnhanced />;
-      case 'permissions': return <AdminPermissions />;
-      case 'fraud': return <AdminFraudDetection />;
-      case 'ccc': return <AdminCCCContributions />;
-      case 'validation': return <AdminValidation />;
-      case 'ccc-codes': return <AdminCCCCodes />;
-      case 'contribution-config': return <AdminContributionConfig />;
-      case 'map-legend': return <AdminContributionConfig initialTab="map" scrollToLegend />;
-      case 'payments': return <AdminPayments onRefresh={refreshCounts} />;
-      case 'payment-methods': return <AdminPaymentMethods />;
-      case 'payment-mode': return <AdminPaymentMode />;
-      case 'payment-monitoring': return <AdminPaymentMonitoring />;
-      case 'payment-integration': return <AdminPaymentServiceIntegration />;
-      case 'test-mode': return <AdminTestMode />;
-      case 'billing-config': return <AdminBillingConfig />;
-      case 'currency-config': return <AdminCurrencyConfig />;
-      case 'invoices': return <AdminInvoices />;
-      case 'financial': return <AdminFinancialDashboard />;
-      case 'transactions': return <AdminTransactions />;
-      case 'commissions': return <AdminCommissions />;
-      case 'resellers': return <AdminResellers />;
-      case 'discount-codes': return <AdminDiscountCodes />;
-      case 'services': return <AdminCadastralServices />;
-      case 'catalog-config': return <AdminCatalogConfig />;
-      case 'cadastral-map': return <AdminCadastralMap />;
-      case 'map-providers': return <AdminMapProviders />;
-      case 'cadastral-tooltip': return <AdminCadastralTooltip />;
-      case 'search-config': return <AdminSearchBarConfig />;
-      case 'results-config': return <AdminResultsConfig />;
-      case 'zones': return <AdminTerritorialZones />;
-      case 'permits': return <AdminBuildingPermits />;
-      case 'land-title-requests': return <AdminLandTitleRequests />;
-      case 'mutations': return <AdminMutationRequests />;
-      case 'subdivision-requests': return <AdminSubdivisionRequests />;
-      case 'subdivision-fees-config': return <AdminSubdivisionFeesConfig />;
-      case 'expertise-requests': return <AdminExpertiseRequests />;
-      case 'expertise-fees-config': return <AdminExpertiseFeesConfig />;
-      case 'permit-fees-config': return <AdminPermitFeesConfig />;
-      case 'mutation-fees-config': return <AdminMutationFeesConfig />;
-      case 'mortgages': return <AdminMortgages />;
-      case 'tax-history': return <AdminTaxHistory />;
-      case 'tax-declarations': return <AdminTaxDeclarations />;
-      case 'ownership-history': return <AdminOwnershipHistory />;
-      case 'boundary-history': return <AdminBoundaryHistory />;
-      case 'ccc-usage': return <AdminCCCUsage />;
-      case 'payment-reconciliation': return <AdminPaymentReconciliation />;
-      case 'reseller-commissions': return <AdminResellerCommissions />;
-      case 'system-health': return <AdminSystemHealth />;
-      case 'publications': return <AdminPublications onRefresh={refreshCounts} />;
-      case 'articles': return <AdminArticles />;
-      case 'article-themes': return <AdminArticleThemes />;
-      case 'notifications': return <AdminNotifications />;
-      case 'parcel-actions-config': return <AdminParcelActionsConfig />;
-      case 'land-disputes': return <AdminLandDisputes />;
-      case 'dispute-analytics': return <AdminDisputeAnalytics />;
-      case 'certificates': return <AdminCertificates />;
-      case 'analytics-charts-config': return <AdminAnalyticsChartsConfig />;
-      case 'partners': return <AdminPartners />;
-      case 'pitch-config': return <AdminPitchConfig />;
-      case 'hr': return <AdminHR />;
-      case 'audit-logs': return <AdminAuditLogs />;
-      default: return <AdminDashboardOverview />;
-    }
+    const Component = tabComponents[activeTab] || tabComponents['dashboard'];
+    const props = getComponentProps(activeTab, refreshCounts);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return <Component {...(props as any)} />;
   };
+
+  const category = getTabCategory(activeTab);
+  const label = getTabLabel(activeTab);
 
   return (
     <div className="flex h-dvh overflow-hidden bg-background">
@@ -246,6 +197,16 @@ const Admin = () => {
         <AdminDashboardHeader onMenuClick={() => setMobileMenuOpen(true)} />
         <main className="flex-1 overflow-y-auto p-2 md:p-3 lg:p-4">
           <div className="max-w-[360px] mx-auto md:max-w-none">
+            {/* Breadcrumb */}
+            {activeTab !== 'dashboard' && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
+                <span>Admin</span>
+                <ChevronRight className="h-3 w-3" />
+                <span>{category}</span>
+                <ChevronRight className="h-3 w-3" />
+                <span className="text-foreground font-medium">{label}</span>
+              </div>
+            )}
             <Suspense fallback={<LazyFallback />}>
               {renderContent()}
             </Suspense>

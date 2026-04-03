@@ -5,7 +5,7 @@ import {
   Users,
   FileText,
   CreditCard,
-  BarChart,
+  BarChart3,
   Settings,
   Shield,
   MapPin,
@@ -35,6 +35,22 @@ import {
   Handshake,
   ChevronDown,
   Presentation,
+  PieChart,
+  Wallet,
+  ArrowLeftRight,
+  Layers,
+  FileSearch,
+  Landmark,
+  ScrollText,
+  History,
+  Compass,
+  Percent,
+  Activity,
+  SlidersHorizontal,
+  BookOpen,
+  Newspaper,
+  Palette,
+  UserCog,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -63,12 +79,12 @@ export const menuItems = [
     category: 'Vue d\'ensemble',
     items: [
       { icon: LayoutDashboard, label: 'Dashboard', value: 'dashboard', badge: null },
-      { icon: BarChart, label: 'Analytics', value: 'analytics', badge: null },
-      { icon: BarChart, label: 'Config Graphiques', value: 'analytics-charts-config', badge: null },
+      { icon: PieChart, label: 'Analytics', value: 'analytics', badge: null },
+      { icon: SlidersHorizontal, label: 'Config Graphiques', value: 'analytics-charts-config', badge: null },
     ]
   },
   {
-    category: 'Gestion des utilisateurs',
+    category: 'Utilisateurs & Sécurité',
     items: [
       { icon: Users, label: 'Utilisateurs', value: 'users', badge: null },
       { icon: Shield, label: 'Rôles', value: 'roles', badge: null },
@@ -82,64 +98,74 @@ export const menuItems = [
       { icon: ClipboardList, label: 'Contributions CCC', value: 'ccc', badge: null },
       { icon: FileCheck, label: 'File de validation', value: 'validation', badge: 'pending' },
       { icon: Gift, label: 'Codes CCC', value: 'ccc-codes', badge: null },
-      { icon: BarChart, label: 'Utilisation CCC', value: 'ccc-usage', badge: null },
+      { icon: BarChart3, label: 'Utilisation CCC', value: 'ccc-usage', badge: null },
       { icon: Settings, label: 'Config Contributions', value: 'contribution-config', badge: null },
     ]
   },
   {
-    category: 'Finances',
+    category: 'Paiements',
     items: [
-      { icon: BarChart, label: 'Tableau de Bord', value: 'financial', badge: null },
+      { icon: Wallet, label: 'Tableau de Bord', value: 'financial', badge: null },
       { icon: CreditCard, label: 'Paiements', value: 'payments', badge: 'payments' },
       { icon: CheckSquare, label: 'Réconciliation', value: 'payment-reconciliation', badge: null },
       { icon: Smartphone, label: 'Moyens de Paiement', value: 'payment-methods', badge: null },
       { icon: Settings, label: 'Mode de Paiement', value: 'payment-mode', badge: null },
-      { icon: CheckSquare, label: 'Intégration Services', value: 'payment-integration', badge: null },
-      { icon: TrendingUp, label: 'Monitoring Paiements', value: 'payment-monitoring', badge: null },
+      { icon: Layers, label: 'Intégration Services', value: 'payment-integration', badge: null },
+      { icon: TrendingUp, label: 'Monitoring', value: 'payment-monitoring', badge: null },
+    ]
+  },
+  {
+    category: 'Facturation & Commerce',
+    items: [
       { icon: Receipt, label: 'Config Facturation', value: 'billing-config', badge: null },
-      { icon: DollarSign, label: 'Devises / Taux', value: 'currency-config', badge: null },
-      { icon: DollarSign, label: 'Factures', value: 'invoices', badge: null },
-      { icon: FileText, label: 'Transactions', value: 'transactions', badge: null },
-      { icon: Users, label: 'Commissions', value: 'commissions', badge: null },
-      { icon: DollarSign, label: 'Commissions Revendeurs', value: 'reseller-commissions', badge: null },
+      { icon: ArrowLeftRight, label: 'Devises / Taux', value: 'currency-config', badge: null },
+      { icon: FileText, label: 'Factures', value: 'invoices', badge: null },
+      { icon: ScrollText, label: 'Transactions', value: 'transactions', badge: null },
+      { icon: DollarSign, label: 'Commissions', value: 'commissions', badge: null },
+      { icon: Percent, label: 'Commissions Revendeurs', value: 'reseller-commissions', badge: null },
       { icon: ShoppingCart, label: 'Revendeurs', value: 'resellers', badge: null },
       { icon: Tag, label: 'Codes de Remise', value: 'discount-codes', badge: null },
     ]
   },
   {
-    category: 'Cadastre & Services',
+    category: 'Carte & Configuration',
     items: [
       { icon: MapIcon, label: 'Carte Cadastrale', value: 'cadastral-map', badge: null },
       { icon: Globe, label: 'Fournisseurs Carte', value: 'map-providers', badge: null },
       { icon: Database, label: 'Services Cadastraux', value: 'services', badge: null },
-      { icon: Settings, label: 'Config Catalogue', value: 'catalog-config', badge: null },
-      { icon: Settings, label: 'Infobulle Carte', value: 'cadastral-tooltip', badge: null },
+      { icon: Layers, label: 'Config Catalogue', value: 'catalog-config', badge: null },
+      { icon: MapPin, label: 'Infobulle Carte', value: 'cadastral-tooltip', badge: null },
       { icon: LayoutList, label: 'Légende Carte', value: 'map-legend', badge: null },
-      { icon: Search, label: 'Config Barre Recherche', value: 'search-config', badge: null },
-      { icon: FileText, label: 'Config Résultats', value: 'results-config', badge: null },
-      { icon: MapPin, label: 'Zones Territoriales', value: 'zones', badge: null },
+      { icon: Search, label: 'Config Recherche', value: 'search-config', badge: null },
+      { icon: FileSearch, label: 'Config Résultats', value: 'results-config', badge: null },
+      { icon: Compass, label: 'Zones Territoriales', value: 'zones', badge: null },
+    ]
+  },
+  {
+    category: 'Demandes & Procédures',
+    items: [
       { icon: Building2, label: 'Autorisation de Bâtir', value: 'permits', badge: 'permits' },
-      { icon: FileText, label: 'Config Frais Autorisation', value: 'permit-fees-config', badge: null },
-      { icon: FileText, label: 'Demandes Titres Fonciers', value: 'land-title-requests', badge: 'landTitle' },
-      { icon: FileText, label: 'Demandes Mutation', value: 'mutations', badge: 'mutations' },
+      { icon: Receipt, label: 'Config Frais Autorisation', value: 'permit-fees-config', badge: null },
+      { icon: Landmark, label: 'Demandes Titres Fonciers', value: 'land-title-requests', badge: 'landTitle' },
+      { icon: ArrowLeftRight, label: 'Demandes Mutation', value: 'mutations', badge: 'mutations' },
       { icon: DollarSign, label: 'Config Frais Mutation', value: 'mutation-fees-config', badge: null },
       { icon: Grid3X3, label: 'Demandes Lotissement', value: 'subdivision-requests', badge: 'subdivisions' },
       { icon: DollarSign, label: 'Config Frais Lotissement', value: 'subdivision-fees-config', badge: null },
       { icon: FileCheck, label: 'Expertises foncières', value: 'expertise-requests', badge: 'expertise' },
       { icon: DollarSign, label: 'Config Frais Expert.', value: 'expertise-fees-config', badge: null },
-      { icon: Scale, label: 'Litiges Fonciers', value: 'land-disputes', badge: 'disputes' },
-      { icon: BarChart, label: 'Analytics Litiges', value: 'dispute-analytics', badge: null },
-      { icon: Database, label: 'Hypothèques', value: 'mortgages', badge: 'mortgages' },
-      { icon: FileText, label: 'Historique Taxes', value: 'tax-history', badge: null },
-      { icon: Receipt, label: 'Déclarations Fiscales', value: 'tax-declarations', badge: null },
-      { icon: Users, label: 'Historique Propriété', value: 'ownership-history', badge: null },
-      { icon: MapPin, label: 'Historique Bornage', value: 'boundary-history', badge: null },
+      { icon: Award, label: 'Gestion Certificats', value: 'certificates', badge: null },
     ]
   },
   {
-    category: 'Certificats',
+    category: 'Historiques & Litiges',
     items: [
-      { icon: Award, label: 'Gestion Certificats', value: 'certificates', badge: null },
+      { icon: Scale, label: 'Litiges Fonciers', value: 'land-disputes', badge: 'disputes' },
+      { icon: PieChart, label: 'Analytics Litiges', value: 'dispute-analytics', badge: null },
+      { icon: Database, label: 'Hypothèques', value: 'mortgages', badge: 'mortgages' },
+      { icon: Receipt, label: 'Historique Taxes', value: 'tax-history', badge: null },
+      { icon: ScrollText, label: 'Déclarations Fiscales', value: 'tax-declarations', badge: null },
+      { icon: History, label: 'Historique Propriété', value: 'ownership-history', badge: null },
+      { icon: Compass, label: 'Historique Bornage', value: 'boundary-history', badge: null },
     ]
   },
   {
@@ -147,16 +173,10 @@ export const menuItems = [
     items: [
       { icon: Handshake, label: 'Partenaires', value: 'partners', badge: null },
       { icon: Presentation, label: 'Présentation BIC', value: 'pitch-config', badge: null },
-      { icon: FileText, label: 'Publications', value: 'publications', badge: null },
-      { icon: FileText, label: 'Articles', value: 'articles', badge: null },
-      { icon: Tag, label: 'Thèmes Articles', value: 'article-themes', badge: null },
+      { icon: Newspaper, label: 'Publications', value: 'publications', badge: null },
+      { icon: BookOpen, label: 'Articles', value: 'articles', badge: null },
+      { icon: Palette, label: 'Thèmes Articles', value: 'article-themes', badge: null },
       { icon: Bell, label: 'Notifications', value: 'notifications', badge: null },
-    ]
-  },
-  {
-    category: 'Ressources Humaines',
-    items: [
-      { icon: BarChart, label: 'Espace RH', value: 'hr', badge: null },
     ]
   },
   {
@@ -165,16 +185,32 @@ export const menuItems = [
       { icon: Settings, label: 'Actions Parcelle', value: 'parcel-actions-config', badge: null },
       { icon: TestTube, label: 'Mode Test', value: 'test-mode', badge: null },
       { icon: Shield, label: 'Logs d\'Audit', value: 'audit-logs', badge: null },
-      { icon: Database, label: 'Santé Système', value: 'system-health', badge: null },
+      { icon: Activity, label: 'Santé Système', value: 'system-health', badge: null },
+      { icon: UserCog, label: 'Espace RH', value: 'hr', badge: null },
     ]
   },
 ];
+
+// Helper to get label from tab value
+export const getTabLabel = (tabValue: string): string => {
+  for (const section of menuItems) {
+    const item = section.items.find(i => i.value === tabValue);
+    if (item) return item.label;
+  }
+  return 'Dashboard';
+};
+
+export const getTabCategory = (tabValue: string): string => {
+  for (const section of menuItems) {
+    if (section.items.some(i => i.value === tabValue)) return section.category;
+  }
+  return '';
+};
 
 export function AdminSidebar({ pendingCount, pendingLandTitleCount, pendingPermitsCount, pendingMutationsCount, pendingExpertiseCount, pendingSubdivisionsCount, pendingPaymentsCount, pendingDisputesCount, pendingMortgagesCount, onNavigate }: AdminSidebarProps) {
   const location = useLocation();
   const currentTab = new URLSearchParams(location.search).get('tab') || 'dashboard';
 
-  // Determine which categories should be open (active tab's category + default first two)
   const activeCategoryIndex = menuItems.findIndex(section =>
     section.items.some(item => item.value === currentTab)
   );
@@ -182,7 +218,6 @@ export function AdminSidebar({ pendingCount, pendingLandTitleCount, pendingPermi
   const [openSections, setOpenSections] = useState<Record<number, boolean>>(() => {
     const initial: Record<number, boolean> = {};
     menuItems.forEach((_, idx) => {
-      // Open first category + the one containing active tab
       initial[idx] = idx === 0 || idx === activeCategoryIndex;
     });
     return initial;
