@@ -102,7 +102,7 @@ const SlideSolution = () => (
           { icon: Database, title: 'Centralisation', before: 'Courir entre 3 bureaux et attendre des semaines', after: 'Tout en un clic, depuis n\'importe où' },
           { icon: Lock, title: 'Sécurisation', before: 'Faux titres indétectables, fraude généralisée', after: 'QR code vérifiable en 10 secondes' },
           { icon: Eye, title: 'Transparence', before: 'Information réservée aux initiés et intermédiaires', after: 'Tout citoyen peut vérifier un titre gratuitement' },
-          { icon: Layers, title: 'Interopérabilité', before: 'Systèmes cloisonnés, données inaccessibles', after: 'Une API ouverte pour banques, notaires et institutions' },
+          { icon: Layers, title: 'Accessibilité', before: 'Systèmes cloisonnés, données inaccessibles', after: 'Accès personnalisé par permissions pour chaque professionnel et institution' },
         ].map((p) => (
           <div key={p.title} className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/15 p-6 hover:bg-white/15 transition-colors">
             <div className="flex items-center gap-3 mb-4">
