@@ -343,8 +343,8 @@ function formatDateTimeForFilename(): string {
 }
 
 /**
- * Génère un rapport cadastral complet structuré selon les onglets du résultat cadastral
- * IMPORTANT: Utilise les données de contribution validées en priorité pour plus d'exactitude
+ * Génère un rapport cadastral complet — PDF professionnel multi-pages
+ * Miroir fidèle de CadastralDocumentView (7 sections + authentification)
  */
 export async function generateCadastralReport(
   cadastralResult: any,
@@ -355,12 +355,12 @@ export async function generateCadastralReport(
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 15; // Réduire les marges pour plus d'espace
+  const margin = 15;
   let currentY = margin;
-  let pageNumber = 1;
+  let totalPages = 0;
 
-  // Récupérer les données de contribution validées si disponibles
-  let contributionData = null;
+  // --- Load contribution data ---
+  let contributionData: any = null;
   try {
     const { supabase } = await import('@/integrations/supabase/client');
     const { data } = await supabase
@@ -371,28 +371,20 @@ export async function generateCadastralReport(
       .order('created_at', { ascending: false })
       .limit(1)
       .single();
-    
-    if (data) {
-      contributionData = data;
-      console.log('Utilisation des données de contribution validées pour le rapport');
-    }
-  } catch (error) {
-    console.log('Aucune contribution validée trouvée, utilisation des données cadastrales standards');
-  }
+    if (data) contributionData = data;
+  } catch { /* use standard data */ }
 
-  // Utiliser les données de contribution si disponibles, sinon les données cadastrales
   const parcel = contributionData || cadastralResult.parcel;
   const ownership_history = contributionData?.ownership_history || cadastralResult.ownership_history || [];
   const tax_history = contributionData?.tax_history || cadastralResult.tax_history || [];
   const mortgage_history = contributionData?.mortgage_history || cadastralResult.mortgage_history || [];
   const boundary_history = contributionData?.boundary_history || cadastralResult.boundary_history || [];
   const building_permits = contributionData?.building_permits || cadastralResult.building_permits || [];
-  
-  
-  // Persist verification and generate QR code
+  const land_disputes = cadastralResult.land_disputes || [];
+
+  // --- Verification & QR ---
   let reportId = generateReportId();
   let verifyUrl = `https://bic.cd/verify-report/${reportId}`;
-  
   try {
     const verification = await createDocumentVerification({
       documentType: 'report',
@@ -407,427 +399,573 @@ export async function generateCadastralReport(
       reportId = verification.verificationCode;
       verifyUrl = verification.verifyUrl;
     }
-  } catch (e) {
-    console.error('Failed to persist verification, using fallback ID:', e);
-  }
+  } catch { /* fallback ID */ }
 
   const reportDate = new Date();
   const reportDateTime = reportDate.toLocaleDateString('fr-FR') + ' à ' + reportDate.toLocaleTimeString('fr-FR');
-  
-  // Générer QR code pour vérification
   let qrCodeDataUrl = '';
-  try {
-    qrCodeDataUrl = await QRCode.toDataURL(verifyUrl);
-  } catch (error) {
-    console.error('Failed to generate QR code:', error);
-  }
+  try { qrCodeDataUrl = await QRCode.toDataURL(verifyUrl); } catch { /* */ }
 
-  // Fonction pour ajouter un en-tête de page (optimisé)
-  const addPageHeader = () => {
-    // En-tête compact
-    doc.setTextColor(0, 51, 102);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.text("BIC - Bureau d'Informations Cadastrales", margin, 10);
-    
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`${BIC_COMPANY_INFO.email} | ${BIC_COMPANY_INFO.phone}`, pageWidth - margin, 10, { align: 'right' });
-    
-    // Ligne de séparation
-    doc.setDrawColor(0, 51, 102);
-    doc.setLineWidth(0.5);
-    doc.line(margin, 13, pageWidth - margin, 13);
-    
-    currentY = 18;
+  // --- Helpers ---
+  const BLUE = [0, 51, 102] as const;
+  const GRAY = [60, 60, 60] as const;
+  const LIGHT_GRAY = [100, 100, 100] as const;
+
+  const formatDate = (d: string | null): string => {
+    if (!d) return '—';
+    return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
   };
-
-  // Fonction pour ajouter un pied de page (optimisé)
-  const addPageFooter = () => {
-    const footerY = pageHeight - 20;
-    
-    // Ligne de séparation
-    doc.setDrawColor(200, 200, 200);
-    doc.setLineWidth(0.3);
-    doc.line(margin, footerY, pageWidth - margin, footerY);
-    
-    // Texte du pied de page
-    doc.setTextColor(80, 80, 80);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
-    doc.text(`Rapport N° ${reportId} - Généré le ${reportDate.toLocaleDateString('fr-FR')}`, margin, footerY + 4);
-    doc.text("Scannez le QR code pour vérifier ce document", margin, footerY + 8);
-    
-    // QR Code compact
-    if (qrCodeDataUrl) {
-      try {
-        doc.addImage(qrCodeDataUrl, 'PNG', pageWidth - 25, footerY - 8, 10, 10);
-      } catch (error) {
-        console.error('Failed to add QR code to PDF:', error);
-      }
-    }
-    
-    doc.text(`Page ${pageNumber}/2`, pageWidth - margin, footerY + 8, { align: 'right' });
-  };
-
-
-  // Fonction pour créer une nouvelle page
-  const addNewPage = () => {
-    addPageFooter();
-    doc.addPage();
-    pageNumber++;
-    addPageHeader();
-  };
-
-  // Fonction de formatage des données
   const formatArea = (sqm: number): string => {
     if (!sqm || sqm === 0) return 'N/A';
-    if (sqm >= 10000) {
-      return `${(sqm / 10000).toFixed(2)} ha`;
-    }
+    if (sqm >= 10000) return `${(sqm / 10000).toFixed(2)} ha (${sqm.toLocaleString('fr-FR')} m²)`;
     return `${sqm.toLocaleString('fr-FR')} m²`;
   };
 
-  const formatDate = (dateString: string | null): string => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('fr-FR');
+  const ownerName = parcel.current_owner_name ||
+    (Array.isArray(parcel.current_owners_details) && parcel.current_owners_details.length > 0
+      ? parcel.current_owners_details.map((o: any) => `${o.lastName || ''} ${o.firstName || ''}`.trim()).join(', ')
+      : 'Non renseigné');
+
+  const addPageHeader = () => {
+    doc.setTextColor(...BLUE);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text("RÉPUBLIQUE DÉMOCRATIQUE DU CONGO", pageWidth / 2, 8, { align: 'center' });
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text("Bureau d'Informations Cadastrales (BIC)", pageWidth / 2, 12, { align: 'center' });
+    doc.setDrawColor(...BLUE);
+    doc.setLineWidth(0.5);
+    doc.line(margin, 14, pageWidth - margin, 14);
+    currentY = 18;
   };
 
-  // ===== PAGE 1: INFORMATIONS PRINCIPALES =====
+  const addPageFooter = () => {
+    const fy = pageHeight - 12;
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.2);
+    doc.line(margin, fy - 2, pageWidth - margin, fy - 2);
+    doc.setTextColor(...LIGHT_GRAY);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6);
+    doc.text(`Rapport N° ${reportId} — ${reportDate.toLocaleDateString('fr-FR')}`, margin, fy + 1);
+    if (qrCodeDataUrl) {
+      try { doc.addImage(qrCodeDataUrl, 'PNG', pageWidth - margin - 8, fy - 10, 8, 8); } catch { /* */ }
+    }
+  };
+
+  const ensureSpace = (needed: number) => {
+    if (currentY + needed > pageHeight - 18) {
+      addPageFooter();
+      doc.addPage();
+      totalPages++;
+      addPageHeader();
+    }
+  };
+
+  const sectionTitle = (num: number, title: string) => {
+    ensureSpace(12);
+    doc.setTextColor(...BLUE);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text(`${num}. ${title}`, margin, currentY);
+    currentY += 1;
+    doc.setDrawColor(...BLUE);
+    doc.setLineWidth(0.3);
+    doc.line(margin, currentY, margin + 60, currentY);
+    currentY += 4;
+  };
+
+  const fieldRow = (label: string, value: string, bold = false) => {
+    ensureSpace(5);
+    doc.setTextColor(...GRAY);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text(label, margin, currentY);
+    doc.setFont('helvetica', bold ? 'bold' : 'normal');
+    doc.text(value || '—', margin + 45, currentY, { maxWidth: pageWidth - margin - 50 });
+    currentY += 4.5;
+  };
+
+  const lockedSection = (title: string) => {
+    ensureSpace(12);
+    doc.setTextColor(...LIGHT_GRAY);
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(8);
+    doc.text(`[${title} — Section non incluse dans votre achat]`, margin, currentY);
+    currentY += 6;
+  };
+
+  const isServicePaid = (serviceId: string) => paidServices.includes(serviceId);
+
+  // ===== PAGE 1: COVER =====
+  totalPages = 1;
   addPageHeader();
 
-  // Titre du rapport (compact)
-  doc.setTextColor(0, 51, 102);
+  // Title block
+  doc.setTextColor(...BLUE);
   doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.text("FICHE CADASTRALE", pageWidth / 2, currentY + 4, { align: 'center' });
+  currentY += 10;
   doc.setFontSize(14);
-  doc.text("RAPPORT CADASTRAL", pageWidth / 2, currentY, { align: 'center' });
-  currentY += 5;
-
-  doc.setFontSize(12);
   doc.text(`Parcelle N° ${parcel.parcel_number || 'N/A'}`, pageWidth / 2, currentY, { align: 'center' });
+  currentY += 7;
+
+  // Type badge
+  const typeLabel = parcel.parcel_type === 'SU' ? 'Section Urbaine (SU)' : 'Section Rurale (SR)';
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text(typeLabel, pageWidth / 2, currentY, { align: 'center' });
+  currentY += 5;
+
+  // Dispute badge
+  if (parcel.has_dispute) {
+    doc.setTextColor(200, 100, 0);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text("⚠ LITIGE EN COURS", pageWidth / 2, currentY, { align: 'center' });
+    currentY += 5;
+  }
+
+  doc.setTextColor(...GRAY);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.text(`Document généré le ${reportDateTime}`, pageWidth / 2, currentY, { align: 'center' });
+  currentY += 3;
+  doc.text(`Code de vérification : ${reportId}`, pageWidth / 2, currentY, { align: 'center' });
   currentY += 8;
 
-  // 1. INFORMATIONS GÉNÉRALES (condensées)
-  doc.setTextColor(0, 51, 102);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.text("1. INFORMATIONS GÉNÉRALES", margin, currentY);
-  currentY += 5;
-
-  doc.setTextColor(60, 60, 60);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-
-  // Déterminer le type de propriétaire à afficher
-  const ownerName = parcel.current_owner_name || 
-                   (parcel.current_owners_details && Array.isArray(parcel.current_owners_details) && parcel.current_owners_details.length > 0
-                     ? parcel.current_owners_details.map((o: any) => `${o.lastName} ${o.firstName || ''}`.trim()).join(', ')
-                     : 'Non renseigné');
-
-  const generalInfo = [
-    ['Type:', parcel.parcel_type === 'SU' ? 'Section Urbaine' : (parcel.property_title_type || 'Non spécifié')],
-    ['Superficie:', formatArea(parcel.area_sqm)],
-    ['Propriétaire:', ownerName],
-    ['Depuis:', formatDate(parcel.current_owner_since)],
-  ];
-
-  generalInfo.forEach(([label, value]) => {
-    doc.setFont('helvetica', 'bold');
-    doc.text(label, margin, currentY);
-    doc.setFont('helvetica', 'normal');
-    doc.text(value, margin + 30, currentY);
-    currentY += 4;
-  });
-
-  currentY += 4;
-
-  // 2. LOCALISATION (condensée)
-  doc.setTextColor(0, 51, 102);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.text("2. LOCALISATION", margin, currentY);
-  currentY += 5;
-
-  doc.setTextColor(60, 60, 60);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-
-  const locationInfo = [
-    ['Province:', parcel.province || 'Nord-Kivu'],
-    ...(parcel.parcel_type === 'SU' || parcel.ville ? [
-      ['Ville:', parcel.ville || 'N/A'],
-      ['Commune:', parcel.commune || 'N/A'],
-      ['Quartier:', parcel.quartier || 'N/A'],
-    ] : [
-      ['Territoire:', parcel.territoire || 'N/A'],
-      ['Collectivité:', parcel.collectivite || 'N/A'],
-    ])
-  ];
-
-  locationInfo.forEach(([label, value]) => {
-    doc.setFont('helvetica', 'bold');
-    doc.text(label, margin, currentY);
-    doc.setFont('helvetica', 'normal');
-    doc.text(value, margin + 30, currentY);
-    currentY += 4;
-  });
-
-  currentY += 4;
-
-
-  // 3. COORDONNÉES GPS (condensées)
-  doc.setTextColor(0, 51, 102);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.text("3. COORDONNÉES GPS", margin, currentY);
-  currentY += 5;
-
-  if (parcel.gps_coordinates && parcel.gps_coordinates.length > 0) {
-    doc.setTextColor(60, 60, 60);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    
-    const maxGPS = Math.min(parcel.gps_coordinates.length, 4); // Limiter à 4 bornes pour économiser de l'espace
-    for (let i = 0; i < maxGPS; i++) {
-      const coord = parcel.gps_coordinates[i];
-      doc.text(`Borne ${i + 1}: ${coord.lat.toFixed(6)}, ${coord.lng.toFixed(6)}`, margin, currentY);
-      currentY += 4;
-    }
-    if (parcel.gps_coordinates.length > 4) {
-      doc.setFont('helvetica', 'italic');
-      doc.text(`... et ${parcel.gps_coordinates.length - 4} autre(s) borne(s)`, margin, currentY);
-      currentY += 4;
-    }
-  } else {
-    doc.setTextColor(100, 100, 100);
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(8);
-    doc.text("Aucune coordonnée GPS disponible", margin, currentY);
-    currentY += 4;
-  }
-
-  currentY += 4;
-
-  // 4. HISTORIQUE DE PROPRIÉTÉ (condensé)
-  if (ownership_history && ownership_history.length > 0) {
-    doc.setTextColor(0, 51, 102);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.text("4. HISTORIQUE DE PROPRIÉTÉ", margin, currentY);
-    currentY += 5;
-
-    doc.setTextColor(60, 60, 60);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    
-    const maxHistory = Math.min(ownership_history.length, 3);
-    for (let i = 0; i < maxHistory; i++) {
-      const owner = ownership_history[i];
-      doc.text(`${formatDate(owner.ownership_start_date)} - ${formatDate(owner.ownership_end_date)}: ${owner.owner_name}`, margin, currentY);
-      currentY += 4;
-    }
-    if (ownership_history.length > 3) {
-      doc.setFont('helvetica', 'italic');
-      doc.text(`... et ${ownership_history.length - 3} ancien(s) propriétaire(s)`, margin, currentY);
-      currentY += 4;
-    }
-    currentY += 4;
-  }
-
-  // Passer à la page 2
-  addNewPage();
-
-
-  // 5. OBLIGATIONS FINANCIÈRES (condensées)
-  doc.setTextColor(0, 51, 102);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.text("5. OBLIGATIONS FINANCIÈRES", margin, currentY);
-  currentY += 5;
-
-  // 5.1 Taxes foncières
-  if (tax_history && tax_history.length > 0) {
-    const totalTaxes = tax_history.reduce((sum, tax) => sum + Number(tax.amount_usd || 0), 0);
-    const paidTaxes = tax_history.filter(tax => tax.payment_status === 'paid').reduce((sum, tax) => sum + Number(tax.amount_usd || 0), 0);
-    const overdueTaxes = tax_history.filter(tax => tax.payment_status === 'overdue').reduce((sum, tax) => sum + Number(tax.amount_usd || 0), 0);
-    
-    doc.setTextColor(60, 60, 60);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    
-    doc.text(`Taxes: Total $${totalTaxes.toLocaleString()} | Payé $${paidTaxes.toLocaleString()} | Arriérés $${overdueTaxes.toLocaleString()}`, margin, currentY);
-    currentY += 4;
-    doc.text(`Statut: ${overdueTaxes > 0 ? 'EN RETARD' : 'À JOUR'}`, margin, currentY);
-    currentY += 4;
-  } else {
-    doc.setTextColor(100, 100, 100);
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(8);
-    doc.text("Aucun historique fiscal disponible", margin, currentY);
-    currentY += 4;
-  }
-
-  currentY += 2;
-
-  // 5.2 Hypothèques
-  if (mortgage_history && mortgage_history.length > 0) {
-    const totalMortgages = mortgage_history.reduce((sum, m) => sum + Number(m.mortgage_amount_usd || 0), 0);
-    const activeMortgages = mortgage_history.filter(m => m.mortgage_status === 'active');
-    
-    doc.setTextColor(60, 60, 60);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    
-    doc.text(`Hypothèques: ${activeMortgages.length} active(s) | Total $${totalMortgages.toLocaleString()}`, margin, currentY);
-    currentY += 4;
-    
-    if (activeMortgages.length > 0) {
-      const latest = activeMortgages[0];
-      doc.text(`Dernière: ${latest.creditor_name} - $${Number(latest.mortgage_amount_usd).toLocaleString()}`, margin, currentY);
-      currentY += 4;
-    }
-  } else {
-    doc.setTextColor(100, 100, 100);
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(8);
-    doc.text("Aucune hypothèque enregistrée", margin, currentY);
-    currentY += 4;
-  }
-
-  currentY += 4;
-
-  // 6. AUTORISATION DE BÂTIR ET BORNAGE (condensés)
-  if (building_permits && building_permits.length > 0) {
-    doc.setTextColor(0, 51, 102);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.text("6. AUTORISATION DE BÂTIR", margin, currentY);
-    currentY += 5;
-
-    doc.setTextColor(60, 60, 60);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    
-    const latest = building_permits[0];
-    doc.text(`N° ${latest.permit_number || 'N/A'} | ${latest.issuing_service || 'N/A'}`, margin, currentY);
-    currentY += 4;
-    doc.text(`Délivré: ${formatDate(latest.issue_date)} | Statut: ${latest.administrative_status || 'En cours'}`, margin, currentY);
-    currentY += 4;
-  }
-
-  if (boundary_history && boundary_history.length > 0) {
-    doc.setTextColor(0, 51, 102);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.text("7. BORNAGE", margin, currentY);
-    currentY += 5;
-
-    doc.setTextColor(60, 60, 60);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    
-    const latest = boundary_history[0];
-    doc.text(`PV: ${latest.pv_reference_number || 'N/A'} | Date: ${formatDate(latest.survey_date)}`, margin, currentY);
-    currentY += 4;
-    doc.text(`Géomètre: ${latest.surveyor_name || 'N/A'}`, margin, currentY);
-    currentY += 4;
-  }
-
-  currentY += 4;
-
-  // 8. SERVICES INCLUS
-  doc.setTextColor(0, 51, 102);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.text("8. SERVICES INCLUS", margin, currentY);
-  currentY += 5;
-
-  doc.setTextColor(60, 60, 60);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  
-  const serviceNames = paidServices.map(serviceId => {
-    const service = servicesCatalog.find(s => s.id === serviceId);
-    return service ? `${service.name} ($${Number(service.price).toFixed(2)})` : 'Service inconnu';
-  });
-  
-  doc.text(serviceNames.join(', ') || 'Aucun service', margin, currentY, { maxWidth: pageWidth - 2 * margin });
-  currentY += 8;
-
-  // 9. AUTHENTIFICATION
-  doc.setTextColor(0, 51, 102);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.text("9. AUTHENTIFICATION", margin, currentY);
-  currentY += 5;
-
-  doc.setDrawColor(0, 51, 102);
-  doc.setLineWidth(0.3);
-  doc.rect(margin, currentY - 2, pageWidth - 2 * margin, 25);
-
-  doc.setTextColor(60, 60, 60);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
-  doc.text("IDENTIFIANT UNIQUE", margin + 3, currentY + 3);
-  
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.text(`ID: ${reportId}`, margin + 3, currentY + 8);
-  doc.text(`Date: ${reportDateTime}`, margin + 3, currentY + 13);
-
-  // QR code compact
+  // QR code on cover
   if (qrCodeDataUrl) {
     try {
-      doc.addImage(qrCodeDataUrl, 'PNG', pageWidth - margin - 20, currentY, 17, 17);
+      doc.addImage(qrCodeDataUrl, 'PNG', pageWidth / 2 - 12, currentY, 24, 24);
+      currentY += 26;
       doc.setFont('helvetica', 'italic');
-      doc.setFontSize(6);
-      doc.text("Vérifier", pageWidth - margin - 11.5, currentY + 19, { align: 'center' });
-    } catch (error) {
-      console.error('Failed to add QR code:', error);
+      doc.setFontSize(7);
+      doc.text("Scannez pour vérifier l'authenticité", pageWidth / 2, currentY, { align: 'center' });
+      currentY += 8;
+    } catch { currentY += 4; }
+  }
+
+  // ===== SECTION 1: IDENTIFICATION =====
+  sectionTitle(1, "IDENTIFICATION DE LA PARCELLE");
+  fieldRow("Type de titre", parcel.property_title_type || 'Non spécifié');
+  if (parcel.title_reference_number) fieldRow("Référence du titre", parcel.title_reference_number);
+  if (parcel.title_issue_date) fieldRow("Date d'émission", formatDate(parcel.title_issue_date));
+  if (parcel.location) fieldRow("Adresse", parcel.location);
+  fieldRow("Superficie déclarée", formatArea(parcel.area_sqm), true);
+  if (parcel.surface_calculee_bornes != null) {
+    const variance = parcel.area_sqm ? ((parcel.surface_calculee_bornes - parcel.area_sqm) / parcel.area_sqm * 100) : null;
+    let surfaceText = formatArea(parcel.surface_calculee_bornes);
+    if (variance !== null && Math.abs(variance) > 1) {
+      surfaceText += ` (${variance > 0 ? '+' : ''}${variance.toFixed(1)}% variance)`;
+    }
+    fieldRow("Superficie mesurée (GPS)", surfaceText);
+  }
+  if (parcel.declared_usage) fieldRow("Usage déclaré", parcel.declared_usage);
+  if (parcel.lease_type) fieldRow("Type de bail", parcel.lease_type);
+  if (parcel.standing) fieldRow("Standing", parcel.standing);
+  if (parcel.is_subdivided != null) fieldRow("Parcelle subdivisée", parcel.is_subdivided ? 'Oui — Lotie' : 'Non');
+  currentY += 3;
+
+  // ===== SECTION 2: PROPRIÉTAIRE =====
+  sectionTitle(2, "PROPRIÉTAIRE ACTUEL");
+  fieldRow("Nom complet", ownerName, true);
+  if (parcel.current_owner_legal_status) fieldRow("Statut juridique", parcel.current_owner_legal_status);
+  fieldRow("Propriétaire depuis", formatDate(parcel.current_owner_since));
+  if (parcel.whatsapp_number) fieldRow("WhatsApp", parcel.whatsapp_number);
+  currentY += 3;
+
+  // ===== SECTION 3: CONSTRUCTION & AUTORISATIONS =====
+  const hasConstruction = parcel.construction_type || parcel.construction_nature || parcel.construction_materials || parcel.construction_year;
+  if (hasConstruction || building_permits.length > 0) {
+    sectionTitle(3, "CONSTRUCTION & AUTORISATIONS");
+    if (hasConstruction) {
+      if (parcel.construction_type) fieldRow("Type de construction", parcel.construction_type);
+      if (parcel.construction_nature) fieldRow("Nature", parcel.construction_nature);
+      if (parcel.construction_materials) fieldRow("Matériaux", parcel.construction_materials);
+      if (parcel.construction_year) fieldRow("Année de construction", String(parcel.construction_year));
+      currentY += 2;
+    }
+    if (building_permits.length > 0) {
+      ensureSpace(20);
+      doc.setTextColor(...GRAY);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.text("Autorisations de bâtir", margin, currentY);
+      currentY += 2;
+      autoTable(doc, {
+        startY: currentY,
+        head: [['N° Permis', 'Émission', 'Validité', 'Statut', 'Service émetteur']],
+        body: building_permits.map((p: any) => {
+          const issueDate = new Date(p.issue_date);
+          const endDate = new Date(issueDate);
+          endDate.setMonth(endDate.getMonth() + (p.validity_period_months || 0));
+          const isValid = endDate > new Date();
+          return [
+            p.permit_number || '—',
+            formatDate(p.issue_date),
+            `${isValid ? 'Valide' : 'Expiré'} — ${endDate.toLocaleDateString('fr-FR')}`,
+            p.administrative_status || '—',
+            p.issuing_service || '—',
+          ];
+        }),
+        styles: { fontSize: 7, cellPadding: 1.5, textColor: [60, 60, 60] },
+        headStyles: { fillColor: [0, 51, 102], textColor: [255, 255, 255], fontSize: 7 },
+        margin: { left: margin, right: margin },
+        theme: 'grid',
+      });
+      currentY = (doc as any).lastAutoTable?.finalY + 5 || currentY + 20;
     }
   }
 
-  currentY += 28;
+  // ===== SECTION 4: LOCALISATION =====
+  sectionTitle(4, "LOCALISATION");
+  fieldRow("Province", parcel.province || '—');
+  if (parcel.parcel_type === 'SU') {
+    if (parcel.ville) fieldRow("Ville", parcel.ville);
+    if (parcel.commune) fieldRow("Commune", parcel.commune);
+    if (parcel.quartier) fieldRow("Quartier", parcel.quartier);
+    if (parcel.avenue) fieldRow("Avenue", parcel.avenue);
+    if (parcel.house_number) fieldRow("N° Maison", parcel.house_number);
+  } else {
+    if (parcel.territoire) fieldRow("Territoire", parcel.territoire);
+    if (parcel.collectivite) fieldRow("Collectivité", parcel.collectivite);
+    if (parcel.groupement) fieldRow("Groupement", parcel.groupement);
+    if (parcel.village) fieldRow("Village", parcel.village);
+  }
+  if (parcel.latitude && parcel.longitude) {
+    fieldRow("Coordonnées GPS", `${Number(parcel.latitude).toFixed(6)}, ${Number(parcel.longitude).toFixed(6)}`);
+  }
+  if (parcel.nombre_bornes) fieldRow("Nombre de bornes", String(parcel.nombre_bornes));
 
-  // Mentions de sécurité
-  doc.setFont('helvetica', 'italic');
+  // GPS coordinates (all bounds)
+  const gpsCoords = Array.isArray(parcel.gps_coordinates) ? parcel.gps_coordinates : [];
+  if (gpsCoords.length > 0) {
+    ensureSpace(10 + gpsCoords.length * 4);
+    doc.setTextColor(...GRAY);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text("Bornes GPS", margin, currentY);
+    currentY += 2;
+    autoTable(doc, {
+      startY: currentY,
+      head: [['Borne', 'Latitude', 'Longitude']],
+      body: gpsCoords.map((c: any, i: number) => [
+        c.borne || `B${i + 1}`,
+        Number(c.lat).toFixed(6),
+        Number(c.lng).toFixed(6),
+      ]),
+      styles: { fontSize: 7, cellPadding: 1.2, textColor: [60, 60, 60] },
+      headStyles: { fillColor: [0, 51, 102], textColor: [255, 255, 255], fontSize: 7 },
+      margin: { left: margin, right: margin },
+      theme: 'grid',
+    });
+    currentY = (doc as any).lastAutoTable?.finalY + 4 || currentY + 15;
+  }
+
+  // Parcel sides
+  const parcelSides: any[] = Array.isArray(parcel.parcel_sides)
+    ? (parcel.parcel_sides as any[]).filter((s: any) => s && (s.side || s.length))
+    : [];
+  if (parcelSides.length > 0) {
+    ensureSpace(10 + parcelSides.length * 5);
+    doc.setTextColor(...GRAY);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text("Dimensions des côtés", margin, currentY);
+    currentY += 2;
+    autoTable(doc, {
+      startY: currentY,
+      head: [['Côté', 'Longueur (m)', 'Orientation']],
+      body: parcelSides.map((s: any, i: number) => [
+        s.side || `Côté ${i + 1}`,
+        s.length != null ? `${s.length} m` : '—',
+        s.orientation || '—',
+      ]),
+      styles: { fontSize: 7, cellPadding: 1.2, textColor: [60, 60, 60] },
+      headStyles: { fillColor: [0, 51, 102], textColor: [255, 255, 255], fontSize: 7 },
+      margin: { left: margin, right: margin },
+      theme: 'grid',
+    });
+    currentY = (doc as any).lastAutoTable?.finalY + 4 || currentY + 15;
+  }
+
+  // Boundary history
+  if (boundary_history.length > 0) {
+    ensureSpace(10 + boundary_history.length * 5);
+    doc.setTextColor(...GRAY);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text("Historique de bornage", margin, currentY);
+    currentY += 2;
+    autoTable(doc, {
+      startY: currentY,
+      head: [['Réf. PV', 'Objet', 'Géomètre', 'Date']],
+      body: boundary_history.map((b: any) => [
+        b.pv_reference_number || '—',
+        b.boundary_purpose || '—',
+        b.surveyor_name || '—',
+        formatDate(b.survey_date),
+      ]),
+      styles: { fontSize: 7, cellPadding: 1.2, textColor: [60, 60, 60] },
+      headStyles: { fillColor: [0, 51, 102], textColor: [255, 255, 255], fontSize: 7 },
+      margin: { left: margin, right: margin },
+      theme: 'grid',
+    });
+    currentY = (doc as any).lastAutoTable?.finalY + 5 || currentY + 15;
+  }
+
+  // ===== SECTION 5: HISTORIQUE DE PROPRIÉTÉ =====
+  sectionTitle(5, "HISTORIQUE DE PROPRIÉTÉ");
+  if (ownership_history.length > 0) {
+    ensureSpace(15);
+    const historyRows = [
+      [ownerName, parcel.current_owner_legal_status || '—', formatDate(parcel.current_owner_since), 'Actuel', '—'],
+      ...ownership_history.map((o: any) => [
+        o.owner_name || '—',
+        o.legal_status || '—',
+        formatDate(o.ownership_start_date),
+        formatDate(o.ownership_end_date),
+        o.mutation_type || '—',
+      ]),
+    ];
+    autoTable(doc, {
+      startY: currentY,
+      head: [['Propriétaire', 'Statut juridique', 'Du', 'Au', 'Mutation']],
+      body: historyRows,
+      styles: { fontSize: 7, cellPadding: 1.5, textColor: [60, 60, 60] },
+      headStyles: { fillColor: [0, 51, 102], textColor: [255, 255, 255], fontSize: 7 },
+      bodyStyles: {},
+      margin: { left: margin, right: margin },
+      theme: 'grid',
+      didParseCell: (data: any) => {
+        if (data.section === 'body' && data.row.index === 0) {
+          data.cell.styles.fillColor = [230, 240, 255];
+          data.cell.styles.fontStyle = 'bold';
+        }
+      },
+    });
+    currentY = (doc as any).lastAutoTable?.finalY + 5 || currentY + 20;
+  } else {
+    doc.setTextColor(...LIGHT_GRAY);
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(8);
+    doc.text("Aucun ancien propriétaire enregistré", margin, currentY);
+    currentY += 6;
+  }
+
+  // ===== SECTION 6: OBLIGATIONS FINANCIÈRES =====
+  sectionTitle(6, "OBLIGATIONS FINANCIÈRES");
+
+  // 6.1 Taxes
+  doc.setTextColor(...GRAY);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.text("Taxes foncières", margin, currentY);
+  currentY += 2;
+
+  if (tax_history.length > 0) {
+    ensureSpace(15);
+    autoTable(doc, {
+      startY: currentY,
+      head: [['Année', 'Montant (USD)', 'Statut', 'Date paiement']],
+      body: tax_history.map((t: any) => {
+        const status = t.payment_status === 'paid' ? 'Payé' : t.payment_status === 'overdue' ? 'En retard' : t.payment_status;
+        return [
+          String(t.tax_year),
+          `$${Number(t.amount_usd).toLocaleString('fr-FR')}`,
+          status,
+          t.payment_date ? formatDate(t.payment_date) : '—',
+        ];
+      }),
+      styles: { fontSize: 7, cellPadding: 1.2, textColor: [60, 60, 60] },
+      headStyles: { fillColor: [0, 51, 102], textColor: [255, 255, 255], fontSize: 7 },
+      margin: { left: margin, right: margin },
+      theme: 'grid',
+      didParseCell: (data: any) => {
+        if (data.section === 'body' && data.column.index === 2) {
+          const val = data.cell.raw;
+          if (val === 'En retard') data.cell.styles.textColor = [200, 50, 50];
+          else if (val === 'Payé') data.cell.styles.textColor = [39, 174, 96];
+        }
+      },
+    });
+    currentY = (doc as any).lastAutoTable?.finalY + 5 || currentY + 20;
+  } else {
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(...LIGHT_GRAY);
+    doc.setFontSize(8);
+    doc.text("Aucun historique fiscal disponible", margin, currentY);
+    currentY += 6;
+  }
+
+  // 6.2 Hypothèques
+  doc.setTextColor(...GRAY);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.text("Hypothèques", margin, currentY);
+  currentY += 2;
+
+  if (mortgage_history.length > 0) {
+    ensureSpace(15);
+    autoTable(doc, {
+      startY: currentY,
+      head: [['Créancier', 'Type', 'Montant (USD)', 'Durée', 'Date contrat', 'Statut']],
+      body: mortgage_history.map((m: any) => {
+        const statusLabel = m.mortgage_status === 'active' ? 'Active' : m.mortgage_status === 'closed' ? 'Clôturée' : m.mortgage_status;
+        return [
+          m.creditor_name || '—',
+          m.creditor_type || '—',
+          `$${Number(m.mortgage_amount_usd).toLocaleString('fr-FR')}`,
+          `${m.duration_months || '—'} mois`,
+          formatDate(m.contract_date),
+          statusLabel,
+        ];
+      }),
+      styles: { fontSize: 7, cellPadding: 1.2, textColor: [60, 60, 60] },
+      headStyles: { fillColor: [0, 51, 102], textColor: [255, 255, 255], fontSize: 7 },
+      margin: { left: margin, right: margin },
+      theme: 'grid',
+    });
+    currentY = (doc as any).lastAutoTable?.finalY + 5 || currentY + 20;
+  } else {
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(...LIGHT_GRAY);
+    doc.setFontSize(8);
+    doc.text("Aucune hypothèque enregistrée", margin, currentY);
+    currentY += 6;
+  }
+
+  // ===== SECTION 7: LITIGES FONCIERS =====
+  sectionTitle(7, "LITIGES FONCIERS");
+  if (parcel.has_dispute && land_disputes.length > 0) {
+    ensureSpace(15);
+    autoTable(doc, {
+      startY: currentY,
+      head: [['Référence', 'Type', 'Nature', 'Statut', 'Date']],
+      body: land_disputes.map((d: any) => [
+        d.reference_number || '—',
+        d.dispute_type || '—',
+        d.dispute_nature || '—',
+        d.current_status || '—',
+        formatDate(d.created_at),
+      ]),
+      styles: { fontSize: 7, cellPadding: 1.2, textColor: [60, 60, 60] },
+      headStyles: { fillColor: [200, 100, 0], textColor: [255, 255, 255], fontSize: 7 },
+      margin: { left: margin, right: margin },
+      theme: 'grid',
+    });
+    currentY = (doc as any).lastAutoTable?.finalY + 5 || currentY + 20;
+  } else if (parcel.has_dispute) {
+    doc.setTextColor(200, 100, 0);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text("⚠ Un litige est signalé sur cette parcelle. Détails non disponibles.", margin, currentY);
+    currentY += 6;
+  } else {
+    doc.setTextColor(39, 174, 96);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text("Aucun litige signalé sur cette parcelle.", margin, currentY);
+    currentY += 6;
+  }
+
+  // ===== SERVICES INCLUS =====
+  ensureSpace(20);
+  doc.setTextColor(...BLUE);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.text("SERVICES INCLUS DANS CET ACHAT", margin, currentY);
+  currentY += 5;
+
+  const paidServiceNames = paidServices.map(id => {
+    const s = servicesCatalog.find(svc => svc.id === id);
+    return s ? `• ${s.name}` : null;
+  }).filter(Boolean);
+
+  if (paidServiceNames.length > 0) {
+    doc.setTextColor(...GRAY);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    paidServiceNames.forEach(name => {
+      ensureSpace(5);
+      doc.text(name!, margin + 2, currentY);
+      currentY += 4;
+    });
+  } else {
+    doc.setTextColor(...LIGHT_GRAY);
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(8);
+    doc.text("Aucun service sélectionné", margin, currentY);
+    currentY += 5;
+  }
+  currentY += 4;
+
+  // ===== AUTHENTIFICATION =====
+  ensureSpace(35);
+  doc.setDrawColor(...BLUE);
+  doc.setLineWidth(0.4);
+  doc.rect(margin, currentY, pageWidth - 2 * margin, 28);
+
+  doc.setTextColor(...BLUE);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.text("AUTHENTIFICATION DU DOCUMENT", margin + 3, currentY + 5);
+
+  doc.setTextColor(...GRAY);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.text(`Identifiant unique : ${reportId}`, margin + 3, currentY + 10);
+  doc.text(`Date de génération : ${reportDateTime}`, margin + 3, currentY + 15);
+  doc.text(`Vérification : ${verifyUrl}`, margin + 3, currentY + 20);
+
+  if (qrCodeDataUrl) {
+    try {
+      doc.addImage(qrCodeDataUrl, 'PNG', pageWidth - margin - 22, currentY + 2, 20, 20);
+    } catch { /* */ }
+  }
+  currentY += 32;
+
+  // ===== DISCLAIMER =====
+  ensureSpace(30);
+  doc.setTextColor(...LIGHT_GRAY);
+  doc.setFont('helvetica', 'bold');
   doc.setFontSize(7);
-  doc.setTextColor(100, 100, 100);
-  doc.text("Ce document a été généré par BIC. Scannez le QR code pour vérifier son authenticité.", margin, currentY, { maxWidth: pageWidth - 2 * margin });
-  
-  // Note sur les données
-  currentY += 6;
+  doc.text("Avis de non-responsabilité :", margin, currentY);
+  currentY += 3;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6.5);
+  const disclaimer = "Les informations contenues dans ce document proviennent de sources officielles (services cadastraux, conservation des titres immobiliers) et de contributions communautaires vérifiées. Le Bureau d'Informations Cadastrales (BIC) ne saurait garantir l'exhaustivité, l'exactitude absolue ou l'actualité permanente de l'ensemble des données. BIC agit de bonne foi dans son travail de compilation et de présentation de ces informations.";
+  const disclaimerLines = doc.splitTextToSize(disclaimer, pageWidth - 2 * margin);
+  doc.text(disclaimerLines, margin, currentY);
+  currentY += disclaimerLines.length * 3 + 2;
+
+  const disclaimer2 = `En cas de divergence avec la situation réelle, veuillez vous rapprocher du service des Affaires Foncières compétent pour solliciter une mise à jour des informations relatives à la parcelle ${parcel.parcel_number}.`;
+  const disclaimer2Lines = doc.splitTextToSize(disclaimer2, pageWidth - 2 * margin);
+  doc.text(disclaimer2Lines, margin, currentY);
+  currentY += disclaimer2Lines.length * 3 + 2;
+
   if (contributionData) {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7);
     doc.setTextColor(0, 100, 0);
     doc.text("✓ Données issues de contribution cadastrale validée", margin, currentY);
+    currentY += 5;
   }
 
-  // Pied de page final
-  addPageFooter();
+  // Add footer to all pages
+  const numPages = doc.getNumberOfPages();
+  for (let i = 1; i <= numPages; i++) {
+    doc.setPage(i);
+    addPageFooter();
+    doc.setTextColor(...LIGHT_GRAY);
+    doc.setFontSize(6);
+    doc.text(`Page ${i}/${numPages}`, pageWidth - margin, pageHeight - 11, { align: 'right' });
+  }
 
-  // Sauvegarder le PDF
-  const pdfFilename = filename || `Rapport_Cadastral_${parcel.parcel_number}_${formatDateTimeForFilename()}.pdf`;
+  // Save
+  const pdfFilename = filename || `Fiche_Cadastrale_${parcel.parcel_number}_${formatDateTimeForFilename()}.pdf`;
   saveDocument(doc, pdfFilename);
-}
-
-/**
- * Calcule la surface en mètres carrés à partir des coordonnées GPS
- */
-function calculateSurfaceFromBounds(gpsCoordinates: Array<{lat: number, lng: number}>): number | null {
-  if (!gpsCoordinates || gpsCoordinates.length < 3) return null;
-  
-  let area = 0;
-  const coords = gpsCoordinates;
-  const n = coords.length;
-  
-  for (let i = 0; i < n; i++) {
-    const j = (i + 1) % n;
-    area += coords[i].lat * coords[j].lng;
-    area -= coords[j].lat * coords[i].lng;
-  }
-  
-  return Math.abs(area) / 2 * 111319.5 * 111319.5; // Conversion approximative en m²
 }
