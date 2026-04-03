@@ -145,7 +145,8 @@ const Admin = () => {
   const renderContent = () => {
     const Component = tabComponents[activeTab] || tabComponents['dashboard'];
     const props = getComponentProps(activeTab, refreshCounts);
-    return <Component {...props} />;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return <Component {...(props as any)} />;
   };
 
   const category = getTabCategory(activeTab);
