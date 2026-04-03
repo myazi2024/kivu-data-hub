@@ -4208,6 +4208,33 @@ export type Database = {
       }
     }
     Views: {
+      payment_methods_public: {
+        Row: {
+          config_type: string | null
+          display_order: number | null
+          id: string | null
+          is_enabled: boolean | null
+          provider_id: string | null
+          provider_name: string | null
+        }
+        Insert: {
+          config_type?: string | null
+          display_order?: number | null
+          id?: string | null
+          is_enabled?: boolean | null
+          provider_id?: string | null
+          provider_name?: string | null
+        }
+        Update: {
+          config_type?: string | null
+          display_order?: number | null
+          id?: string | null
+          is_enabled?: boolean | null
+          provider_id?: string | null
+          provider_name?: string | null
+        }
+        Relationships: []
+      }
       properties_public: {
         Row: {
           address: string | null
@@ -4426,6 +4453,10 @@ export type Database = {
           new_values: Json
           old_values: Json
         }[]
+      }
+      get_signed_document_url: {
+        Args: { p_expires_in?: number; p_file_path: string }
+        Returns: string
       }
       get_user_activity_stats: {
         Args: { _end_date?: string; _start_date?: string; _user_id: string }
