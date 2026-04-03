@@ -69,6 +69,7 @@ const AdminMapProviders = lazy(() => import('@/components/admin/AdminMapProvider
 const AdminAnalyticsChartsConfig = lazy(() => import('@/components/admin/AdminAnalyticsChartsConfig'));
 const AdminSubdivisionFeesConfig = lazy(() => import('@/components/admin/AdminSubdivisionFeesConfig'));
 const AdminPartners = lazy(() => import('@/components/admin/AdminPartners'));
+const AdminPitchConfig = lazy(() => import('@/components/admin/AdminPitchConfig'));
 const AdminHR = lazy(() => import('@/components/admin/hr/AdminHR'));
 
 const LazyFallback = () => (
