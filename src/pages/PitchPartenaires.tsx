@@ -125,19 +125,20 @@ const SlideContext = () => (
 const SlideSolution = () => (
   <SlideWrapper bg={territorialMap} overlay>
     <div className="flex-1 flex flex-col px-6 md:px-16 py-10 md:py-16">
-      <div className="mb-8">
+      <AnimateIn delay={100} className="mb-8">
         <span className="text-sm font-semibold text-primary uppercase tracking-wider">La Solution</span>
         <h2 className="text-3xl md:text-5xl font-bold text-white mt-2">La plateforme BIC</h2>
         <p className="text-lg text-white/80 mt-3 max-w-3xl">Une infrastructure numérique souveraine qui transforme radicalement l'accès aux données cadastrales de la RDC.</p>
-      </div>
+      </AnimateIn>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 flex-1 max-w-5xl">
         {[
           { icon: Database, title: 'Centralisation', before: 'Courir entre 3 bureaux et attendre des semaines', after: 'Tout en un clic, depuis n\'importe où' },
           { icon: Lock, title: 'Sécurisation', before: 'Faux titres indétectables, fraude généralisée', after: 'QR code vérifiable en 10 secondes' },
           { icon: Eye, title: 'Transparence', before: 'Information réservée aux initiés et intermédiaires', after: 'Tout citoyen peut vérifier un titre gratuitement' },
           { icon: Layers, title: 'Accessibilité', before: 'Systèmes cloisonnés, données inaccessibles', after: 'Accès personnalisé par permissions pour chaque professionnel et institution' },
-        ].map((p) => (
-          <div key={p.title} className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/15 p-6 hover:bg-white/15 transition-colors">
+        ].map((p, i) => (
+          <AnimateIn key={p.title} delay={300 + i * 120}>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/15 p-6 hover:bg-white/15 transition-colors">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2.5 rounded-lg bg-primary/20">
                 <p.icon className="h-6 w-6 text-primary" />
