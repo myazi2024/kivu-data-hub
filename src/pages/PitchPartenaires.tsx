@@ -24,6 +24,27 @@ import mapViz from '@/assets/bic-map-screenshot.jpg';
 import territorialMap from '@/assets/territorial-map-illustration.webp';
 import gomaHero from '@/assets/goma-city-hero.jpg';
 
+/* ──────────────────── ANIMATION HELPERS ──────────────────── */
+
+type AnimVariant = 'fade-up' | 'scale-in';
+
+const AnimateIn: React.FC<{
+  children: React.ReactNode;
+  variant?: AnimVariant;
+  delay?: number;
+  className?: string;
+}> = ({ children, variant = 'fade-up', delay = 0, className = '' }) => {
+  const animClass = variant === 'scale-in' ? 'animate-pitch-scale-in' : 'animate-pitch-fade-up';
+  return (
+    <div
+      className={`${animClass} ${className}`}
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      {children}
+    </div>
+  );
+};
+
 /* ──────────────────── SLIDE COMPONENTS ──────────────────── */
 
 const SlideWrapper: React.FC<{ bg?: string; overlay?: boolean; children: React.ReactNode; className?: string }> = ({ bg, overlay = false, children, className = '' }) => (
