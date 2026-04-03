@@ -1204,7 +1204,24 @@ const PitchPartenaires = () => {
         </div>
 
         {/* Slide container */}
-        <div className={`relative overflow-hidden ${isFullscreen ? 'h-screen' : 'h-[calc(100dvh-4rem)]'}`}>
+        <div
+          className={`relative overflow-hidden ${isFullscreen ? 'h-screen' : 'h-[calc(100dvh-4rem)]'}`}
+          onTouchStart={(e) => {
+            const t = e.changedTouches[0];
+            touchStartRef.current = { x: t.clientX, y: t.clientY };
+          }}
+          onTouchEnd={(e) => {
+            if (!touchStartRef.current) return;
+            const t = e.changedTouches[0];
+            const dx = t.clientX - touchStartRef.current.x;
+            const dy = t.clientY - touchStartRef.current.y;
+            touchStartRef.current = null;
+            if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+              if (dx < 0) next();
+              else prev();
+            }
+          }}
+        >
           <CurrentSlide />
         </div>
 
