@@ -32,10 +32,9 @@ export const usePaymentProviders = () => {
     const load = async () => {
       try {
         const { data, error } = await supabase
-          .from('payment_methods_config')
-          .select('*')
+          .from('payment_methods_public' as any)
+          .select('id, config_type, provider_id, provider_name, is_enabled, display_order')
           .eq('config_type', 'mobile_money')
-          .eq('is_enabled', true)
           .order('display_order', { ascending: true });
 
         if (error) throw error;
