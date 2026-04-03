@@ -1145,6 +1145,7 @@ const PitchPartenaires = () => {
   const [current, setCurrent] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const goTo = useCallback((idx: number) => {
     setCurrent(Math.max(0, Math.min(slides.length - 1, idx)));
