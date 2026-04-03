@@ -824,7 +824,7 @@ const SlidePricing = () => (
         {[
           { icon: Search, title: 'Recherche unitaire', price: '2 — 10 $', unit: 'par consultation', desc: 'Recherche et consultation de la fiche cadastrale complète d\'une parcelle avec export PDF.', features: ['Fiche cadastrale complète', 'Export PDF téléchargeable', 'Certificat vérifiable'] },
           { icon: CreditCard, title: 'Abonnement', price: '25 — 100 $', unit: 'par mois', desc: 'Accès illimité aux recherches et consultations pour les professionnels du foncier.', features: ['Recherches illimitées', 'Tableau de bord analytique', 'Support prioritaire'] },
-          { icon: Code2, title: 'API commerciale', price: '0,50 $', unit: 'par appel', desc: 'Intégration des données cadastrales dans vos systèmes via notre API REST sécurisée.', features: ['Documentation complète', 'Webhooks temps réel', 'SLA garanti'] },
+          { icon: Code2, title: 'Accès Professionnel', price: '50 — 200 $', unit: 'par mois', desc: 'Compte professionnel avec permissions avancées pour les entreprises : banques, notaires, promoteurs.', features: ['Permissions personnalisées', 'Accès aux données avancées', 'Support dédié'] },
           { icon: DollarSign, title: 'Commissions services', price: '5 — 15%', unit: 'du montant', desc: 'Commission sur les services payants : demandes de titres, mutations, expertises immobilières.', features: ['Titres fonciers', 'Mutations foncières', 'Expertises immobilières'] },
         ].map((p) => (
           <div key={p.title} className="bg-card rounded-xl border p-5 flex flex-col hover:shadow-md transition-shadow">
