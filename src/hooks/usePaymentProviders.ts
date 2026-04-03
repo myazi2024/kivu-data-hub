@@ -39,7 +39,7 @@ export const usePaymentProviders = () => {
 
         if (error) throw error;
 
-        const mapped = data?.map((p) => ({
+        const mapped = (data as any[])?.map((p: any) => ({
           value: p.provider_id,
           label: p.provider_name,
           prefix: PROVIDER_MAP[p.provider_id]?.prefix || '+243 XX',
