@@ -200,13 +200,13 @@ const SlideMap = () => (
 const SlideServices = () => (
   <SlideWrapper>
     <div className="flex-1 flex flex-col bg-gradient-to-br from-primary/5 via-background to-secondary/5 px-6 md:px-16 py-10 md:py-14">
-      <div className="mb-6 text-center">
+      <AnimateIn delay={100} className="mb-6 text-center">
         <span className="text-sm font-semibold text-primary uppercase tracking-wider">Écosystème complet</span>
         <h2 className="text-3xl md:text-4xl font-bold text-foreground mt-2">8 Services numériques intégrés</h2>
         <p className="text-muted-foreground mt-2 max-w-2xl mx-auto italic">
           Chaque service répond à un besoin concret des citoyens, notaires, banques et administrations. Voici l'écosystème complet.
         </p>
-      </div>
+      </AnimateIn>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1 max-w-5xl mx-auto w-full">
         {[
           { icon: Search, name: 'Recherche cadastrale', desc: 'Recherche par numéro de parcelle, nom du propriétaire ou localisation GPS' },
@@ -217,14 +217,16 @@ const SlideServices = () => (
           { icon: AlertTriangle, name: 'Litiges fonciers', desc: 'Déclaration et suivi des conflits fonciers avec médiation intégrée' },
           { icon: Receipt, name: 'Hypothèque', desc: 'Vérification et gestion des charges hypothécaires sur les parcelles' },
           { icon: History, name: 'Historique fiscal', desc: 'Consultation de l\'historique des taxes foncières et quittances' },
-        ].map((s) => (
-          <div key={s.name} className="bg-card rounded-xl border p-4 flex flex-col items-center text-center shadow-sm hover:shadow-md hover:border-primary/30 transition-all group">
-            <div className="p-3 rounded-xl bg-primary/10 mb-3 group-hover:bg-primary/20 transition-colors">
-              <s.icon className="h-6 w-6 text-primary" />
+        ].map((s, i) => (
+          <AnimateIn key={s.name} delay={300 + i * 80} variant="scale-in">
+            <div className="bg-card rounded-xl border p-4 flex flex-col items-center text-center shadow-sm hover:shadow-md hover:border-primary/30 transition-all group h-full">
+              <div className="p-3 rounded-xl bg-primary/10 mb-3 group-hover:bg-primary/20 transition-colors">
+                <s.icon className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="font-semibold text-foreground text-sm mb-1">{s.name}</h3>
+              <p className="text-xs text-muted-foreground leading-snug">{s.desc}</p>
             </div>
-            <h3 className="font-semibold text-foreground text-sm mb-1">{s.name}</h3>
-            <p className="text-xs text-muted-foreground leading-snug">{s.desc}</p>
-          </div>
+          </AnimateIn>
         ))}
       </div>
     </div>
