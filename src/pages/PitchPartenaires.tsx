@@ -104,15 +104,17 @@ const SlideContext = () => (
           { icon: FileText, value: '0%', label: 'de numérisation du cadastre avant le BIC', consequence: 'Des millions de documents papier fragiles dispersés dans 26 provinces', color: 'text-orange-500' },
           { icon: Clock, value: '2 mois', label: 'pour vérifier un titre foncier manuellement', consequence: 'Des transactions bloquées, des projets immobiliers retardés indéfiniment', color: 'text-amber-500' },
           { icon: Shield, value: '45%', label: 'des titres fonciers contiennent des irrégularités', consequence: 'Des propriétaires légitimes privés de leurs droits par des faux documents', color: 'text-red-500' },
-        ].map((s) => (
-          <div key={s.label} className="bg-card rounded-xl border p-6 flex flex-col items-center text-center shadow-sm hover:shadow-md transition-shadow">
-            <div className="p-3 rounded-full bg-destructive/10 mb-4">
-              <s.icon className={`h-7 w-7 ${s.color}`} />
+        ].map((s, i) => (
+          <AnimateIn key={s.label} delay={300 + i * 120}>
+            <div className="bg-card rounded-xl border p-6 flex flex-col items-center text-center shadow-sm hover:shadow-md transition-shadow h-full">
+              <div className="p-3 rounded-full bg-destructive/10 mb-4">
+                <s.icon className={`h-7 w-7 ${s.color}`} />
+              </div>
+              <div className={`text-4xl md:text-5xl font-bold ${s.color} mb-2`}>{s.value}</div>
+              <p className="text-sm text-muted-foreground mb-2">{s.label}</p>
+              <p className="text-xs text-destructive/70 italic leading-snug">{s.consequence}</p>
             </div>
-            <div className={`text-4xl md:text-5xl font-bold ${s.color} mb-2`}>{s.value}</div>
-            <p className="text-sm text-muted-foreground mb-2">{s.label}</p>
-            <p className="text-xs text-destructive/70 italic leading-snug">{s.consequence}</p>
-          </div>
+          </AnimateIn>
         ))}
       </div>
     </div>
