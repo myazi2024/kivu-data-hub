@@ -1,32 +1,23 @@
 
-
-# Boutons Zoom adaptatifs sur la carte cadastrale
+# Positionnement dynamique du bloc Légende
 
 ## Problème
 
-Les contrôles de zoom Leaflet (bottom-right) ont une position fixe (`margin-bottom: 12rem` sur mobile). Quand le panneau de la parcelle sélectionnée est affiché — et surtout quand le bloc "Actions" s'ouvre (jusqu'à 200-260px de plus) — les boutons de zoom se retrouvent cachés dessous car ils ne s'adaptent pas à la hauteur du panneau.
+Le bloc Légende mobile a une position fixe (`bottom-48`, soit ~12rem) et ne s'adapte pas quand le panneau parcelle ou le dropdown Actions s'ouvre, contrairement aux boutons de zoom qui ont déjà été corrigés.
 
 ## Solution
 
-Remplacer le positionnement CSS statique des contrôles de zoom par un **calcul dynamique** basé sur l'état du panneau et du dropdown :
+Appliquer la même logique dynamique que les contrôles de zoom au positionnement du bloc Légende mobile.
 
 ### Dans `src/pages/CadastralMap.tsx`
 
-1. **Calculer dynamiquement le `margin-bottom`** des contrôles de zoom via un `useEffect` qui observe :
-   - `selectedParcel` (panneau visible ou non)
-   - `actionsExpanded` (dropdown ouvert ou non)
-   - `isMobile` (comportement différent)
+1. **Légende mobile** (ligne 1489) : remplacer la classe fixe `bottom-48` par un `style={{ bottom: ... }}` dynamique calculé selon `selectedParcel`, `actionsExpanded` et `isMobile` :
+   - Aucune parcelle : `bottom: 12rem` (équivalent au `bottom-48` actuel)
+   - Parcelle sélectionnée, actions fermées : `bottom: 15rem`
+   - Parcelle sélectionnée, actions ouvertes : `bottom: 30rem`
+   - Ajouter `transition: bottom 0.3s ease` pour la fluidité
 
-2. **Logique de marge** :
-   - Aucune parcelle sélectionnée : marge par défaut (1rem)
-   - Parcelle sélectionnée, actions fermées : marge = hauteur du panneau (~10rem mobile, ~8rem desktop) + 1rem
-   - Parcelle sélectionnée, actions ouvertes : marge += hauteur du dropdown (~13rem mobile, ~17rem desktop)
+2. **Légende desktop** (ligne 1475) : même approche si nécessaire — le panneau desktop est en `bottom-right`, la légende est en `top-right` donc pas de collision. Pas de changement requis pour le desktop.
 
-3. **Mise à jour via `<style>` dynamique** : remplacer le bloc `<style>` statique actuel (lignes 937-942) par un bloc dont le `margin-bottom` est une variable calculée. Ajouter une transition CSS (`transition: margin-bottom 0.3s ease`) pour que le déplacement soit fluide.
-
-4. **Desktop** : même logique, le panneau est en `bottom-4 right-4 w-80` — les zoom controls Leaflet sont aussi `bottomright`, donc la même collision existe. Appliquer la même adaptation.
-
-### Résultat
-
-Les boutons +/- se déplacent fluidement vers le haut quand le panneau apparaît ou que le dropdown s'ouvre, et redescendent quand il se ferme.
-
+### Fichier modifié
+- `src/pages/CadastralMap.tsx` : 1 modification sur le div de la légende mobile
