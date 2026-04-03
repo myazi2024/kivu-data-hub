@@ -155,7 +155,8 @@ const SlideSolution = () => (
                 <p className="text-white text-sm font-medium">{p.after}</p>
               </div>
             </div>
-          </div>
+           </div>
+          </AnimateIn>
         ))}
       </div>
     </div>
