@@ -1272,7 +1272,12 @@ const PitchPartenaires = () => {
             }
           }}
         >
-          <CurrentSlide />
+          <div
+            key={current}
+            className={`w-full h-full ${slideDirection === 'forward' ? 'animate-pitch-slide-in-right' : 'animate-pitch-slide-in-left'}`}
+          >
+            <CurrentSlide />
+          </div>
         </div>
 
         {/* Navigation overlay */}
