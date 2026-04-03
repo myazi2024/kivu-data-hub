@@ -196,6 +196,195 @@ const SlideServices = () => (
   </SlideWrapper>
 );
 
+/* ── Slides 5.1–5.8: Détail des 8 services ── */
+
+const ServiceSlideLayout: React.FC<{
+  num: number;
+  name: string;
+  description: string;
+  features: { icon: React.ElementType; text: string }[];
+  audience: string;
+  MainIcon: React.ElementType;
+  gradient: string;
+  iconBg: string;
+}> = ({ num, name, description, features, audience, MainIcon, gradient, iconBg }) => (
+  <SlideWrapper>
+    <div className={`flex-1 flex flex-col md:flex-row ${gradient}`}>
+      <div className="md:w-3/5 flex flex-col justify-center px-6 md:px-16 py-10">
+        <span className="inline-block mb-3 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold w-fit">
+          Service {num}/8
+        </span>
+        <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">{name}</h2>
+        <p className="text-muted-foreground mb-6 leading-relaxed italic">{description}</p>
+        <ul className="space-y-3 mb-6">
+          {features.map((f, i) => (
+            <li key={i} className="flex items-start gap-3">
+              <div className="p-1.5 rounded-lg bg-primary/10 shrink-0 mt-0.5">
+                <f.icon className="h-4 w-4 text-primary" />
+              </div>
+              <span className="text-sm text-foreground">{f.text}</span>
+            </li>
+          ))}
+        </ul>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Users className="h-3.5 w-3.5" />
+          <span className="font-medium">Public cible :</span>
+          <span>{audience}</span>
+        </div>
+      </div>
+      <div className="md:w-2/5 flex items-center justify-center p-8">
+        <div className={`w-40 h-40 md:w-56 md:h-56 rounded-3xl ${iconBg} flex items-center justify-center shadow-2xl`}>
+          <MainIcon className="h-20 w-20 md:h-28 md:w-28 text-white" strokeWidth={1.5} />
+        </div>
+      </div>
+    </div>
+  </SlideWrapper>
+);
+
+const SlideServiceRecherche = () => (
+  <ServiceSlideLayout
+    num={1}
+    name="Recherche cadastrale"
+    description="Accédez instantanément aux données de n'importe quelle parcelle enregistrée en RDC. La recherche multi-critères permet de trouver une parcelle par son numéro officiel, le nom du propriétaire ou sa localisation GPS."
+    features={[
+      { icon: Search, text: "Recherche par numéro de parcelle (ex: SU/2130/KIN), nom du propriétaire ou adresse" },
+      { icon: MapPin, text: "Géolocalisation automatique via GPS du smartphone avec rayon de recherche configurable" },
+      { icon: Timer, text: "Résultats en moins de 5 secondes avec fiche complète : superficie, propriétaire, historique" },
+      { icon: FileCheck, text: "Export PDF de la fiche cadastrale avec QR code de vérification intégré" },
+    ]}
+    audience="Citoyens, notaires, avocats, agents immobiliers"
+    MainIcon={Search}
+    gradient="bg-gradient-to-br from-blue-50/50 via-background to-blue-100/30 dark:from-blue-950/20 dark:to-blue-900/10"
+    iconBg="bg-gradient-to-br from-blue-500 to-blue-700"
+  />
+);
+
+const SlideServiceCarte = () => (
+  <ServiceSlideLayout
+    num={2}
+    name="Carte interactive"
+    description="Visualisez l'ensemble du territoire congolais sur une carte satellite avec les couches cadastrales superposées. Identifiez les parcelles, leurs limites et leurs propriétaires d'un simple clic."
+    features={[
+      { icon: Map, text: "Vue satellite haute résolution avec couches cadastrales et limites de propriété" },
+      { icon: Layers, text: "Filtrage par province, commune, quartier et type de parcelle (urbaine/rurale)" },
+      { icon: MousePointerClick, text: "Clic sur une parcelle pour afficher sa fiche complète instantanément" },
+      { icon: Globe, text: "Navigation fluide avec zoom jusqu'au niveau de la parcelle individuelle" },
+    ]}
+    audience="Urbanistes, géomètres, administrations provinciales"
+    MainIcon={Map}
+    gradient="bg-gradient-to-br from-emerald-50/50 via-background to-emerald-100/30 dark:from-emerald-950/20 dark:to-emerald-900/10"
+    iconBg="bg-gradient-to-br from-emerald-500 to-emerald-700"
+  />
+);
+
+const SlideServiceTitre = () => (
+  <ServiceSlideLayout
+    num={3}
+    name="Demande de titre foncier"
+    description="Soumettez votre demande de certificat de propriété entièrement en ligne. Suivez l'avancement en temps réel et recevez votre titre foncier numérique une fois approuvé — sans déplacement physique."
+    features={[
+      { icon: FileText, text: "Formulaire guidé étape par étape avec pièces justificatives numérisées" },
+      { icon: Activity, text: "Suivi en temps réel du statut de la demande (soumis, en traitement, approuvé)" },
+      { icon: BadgeCheck, text: "Titre foncier numérique avec QR code d'authenticité et signature électronique" },
+      { icon: DollarSign, text: "Calcul automatique des frais selon le type de titre et la superficie" },
+    ]}
+    audience="Propriétaires fonciers, promoteurs immobiliers, banques"
+    MainIcon={Landmark}
+    gradient="bg-gradient-to-br from-amber-50/50 via-background to-amber-100/30 dark:from-amber-950/20 dark:to-amber-900/10"
+    iconBg="bg-gradient-to-br from-amber-500 to-amber-700"
+  />
+);
+
+const SlideServiceExpertise = () => (
+  <ServiceSlideLayout
+    num={4}
+    name="Expertise immobilière"
+    description="Obtenez une évaluation professionnelle de la valeur marchande de votre bien foncier. Nos experts certifiés analysent le terrain, les constructions et le marché local pour produire un rapport détaillé."
+    features={[
+      { icon: Home, text: "Évaluation complète : terrain, constructions, matériaux, état et environnement" },
+      { icon: BarChart3, text: "Comparaison avec les transactions récentes dans la même zone géographique" },
+      { icon: FileCheck, text: "Rapport d'expertise certifié accepté par les banques et institutions financières" },
+      { icon: Award, text: "Experts immobiliers certifiés avec connaissance du marché local congolais" },
+    ]}
+    audience="Propriétaires, banques, investisseurs, assureurs"
+    MainIcon={Home}
+    gradient="bg-gradient-to-br from-violet-50/50 via-background to-violet-100/30 dark:from-violet-950/20 dark:to-violet-900/10"
+    iconBg="bg-gradient-to-br from-violet-500 to-violet-700"
+  />
+);
+
+const SlideServiceMutation = () => (
+  <ServiceSlideLayout
+    num={5}
+    name="Mutation foncière"
+    description="Numérisez le transfert de propriété d'un terrain. La plateforme vérifie automatiquement l'identité des parties, l'absence de charges et génère les documents de mutation conformes à la législation congolaise."
+    features={[
+      { icon: Scale, text: "Vérification automatique de la chaîne de propriété et de l'absence de charges" },
+      { icon: UserCheck, text: "Identification numérique des parties (vendeur/acheteur) avec pièces d'identité" },
+      { icon: Shield, text: "Contrôle anti-fraude : détection des doubles ventes et titres falsifiés" },
+      { icon: FileText, text: "Génération automatique de l'acte de mutation avec signatures électroniques" },
+    ]}
+    audience="Notaires, avocats, agences immobilières"
+    MainIcon={Scale}
+    gradient="bg-gradient-to-br from-rose-50/50 via-background to-rose-100/30 dark:from-rose-950/20 dark:to-rose-900/10"
+    iconBg="bg-gradient-to-br from-rose-500 to-rose-700"
+  />
+);
+
+const SlideServiceLitiges = () => (
+  <ServiceSlideLayout
+    num={6}
+    name="Litiges fonciers"
+    description="Déclarez et suivez les conflits fonciers directement en ligne. La plateforme offre un système de médiation structuré avec historique des procédures et possibilité de demander la levée d'une opposition."
+    features={[
+      { icon: AlertTriangle, text: "Déclaration en ligne avec pièces justificatives et géolocalisation du litige" },
+      { icon: BookOpen, text: "Historique complet des procédures : tribunal, médiation, résolution amiable" },
+      { icon: Handshake, text: "Système de médiation intégré avec suivi des étapes et notifications" },
+      { icon: Eye, text: "Visibilité publique du statut de litige sur la fiche cadastrale de la parcelle" },
+    ]}
+    audience="Citoyens en conflit, avocats, tribunaux, médiateurs"
+    MainIcon={AlertTriangle}
+    gradient="bg-gradient-to-br from-orange-50/50 via-background to-orange-100/30 dark:from-orange-950/20 dark:to-orange-900/10"
+    iconBg="bg-gradient-to-br from-orange-500 to-orange-700"
+  />
+);
+
+const SlideServiceHypotheque = () => (
+  <ServiceSlideLayout
+    num={7}
+    name="Vérification d'hypothèque"
+    description="Vérifiez en un clic si une parcelle est grevée d'une hypothèque. Consultez le détail des charges : montant, créancier, durée, statut des paiements — essentiel avant tout achat ou investissement."
+    features={[
+      { icon: Receipt, text: "Liste complète des hypothèques actives et historiques sur une parcelle" },
+      { icon: Building2, text: "Détails du créancier (banque, institution), montant et durée du contrat" },
+      { icon: CreditCard, text: "Historique des paiements hypothécaires avec statut (à jour / en retard)" },
+      { icon: Lock, text: "Alerte automatique si une parcelle est sous hypothèque lors d'une recherche" },
+    ]}
+    audience="Banques, investisseurs, acquéreurs potentiels"
+    MainIcon={Receipt}
+    gradient="bg-gradient-to-br from-cyan-50/50 via-background to-cyan-100/30 dark:from-cyan-950/20 dark:to-cyan-900/10"
+    iconBg="bg-gradient-to-br from-cyan-500 to-cyan-700"
+  />
+);
+
+const SlideServiceHistorique = () => (
+  <ServiceSlideLayout
+    num={8}
+    name="Historique fiscal"
+    description="Consultez l'historique complet des taxes foncières d'une parcelle : montants, années, statuts de paiement et quittances. Un outil indispensable pour vérifier la conformité fiscale avant une transaction."
+    features={[
+      { icon: History, text: "Historique année par année des taxes foncières avec montants et statuts" },
+      { icon: FileCheck, text: "Quittances de paiement téléchargeables au format PDF" },
+      { icon: TrendingUp, text: "Évolution graphique des montants fiscaux sur les dernières années" },
+      { icon: AlertTriangle, text: "Alertes en cas d'arriérés fiscaux non réglés sur la parcelle" },
+    ]}
+    audience="Acquéreurs, notaires, services fiscaux provinciaux"
+    MainIcon={History}
+    gradient="bg-gradient-to-br from-teal-50/50 via-background to-teal-100/30 dark:from-teal-950/20 dark:to-teal-900/10"
+    iconBg="bg-gradient-to-br from-teal-500 to-teal-700"
+  />
+);
+
 /* ── Slide 6: Comment ça marche (NOUVEAU) ── */
 const SlideHowItWorks = () => (
   <SlideWrapper>
@@ -924,6 +1113,14 @@ const slides = [
   { id: 'solution', title: 'La Solution', component: SlideSolution },
   { id: 'map', title: 'Carte interactive', component: SlideMap },
   { id: 'services', title: 'Services', component: SlideServices },
+  { id: 'service-recherche', title: 'Service: Recherche', component: SlideServiceRecherche },
+  { id: 'service-carte', title: 'Service: Carte', component: SlideServiceCarte },
+  { id: 'service-titre', title: 'Service: Titre foncier', component: SlideServiceTitre },
+  { id: 'service-expertise', title: 'Service: Expertise', component: SlideServiceExpertise },
+  { id: 'service-mutation', title: 'Service: Mutation', component: SlideServiceMutation },
+  { id: 'service-litiges', title: 'Service: Litiges', component: SlideServiceLitiges },
+  { id: 'service-hypotheque', title: 'Service: Hypothèque', component: SlideServiceHypotheque },
+  { id: 'service-historique', title: 'Service: Historique fiscal', component: SlideServiceHistorique },
   { id: 'how-it-works', title: 'Comment ça marche', component: SlideHowItWorks },
   { id: 'search', title: 'Recherche', component: SlideSearch },
   { id: 'fiche', title: 'Fiche Cadastrale', component: SlideFicheCadastrale },
