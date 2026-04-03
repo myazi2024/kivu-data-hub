@@ -189,8 +189,12 @@ export default {
 				'ripple': 'ripple 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
 				'pulse-success': 'pulse-success 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
 				'search-rise': 'search-rise 2.6s cubic-bezier(0.22, 1, 0.36, 1) both',
-				'shake': 'shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both'
-			}
+			'shake': 'shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both',
+			'pitch-slide-in-right': 'pitch-slide-in-right 0.45s cubic-bezier(0.22, 1, 0.36, 1) both',
+			'pitch-slide-in-left': 'pitch-slide-in-left 0.45s cubic-bezier(0.22, 1, 0.36, 1) both',
+			'pitch-fade-up': 'pitch-fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both',
+			'pitch-scale-in': 'pitch-scale-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both'
+		}
 		}
 	},
 	plugins: [require("tailwindcss-animate")],
