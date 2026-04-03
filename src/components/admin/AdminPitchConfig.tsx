@@ -244,7 +244,7 @@ const InquiriesTab = () => {
     switch (status) {
       case 'new': return <Badge variant="destructive">Nouveau</Badge>;
       case 'read': return <Badge variant="secondary">Lu</Badge>;
-      case 'processed': return <Badge className="bg-green-600 text-white">Traité</Badge>;
+      case 'processed': return <Badge className="bg-primary text-primary-foreground">Traité</Badge>;
       default: return <Badge variant="outline">{status}</Badge>;
     }
   };
