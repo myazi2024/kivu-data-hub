@@ -59,20 +59,30 @@ const SlideWrapper: React.FC<{ bg?: string; overlay?: boolean; children: React.R
 const SlideCover = () => (
   <SlideWrapper bg={heroSkyline} overlay>
     <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
-      <img src={bicLogo} alt="Logo BIC" className="h-20 md:h-28 mb-8 drop-shadow-xl" />
-      <span className="inline-block mb-4 px-5 py-1.5 rounded-full bg-white/15 backdrop-blur text-white text-sm font-medium border border-white/20">
-        Présentation aux Partenaires d'Affaires
-      </span>
-      <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-4 leading-tight max-w-4xl">
-        Bureau d'Informations Cadastrales
-      </h1>
-      <p className="text-xl md:text-2xl text-white/90 max-w-2xl mb-10 font-light">
-        Cadastre numérique collaboratif.
-      </p>
-      <div className="flex items-center gap-3 text-white/70 text-sm">
-        <MonitorSmartphone className="h-4 w-4" />
-        <span>Utilisez les flèches ← → ou cliquez pour naviguer • Appuyez sur <kbd className="px-1.5 py-0.5 bg-white/20 rounded text-xs">F</kbd> pour le plein écran</span>
-      </div>
+      <AnimateIn variant="scale-in" delay={100}>
+        <img src={bicLogo} alt="Logo BIC" className="h-20 md:h-28 mb-8 drop-shadow-xl" />
+      </AnimateIn>
+      <AnimateIn delay={300}>
+        <span className="inline-block mb-4 px-5 py-1.5 rounded-full bg-white/15 backdrop-blur text-white text-sm font-medium border border-white/20">
+          Présentation aux Partenaires d'Affaires
+        </span>
+      </AnimateIn>
+      <AnimateIn delay={500}>
+        <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-4 leading-tight max-w-4xl">
+          Bureau d'Informations Cadastrales
+        </h1>
+      </AnimateIn>
+      <AnimateIn delay={700}>
+        <p className="text-xl md:text-2xl text-white/90 max-w-2xl mb-10 font-light">
+          Cadastre numérique collaboratif.
+        </p>
+      </AnimateIn>
+      <AnimateIn delay={900}>
+        <div className="flex items-center gap-3 text-white/70 text-sm">
+          <MonitorSmartphone className="h-4 w-4" />
+          <span>Utilisez les flèches ← → ou cliquez pour naviguer • Appuyez sur <kbd className="px-1.5 py-0.5 bg-white/20 rounded text-xs">F</kbd> pour le plein écran</span>
+        </div>
+      </AnimateIn>
     </div>
   </SlideWrapper>
 );
@@ -81,13 +91,13 @@ const SlideCover = () => (
 const SlideContext = () => (
   <SlideWrapper>
     <div className="flex-1 flex flex-col bg-gradient-to-br from-destructive/5 via-background to-destructive/10 px-6 md:px-16 py-10 md:py-16">
-      <div className="mb-8">
+      <AnimateIn delay={100} className="mb-8">
         <span className="text-sm font-semibold text-destructive uppercase tracking-wider">Le Problème</span>
         <h2 className="text-3xl md:text-5xl font-bold text-foreground mt-2">La crise foncière en RDC</h2>
         <p className="text-lg text-muted-foreground mt-3 max-w-3xl italic">
           En RDC, acheter un terrain c'est souvent acheter un litige. Voici pourquoi.
         </p>
-      </div>
+      </AnimateIn>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 flex-1">
         {[
           { icon: AlertTriangle, value: '70%', label: 'des litiges judiciaires sont liés au foncier', consequence: 'Des familles expulsées de terrains qu\'elles occupent depuis des générations', color: 'text-destructive' },
