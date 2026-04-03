@@ -363,6 +363,13 @@ export type Database = {
             referencedRelation: "cadastral_parcels"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "cadastral_boundary_history_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_parcels_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       cadastral_building_permits: {
@@ -414,6 +421,13 @@ export type Database = {
             columns: ["parcel_id"]
             isOneToOne: false
             referencedRelation: "cadastral_parcels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cadastral_building_permits_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_parcels_public"
             referencedColumns: ["id"]
           },
         ]
@@ -682,6 +696,13 @@ export type Database = {
             referencedRelation: "cadastral_parcels"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "cadastral_contributions_original_parcel_id_fkey"
+            columns: ["original_parcel_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_parcels_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       cadastral_contributor_codes: {
@@ -920,6 +941,13 @@ export type Database = {
             referencedRelation: "cadastral_parcels"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "cadastral_land_disputes_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_parcels_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       cadastral_mortgage_payments: {
@@ -1008,6 +1036,13 @@ export type Database = {
             referencedRelation: "cadastral_parcels"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_cadastral_mortgages_parcel"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_parcels_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       cadastral_ownership_history: {
@@ -1050,6 +1085,13 @@ export type Database = {
             columns: ["parcel_id"]
             isOneToOne: false
             referencedRelation: "cadastral_parcels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cadastral_ownership_history_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_parcels_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1372,6 +1414,13 @@ export type Database = {
             columns: ["parcel_id"]
             isOneToOne: false
             referencedRelation: "cadastral_parcels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cadastral_tax_history_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_parcels_public"
             referencedColumns: ["id"]
           },
         ]
@@ -2340,6 +2389,13 @@ export type Database = {
             columns: ["parcel_id"]
             isOneToOne: false
             referencedRelation: "cadastral_parcels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mutation_requests_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_parcels_public"
             referencedColumns: ["id"]
           },
         ]
@@ -3436,6 +3492,13 @@ export type Database = {
             referencedRelation: "cadastral_parcels"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "real_estate_expertise_requests_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_parcels_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       reseller_sales: {
@@ -3837,6 +3900,13 @@ export type Database = {
             referencedRelation: "cadastral_parcels"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "subdivision_requests_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_parcels_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       subdivision_roads: {
@@ -4208,6 +4278,72 @@ export type Database = {
       }
     }
     Views: {
+      cadastral_parcels_public: {
+        Row: {
+          area_hectares: number | null
+          area_sqm: number | null
+          collectivite: string | null
+          commune: string | null
+          created_at: string | null
+          groupement: string | null
+          has_dispute: boolean | null
+          id: string | null
+          is_subdivided: boolean | null
+          location: string | null
+          parcel_number: string | null
+          parcel_type: string | null
+          property_title_type: string | null
+          province: string | null
+          quartier: string | null
+          territoire: string | null
+          updated_at: string | null
+          village: string | null
+          ville: string | null
+        }
+        Insert: {
+          area_hectares?: number | null
+          area_sqm?: number | null
+          collectivite?: string | null
+          commune?: string | null
+          created_at?: string | null
+          groupement?: string | null
+          has_dispute?: boolean | null
+          id?: string | null
+          is_subdivided?: boolean | null
+          location?: string | null
+          parcel_number?: string | null
+          parcel_type?: string | null
+          property_title_type?: string | null
+          province?: string | null
+          quartier?: string | null
+          territoire?: string | null
+          updated_at?: string | null
+          village?: string | null
+          ville?: string | null
+        }
+        Update: {
+          area_hectares?: number | null
+          area_sqm?: number | null
+          collectivite?: string | null
+          commune?: string | null
+          created_at?: string | null
+          groupement?: string | null
+          has_dispute?: boolean | null
+          id?: string | null
+          is_subdivided?: boolean | null
+          location?: string | null
+          parcel_number?: string | null
+          parcel_type?: string | null
+          property_title_type?: string | null
+          province?: string | null
+          quartier?: string | null
+          territoire?: string | null
+          updated_at?: string | null
+          village?: string | null
+          ville?: string | null
+        }
+        Relationships: []
+      }
       payment_methods_public: {
         Row: {
           config_type: string | null
@@ -4425,6 +4561,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_parcel_with_pii: { Args: { p_parcel_number: string }; Returns: Json }
       get_reseller_statistics: {
         Args: {
           end_date?: string
