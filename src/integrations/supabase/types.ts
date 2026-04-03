@@ -4686,6 +4686,18 @@ export type Database = {
         Returns: Json
       }
       verify_document_by_code: { Args: { p_code: string }; Returns: Json }
+      verify_expertise_certificate: {
+        Args: { p_reference: string }
+        Returns: {
+          certificate_expiry_date: string
+          certificate_issue_date: string
+          certificate_url: string
+          market_value_usd: number
+          parcel_number: string
+          reference_number: string
+          status: string
+        }[]
+      }
     }
     Enums: {
       app_role:
