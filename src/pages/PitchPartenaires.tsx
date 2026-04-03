@@ -1189,11 +1189,16 @@ const slides = [
 const PitchPartenaires = () => {
   const [current, setCurrent] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [slideDirection, setSlideDirection] = useState<'forward' | 'backward'>('forward');
   const containerRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const goTo = useCallback((idx: number) => {
-    setCurrent(Math.max(0, Math.min(slides.length - 1, idx)));
+    const clamped = Math.max(0, Math.min(slides.length - 1, idx));
+    setCurrent((prev) => {
+      setSlideDirection(clamped >= prev ? 'forward' : 'backward');
+      return clamped;
+    });
   }, []);
 
   const prev = useCallback(() => goTo(current - 1), [current, goTo]);
