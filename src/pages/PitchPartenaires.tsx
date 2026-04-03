@@ -102,7 +102,7 @@ const SlideSolution = () => (
           { icon: Database, title: 'Centralisation', before: 'Courir entre 3 bureaux et attendre des semaines', after: 'Tout en un clic, depuis n\'importe où' },
           { icon: Lock, title: 'Sécurisation', before: 'Faux titres indétectables, fraude généralisée', after: 'QR code vérifiable en 10 secondes' },
           { icon: Eye, title: 'Transparence', before: 'Information réservée aux initiés et intermédiaires', after: 'Tout citoyen peut vérifier un titre gratuitement' },
-          { icon: Layers, title: 'Interopérabilité', before: 'Systèmes cloisonnés, données inaccessibles', after: 'Une API ouverte pour banques, notaires et institutions' },
+          { icon: Layers, title: 'Accessibilité', before: 'Systèmes cloisonnés, données inaccessibles', after: 'Accès personnalisé par permissions pour chaque professionnel et institution' },
         ].map((p) => (
           <div key={p.title} className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/15 p-6 hover:bg-white/15 transition-colors">
             <div className="flex items-center gap-3 mb-4">
@@ -692,7 +692,7 @@ const SlideBusiness = () => (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-5xl mx-auto flex-1 w-full">
         {[
           { icon: Building2, title: 'Partenariat Institutionnel', desc: 'Administrations provinciales, ministères, mairies. Accès complet à la plateforme pour la planification urbaine et la gouvernance foncière.', benefits: ['Tableau de bord analytique dédié', 'Formation des agents', 'Rapports statistiques périodiques', 'Intégration avec les systèmes existants'] },
-          { icon: Code2, title: 'Partenariat Commercial', desc: 'Banques, notaires, agences immobilières, promoteurs. Accès API pour intégrer les données cadastrales dans vos processus métier.', benefits: ['API REST sécurisée et documentée', 'Vérification automatisée des titres', 'Webhooks pour notifications temps réel', 'Support technique prioritaire'] },
+          { icon: Code2, title: 'Partenariat Commercial', desc: 'Banques, notaires, agences immobilières, promoteurs. Accès direct à la plateforme avec permissions adaptées à vos besoins métier.', benefits: ['Compte professionnel avec permissions dédiées', 'Vérification des titres en temps réel', 'Notifications et alertes personnalisées', 'Support technique prioritaire'] },
           { icon: GraduationCap, title: 'Partenariat Académique', desc: 'Universités, centres de recherche, ONG. Accès aux données anonymisées pour la recherche sur le foncier en RDC.', benefits: ['Données anonymisées pour recherche', 'Publications scientifiques conjointes', 'Stages et projets de fin d\'études', 'Accès gratuit pour la recherche'] },
           { icon: Gauge, title: 'Partenariat Technologique', desc: 'Entreprises SIG, télédétection, startups GovTech. Co-développement de solutions innovantes pour le cadastre numérique.', benefits: ['Co-développement de modules', 'Partage de données géospatiales', 'Innovation sur la blockchain foncière', 'Accès au marché RDC via le BIC'] },
         ].map((bm) => (
@@ -745,7 +745,7 @@ const SlideRoadmap = () => (
             title: 'Extension nationale',
             status: 'Planifié',
             statusColor: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-            items: ['Extension à Kinshasa et 5 provinces clés', 'Objectif : 50 000 parcelles numérisées', 'Recrutement d\'équipes provinciales', 'Lancement de l\'API commerciale', 'Partenariats bancaires et notariaux'],
+            items: ['Extension à Kinshasa et 5 provinces clés', 'Objectif : 50 000 parcelles numérisées', 'Recrutement d\'équipes provinciales', 'Ouverture des comptes professionnels à grande échelle', 'Partenariats bancaires et notariaux'],
           },
           {
             icon: Globe2,
@@ -753,7 +753,7 @@ const SlideRoadmap = () => (
             title: 'Couverture nationale',
             status: 'Vision',
             statusColor: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400',
-            items: ['Couverture des 26 provinces', 'Objectif : 500 000+ parcelles', 'API publique pour développeurs tiers', 'Interopérabilité avec les SIG nationaux', 'Modèle réplicable dans d\'autres pays africains'],
+            items: ['Couverture des 26 provinces', 'Objectif : 500 000+ parcelles', 'Permissions étendues pour tous les acteurs du foncier', 'Intégration des données SIG nationales dans la plateforme', 'Modèle réplicable dans d\'autres pays africains'],
           },
         ].map((p) => (
           <div key={p.phase} className="bg-card rounded-xl border p-6 flex flex-col hover:shadow-md transition-shadow">
@@ -824,7 +824,7 @@ const SlidePricing = () => (
         {[
           { icon: Search, title: 'Recherche unitaire', price: '2 — 10 $', unit: 'par consultation', desc: 'Recherche et consultation de la fiche cadastrale complète d\'une parcelle avec export PDF.', features: ['Fiche cadastrale complète', 'Export PDF téléchargeable', 'Certificat vérifiable'] },
           { icon: CreditCard, title: 'Abonnement', price: '25 — 100 $', unit: 'par mois', desc: 'Accès illimité aux recherches et consultations pour les professionnels du foncier.', features: ['Recherches illimitées', 'Tableau de bord analytique', 'Support prioritaire'] },
-          { icon: Code2, title: 'API commerciale', price: '0,50 $', unit: 'par appel', desc: 'Intégration des données cadastrales dans vos systèmes via notre API REST sécurisée.', features: ['Documentation complète', 'Webhooks temps réel', 'SLA garanti'] },
+          { icon: Code2, title: 'Accès Professionnel', price: '50 — 200 $', unit: 'par mois', desc: 'Compte professionnel avec permissions avancées pour les entreprises : banques, notaires, promoteurs.', features: ['Permissions personnalisées', 'Accès aux données avancées', 'Support dédié'] },
           { icon: DollarSign, title: 'Commissions services', price: '5 — 15%', unit: 'du montant', desc: 'Commission sur les services payants : demandes de titres, mutations, expertises immobilières.', features: ['Titres fonciers', 'Mutations foncières', 'Expertises immobilières'] },
         ].map((p) => (
           <div key={p.title} className="bg-card rounded-xl border p-5 flex flex-col hover:shadow-md transition-shadow">
