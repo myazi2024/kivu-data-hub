@@ -1,75 +1,39 @@
 
 
-# Audit & Refonte du PDF de la Fiche Cadastrale
+# Insertion de 8 slides de services dans la Présentation BIC
 
-## Constat de l'audit
+## Résumé
 
-La fiche cadastrale affichée à l'écran (`CadastralDocumentView`) est riche et bien structurée avec 7 sections modulaires. En revanche, le PDF généré par `generateCadastralReport` dans `src/lib/pdf.ts` est significativement appauvri :
+Ajouter 8 nouveaux slides après le slide "Services" (id: `services`), chacun dédié à un des 8 services numériques du BIC. Ces slides reprendront le même pattern visuel que les slides existants (SlideWrapper, layout deux colonnes texte/visuel).
 
-| Donnée | Écran | PDF |
-|--------|-------|-----|
-| Type de titre + référence + date émission | Oui | Partiel (type seulement) |
-| Adresse textuelle (location) | Oui | Non |
-| Usage déclaré, bail, standing | Oui | Non |
-| Subdivision | Oui | Non |
-| Surface mesurée GPS + variance | Oui | Non |
-| Propriétaire WhatsApp | Oui | Non |
-| Statut juridique propriétaire | Oui | Non |
-| Construction (type, nature, matériaux, année) | Oui | Non |
-| Autorisations de bâtir (tableau complet) | Oui | 1 ligne seulement |
-| Localisation complète (avenue, n° maison, village...) | Oui | Partiel |
-| Dimensions des côtés + orientation | Oui | Non |
-| Croquis SVG du terrain | Oui | Non |
-| Historique bornage (tableau) | Oui | 1 ligne seulement |
-| Taxes foncières (tableau détaillé) | Oui | Résumé 1 ligne |
-| Hypothèques (tableau détaillé) | Oui | Résumé 1 ligne |
-| Litiges fonciers | Oui | Absent |
-| Documents joints (titre, PV, reçus) | Oui | Absent |
-| En-tête RDC officiel | Oui | Basique |
-| Badge litige | Oui | Absent |
-| Disclaimer complet | Oui | Minimal |
+## Les 8 services (un slide chacun)
 
-## Plan de refonte
+1. **Recherche cadastrale** — Recherche par numéro, nom, GPS. Résultats instantanés.
+2. **Carte interactive** — Visualisation satellite avec couches cadastrales.
+3. **Titre foncier** — Demande en ligne de certificat avec suivi temps réel.
+4. **Expertise immobilière** — Évaluation professionnelle de la valeur marchande.
+5. **Mutation foncière** — Transfert de propriété numérisé.
+6. **Litiges fonciers** — Déclaration et suivi des conflits avec médiation.
+7. **Vérification d'hypothèque** — Vérification des charges hypothécaires.
+8. **Historique fiscal** — Consultation de l'historique taxes et quittances.
 
-### 1. Restructurer `generateCadastralReport` en sections miroir de l'écran
+## Design de chaque slide
 
-Réécrire la fonction pour produire un PDF professionnel multi-pages avec toutes les sections :
+Chaque slide suivra un layout cohérent :
+- **En-tête** : badge "Service N/8" + nom du service
+- **Colonne gauche** : description détaillée, 3-4 points clés avec icônes CheckCircle2, public cible
+- **Colonne droite** : icône principale grande dans un cadre stylisé avec gradient
+- Alternance de gradients de fond pour varier visuellement (bleu, vert, ambre, violet, etc.)
 
-**Page 1 — Couverture**
-- En-tête officiel RDC + BIC (logo Landmark, même style que `DocumentHeader`)
-- Titre "FICHE CADASTRALE" + N° parcelle + date
-- Badge type (Section Urbaine/Rurale) + badge litige si applicable
-- QR code de vérification
+## Modifications techniques
 
-**Page 2 — Identification & Propriétaire**
-- Section 1 : Identification complète (type titre, référence, date émission, adresse, superficie déclarée + mesurée avec variance, usage, bail, standing, subdivision)
-- Section 2 : Propriétaire actuel (nom, statut juridique, depuis, WhatsApp)
+### Fichier : `src/pages/PitchPartenaires.tsx`
 
-**Page 3 — Construction, Localisation & Bornage**
-- Section 3 : Construction (type, nature, matériaux, année) + tableau autorisations de bâtir complet
-- Section 4 : Localisation complète (province, ville/territoire, commune/collectivité, quartier, avenue, n° maison, GPS) + tableau des côtés avec dimensions/orientations + historique de bornage
+1. **Créer 8 composants** (`SlideServiceRecherche`, `SlideServiceCarte`, `SlideServiceTitre`, `SlideServiceExpertise`, `SlideServiceMutation`, `SlideServiceLitiges`, `SlideServiceHypotheque`, `SlideServiceHistorique`) — insérés après le composant `SlideServices` (~ligne 197).
 
-**Page 4 — Historique & Obligations**
-- Section 5 : Historique de propriété (tableau complet, pas limité à 3)
-- Section 6 : Obligations financières — taxes foncières (tableau) + hypothèques (tableau avec statuts)
+2. **Mettre à jour le tableau `slides`** (~ligne 921) pour insérer les 8 nouveaux slides entre `services` et `how-it-works`.
 
-**Page 5 — Litiges & Authentification**
-- Section 7 : Litiges fonciers (tableau complet si payé)
-- Section 8 : Services inclus dans l'achat
-- Bloc d'authentification (ID unique + QR code + date)
-- Disclaimer complet (même texte que `DocumentFooter`)
+3. **Mettre à jour `DEFAULT_SLIDES`** dans `src/components/admin/AdminPitchConfig.tsx` pour ajouter les 8 nouveaux slide IDs afin qu'ils soient configurables dans l'admin.
 
-### 2. Améliorations techniques du PDF
-
-- Utiliser `autoTable` pour tous les tableaux (taxes, hypothèques, permis, bornage, litiges, historique) au lieu de texte brut
-- Ajouter un en-tête et pied de page cohérents sur chaque page (numérotation dynamique basée sur le nombre réel de pages)
-- Gestion automatique des sauts de page quand le contenu dépasse
-- Sections verrouillées : afficher "Section non incluse dans votre achat" pour les services non payés (comme à l'écran)
-- Inclure les coordonnées GPS complètes (toutes les bornes, pas limité à 4)
-
-### 3. Fichiers modifiés
-
-- **`src/lib/pdf.ts`** : Réécriture complète de `generateCadastralReport` (~300 lignes) avec les nouvelles sections structurées, tableaux `autoTable`, en-tête officiel, et footer avec disclaimer
-
-Aucun autre fichier ne nécessite de modification — le bouton "Télécharger PDF" dans `DocumentToolbar` appelle déjà `onDownloadReport` qui déclenche `generateCadastralReport`.
+### Aucune nouvelle dépendance — toutes les icônes nécessaires sont déjà importées.
 
