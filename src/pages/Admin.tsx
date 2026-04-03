@@ -194,6 +194,7 @@ const Admin = () => {
       case 'certificates': return <AdminCertificates />;
       case 'analytics-charts-config': return <AdminAnalyticsChartsConfig />;
       case 'partners': return <AdminPartners />;
+      case 'pitch-config': return <AdminPitchConfig />;
       case 'hr': return <AdminHR />;
       case 'audit-logs': return <AdminAuditLogs />;
       default: return <AdminDashboardOverview />;
