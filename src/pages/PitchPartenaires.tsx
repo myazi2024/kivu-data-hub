@@ -403,7 +403,7 @@ const SlideVerification = () => (
             {[
               { icon: FileCheck, name: 'Rapport cadastral' },
               { icon: Receipt, name: 'Facture de service' },
-              { icon: Landmark, name: 'Permis de bâtir' },
+              { icon: Landmark, name: 'Autorisation de bâtir' },
               { icon: Award, name: 'Certificat cadastral' },
               { icon: Home, name: 'Rapport d\'expertise' },
               { icon: CircleDollarSign, name: 'Reçu hypothécaire' },
