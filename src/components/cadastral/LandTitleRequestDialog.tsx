@@ -833,6 +833,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     ]);
     setRoadSides([]);
     // Reset valorisation
+    setPropertyCategory('');
     setConstructionType('');
     setConstructionNature('');
     setConstructionMaterials('');
