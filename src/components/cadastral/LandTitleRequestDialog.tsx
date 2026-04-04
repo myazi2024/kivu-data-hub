@@ -1308,7 +1308,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                           }
 
                                           // Fetch valorisation data (construction info) from parcel/contribution
-                                          const valoPropertyCategory = (contribData as any)?.property_category || '';
+                                          const valoPropertyCategory = contribData?.property_category || '';
                                           const valoConstructionType = parcelLocData?.construction_type || contribData?.construction_type || '';
                                           const valoConstructionNature = parcelLocData?.construction_nature || contribData?.construction_nature || '';
                                           const valoConstructionMaterials = parcelLocData?.construction_materials || (contribData as any)?.construction_materials || '';
