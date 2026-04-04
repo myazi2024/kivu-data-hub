@@ -887,7 +887,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setFloorNumber('');
     setConstructionYear('');
     setNationality('');
-    setOccupationDuration('');
     setValorisationValidated(false);
     setDeducedTitleType(null);
     // Reset valorisation update states
