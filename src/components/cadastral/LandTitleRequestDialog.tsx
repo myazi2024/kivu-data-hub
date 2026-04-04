@@ -2329,6 +2329,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
                   {/* Construction form block - always shown if no parcel data, or conditionally if update requested */}
                   {(!(isParcelLinkedMode && parcelValidated && parcelValorisationData) || showValorisationUpdate) && (
+                  <>
                   <Card className={cn("border rounded-xl", showValorisationUpdate && "border-2 border-orange-300/50 bg-orange-50/30 dark:bg-orange-950/10")}>
                     <CardContent className="p-3 space-y-3">
                       <div className="flex items-center justify-between">
