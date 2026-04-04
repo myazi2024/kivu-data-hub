@@ -1,23 +1,28 @@
 
-# Positionnement dynamique du bloc Légende
+
+# Boutons Zoom dynamiques sur mobile — Prise en compte de la barre de recherche
 
 ## Problème
 
-Le bloc Légende mobile a une position fixe (`bottom-48`, soit ~12rem) et ne s'adapte pas quand le panneau parcelle ou le dropdown Actions s'ouvre, contrairement aux boutons de zoom qui ont déjà été corrigés.
+Sur mobile, quand aucune parcelle n'est sélectionnée, la barre de recherche se positionne en bas de l'écran (`translate-y-[calc(100dvh-12rem)]`). Les boutons de zoom (bottom-right) restent à `margin-bottom: 1rem`, ce qui crée un chevauchement. De plus, quand le dropdown Actions s'ouvre, le calcul actuel ne fonctionne pas toujours correctement sur mobile.
 
 ## Solution
 
-Appliquer la même logique dynamique que les contrôles de zoom au positionnement du bloc Légende mobile.
+Modifier le calcul dynamique du `margin-bottom` des contrôles de zoom pour prendre en compte **3 états** sur mobile :
 
-### Dans `src/pages/CadastralMap.tsx`
+### Logique de marge mobile mise à jour
 
-1. **Légende mobile** (ligne 1489) : remplacer la classe fixe `bottom-48` par un `style={{ bottom: ... }}` dynamique calculé selon `selectedParcel`, `actionsExpanded` et `isMobile` :
-   - Aucune parcelle : `bottom: 12rem` (équivalent au `bottom-48` actuel)
-   - Parcelle sélectionnée, actions fermées : `bottom: 15rem`
-   - Parcelle sélectionnée, actions ouvertes : `bottom: 30rem`
-   - Ajouter `transition: bottom 0.3s ease` pour la fluidité
-
-2. **Légende desktop** (ligne 1475) : même approche si nécessaire — le panneau desktop est en `bottom-right`, la légende est en `top-right` donc pas de collision. Pas de changement requis pour le desktop.
+| État | margin-bottom |
+|---|---|
+| Aucune parcelle, recherche inactive (barre en bas) | `13rem` (au-dessus de la barre) |
+| Aucune parcelle, recherche active (barre en haut) | `1rem` |
+| Parcelle sélectionnée, actions fermées | `11rem` |
+| Parcelle sélectionnée, actions ouvertes | `26rem` |
 
 ### Fichier modifié
-- `src/pages/CadastralMap.tsx` : 1 modification sur le div de la légende mobile
+
+**`src/pages/CadastralMap.tsx`** — Bloc `<style>` dynamique (lignes 937-948) :
+- Ajouter `isSearchBarActive` dans le calcul de marge
+- Sur mobile sans parcelle : si la barre de recherche est en bas (`!isSearchBarActive`), appliquer `13rem` au lieu de `1rem` pour que les boutons restent au-dessus
+- Desktop inchangé (la barre de recherche ne descend pas en bas sur desktop)
+
