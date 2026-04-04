@@ -72,7 +72,7 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
   floorNumber,
   constructionYear,
   nationality,
-  occupationDuration,
+  hasBuildingPermit,
   valorisationValidated,
   deducedTitleType,
   requesterIdFile,
