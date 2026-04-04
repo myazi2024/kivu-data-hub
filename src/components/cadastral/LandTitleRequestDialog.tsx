@@ -2576,7 +2576,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         </div>
                       )}
 
-                      {/* Row 3: Standing + Nombre d'étages (visible if nature != "Non bâti") */}
+                      {/* Row 3: Standing + Nombre d'étages (visible if nature != "Non bâti" AND category != "Appartement") */}
                       {constructionNature && !constructionNature.toLowerCase().includes('non bâti') && (
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-1.5">
@@ -2592,6 +2592,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               </SelectContent>
                             </Select>
                           </div>
+                          {propertyCategory !== 'Appartement' && (
                           <div className="space-y-1.5">
                             <Label className="text-sm">Nombre d'étages</Label>
                             <Select value={floorNumber} onValueChange={setFloorNumber}>
@@ -2607,6 +2608,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               </SelectContent>
                             </Select>
                           </div>
+                          )}
                         </div>
                       )}
 
