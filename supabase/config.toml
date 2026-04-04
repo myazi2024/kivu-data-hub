@@ -17,7 +17,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.cleanup-test-data]
-verify_jwt = false
+verify_jwt = true
 
 [functions.test-payment-provider]
 verify_jwt = false
