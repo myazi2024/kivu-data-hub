@@ -1,30 +1,65 @@
 
-# Bloc "Mise en valeur" conditionnel — Proposition de mise à jour
+
+# Alignement complet du bloc Mise en valeur avec le bloc Construction du CCC
 
 ## Problème
 
-Dans l'onglet Valorisation, le deuxième bloc "Mise en valeur" (formulaire éditable) s'affiche toujours, même quand les données pré-remplies du premier bloc sont correctes. C'est redondant.
+Le bloc "Données de mise en valeur enregistrées" (lecture seule) et le bloc conditionnel "Proposer une mise à jour" dans l'onglet Valorisation du formulaire de titre foncier ne contiennent que 4 champs (type, nature, matériaux, usage), alors que le bloc Construction du CCC en contient 8 (+ catégorie de bien, standing, nombre d'étages, année de construction). De plus, les boutons de choix doivent être des boutons radio au lieu d'un bouton d'action.
 
 ## Solution
 
-Rendre le deuxième bloc conditionnel : il ne s'affiche que lorsque l'utilisateur clique sur un bouton "Proposer une mise à jour" dans le premier bloc (données enregistrées).
+### 1. Migration SQL — Ajouter 3 colonnes à `land_title_requests`
 
-### Modifications dans `src/components/cadastral/LandTitleRequestDialog.tsx`
+```sql
+ALTER TABLE land_title_requests
+  ADD COLUMN IF NOT EXISTS standing text,
+  ADD COLUMN IF NOT EXISTS construction_year integer,
+  ADD COLUMN IF NOT EXISTS floor_number text;
+```
 
-1. **Ajouter un état** `showValorisationUpdate` (booléen, `false` par défaut) pour contrôler l'affichage du second bloc.
+Note : `property_category` n'est pas nécessaire ici car le titre foncier concerne des parcelles, pas des appartements — la catégorie est déduite du type de construction.
 
-2. **Ajouter un bouton dans le premier bloc** (après la grille des données enregistrées, ligne ~2189) :
-   - Icône `RefreshCw` + texte "Ces données sont inexactes ? Proposer une mise à jour"
-   - Style discret (variant `outline`, petite taille)
-   - Au clic : bascule `showValorisationUpdate` à `true`
+### 2. Type `LandTitleRequestData` — `src/hooks/useLandTitleRequest.tsx`
 
-3. **Conditionner le second bloc** (ligne 2194-2310) :
-   - En mode parcelle liée (`isParcelLinkedMode && parcelValidated && parcelValorisationData`) : afficher uniquement si `showValorisationUpdate === true`
-   - Hors mode parcelle liée : afficher toujours (comportement actuel inchangé)
-   - Quand affiché conditionnellement, modifier le titre en "Proposer une mise à jour" et retirer le `disabled` des champs (ils ne doivent plus être verrouillés puisque l'utilisateur veut justement corriger)
-   - Ajouter un bouton "Annuler" pour refermer le bloc et réinitialiser `showValorisationUpdate`
+Ajouter les champs `standing`, `constructionYear` (number), `floorNumber` (string) au type et les inclure dans l'insert DB (`createPendingRequest`).
 
-4. **Supprimer les `disabled`** sur les selects du second bloc quand `showValorisationUpdate` est actif — les champs doivent être librement éditables pour permettre la correction.
+### 3. État `parcelValorisationData` — `LandTitleRequestDialog.tsx`
 
-### Fichier modifié
-- `src/components/cadastral/LandTitleRequestDialog.tsx`
+Étendre le type pour inclure `standing`, `constructionYear`, `floorNumber`. Lors du fetch des données parcelle (ligne ~1198), extraire aussi ces 3 champs depuis `contribData`/`parcelLocData`.
+
+### 4. Boutons radio — Remplacer le bouton "Proposer une mise à jour"
+
+Retirer le bouton actuel dans le premier bloc. Ajouter **en dehors** du premier bloc (entre les deux Cards) un groupe de boutons radio :
+- ○ Ces données sont exactes
+- ○ Proposer une mise à jour
+
+Le radio "exactes" est sélectionné par défaut. Quand "Proposer une mise à jour" est coché, le second bloc s'affiche. Quand "exactes" est recoché, le second bloc se masque.
+
+### 5. Bloc "Données enregistrées" — Ajouter les cases manquantes
+
+Compléter la grille de lecture seule avec :
+- Standing
+- Nombre d'étages
+- Année de construction
+
+(en plus des 4 existants : type, nature, matériaux, usage)
+
+### 6. Bloc conditionnel "Proposer une mise à jour" — Aligner sur le CCC
+
+Reproduire la structure exacte du bloc Construction du CCC :
+1. **Type de construction** + **Matériaux** (grille 2 colonnes)
+2. **Nature** (auto-déterminée par matériaux, lecture seule) + **Usage déclaré**
+3. **Standing** + **Nombre d'étages** (conditionnel : visible si nature ≠ "Non bâti")
+4. **Année de construction** (conditionnel : visible si type ≠ "Terrain nu")
+
+Ajouter les états locaux `standing`, `constructionYear`, `floorNumber` avec pré-remplissage depuis `parcelValorisationData`.
+
+### 7. Retirer le bouton "Annuler" du header du second bloc
+
+Puisque le contrôle se fait par les radios, le bouton Annuler dans le header du Card est redondant — le supprimer.
+
+### Fichiers modifiés
+- **Migration SQL** : nouvelle migration pour les 3 colonnes
+- **`src/hooks/useLandTitleRequest.tsx`** : types + insert
+- **`src/components/cadastral/LandTitleRequestDialog.tsx`** : refonte de l'onglet Valorisation
+
