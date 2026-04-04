@@ -231,7 +231,6 @@ export const useLandTitleRequest = () => {
           declared_usage: data.declaredUsage || null,
           deduced_title_type: data.deducedTitleType || null,
           nationality: data.nationality || null,
-          occupation_duration: data.occupationDuration || null,
           standing: data.standing || null,
           construction_year: data.constructionYear || null,
           floor_number: data.floorNumber || null,
