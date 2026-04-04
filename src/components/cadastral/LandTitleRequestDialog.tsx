@@ -44,6 +44,7 @@ import SectionHelpPopover from './SectionHelpPopover';
 import { supabase } from '@/integrations/supabase/client';
 import { validateLandTitleFile } from '@/types/landTitleRequest';
 import { saveDraft, loadDraft, clearDraft, hasDraft } from '@/utils/landTitleDraftStorage';
+import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
 
 interface LandTitleRequestDialogProps {
   open: boolean;
