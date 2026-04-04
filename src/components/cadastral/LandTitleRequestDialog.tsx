@@ -881,10 +881,22 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setConstructionNature('');
     setConstructionMaterials('');
     setDeclaredUsage('');
+    setStanding('');
+    setFloorNumber('');
+    setConstructionYear('');
     setNationality('');
     setOccupationDuration('');
     setValorisationValidated(false);
     setDeducedTitleType(null);
+    // Reset valorisation update states
+    setShowValorisationUpdate(false);
+    setHasPermitUpdate('');
+    setPermitUpdateType('construction');
+    setPermitUpdateNumber('');
+    setPermitUpdateDate('');
+    setPermitUpdateService('');
+    setPermitUpdateFile(null);
+    setParcelBuildingPermits([]);
     onOpenChange(false);
   };
 
