@@ -353,6 +353,22 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setDeducedTitleType(null);
   }, [constructionType, constructionNature, declaredUsage, nationality, occupationDuration, formData.sectionType]);
 
+  // Property category -> Construction type cascade
+  useEffect(() => {
+    if (!propertyCategory) {
+      setAvailableConstructionTypes([]);
+      setConstructionType('');
+      return;
+    }
+    const allowedTypes = CATEGORY_TO_CONSTRUCTION_TYPES[propertyCategory] || [];
+    setAvailableConstructionTypes(allowedTypes);
+    if (allowedTypes.length === 1) {
+      if (constructionType !== allowedTypes[0]) setConstructionType(allowedTypes[0]);
+    } else if (constructionType && !allowedTypes.includes(constructionType)) {
+      setConstructionType('');
+    }
+  }, [propertyCategory]);
+
   // Construction type -> Nature logic
   useEffect(() => {
     if (!constructionType) {
