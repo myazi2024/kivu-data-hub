@@ -1317,6 +1317,7 @@ const CadastralMap = () => {
                 parcelData={selectedParcel}
                 expanded={actionsExpanded}
                 onCollapse={() => setActionsExpanded(false)}
+                onRequestLandTitle={() => setShowLandTitleTermsDialog(true)}
               />
 
               {/* Header with gradient accent */}

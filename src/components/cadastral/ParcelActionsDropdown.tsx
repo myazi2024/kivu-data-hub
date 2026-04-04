@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Sparkles, Clock, Beaker, Tag, FileText, ArrowRightLeft, Landmark, ShieldCheck, Calculator, LayoutGrid, AlertTriangle, Award } from 'lucide-react';
+import { Sparkles, Clock, Beaker, Tag, FileText, ArrowRightLeft, Landmark, ShieldCheck, Calculator, LayoutGrid, AlertTriangle, Award, ScrollText } from 'lucide-react';
 import { useParcelActionsConfig, ParcelAction } from '@/hooks/useParcelActionsConfig';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -20,6 +20,7 @@ interface ParcelActionsDropdownProps {
   parcelData?: any;
   expanded: boolean;
   onCollapse: () => void;
+  onRequestLandTitle?: () => void;
 }
 
 // Haptic feedback utility
@@ -70,6 +71,7 @@ const DEFAULT_ACTION_ICONS: Record<string, React.ComponentType<{ className?: str
   expertise: Award,
   mutation: ArrowRightLeft,
   mortgage_management: Landmark,
+  land_title_request: ScrollText,
   permit_add: ShieldCheck,
   tax: Calculator,
   permit_request: FileText,
@@ -84,7 +86,7 @@ const ActionIcon: React.FC<{ iconName?: string; actionKey: string }> = ({ iconNa
 };
 
 const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
-  parcelNumber, parcelId, parcelData, expanded, onCollapse
+  parcelNumber, parcelId, parcelData, expanded, onCollapse, onRequestLandTitle
 }) => {
   const { actions } = useParcelActionsConfig();
   const [showMutationDialog, setShowMutationDialog] = useState(false);
@@ -109,6 +111,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
       'expertise': () => setShowExpertiseDialog(true),
       'mutation': () => setShowMutationDialog(true),
       'mortgage_management': () => setShowMortgageManagementDialog(true),
+      'land_title_request': () => onRequestLandTitle?.(),
       'permit_add': () => setShowBuildingPermitManagementDialog(true),
       'tax': () => setShowTaxDialog(true),
       'permit_request': () => setShowPermitRequestDialog(true),
