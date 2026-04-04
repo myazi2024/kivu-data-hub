@@ -531,7 +531,7 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
       construction_nature: i % 4 === 0 ? null : pick(['Durable', 'Semi-durable', 'Précaire'], i),
       deduced_title_type: pick(TITLE_TYPES, i),
       area_sqm: randInt(200, 3000),
-      occupation_duration: pick(['moins_1_an', '1_3_ans', '3_5_ans', '5_ans_plus'], i),
+      // occupation_duration removed from business logic
       estimated_processing_days: randInt(20, 90),
       status,
       rejection_reason: status === 'rejected' ? 'Documents incomplets (données de test)' : null,
