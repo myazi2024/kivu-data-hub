@@ -86,7 +86,7 @@ const ActionIcon: React.FC<{ iconName?: string; actionKey: string }> = ({ iconNa
 };
 
 const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
-  parcelNumber, parcelId, parcelData, expanded, onCollapse
+  parcelNumber, parcelId, parcelData, expanded, onCollapse, onRequestLandTitle
 }) => {
   const { actions } = useParcelActionsConfig();
   const [showMutationDialog, setShowMutationDialog] = useState(false);
