@@ -2351,10 +2351,12 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                   <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Standing</p>
                                   <p className="text-sm font-medium">{parcelValorisationData.standing || '—'}</p>
                                 </div>
-                                <div className="p-2 rounded-lg bg-background border">
-                                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Nombre d'étages</p>
-                                  <p className="text-sm font-medium">{parcelValorisationData.floorNumber || '—'}</p>
-                                </div>
+                                {parcelValorisationData.propertyCategory !== 'Appartement' && (
+                                  <div className="p-2 rounded-lg bg-background border">
+                                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Nombre d'étages</p>
+                                    <p className="text-sm font-medium">{parcelValorisationData.floorNumber || '—'}</p>
+                                  </div>
+                                )}
                               </>
                             )}
                             {/* Conditionally show construction year if type != "Terrain nu" */}
