@@ -218,7 +218,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   
   // New fields for land title deduction
   const [nationality, setNationality] = useState<'congolais' | 'etranger' | ''>('');
-  const [occupationDuration, setOccupationDuration] = useState<'perpetuel' | 'long_terme' | 'temporaire' | ''>('');
   
   // Land title type deduction
   const [valorisationValidated, setValorisationValidated] = useState(false);
