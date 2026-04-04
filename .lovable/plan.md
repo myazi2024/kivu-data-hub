@@ -1,34 +1,30 @@
 
-
-# Ajout du service "Demander un titre foncier" dans le dropdown Actions
+# Bloc "Mise en valeur" conditionnel — Proposition de mise à jour
 
 ## Problème
 
-Le service de demande de titre foncier existe déjà dans l'app (dialog `LandTitleRequestDialog` + `LandTitleTermsDialog`) mais n'est accessible que via le bouton flottant de notification sur la carte. Il manque en tant que raccourci dans le dropdown "Actions" de la parcelle sélectionnée.
+Dans l'onglet Valorisation, le deuxième bloc "Mise en valeur" (formulaire éditable) s'affiche toujours, même quand les données pré-remplies du premier bloc sont correctes. C'est redondant.
 
 ## Solution
 
-Ajouter une entrée `land_title_request` dans la configuration des actions et câbler le handler pour ouvrir le flux existant (termes → demande).
+Rendre le deuxième bloc conditionnel : il ne s'affiche que lorsque l'utilisateur clique sur un bouton "Proposer une mise à jour" dans le premier bloc (données enregistrées).
 
-### Modifications
+### Modifications dans `src/components/cadastral/LandTitleRequestDialog.tsx`
 
-**1. `src/hooks/useParcelActionsConfig.tsx`**
-- Ajouter une entrée dans `DEFAULT_ACTIONS` :
-  - `key: 'land_title_request'`, label "Demander un titre foncier", description "Soumettre une demande de titre foncier", `displayOrder: 4`, `category: 'title'`, `badge: { type: 'none' }`
-- Ajouter `ScrollText` dans les icônes par défaut
+1. **Ajouter un état** `showValorisationUpdate` (booléen, `false` par défaut) pour contrôler l'affichage du second bloc.
 
-**2. `src/components/cadastral/ParcelActionsDropdown.tsx`**
-- Ajouter une prop `onRequestLandTitle` (callback) au composant
-- Ajouter `ScrollText` dans les imports Lucide
-- Ajouter `land_title_request: ScrollText` dans `DEFAULT_ACTION_ICONS`
-- Dans `getActionHandler`, mapper `'land_title_request'` vers `onRequestLandTitle`
+2. **Ajouter un bouton dans le premier bloc** (après la grille des données enregistrées, ligne ~2189) :
+   - Icône `RefreshCw` + texte "Ces données sont inexactes ? Proposer une mise à jour"
+   - Style discret (variant `outline`, petite taille)
+   - Au clic : bascule `showValorisationUpdate` à `true`
 
-**3. `src/pages/CadastralMap.tsx`**
-- Passer la prop `onRequestLandTitle` au `ParcelActionsDropdown` qui déclenche `setShowLandTitleTermsDialog(true)` (le flux existant : termes d'abord, puis dialog de demande)
+3. **Conditionner le second bloc** (ligne 2194-2310) :
+   - En mode parcelle liée (`isParcelLinkedMode && parcelValidated && parcelValorisationData`) : afficher uniquement si `showValorisationUpdate === true`
+   - Hors mode parcelle liée : afficher toujours (comportement actuel inchangé)
+   - Quand affiché conditionnellement, modifier le titre en "Proposer une mise à jour" et retirer le `disabled` des champs (ils ne doivent plus être verrouillés puisque l'utilisateur veut justement corriger)
+   - Ajouter un bouton "Annuler" pour refermer le bloc et réinitialiser `showValorisationUpdate`
 
-**4. Base de données** — Migration SQL
-- Insérer la nouvelle action dans `parcel_actions_config` pour qu'elle soit persistée et configurable par l'admin
+4. **Supprimer les `disabled`** sur les selects du second bloc quand `showValorisationUpdate` est actif — les champs doivent être librement éditables pour permettre la correction.
 
-### Résultat
-Le service apparaîtra dans le menu Actions entre "Gestion Hypothèque" et "Ajouter une autorisation", et ouvrira le même flux termes → demande de titre que le bouton existant.
-
+### Fichier modifié
+- `src/components/cadastral/LandTitleRequestDialog.tsx`
