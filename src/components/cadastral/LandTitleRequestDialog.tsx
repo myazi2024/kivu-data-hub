@@ -353,6 +353,20 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setDeducedTitleType(null);
   }, [constructionType, constructionNature, declaredUsage, nationality, occupationDuration, formData.sectionType]);
 
+  // Auto-fill construction states when "Ces données sont exactes" is selected
+  useEffect(() => {
+    if (!showValorisationUpdate && parcelValorisationData) {
+      setPropertyCategory(parcelValorisationData.propertyCategory || '');
+      setConstructionType(parcelValorisationData.constructionType || '');
+      setConstructionNature(parcelValorisationData.constructionNature || '');
+      setConstructionMaterials(parcelValorisationData.constructionMaterials || '');
+      setDeclaredUsage(parcelValorisationData.declaredUsage || '');
+      setStanding(parcelValorisationData.standing || '');
+      setFloorNumber(parcelValorisationData.floorNumber || '');
+      setConstructionYear(parcelValorisationData.constructionYear ? String(parcelValorisationData.constructionYear) : '');
+    }
+  }, [showValorisationUpdate, parcelValorisationData]);
+
   // Property category -> Construction type cascade
   useEffect(() => {
     if (!propertyCategory) {
