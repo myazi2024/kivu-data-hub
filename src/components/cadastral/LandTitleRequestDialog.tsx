@@ -2391,7 +2391,30 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         </span>
                       </div>
 
+                      {/* Row 0: Catégorie de bien */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1.5">
+                          <Label className="text-sm">Catégorie de bien *</Label>
+                          <Select 
+                            value={propertyCategory}
+                            onValueChange={(value) => {
+                              setPropertyCategory(value);
+                            }}
+                          >
+                            <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
+                              <SelectValue placeholder="Sélectionner la catégorie" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl">
+                              {PROPERTY_CATEGORY_OPTIONS.map(opt => (
+                                <SelectItem key={opt} value={opt} className="text-sm py-2">{opt}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
                       {/* Row 1: Type de construction + Matériaux */}
+                      {propertyCategory && (
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1.5">
                           <Label className="text-sm">Type de construct. *</Label>
@@ -2405,18 +2428,21 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                 setFloorNumber('');
                               }
                             }}
+                            disabled={availableConstructionTypes.length <= 1}
                           >
-                            <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
+                            <SelectTrigger className={cn(
+                              "h-11 text-sm rounded-xl border-2",
+                              availableConstructionTypes.length <= 1 ? "bg-muted/50" : "focus:border-primary"
+                            )}>
                               <SelectValue placeholder="Choisir le type" />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl">
-                              <SelectItem value="Résidentielle" className="text-sm py-2">Résidentielle</SelectItem>
-                              <SelectItem value="Commerciale" className="text-sm py-2">Commerciale</SelectItem>
-                              <SelectItem value="Industrielle" className="text-sm py-2">Industrielle</SelectItem>
-                              <SelectItem value="Agricole" className="text-sm py-2">Agricole</SelectItem>
-                              <SelectItem value="Terrain nu" className="text-sm py-2">Terrain nu</SelectItem>
+                              {availableConstructionTypes.map(t => (
+                                <SelectItem key={t} value={t} className="text-sm py-2">{t}</SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
+                        </div>
                         </div>
 
                         {constructionType !== 'Terrain nu' && (
