@@ -20,6 +20,7 @@ interface ParcelActionsDropdownProps {
   parcelData?: any;
   expanded: boolean;
   onCollapse: () => void;
+  onRequestLandTitle?: () => void;
 }
 
 // Haptic feedback utility
