@@ -755,7 +755,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       floorNumber,
       deducedTitleType: deducedTitleType?.type || '',
       nationality,
-      occupationDuration,
       requesterIdDocumentFile: requesterIdFile,
       ownerIdDocumentFile: ownerIdFile,
       proofOfOwnershipFile: proofOfOwnershipFile,
