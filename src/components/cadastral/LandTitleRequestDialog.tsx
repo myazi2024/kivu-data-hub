@@ -897,7 +897,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setValorisationValidated(false);
     setDeducedTitleType(null);
     // Reset valorisation update states
-    setShowValorisationUpdate(false);
+    setValorisationChoice(null);
     setHasPermitUpdate('');
     setPermitUpdateType('construction');
     setPermitUpdateNumber('');
