@@ -120,6 +120,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   } | null>(null);
   // Valorisation data loaded from parcel for renewal mode (auto-display)
   const [parcelValorisationData, setParcelValorisationData] = useState<{
+    propertyCategory?: string;
     constructionType?: string;
     constructionNature?: string;
     constructionMaterials?: string;
