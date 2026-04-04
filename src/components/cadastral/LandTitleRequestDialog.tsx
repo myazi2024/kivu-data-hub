@@ -2261,6 +2261,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           </p>
                           <div className="grid grid-cols-2 gap-2">
                             <div className="p-2 rounded-lg bg-background border">
+                              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Catégorie de bien</p>
+                              <p className="text-sm font-medium">{parcelValorisationData.propertyCategory || '—'}</p>
+                            </div>
+                            <div className="p-2 rounded-lg bg-background border">
                               <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Type de construction</p>
                               <p className="text-sm font-medium">{parcelValorisationData.constructionType || '—'}</p>
                             </div>
