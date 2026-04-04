@@ -418,6 +418,29 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     }
   }, [constructionType]);
 
+  // Materials -> Nature auto-determination (aligned with CCC)
+  const MATERIAL_TO_NATURE: Record<string, string> = useMemo(() => ({
+    'Béton armé': 'Durable', 'Briques cuites': 'Durable', 'Parpaings': 'Durable', 'Pierre naturelle': 'Durable',
+    'Semi-dur': 'Semi-durable', 'Briques adobes': 'Semi-durable', 'Bois': 'Semi-durable', 'Mixte': 'Semi-durable',
+    'Tôles': 'Précaire', 'Paille': 'Précaire',
+  }), []);
+
+  useEffect(() => {
+    if (constructionMaterials && MATERIAL_TO_NATURE[constructionMaterials]) {
+      const determinedNature = MATERIAL_TO_NATURE[constructionMaterials];
+      if (availableConstructionNatures.includes(determinedNature) && constructionNature !== determinedNature) {
+        setConstructionNature(determinedNature);
+      }
+    }
+  }, [constructionMaterials, availableConstructionNatures]);
+
+  // Location-eligible combinations for "Location" usage
+  const LOCATION_ELIGIBLE_KEYS = useMemo(() => new Set([
+    'Résidentielle_Durable', 'Résidentielle_Semi-durable',
+    'Commerciale_Durable', 'Commerciale_Semi-durable',
+    'Industrielle_Durable', 'Industrielle_Semi-durable',
+  ]), []);
+
   // Construction type + Nature -> Usage logic
   useEffect(() => {
     if (!constructionType || !constructionNature) {
@@ -462,6 +485,12 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       }
     } else if (constructionType === 'Terrain nu') {
       usages = ['Terrain vacant', 'Agriculture', 'Parking'];
+    }
+
+    // Inject 'Location' for eligible type+nature combinations (aligned with CCC)
+    const specificKey = `${constructionType}_${constructionNature}`;
+    if (LOCATION_ELIGIBLE_KEYS.has(specificKey) && !usages.includes('Location')) {
+      usages.push('Location');
     }
     
     setAvailableDeclaredUsages(usages);
