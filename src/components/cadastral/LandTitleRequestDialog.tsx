@@ -418,6 +418,29 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     }
   }, [constructionType]);
 
+  // Materials -> Nature auto-determination (aligned with CCC)
+  const MATERIAL_TO_NATURE: Record<string, string> = useMemo(() => ({
+    'Béton armé': 'Durable', 'Briques cuites': 'Durable', 'Parpaings': 'Durable', 'Pierre naturelle': 'Durable',
+    'Semi-dur': 'Semi-durable', 'Briques adobes': 'Semi-durable', 'Bois': 'Semi-durable', 'Mixte': 'Semi-durable',
+    'Tôles': 'Précaire', 'Paille': 'Précaire',
+  }), []);
+
+  useEffect(() => {
+    if (constructionMaterials && MATERIAL_TO_NATURE[constructionMaterials]) {
+      const determinedNature = MATERIAL_TO_NATURE[constructionMaterials];
+      if (availableConstructionNatures.includes(determinedNature) && constructionNature !== determinedNature) {
+        setConstructionNature(determinedNature);
+      }
+    }
+  }, [constructionMaterials, availableConstructionNatures]);
+
+  // Location-eligible combinations for "Location" usage
+  const LOCATION_ELIGIBLE_KEYS = useMemo(() => new Set([
+    'Résidentielle_Durable', 'Résidentielle_Semi-durable',
+    'Commerciale_Durable', 'Commerciale_Semi-durable',
+    'Industrielle_Durable', 'Industrielle_Semi-durable',
+  ]), []);
+
   // Construction type + Nature -> Usage logic
   useEffect(() => {
     if (!constructionType || !constructionNature) {
@@ -463,6 +486,12 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     } else if (constructionType === 'Terrain nu') {
       usages = ['Terrain vacant', 'Agriculture', 'Parking'];
     }
+
+    // Inject 'Location' for eligible type+nature combinations (aligned with CCC)
+    const specificKey = `${constructionType}_${constructionNature}`;
+    if (LOCATION_ELIGIBLE_KEYS.has(specificKey) && !usages.includes('Location')) {
+      usages.push('Location');
+    }
     
     setAvailableDeclaredUsages(usages);
     
@@ -503,10 +532,14 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     const draft = loadDraft();
     if (draft) {
       setFormData(prev => ({ ...prev, ...draft.formData }));
+      setPropertyCategory(draft.propertyCategory || '');
       setConstructionType(draft.constructionType || '');
       setConstructionNature(draft.constructionNature || '');
       setConstructionMaterials(draft.constructionMaterials || '');
       setDeclaredUsage(draft.declaredUsage || '');
+      setStanding(draft.standing || '');
+      setFloorNumber(draft.floorNumber || '');
+      setConstructionYear(draft.constructionYear || '');
       setNationality(draft.nationality as any || '');
       setOccupationDuration(draft.occupationDuration as any || '');
       setRequestType(draft.requestType as any || '');
@@ -525,10 +558,14 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       if (hasData) {
         saveDraft({
           formData,
+          propertyCategory,
           constructionType,
           constructionNature,
           constructionMaterials,
           declaredUsage,
+          standing,
+          floorNumber,
+          constructionYear,
           nationality,
           occupationDuration,
           requestType,
@@ -852,10 +889,22 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setConstructionNature('');
     setConstructionMaterials('');
     setDeclaredUsage('');
+    setStanding('');
+    setFloorNumber('');
+    setConstructionYear('');
     setNationality('');
     setOccupationDuration('');
     setValorisationValidated(false);
     setDeducedTitleType(null);
+    // Reset valorisation update states
+    setShowValorisationUpdate(false);
+    setHasPermitUpdate('');
+    setPermitUpdateType('construction');
+    setPermitUpdateNumber('');
+    setPermitUpdateDate('');
+    setPermitUpdateService('');
+    setPermitUpdateFile(null);
+    setParcelBuildingPermits([]);
     onOpenChange(false);
   };
 
@@ -1175,7 +1224,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                           // First try contributions for richer owner + location details
                                           const { data: contribData } = await supabase
                                             .from('cadastral_contributions')
-                                            .select('current_owners_details, current_owner_name, current_owner_legal_status, province, parcel_type, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, construction_type, construction_nature, construction_materials, declared_usage, area_sqm, standing, construction_year, floor_number')
+                                            .select('current_owners_details, current_owner_name, current_owner_legal_status, province, parcel_type, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, construction_type, construction_nature, construction_materials, declared_usage, area_sqm, standing, construction_year, floor_number, property_category')
                                             .eq('parcel_number', parcel.parcel_number)
                                             .eq('status', 'approved')
                                             .order('created_at', { ascending: false })
@@ -1279,7 +1328,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                           }
 
                                           // Fetch valorisation data (construction info) from parcel/contribution
-                                          const valoPropertyCategory = (contribData as any)?.property_category || '';
+                                          const valoPropertyCategory = contribData?.property_category || '';
                                           const valoConstructionType = parcelLocData?.construction_type || contribData?.construction_type || '';
                                           const valoConstructionNature = parcelLocData?.construction_nature || contribData?.construction_nature || '';
                                           const valoConstructionMaterials = parcelLocData?.construction_materials || (contribData as any)?.construction_materials || '';
@@ -2302,10 +2351,12 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                   <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Standing</p>
                                   <p className="text-sm font-medium">{parcelValorisationData.standing || '—'}</p>
                                 </div>
-                                <div className="p-2 rounded-lg bg-background border">
-                                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Nombre d'étages</p>
-                                  <p className="text-sm font-medium">{parcelValorisationData.floorNumber || '—'}</p>
-                                </div>
+                                {parcelValorisationData.propertyCategory !== 'Appartement' && (
+                                  <div className="p-2 rounded-lg bg-background border">
+                                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Nombre d'étages</p>
+                                    <p className="text-sm font-medium">{parcelValorisationData.floorNumber || '—'}</p>
+                                  </div>
+                                )}
                               </>
                             )}
                             {/* Conditionally show construction year if type != "Terrain nu" */}
@@ -2318,7 +2369,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           </div>
 
                           {/* Building permits read-only sub-block */}
-                          {parcelValorisationData.constructionType !== 'Terrain nu' && (
+                          {parcelValorisationData.constructionType !== 'Terrain nu' && parcelValorisationData.propertyCategory !== 'Appartement' && (
                             <div className="mt-3 pt-3 border-t space-y-2">
                               <div className="flex items-center gap-2">
                                 <ClipboardCheck className="h-3.5 w-3.5 text-primary" />
@@ -2535,7 +2586,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         </div>
                       )}
 
-                      {/* Row 3: Standing + Nombre d'étages (visible if nature != "Non bâti") */}
+                      {/* Row 3: Standing + Nombre d'étages (visible if nature != "Non bâti" AND category != "Appartement") */}
                       {constructionNature && !constructionNature.toLowerCase().includes('non bâti') && (
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-1.5">
@@ -2551,6 +2602,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               </SelectContent>
                             </Select>
                           </div>
+                          {propertyCategory !== 'Appartement' && (
                           <div className="space-y-1.5">
                             <Label className="text-sm">Nombre d'étages</Label>
                             <Select value={floorNumber} onValueChange={setFloorNumber}>
@@ -2566,6 +2618,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               </SelectContent>
                             </Select>
                           </div>
+                          )}
                         </div>
                       )}
 
@@ -2589,8 +2642,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                     </CardContent>
                    </Card>
 
-                  {/* Building permit update sub-block (conditional, visible when update mode + type != Terrain nu) */}
-                  {showValorisationUpdate && constructionType && constructionType !== 'Terrain nu' && (
+                  {/* Building permit update sub-block (conditional, visible when update mode + type != Terrain nu + category != Appartement) */}
+                  {showValorisationUpdate && constructionType && constructionType !== 'Terrain nu' && propertyCategory !== 'Appartement' && (
                     <Card className="border rounded-xl border-2 border-orange-300/50 bg-orange-50/30 dark:bg-orange-950/10">
                       <CardContent className="p-3 space-y-3">
                         <div className="flex items-center gap-2">
@@ -3289,9 +3342,14 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                   <TabsContent value="review" className="space-y-4">
                     <LandTitleReviewTab
                       formData={formData}
+                      propertyCategory={propertyCategory}
                       constructionType={constructionType}
                       constructionNature={constructionNature}
+                      constructionMaterials={constructionMaterials}
                       declaredUsage={declaredUsage}
+                      standing={standing}
+                      floorNumber={floorNumber}
+                      constructionYear={constructionYear}
                       nationality={nationality}
                       occupationDuration={occupationDuration}
                       valorisationValidated={valorisationValidated}
@@ -3306,6 +3364,11 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       loading={loading}
                       requestType={requestType}
                       selectedParcelNumber={selectedParcelNumber}
+                      hasPermitUpdate={hasPermitUpdate}
+                      permitUpdateType={permitUpdateType}
+                      permitUpdateNumber={permitUpdateNumber}
+                      permitUpdateDate={permitUpdateDate}
+                      permitUpdateService={permitUpdateService}
                       onEditTab={(tabId) => setActiveTab(tabId)}
                       onProceedToPayment={handleProceedToPayment}
                     />

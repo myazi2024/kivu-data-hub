@@ -8,10 +8,14 @@ const DRAFT_EXPIRY_HOURS = 24;
 
 export interface LandTitleDraft {
   formData: Record<string, any>;
+  propertyCategory: string;
   constructionType: string;
   constructionNature: string;
   constructionMaterials: string;
   declaredUsage: string;
+  standing: string;
+  floorNumber: string;
+  constructionYear: string;
   nationality: string;
   occupationDuration: string;
   requestType: string;

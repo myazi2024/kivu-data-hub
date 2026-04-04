@@ -9,9 +9,14 @@ type DeducedTitle = { label: string; description?: string } | null;
 
 export interface LandTitleReviewTabProps {
   formData: LandTitleRequestData;
+  propertyCategory?: string;
   constructionType: string;
   constructionNature: string;
+  constructionMaterials?: string;
   declaredUsage: string;
+  standing?: string;
+  floorNumber?: string;
+  constructionYear?: string;
   nationality: string;
   occupationDuration: string;
   valorisationValidated: boolean;
@@ -26,6 +31,11 @@ export interface LandTitleReviewTabProps {
   loading?: boolean;
   requestType?: string;
   selectedParcelNumber?: string;
+  hasPermitUpdate?: string;
+  permitUpdateType?: string;
+  permitUpdateNumber?: string;
+  permitUpdateDate?: string;
+  permitUpdateService?: string;
   onEditTab: (tabId: string) => void;
   onProceedToPayment: () => void;
 }
@@ -55,11 +65,23 @@ const formatOccupationDuration = (dur: string) => {
   }
 };
 
+const formatFloorNumber = (floor: string) => {
+  if (floor === '0') return 'Rez-de-chaussée';
+  if (floor === '4+') return 'R+4 ou plus';
+  if (floor) return `R+${floor}`;
+  return '';
+};
+
 const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
   formData,
+  propertyCategory,
   constructionType,
   constructionNature,
+  constructionMaterials,
   declaredUsage,
+  standing,
+  floorNumber,
+  constructionYear,
   nationality,
   occupationDuration,
   valorisationValidated,
@@ -74,6 +96,11 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
   loading,
   requestType,
   selectedParcelNumber,
+  hasPermitUpdate,
+  permitUpdateType,
+  permitUpdateNumber,
+  permitUpdateDate,
+  permitUpdateService,
   onEditTab,
   onProceedToPayment,
 }) => {
@@ -83,9 +110,7 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
   const requesterComplete =
     !!requestType &&
     (
-      // In parcel-linked owner mode, requester identity comes from the parcel data
       (formData.requesterType === 'owner' && !!selectedParcelNumber) ||
-      // Otherwise need manual fields
       (!!formData.requesterLastName && !!formData.requesterFirstName && !!formData.requesterPhone)
     ) &&
     (formData.requesterType !== "representative" || (!!formData.ownerLastName && !!formData.ownerFirstName)) &&
@@ -221,51 +246,19 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
 
             {formData.sectionType === "urbaine" && (
               <div className="pt-1 border-t border-border/50">
-                {formData.ville && (
-                  <div>
-                    <span className="font-medium">Ville:</span> {formData.ville}
-                  </div>
-                )}
-                {formData.commune && (
-                  <div>
-                    <span className="font-medium">Commune:</span> {formData.commune}
-                  </div>
-                )}
-                {formData.quartier && (
-                  <div>
-                    <span className="font-medium">Quartier:</span> {formData.quartier}
-                  </div>
-                )}
-                {formData.avenue && (
-                  <div>
-                    <span className="font-medium">Avenue:</span> {formData.avenue}
-                  </div>
-                )}
+                {formData.ville && <div><span className="font-medium">Ville:</span> {formData.ville}</div>}
+                {formData.commune && <div><span className="font-medium">Commune:</span> {formData.commune}</div>}
+                {formData.quartier && <div><span className="font-medium">Quartier:</span> {formData.quartier}</div>}
+                {formData.avenue && <div><span className="font-medium">Avenue:</span> {formData.avenue}</div>}
               </div>
             )}
 
             {formData.sectionType === "rurale" && (
               <div className="pt-1 border-t border-border/50">
-                {formData.territoire && (
-                  <div>
-                    <span className="font-medium">Territoire:</span> {formData.territoire}
-                  </div>
-                )}
-                {formData.collectivite && (
-                  <div>
-                    <span className="font-medium">Collectivité:</span> {formData.collectivite}
-                  </div>
-                )}
-                {formData.groupement && (
-                  <div>
-                    <span className="font-medium">Groupement:</span> {formData.groupement}
-                  </div>
-                )}
-                {formData.village && (
-                  <div>
-                    <span className="font-medium">Village:</span> {formData.village}
-                  </div>
-                )}
+                {formData.territoire && <div><span className="font-medium">Territoire:</span> {formData.territoire}</div>}
+                {formData.collectivite && <div><span className="font-medium">Collectivité:</span> {formData.collectivite}</div>}
+                {formData.groupement && <div><span className="font-medium">Groupement:</span> {formData.groupement}</div>}
+                {formData.village && <div><span className="font-medium">Village:</span> {formData.village}</div>}
               </div>
             )}
 
@@ -307,15 +300,40 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
             </Button>
           </div>
           <div className="space-y-1 text-xs">
+            {propertyCategory && (
+              <div>
+                <span className="font-medium">Catégorie:</span> {propertyCategory}
+              </div>
+            )}
             <div>
               <span className="font-medium">Type:</span> {constructionType || <span className="italic text-muted-foreground">Non renseigné</span>}
             </div>
             <div>
               <span className="font-medium">Nature:</span> {constructionNature || <span className="italic text-muted-foreground">Non renseignée</span>}
             </div>
+            {constructionMaterials && (
+              <div>
+                <span className="font-medium">Matériaux:</span> {constructionMaterials}
+              </div>
+            )}
             <div>
               <span className="font-medium">Usage:</span> {declaredUsage || <span className="italic text-muted-foreground">Non renseigné</span>}
             </div>
+            {standing && (
+              <div>
+                <span className="font-medium">Standing:</span> {standing}
+              </div>
+            )}
+            {floorNumber && propertyCategory !== 'Appartement' && (
+              <div>
+                <span className="font-medium">Étages:</span> {formatFloorNumber(floorNumber)}
+              </div>
+            )}
+            {constructionYear && (
+              <div>
+                <span className="font-medium">Année de construction:</span> {constructionYear}
+              </div>
+            )}
             {(nationality || occupationDuration) && (
               <div className="pt-1 border-t border-border/50 text-muted-foreground">
                 {nationality && <div>Nationalité: {formatNationality(nationality)}</div>}
@@ -327,6 +345,18 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
                 <span className="font-medium">Titre déduit:</span> {deducedTitleType.label}
               </div>
             )}
+
+            {/* Proposed building permit update */}
+            {hasPermitUpdate === 'yes' && permitUpdateNumber && (
+              <div className="pt-1 border-t border-border/50">
+                <div className="font-medium text-muted-foreground mb-0.5">Autorisation de bâtir proposée</div>
+                <div><span className="font-medium">Type:</span> {permitUpdateType === 'construction' ? 'Autorisation de bâtir' : 'Régularisation'}</div>
+                <div><span className="font-medium">N°:</span> {permitUpdateNumber}</div>
+                {permitUpdateDate && <div><span className="font-medium">Date:</span> {new Date(permitUpdateDate).toLocaleDateString('fr-FR')}</div>}
+                {permitUpdateService && <div><span className="font-medium">Service:</span> {permitUpdateService}</div>}
+              </div>
+            )}
+
             {!valorisationComplete && (
               <button
                 type="button"
