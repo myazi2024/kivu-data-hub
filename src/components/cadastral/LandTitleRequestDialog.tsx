@@ -230,7 +230,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       constructionNature,
       declaredUsage,
       nationality,
-      occupationDuration
+      hasBuildingPermit: parcelBuildingPermits.length > 0 || hasPermitUpdate === 'yes'
     });
 
     if (!validation.isValid) {
@@ -242,11 +242,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       return;
     }
 
-    // Check for recommendations
-    if (validation.recommendations.length > 0 && !nationality) {
+    if (!nationality) {
       toast({
         title: "Données incomplètes",
-        description: "Veuillez indiquer votre nationalité et la durée d'occupation souhaitée",
+        description: "Veuillez indiquer votre nationalité",
         variant: "destructive"
       });
       return;
@@ -258,7 +257,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       constructionNature,
       declaredUsage,
       nationality,
-      occupationDuration,
+      hasBuildingPermit: parcelBuildingPermits.length > 0 || hasPermitUpdate === 'yes',
       areaSqm: formData.areaSqm
     });
     
