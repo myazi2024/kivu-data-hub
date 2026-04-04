@@ -1486,7 +1486,15 @@ const CadastralMap = () => {
                 </div>
               </div>
               {/* Mobile legend toggle */}
-              <div className="absolute bottom-48 left-3 z-[800] md:hidden">
+              <div 
+                className="absolute left-3 z-[800] md:hidden"
+                style={{
+                  bottom: selectedParcel 
+                    ? (actionsExpanded ? '30rem' : '15rem') 
+                    : '12rem',
+                  transition: 'bottom 0.3s ease'
+                }}
+              >
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button variant="secondary" size="sm" className="h-7 w-7 rounded-lg shadow-lg p-0">
