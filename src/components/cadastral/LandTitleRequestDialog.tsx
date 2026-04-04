@@ -2188,6 +2188,17 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                             <p className="text-sm font-medium">{parcelValorisationData.declaredUsage || '—'}</p>
                           </div>
                         </div>
+                        {!showValorisationUpdate && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full mt-2 h-8 text-xs rounded-xl gap-2 text-muted-foreground hover:text-primary"
+                            onClick={() => setShowValorisationUpdate(true)}
+                          >
+                            <RefreshCw className="h-3 w-3" />
+                            Ces données sont inexactes ? Proposer une mise à jour
+                          </Button>
+                        )}
                       </CardContent>
                     </Card>
                   )}
