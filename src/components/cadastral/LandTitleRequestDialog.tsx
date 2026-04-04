@@ -75,7 +75,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [activeTab, setActiveTab] = useState('requester');
   const [showQuickAuth, setShowQuickAuth] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
-  const [showValorisationUpdate, setShowValorisationUpdate] = useState(false);
+  const [valorisationChoice, setValorisationChoice] = useState<null | 'exact' | 'update'>(null);
+  const showValorisationUpdate = valorisationChoice === 'update';
+  const skipCascadeRef = useRef(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [savedReferenceNumber, setSavedReferenceNumber] = useState<string>('');
@@ -352,7 +354,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
   // Auto-fill construction states when "Ces données sont exactes" is selected
   useEffect(() => {
-    if (!showValorisationUpdate && parcelValorisationData) {
+    if (valorisationChoice === 'exact' && parcelValorisationData) {
+      skipCascadeRef.current = true;
       setPropertyCategory(parcelValorisationData.propertyCategory || '');
       setConstructionType(parcelValorisationData.constructionType || '');
       setConstructionNature(parcelValorisationData.constructionNature || '');
@@ -361,11 +364,13 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       setStanding(parcelValorisationData.standing || '');
       setFloorNumber(parcelValorisationData.floorNumber || '');
       setConstructionYear(parcelValorisationData.constructionYear ? String(parcelValorisationData.constructionYear) : '');
+      setTimeout(() => { skipCascadeRef.current = false; }, 0);
     }
-  }, [showValorisationUpdate, parcelValorisationData]);
+  }, [valorisationChoice, parcelValorisationData]);
 
   // Property category -> Construction type cascade
   useEffect(() => {
+    if (skipCascadeRef.current) return;
     if (!propertyCategory) {
       setAvailableConstructionTypes([]);
       setConstructionType('');
@@ -382,6 +387,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
   // Construction type -> Nature logic
   useEffect(() => {
+    if (skipCascadeRef.current) return;
     if (!constructionType) {
       setAvailableConstructionNatures([]);
       setConstructionNature('');
@@ -440,6 +446,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
   // Construction type + Nature -> Usage logic
   useEffect(() => {
+    if (skipCascadeRef.current) return;
     if (!constructionType || !constructionNature) {
       setAvailableDeclaredUsages([]);
       setDeclaredUsage('');
@@ -890,7 +897,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setValorisationValidated(false);
     setDeducedTitleType(null);
     // Reset valorisation update states
-    setShowValorisationUpdate(false);
+    setValorisationChoice(null);
     setHasPermitUpdate('');
     setPermitUpdateType('construction');
     setPermitUpdateNumber('');
@@ -2410,8 +2417,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
                       {/* Radio group: exact or update */}
                       <RadioGroup
-                        value={showValorisationUpdate ? 'update' : 'exact'}
-                        onValueChange={(val) => setShowValorisationUpdate(val === 'update')}
+                        value={valorisationChoice || ''}
+                        onValueChange={(val) => setValorisationChoice(val as 'exact' | 'update')}
                         className="flex flex-col gap-2"
                       >
                         <div className="flex items-center space-x-2">
