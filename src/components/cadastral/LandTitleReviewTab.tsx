@@ -323,10 +323,10 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
                 <span className="font-medium">Année de construction:</span> {constructionYear}
               </div>
             )}
-            {(nationality || occupationDuration) && (
+            {nationality && (
               <div className="pt-1 border-t border-border/50 text-muted-foreground">
-                {nationality && <div>Nationalité: {formatNationality(nationality)}</div>}
-                {occupationDuration && <div>Durée: {formatOccupationDuration(occupationDuration)}</div>}
+                <div>Nationalité: {formatNationality(nationality)}</div>
+                <div>Autorisation de bâtir: {hasBuildingPermit ? 'Oui' : 'Non'}</div>
               </div>
             )}
             {deducedTitleType?.label && (
