@@ -941,7 +941,9 @@ const CadastralMap = () => {
                 ? isMobile
                   ? actionsExpanded ? '26rem' : '11rem'
                   : actionsExpanded ? '24rem' : '10rem'
-                : isMobile ? '1rem' : '1rem'
+                : isMobile
+                  ? isSearchBarActive ? '1rem' : '13rem'
+                  : '1rem'
             } !important;
             transition: margin-bottom 0.3s ease !important;
           }
