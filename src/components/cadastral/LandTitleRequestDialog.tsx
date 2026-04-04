@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Loader2, CheckCircle2, Upload, X, Info, ChevronRight, User, MapPin, FileText, CreditCard, Building, Home, Award, AlertCircle, Check, ClipboardCheck, TrendingUp, Search, Plus, AlertTriangle } from 'lucide-react';
+import { Loader2, CheckCircle2, Upload, X, Info, ChevronRight, User, MapPin, FileText, CreditCard, Building, Home, Award, AlertCircle, Check, ClipboardCheck, TrendingUp, Search, Plus, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -75,6 +75,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [activeTab, setActiveTab] = useState('requester');
   const [showQuickAuth, setShowQuickAuth] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
+  const [showValorisationUpdate, setShowValorisationUpdate] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [savedReferenceNumber, setSavedReferenceNumber] = useState<string>('');
@@ -2187,25 +2188,52 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                             <p className="text-sm font-medium">{parcelValorisationData.declaredUsage || '—'}</p>
                           </div>
                         </div>
+                        {!showValorisationUpdate && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full mt-2 h-8 text-xs rounded-xl gap-2 text-muted-foreground hover:text-primary"
+                            onClick={() => setShowValorisationUpdate(true)}
+                          >
+                            <RefreshCw className="h-3 w-3" />
+                            Ces données sont inexactes ? Proposer une mise à jour
+                          </Button>
+                        )}
                       </CardContent>
                     </Card>
                   )}
 
-                  {/* Type de construction */}
-                  <Card className="border rounded-xl">
+                  {/* Type de construction - conditionnel en mode parcelle liée */}
+                  {(!(isParcelLinkedMode && parcelValidated && parcelValorisationData) || showValorisationUpdate) && (
+                  <Card className={cn("border rounded-xl", showValorisationUpdate && "border-2 border-orange-300/50 bg-orange-50/30 dark:bg-orange-950/10")}>
                     <CardContent className="p-3 space-y-3">
                       <div className="flex items-center justify-between">
                         <h4 className="text-sm font-semibold flex items-center gap-2">
                           <Home className="h-4 w-4 text-muted-foreground" />
-                          Mise en valeur
+                          {showValorisationUpdate ? 'Proposer une mise à jour' : 'Mise en valeur'}
                           <SectionHelpPopover
-                            title="Mise en valeur"
-                            description="Décrivez comment la parcelle est mise en valeur : type de construction, nature, usage déclaré. Ces informations déterminent le type de titre foncier auquel vous avez droit."
+                            title={showValorisationUpdate ? "Mise à jour des données" : "Mise en valeur"}
+                            description={showValorisationUpdate 
+                              ? "Corrigez les informations de mise en valeur si elles sont obsolètes ou inexactes. Vos modifications seront soumises pour vérification."
+                              : "Décrivez comment la parcelle est mise en valeur : type de construction, nature, usage déclaré. Ces informations déterminent le type de titre foncier auquel vous avez droit."}
                           />
                         </h4>
-                        <span className="text-[10px] px-2 py-0.5 bg-muted rounded-full">
-                          {formData.sectionType === 'urbaine' ? 'SU' : formData.sectionType === 'rurale' ? 'SR' : '—'}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          {showValorisationUpdate && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 text-[10px] px-2 rounded-lg text-muted-foreground hover:text-destructive"
+                              onClick={() => setShowValorisationUpdate(false)}
+                            >
+                              <X className="h-3 w-3 mr-1" />
+                              Annuler
+                            </Button>
+                          )}
+                          <span className="text-[10px] px-2 py-0.5 bg-muted rounded-full">
+                            {formData.sectionType === 'urbaine' ? 'SU' : formData.sectionType === 'rurale' ? 'SR' : '—'}
+                          </span>
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">
@@ -2217,7 +2245,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               setConstructionType(value);
                               if (value === 'Terrain nu') setConstructionMaterials('');
                             }}
-                            disabled={isParcelLinkedMode && parcelValidated && !!parcelValorisationData?.constructionType}
+                            disabled={!showValorisationUpdate && isParcelLinkedMode && parcelValidated && !!parcelValorisationData?.constructionType}
                           >
                             <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
                               <SelectValue placeholder="Choisir le type" />
@@ -2237,7 +2265,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           <Select 
                             value={constructionNature}
                             onValueChange={setConstructionNature}
-                            disabled={!constructionType || (isParcelLinkedMode && parcelValidated && !!parcelValorisationData?.constructionNature)}
+                            disabled={!constructionType || (!showValorisationUpdate && isParcelLinkedMode && parcelValidated && !!parcelValorisationData?.constructionNature)}
                           >
                             <SelectTrigger className={cn(
                               "h-11 text-sm rounded-xl border-2",
@@ -2289,7 +2317,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                             <Select 
                               value={declaredUsage}
                               onValueChange={setDeclaredUsage}
-                              disabled={!constructionNature || (isParcelLinkedMode && parcelValidated && !!parcelValorisationData?.declaredUsage)}
+                              disabled={!constructionNature || (!showValorisationUpdate && isParcelLinkedMode && parcelValidated && !!parcelValorisationData?.declaredUsage)}
                             >
                               <SelectTrigger className={cn(
                                 "h-11 text-sm rounded-xl border-2",
@@ -2308,6 +2336,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       )}
                     </CardContent>
                   </Card>
+                  )}
 
                   {/* Éligibilité légale */}
                   {constructionType && constructionNature && declaredUsage && (
