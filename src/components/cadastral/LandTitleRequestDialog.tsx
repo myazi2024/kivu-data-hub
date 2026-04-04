@@ -311,6 +311,12 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setParcelOwnerData(null);
     setParcelLocationData(null);
     setParcelValorisationData(null);
+    setParcelBuildingPermits([]);
+    setHasPermitUpdate('');
+    setPermitUpdateNumber('');
+    setPermitUpdateDate('');
+    setPermitUpdateService('');
+    setPermitUpdateFile(null);
     // Reset requesterType when not in parcel-linked mode
     if (!isParcelLinkedMode) {
       setFormData(prev => ({ ...prev, requesterType: 'owner', isOwnerSameAsRequester: true }));
