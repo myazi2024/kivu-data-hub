@@ -136,6 +136,7 @@ export const useLandTitleRequest = () => {
       let ownerIdDocUrl: string | null = null;
       let proofOfOwnershipUrl: string | null = null;
       let procurationDocUrl: string | null = null;
+      let proposedPermitDocUrl: string | null = null;
 
       if (data.requesterIdDocumentFile) {
         requesterIdDocUrl = await uploadDocument(data.requesterIdDocumentFile, 'requester-id');
@@ -165,6 +166,14 @@ export const useLandTitleRequest = () => {
         procurationDocUrl = await uploadDocument(data.procurationDocumentFile, 'procuration');
         if (!procurationDocUrl) {
           toast.error("Échec de l'upload de la procuration");
+          return { success: false };
+        }
+      }
+
+      if (data.proposedPermitDocumentFile) {
+        proposedPermitDocUrl = await uploadDocument(data.proposedPermitDocumentFile, 'proposed-permit');
+        if (!proposedPermitDocUrl) {
+          toast.error("Échec de l'upload du document d'autorisation");
           return { success: false };
         }
       }
