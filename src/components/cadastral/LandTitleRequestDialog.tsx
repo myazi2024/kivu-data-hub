@@ -2369,7 +2369,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           </div>
 
                           {/* Building permits read-only sub-block */}
-                          {parcelValorisationData.constructionType !== 'Terrain nu' && (
+                          {parcelValorisationData.constructionType !== 'Terrain nu' && parcelValorisationData.propertyCategory !== 'Appartement' && (
                             <div className="mt-3 pt-3 border-t space-y-2">
                               <div className="flex items-center gap-2">
                                 <ClipboardCheck className="h-3.5 w-3.5 text-primary" />
