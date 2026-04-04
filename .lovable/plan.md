@@ -1,30 +1,28 @@
-# Ajout de la case "Catégorie de bien" dans l'onglet Mise en valeur
+
+
+# Fix: impossible d'avancer quand "Ces données sont exactes" est coché
 
 ## Problème
 
-Le bloc "Construction" du formulaire CCC inclut un champ "Catégorie de bien" (property_category) avec les options : Appartement, Villa, Maison, Local commercial, Immeuble/Bâtiment, Entrepôt/Hangar, Terrain nu. Ce champ est absent des deux blocs de l'onglet "Mise en valeur" du formulaire de demande de titre foncier.
+Quand l'utilisateur sélectionne "Ces données sont exactes", le bloc formulaire construction est masqué (ligne 2375). Mais les variables d'état `constructionType`, `constructionNature`, `declaredUsage` restent vides. Or :
+- Le bloc "Éligibilité" (nationalité + durée) ne s'affiche que si ces 3 variables sont remplies (ligne 2697)
+- Le bouton "Déterminer le titre" est `disabled` si elles sont vides (ligne 2803)
+- Le bouton "Suivant" est `disabled={!valorisationValidated}` (ligne 2949)
+
+Résultat : l'utilisateur ne peut jamais valider ni avancer.
 
 ## Solution
 
-### 1. État `parcelValorisationData` — Ajouter `propertyCategory`
+Quand le radio "Ces données sont exactes" est coché ET que `parcelValorisationData` existe, **auto-remplir les états** `constructionType`, `constructionNature`, `declaredUsage`, `constructionMaterials`, `standing`, `floorNumber`, `constructionYear` et `propertyCategory` depuis `parcelValorisationData`.
 
-Étendre le type de `parcelValorisationData` pour inclure `propertyCategory?: string` et le récupérer depuis `contribData?.property_category` lors du fetch parcelle.
+### Détail technique
 
-### 2. Bloc lecture seule — Ajouter la case "Catégorie de bien"
+1. **Ajouter un `useEffect`** qui réagit à `showValorisationUpdate` et `parcelValorisationData` :
+   - Si `showValorisationUpdate === false` et `parcelValorisationData` existe → setter les 8 variables d'état depuis les données parcelle
+   - Cela rend le bloc Éligibilité visible et le bouton "Déterminer le titre" activable
 
-Ajouter une case en première position de la grille (avant "Type de construction") affichant `parcelValorisationData.propertyCategory`.
-
-### 3. Bloc éditable — Ajouter le Select "Catégorie de bien"
-
-Ajouter un Select en première position (avant "Type de construction") avec les options alignées sur le CCC : Appartement, Villa, Maison, Local commercial, Immeuble/Bâtiment, Entrepôt/Hangar, Terrain nu. Pré-remplir depuis `parcelValorisationData.propertyCategory`.
-
-### 4. État local + soumission
-
-- Ajouter un état `propertyCategory` (string) avec pré-remplissage
-- Pas de migration SQL nécessaire : la colonne `property_category` n'est pas strictement requise dans `land_title_requests` puisque cette donnée est liée à la parcelle. Toutefois, si l'utilisateur propose une mise à jour, il faut la persister → je vérifierai si la colonne existe déjà ou si une migration est nécessaire.
-
-4. Assure-toi que la logique de dépendance entre cases dans le bloc "construction" (formulaire ccc) est respecté dans l'onglet mise en valeur (Formulaire de demande de titre foncier).
+2. **Quand l'utilisateur repasse en mode "Proposer une mise à jour"** → les états sont déjà pré-remplis (comportement existant), donc pas de changement nécessaire
 
 ### Fichier modifié
+- `src/components/cadastral/LandTitleRequestDialog.tsx` — ajout d'un `useEffect` (~5 lignes)
 
-- `src/components/cadastral/LandTitleRequestDialog.tsx`
