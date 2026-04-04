@@ -2762,92 +2762,45 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           Éligibilité
                           <SectionHelpPopover
                             title="Éligibilité au titre foncier"
-                            description="Indiquez votre nationalité et la durée d'occupation souhaitée. Ces critères déterminent automatiquement le type de titre foncier auquel vous êtes éligible selon la loi congolaise."
+                            description="Indiquez votre nationalité. Ce critère, combiné à l'état de mise en valeur et à la présence d'une autorisation de bâtir, détermine le type de titre foncier auquel vous êtes éligible."
                           />
                         </h4>
 
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="space-y-1.5">
-                            <Label className="text-sm">Nationalité *</Label>
-                            <Select 
-                              value={nationality}
-                              onValueChange={(value) => setNationality(value as 'congolais' | 'etranger')}
-                            >
-                              <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
-                                <SelectValue placeholder="Choisir" />
-                              </SelectTrigger>
-                              <SelectContent className="rounded-xl">
-                                {NATIONALITY_OPTIONS.map((option) => (
-                                  <SelectItem key={option.value} value={option.value} className="text-sm py-2">
-                                    {option.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="space-y-1.5">
-                            <Label className="text-sm">Durée souhaitée *</Label>
-                            <Select 
-                              value={occupationDuration}
-                              onValueChange={(value) => setOccupationDuration(value as 'perpetuel' | 'long_terme' | 'temporaire')}
-                            >
-                              <SelectTrigger className={cn(
-                                "h-11 text-sm rounded-xl border-2",
-                                nationality === 'etranger' && occupationDuration === 'perpetuel'
-                                  ? "border-destructive"
-                                  : "focus:border-primary"
-                              )}>
-                                <SelectValue placeholder="Choisir" />
-                              </SelectTrigger>
-                              <SelectContent className="rounded-xl">
-                                {OCCUPATION_DURATION_OPTIONS.map((option) => (
-                                  <SelectItem 
-                                    key={option.value} 
-                                    value={option.value}
-                                    disabled={nationality === 'etranger' && option.value === 'perpetuel'}
-                                    className="text-sm py-2"
-                                  >
-                                    <div className="flex flex-col">
-                                      <span className={cn(
-                                        nationality === 'etranger' && option.value === 'perpetuel' && "line-through text-muted-foreground"
-                                      )}>
-                                        {option.label}
-                                      </span>
-                                      {nationality === 'etranger' && option.value === 'perpetuel' && (
-                                        <span className="text-[10px] text-destructive">Non accessible aux étrangers</span>
-                                      )}
-                                    </div>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-sm">Nationalité *</Label>
+                          <Select 
+                            value={nationality}
+                            onValueChange={(value) => setNationality(value as 'congolais' | 'etranger')}
+                          >
+                            <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
+                              <SelectValue placeholder="Choisir" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl">
+                              {NATIONALITY_OPTIONS.map((option) => (
+                                <SelectItem key={option.value} value={option.value} className="text-sm py-2">
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
 
-                        {nationality && occupationDuration && (
+                        {nationality && (
                           <div className={cn(
                             "p-2 rounded-lg text-xs flex items-center gap-2",
-                            nationality === 'congolais' && occupationDuration === 'perpetuel'
+                            (parcelBuildingPermits.length > 0 || hasPermitUpdate === 'yes')
                               ? "bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400"
-                              : nationality === 'etranger'
-                              ? "bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400"
                               : "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
                           )}>
-                            {nationality === 'congolais' && occupationDuration === 'perpetuel' ? (
+                            {(parcelBuildingPermits.length > 0 || hasPermitUpdate === 'yes') ? (
                               <>
                                 <Check className="h-3.5 w-3.5 flex-shrink-0" />
-                                <span>Éligible → <strong>Concession Perpétuelle</strong></span>
-                              </>
-                            ) : nationality === 'etranger' ? (
-                              <>
-                                <Info className="h-3.5 w-3.5 flex-shrink-0" />
-                                <span>Éligible → <strong>Bail/Concession Ordinaire</strong></span>
+                                <span>La mise en valeur est prouvée par l'autorisation de bâtir délivrée</span>
                               </>
                             ) : (
                               <>
                                 <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
-                                <span>Titre temporaire disponible</span>
+                                <span>Aucune autorisation de bâtir identifiée. Cela peut limiter le type de titre accessible.</span>
                               </>
                             )}
                           </div>
@@ -2857,10 +2810,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                   )}
 
                   {/* Bouton de validation */}
-                  {nationality && occupationDuration && (
+                  {nationality && (
                     <Button 
                       onClick={handleValidateValorisation}
-                      disabled={!constructionType || !constructionNature || !declaredUsage || !nationality || !occupationDuration}
+                      disabled={!constructionType || !constructionNature || !declaredUsage || !nationality}
                       className={cn(
                         "w-full h-10 text-sm rounded-xl gap-2",
                         valorisationValidated ? "bg-green-600 hover:bg-green-700" : ""
