@@ -1,67 +1,75 @@
 
 
-# Amelioration de la fonctionnalite "Determiner un titre"
+# Fix: "Ces donnees sont exactes" doit ouvrir la suite du formulaire
 
-## Probleme actuel
+## Probleme
 
-1. **"Duree souhaitee" inutile** : Le champ `occupationDuration` (perpetuel/long_terme/temporaire) est utilise comme critere principal de deduction, alors qu'en droit foncier congolais, c'est l'etat de mise en valeur (prouve par l'autorisation de batir) qui determine le titre, pas un souhait du demandeur.
+Quand l'utilisateur clique sur "Ces donnees sont exactes", rien ne se passe car `showValorisationUpdate` est deja `false` (valeur initiale). Le useEffect (ligne 354) ne se re-declenche pas.
 
-2. **L'autorisation de batir n'intervient pas dans la deduction** : Le formulaire collecte deja les donnees d'autorisation de batir (existantes via `parcelBuildingPermits` ou proposees via `permitUpdate*`), mais `deduceLandTitleType()` ne les prend pas en compte. Or, la presence d'une autorisation de batir delivree est la preuve formelle de la mise en valeur.
-
-3. **La logique actuelle** dans `landTitleDeduction.ts` (727 lignes) branch sur `occupationDuration` en premier (lignes 99-301), ce qui fausse la deduction : un congolais avec construction durable + autorisation de batir delivree devrait automatiquement obtenir un Certificat d'enregistrement, independamment d'une "duree souhaitee".
+De plus, les useEffects en cascade (lignes 368-416) interferent avec le remplissage initial : quand `propertyCategory` est set, le cascade reset `constructionType` si la valeur n'est pas dans le mapping `CATEGORY_TO_CONSTRUCTION_TYPES`, ce qui declenche a son tour le reset de `constructionNature` et `declaredUsage`. Les champs deviennent vides, le bloc Eligibilite ne s'affiche pas, et le bouton "Determiner le titre" reste bloque.
 
 ## Solution
 
-### 1. Supprimer le champ "Duree souhaitee"
+### 1. Introduire un etat explicite pour le choix du radio
 
-**Fichier** : `LandTitleRequestDialog.tsx`
-- Retirer le `Select` "Duree souhaitee" du bloc Eligibilite (lignes 2796-2832)
-- Retirer la variable d'etat `occupationDuration` et son setter
-- Le bloc Eligibilite ne garde que le champ "Nationalite"
-- Le bouton "Determiner le titre" s'affiche des que `nationality` est rempli (au lieu de `nationality && occupationDuration`)
-- Retirer `occupationDuration` des dependances du `useEffect` de reset (ligne 354)
-- Retirer les messages conditionnels basés sur `occupationDuration` (lignes 2835-2861)
+Remplacer la derivation implicite (`showValorisationUpdate ? 'update' : 'exact'`) par un etat `valorisationChoice` a 3 valeurs : `null` (pas encore choisi), `'exact'`, `'update'`.
 
-**Fichier** : `landTitleDraftStorage.ts` — retirer `occupationDuration` du draft
+- Initial : `null` (aucun radio selectionne)
+- Cliquer "Ces donnees sont exactes" → `'exact'`
+- Cliquer "Proposer une mise a jour" → `'update'`
+- `showValorisationUpdate` devient derive : `valorisationChoice === 'update'`
 
-**Fichier** : `useLandTitleRequest.tsx` — retirer `occupationDuration` du type et de l'insert
+### 2. Adapter le useEffect d'auto-remplissage
 
-**Fichier** : `LandTitleReviewTab.tsx` — retirer l'affichage de "Duree souhaitee"
+Le useEffect (ligne 354) reagit a `valorisationChoice` au lieu de `showValorisationUpdate`. Quand `valorisationChoice === 'exact'` et `parcelValorisationData` existe, il set les 8 etats. Un flag `skipCascadeRef` (useRef) est active pendant le remplissage pour empecher les useEffects cascade de reset les valeurs.
 
-### 2. Ajouter l'autorisation de batir comme critere de deduction
+### 3. Proteger les cascades avec le flag
 
-**Fichier** : `landTitleDeduction.ts`
-- Ajouter au type `LandTitleDeductionInput` : `hasBuildingPermit: boolean` (une autorisation de batir delivree existe-t-elle, soit dans les donnees parcelle, soit proposee par l'utilisateur)
-- Refondre la logique de deduction :
-  - **Congolais + Construction durable + Autorisation de batir** → Certificat d'enregistrement (confiance haute)
-  - **Congolais + Construction durable + PAS d'autorisation** → Concession ordinaire (avec mention que l'obtention d'une autorisation de batir permettrait d'evoluer vers le certificat)
-  - **Etranger + Construction durable + Autorisation** → Bail emphyteotique (18-99 ans)
-  - **Etranger + sans construction durable** → Bail foncier
-  - **Semi-durable / Precaire** → Concession ordinaire (avec chemin de conversion)
-  - **Terrain nu** → Permis d'occupation (urbain ou rural)
-- Supprimer toute reference a `occupationDuration` dans les parametres et la logique
-- Supprimer `OCCUPATION_DURATION_OPTIONS`
-- Simplifier : la "duree" decoule naturellement du type de titre deduit
+Les useEffects cascade (lignes 368, 384, 442) verifient `skipCascadeRef.current` avant de reset. Le flag est desactive apres un tick (via setTimeout ou un micro-task).
 
-### 3. Connecter les donnees d'autorisation au moteur de deduction
+### Detail technique
 
-**Fichier** : `LandTitleRequestDialog.tsx`
-- Dans `handleValidateValorisation`, calculer `hasBuildingPermit` :
-  ```
-  const hasBuildingPermit = parcelBuildingPermits.length > 0 || hasPermitUpdate === 'yes';
-  ```
-- Passer ce booleen a `deduceLandTitle()` a la place de `occupationDuration`
+```
+const [valorisationChoice, setValorisationChoice] = useState<null | 'exact' | 'update'>(null);
+const showValorisationUpdate = valorisationChoice === 'update';
+const skipCascadeRef = useRef(false);
 
-### 4. Adapter les messages du bloc Eligibilite
+useEffect(() => {
+  if (valorisationChoice === 'exact' && parcelValorisationData) {
+    skipCascadeRef.current = true;
+    setPropertyCategory(parcelValorisationData.propertyCategory || '');
+    setConstructionType(parcelValorisationData.constructionType || '');
+    setConstructionNature(parcelValorisationData.constructionNature || '');
+    setConstructionMaterials(parcelValorisationData.constructionMaterials || '');
+    setDeclaredUsage(parcelValorisationData.declaredUsage || '');
+    setStanding(parcelValorisationData.standing || '');
+    setFloorNumber(parcelValorisationData.floorNumber || '');
+    setConstructionYear(...);
+    setTimeout(() => { skipCascadeRef.current = false; }, 0);
+  }
+}, [valorisationChoice, parcelValorisationData]);
+```
 
-- Remplacer le message conditionnel (lignes 2835-2861) par un message base sur la presence/absence d'autorisation de batir :
-  - Si autorisation presente : "La mise en valeur est prouvee par l'autorisation de batir delivree"
-  - Si absente : "Aucune autorisation de batir n'a ete identifiee. Cela peut limiter le type de titre accessible."
+Chaque useEffect cascade ajoute en premiere ligne :
+```
+if (skipCascadeRef.current) return;
+```
 
-### Fichiers modifies
-- `src/utils/landTitleDeduction.ts` — refonte logique, nouveau parametre, suppression `occupationDuration`
-- `src/components/cadastral/LandTitleRequestDialog.tsx` — suppression du champ, adaptation de la validation
-- `src/components/cadastral/LandTitleReviewTab.tsx` — retrait affichage duree
-- `src/utils/landTitleDraftStorage.ts` — retrait du draft
-- `src/hooks/useLandTitleRequest.tsx` — retrait du type et de l'insert
+### 4. Adapter le RadioGroup
+
+```
+<RadioGroup
+  value={valorisationChoice || ''}
+  onValueChange={(val) => setValorisationChoice(val as 'exact' | 'update')}
+>
+```
+
+Aucun radio n'est pre-selectionne → l'utilisateur doit faire un choix explicite.
+
+### 5. Adapter handleConfirmClose
+
+Ajouter `setValorisationChoice(null)` au reset.
+
+### Fichier modifie
+- `src/components/cadastral/LandTitleRequestDialog.tsx`
 
