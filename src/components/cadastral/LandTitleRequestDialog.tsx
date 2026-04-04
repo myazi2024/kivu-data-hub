@@ -554,10 +554,14 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       if (hasData) {
         saveDraft({
           formData,
+          propertyCategory,
           constructionType,
           constructionNature,
           constructionMaterials,
           declaredUsage,
+          standing,
+          floorNumber,
+          constructionYear,
           nationality,
           occupationDuration,
           requestType,
