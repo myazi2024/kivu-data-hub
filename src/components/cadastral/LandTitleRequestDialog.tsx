@@ -2192,21 +2192,37 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                     </Card>
                   )}
 
-                  {/* Type de construction */}
-                  <Card className="border rounded-xl">
+                  {/* Type de construction - conditionnel en mode parcelle liée */}
+                  {(!(isParcelLinkedMode && parcelValidated && parcelValorisationData) || showValorisationUpdate) && (
+                  <Card className={cn("border rounded-xl", showValorisationUpdate && "border-2 border-orange-300/50 bg-orange-50/30 dark:bg-orange-950/10")}>
                     <CardContent className="p-3 space-y-3">
                       <div className="flex items-center justify-between">
                         <h4 className="text-sm font-semibold flex items-center gap-2">
                           <Home className="h-4 w-4 text-muted-foreground" />
-                          Mise en valeur
+                          {showValorisationUpdate ? 'Proposer une mise à jour' : 'Mise en valeur'}
                           <SectionHelpPopover
-                            title="Mise en valeur"
-                            description="Décrivez comment la parcelle est mise en valeur : type de construction, nature, usage déclaré. Ces informations déterminent le type de titre foncier auquel vous avez droit."
+                            title={showValorisationUpdate ? "Mise à jour des données" : "Mise en valeur"}
+                            description={showValorisationUpdate 
+                              ? "Corrigez les informations de mise en valeur si elles sont obsolètes ou inexactes. Vos modifications seront soumises pour vérification."
+                              : "Décrivez comment la parcelle est mise en valeur : type de construction, nature, usage déclaré. Ces informations déterminent le type de titre foncier auquel vous avez droit."}
                           />
                         </h4>
-                        <span className="text-[10px] px-2 py-0.5 bg-muted rounded-full">
-                          {formData.sectionType === 'urbaine' ? 'SU' : formData.sectionType === 'rurale' ? 'SR' : '—'}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          {showValorisationUpdate && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 text-[10px] px-2 rounded-lg text-muted-foreground hover:text-destructive"
+                              onClick={() => setShowValorisationUpdate(false)}
+                            >
+                              <X className="h-3 w-3 mr-1" />
+                              Annuler
+                            </Button>
+                          )}
+                          <span className="text-[10px] px-2 py-0.5 bg-muted rounded-full">
+                            {formData.sectionType === 'urbaine' ? 'SU' : formData.sectionType === 'rurale' ? 'SR' : '—'}
+                          </span>
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">
