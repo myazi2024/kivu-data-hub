@@ -2443,7 +2443,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                             </SelectContent>
                           </Select>
                         </div>
-                        </div>
 
                         {constructionType !== 'Terrain nu' && (
                           <div className="space-y-1.5">
