@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Sparkles, Clock, Beaker, Tag, FileText, ArrowRightLeft, Landmark, ShieldCheck, Calculator, LayoutGrid, AlertTriangle, Award } from 'lucide-react';
+import { Sparkles, Clock, Beaker, Tag, FileText, ArrowRightLeft, Landmark, ShieldCheck, Calculator, LayoutGrid, AlertTriangle, Award, ScrollText } from 'lucide-react';
 import { useParcelActionsConfig, ParcelAction } from '@/hooks/useParcelActionsConfig';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
