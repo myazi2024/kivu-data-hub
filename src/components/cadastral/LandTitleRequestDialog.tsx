@@ -194,6 +194,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [roadSides, setRoadSides] = useState<Array<any>>([]);
 
 // Construction type state
+  const [propertyCategory, setPropertyCategory] = useState<string>('');
   const [constructionType, setConstructionType] = useState<string>('');
   const [constructionNature, setConstructionNature] = useState<string>('');
   const [constructionMaterials, setConstructionMaterials] = useState<string>('');
@@ -201,8 +202,20 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [standing, setStanding] = useState<string>('');
   const [constructionYear, setConstructionYear] = useState<string>('');
   const [floorNumber, setFloorNumber] = useState<string>('');
+  const [availableConstructionTypes, setAvailableConstructionTypes] = useState<string[]>([]);
   const [availableConstructionNatures, setAvailableConstructionNatures] = useState<string[]>([]);
   const [availableDeclaredUsages, setAvailableDeclaredUsages] = useState<string[]>([]);
+
+  const PROPERTY_CATEGORY_OPTIONS = useMemo(() => [
+    'Appartement', 'Villa', 'Maison', 'Local commercial',
+    'Immeuble/Bâtiment', 'Entrepôt/Hangar', 'Terrain nu',
+  ], []);
+
+  const CATEGORY_TO_CONSTRUCTION_TYPES: Record<string, string[]> = useMemo(() => ({
+    'Appartement': ['Résidentielle'], 'Villa': ['Résidentielle'], 'Maison': ['Résidentielle'],
+    'Local commercial': ['Commerciale'], 'Immeuble/Bâtiment': ['Résidentielle', 'Commerciale', 'Industrielle'],
+    'Entrepôt/Hangar': ['Industrielle', 'Agricole'], 'Terrain nu': ['Terrain nu'],
+  }), []);
   
   // New fields for land title deduction
   const [nationality, setNationality] = useState<'congolais' | 'etranger' | ''>('');
