@@ -3344,7 +3344,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       floorNumber={floorNumber}
                       constructionYear={constructionYear}
                       nationality={nationality}
-                      occupationDuration={occupationDuration}
+                      hasBuildingPermit={parcelBuildingPermits.length > 0 || hasPermitUpdate === 'yes'}
                       valorisationValidated={valorisationValidated}
                       deducedTitleType={deducedTitleType}
                       requesterIdFile={requesterIdFile}
