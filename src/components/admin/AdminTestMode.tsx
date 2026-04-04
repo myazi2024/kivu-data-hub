@@ -50,10 +50,12 @@ const AdminTestMode: React.FC = () => {
   const {
     cleaningUp,
     generatingData,
+    regenerating,
     generationSteps,
     currentStep,
     cleanupTestData,
     generateTestData,
+    regenerateTestData,
   } = useTestDataActions({
     userId: user?.id,
     onComplete: refreshStats,
