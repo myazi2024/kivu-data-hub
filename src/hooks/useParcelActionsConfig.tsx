@@ -64,6 +64,18 @@ const DEFAULT_ACTIONS: ParcelAction[] = [
     category: 'mortgage'
   },
   {
+    id: '4',
+    key: 'land_title_request',
+    label: 'Demander un titre foncier',
+    description: 'Soumettre une demande de titre foncier',
+    isActive: true,
+    isVisible: true,
+    displayOrder: 4,
+    badge: { type: 'none' },
+    requiresAuth: true,
+    category: 'title'
+  },
+  {
     id: '5',
     key: 'permit_add',
     label: 'Ajouter une autorisation',

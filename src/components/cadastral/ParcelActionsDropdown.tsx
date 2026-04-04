@@ -111,6 +111,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
       'expertise': () => setShowExpertiseDialog(true),
       'mutation': () => setShowMutationDialog(true),
       'mortgage_management': () => setShowMortgageManagementDialog(true),
+      'land_title_request': () => onRequestLandTitle?.(),
       'permit_add': () => setShowBuildingPermitManagementDialog(true),
       'tax': () => setShowTaxDialog(true),
       'permit_request': () => setShowPermitRequestDialog(true),
