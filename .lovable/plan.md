@@ -1,48 +1,30 @@
+# Ajout de la case "Catégorie de bien" dans l'onglet Mise en valeur
 
+## Problème
 
-# Ajout du bloc "Autorisation de bâtir" dans l'onglet Mise en valeur du titre foncier
-
-## Probleme
-
-L'onglet "Infos" du formulaire CCC affiche un bloc "Autorisation de bâtir" juste après le bloc "Construction", mais l'onglet "Mise en valeur" du formulaire de demande de titre foncier n'intègre pas du tout ce bloc — ni en lecture seule (données enregistrées), ni en mode édition (proposer une mise à jour).
+Le bloc "Construction" du formulaire CCC inclut un champ "Catégorie de bien" (property_category) avec les options : Appartement, Villa, Maison, Local commercial, Immeuble/Bâtiment, Entrepôt/Hangar, Terrain nu. Ce champ est absent des deux blocs de l'onglet "Mise en valeur" du formulaire de demande de titre foncier.
 
 ## Solution
 
-Ajouter un sous-bloc "Autorisation de bâtir" dans les deux zones de l'onglet Valorisation :
+### 1. État `parcelValorisationData` — Ajouter `propertyCategory`
 
-### 1. Bloc lecture seule — "Données enregistrées"
+Étendre le type de `parcelValorisationData` pour inclure `propertyCategory?: string` et le récupérer depuis `contribData?.property_category` lors du fetch parcelle.
 
-Après la grille des 7 champs construction existants, ajouter un sous-bloc "Autorisation de bâtir" (conditionnel : visible si le type de construction n'est pas "Terrain nu") :
-- Fetch des autorisations depuis `cadastral_building_permits` pour la parcelle lors de la validation (même requête que `CadastralMap.tsx` ligne 421)
-- Stocker dans un nouvel état `parcelBuildingPermits`
-- Afficher en lecture seule **avec masquage PII** : N° d'autorisation (masqué partiellement, ex: "PC-20***01"), type (Bâtir/Régularisation), date d'émission, statut de validité (valide/expiré), service émetteur
-- Le document de l'autorisation n'est PAS affiché (accès payant)
-- Si aucune autorisation trouvée, afficher "Aucune autorisation enregistrée"
+### 2. Bloc lecture seule — Ajouter la case "Catégorie de bien"
 
-### 2. Bloc conditionnel — "Proposer une mise à jour"
+Ajouter une case en première position de la grille (avant "Type de construction") affichant `parcelValorisationData.propertyCategory`.
 
-Quand l'utilisateur sélectionne le radio "Proposer une mise à jour", ajouter après le bloc construction éditable un sous-bloc "Autorisation de bâtir" reproduisant la structure du CCC :
-- Question "Avez-vous obtenu une autorisation de bâtir ?" avec boutons Oui/Non
-- Si Oui : formulaire avec type (Bâtir/Régularisation), N° autorisation, date, service émetteur (via `BuildingPermitIssuingServiceSelect`), upload document optionnel
-- Validation chronologique identique au CCC (3 ans pour bâtir, post-construction pour régularisation)
-- Visible uniquement si type de construction != "Terrain nu"
+### 3. Bloc éditable — Ajouter le Select "Catégorie de bien"
 
-### 3. Données et persistance
+Ajouter un Select en première position (avant "Type de construction") avec les options alignées sur le CCC : Appartement, Villa, Maison, Local commercial, Immeuble/Bâtiment, Entrepôt/Hangar, Terrain nu. Pré-remplir depuis `parcelValorisationData.propertyCategory`.
 
-- **Nouvel état** : `parcelBuildingPermits` (array) pour les données en lecture seule
-- **Nouveaux états** pour le formulaire d'update : `hasPermitUpdate` (boolean), `permitUpdateType` ('construction' | 'regularization'), `permitUpdateNumber` (string), `permitUpdateDate` (string), `permitUpdateService` (string), `permitUpdateFile` (File | null)
-- **Migration SQL** : Ajouter des colonnes à `land_title_requests` pour stocker la proposition d'autorisation :
-  - `proposed_permit_type` (text)
-  - `proposed_permit_number` (text)
-  - `proposed_permit_date` (text)
-  - `proposed_permit_service` (text)
-  - `proposed_permit_document_url` (text)
-- **Hook** `useLandTitleRequest.tsx` : ajouter ces champs au type et à l'insert, avec upload du document si fourni
-- **Type** `landTitleRequest.ts` : ajouter les colonnes au type `LandTitleRequestRow`
+### 4. État local + soumission
 
-### Fichiers modifiés
-- **Migration SQL** : nouvelle migration pour 5 colonnes
-- **`src/hooks/useLandTitleRequest.tsx`** : types + insert
-- **`src/types/landTitleRequest.ts`** : colonnes ajoutées au type Row
-- **`src/components/cadastral/LandTitleRequestDialog.tsx`** : fetch des permits, bloc lecture seule, bloc éditable conditionnel
+- Ajouter un état `propertyCategory` (string) avec pré-remplissage
+- Pas de migration SQL nécessaire : la colonne `property_category` n'est pas strictement requise dans `land_title_requests` puisque cette donnée est liée à la parcelle. Toutefois, si l'utilisateur propose une mise à jour, il faut la persister → je vérifierai si la colonne existe déjà ou si une migration est nécessaire.
 
+4. Assure-toi que la logique de dépendance entre cases dans le bloc "construction" (formulaire ccc) est respecté dans l'onglet mise en valeur (Formulaire de demande de titre foncier).
+
+### Fichier modifié
+
+- `src/components/cadastral/LandTitleRequestDialog.tsx`
