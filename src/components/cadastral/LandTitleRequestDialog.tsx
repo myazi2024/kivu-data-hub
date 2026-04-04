@@ -681,7 +681,13 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       gpsCoordinates: gpsCoordinates,
       parcelSides: parcelSides,
       roadBorderingSides: roadSides,
-      totalAmountOverride: totalAmount
+      totalAmountOverride: totalAmount,
+      // Proposed building permit data
+      proposedPermitType: showValorisationUpdate && hasPermitUpdate === 'yes' ? (permitUpdateType === 'construction' ? 'Autorisation de bâtir' : 'Régularisation') : undefined,
+      proposedPermitNumber: showValorisationUpdate && hasPermitUpdate === 'yes' ? permitUpdateNumber : undefined,
+      proposedPermitDate: showValorisationUpdate && hasPermitUpdate === 'yes' ? permitUpdateDate : undefined,
+      proposedPermitService: showValorisationUpdate && hasPermitUpdate === 'yes' ? permitUpdateService : undefined,
+      proposedPermitDocumentFile: showValorisationUpdate && hasPermitUpdate === 'yes' ? permitUpdateFile : undefined,
     }, feeItems);
 
     setIsSubmitting(false);
