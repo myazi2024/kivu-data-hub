@@ -54,7 +54,6 @@ export interface LandTitleRequestData {
   declaredUsage?: string;
   deducedTitleType?: string;
   nationality?: string;
-  occupationDuration?: string;
   standing?: string;
   constructionYear?: number;
   floorNumber?: string;
