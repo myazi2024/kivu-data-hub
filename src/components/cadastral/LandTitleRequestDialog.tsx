@@ -31,7 +31,6 @@ import {
   deduceLandTitleType as deduceLandTitle, 
   DeducedLandTitle,
   NATIONALITY_OPTIONS,
-  OCCUPATION_DURATION_OPTIONS,
   validateDeductionInput
 } from '@/utils/landTitleDeduction';
 import { QuickAuthDialog } from './QuickAuthDialog';
