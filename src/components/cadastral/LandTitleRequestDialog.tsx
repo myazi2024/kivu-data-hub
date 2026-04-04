@@ -44,6 +44,7 @@ import SectionHelpPopover from './SectionHelpPopover';
 import { supabase } from '@/integrations/supabase/client';
 import { validateLandTitleFile } from '@/types/landTitleRequest';
 import { saveDraft, loadDraft, clearDraft, hasDraft } from '@/utils/landTitleDraftStorage';
+import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
 
 interface LandTitleRequestDialogProps {
   open: boolean;
@@ -127,6 +128,22 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     constructionYear?: number;
     floorNumber?: string;
   } | null>(null);
+  // Building permits loaded from parcel (read-only display)
+  const [parcelBuildingPermits, setParcelBuildingPermits] = useState<Array<{
+    permit_number: string;
+    administrative_status: string;
+    issue_date: string;
+    issuing_service: string;
+    validity_period_months: number;
+    is_current: boolean;
+  }>>([]);
+  // Building permit update form states
+  const [hasPermitUpdate, setHasPermitUpdate] = useState<'yes' | 'no' | ''>('');
+  const [permitUpdateType, setPermitUpdateType] = useState<'construction' | 'regularization'>('construction');
+  const [permitUpdateNumber, setPermitUpdateNumber] = useState('');
+  const [permitUpdateDate, setPermitUpdateDate] = useState('');
+  const [permitUpdateService, setPermitUpdateService] = useState('');
+  const [permitUpdateFile, setPermitUpdateFile] = useState<File | null>(null);
   const [loadingOwnerData, setLoadingOwnerData] = useState(false);
   
   // Form data
@@ -294,6 +311,12 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setParcelOwnerData(null);
     setParcelLocationData(null);
     setParcelValorisationData(null);
+    setParcelBuildingPermits([]);
+    setHasPermitUpdate('');
+    setPermitUpdateNumber('');
+    setPermitUpdateDate('');
+    setPermitUpdateService('');
+    setPermitUpdateFile(null);
     // Reset requesterType when not in parcel-linked mode
     if (!isParcelLinkedMode) {
       setFormData(prev => ({ ...prev, requesterType: 'owner', isOwnerSameAsRequester: true }));
@@ -664,7 +687,13 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       gpsCoordinates: gpsCoordinates,
       parcelSides: parcelSides,
       roadBorderingSides: roadSides,
-      totalAmountOverride: totalAmount
+      totalAmountOverride: totalAmount,
+      // Proposed building permit data
+      proposedPermitType: showValorisationUpdate && hasPermitUpdate === 'yes' ? (permitUpdateType === 'construction' ? 'Autorisation de bâtir' : 'Régularisation') : undefined,
+      proposedPermitNumber: showValorisationUpdate && hasPermitUpdate === 'yes' ? permitUpdateNumber : undefined,
+      proposedPermitDate: showValorisationUpdate && hasPermitUpdate === 'yes' ? permitUpdateDate : undefined,
+      proposedPermitService: showValorisationUpdate && hasPermitUpdate === 'yes' ? permitUpdateService : undefined,
+      proposedPermitDocumentFile: showValorisationUpdate && hasPermitUpdate === 'yes' ? permitUpdateFile : undefined,
     }, feeItems);
 
     setIsSubmitting(false);
@@ -1233,6 +1262,14 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                             if (valoConstructionYear) setConstructionYear(String(valoConstructionYear));
                                             if (valoFloorNumber) setFloorNumber(valoFloorNumber);
                                           }
+
+                                          // Fetch building permits for this parcel
+                                          const { data: permitsData } = await supabase
+                                            .from('cadastral_building_permits')
+                                            .select('permit_number, administrative_status, issue_date, issuing_service, validity_period_months, is_current')
+                                            .eq('parcel_id', parcel.id)
+                                            .order('issue_date', { ascending: false });
+                                          setParcelBuildingPermits(permitsData || []);
                                         } catch (err) {
                                           console.error('Error fetching owner data:', err);
                                         } finally {
@@ -2227,6 +2264,51 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               </div>
                             )}
                           </div>
+
+                          {/* Building permits read-only sub-block */}
+                          {parcelValorisationData.constructionType !== 'Terrain nu' && (
+                            <div className="mt-3 pt-3 border-t space-y-2">
+                              <div className="flex items-center gap-2">
+                                <ClipboardCheck className="h-3.5 w-3.5 text-primary" />
+                                <h5 className="text-xs font-semibold">Autorisation de bâtir</h5>
+                              </div>
+                              {parcelBuildingPermits.length > 0 ? (
+                                <div className="space-y-2">
+                                  {parcelBuildingPermits.map((permit, idx) => {
+                                    // Mask permit number for PII
+                                    const masked = permit.permit_number.length > 6
+                                      ? permit.permit_number.slice(0, 3) + '***' + permit.permit_number.slice(-2)
+                                      : '***';
+                                    const issueDate = permit.issue_date ? new Date(permit.issue_date) : null;
+                                    const expiryDate = issueDate ? new Date(new Date(issueDate).setMonth(issueDate.getMonth() + (permit.validity_period_months || 36))) : null;
+                                    const isExpired = expiryDate ? expiryDate < new Date() : false;
+                                    return (
+                                      <div key={idx} className="grid grid-cols-2 gap-2">
+                                        <div className="p-2 rounded-lg bg-background border">
+                                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">N° Autorisation</p>
+                                          <p className="text-sm font-medium">{masked}</p>
+                                        </div>
+                                        <div className="p-2 rounded-lg bg-background border">
+                                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Statut</p>
+                                          <p className="text-sm font-medium">{isExpired ? 'Expirée' : (permit.administrative_status || 'Valide')}</p>
+                                        </div>
+                                        <div className="p-2 rounded-lg bg-background border">
+                                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Date d'émission</p>
+                                          <p className="text-sm font-medium">{issueDate ? issueDate.toLocaleDateString('fr-FR') : '—'}</p>
+                                        </div>
+                                        <div className="p-2 rounded-lg bg-background border">
+                                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Service émetteur</p>
+                                          <p className="text-sm font-medium">{permit.issuing_service || '—'}</p>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <p className="text-xs text-muted-foreground italic">Aucune autorisation enregistrée</p>
+                              )}
+                            </div>
+                          )}
                         </CardContent>
                       </Card>
 
@@ -2253,6 +2335,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
                   {/* Construction form block - always shown if no parcel data, or conditionally if update requested */}
                   {(!(isParcelLinkedMode && parcelValidated && parcelValorisationData) || showValorisationUpdate) && (
+                  <>
                   <Card className={cn("border rounded-xl", showValorisationUpdate && "border-2 border-orange-300/50 bg-orange-50/30 dark:bg-orange-950/10")}>
                     <CardContent className="p-3 space-y-3">
                       <div className="flex items-center justify-between">
@@ -2426,7 +2509,124 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         </div>
                       )}
                     </CardContent>
-                  </Card>
+                   </Card>
+
+                  {/* Building permit update sub-block (conditional, visible when update mode + type != Terrain nu) */}
+                  {showValorisationUpdate && constructionType && constructionType !== 'Terrain nu' && (
+                    <Card className="border rounded-xl border-2 border-orange-300/50 bg-orange-50/30 dark:bg-orange-950/10">
+                      <CardContent className="p-3 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
+                          <h4 className="text-sm font-semibold">Autorisation de bâtir</h4>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <Label className="text-sm">Avez-vous obtenu une autorisation de bâtir ?</Label>
+                          <RadioGroup
+                            value={hasPermitUpdate}
+                            onValueChange={(val) => setHasPermitUpdate(val as 'yes' | 'no')}
+                            className="flex gap-4"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="yes" id="permit-yes" />
+                              <Label htmlFor="permit-yes" className="text-sm cursor-pointer">Oui</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="no" id="permit-no" />
+                              <Label htmlFor="permit-no" className="text-sm cursor-pointer">Non</Label>
+                            </div>
+                          </RadioGroup>
+                        </div>
+
+                        {hasPermitUpdate === 'yes' && (
+                          <div className="space-y-3 animate-fade-in">
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="space-y-1.5">
+                                <Label className="text-sm">Type *</Label>
+                                <Select value={permitUpdateType} onValueChange={(v) => setPermitUpdateType(v as 'construction' | 'regularization')}>
+                                  <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent className="rounded-xl">
+                                    <SelectItem value="construction" className="text-sm py-2">Autorisation de bâtir</SelectItem>
+                                    <SelectItem value="regularization" className="text-sm py-2">Régularisation</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-1.5">
+                                <Label className="text-sm">N° Autorisation *</Label>
+                                <Input
+                                  value={permitUpdateNumber}
+                                  onChange={(e) => setPermitUpdateNumber(e.target.value)}
+                                  placeholder="Ex: PC-2024-001"
+                                  className="h-11 text-sm rounded-xl border-2 focus:border-primary"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="space-y-1.5">
+                                <Label className="text-sm">Date d'émission *</Label>
+                                <Input
+                                  type="date"
+                                  value={permitUpdateDate}
+                                  onChange={(e) => setPermitUpdateDate(e.target.value)}
+                                  max={new Date().toISOString().split('T')[0]}
+                                  className="h-11 text-sm rounded-xl border-2 focus:border-primary"
+                                />
+                                {permitUpdateDate && constructionYear && (() => {
+                                  const permitYear = new Date(permitUpdateDate).getFullYear();
+                                  const cYear = parseInt(constructionYear, 10);
+                                  if (permitUpdateType === 'construction' && cYear && permitYear > cYear) {
+                                    return <p className="text-[10px] text-destructive">L'autorisation de bâtir doit précéder la construction</p>;
+                                  }
+                                  if (permitUpdateType === 'regularization' && cYear && permitYear < cYear) {
+                                    return <p className="text-[10px] text-destructive">La régularisation doit être postérieure à la construction</p>;
+                                  }
+                                  return null;
+                                })()}
+                              </div>
+                              <div className="space-y-1.5">
+                                <Label className="text-sm">Service émetteur *</Label>
+                                <BuildingPermitIssuingServiceSelect
+                                  value={permitUpdateService}
+                                  onValueChange={setPermitUpdateService}
+                                />
+                              </div>
+                            </div>
+
+                            <div className="space-y-1.5">
+                              <Label className="text-sm">Document d'autorisation (optionnel)</Label>
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="file"
+                                  accept=".pdf,.jpg,.jpeg,.png,.webp"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0] || null;
+                                    if (file) {
+                                      const validation = validateLandTitleFile(file);
+                                      if (!validation.valid) {
+                                        toast({ title: "Fichier invalide", description: validation.error, variant: "destructive" });
+                                        return;
+                                      }
+                                    }
+                                    setPermitUpdateFile(file);
+                                  }}
+                                  className="h-11 text-sm rounded-xl border-2"
+                                />
+                                {permitUpdateFile && (
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" onClick={() => setPermitUpdateFile(null)}>
+                                    <X className="h-3.5 w-3.5" />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+                  </>
                   )}
 
                   {/* Éligibilité légale */}

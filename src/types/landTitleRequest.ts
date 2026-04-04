@@ -52,6 +52,11 @@ export interface LandTitleRequestRow {
   rejection_reason: string | null;
   estimated_processing_days: number | null;
   reviewed_by: string | null;
+  proposed_permit_type: string | null;
+  proposed_permit_number: string | null;
+  proposed_permit_date: string | null;
+  proposed_permit_service: string | null;
+  proposed_permit_document_url: string | null;
   reviewed_at: string | null;
   created_at: string;
   updated_at: string;

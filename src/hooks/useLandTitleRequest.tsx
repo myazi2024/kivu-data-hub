@@ -59,6 +59,13 @@ export interface LandTitleRequestData {
   constructionYear?: number;
   floorNumber?: string;
   
+  // Proposed building permit update
+  proposedPermitType?: string;
+  proposedPermitNumber?: string;
+  proposedPermitDate?: string;
+  proposedPermitService?: string;
+  proposedPermitDocumentFile?: File | null;
+  
   // Documents
   proofOfOwnershipFile?: File | null;
   procurationDocumentFile?: File | null;
@@ -129,6 +136,7 @@ export const useLandTitleRequest = () => {
       let ownerIdDocUrl: string | null = null;
       let proofOfOwnershipUrl: string | null = null;
       let procurationDocUrl: string | null = null;
+      let proposedPermitDocUrl: string | null = null;
 
       if (data.requesterIdDocumentFile) {
         requesterIdDocUrl = await uploadDocument(data.requesterIdDocumentFile, 'requester-id');
@@ -158,6 +166,14 @@ export const useLandTitleRequest = () => {
         procurationDocUrl = await uploadDocument(data.procurationDocumentFile, 'procuration');
         if (!procurationDocUrl) {
           toast.error("Échec de l'upload de la procuration");
+          return { success: false };
+        }
+      }
+
+      if (data.proposedPermitDocumentFile) {
+        proposedPermitDocUrl = await uploadDocument(data.proposedPermitDocumentFile, 'proposed-permit');
+        if (!proposedPermitDocUrl) {
+          toast.error("Échec de l'upload du document d'autorisation");
           return { success: false };
         }
       }
@@ -220,8 +236,13 @@ export const useLandTitleRequest = () => {
           standing: data.standing || null,
           construction_year: data.constructionYear || null,
           floor_number: data.floorNumber || null,
-          proof_of_ownership_url: proofOfOwnershipUrl,
-          procuration_document_url: procurationDocUrl,
+           proof_of_ownership_url: proofOfOwnershipUrl,
+           procuration_document_url: procurationDocUrl,
+           proposed_permit_type: data.proposedPermitType || null,
+           proposed_permit_number: data.proposedPermitNumber || null,
+           proposed_permit_date: data.proposedPermitDate || null,
+           proposed_permit_service: data.proposedPermitService || null,
+           proposed_permit_document_url: proposedPermitDocUrl,
           fee_items: feeItems,
           total_amount_usd: totalAmount,
           payment_status: 'pending'
