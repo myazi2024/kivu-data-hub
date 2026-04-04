@@ -55,6 +55,9 @@ export interface LandTitleRequestData {
   deducedTitleType?: string;
   nationality?: string;
   occupationDuration?: string;
+  standing?: string;
+  constructionYear?: number;
+  floorNumber?: string;
   
   // Documents
   proofOfOwnershipFile?: File | null;
@@ -214,6 +217,9 @@ export const useLandTitleRequest = () => {
           deduced_title_type: data.deducedTitleType || null,
           nationality: data.nationality || null,
           occupation_duration: data.occupationDuration || null,
+          standing: data.standing || null,
+          construction_year: data.constructionYear || null,
+          floor_number: data.floorNumber || null,
           proof_of_ownership_url: proofOfOwnershipUrl,
           procuration_document_url: procurationDocUrl,
           fee_items: feeItems,

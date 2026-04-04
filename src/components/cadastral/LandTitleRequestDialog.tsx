@@ -123,6 +123,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     constructionNature?: string;
     constructionMaterials?: string;
     declaredUsage?: string;
+    standing?: string;
+    constructionYear?: number;
+    floorNumber?: string;
   } | null>(null);
   const [loadingOwnerData, setLoadingOwnerData] = useState(false);
   
@@ -177,6 +180,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [constructionNature, setConstructionNature] = useState<string>('');
   const [constructionMaterials, setConstructionMaterials] = useState<string>('');
   const [declaredUsage, setDeclaredUsage] = useState<string>('');
+  const [standing, setStanding] = useState<string>('');
+  const [constructionYear, setConstructionYear] = useState<string>('');
+  const [floorNumber, setFloorNumber] = useState<string>('');
   const [availableConstructionNatures, setAvailableConstructionNatures] = useState<string[]>([]);
   const [availableDeclaredUsages, setAvailableDeclaredUsages] = useState<string[]>([]);
   
@@ -645,6 +651,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       constructionNature,
       constructionMaterials,
       declaredUsage,
+      standing,
+      constructionYear: constructionYear ? parseInt(constructionYear, 10) : undefined,
+      floorNumber,
       deducedTitleType: deducedTitleType?.type || '',
       nationality,
       occupationDuration,
@@ -1092,7 +1101,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                           // First try contributions for richer owner + location details
                                           const { data: contribData } = await supabase
                                             .from('cadastral_contributions')
-                                            .select('current_owners_details, current_owner_name, current_owner_legal_status, province, parcel_type, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, construction_type, construction_nature, declared_usage, area_sqm')
+                                            .select('current_owners_details, current_owner_name, current_owner_legal_status, province, parcel_type, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, construction_type, construction_nature, construction_materials, declared_usage, area_sqm, standing, construction_year, floor_number')
                                             .eq('parcel_number', parcel.parcel_number)
                                             .eq('status', 'approved')
                                             .order('created_at', { ascending: false })
@@ -1153,7 +1162,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                           // Fetch location data: prioritize parcel table (source of truth)
                                           const { data: parcelLocData } = await supabase
                                             .from('cadastral_parcels')
-                                            .select('province, parcel_type, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, parcel_sides, gps_coordinates, construction_type, construction_nature, construction_materials, declared_usage, area_sqm')
+                                            .select('province, parcel_type, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, parcel_sides, gps_coordinates, construction_type, construction_nature, construction_materials, declared_usage, area_sqm, standing, construction_year')
                                             .eq('id', parcel.id)
                                             .single();
                                           
@@ -1200,6 +1209,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                           const valoConstructionNature = parcelLocData?.construction_nature || contribData?.construction_nature || '';
                                           const valoConstructionMaterials = parcelLocData?.construction_materials || (contribData as any)?.construction_materials || '';
                                           const valoDeclaredUsage = parcelLocData?.declared_usage || contribData?.declared_usage || '';
+                                          const valoStanding = (parcelLocData as any)?.standing || (contribData as any)?.standing || '';
+                                          const valoConstructionYear = (parcelLocData as any)?.construction_year || (contribData as any)?.construction_year || null;
+                                          const valoFloorNumber = (contribData as any)?.floor_number || '';
                                           
                                           if (valoConstructionType || valoConstructionNature || valoDeclaredUsage) {
                                             const valoData = {
@@ -1207,6 +1219,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                               constructionNature: valoConstructionNature,
                                               constructionMaterials: valoConstructionMaterials,
                                               declaredUsage: valoDeclaredUsage,
+                                              standing: valoStanding,
+                                              constructionYear: valoConstructionYear,
+                                              floorNumber: valoFloorNumber,
                                             };
                                             setParcelValorisationData(valoData);
                                             // Auto-fill construction states
@@ -1214,6 +1229,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                             if (valoConstructionNature) setConstructionNature(valoConstructionNature);
                                             if (valoConstructionMaterials) setConstructionMaterials(valoConstructionMaterials);
                                             if (valoDeclaredUsage) setDeclaredUsage(valoDeclaredUsage);
+                                            if (valoStanding) setStanding(valoStanding);
+                                            if (valoConstructionYear) setConstructionYear(String(valoConstructionYear));
+                                            if (valoFloorNumber) setFloorNumber(valoFloorNumber);
                                           }
                                         } catch (err) {
                                           console.error('Error fetching owner data:', err);
@@ -2161,49 +2179,79 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                 <TabsContent value="valorisation" className="space-y-4">
                   {/* PARCEL-LINKED MODE: Auto-loaded valorisation data displayed as read-only */}
                   {isParcelLinkedMode && parcelValidated && parcelValorisationData && (
-                    <Card className="border-2 border-primary/20 rounded-xl bg-primary/5">
-                      <CardContent className="p-3 space-y-3">
-                        <div className="flex items-center gap-2">
-                          <Home className="h-4 w-4 text-primary" />
-                          <h4 className="text-sm font-semibold">Données de mise en valeur enregistrées</h4>
+                    <>
+                      <Card className="border-2 border-primary/20 rounded-xl bg-primary/5">
+                        <CardContent className="p-3 space-y-3">
+                          <div className="flex items-center gap-2">
+                            <Home className="h-4 w-4 text-primary" />
+                            <h4 className="text-sm font-semibold">Données de mise en valeur enregistrées</h4>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Ces informations sont extraites de la fiche parcellaire <strong>{selectedParcelNumber}</strong> disponible dans la base de données.
+                          </p>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="p-2 rounded-lg bg-background border">
+                              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Type de construction</p>
+                              <p className="text-sm font-medium">{parcelValorisationData.constructionType || '—'}</p>
+                            </div>
+                            <div className="p-2 rounded-lg bg-background border">
+                              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Matériaux</p>
+                              <p className="text-sm font-medium">{parcelValorisationData.constructionMaterials || '—'}</p>
+                            </div>
+                            <div className="p-2 rounded-lg bg-background border">
+                              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Nature</p>
+                              <p className="text-sm font-medium">{parcelValorisationData.constructionNature || '—'}</p>
+                            </div>
+                            <div className="p-2 rounded-lg bg-background border">
+                              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Usage déclaré</p>
+                              <p className="text-sm font-medium">{parcelValorisationData.declaredUsage || '—'}</p>
+                            </div>
+                            {/* Conditionally show standing & floor_number if nature != "Non bâti" */}
+                            {parcelValorisationData.constructionNature && !parcelValorisationData.constructionNature.toLowerCase().includes('non bâti') && (
+                              <>
+                                <div className="p-2 rounded-lg bg-background border">
+                                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Standing</p>
+                                  <p className="text-sm font-medium">{parcelValorisationData.standing || '—'}</p>
+                                </div>
+                                <div className="p-2 rounded-lg bg-background border">
+                                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Nombre d'étages</p>
+                                  <p className="text-sm font-medium">{parcelValorisationData.floorNumber || '—'}</p>
+                                </div>
+                              </>
+                            )}
+                            {/* Conditionally show construction year if type != "Terrain nu" */}
+                            {parcelValorisationData.constructionType !== 'Terrain nu' && (
+                              <div className="p-2 rounded-lg bg-background border">
+                                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Année de construction</p>
+                                <p className="text-sm font-medium">{parcelValorisationData.constructionYear || '—'}</p>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Radio group: exact or update */}
+                      <RadioGroup
+                        value={showValorisationUpdate ? 'update' : 'exact'}
+                        onValueChange={(val) => setShowValorisationUpdate(val === 'update')}
+                        className="flex flex-col gap-2"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="exact" id="valo-exact" />
+                          <Label htmlFor="valo-exact" className="text-sm cursor-pointer">Ces données sont exactes</Label>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                          Ces informations sont extraites de la fiche parcellaire <strong>{selectedParcelNumber}</strong> disponible dans la base de données.
-                        </p>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="p-2 rounded-lg bg-background border">
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Type de construction</p>
-                            <p className="text-sm font-medium">{parcelValorisationData.constructionType || '—'}</p>
-                          </div>
-                          <div className="p-2 rounded-lg bg-background border">
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Nature</p>
-                            <p className="text-sm font-medium">{parcelValorisationData.constructionNature || '—'}</p>
-                          </div>
-                          <div className="p-2 rounded-lg bg-background border">
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Matériaux</p>
-                            <p className="text-sm font-medium">{parcelValorisationData.constructionMaterials || '—'}</p>
-                          </div>
-                          <div className="p-2 rounded-lg bg-background border">
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Usage déclaré</p>
-                            <p className="text-sm font-medium">{parcelValorisationData.declaredUsage || '—'}</p>
-                          </div>
-                        </div>
-                        {!showValorisationUpdate && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full mt-2 h-8 text-xs rounded-xl gap-2 text-muted-foreground hover:text-primary"
-                            onClick={() => setShowValorisationUpdate(true)}
-                          >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="update" id="valo-update" />
+                          <Label htmlFor="valo-update" className="text-sm cursor-pointer flex items-center gap-1.5">
                             <RefreshCw className="h-3 w-3" />
-                            Ces données sont inexactes ? Proposer une mise à jour
-                          </Button>
-                        )}
-                      </CardContent>
-                    </Card>
+                            Proposer une mise à jour
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </>
                   )}
 
-                  {/* Type de construction - conditionnel en mode parcelle liée */}
+                  {/* Construction form block - always shown if no parcel data, or conditionally if update requested */}
                   {(!(isParcelLinkedMode && parcelValidated && parcelValorisationData) || showValorisationUpdate) && (
                   <Card className={cn("border rounded-xl", showValorisationUpdate && "border-2 border-orange-300/50 bg-orange-50/30 dark:bg-orange-950/10")}>
                     <CardContent className="p-3 space-y-3">
@@ -2218,24 +2266,12 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               : "Décrivez comment la parcelle est mise en valeur : type de construction, nature, usage déclaré. Ces informations déterminent le type de titre foncier auquel vous avez droit."}
                           />
                         </h4>
-                        <div className="flex items-center gap-2">
-                          {showValorisationUpdate && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 text-[10px] px-2 rounded-lg text-muted-foreground hover:text-destructive"
-                              onClick={() => setShowValorisationUpdate(false)}
-                            >
-                              <X className="h-3 w-3 mr-1" />
-                              Annuler
-                            </Button>
-                          )}
-                          <span className="text-[10px] px-2 py-0.5 bg-muted rounded-full">
-                            {formData.sectionType === 'urbaine' ? 'SU' : formData.sectionType === 'rurale' ? 'SR' : '—'}
-                          </span>
-                        </div>
+                        <span className="text-[10px] px-2 py-0.5 bg-muted rounded-full">
+                          {formData.sectionType === 'urbaine' ? 'SU' : formData.sectionType === 'rurale' ? 'SR' : '—'}
+                        </span>
                       </div>
 
+                      {/* Row 1: Type de construction + Matériaux */}
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1.5">
                           <Label className="text-sm">Type de construct. *</Label>
@@ -2243,9 +2279,12 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                             value={constructionType}
                             onValueChange={(value) => {
                               setConstructionType(value);
-                              if (value === 'Terrain nu') setConstructionMaterials('');
+                              if (value === 'Terrain nu') {
+                                setConstructionMaterials('');
+                                setStanding('');
+                                setFloorNumber('');
+                              }
                             }}
-                            disabled={!showValorisationUpdate && isParcelLinkedMode && parcelValidated && !!parcelValorisationData?.constructionType}
                           >
                             <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
                               <SelectValue placeholder="Choisir le type" />
@@ -2260,64 +2299,64 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           </Select>
                         </div>
 
-                        <div className="space-y-1.5">
-                          <Label className="text-sm">Nature *</Label>
-                          <Select 
-                            value={constructionNature}
-                            onValueChange={setConstructionNature}
-                            disabled={!constructionType || (!showValorisationUpdate && isParcelLinkedMode && parcelValidated && !!parcelValorisationData?.constructionNature)}
-                          >
-                            <SelectTrigger className={cn(
-                              "h-11 text-sm rounded-xl border-2",
-                              !constructionType ? "bg-muted/50 cursor-not-allowed" : "focus:border-primary"
-                            )}>
-                              <SelectValue placeholder={!constructionType ? "→ Type d'abord" : "Choisir"} />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl">
-                              {availableConstructionNatures.map((nature) => (
-                                <SelectItem key={nature} value={nature} className="text-sm py-2">{nature}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                        {constructionType !== 'Terrain nu' && (
+                          <div className="space-y-1.5">
+                            <Label className="text-sm">Matériaux</Label>
+                            <Select value={constructionMaterials} onValueChange={setConstructionMaterials}>
+                              <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
+                                <SelectValue placeholder="Choisir" />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-xl">
+                                {(() => {
+                                  const materialsByNature: Record<string, string[]> = {
+                                    'Durable': ['Béton armé', 'Briques cuites', 'Parpaings', 'Pierre naturelle'],
+                                    'Semi-durable': ['Semi-dur', 'Briques adobes', 'Bois', 'Mixte'],
+                                    'Précaire': ['Tôles', 'Bois', 'Paille', 'Autre'],
+                                  };
+                                  const materials = materialsByNature[constructionNature] || [
+                                    'Béton armé', 'Briques cuites', 'Parpaings', 'Pierre naturelle',
+                                    'Semi-dur', 'Briques adobes', 'Bois', 'Mixte', 'Tôles', 'Paille', 'Autre'
+                                  ];
+                                  return materials.map(m => (
+                                    <SelectItem key={m} value={m} className="text-sm py-2">{m}</SelectItem>
+                                  ));
+                                })()}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
                       </div>
 
+                      {/* Row 2: Nature (auto-determined) + Usage déclaré */}
                       {constructionType && (
                         <div className="grid grid-cols-2 gap-2">
-                          {constructionType !== 'Terrain nu' && (
-                            <div className="space-y-1.5">
-                              <Label className="text-sm">Matériaux</Label>
-                              <Select value={constructionMaterials} onValueChange={setConstructionMaterials}>
-                                <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
-                                  <SelectValue placeholder="Choisir" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-xl">
-                                  {(() => {
-                                    // CCC-aligned: materials depend on construction nature
-                                    const materialsByNature: Record<string, string[]> = {
-                                      'Durable': ['Béton armé', 'Briques cuites', 'Parpaings', 'Pierre naturelle'],
-                                      'Semi-durable': ['Semi-dur', 'Briques adobes', 'Bois', 'Mixte'],
-                                      'Précaire': ['Tôles', 'Bois', 'Paille', 'Autre'],
-                                    };
-                                    const materials = materialsByNature[constructionNature] || [
-                                      'Béton armé', 'Briques cuites', 'Parpaings', 'Pierre naturelle',
-                                      'Semi-dur', 'Briques adobes', 'Bois', 'Mixte', 'Tôles', 'Paille', 'Autre'
-                                    ];
-                                    return materials.map(m => (
-                                      <SelectItem key={m} value={m} className="text-sm py-2">{m}</SelectItem>
-                                    ));
-                                  })()}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          )}
+                          <div className="space-y-1.5">
+                            <Label className="text-sm">Nature *</Label>
+                            <Select 
+                              value={constructionNature}
+                              onValueChange={setConstructionNature}
+                              disabled={!constructionType}
+                            >
+                              <SelectTrigger className={cn(
+                                "h-11 text-sm rounded-xl border-2",
+                                !constructionType ? "bg-muted/50 cursor-not-allowed" : "focus:border-primary"
+                              )}>
+                                <SelectValue placeholder={!constructionType ? "→ Type d'abord" : "Choisir"} />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-xl">
+                                {availableConstructionNatures.map((nature) => (
+                                  <SelectItem key={nature} value={nature} className="text-sm py-2">{nature}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
 
-                          <div className={cn("space-y-1.5", constructionType === 'Terrain nu' && "col-span-2")}>
+                          <div className="space-y-1.5">
                             <Label className="text-sm">Usage déclaré *</Label>
                             <Select 
                               value={declaredUsage}
                               onValueChange={setDeclaredUsage}
-                              disabled={!constructionNature || (!showValorisationUpdate && isParcelLinkedMode && parcelValidated && !!parcelValorisationData?.declaredUsage)}
+                              disabled={!constructionNature}
                             >
                               <SelectTrigger className={cn(
                                 "h-11 text-sm rounded-xl border-2",
@@ -2331,6 +2370,58 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                 ))}
                               </SelectContent>
                             </Select>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Row 3: Standing + Nombre d'étages (visible if nature != "Non bâti") */}
+                      {constructionNature && !constructionNature.toLowerCase().includes('non bâti') && (
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1.5">
+                            <Label className="text-sm">Standing</Label>
+                            <Select value={standing} onValueChange={setStanding}>
+                              <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
+                                <SelectValue placeholder="Choisir" />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-xl">
+                                <SelectItem value="Haut standing" className="text-sm py-2">Haut standing</SelectItem>
+                                <SelectItem value="Moyen standing" className="text-sm py-2">Moyen standing</SelectItem>
+                                <SelectItem value="Bas standing" className="text-sm py-2">Bas standing</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-sm">Nombre d'étages</Label>
+                            <Select value={floorNumber} onValueChange={setFloorNumber}>
+                              <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
+                                <SelectValue placeholder="Choisir" />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-xl">
+                                <SelectItem value="0" className="text-sm py-2">Rez-de-chaussée uniquement</SelectItem>
+                                <SelectItem value="1" className="text-sm py-2">R+1</SelectItem>
+                                <SelectItem value="2" className="text-sm py-2">R+2</SelectItem>
+                                <SelectItem value="3" className="text-sm py-2">R+3</SelectItem>
+                                <SelectItem value="4+" className="text-sm py-2">R+4 ou plus</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Row 4: Année de construction (visible if type != "Terrain nu") */}
+                      {constructionType && constructionType !== 'Terrain nu' && (
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1.5">
+                            <Label className="text-sm">Année de construction</Label>
+                            <Input
+                              type="number"
+                              min={1900}
+                              max={new Date().getFullYear()}
+                              value={constructionYear}
+                              onChange={(e) => setConstructionYear(e.target.value)}
+                              placeholder="Ex: 2015"
+                              className="h-11 text-sm rounded-xl border-2 focus:border-primary"
+                            />
                           </div>
                         </div>
                       )}
