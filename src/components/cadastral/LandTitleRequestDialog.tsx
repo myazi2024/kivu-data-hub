@@ -348,7 +348,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   useEffect(() => {
     setValorisationValidated(false);
     setDeducedTitleType(null);
-  }, [constructionType, constructionNature, declaredUsage, nationality, occupationDuration, formData.sectionType]);
+  }, [constructionType, constructionNature, declaredUsage, nationality, formData.sectionType, hasPermitUpdate, parcelBuildingPermits]);
 
   // Auto-fill construction states when "Ces données sont exactes" is selected
   useEffect(() => {
