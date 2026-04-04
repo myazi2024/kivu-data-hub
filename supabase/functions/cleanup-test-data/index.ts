@@ -16,6 +16,44 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Security: Verify JWT and admin role
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const userId = claimsData.claims.sub as string;
+
+    // Verify admin role
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .in("role", ["admin", "super_admin"])
+      .limit(1);
+
+    if (!roleData || roleData.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "Forbidden: admin role required" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Load test mode config
     const { data: configData } = await supabase
       .from("cadastral_search_config")
@@ -107,7 +145,7 @@ Deno.serve(async (req) => {
       supabase.from("cadastral_contributions").delete().ilike("parcel_number", "TEST-%").lt("created_at", cutoffISO).select("id")
     );
 
-    // 7. Parcel children (Bug 11 fix: include boundary_history and mortgages)
+    // 7. Parcel children (including mortgage_payments → mortgages)
     const { data: parcelRows } = await supabase
       .from("cadastral_parcels")
       .select("id")
@@ -115,6 +153,19 @@ Deno.serve(async (req) => {
       .lt("created_at", cutoffISO);
     const parcelIds = parcelRows?.map((r: any) => r.id) ?? [];
     if (parcelIds.length > 0) {
+      // 7a. mortgage_payments (FK → mortgages) — must delete BEFORE mortgages
+      const { data: mortgageRows } = await supabase
+        .from("cadastral_mortgages")
+        .select("id")
+        .in("parcel_id", parcelIds);
+      const mortgageIds = mortgageRows?.map((r: any) => r.id) ?? [];
+      if (mortgageIds.length > 0) {
+        await safeDelete(
+          "cadastral_mortgage_payments",
+          supabase.from("cadastral_mortgage_payments").delete().in("mortgage_id", mortgageIds).select("id")
+        );
+      }
+
       await safeDelete(
         "cadastral_ownership_history",
         supabase.from("cadastral_ownership_history").delete().in("parcel_id", parcelIds).select("id")
@@ -157,7 +208,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 10. Independent tables
+    // 10. Independent tables (land_title_requests moved OUTSIDE parcel_ids block)
     await safeDelete(
       "real_estate_expertise_requests",
       supabase.from("real_estate_expertise_requests").delete().ilike("reference_number", "TEST-%").lt("created_at", cutoffISO).select("id")
@@ -188,7 +239,7 @@ Deno.serve(async (req) => {
       supabase.from("subdivision_requests").delete().ilike("reference_number", "TEST-%").lt("created_at", cutoffISO).select("id")
     );
 
-    // Audit log (Bug 19 fix: include errors in audit)
+    // Audit log
     await supabase.rpc("log_audit_action", {
       action_param: "AUTO_TEST_DATA_CLEANUP",
       table_name_param: "cadastral_contributions",

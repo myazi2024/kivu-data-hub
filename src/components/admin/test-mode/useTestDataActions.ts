@@ -61,6 +61,7 @@ export const useTestDataActions = ({
 }: UseTestDataActionsProps) => {
   const [cleaningUp, setCleaningUp] = useState(false);
   const [generatingData, setGeneratingData] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
   const [generationSteps, setGenerationSteps] = useState<GenerationStep[]>(GENERATION_STEPS);
   const [currentStep, setCurrentStep] = useState(-1);
 
@@ -115,6 +116,7 @@ export const useTestDataActions = ({
 
     const suffix = uniqueSuffix();
     const parcelNumbers = generateParcelNumbers(suffix);
+    const failedSteps: string[] = [];
 
     try {
       setGeneratingData(true);
@@ -180,8 +182,14 @@ export const useTestDataActions = ({
 
       // Step 5: Service access (non-blocking)
       updateStep(5, 'running');
-      await generateServiceAccess(userId, invoices);
-      updateStep(5, 'done');
+      try {
+        await generateServiceAccess(userId, invoices);
+        updateStep(5, 'done');
+      } catch (saError) {
+        updateStep(5, 'error');
+        failedSteps.push('Accès services');
+        console.error('Service access (non-bloquant):', saError);
+      }
 
       // Step 6: Contributor codes
       updateStep(6, 'running');
@@ -190,6 +198,7 @@ export const useTestDataActions = ({
         updateStep(6, 'done');
       } catch (cccError) {
         updateStep(6, 'error');
+        failedSteps.push('Codes CCC');
         console.error('Codes CCC (non-bloquant):', cccError);
       }
 
@@ -200,6 +209,7 @@ export const useTestDataActions = ({
         updateStep(7, 'done');
       } catch (titleError) {
         updateStep(7, 'error');
+        failedSteps.push('Demandes titres');
         console.error('Title requests failed (non-blocking):', titleError);
       }
 
@@ -211,6 +221,7 @@ export const useTestDataActions = ({
         updateStep(8, 'done');
       } catch (expError) {
         updateStep(8, 'error');
+        failedSteps.push('Expertises');
         console.error('Expertise requests/payments failed (non-blocking):', expError);
       }
 
@@ -221,6 +232,7 @@ export const useTestDataActions = ({
         updateStep(9, 'done');
       } catch (dispError) {
         updateStep(9, 'error');
+        failedSteps.push('Litiges');
         console.error('Disputes failed (non-blocking):', dispError);
       }
 
@@ -232,6 +244,7 @@ export const useTestDataActions = ({
         updateStep(10, 'done');
       } catch (histError) {
         updateStep(10, 'error');
+        failedSteps.push('Historique');
         console.error('History (non-blocking):', histError);
       }
 
@@ -245,6 +258,7 @@ export const useTestDataActions = ({
         updateStep(11, 'done');
       } catch (bmError) {
         updateStep(11, 'error');
+        failedSteps.push('Bornages/hypothèques/permis');
         console.error('Bornages/hypothèques/permis/conflits (non-blocking):', bmError);
       }
 
@@ -256,6 +270,7 @@ export const useTestDataActions = ({
         updateStep(12, 'done');
       } catch (fcError) {
         updateStep(12, 'error');
+        failedSteps.push('Fraudes/certificats');
         console.error('Fraud/certificates (non-blocking):', fcError);
       }
 
@@ -267,6 +282,7 @@ export const useTestDataActions = ({
         updateStep(13, 'done');
       } catch (msError) {
         updateStep(13, 'error');
+        failedSteps.push('Mutations/lotissements');
         console.error('Mutations/subdivisions (non-blocking):', msError);
       }
 
@@ -280,6 +296,7 @@ export const useTestDataActions = ({
           invoices: invoices.length,
           parcels: parcels.length,
           suffix,
+          failedSteps,
           entities: [
             'parcels', 'contributions', 'invoices', 'payments', 'service_access',
             'contributor_codes', 'title_requests', 'expertise', 'disputes',
@@ -291,9 +308,16 @@ export const useTestDataActions = ({
         })
       );
 
-      toast.success('Données de test générées', {
-        description: `${parcels.length} parcelles (26 provinces, densité variable ×1 à ×26), ${contributions.length} contributions, ${invoices.length} factures et 10+ entités associées — étalonnées sur 10 ans`,
-      });
+      if (failedSteps.length > 0) {
+        toast.warning('Données de test générées avec des erreurs partielles', {
+          description: `${parcels.length} parcelles créées. Échecs : ${failedSteps.join(', ')}`,
+          duration: 8000,
+        });
+      } else {
+        toast.success('Données de test générées', {
+          description: `${parcels.length} parcelles (26 provinces, densité variable), ${contributions.length} contributions, ${invoices.length} factures et 10+ entités associées`,
+        });
+      }
 
       await onComplete();
     } catch (error: unknown) {
@@ -305,12 +329,35 @@ export const useTestDataActions = ({
     }
   }, [userId, onComplete]);
 
+  const regenerateTestData = useCallback(async () => {
+    if (!userId) {
+      toast.error('Erreur', { description: 'Vous devez être connecté' });
+      return;
+    }
+    try {
+      setRegenerating(true);
+      toast.info('Nettoyage des données existantes…');
+      const { error } = await supabase.rpc('cleanup_all_test_data');
+      if (error) throw new Error(error.message);
+      toast.success('Données nettoyées, régénération en cours…');
+      await generateTestData();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Veuillez réessayer';
+      console.error('Erreur lors de la régénération:', error);
+      toast.error('Erreur lors de la régénération', { description: message });
+    } finally {
+      setRegenerating(false);
+    }
+  }, [userId, generateTestData]);
+
   return {
     cleaningUp,
     generatingData,
+    regenerating,
     generationSteps,
     currentStep,
     cleanupTestData,
     generateTestData,
+    regenerateTestData,
   };
 };

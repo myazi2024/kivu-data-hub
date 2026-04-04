@@ -6,9 +6,10 @@ import { ExternalLink } from 'lucide-react';
 const guidelines = [
   <>Activez le <strong>mode test</strong> avant de tester les flux critiques (paiements, contributions, etc.)</>,
   <>Toutes les données créées en mode test auront le préfixe <strong>TEST-</strong> dans leur numéro de parcelle ou référence</>,
-  <>À l'activation, un <strong>jeu complet de données</strong> est généré automatiquement : 520 parcelles (26 provinces × 20), contributions, factures, paiements, codes CCC, titres, expertises, litiges, conflits, historique et certificats</>,
-  <>Le <strong>nettoyage automatique</strong> supprimera les données de test après le délai configuré (via cron quotidien)</>,
+  <>À l'activation, un <strong>jeu complet de données</strong> est généré automatiquement : 7 020 parcelles (26 provinces × densité variable), contributions, factures, paiements, codes CCC, titres, expertises, litiges, conflits, historique et certificats</>,
+  <>Le <strong>nettoyage automatique</strong> supprimera les données de test après le délai configuré (nécessite un cron configuré dans Supabase)</>,
   <>Utilisez <strong>"Nettoyer tout"</strong> pour supprimer manuellement toutes les données de test (respecte l'ordre FK)</>,
+  <>Utilisez <strong>"Régénérer"</strong> pour supprimer et recréer un jeu de données test frais en une seule action</>,
   <><strong>Important :</strong> Les données test sont isolées dans l'environnement <code>/test/*</code> et n'apparaissent plus dans les routes de production</>,
 ];
 

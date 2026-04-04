@@ -12,7 +12,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Loader2, Info, Trash2, RefreshCw } from 'lucide-react';
+import { Loader2, Info, Trash2, RefreshCw, RotateCcw } from 'lucide-react';
 import type { TestDataStats } from './types';
 
 interface TestDataStatsCardProps {
@@ -20,8 +20,10 @@ interface TestDataStatsCardProps {
   total: number;
   cleaningUp: boolean;
   statsLoading: boolean;
+  regenerating?: boolean;
   onCleanup: () => void;
   onRefresh: () => void;
+  onRegenerate?: () => void;
 }
 
 const STAT_ITEMS: { key: keyof TestDataStats; label: string }[] = [
@@ -52,8 +54,10 @@ const TestDataStatsCard: React.FC<TestDataStatsCardProps> = ({
   total,
   cleaningUp,
   statsLoading,
+  regenerating,
   onCleanup,
   onRefresh,
+  onRegenerate,
 }) => {
   return (
     <Card>
@@ -82,6 +86,41 @@ const TestDataStatsCard: React.FC<TestDataStatsCardProps> = ({
             )}
             Actualiser
           </Button>
+
+          {onRegenerate && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  disabled={regenerating || cleaningUp || total === 0}
+                >
+                  {regenerating ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                  )}
+                  Régénérer
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Régénérer les données de test ?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Cette action va <strong>supprimer</strong> toutes les données de test existantes
+                    ({total} enregistrements) puis <strong>générer</strong> un nouveau jeu complet.
+                    <br />
+                    <strong>Cette action est irréversible.</strong>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction onClick={onRegenerate}>
+                    Régénérer
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
 
           <AlertDialog>
             <AlertDialogTrigger asChild>
