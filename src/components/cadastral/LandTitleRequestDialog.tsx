@@ -1250,6 +1250,14 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                             if (valoConstructionYear) setConstructionYear(String(valoConstructionYear));
                                             if (valoFloorNumber) setFloorNumber(valoFloorNumber);
                                           }
+
+                                          // Fetch building permits for this parcel
+                                          const { data: permitsData } = await supabase
+                                            .from('cadastral_building_permits')
+                                            .select('permit_number, administrative_status, issue_date, issuing_service, validity_period_months, is_current')
+                                            .eq('parcel_id', parcel.id)
+                                            .order('issue_date', { ascending: false });
+                                          setParcelBuildingPermits(permitsData || []);
                                         } catch (err) {
                                           console.error('Error fetching owner data:', err);
                                         } finally {
