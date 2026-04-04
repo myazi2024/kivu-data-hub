@@ -1,28 +1,34 @@
 
 
-# Boutons Zoom dynamiques sur mobile — Prise en compte de la barre de recherche
+# Ajout du service "Demander un titre foncier" dans le dropdown Actions
 
 ## Problème
 
-Sur mobile, quand aucune parcelle n'est sélectionnée, la barre de recherche se positionne en bas de l'écran (`translate-y-[calc(100dvh-12rem)]`). Les boutons de zoom (bottom-right) restent à `margin-bottom: 1rem`, ce qui crée un chevauchement. De plus, quand le dropdown Actions s'ouvre, le calcul actuel ne fonctionne pas toujours correctement sur mobile.
+Le service de demande de titre foncier existe déjà dans l'app (dialog `LandTitleRequestDialog` + `LandTitleTermsDialog`) mais n'est accessible que via le bouton flottant de notification sur la carte. Il manque en tant que raccourci dans le dropdown "Actions" de la parcelle sélectionnée.
 
 ## Solution
 
-Modifier le calcul dynamique du `margin-bottom` des contrôles de zoom pour prendre en compte **3 états** sur mobile :
+Ajouter une entrée `land_title_request` dans la configuration des actions et câbler le handler pour ouvrir le flux existant (termes → demande).
 
-### Logique de marge mobile mise à jour
+### Modifications
 
-| État | margin-bottom |
-|---|---|
-| Aucune parcelle, recherche inactive (barre en bas) | `13rem` (au-dessus de la barre) |
-| Aucune parcelle, recherche active (barre en haut) | `1rem` |
-| Parcelle sélectionnée, actions fermées | `11rem` |
-| Parcelle sélectionnée, actions ouvertes | `26rem` |
+**1. `src/hooks/useParcelActionsConfig.tsx`**
+- Ajouter une entrée dans `DEFAULT_ACTIONS` :
+  - `key: 'land_title_request'`, label "Demander un titre foncier", description "Soumettre une demande de titre foncier", `displayOrder: 4`, `category: 'title'`, `badge: { type: 'none' }`
+- Ajouter `ScrollText` dans les icônes par défaut
 
-### Fichier modifié
+**2. `src/components/cadastral/ParcelActionsDropdown.tsx`**
+- Ajouter une prop `onRequestLandTitle` (callback) au composant
+- Ajouter `ScrollText` dans les imports Lucide
+- Ajouter `land_title_request: ScrollText` dans `DEFAULT_ACTION_ICONS`
+- Dans `getActionHandler`, mapper `'land_title_request'` vers `onRequestLandTitle`
 
-**`src/pages/CadastralMap.tsx`** — Bloc `<style>` dynamique (lignes 937-948) :
-- Ajouter `isSearchBarActive` dans le calcul de marge
-- Sur mobile sans parcelle : si la barre de recherche est en bas (`!isSearchBarActive`), appliquer `13rem` au lieu de `1rem` pour que les boutons restent au-dessus
-- Desktop inchangé (la barre de recherche ne descend pas en bas sur desktop)
+**3. `src/pages/CadastralMap.tsx`**
+- Passer la prop `onRequestLandTitle` au `ParcelActionsDropdown` qui déclenche `setShowLandTitleTermsDialog(true)` (le flux existant : termes d'abord, puis dialog de demande)
+
+**4. Base de données** — Migration SQL
+- Insérer la nouvelle action dans `parcel_actions_config` pour qu'elle soit persistée et configurable par l'admin
+
+### Résultat
+Le service apparaîtra dans le menu Actions entre "Gestion Hypothèque" et "Ajouter une autorisation", et ouvrira le même flux termes → demande de titre que le bouton existant.
 
