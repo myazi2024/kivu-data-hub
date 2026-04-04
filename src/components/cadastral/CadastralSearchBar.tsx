@@ -81,8 +81,19 @@ const CadastralSearchBar = () => {
         setShowResultsDialog(true);
       }
     };
+    const handleOpenCCC = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.parcelNumber) {
+        setSearchQuery(detail.parcelNumber);
+      }
+      setShowContributionDialog(true);
+    };
     window.addEventListener('open-cadastral-results-dialog', handleOpenCatalog);
-    return () => window.removeEventListener('open-cadastral-results-dialog', handleOpenCatalog);
+    window.addEventListener('open-ccc-dialog', handleOpenCCC);
+    return () => {
+      window.removeEventListener('open-cadastral-results-dialog', handleOpenCatalog);
+      window.removeEventListener('open-ccc-dialog', handleOpenCCC);
+    };
   }, [searchResult]);
 
   useEffect(() => {
