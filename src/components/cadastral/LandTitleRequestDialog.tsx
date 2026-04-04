@@ -31,7 +31,6 @@ import {
   deduceLandTitleType as deduceLandTitle, 
   DeducedLandTitle,
   NATIONALITY_OPTIONS,
-  OCCUPATION_DURATION_OPTIONS,
   validateDeductionInput
 } from '@/utils/landTitleDeduction';
 import { QuickAuthDialog } from './QuickAuthDialog';
@@ -219,7 +218,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   
   // New fields for land title deduction
   const [nationality, setNationality] = useState<'congolais' | 'etranger' | ''>('');
-  const [occupationDuration, setOccupationDuration] = useState<'perpetuel' | 'long_terme' | 'temporaire' | ''>('');
   
   // Land title type deduction
   const [valorisationValidated, setValorisationValidated] = useState(false);
@@ -232,7 +230,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       constructionNature,
       declaredUsage,
       nationality,
-      occupationDuration
+      hasBuildingPermit: parcelBuildingPermits.length > 0 || hasPermitUpdate === 'yes'
     });
 
     if (!validation.isValid) {
@@ -244,11 +242,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       return;
     }
 
-    // Check for recommendations
-    if (validation.recommendations.length > 0 && !nationality) {
+    if (!nationality) {
       toast({
         title: "Données incomplètes",
-        description: "Veuillez indiquer votre nationalité et la durée d'occupation souhaitée",
+        description: "Veuillez indiquer votre nationalité",
         variant: "destructive"
       });
       return;
@@ -260,7 +257,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       constructionNature,
       declaredUsage,
       nationality,
-      occupationDuration,
+      hasBuildingPermit: parcelBuildingPermits.length > 0 || hasPermitUpdate === 'yes',
       areaSqm: formData.areaSqm
     });
     
@@ -351,7 +348,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   useEffect(() => {
     setValorisationValidated(false);
     setDeducedTitleType(null);
-  }, [constructionType, constructionNature, declaredUsage, nationality, occupationDuration, formData.sectionType]);
+  }, [constructionType, constructionNature, declaredUsage, nationality, formData.sectionType, hasPermitUpdate, parcelBuildingPermits]);
 
   // Auto-fill construction states when "Ces données sont exactes" is selected
   useEffect(() => {
@@ -541,7 +538,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       setFloorNumber(draft.floorNumber || '');
       setConstructionYear(draft.constructionYear || '');
       setNationality(draft.nationality as any || '');
-      setOccupationDuration(draft.occupationDuration as any || '');
       setRequestType(draft.requestType as any || '');
       setSelectedParcelNumber(draft.selectedParcelNumber || '');
       if (draft.gpsCoordinates?.length) setGpsCoordinates(draft.gpsCoordinates);
@@ -567,7 +563,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
           floorNumber,
           constructionYear,
           nationality,
-          occupationDuration,
           requestType,
           selectedParcelNumber,
           gpsCoordinates,
@@ -576,7 +571,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       }
     }, 10000);
     return () => clearInterval(interval);
-  }, [open, formData, constructionType, constructionNature, constructionMaterials, declaredUsage, nationality, occupationDuration, requestType, selectedParcelNumber, gpsCoordinates, parcelSides]);
+  }, [open, formData, constructionType, constructionNature, constructionMaterials, declaredUsage, nationality, requestType, selectedParcelNumber, gpsCoordinates, parcelSides]);
 
   // Update location options
   useEffect(() => {
@@ -760,7 +755,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       floorNumber,
       deducedTitleType: deducedTitleType?.type || '',
       nationality,
-      occupationDuration,
       requesterIdDocumentFile: requesterIdFile,
       ownerIdDocumentFile: ownerIdFile,
       proofOfOwnershipFile: proofOfOwnershipFile,
@@ -893,7 +887,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setFloorNumber('');
     setConstructionYear('');
     setNationality('');
-    setOccupationDuration('');
     setValorisationValidated(false);
     setDeducedTitleType(null);
     // Reset valorisation update states
@@ -2769,92 +2762,45 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           Éligibilité
                           <SectionHelpPopover
                             title="Éligibilité au titre foncier"
-                            description="Indiquez votre nationalité et la durée d'occupation souhaitée. Ces critères déterminent automatiquement le type de titre foncier auquel vous êtes éligible selon la loi congolaise."
+                            description="Indiquez votre nationalité. Ce critère, combiné à l'état de mise en valeur et à la présence d'une autorisation de bâtir, détermine le type de titre foncier auquel vous êtes éligible."
                           />
                         </h4>
 
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="space-y-1.5">
-                            <Label className="text-sm">Nationalité *</Label>
-                            <Select 
-                              value={nationality}
-                              onValueChange={(value) => setNationality(value as 'congolais' | 'etranger')}
-                            >
-                              <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
-                                <SelectValue placeholder="Choisir" />
-                              </SelectTrigger>
-                              <SelectContent className="rounded-xl">
-                                {NATIONALITY_OPTIONS.map((option) => (
-                                  <SelectItem key={option.value} value={option.value} className="text-sm py-2">
-                                    {option.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="space-y-1.5">
-                            <Label className="text-sm">Durée souhaitée *</Label>
-                            <Select 
-                              value={occupationDuration}
-                              onValueChange={(value) => setOccupationDuration(value as 'perpetuel' | 'long_terme' | 'temporaire')}
-                            >
-                              <SelectTrigger className={cn(
-                                "h-11 text-sm rounded-xl border-2",
-                                nationality === 'etranger' && occupationDuration === 'perpetuel'
-                                  ? "border-destructive"
-                                  : "focus:border-primary"
-                              )}>
-                                <SelectValue placeholder="Choisir" />
-                              </SelectTrigger>
-                              <SelectContent className="rounded-xl">
-                                {OCCUPATION_DURATION_OPTIONS.map((option) => (
-                                  <SelectItem 
-                                    key={option.value} 
-                                    value={option.value}
-                                    disabled={nationality === 'etranger' && option.value === 'perpetuel'}
-                                    className="text-sm py-2"
-                                  >
-                                    <div className="flex flex-col">
-                                      <span className={cn(
-                                        nationality === 'etranger' && option.value === 'perpetuel' && "line-through text-muted-foreground"
-                                      )}>
-                                        {option.label}
-                                      </span>
-                                      {nationality === 'etranger' && option.value === 'perpetuel' && (
-                                        <span className="text-[10px] text-destructive">Non accessible aux étrangers</span>
-                                      )}
-                                    </div>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-sm">Nationalité *</Label>
+                          <Select 
+                            value={nationality}
+                            onValueChange={(value) => setNationality(value as 'congolais' | 'etranger')}
+                          >
+                            <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
+                              <SelectValue placeholder="Choisir" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl">
+                              {NATIONALITY_OPTIONS.map((option) => (
+                                <SelectItem key={option.value} value={option.value} className="text-sm py-2">
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
 
-                        {nationality && occupationDuration && (
+                        {nationality && (
                           <div className={cn(
                             "p-2 rounded-lg text-xs flex items-center gap-2",
-                            nationality === 'congolais' && occupationDuration === 'perpetuel'
+                            (parcelBuildingPermits.length > 0 || hasPermitUpdate === 'yes')
                               ? "bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400"
-                              : nationality === 'etranger'
-                              ? "bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400"
                               : "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
                           )}>
-                            {nationality === 'congolais' && occupationDuration === 'perpetuel' ? (
+                            {(parcelBuildingPermits.length > 0 || hasPermitUpdate === 'yes') ? (
                               <>
                                 <Check className="h-3.5 w-3.5 flex-shrink-0" />
-                                <span>Éligible → <strong>Concession Perpétuelle</strong></span>
-                              </>
-                            ) : nationality === 'etranger' ? (
-                              <>
-                                <Info className="h-3.5 w-3.5 flex-shrink-0" />
-                                <span>Éligible → <strong>Bail/Concession Ordinaire</strong></span>
+                                <span>La mise en valeur est prouvée par l'autorisation de bâtir délivrée</span>
                               </>
                             ) : (
                               <>
                                 <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
-                                <span>Titre temporaire disponible</span>
+                                <span>Aucune autorisation de bâtir identifiée. Cela peut limiter le type de titre accessible.</span>
                               </>
                             )}
                           </div>
@@ -2864,10 +2810,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                   )}
 
                   {/* Bouton de validation */}
-                  {nationality && occupationDuration && (
+                  {nationality && (
                     <Button 
                       onClick={handleValidateValorisation}
-                      disabled={!constructionType || !constructionNature || !declaredUsage || !nationality || !occupationDuration}
+                      disabled={!constructionType || !constructionNature || !declaredUsage || !nationality}
                       className={cn(
                         "w-full h-10 text-sm rounded-xl gap-2",
                         valorisationValidated ? "bg-green-600 hover:bg-green-700" : ""
@@ -3351,7 +3297,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       floorNumber={floorNumber}
                       constructionYear={constructionYear}
                       nationality={nationality}
-                      occupationDuration={occupationDuration}
+                      hasBuildingPermit={parcelBuildingPermits.length > 0 || hasPermitUpdate === 'yes'}
                       valorisationValidated={valorisationValidated}
                       deducedTitleType={deducedTitleType}
                       requesterIdFile={requesterIdFile}

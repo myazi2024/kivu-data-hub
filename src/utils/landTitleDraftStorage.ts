@@ -17,7 +17,6 @@ export interface LandTitleDraft {
   floorNumber: string;
   constructionYear: string;
   nationality: string;
-  occupationDuration: string;
   requestType: string;
   selectedParcelNumber: string;
   gpsCoordinates: Array<{ borne: string; lat: string; lng: string }>;

@@ -18,7 +18,7 @@ export interface LandTitleReviewTabProps {
   floorNumber?: string;
   constructionYear?: string;
   nationality: string;
-  occupationDuration: string;
+  hasBuildingPermit?: boolean;
   valorisationValidated: boolean;
   deducedTitleType: DeducedTitle;
   requesterIdFile: File | null;
@@ -52,18 +52,7 @@ const formatNationality = (nat: string) => {
   return "";
 };
 
-const formatOccupationDuration = (dur: string) => {
-  switch (dur) {
-    case "perpetuel":
-      return "Perpétuel";
-    case "long_terme":
-      return "Long terme (25 ans)";
-    case "temporaire":
-      return "Temporaire (3 ans)";
-    default:
-      return "";
-  }
-};
+
 
 const formatFloorNumber = (floor: string) => {
   if (floor === '0') return 'Rez-de-chaussée';
@@ -83,7 +72,7 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
   floorNumber,
   constructionYear,
   nationality,
-  occupationDuration,
+  hasBuildingPermit,
   valorisationValidated,
   deducedTitleType,
   requesterIdFile,
@@ -334,10 +323,10 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
                 <span className="font-medium">Année de construction:</span> {constructionYear}
               </div>
             )}
-            {(nationality || occupationDuration) && (
+            {nationality && (
               <div className="pt-1 border-t border-border/50 text-muted-foreground">
-                {nationality && <div>Nationalité: {formatNationality(nationality)}</div>}
-                {occupationDuration && <div>Durée: {formatOccupationDuration(occupationDuration)}</div>}
+                <div>Nationalité: {formatNationality(nationality)}</div>
+                <div>Autorisation de bâtir: {hasBuildingPermit ? 'Oui' : 'Non'}</div>
               </div>
             )}
             {deducedTitleType?.label && (
