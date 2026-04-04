@@ -59,6 +59,13 @@ export interface LandTitleRequestData {
   constructionYear?: number;
   floorNumber?: string;
   
+  // Proposed building permit update
+  proposedPermitType?: string;
+  proposedPermitNumber?: string;
+  proposedPermitDate?: string;
+  proposedPermitService?: string;
+  proposedPermitDocumentFile?: File | null;
+  
   // Documents
   proofOfOwnershipFile?: File | null;
   procurationDocumentFile?: File | null;
