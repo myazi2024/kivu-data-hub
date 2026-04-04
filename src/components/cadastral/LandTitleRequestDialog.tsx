@@ -2632,8 +2632,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                     </CardContent>
                    </Card>
 
-                  {/* Building permit update sub-block (conditional, visible when update mode + type != Terrain nu) */}
-                  {showValorisationUpdate && constructionType && constructionType !== 'Terrain nu' && (
+                  {/* Building permit update sub-block (conditional, visible when update mode + type != Terrain nu + category != Appartement) */}
+                  {showValorisationUpdate && constructionType && constructionType !== 'Terrain nu' && propertyCategory !== 'Appartement' && (
                     <Card className="border rounded-xl border-2 border-orange-300/50 bg-orange-50/30 dark:bg-orange-950/10">
                       <CardContent className="p-3 space-y-3">
                         <div className="flex items-center gap-2">
