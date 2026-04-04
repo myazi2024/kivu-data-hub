@@ -1,65 +1,48 @@
 
 
-# Alignement complet du bloc Mise en valeur avec le bloc Construction du CCC
+# Ajout du bloc "Autorisation de bâtir" dans l'onglet Mise en valeur du titre foncier
 
-## Problème
+## Probleme
 
-Le bloc "Données de mise en valeur enregistrées" (lecture seule) et le bloc conditionnel "Proposer une mise à jour" dans l'onglet Valorisation du formulaire de titre foncier ne contiennent que 4 champs (type, nature, matériaux, usage), alors que le bloc Construction du CCC en contient 8 (+ catégorie de bien, standing, nombre d'étages, année de construction). De plus, les boutons de choix doivent être des boutons radio au lieu d'un bouton d'action.
+L'onglet "Infos" du formulaire CCC affiche un bloc "Autorisation de bâtir" juste après le bloc "Construction", mais l'onglet "Mise en valeur" du formulaire de demande de titre foncier n'intègre pas du tout ce bloc — ni en lecture seule (données enregistrées), ni en mode édition (proposer une mise à jour).
 
 ## Solution
 
-### 1. Migration SQL — Ajouter 3 colonnes à `land_title_requests`
+Ajouter un sous-bloc "Autorisation de bâtir" dans les deux zones de l'onglet Valorisation :
 
-```sql
-ALTER TABLE land_title_requests
-  ADD COLUMN IF NOT EXISTS standing text,
-  ADD COLUMN IF NOT EXISTS construction_year integer,
-  ADD COLUMN IF NOT EXISTS floor_number text;
-```
+### 1. Bloc lecture seule — "Données enregistrées"
 
-Note : `property_category` n'est pas nécessaire ici car le titre foncier concerne des parcelles, pas des appartements — la catégorie est déduite du type de construction.
+Après la grille des 7 champs construction existants, ajouter un sous-bloc "Autorisation de bâtir" (conditionnel : visible si le type de construction n'est pas "Terrain nu") :
+- Fetch des autorisations depuis `cadastral_building_permits` pour la parcelle lors de la validation (même requête que `CadastralMap.tsx` ligne 421)
+- Stocker dans un nouvel état `parcelBuildingPermits`
+- Afficher en lecture seule **avec masquage PII** : N° d'autorisation (masqué partiellement, ex: "PC-20***01"), type (Bâtir/Régularisation), date d'émission, statut de validité (valide/expiré), service émetteur
+- Le document de l'autorisation n'est PAS affiché (accès payant)
+- Si aucune autorisation trouvée, afficher "Aucune autorisation enregistrée"
 
-### 2. Type `LandTitleRequestData` — `src/hooks/useLandTitleRequest.tsx`
+### 2. Bloc conditionnel — "Proposer une mise à jour"
 
-Ajouter les champs `standing`, `constructionYear` (number), `floorNumber` (string) au type et les inclure dans l'insert DB (`createPendingRequest`).
+Quand l'utilisateur sélectionne le radio "Proposer une mise à jour", ajouter après le bloc construction éditable un sous-bloc "Autorisation de bâtir" reproduisant la structure du CCC :
+- Question "Avez-vous obtenu une autorisation de bâtir ?" avec boutons Oui/Non
+- Si Oui : formulaire avec type (Bâtir/Régularisation), N° autorisation, date, service émetteur (via `BuildingPermitIssuingServiceSelect`), upload document optionnel
+- Validation chronologique identique au CCC (3 ans pour bâtir, post-construction pour régularisation)
+- Visible uniquement si type de construction != "Terrain nu"
 
-### 3. État `parcelValorisationData` — `LandTitleRequestDialog.tsx`
+### 3. Données et persistance
 
-Étendre le type pour inclure `standing`, `constructionYear`, `floorNumber`. Lors du fetch des données parcelle (ligne ~1198), extraire aussi ces 3 champs depuis `contribData`/`parcelLocData`.
-
-### 4. Boutons radio — Remplacer le bouton "Proposer une mise à jour"
-
-Retirer le bouton actuel dans le premier bloc. Ajouter **en dehors** du premier bloc (entre les deux Cards) un groupe de boutons radio :
-- ○ Ces données sont exactes
-- ○ Proposer une mise à jour
-
-Le radio "exactes" est sélectionné par défaut. Quand "Proposer une mise à jour" est coché, le second bloc s'affiche. Quand "exactes" est recoché, le second bloc se masque.
-
-### 5. Bloc "Données enregistrées" — Ajouter les cases manquantes
-
-Compléter la grille de lecture seule avec :
-- Standing
-- Nombre d'étages
-- Année de construction
-
-(en plus des 4 existants : type, nature, matériaux, usage)
-
-### 6. Bloc conditionnel "Proposer une mise à jour" — Aligner sur le CCC
-
-Reproduire la structure exacte du bloc Construction du CCC :
-1. **Type de construction** + **Matériaux** (grille 2 colonnes)
-2. **Nature** (auto-déterminée par matériaux, lecture seule) + **Usage déclaré**
-3. **Standing** + **Nombre d'étages** (conditionnel : visible si nature ≠ "Non bâti")
-4. **Année de construction** (conditionnel : visible si type ≠ "Terrain nu")
-
-Ajouter les états locaux `standing`, `constructionYear`, `floorNumber` avec pré-remplissage depuis `parcelValorisationData`.
-
-### 7. Retirer le bouton "Annuler" du header du second bloc
-
-Puisque le contrôle se fait par les radios, le bouton Annuler dans le header du Card est redondant — le supprimer.
+- **Nouvel état** : `parcelBuildingPermits` (array) pour les données en lecture seule
+- **Nouveaux états** pour le formulaire d'update : `hasPermitUpdate` (boolean), `permitUpdateType` ('construction' | 'regularization'), `permitUpdateNumber` (string), `permitUpdateDate` (string), `permitUpdateService` (string), `permitUpdateFile` (File | null)
+- **Migration SQL** : Ajouter des colonnes à `land_title_requests` pour stocker la proposition d'autorisation :
+  - `proposed_permit_type` (text)
+  - `proposed_permit_number` (text)
+  - `proposed_permit_date` (text)
+  - `proposed_permit_service` (text)
+  - `proposed_permit_document_url` (text)
+- **Hook** `useLandTitleRequest.tsx` : ajouter ces champs au type et à l'insert, avec upload du document si fourni
+- **Type** `landTitleRequest.ts` : ajouter les colonnes au type `LandTitleRequestRow`
 
 ### Fichiers modifiés
-- **Migration SQL** : nouvelle migration pour les 3 colonnes
+- **Migration SQL** : nouvelle migration pour 5 colonnes
 - **`src/hooks/useLandTitleRequest.tsx`** : types + insert
-- **`src/components/cadastral/LandTitleRequestDialog.tsx`** : refonte de l'onglet Valorisation
+- **`src/types/landTitleRequest.ts`** : colonnes ajoutées au type Row
+- **`src/components/cadastral/LandTitleRequestDialog.tsx`** : fetch des permits, bloc lecture seule, bloc éditable conditionnel
 
