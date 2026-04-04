@@ -370,6 +370,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
   // Property category -> Construction type cascade
   useEffect(() => {
+    if (skipCascadeRef.current) return;
     if (!propertyCategory) {
       setAvailableConstructionTypes([]);
       setConstructionType('');
