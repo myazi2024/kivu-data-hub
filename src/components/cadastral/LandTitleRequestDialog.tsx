@@ -120,6 +120,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   } | null>(null);
   // Valorisation data loaded from parcel for renewal mode (auto-display)
   const [parcelValorisationData, setParcelValorisationData] = useState<{
+    propertyCategory?: string;
     constructionType?: string;
     constructionNature?: string;
     constructionMaterials?: string;
@@ -193,6 +194,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [roadSides, setRoadSides] = useState<Array<any>>([]);
 
 // Construction type state
+  const [propertyCategory, setPropertyCategory] = useState<string>('');
   const [constructionType, setConstructionType] = useState<string>('');
   const [constructionNature, setConstructionNature] = useState<string>('');
   const [constructionMaterials, setConstructionMaterials] = useState<string>('');
@@ -200,8 +202,20 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [standing, setStanding] = useState<string>('');
   const [constructionYear, setConstructionYear] = useState<string>('');
   const [floorNumber, setFloorNumber] = useState<string>('');
+  const [availableConstructionTypes, setAvailableConstructionTypes] = useState<string[]>([]);
   const [availableConstructionNatures, setAvailableConstructionNatures] = useState<string[]>([]);
   const [availableDeclaredUsages, setAvailableDeclaredUsages] = useState<string[]>([]);
+
+  const PROPERTY_CATEGORY_OPTIONS = useMemo(() => [
+    'Appartement', 'Villa', 'Maison', 'Local commercial',
+    'Immeuble/Bâtiment', 'Entrepôt/Hangar', 'Terrain nu',
+  ], []);
+
+  const CATEGORY_TO_CONSTRUCTION_TYPES: Record<string, string[]> = useMemo(() => ({
+    'Appartement': ['Résidentielle'], 'Villa': ['Résidentielle'], 'Maison': ['Résidentielle'],
+    'Local commercial': ['Commerciale'], 'Immeuble/Bâtiment': ['Résidentielle', 'Commerciale', 'Industrielle'],
+    'Entrepôt/Hangar': ['Industrielle', 'Agricole'], 'Terrain nu': ['Terrain nu'],
+  }), []);
   
   // New fields for land title deduction
   const [nationality, setNationality] = useState<'congolais' | 'etranger' | ''>('');
@@ -338,6 +352,22 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setValorisationValidated(false);
     setDeducedTitleType(null);
   }, [constructionType, constructionNature, declaredUsage, nationality, occupationDuration, formData.sectionType]);
+
+  // Property category -> Construction type cascade
+  useEffect(() => {
+    if (!propertyCategory) {
+      setAvailableConstructionTypes([]);
+      setConstructionType('');
+      return;
+    }
+    const allowedTypes = CATEGORY_TO_CONSTRUCTION_TYPES[propertyCategory] || [];
+    setAvailableConstructionTypes(allowedTypes);
+    if (allowedTypes.length === 1) {
+      if (constructionType !== allowedTypes[0]) setConstructionType(allowedTypes[0]);
+    } else if (constructionType && !allowedTypes.includes(constructionType)) {
+      setConstructionType('');
+    }
+  }, [propertyCategory]);
 
   // Construction type -> Nature logic
   useEffect(() => {
@@ -803,6 +833,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     ]);
     setRoadSides([]);
     // Reset valorisation
+    setPropertyCategory('');
     setConstructionType('');
     setConstructionNature('');
     setConstructionMaterials('');
@@ -1234,6 +1265,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                           }
 
                                           // Fetch valorisation data (construction info) from parcel/contribution
+                                          const valoPropertyCategory = (contribData as any)?.property_category || '';
                                           const valoConstructionType = parcelLocData?.construction_type || contribData?.construction_type || '';
                                           const valoConstructionNature = parcelLocData?.construction_nature || contribData?.construction_nature || '';
                                           const valoConstructionMaterials = parcelLocData?.construction_materials || (contribData as any)?.construction_materials || '';
@@ -1242,8 +1274,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                           const valoConstructionYear = (parcelLocData as any)?.construction_year || (contribData as any)?.construction_year || null;
                                           const valoFloorNumber = (contribData as any)?.floor_number || '';
                                           
-                                          if (valoConstructionType || valoConstructionNature || valoDeclaredUsage) {
+                                          if (valoConstructionType || valoConstructionNature || valoDeclaredUsage || valoPropertyCategory) {
                                             const valoData = {
+                                              propertyCategory: valoPropertyCategory,
                                               constructionType: valoConstructionType,
                                               constructionNature: valoConstructionNature,
                                               constructionMaterials: valoConstructionMaterials,
@@ -1254,6 +1287,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                             };
                                             setParcelValorisationData(valoData);
                                             // Auto-fill construction states
+                                            if (valoPropertyCategory) setPropertyCategory(valoPropertyCategory);
                                             if (valoConstructionType) setConstructionType(valoConstructionType);
                                             if (valoConstructionNature) setConstructionNature(valoConstructionNature);
                                             if (valoConstructionMaterials) setConstructionMaterials(valoConstructionMaterials);
@@ -2228,6 +2262,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           </p>
                           <div className="grid grid-cols-2 gap-2">
                             <div className="p-2 rounded-lg bg-background border">
+                              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Catégorie de bien</p>
+                              <p className="text-sm font-medium">{parcelValorisationData.propertyCategory || '—'}</p>
+                            </div>
+                            <div className="p-2 rounded-lg bg-background border">
                               <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Type de construction</p>
                               <p className="text-sm font-medium">{parcelValorisationData.constructionType || '—'}</p>
                             </div>
@@ -2354,7 +2392,30 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         </span>
                       </div>
 
+                      {/* Row 0: Catégorie de bien */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1.5">
+                          <Label className="text-sm">Catégorie de bien *</Label>
+                          <Select 
+                            value={propertyCategory}
+                            onValueChange={(value) => {
+                              setPropertyCategory(value);
+                            }}
+                          >
+                            <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
+                              <SelectValue placeholder="Sélectionner la catégorie" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl">
+                              {PROPERTY_CATEGORY_OPTIONS.map(opt => (
+                                <SelectItem key={opt} value={opt} className="text-sm py-2">{opt}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
                       {/* Row 1: Type de construction + Matériaux */}
+                      {propertyCategory && (
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1.5">
                           <Label className="text-sm">Type de construct. *</Label>
@@ -2368,16 +2429,18 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                 setFloorNumber('');
                               }
                             }}
+                            disabled={availableConstructionTypes.length <= 1}
                           >
-                            <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
+                            <SelectTrigger className={cn(
+                              "h-11 text-sm rounded-xl border-2",
+                              availableConstructionTypes.length <= 1 ? "bg-muted/50" : "focus:border-primary"
+                            )}>
                               <SelectValue placeholder="Choisir le type" />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl">
-                              <SelectItem value="Résidentielle" className="text-sm py-2">Résidentielle</SelectItem>
-                              <SelectItem value="Commerciale" className="text-sm py-2">Commerciale</SelectItem>
-                              <SelectItem value="Industrielle" className="text-sm py-2">Industrielle</SelectItem>
-                              <SelectItem value="Agricole" className="text-sm py-2">Agricole</SelectItem>
-                              <SelectItem value="Terrain nu" className="text-sm py-2">Terrain nu</SelectItem>
+                              {availableConstructionTypes.map(t => (
+                                <SelectItem key={t} value={t} className="text-sm py-2">{t}</SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
@@ -2409,6 +2472,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           </div>
                         )}
                       </div>
+                      )}
 
                       {/* Row 2: Nature (auto-determined) + Usage déclaré */}
                       {constructionType && (
