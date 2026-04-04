@@ -2252,6 +2252,51 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               </div>
                             )}
                           </div>
+
+                          {/* Building permits read-only sub-block */}
+                          {parcelValorisationData.constructionType !== 'Terrain nu' && (
+                            <div className="mt-3 pt-3 border-t space-y-2">
+                              <div className="flex items-center gap-2">
+                                <ClipboardCheck className="h-3.5 w-3.5 text-primary" />
+                                <h5 className="text-xs font-semibold">Autorisation de bâtir</h5>
+                              </div>
+                              {parcelBuildingPermits.length > 0 ? (
+                                <div className="space-y-2">
+                                  {parcelBuildingPermits.map((permit, idx) => {
+                                    // Mask permit number for PII
+                                    const masked = permit.permit_number.length > 6
+                                      ? permit.permit_number.slice(0, 3) + '***' + permit.permit_number.slice(-2)
+                                      : '***';
+                                    const issueDate = permit.issue_date ? new Date(permit.issue_date) : null;
+                                    const expiryDate = issueDate ? new Date(new Date(issueDate).setMonth(issueDate.getMonth() + (permit.validity_period_months || 36))) : null;
+                                    const isExpired = expiryDate ? expiryDate < new Date() : false;
+                                    return (
+                                      <div key={idx} className="grid grid-cols-2 gap-2">
+                                        <div className="p-2 rounded-lg bg-background border">
+                                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">N° Autorisation</p>
+                                          <p className="text-sm font-medium">{masked}</p>
+                                        </div>
+                                        <div className="p-2 rounded-lg bg-background border">
+                                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Statut</p>
+                                          <p className="text-sm font-medium">{isExpired ? 'Expirée' : (permit.administrative_status || 'Valide')}</p>
+                                        </div>
+                                        <div className="p-2 rounded-lg bg-background border">
+                                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Date d'émission</p>
+                                          <p className="text-sm font-medium">{issueDate ? issueDate.toLocaleDateString('fr-FR') : '—'}</p>
+                                        </div>
+                                        <div className="p-2 rounded-lg bg-background border">
+                                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Service émetteur</p>
+                                          <p className="text-sm font-medium">{permit.issuing_service || '—'}</p>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <p className="text-xs text-muted-foreground italic">Aucune autorisation enregistrée</p>
+                              )}
+                            </div>
+                          )}
                         </CardContent>
                       </Card>
 
