@@ -128,6 +128,22 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     constructionYear?: number;
     floorNumber?: string;
   } | null>(null);
+  // Building permits loaded from parcel (read-only display)
+  const [parcelBuildingPermits, setParcelBuildingPermits] = useState<Array<{
+    permit_number: string;
+    administrative_status: string;
+    issue_date: string;
+    issuing_service: string;
+    validity_period_months: number;
+    is_current: boolean;
+  }>>([]);
+  // Building permit update form states
+  const [hasPermitUpdate, setHasPermitUpdate] = useState<'yes' | 'no' | ''>('');
+  const [permitUpdateType, setPermitUpdateType] = useState<'construction' | 'regularization'>('construction');
+  const [permitUpdateNumber, setPermitUpdateNumber] = useState('');
+  const [permitUpdateDate, setPermitUpdateDate] = useState('');
+  const [permitUpdateService, setPermitUpdateService] = useState('');
+  const [permitUpdateFile, setPermitUpdateFile] = useState<File | null>(null);
   const [loadingOwnerData, setLoadingOwnerData] = useState(false);
   
   // Form data
