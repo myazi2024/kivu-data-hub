@@ -2471,6 +2471,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           </div>
                         )}
                       </div>
+                      )}
 
                       {/* Row 2: Nature (auto-determined) + Usage déclaré */}
                       {constructionType && (
