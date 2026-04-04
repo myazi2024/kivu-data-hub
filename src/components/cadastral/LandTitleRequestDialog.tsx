@@ -180,6 +180,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [constructionNature, setConstructionNature] = useState<string>('');
   const [constructionMaterials, setConstructionMaterials] = useState<string>('');
   const [declaredUsage, setDeclaredUsage] = useState<string>('');
+  const [standing, setStanding] = useState<string>('');
+  const [constructionYear, setConstructionYear] = useState<string>('');
+  const [floorNumber, setFloorNumber] = useState<string>('');
   const [availableConstructionNatures, setAvailableConstructionNatures] = useState<string[]>([]);
   const [availableDeclaredUsages, setAvailableDeclaredUsages] = useState<string[]>([]);
   
