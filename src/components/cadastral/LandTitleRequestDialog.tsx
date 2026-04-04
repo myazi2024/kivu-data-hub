@@ -75,7 +75,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [activeTab, setActiveTab] = useState('requester');
   const [showQuickAuth, setShowQuickAuth] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
-  const [showValorisationUpdate, setShowValorisationUpdate] = useState(false);
+  const [valorisationChoice, setValorisationChoice] = useState<null | 'exact' | 'update'>(null);
+  const showValorisationUpdate = valorisationChoice === 'update';
+  const skipCascadeRef = useRef(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [savedReferenceNumber, setSavedReferenceNumber] = useState<string>('');
