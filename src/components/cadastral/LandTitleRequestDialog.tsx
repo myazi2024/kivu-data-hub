@@ -532,10 +532,14 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     const draft = loadDraft();
     if (draft) {
       setFormData(prev => ({ ...prev, ...draft.formData }));
+      setPropertyCategory(draft.propertyCategory || '');
       setConstructionType(draft.constructionType || '');
       setConstructionNature(draft.constructionNature || '');
       setConstructionMaterials(draft.constructionMaterials || '');
       setDeclaredUsage(draft.declaredUsage || '');
+      setStanding(draft.standing || '');
+      setFloorNumber(draft.floorNumber || '');
+      setConstructionYear(draft.constructionYear || '');
       setNationality(draft.nationality as any || '');
       setOccupationDuration(draft.occupationDuration as any || '');
       setRequestType(draft.requestType as any || '');
