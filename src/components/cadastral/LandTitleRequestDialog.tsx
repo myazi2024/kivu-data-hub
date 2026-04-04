@@ -354,7 +354,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
   // Auto-fill construction states when "Ces données sont exactes" is selected
   useEffect(() => {
-    if (!showValorisationUpdate && parcelValorisationData) {
+    if (valorisationChoice === 'exact' && parcelValorisationData) {
+      skipCascadeRef.current = true;
       setPropertyCategory(parcelValorisationData.propertyCategory || '');
       setConstructionType(parcelValorisationData.constructionType || '');
       setConstructionNature(parcelValorisationData.constructionNature || '');
@@ -363,8 +364,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       setStanding(parcelValorisationData.standing || '');
       setFloorNumber(parcelValorisationData.floorNumber || '');
       setConstructionYear(parcelValorisationData.constructionYear ? String(parcelValorisationData.constructionYear) : '');
+      setTimeout(() => { skipCascadeRef.current = false; }, 0);
     }
-  }, [showValorisationUpdate, parcelValorisationData]);
+  }, [valorisationChoice, parcelValorisationData]);
 
   // Property category -> Construction type cascade
   useEffect(() => {
