@@ -2417,8 +2417,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
                       {/* Radio group: exact or update */}
                       <RadioGroup
-                        value={showValorisationUpdate ? 'update' : 'exact'}
-                        onValueChange={(val) => setShowValorisationUpdate(val === 'update')}
+                        value={valorisationChoice || ''}
+                        onValueChange={(val) => setValorisationChoice(val as 'exact' | 'update')}
                         className="flex flex-col gap-2"
                       >
                         <div className="flex items-center space-x-2">
