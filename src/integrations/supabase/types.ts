@@ -1973,6 +1973,11 @@ export type Database = {
           processing_notes: string | null
           procuration_document_url: string | null
           proof_of_ownership_url: string | null
+          proposed_permit_date: string | null
+          proposed_permit_document_url: string | null
+          proposed_permit_number: string | null
+          proposed_permit_service: string | null
+          proposed_permit_type: string | null
           province: string
           quartier: string | null
           reference_number: string
@@ -2037,6 +2042,11 @@ export type Database = {
           processing_notes?: string | null
           procuration_document_url?: string | null
           proof_of_ownership_url?: string | null
+          proposed_permit_date?: string | null
+          proposed_permit_document_url?: string | null
+          proposed_permit_number?: string | null
+          proposed_permit_service?: string | null
+          proposed_permit_type?: string | null
           province: string
           quartier?: string | null
           reference_number: string
@@ -2101,6 +2111,11 @@ export type Database = {
           processing_notes?: string | null
           procuration_document_url?: string | null
           proof_of_ownership_url?: string | null
+          proposed_permit_date?: string | null
+          proposed_permit_document_url?: string | null
+          proposed_permit_number?: string | null
+          proposed_permit_service?: string | null
+          proposed_permit_type?: string | null
           province?: string
           quartier?: string | null
           reference_number?: string
