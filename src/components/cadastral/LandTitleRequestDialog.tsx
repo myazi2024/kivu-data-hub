@@ -1206,6 +1206,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                           const valoConstructionNature = parcelLocData?.construction_nature || contribData?.construction_nature || '';
                                           const valoConstructionMaterials = parcelLocData?.construction_materials || (contribData as any)?.construction_materials || '';
                                           const valoDeclaredUsage = parcelLocData?.declared_usage || contribData?.declared_usage || '';
+                                          const valoStanding = (parcelLocData as any)?.standing || (contribData as any)?.standing || '';
+                                          const valoConstructionYear = (parcelLocData as any)?.construction_year || (contribData as any)?.construction_year || null;
+                                          const valoFloorNumber = (contribData as any)?.floor_number || '';
                                           
                                           if (valoConstructionType || valoConstructionNature || valoDeclaredUsage) {
                                             const valoData = {
@@ -1213,6 +1216,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                               constructionNature: valoConstructionNature,
                                               constructionMaterials: valoConstructionMaterials,
                                               declaredUsage: valoDeclaredUsage,
+                                              standing: valoStanding,
+                                              constructionYear: valoConstructionYear,
+                                              floorNumber: valoFloorNumber,
                                             };
                                             setParcelValorisationData(valoData);
                                             // Auto-fill construction states
@@ -1220,6 +1226,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                             if (valoConstructionNature) setConstructionNature(valoConstructionNature);
                                             if (valoConstructionMaterials) setConstructionMaterials(valoConstructionMaterials);
                                             if (valoDeclaredUsage) setDeclaredUsage(valoDeclaredUsage);
+                                            if (valoStanding) setStanding(valoStanding);
+                                            if (valoConstructionYear) setConstructionYear(String(valoConstructionYear));
+                                            if (valoFloorNumber) setFloorNumber(valoFloorNumber);
                                           }
                                         } catch (err) {
                                           console.error('Error fetching owner data:', err);
