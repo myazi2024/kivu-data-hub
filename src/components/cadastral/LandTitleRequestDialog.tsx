@@ -563,7 +563,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
           floorNumber,
           constructionYear,
           nationality,
-          occupationDuration,
           requestType,
           selectedParcelNumber,
           gpsCoordinates,
