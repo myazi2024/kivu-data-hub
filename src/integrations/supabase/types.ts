@@ -1946,11 +1946,13 @@ export type Database = {
           construction_materials: string | null
           construction_nature: string | null
           construction_type: string | null
+          construction_year: number | null
           created_at: string
           declared_usage: string | null
           deduced_title_type: string | null
           estimated_processing_days: number | null
           fee_items: Json
+          floor_number: string | null
           gps_coordinates: Json | null
           groupement: string | null
           id: string
@@ -1990,6 +1992,7 @@ export type Database = {
           road_bordering_sides: Json | null
           section_type: string
           selected_parcel_number: string | null
+          standing: string | null
           status: string
           territoire: string | null
           total_amount_usd: number
@@ -2007,11 +2010,13 @@ export type Database = {
           construction_materials?: string | null
           construction_nature?: string | null
           construction_type?: string | null
+          construction_year?: number | null
           created_at?: string
           declared_usage?: string | null
           deduced_title_type?: string | null
           estimated_processing_days?: number | null
           fee_items?: Json
+          floor_number?: string | null
           gps_coordinates?: Json | null
           groupement?: string | null
           id?: string
@@ -2051,6 +2056,7 @@ export type Database = {
           road_bordering_sides?: Json | null
           section_type: string
           selected_parcel_number?: string | null
+          standing?: string | null
           status?: string
           territoire?: string | null
           total_amount_usd?: number
@@ -2068,11 +2074,13 @@ export type Database = {
           construction_materials?: string | null
           construction_nature?: string | null
           construction_type?: string | null
+          construction_year?: number | null
           created_at?: string
           declared_usage?: string | null
           deduced_title_type?: string | null
           estimated_processing_days?: number | null
           fee_items?: Json
+          floor_number?: string | null
           gps_coordinates?: Json | null
           groupement?: string | null
           id?: string
@@ -2112,6 +2120,7 @@ export type Database = {
           road_bordering_sides?: Json | null
           section_type?: string
           selected_parcel_number?: string | null
+          standing?: string | null
           status?: string
           territoire?: string | null
           total_amount_usd?: number
