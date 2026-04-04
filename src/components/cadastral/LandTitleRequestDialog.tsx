@@ -123,6 +123,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     constructionNature?: string;
     constructionMaterials?: string;
     declaredUsage?: string;
+    standing?: string;
+    constructionYear?: number;
+    floorNumber?: string;
   } | null>(null);
   const [loadingOwnerData, setLoadingOwnerData] = useState(false);
   
