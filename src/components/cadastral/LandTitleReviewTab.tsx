@@ -18,7 +18,7 @@ export interface LandTitleReviewTabProps {
   floorNumber?: string;
   constructionYear?: string;
   nationality: string;
-  occupationDuration: string;
+  hasBuildingPermit?: boolean;
   valorisationValidated: boolean;
   deducedTitleType: DeducedTitle;
   requesterIdFile: File | null;
