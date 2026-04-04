@@ -71,6 +71,7 @@ const DEFAULT_ACTION_ICONS: Record<string, React.ComponentType<{ className?: str
   expertise: Award,
   mutation: ArrowRightLeft,
   mortgage_management: Landmark,
+  land_title_request: ScrollText,
   permit_add: ShieldCheck,
   tax: Calculator,
   permit_request: FileText,
