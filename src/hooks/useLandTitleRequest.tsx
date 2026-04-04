@@ -55,6 +55,9 @@ export interface LandTitleRequestData {
   deducedTitleType?: string;
   nationality?: string;
   occupationDuration?: string;
+  standing?: string;
+  constructionYear?: number;
+  floorNumber?: string;
   
   // Documents
   proofOfOwnershipFile?: File | null;
