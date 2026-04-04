@@ -571,7 +571,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       }
     }, 10000);
     return () => clearInterval(interval);
-  }, [open, formData, constructionType, constructionNature, constructionMaterials, declaredUsage, nationality, occupationDuration, requestType, selectedParcelNumber, gpsCoordinates, parcelSides]);
+  }, [open, formData, constructionType, constructionNature, constructionMaterials, declaredUsage, nationality, requestType, selectedParcelNumber, gpsCoordinates, parcelSides]);
 
   // Update location options
   useEffect(() => {
