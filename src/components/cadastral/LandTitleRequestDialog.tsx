@@ -2336,6 +2336,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       )}
                     </CardContent>
                   </Card>
+                  )}
 
                   {/* Éligibilité légale */}
                   {constructionType && constructionNature && declaredUsage && (
