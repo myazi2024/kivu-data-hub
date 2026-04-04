@@ -387,6 +387,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
   // Construction type -> Nature logic
   useEffect(() => {
+    if (skipCascadeRef.current) return;
     if (!constructionType) {
       setAvailableConstructionNatures([]);
       setConstructionNature('');
