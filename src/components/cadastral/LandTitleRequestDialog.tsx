@@ -538,7 +538,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       setFloorNumber(draft.floorNumber || '');
       setConstructionYear(draft.constructionYear || '');
       setNationality(draft.nationality as any || '');
-      setOccupationDuration(draft.occupationDuration as any || '');
       setRequestType(draft.requestType as any || '');
       setSelectedParcelNumber(draft.selectedParcelNumber || '');
       if (draft.gpsCoordinates?.length) setGpsCoordinates(draft.gpsCoordinates);
