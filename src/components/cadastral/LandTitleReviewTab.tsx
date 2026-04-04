@@ -52,18 +52,7 @@ const formatNationality = (nat: string) => {
   return "";
 };
 
-const formatOccupationDuration = (dur: string) => {
-  switch (dur) {
-    case "perpetuel":
-      return "Perpétuel";
-    case "long_terme":
-      return "Long terme (25 ans)";
-    case "temporaire":
-      return "Temporaire (3 ans)";
-    default:
-      return "";
-  }
-};
+
 
 const formatFloorNumber = (floor: string) => {
   if (floor === '0') return 'Rez-de-chaussée';
