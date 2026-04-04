@@ -1264,6 +1264,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                           }
 
                                           // Fetch valorisation data (construction info) from parcel/contribution
+                                          const valoPropertyCategory = (contribData as any)?.property_category || '';
                                           const valoConstructionType = parcelLocData?.construction_type || contribData?.construction_type || '';
                                           const valoConstructionNature = parcelLocData?.construction_nature || contribData?.construction_nature || '';
                                           const valoConstructionMaterials = parcelLocData?.construction_materials || (contribData as any)?.construction_materials || '';
@@ -1272,8 +1273,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                           const valoConstructionYear = (parcelLocData as any)?.construction_year || (contribData as any)?.construction_year || null;
                                           const valoFloorNumber = (contribData as any)?.floor_number || '';
                                           
-                                          if (valoConstructionType || valoConstructionNature || valoDeclaredUsage) {
+                                          if (valoConstructionType || valoConstructionNature || valoDeclaredUsage || valoPropertyCategory) {
                                             const valoData = {
+                                              propertyCategory: valoPropertyCategory,
                                               constructionType: valoConstructionType,
                                               constructionNature: valoConstructionNature,
                                               constructionMaterials: valoConstructionMaterials,
@@ -1284,6 +1286,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                             };
                                             setParcelValorisationData(valoData);
                                             // Auto-fill construction states
+                                            if (valoPropertyCategory) setPropertyCategory(valoPropertyCategory);
                                             if (valoConstructionType) setConstructionType(valoConstructionType);
                                             if (valoConstructionNature) setConstructionNature(valoConstructionNature);
                                             if (valoConstructionMaterials) setConstructionMaterials(valoConstructionMaterials);
