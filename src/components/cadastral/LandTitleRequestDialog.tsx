@@ -3340,9 +3340,14 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                   <TabsContent value="review" className="space-y-4">
                     <LandTitleReviewTab
                       formData={formData}
+                      propertyCategory={propertyCategory}
                       constructionType={constructionType}
                       constructionNature={constructionNature}
+                      constructionMaterials={constructionMaterials}
                       declaredUsage={declaredUsage}
+                      standing={standing}
+                      floorNumber={floorNumber}
+                      constructionYear={constructionYear}
                       nationality={nationality}
                       occupationDuration={occupationDuration}
                       valorisationValidated={valorisationValidated}
@@ -3357,6 +3362,11 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       loading={loading}
                       requestType={requestType}
                       selectedParcelNumber={selectedParcelNumber}
+                      hasPermitUpdate={hasPermitUpdate}
+                      permitUpdateType={permitUpdateType}
+                      permitUpdateNumber={permitUpdateNumber}
+                      permitUpdateDate={permitUpdateDate}
+                      permitUpdateService={permitUpdateService}
                       onEditTab={(tabId) => setActiveTab(tabId)}
                       onProceedToPayment={handleProceedToPayment}
                     />
