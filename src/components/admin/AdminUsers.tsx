@@ -114,6 +114,9 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
       partner: { variant: 'default', icon: Users, label: 'Partenaire' },
       expert_immobilier: { variant: 'default', icon: User, label: 'Expert Immobilier' },
       mortgage_officer: { variant: 'default', icon: User, label: 'Agent Hypothécaire' },
+      notaire: { variant: 'default', icon: User, label: 'Notaire' },
+      geometre: { variant: 'default', icon: User, label: 'Géomètre' },
+      urbaniste: { variant: 'default', icon: User, label: 'Urbaniste' },
       user: { variant: 'secondary', icon: User, label: 'Utilisateur' }
     };
     

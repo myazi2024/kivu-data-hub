@@ -143,6 +143,9 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
       partner: { variant: 'secondary', icon: UsersIcon, label: 'Partenaire' },
       expert_immobilier: { variant: 'secondary', icon: UserIcon, label: 'Expert Immobilier' },
       mortgage_officer: { variant: 'secondary', icon: UserIcon, label: 'Agent Hypothécaire' },
+      notaire: { variant: 'secondary', icon: UserIcon, label: 'Notaire' },
+      geometre: { variant: 'secondary', icon: UserIcon, label: 'Géomètre' },
+      urbaniste: { variant: 'secondary', icon: UserIcon, label: 'Urbaniste' },
       user: { variant: 'outline', icon: UserIcon, label: 'Utilisateur' }
     };
     
