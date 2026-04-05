@@ -141,6 +141,19 @@ const CadastralMap = () => {
     };
   }, []);
 
+  // Listen for open-ccc-dialog event (from LandTitleRequestDialog button)
+  useEffect(() => {
+    const handleOpenCCC = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.parcelNumber) {
+        setSearchQuery(detail.parcelNumber);
+      }
+      setShowContributionDialog(true);
+    };
+    window.addEventListener('open-ccc-dialog', handleOpenCCC);
+    return () => window.removeEventListener('open-ccc-dialog', handleOpenCCC);
+  }, []);
+
   // Handle Stripe payment return for expertise/certificate access
   useEffect(() => {
     const paymentStatus = searchParams.get('payment');
