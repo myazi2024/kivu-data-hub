@@ -17,7 +17,7 @@ export interface UserProfile {
   fraud_strikes: number;
 }
 
-const ROLE_HIERARCHY = ['super_admin', 'admin', 'expert_immobilier', 'mortgage_officer', 'partner', 'user'];
+import { getHighestRole } from '@/constants/roles';
 
 export const useUserManagement = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -55,15 +55,8 @@ export const useUserManagement = () => {
 
       // Combine profiles with their highest role
       const usersWithRoles = profilesData?.map(profile => {
-        const userRoles = rolesData?.filter(r => r.user_id === profile.user_id).map(r => r.role) || [];
-        let highestRole = 'user';
-        
-        for (const hierarchyRole of ROLE_HIERARCHY) {
-          if (userRoles.includes(hierarchyRole as any)) {
-            highestRole = hierarchyRole;
-            break;
-          }
-        }
+        const userRoles = rolesData?.filter(r => r.user_id === profile.user_id).map(r => r.role as string) || [];
+        const highestRole = getHighestRole(userRoles);
 
         return {
           ...profile,

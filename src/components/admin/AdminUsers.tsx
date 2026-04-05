@@ -51,14 +51,16 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'UPDATE',
           schema: 'public',
           table: 'profiles'
         },
         (payload) => {
-          console.log('Profile changed:', payload);
-          // Refetch users when a profile is updated
-          fetchUsers();
+          // Only refetch if visible fields changed
+          const { new: newRow, old: oldRow } = payload;
+          const visibleFields = ['full_name', 'email', 'organization', 'is_blocked', 'blocked_at', 'blocked_reason', 'fraud_strikes', 'avatar_url'];
+          const changed = visibleFields.some(f => (newRow as any)?.[f] !== (oldRow as any)?.[f]);
+          if (changed) fetchUsers();
         }
       )
       .subscribe();
@@ -114,6 +116,9 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
       partner: { variant: 'default', icon: Users, label: 'Partenaire' },
       expert_immobilier: { variant: 'default', icon: User, label: 'Expert Immobilier' },
       mortgage_officer: { variant: 'default', icon: User, label: 'Agent Hypothécaire' },
+      notaire: { variant: 'default', icon: User, label: 'Notaire' },
+      geometre: { variant: 'default', icon: User, label: 'Géomètre' },
+      urbaniste: { variant: 'default', icon: User, label: 'Urbaniste' },
       user: { variant: 'secondary', icon: User, label: 'Utilisateur' }
     };
     

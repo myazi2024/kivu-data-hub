@@ -2,13 +2,15 @@ import { useState, useEffect, createContext, useContext, ReactNode } from "react
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
+import type { AppRole } from '@/constants/roles';
+
 interface Profile {
   id: string;
   user_id: string;
   email: string;
   full_name?: string;
   organization?: string;
-  role: 'super_admin' | 'admin' | 'partner' | 'user';
+  role: AppRole;
   avatar_url?: string;
   created_at: string;
   updated_at: string;
@@ -72,17 +74,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
 
       // Determine highest role based on hierarchy
-      const roleHierarchy = ['super_admin', 'admin', 'partner', 'user'];
-      let highestRole: 'super_admin' | 'admin' | 'partner' | 'user' = 'user';
+      const { getHighestRole } = await import('@/constants/roles');
+      let highestRole: AppRole = 'user';
       
       if (rolesData && rolesData.length > 0) {
-        const roles = rolesData.map(r => r.role);
-        for (const hierarchyRole of roleHierarchy) {
-          if (roles.includes(hierarchyRole as any)) {
-            highestRole = hierarchyRole as typeof highestRole;
-            break;
-          }
-        }
+        const roles = rolesData.map(r => r.role as string);
+        highestRole = getHighestRole(roles);
       }
 
       // Combine profile with role

@@ -69,7 +69,7 @@ export default function AdminFraudDetection() {
         .from('fraud_attempts')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(500);
+        .limit(1000);
 
       if (attemptsError) throw attemptsError;
       setFraudAttempts(attempts || []);
@@ -127,6 +127,20 @@ export default function AdminFraudDetection() {
   };
 
   const handleBlockUser = async (userId: string) => {
+    // Check if target is admin/super_admin before blocking
+    const targetUser = suspiciousUsers.find(u => u.user_id === userId);
+    if (targetUser) {
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+      const userRoles = roles?.map(r => r.role) || [];
+      if (userRoles.includes('super_admin' as any) || userRoles.includes('admin' as any)) {
+        toast.error('Impossible de bloquer un administrateur depuis cette interface');
+        return;
+      }
+    }
+
     if (!confirm('Êtes-vous sûr de vouloir bloquer cet utilisateur ?')) return;
 
     try {
@@ -404,7 +418,7 @@ export default function AdminFraudDetection() {
             </ResponsiveTable>
           </div>
           {/* Pagination for users */}
-          {totalUserItems > 10 && (
+          {userTotalPages > 1 && (
             <div className="p-2">
               <PaginationControls
                 currentPage={userPage}
@@ -522,7 +536,7 @@ export default function AdminFraudDetection() {
             </ResponsiveTable>
           </div>
           {/* Pagination for fraud attempts */}
-          {totalFraudItems > 20 && (
+          {fraudTotalPages > 1 && (
             <div className="p-2">
               <PaginationControls
                 currentPage={fraudPage}

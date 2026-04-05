@@ -2,10 +2,11 @@ import { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
+import type { AppRole } from "@/constants/roles";
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  requiredRoles?: Array<'super_admin' | 'admin' | 'partner' | 'user'>;
+  requiredRoles?: AppRole[];
 }
 
 const ProtectedRoute = ({ children, requiredRoles }: ProtectedRouteProps) => {
