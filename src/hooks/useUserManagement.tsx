@@ -55,15 +55,8 @@ export const useUserManagement = () => {
 
       // Combine profiles with their highest role
       const usersWithRoles = profilesData?.map(profile => {
-        const userRoles = rolesData?.filter(r => r.user_id === profile.user_id).map(r => r.role) || [];
-        let highestRole = 'user';
-        
-        for (const hierarchyRole of ROLE_HIERARCHY) {
-          if (userRoles.includes(hierarchyRole as any)) {
-            highestRole = hierarchyRole;
-            break;
-          }
-        }
+        const userRoles = rolesData?.filter(r => r.user_id === profile.user_id).map(r => r.role as string) || [];
+        const highestRole = getHighestRole(userRoles);
 
         return {
           ...profile,
