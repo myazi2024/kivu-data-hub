@@ -72,17 +72,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
 
       // Determine highest role based on hierarchy
-      const roleHierarchy = ['super_admin', 'admin', 'partner', 'user'];
-      let highestRole: 'super_admin' | 'admin' | 'partner' | 'user' = 'user';
+      const { getHighestRole } = await import('@/constants/roles');
+      let highestRole: string = 'user';
       
       if (rolesData && rolesData.length > 0) {
         const roles = rolesData.map(r => r.role);
-        for (const hierarchyRole of roleHierarchy) {
-          if (roles.includes(hierarchyRole as any)) {
-            highestRole = hierarchyRole as typeof highestRole;
-            break;
-          }
-        }
+        highestRole = getHighestRole(roles as string[]);
       }
 
       // Combine profile with role
