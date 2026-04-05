@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -85,6 +85,15 @@ export const useAdminUserStatistics = (userId: string | null) => {
       setLoading(false);
     }
   }, [userId]);
+
+  // Auto-fetch when userId changes
+  useEffect(() => {
+    if (userId) {
+      fetchStatistics();
+    } else {
+      setStatistics(null);
+    }
+  }, [userId, fetchStatistics]);
 
   return {
     loading,

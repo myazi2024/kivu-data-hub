@@ -51,14 +51,16 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'UPDATE',
           schema: 'public',
           table: 'profiles'
         },
         (payload) => {
-          console.log('Profile changed:', payload);
-          // Refetch users when a profile is updated
-          fetchUsers();
+          // Only refetch if visible fields changed
+          const { new: newRow, old: oldRow } = payload;
+          const visibleFields = ['full_name', 'email', 'organization', 'is_blocked', 'blocked_at', 'blocked_reason', 'fraud_strikes', 'avatar_url'];
+          const changed = visibleFields.some(f => (newRow as any)?.[f] !== (oldRow as any)?.[f]);
+          if (changed) fetchUsers();
         }
       )
       .subscribe();

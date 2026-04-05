@@ -69,7 +69,7 @@ export default function AdminFraudDetection() {
         .from('fraud_attempts')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(500);
+        .limit(1000);
 
       if (attemptsError) throw attemptsError;
       setFraudAttempts(attempts || []);
@@ -418,7 +418,7 @@ export default function AdminFraudDetection() {
             </ResponsiveTable>
           </div>
           {/* Pagination for users */}
-          {totalUserItems > 10 && (
+          {userTotalPages > 1 && (
             <div className="p-2">
               <PaginationControls
                 currentPage={userPage}
@@ -536,7 +536,7 @@ export default function AdminFraudDetection() {
             </ResponsiveTable>
           </div>
           {/* Pagination for fraud attempts */}
-          {totalFraudItems > 20 && (
+          {fraudTotalPages > 1 && (
             <div className="p-2">
               <PaginationControls
                 currentPage={fraudPage}
