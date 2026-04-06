@@ -1291,7 +1291,7 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
             Sauvegarder la configuration des croisements
           </Button>
         </div>
-      )
+      )}
 
 
       <AlertDialog open={!!pendingTabSwitch} onOpenChange={(open) => { if (!open) cancelTabSwitch(); }}>
