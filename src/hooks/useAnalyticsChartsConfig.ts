@@ -51,7 +51,7 @@ const TAB_FILTER_DEFAULTS: Record<string, TabFilterConfig> = {
 };
 
 /** Available date fields for admin selection */
-const DATE_FIELD_OPTIONS = [
+export const DATE_FIELD_OPTIONS = [
   { value: 'created_at', label: 'Date de création (created_at)' },
   { value: 'updated_at', label: 'Date de mise à jour (updated_at)' },
   { value: 'ownership_start_date', label: 'Début de propriété (ownership_start_date)' },
