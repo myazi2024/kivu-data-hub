@@ -163,8 +163,8 @@ export const AnalyticsFilters: React.FC<Props> = ({
 
   const reset = useCallback(() => {
     onChange({ ...defaultFilter });
-    onVilleChange?.(undefined);
-    onCommuneChange?.(undefined);
+    handleVilleChange(undefined);
+    handleCommuneChange(undefined);
   }, [onChange, onVilleChange, onCommuneChange]);
 
   const semesterOptions = [1, 2];
@@ -297,8 +297,8 @@ export const AnalyticsFilters: React.FC<Props> = ({
             territoire: undefined, collectivite: undefined, groupement: undefined, villageFilter: undefined,
           });
           provinceFilterCallback?.(newProvince);
-          onVilleChange?.(undefined);
-          onCommuneChange?.(undefined);
+          handleVilleChange(undefined);
+          handleCommuneChange(undefined);
         }}>
           <SelectTrigger className={selectCls}><SelectValue placeholder="Province" /></SelectTrigger>
           <SelectContent>
@@ -316,8 +316,8 @@ export const AnalyticsFilters: React.FC<Props> = ({
             ville: undefined, commune: undefined, quartier: undefined, avenue: undefined,
             territoire: undefined, collectivite: undefined, groupement: undefined, villageFilter: undefined,
           });
-          onVilleChange?.(undefined);
-          onCommuneChange?.(undefined);
+          handleVilleChange(undefined);
+          handleCommuneChange(undefined);
         }}>
           <SelectTrigger className={selectCls}><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -337,8 +337,8 @@ export const AnalyticsFilters: React.FC<Props> = ({
                 <Select value={filter.ville || '__all__'} onValueChange={v => {
                   const newVille = v === '__all__' ? undefined : v;
                   onChange({ ...filter, ville: newVille, commune: undefined, quartier: undefined, avenue: undefined });
-                  onVilleChange?.(newVille);
-                  onCommuneChange?.(undefined);
+                  handleVilleChange(newVille);
+                  handleCommuneChange(undefined);
                 }}>
                   <SelectTrigger className={selectCls}><SelectValue placeholder="Ville" /></SelectTrigger>
                   <SelectContent>
@@ -356,7 +356,7 @@ export const AnalyticsFilters: React.FC<Props> = ({
                 <Select value={filter.commune || '__all__'} onValueChange={v => {
                   const newCommune = v === '__all__' ? undefined : v;
                   onChange({ ...filter, commune: newCommune, quartier: undefined, avenue: undefined });
-                  onCommuneChange?.(newCommune);
+                  handleCommuneChange(newCommune);
                 }}>
                   <SelectTrigger className={selectCls}><SelectValue placeholder="Commune" /></SelectTrigger>
                   <SelectContent>
