@@ -380,11 +380,11 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   <div className="flex-1 min-h-0 overflow-hidden flex items-center justify-center p-1">
                     {selectedVille && selectedCommune && selectedVille.toLowerCase() === 'goma' ? (
                       <div className="w-full h-full">
-                        <DRCQuartiersMap ville={selectedVille} commune={selectedCommune} quartier={selectedQuartier} />
+                        <DRCQuartiersMap ville={selectedVille} commune={selectedCommune} quartier={selectedQuartier} onQuartierSelect={setSelectedQuartier} />
                       </div>
                     ) : selectedVille ? (
                       <div className="w-full h-full">
-                        <DRCCommunesMap ville={selectedVille} commune={selectedCommune} />
+                        <DRCCommunesMap ville={selectedVille} commune={selectedCommune} onCommuneSelect={setSelectedCommune} />
                       </div>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center" style={{ transform: 'scale(0.9)', transformOrigin: 'center center' }}>
