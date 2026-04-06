@@ -565,6 +565,10 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                     analytics={analytics!}
                     selectedProvince={selectedProvince}
                     onProvinceFilter={handleProvinceFilter}
+                    onVilleChange={setSelectedVille}
+                    onCommuneChange={setSelectedCommune}
+                    selectedVille={selectedVille}
+                    selectedCommune={selectedCommune}
                   />
                 </div>
               </CardContent>
