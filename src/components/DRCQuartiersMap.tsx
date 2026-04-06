@@ -154,9 +154,10 @@ const DRCQuartiersMap: React.FC<Props> = ({ ville, commune, quartier }) => {
           const name = f.properties.name;
           const isSelected = quartier && name.toLowerCase() === quartier.toLowerCase();
           const isHovered = hovered === name;
+          const hasSelection = !!quartier;
           const path = projectFeature(f.geometry, bbox, dims.w, dims.h, padding);
-          const fill = isSelected ? HIGHLIGHT : isHovered ? 'hsl(var(--primary) / 0.55)' : COLORS[i % COLORS.length];
-          const stroke = isSelected ? HIGHLIGHT_STROKE : STROKE;
+          const fill = isSelected ? HIGHLIGHT : isHovered ? 'hsl(var(--primary) / 0.55)' : hasSelection ? 'hsl(var(--muted) / 0.15)' : COLORS[i % COLORS.length];
+          const stroke = isSelected ? HIGHLIGHT_STROKE : hasSelection ? 'hsl(var(--foreground) / 0.1)' : STROKE;
           const strokeWidth = isSelected ? 2 : isHovered ? 1.5 : 0.8;
 
           return (
