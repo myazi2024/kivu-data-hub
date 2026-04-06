@@ -187,6 +187,8 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     if (!provinceName) {
       setSelectedProvince(null);
       setExternalProvinceId(null);
+      setSelectedVille(undefined);
+      setSelectedCommune(undefined);
       return;
     }
     const normalize = (s: string) => s.toLowerCase().replace(/[-\s]/g, '');
@@ -194,6 +196,8 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     if (province) {
       setSelectedProvince(province);
       setExternalProvinceId(province.id);
+      setSelectedVille(undefined);
+      setSelectedCommune(undefined);
     }
   }, [provincesData]);
 
