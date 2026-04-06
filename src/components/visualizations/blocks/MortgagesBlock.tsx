@@ -19,7 +19,7 @@ const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TAB
 export const MortgagesBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
   const mapProvince = useContext(MapProvinceContext);
-  useEffect(() => { setFilter(() => ({ ...defaultFilter, province: mapProvince || undefined })); }, [mapProvince]);
+  useEffect(() => { setFilter(f => ({ ...f, province: mapProvince || undefined })); }, [mapProvince]);
   const filterLabel = useMemo(() => buildFilterLabel(filter), [filter]);
   const { isChartVisible: v, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
   const filtered = useMemo(() => applyFilters(data.mortgages, filter), [data.mortgages, filter]);
@@ -78,9 +78,8 @@ export const MortgagesBlock: React.FC<Props> = memo(({ data }) => {
           {v('amount-brackets') && <ChartCard title={t('amount-brackets', 'Montants')} data={amountBrackets} type="bar-v" colorIndex={1} insight={generateInsight(amountBrackets, 'bar-v', 'les montants hypothécaires')} />}
           {v('status') && <ChartCard title={t('status', 'Statut')} data={byStatus} type="pie" colorIndex={2} insight={generateInsight(byStatus, 'pie', 'les statuts hypothécaires')} />}
           {v('duration') && <ChartCard title={t('duration', 'Durée (mois)')} data={durationBrackets} type="bar-v" colorIndex={3} insight={generateInsight(durationBrackets, 'bar-v', 'les durées hypothécaires')} />}
-          {v('trend') && <ChartCard title={t('trend', 'Contrats/mois')} data={trend} type="area" colorIndex={4} icon={TrendingUp} insight={generateInsight(trend, 'area', 'les contrats hypothécaires')} />}
           {v('geo') && <GeoCharts records={filtered} />}
-          {v('evolution') && <ChartCard title={t('evolution', 'Évolution')} data={trend} type="area" colorIndex={5} colSpan={2} icon={TrendingUp} insight={generateInsight(trend, 'area', "l'évolution des hypothèques")} />}
+          {v('evolution') && <ChartCard title={t('evolution', 'Évolution')} data={trend} type="area" colorIndex={4} colSpan={2} icon={TrendingUp} insight={generateInsight(trend, 'area', "l'évolution des hypothèques")} />}
         </div>
       </div>
     </FilterLabelContext.Provider>

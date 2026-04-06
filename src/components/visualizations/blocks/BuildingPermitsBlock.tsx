@@ -19,7 +19,7 @@ const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TAB
 export const BuildingPermitsBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
   const mapProvince = useContext(MapProvinceContext);
-  useEffect(() => { setFilter(() => ({ ...defaultFilter, province: mapProvince || undefined })); }, [mapProvince]);
+  useEffect(() => { setFilter(f => ({ ...f, province: mapProvince || undefined })); }, [mapProvince]);
   const filterLabel = useMemo(() => buildFilterLabel(filter), [filter]);
   const { isChartVisible: v, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
   const filtered = useMemo(() => applyFilters(data.buildingPermits, filter), [data.buildingPermits, filter]);
@@ -72,9 +72,9 @@ export const BuildingPermitsBlock: React.FC<Props> = memo(({ data }) => {
         <KpiGrid items={kpiItems} />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {v('status') && <ChartCard title={t('status', 'Statut administratif')} data={byStatus} type="bar-v" colorIndex={0} insight={generateInsight(byStatus, 'bar-v', 'les statuts des autorisations')} />}
-          {v('request-type') && <ChartCard title={t('request-type', 'En cours vs Expiré')} data={byCurrent} type="pie" colorIndex={1} insight={generateInsight(byCurrent, 'pie', 'la validité des permis')} />}
-          {v('construction-type') && <ChartCard title={t('construction-type', 'Service émetteur')} data={byService} type="bar-h" colorIndex={2} labelWidth={100} insight={generateInsight(byService, 'bar-h', 'les services émetteurs')} />}
-          {v('declared-usage') && <ChartCard title={t('declared-usage', 'Période de validité')} data={validityBrackets} type="bar-v" colorIndex={3} insight={generateInsight(validityBrackets, 'bar-v', 'les périodes de validité')} />}
+          {v('current-status') && <ChartCard title={t('current-status', 'En cours vs Expiré')} data={byCurrent} type="pie" colorIndex={1} insight={generateInsight(byCurrent, 'pie', 'la validité des permis')} />}
+          {v('issuing-service') && <ChartCard title={t('issuing-service', 'Service émetteur')} data={byService} type="bar-h" colorIndex={2} labelWidth={100} insight={generateInsight(byService, 'bar-h', 'les services émetteurs')} />}
+          {v('validity-period') && <ChartCard title={t('validity-period', 'Période de validité')} data={validityBrackets} type="bar-v" colorIndex={3} insight={generateInsight(validityBrackets, 'bar-v', 'les périodes de validité')} />}
           {v('geo') && <GeoCharts records={filtered} />}
           {v('evolution') && <ChartCard title={t('evolution', 'Évolution')} data={trend} type="area" colorIndex={4} colSpan={2} icon={TrendingUp} insight={generateInsight(trend, 'area', "l'évolution des autorisations")} />}
         </div>

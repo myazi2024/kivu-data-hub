@@ -1,7 +1,7 @@
 import React, { memo, useRef, useCallback, useContext, createContext } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, AreaChart, Area, Legend } from 'recharts';
-import { CHART_HEIGHT as CH, NoData } from '@/utils/analyticsConstants';
+import { CHART_HEIGHT as BASE_CH, NoData } from '@/utils/analyticsConstants';
 import { CHART_COLORS } from '@/utils/analyticsHelpers';
 import { LucideIcon, Info, Copy, Check } from 'lucide-react';
 import { toPng } from 'html-to-image';
@@ -53,7 +53,7 @@ const gridStroke = 'hsl(var(--border))';
 
 const colSpanClass: Record<number, string> = { 2: 'md:col-span-2', 3: 'md:col-span-3' };
 
-const truncLabel = (s: string, max = 12) => s.length > max ? s.slice(0, max) + '…' : s;
+const truncLabel = (s: string, max = 16) => s.length > max ? s.slice(0, max) + '…' : s;
 
 const InsightText: React.FC<{ text?: string }> = ({ text }) => {
   if (!text) return null;
@@ -164,6 +164,7 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
   const fill = color || CHART_COLORS[colorIndex % CHART_COLORS.length];
   const displayData = type === 'area' ? data : data.slice(0, maxItems);
   const truncated = type !== 'area' && data.length > maxItems;
+  const CH = type === 'bar-h' && displayData.length > 5 ? Math.max(BASE_CH, displayData.length * 28) : BASE_CH;
 
   return (
     <Card ref={ref} className={`border-border/30 ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
@@ -259,7 +260,7 @@ export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
       <CardContent className="px-2 pb-2">
         {displayData.length === 0 ? <NoData /> : (
           <>
-            <ResponsiveContainer width="100%" height={CH}>
+             <ResponsiveContainer width="100%" height={BASE_CH}>
               <BarChart data={displayData} layout={layout} margin={layout === 'vertical' ? { left: 5 } : undefined}>
                 <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
                 {layout === 'vertical' ? (
@@ -308,7 +309,7 @@ export const ColorMappedPieCard: React.FC<MultiDataPieProps> = memo(({
       <CardContent className="px-2 pb-2">
         {data.length === 0 ? <NoData /> : (
           <>
-            <ResponsiveContainer width="100%" height={CH}>
+             <ResponsiveContainer width="100%" height={BASE_CH}>
               <PieChart>
                 <Pie data={data} cx="50%" cy="50%" outerRadius={55} dataKey="value"
                   label={({ name, value }) => `${truncLabel(name)}: ${value}`}
