@@ -206,12 +206,16 @@ export const AnalyticsFilters: React.FC<Props> = ({
       <div className="flex items-center gap-1 flex-wrap">
         <Badge variant="outline" className="gap-0.5 text-[10px] px-1.5 py-0"><Calendar className="h-2.5 w-2.5" /> Temps</Badge>
 
-        <Select value={String(filter.year)} onValueChange={v => onChange({ ...filter, year: Number(v), semester: undefined, quarter: undefined, month: undefined, week: undefined })}>
+        <Select value={filter.year === null ? '__all__' : String(filter.year)} onValueChange={v => onChange({ ...filter, year: v === '__all__' ? null : Number(v), semester: undefined, quarter: undefined, month: undefined, week: undefined })}>
           <SelectTrigger className={selectCls}><SelectValue placeholder="Année" /></SelectTrigger>
-          <SelectContent>{years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
+          <SelectContent>
+            <SelectItem value="__all__">Toutes les années</SelectItem>
+            {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+          </SelectContent>
         </Select>
 
         {sep}
+        {filter.year !== null && (
         <Select value={filter.semester ? String(filter.semester) : '__all__'} onValueChange={v => onChange({ ...filter, semester: v === '__all__' ? undefined : Number(v), quarter: undefined, month: undefined, week: undefined })}>
           <SelectTrigger className={selectCls}><SelectValue placeholder="Sem." /></SelectTrigger>
           <SelectContent>
