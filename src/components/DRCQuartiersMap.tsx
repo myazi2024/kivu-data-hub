@@ -10,6 +10,7 @@ interface Props {
   ville: string;
   commune?: string;
   quartier?: string;
+  onQuartierSelect?: (quartier: string) => void;
 }
 
 const COLORS = [
@@ -88,7 +89,7 @@ function centroid(geometry: any, bbox: any, w: number, h: number, padding: numbe
   ];
 }
 
-const DRCQuartiersMap: React.FC<Props> = ({ ville, commune, quartier }) => {
+const DRCQuartiersMap: React.FC<Props> = ({ ville, commune, quartier, onQuartierSelect }) => {
   const [features, setFeatures] = useState<Feature[]>([]);
   const [hovered, setHovered] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -170,6 +171,7 @@ const DRCQuartiersMap: React.FC<Props> = ({ ville, commune, quartier }) => {
               className="transition-colors duration-150 cursor-pointer"
               onMouseEnter={() => setHovered(name)}
               onMouseLeave={() => setHovered(null)}
+              onClick={() => onQuartierSelect?.(name)}
             />
           );
         })}
