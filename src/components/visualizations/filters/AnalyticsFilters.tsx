@@ -173,7 +173,8 @@ export const AnalyticsFilters: React.FC<Props> = ({
     onChange({ ...defaultFilter });
     handleVilleChange(undefined);
     handleCommuneChange(undefined);
-  }, [onChange, handleVilleChange, handleCommuneChange]);
+    handleQuartierChange(undefined);
+  }, [onChange, handleVilleChange, handleCommuneChange, handleQuartierChange]);
 
   const semesterOptions = [1, 2];
   const quarterOptions = useMemo(() => {
