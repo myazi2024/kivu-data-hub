@@ -77,7 +77,7 @@ export const CertificatesBlock: React.FC<Props> = memo(({ data }) => {
   return (
     <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
-      <AnalyticsFilters data={data.certificates} filter={filter} onChange={setFilter} hidePaymentStatus dateField="generated_at" />
+      <AnalyticsFilters data={data.certificates} filter={filter} onChange={setFilter} dateField="generated_at" />
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {v('cert-type') && <ChartCard title={ct('cert-type', 'Type certificat')} icon={Award} data={byType} type="bar-h" colorIndex={0} labelWidth={120}

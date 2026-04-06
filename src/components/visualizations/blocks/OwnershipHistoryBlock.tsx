@@ -60,7 +60,7 @@ export const OwnershipHistoryBlock: React.FC<Props> = memo(({ data }) => {
   return (
     <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
-      <AnalyticsFilters data={data.ownershipHistory} filter={filter} onChange={setFilter} hidePaymentStatus hideStatus dateField="ownership_start_date" />
+      <AnalyticsFilters data={data.ownershipHistory} filter={filter} onChange={setFilter} hideStatus dateField="ownership_start_date" />
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {v('legal-status') && <ChartCard title={ct('legal-status', 'Statut juridique')} icon={Users} data={byLegalStatus} type="donut" colorIndex={1}

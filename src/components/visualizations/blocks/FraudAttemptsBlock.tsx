@@ -77,7 +77,7 @@ export const FraudAttemptsBlock: React.FC<Props> = memo(({ data }) => {
   return (
     <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
-      <AnalyticsFilters data={data.fraudAttempts} filter={filter} onChange={setFilter} hidePaymentStatus hideStatus />
+      <AnalyticsFilters data={data.fraudAttempts} filter={filter} onChange={setFilter} hideStatus />
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {v('fraud-type') && <ChartCard title={ct('fraud-type', 'Type de fraude')} icon={ShieldAlert} data={byFraudType} type="bar-h" colorIndex={4} labelWidth={120}

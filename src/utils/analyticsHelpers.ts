@@ -21,7 +21,6 @@ export interface AnalyticsFilter {
   groupement?: string;
   villageFilter?: string;
   status?: string;
-  paymentStatus?: string;
 }
 
 export const defaultFilter: AnalyticsFilter = { sectionType: 'all', year: null };
@@ -80,18 +79,12 @@ function matchesStatus(r: any, f: AnalyticsFilter): boolean {
   return recordStatus === f.status;
 }
 
-function matchesPaymentStatus(r: any, f: AnalyticsFilter): boolean {
-  if (!f.paymentStatus) return true;
-  const ps = r.payment_status || r.submission_payment_status;
-  return ps === f.paymentStatus;
-}
 
 export function applyFilters(records: any[], filter: AnalyticsFilter, dateField = 'created_at'): any[] {
   return records.filter(r =>
     matchesPeriod(r[dateField], filter) &&
     matchesLocation(r, filter) &&
-    matchesStatus(r, filter) &&
-    matchesPaymentStatus(r, filter)
+    matchesStatus(r, filter)
   );
 }
 

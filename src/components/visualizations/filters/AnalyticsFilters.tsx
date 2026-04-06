@@ -2,7 +2,7 @@ import React, { useMemo, useCallback, useContext, createContext } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MapPin, Calendar, X, CheckCircle, CreditCard } from 'lucide-react';
+import { MapPin, Calendar, X, CheckCircle } from 'lucide-react';
 import { AnalyticsFilter, defaultFilter, extractUnique, getAvailableYears, getSectionType } from '@/utils/analyticsHelpers';
 
 /** Context to propagate province filter changes up to the map */
@@ -47,16 +47,14 @@ interface Props {
   onCommuneChange?: (commune: string | undefined) => void;
   dateField?: string;
   statusField?: string;
-  paymentStatusField?: string;
   hideStatus?: boolean;
-  hidePaymentStatus?: boolean;
 }
 
 const MONTHS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
 
 export const AnalyticsFilters: React.FC<Props> = ({
   data, filter, onChange, onVilleChange, onCommuneChange, dateField = 'created_at',
-  statusField, paymentStatusField, hideStatus = false, hidePaymentStatus = false,
+  statusField, hideStatus = false,
 }) => {
   const provinceFilterCallback = useContext(ProvinceFilterContext);
   const villeChangeCtx = useContext(VilleChangeContext);
@@ -159,15 +157,13 @@ export const AnalyticsFilters: React.FC<Props> = ({
   const detectedStatusField = statusField || (data.length > 0 && data[0]?.current_status !== undefined ? 'current_status' : 'status');
   const statusOptions = useMemo(() => hideStatus ? [] : extractUnique(data, detectedStatusField), [data, detectedStatusField, hideStatus]);
 
-  const detectedPaymentField = paymentStatusField || (data.length > 0 && data[0]?.submission_payment_status !== undefined ? 'submission_payment_status' : 'payment_status');
-  const paymentStatusOptions = useMemo(() => hidePaymentStatus ? [] : extractUnique(data, detectedPaymentField), [data, detectedPaymentField, hidePaymentStatus]);
 
   const hasActiveFilters = (filter.year !== defaultFilter.year) ||
     filter.semester || filter.quarter || filter.month || filter.week ||
     filter.sectionType !== 'all' ||
     filter.province || filter.ville || filter.commune || filter.quartier || filter.avenue ||
     filter.territoire || filter.collectivite || filter.groupement || filter.villageFilter ||
-    filter.status || filter.paymentStatus;
+    filter.status;
 
   const reset = useCallback(() => {
     onChange({ ...defaultFilter });
@@ -279,15 +275,6 @@ export const AnalyticsFilters: React.FC<Props> = ({
           </>
         )}
 
-        {!hidePaymentStatus && paymentStatusOptions.length > 0 && (
-          <Select value={filter.paymentStatus || '__all__'} onValueChange={v => onChange({ ...filter, paymentStatus: v === '__all__' ? undefined : v })}>
-            <SelectTrigger className={selectCls}><CreditCard className="h-2.5 w-2.5 mr-0.5" /><SelectValue placeholder="Paiement" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">Tous paiements</SelectItem>
-              {paymentStatusOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        )}
 
         {hasActiveFilters && (
           <Button variant="ghost" size="sm" className="h-5 text-[10px] px-1.5 ml-auto" onClick={reset}><X className="h-2.5 w-2.5" /></Button>
