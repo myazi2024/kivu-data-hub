@@ -17,7 +17,7 @@ import { CertificatesBlock } from './blocks/CertificatesBlock';
 import { InvoicesBlock } from './blocks/InvoicesBlock';
 import { ProvinceData } from '@/types/province';
 import { useAnalyticsTabsConfig, useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
-import { ProvinceFilterContext, MapProvinceContext, VilleFilterContext, CommuneFilterContext } from './filters/AnalyticsFilters';
+import { ProvinceFilterContext, MapProvinceContext, VilleFilterContext, CommuneFilterContext, VilleChangeContext, CommuneChangeContext } from './filters/AnalyticsFilters';
 import { WatermarkContext } from './shared/ChartCard';
 
 interface ProvinceDataVisualizationProps {
