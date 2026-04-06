@@ -1,30 +1,55 @@
 
-# Atténuer les voisins quand une commune/quartier est sélectionné
 
-## Problème
-Quand une commune ou un quartier est sélectionné, les voisins ont la même opacité/couleur que d'habitude — pas de distinction visuelle claire entre la sélection et le contexte.
+# Synchroniser les filtres Ville/Commune/Quartier de la carte vers les blocs Analytics
+
+## Probleme
+
+Quand on selectionne une ville, commune ou quartier sur la carte, la carte change de niveau (provinces → communes → quartiers) mais les 14 blocs analytiques en dessous ne filtrent que par **province**. Les contextes `VilleFilterContext`, `CommuneFilterContext` et `QuartierFilterContext` sont fournis par `ProvinceDataVisualization` mais **aucun bloc ne les consomme**.
 
 ## Correction
 
-Dans **DRCCommunesMap.tsx** (ligne 167) et **DRCQuartiersMap.tsx** (ligne 158), modifier la logique `fill` pour atténuer les features non sélectionnées quand une sélection est active :
+### Dans chacun des 14 blocs (`src/components/visualizations/blocks/*.tsx`)
+
+Modifier le `useEffect` existant qui synchronise `mapProvince` pour aussi synchroniser `ville`, `commune` et `quartier` depuis leurs contextes respectifs :
 
 ```typescript
-// Quand une sélection est active, les voisins deviennent très pâles
-const hasSelection = !!commune; // (ou !!quartier pour QuartiersMap)
-const fill = isSelected 
-  ? HIGHLIGHT 
-  : isHovered 
-    ? 'hsl(var(--primary) / 0.55)' 
-    : hasSelection 
-      ? 'hsl(var(--muted) / 0.15)'  // voisins atténués
-      : COLORS[i % COLORS.length];  // couleur normale
+// Avant (identique dans les 14 blocs)
+const mapProvince = useContext(MapProvinceContext);
+useEffect(() => { 
+  setFilter(f => ({ ...f, province: mapProvince || undefined, ville: undefined })); 
+}, [mapProvince]);
 
-const stroke = isSelected ? HIGHLIGHT_STROKE : hasSelection ? 'hsl(var(--foreground) / 0.1)' : STROKE;
-const strokeWidth = isSelected ? 2 : isHovered ? 1.5 : 0.8;
+// Apres
+const mapProvince = useContext(MapProvinceContext);
+const mapVille = useContext(VilleFilterContext);
+const mapCommune = useContext(CommuneFilterContext);
+const mapQuartier = useContext(QuartierFilterContext);
+useEffect(() => { 
+  setFilter(f => ({ 
+    ...f, 
+    province: mapProvince || undefined, 
+    ville: mapVille || undefined, 
+    commune: mapCommune || undefined, 
+    quartier: mapQuartier || undefined,
+  })); 
+}, [mapProvince, mapVille, mapCommune, mapQuartier]);
 ```
 
-Les voisins passent à une opacité très faible (15%) avec un contour léger (10%), gardant le focus visuel sur la sélection.
+Chaque bloc devra aussi importer `VilleFilterContext`, `CommuneFilterContext` et `QuartierFilterContext` depuis `AnalyticsFilters`.
 
-### Fichiers modifiés
-- `src/components/DRCCommunesMap.tsx` — atténuer voisins quand commune sélectionnée
-- `src/components/DRCQuartiersMap.tsx` — atténuer voisins quand quartier sélectionné
+### Fichiers modifies (14 blocs)
+- `TitleRequestsBlock.tsx`
+- `ParcelsWithTitleBlock.tsx`
+- `ContributionsBlock.tsx`
+- `ExpertiseBlock.tsx`
+- `MutationBlock.tsx`
+- `SubdivisionBlock.tsx`
+- `DisputesBlock.tsx`
+- `MortgagesBlock.tsx`
+- `BuildingPermitsBlock.tsx`
+- `TaxesBlock.tsx`
+- `OwnershipHistoryBlock.tsx`
+- `FraudAttemptsBlock.tsx`
+- `CertificatesBlock.tsx`
+- `InvoicesBlock.tsx`
+
