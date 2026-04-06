@@ -1,87 +1,67 @@
 
 
-# Couche carte Villes/Communes depuis les filtres Analytics
+# Couche carte Quartiers de Goma depuis les filtres Analytics
 
 ## Contexte
 
-Le dataset HDI contient 58 communes reparties dans 11 villes de la RDC. Le GeoJSON (94 KB, simplifie) a ete genere et place dans `public/drc-communes.geojson`. Chaque feature a `is_in_admi` (= ville) et `name` (= commune).
+Le dataset HDI contient 18 quartiers repartis dans 2 communes (Goma et Karisimbi) de la ville de Goma. Le GeoJSON source est disponible a `https://data.humdata.org/.../osm_goma_quartiers_210527.geojson`. Chaque feature a `name` (= quartier) et `is_in_commune` ou equivalent (= commune).
 
-Actuellement, le filtre Lieu dans Analytics ne contient pas de niveau "Ville" — il passe directement de Section Urbaine a Commune. Il faut reintroduire le filtre "Ville" entre Section et Commune, puis utiliser ce filtre pour piloter l'affichage d'une nouvelle couche carte.
+Actuellement, quand on selectionne une ville dans le filtre Lieu, la carte bascule de la carte RDC provinces vers la carte communes (`DRCCommunesMap`). Il faut ajouter un niveau supplementaire : quand on selectionne aussi une commune (ex: "Goma"), la carte bascule vers les quartiers de cette commune.
 
-## Structure cible du filtre Lieu (urbain)
+## Structure de la carte
 
 ```text
-Province → Section Urbaine → Ville (nouveau) → Commune → Quartier → Avenue
+Carte RDC provinces (par defaut)
+ └─ Carte communes (quand ville selectionnee)
+     └─ Carte quartiers Goma (quand commune selectionnee ET ville = Goma)
 ```
 
 ## Modifications
 
-### 1. Reintroduire le champ `ville` dans le filtre
+### 1. Telecharger et simplifier le GeoJSON quartiers
 
-**`src/utils/analyticsHelpers.ts`** :
-- Ajouter `ville?: string` dans `AnalyticsFilter`
-- Ajouter le check `ville` dans `matchesLocation` (`if (f.ville && r.ville !== f.ville) return false`)
-- Ajouter `ville` dans `buildFilterLabel`
+- Telecharger `osm_goma_quartiers_210527.geojson` depuis HDI
+- Simplifier les coordonnees (precision 4 decimales) pour reduire la taille
+- Enregistrer dans `public/goma-quartiers.geojson`
+- Chaque feature aura `name` (quartier) et un champ identifiant la commune parente
 
-### 2. Ajouter le select "Ville" dans les filtres Analytics
+### 2. Creer le composant `DRCQuartiersMap.tsx`
 
-**`src/components/visualizations/filters/AnalyticsFilters.tsx`** :
-- Dans la cascade urbaine, ajouter un select "Ville" avant "Commune" :
-  - Visible des que `sectionType === 'urbaine'`
-  - Options depuis `getVillesForProvince(province)` (deja disponible dans geographicData)
-  - Quand on selectionne une ville, les communes se filtrent via `getCommunesForVille`
-  - Reset : changer de ville reset commune, quartier, avenue
-- Le `implicitVille` actuel est remplace par `filter.ville` explicite
-- Exporter un nouveau contexte `VilleFilterContext` pour communiquer la ville selectionnee a la carte
-- Exporter un nouveau contexte `CommuneFilterContext` pour communiquer la commune selectionnee a la carte
+- Meme architecture que `DRCCommunesMap.tsx` (SVG, projection proportionnelle, bounding box dynamique)
+- Props : `ville: string`, `commune?: string`, `quartier?: string`
+- Charge `public/goma-quartiers.geojson` via fetch
+- Filtre les features par commune parente quand `commune` est defini
+- Met en surbrillance le quartier selectionne (`name === quartier`)
+- Tooltip au hover, labels SVG
 
-### 3. Creer le composant de carte communes
+### 3. Ajouter le contexte `QuartierFilterContext` et callback
 
-**`src/components/DRCCommunesMap.tsx`** (nouveau) :
-- Charge `public/drc-communes.geojson` via fetch
-- Props : `ville?: string`, `commune?: string`
-- Quand `ville` est defini : filtre les features ou `is_in_admi === ville`, calcule le bounding box et affiche la carte zoomee dynamiquement
-- Quand `commune` est aussi defini : met en surbrillance la feature ou `name === commune`
-- Rendu SVG avec projection proportionnelle (meme style que DRCMapWithTooltip)
-- Tooltip au hover montrant le nom de la commune
-- Couleurs : communes avec fond colore, commune selectionnee en surbrillance
+- Dans `AnalyticsFilters.tsx` : exporter `QuartierFilterContext` et `QuartierChangeContext`
+- Dans `ProvinceDataVisualization.tsx` : ajouter les providers + props `onQuartierChange`, `selectedQuartier`
 
-### 4. Integrer la carte communes dans DRCInteractiveMap
+### 4. Mettre a jour `DRCInteractiveMap.tsx`
 
-**`src/components/DRCInteractiveMap.tsx`** :
-- Ajouter un state `selectedVille` et `selectedCommune` (provenants des filtres Analytics via contextes)
-- Logique de bascule : si `selectedVille` est defini, remplacer la carte RDC provinces par la carte communes (DRCCommunesMap)
-- Si `selectedVille` est vide, afficher la carte provinces classique
-- Mettre a jour le titre de la carte pour refleter la ville affichee
-- Propagation : `VilleFilterContext.Provider` et `CommuneFilterContext.Provider` dans ProvinceDataVisualization
+- Ajouter state `selectedQuartier`
+- Logique de bascule a 3 niveaux :
+  - Si `selectedVille` ET `selectedCommune` ET ville === 'Goma' → afficher `DRCQuartiersMap`
+  - Si `selectedVille` seulement → afficher `DRCCommunesMap`
+  - Sinon → afficher carte provinces
+- Mettre a jour le titre et la description contextuelle
+- Passer `onQuartierChange={setSelectedQuartier}` et `selectedQuartier` a `ProvinceDataVisualization`
 
-### 5. Mettre a jour les contextes dans ProvinceDataVisualization
+### 5. Mettre a jour `ProvinceDataVisualization.tsx`
 
-**`src/components/visualizations/ProvinceDataVisualization.tsx`** :
-- Ajouter les providers `VilleFilterContext` et `CommuneFilterContext`
-- Les callbacks remontent les valeurs vers DRCInteractiveMap
+- Ajouter props `onQuartierChange` et `selectedQuartier`
+- Ajouter les providers `QuartierFilterContext` et `QuartierChangeContext`
 
-### 6. Mettre a jour les blocs de visualisation
+### 6. Propager la selection quartier dans les filtres
 
-**Tous les 14 blocs** : ajouter le reset de `ville` dans le `useEffect` qui gere `mapProvince` :
-```typescript
-useEffect(() => { 
-  setFilter(f => ({ ...f, province: mapProvince || undefined, ville: undefined })); 
-}, [mapProvince]);
-```
-
-### 7. GeoCharts — ajouter "Par ville"
-
-**`src/components/visualizations/shared/GeoCharts.tsx`** :
-- Ajouter un graphique "Par ville" entre Section et Commune dans la cascade urbaine
+- Dans `AnalyticsFilters.tsx`, quand le quartier change dans le filtre, appeler `handleQuartierChange` pour remonter au contexte carte
 
 ### Fichiers concernes
-- `public/drc-communes.geojson` (deja genere)
-- `src/utils/analyticsHelpers.ts` — ajouter `ville` au filtre
-- `src/components/visualizations/filters/AnalyticsFilters.tsx` — ajouter select Ville + contextes
-- `src/components/DRCCommunesMap.tsx` — nouveau composant carte communes
-- `src/components/DRCInteractiveMap.tsx` — bascule carte provinces/communes
-- `src/components/visualizations/ProvinceDataVisualization.tsx` — providers contexte
-- `src/components/visualizations/shared/GeoCharts.tsx` — graphique "Par ville"
-- 14 fichiers blocs — reset ville
+- `public/goma-quartiers.geojson` — nouveau fichier GeoJSON
+- `src/components/DRCQuartiersMap.tsx` — nouveau composant carte quartiers
+- `src/components/DRCInteractiveMap.tsx` — bascule 3 niveaux
+- `src/components/visualizations/filters/AnalyticsFilters.tsx` — contextes quartier + propagation
+- `src/components/visualizations/ProvinceDataVisualization.tsx` — providers quartier
 
