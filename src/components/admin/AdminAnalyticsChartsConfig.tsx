@@ -24,6 +24,8 @@ import {
   useAnalyticsTabsConfig,
   ANALYTICS_TABS_REGISTRY,
   TAB_FILTER_DEFAULTS,
+  DATE_FIELD_OPTIONS,
+  STATUS_FIELD_OPTIONS,
   buildFilterDefaults,
   ChartConfigItem,
   TabConfig,
