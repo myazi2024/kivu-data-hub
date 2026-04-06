@@ -282,10 +282,12 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   <div className="bg-muted/20 px-2 py-0.5 border-b border-border/30 flex-shrink-0">
                     <h2 className="text-[10px] sm:text-xs font-medium text-foreground flex items-center gap-1">
                       <MapPin className="h-3 w-3 text-primary" />
-                      <span>{selectedProvince ? selectedProvince.name : 'République Démocratique du Congo'}</span>
+                      <span>{selectedVille ? `${selectedVille}${selectedCommune ? ` — ${selectedCommune}` : ''}` : selectedProvince ? selectedProvince.name : 'République Démocratique du Congo'}</span>
                     </h2>
                     <p className="text-[10px] text-muted-foreground leading-tight">
-                      {selectedProvince
+                      {selectedVille
+                        ? `Découpage communal de la ville de ${selectedVille}`
+                        : selectedProvince
                         ? `Données foncières cadastrales de ${selectedProvince.name} — Total : ${formatNumber(selectedProvince.parcelsCount)} parcelles enregistrées`
                         : `${getChartConfig('map-header-note')?.custom_title || 'Répartition géographique des données foncières cadastrales'} — Total : ${formatNumber(totalParcels)} parcelles enregistrées`
                       }
