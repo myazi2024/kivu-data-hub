@@ -458,6 +458,7 @@ export const AnalyticsFilters: React.FC<Props> = ({
           </>
         )}
       </div>
+      )}
     </div>
   );
 };
