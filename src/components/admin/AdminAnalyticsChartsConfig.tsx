@@ -717,7 +717,27 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
         </div>
       )}
 
-      {/* Unsaved changes confirmation dialog */}
+      {/* ─── FILTERS MANAGEMENT VIEW ─── */}
+      {viewMode === 'filters' && (
+        <FilterManager
+          configs={configs}
+          localTabs={localTabs}
+          onSave={async (items: ChartConfigItem[]) => {
+            setIsSaving(true);
+            try {
+              await upsertConfig.mutateAsync(items);
+              toast.success('Configuration des filtres sauvegardée');
+            } catch (error: any) {
+              toast.error(`Erreur: ${error?.message || 'Sauvegarde impossible'}`);
+            } finally {
+              setIsSaving(false);
+            }
+          }}
+          isSaving={isSaving}
+        />
+      )}
+
+
       <AlertDialog open={!!pendingTabSwitch} onOpenChange={(open) => { if (!open) cancelTabSwitch(); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
