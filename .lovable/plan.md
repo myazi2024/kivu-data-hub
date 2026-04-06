@@ -1,67 +1,44 @@
 
 
-# Couche carte Quartiers de Goma depuis les filtres Analytics
+# Zoom dynamique sur commune/quartier selectionne
 
-## Contexte
+## Probleme
 
-Le dataset HDI contient 18 quartiers repartis dans 2 communes (Goma et Karisimbi) de la ville de Goma. Le GeoJSON source est disponible a `https://data.humdata.org/.../osm_goma_quartiers_210527.geojson`. Chaque feature a `name` (= quartier) et `is_in_commune` ou equivalent (= commune).
+Quand une commune est selectionnee dans `DRCCommunesMap`, le bounding box est calcule sur **toutes les communes de la ville** — la commune selectionnee est simplement coloree differemment mais pas zoomee. Meme probleme dans `DRCQuartiersMap` pour les quartiers.
 
-Actuellement, quand on selectionne une ville dans le filtre Lieu, la carte bascule de la carte RDC provinces vers la carte communes (`DRCCommunesMap`). Il faut ajouter un niveau supplementaire : quand on selectionne aussi une commune (ex: "Goma"), la carte bascule vers les quartiers de cette commune.
+## Correction
 
-## Structure de la carte
+### DRCCommunesMap.tsx
 
-```text
-Carte RDC provinces (par defaut)
- └─ Carte communes (quand ville selectionnee)
-     └─ Carte quartiers Goma (quand commune selectionnee ET ville = Goma)
+Modifier le `useMemo` du `bbox` pour que, quand `commune` est defini, le bounding box soit calcule uniquement sur la feature correspondante (celle ou `name === commune`). Si la commune selectionnee n'est pas trouvee, fallback sur toutes les communes de la ville.
+
+```typescript
+const bbox = useMemo(() => {
+  const source = commune
+    ? filtered.filter(f => f.properties.name.toLowerCase() === commune.toLowerCase())
+    : filtered;
+  const target = source.length > 0 ? source : filtered;
+  // ... calcul bbox sur target
+}, [filtered, commune]);
 ```
 
-## Modifications
+### DRCQuartiersMap.tsx
 
-### 1. Telecharger et simplifier le GeoJSON quartiers
+Meme logique : quand `quartier` est defini, le bounding box se calcule uniquement sur la feature ou `name === quartier`.
 
-- Telecharger `osm_goma_quartiers_210527.geojson` depuis HDI
-- Simplifier les coordonnees (precision 4 decimales) pour reduire la taille
-- Enregistrer dans `public/goma-quartiers.geojson`
-- Chaque feature aura `name` (quartier) et un champ identifiant la commune parente
+```typescript
+const bbox = useMemo(() => {
+  const source = quartier
+    ? filtered.filter(f => f.properties.name.toLowerCase() === quartier.toLowerCase())
+    : filtered;
+  const target = source.length > 0 ? source : filtered;
+  // ... calcul bbox sur target
+}, [filtered, quartier]);
+```
 
-### 2. Creer le composant `DRCQuartiersMap.tsx`
+Dans les deux cas, toutes les features voisines restent rendues (visibles) mais le cadrage SVG est centre et zoome sur l'element selectionne.
 
-- Meme architecture que `DRCCommunesMap.tsx` (SVG, projection proportionnelle, bounding box dynamique)
-- Props : `ville: string`, `commune?: string`, `quartier?: string`
-- Charge `public/goma-quartiers.geojson` via fetch
-- Filtre les features par commune parente quand `commune` est defini
-- Met en surbrillance le quartier selectionne (`name === quartier`)
-- Tooltip au hover, labels SVG
-
-### 3. Ajouter le contexte `QuartierFilterContext` et callback
-
-- Dans `AnalyticsFilters.tsx` : exporter `QuartierFilterContext` et `QuartierChangeContext`
-- Dans `ProvinceDataVisualization.tsx` : ajouter les providers + props `onQuartierChange`, `selectedQuartier`
-
-### 4. Mettre a jour `DRCInteractiveMap.tsx`
-
-- Ajouter state `selectedQuartier`
-- Logique de bascule a 3 niveaux :
-  - Si `selectedVille` ET `selectedCommune` ET ville === 'Goma' → afficher `DRCQuartiersMap`
-  - Si `selectedVille` seulement → afficher `DRCCommunesMap`
-  - Sinon → afficher carte provinces
-- Mettre a jour le titre et la description contextuelle
-- Passer `onQuartierChange={setSelectedQuartier}` et `selectedQuartier` a `ProvinceDataVisualization`
-
-### 5. Mettre a jour `ProvinceDataVisualization.tsx`
-
-- Ajouter props `onQuartierChange` et `selectedQuartier`
-- Ajouter les providers `QuartierFilterContext` et `QuartierChangeContext`
-
-### 6. Propager la selection quartier dans les filtres
-
-- Dans `AnalyticsFilters.tsx`, quand le quartier change dans le filtre, appeler `handleQuartierChange` pour remonter au contexte carte
-
-### Fichiers concernes
-- `public/goma-quartiers.geojson` — nouveau fichier GeoJSON
-- `src/components/DRCQuartiersMap.tsx` — nouveau composant carte quartiers
-- `src/components/DRCInteractiveMap.tsx` — bascule 3 niveaux
-- `src/components/visualizations/filters/AnalyticsFilters.tsx` — contextes quartier + propagation
-- `src/components/visualizations/ProvinceDataVisualization.tsx` — providers quartier
+### Fichiers modifies
+- `src/components/DRCCommunesMap.tsx` — bbox conditionnel sur commune
+- `src/components/DRCQuartiersMap.tsx` — bbox conditionnel sur quartier
 
