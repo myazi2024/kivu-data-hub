@@ -5,9 +5,9 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { MapPin, DollarSign, BarChart3, Info, FileText, Database, AlertTriangle, Loader2, Copy, Check, Maximize, Minimize } from 'lucide-react';
-// html2canvas is lazy-imported in handleCopyImage
 import { toast } from 'sonner';
 import DRCMapWithTooltip from './DRCMapWithTooltip';
+import DRCCommunesMap from './DRCCommunesMap';
 
 import { ProvinceData } from '@/types/province';
 import ProvinceDataVisualization from './visualizations/ProvinceDataVisualization';
