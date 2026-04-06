@@ -483,19 +483,19 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
               </Card>
             </div>
 
-            {/* Données province — real stats */}
+            {/* Données géographiques — scoped stats */}
             <div className={`${activeMobilePanel === 'analytics' ? 'hidden lg:block' : selectedProvince ? 'h-1/2' : 'hidden lg:block'} lg:h-auto lg:flex-[2] min-h-0 overflow-hidden transition-all duration-300 w-full`}>
               <Card className="h-full flex flex-col border-border/30 overflow-hidden">
                 <ScrollArea className="flex-1">
-                  {selectedProvince ? (
+                  {selectedProvince && scopedStats ? (
                     <div className="p-2 space-y-2">
                       <div className="flex items-center justify-between gap-1 mb-1">
                         <div className="flex items-center gap-1 min-w-0">
                           <MapPin className="h-3 w-3 text-primary flex-shrink-0" />
-                          <span className="text-[11px] sm:text-xs font-medium text-foreground truncate">{selectedProvince.name}</span>
+                          <span className="text-[11px] sm:text-xs font-medium text-foreground truncate">{scopeLabel}</span>
                         </div>
                         <button
-                          onClick={() => setSelectedProvince(null)}
+                          onClick={() => { setSelectedProvince(null); setSelectedVille(undefined); setSelectedCommune(undefined); setSelectedQuartier(undefined); }}
                           className="lg:hidden flex-shrink-0 h-5 w-5 flex items-center justify-center rounded-full bg-muted hover:bg-destructive hover:text-destructive-foreground transition-colors text-muted-foreground"
                           aria-label="Fermer"
                         >
@@ -513,19 +513,19 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                           {isChartVisible('detail-parcels') && (
                             <Card className="p-1 border-border/30">
                               <div className="text-[10px] text-muted-foreground truncate">{dt('detail-parcels', 'Parcelles')}</div>
-                              <div className="text-[11px] font-bold text-primary">{formatNumber(selectedProvince.parcelsCount)}</div>
+                              <div className="text-[11px] font-bold text-primary">{formatNumber(scopedStats.parcelsCount)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-titles') && (
                             <Card className="p-1 border-border/30">
                               <div className="text-[10px] text-muted-foreground truncate">{dt('detail-titles', 'Titres dem.')}</div>
-                              <div className="text-[11px] font-bold text-blue-600">{formatNumber(selectedProvince.titleRequestsCount)}</div>
+                              <div className="text-[11px] font-bold text-blue-600">{formatNumber(scopedStats.titleRequestsCount)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-contributions') && (
                             <Card className="p-1 border-border/30">
                               <div className="text-[10px] text-muted-foreground truncate">{dt('detail-contributions', 'Contributions')}</div>
-                              <div className="text-[11px] font-bold text-emerald-600">{formatNumber(selectedProvince.contributionsCount)}</div>
+                              <div className="text-[11px] font-bold text-emerald-600">{formatNumber(scopedStats.contributionsCount)}</div>
                             </Card>
                           )}
                         </div>
@@ -541,25 +541,25 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                           {isChartVisible('detail-mutations') && (
                             <Card className="p-1 border-border/30">
                               <div className="text-[10px] text-muted-foreground truncate">{dt('detail-mutations', 'Mutations')}</div>
-                              <div className="text-[11px] font-bold text-violet-600">{formatNumber(selectedProvince.mutationsCount)}</div>
+                              <div className="text-[11px] font-bold text-violet-600">{formatNumber(scopedStats.mutationsCount)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-disputes') && (
                             <Card className="p-1 border-border/30">
                               <div className="text-[10px] text-muted-foreground truncate">{dt('detail-disputes', 'Litiges')}</div>
-                              <div className="text-[11px] font-bold text-orange-500">{formatNumber(selectedProvince.disputesCount)}</div>
+                              <div className="text-[11px] font-bold text-orange-500">{formatNumber(scopedStats.disputesCount)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-certificates') && (
                             <Card className="p-1 border-border/30">
                               <div className="text-[10px] text-muted-foreground truncate">{dt('detail-certificates', 'Certificats')}</div>
-                              <div className="text-[11px] font-bold text-emerald-600">{formatNumber(selectedProvince.certificatesCount)}</div>
+                              <div className="text-[11px] font-bold text-emerald-600">{formatNumber(scopedStats.certificatesCount)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-expertises') && (
                             <Card className="p-1 border-border/30">
                               <div className="text-[10px] text-muted-foreground truncate">{dt('detail-expertises', 'Expertises')}</div>
-                              <div className="text-[11px] font-bold text-blue-600">{formatNumber(selectedProvince.expertisesCount)}</div>
+                              <div className="text-[11px] font-bold text-blue-600">{formatNumber(scopedStats.expertisesCount)}</div>
                             </Card>
                           )}
                         </div>
@@ -575,19 +575,19 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                           {isChartVisible('detail-revenue') && (
                             <Card className="p-1 border-border/30">
                               <div className="text-[10px] text-muted-foreground truncate">{dt('detail-revenue', 'Revenus')}</div>
-                              <div className="text-[11px] font-bold text-primary">{formatCurrency(selectedProvince.revenueUsd)}</div>
+                              <div className="text-[11px] font-bold text-primary">{formatCurrency(scopedStats.revenueUsd)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-fiscal') && (
                             <Card className="p-1 border-border/30">
                               <div className="text-[10px] text-muted-foreground truncate">{dt('detail-fiscal', 'Recettes fisc.')}</div>
-                              <div className="text-[11px] font-bold text-emerald-600">{formatCurrency(selectedProvince.fiscalRevenueUsd)}</div>
+                              <div className="text-[11px] font-bold text-emerald-600">{formatCurrency(scopedStats.fiscalRevenueUsd)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-invoices') && (
                             <Card className="p-1 border-border/30">
                               <div className="text-[10px] text-muted-foreground truncate">{dt('detail-invoices', 'Factures')}</div>
-                              <div className="text-[11px] font-bold text-blue-600">{formatNumber(selectedProvince.invoicesCount)}</div>
+                              <div className="text-[11px] font-bold text-blue-600">{formatNumber(scopedStats.invoicesCount)}</div>
                             </Card>
                           )}
                         </div>
@@ -600,25 +600,25 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                             <div className="text-[10px] text-muted-foreground truncate">{dt('detail-density', 'Densité')}</div>
                             <Badge 
                               variant={
-                                selectedProvince.densityLevel === 'Très élevé' ? 'destructive' :
-                                selectedProvince.densityLevel === 'Élevé' ? 'secondary' : 'outline'
+                                scopedStats.densityLevel === 'Très élevé' ? 'destructive' :
+                                scopedStats.densityLevel === 'Élevé' ? 'secondary' : 'outline'
                               }
                               className="text-[10px] px-1 py-0"
                             >
-                              {selectedProvince.densityLevel}
+                              {scopedStats.densityLevel}
                             </Badge>
                           </Card>
                         )}
                         {isChartVisible('detail-surface') && (
                           <Card className="p-1 border-border/30">
                             <div className="text-[10px] text-muted-foreground truncate">{dt('detail-surface', 'Surface (ha)')}</div>
-                            <div className="text-[11px] font-bold text-accent">{formatNumber(selectedProvince.totalSurfaceHa || 0)}</div>
+                            <div className="text-[11px] font-bold text-accent">{formatNumber(scopedStats.totalSurfaceHa || 0)}</div>
                           </Card>
                         )}
                         {isChartVisible('detail-resolution') && (
                           <Card className="p-1 border-border/30">
                             <div className="text-[10px] text-muted-foreground truncate">{dt('detail-resolution', 'Résol. litiges')}</div>
-                            <div className="text-[11px] font-bold text-emerald-600">{selectedProvince.disputeResolutionRate || 0}%</div>
+                            <div className="text-[11px] font-bold text-emerald-600">{scopedStats.disputeResolutionRate || 0}%</div>
                           </Card>
                         )}
                       </div>
