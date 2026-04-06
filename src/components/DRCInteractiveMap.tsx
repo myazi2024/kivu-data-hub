@@ -418,15 +418,15 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                     </div>
                   )}
 
-                  {/* Légende contextuelle province zoomée */}
-                  {isMapZoomed && selectedProvince && (
+                  {/* Légende contextuelle — scope dynamique */}
+                  {selectedProvince && scopedStats && (
                     <div className="absolute bottom-5 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30 animate-fade-in">
-                      <div className="text-[10px] font-medium text-foreground mb-0.5">{selectedProvince.name}</div>
+                      <div className="text-[10px] font-medium text-foreground mb-0.5">{scopeLabel}</div>
                       <div className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
-                        <div className="flex justify-between gap-2"><span>Parcelles</span><span className="font-medium text-foreground">{formatNumber(selectedProvince.parcelsCount)}</span></div>
-                        <div className="flex justify-between gap-2"><span>Titres dem.</span><span className="font-medium text-foreground">{formatNumber(selectedProvince.titleRequestsCount)}</span></div>
-                        <div className="flex justify-between gap-2"><span>Revenus</span><span className="font-medium text-foreground">{formatCurrency(selectedProvince.revenueUsd)}</span></div>
-                        <div className="flex justify-between gap-2"><span>Densité</span><span className="font-medium text-foreground">{selectedProvince.densityLevel}</span></div>
+                        <div className="flex justify-between gap-2"><span>Parcelles</span><span className="font-medium text-foreground">{formatNumber(scopedStats.parcelsCount)}</span></div>
+                        <div className="flex justify-between gap-2"><span>Titres dem.</span><span className="font-medium text-foreground">{formatNumber(scopedStats.titleRequestsCount)}</span></div>
+                        <div className="flex justify-between gap-2"><span>Revenus</span><span className="font-medium text-foreground">{formatCurrency(scopedStats.revenueUsd)}</span></div>
+                        <div className="flex justify-between gap-2"><span>Densité</span><span className="font-medium text-foreground">{scopedStats.densityLevel}</span></div>
                       </div>
                     </div>
                   )}
