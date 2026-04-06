@@ -421,14 +421,16 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
   const [activeTab, setActiveTab] = useState(Object.keys(ANALYTICS_TABS_REGISTRY)[0]);
   const [localItems, setLocalItems] = useState<Record<string, ChartConfigItem[]>>({});
   const [localTabs, setLocalTabs] = useState<TabConfig[]>([]);
+  const [localFilters, setLocalFilters] = useState<Record<string, ChartConfigItem[]>>({});
   const [hasTabChanges, setHasTabChanges] = useState(false);
+  const [hasFilterChanges, setHasFilterChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [viewMode, setViewMode] = useState<'tabs' | 'charts' | 'filters'>('tabs');
   const [modifiedTabs, setModifiedTabs] = useState<Set<string>>(new Set());
   const [pendingTabSwitch, setPendingTabSwitch] = useState<string | null>(null);
 
   const hasChartChanges = modifiedTabs.size > 0;
-  const hasChanges = hasChartChanges || hasTabChanges;
+  const hasChanges = hasChartChanges || hasTabChanges || hasFilterChanges;
 
   // Initialize local state from defaults + DB overrides
   useEffect(() => {
