@@ -120,8 +120,12 @@ const DRCCommunesMap: React.FC<Props> = ({ ville, commune }) => {
 
   const bbox = useMemo(() => {
     if (filtered.length === 0) return { minLng: 0, maxLng: 1, minLat: 0, maxLat: 1 };
+    const source = commune
+      ? filtered.filter(f => f.properties.name.toLowerCase() === commune.toLowerCase())
+      : filtered;
+    const target = source.length > 0 ? source : filtered;
     let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity;
-    filtered.forEach(f => {
+    target.forEach(f => {
       flatCoords(f.geometry).forEach(([lng, lat]) => {
         if (lng < minLng) minLng = lng;
         if (lng > maxLng) maxLng = lng;
@@ -129,10 +133,10 @@ const DRCCommunesMap: React.FC<Props> = ({ ville, commune }) => {
         if (lat > maxLat) maxLat = lat;
       });
     });
-    const padLng = (maxLng - minLng) * 0.05;
-    const padLat = (maxLat - minLat) * 0.05;
+    const padLng = (maxLng - minLng) * 0.1;
+    const padLat = (maxLat - minLat) * 0.1;
     return { minLng: minLng - padLng, maxLng: maxLng + padLng, minLat: minLat - padLat, maxLat: maxLat + padLat };
-  }, [filtered]);
+  }, [filtered, commune]);
 
   if (!ville) {
     return (
