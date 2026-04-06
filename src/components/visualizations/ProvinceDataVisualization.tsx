@@ -17,7 +17,7 @@ import { CertificatesBlock } from './blocks/CertificatesBlock';
 import { InvoicesBlock } from './blocks/InvoicesBlock';
 import { ProvinceData } from '@/types/province';
 import { useAnalyticsTabsConfig, useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
-import { ProvinceFilterContext, MapProvinceContext, VilleFilterContext, CommuneFilterContext, VilleChangeContext, CommuneChangeContext } from './filters/AnalyticsFilters';
+import { ProvinceFilterContext, MapProvinceContext, VilleFilterContext, CommuneFilterContext, VilleChangeContext, CommuneChangeContext, QuartierFilterContext, QuartierChangeContext } from './filters/AnalyticsFilters';
 import { WatermarkContext } from './shared/ChartCard';
 
 interface ProvinceDataVisualizationProps {
@@ -26,8 +26,10 @@ interface ProvinceDataVisualizationProps {
   onProvinceFilter?: (provinceName: string | undefined) => void;
   onVilleChange?: (ville: string | undefined) => void;
   onCommuneChange?: (commune: string | undefined) => void;
+  onQuartierChange?: (quartier: string | undefined) => void;
   selectedVille?: string | null;
   selectedCommune?: string | null;
+  selectedQuartier?: string | null;
 }
 
 const ICON_MAP: Record<string, React.ComponentType<any>> = {
@@ -65,8 +67,8 @@ const BLOCK_MAP: Record<string, React.ComponentType<{ data: any }>> = {
 };
 
 const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
-  analytics, selectedProvince, onProvinceFilter, onVilleChange, onCommuneChange,
-  selectedVille, selectedCommune,
+  analytics, selectedProvince, onProvinceFilter, onVilleChange, onCommuneChange, onQuartierChange,
+  selectedVille, selectedCommune, selectedQuartier,
 }) => {
   const { visibleTabs, isLoading: tabsLoading } = useAnalyticsTabsConfig();
   const [activeTab, setActiveTab] = useState('');
@@ -130,11 +132,15 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
             <ProvinceFilterContext.Provider value={onProvinceFilter || null}>
               <VilleChangeContext.Provider value={onVilleChange || null}>
                 <CommuneChangeContext.Provider value={onCommuneChange || null}>
-                  <VilleFilterContext.Provider value={selectedVille || null}>
-                    <CommuneFilterContext.Provider value={selectedCommune || null}>
-                      {BlockComponent ? <BlockComponent data={analytics} /> : null}
-                    </CommuneFilterContext.Provider>
-                  </VilleFilterContext.Provider>
+                  <QuartierChangeContext.Provider value={onQuartierChange || null}>
+                    <VilleFilterContext.Provider value={selectedVille || null}>
+                      <CommuneFilterContext.Provider value={selectedCommune || null}>
+                        <QuartierFilterContext.Provider value={selectedQuartier || null}>
+                          {BlockComponent ? <BlockComponent data={analytics} /> : null}
+                        </QuartierFilterContext.Provider>
+                      </CommuneFilterContext.Provider>
+                    </VilleFilterContext.Provider>
+                  </QuartierChangeContext.Provider>
                 </CommuneChangeContext.Provider>
               </VilleChangeContext.Provider>
             </ProvinceFilterContext.Provider>
