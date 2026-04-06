@@ -6,7 +6,7 @@ export const CHART_COLORS = [
 
 export interface AnalyticsFilter {
   sectionType: 'all' | 'urbaine' | 'rurale';
-  year: number;
+  year: number | null; // null = all years
   semester?: number;   // 1 | 2
   quarter?: number;    // 1..4
   month?: number;      // 1..12
@@ -24,7 +24,7 @@ export interface AnalyticsFilter {
   paymentStatus?: string;
 }
 
-export const defaultFilter: AnalyticsFilter = { sectionType: 'all', year: new Date().getFullYear() };
+export const defaultFilter: AnalyticsFilter = { sectionType: 'all', year: null };
 
 export function getSectionType(record: any): 'urbaine' | 'rurale' | null {
   if (record.section_type === 'urbaine' || record.parcel_type === 'SU') return 'urbaine';
@@ -34,6 +34,7 @@ export function getSectionType(record: any): 'urbaine' | 'rurale' | null {
 
 export function matchesPeriod(dateStr: string | null | undefined, filter: AnalyticsFilter): boolean {
   if (!dateStr) return true;
+  if (filter.year === null) return true; // all years
   const d = new Date(dateStr);
   if (d.getFullYear() !== filter.year) return false;
   if (filter.semester) {
@@ -54,20 +55,22 @@ export function matchesPeriod(dateStr: string | null | undefined, filter: Analyt
   return true;
 }
 
+const _norm = (s?: string | null) => (s || '').trim().toLowerCase();
+
 export function matchesLocation(r: any, f: AnalyticsFilter): boolean {
   if (f.sectionType !== 'all') {
     const st = getSectionType(r);
     if (st && st !== f.sectionType) return false;
   }
-  if (f.province && r.province !== f.province) return false;
-  if (f.ville && r.ville !== f.ville) return false;
-  if (f.commune && r.commune !== f.commune) return false;
-  if (f.quartier && r.quartier !== f.quartier) return false;
-  if (f.avenue && r.avenue !== f.avenue) return false;
-  if (f.territoire && r.territoire !== f.territoire) return false;
-  if (f.collectivite && r.collectivite !== f.collectivite) return false;
-  if (f.groupement && r.groupement !== f.groupement) return false;
-  if (f.villageFilter && r.village !== f.villageFilter) return false;
+  if (f.province && _norm(r.province) !== _norm(f.province)) return false;
+  if (f.ville && _norm(r.ville) !== _norm(f.ville)) return false;
+  if (f.commune && _norm(r.commune) !== _norm(f.commune)) return false;
+  if (f.quartier && _norm(r.quartier) !== _norm(f.quartier)) return false;
+  if (f.avenue && _norm(r.avenue) !== _norm(f.avenue)) return false;
+  if (f.territoire && _norm(r.territoire) !== _norm(f.territoire)) return false;
+  if (f.collectivite && _norm(r.collectivite) !== _norm(f.collectivite)) return false;
+  if (f.groupement && _norm(r.groupement) !== _norm(f.groupement)) return false;
+  if (f.villageFilter && _norm(r.village) !== _norm(f.villageFilter)) return false;
   return true;
 }
 
