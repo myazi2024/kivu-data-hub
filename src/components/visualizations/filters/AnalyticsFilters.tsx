@@ -23,6 +23,12 @@ export const VilleChangeContext = createContext<((ville: string | undefined) => 
 /** Context for commune change callback */
 export const CommuneChangeContext = createContext<((commune: string | undefined) => void) | null>(null);
 
+/** Context to propagate quartier selection to the map (current value) */
+export const QuartierFilterContext = createContext<string | null>(null);
+
+/** Context for quartier change callback */
+export const QuartierChangeContext = createContext<((quartier: string | undefined) => void) | null>(null);
+
 import {
   getAllProvinces,
   getVillesForProvince,
@@ -55,8 +61,10 @@ export const AnalyticsFilters: React.FC<Props> = ({
   const provinceFilterCallback = useContext(ProvinceFilterContext);
   const villeChangeCtx = useContext(VilleChangeContext);
   const communeChangeCtx = useContext(CommuneChangeContext);
+  const quartierChangeCtx = useContext(QuartierChangeContext);
   const handleVilleChange = onVilleChange || villeChangeCtx || (() => {});
   const handleCommuneChange = onCommuneChange || communeChangeCtx || (() => {});
+  const handleQuartierChange = quartierChangeCtx || (() => {});
   const years = useMemo(() => {
     const dataYears = getAvailableYears(data, dateField);
     const currentYear = new Date().getFullYear();
@@ -165,7 +173,8 @@ export const AnalyticsFilters: React.FC<Props> = ({
     onChange({ ...defaultFilter });
     handleVilleChange(undefined);
     handleCommuneChange(undefined);
-  }, [onChange, handleVilleChange, handleCommuneChange]);
+    handleQuartierChange(undefined);
+  }, [onChange, handleVilleChange, handleCommuneChange, handleQuartierChange]);
 
   const semesterOptions = [1, 2];
   const quarterOptions = useMemo(() => {
@@ -339,6 +348,7 @@ export const AnalyticsFilters: React.FC<Props> = ({
                   onChange({ ...filter, ville: newVille, commune: undefined, quartier: undefined, avenue: undefined });
                   handleVilleChange(newVille);
                   handleCommuneChange(undefined);
+                  handleQuartierChange(undefined);
                 }}>
                   <SelectTrigger className={selectCls}><SelectValue placeholder="Ville" /></SelectTrigger>
                   <SelectContent>
@@ -357,6 +367,7 @@ export const AnalyticsFilters: React.FC<Props> = ({
                   const newCommune = v === '__all__' ? undefined : v;
                   onChange({ ...filter, commune: newCommune, quartier: undefined, avenue: undefined });
                   handleCommuneChange(newCommune);
+                  handleQuartierChange(undefined);
                 }}>
                   <SelectTrigger className={selectCls}><SelectValue placeholder="Commune" /></SelectTrigger>
                   <SelectContent>
@@ -370,7 +381,11 @@ export const AnalyticsFilters: React.FC<Props> = ({
             {filter.commune && quartiersFinal.length > 0 && (
               <>
                 {sep}
-                <Select value={filter.quartier || '__all__'} onValueChange={v => onChange({ ...filter, quartier: v === '__all__' ? undefined : v, avenue: undefined })}>
+                <Select value={filter.quartier || '__all__'} onValueChange={v => {
+                  const newQuartier = v === '__all__' ? undefined : v;
+                  onChange({ ...filter, quartier: newQuartier, avenue: undefined });
+                  handleQuartierChange(newQuartier);
+                }}>
                   <SelectTrigger className={selectCls}><SelectValue placeholder="Quartier" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__all__">Tous les quartiers</SelectItem>

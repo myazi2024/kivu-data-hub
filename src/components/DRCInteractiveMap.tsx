@@ -8,6 +8,7 @@ import { MapPin, DollarSign, BarChart3, Info, FileText, Database, AlertTriangle,
 import { toast } from 'sonner';
 import DRCMapWithTooltip from './DRCMapWithTooltip';
 import DRCCommunesMap from './DRCCommunesMap';
+import DRCQuartiersMap from './DRCQuartiersMap';
 
 import { ProvinceData } from '@/types/province';
 import ProvinceDataVisualization from './visualizations/ProvinceDataVisualization';
@@ -71,6 +72,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const [externalProvinceId, setExternalProvinceId] = useState<string | null>(null);
   const [selectedVille, setSelectedVille] = useState<string | undefined>(undefined);
   const [selectedCommune, setSelectedCommune] = useState<string | undefined>(undefined);
+  const [selectedQuartier, setSelectedQuartier] = useState<string | undefined>(undefined);
   const mapCardRef = React.useRef<HTMLDivElement>(null);
 
   const { data: analytics, isLoading } = useLandDataAnalytics();
@@ -189,6 +191,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
       setExternalProvinceId(null);
       setSelectedVille(undefined);
       setSelectedCommune(undefined);
+      setSelectedQuartier(undefined);
       return;
     }
     const normalize = (s: string) => s.toLowerCase().replace(/[-\s]/g, '');
@@ -198,6 +201,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
       setExternalProvinceId(province.id);
       setSelectedVille(undefined);
       setSelectedCommune(undefined);
+      setSelectedQuartier(undefined);
     }
   }, [provincesData]);
 
@@ -286,10 +290,12 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   <div className="bg-muted/20 px-2 py-0.5 border-b border-border/30 flex-shrink-0">
                     <h2 className="text-[10px] sm:text-xs font-medium text-foreground flex items-center gap-1">
                       <MapPin className="h-3 w-3 text-primary" />
-                      <span>{selectedVille ? `${selectedVille}${selectedCommune ? ` — ${selectedCommune}` : ''}` : selectedProvince ? selectedProvince.name : 'République Démocratique du Congo'}</span>
+                      <span>{selectedVille ? `${selectedVille}${selectedCommune ? ` — ${selectedCommune}` : ''}${selectedQuartier ? ` — ${selectedQuartier}` : ''}` : selectedProvince ? selectedProvince.name : 'République Démocratique du Congo'}</span>
                     </h2>
                     <p className="text-[10px] text-muted-foreground leading-tight">
-                      {selectedVille
+                      {selectedVille && selectedCommune && selectedVille.toLowerCase() === 'goma'
+                        ? `Découpage des quartiers de la commune de ${selectedCommune} — ${selectedVille}`
+                        : selectedVille
                         ? `Découpage communal de la ville de ${selectedVille}`
                         : selectedProvince
                         ? `Données foncières cadastrales de ${selectedProvince.name} — Total : ${formatNumber(selectedProvince.parcelsCount)} parcelles enregistrées`
@@ -299,7 +305,11 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   </div>
                   
                   <div className="flex-1 min-h-0 overflow-hidden flex items-center justify-center p-1">
-                    {selectedVille ? (
+                    {selectedVille && selectedCommune && selectedVille.toLowerCase() === 'goma' ? (
+                      <div className="w-full h-full">
+                        <DRCQuartiersMap ville={selectedVille} commune={selectedCommune} quartier={selectedQuartier} />
+                      </div>
+                    ) : selectedVille ? (
                       <div className="w-full h-full">
                         <DRCCommunesMap ville={selectedVille} commune={selectedCommune} />
                       </div>
@@ -565,14 +575,16 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
               </CardHeader>
               <CardContent className="flex-1 p-0 overflow-hidden charts-compact text-[10px] min-h-0">
                 <div className="h-full p-1.5 sm:p-2">
-                  <ProvinceDataVisualization 
+                <ProvinceDataVisualization 
                     analytics={analytics!}
                     selectedProvince={selectedProvince}
                     onProvinceFilter={handleProvinceFilter}
                     onVilleChange={setSelectedVille}
                     onCommuneChange={setSelectedCommune}
+                    onQuartierChange={setSelectedQuartier}
                     selectedVille={selectedVille}
                     selectedCommune={selectedCommune}
+                    selectedQuartier={selectedQuartier}
                   />
                 </div>
               </CardContent>
