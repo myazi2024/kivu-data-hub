@@ -123,3 +123,48 @@ export const CROSS_VARIABLE_REGISTRY: Record<string, Record<string, CrossVariabl
 export function getCrossVariables(tabKey: string, chartKey: string): CrossVariable[] {
   return CROSS_VARIABLE_REGISTRY[tabKey]?.[chartKey] || [];
 }
+
+/** Merge registry defaults with DB overrides (stored as JSON in custom_title) */
+export function getCrossVariablesWithOverrides(
+  tabKey: string,
+  chartKey: string,
+  dbOverride?: { is_visible: boolean; custom_title?: string | null }
+): CrossVariable[] {
+  const defaults = CROSS_VARIABLE_REGISTRY[tabKey]?.[chartKey] || [];
+  if (!defaults.length) return [];
+
+  // If picklist globally disabled for this chart
+  if (dbOverride && !dbOverride.is_visible) return [];
+
+  // If no override, return defaults as-is
+  if (!dbOverride?.custom_title) return defaults;
+
+  try {
+    const overrides: { label: string; field: string; enabled: boolean }[] = JSON.parse(dbOverride.custom_title);
+    // Build a map of overrides by field
+    const overrideMap = new Map(overrides.map(o => [o.field, o]));
+
+    // Merge: keep order from overrides, include new defaults not in overrides
+    const result: CrossVariable[] = [];
+    const seenFields = new Set<string>();
+
+    // First, process overrides in order
+    for (const o of overrides) {
+      if (!o.enabled) continue;
+      const def = defaults.find(d => d.field === o.field);
+      result.push({ label: o.label, field: o.field, maxCategories: def?.maxCategories });
+      seenFields.add(o.field);
+    }
+
+    // Then, add any defaults not covered by overrides
+    for (const d of defaults) {
+      if (!seenFields.has(d.field)) {
+        result.push(d);
+      }
+    }
+
+    return result;
+  } catch {
+    return defaults;
+  }
+}
