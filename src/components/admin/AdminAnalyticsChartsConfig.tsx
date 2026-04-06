@@ -469,6 +469,24 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
     setLocalTabs(dbTabs);
   }, [dbTabs, isLoading]);
 
+  // Initialize local filters from defaults + DB overrides
+  useEffect(() => {
+    if (isLoading) return;
+    const result: Record<string, ChartConfigItem[]> = {};
+    const dbFilterMap = new Map<string, ChartConfigItem>();
+    configs.filter(c => c.item_type === 'filter').forEach(c => dbFilterMap.set(`${c.tab_key}::${c.item_key}`, c));
+
+    Object.keys(TAB_FILTER_DEFAULTS).forEach(tabKey => {
+      const defaults = buildFilterDefaults(tabKey);
+      result[tabKey] = defaults.map(d => {
+        const override = dbFilterMap.get(`${d.tab_key}::${d.item_key}`);
+        return override ? { ...d, is_visible: override.is_visible, custom_title: override.custom_title || d.custom_title, id: override.id } : d;
+      });
+    });
+    setLocalFilters(result);
+    setHasFilterChanges(false);
+  }, [configs, isLoading]);
+
   const currentItems = localItems[activeTab] || [];
   const currentKpis = currentItems.filter(i => i.item_type === 'kpi');
   const currentCharts = currentItems.filter(i => i.item_type === 'chart');
@@ -538,17 +556,19 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
     try {
       const allChartItems = Object.values(localItems).flat();
       const tabItems = tabConfigToItems(localTabs);
-      await upsertConfig.mutateAsync([...allChartItems, ...tabItems]);
+      const allFilterItems = Object.values(localFilters).flat();
+      await upsertConfig.mutateAsync([...allChartItems, ...tabItems, ...allFilterItems]);
       toast.success('Toute la configuration Analytics a été sauvegardée');
       setModifiedTabs(new Set());
       setHasTabChanges(false);
+      setHasFilterChanges(false);
     } catch (error: any) {
       console.error('Save all error:', error);
       toast.error(`Erreur: ${error?.message || 'Sauvegarde globale impossible'}`);
     } finally {
       setIsSaving(false);
     }
-  }, [localItems, localTabs, upsertConfig, tabConfigToItems]);
+  }, [localItems, localTabs, localFilters, upsertConfig, tabConfigToItems]);
 
   const handleSaveTabs = useCallback(async () => {
     setIsSaving(true);
@@ -907,13 +927,15 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
       {/* ─── FILTERS MANAGEMENT VIEW ─── */}
       {viewMode === 'filters' && (
         <FilterManager
-          configs={configs}
+          localFilters={localFilters}
+          onUpdateFilters={(filters) => { setLocalFilters(filters); setHasFilterChanges(true); }}
           localTabs={localTabs}
           onSave={async (items: ChartConfigItem[]) => {
             setIsSaving(true);
             try {
               await upsertConfig.mutateAsync(items);
               toast.success('Configuration des filtres sauvegardée');
+              setHasFilterChanges(false);
             } catch (error: any) {
               toast.error(`Erreur: ${error?.message || 'Sauvegarde impossible'}`);
             } finally {
