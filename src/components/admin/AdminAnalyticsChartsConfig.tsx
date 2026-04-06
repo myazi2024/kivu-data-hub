@@ -477,6 +477,15 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
                   <BarChart3 className="h-3.5 w-3.5 mr-1" />
                   Graphiques
                 </Button>
+                <Button
+                  size="sm"
+                  variant={viewMode === 'filters' ? 'default' : 'ghost'}
+                  className="rounded-none h-8 text-xs"
+                  onClick={() => setViewMode('filters')}
+                >
+                  <Filter className="h-3.5 w-3.5 mr-1" />
+                  Filtres
+                </Button>
               </div>
               <Button size="sm" variant="outline" onClick={handleSaveAll} disabled={!hasChanges || isSaving}>
                 {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Save className="h-3.5 w-3.5 mr-1" />}
