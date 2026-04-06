@@ -50,6 +50,27 @@ const TAB_FILTER_DEFAULTS: Record<string, TabFilterConfig> = {
   'taxes': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
 };
 
+/** Available date fields for admin selection */
+export const DATE_FIELD_OPTIONS = [
+  { value: 'created_at', label: 'Date de création (created_at)' },
+  { value: 'updated_at', label: 'Date de mise à jour (updated_at)' },
+  { value: 'ownership_start_date', label: 'Début de propriété (ownership_start_date)' },
+  { value: 'generated_at', label: 'Date de génération (generated_at)' },
+  { value: 'issue_date', label: "Date d'émission (issue_date)" },
+  { value: 'contract_date', label: 'Date de contrat (contract_date)' },
+  { value: 'survey_date', label: "Date d'arpentage (survey_date)" },
+  { value: 'payment_date', label: 'Date de paiement (payment_date)' },
+];
+
+/** Available status fields for admin selection */
+export const STATUS_FIELD_OPTIONS = [
+  { value: 'status', label: 'Statut (status)' },
+  { value: 'current_status', label: 'Statut actuel (current_status)' },
+  { value: 'payment_status', label: 'Statut paiement (payment_status)' },
+  { value: 'mortgage_status', label: 'Statut hypothèque (mortgage_status)' },
+  { value: 'administrative_status', label: 'Statut administratif (administrative_status)' },
+];
+
 /** Build default filter config items for a given tab */
 function buildFilterDefaults(tabKey: string): ChartConfigItem[] {
   const defaults = TAB_FILTER_DEFAULTS[tabKey];
@@ -58,6 +79,8 @@ function buildFilterDefaults(tabKey: string): ChartConfigItem[] {
     { tab_key: tabKey, item_key: 'filter-status', item_type: 'filter', is_visible: !defaults.hideStatus, display_order: 0, custom_title: 'Filtre statut' },
     { tab_key: tabKey, item_key: 'filter-time', item_type: 'filter', is_visible: !defaults.hideTime, display_order: 1, custom_title: 'Filtre temps' },
     { tab_key: tabKey, item_key: 'filter-location', item_type: 'filter', is_visible: !defaults.hideLocation, display_order: 2, custom_title: 'Filtre lieu' },
+    { tab_key: tabKey, item_key: 'filter-date-field', item_type: 'filter', is_visible: true, display_order: 3, custom_title: defaults.dateField },
+    { tab_key: tabKey, item_key: 'filter-status-field', item_type: 'filter', is_visible: true, display_order: 4, custom_title: defaults.statusField || 'status' },
   ];
 }
 
@@ -162,13 +185,15 @@ export function useTabFilterConfig(tabKey: string): TabFilterConfig {
     const statusCfg = filterMap.get('filter-status');
     const timeCfg = filterMap.get('filter-time');
     const locationCfg = filterMap.get('filter-location');
+    const dateFieldCfg = filterMap.get('filter-date-field');
+    const statusFieldCfg = filterMap.get('filter-status-field');
 
     return {
       hideStatus: statusCfg ? !statusCfg.is_visible : defaults.hideStatus,
       hideTime: timeCfg ? !timeCfg.is_visible : defaults.hideTime,
       hideLocation: locationCfg ? !locationCfg.is_visible : defaults.hideLocation,
-      dateField: defaults.dateField,
-      statusField: defaults.statusField,
+      dateField: dateFieldCfg?.custom_title || defaults.dateField,
+      statusField: statusFieldCfg?.custom_title || defaults.statusField,
     };
   }, [configs, tabKey]);
 }

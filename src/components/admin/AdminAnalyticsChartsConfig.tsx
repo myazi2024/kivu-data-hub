@@ -15,7 +15,7 @@ import {
 import {
   Settings, Save, Eye, EyeOff, ChevronUp, ChevronDown, RotateCcw, Loader2,
   BarChart3, PieChart as PieChartIcon, TrendingUp, LayoutGrid, Palette, GripVertical,
-  Layers, Pencil, Map as MapIcon, Globe, Filter
+  Layers, Map as MapIcon, Globe, Filter
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -24,6 +24,8 @@ import {
   useAnalyticsTabsConfig,
   ANALYTICS_TABS_REGISTRY,
   TAB_FILTER_DEFAULTS,
+  DATE_FIELD_OPTIONS,
+  STATUS_FIELD_OPTIONS,
   buildFilterDefaults,
   ChartConfigItem,
   TabConfig,
@@ -230,7 +232,8 @@ const TabManager: React.FC<TabManagerProps> = ({ localTabs, onUpdate }) => {
 
 // ─── Filter Manager Component ────────────────────────────────────────
 interface FilterManagerProps {
-  configs: ChartConfigItem[];
+  localFilters: Record<string, ChartConfigItem[]>;
+  onUpdateFilters: (filters: Record<string, ChartConfigItem[]>) => void;
   localTabs: TabConfig[];
   onSave: (items: ChartConfigItem[]) => Promise<void>;
   isSaving: boolean;
@@ -242,43 +245,35 @@ const FILTER_LABELS: Record<string, { label: string; description: string }> = {
   'filter-location': { label: 'Filtre géographique', description: 'Afficher la cascade Province / Section / Ville / Commune / Quartier' },
 };
 
-const FilterManager: React.FC<FilterManagerProps> = ({ configs, localTabs, onSave, isSaving }) => {
+const FilterManager: React.FC<FilterManagerProps> = ({ localFilters, onUpdateFilters, localTabs, onSave, isSaving }) => {
   const [selectedTab, setSelectedTab] = useState(Object.keys(TAB_FILTER_DEFAULTS)[0]);
-  const [localFilters, setLocalFilters] = useState<Record<string, ChartConfigItem[]>>({});
-  const [modified, setModified] = useState(false);
-
-  // Init from defaults + DB overrides
-  useEffect(() => {
-    const result: Record<string, ChartConfigItem[]> = {};
-    const dbFilterMap = new Map<string, ChartConfigItem>();
-    configs.filter(c => c.item_type === 'filter').forEach(c => dbFilterMap.set(`${c.tab_key}::${c.item_key}`, c));
-
-    Object.keys(TAB_FILTER_DEFAULTS).forEach(tabKey => {
-      const defaults = buildFilterDefaults(tabKey);
-      result[tabKey] = defaults.map(d => {
-        const override = dbFilterMap.get(`${d.tab_key}::${d.item_key}`);
-        return override ? { ...d, is_visible: override.is_visible, id: override.id } : d;
-      });
-    });
-    setLocalFilters(result);
-  }, [configs]);
 
   const currentFilters = localFilters[selectedTab] || [];
+  const toggleFilters = currentFilters.filter(f => ['filter-status', 'filter-time', 'filter-location'].includes(f.item_key));
+  const dateFieldItem = currentFilters.find(f => f.item_key === 'filter-date-field');
+  const statusFieldItem = currentFilters.find(f => f.item_key === 'filter-status-field');
 
   const toggleFilter = (itemKey: string) => {
-    setLocalFilters(prev => ({
-      ...prev,
-      [selectedTab]: (prev[selectedTab] || []).map(f =>
+    onUpdateFilters({
+      ...localFilters,
+      [selectedTab]: (localFilters[selectedTab] || []).map(f =>
         f.item_key === itemKey ? { ...f, is_visible: !f.is_visible } : f
       ),
-    }));
-    setModified(true);
+    });
+  };
+
+  const updateFieldValue = (itemKey: string, value: string) => {
+    onUpdateFilters({
+      ...localFilters,
+      [selectedTab]: (localFilters[selectedTab] || []).map(f =>
+        f.item_key === itemKey ? { ...f, custom_title: value } : f
+      ),
+    });
   };
 
   const handleSave = async () => {
     const allFilterItems = Object.values(localFilters).flat();
     await onSave(allFilterItems);
-    setModified(false);
   };
 
   const analyticsTabKeys = Object.keys(TAB_FILTER_DEFAULTS);
@@ -300,7 +295,7 @@ const FilterManager: React.FC<FilterManagerProps> = ({ configs, localTabs, onSav
                 const tabConf = localTabs.find(t => t.key === key);
                 const label = tabConf?.label || reg?.label || key;
                 const filters = localFilters[key] || [];
-                const hiddenCount = filters.filter(f => !f.is_visible).length;
+                const hiddenCount = filters.filter(f => ['filter-status', 'filter-time', 'filter-location'].includes(f.item_key) && !f.is_visible).length;
                 return (
                   <button
                     key={key}
@@ -332,18 +327,18 @@ const FilterManager: React.FC<FilterManagerProps> = ({ configs, localTabs, onSav
               <Filter className="h-4 w-4" />
               Filtres — {ANALYTICS_TABS_REGISTRY[selectedTab]?.label || selectedTab}
             </CardTitle>
-            <Button size="sm" onClick={handleSave} disabled={!modified || isSaving}>
+            <Button size="sm" onClick={handleSave} disabled={isSaving}>
               {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Save className="h-3.5 w-3.5 mr-1" />}
-              Sauvegarder
+              Sauvegarder filtres
             </Button>
           </div>
           <CardDescription className="text-xs mt-1">
-            Activez ou désactivez les filtres disponibles pour cet onglet dans le tableau de bord Analytics.
+            Activez ou désactivez les filtres et configurez les champs sources pour cet onglet.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            {currentFilters.map(f => {
+          <div className="space-y-3">
+            {toggleFilters.map(f => {
               const meta = FILTER_LABELS[f.item_key];
               return (
                 <div key={f.item_key} className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
@@ -363,7 +358,50 @@ const FilterManager: React.FC<FilterManagerProps> = ({ configs, localTabs, onSav
                 </div>
               );
             })}
-            {currentFilters.length === 0 && (
+
+            <Separator className="my-2" />
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Champ date source</Label>
+              <Select
+                value={dateFieldItem?.custom_title || 'created_at'}
+                onValueChange={(v) => updateFieldValue('filter-date-field', v)}
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {DATE_FIELD_OPTIONS.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground">Le champ utilisé pour le filtrage temporel (année, mois, etc.)</p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Champ statut source</Label>
+              <Select
+                value={statusFieldItem?.custom_title || 'status'}
+                onValueChange={(v) => updateFieldValue('filter-status-field', v)}
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUS_FIELD_OPTIONS.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground">Le champ utilisé pour le filtrage par statut</p>
+            </div>
+
+            {toggleFilters.length === 0 && (
               <div className="text-sm text-muted-foreground text-center py-8">
                 Aucun filtre configurable pour cet onglet.
               </div>
@@ -383,14 +421,16 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
   const [activeTab, setActiveTab] = useState(Object.keys(ANALYTICS_TABS_REGISTRY)[0]);
   const [localItems, setLocalItems] = useState<Record<string, ChartConfigItem[]>>({});
   const [localTabs, setLocalTabs] = useState<TabConfig[]>([]);
+  const [localFilters, setLocalFilters] = useState<Record<string, ChartConfigItem[]>>({});
   const [hasTabChanges, setHasTabChanges] = useState(false);
+  const [hasFilterChanges, setHasFilterChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [viewMode, setViewMode] = useState<'tabs' | 'charts' | 'filters'>('tabs');
   const [modifiedTabs, setModifiedTabs] = useState<Set<string>>(new Set());
   const [pendingTabSwitch, setPendingTabSwitch] = useState<string | null>(null);
 
   const hasChartChanges = modifiedTabs.size > 0;
-  const hasChanges = hasChartChanges || hasTabChanges;
+  const hasChanges = hasChartChanges || hasTabChanges || hasFilterChanges;
 
   // Initialize local state from defaults + DB overrides
   useEffect(() => {
@@ -428,6 +468,24 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
     if (isLoading) return;
     setLocalTabs(dbTabs);
   }, [dbTabs, isLoading]);
+
+  // Initialize local filters from defaults + DB overrides
+  useEffect(() => {
+    if (isLoading) return;
+    const result: Record<string, ChartConfigItem[]> = {};
+    const dbFilterMap = new Map<string, ChartConfigItem>();
+    configs.filter(c => c.item_type === 'filter').forEach(c => dbFilterMap.set(`${c.tab_key}::${c.item_key}`, c));
+
+    Object.keys(TAB_FILTER_DEFAULTS).forEach(tabKey => {
+      const defaults = buildFilterDefaults(tabKey);
+      result[tabKey] = defaults.map(d => {
+        const override = dbFilterMap.get(`${d.tab_key}::${d.item_key}`);
+        return override ? { ...d, is_visible: override.is_visible, custom_title: override.custom_title || d.custom_title, id: override.id } : d;
+      });
+    });
+    setLocalFilters(result);
+    setHasFilterChanges(false);
+  }, [configs, isLoading]);
 
   const currentItems = localItems[activeTab] || [];
   const currentKpis = currentItems.filter(i => i.item_type === 'kpi');
@@ -498,17 +556,19 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
     try {
       const allChartItems = Object.values(localItems).flat();
       const tabItems = tabConfigToItems(localTabs);
-      await upsertConfig.mutateAsync([...allChartItems, ...tabItems]);
+      const allFilterItems = Object.values(localFilters).flat();
+      await upsertConfig.mutateAsync([...allChartItems, ...tabItems, ...allFilterItems]);
       toast.success('Toute la configuration Analytics a été sauvegardée');
       setModifiedTabs(new Set());
       setHasTabChanges(false);
+      setHasFilterChanges(false);
     } catch (error: any) {
       console.error('Save all error:', error);
       toast.error(`Erreur: ${error?.message || 'Sauvegarde globale impossible'}`);
     } finally {
       setIsSaving(false);
     }
-  }, [localItems, localTabs, upsertConfig, tabConfigToItems]);
+  }, [localItems, localTabs, localFilters, upsertConfig, tabConfigToItems]);
 
   const handleSaveTabs = useCallback(async () => {
     setIsSaving(true);
@@ -668,7 +728,7 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
             <CardContent className="p-0">
               <ScrollArea className="h-[500px]">
                 <div className="space-y-0.5 p-2">
-                  {Object.entries(ANALYTICS_TABS_REGISTRY).map(([key, tab]) => {
+                  {Object.entries(ANALYTICS_TABS_REGISTRY).filter(([key]) => key !== '_global').map(([key, tab]) => {
                     const stat = tabStats[key];
                     const tabConf = localTabs.find(t => t.key === key);
                     const tabLabel = tabConf?.label || tab.label;
@@ -867,13 +927,15 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
       {/* ─── FILTERS MANAGEMENT VIEW ─── */}
       {viewMode === 'filters' && (
         <FilterManager
-          configs={configs}
+          localFilters={localFilters}
+          onUpdateFilters={(filters) => { setLocalFilters(filters); setHasFilterChanges(true); }}
           localTabs={localTabs}
           onSave={async (items: ChartConfigItem[]) => {
             setIsSaving(true);
             try {
               await upsertConfig.mutateAsync(items);
               toast.success('Configuration des filtres sauvegardée');
+              setHasFilterChanges(false);
             } catch (error: any) {
               toast.error(`Erreur: ${error?.message || 'Sauvegarde impossible'}`);
             } finally {
