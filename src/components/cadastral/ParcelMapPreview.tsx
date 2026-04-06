@@ -147,6 +147,8 @@ export const ParcelMapPreview = ({
   const [editingSideIndex, setEditingSideIndex] = useState<number | null>(null);
   const [editingSideValue, setEditingSideValue] = useState<string>('');
   const dimensionLongPressRef = useRef<number | null>(null);
+  const [editingBorneIndex, setEditingBorneIndex] = useState<number | null>(null);
+  const [editingBorneCoords, setEditingBorneCoords] = useState<{ lat: string; lng: string }>({ lat: '', lng: '' });
   
   // Charger la configuration depuis Supabase
   const { config: dbConfig, loading: configLoading } = useMapConfig();
@@ -932,6 +934,17 @@ export const ParcelMapPreview = ({
               };
               onCoordinatesUpdate(updatedCoords);
               updateParcelSidesFromCoordinates(updatedCoords);
+            }
+          });
+
+          // Double-clic = édition manuelle des coordonnées GPS
+          marker.on('dblclick', (e: any) => {
+            e.originalEvent?.stopPropagation();
+            e.originalEvent?.preventDefault();
+            const idx = coordinates.findIndex(c => c.borne === coord.borne);
+            if (idx !== -1) {
+              setEditingBorneIndex(idx);
+              setEditingBorneCoords({ lat: coordinates[idx].lat, lng: coordinates[idx].lng });
             }
           });
 
@@ -1828,6 +1841,101 @@ export const ParcelMapPreview = ({
             </div>
           </div>
         )}
+
+        {/* Overlay d'édition de coordonnées GPS de borne */}
+        {editingBorneIndex !== null && (
+          <div className="absolute inset-0 z-[1100] flex items-center justify-center bg-black/30 rounded-2xl">
+            <div className="bg-card rounded-xl p-4 shadow-2xl border border-border/50 w-64 space-y-3">
+              <p className="text-xs font-semibold text-foreground text-center">
+                📍 Borne {editingBorneIndex + 1} — Coordonnées GPS
+              </p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-medium text-muted-foreground w-8">Lat</span>
+                  <input
+                    type="number"
+                    step="0.000001"
+                    value={editingBorneCoords.lat}
+                    onChange={(e) => setEditingBorneCoords(prev => ({ ...prev, lat: e.target.value }))}
+                    onBlur={() => {
+                      if (editingBorneIndex !== null) {
+                        const lat = parseFloat(editingBorneCoords.lat);
+                        const lng = parseFloat(editingBorneCoords.lng);
+                        if (!isNaN(lat) && !isNaN(lng)) {
+                          const updatedCoords = [...coordinates];
+                          updatedCoords[editingBorneIndex] = { ...updatedCoords[editingBorneIndex], lat: lat.toFixed(6), lng: lng.toFixed(6) };
+                          onCoordinatesUpdate(updatedCoords);
+                          updateParcelSidesFromCoordinates(updatedCoords);
+                        }
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') { setEditingBorneIndex(null); }
+                    }}
+                    autoFocus
+                    className="flex-1 h-9 rounded-lg border border-border bg-background px-3 text-sm font-mono text-center focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-medium text-muted-foreground w-8">Lng</span>
+                  <input
+                    type="number"
+                    step="0.000001"
+                    value={editingBorneCoords.lng}
+                    onChange={(e) => setEditingBorneCoords(prev => ({ ...prev, lng: e.target.value }))}
+                    onBlur={() => {
+                      if (editingBorneIndex !== null) {
+                        const lat = parseFloat(editingBorneCoords.lat);
+                        const lng = parseFloat(editingBorneCoords.lng);
+                        if (!isNaN(lat) && !isNaN(lng)) {
+                          const updatedCoords = [...coordinates];
+                          updatedCoords[editingBorneIndex] = { ...updatedCoords[editingBorneIndex], lat: lat.toFixed(6), lng: lng.toFixed(6) };
+                          onCoordinatesUpdate(updatedCoords);
+                          updateParcelSidesFromCoordinates(updatedCoords);
+                        }
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') { setEditingBorneIndex(null); }
+                    }}
+                    className="flex-1 h-9 rounded-lg border border-border bg-background px-3 text-sm font-mono text-center focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 h-8 rounded-lg text-xs"
+                  onClick={() => setEditingBorneIndex(null)}
+                >
+                  Fermer
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="flex-1 h-8 rounded-lg text-xs"
+                  onClick={() => {
+                    if (editingBorneIndex !== null) {
+                      const lat = parseFloat(editingBorneCoords.lat);
+                      const lng = parseFloat(editingBorneCoords.lng);
+                      if (!isNaN(lat) && !isNaN(lng)) {
+                        const updatedCoords = [...coordinates];
+                        updatedCoords[editingBorneIndex] = { ...updatedCoords[editingBorneIndex], lat: lat.toFixed(6), lng: lng.toFixed(6) };
+                        onCoordinatesUpdate(updatedCoords);
+                        updateParcelSidesFromCoordinates(updatedCoords);
+                      }
+                    }
+                    setEditingBorneIndex(null);
+                  }}
+                >
+                  Appliquer
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Boutons Tracer/Terminer + Superficie/Périmètre sur la carte (en haut à gauche) */}
         {enableDrawingMode && (
@@ -2352,7 +2460,7 @@ export const ParcelMapPreview = ({
               ? "Touchez dans la parcelle pour placer la construction."
               : isDrawingMode 
                 ? "Touchez la carte pour ajouter des bornes."
-                : "Utilisez les boutons sur la carte pour les fonctions avancées."
+                : "Placez les bornes sur la carte en activant le mode tracé. Double-cliquez sur une borne pour modifier ses coordonnées GPS manuellement. Pour éviter l'empiètement des limites de votre parcelle sur le voisinage, prélevez les coordonnées GPS de chaque borne avec un équipement professionnel de précision (ex : Garmin GPS), puis double-cliquez sur chaque borne pour entrer les coordonnées prélevées."
             }
           </p>
         </div>
