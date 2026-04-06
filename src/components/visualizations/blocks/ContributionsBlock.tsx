@@ -22,7 +22,10 @@ const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TAB
 export const ContributionsBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
   const mapProvince = useContext(MapProvinceContext);
-  useEffect(() => { setFilter(f => ({ ...f, province: mapProvince || undefined, ville: undefined })); }, [mapProvince]);
+  const mapVille = useContext(VilleFilterContext);
+  const mapCommune = useContext(CommuneFilterContext);
+  const mapQuartier = useContext(QuartierFilterContext);
+  useEffect(() => { setFilter(f => ({ ...f, province: mapProvince || undefined, ville: mapVille || undefined, commune: mapCommune || undefined, quartier: mapQuartier || undefined })); }, [mapProvince, mapVille, mapCommune, mapQuartier]);
   const filterLabel = useMemo(() => buildFilterLabel(filter), [filter]);
   const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
   const filtered = useMemo(() => applyFilters(data.contributions, filter), [data.contributions, filter]);
