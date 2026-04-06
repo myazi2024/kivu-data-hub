@@ -225,6 +225,10 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
 
     const totalSurface = filteredParcels.reduce((s, p) => s + (p.area_sqm || 0), 0);
     const resolvedDisputes = disputes.filter(d => predicate(d) && (d.current_status === 'resolved' || d.current_status === 'resolu')).length;
+    const surfaceHa = totalSurface / 10000;
+    const density = surfaceHa > 0
+      ? (pCount / surfaceHa > 50 ? 'Très élevé' : pCount / surfaceHa > 20 ? 'Élevé' : pCount / surfaceHa > 5 ? 'Modéré' : 'Faible')
+      : (pCount > 500 ? 'Très élevé' : pCount > 100 ? 'Élevé' : pCount > 30 ? 'Modéré' : 'Faible');
 
     return {
       parcelsCount: pCount,
@@ -237,10 +241,9 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
       revenueUsd: totalRevenue,
       fiscalRevenueUsd: fiscalRevenue,
       invoicesCount: allInvoices.length,
-      totalSurfaceHa: Math.round(totalSurface / 10000),
+      totalSurfaceHa: Math.round(surfaceHa),
       disputeResolutionRate: disputeCount > 0 ? Math.round((resolvedDisputes / disputeCount) * 100) : 0,
-      const surfaceHa = totalSurface / 10000;
-      densityLevel: (surfaceHa > 0 ? (pCount / surfaceHa > 50 ? 'Très élevé' : pCount / surfaceHa > 20 ? 'Élevé' : pCount / surfaceHa > 5 ? 'Modéré' : 'Faible') : (pCount > 500 ? 'Très élevé' : pCount > 100 ? 'Élevé' : pCount > 30 ? 'Modéré' : 'Faible')) as ProvinceData['densityLevel'],
+      densityLevel: density as ProvinceData['densityLevel'],
     };
   }, [analytics, selectedProvince, selectedVille, selectedCommune, selectedQuartier]);
 
