@@ -11,11 +11,17 @@ export const ProvinceFilterContext = createContext<((province: string | undefine
 /** Context to receive the currently selected province from the map */
 export const MapProvinceContext = createContext<string | null>(null);
 
-/** Context to propagate ville selection to the map */
+/** Context to propagate ville selection to the map (current value) */
 export const VilleFilterContext = createContext<string | null>(null);
 
-/** Context to propagate commune selection to the map */
+/** Context to propagate commune selection to the map (current value) */
 export const CommuneFilterContext = createContext<string | null>(null);
+
+/** Context for ville change callback */
+export const VilleChangeContext = createContext<((ville: string | undefined) => void) | null>(null);
+
+/** Context for commune change callback */
+export const CommuneChangeContext = createContext<((commune: string | undefined) => void) | null>(null);
 
 import {
   getAllProvinces,
