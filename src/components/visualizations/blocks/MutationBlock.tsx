@@ -9,7 +9,7 @@ import { ChartCard, StackedBarCard, FilterLabelContext } from '../shared/ChartCa
 import { GeoCharts } from '../shared/GeoCharts';
 import { MapProvinceContext, VilleFilterContext, CommuneFilterContext, QuartierFilterContext } from '../filters/AnalyticsFilters';
 import { generateInsight, generateStackedInsight } from '@/utils/chartInsights';
-import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
+import { useTabChartsConfig, useTabFilterConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 
 interface Props { data: LandAnalyticsData; }
 
@@ -25,6 +25,7 @@ export const MutationBlock: React.FC<Props> = memo(({ data }) => {
   useEffect(() => { setFilter(f => ({ ...f, province: mapProvince || undefined, ville: mapVille || undefined, commune: mapCommune || undefined, quartier: mapQuartier || undefined })); }, [mapProvince, mapVille, mapCommune, mapQuartier]);
   const filterLabel = useMemo(() => buildFilterLabel(filter), [filter]);
   const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
+  const filterConfig = useTabFilterConfig(TAB_KEY);
   const filtered = useMemo(() => applyFilters(data.mutationRequests, filter), [data.mutationRequests, filter]);
   const byStatus = useMemo(() => countBy(filtered, 'status'), [filtered]);
   const byType = useMemo(() => countBy(filtered, 'mutation_type'), [filtered]);
@@ -118,7 +119,7 @@ export const MutationBlock: React.FC<Props> = memo(({ data }) => {
   return (
     <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
-      <AnalyticsFilters data={data.mutationRequests} filter={filter} onChange={setFilter} />
+      <AnalyticsFilters data={data.mutationRequests} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} />
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {v('status') && <ChartCard title={t('status', 'Statut')} icon={ArrowRightLeft} data={byStatus} type="pie" colorIndex={6}
