@@ -260,7 +260,6 @@ export function useTabCrossConfig(tabKey: string, chartKey: string) {
     const crossItem = configs.find(
       c => c.tab_key === tabKey && c.item_key === `cross-${chartKey}` && c.item_type === 'cross'
     );
-    const { getCrossVariablesWithOverrides } = require('@/config/crossVariables');
     return getCrossVariablesWithOverrides(
       tabKey,
       chartKey,
