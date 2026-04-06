@@ -348,6 +348,7 @@ export const AnalyticsFilters: React.FC<Props> = ({
                   onChange({ ...filter, ville: newVille, commune: undefined, quartier: undefined, avenue: undefined });
                   handleVilleChange(newVille);
                   handleCommuneChange(undefined);
+                  handleQuartierChange(undefined);
                 }}>
                   <SelectTrigger className={selectCls}><SelectValue placeholder="Ville" /></SelectTrigger>
                   <SelectContent>
@@ -366,6 +367,7 @@ export const AnalyticsFilters: React.FC<Props> = ({
                   const newCommune = v === '__all__' ? undefined : v;
                   onChange({ ...filter, commune: newCommune, quartier: undefined, avenue: undefined });
                   handleCommuneChange(newCommune);
+                  handleQuartierChange(undefined);
                 }}>
                   <SelectTrigger className={selectCls}><SelectValue placeholder="Commune" /></SelectTrigger>
                   <SelectContent>
