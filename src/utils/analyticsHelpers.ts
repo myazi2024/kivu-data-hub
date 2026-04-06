@@ -252,7 +252,7 @@ export function sumByMonth(records: any[], amountField = 'total_amount_usd', dat
 export function buildFilterLabel(filter: AnalyticsFilter): string {
   const parts: string[] = [];
   // Time — cascading
-  let t = String(filter.year);
+  let t = filter.year === null ? 'Toutes les années' : String(filter.year);
   if (filter.semester) t += ` S${filter.semester}`;
   if (filter.quarter) t += ` T${filter.quarter}`;
   if (filter.month) t += ` ${MONTH_LABELS[filter.month - 1]}`;
