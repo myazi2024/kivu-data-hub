@@ -9,7 +9,7 @@ import { ChartCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
 import { MapProvinceContext, VilleFilterContext, CommuneFilterContext, QuartierFilterContext } from '../filters/AnalyticsFilters';
 import { generateInsight } from '@/utils/chartInsights';
-import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
+import { useTabChartsConfig, useTabFilterConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 
 interface Props { data: LandAnalyticsData; }
 
@@ -25,7 +25,8 @@ export const OwnershipHistoryBlock: React.FC<Props> = memo(({ data }) => {
   useEffect(() => { setFilter(f => ({ ...f, province: mapProvince || undefined, ville: mapVille || undefined, commune: mapCommune || undefined, quartier: mapQuartier || undefined })); }, [mapProvince, mapVille, mapCommune, mapQuartier]);
   const filterLabel = useMemo(() => buildFilterLabel(filter), [filter]);
   const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
-  const filtered = useMemo(() => applyFilters(data.ownershipHistory, filter, 'ownership_start_date'), [data.ownershipHistory, filter]);
+  const filterConfig = useTabFilterConfig(TAB_KEY);
+  const filtered = useMemo(() => applyFilters(data.ownershipHistory, filter, filterConfig.dateField), [data.ownershipHistory, filter, filterConfig.dateField]);
 
   const byLegalStatus = useMemo(() => countBy(filtered, 'legal_status'), [filtered]);
   const byMutationType = useMemo(() => countBy(filtered, 'mutation_type'), [filtered]);
@@ -60,7 +61,7 @@ export const OwnershipHistoryBlock: React.FC<Props> = memo(({ data }) => {
   return (
     <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
-      <AnalyticsFilters data={data.ownershipHistory} filter={filter} onChange={setFilter} hideStatus dateField="ownership_start_date" />
+      <AnalyticsFilters data={data.ownershipHistory} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} />
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {v('legal-status') && <ChartCard title={ct('legal-status', 'Statut juridique')} icon={Users} data={byLegalStatus} type="donut" colorIndex={1}

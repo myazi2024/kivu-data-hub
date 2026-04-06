@@ -48,13 +48,15 @@ interface Props {
   dateField?: string;
   statusField?: string;
   hideStatus?: boolean;
+  hideTime?: boolean;
+  hideLocation?: boolean;
 }
 
 const MONTHS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
 
 export const AnalyticsFilters: React.FC<Props> = ({
   data, filter, onChange, onVilleChange, onCommuneChange, dateField = 'created_at',
-  statusField, hideStatus = false,
+  statusField, hideStatus = false, hideTime = false, hideLocation = false,
 }) => {
   const provinceFilterCallback = useContext(ProvinceFilterContext);
   const villeChangeCtx = useContext(VilleChangeContext);
@@ -199,6 +201,7 @@ export const AnalyticsFilters: React.FC<Props> = ({
   return (
     <div className="space-y-1 bg-background/95 backdrop-blur-sm rounded-md p-1.5 border border-border/30 shadow-sm sticky top-0 z-10">
       {/* Row 1: Temps */}
+      {!hideTime && (
       <div className="flex items-center gap-1 flex-wrap">
         <Badge variant="outline" className="gap-0.5 text-[10px] px-1.5 py-0"><Calendar className="h-2.5 w-2.5" /> Temps</Badge>
 
@@ -280,8 +283,10 @@ export const AnalyticsFilters: React.FC<Props> = ({
           <Button variant="ghost" size="sm" className="h-5 text-[10px] px-1.5 ml-auto" onClick={reset}><X className="h-2.5 w-2.5" /></Button>
         )}
       </div>
+      )}
 
       {/* Row 2: Lieu — Pays › Province › Section › cascade */}
+      {!hideLocation && (
       <div className="flex items-center gap-1 flex-wrap">
         <Badge variant="outline" className="gap-0.5 text-[10px] px-1.5 py-0"><MapPin className="h-2.5 w-2.5" /> Lieu</Badge>
 
@@ -453,6 +458,7 @@ export const AnalyticsFilters: React.FC<Props> = ({
           </>
         )}
       </div>
+      )}
     </div>
   );
 };

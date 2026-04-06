@@ -9,7 +9,7 @@ import { ChartCard, ColorMappedPieCard, FilterLabelContext } from '../shared/Cha
 import { GeoCharts } from '../shared/GeoCharts';
 import { MapProvinceContext, VilleFilterContext, CommuneFilterContext, QuartierFilterContext } from '../filters/AnalyticsFilters';
 import { generateInsight } from '@/utils/chartInsights';
-import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
+import { useTabChartsConfig, useTabFilterConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { normalizeConstructionType } from '@/utils/constructionTypeNormalizer';
 import { normalizeDeclaredUsage } from '@/utils/declaredUsageNormalizer';
 
@@ -32,6 +32,7 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
   useEffect(() => { setFilter(f => ({ ...f, province: mapProvince || undefined, ville: mapVille || undefined, commune: mapCommune || undefined, quartier: mapQuartier || undefined })); }, [mapProvince, mapVille, mapCommune, mapQuartier]);
   const filterLabel = useMemo(() => buildFilterLabel(filter), [filter]);
   const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
+  const filterConfig = useTabFilterConfig(TAB_KEY);
   const filtered = useMemo(() => applyFilters(data.titleRequests, filter), [data.titleRequests, filter]);
 
   const normalized = useMemo(() => filtered.map(r => ({
@@ -126,7 +127,7 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
   return (
     <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
-      <AnalyticsFilters data={data.titleRequests} filter={filter} onChange={setFilter} />
+      <AnalyticsFilters data={data.titleRequests} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} />
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {v('request-type') && <ChartCard title={t('request-type', 'Type de demande')} icon={FileText} data={byRequestType} type="bar-h" colorIndex={0} labelWidth={100}

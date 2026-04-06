@@ -15,7 +15,7 @@ import {
 import {
   Settings, Save, Eye, EyeOff, ChevronUp, ChevronDown, RotateCcw, Loader2,
   BarChart3, PieChart as PieChartIcon, TrendingUp, LayoutGrid, Palette, GripVertical,
-  Layers, Pencil, Map as MapIcon, Globe
+  Layers, Pencil, Map as MapIcon, Globe, Filter
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -23,6 +23,8 @@ import {
   useAnalyticsChartsConfigMutations,
   useAnalyticsTabsConfig,
   ANALYTICS_TABS_REGISTRY,
+  TAB_FILTER_DEFAULTS,
+  buildFilterDefaults,
   ChartConfigItem,
   TabConfig,
 } from '@/hooks/useAnalyticsChartsConfig';
@@ -226,6 +228,153 @@ const TabManager: React.FC<TabManagerProps> = ({ localTabs, onUpdate }) => {
   );
 };
 
+// ─── Filter Manager Component ────────────────────────────────────────
+interface FilterManagerProps {
+  configs: ChartConfigItem[];
+  localTabs: TabConfig[];
+  onSave: (items: ChartConfigItem[]) => Promise<void>;
+  isSaving: boolean;
+}
+
+const FILTER_LABELS: Record<string, { label: string; description: string }> = {
+  'filter-status': { label: 'Filtre statut', description: 'Afficher le sélecteur de statut (approuvé, en attente, etc.)' },
+  'filter-time': { label: 'Filtre temporel', description: 'Afficher les sélecteurs Année / Semestre / Trimestre / Mois' },
+  'filter-location': { label: 'Filtre géographique', description: 'Afficher la cascade Province / Section / Ville / Commune / Quartier' },
+};
+
+const FilterManager: React.FC<FilterManagerProps> = ({ configs, localTabs, onSave, isSaving }) => {
+  const [selectedTab, setSelectedTab] = useState(Object.keys(TAB_FILTER_DEFAULTS)[0]);
+  const [localFilters, setLocalFilters] = useState<Record<string, ChartConfigItem[]>>({});
+  const [modified, setModified] = useState(false);
+
+  // Init from defaults + DB overrides
+  useEffect(() => {
+    const result: Record<string, ChartConfigItem[]> = {};
+    const dbFilterMap = new Map<string, ChartConfigItem>();
+    configs.filter(c => c.item_type === 'filter').forEach(c => dbFilterMap.set(`${c.tab_key}::${c.item_key}`, c));
+
+    Object.keys(TAB_FILTER_DEFAULTS).forEach(tabKey => {
+      const defaults = buildFilterDefaults(tabKey);
+      result[tabKey] = defaults.map(d => {
+        const override = dbFilterMap.get(`${d.tab_key}::${d.item_key}`);
+        return override ? { ...d, is_visible: override.is_visible, id: override.id } : d;
+      });
+    });
+    setLocalFilters(result);
+  }, [configs]);
+
+  const currentFilters = localFilters[selectedTab] || [];
+
+  const toggleFilter = (itemKey: string) => {
+    setLocalFilters(prev => ({
+      ...prev,
+      [selectedTab]: (prev[selectedTab] || []).map(f =>
+        f.item_key === itemKey ? { ...f, is_visible: !f.is_visible } : f
+      ),
+    }));
+    setModified(true);
+  };
+
+  const handleSave = async () => {
+    const allFilterItems = Object.values(localFilters).flat();
+    await onSave(allFilterItems);
+    setModified(false);
+  };
+
+  const analyticsTabKeys = Object.keys(TAB_FILTER_DEFAULTS);
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+      <Card className="lg:col-span-1">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Filter className="h-4 w-4 text-primary" />
+            Onglets
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <ScrollArea className="h-[400px]">
+            <div className="space-y-0.5 p-2">
+              {analyticsTabKeys.map(key => {
+                const reg = ANALYTICS_TABS_REGISTRY[key];
+                const tabConf = localTabs.find(t => t.key === key);
+                const label = tabConf?.label || reg?.label || key;
+                const filters = localFilters[key] || [];
+                const hiddenCount = filters.filter(f => !f.is_visible).length;
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setSelectedTab(key)}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors flex items-center justify-between ${
+                      selectedTab === key
+                        ? 'bg-primary text-primary-foreground'
+                        : 'hover:bg-accent text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <span className="font-medium">{label}</span>
+                    {hiddenCount > 0 && (
+                      <Badge variant="secondary" className="text-[9px] h-4 px-1">
+                        {hiddenCount} masqué{hiddenCount > 1 ? 's' : ''}
+                      </Badge>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </ScrollArea>
+        </CardContent>
+      </Card>
+
+      <Card className="lg:col-span-3">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Filter className="h-4 w-4" />
+              Filtres — {ANALYTICS_TABS_REGISTRY[selectedTab]?.label || selectedTab}
+            </CardTitle>
+            <Button size="sm" onClick={handleSave} disabled={!modified || isSaving}>
+              {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+              Sauvegarder
+            </Button>
+          </div>
+          <CardDescription className="text-xs mt-1">
+            Activez ou désactivez les filtres disponibles pour cet onglet dans le tableau de bord Analytics.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {currentFilters.map(f => {
+              const meta = FILTER_LABELS[f.item_key];
+              return (
+                <div key={f.item_key} className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+                  f.is_visible ? 'bg-card border-border/50' : 'bg-muted/30 border-border/20 opacity-60'
+                }`}>
+                  <Switch
+                    checked={f.is_visible}
+                    onCheckedChange={() => toggleFilter(f.item_key)}
+                  />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium">{meta?.label || f.item_key}</div>
+                    <div className="text-xs text-muted-foreground">{meta?.description || ''}</div>
+                  </div>
+                  <Badge variant={f.is_visible ? 'default' : 'secondary'} className="text-[9px]">
+                    {f.is_visible ? 'Actif' : 'Masqué'}
+                  </Badge>
+                </div>
+              );
+            })}
+            {currentFilters.length === 0 && (
+              <div className="text-sm text-muted-foreground text-center py-8">
+                Aucun filtre configurable pour cet onglet.
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
 // ─── Main Component ──────────────────────────────────────────────────
 const AdminAnalyticsChartsConfig: React.FC = () => {
   const { configs, isLoading } = useAnalyticsChartsConfig();
@@ -236,7 +385,7 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
   const [localTabs, setLocalTabs] = useState<TabConfig[]>([]);
   const [hasTabChanges, setHasTabChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [viewMode, setViewMode] = useState<'tabs' | 'charts'>('tabs');
+  const [viewMode, setViewMode] = useState<'tabs' | 'charts' | 'filters'>('tabs');
   const [modifiedTabs, setModifiedTabs] = useState<Set<string>>(new Set());
   const [pendingTabSwitch, setPendingTabSwitch] = useState<string | null>(null);
 
@@ -475,6 +624,15 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
                   <BarChart3 className="h-3.5 w-3.5 mr-1" />
                   Graphiques
                 </Button>
+                <Button
+                  size="sm"
+                  variant={viewMode === 'filters' ? 'default' : 'ghost'}
+                  className="rounded-none h-8 text-xs"
+                  onClick={() => setViewMode('filters')}
+                >
+                  <Filter className="h-3.5 w-3.5 mr-1" />
+                  Filtres
+                </Button>
               </div>
               <Button size="sm" variant="outline" onClick={handleSaveAll} disabled={!hasChanges || isSaving}>
                 {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Save className="h-3.5 w-3.5 mr-1" />}
@@ -706,7 +864,27 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
         </div>
       )}
 
-      {/* Unsaved changes confirmation dialog */}
+      {/* ─── FILTERS MANAGEMENT VIEW ─── */}
+      {viewMode === 'filters' && (
+        <FilterManager
+          configs={configs}
+          localTabs={localTabs}
+          onSave={async (items: ChartConfigItem[]) => {
+            setIsSaving(true);
+            try {
+              await upsertConfig.mutateAsync(items);
+              toast.success('Configuration des filtres sauvegardée');
+            } catch (error: any) {
+              toast.error(`Erreur: ${error?.message || 'Sauvegarde impossible'}`);
+            } finally {
+              setIsSaving(false);
+            }
+          }}
+          isSaving={isSaving}
+        />
+      )}
+
+
       <AlertDialog open={!!pendingTabSwitch} onOpenChange={(open) => { if (!open) cancelTabSwitch(); }}>
         <AlertDialogContent>
           <AlertDialogHeader>

@@ -9,7 +9,7 @@ import { ChartCard, StackedBarCard, FilterLabelContext } from '../shared/ChartCa
 import { GeoCharts } from '../shared/GeoCharts';
 import { MapProvinceContext, VilleFilterContext, CommuneFilterContext, QuartierFilterContext } from '../filters/AnalyticsFilters';
 import { generateInsight, generateStackedInsight } from '@/utils/chartInsights';
-import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
+import { useTabChartsConfig, useTabFilterConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 
 interface Props { data: LandAnalyticsData; }
 
@@ -25,7 +25,8 @@ export const CertificatesBlock: React.FC<Props> = memo(({ data }) => {
   useEffect(() => { setFilter(f => ({ ...f, province: mapProvince || undefined, ville: mapVille || undefined, commune: mapCommune || undefined, quartier: mapQuartier || undefined })); }, [mapProvince, mapVille, mapCommune, mapQuartier]);
   const filterLabel = useMemo(() => buildFilterLabel(filter), [filter]);
   const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
-  const filtered = useMemo(() => applyFilters(data.certificates, filter, 'generated_at'), [data.certificates, filter]);
+  const filterConfig = useTabFilterConfig(TAB_KEY);
+  const filtered = useMemo(() => applyFilters(data.certificates, filter, filterConfig.dateField), [data.certificates, filter, filterConfig.dateField]);
 
   const byType = useMemo(() => countBy(filtered, 'certificate_type'), [filtered]);
   const byStatus = useMemo(() => countBy(filtered, 'status'), [filtered]);
@@ -77,7 +78,7 @@ export const CertificatesBlock: React.FC<Props> = memo(({ data }) => {
   return (
     <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
-      <AnalyticsFilters data={data.certificates} filter={filter} onChange={setFilter} dateField="generated_at" />
+      <AnalyticsFilters data={data.certificates} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} />
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {v('cert-type') && <ChartCard title={ct('cert-type', 'Type certificat')} icon={Award} data={byType} type="bar-h" colorIndex={0} labelWidth={120}

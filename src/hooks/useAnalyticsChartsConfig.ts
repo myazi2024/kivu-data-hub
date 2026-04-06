@@ -6,7 +6,7 @@ export interface ChartConfigItem {
   id?: string;
   tab_key: string;
   item_key: string;
-  item_type: 'chart' | 'kpi' | 'tab';
+  item_type: 'chart' | 'kpi' | 'tab' | 'filter';
   is_visible: boolean;
   display_order: number;
   custom_title?: string | null;
@@ -22,6 +22,43 @@ export interface TabConfig {
   defaultLabel: string;
   is_visible: boolean;
   display_order: number;
+}
+
+export interface TabFilterConfig {
+  hideStatus: boolean;
+  hideTime: boolean;
+  hideLocation: boolean;
+  dateField: string;
+  statusField?: string;
+}
+
+/** Default filter settings per tab (matches current hardcoded behavior) */
+const TAB_FILTER_DEFAULTS: Record<string, TabFilterConfig> = {
+  'title-requests': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
+  'parcels-titled': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
+  'contributions': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
+  'expertise': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
+  'mutations': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
+  'mortgages': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
+  'subdivision': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
+  'disputes': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at', statusField: 'current_status' },
+  'ownership': { hideStatus: true, hideTime: false, hideLocation: false, dateField: 'ownership_start_date' },
+  'fraud': { hideStatus: true, hideTime: false, hideLocation: false, dateField: 'created_at' },
+  'certificates': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'generated_at' },
+  'invoices': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
+  'building-permits': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
+  'taxes': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
+};
+
+/** Build default filter config items for a given tab */
+function buildFilterDefaults(tabKey: string): ChartConfigItem[] {
+  const defaults = TAB_FILTER_DEFAULTS[tabKey];
+  if (!defaults) return [];
+  return [
+    { tab_key: tabKey, item_key: 'filter-status', item_type: 'filter', is_visible: !defaults.hideStatus, display_order: 0, custom_title: 'Filtre statut' },
+    { tab_key: tabKey, item_key: 'filter-time', item_type: 'filter', is_visible: !defaults.hideTime, display_order: 1, custom_title: 'Filtre temps' },
+    { tab_key: tabKey, item_key: 'filter-location', item_type: 'filter', is_visible: !defaults.hideLocation, display_order: 2, custom_title: 'Filtre lieu' },
+  ];
 }
 
 const QUERY_KEY = ['analytics-charts-config'];
@@ -76,7 +113,7 @@ export function useTabChartsConfig(tabKey: string, defaults: ChartConfigItem[]) 
 
   const merged = useMemo(() => {
     const dbMap = new Map<string, ChartConfigItem>();
-    configs.filter(c => c.tab_key === tabKey && c.item_type !== 'tab').forEach(c => dbMap.set(c.item_key, c));
+    configs.filter(c => c.tab_key === tabKey && c.item_type !== 'tab' && c.item_type !== 'filter').forEach(c => dbMap.set(c.item_key, c));
 
     return defaults.map((d, i) => {
       const override = dbMap.get(d.item_key);
@@ -109,6 +146,33 @@ export function useTabChartsConfig(tabKey: string, defaults: ChartConfigItem[]) 
   return { merged, isChartVisible, getChartConfig, isLoading };
 }
 
+/** Returns the filter configuration for a specific tab, merged with DB overrides */
+export function useTabFilterConfig(tabKey: string): TabFilterConfig {
+  const { configs } = useAnalyticsChartsConfig();
+
+  return useMemo(() => {
+    const defaults = TAB_FILTER_DEFAULTS[tabKey] || { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' };
+    const filterItems = configs.filter(c => c.tab_key === tabKey && c.item_type === 'filter');
+
+    if (filterItems.length === 0) return defaults;
+
+    const filterMap = new Map<string, ChartConfigItem>();
+    filterItems.forEach(c => filterMap.set(c.item_key, c));
+
+    const statusCfg = filterMap.get('filter-status');
+    const timeCfg = filterMap.get('filter-time');
+    const locationCfg = filterMap.get('filter-location');
+
+    return {
+      hideStatus: statusCfg ? !statusCfg.is_visible : defaults.hideStatus,
+      hideTime: timeCfg ? !timeCfg.is_visible : defaults.hideTime,
+      hideLocation: locationCfg ? !locationCfg.is_visible : defaults.hideLocation,
+      dateField: defaults.dateField,
+      statusField: defaults.statusField,
+    };
+  }, [configs, tabKey]);
+}
+
 /** Admin mutation helpers */
 export function useAnalyticsChartsConfigMutations() {
   const queryClient = useQueryClient();
@@ -124,7 +188,7 @@ export function useAnalyticsChartsConfigMutations() {
         display_order: rest.display_order,
         custom_title: rest.custom_title || null,
         custom_color: rest.custom_color || null,
-        chart_type: rest.item_type === 'tab' ? null : (rest.chart_type || null),
+        chart_type: (rest.item_type === 'tab' || rest.item_type === 'filter') ? null : (rest.chart_type || null),
         custom_icon: rest.custom_icon || null,
         col_span: rest.col_span ?? 1,
       }));
@@ -161,6 +225,9 @@ export function useAnalyticsChartsConfigMutations() {
 
   return { upsertConfig, deleteConfig, deleteTabOverrides };
 }
+
+/** Exported for admin UI filter management */
+export { TAB_FILTER_DEFAULTS, buildFilterDefaults };
 
 /** Registry of all analytics tabs with their default charts and KPIs */
 export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: ChartConfigItem[]; kpis: ChartConfigItem[] }> = {
@@ -352,7 +419,6 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'disputes', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 7, custom_title: 'Géographie' },
       { tab_key: 'disputes', item_key: 'resolution-rate', item_type: 'chart', is_visible: true, display_order: 8, custom_title: 'Taux résolution %', chart_type: 'area', col_span: 2 },
       { tab_key: 'disputes', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 9, custom_title: 'Évolution signalements', chart_type: 'area', col_span: 2 },
-      // Levées
       { tab_key: 'disputes', item_key: 'lifting-status', item_type: 'chart', is_visible: true, display_order: 10, custom_title: 'Statut levée', chart_type: 'pie' },
       { tab_key: 'disputes', item_key: 'lifting-resolution-level', item_type: 'chart', is_visible: true, display_order: 11, custom_title: 'Niveau résolution (levée)', chart_type: 'bar-h' },
       { tab_key: 'disputes', item_key: 'lifting-nature', item_type: 'chart', is_visible: true, display_order: 12, custom_title: 'Nature litige (levée)', chart_type: 'bar-h' },
@@ -495,7 +561,6 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
   'rdc-map': {
     label: 'Carte RDC',
     charts: [
-      // Map settings (config items exposed as "charts" for admin UI)
       { tab_key: 'rdc-map', item_key: 'map-legend-title', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Densité parcelles cadastrées' },
       { tab_key: 'rdc-map', item_key: 'map-header-note', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Répartition géographique des données foncières cadastrales' },
       { tab_key: 'rdc-map', item_key: 'map-watermark', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'BIC - Tous droits réservés' },
@@ -506,7 +571,6 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'rdc-map', item_key: 'map-tier-4', item_type: 'chart', is_visible: true, display_order: 7, custom_title: 'Très élevé (501+)', custom_color: '#b31942' },
     ],
     kpis: [
-      // Tooltip KPIs
       { tab_key: 'rdc-map', item_key: 'tooltip-parcels', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Parcelles' },
       { tab_key: 'rdc-map', item_key: 'tooltip-titles', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Titres dem.' },
       { tab_key: 'rdc-map', item_key: 'tooltip-contributions', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'Contributions' },
@@ -518,7 +582,6 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'rdc-map', item_key: 'tooltip-revenue', item_type: 'kpi', is_visible: true, display_order: 8, custom_title: 'Revenus' },
       { tab_key: 'rdc-map', item_key: 'tooltip-fiscal', item_type: 'kpi', is_visible: true, display_order: 9, custom_title: 'Rec. fiscales' },
       { tab_key: 'rdc-map', item_key: 'tooltip-density', item_type: 'kpi', is_visible: true, display_order: 10, custom_title: 'Densité' },
-      // Detail panel KPIs
       { tab_key: 'rdc-map', item_key: 'detail-parcels', item_type: 'kpi', is_visible: true, display_order: 11, custom_title: 'Parcelles' },
       { tab_key: 'rdc-map', item_key: 'detail-titles', item_type: 'kpi', is_visible: true, display_order: 12, custom_title: 'Titres dem.' },
       { tab_key: 'rdc-map', item_key: 'detail-contributions', item_type: 'kpi', is_visible: true, display_order: 13, custom_title: 'Contributions' },
