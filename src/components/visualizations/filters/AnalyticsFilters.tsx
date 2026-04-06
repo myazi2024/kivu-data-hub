@@ -286,6 +286,7 @@ export const AnalyticsFilters: React.FC<Props> = ({
       )}
 
       {/* Row 2: Lieu — Pays › Province › Section › cascade */}
+      {!hideLocation && (
       <div className="flex items-center gap-1 flex-wrap">
         <Badge variant="outline" className="gap-0.5 text-[10px] px-1.5 py-0"><MapPin className="h-2.5 w-2.5" /> Lieu</Badge>
 
