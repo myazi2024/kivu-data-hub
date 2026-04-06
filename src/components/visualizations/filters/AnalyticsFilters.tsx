@@ -10,6 +10,19 @@ export const ProvinceFilterContext = createContext<((province: string | undefine
 
 /** Context to receive the currently selected province from the map */
 export const MapProvinceContext = createContext<string | null>(null);
+
+/** Context to propagate ville selection to the map (current value) */
+export const VilleFilterContext = createContext<string | null>(null);
+
+/** Context to propagate commune selection to the map (current value) */
+export const CommuneFilterContext = createContext<string | null>(null);
+
+/** Context for ville change callback */
+export const VilleChangeContext = createContext<((ville: string | undefined) => void) | null>(null);
+
+/** Context for commune change callback */
+export const CommuneChangeContext = createContext<((commune: string | undefined) => void) | null>(null);
+
 import {
   getAllProvinces,
   getVillesForProvince,
@@ -24,6 +37,8 @@ interface Props {
   data: any[];
   filter: AnalyticsFilter;
   onChange: (f: AnalyticsFilter) => void;
+  onVilleChange?: (ville: string | undefined) => void;
+  onCommuneChange?: (commune: string | undefined) => void;
   dateField?: string;
   statusField?: string;
   paymentStatusField?: string;
@@ -34,10 +49,14 @@ interface Props {
 const MONTHS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
 
 export const AnalyticsFilters: React.FC<Props> = ({
-  data, filter, onChange, dateField = 'created_at',
+  data, filter, onChange, onVilleChange, onCommuneChange, dateField = 'created_at',
   statusField, paymentStatusField, hideStatus = false, hidePaymentStatus = false,
 }) => {
   const provinceFilterCallback = useContext(ProvinceFilterContext);
+  const villeChangeCtx = useContext(VilleChangeContext);
+  const communeChangeCtx = useContext(CommuneChangeContext);
+  const handleVilleChange = onVilleChange || villeChangeCtx || (() => {});
+  const handleCommuneChange = onCommuneChange || communeChangeCtx || (() => {});
   const years = useMemo(() => {
     const dataYears = getAvailableYears(data, dateField);
     const currentYear = new Date().getFullYear();
@@ -56,19 +75,28 @@ export const AnalyticsFilters: React.FC<Props> = ({
   const hasUrbanData = useMemo(() => provinceScoped.some(r => getSectionType(r) === 'urbaine'), [provinceScoped]);
   const hasRuralData = useMemo(() => provinceScoped.some(r => getSectionType(r) === 'rurale'), [provinceScoped]);
 
-  // Urban cascade: use first ville from geographicData as implicit lookup key for commune/quartier/avenue
+  // Urban cascade: Province → Section Urbaine → Ville → Commune → Quartier → Avenue
   const villes = useMemo(() => filter.province ? getVillesForProvince(filter.province) : [], [filter.province]);
-  const implicitVille = villes.length > 0 ? villes[0] : undefined;
 
-  const communes = useMemo(() => (filter.province && implicitVille) ? getCommunesForVille(filter.province, implicitVille) : [], [filter.province, implicitVille]);
-  // Fallback: extract communes from data if geographicData has none
+  const communes = useMemo(() => {
+    if (filter.province && filter.ville) return getCommunesForVille(filter.province, filter.ville);
+    return [];
+  }, [filter.province, filter.ville]);
+
   const communesFinal = useMemo(() => {
     if (communes.length > 0) return communes;
-    const scoped = provinceScoped.filter(r => getSectionType(r) === 'urbaine');
+    if (!filter.ville) return [];
+    const scoped = provinceScoped.filter(r => getSectionType(r) === 'urbaine' && r.ville === filter.ville);
     return extractUnique(scoped, 'commune');
-  }, [communes, provinceScoped]);
+  }, [communes, provinceScoped, filter.ville]);
 
-  const quartiers = useMemo(() => (filter.province && implicitVille && filter.commune) ? getQuartiersForCommune(filter.province, implicitVille, filter.commune) : [], [filter.province, implicitVille, filter.commune]);
+  const quartiers = useMemo(() => {
+    if (filter.province && filter.ville && filter.commune) {
+      return getQuartiersForCommune(filter.province, filter.ville, filter.commune);
+    }
+    return [];
+  }, [filter.province, filter.ville, filter.commune]);
+
   const quartiersFinal = useMemo(() => {
     if (quartiers.length > 0) return quartiers;
     if (!filter.commune) return [];
@@ -76,7 +104,13 @@ export const AnalyticsFilters: React.FC<Props> = ({
     return extractUnique(scoped, 'quartier');
   }, [quartiers, provinceScoped, filter.commune]);
 
-  const avenues = useMemo(() => (filter.province && implicitVille && filter.commune && filter.quartier) ? getAvenuesForQuartier(filter.province, implicitVille, filter.commune, filter.quartier) : [], [filter.province, implicitVille, filter.commune, filter.quartier]);
+  const avenues = useMemo(() => {
+    if (filter.province && filter.ville && filter.commune && filter.quartier) {
+      return getAvenuesForQuartier(filter.province, filter.ville, filter.commune, filter.quartier);
+    }
+    return [];
+  }, [filter.province, filter.ville, filter.commune, filter.quartier]);
+
   const avenuesFinal = useMemo(() => {
     if (avenues.length > 0) return avenues;
     if (!filter.quartier) return [];
@@ -123,11 +157,15 @@ export const AnalyticsFilters: React.FC<Props> = ({
   const hasActiveFilters = (filter.year !== defaultFilter.year) ||
     filter.semester || filter.quarter || filter.month || filter.week ||
     filter.sectionType !== 'all' ||
-    filter.province || filter.commune || filter.quartier || filter.avenue ||
+    filter.province || filter.ville || filter.commune || filter.quartier || filter.avenue ||
     filter.territoire || filter.collectivite || filter.groupement || filter.villageFilter ||
     filter.status || filter.paymentStatus;
 
-  const reset = useCallback(() => onChange({ ...defaultFilter }), [onChange]);
+  const reset = useCallback(() => {
+    onChange({ ...defaultFilter });
+    handleVilleChange(undefined);
+    handleCommuneChange(undefined);
+  }, [onChange, handleVilleChange, handleCommuneChange]);
 
   const semesterOptions = [1, 2];
   const quarterOptions = useMemo(() => {
@@ -255,10 +293,12 @@ export const AnalyticsFilters: React.FC<Props> = ({
             ...filter,
             province: newProvince,
             sectionType: 'all',
-            commune: undefined, quartier: undefined, avenue: undefined,
+            ville: undefined, commune: undefined, quartier: undefined, avenue: undefined,
             territoire: undefined, collectivite: undefined, groupement: undefined, villageFilter: undefined,
           });
           provinceFilterCallback?.(newProvince);
+          handleVilleChange(undefined);
+          handleCommuneChange(undefined);
         }}>
           <SelectTrigger className={selectCls}><SelectValue placeholder="Province" /></SelectTrigger>
           <SelectContent>
@@ -269,12 +309,16 @@ export const AnalyticsFilters: React.FC<Props> = ({
 
         {/* Section — always visible after Province */}
         {sep}
-        <Select value={filter.sectionType} onValueChange={v => onChange({
-          ...filter,
-          sectionType: v as any,
-          commune: undefined, quartier: undefined, avenue: undefined,
-          territoire: undefined, collectivite: undefined, groupement: undefined, villageFilter: undefined,
-        })}>
+        <Select value={filter.sectionType} onValueChange={v => {
+          onChange({
+            ...filter,
+            sectionType: v as any,
+            ville: undefined, commune: undefined, quartier: undefined, avenue: undefined,
+            territoire: undefined, collectivite: undefined, groupement: undefined, villageFilter: undefined,
+          });
+          handleVilleChange(undefined);
+          handleCommuneChange(undefined);
+        }}>
           <SelectTrigger className={selectCls}><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Toutes les sections</SelectItem>
@@ -283,17 +327,46 @@ export const AnalyticsFilters: React.FC<Props> = ({
           </SelectContent>
         </Select>
 
-        {/* Urban cascade: Commune → Quartier → Avenue */}
+        {/* Urban cascade: Ville → Commune → Quartier → Avenue */}
         {showUrbanSub && (
           <>
-            {sep}
-            <Select value={filter.commune || '__all__'} onValueChange={v => onChange({ ...filter, commune: v === '__all__' ? undefined : v, quartier: undefined, avenue: undefined })}>
-              <SelectTrigger className={selectCls}><SelectValue placeholder="Commune" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__all__">Toutes les communes</SelectItem>
-                {communesFinal.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            {/* Ville */}
+            {villes.length > 0 && (
+              <>
+                {sep}
+                <Select value={filter.ville || '__all__'} onValueChange={v => {
+                  const newVille = v === '__all__' ? undefined : v;
+                  onChange({ ...filter, ville: newVille, commune: undefined, quartier: undefined, avenue: undefined });
+                  handleVilleChange(newVille);
+                  handleCommuneChange(undefined);
+                }}>
+                  <SelectTrigger className={selectCls}><SelectValue placeholder="Ville" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">Toutes les villes</SelectItem>
+                    {villes.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </>
+            )}
+
+            {/* Commune — visible after Ville */}
+            {filter.ville && communesFinal.length > 0 && (
+              <>
+                {sep}
+                <Select value={filter.commune || '__all__'} onValueChange={v => {
+                  const newCommune = v === '__all__' ? undefined : v;
+                  onChange({ ...filter, commune: newCommune, quartier: undefined, avenue: undefined });
+                  handleCommuneChange(newCommune);
+                }}>
+                  <SelectTrigger className={selectCls}><SelectValue placeholder="Commune" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">Toutes les communes</SelectItem>
+                    {communesFinal.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </>
+            )}
+
             {filter.commune && quartiersFinal.length > 0 && (
               <>
                 {sep}

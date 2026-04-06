@@ -17,13 +17,17 @@ import { CertificatesBlock } from './blocks/CertificatesBlock';
 import { InvoicesBlock } from './blocks/InvoicesBlock';
 import { ProvinceData } from '@/types/province';
 import { useAnalyticsTabsConfig, useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
-import { ProvinceFilterContext, MapProvinceContext } from './filters/AnalyticsFilters';
+import { ProvinceFilterContext, MapProvinceContext, VilleFilterContext, CommuneFilterContext, VilleChangeContext, CommuneChangeContext } from './filters/AnalyticsFilters';
 import { WatermarkContext } from './shared/ChartCard';
 
 interface ProvinceDataVisualizationProps {
   analytics: LandAnalyticsData;
   selectedProvince?: ProvinceData | null;
   onProvinceFilter?: (provinceName: string | undefined) => void;
+  onVilleChange?: (ville: string | undefined) => void;
+  onCommuneChange?: (commune: string | undefined) => void;
+  selectedVille?: string | null;
+  selectedCommune?: string | null;
 }
 
 const ICON_MAP: Record<string, React.ComponentType<any>> = {
@@ -60,7 +64,10 @@ const BLOCK_MAP: Record<string, React.ComponentType<{ data: any }>> = {
   'invoices': InvoicesBlock,
 };
 
-const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({ analytics, selectedProvince, onProvinceFilter }) => {
+const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
+  analytics, selectedProvince, onProvinceFilter, onVilleChange, onCommuneChange,
+  selectedVille, selectedCommune,
+}) => {
   const { visibleTabs, isLoading: tabsLoading } = useAnalyticsTabsConfig();
   const [activeTab, setActiveTab] = useState('');
 
@@ -91,7 +98,7 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({ a
 
   return (
     <div className="flex flex-row lg:flex-col h-full w-full min-h-0 overflow-hidden">
-      {/* Tabs - vertical on mobile (fixed left), horizontal on desktop (fixed top) */}
+      {/* Tabs */}
       <div className="w-20 sm:w-24 lg:w-full shrink-0 border-r lg:border-r-0 lg:border-b border-border/40 bg-background overflow-y-auto overflow-x-hidden lg:overflow-y-hidden lg:overflow-x-auto scrollbar-hide">
         <div className="flex flex-col lg:flex-row lg:items-center gap-0.5 p-0.5 lg:w-max">
           {visibleTabs.map((tab) => {
@@ -116,12 +123,20 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({ a
         </div>
       </div>
 
-      {/* Content - scrolls independently */}
+      {/* Content */}
       <div className="flex-1 min-w-0 min-h-0 overflow-y-auto overflow-x-hidden p-1 lg:p-0 lg:mt-1.5">
         <WatermarkContext.Provider value={watermarkText}>
           <MapProvinceContext.Provider value={selectedProvince?.name || null}>
             <ProvinceFilterContext.Provider value={onProvinceFilter || null}>
-              {BlockComponent ? <BlockComponent data={analytics} /> : null}
+              <VilleChangeContext.Provider value={onVilleChange || null}>
+                <CommuneChangeContext.Provider value={onCommuneChange || null}>
+                  <VilleFilterContext.Provider value={selectedVille || null}>
+                    <CommuneFilterContext.Provider value={selectedCommune || null}>
+                      {BlockComponent ? <BlockComponent data={analytics} /> : null}
+                    </CommuneFilterContext.Provider>
+                  </VilleFilterContext.Provider>
+                </CommuneChangeContext.Provider>
+              </VilleChangeContext.Provider>
             </ProvinceFilterContext.Provider>
           </MapProvinceContext.Provider>
         </WatermarkContext.Provider>

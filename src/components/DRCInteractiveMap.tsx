@@ -5,9 +5,9 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { MapPin, DollarSign, BarChart3, Info, FileText, Database, AlertTriangle, Loader2, Copy, Check, Maximize, Minimize } from 'lucide-react';
-// html2canvas is lazy-imported in handleCopyImage
 import { toast } from 'sonner';
 import DRCMapWithTooltip from './DRCMapWithTooltip';
+import DRCCommunesMap from './DRCCommunesMap';
 
 import { ProvinceData } from '@/types/province';
 import ProvinceDataVisualization from './visualizations/ProvinceDataVisualization';
@@ -69,6 +69,8 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const [isCopying, setIsCopying] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [externalProvinceId, setExternalProvinceId] = useState<string | null>(null);
+  const [selectedVille, setSelectedVille] = useState<string | undefined>(undefined);
+  const [selectedCommune, setSelectedCommune] = useState<string | undefined>(undefined);
   const mapCardRef = React.useRef<HTMLDivElement>(null);
 
   const { data: analytics, isLoading } = useLandDataAnalytics();
@@ -185,6 +187,8 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     if (!provinceName) {
       setSelectedProvince(null);
       setExternalProvinceId(null);
+      setSelectedVille(undefined);
+      setSelectedCommune(undefined);
       return;
     }
     const normalize = (s: string) => s.toLowerCase().replace(/[-\s]/g, '');
@@ -192,6 +196,8 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     if (province) {
       setSelectedProvince(province);
       setExternalProvinceId(province.id);
+      setSelectedVille(undefined);
+      setSelectedCommune(undefined);
     }
   }, [provincesData]);
 
@@ -280,10 +286,12 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   <div className="bg-muted/20 px-2 py-0.5 border-b border-border/30 flex-shrink-0">
                     <h2 className="text-[10px] sm:text-xs font-medium text-foreground flex items-center gap-1">
                       <MapPin className="h-3 w-3 text-primary" />
-                      <span>{selectedProvince ? selectedProvince.name : 'République Démocratique du Congo'}</span>
+                      <span>{selectedVille ? `${selectedVille}${selectedCommune ? ` — ${selectedCommune}` : ''}` : selectedProvince ? selectedProvince.name : 'République Démocratique du Congo'}</span>
                     </h2>
                     <p className="text-[10px] text-muted-foreground leading-tight">
-                      {selectedProvince
+                      {selectedVille
+                        ? `Découpage communal de la ville de ${selectedVille}`
+                        : selectedProvince
                         ? `Données foncières cadastrales de ${selectedProvince.name} — Total : ${formatNumber(selectedProvince.parcelsCount)} parcelles enregistrées`
                         : `${getChartConfig('map-header-note')?.custom_title || 'Répartition géographique des données foncières cadastrales'} — Total : ${formatNumber(totalParcels)} parcelles enregistrées`
                       }
@@ -291,25 +299,31 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   </div>
                   
                   <div className="flex-1 min-h-0 overflow-hidden flex items-center justify-center p-1">
-                    <div className="w-full h-full flex items-center justify-center" style={{ transform: 'scale(0.9)', transformOrigin: 'center center' }}>
-                      <DRCMapWithTooltip
-                        provincesData={provincesData}
-                        selectedProvince={selectedProvince?.id || null}
-                        externalZoomProvinceId={externalProvinceId}
-                        onProvinceSelect={setSelectedProvince}
-                        onProvinceHover={setHoveredProvince}
-                        hoveredProvince={hoveredProvince}
-                        getProvinceColor={getProvinceColor}
-                        onMapReady={setMapInstance}
-                        tooltipLineConfigs={tooltipLineConfigs}
-                        onZoomChange={(zoomed) => { setIsMapZoomed(zoomed); if (!zoomed) setExternalProvinceId(null); }}
-                        onProvinceDeselect={() => setSelectedProvince(null)}
-                      />
-                    </div>
+                    {selectedVille ? (
+                      <div className="w-full h-full">
+                        <DRCCommunesMap ville={selectedVille} commune={selectedCommune} />
+                      </div>
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center" style={{ transform: 'scale(0.9)', transformOrigin: 'center center' }}>
+                        <DRCMapWithTooltip
+                          provincesData={provincesData}
+                          selectedProvince={selectedProvince?.id || null}
+                          externalZoomProvinceId={externalProvinceId}
+                          onProvinceSelect={setSelectedProvince}
+                          onProvinceHover={setHoveredProvince}
+                          hoveredProvince={hoveredProvince}
+                          getProvinceColor={getProvinceColor}
+                          onMapReady={setMapInstance}
+                          tooltipLineConfigs={tooltipLineConfigs}
+                          onZoomChange={(zoomed) => { setIsMapZoomed(zoomed); if (!zoomed) setExternalProvinceId(null); }}
+                          onProvinceDeselect={() => setSelectedProvince(null)}
+                        />
+                      </div>
+                    )}
                   </div>
                   
                   {/* Légende choroplèthe à 4 paliers — masquée pendant le zoom */}
-                  {!isMapZoomed && (
+                  {!isMapZoomed && !selectedVille && (
                     <div className="absolute bottom-5 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30">
                       <div className="text-[10px] text-muted-foreground mb-0.5">{getChartConfig('map-legend-title')?.custom_title || 'Densité parcelles cadastrées'}</div>
                       <div className="flex flex-col gap-0.5">
@@ -555,6 +569,10 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                     analytics={analytics!}
                     selectedProvince={selectedProvince}
                     onProvinceFilter={handleProvinceFilter}
+                    onVilleChange={setSelectedVille}
+                    onCommuneChange={setSelectedCommune}
+                    selectedVille={selectedVille}
+                    selectedCommune={selectedCommune}
                   />
                 </div>
               </CardContent>
