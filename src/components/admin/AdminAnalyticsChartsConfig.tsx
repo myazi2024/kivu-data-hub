@@ -15,7 +15,7 @@ import {
 import {
   Settings, Save, Eye, EyeOff, ChevronUp, ChevronDown, RotateCcw, Loader2,
   BarChart3, PieChart as PieChartIcon, TrendingUp, LayoutGrid, Palette, GripVertical,
-  Layers, Map as MapIcon, Globe, Filter
+  Layers, Map as MapIcon, Globe, Filter, GitBranch, Plus, Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -30,6 +30,7 @@ import {
   ChartConfigItem,
   TabConfig,
 } from '@/hooks/useAnalyticsChartsConfig';
+import { CROSS_VARIABLE_REGISTRY, CrossVariable } from '@/config/crossVariables';
 
 const CHART_TYPE_OPTIONS = [
   { value: 'bar-h', label: 'Barres horiz.', icon: '▬' },
