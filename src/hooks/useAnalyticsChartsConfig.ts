@@ -6,7 +6,7 @@ export interface ChartConfigItem {
   id?: string;
   tab_key: string;
   item_key: string;
-  item_type: 'chart' | 'kpi' | 'tab' | 'filter';
+  item_type: 'chart' | 'kpi' | 'tab' | 'filter' | 'cross';
   is_visible: boolean;
   display_order: number;
   custom_title?: string | null;
@@ -136,7 +136,7 @@ export function useTabChartsConfig(tabKey: string, defaults: ChartConfigItem[]) 
 
   const merged = useMemo(() => {
     const dbMap = new Map<string, ChartConfigItem>();
-    configs.filter(c => c.tab_key === tabKey && c.item_type !== 'tab' && c.item_type !== 'filter').forEach(c => dbMap.set(c.item_key, c));
+    configs.filter(c => c.tab_key === tabKey && c.item_type !== 'tab' && c.item_type !== 'filter' && c.item_type !== 'cross').forEach(c => dbMap.set(c.item_key, c));
 
     return defaults.map((d, i) => {
       const override = dbMap.get(d.item_key);
@@ -249,6 +249,23 @@ export function useAnalyticsChartsConfigMutations() {
   });
 
   return { upsertConfig, deleteConfig, deleteTabOverrides };
+}
+
+/** Returns the cross-variable config for a specific chart, merged with DB overrides */
+export function useTabCrossConfig(tabKey: string, chartKey: string) {
+  const { configs } = useAnalyticsChartsConfig();
+
+  return useMemo(() => {
+    const crossItem = configs.find(
+      c => c.tab_key === tabKey && c.item_key === `cross-${chartKey}` && c.item_type === 'cross'
+    );
+    const { getCrossVariablesWithOverrides } = require('@/config/crossVariables');
+    return getCrossVariablesWithOverrides(
+      tabKey,
+      chartKey,
+      crossItem ? { is_visible: crossItem.is_visible, custom_title: crossItem.custom_title } : undefined
+    );
+  }, [configs, tabKey, chartKey]);
 }
 
 /** Exported for admin UI filter management */
