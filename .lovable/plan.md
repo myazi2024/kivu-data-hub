@@ -1,44 +1,30 @@
 
+# Atténuer les voisins quand une commune/quartier est sélectionné
 
-# Zoom dynamique sur commune/quartier selectionne
-
-## Probleme
-
-Quand une commune est selectionnee dans `DRCCommunesMap`, le bounding box est calcule sur **toutes les communes de la ville** — la commune selectionnee est simplement coloree differemment mais pas zoomee. Meme probleme dans `DRCQuartiersMap` pour les quartiers.
+## Problème
+Quand une commune ou un quartier est sélectionné, les voisins ont la même opacité/couleur que d'habitude — pas de distinction visuelle claire entre la sélection et le contexte.
 
 ## Correction
 
-### DRCCommunesMap.tsx
-
-Modifier le `useMemo` du `bbox` pour que, quand `commune` est defini, le bounding box soit calcule uniquement sur la feature correspondante (celle ou `name === commune`). Si la commune selectionnee n'est pas trouvee, fallback sur toutes les communes de la ville.
+Dans **DRCCommunesMap.tsx** (ligne 167) et **DRCQuartiersMap.tsx** (ligne 158), modifier la logique `fill` pour atténuer les features non sélectionnées quand une sélection est active :
 
 ```typescript
-const bbox = useMemo(() => {
-  const source = commune
-    ? filtered.filter(f => f.properties.name.toLowerCase() === commune.toLowerCase())
-    : filtered;
-  const target = source.length > 0 ? source : filtered;
-  // ... calcul bbox sur target
-}, [filtered, commune]);
+// Quand une sélection est active, les voisins deviennent très pâles
+const hasSelection = !!commune; // (ou !!quartier pour QuartiersMap)
+const fill = isSelected 
+  ? HIGHLIGHT 
+  : isHovered 
+    ? 'hsl(var(--primary) / 0.55)' 
+    : hasSelection 
+      ? 'hsl(var(--muted) / 0.15)'  // voisins atténués
+      : COLORS[i % COLORS.length];  // couleur normale
+
+const stroke = isSelected ? HIGHLIGHT_STROKE : hasSelection ? 'hsl(var(--foreground) / 0.1)' : STROKE;
+const strokeWidth = isSelected ? 2 : isHovered ? 1.5 : 0.8;
 ```
 
-### DRCQuartiersMap.tsx
+Les voisins passent à une opacité très faible (15%) avec un contour léger (10%), gardant le focus visuel sur la sélection.
 
-Meme logique : quand `quartier` est defini, le bounding box se calcule uniquement sur la feature ou `name === quartier`.
-
-```typescript
-const bbox = useMemo(() => {
-  const source = quartier
-    ? filtered.filter(f => f.properties.name.toLowerCase() === quartier.toLowerCase())
-    : filtered;
-  const target = source.length > 0 ? source : filtered;
-  // ... calcul bbox sur target
-}, [filtered, quartier]);
-```
-
-Dans les deux cas, toutes les features voisines restent rendues (visibles) mais le cadrage SVG est centre et zoome sur l'element selectionne.
-
-### Fichiers modifies
-- `src/components/DRCCommunesMap.tsx` — bbox conditionnel sur commune
-- `src/components/DRCQuartiersMap.tsx` — bbox conditionnel sur quartier
-
+### Fichiers modifiés
+- `src/components/DRCCommunesMap.tsx` — atténuer voisins quand commune sélectionnée
+- `src/components/DRCQuartiersMap.tsx` — atténuer voisins quand quartier sélectionné
