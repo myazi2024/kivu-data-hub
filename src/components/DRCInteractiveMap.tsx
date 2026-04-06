@@ -57,6 +57,23 @@ function sumForProvince(records: any[], provinceName: string, field: string): nu
     .reduce((s, r) => s + (r[field] || 0), 0);
 }
 
+/** Normalize string for comparison */
+const norm = (s?: string | null) => (s || '').trim().toLowerCase();
+
+/** Build a filter predicate based on the most specific geo scope */
+function buildScopePredicate(
+  province?: string,
+  ville?: string,
+  commune?: string,
+  quartier?: string,
+): (record: any) => boolean {
+  if (quartier) return (r) => norm(r.quartier) === norm(quartier) && norm(r.commune) === norm(commune);
+  if (commune) return (r) => norm(r.commune) === norm(commune) && norm(r.ville) === norm(ville);
+  if (ville) return (r) => norm(r.ville) === norm(ville);
+  if (province) return (r) => norm(r.province) === norm(province);
+  return () => false;
+}
+
 interface DRCInteractiveMapProps {
   onFullscreenChange?: (isFullscreen: boolean) => void;
 }
