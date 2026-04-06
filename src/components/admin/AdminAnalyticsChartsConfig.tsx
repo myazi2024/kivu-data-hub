@@ -736,6 +736,37 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
     setHasFilterChanges(false);
   }, [configs, isLoading]);
 
+  // Initialize local cross config from registry + DB overrides
+  useEffect(() => {
+    if (isLoading) return;
+    const dbCrossMap = new Map<string, ChartConfigItem>();
+    configs.filter(c => c.item_type === 'cross').forEach(c => dbCrossMap.set(`${c.tab_key}::${c.item_key}`, c));
+
+    const result: Record<string, Record<string, { enabled: boolean; variables: { label: string; field: string; enabled: boolean }[] }>> = {};
+    Object.entries(CROSS_VARIABLE_REGISTRY).forEach(([tabKey, charts]) => {
+      result[tabKey] = {};
+      Object.entries(charts).forEach(([chartKey, defaults]) => {
+        const dbItem = dbCrossMap.get(`${tabKey}::cross-${chartKey}`);
+        if (dbItem) {
+          let variables: { label: string; field: string; enabled: boolean }[];
+          try {
+            variables = dbItem.custom_title ? JSON.parse(dbItem.custom_title) : defaults.map(d => ({ label: d.label, field: d.field, enabled: true }));
+          } catch {
+            variables = defaults.map(d => ({ label: d.label, field: d.field, enabled: true }));
+          }
+          result[tabKey][chartKey] = { enabled: dbItem.is_visible, variables };
+        } else {
+          result[tabKey][chartKey] = {
+            enabled: true,
+            variables: defaults.map(d => ({ label: d.label, field: d.field, enabled: true })),
+          };
+        }
+      });
+    });
+    setLocalCross(result);
+    setHasCrossChanges(false);
+  }, [configs, isLoading]);
+
   const currentItems = localItems[activeTab] || [];
   const currentKpis = currentItems.filter(i => i.item_type === 'kpi');
   const currentCharts = currentItems.filter(i => i.item_type === 'chart');
@@ -806,18 +837,33 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
       const allChartItems = Object.values(localItems).flat();
       const tabItems = tabConfigToItems(localTabs);
       const allFilterItems = Object.values(localFilters).flat();
-      await upsertConfig.mutateAsync([...allChartItems, ...tabItems, ...allFilterItems]);
+      // Build cross items
+      const crossItems: ChartConfigItem[] = [];
+      Object.entries(localCross).forEach(([tabKey, charts]) => {
+        Object.entries(charts).forEach(([chartKey, config]) => {
+          crossItems.push({
+            tab_key: tabKey,
+            item_key: `cross-${chartKey}`,
+            item_type: 'cross',
+            is_visible: config.enabled,
+            display_order: 0,
+            custom_title: JSON.stringify(config.variables),
+          });
+        });
+      });
+      await upsertConfig.mutateAsync([...allChartItems, ...tabItems, ...allFilterItems, ...crossItems]);
       toast.success('Toute la configuration Analytics a été sauvegardée');
       setModifiedTabs(new Set());
       setHasTabChanges(false);
       setHasFilterChanges(false);
+      setHasCrossChanges(false);
     } catch (error: any) {
       console.error('Save all error:', error);
       toast.error(`Erreur: ${error?.message || 'Sauvegarde globale impossible'}`);
     } finally {
       setIsSaving(false);
     }
-  }, [localItems, localTabs, localFilters, upsertConfig, tabConfigToItems]);
+  }, [localItems, localTabs, localFilters, localCross, upsertConfig, tabConfigToItems]);
 
   const handleSaveTabs = useCallback(async () => {
     setIsSaving(true);
@@ -941,6 +987,15 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
                 >
                   <Filter className="h-3.5 w-3.5 mr-1" />
                   Filtres
+                </Button>
+                <Button
+                  size="sm"
+                  variant={viewMode === 'cross' ? 'default' : 'ghost'}
+                  className="rounded-none h-8 text-xs"
+                  onClick={() => setViewMode('cross')}
+                >
+                  <GitBranch className="h-3.5 w-3.5 mr-1" />
+                  Croisements
                 </Button>
               </div>
               <Button size="sm" variant="outline" onClick={handleSaveAll} disabled={!hasChanges || isSaving}>
@@ -1194,6 +1249,49 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
           isSaving={isSaving}
         />
       )}
+
+      {/* ─── CROSS VARIABLES MANAGEMENT VIEW ─── */}
+      {viewMode === 'cross' && (
+        <div className="space-y-4">
+          <CrossVariableManager
+            localCross={localCross}
+            onUpdateCross={(cross) => { setLocalCross(cross); setHasCrossChanges(true); }}
+            localTabs={localTabs}
+          />
+          <Button
+            onClick={async () => {
+              setIsSaving(true);
+              try {
+                const crossItems: ChartConfigItem[] = [];
+                Object.entries(localCross).forEach(([tabKey, charts]) => {
+                  Object.entries(charts).forEach(([chartKey, config]) => {
+                    crossItems.push({
+                      tab_key: tabKey,
+                      item_key: `cross-${chartKey}`,
+                      item_type: 'cross',
+                      is_visible: config.enabled,
+                      display_order: 0,
+                      custom_title: JSON.stringify(config.variables),
+                    });
+                  });
+                });
+                await upsertConfig.mutateAsync(crossItems);
+                toast.success('Configuration des croisements sauvegardée');
+                setHasCrossChanges(false);
+              } catch (error: any) {
+                toast.error(`Erreur: ${error?.message || 'Sauvegarde impossible'}`);
+              } finally {
+                setIsSaving(false);
+              }
+            }}
+            disabled={!hasCrossChanges || isSaving}
+            className="w-full"
+          >
+            {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+            Sauvegarder la configuration des croisements
+          </Button>
+        </div>
+      )
 
 
       <AlertDialog open={!!pendingTabSwitch} onOpenChange={(open) => { if (!open) cancelTabSwitch(); }}>
