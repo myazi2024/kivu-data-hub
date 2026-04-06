@@ -10,11 +10,13 @@ import { GeoCharts } from '../shared/GeoCharts';
 import { MapProvinceContext, VilleFilterContext, CommuneFilterContext, QuartierFilterContext } from '../filters/AnalyticsFilters';
 import { generateInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, useTabFilterConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
+import { getCrossVariables } from '@/config/crossVariables';
 
 interface Props { data: LandAnalyticsData; }
 
 const TAB_KEY = 'subdivision';
 const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TABS_REGISTRY[TAB_KEY].charts];
+const cx = (key: string) => getCrossVariables(TAB_KEY, key);
 
 export const SubdivisionBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
@@ -83,7 +85,6 @@ export const SubdivisionBlock: React.FC<Props> = memo(({ data }) => {
     return { totalLots, approved, avgLots, avgDays, totalSurface, totalRevenue };
   }, [filtered]);
 
-
   const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
   const v = isChartVisible;
 
@@ -103,17 +104,17 @@ export const SubdivisionBlock: React.FC<Props> = memo(({ data }) => {
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {v('status') && <ChartCard title={ct('status', 'Statut')} icon={Scissors} data={byStatus} type="pie" colorIndex={7}
-          insight={generateInsight(byStatus, 'pie', 'les statuts de lotissement')} />}
+          insight={generateInsight(byStatus, 'pie', 'les statuts de lotissement')} crossVariables={cx('status')} rawRecords={filtered} groupField="status" />}
         {v('lots-distribution') && <ChartCard title={ct('lots-distribution', 'Distribution lots')} icon={BarChart3} data={lotsDistribution} type="bar-v" colorIndex={9} hidden={lotsDistribution.length === 0}
-          insight={generateInsight(lotsDistribution, 'bar-v', 'la distribution des lots')} />}
+          insight={generateInsight(lotsDistribution, 'bar-v', 'la distribution des lots')} crossVariables={cx('lots-distribution')} rawRecords={filtered} groupField="number_of_lots" />}
         {v('purpose') && <ChartCard title={ct('purpose', 'Objet lotissement')} icon={Target} data={byPurpose} type="bar-h" colorIndex={0} labelWidth={100} hidden={byPurpose.length === 0}
-          insight={generateInsight(byPurpose, 'bar-h', 'les objets de lotissement')} />}
+          insight={generateInsight(byPurpose, 'bar-h', 'les objets de lotissement')} crossVariables={cx('purpose')} rawRecords={filtered} groupField="purpose_of_subdivision" />}
         {v('requester-type') && <ChartCard title={ct('requester-type', 'Type demandeur')} icon={Users} data={byRequesterType} type="donut" colorIndex={1} hidden={byRequesterType.length === 0}
-          insight={generateInsight(byRequesterType, 'donut', 'les demandeurs')} />}
+          insight={generateInsight(byRequesterType, 'donut', 'les demandeurs')} crossVariables={cx('requester-type')} rawRecords={filtered} groupField="requester_type" />}
         {v('payment') && <ChartCard title={ct('payment', 'Paiement')} icon={DollarSign} data={byPaymentStatus} type="donut" colorIndex={2} hidden={byPaymentStatus.length === 0}
-          insight={generateInsight(byPaymentStatus, 'donut', 'les paiements')} />}
+          insight={generateInsight(byPaymentStatus, 'donut', 'les paiements')} crossVariables={cx('payment')} rawRecords={filtered} groupField="submission_payment_status" />}
         {v('surface') && <ChartCard title={ct('surface', 'Surface parcelle mère')} icon={Ruler} data={surfaceDist} type="bar-v" colorIndex={5} hidden={surfaceDist.length === 0}
-          insight={generateInsight(surfaceDist, 'bar-v', 'les surfaces des parcelles mères')} />}
+          insight={generateInsight(surfaceDist, 'bar-v', 'les surfaces des parcelles mères')} crossVariables={cx('surface')} rawRecords={filtered} groupField="parent_parcel_area_sqm" />}
         {v('revenue-trend') && <ChartCard title={ct('revenue-trend', 'Revenus/mois')} icon={DollarSign} data={revenueTrend} type="area" colorIndex={2} hidden={revenueTrend.length < 2}
           insight={generateInsight(revenueTrend, 'area', 'les revenus de lotissement')} />}
         {v('geo') && <GeoCharts records={filtered} />}

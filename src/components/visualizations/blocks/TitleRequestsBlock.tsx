@@ -12,11 +12,13 @@ import { generateInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, useTabFilterConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { normalizeConstructionType } from '@/utils/constructionTypeNormalizer';
 import { normalizeDeclaredUsage } from '@/utils/declaredUsageNormalizer';
+import { getCrossVariables } from '@/config/crossVariables';
 
 interface Props { data: LandAnalyticsData; }
 
 const TAB_KEY = 'title-requests';
 const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TABS_REGISTRY[TAB_KEY].charts];
+const cx = (key: string) => getCrossVariables(TAB_KEY, key);
 
 const GENDER_COLORS: Record<string, string> = {
   'Masculin': '#3b82f6', 'Féminin': '#ec4899', 'M': '#3b82f6', 'F': '#ec4899',
@@ -89,7 +91,6 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
     return result;
   }, [stats]);
 
-
   const processingInsight = useMemo(() => {
     if (processingComparison.length < 2) return '';
     const diff = stats.avgDays - stats.avgEstimated;
@@ -106,10 +107,8 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
     return generateInsight(genderData, 'pie', 'les demandeurs');
   }, [genderData]);
 
-  // Helper to get configured title
   const t = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
 
-  // Build visible KPI items
   const kpiItems = useMemo(() => {
     const all = [
       { key: 'kpi-total', label: t('kpi-total', 'Total'), value: filtered.length, cls: 'text-primary' },
@@ -131,31 +130,31 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {v('request-type') && <ChartCard title={t('request-type', 'Type de demande')} icon={FileText} data={byRequestType} type="bar-h" colorIndex={0} labelWidth={100}
-          insight={generateInsight(byRequestType, 'bar-h', 'les types de demande')} />}
+          insight={generateInsight(byRequestType, 'bar-h', 'les types de demande')} crossVariables={cx('request-type')} rawRecords={filtered} groupField="request_type" />}
         {v('requester-type') && <ChartCard title={t('requester-type', 'Demandeur')} icon={Users} data={byRequesterType} type="donut" colorIndex={1}
-          insight={generateInsight(byRequesterType, 'donut', 'les demandeurs')} />}
+          insight={generateInsight(byRequesterType, 'donut', 'les demandeurs')} crossVariables={cx('requester-type')} rawRecords={filtered} groupField="requester_type" />}
         {v('status') && <ChartCard title={t('status', 'Statut')} data={byStatus} type="bar-v" colorIndex={1}
-          insight={generateInsight(byStatus, 'bar-v', 'les statuts')} />}
+          insight={generateInsight(byStatus, 'bar-v', 'les statuts')} crossVariables={cx('status')} rawRecords={filtered} groupField="status" />}
         {v('payment') && <ChartCard title={t('payment', 'Paiement')} icon={DollarSign} data={byPayment} type="donut" colorIndex={2}
-          insight={generateInsight(byPayment, 'donut', 'les paiements')} />}
+          insight={generateInsight(byPayment, 'donut', 'les paiements')} crossVariables={cx('payment')} rawRecords={filtered} groupField="payment_status" />}
         {v('legal-status') && <ChartCard title={t('legal-status', 'Statut juridique')} data={byOwnerLegalStatus} type="donut" colorIndex={4}
-          insight={generateInsight(byOwnerLegalStatus, 'donut', 'les statuts juridiques')} />}
+          insight={generateInsight(byOwnerLegalStatus, 'donut', 'les statuts juridiques')} crossVariables={cx('legal-status')} rawRecords={filtered} groupField="owner_legal_status" />}
         {v('declared-usage') && <ChartCard title={t('declared-usage', 'Usage déclaré')} data={byDeclaredUsage} type="bar-h" colorIndex={5}
-          insight={generateInsight(byDeclaredUsage, 'bar-h', 'les usages')} />}
+          insight={generateInsight(byDeclaredUsage, 'bar-h', 'les usages')} crossVariables={cx('declared-usage')} rawRecords={normalized} groupField="declared_usage" />}
         {v('gender') && <ColorMappedPieCard title={t('gender', 'Genre')} icon={Users} iconColor="text-pink-500" data={genderData} colorMap={GENDER_COLORS}
-          insight={genderInsight} />}
+          insight={genderInsight} crossVariables={cx('gender')} rawRecords={filtered} groupField="requester_gender" />}
         {v('nationality') && <ChartCard title={t('nationality', 'Nationalité')} icon={Globe} data={byNationality} type="bar-h" colorIndex={9} labelWidth={80} hidden={byNationality.length === 0}
-          insight={generateInsight(byNationality, 'bar-h', 'les nationalités')} />}
+          insight={generateInsight(byNationality, 'bar-h', 'les nationalités')} crossVariables={cx('nationality')} rawRecords={filtered} groupField="nationality" />}
         {v('deduced-title') && <ChartCard title={t('deduced-title', 'Titre déduit')} data={byDeducedTitleType} type="bar-h" colorIndex={3} labelWidth={100} hidden={byDeducedTitleType.length === 0}
-          insight={generateInsight(byDeducedTitleType, 'bar-h', 'les types de titre')} />}
+          insight={generateInsight(byDeducedTitleType, 'bar-h', 'les types de titre')} crossVariables={cx('deduced-title')} rawRecords={filtered} groupField="deduced_title_type" />}
         {v('owner-same') && <ChartCard title={t('owner-same', 'Demandeur = Proprio')} icon={UserCheck} data={ownerSameData} type="pie" colorIndex={0} hidden={ownerSameData.length === 0}
-          insight={generateInsight(ownerSameData, 'pie', 'propriétaire vs mandataire')} />}
+          insight={generateInsight(ownerSameData, 'pie', 'propriétaire vs mandataire')} crossVariables={cx('owner-same')} rawRecords={filtered} groupField="is_owner_same_as_requester" />}
         {v('surface') && <ChartCard title={t('surface', 'Superficie demandée')} icon={Ruler} data={surfaceDist} type="bar-v" colorIndex={10} hidden={surfaceDist.length === 0}
-          insight={generateInsight(surfaceDist, 'bar-v', 'les superficies')} />}
+          insight={generateInsight(surfaceDist, 'bar-v', 'les superficies')} crossVariables={cx('surface')} rawRecords={filtered} groupField="area_sqm" />}
         {v('construction-type') && <ChartCard title={t('construction-type', 'Type construction')} icon={Building} data={byConstructionType} type="bar-h" colorIndex={3} hidden={byConstructionType.length === 0}
-          insight={generateInsight(byConstructionType, 'bar-h', 'les types de construction')} />}
+          insight={generateInsight(byConstructionType, 'bar-h', 'les types de construction')} crossVariables={cx('construction-type')} rawRecords={normalized} groupField="construction_type" />}
         {v('construction-nature') && <ChartCard title={t('construction-nature', 'Nature construction')} data={byConstructionNature} type="bar-h" colorIndex={7} labelWidth={100}
-          insight="Mesure l'évolution des matériaux de construction d'une zone à l'autre." />}
+          insight="Mesure l'évolution des matériaux de construction d'une zone à l'autre." crossVariables={cx('construction-nature')} rawRecords={filtered} groupField="construction_nature" />}
         {v('revenue-trend') && <ChartCard title={t('revenue-trend', 'Revenus/mois')} icon={DollarSign} data={revenueTrend} type="area" colorIndex={2} hidden={revenueTrend.length < 2}
           insight={generateInsight(revenueTrend, 'area', 'les revenus mensuels')} />}
         {v('processing-comparison') && <ChartCard title={t('processing-comparison', 'Délai estimé vs réel')} icon={Clock} data={processingComparison} type="bar-v" colorIndex={5} hidden={processingComparison.length === 0}

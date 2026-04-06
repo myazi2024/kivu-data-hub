@@ -10,11 +10,13 @@ import { GeoCharts } from '../shared/GeoCharts';
 import { MapProvinceContext, VilleFilterContext, CommuneFilterContext, QuartierFilterContext } from '../filters/AnalyticsFilters';
 import { generateInsight, generateStackedInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, useTabFilterConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
+import { getCrossVariables } from '@/config/crossVariables';
 
 interface Props { data: LandAnalyticsData; }
 
 const TAB_KEY = 'disputes';
 const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TABS_REGISTRY[TAB_KEY].charts];
+const cx = (key: string) => getCrossVariables(TAB_KEY, key);
 
 export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
@@ -28,7 +30,6 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
   const filterConfig = useTabFilterConfig(TAB_KEY);
   const filtered = useMemo(() => applyFilters(data.disputes, filter), [data.disputes, filter]);
 
-  // === SIGNALEMENTS ===
   const { enCours, resolus, byNature, byType, byStatus, byResolutionLevel, byDeclarantQuality, trend, natureStatusCross, resolutionStatus } = useMemo(() => {
     const enCours = filtered.filter(d => !['resolved', 'closed', 'resolu', 'leve'].includes(d.current_status));
     const resolus = filtered.filter(d => ['resolved', 'closed', 'resolu', 'leve'].includes(d.current_status));
@@ -80,7 +81,6 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
     });
   }, [filtered]);
 
-  // === LEVÉES ===
   const liftingDisputes = useMemo(() =>
     filtered.filter(d => d.lifting_status && VALID_LIFTING_STATUSES.includes(d.lifting_status)),
     [filtered]
@@ -121,13 +121,11 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
   const v = isChartVisible;
 
   const kpiItems = useMemo(() => [
-    // Signalements KPIs
     { key: 'kpi-total', label: ct('kpi-total', 'Total'), value: filtered.length, cls: 'text-red-600' },
     { key: 'kpi-en-cours', label: ct('kpi-en-cours', 'En cours'), value: enCours.length, cls: 'text-amber-600', tooltip: pct(enCours.length, filtered.length) },
     { key: 'kpi-resolus', label: ct('kpi-resolus', 'Résolus'), value: resolus.length, cls: 'text-emerald-600', tooltip: pct(resolus.length, filtered.length) },
     { key: 'kpi-rate', label: ct('kpi-rate', 'Taux résolution'), value: pct(resolus.length, filtered.length), cls: 'text-purple-600' },
     { key: 'kpi-duration', label: ct('kpi-duration', 'Durée moy.'), value: avgDuration > 0 ? `${avgDuration}j` : 'N/A', cls: 'text-blue-600', tooltip: 'Durée moyenne des litiges (jours)' },
-    // Levées KPIs
     { key: 'kpi-lifting-total', label: ct('kpi-lifting-total', 'Demandes levée'), value: liftingDisputes.length, cls: 'text-sky-600' },
     { key: 'kpi-lifting-approved', label: ct('kpi-lifting-approved', 'Levées approuvées'), value: liftingStats.approved, cls: 'text-emerald-600', tooltip: pct(liftingStats.approved, liftingDisputes.length) },
     { key: 'kpi-lifting-pending', label: ct('kpi-lifting-pending', 'Levées en attente'), value: liftingStats.pending, cls: 'text-amber-600', tooltip: pct(liftingStats.pending, liftingDisputes.length) },
@@ -143,20 +141,19 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
       />
       <KpiGrid items={kpiItems} />
 
-      {/* Section Signalements */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {v('nature') && <ChartCard title={ct('nature', 'Nature')} icon={AlertTriangle} iconColor="text-red-500" data={byNature} type="bar-h" colorIndex={4} labelWidth={110}
-          insight={generateInsight(byNature, 'bar-h', 'les natures de litige')} />}
+          insight={generateInsight(byNature, 'bar-h', 'les natures de litige')} crossVariables={cx('nature')} rawRecords={filtered} groupField="dispute_nature" />}
         {v('resolution-status') && <ChartCard title={ct('resolution-status', 'En cours vs Résolus')} data={resolutionStatus} type="pie" colorIndex={3}
-          insight={`${pct(resolus.length, filtered.length)} des litiges sont résolus à ce jour.`} />}
+          insight={`${pct(resolus.length, filtered.length)} des litiges sont résolus à ce jour.`} crossVariables={cx('resolution-status')} rawRecords={filtered} groupField="current_status" />}
         {v('status-detail') && <ChartCard title={ct('status-detail', 'Statut détaillé')} data={byStatus} type="bar-v" colorIndex={8}
-          insight={generateInsight(byStatus, 'bar-v', 'les statuts détaillés')} />}
+          insight={generateInsight(byStatus, 'bar-v', 'les statuts détaillés')} crossVariables={cx('status-detail')} rawRecords={filtered} groupField="current_status" />}
         {v('type') && <ChartCard title={ct('type', 'Type litige')} data={byType} type="donut" colorIndex={0}
-          insight={generateInsight(byType, 'donut', 'les types de litige')} />}
+          insight={generateInsight(byType, 'donut', 'les types de litige')} crossVariables={cx('type')} rawRecords={filtered} groupField="dispute_type" />}
         {v('resolution-level') && <ChartCard title={ct('resolution-level', 'Niveau résolution')} icon={Scale} iconColor="text-purple-500" data={byResolutionLevel} type="bar-h" colorIndex={5} labelWidth={100}
-          insight={generateInsight(byResolutionLevel, 'bar-h', 'les niveaux de résolution')} />}
+          insight={generateInsight(byResolutionLevel, 'bar-h', 'les niveaux de résolution')} crossVariables={cx('resolution-level')} rawRecords={filtered} groupField="resolution_level" />}
         {v('declarant-quality') && <ChartCard title={ct('declarant-quality', 'Qualité déclarant')} icon={Users} data={byDeclarantQuality} type="donut" colorIndex={1} hidden={byDeclarantQuality.length === 0}
-          insight={generateInsight(byDeclarantQuality, 'donut', 'les déclarants')} />}
+          insight={generateInsight(byDeclarantQuality, 'donut', 'les déclarants')} crossVariables={cx('declarant-quality')} rawRecords={filtered} groupField="declarant_quality" />}
         {v('nature-resolution') && <StackedBarCard title={ct('nature-resolution', 'Nature × Résolution')} data={natureStatusCross} bars={[
           { dataKey: 'enCours', name: 'En cours', color: CHART_COLORS[3] },
           { dataKey: 'resolu', name: 'Résolus', color: CHART_COLORS[2] },
@@ -169,7 +166,6 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(trend, 'area', 'les litiges')} />}
       </div>
 
-      {/* Section Levées */}
       {liftingDisputes.length > 0 && (
         <>
           <div className="flex items-center gap-2 pt-2 pb-1">
@@ -179,11 +175,11 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {v('lifting-status') && <ChartCard title={ct('lifting-status', 'Statut levée')} icon={ShieldCheck} data={byLiftingStatus} type="pie" colorIndex={9}
-              insight={generateInsight(byLiftingStatus, 'pie', 'les statuts de levée')} />}
+              insight={generateInsight(byLiftingStatus, 'pie', 'les statuts de levée')} crossVariables={cx('lifting-status')} rawRecords={liftingDisputes} groupField="lifting_status" />}
             {v('lifting-resolution-level') && <ChartCard title={ct('lifting-resolution-level', 'Niveau résolution (levée)')} icon={Scale} iconColor="text-purple-500" data={byLiftingResolutionLevel} type="bar-h" colorIndex={9} labelWidth={100}
               insight={generateInsight(byLiftingResolutionLevel, 'bar-h', 'les niveaux de résolution')} />}
             {v('lifting-nature') && <ChartCard title={ct('lifting-nature', 'Nature litige (levée)')} data={byLiftingNature} type="bar-h" colorIndex={4} labelWidth={100}
-              insight={generateInsight(byLiftingNature, 'bar-h', 'les natures de litige concernées')} />}
+              insight={generateInsight(byLiftingNature, 'bar-h', 'les natures de litige concernées')} crossVariables={cx('lifting-nature')} rawRecords={liftingDisputes} groupField="dispute_nature" />}
             {v('lifting-reason') && <ChartCard title={ct('lifting-reason', 'Motif de levée')} icon={MessageSquare} data={byLiftingReason} type="bar-h" colorIndex={6} labelWidth={120} hidden={byLiftingReason.length === 0}
               insight={generateInsight(byLiftingReason, 'bar-h', 'les motifs de levée')} />}
             {v('lifting-geo') && <GeoCharts records={liftingDisputes} />}

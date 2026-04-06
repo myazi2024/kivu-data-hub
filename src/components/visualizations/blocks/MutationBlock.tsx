@@ -10,11 +10,13 @@ import { GeoCharts } from '../shared/GeoCharts';
 import { MapProvinceContext, VilleFilterContext, CommuneFilterContext, QuartierFilterContext } from '../filters/AnalyticsFilters';
 import { generateInsight, generateStackedInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, useTabFilterConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
+import { getCrossVariables } from '@/config/crossVariables';
 
 interface Props { data: LandAnalyticsData; }
 
 const TAB_KEY = 'mutations';
 const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TABS_REGISTRY[TAB_KEY].charts];
+const cx = (key: string) => getCrossVariables(TAB_KEY, key);
 
 export const MutationBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
@@ -51,7 +53,6 @@ export const MutationBlock: React.FC<Props> = memo(({ data }) => {
 
   const revenueTrend = useMemo(() => sumByMonth(filtered), [filtered]);
 
-  // New: market value distribution
   const byMarketValue = useMemo(() => {
     const buckets: Record<string, number> = { '< $10k': 0, '$10k–$50k': 0, '$50k–$100k': 0, '$100k–$500k': 0, '> $500k': 0 };
     filtered.forEach(r => {
@@ -67,7 +68,6 @@ export const MutationBlock: React.FC<Props> = memo(({ data }) => {
     return Object.entries(buckets).filter(([, v]) => v > 0).map(([name, value]) => ({ name, value }));
   }, [filtered]);
 
-  // New: title age distribution
   const byTitleAge = useMemo(() => {
     const counts: Record<string, number> = { '< 10 ans': 0, '≥ 10 ans': 0, 'Non renseigné': 0 };
     filtered.forEach(r => {
@@ -79,7 +79,6 @@ export const MutationBlock: React.FC<Props> = memo(({ data }) => {
     return Object.entries(counts).filter(([, v]) => v > 0).map(([name, value]) => ({ name, value }));
   }, [filtered]);
 
-  // New: late fees vs no late fees
   const byLateFees = useMemo(() => {
     let withLate = 0, withoutLate = 0;
     filtered.forEach(r => {
@@ -103,7 +102,6 @@ export const MutationBlock: React.FC<Props> = memo(({ data }) => {
     return { approved, pending, rejected, avgDays, totalRevenue, paidRevenue };
   }, [filtered]);
 
-
   const t = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
   const v = isChartVisible;
 
@@ -123,13 +121,13 @@ export const MutationBlock: React.FC<Props> = memo(({ data }) => {
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {v('status') && <ChartCard title={t('status', 'Statut')} icon={ArrowRightLeft} data={byStatus} type="pie" colorIndex={6}
-          insight={generateInsight(byStatus, 'pie', 'les statuts de mutation')} />}
+          insight={generateInsight(byStatus, 'pie', 'les statuts de mutation')} crossVariables={cx('status')} rawRecords={filtered} groupField="status" />}
         {v('mutation-type') && <ChartCard title={t('mutation-type', 'Type mutation')} data={byType} type="bar-h" colorIndex={6} labelWidth={100}
-          insight={generateInsight(byType, 'bar-h', 'les types de mutation')} />}
+          insight={generateInsight(byType, 'bar-h', 'les types de mutation')} crossVariables={cx('mutation-type')} rawRecords={filtered} groupField="mutation_type" />}
         {v('requester-type') && <ChartCard title={t('requester-type', 'Type demandeur')} icon={Users} data={byRequesterType} type="donut" colorIndex={1}
-          insight={generateInsight(byRequesterType, 'donut', 'les demandeurs')} />}
+          insight={generateInsight(byRequesterType, 'donut', 'les demandeurs')} crossVariables={cx('requester-type')} rawRecords={filtered} groupField="requester_type" />}
         {v('payment') && <ChartCard title={t('payment', 'Paiement')} icon={DollarSign} data={byPaymentStatus} type="donut" colorIndex={2}
-          insight={generateInsight(byPaymentStatus, 'donut', 'les paiements')} />}
+          insight={generateInsight(byPaymentStatus, 'donut', 'les paiements')} crossVariables={cx('payment')} rawRecords={filtered} groupField="payment_status" />}
         {v('type-status') && <StackedBarCard title={t('type-status', 'Type × Statut')} data={typeStatusCross} bars={[
           { dataKey: 'approved', name: 'Approuvées', color: CHART_COLORS[2] },
           { dataKey: 'pending', name: 'En attente', color: CHART_COLORS[3] },
@@ -141,11 +139,11 @@ export const MutationBlock: React.FC<Props> = memo(({ data }) => {
             { dataKey: 'rejected', name: 'Rejetées' },
           ], 'croisement type/statut')} />}
         {v('market-value') && <ChartCard title={t('market-value', 'Valeur vénale')} icon={DollarSign} data={byMarketValue} type="bar-v" colorIndex={5} hidden={byMarketValue.length === 0}
-          insight={generateInsight(byMarketValue, 'bar-v', 'la valeur vénale des mutations')} />}
+          insight={generateInsight(byMarketValue, 'bar-v', 'la valeur vénale des mutations')} crossVariables={cx('market-value')} rawRecords={filtered} groupField="market_value_usd" />}
         {v('title-age') && <ChartCard title={t('title-age', 'Ancienneté titre')} data={byTitleAge} type="pie" colorIndex={3} hidden={byTitleAge.length === 0}
-          insight={generateInsight(byTitleAge, 'pie', "l'ancienneté des titres")} />}
+          insight={generateInsight(byTitleAge, 'pie', "l'ancienneté des titres")} crossVariables={cx('title-age')} rawRecords={filtered} groupField="title_age" />}
         {v('late-fees') && <ChartCard title={t('late-fees', 'Retard mutation')} data={byLateFees} type="pie" colorIndex={4} hidden={byLateFees.length === 0}
-          insight={generateInsight(byLateFees, 'pie', 'les retards de mutation')} />}
+          insight={generateInsight(byLateFees, 'pie', 'les retards de mutation')} crossVariables={cx('late-fees')} rawRecords={filtered} groupField="late_fee_amount" />}
         {v('revenue-trend') && <ChartCard title={t('revenue-trend', 'Revenus/mois')} icon={TrendingUp} data={revenueTrend} type="area" colorIndex={2} hidden={revenueTrend.length < 2}
           insight={generateInsight(revenueTrend, 'area', 'les revenus de mutation')} />}
         {v('geo') && <GeoCharts records={filtered} />}

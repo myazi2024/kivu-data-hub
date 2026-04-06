@@ -13,11 +13,13 @@ import { useTabChartsConfig, useTabFilterConfig, ANALYTICS_TABS_REGISTRY } from 
 import { normalizeTitleType } from '@/utils/titleTypeNormalizer';
 import { normalizeConstructionType } from '@/utils/constructionTypeNormalizer';
 import { normalizeDeclaredUsage } from '@/utils/declaredUsageNormalizer';
+import { getCrossVariables } from '@/config/crossVariables';
 
 interface Props { data: LandAnalyticsData; }
 
 const TAB_KEY = 'contributions';
 const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TABS_REGISTRY[TAB_KEY].charts];
+const cx = (key: string) => getCrossVariables(TAB_KEY, key);
 
 export const ContributionsBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
@@ -77,7 +79,6 @@ export const ContributionsBlock: React.FC<Props> = memo(({ data }) => {
     return { approved, pending, rejected, avgDays };
   }, [filtered]);
 
-
   const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
   const v = isChartVisible;
 
@@ -97,25 +98,26 @@ export const ContributionsBlock: React.FC<Props> = memo(({ data }) => {
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {v('contribution-type') && <ChartCard title={ct('contribution-type', 'Type contribution')} icon={FileText} data={byContributionType} type="bar-h" colorIndex={0} labelWidth={100}
-          insight={generateInsight(byContributionType, 'bar-h', 'les types de contribution')} />}
+          insight={generateInsight(byContributionType, 'bar-h', 'les types de contribution')} crossVariables={cx('contribution-type')} rawRecords={filtered} groupField="contribution_type" />}
         {v('status') && <ChartCard title={ct('status', 'Statut')} data={byStatus} type="pie" colorIndex={1}
-          insight={generateInsight(byStatus, 'pie', 'les statuts')} />}
+          insight={generateInsight(byStatus, 'pie', 'les statuts')} crossVariables={cx('status')} rawRecords={filtered} groupField="status" />}
         {v('title-type') && <ChartCard title={ct('title-type', 'Type titre')} data={byPropertyTitleType} type="bar-h" colorIndex={3} labelWidth={100} hidden={byPropertyTitleType.length === 0}
-          insight={generateInsight(byPropertyTitleType, 'bar-h', 'les types de titre')} />}
+          insight={generateInsight(byPropertyTitleType, 'bar-h', 'les types de titre')} crossVariables={cx('title-type')} rawRecords={normalized} groupField="property_title_type" />}
         {v('legal-status') && <ChartCard title={ct('legal-status', 'Statut juridique')} icon={Users} data={byLegalStatus} type="donut" colorIndex={4}
-          insight={generateInsight(byLegalStatus, 'donut', 'les statuts juridiques')} />}
+          insight={generateInsight(byLegalStatus, 'donut', 'les statuts juridiques')} crossVariables={cx('legal-status')} rawRecords={filtered} groupField="current_owner_legal_status" />}
         {v('usage') && <ChartCard title={ct('usage', 'Usage déclaré')} data={byDeclaredUsage} type="bar-h" colorIndex={5} hidden={byDeclaredUsage.length === 0}
-          insight={generateInsight(byDeclaredUsage, 'bar-h', 'les usages déclarés')} />}
+          insight={generateInsight(byDeclaredUsage, 'bar-h', 'les usages déclarés')} crossVariables={cx('usage')} rawRecords={normalized} groupField="declared_usage" />}
         {v('construction-type') && <ChartCard title={ct('construction-type', 'Type construction')} data={byConstructionType} type="bar-h" colorIndex={7} hidden={byConstructionType.length === 0}
-          insight={generateInsight(byConstructionType, 'bar-h', 'les types de construction')} />}
+          insight={generateInsight(byConstructionType, 'bar-h', 'les types de construction')} crossVariables={cx('construction-type')} rawRecords={normalized} groupField="construction_type" />}
         {v('fraud-detection') && <ChartCard title={ct('fraud-detection', 'Détection fraude')} icon={ShieldAlert} data={fraudData.distribution} type="pie" colorIndex={4}
-          insight={fraudData.suspicious > 0 ? `${fraudData.suspicious} contribution${fraudData.suspicious > 1 ? 's' : ''} signalée${fraudData.suspicious > 1 ? 's' : ''} comme suspecte${fraudData.suspicious > 1 ? 's' : ''}.` : 'Aucune contribution suspecte détectée.'} />}
+          insight={fraudData.suspicious > 0 ? `${fraudData.suspicious} contribution${fraudData.suspicious > 1 ? 's' : ''} signalée${fraudData.suspicious > 1 ? 's' : ''} comme suspecte${fraudData.suspicious > 1 ? 's' : ''}.` : 'Aucune contribution suspecte détectée.'}
+          crossVariables={cx('fraud-detection')} rawRecords={filtered} groupField="is_suspicious" />}
         {v('fraud-score') && <ChartCard title={ct('fraud-score', 'Score fraude')} icon={AlertTriangle} data={fraudData.byScore} type="bar-v" colorIndex={4} hidden={fraudData.byScore.length === 0}
-          insight={generateInsight(fraudData.byScore, 'bar-v', 'les niveaux de risque')} />}
+          insight={generateInsight(fraudData.byScore, 'bar-v', 'les niveaux de risque')} crossVariables={cx('fraud-score')} rawRecords={filtered} groupField="fraud_score" />}
         {v('fraud-reason') && <ChartCard title={ct('fraud-reason', 'Motif fraude')} data={fraudData.byFraudReason} type="bar-h" colorIndex={4} labelWidth={120} hidden={fraudData.byFraudReason.length === 0}
           insight={generateInsight(fraudData.byFraudReason, 'bar-h', 'les motifs de fraude')} />}
         {v('appeal-status') && <ChartCard title={ct('appeal-status', 'Statut appel')} icon={Gavel} data={appealData.byAppealStatus} type="donut" colorIndex={9} hidden={appealData.byAppealStatus.length === 0}
-          insight={generateInsight(appealData.byAppealStatus, 'donut', 'les appels')} />}
+          insight={generateInsight(appealData.byAppealStatus, 'donut', 'les appels')} crossVariables={cx('appeal-status')} rawRecords={filtered} groupField="appeal_status" />}
         {v('geo') && <GeoCharts records={filtered} />}
         {v('evolution') && <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type="area" colorIndex={0} colSpan={2}
           insight={generateInsight(trend, 'area', 'les contributions')} />}
