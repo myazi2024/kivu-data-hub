@@ -128,11 +128,15 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
         <WatermarkContext.Provider value={watermarkText}>
           <MapProvinceContext.Provider value={selectedProvince?.name || null}>
             <ProvinceFilterContext.Provider value={onProvinceFilter || null}>
-              <VilleFilterContext.Provider value={selectedVille || null}>
-                <CommuneFilterContext.Provider value={selectedCommune || null}>
-                  {BlockComponent ? <BlockComponent data={analytics} /> : null}
-                </CommuneFilterContext.Provider>
-              </VilleFilterContext.Provider>
+              <VilleChangeContext.Provider value={onVilleChange || null}>
+                <CommuneChangeContext.Provider value={onCommuneChange || null}>
+                  <VilleFilterContext.Provider value={selectedVille || null}>
+                    <CommuneFilterContext.Provider value={selectedCommune || null}>
+                      {BlockComponent ? <BlockComponent data={analytics} /> : null}
+                    </CommuneFilterContext.Provider>
+                  </VilleFilterContext.Provider>
+                </CommuneChangeContext.Provider>
+              </VilleChangeContext.Provider>
             </ProvinceFilterContext.Provider>
           </MapProvinceContext.Provider>
         </WatermarkContext.Provider>
