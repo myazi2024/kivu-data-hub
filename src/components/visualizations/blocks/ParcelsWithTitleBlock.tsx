@@ -32,9 +32,7 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
   const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
   const filteredParcels = useMemo(() => applyFilters(data.parcels, filter), [data.parcels, filter]);
   const filteredContribs = useMemo(() => applyFilters(data.contributions, filter), [data.contributions, filter]);
-  const filteredPermits = useMemo(() => applyFilters(data.buildingPermits, filter), [data.buildingPermits, filter]);
-  const filteredTaxes = useMemo(() => applyFilters(data.taxHistory, filter), [data.taxHistory, filter]);
-  const filteredMortgages = useMemo(() => applyFilters(data.mortgages, filter), [data.mortgages, filter]);
+
 
   const normalizedParcels = useMemo(() =>
     filteredParcels.map(p => ({
@@ -76,78 +74,7 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     return generateInsight(genderData, 'pie', 'le genre des propriétaires');
   }, [genderData]);
 
-  const permitData = useMemo(() => {
-    const parcelIdsWithPermit = new Set(filteredPermits.map(p => p.parcel_id));
-    const w = filteredParcels.filter(p => parcelIdsWithPermit.has(p.id)).length;
-    const distribution = [{ name: 'Avec', value: w }, { name: 'Sans', value: filteredParcels.length - w }];
-    const byAdminStatus = countBy(filteredPermits, 'administrative_status');
-    const byIssuingService = countBy(filteredPermits, 'issuing_service');
-    const now = new Date();
-    let valid = 0, expired = 0;
-    filteredPermits.forEach(p => {
-      if (p.is_current === false) { expired++; return; }
-      if (p.issue_date && p.validity_period_months) {
-        const expiry = new Date(p.issue_date);
-        expiry.setMonth(expiry.getMonth() + p.validity_period_months);
-        if (expiry > now) valid++; else expired++;
-      } else if (p.is_current === true) valid++;
-    });
-    const validityDist = [
-      ...(valid > 0 ? [{ name: 'Valides', value: valid }] : []),
-      ...(expired > 0 ? [{ name: 'Expirées', value: expired }] : []),
-    ];
-    return { distribution, byAdminStatus, byIssuingService, validityDist };
-  }, [filteredParcels, filteredPermits]);
 
-  const urbanCount = useMemo(() => filteredParcels.filter(p => p.parcel_type === 'SU' || p.parcel_type === 'Terrain bâti').length, [filteredParcels]);
-  const ruralCount = useMemo(() => filteredParcels.filter(p => p.parcel_type === 'SR' || p.parcel_type === 'Terrain nu').length, [filteredParcels]);
-  const totalSurface = useMemo(() => filteredParcels.reduce((s, p) => s + (p.area_sqm || 0), 0), [filteredParcels]);
-
-  const taxData = useMemo(() => {
-    const byPayment = countBy(filteredTaxes, 'payment_status');
-    const byYear = new Map<number, { paid: number; pending: number }>();
-    let paidAmount = 0, pendingAmount = 0;
-    filteredTaxes.forEach(t => {
-      if (!byYear.has(t.tax_year)) byYear.set(t.tax_year, { paid: 0, pending: 0 });
-      const e = byYear.get(t.tax_year)!;
-      if (t.payment_status === 'paid') { e.paid++; paidAmount += t.amount_usd || 0; }
-      else { e.pending++; pendingAmount += t.amount_usd || 0; }
-    });
-    const yearData = Array.from(byYear.entries()).sort(([a], [b]) => a - b).map(([year, d]) => ({ name: String(year), paid: d.paid, pending: d.pending }));
-    const yearAmountData = Array.from(byYear.entries()).sort(([a], [b]) => a - b).map(([year]) => {
-      const yearTaxes = filteredTaxes.filter(t => t.tax_year === year);
-      const total = yearTaxes.reduce((s, t) => s + (t.amount_usd || 0), 0);
-      return { name: String(year), value: Math.round(total) };
-    });
-    const delayData = filteredTaxes
-      .filter(t => t.payment_date && t.payment_status === 'paid')
-      .map(t => {
-        const taxDate = new Date(t.tax_year, 0, 1);
-        const payDate = new Date(t.payment_date);
-        return Math.round((payDate.getTime() - taxDate.getTime()) / (1000 * 60 * 60 * 24));
-      });
-    const avgPaymentDelay = delayData.length > 0 ? Math.round(delayData.reduce((a, b) => a + b, 0) / delayData.length) : 0;
-    return { byPayment, yearData, yearAmountData, paidAmount, pendingAmount, avgPaymentDelay };
-  }, [filteredTaxes]);
-
-  const mortgageData = useMemo(() => {
-    const parcelIdsWithMortgage = new Set(filteredMortgages.map(m => m.parcel_id));
-    const w = filteredParcels.filter(p => parcelIdsWithMortgage.has(p.id)).length;
-    const distribution = [{ name: 'Avec hyp.', value: w }, { name: 'Sans hyp.', value: filteredParcels.length - w }];
-    const totalAmount = filteredMortgages.reduce((s, m) => s + (m.mortgage_amount_usd || 0), 0);
-    const avgDuration = filteredMortgages.length > 0 ? Math.round(filteredMortgages.reduce((s, m) => s + (m.duration_months || 0), 0) / filteredMortgages.length) : 0;
-    const byCreditorType = countBy(filteredMortgages, 'creditor_type');
-    const byStatus = countBy(filteredMortgages, 'mortgage_status');
-    const contractYearMap = new Map<string, number>();
-    filteredMortgages.forEach(m => {
-      if (m.contract_date) {
-        const y = new Date(m.contract_date).getFullYear().toString();
-        contractYearMap.set(y, (contractYearMap.get(y) || 0) + 1);
-      }
-    });
-    const contractTrend = Array.from(contractYearMap.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([name, value]) => ({ name, value }));
-    return { distribution, totalAmount, avgDuration, byCreditorType, byStatus, count: filteredMortgages.length, contractTrend };
-  }, [filteredParcels, filteredMortgages]);
 
   const trend = useMemo(() => trendByMonth(filteredParcels), [filteredParcels]);
 
