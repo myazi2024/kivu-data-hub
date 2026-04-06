@@ -69,6 +69,8 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const [isCopying, setIsCopying] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [externalProvinceId, setExternalProvinceId] = useState<string | null>(null);
+  const [selectedVille, setSelectedVille] = useState<string | undefined>(undefined);
+  const [selectedCommune, setSelectedCommune] = useState<string | undefined>(undefined);
   const mapCardRef = React.useRef<HTMLDivElement>(null);
 
   const { data: analytics, isLoading } = useLandDataAnalytics();
