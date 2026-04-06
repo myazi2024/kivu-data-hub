@@ -145,9 +145,14 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
 
       // Surface totale
       const totalSurface = parcels.filter(p => p.province === meta.name).reduce((s, p) => s + (p.area_sqm || 0), 0);
+      const surfaceHa = totalSurface / 10000;
 
       // Disputes resolved ratio
       const resolvedDisputes = disputes.filter(d => d.province === meta.name && (d.current_status === 'resolved' || d.current_status === 'resolu')).length;
+
+      const density = surfaceHa > 0
+        ? (pCount / surfaceHa > 50 ? 'Très élevé' : pCount / surfaceHa > 20 ? 'Élevé' : pCount / surfaceHa > 5 ? 'Modéré' : 'Faible')
+        : (pCount > 500 ? 'Très élevé' : pCount > 100 ? 'Élevé' : pCount > 30 ? 'Modéré' : 'Faible');
 
       return {
         id: meta.id,
@@ -158,7 +163,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
         contributionsCount: contribCount,
         mutationsCount: mutationCount,
         disputesCount: disputeCount,
-        densityLevel: (totalSurface > 0 ? (pCount / (totalSurface / 10000) > 50 ? 'Très élevé' : pCount / (totalSurface / 10000) > 20 ? 'Élevé' : pCount / (totalSurface / 10000) > 5 ? 'Modéré' : 'Faible') : (pCount > 500 ? 'Très élevé' : pCount > 100 ? 'Élevé' : pCount > 30 ? 'Modéré' : 'Faible')) as ProvinceData['densityLevel'],
+        densityLevel: density as ProvinceData['densityLevel'],
         certificatesCount: certCount,
         invoicesCount: allInvoices.length,
         expertisesCount: expertiseCount,
