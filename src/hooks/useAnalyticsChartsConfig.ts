@@ -63,7 +63,7 @@ export const DATE_FIELD_OPTIONS = [
 ];
 
 /** Available status fields for admin selection */
-const STATUS_FIELD_OPTIONS = [
+export const STATUS_FIELD_OPTIONS = [
   { value: 'status', label: 'Statut (status)' },
   { value: 'current_status', label: 'Statut actuel (current_status)' },
   { value: 'payment_status', label: 'Statut paiement (payment_status)' },
