@@ -295,21 +295,27 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   </div>
                   
                   <div className="flex-1 min-h-0 overflow-hidden flex items-center justify-center p-1">
-                    <div className="w-full h-full flex items-center justify-center" style={{ transform: 'scale(0.9)', transformOrigin: 'center center' }}>
-                      <DRCMapWithTooltip
-                        provincesData={provincesData}
-                        selectedProvince={selectedProvince?.id || null}
-                        externalZoomProvinceId={externalProvinceId}
-                        onProvinceSelect={setSelectedProvince}
-                        onProvinceHover={setHoveredProvince}
-                        hoveredProvince={hoveredProvince}
-                        getProvinceColor={getProvinceColor}
-                        onMapReady={setMapInstance}
-                        tooltipLineConfigs={tooltipLineConfigs}
-                        onZoomChange={(zoomed) => { setIsMapZoomed(zoomed); if (!zoomed) setExternalProvinceId(null); }}
-                        onProvinceDeselect={() => setSelectedProvince(null)}
-                      />
-                    </div>
+                    {selectedVille ? (
+                      <div className="w-full h-full">
+                        <DRCCommunesMap ville={selectedVille} commune={selectedCommune} />
+                      </div>
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center" style={{ transform: 'scale(0.9)', transformOrigin: 'center center' }}>
+                        <DRCMapWithTooltip
+                          provincesData={provincesData}
+                          selectedProvince={selectedProvince?.id || null}
+                          externalZoomProvinceId={externalProvinceId}
+                          onProvinceSelect={setSelectedProvince}
+                          onProvinceHover={setHoveredProvince}
+                          hoveredProvince={hoveredProvince}
+                          getProvinceColor={getProvinceColor}
+                          onMapReady={setMapInstance}
+                          tooltipLineConfigs={tooltipLineConfigs}
+                          onZoomChange={(zoomed) => { setIsMapZoomed(zoomed); if (!zoomed) setExternalProvinceId(null); }}
+                          onProvinceDeselect={() => setSelectedProvince(null)}
+                        />
+                      </div>
+                    )}
                   </div>
                   
                   {/* Légende choroplèthe à 4 paliers — masquée pendant le zoom */}
