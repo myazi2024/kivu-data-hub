@@ -443,10 +443,10 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
   'building-permits': {
     label: 'Autorisations',
     charts: [
-      { tab_key: 'building-permits', item_key: 'request-type', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Construction vs Régularisation', chart_type: 'pie' },
-      { tab_key: 'building-permits', item_key: 'status', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Statut', chart_type: 'bar-v' },
-      { tab_key: 'building-permits', item_key: 'construction-type', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Type construction', chart_type: 'bar-h' },
-      { tab_key: 'building-permits', item_key: 'declared-usage', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Usage déclaré', chart_type: 'bar-h' },
+      { tab_key: 'building-permits', item_key: 'status', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Statut administratif', chart_type: 'bar-v' },
+      { tab_key: 'building-permits', item_key: 'current-status', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'En cours vs Expiré', chart_type: 'pie' },
+      { tab_key: 'building-permits', item_key: 'issuing-service', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Service émetteur', chart_type: 'bar-h' },
+      { tab_key: 'building-permits', item_key: 'validity-period', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Période de validité', chart_type: 'bar-v' },
       { tab_key: 'building-permits', item_key: 'estimated-cost', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Coût estimé', chart_type: 'bar-v' },
       { tab_key: 'building-permits', item_key: 'roofing-type', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Type toiture', chart_type: 'donut' },
       { tab_key: 'building-permits', item_key: 'water-supply', item_type: 'chart', is_visible: true, display_order: 6, custom_title: 'Alimentation eau', chart_type: 'pie' },
