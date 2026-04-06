@@ -15,7 +15,7 @@ import {
 import {
   Settings, Save, Eye, EyeOff, ChevronUp, ChevronDown, RotateCcw, Loader2,
   BarChart3, PieChart as PieChartIcon, TrendingUp, LayoutGrid, Palette, GripVertical,
-  Layers, Pencil, Map as MapIcon, Globe
+  Layers, Pencil, Map as MapIcon, Globe, Filter
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -23,6 +23,8 @@ import {
   useAnalyticsChartsConfigMutations,
   useAnalyticsTabsConfig,
   ANALYTICS_TABS_REGISTRY,
+  TAB_FILTER_DEFAULTS,
+  buildFilterDefaults,
   ChartConfigItem,
   TabConfig,
 } from '@/hooks/useAnalyticsChartsConfig';
@@ -236,7 +238,7 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
   const [localTabs, setLocalTabs] = useState<TabConfig[]>([]);
   const [hasTabChanges, setHasTabChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [viewMode, setViewMode] = useState<'tabs' | 'charts'>('tabs');
+  const [viewMode, setViewMode] = useState<'tabs' | 'charts' | 'filters'>('tabs');
   const [modifiedTabs, setModifiedTabs] = useState<Set<string>>(new Set());
   const [pendingTabSwitch, setPendingTabSwitch] = useState<string | null>(null);
 
