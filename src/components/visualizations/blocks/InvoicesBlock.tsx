@@ -10,11 +10,13 @@ import { GeoCharts } from '../shared/GeoCharts';
 import { MapProvinceContext, VilleFilterContext, CommuneFilterContext, QuartierFilterContext } from '../filters/AnalyticsFilters';
 import { generateInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, useTabFilterConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
+import { getCrossVariables } from '@/config/crossVariables';
 
 interface Props { data: LandAnalyticsData; }
 
 const TAB_KEY = 'invoices';
 const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TABS_REGISTRY[TAB_KEY].charts];
+const cx = (key: string) => getCrossVariables(TAB_KEY, key);
 
 export const InvoicesBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
@@ -62,11 +64,11 @@ export const InvoicesBlock: React.FC<Props> = memo(({ data }) => {
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {v('status') && <ChartCard title={ct('status', 'Statut')} icon={Receipt} data={byStatus} type="pie" colorIndex={2}
-          insight={generateInsight(byStatus, 'pie', 'les statuts de facture')} />}
+          insight={generateInsight(byStatus, 'pie', 'les statuts de facture')} crossVariables={cx('status')} rawRecords={filtered} groupField="status" />}
         {v('payment-method') && <ChartCard title={ct('payment-method', 'Moyen paiement')} icon={CreditCard} data={byPaymentMethod} type="donut" colorIndex={0} hidden={byPaymentMethod.length === 0}
-          insight={generateInsight(byPaymentMethod, 'donut', 'les moyens de paiement')} />}
+          insight={generateInsight(byPaymentMethod, 'donut', 'les moyens de paiement')} crossVariables={cx('payment-method')} rawRecords={filtered} groupField="payment_method" />}
         {v('geo-zone') && <ChartCard title={ct('geo-zone', 'Zone géographique')} icon={MapPin} data={byGeoZone} type="bar-h" colorIndex={6} labelWidth={100} hidden={byGeoZone.length === 0}
-          insight={generateInsight(byGeoZone, 'bar-h', 'les zones géographiques')} />}
+          insight={generateInsight(byGeoZone, 'bar-h', 'les zones géographiques')} crossVariables={cx('geo-zone')} rawRecords={filtered} groupField="geographical_zone" />}
         {v('revenue-trend') && <ChartCard title={ct('revenue-trend', 'Revenus/mois')} icon={DollarSign} data={revenueTrend} type="area" colorIndex={2} hidden={revenueTrend.length < 2}
           insight={generateInsight(revenueTrend, 'area', 'les revenus mensuels')} />}
         {v('geo') && <GeoCharts records={filtered} />}

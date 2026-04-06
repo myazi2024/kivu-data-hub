@@ -13,11 +13,13 @@ import { useTabChartsConfig, useTabFilterConfig, ANALYTICS_TABS_REGISTRY } from 
 import { normalizeTitleType } from '@/utils/titleTypeNormalizer';
 import { normalizeConstructionType } from '@/utils/constructionTypeNormalizer';
 import { normalizeDeclaredUsage } from '@/utils/declaredUsageNormalizer';
+import { getCrossVariables } from '@/config/crossVariables';
 
 interface Props { data: LandAnalyticsData; }
 
 const TAB_KEY = 'parcels-titled';
 const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TABS_REGISTRY[TAB_KEY].charts];
+const cx = (key: string) => getCrossVariables(TAB_KEY, key);
 
 const GENDER_COLORS: Record<string, string> = {
   'Masculin': '#3b82f6', 'Féminin': '#ec4899', 'M': '#3b82f6', 'F': '#ec4899',
@@ -99,23 +101,23 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {v('title-type') && <ChartCard title={ct('title-type', 'Type titre')} icon={FileText} data={charts.byTitleType} type="bar-h" colorIndex={0} labelWidth={110}
-          insight={generateInsight(charts.byTitleType, 'bar-h', 'les types de titre')} />}
+          insight={generateInsight(charts.byTitleType, 'bar-h', 'les types de titre')} crossVariables={cx('title-type')} rawRecords={normalizedParcels} groupField="property_title_type" />}
         {v('legal-status') && <ChartCard title={ct('legal-status', 'Propriétaires')} icon={Users} data={charts.byLegalStatus} type="donut" colorIndex={1}
-          insight={generateInsight(charts.byLegalStatus, 'donut', 'les statuts juridiques')} />}
+          insight={generateInsight(charts.byLegalStatus, 'donut', 'les statuts juridiques')} crossVariables={cx('legal-status')} rawRecords={filteredParcels} groupField="current_owner_legal_status" />}
         {v('gender') && <ColorMappedPieCard title={ct('gender', 'Genre propriétaires')} icon={Users} iconColor="text-pink-500" data={genderData} colorMap={GENDER_COLORS}
-          insight={genderInsight} />}
+          insight={genderInsight} crossVariables={cx('gender')} rawRecords={filteredParcels} groupField="current_owner_legal_status" />}
         {v('construction-type') && <ChartCard title={ct('construction-type', 'Construction')} icon={Building} data={charts.byConstructionType} type="bar-h" colorIndex={3}
-          insight={generateInsight(charts.byConstructionType, 'bar-h', 'les constructions')} />}
+          insight={generateInsight(charts.byConstructionType, 'bar-h', 'les constructions')} crossVariables={cx('construction-type')} rawRecords={normalizedParcels} groupField="construction_type" />}
         {v('construction-nature') && <ChartCard title={ct('construction-nature', 'Nature construction')} data={charts.byConstructionNature} type="bar-h" colorIndex={7}
-          insight="Répartition des matériaux et natures de construction par localisation." />}
+          insight="Répartition des matériaux et natures de construction par localisation." crossVariables={cx('construction-nature')} rawRecords={filteredParcels} groupField="construction_nature" />}
         {v('construction-decade') && <ChartCard title={ct('construction-decade', 'Année construction')} icon={Clock} data={charts.byDecade} type="bar-v" colorIndex={0} hidden={charts.byDecade.length === 0}
           insight={generateInsight(charts.byDecade, 'bar-v', 'les décennies de construction')} />}
         {v('usage') && <ChartCard title={ct('usage', 'Usage déclaré')} data={charts.byDeclaredUsage} type="bar-h" colorIndex={5}
-          insight={generateInsight(charts.byDeclaredUsage, 'bar-h', 'les usages déclarés')} />}
+          insight={generateInsight(charts.byDeclaredUsage, 'bar-h', 'les usages déclarés')} crossVariables={cx('usage')} rawRecords={normalizedParcels} groupField="declared_usage" />}
         {v('lease-type') && <ChartCard title={ct('lease-type', 'Type bail')} icon={Home} data={charts.byLeaseType} type="donut" colorIndex={9} hidden={charts.byLeaseType.length === 0}
-          insight={generateInsight(charts.byLeaseType, 'donut', 'les types de bail')} />}
+          insight={generateInsight(charts.byLeaseType, 'donut', 'les types de bail')} crossVariables={cx('lease-type')} rawRecords={filteredParcels} groupField="lease_type" />}
         {v('surface') && <ChartCard title={ct('surface', 'Superficie')} icon={Ruler} data={charts.surfaceDist} type="bar-v" colorIndex={9}
-          insight={generateInsight(charts.surfaceDist, 'bar-v', 'les tranches de superficie')} />}
+          insight={generateInsight(charts.surfaceDist, 'bar-v', 'les tranches de superficie')} crossVariables={cx('surface')} rawRecords={filteredParcels} groupField="area_sqm" />}
         {v('geo') && <GeoCharts records={filteredParcels} />}
         {v('evolution') && <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type="area" colorIndex={0} colSpan={2}
           insight={generateInsight(trend, 'area', 'les parcelles')} />}

@@ -201,6 +201,39 @@ export function numericDistribution(records: any[], field: string, buckets: { na
   return buckets.map((b, i) => ({ name: b.name, value: counts[i] })).filter(b => b.value > 0);
 }
 
+/** Cross-tabulate: group by groupField, segment by crossField */
+export function crossBy(
+  records: any[], groupField: string, crossField: string, maxCross = 5
+): { data: any[]; keys: string[] } {
+  const outerMap = new Map<string, Map<string, number>>();
+  const crossCounts = new Map<string, number>();
+  records.forEach(r => {
+    const g = r[groupField] || '(Non renseigné)';
+    const c = r[crossField] || '(Non renseigné)';
+    if (!outerMap.has(g)) outerMap.set(g, new Map());
+    const inner = outerMap.get(g)!;
+    inner.set(c, (inner.get(c) || 0) + 1);
+    crossCounts.set(c, (crossCounts.get(c) || 0) + 1);
+  });
+  // Keep top N cross values
+  const topKeys = Array.from(crossCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, maxCross)
+    .map(([k]) => k);
+  const data = Array.from(outerMap.entries())
+    .map(([name, inner]) => {
+      const row: any = { name };
+      topKeys.forEach(k => { row[k] = inner.get(k) || 0; });
+      return row;
+    })
+    .sort((a, b) => {
+      const sumA = topKeys.reduce((s, k) => s + (a[k] || 0), 0);
+      const sumB = topKeys.reduce((s, k) => s + (b[k] || 0), 0);
+      return sumB - sumA;
+    });
+  return { data, keys: topKeys };
+}
+
 /** Distribution by decade for construction_year */
 export function yearDecadeDistribution(records: any[], field = 'construction_year'): { name: string; value: number }[] {
   const map = new Map<string, number>();

@@ -10,11 +10,13 @@ import { GeoCharts } from '../shared/GeoCharts';
 import { MapProvinceContext, VilleFilterContext, CommuneFilterContext, QuartierFilterContext } from '../filters/AnalyticsFilters';
 import { generateInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, useTabFilterConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
+import { getCrossVariables } from '@/config/crossVariables';
 
 interface Props { data: LandAnalyticsData; }
 
 const TAB_KEY = 'mortgages';
 const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TABS_REGISTRY[TAB_KEY].charts];
+const cx = (key: string) => getCrossVariables(TAB_KEY, key);
 
 export const MortgagesBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
@@ -78,10 +80,10 @@ export const MortgagesBlock: React.FC<Props> = memo(({ data }) => {
         <AnalyticsFilters data={data.mortgages} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} />
         <KpiGrid items={kpiItems} />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          {v('creditor-type') && <ChartCard title={t('creditor-type', 'Type créancier')} data={byCreditorType} type="donut" colorIndex={0} insight={generateInsight(byCreditorType, 'donut', 'les types de créancier')} />}
-          {v('amount-brackets') && <ChartCard title={t('amount-brackets', 'Montants')} data={amountBrackets} type="bar-v" colorIndex={1} insight={generateInsight(amountBrackets, 'bar-v', 'les montants hypothécaires')} />}
-          {v('status') && <ChartCard title={t('status', 'Statut')} data={byStatus} type="pie" colorIndex={2} insight={generateInsight(byStatus, 'pie', 'les statuts hypothécaires')} />}
-          {v('duration') && <ChartCard title={t('duration', 'Durée (mois)')} data={durationBrackets} type="bar-v" colorIndex={3} insight={generateInsight(durationBrackets, 'bar-v', 'les durées hypothécaires')} />}
+          {v('creditor-type') && <ChartCard title={t('creditor-type', 'Type créancier')} data={byCreditorType} type="donut" colorIndex={0} insight={generateInsight(byCreditorType, 'donut', 'les types de créancier')} crossVariables={cx('creditor-type')} rawRecords={filtered} groupField="creditor_type" />}
+          {v('amount-brackets') && <ChartCard title={t('amount-brackets', 'Montants')} data={amountBrackets} type="bar-v" colorIndex={1} insight={generateInsight(amountBrackets, 'bar-v', 'les montants hypothécaires')} crossVariables={cx('amount-brackets')} rawRecords={filtered} groupField="mortgage_amount_usd" />}
+          {v('status') && <ChartCard title={t('status', 'Statut')} data={byStatus} type="pie" colorIndex={2} insight={generateInsight(byStatus, 'pie', 'les statuts hypothécaires')} crossVariables={cx('status')} rawRecords={filtered} groupField="mortgage_status" />}
+          {v('duration') && <ChartCard title={t('duration', 'Durée (mois)')} data={durationBrackets} type="bar-v" colorIndex={3} insight={generateInsight(durationBrackets, 'bar-v', 'les durées hypothécaires')} crossVariables={cx('duration')} rawRecords={filtered} groupField="duration_months" />}
           {v('geo') && <GeoCharts records={filtered} />}
           {v('evolution') && <ChartCard title={t('evolution', 'Évolution')} data={trend} type="area" colorIndex={4} colSpan={2} icon={TrendingUp} insight={generateInsight(trend, 'area', "l'évolution des hypothèques")} />}
         </div>

@@ -10,11 +10,13 @@ import { GeoCharts } from '../shared/GeoCharts';
 import { MapProvinceContext, VilleFilterContext, CommuneFilterContext, QuartierFilterContext } from '../filters/AnalyticsFilters';
 import { generateInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, useTabFilterConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
+import { getCrossVariables } from '@/config/crossVariables';
 
 interface Props { data: LandAnalyticsData; }
 
 const TAB_KEY = 'ownership';
 const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TABS_REGISTRY[TAB_KEY].charts];
+const cx = (key: string) => getCrossVariables(TAB_KEY, key);
 
 export const OwnershipHistoryBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
@@ -47,7 +49,6 @@ export const OwnershipHistoryBlock: React.FC<Props> = memo(({ data }) => {
     return { avgYears, activeOwners, transfers: withDates.length };
   }, [filtered]);
 
-
   const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
   const v = isChartVisible;
 
@@ -65,9 +66,9 @@ export const OwnershipHistoryBlock: React.FC<Props> = memo(({ data }) => {
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {v('legal-status') && <ChartCard title={ct('legal-status', 'Statut juridique')} icon={Users} data={byLegalStatus} type="donut" colorIndex={1}
-          insight={generateInsight(byLegalStatus, 'donut', 'les statuts juridiques des propriétaires')} />}
+          insight={generateInsight(byLegalStatus, 'donut', 'les statuts juridiques des propriétaires')} crossVariables={cx('legal-status')} rawRecords={filtered} groupField="legal_status" />}
         {v('mutation-type') && <ChartCard title={ct('mutation-type', 'Type mutation')} icon={ArrowRightLeft} data={byMutationType} type="bar-h" colorIndex={6} labelWidth={100}
-          insight={generateInsight(byMutationType, 'bar-h', 'les types de mutation')} />}
+          insight={generateInsight(byMutationType, 'bar-h', 'les types de mutation')} crossVariables={cx('mutation-type')} rawRecords={filtered} groupField="mutation_type" />}
         {v('geo') && <GeoCharts records={filtered} />}
         {v('evolution') && <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type="area" colorIndex={0} colSpan={2}
           insight={generateInsight(trend, 'area', 'les transferts de propriété')} />}

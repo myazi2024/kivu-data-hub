@@ -10,11 +10,13 @@ import { GeoCharts } from '../shared/GeoCharts';
 import { MapProvinceContext, VilleFilterContext, CommuneFilterContext, QuartierFilterContext } from '../filters/AnalyticsFilters';
 import { generateInsight, generateStackedInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, useTabFilterConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
+import { getCrossVariables } from '@/config/crossVariables';
 
 interface Props { data: LandAnalyticsData; }
 
 const TAB_KEY = 'certificates';
 const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TABS_REGISTRY[TAB_KEY].charts];
+const cx = (key: string) => getCrossVariables(TAB_KEY, key);
 
 export const CertificatesBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
@@ -32,7 +34,6 @@ export const CertificatesBlock: React.FC<Props> = memo(({ data }) => {
   const byStatus = useMemo(() => countBy(filtered, 'status'), [filtered]);
   const trend = useMemo(() => trendByMonth(filtered, 'generated_at'), [filtered]);
 
-  // Type trend per month
   const typeTrend = useMemo(() => {
     const map = new Map<string, Map<string, number>>();
     const types = new Set<string>();
@@ -82,9 +83,9 @@ export const CertificatesBlock: React.FC<Props> = memo(({ data }) => {
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {v('cert-type') && <ChartCard title={ct('cert-type', 'Type certificat')} icon={Award} data={byType} type="bar-h" colorIndex={0} labelWidth={120}
-          insight={generateInsight(byType, 'bar-h', 'les types de certificat')} />}
+          insight={generateInsight(byType, 'bar-h', 'les types de certificat')} crossVariables={cx('cert-type')} rawRecords={filtered} groupField="certificate_type" />}
         {v('status') && <ChartCard title={ct('status', 'Statut')} icon={CheckCircle} data={byStatus} type="pie" colorIndex={2}
-          insight={generateInsight(byStatus, 'pie', 'les statuts de certificat')} />}
+          insight={generateInsight(byStatus, 'pie', 'les statuts de certificat')} crossVariables={cx('status')} rawRecords={filtered} groupField="status" />}
         {v('type-trend') && typeTrend.data.length > 1 && <StackedBarCard title={ct('type-trend', 'Type × Mois')} data={typeTrend.data}
           bars={typeTrend.types.map((t, i) => ({ dataKey: t, name: t, color: CHART_COLORS[i % CHART_COLORS.length] }))}
           maxItems={12}

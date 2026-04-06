@@ -11,11 +11,13 @@ import { MapProvinceContext, VilleFilterContext, CommuneFilterContext, QuartierF
 import { generateInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, useTabFilterConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { WALL_LABELS, ROOF_LABELS, SOUND_LABELS, BUILDING_POSITION_LABELS } from '@/constants/expertiseLabels';
+import { getCrossVariables } from '@/config/crossVariables';
 
 interface Props { data: LandAnalyticsData; }
 
 const TAB_KEY = 'expertise';
 const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TABS_REGISTRY[TAB_KEY].charts];
+const cx = (key: string) => getCrossVariables(TAB_KEY, key);
 
 export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
@@ -38,7 +40,6 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
 
   const byDecade = useMemo(() => yearDecadeDistribution(filtered, 'construction_year'), [filtered]);
 
-  // New charts from extended columns
   const byWallMaterial = useMemo(() => {
     const raw = countBy(filtered.filter(r => r.wall_material), 'wall_material');
     return raw.map(d => ({ ...d, name: WALL_LABELS[d.name] || d.name }));
@@ -171,13 +172,13 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {v('status') && <ChartCard title={ct('status', 'Statut détaillé')} icon={Search} data={byStatus} type="bar-v" colorIndex={5}
-          insight={generateInsight(byStatus, 'bar-v', 'les statuts d\'expertise')} />}
+          insight={generateInsight(byStatus, 'bar-v', 'les statuts d\'expertise')} crossVariables={cx('status')} rawRecords={filtered} groupField="status" />}
         {v('payment') && <ChartCard title={ct('payment', 'Paiement')} icon={DollarSign} data={byPaymentStatus} type="donut" colorIndex={2}
-          insight={generateInsight(byPaymentStatus, 'donut', 'les paiements')} />}
+          insight={generateInsight(byPaymentStatus, 'donut', 'les paiements')} crossVariables={cx('payment')} rawRecords={filtered} groupField="payment_status" />}
         {v('property-condition') && <ChartCard title={ct('property-condition', 'État du bien')} icon={Building} data={byPropertyCondition} type="bar-h" colorIndex={7} labelWidth={100} hidden={byPropertyCondition.length === 0}
-          insight={generateInsight(byPropertyCondition, 'bar-h', 'l\'état des biens')} />}
+          insight={generateInsight(byPropertyCondition, 'bar-h', 'l\'état des biens')} crossVariables={cx('property-condition')} rawRecords={filtered} groupField="property_condition" />}
         {v('construction-quality') && <ChartCard title={ct('construction-quality', 'Qualité construction')} data={byConstructionQuality} type="donut" colorIndex={3} hidden={byConstructionQuality.length === 0}
-          insight={generateInsight(byConstructionQuality, 'donut', 'la qualité de construction')} />}
+          insight={generateInsight(byConstructionQuality, 'donut', 'la qualité de construction')} crossVariables={cx('construction-quality')} rawRecords={filtered} groupField="construction_quality" />}
         {v('construction-decade') && <ChartCard title={ct('construction-decade', 'Année construction')} icon={Clock} data={byDecade} type="bar-v" colorIndex={0} hidden={byDecade.length === 0}
           insight={generateInsight(byDecade, 'bar-v', 'les périodes de construction')} />}
         {v('built-area') && <ChartCard title={ct('built-area', 'Surface bâtie')} icon={Ruler} data={builtAreaDist} type="bar-v" colorIndex={1} hidden={builtAreaDist.length === 0}
@@ -185,23 +186,23 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
         {v('equipment') && <ChartCard title={ct('equipment', 'Équipements')} icon={Zap} data={equipmentData} type="bar-h" colorIndex={9} labelWidth={100} hidden={equipmentData.length === 0}
           insight="Répartition des équipements disponibles dans les biens expertisés." />}
         {v('wall-material') && <ChartCard title={ct('wall-material', 'Matériau murs')} icon={Layers} data={byWallMaterial} type="bar-h" colorIndex={3} labelWidth={110} hidden={byWallMaterial.length === 0}
-          insight={generateInsight(byWallMaterial, 'bar-h', 'les matériaux de murs')} />}
+          insight={generateInsight(byWallMaterial, 'bar-h', 'les matériaux de murs')} crossVariables={cx('wall-material')} rawRecords={filtered} groupField="wall_material" />}
         {v('roof-material') && <ChartCard title={ct('roof-material', 'Matériau toiture')} icon={Building} data={byRoofMaterial} type="pie" colorIndex={1} hidden={byRoofMaterial.length === 0}
-          insight={generateInsight(byRoofMaterial, 'pie', 'les matériaux de toiture')} />}
+          insight={generateInsight(byRoofMaterial, 'pie', 'les matériaux de toiture')} crossVariables={cx('roof-material')} rawRecords={filtered} groupField="roof_material" />}
         {v('sound-env') && <ChartCard title={ct('sound-env', 'Env. sonore')} icon={Volume2} data={bySoundEnv} type="donut" colorIndex={6} hidden={bySoundEnv.length === 0}
-          insight={generateInsight(bySoundEnv, 'donut', 'l\'environnement sonore')} />}
+          insight={generateInsight(bySoundEnv, 'donut', 'l\'environnement sonore')} crossVariables={cx('sound-env')} rawRecords={filtered} groupField="sound_environment" />}
         {v('building-position') && <ChartCard title={ct('building-position', 'Position bâtiment')} icon={MapPin} data={byBuildingPosition} type="pie" colorIndex={8} hidden={byBuildingPosition.length === 0}
-          insight={generateInsight(byBuildingPosition, 'pie', 'les positions sur parcelle')} />}
+          insight={generateInsight(byBuildingPosition, 'pie', 'les positions sur parcelle')} crossVariables={cx('building-position')} rawRecords={filtered} groupField="building_position" />}
         {v('road-access') && <ChartCard title={ct('road-access', 'Accès routier')} icon={MapPin} data={byRoadAccess} type="pie" colorIndex={0} hidden={byRoadAccess.length === 0}
-          insight={generateInsight(byRoadAccess, 'pie', 'les types d\'accès routier')} />}
+          insight={generateInsight(byRoadAccess, 'pie', 'les types d\'accès routier')} crossVariables={cx('road-access')} rawRecords={filtered} groupField="road_access_type" />}
         {v('proximity') && <ChartCard title={ct('proximity', 'Proximité moy.')} icon={MapPin} data={proximityData} type="bar-h" colorIndex={6} labelWidth={110} hidden={proximityData.length === 0}
           insight="Distance moyenne aux infrastructures clés (routes, marchés, écoles, hôpitaux)." />}
         {v('risk-zones') && <ChartCard title={ct('risk-zones', 'Zones à risque')} icon={ShieldAlert} data={riskData} type="pie" colorIndex={4} hidden={riskData.length === 0}
-          insight={riskData.length > 0 ? `${riskData.filter(r => r.name !== 'Hors risque').reduce((s, r) => s + r.value, 0)} bien(s) situé(s) en zone à risque.` : ''} />}
+          insight={riskData.length > 0 ? `${riskData.filter(r => r.name !== 'Hors risque').reduce((s, r) => s + r.value, 0)} bien(s) situé(s) en zone à risque.` : ''} crossVariables={cx('risk-zones')} rawRecords={filtered} groupField="flood_risk_zone" />}
         {v('market-value') && <ChartCard title={ct('market-value', 'Valeur marchande')} icon={DollarSign} data={valueDist} type="bar-v" colorIndex={2} hidden={valueDist.length === 0}
-          insight={generateInsight(valueDist, 'bar-v', 'les tranches de valeur')} />}
+          insight={generateInsight(valueDist, 'bar-v', 'les tranches de valeur')} crossVariables={cx('market-value')} rawRecords={filtered} groupField="market_value_usd" />}
         {v('floors') && <ChartCard title={ct('floors', 'Nbre d\'étages')} icon={Building} data={floorsDist} type="bar-v" colorIndex={1} hidden={floorsDist.length === 0}
-          insight={generateInsight(floorsDist, 'bar-v', 'le nombre d\'étages')} />}
+          insight={generateInsight(floorsDist, 'bar-v', 'le nombre d\'étages')} crossVariables={cx('floors')} rawRecords={filtered} groupField="number_of_floors" />}
         {v('garden') && <ChartCard title={ct('garden', 'Surface jardin')} icon={Trees} data={gardenDist} type="bar-v" colorIndex={10} hidden={gardenDist.length === 0}
           insight={generateInsight(gardenDist, 'bar-v', 'les surfaces de jardin')} />}
         {v('geo') && <GeoCharts records={filtered} />}

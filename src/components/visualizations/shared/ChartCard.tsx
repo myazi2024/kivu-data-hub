@@ -1,11 +1,13 @@
-import React, { memo, useRef, useCallback, useContext, createContext } from 'react';
+import React, { memo, useRef, useCallback, useContext, createContext, useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, AreaChart, Area, Legend } from 'recharts';
 import { CHART_HEIGHT as BASE_CH, NoData } from '@/utils/analyticsConstants';
-import { CHART_COLORS } from '@/utils/analyticsHelpers';
-import { LucideIcon, Info, Copy, Check } from 'lucide-react';
+import { CHART_COLORS, crossBy } from '@/utils/analyticsHelpers';
+import { LucideIcon, Info, Copy, Check, GitBranch, X } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { toast } from 'sonner';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CrossVariable } from '@/config/crossVariables';
 
 /** Context providing the active filter label string to all chart cards */
 export const FilterLabelContext = createContext<string>('');
@@ -23,6 +25,10 @@ interface ChartCardProps {
   maxItems?: number;
   hidden?: boolean;
   insight?: string;
+  // Cross-variable support
+  crossVariables?: CrossVariable[];
+  rawRecords?: any[];
+  groupField?: string;
 }
 
 interface StackedBarCardProps {
@@ -46,6 +52,9 @@ interface MultiDataPieProps {
   data: { name: string; value: number }[];
   colorMap?: Record<string, string>;
   insight?: string;
+  crossVariables?: CrossVariable[];
+  rawRecords?: any[];
+  groupField?: string;
 }
 
 const tooltipStyle = { fontSize: 10 };
@@ -119,7 +128,7 @@ const useCopyAsImage = () => {
     if (!ref.current) return;
     try {
       const dataUrl = await toPng(ref.current, { backgroundColor: 'white', pixelRatio: 2 });
-      const blob = await roundCorners(dataUrl, 24); // 12px * pixelRatio(2)
+      const blob = await roundCorners(dataUrl, 24);
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
       setCopied(true);
       toast.success('Image copiée dans le presse-papiers');
@@ -147,19 +156,106 @@ const useCopyAsImage = () => {
 const CopyButton: React.FC<{ onClick: () => void; copied: boolean }> = ({ onClick, copied }) => (
   <button
     onClick={onClick}
-    className="ml-auto p-0.5 rounded hover:bg-muted/80 transition-colors text-muted-foreground hover:text-foreground"
+    className="p-0.5 rounded hover:bg-muted/80 transition-colors text-muted-foreground hover:text-foreground"
     title="Copier en image"
   >
     {copied ? <Check className="h-3 w-3 text-primary" /> : <Copy className="h-3 w-3" />}
   </button>
 );
 
+/** Cross-variable picker button */
+const CrossVariablePicker: React.FC<{
+  variables: CrossVariable[];
+  selected: string | null;
+  onSelect: (field: string | null) => void;
+}> = ({ variables, selected, onSelect }) => {
+  const [open, setOpen] = useState(false);
+  if (variables.length === 0) return null;
+
+  if (selected) {
+    const active = variables.find(v => v.field === selected);
+    return (
+      <button
+        onClick={() => onSelect(null)}
+        className="flex items-center gap-0.5 px-1 py-0.5 rounded bg-primary/10 text-primary text-[8px] font-medium hover:bg-primary/20 transition-colors"
+        title="Retirer le croisement"
+      >
+        <span className="truncate max-w-[50px]">{active?.label || selected}</span>
+        <X className="h-2.5 w-2.5 shrink-0" />
+      </button>
+    );
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          className="p-0.5 rounded hover:bg-muted/80 transition-colors text-muted-foreground hover:text-foreground"
+          title="Croiser avec une variable"
+        >
+          <GitBranch className="h-3 w-3" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto min-w-[120px] p-1" align="end" sideOffset={4}>
+        <p className="text-[9px] font-medium text-muted-foreground px-1.5 py-1">Croiser par :</p>
+        {variables.map(v => (
+          <button
+            key={v.field}
+            onClick={() => { onSelect(v.field); setOpen(false); }}
+            className="w-full text-left px-1.5 py-1 text-[10px] rounded hover:bg-muted/80 transition-colors"
+          >
+            {v.label}
+          </button>
+        ))}
+      </PopoverContent>
+    </Popover>
+  );
+};
+
+/** Stacked bar rendering for cross mode */
+const CrossStackedChart: React.FC<{
+  records: any[];
+  groupField: string;
+  crossField: string;
+  maxCross?: number;
+  maxItems?: number;
+}> = ({ records, groupField, crossField, maxCross = 5, maxItems = 8 }) => {
+  const { data, keys } = useMemo(() => crossBy(records, groupField, crossField, maxCross), [records, groupField, crossField, maxCross]);
+  const displayData = data.slice(0, maxItems);
+
+  if (displayData.length === 0) return <NoData />;
+
+  const maxLabelLen = Math.max(...displayData.map(d => String(d.name).length));
+  const labelW = Math.min(Math.max(maxLabelLen * 6, 60), 120);
+  const CH = displayData.length > 5 ? Math.max(BASE_CH, displayData.length * 28) : BASE_CH;
+
+  return (
+    <ResponsiveContainer width="100%" height={CH}>
+      <BarChart data={displayData} layout="vertical" margin={{ left: 5 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+        <XAxis type="number" tick={{ fontSize: 9 }} />
+        <YAxis type="category" dataKey="name" width={labelW} tick={{ fontSize: 8 }} />
+        <Tooltip contentStyle={tooltipStyle} />
+        <Legend wrapperStyle={{ fontSize: 9 }} />
+        {keys.map((k, i) => (
+          <Bar key={k} dataKey={k} name={k} fill={CHART_COLORS[i % CHART_COLORS.length]} stackId="cross" radius={i === keys.length - 1 ? [0, 3, 3, 0] : undefined} />
+        ))}
+      </BarChart>
+    </ResponsiveContainer>
+  );
+};
+
 export const ChartCard: React.FC<ChartCardProps> = memo(({
-  title, icon: Icon, iconColor, colSpan, data, type, color, colorIndex = 0, labelWidth = 90, maxItems = 10, hidden = false, insight
+  title, icon: Icon, iconColor, colSpan, data, type, color, colorIndex = 0, labelWidth = 90, maxItems = 10, hidden = false, insight,
+  crossVariables, rawRecords, groupField,
 }) => {
   const { ref, copied, copy } = useCopyAsImage();
   const filterLabel = useContext(FilterLabelContext);
+  const [crossField, setCrossField] = useState<string | null>(null);
   if (hidden) return null;
+
+  const hasCross = crossVariables && crossVariables.length > 0 && rawRecords && groupField;
+  const isCrossMode = hasCross && crossField;
 
   const fill = color || CHART_COLORS[colorIndex % CHART_COLORS.length];
   const displayData = type === 'area' ? data : data.slice(0, maxItems);
@@ -175,12 +271,31 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
             <CardTitle className="text-xs font-semibold leading-tight break-words">{title}</CardTitle>
             {filterLabel && <ChartFilterSubtitle filterLabel={filterLabel} />}
           </div>
-          {truncated && <span className="text-[8px] text-muted-foreground shrink-0 mt-0.5">Top {maxItems}/{data.length}</span>}
-          <CopyButton onClick={copy} copied={copied} />
+          {truncated && !isCrossMode && <span className="text-[8px] text-muted-foreground shrink-0 mt-0.5">Top {maxItems}/{data.length}</span>}
+          <div className="flex items-center gap-0.5 shrink-0">
+            {hasCross && (
+              <CrossVariablePicker
+                variables={crossVariables!}
+                selected={crossField}
+                onSelect={setCrossField}
+              />
+            )}
+            <CopyButton onClick={copy} copied={copied} />
+          </div>
         </div>
       </CardHeader>
       <CardContent className="px-2 pb-2">
-        {displayData.length === 0 ? <NoData /> : (
+        {isCrossMode ? (
+          <>
+            <CrossStackedChart
+              records={rawRecords!}
+              groupField={groupField!}
+              crossField={crossField!}
+              maxItems={maxItems}
+            />
+            <ChartFooter />
+          </>
+        ) : displayData.length === 0 ? <NoData /> : (
           <>
             <ResponsiveContainer width="100%" height={CH}>
               {type === 'bar-h' ? (
@@ -290,9 +405,14 @@ export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
 
 export const ColorMappedPieCard: React.FC<MultiDataPieProps> = memo(({
   title, icon: Icon, iconColor, data, colorMap = {}, insight,
+  crossVariables, rawRecords, groupField,
 }) => {
   const { ref, copied, copy } = useCopyAsImage();
   const filterLabel = useContext(FilterLabelContext);
+  const [crossField, setCrossField] = useState<string | null>(null);
+
+  const hasCross = crossVariables && crossVariables.length > 0 && rawRecords && groupField;
+  const isCrossMode = hasCross && crossField;
   
   return (
     <Card ref={ref} className="border-border/30">
@@ -303,11 +423,29 @@ export const ColorMappedPieCard: React.FC<MultiDataPieProps> = memo(({
             <CardTitle className="text-xs font-semibold leading-tight break-words">{title}</CardTitle>
             {filterLabel && <ChartFilterSubtitle filterLabel={filterLabel} />}
           </div>
-          <CopyButton onClick={copy} copied={copied} />
+          <div className="flex items-center gap-0.5 shrink-0">
+            {hasCross && (
+              <CrossVariablePicker
+                variables={crossVariables!}
+                selected={crossField}
+                onSelect={setCrossField}
+              />
+            )}
+            <CopyButton onClick={copy} copied={copied} />
+          </div>
         </div>
       </CardHeader>
       <CardContent className="px-2 pb-2">
-        {data.length === 0 ? <NoData /> : (
+        {isCrossMode ? (
+          <>
+            <CrossStackedChart
+              records={rawRecords!}
+              groupField={groupField!}
+              crossField={crossField!}
+            />
+            <ChartFooter />
+          </>
+        ) : data.length === 0 ? <NoData /> : (
           <>
              <ResponsiveContainer width="100%" height={BASE_CH}>
               <PieChart>
