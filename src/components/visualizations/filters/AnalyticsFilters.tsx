@@ -48,6 +48,8 @@ interface Props {
   dateField?: string;
   statusField?: string;
   hideStatus?: boolean;
+  hideTime?: boolean;
+  hideLocation?: boolean;
 }
 
 const MONTHS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
