@@ -1,60 +1,51 @@
 
 
-# Double-clic sur borne pour editer les coordonnees GPS
+# Alignement du filtre "Lieu" et des visuels geographiques sur la structure CCC
 
-## Objectif
+## Probleme
 
-Permettre a l'utilisateur de double-cliquer sur une borne du croquis parcelle pour afficher et modifier ses coordonnees GPS (latitude, longitude). La validation se fait au blur (clic en dehors). La borne se repositionne instantanement et les dimensions des cotes se recalculent.
+Le composant `GeoCharts` affiche systematiquement tous les niveaux geographiques (urbain ET rural) en meme temps, sans respecter le filtre de section ni la hierarchie du formulaire CCC. Il manque aussi un graphique "Par section" (Urbaine/Rurale) entre Province et les sous-niveaux.
 
-## Approche
+La structure CCC est : **Province → Section → (Urbaine: Ville, Commune, Quartier) ou (Rurale: Territoire, Collectivite, Groupement, Village)**. Les visuels doivent suivre cette meme logique.
 
-### 1. Nouvel etat pour l'edition de borne
+## Modifications
 
-Ajouter un state `editingBorneIndex` (number | null) et `editingBorneCoords` ({ lat: string, lng: string }) dans le composant `ParcelMapPreview`.
+### 1. `GeoCharts.tsx` — Restructurer les visuels geographiques
 
-### 2. Handler double-clic sur les marqueurs de bornes
+**Ajouter un graphique "Par section"** (Urbaine vs Rurale) juste apres "Par province". Ce chart montre la repartition entre sections.
 
-Dans la boucle de creation des marqueurs (ligne ~885, apres les handlers existants `dragend`, `mousedown`, etc.), ajouter un listener `dblclick` sur chaque marqueur de borne :
+**Conditionner l'affichage des sous-niveaux** en fonction des donnees presentes :
+- Si uniquement des donnees urbaines : afficher Ville → Commune → Quartier (pas les niveaux ruraux)
+- Si uniquement des donnees rurales : afficher Territoire → Collectivite → Groupement → Village (pas les niveaux urbains)
+- Si les deux : afficher d'abord Section, puis les deux cascades
+
+**Supprimer le graphique "Par avenue"** — trop granulaire et non pertinent en analytics (le formulaire CCC l'inclut mais il n'apporte pas de valeur analytique)
+
+### 2. Aucun changement dans `AnalyticsFilters.tsx`
+
+Le filtre "Lieu" suit deja la bonne structure (Province → Section → cascade dependante). Le probleme est uniquement cote visuels.
+
+### 3. Aucun changement dans `analyticsHelpers.ts`
+
+`matchesLocation` et `buildFilterLabel` gerent deja correctement la hierarchie.
+
+### Detail technique
 
 ```typescript
-marker.on('dblclick', (e: any) => {
-  e.originalEvent?.stopPropagation();
-  e.originalEvent?.preventDefault();
-  const idx = coordinates.findIndex(c => c.borne === coord.borne);
-  if (idx !== -1) {
-    setEditingBorneIndex(idx);
-    setEditingBorneCoords({ lat: coord.lat, lng: coord.lng });
-  }
-});
+// GeoCharts.tsx — ajout du graphique section
+const bySection = useMemo(() => {
+  const counts: { name: string; value: number }[] = [];
+  if (urbanRecords.length > 0) counts.push({ name: 'Urbaine', value: urbanRecords.length });
+  if (ruralRecords.length > 0) counts.push({ name: 'Rurale', value: ruralRecords.length });
+  return counts;
+}, [urbanRecords, ruralRecords]);
+
+// Rendu : Province → Section → sous-niveaux conditionnels
+<ChartCard title="Par section" data={bySection} type="donut" ... />
+// Puis urban charts seulement si urbanRecords.length > 0
+// Puis rural charts seulement si ruralRecords.length > 0
 ```
 
-### 3. Overlay d'edition des coordonnees GPS
-
-Ajouter un overlay (meme pattern que l'overlay `editingSideIndex` aux lignes 1787-1830) qui affiche :
-- Le numero de la borne
-- Deux champs input (Latitude, Longitude) avec `type="number"` et `step="0.000001"`
-- Validation au `onBlur` de chaque input ET bouton "Appliquer"
-- Annulation avec Escape
-
-Au blur/validation :
-1. Mettre a jour `coordinates[editingBorneIndex]` avec les nouvelles valeurs
-2. Appeler `onCoordinatesUpdate(updatedCoords)`
-3. Appeler `updateParcelSidesFromCoordinates(updatedCoords)` pour recalculer les dimensions
-4. Fermer l'overlay
-
-### 4. Mise a jour de la notification info
-
-Remplacer le texte generique (ligne 2350-2356) par un message contextuel enrichi incluant l'instruction sur le double-clic et la recommandation d'equipement GPS de precision :
-
-- Mode normal : "Placez les bornes sur la carte. Double-cliquez sur une borne pour modifier ses coordonnees GPS. Pour reduire les marges d'erreur, prelevez les coordonnees avec un equipement professionnel (ex: Garmin GPS) puis entrez-les manuellement."
-- Mode dessin : texte actuel
-- Mode construction : texte actuel
-
 ### Fichier modifie
-- `src/components/cadastral/ParcelMapPreview.tsx`
-  - +2 states (`editingBorneIndex`, `editingBorneCoords`)
-  - +1 handler `dblclick` sur les marqueurs de bornes (~5 lignes)
-  - +1 fonction `confirmBorneEdit` (~15 lignes)
-  - +1 overlay UI (~30 lignes, meme pattern que l'overlay dimension)
-  - Mise a jour du texte de notification (~8 lignes)
+- `src/components/visualizations/shared/GeoCharts.tsx` — ajout chart "Par section", suppression chart "Par avenue", reordonnancement des charts
 
