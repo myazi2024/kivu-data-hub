@@ -260,7 +260,7 @@ export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
       <CardContent className="px-2 pb-2">
         {displayData.length === 0 ? <NoData /> : (
           <>
-            <ResponsiveContainer width="100%" height={CH}>
+             <ResponsiveContainer width="100%" height={BASE_CH}>
               <BarChart data={displayData} layout={layout} margin={layout === 'vertical' ? { left: 5 } : undefined}>
                 <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
                 {layout === 'vertical' ? (
@@ -309,7 +309,7 @@ export const ColorMappedPieCard: React.FC<MultiDataPieProps> = memo(({
       <CardContent className="px-2 pb-2">
         {data.length === 0 ? <NoData /> : (
           <>
-            <ResponsiveContainer width="100%" height={CH}>
+             <ResponsiveContainer width="100%" height={BASE_CH}>
               <PieChart>
                 <Pie data={data} cx="50%" cy="50%" outerRadius={55} dataKey="value"
                   label={({ name, value }) => `${truncLabel(name)}: ${value}`}
