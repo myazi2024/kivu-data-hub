@@ -9,6 +9,7 @@ interface Feature {
 interface Props {
   ville?: string;
   commune?: string;
+  onCommuneSelect?: (commune: string) => void;
 }
 
 const COLORS = [
@@ -89,7 +90,7 @@ function centroid(geometry: any, bbox: any, w: number, h: number, padding: numbe
   ];
 }
 
-const DRCCommunesMap: React.FC<Props> = ({ ville, commune }) => {
+const DRCCommunesMap: React.FC<Props> = ({ ville, commune, onCommuneSelect }) => {
   const [features, setFeatures] = useState<Feature[]>([]);
   const [hovered, setHovered] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -179,6 +180,7 @@ const DRCCommunesMap: React.FC<Props> = ({ ville, commune }) => {
               className="transition-colors duration-150 cursor-pointer"
               onMouseEnter={() => setHovered(name)}
               onMouseLeave={() => setHovered(null)}
+              onClick={() => onCommuneSelect?.(name)}
             />
           );
         })}

@@ -67,9 +67,9 @@ function buildScopePredicate(
   commune?: string,
   quartier?: string,
 ): (record: any) => boolean {
-  if (quartier) return (r) => norm(r.quartier) === norm(quartier) && norm(r.commune) === norm(commune);
-  if (commune) return (r) => norm(r.commune) === norm(commune) && norm(r.ville) === norm(ville);
-  if (ville) return (r) => norm(r.ville) === norm(ville);
+  if (quartier) return (r) => norm(r.quartier) === norm(quartier) && norm(r.commune) === norm(commune) && norm(r.ville) === norm(ville) && norm(r.province) === norm(province);
+  if (commune) return (r) => norm(r.commune) === norm(commune) && norm(r.ville) === norm(ville) && norm(r.province) === norm(province);
+  if (ville) return (r) => norm(r.ville) === norm(ville) && norm(r.province) === norm(province);
   if (province) return (r) => norm(r.province) === norm(province);
   return () => false;
 }
@@ -145,9 +145,14 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
 
       // Surface totale
       const totalSurface = parcels.filter(p => p.province === meta.name).reduce((s, p) => s + (p.area_sqm || 0), 0);
+      const surfaceHa = totalSurface / 10000;
 
       // Disputes resolved ratio
       const resolvedDisputes = disputes.filter(d => d.province === meta.name && (d.current_status === 'resolved' || d.current_status === 'resolu')).length;
+
+      const density = surfaceHa > 0
+        ? (pCount / surfaceHa > 50 ? 'Très élevé' : pCount / surfaceHa > 20 ? 'Élevé' : pCount / surfaceHa > 5 ? 'Modéré' : 'Faible')
+        : (pCount > 500 ? 'Très élevé' : pCount > 100 ? 'Élevé' : pCount > 30 ? 'Modéré' : 'Faible');
 
       return {
         id: meta.id,
@@ -158,7 +163,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
         contributionsCount: contribCount,
         mutationsCount: mutationCount,
         disputesCount: disputeCount,
-        densityLevel: (pCount > 500 ? 'Très élevé' : pCount > 100 ? 'Élevé' : pCount > 30 ? 'Modéré' : 'Faible') as ProvinceData['densityLevel'],
+        densityLevel: density as ProvinceData['densityLevel'],
         certificatesCount: certCount,
         invoicesCount: allInvoices.length,
         expertisesCount: expertiseCount,
@@ -225,6 +230,10 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
 
     const totalSurface = filteredParcels.reduce((s, p) => s + (p.area_sqm || 0), 0);
     const resolvedDisputes = disputes.filter(d => predicate(d) && (d.current_status === 'resolved' || d.current_status === 'resolu')).length;
+    const surfaceHa = totalSurface / 10000;
+    const density = surfaceHa > 0
+      ? (pCount / surfaceHa > 50 ? 'Très élevé' : pCount / surfaceHa > 20 ? 'Élevé' : pCount / surfaceHa > 5 ? 'Modéré' : 'Faible')
+      : (pCount > 500 ? 'Très élevé' : pCount > 100 ? 'Élevé' : pCount > 30 ? 'Modéré' : 'Faible');
 
     return {
       parcelsCount: pCount,
@@ -237,9 +246,9 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
       revenueUsd: totalRevenue,
       fiscalRevenueUsd: fiscalRevenue,
       invoicesCount: allInvoices.length,
-      totalSurfaceHa: Math.round(totalSurface / 10000),
+      totalSurfaceHa: Math.round(surfaceHa),
       disputeResolutionRate: disputeCount > 0 ? Math.round((resolvedDisputes / disputeCount) * 100) : 0,
-      densityLevel: (pCount > 500 ? 'Très élevé' : pCount > 100 ? 'Élevé' : pCount > 30 ? 'Modéré' : 'Faible') as ProvinceData['densityLevel'],
+      densityLevel: density as ProvinceData['densityLevel'],
     };
   }, [analytics, selectedProvince, selectedVille, selectedCommune, selectedQuartier]);
 
@@ -376,11 +385,11 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   <div className="flex-1 min-h-0 overflow-hidden flex items-center justify-center p-1">
                     {selectedVille && selectedCommune && selectedVille.toLowerCase() === 'goma' ? (
                       <div className="w-full h-full">
-                        <DRCQuartiersMap ville={selectedVille} commune={selectedCommune} quartier={selectedQuartier} />
+                        <DRCQuartiersMap ville={selectedVille} commune={selectedCommune} quartier={selectedQuartier} onQuartierSelect={setSelectedQuartier} />
                       </div>
                     ) : selectedVille ? (
                       <div className="w-full h-full">
-                        <DRCCommunesMap ville={selectedVille} commune={selectedCommune} />
+                        <DRCCommunesMap ville={selectedVille} commune={selectedCommune} onCommuneSelect={setSelectedCommune} />
                       </div>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center" style={{ transform: 'scale(0.9)', transformOrigin: 'center center' }}>
@@ -402,7 +411,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   </div>
                   
                   {/* Légende choroplèthe à 4 paliers — masquée pendant le zoom */}
-                  {!isMapZoomed && !selectedVille && (
+                  {!isMapZoomed && !selectedVille && !selectedProvince && (
                     <div className="absolute bottom-5 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30">
                       <div className="text-[10px] text-muted-foreground mb-0.5">{getChartConfig('map-legend-title')?.custom_title || 'Densité parcelles cadastrées'}</div>
                       <div className="flex flex-col gap-0.5">

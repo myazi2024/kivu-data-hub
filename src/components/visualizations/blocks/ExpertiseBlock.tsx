@@ -1,4 +1,4 @@
-import React, { useState, useMemo, memo, useCallback, useContext, useEffect } from 'react';
+import React, { useState, useMemo, memo, useContext, useEffect } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
 import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, avgProcessingDays, numericDistribution, yearDecadeDistribution, avgField, buildFilterLabel } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
