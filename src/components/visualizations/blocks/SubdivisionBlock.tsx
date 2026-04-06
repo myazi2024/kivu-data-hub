@@ -98,7 +98,7 @@ export const SubdivisionBlock: React.FC<Props> = memo(({ data }) => {
   return (
     <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
-      <AnalyticsFilters data={data.subdivisionRequests} filter={filter} onChange={setFilter} paymentStatusField="submission_payment_status" />
+      <AnalyticsFilters data={data.subdivisionRequests} filter={filter} onChange={setFilter} />
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {v('status') && <ChartCard title={ct('status', 'Statut')} icon={Scissors} data={byStatus} type="pie" colorIndex={7}
