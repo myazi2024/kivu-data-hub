@@ -11,7 +11,7 @@ interface Props {
 /**
  * Renders geographic breakdown charts aligned with CCC form hierarchy:
  * Province → Section (Urbaine/Rurale) → conditional sub-levels
- * Urban: ville → commune → quartier
+ * Urban: commune → quartier → avenue
  * Rural: territoire → collectivité → groupement → village
  */
 export const GeoCharts: React.FC<Props> = memo(({ records, colorIndices = [2, 6, 10, 7, 8, 11] }) => {
@@ -37,9 +37,9 @@ export const GeoCharts: React.FC<Props> = memo(({ records, colorIndices = [2, 6,
   }, [urbanRecords, ruralRecords]);
 
   // Urban sub-levels
-  const byVille = useMemo(() => urbanRecords.length > 0 ? countBy(urbanRecords, 'ville') : [], [urbanRecords]);
   const byCommune = useMemo(() => urbanRecords.length > 0 ? countBy(urbanRecords, 'commune') : [], [urbanRecords]);
   const byQuartier = useMemo(() => urbanRecords.length > 0 ? countBy(urbanRecords, 'quartier') : [], [urbanRecords]);
+  const byAvenue = useMemo(() => urbanRecords.length > 0 ? countBy(urbanRecords, 'avenue') : [], [urbanRecords]);
 
   // Rural sub-levels
   const byTerritoire = useMemo(() => ruralRecords.length > 0 ? countBy(ruralRecords, 'territoire') : [], [ruralRecords]);
@@ -57,15 +57,15 @@ export const GeoCharts: React.FC<Props> = memo(({ records, colorIndices = [2, 6,
       <ChartCard title="Par section" data={bySection} type="donut" colorIndex={colorIndices[1]} hidden={bySection.length === 0}
         insight={generateInsight(bySection, 'donut', 'les sections')} />
 
-      {/* 3. Urban sub-levels: Ville → Commune → Quartier */}
+      {/* 3. Urban sub-levels: Commune → Quartier → Avenue */}
       {urbanRecords.length > 0 && (
         <>
-          <ChartCard title="Par ville" data={byVille} type="bar-v" colorIndex={colorIndices[0]} hidden={byVille.length === 0}
-            insight={generateInsight(byVille, 'bar-v', 'les villes')} />
-          <ChartCard title="Par commune" data={byCommune} type="bar-v" colorIndex={colorIndices[1]} hidden={byCommune.length === 0}
+          <ChartCard title="Par commune" data={byCommune} type="bar-v" colorIndex={colorIndices[0]} hidden={byCommune.length === 0}
             insight={generateInsight(byCommune, 'bar-v', 'les communes')} />
-          <ChartCard title="Par quartier" data={byQuartier} type="bar-v" colorIndex={colorIndices[2]} hidden={byQuartier.length === 0}
+          <ChartCard title="Par quartier" data={byQuartier} type="bar-v" colorIndex={colorIndices[1]} hidden={byQuartier.length === 0}
             insight={generateInsight(byQuartier, 'bar-v', 'les quartiers')} />
+          <ChartCard title="Par avenue" data={byAvenue} type="bar-v" colorIndex={colorIndices[2]} hidden={byAvenue.length === 0}
+            insight={generateInsight(byAvenue, 'bar-v', 'les avenues')} />
         </>
       )}
 

@@ -45,10 +45,10 @@ export const AnalyticsFilters: React.FC<Props> = ({
     return dataYears.sort((a, b) => b - a);
   }, [data, dateField]);
 
-  // === Geographic hierarchy from geographicData (same as forms) ===
+  // === Geographic hierarchy ===
   const provinces = useMemo(() => getAllProvinces(), []);
 
-  // After province, detect which sections have data
+  // Scoped data for detecting sections
   const provinceScoped = useMemo(
     () => filter.province ? data.filter(r => r.province === filter.province) : data,
     [data, filter.province]
@@ -56,17 +56,51 @@ export const AnalyticsFilters: React.FC<Props> = ({
   const hasUrbanData = useMemo(() => provinceScoped.some(r => getSectionType(r) === 'urbaine'), [provinceScoped]);
   const hasRuralData = useMemo(() => provinceScoped.some(r => getSectionType(r) === 'rurale'), [provinceScoped]);
 
-  // Urban cascade from geographicData
+  // Urban cascade: use first ville from geographicData as implicit lookup key for commune/quartier/avenue
   const villes = useMemo(() => filter.province ? getVillesForProvince(filter.province) : [], [filter.province]);
-  const communes = useMemo(() => (filter.province && filter.ville) ? getCommunesForVille(filter.province, filter.ville) : [], [filter.province, filter.ville]);
-  const quartiers = useMemo(() => (filter.province && filter.ville && filter.commune) ? getQuartiersForCommune(filter.province, filter.ville, filter.commune) : [], [filter.province, filter.ville, filter.commune]);
-  const avenues = useMemo(() => (filter.province && filter.ville && filter.commune && filter.quartier) ? getAvenuesForQuartier(filter.province, filter.ville, filter.commune, filter.quartier) : [], [filter.province, filter.ville, filter.commune, filter.quartier]);
+  const implicitVille = villes.length > 0 ? villes[0] : undefined;
+
+  const communes = useMemo(() => (filter.province && implicitVille) ? getCommunesForVille(filter.province, implicitVille) : [], [filter.province, implicitVille]);
+  // Fallback: extract communes from data if geographicData has none
+  const communesFinal = useMemo(() => {
+    if (communes.length > 0) return communes;
+    const scoped = provinceScoped.filter(r => getSectionType(r) === 'urbaine');
+    return extractUnique(scoped, 'commune');
+  }, [communes, provinceScoped]);
+
+  const quartiers = useMemo(() => (filter.province && implicitVille && filter.commune) ? getQuartiersForCommune(filter.province, implicitVille, filter.commune) : [], [filter.province, implicitVille, filter.commune]);
+  const quartiersFinal = useMemo(() => {
+    if (quartiers.length > 0) return quartiers;
+    if (!filter.commune) return [];
+    const scoped = provinceScoped.filter(r => getSectionType(r) === 'urbaine' && r.commune === filter.commune);
+    return extractUnique(scoped, 'quartier');
+  }, [quartiers, provinceScoped, filter.commune]);
+
+  const avenues = useMemo(() => (filter.province && implicitVille && filter.commune && filter.quartier) ? getAvenuesForQuartier(filter.province, implicitVille, filter.commune, filter.quartier) : [], [filter.province, implicitVille, filter.commune, filter.quartier]);
+  const avenuesFinal = useMemo(() => {
+    if (avenues.length > 0) return avenues;
+    if (!filter.quartier) return [];
+    const scoped = provinceScoped.filter(r => getSectionType(r) === 'urbaine' && r.commune === filter.commune && r.quartier === filter.quartier);
+    return extractUnique(scoped, 'avenue');
+  }, [avenues, provinceScoped, filter.commune, filter.quartier]);
 
   // Rural cascade from geographicData
   const territoires = useMemo(() => filter.province ? getTerritoiresForProvince(filter.province) : [], [filter.province]);
-  const collectivites = useMemo(() => (filter.province && filter.territoire) ? getCollectivitesForTerritoire(filter.province, filter.territoire) : [], [filter.province, filter.territoire]);
+  const territoiresFinal = useMemo(() => {
+    if (territoires.length > 0) return territoires;
+    const scoped = provinceScoped.filter(r => getSectionType(r) === 'rurale');
+    return extractUnique(scoped, 'territoire');
+  }, [territoires, provinceScoped]);
 
-  // Groupements & villages: not in geographicData, fall back to data extraction
+  const collectivites = useMemo(() => (filter.province && filter.territoire) ? getCollectivitesForTerritoire(filter.province, filter.territoire) : [], [filter.province, filter.territoire]);
+  const collectivitesFinal = useMemo(() => {
+    if (collectivites.length > 0) return collectivites;
+    if (!filter.territoire) return [];
+    const scoped = provinceScoped.filter(r => getSectionType(r) === 'rurale' && r.territoire === filter.territoire);
+    return extractUnique(scoped, 'collectivite');
+  }, [collectivites, provinceScoped, filter.territoire]);
+
+  // Groupements & villages: from data
   const sectionScoped = useMemo(() => {
     let scoped = provinceScoped;
     if (filter.sectionType !== 'all') scoped = scoped.filter(r => getSectionType(r) === filter.sectionType);
@@ -89,23 +123,18 @@ export const AnalyticsFilters: React.FC<Props> = ({
   const hasActiveFilters = (filter.year !== defaultFilter.year) ||
     filter.semester || filter.quarter || filter.month || filter.week ||
     filter.sectionType !== 'all' ||
-    filter.province || filter.ville || filter.commune || filter.quartier || filter.avenue ||
+    filter.province || filter.commune || filter.quartier || filter.avenue ||
     filter.territoire || filter.collectivite || filter.groupement || filter.villageFilter ||
     filter.status || filter.paymentStatus;
 
   const reset = useCallback(() => onChange({ ...defaultFilter }), [onChange]);
 
-  // Semester options based on year
   const semesterOptions = [1, 2];
-
-  // Quarter options scoped to semester if selected
   const quarterOptions = useMemo(() => {
     if (filter.semester === 1) return [1, 2];
     if (filter.semester === 2) return [3, 4];
     return [1, 2, 3, 4];
   }, [filter.semester]);
-
-  // Month options scoped to quarter if selected, else semester
   const monthOptions = useMemo(() => {
     if (filter.quarter) {
       const start = (filter.quarter - 1) * 3 + 1;
@@ -115,29 +144,26 @@ export const AnalyticsFilters: React.FC<Props> = ({
     if (filter.semester === 2) return [7, 8, 9, 10, 11, 12];
     return Array.from({ length: 12 }, (_, i) => i + 1);
   }, [filter.semester, filter.quarter]);
-
-  // Week options (weeks within month, 1-5)
   const weekOptions = [1, 2, 3, 4, 5];
 
-  const showUrbanSub = (filter.sectionType === 'urbaine' || (filter.sectionType === 'all' && !hasRuralData)) && villes.length > 0;
-  const showRuralSub = (filter.sectionType === 'rurale' || (filter.sectionType === 'all' && !hasUrbanData)) && territoires.length > 0;
+  // Show urban/rural sub-filters based on section selection
+  const showUrbanSub = filter.sectionType === 'urbaine' || (filter.sectionType === 'all' && hasUrbanData && !hasRuralData);
+  const showRuralSub = filter.sectionType === 'rurale' || (filter.sectionType === 'all' && hasRuralData && !hasUrbanData);
 
   const selectCls = "h-6 text-[10px] w-auto min-w-[70px]";
   const sep = <span className="text-[10px] text-muted-foreground">›</span>;
 
   return (
     <div className="space-y-1 bg-background/95 backdrop-blur-sm rounded-md p-1.5 border border-border/30 shadow-sm sticky top-0 z-10">
-      {/* Row 1: Temps cascading — Année › Semestre › Trimestre › Mois › Semaine */}
+      {/* Row 1: Temps */}
       <div className="flex items-center gap-1 flex-wrap">
         <Badge variant="outline" className="gap-0.5 text-[10px] px-1.5 py-0"><Calendar className="h-2.5 w-2.5" /> Temps</Badge>
 
-        {/* Année — always visible */}
         <Select value={String(filter.year)} onValueChange={v => onChange({ ...filter, year: Number(v), semester: undefined, quarter: undefined, month: undefined, week: undefined })}>
           <SelectTrigger className={selectCls}><SelectValue placeholder="Année" /></SelectTrigger>
           <SelectContent>{years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
         </Select>
 
-        {/* Semestre — always available after year */}
         {sep}
         <Select value={filter.semester ? String(filter.semester) : '__all__'} onValueChange={v => onChange({ ...filter, semester: v === '__all__' ? undefined : Number(v), quarter: undefined, month: undefined, week: undefined })}>
           <SelectTrigger className={selectCls}><SelectValue placeholder="Sem." /></SelectTrigger>
@@ -147,7 +173,6 @@ export const AnalyticsFilters: React.FC<Props> = ({
           </SelectContent>
         </Select>
 
-        {/* Trimestre — shown when semester selected */}
         {filter.semester && (
           <>
             {sep}
@@ -161,7 +186,6 @@ export const AnalyticsFilters: React.FC<Props> = ({
           </>
         )}
 
-        {/* Mois — shown when quarter selected */}
         {filter.quarter && (
           <>
             {sep}
@@ -175,7 +199,6 @@ export const AnalyticsFilters: React.FC<Props> = ({
           </>
         )}
 
-        {/* Semaine — shown when month selected */}
         {filter.month && (
           <>
             {sep}
@@ -189,7 +212,6 @@ export const AnalyticsFilters: React.FC<Props> = ({
           </>
         )}
 
-        {/* Status & payment inline */}
         {!hideStatus && statusOptions.length > 0 && (
           <>
             <div className="w-px h-4 bg-border/50" />
@@ -218,101 +240,107 @@ export const AnalyticsFilters: React.FC<Props> = ({
         )}
       </div>
 
-      {/* Row 2: Espace — funnel Province → Section → sub-levels */}
+      {/* Row 2: Lieu — Pays › Province › Section › cascade */}
       <div className="flex items-center gap-1 flex-wrap">
         <Badge variant="outline" className="gap-0.5 text-[10px] px-1.5 py-0"><MapPin className="h-2.5 w-2.5" /> Lieu</Badge>
 
+        {/* Pays — fixed */}
+        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-normal">Rép. Dém. du Congo</Badge>
+
         {/* Province */}
+        {sep}
         <Select value={filter.province || '__all__'} onValueChange={v => {
           const newProvince = v === '__all__' ? undefined : v;
           onChange({
             ...filter,
             province: newProvince,
             sectionType: 'all',
-            ville: undefined, commune: undefined, quartier: undefined, avenue: undefined,
+            commune: undefined, quartier: undefined, avenue: undefined,
             territoire: undefined, collectivite: undefined, groupement: undefined, villageFilter: undefined,
           });
           provinceFilterCallback?.(newProvince);
         }}>
           <SelectTrigger className={selectCls}><SelectValue placeholder="Province" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="__all__">Rép. Dém. du Congo</SelectItem>
+            <SelectItem value="__all__">Toutes les provinces</SelectItem>
             {provinces.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
           </SelectContent>
         </Select>
 
-        {/* Section — show when province selected and both sections have data */}
-        {filter.province && (hasUrbanData || hasRuralData) && (
-          <>
-            {sep}
-            <Select value={filter.sectionType} onValueChange={v => onChange({
-              ...filter,
-              sectionType: v as any,
-              ville: undefined, commune: undefined, quartier: undefined, avenue: undefined,
-              territoire: undefined, collectivite: undefined, groupement: undefined, villageFilter: undefined,
-            })}>
-              <SelectTrigger className={selectCls}><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes sections</SelectItem>
-                {hasUrbanData && <SelectItem value="urbaine">Urbaine</SelectItem>}
-                {hasRuralData && <SelectItem value="rurale">Rurale</SelectItem>}
-              </SelectContent>
-            </Select>
-          </>
-        )}
+        {/* Section — always visible after Province */}
+        {sep}
+        <Select value={filter.sectionType} onValueChange={v => onChange({
+          ...filter,
+          sectionType: v as any,
+          commune: undefined, quartier: undefined, avenue: undefined,
+          territoire: undefined, collectivite: undefined, groupement: undefined, villageFilter: undefined,
+        })}>
+          <SelectTrigger className={selectCls}><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Toutes les sections</SelectItem>
+            <SelectItem value="urbaine">Urbaine</SelectItem>
+            <SelectItem value="rurale">Rurale</SelectItem>
+          </SelectContent>
+        </Select>
 
-        {/* Urban cascade */}
+        {/* Urban cascade: Commune → Quartier → Avenue */}
         {showUrbanSub && (
           <>
             {sep}
-            <Select value={filter.ville || '__all__'} onValueChange={v => onChange({ ...filter, ville: v === '__all__' ? undefined : v, commune: undefined, quartier: undefined, avenue: undefined })}>
-              <SelectTrigger className={selectCls}><SelectValue placeholder="Ville" /></SelectTrigger>
-              <SelectContent><SelectItem value="__all__">Toutes villes</SelectItem>{villes.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+            <Select value={filter.commune || '__all__'} onValueChange={v => onChange({ ...filter, commune: v === '__all__' ? undefined : v, quartier: undefined, avenue: undefined })}>
+              <SelectTrigger className={selectCls}><SelectValue placeholder="Commune" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">Toutes les communes</SelectItem>
+                {communesFinal.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+              </SelectContent>
             </Select>
-            {filter.ville && communes.length > 0 && (
-              <>
-                {sep}
-                <Select value={filter.commune || '__all__'} onValueChange={v => onChange({ ...filter, commune: v === '__all__' ? undefined : v, quartier: undefined, avenue: undefined })}>
-                  <SelectTrigger className={selectCls}><SelectValue placeholder="Commune" /></SelectTrigger>
-                  <SelectContent><SelectItem value="__all__">Toutes</SelectItem>{communes.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
-                </Select>
-              </>
-            )}
-            {filter.commune && quartiers.length > 0 && (
+            {filter.commune && quartiersFinal.length > 0 && (
               <>
                 {sep}
                 <Select value={filter.quartier || '__all__'} onValueChange={v => onChange({ ...filter, quartier: v === '__all__' ? undefined : v, avenue: undefined })}>
                   <SelectTrigger className={selectCls}><SelectValue placeholder="Quartier" /></SelectTrigger>
-                  <SelectContent><SelectItem value="__all__">Tous</SelectItem>{quartiers.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    <SelectItem value="__all__">Tous les quartiers</SelectItem>
+                    {quartiersFinal.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                  </SelectContent>
                 </Select>
               </>
             )}
-            {filter.quartier && avenues.length > 0 && (
+            {filter.quartier && avenuesFinal.length > 0 && (
               <>
                 {sep}
                 <Select value={filter.avenue || '__all__'} onValueChange={v => onChange({ ...filter, avenue: v === '__all__' ? undefined : v })}>
                   <SelectTrigger className={selectCls}><SelectValue placeholder="Avenue" /></SelectTrigger>
-                  <SelectContent><SelectItem value="__all__">Toutes</SelectItem>{avenues.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    <SelectItem value="__all__">Toutes les avenues</SelectItem>
+                    {avenuesFinal.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                  </SelectContent>
                 </Select>
               </>
             )}
           </>
         )}
 
-        {/* Rural cascade */}
+        {/* Rural cascade: Territoire → Collectivité → Groupement → Village */}
         {showRuralSub && (
           <>
             {sep}
             <Select value={filter.territoire || '__all__'} onValueChange={v => onChange({ ...filter, territoire: v === '__all__' ? undefined : v, collectivite: undefined, groupement: undefined, villageFilter: undefined })}>
               <SelectTrigger className={selectCls}><SelectValue placeholder="Territoire" /></SelectTrigger>
-              <SelectContent><SelectItem value="__all__">Tous territoires</SelectItem>{territoires.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+              <SelectContent>
+                <SelectItem value="__all__">Tous les territoires</SelectItem>
+                {territoiresFinal.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+              </SelectContent>
             </Select>
-            {filter.territoire && collectivites.length > 0 && (
+            {filter.territoire && collectivitesFinal.length > 0 && (
               <>
                 {sep}
                 <Select value={filter.collectivite || '__all__'} onValueChange={v => onChange({ ...filter, collectivite: v === '__all__' ? undefined : v, groupement: undefined, villageFilter: undefined })}>
                   <SelectTrigger className={selectCls}><SelectValue placeholder="Collectivité" /></SelectTrigger>
-                  <SelectContent><SelectItem value="__all__">Toutes</SelectItem>{collectivites.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    <SelectItem value="__all__">Toutes les collectivités</SelectItem>
+                    {collectivitesFinal.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                  </SelectContent>
                 </Select>
               </>
             )}
@@ -321,7 +349,10 @@ export const AnalyticsFilters: React.FC<Props> = ({
                 {sep}
                 <Select value={filter.groupement || '__all__'} onValueChange={v => onChange({ ...filter, groupement: v === '__all__' ? undefined : v, villageFilter: undefined })}>
                   <SelectTrigger className={selectCls}><SelectValue placeholder="Groupement" /></SelectTrigger>
-                  <SelectContent><SelectItem value="__all__">Tous</SelectItem>{groupements.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    <SelectItem value="__all__">Tous les groupements</SelectItem>
+                    {groupements.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                  </SelectContent>
                 </Select>
               </>
             )}
@@ -330,7 +361,10 @@ export const AnalyticsFilters: React.FC<Props> = ({
                 {sep}
                 <Select value={filter.villageFilter || '__all__'} onValueChange={v => onChange({ ...filter, villageFilter: v === '__all__' ? undefined : v })}>
                   <SelectTrigger className={selectCls}><SelectValue placeholder="Village" /></SelectTrigger>
-                  <SelectContent><SelectItem value="__all__">Tous</SelectItem>{villages.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    <SelectItem value="__all__">Tous les villages</SelectItem>
+                    {villages.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                  </SelectContent>
                 </Select>
               </>
             )}
