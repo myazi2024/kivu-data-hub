@@ -56,7 +56,7 @@ const MONTHS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','N
 
 export const AnalyticsFilters: React.FC<Props> = ({
   data, filter, onChange, onVilleChange, onCommuneChange, dateField = 'created_at',
-  statusField, hideStatus = false,
+  statusField, hideStatus = false, hideTime = false, hideLocation = false,
 }) => {
   const provinceFilterCallback = useContext(ProvinceFilterContext);
   const villeChangeCtx = useContext(VilleChangeContext);
