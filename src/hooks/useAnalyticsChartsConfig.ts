@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useMemo } from 'react';
+import { getCrossVariablesWithOverrides } from '@/config/crossVariables';
 
 export interface ChartConfigItem {
   id?: string;
