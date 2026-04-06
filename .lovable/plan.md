@@ -1,115 +1,91 @@
 
+# Audit détaillé — Config Graphiques (Admin)
 
-# Config Graphiques — Ajouter la gestion des filtres par onglet/indicateur
+## Architecture actuelle
 
-## Contexte
+La page est structurée en 3 modes : **Onglets** | **Graphiques** | **Filtres**, avec un registre de 16 entrées (`ANALYTICS_TABS_REGISTRY`) stockant ~150 items (KPIs + Charts) et un système de fusion defaults/DB via `useTabChartsConfig`.
 
-La page **Config Graphiques** (admin) gère actuellement :
-- **Onglets** : visibilité, ordre, renommage des 14 onglets analytics
-- **Graphiques/KPIs** : visibilité, ordre, titre, couleur, type de graphique
+---
 
-Ce qui **manque** : aucune interface pour configurer quels **filtres** sont disponibles par onglet (ex: masquer le filtre Statut pour l'onglet Fraude, masquer la cascade rurale pour Certificats, etc.). Chaque bloc utilise des props hardcodées (`hideStatus`, `dateField`, `statusField`) sans possibilité de configuration admin.
+## 1. Redondances et code mort
 
-## Architecture existante
+| Problème | Localisation | Sévérité |
+|----------|-------------|----------|
+| **`_global` tab** ne contient qu'un watermark (`global-watermark`). Ce n'est pas un onglet analytics réel, il ne devrait pas apparaître dans le sélecteur d'onglets du mode Graphiques ni dans le mode Filtres | `useAnalyticsChartsConfig.ts` L554-560, `AdminAnalyticsChartsConfig.tsx` L671 | Moyenne |
+| **`rdc-map` dans le mode Filtres** : cet onglet carte n'a pas de filtres analytics (pas de `AnalyticsFilters`) mais apparaît dans `TAB_FILTER_DEFAULTS`… non, il n'y apparaît pas, mais il apparaît quand même dans la liste des onglets du `FilterManager` car celui-ci itère sur `Object.keys(TAB_FILTER_DEFAULTS)` — OK, il est bien exclu. **Cependant** `_global` et `rdc-map` apparaissent dans le sélecteur d'onglets du mode **Graphiques** (L671 itère `ANALYTICS_TABS_REGISTRY`) | Admin UI L671 | Faible |
+| **Duplication tooltip/detail KPIs dans `rdc-map`** : 11 KPIs tooltip + 13 KPIs detail = 24 items, avec des libellés identiques (Parcelles, Titres, Contributions…). Les labels sont dupliqués entre `tooltip-*` et `detail-*` | Registry L573-598 | Faible |
+| **`Pencil` importé mais jamais utilisé** dans `AdminAnalyticsChartsConfig.tsx` L18 | Import L18 | Faible |
 
-- `ChartConfigItem` dans `useAnalyticsChartsConfig.ts` stocke `tab_key`, `item_key`, `item_type`, `is_visible`, `display_order`, `custom_title`, `custom_color`, `chart_type`, `custom_icon`, `col_span`
-- Table DB `analytics_charts_config` avec upsert sur `(tab_key, item_key)`
-- `AnalyticsFilters.tsx` accepte les props `hideStatus`, `dateField`, `statusField`
-- Les 14 blocs passent ces props en dur
+## 2. Fonctionnalités absentes
 
-## Plan d'implémentation
+| Fonctionnalité manquante | Impact | Priorité |
+|--------------------------|--------|----------|
+| **Pas de configuration du `dateField` ni `statusField` dans le mode Filtres** : l'admin peut activer/désactiver les 3 filtres (statut, temps, lieu) mais ne peut pas changer le champ date source (`created_at` vs `ownership_start_date` vs `generated_at`) ni le champ statut (`status` vs `current_status`). Ces valeurs restent hardcodées dans `TAB_FILTER_DEFAULTS` | L'admin ne peut pas adapter les champs sources si le schéma DB évolue | Élevée |
+| **Pas de prévisualisation** : aucun aperçu du rendu du graphique/KPI dans la config admin. L'admin doit naviguer vers /map pour voir le résultat | UX | Moyenne |
+| **Pas de recherche/filtrage** dans la liste des onglets (mode Graphiques) : avec 16 onglets, trouver un item spécifique est fastidieux | UX | Faible |
+| **Pas de drag-and-drop** pour réordonner : seuls des boutons ↑↓ existent. Pour déplacer un item du rang 15 au rang 2, il faut 13 clics | UX | Faible |
+| **Pas de "Réinitialiser tout"** global : le bouton reset ne fonctionne que pour l'onglet actif (L528-537). Pas de reset global qui supprimerait tous les overrides DB | UX | Moyenne |
+| **Pas de confirmation avant "Sauvegarder tout"** : le bouton sauvegarde immédiatement tous les onglets + tabs sans confirmation | UX | Faible |
+| **Pas d'export/import** de la configuration (JSON) pour sauvegarder/restaurer des presets | UX avancée | Faible |
 
-### 1. Etendre `ChartConfigItem` pour stocker la config filtres par onglet
+## 3. Indicateurs fictifs / données non vérifiables
 
-Ajouter un nouveau type d'item `item_type: 'filter'` dans le registry, un par onglet, avec des propriétés stockées dans les champs existants (ou un champ JSON `config_value`).
+| Problème | Détail |
+|----------|--------|
+| **Registry déclare des graphiques qui pourraient ne pas exister dans les blocs** : le registry est la source de vérité pour la config admin mais la correspondance avec les `item_key` utilisés dans les blocs (ex: `v('legal-status')`) n'est pas validée à la compilation. Si un bloc utilise `v('legal-status')` mais le registry a `item_key: 'legal-statut'`, le graphique sera toujours visible (fallback `true` dans `isChartVisible`) | Aucune validation de cohérence registry ↔ blocs |
+| **Graphiques "Géographie" (`geo`)** n'ont pas de `chart_type` dans le registry (ex: L252, L276) car ils sont rendus par `GeoCharts` et non par `ChartCard`. C'est correct mais confusant pour l'admin qui voit un item sans type de graphique et sans couleur | Cohérence UI |
 
-Approche optimisée : utiliser `item_key: '__filters__'` et `item_type: 'tab'` (ou un nouveau type `'filter'`) par `tab_key`, avec un champ JSON pour les options de filtre.
+## 4. Problèmes de logique
 
-Cependant, la table `analytics_charts_config` n'a pas de champ JSON libre. On va plutôt encoder les options filtre comme des items individuels avec `item_type: 'filter'` :
+| Problème | Détail | Sévérité |
+|----------|--------|----------|
+| **Mode Filtres : `handleSave` écrase potentiellement** — le `FilterManager` sauvegarde tous les filter items de tous les onglets en un seul upsert. Si un autre admin modifie un filtre en parallèle, ses changements seront écrasés (pas de versioning/locking) | Concurrence admin | Faible |
+| **`handleSaveAll` mélange charts et tabs mais pas les filtres** : le bouton "Sauvegarder tout" (L496-511) fusionne `allChartItems` + `tabItems` mais n'inclut pas les filter items du `FilterManager` (qui a son propre état local) | L'état des filtres modifiés dans le mode Filtres n'est pas pris en compte par "Sauvegarder tout" | Élevée |
+| **`hasChanges` ne reflète pas les modifications des filtres** : `hasChanges = hasChartChanges \|\| hasTabChanges` (L393) mais le mode Filtres a son propre `modified` state interne. Le badge "Non sauvegardé" ne s'affiche pas quand seuls les filtres sont modifiés | Élevée |
+| **Tri des items** : la logique de tri (L418-421) force les KPIs avant les charts. Si un admin veut intercaler un KPI après un chart, c'est impossible | Contrainte de design |
 
-```
-tab_key: 'ownership', item_key: 'filter-hide-status', item_type: 'filter', is_visible: false
-tab_key: 'ownership', item_key: 'filter-hide-time', item_type: 'filter', is_visible: false  
-tab_key: 'ownership', item_key: 'filter-hide-location', item_type: 'filter', is_visible: false
-```
+## 5. Incohérences entre Registry et Blocs
 
-### 2. Définir le registre des filtres configurables
+| Tab | Registry items | Problème potentiel |
+|-----|---------------|-------------------|
+| `ownership` | `dateField: 'ownership_start_date'` | Le trend dans `OwnershipHistoryBlock` utilise `trendByMonth(filtered, 'ownership_start_date')` mais `applyFilters` utilise `filterConfig.dateField` — OK si cohérent, mais si l'admin pouvait changer `dateField`, le trend continuerait d'utiliser `'ownership_start_date'` en dur |
+| `certificates` | `dateField: 'generated_at'` | Idem, les blocs ont parfois des `dateField` hardcodés en plus du filterConfig |
+| `disputes` | `statusField: 'current_status'` | Seul onglet avec un statusField non-default. Non configurable via l'UI admin |
 
-Dans `ANALYTICS_TABS_REGISTRY`, ajouter une nouvelle clé `filters` par onglet :
+## 6. Optimisations recommandées
 
-```typescript
-filters: [
-  { tab_key: 'ownership', item_key: 'filter-status', item_type: 'filter', is_visible: false, display_order: 0, custom_title: 'Filtre statut' },
-  { tab_key: 'ownership', item_key: 'filter-time', item_type: 'filter', is_visible: true, display_order: 1, custom_title: 'Filtre temps' },
-  { tab_key: 'ownership', item_key: 'filter-location', item_type: 'filter', is_visible: true, display_order: 2, custom_title: 'Filtre lieu' },
-]
-```
+### Priorité haute
+1. **Remonter l'état des filtres** dans le composant parent pour que `hasChanges` et "Sauvegarder tout" incluent les modifications de filtres
+2. **Ajouter `dateField` et `statusField` configurables** dans le mode Filtres (2 selects supplémentaires par onglet avec les champs possibles)
+3. **Valider la cohérence registry ↔ blocs** via un test ou une assertion au build (vérifier que chaque `v('key')` dans un bloc correspond à un `item_key` dans le registry)
 
-Chaque onglet aura les mêmes filtres par défaut (temps, lieu, section, statut), avec `is_visible` reflétant le comportement actuel hardcodé.
+### Priorité moyenne
+4. **Exclure `_global`** de la liste du mode Graphiques (ou le regrouper avec `rdc-map` dans une section "Paramètres spéciaux")
+5. **Ajouter un bouton "Réinitialiser tout"** global qui supprime tous les overrides DB
+6. **Ajouter `chart_type: null` explicitement** pour les items `geo` dans le registry et afficher "Multi-graphique" dans l'admin
 
-### 3. Ajouter un troisième mode dans `AdminAnalyticsChartsConfig`
+### Priorité faible
+7. Nettoyer l'import `Pencil` inutilisé
+8. Ajouter une recherche textuelle dans le sélecteur d'onglets
+9. Implémenter le drag-and-drop (dnd-kit) pour le réordonnancement
 
-Ajouter un bouton **"Filtres"** dans le toggle `viewMode` (à côté de Onglets / Graphiques) :
+## Plan d'implémentation recommandé
 
-```
-Onglets | Graphiques | Filtres
-```
+### Étape 1 — Corriger la logique "Sauvegarder tout" + badge (critique)
+- Remonter `localFilters` et `modified` du `FilterManager` dans le composant parent
+- Inclure les filter items dans `handleSaveAll`
+- Inclure les modifications filtres dans `hasChanges`
 
-En mode Filtres :
-- Panneau gauche : liste des 14 onglets (réutilisation du sélecteur existant)
-- Panneau droit : pour l'onglet sélectionné, afficher les filtres avec Switch on/off :
-  - Filtre temporel (Année / Semestre / Trimestre / Mois / Semaine)
-  - Filtre géographique (Province / Section / Ville / Commune / Quartier / Avenue)
-  - Filtre statut
-  - Champ date source (select parmi les champs disponibles)
-  - Champ statut source (select parmi les champs disponibles)
+### Étape 2 — Ajouter dateField/statusField au mode Filtres
+- Ajouter 2 selects dans `FilterManager` pour chaque onglet
+- Stocker dans des items filter additionnels (`filter-date-field`, `filter-status-field`)
+- Mettre à jour `useTabFilterConfig` pour lire ces overrides
 
-### 4. Hook `useTabFilterConfig`
+### Étape 3 — Nettoyage
+- Supprimer import `Pencil`
+- Masquer `_global` dans le sélecteur d'onglets du mode Graphiques
+- Ajouter labels explicites pour les items `geo` sans `chart_type`
 
-Nouveau hook (ou extension de `useTabChartsConfig`) qui retourne la config filtres pour un onglet donné :
-
-```typescript
-export function useTabFilterConfig(tabKey: string) {
-  const { configs } = useAnalyticsChartsConfig();
-  // Merge defaults avec overrides DB
-  return { hideStatus, hideTime, hideLocation, dateField, statusField };
-}
-```
-
-### 5. Mise à jour des 14 blocs
-
-Chaque bloc remplacera ses props hardcodées par le hook :
-
-```typescript
-// Avant (hardcodé)
-<AnalyticsFilters hideStatus dateField="ownership_start_date" />
-
-// Après (configurable)
-const filterConfig = useTabFilterConfig('ownership');
-<AnalyticsFilters 
-  hideStatus={filterConfig.hideStatus} 
-  dateField={filterConfig.dateField}
-  statusField={filterConfig.statusField}
-  hideTime={filterConfig.hideTime}
-  hideLocation={filterConfig.hideLocation}
-/>
-```
-
-### 6. Corriger les erreurs de build (prioritaire)
-
-Les 7 fichiers blocs passent encore `hidePaymentStatus` / `paymentStatusField` à `<AnalyticsFilters>`. Bien que `grep` ne les trouve pas, les erreurs de build persistent. Il faut re-écrire explicitement les lignes concernées pour forcer la recompilation.
-
-## Fichiers modifiés
-
-| Fichier | Action |
-|---------|--------|
-| `src/hooks/useAnalyticsChartsConfig.ts` | Ajouter `filters` au registry + `useTabFilterConfig` hook |
-| `src/components/admin/AdminAnalyticsChartsConfig.tsx` | Ajouter mode "Filtres" avec UI de configuration |
-| `src/components/visualizations/filters/AnalyticsFilters.tsx` | Ajouter props `hideTime`, `hideLocation` |
-| 7 blocs dans `src/components/visualizations/blocks/` | Utiliser `useTabFilterConfig` + corriger erreurs build |
-
-## Résumé
-- 3 nouveaux concepts : `item_type: 'filter'`, `viewMode: 'filters'`, `useTabFilterConfig`
-- Réutilisation complète de l'infrastructure existante (table DB, upsert, merge by key)
-- Aucune migration DB requise (la table `analytics_charts_config` supporte déjà des item_type arbitraires)
-
+### Fichiers modifiés
+- `src/components/admin/AdminAnalyticsChartsConfig.tsx`
+- `src/hooks/useAnalyticsChartsConfig.ts`
