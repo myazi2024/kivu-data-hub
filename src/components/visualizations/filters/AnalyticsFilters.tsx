@@ -53,6 +53,10 @@ export const AnalyticsFilters: React.FC<Props> = ({
   statusField, paymentStatusField, hideStatus = false, hidePaymentStatus = false,
 }) => {
   const provinceFilterCallback = useContext(ProvinceFilterContext);
+  const villeChangeCtx = useContext(VilleChangeContext);
+  const communeChangeCtx = useContext(CommuneChangeContext);
+  const handleVilleChange = onVilleChange || villeChangeCtx || (() => {});
+  const handleCommuneChange = onCommuneChange || communeChangeCtx || (() => {});
   const years = useMemo(() => {
     const dataYears = getAvailableYears(data, dateField);
     const currentYear = new Date().getFullYear();
