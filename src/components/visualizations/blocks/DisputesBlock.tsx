@@ -9,7 +9,7 @@ import { ChartCard, StackedBarCard, FilterLabelContext } from '../shared/ChartCa
 import { GeoCharts } from '../shared/GeoCharts';
 import { MapProvinceContext, VilleFilterContext, CommuneFilterContext, QuartierFilterContext } from '../filters/AnalyticsFilters';
 import { generateInsight, generateStackedInsight } from '@/utils/chartInsights';
-import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
+import { useTabChartsConfig, useTabFilterConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 
 interface Props { data: LandAnalyticsData; }
 
@@ -25,6 +25,7 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
   useEffect(() => { setFilter(f => ({ ...f, province: mapProvince || undefined, ville: mapVille || undefined, commune: mapCommune || undefined, quartier: mapQuartier || undefined })); }, [mapProvince, mapVille, mapCommune, mapQuartier]);
   const filterLabel = useMemo(() => buildFilterLabel(filter), [filter]);
   const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
+  const filterConfig = useTabFilterConfig(TAB_KEY);
   const filtered = useMemo(() => applyFilters(data.disputes, filter), [data.disputes, filter]);
 
   // === SIGNALEMENTS ===
@@ -137,7 +138,8 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
     <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
       <AnalyticsFilters data={data.disputes} filter={filter} onChange={setFilter}
-        statusField="current_status"
+        hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation}
+        dateField={filterConfig.dateField} statusField={filterConfig.statusField}
       />
       <KpiGrid items={kpiItems} />
 
