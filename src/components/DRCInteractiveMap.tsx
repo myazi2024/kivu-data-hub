@@ -67,9 +67,9 @@ function buildScopePredicate(
   commune?: string,
   quartier?: string,
 ): (record: any) => boolean {
-  if (quartier) return (r) => norm(r.quartier) === norm(quartier) && norm(r.commune) === norm(commune);
-  if (commune) return (r) => norm(r.commune) === norm(commune) && norm(r.ville) === norm(ville);
-  if (ville) return (r) => norm(r.ville) === norm(ville);
+  if (quartier) return (r) => norm(r.quartier) === norm(quartier) && norm(r.commune) === norm(commune) && norm(r.ville) === norm(ville) && norm(r.province) === norm(province);
+  if (commune) return (r) => norm(r.commune) === norm(commune) && norm(r.ville) === norm(ville) && norm(r.province) === norm(province);
+  if (ville) return (r) => norm(r.ville) === norm(ville) && norm(r.province) === norm(province);
   if (province) return (r) => norm(r.province) === norm(province);
   return () => false;
 }
@@ -158,7 +158,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
         contributionsCount: contribCount,
         mutationsCount: mutationCount,
         disputesCount: disputeCount,
-        densityLevel: (pCount > 500 ? 'Très élevé' : pCount > 100 ? 'Élevé' : pCount > 30 ? 'Modéré' : 'Faible') as ProvinceData['densityLevel'],
+        densityLevel: (totalSurface > 0 ? (pCount / (totalSurface / 10000) > 50 ? 'Très élevé' : pCount / (totalSurface / 10000) > 20 ? 'Élevé' : pCount / (totalSurface / 10000) > 5 ? 'Modéré' : 'Faible') : (pCount > 500 ? 'Très élevé' : pCount > 100 ? 'Élevé' : pCount > 30 ? 'Modéré' : 'Faible')) as ProvinceData['densityLevel'],
         certificatesCount: certCount,
         invoicesCount: allInvoices.length,
         expertisesCount: expertiseCount,
@@ -239,7 +239,8 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
       invoicesCount: allInvoices.length,
       totalSurfaceHa: Math.round(totalSurface / 10000),
       disputeResolutionRate: disputeCount > 0 ? Math.round((resolvedDisputes / disputeCount) * 100) : 0,
-      densityLevel: (pCount > 500 ? 'Très élevé' : pCount > 100 ? 'Élevé' : pCount > 30 ? 'Modéré' : 'Faible') as ProvinceData['densityLevel'],
+      const surfaceHa = totalSurface / 10000;
+      densityLevel: (surfaceHa > 0 ? (pCount / surfaceHa > 50 ? 'Très élevé' : pCount / surfaceHa > 20 ? 'Élevé' : pCount / surfaceHa > 5 ? 'Modéré' : 'Faible') : (pCount > 500 ? 'Très élevé' : pCount > 100 ? 'Élevé' : pCount > 30 ? 'Modéré' : 'Faible')) as ProvinceData['densityLevel'],
     };
   }, [analytics, selectedProvince, selectedVille, selectedCommune, selectedQuartier]);
 
