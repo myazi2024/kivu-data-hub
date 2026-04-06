@@ -214,8 +214,9 @@ export const AnalyticsFilters: React.FC<Props> = ({
           </SelectContent>
         </Select>
 
-        {sep}
         {filter.year !== null && (
+        <>
+        {sep}
         <Select value={filter.semester ? String(filter.semester) : '__all__'} onValueChange={v => onChange({ ...filter, semester: v === '__all__' ? undefined : Number(v), quarter: undefined, month: undefined, week: undefined })}>
           <SelectTrigger className={selectCls}><SelectValue placeholder="Sem." /></SelectTrigger>
           <SelectContent>
@@ -261,6 +262,8 @@ export const AnalyticsFilters: React.FC<Props> = ({
               </SelectContent>
             </Select>
           </>
+        )}
+        </>
         )}
 
         {!hideStatus && statusOptions.length > 0 && (
