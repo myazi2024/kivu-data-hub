@@ -12,6 +12,7 @@ export interface AnalyticsFilter {
   month?: number;      // 1..12
   week?: number;       // 1..5 (week within month)
   province?: string;
+  ville?: string;
   commune?: string;
   quartier?: string;
   avenue?: string;
@@ -59,6 +60,7 @@ export function matchesLocation(r: any, f: AnalyticsFilter): boolean {
     if (st && st !== f.sectionType) return false;
   }
   if (f.province && r.province !== f.province) return false;
+  if (f.ville && r.ville !== f.ville) return false;
   if (f.commune && r.commune !== f.commune) return false;
   if (f.quartier && r.quartier !== f.quartier) return false;
   if (f.avenue && r.avenue !== f.avenue) return false;
@@ -257,6 +259,7 @@ export function buildFilterLabel(filter: AnalyticsFilter): string {
   const loc: string[] = ['Rép. Dém. du Congo'];
   if (filter.province) loc.push(filter.province);
   if (filter.sectionType !== 'all') loc.push(filter.sectionType === 'urbaine' ? 'Urbaine' : 'Rurale');
+  if (filter.ville) loc.push(filter.ville);
   if (filter.commune) loc.push(filter.commune);
   if (filter.quartier) loc.push(filter.quartier);
   if (filter.avenue) loc.push(filter.avenue);
