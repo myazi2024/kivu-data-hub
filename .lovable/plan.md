@@ -1,91 +1,219 @@
 
-# Audit détaillé — Config Graphiques (Admin)
 
-## Architecture actuelle
+# Picklist de croisement de variables par graphique
 
-La page est structurée en 3 modes : **Onglets** | **Graphiques** | **Filtres**, avec un registre de 16 entrées (`ANALYTICS_TABS_REGISTRY`) stockant ~150 items (KPIs + Charts) et un système de fusion defaults/DB via `useTabChartsConfig`.
+## Concept
 
----
+Ajouter un petit sélecteur (picklist) dans le coin supérieur droit de chaque `ChartCard`, à côté du bouton "Copier". Quand l'utilisateur sélectionne une variable de croisement, le graphique passe en mode **StackedBar** (ou donut segmenté) pour montrer la répartition de la variable sélectionnée au sein de chaque catégorie de l'indicateur principal.
 
-## 1. Redondances et code mort
+Par exemple, sur le graphique "Type de demande" (TitleRequests), choisir la variable "Statut" transforme le bar chart en stacked bar montrant la répartition approuvé/en attente/rejeté pour chaque type de demande.
 
-| Problème | Localisation | Sévérité |
-|----------|-------------|----------|
-| **`_global` tab** ne contient qu'un watermark (`global-watermark`). Ce n'est pas un onglet analytics réel, il ne devrait pas apparaître dans le sélecteur d'onglets du mode Graphiques ni dans le mode Filtres | `useAnalyticsChartsConfig.ts` L554-560, `AdminAnalyticsChartsConfig.tsx` L671 | Moyenne |
-| **`rdc-map` dans le mode Filtres** : cet onglet carte n'a pas de filtres analytics (pas de `AnalyticsFilters`) mais apparaît dans `TAB_FILTER_DEFAULTS`… non, il n'y apparaît pas, mais il apparaît quand même dans la liste des onglets du `FilterManager` car celui-ci itère sur `Object.keys(TAB_FILTER_DEFAULTS)` — OK, il est bien exclu. **Cependant** `_global` et `rdc-map` apparaissent dans le sélecteur d'onglets du mode **Graphiques** (L671 itère `ANALYTICS_TABS_REGISTRY`) | Admin UI L671 | Faible |
-| **Duplication tooltip/detail KPIs dans `rdc-map`** : 11 KPIs tooltip + 13 KPIs detail = 24 items, avec des libellés identiques (Parcelles, Titres, Contributions…). Les labels sont dupliqués entre `tooltip-*` et `detail-*` | Registry L573-598 | Faible |
-| **`Pencil` importé mais jamais utilisé** dans `AdminAnalyticsChartsConfig.tsx` L18 | Import L18 | Faible |
+## Architecture technique
 
-## 2. Fonctionnalités absentes
+### 1. Définir les variables croisables par graphique
 
-| Fonctionnalité manquante | Impact | Priorité |
-|--------------------------|--------|----------|
-| **Pas de configuration du `dateField` ni `statusField` dans le mode Filtres** : l'admin peut activer/désactiver les 3 filtres (statut, temps, lieu) mais ne peut pas changer le champ date source (`created_at` vs `ownership_start_date` vs `generated_at`) ni le champ statut (`status` vs `current_status`). Ces valeurs restent hardcodées dans `TAB_FILTER_DEFAULTS` | L'admin ne peut pas adapter les champs sources si le schéma DB évolue | Élevée |
-| **Pas de prévisualisation** : aucun aperçu du rendu du graphique/KPI dans la config admin. L'admin doit naviguer vers /map pour voir le résultat | UX | Moyenne |
-| **Pas de recherche/filtrage** dans la liste des onglets (mode Graphiques) : avec 16 onglets, trouver un item spécifique est fastidieux | UX | Faible |
-| **Pas de drag-and-drop** pour réordonner : seuls des boutons ↑↓ existent. Pour déplacer un item du rang 15 au rang 2, il faut 13 clics | UX | Faible |
-| **Pas de "Réinitialiser tout"** global : le bouton reset ne fonctionne que pour l'onglet actif (L528-537). Pas de reset global qui supprimerait tous les overrides DB | UX | Moyenne |
-| **Pas de confirmation avant "Sauvegarder tout"** : le bouton sauvegarde immédiatement tous les onglets + tabs sans confirmation | UX | Faible |
-| **Pas d'export/import** de la configuration (JSON) pour sauvegarder/restaurer des presets | UX avancée | Faible |
+Créer un fichier `src/config/crossVariables.ts` contenant un registre statique `CROSS_VARIABLE_REGISTRY` qui mappe chaque `(tab_key, chart_key)` à une liste de variables pertinentes :
 
-## 3. Indicateurs fictifs / données non vérifiables
+```typescript
+export interface CrossVariable {
+  label: string;        // Ex: "Statut", "Province"
+  field: string;        // Ex: "status", "province"
+  maxCategories?: number; // Limite pour éviter trop de segments (défaut: 5)
+}
 
-| Problème | Détail |
-|----------|--------|
-| **Registry déclare des graphiques qui pourraient ne pas exister dans les blocs** : le registry est la source de vérité pour la config admin mais la correspondance avec les `item_key` utilisés dans les blocs (ex: `v('legal-status')`) n'est pas validée à la compilation. Si un bloc utilise `v('legal-status')` mais le registry a `item_key: 'legal-statut'`, le graphique sera toujours visible (fallback `true` dans `isChartVisible`) | Aucune validation de cohérence registry ↔ blocs |
-| **Graphiques "Géographie" (`geo`)** n'ont pas de `chart_type` dans le registry (ex: L252, L276) car ils sont rendus par `GeoCharts` et non par `ChartCard`. C'est correct mais confusant pour l'admin qui voit un item sans type de graphique et sans couleur | Cohérence UI |
+export const CROSS_VARIABLE_REGISTRY: Record<string, Record<string, CrossVariable[]>> = {
+  'title-requests': {
+    'request-type':    [{ label: 'Statut', field: 'status' }, { label: 'Paiement', field: 'payment_status' }, { label: 'Province', field: 'province' }, { label: 'Usage', field: 'declared_usage' }],
+    'requester-type':  [{ label: 'Statut', field: 'status' }, { label: 'Genre', field: 'requester_gender' }, { label: 'Province', field: 'province' }],
+    // ... etc.
+  },
+  // ... autres onglets
+};
+```
 
-## 4. Problèmes de logique
+### 2. Modifier `ChartCard` pour supporter le croisement
 
-| Problème | Détail | Sévérité |
-|----------|--------|----------|
-| **Mode Filtres : `handleSave` écrase potentiellement** — le `FilterManager` sauvegarde tous les filter items de tous les onglets en un seul upsert. Si un autre admin modifie un filtre en parallèle, ses changements seront écrasés (pas de versioning/locking) | Concurrence admin | Faible |
-| **`handleSaveAll` mélange charts et tabs mais pas les filtres** : le bouton "Sauvegarder tout" (L496-511) fusionne `allChartItems` + `tabItems` mais n'inclut pas les filter items du `FilterManager` (qui a son propre état local) | L'état des filtres modifiés dans le mode Filtres n'est pas pris en compte par "Sauvegarder tout" | Élevée |
-| **`hasChanges` ne reflète pas les modifications des filtres** : `hasChanges = hasChartChanges \|\| hasTabChanges` (L393) mais le mode Filtres a son propre `modified` state interne. Le badge "Non sauvegardé" ne s'affiche pas quand seuls les filtres sont modifiés | Élevée |
-| **Tri des items** : la logique de tri (L418-421) force les KPIs avant les charts. Si un admin veut intercaler un KPI après un chart, c'est impossible | Contrainte de design |
+Ajouter les props optionnelles :
+- `crossVariables?: CrossVariable[]` — liste de variables disponibles
+- `rawRecords?: any[]` — données brutes pour recalculer le croisement
+- `groupField?: string` — le champ principal du graphique (pour regroupe par)
 
-## 5. Incohérences entre Registry et Blocs
+Quand une variable est sélectionnée, `ChartCard` :
+1. Recalcule les données en mode croisé (group by `groupField`, segment by `crossField`)
+2. Rend un `StackedBarChart` au lieu du graphique simple
+3. Affiche un bouton "✕" pour revenir au mode normal
 
-| Tab | Registry items | Problème potentiel |
-|-----|---------------|-------------------|
-| `ownership` | `dateField: 'ownership_start_date'` | Le trend dans `OwnershipHistoryBlock` utilise `trendByMonth(filtered, 'ownership_start_date')` mais `applyFilters` utilise `filterConfig.dateField` — OK si cohérent, mais si l'admin pouvait changer `dateField`, le trend continuerait d'utiliser `'ownership_start_date'` en dur |
-| `certificates` | `dateField: 'generated_at'` | Idem, les blocs ont parfois des `dateField` hardcodés en plus du filterConfig |
-| `disputes` | `statusField: 'current_status'` | Seul onglet avec un statusField non-default. Non configurable via l'UI admin |
+### 3. UI du picklist
 
-## 6. Optimisations recommandées
+Un petit `<Select>` compact (icône `Layers` ou `GitBranch`) en `text-[9px]` à côté du bouton Copier, qui s'ouvre en popover avec les options de croisement. Design discret, pas plus large que 24px en mode fermé (juste une icône).
 
-### Priorité haute
-1. **Remonter l'état des filtres** dans le composant parent pour que `hasChanges` et "Sauvegarder tout" incluent les modifications de filtres
-2. **Ajouter `dateField` et `statusField` configurables** dans le mode Filtres (2 selects supplémentaires par onglet avec les champs possibles)
-3. **Valider la cohérence registry ↔ blocs** via un test ou une assertion au build (vérifier que chaque `v('key')` dans un bloc correspond à un `item_key` dans le registry)
+### 4. Variables pertinentes par onglet et graphique
 
-### Priorité moyenne
-4. **Exclure `_global`** de la liste du mode Graphiques (ou le regrouper avec `rdc-map` dans une section "Paramètres spéciaux")
-5. **Ajouter un bouton "Réinitialiser tout"** global qui supprime tous les overrides DB
-6. **Ajouter `chart_type: null` explicitement** pour les items `geo` dans le registry et afficher "Multi-graphique" dans l'admin
+**Titres fonciers** (`title-requests`) :
+| Graphique | Variables croisables |
+|-----------|---------------------|
+| Type demande | Statut, Paiement, Usage déclaré, Province |
+| Demandeur | Statut, Genre, Province |
+| Statut | Type demande, Paiement, Province |
+| Paiement | Statut, Type demande, Province |
+| Statut juridique | Usage déclaré, Province, Statut |
+| Usage déclaré | Type construction, Province, Statut |
+| Genre | Statut, Type demande, Province |
+| Nationalité | Statut, Province |
+| Titre déduit | Statut, Province |
+| Type construction | Usage déclaré, Province, Statut |
+| Nature construction | Province, Usage déclaré |
+| Superficie | Province, Usage déclaré, Statut |
 
-### Priorité faible
-7. Nettoyer l'import `Pencil` inutilisé
-8. Ajouter une recherche textuelle dans le sélecteur d'onglets
-9. Implémenter le drag-and-drop (dnd-kit) pour le réordonnancement
+**Parcelles titrées** (`parcels-titled`) :
+| Graphique | Variables croisables |
+|-----------|---------------------|
+| Type titre | Statut juridique, Usage déclaré, Province |
+| Propriétaires | Type titre, Usage déclaré, Province |
+| Genre | Type titre, Province |
+| Construction | Usage déclaré, Province, Type titre |
+| Nature construction | Province, Type titre |
+| Usage déclaré | Type titre, Province |
+| Type bail | Usage déclaré, Province |
+| Superficie | Province, Usage déclaré |
 
-## Plan d'implémentation recommandé
+**Contributions** (`contributions`) :
+| Graphique | Variables croisables |
+|-----------|---------------------|
+| Type contribution | Statut, Province, Usage déclaré |
+| Statut | Type contribution, Province |
+| Type titre | Statut, Province, Usage déclaré |
+| Statut juridique | Type contribution, Province |
+| Usage déclaré | Type contribution, Statut, Province |
+| Type construction | Province, Statut |
+| Détection fraude | Type contribution, Province |
+| Score fraude | Type contribution, Province |
+| Statut appel | Province |
 
-### Étape 1 — Corriger la logique "Sauvegarder tout" + badge (critique)
-- Remonter `localFilters` et `modified` du `FilterManager` dans le composant parent
-- Inclure les filter items dans `handleSaveAll`
-- Inclure les modifications filtres dans `hasChanges`
+**Expertise** (`expertise`) :
+| Graphique | Variables croisables |
+|-----------|---------------------|
+| Statut | Condition bien, Qualité construction, Province |
+| Paiement | Statut, Province |
+| État du bien | Qualité construction, Province, Accès routier |
+| Qualité construction | État du bien, Province |
+| Matériau murs | Matériau toiture, Province |
+| Matériau toiture | Matériau murs, Province |
+| Env. sonore | Province, Position bâtiment |
+| Position bâtiment | Province, Env. sonore |
+| Accès routier | Province, État du bien |
+| Zones à risque | Province |
+| Valeur marchande | Province, Qualité construction, État du bien |
+| Nbre étages | Province, Qualité construction |
 
-### Étape 2 — Ajouter dateField/statusField au mode Filtres
-- Ajouter 2 selects dans `FilterManager` pour chaque onglet
-- Stocker dans des items filter additionnels (`filter-date-field`, `filter-status-field`)
-- Mettre à jour `useTabFilterConfig` pour lire ces overrides
+**Mutations** (`mutations`) :
+| Graphique | Variables croisables |
+|-----------|---------------------|
+| Statut | Type mutation, Province, Paiement |
+| Type mutation | Statut, Province, Paiement |
+| Type demandeur | Statut, Province |
+| Paiement | Statut, Type mutation, Province |
+| Valeur vénale | Type mutation, Province |
+| Ancienneté titre | Type mutation, Province |
+| Retard mutation | Type mutation, Province |
 
-### Étape 3 — Nettoyage
-- Supprimer import `Pencil`
-- Masquer `_global` dans le sélecteur d'onglets du mode Graphiques
-- Ajouter labels explicites pour les items `geo` sans `chart_type`
+**Lotissements** (`subdivision`) :
+| Graphique | Variables croisables |
+|-----------|---------------------|
+| Statut | Objet, Province, Type demandeur |
+| Distribution lots | Province, Objet |
+| Objet lotissement | Statut, Province |
+| Type demandeur | Statut, Province |
+| Paiement | Statut, Province |
+| Surface parcelle mère | Province, Objet |
 
-### Fichiers modifiés
-- `src/components/admin/AdminAnalyticsChartsConfig.tsx`
-- `src/hooks/useAnalyticsChartsConfig.ts`
+**Litiges** (`disputes`) :
+| Graphique | Variables croisables |
+|-----------|---------------------|
+| Nature | Statut (en cours/résolu), Province, Type |
+| En cours vs Résolus | Nature, Province |
+| Statut détaillé | Nature, Province |
+| Type litige | Nature, Province, Niveau résolution |
+| Niveau résolution | Nature, Province |
+| Qualité déclarant | Nature, Province |
+| Statut levée | Nature, Province |
+| Nature litige (levée) | Province |
+
+**Hypothèques** (`mortgages`) :
+| Graphique | Variables croisables |
+|-----------|---------------------|
+| Type créancier | Statut, Province |
+| Montants | Province, Type créancier |
+| Statut | Type créancier, Province |
+| Durée | Province, Type créancier |
+
+**Permis** (`building-permits`) :
+| Graphique | Variables croisables |
+|-----------|---------------------|
+| Statut administratif | Service émetteur, Province |
+| En cours vs Expiré | Province, Service |
+| Service émetteur | Statut, Province |
+| Période validité | Province |
+
+**Taxes** (`taxes`) :
+| Graphique | Variables croisables |
+|-----------|---------------------|
+| Statut paiement | Exercice fiscal, Province |
+| Exercice fiscal | Statut paiement, Province |
+| Tranche montant | Statut paiement, Province |
+
+**Propriété** (`ownership`) :
+| Graphique | Variables croisables |
+|-----------|---------------------|
+| Statut juridique | Type mutation, Province |
+| Type mutation | Statut juridique, Province |
+
+**Fraude** (`fraud`) :
+| Graphique | Variables croisables |
+|-----------|---------------------|
+| Type fraude | Sévérité, Province |
+| Sévérité | Type fraude, Province |
+| Liées contrib. | Type fraude, Sévérité |
+
+**Certificats** (`certificates`) :
+| Graphique | Variables croisables |
+|-----------|---------------------|
+| Type certificat | Statut, Province |
+| Statut | Type certificat, Province |
+
+**Factures** (`invoices`) :
+| Graphique | Variables croisables |
+|-----------|---------------------|
+| Statut | Moyen paiement, Province, Zone géo |
+| Moyen paiement | Statut, Province |
+| Zone géographique | Statut, Province |
+
+### 5. Logique de croisement (utilitaire)
+
+Ajouter dans `analyticsHelpers.ts` :
+```typescript
+export function crossBy(
+  records: any[], groupField: string, crossField: string, maxCross = 5
+): { data: any[]; keys: string[] } {
+  // Groupe par groupField, puis compte par crossField
+  // Retourne données pour StackedBarChart + liste de clés
+}
+```
+
+### 6. Fichiers modifiés
+
+| Fichier | Action |
+|---------|--------|
+| `src/config/crossVariables.ts` | **Nouveau** — registre des variables croisables par graphique |
+| `src/utils/analyticsHelpers.ts` | Ajouter `crossBy()` |
+| `src/components/visualizations/shared/ChartCard.tsx` | Ajouter picklist + mode croisé dans `ChartCard` |
+| 14 fichiers blocs | Passer `crossVariables`, `rawRecords`, `groupField` à chaque `ChartCard` |
+
+### 7. Exclusions
+
+Les graphiques suivants ne sont **pas** croisables car leur structure ne s'y prête pas :
+- Graphiques `area`/`evolution` (tendances temporelles)
+- Graphiques `geo` (GeoCharts — déjà multi-niveaux)
+- `StackedBarCard` existants (déjà croisés)
+- KPIs
+
