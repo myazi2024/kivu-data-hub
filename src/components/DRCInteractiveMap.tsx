@@ -201,6 +201,58 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const totalParcels = useMemo(() => provincesData.reduce((s, p) => s + p.parcelsCount, 0), [provincesData]);
   const todayStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
+  /** Scoped stats: recalculate KPIs based on the most specific geographic filter */
+  const scopedStats = useMemo(() => {
+    if (!analytics || !selectedProvince) return null;
+    const predicate = buildScopePredicate(selectedProvince.name, selectedVille, selectedCommune, selectedQuartier);
+    const { parcels, titleRequests, contributions, invoices, disputes, mutationRequests, certificates, expertiseRequests, taxHistory } = analytics;
+
+    const filteredParcels = parcels.filter(predicate);
+    const pCount = filteredParcels.length;
+    const trCount = titleRequests.filter(predicate).length;
+    const contribCount = contributions.filter(predicate).length;
+    const disputeCount = disputes.filter(predicate).length;
+    const mutationCount = mutationRequests.filter(predicate).length;
+    const certCount = certificates.filter(predicate).length;
+    const expertiseCount = expertiseRequests.filter(predicate).length;
+
+    const paidInvoices = invoices.filter(i => predicate(i) && i.status === 'paid');
+    const totalRevenue = paidInvoices.reduce((s, i) => s + (i.total_amount_usd || 0), 0);
+    const allInvoices = invoices.filter(predicate);
+
+    const taxPaid = taxHistory.filter(t => predicate(t) && t.payment_status === 'paid');
+    const fiscalRevenue = taxPaid.reduce((s, t) => s + (t.amount_usd || 0), 0);
+
+    const totalSurface = filteredParcels.reduce((s, p) => s + (p.area_sqm || 0), 0);
+    const resolvedDisputes = disputes.filter(d => predicate(d) && (d.current_status === 'resolved' || d.current_status === 'resolu')).length;
+
+    return {
+      parcelsCount: pCount,
+      titleRequestsCount: trCount,
+      contributionsCount: contribCount,
+      mutationsCount: mutationCount,
+      disputesCount: disputeCount,
+      certificatesCount: certCount,
+      expertisesCount: expertiseCount,
+      revenueUsd: totalRevenue,
+      fiscalRevenueUsd: fiscalRevenue,
+      invoicesCount: allInvoices.length,
+      totalSurfaceHa: Math.round(totalSurface / 10000),
+      disputeResolutionRate: disputeCount > 0 ? Math.round((resolvedDisputes / disputeCount) * 100) : 0,
+      densityLevel: (pCount > 500 ? 'Très élevé' : pCount > 100 ? 'Élevé' : pCount > 30 ? 'Modéré' : 'Faible') as ProvinceData['densityLevel'],
+    };
+  }, [analytics, selectedProvince, selectedVille, selectedCommune, selectedQuartier]);
+
+  /** Label for the detail block header */
+  const scopeLabel = useMemo(() => {
+    const parts: string[] = [];
+    if (selectedQuartier) parts.push(selectedQuartier);
+    if (selectedCommune) parts.push(selectedCommune);
+    if (selectedVille) parts.push(selectedVille);
+    if (selectedProvince) parts.push(selectedProvince.name);
+    return parts.join(' — ') || '';
+  }, [selectedProvince, selectedVille, selectedCommune, selectedQuartier]);
+
   /** Handle province filter from Analytics → zoom map */
   const handleProvinceFilter = React.useCallback((provinceName: string | undefined) => {
     if (!provinceName) {
