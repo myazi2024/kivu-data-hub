@@ -214,7 +214,7 @@ export function useAnalyticsChartsConfigMutations() {
         display_order: rest.display_order,
         custom_title: rest.custom_title || null,
         custom_color: rest.custom_color || null,
-        chart_type: (rest.item_type === 'tab' || rest.item_type === 'filter') ? null : (rest.chart_type || null),
+        chart_type: (rest.item_type === 'tab' || rest.item_type === 'filter' || rest.item_type === 'cross') ? null : (rest.chart_type || null),
         custom_icon: rest.custom_icon || null,
         col_span: rest.col_span ?? 1,
       }));
