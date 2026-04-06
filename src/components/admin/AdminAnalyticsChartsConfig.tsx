@@ -669,15 +669,17 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
   const [localItems, setLocalItems] = useState<Record<string, ChartConfigItem[]>>({});
   const [localTabs, setLocalTabs] = useState<TabConfig[]>([]);
   const [localFilters, setLocalFilters] = useState<Record<string, ChartConfigItem[]>>({});
+  const [localCross, setLocalCross] = useState<Record<string, Record<string, { enabled: boolean; variables: { label: string; field: string; enabled: boolean }[] }>>>({});
   const [hasTabChanges, setHasTabChanges] = useState(false);
   const [hasFilterChanges, setHasFilterChanges] = useState(false);
+  const [hasCrossChanges, setHasCrossChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [viewMode, setViewMode] = useState<'tabs' | 'charts' | 'filters'>('tabs');
+  const [viewMode, setViewMode] = useState<'tabs' | 'charts' | 'filters' | 'cross'>('tabs');
   const [modifiedTabs, setModifiedTabs] = useState<Set<string>>(new Set());
   const [pendingTabSwitch, setPendingTabSwitch] = useState<string | null>(null);
 
   const hasChartChanges = modifiedTabs.size > 0;
-  const hasChanges = hasChartChanges || hasTabChanges || hasFilterChanges;
+  const hasChanges = hasChartChanges || hasTabChanges || hasFilterChanges || hasCrossChanges;
 
   // Initialize local state from defaults + DB overrides
   useEffect(() => {
