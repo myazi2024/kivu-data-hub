@@ -1458,14 +1458,17 @@ const AdminCCCContributions: React.FC = () => {
                     <div className="mt-4">
                       <Label className="text-xs text-muted-foreground">Historique de bornage</Label>
                       <div className="space-y-2 mt-1">
-                        {selectedContribution.boundary_history.map((boundary: any, idx: number) => (
+                        {selectedContribution.boundary_history.map((boundary: any, idx: number) => {
+                          const rr = (obj: any, ...keys: string[]) => { for (const k of keys) { if (obj?.[k] !== undefined && obj[k] !== null) return obj[k]; } return null; };
+                          return (
                           <div key={idx} className="p-2 bg-secondary rounded text-sm">
-                            <p><strong>PV N°:</strong> {boundary.pvReferenceNumber}</p>
-                            <p><strong>Objet:</strong> {boundary.boundaryPurpose}</p>
-                            <p><strong>Géomètre:</strong> {boundary.surveyorName}</p>
-                            <p><strong>Date:</strong> {new Date(boundary.surveyDate).toLocaleDateString('fr-FR')}</p>
+                            <p><strong>PV N°:</strong> {rr(boundary, 'pv_reference_number', 'pvReferenceNumber')}</p>
+                            <p><strong>Objet:</strong> {rr(boundary, 'boundary_purpose', 'boundaryPurpose')}</p>
+                            <p><strong>Géomètre:</strong> {rr(boundary, 'surveyor_name', 'surveyorName')}</p>
+                            <p><strong>Date:</strong> {new Date(rr(boundary, 'survey_date', 'surveyDate') || '').toLocaleDateString('fr-FR')}</p>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}
