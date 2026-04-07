@@ -1,93 +1,44 @@
 
-# Audit — Fonctionnalité de tracé de construction dans le croquis parcelle
 
-## Constats
+# Attribution explicite des constructions tracées aux constructions déclarées
 
-### A. Fonctionnalités absentes
+## Problème
 
-1. **Pas d'édition GPS des sommets de construction par double-clic** — Les bornes de parcelle supportent le double-clic pour éditer les coordonnées GPS (overlay `editingBorneIndex`), mais aucun mécanisme équivalent n'existe pour les sommets d'une construction validée. Impossible de corriger un sommet après validation.
+Le `linkedIndex` est assigné automatiquement et séquentiellement (ordre de tracé = ordre de déclaration). L'utilisateur ne peut pas choisir quelle construction déclarée il est en train de tracer, ni réattribuer après coup. Si l'utilisateur trace la "Villa secondaire" avant la "Villa principale", le mapping est faux.
 
-2. **Pas d'édition/modification d'une construction validée** — Une fois validée, la seule option est de supprimer la construction entière (popup Leaflet ou bouton "Supprimer"). Impossible de déplacer un sommet, ajouter/retirer un sommet, ou ajuster la forme.
+## Solution
 
-3. **Pas de liaison visuelle entre construction tracée et construction déclarée (Infos)** — Le `linkedIndex` est assigné séquentiellement (ligne 1549 : `linkedIndex: buildingShapes.length`) mais n'est jamais affiché. L'utilisateur ne sait pas quelle construction tracée correspond à quelle construction déclarée (principale, additionnelle 1, etc.).
+### 1. Sélecteur de construction cible AVANT le tracé
 
-4. **Pas de sélection de la construction cible avant tracé** — Quand `requiredBuildingCount > 1`, l'utilisateur trace dans l'ordre sans pouvoir choisir "je trace la construction additionnelle 2". Le mapping est implicite et fragile.
+Dans `ParcelMapPreview.tsx`, quand l'utilisateur clique sur le bouton Building2 et que `requiredBuildingCount > 1` :
+- Afficher un petit menu/dropdown listant les constructions déclarées **non encore tracées** (en utilisant `constructionLabels` filtré par les `linkedIndex` déjà utilisés)
+- L'utilisateur choisit laquelle il va tracer (ex: "Villa principale" ou "Garage")
+- Stocker le choix dans un état `selectedBuildingTarget: number | null` (l'index choisi)
+- Ce `selectedBuildingTarget` est ensuite utilisé comme `linkedIndex` dans `validateBuilding` au lieu de `buildingShapes.length`
 
-5. **Pas de déplacement d'une construction validée** — Contrairement à la parcelle (nudge + rotation), les constructions ne peuvent pas être déplacées ou pivotées après placement.
+Si `requiredBuildingCount === 1`, pas de sélecteur — attribution automatique à l'index 0.
 
-6. **Pas d'affichage de la dimension du dernier segment (fermeture)** — Pendant le tracé, les distances s'affichent entre sommets successifs (lignes 1104-1119) mais pas la distance de fermeture (dernier sommet → premier). L'utilisateur ne connaît pas la longueur du dernier côté avant de valider.
+### 2. Réattribution manuelle APRÈS validation
 
-### B. Bugs et erreurs de logique
+Dans la liste détaillée des constructions tracées (bloc en bas de la carte, lignes 2555-2569) :
+- Ajouter un petit `Select` (dropdown) à côté de chaque construction tracée, pré-rempli avec son label actuel
+- Les options disponibles = `constructionLabels` (avec indication de celles déjà attribuées à d'autres tracés)
+- Quand l'utilisateur change la sélection, mettre à jour le `linkedIndex` du `BuildingShape` concerné et celui de l'ancien occupant si permutation
 
-7. **`removeLastBuilding` supprime toujours la dernière** — Le bouton (ligne 2476) supprime `buildingShapes.slice(0, -1)` sans tenir compte du `linkedIndex`. Si l'utilisateur supprime la dernière construction, les `linkedIndex` des restantes deviennent incohérents.
+### 3. Badge visuel pendant le tracé
 
-8. **Suppression via CustomEvent fragile** — La suppression par `document.dispatchEvent(new CustomEvent('remove-building'))` (lignes 1038-1040, 1140-1147) est un anti-pattern React : contourne le flux de données, risque de fuite mémoire si le listener n'est pas nettoyé correctement, et ne recalcule pas les `linkedIndex` des constructions restantes.
+Pendant le tracé (`isDrawingBuilding`), le badge rouge en haut de la carte affiche déjà `constructionLabels[buildingShapes.length]` — le remplacer par `constructionLabels[selectedBuildingTarget]` pour refléter le choix explicite.
 
-9. **ReviewTab utilise l'ancien modèle de données** — Ligne 283 dans ReviewTab : `const labels = { circle: 'Cercle', square: 'Carré', rectangle: 'Rectangle', trapeze: 'Trapèze', polygon: 'Polygone' }` — ces labels correspondent à l'ancien système de formes fixes, pas au nouveau modèle par sommets.
+### 4. Indicateur dans le compteur
 
-10. **`exitMarkerMoveMode` ne restaure pas le mode construction** — Ligne 1594 : si on sort du mode déplacement de borne pendant un tracé de construction, le `dataset.addingBuilding` n'est pas restauré à `'true'`, ce qui casse le tracé en cours.
+Dans la liste détaillée, afficher un indicateur visuel (icône lien ou badge coloré) confirmant la liaison : `🔗 Villa principale → Tracé 1 (45.2 m²)`.
 
-### C. Redondances
+## Fichiers modifiés
 
-11. **Champs rétro-compatibilité inutiles** — `type?`, `center?`, `size?`, `rotation?` dans `BuildingShape` (lignes 56-60) ne sont jamais utilisés dans le nouveau code. Ils encombrent l'interface.
+- **`ParcelMapPreview.tsx`** : état `selectedBuildingTarget`, menu de sélection avant tracé, Select de réattribution dans la liste, badge mis à jour
+- **`LocationTab.tsx`** : aucune modification (les `constructionLabels` sont déjà calculés et passés)
 
-12. **Double rendu des dimensions** — Les dimensions des côtés validés sont affichées à la fois dans le popup Leaflet (lignes 1033-1043) et comme `divIcon` markers (lignes 1046-1063). Redondance visuelle.
+## Impact
 
-### D. Optimisations
+~80 lignes modifiées/ajoutées dans 1 fichier principal.
 
-13. **Calcul de surface non affiché en temps réel** — Pendant le tracé, la surface du polygone en cours n'est pas calculée/affichée. L'utilisateur doit valider pour connaître la surface.
-
-14. **Aucune validation de la surface construction vs surface parcelle** — Pas de vérification que la surface totale des constructions ne dépasse pas la surface de la parcelle.
-
-15. **Le compteur de constructions ne montre pas le détail** — Le bloc en bas (lignes 2461-2484) affiche `N/M constructions tracées` mais pas le nom/catégorie de chaque construction liée.
-
----
-
-## Plan de corrections
-
-### Fichier : `src/components/cadastral/ParcelMapPreview.tsx`
-
-**1. Édition GPS des sommets de construction par double-clic**
-- Ajouter un état `editingBuildingVertex: { shapeId: string; vertexIdx: number } | null` et un overlay similaire à `editingBorneIndex` pour modifier lat/lng d'un sommet de construction.
-- Sur le rendu des constructions validées, ajouter des `circleMarker` interactifs sur chaque sommet avec un handler `dblclick` ouvrant l'overlay d'édition.
-- Après modification, recalculer `sides`, `areaSqm`, `perimeterM`.
-
-**2. Liaison explicite construction tracée ↔ construction déclarée**
-- Recevoir une nouvelle prop `constructionLabels: string[]` (ex: `['Construction principale', 'Villa secondaire', ...]`) calculée depuis le parent.
-- Avant le tracé, si `requiredBuildingCount > 1`, afficher un sélecteur (badge ou dropdown) pour choisir quelle construction on trace. Stocker le `linkedIndex` choisi.
-- Dans le popup et le compteur, afficher le nom de la construction liée (ex: "Construction 1 — Villa").
-
-**3. Affichage de la distance de fermeture pendant le tracé**
-- Quand `buildingVertices.length >= 3`, afficher aussi la distance du segment de fermeture (dernier → premier).
-
-**4. Surface en temps réel pendant le tracé**
-- Calculer et afficher `calculateBuildingArea(buildingVertices)` dans le badge de tracé quand ≥ 3 sommets.
-
-**5. Corriger `removeLastBuilding` et suppression**
-- Remplacer le `CustomEvent` par un callback direct passé au popup via un bouton React.
-- Après suppression, recalculer les `linkedIndex` de toutes les constructions restantes.
-
-**6. Corriger `exitMarkerMoveMode`**
-- Restaurer `dataset.addingBuilding = 'true'` si `isDrawingBuilding` est actif.
-
-**7. Nettoyer les champs rétro-compatibilité**
-- Supprimer `type?`, `center?`, `size?`, `rotation?` de l'interface `BuildingShape`.
-
-**8. Compteur détaillé avec noms des constructions**
-- Remplacer le compteur simple par une liste montrant chaque construction liée (catégorie + surface) avec possibilité de supprimer individuellement.
-
-### Fichier : `src/components/cadastral/ccc-tabs/LocationTab.tsx`
-
-**9. Calculer et passer `constructionLabels`**
-- Construire un tableau de labels depuis `formData.propertyCategory` (principale) + `additionalConstructions[].propertyCategory`.
-
-### Fichier : `src/components/cadastral/ccc-tabs/ReviewTab.tsx`
-
-**10. Corriger les labels obsolètes**
-- Remplacer le mapping `circle/square/rectangle/trapeze/polygon` par l'affichage des vrais `sides` et `areaSqm` du modèle actuel.
-
-### Fichier : `src/components/cadastral/CadastralContributionDialog.tsx`
-
-**11. Passer `constructionLabels`** via LocationTab.
-
-**Impact** : ~150 lignes modifiées/ajoutées dans 4 fichiers.
