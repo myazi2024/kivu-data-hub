@@ -1,82 +1,112 @@
 
-# Audit détaillé — Mode Test (Admin > Système)
 
-## A. Architecture — Constat positif
+# Audit detaille — Mode Test (Admin > Systeme)
 
-Le mode test repose sur une architecture solide :
-- ✅ Isolation par préfixe `TEST-` dans les numéros de parcelle/référence
-- ✅ Routes dédiées `/test/*` via `TestEnvironmentProvider`
-- ✅ Helper `applyTestFilter` appliqué dans 13 composants pour séparer test/production
-- ✅ RPC côté serveur (`cleanup_all_test_data`, `count_test_data_stats`) pour éviter les limites client
-- ✅ Rollback en cas d'échec pendant la génération (FK-safe)
-- ✅ Batching par 50 pour les insertions massives
-- ✅ Progression pas-à-pas avec UI (`GenerationProgress`)
-- ✅ Cron quotidien configuré (`cleanup-test-data-daily` à 3h)
-- ✅ Audit log systématique (`TEST_MODE_ENABLED`, `TEST_DATA_GENERATED`)
+## A. Fuite de donnees test dans les analytics (tables FK)
 
-## B. Problèmes identifiés
+Le filtre `TEST_FILTER_COLUMN` dans `useLandDataAnalytics.tsx` exclut les TEST-% uniquement pour les tables ayant une colonne directe prefixee. Les tables liees par FK ne sont **pas filtrees** :
 
-### B1. Données analytics NON filtrées en mode test
+| # | Table | Colonne FK | Filtre TEST-% ? | Impact |
+|---|-------|------------|------------------|--------|
+| 1 | `cadastral_building_permits` | `parcel_id` | NON | Permis test visibles en production |
+| 2 | `cadastral_tax_history` | `parcel_id` | NON | Historique taxes test visible |
+| 3 | `cadastral_mortgages` | `parcel_id` | NON | Hypotheques test visibles |
+| 4 | `cadastral_ownership_history` | `parcel_id` | NON | Historique propriete test visible |
+| 5 | `fraud_attempts` | `contribution_id` | NON | Fraudes test visibles |
 
-| # | Problème | Impact |
-|---|----------|--------|
-| 1 | **`useLandDataAnalytics.tsx` ne filtre PAS les données TEST-** — Le hook `fetchAll` charge toutes les lignes sans `applyTestFilter`. Les 7 020 parcelles de test apparaissent dans les graphiques de production (onglet "Données foncières"). | **Critique** — Pollution des analytics en production |
-| 2 | **`DRCInteractiveMap` ne filtre pas les données TEST-** — La carte RDC en production affiche les données test (les tooltips province incluent les compteurs TEST-). | **Élevé** — Fausse l'analyse géographique |
+Ces 5 tables sont enrichies ensuite via `enrich()` qui fait un lookup par `parcel_id`, mais l'enrichissement n'exclut pas — il ajoute des champs geo. Les donnees test passent dans les graphiques de production.
 
-### B2. Nettoyage automatique — Fonctionnalité fictive
+**Solution** : Apres le `fetchAll` et l'enrichissement, filtrer les resultats enrichis : exclure les rows dont le `parcel_number` (obtenu via enrichissement) matche `TEST-%`. Ou bien ajouter un filtre post-fetch sur ces tables.
 
-| # | Problème | Impact |
-|---|----------|--------|
-| 3 | **Le cron appelle une Edge Function `cleanup-test-data`** mais utilise la clé **anon** (`role: anon`) dans le header Authorization. L'Edge Function exige un JWT admin (vérification rôle). Le cron **ne peut pas fonctionner** car la clé anon n'est pas admin. | **Critique** — Le nettoyage automatique est inactif |
-| 4 | **Le paramètre `test_data_retention_days` est affiché et configurable mais jamais utilisé** — Ni le cron, ni l'Edge Function, ni le RPC `cleanup_all_test_data` ne prennent en compte la durée de rétention. Toutes les données TEST- sont supprimées à chaque exécution. | **Moyen** — Paramètre fictif |
+## B. Cron de nettoyage automatique casse
 
-### B3. Générateur de données — Lacunes d'alignement
+| # | Probleme |
+|---|----------|
+| 6 | **Cron utilise anon key** — Le cron `cleanup-test-data-daily` appelle l'Edge Function `cleanup-test-data` avec le Bearer token anon. L'Edge Function verifie le role admin via `getClaims()` + `user_roles`. Un token anon n'a pas de `sub` valide, donc la verification echoue systematiquement avec 401/403. Le nettoyage automatique ne fonctionne **jamais**. |
+| 7 | **Edge Function redondante** — La RPC `cleanup_all_test_data()` fait le meme travail cote SQL, avec verification de role integree. L'Edge Function est un doublon inutile. |
+| 8 | **`test_data_retention_days` ignore** — Le parametre est affiche dans l'UI et sauvegarde en config, mais la RPC `cleanup_all_test_data()` supprime **tout** sans condition de date. L'Edge Function utilise ce parametre mais elle ne s'execute jamais (point 6). |
 
-| # | Problème | Impact |
-|---|----------|--------|
-| 5 | **`generateTitleRequests` ne génère pas `construction_materials`, `standing`, `floor_number`, `construction_year`** pour les demandes de titres. Ces champs ont été récemment ajoutés au SELECT analytics mais les données test ne les remplissent pas → graphiques "Matériaux" et "Standing" vides dans l'onglet Titres. | **Moyen** — Graphiques vides en test |
-| 6 | **`generateBuildingPermits` ne génère pas de statut `En attente`** — Seuls `Approuvé` et `Rejeté` sont utilisés. Le KPI "En attente" sera toujours à 0. | **Faible** — Couverture incomplète |
-| 7 | **`generateTaxHistory` utilise `'unpaid'` comme statut** mais `TaxesBlock.statusNorm` normalise vers `'pending'` pour `['pending', 'en_attente', 'unpaid', 'impayé']`. Fonctionnel mais inconsistant avec les données CCC réelles qui utilisent "En attente". | **Faible** — Incohérence stylistique |
-| 8 | **`generateMortgages` utilise `'Renégociée'`** — `MortgagesBlock.statusNorm` ne reconnaît pas ce statut (uniquement `active`/`paid`). Les hypothèques "Renégociée" tombent dans "Autre". | **Faible** — Statut non normalisé |
-| 9 | **`rollbackTestData` utilise `.in()` avec potentiellement 7 020 parcel_numbers** — Dépasse la limite d'URI de Supabase. En cas d'erreur pendant la génération, le rollback peut échouer silencieusement. | **Moyen** — Rollback fragile |
+**Solution** : Remplacer le cron par un appel direct a la RPC SQL (via `net.http_post` vers une nouvelle RPC ou directement `SELECT cleanup_all_test_data()`). Ajouter un parametre de retention a la RPC. Supprimer l'Edge Function devenue inutile.
 
-### B4. Interface admin — Points d'amélioration
+## C. Rollback fragile (`.in()` avec 7 020 elements)
 
-| # | Problème | Impact |
-|---|----------|--------|
-| 10 | **Pas d'indicateur de durée de génération** — La génération de 7 020 parcelles prend 30-60 secondes. Aucun timer visible. | **Faible** — UX |
-| 11 | **Le bouton "Régénérer" est désactivé quand `total === 0`** mais le bouton "Générer" n'existe pas séparément. Si les données ont été supprimées manuellement, l'admin ne peut pas relancer la génération sans toggler le mode test off/on. | **Moyen** — Workflow bloquant |
-| 12 | **Pas de comptage par province** dans les stats — L'admin voit le total par table mais pas la répartition géographique. | **Faible** — Info manquante |
+| # | Probleme |
+|---|----------|
+| 9 | **`rollbackTestData` utilise `.in('parcel_number', parcelNumbers)`** avec un tableau de 7 020 elements. Supabase convertit `.in()` en parametres URL, ce qui depasse la limite d'URI (~8 KB). Le rollback echouera silencieusement sur les grosses generations. |
 
-### B5. Sécurité
+**Solution** : Remplacer le rollback client-side par un appel a la RPC `cleanup_all_test_data()` qui fonctionne cote serveur sans limite d'URI.
 
-| # | Problème | Impact |
-|---|----------|--------|
-| 13 | **La clé anon est en clair dans le cron job** — Exposée dans `cron.job.command`. Pas critique (c'est la clé publique) mais mauvaise pratique. | **Faible** — Hygiène |
+## D. Generateur — donnees manquantes ou incoherentes
 
-## C. Plan de corrections
+| # | Probleme | Generateur |
+|---|----------|------------|
+| 10 | **`generateTaxHistory` — statuts non normalises** — Genere `'paid'` et `'unpaid'` mais `TaxesBlock.statusNorm()` attend aussi `'payé'`, `'en_attente'`, `'pending'`. Distribution deteinte. | `generateTaxHistory` |
+| 11 | **`generateMortgages` — statuts non normalises** — Genere `'Active'` et `'Soldée'` (majuscules) mais `MortgagesBlock.statusNorm()` normalise avec `.toLowerCase()` — OK pour `includes()` mais le label affiche sera la version normalisee, pas l'originale. Incoherence mineure. | `generateMortgages` |
+| 12 | **`generateBuildingPermits` — pas de `permit_type`** — Le bloc `BuildingPermitsBlock` deduit le type via une heuristique sur `permit_number`. Le generateur cree des numeros `TEST-PC-...` qui seront tous classes "Construction" (pas de "reg" dans le numero). Aucune regularisation generee. | `generateBuildingPermits` |
+| 13 | **`generateInvoices` — `geographical_zone` pas enrichie uniformement** — La formule `Math.floor(i / (selectedParcels.length / PROVINCES.length))` peut produire des zones disproportionnees ou `undefined` si la division n'est pas exacte. | `generateInvoices` |
+| 14 | **`generateContributions` — status force a `'pending'` puis update** — Insert avec `status: 'pending'`, puis update en batch vers le status final. Si l'update echoue silencieusement (pas de `.throwOnError()`), toutes les contributions restent `'pending'`. | `generateContributions` |
 
-### Priorité 1 — Filtrer les données TEST- dans les analytics (critique)
+## E. UI/UX — problemes d'experience
+
+| # | Probleme |
+|---|----------|
+| 15 | **Pas de temps estime** — La generation de 7 020 parcelles + entites prend 30-60 secondes. Aucune estimation de temps affichee. |
+| 16 | **Pas de log d'historique** — L'admin ne voit pas l'historique des generations/nettoyages precedents. Les actions sont logguees dans `audit_logs` mais pas exposees dans l'UI. |
+| 17 | **Progression non persistee** — Si l'admin quitte la page pendant la generation, la progression est perdue. Pas de reprise possible. |
+| 18 | **Pas de generation selective** — L'admin ne peut pas choisir quelles tables generer (ex: "seulement les parcelles et contributions"). C'est tout ou rien. |
+| 19 | **Guide mentionne le cron** — Le guide dit "necessite un cron configure dans Supabase" mais le cron est casse (point 6). Information trompeuse. |
+
+## F. Securite
+
+| # | Probleme |
+|---|----------|
+| 20 | **`cleanup_all_test_data()` — `SECURITY DEFINER` sans restrictions** — La RPC utilise `has_role(auth.uid(), 'admin')` ce qui est correct, mais elle est appelee via le client Supabase sans rate limiting. Un admin pourrait l'appeler en boucle. Risque faible. |
+| 21 | **Edge Function expose le anon key dans la migration** — Le fichier SQL de migration contient le anon key en clair. Ce n'est pas un secret (c'est la publishable key), mais c'est une mauvaise pratique dans un fichier versionne. |
+
+---
+
+## Plan de corrections
+
+### Priorite 1 — Filtrage des tables FK dans les analytics
 
 **Fichier** : `src/hooks/useLandDataAnalytics.tsx`
-- Dans `fetchAll`, ajouter un filtre global qui exclut les lignes `TEST-%` pour les tables qui utilisent `parcel_number` ou `reference_number`
-- Concrètement : chaque appel `fetchAll` doit passer un filtre `.not('parcel_number', 'ilike', 'TEST-%')` (ou `reference_number` selon la table)
+- Apres l'enrichissement, ajouter un filtre post-fetch pour les 5 tables FK : exclure les rows dont le `parcel_number` enrichi ou le `province` trace vers un parcel `TEST-%`
+- Ou plus simplement : dans `fetchAll`, pour les tables sans `TEST_FILTER_COLUMN`, faire un JOIN cote requete avec les parcels non-test
 
-### Priorité 2 — Aligner le générateur avec les données CCC
+Approche recommandee : ajouter une fonction `excludeTestEnriched(records)` qui filtre les rows ayant un `parcel_id` lie a un parcel TEST-% (en utilisant le `byId` map deja construit).
+
+### Priorite 2 — Corriger le cron de nettoyage
+
+**Option A (recommandee)** : Remplacer le cron `net.http_post` par un appel SQL direct :
+```sql
+SELECT cron.schedule('cleanup-test-data-daily', '0 3 * * *', $$
+  SELECT public.cleanup_all_test_data();
+$$);
+```
+Cela necessite que le cron s'execute sous un role avec auth.uid() — il faudra modifier la RPC pour accepter un mode "cron" sans verification de role, ou utiliser `SET ROLE`.
+
+**Option B** : Modifier la RPC pour ajouter un parametre `retention_days` et ne supprimer que les donnees plus anciennes que ce delai.
+
+### Priorite 3 — Remplacer le rollback client par la RPC
+
+**Fichier** : `src/components/admin/test-mode/useTestDataActions.ts`
+- Dans `generateTestData`, en cas d'erreur aux etapes critiques (parcelles, contributions), appeler `supabase.rpc('cleanup_all_test_data')` au lieu de `rollbackTestData(parcelNumbers, suffix)`.
 
 **Fichier** : `src/components/admin/test-mode/testDataGenerators.ts`
-- `generateTitleRequests` : ajouter `construction_materials`, `standing`, `floor_number`, `construction_year`
-- `generateBuildingPermits` : ajouter le statut `'En attente'` dans le cycle
-- `generateMortgages` : remplacer `'Renégociée'` par `'Soldée'` pour aligner avec `statusNorm`
+- Supprimer ou deprecier la fonction `rollbackTestData`.
 
-### Priorité 3 — Ajouter un bouton "Générer" indépendant
+### Priorite 4 — Corriger les generateurs
 
-**Fichier** : `src/components/admin/test-mode/TestDataStatsCard.tsx`
-- Ajouter un bouton "Générer" visible quand `total === 0` et le mode test est actif
+**Fichier** : `src/components/admin/test-mode/testDataGenerators.ts`
+- `generateTaxHistory` : ajouter les variantes `'payé'`, `'en_attente'` dans le cycle de statuts
+- `generateBuildingPermits` : ajouter `permit_number` avec "régul" pour ~30% des permis pour generer des regularisations
+- `generateContributions` : ajouter `.throwOnError()` apres les updates de statut en batch
 
-### Priorité 4 — Documenter les limitations
+### Priorite 5 — Mettre a jour le guide
 
-- Le nettoyage automatique via cron est non fonctionnel (clé anon, pas de gestion rétention)
-- `rollbackTestData` est fragile pour les gros volumes
+**Fichier** : `src/components/admin/test-mode/TestModeGuide.tsx`
+- Corriger la mention du cron pour refleter l'etat reel
+- Ajouter l'information sur le nombre approximatif de donnees generees par table
 
-**Impact total** : ~40 lignes modifiées dans 3 fichiers.
+**Impact total** : ~50 lignes modifiees dans 4 fichiers + 1 migration SQL.
+
