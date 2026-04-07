@@ -19,7 +19,21 @@ export interface LandAnalyticsData {
   invoices: any[];
 }
 
-/** Fetch all rows with pagination to bypass 1000-row limit */
+/** Column used to filter TEST- data per table */
+const TEST_FILTER_COLUMN: Record<string, string> = {
+  cadastral_parcels: 'parcel_number',
+  cadastral_contributions: 'parcel_number',
+  land_title_requests: 'reference_number',
+  real_estate_expertise_requests: 'parcel_number',
+  cadastral_land_disputes: 'parcel_number',
+  cadastral_invoices: 'parcel_number',
+  generated_certificates: 'reference_number',
+  mutation_requests: 'reference_number',
+  subdivision_requests: 'reference_number',
+};
+
+/** Fetch all rows with pagination to bypass 1000-row limit.
+ *  Automatically excludes TEST-% rows in production analytics. */
 async function fetchAll(
   table: string,
   select: string,
@@ -28,10 +42,13 @@ async function fetchAll(
   const PAGE = 1000;
   let from = 0;
   const allRows: any[] = [];
+  const testCol = TEST_FILTER_COLUMN[table];
 
   while (true) {
     let query = (supabase.from as any)(table).select(select);
     if (filters) query = filters(query);
+    // Exclude test data from production analytics
+    if (testCol) query = query.not(testCol, 'ilike', 'TEST-%');
     const { data, error } = await query.range(from, from + PAGE - 1);
     if (error) {
       console.error(`[Analytics] Error fetching ${table}:`, error.message);

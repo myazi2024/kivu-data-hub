@@ -12,7 +12,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Loader2, Info, Trash2, RefreshCw, RotateCcw } from 'lucide-react';
+import { Loader2, Info, Trash2, RefreshCw, RotateCcw, Play } from 'lucide-react';
 import type { TestDataStats } from './types';
 
 interface TestDataStatsCardProps {
@@ -21,9 +21,12 @@ interface TestDataStatsCardProps {
   cleaningUp: boolean;
   statsLoading: boolean;
   regenerating?: boolean;
+  generatingData?: boolean;
+  isTestModeActive?: boolean;
   onCleanup: () => void;
   onRefresh: () => void;
   onRegenerate?: () => void;
+  onGenerate?: () => void;
 }
 
 const STAT_ITEMS: { key: keyof TestDataStats; label: string }[] = [
@@ -55,9 +58,12 @@ const TestDataStatsCard: React.FC<TestDataStatsCardProps> = ({
   cleaningUp,
   statsLoading,
   regenerating,
+  generatingData,
+  isTestModeActive,
   onCleanup,
   onRefresh,
   onRegenerate,
+  onGenerate,
 }) => {
   return (
     <Card>
@@ -86,6 +92,21 @@ const TestDataStatsCard: React.FC<TestDataStatsCardProps> = ({
             )}
             Actualiser
           </Button>
+
+          {onGenerate && isTestModeActive && total === 0 && (
+            <Button
+              variant="default"
+              onClick={onGenerate}
+              disabled={generatingData || cleaningUp}
+            >
+              {generatingData ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Play className="mr-2 h-4 w-4" />
+              )}
+              Générer les données
+            </Button>
+          )}
 
           {onRegenerate && (
             <AlertDialog>

@@ -246,9 +246,12 @@ const AdminTestMode: React.FC = () => {
         cleaningUp={cleaningUp}
         statsLoading={statsLoading}
         regenerating={regenerating}
+        generatingData={generatingData}
+        isTestModeActive={isTestModeActive}
         onCleanup={cleanupTestData}
         onRefresh={refreshStats}
         onRegenerate={regenerateTestData}
+        onGenerate={generateTestData}
       />
 
       {/* Guide */}
