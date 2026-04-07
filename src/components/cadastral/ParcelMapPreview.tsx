@@ -229,6 +229,7 @@ export const ParcelMapPreview = ({
     const updatedCoords = [...coordinates, newCoordinate];
     onCoordinatesUpdate(updatedCoords);
     
+    originalCoordsBeforeRotationRef.current = null; // Reset rotation baseline
     updateParcelSidesFromCoordinates(updatedCoords);
   }, [coordinates, onCoordinatesUpdate, onParcelSidesUpdate]);
 
@@ -244,6 +245,7 @@ export const ParcelMapPreview = ({
     const updatedCoords = coordinates.slice(0, -1);
     onCoordinatesUpdate(updatedCoords);
     
+    originalCoordsBeforeRotationRef.current = null; // Reset rotation baseline
     updateParcelSidesFromCoordinates(updatedCoords);
   }, [coordinates, onCoordinatesUpdate, onParcelSidesUpdate]);
 
@@ -266,6 +268,8 @@ export const ParcelMapPreview = ({
     stableSurfaceRef.current = 0;
     stablePerimeterRef.current = 0;
     lastParcelSidesLengthRef.current = '';
+    originalCoordsBeforeRotationRef.current = null;
+    setParcelRotationDegrees(0);
     setShowClearAllDialog(false);
   }, [onCoordinatesUpdate, onParcelSidesUpdate, onRoadSidesChange, onBuildingShapesChange]);
 
