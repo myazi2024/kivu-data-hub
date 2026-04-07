@@ -1726,9 +1726,7 @@ export const ParcelMapPreview = ({
           ? 'border-2 border-orange-400/60 ring-4 ring-orange-500/15' 
           : isAddingBuilding
             ? 'border-2 border-red-400/60 ring-4 ring-red-500/15'
-            : showParcelControls
-              ? 'border-2 border-blue-400/60 ring-4 ring-blue-500/15'
-              : 'border-2 border-primary/25'
+            : 'border-2 border-primary/25'
       }`}>
         <div 
           ref={mapRef} 
