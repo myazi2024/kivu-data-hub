@@ -1,75 +1,30 @@
 
 
-# Config Graphiques — Ajouter la gestion des variables de croisement
+# Augmenter l'ombre de la barre de recherche cadastrale et du dropdown Actions
 
-## Contexte
+## Problème
 
-Le registre `CROSS_VARIABLE_REGISTRY` (dans `src/config/crossVariables.ts`) est entièrement hardcodé. L'admin n'a aucun moyen de :
-- Activer/désactiver le picklist de croisement par graphique
-- Ajouter/retirer des variables croisables
-- Voir quels graphiques ont des variables de croisement
+Sur la carte cadastrale (`/cadastral-map`), deux éléments ont des ombres trop discrètes :
+1. **Barre de recherche** (ligne 990) : utilise `shadow-xl`
+2. **Panneau Actions / détails parcelle** (ligne 1325) : utilise un shadow custom léger
 
-## Plan
+## Modifications
 
-### 1. Ajouter un 4e mode "Croisements" dans le toggle viewMode
+**Fichier** : `src/pages/CadastralMap.tsx`
 
-À côté de `Onglets | Graphiques | Filtres`, ajouter un bouton **Croisements** (icône `GitBranch`).
-
-### 2. Composant `CrossVariableManager`
-
-Structure similaire au mode Graphiques (panneau gauche = onglets, panneau droit = config) :
-
-- **Panneau gauche** : liste des 14 onglets analytics (exclure `_global`)
-- **Panneau droit** : pour l'onglet sélectionné, afficher la liste des graphiques (issus du registry) qui ont des variables croisables. Pour chaque graphique :
-  - Titre du graphique
-  - Switch global pour activer/désactiver le picklist sur ce graphique
-  - Liste des variables croisables avec pour chacune :
-    - Switch on/off (visible dans le picklist ou non)
-    - Label éditable
-    - Champ source (field) éditable
-  - Bouton "Ajouter une variable" pour enrichir la liste
-
-### 3. Stockage dans `analytics_charts_config`
-
-Réutiliser la table existante avec un nouveau `item_type: 'cross'` :
-
+### 1. Barre de recherche (ligne 990)
+Remplacer `shadow-xl` par une ombre custom 3x plus intense :
 ```
-tab_key: 'title-requests'
-item_key: 'cross-request-type'        // cross-{chartKey}
-item_type: 'cross'
-is_visible: true                       // picklist activé pour ce graphique
-custom_title: JSON.stringify(variables) // [{label, field, enabled}]
+shadow-xl → shadow-[0_10px_40px_-8px_rgba(0,0,0,0.3),0_4px_16px_-4px_rgba(0,0,0,0.2)]
 ```
 
-Le champ `custom_title` stockera le JSON des variables (override des defaults du registry). Si pas d'override en DB, on utilise les defaults du `CROSS_VARIABLE_REGISTRY`.
-
-### 4. Hook `useTabCrossConfig`
-
-Nouveau hook (ou extension) qui retourne la config cross pour un onglet :
-
-```typescript
-export function useTabCrossConfig(tabKey: string, chartKey: string): CrossVariable[] {
-  // Merge CROSS_VARIABLE_REGISTRY defaults avec overrides DB
-  // Retourne uniquement les variables enabled
-}
+### 2. Panneau détails parcelle + Actions (ligne 1325)
+Tripler l'intensité de l'ombre existante :
+```
+shadow-[0_8px_40px_-12px_hsl(var(--primary)/0.25),0_4px_16px_-4px_rgba(0,0,0,0.15)]
+→
+shadow-[0_8px_40px_-12px_hsl(var(--primary)/0.75),0_4px_16px_-4px_rgba(0,0,0,0.45)]
 ```
 
-### 5. Mise à jour de `ChartCard`
-
-Modifier la source des `crossVariables` : au lieu de les passer en prop depuis chaque bloc, `ChartCard` (ou les blocs) utiliseront le hook pour obtenir la liste filtrée.
-
-### 6. Intégration dans hasChanges + handleSaveAll
-
-- Ajouter `hasCrossChanges` dans le state parent
-- Inclure les items `cross` dans `handleSaveAll`
-- Badge "Non sauvegardé" reflète les modifications cross
-
-## Fichiers modifiés
-
-| Fichier | Action |
-|---------|--------|
-| `src/components/admin/AdminAnalyticsChartsConfig.tsx` | Ajouter mode "Croisements" + `CrossVariableManager` + intégrer dans save/hasChanges |
-| `src/hooks/useAnalyticsChartsConfig.ts` | Ajouter `useTabCrossConfig` hook + init des cross items |
-| `src/config/crossVariables.ts` | Ajouter `getCrossVariablesWithOverrides()` helper |
-| `src/components/visualizations/shared/ChartCard.tsx` | Utiliser config dynamique au lieu des props statiques |
+Seul le fichier `src/pages/CadastralMap.tsx` est modifié (2 lignes).
 
