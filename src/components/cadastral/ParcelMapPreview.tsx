@@ -2322,44 +2322,31 @@ export const ParcelMapPreview = ({
         )}
         
         {isDrawingBuilding && !isDrawingMode && (
-          <div className="absolute bottom-10 left-2 z-[1000] flex items-center gap-1.5">
-            <Badge className="bg-red-500 text-white text-xs h-6 px-2 rounded-lg shadow-md animate-pulse">
-              <Building2 className="h-3 w-3 mr-1" />
-              Tracé construction ({buildingVertices.length} pts)
-            </Badge>
-            {buildingVertices.length > 0 && (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={removeLastBuildingVertex}
-                className="h-6 w-6 p-0 rounded-lg bg-white/95 shadow-md"
-                title="Supprimer dernier point"
-              >
-                <Trash2 className="h-3 w-3 text-destructive" />
+          <div className="absolute bottom-10 left-2 z-[1000] flex flex-col gap-1 items-start">
+            <div className="flex items-center gap-1.5">
+              <Badge className="bg-red-500 text-white text-xs h-6 px-2 rounded-lg shadow-md animate-pulse">
+                <Building2 className="h-3 w-3 mr-1" />
+                {constructionLabels[buildingShapes.length] || `Construction ${buildingShapes.length + 1}`} ({buildingVertices.length} pts)
+              </Badge>
+              {buildingVertices.length > 0 && (
+                <Button type="button" size="sm" variant="outline" onClick={removeLastBuildingVertex} className="h-6 w-6 p-0 rounded-lg bg-white/95 shadow-md" title="Supprimer dernier point">
+                  <Trash2 className="h-3 w-3 text-destructive" />
+                </Button>
+              )}
+              {buildingVertices.length >= 3 && (
+                <Button type="button" size="sm" onClick={validateBuilding} className="h-6 px-2 rounded-lg bg-green-600 text-white shadow-md text-xs hover:bg-green-700">
+                  <Check className="h-3 w-3 mr-1" />Valider
+                </Button>
+              )}
+              <Button type="button" size="sm" variant="outline" onClick={cancelDrawingBuilding} className="h-6 px-2 rounded-lg bg-white/95 shadow-md text-xs">
+                <X className="h-3 w-3 mr-1" />Annuler
               </Button>
-            )}
+            </div>
             {buildingVertices.length >= 3 && (
-              <Button
-                type="button"
-                size="sm"
-                onClick={validateBuilding}
-                className="h-6 px-2 rounded-lg bg-green-600 text-white shadow-md text-xs hover:bg-green-700"
-              >
-                <Check className="h-3 w-3 mr-1" />
-                Valider
-              </Button>
+              <Badge variant="outline" className="text-[10px] h-5 px-2 rounded-lg bg-white/90 shadow-sm border-red-200">
+                ~{calculateBuildingArea(buildingVertices).toFixed(1)} m²
+              </Badge>
             )}
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={cancelDrawingBuilding}
-              className="h-6 px-2 rounded-lg bg-white/95 shadow-md text-xs"
-            >
-              <X className="h-3 w-3 mr-1" />
-              Annuler
-            </Button>
           </div>
         )}
         
@@ -2560,29 +2547,33 @@ export const ParcelMapPreview = ({
       )}
 
 
-      {/* Constructions ajoutées + compteur */}
+      {/* Constructions ajoutées — liste détaillée avec suppression individuelle */}
       {!isTerrainNu && requiredBuildingCount > 0 && (
         <Card className={`p-3 rounded-2xl shadow-sm border-border/50 ${buildingShapes.length >= requiredBuildingCount ? 'bg-green-50 dark:bg-green-950/20 border-green-200/50' : 'bg-orange-50 dark:bg-orange-950/20 border-orange-200/50'}`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Building2 className={`h-4 w-4 ${buildingShapes.length >= requiredBuildingCount ? 'text-green-500' : 'text-orange-500'}`} />
-              <span className={`text-sm font-medium ${buildingShapes.length >= requiredBuildingCount ? 'text-green-700 dark:text-green-300' : 'text-orange-700 dark:text-orange-300'}`}>
-                {buildingShapes.length}/{requiredBuildingCount} construction{requiredBuildingCount > 1 ? 's' : ''} tracée{requiredBuildingCount > 1 ? 's' : ''}
-              </span>
-            </div>
-            {buildingShapes.length > 0 && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={removeLastBuilding}
-                className="h-7 text-xs rounded-lg text-destructive hover:bg-destructive/10"
-              >
-                <Trash2 className="h-3 w-3 mr-1" />
-                Supprimer
-              </Button>
-            )}
+          <div className="flex items-center gap-2 mb-2">
+            <Building2 className={`h-4 w-4 ${buildingShapes.length >= requiredBuildingCount ? 'text-green-500' : 'text-orange-500'}`} />
+            <span className={`text-sm font-medium ${buildingShapes.length >= requiredBuildingCount ? 'text-green-700 dark:text-green-300' : 'text-orange-700 dark:text-orange-300'}`}>
+              {buildingShapes.length}/{requiredBuildingCount} construction{requiredBuildingCount > 1 ? 's' : ''} tracée{requiredBuildingCount > 1 ? 's' : ''}
+            </span>
           </div>
+          {buildingShapes.length > 0 && (
+            <div className="space-y-1.5">
+              {buildingShapes.map((shape, idx) => {
+                const label = constructionLabels[shape.linkedIndex ?? idx] || `Construction ${idx + 1}`;
+                return (
+                  <div key={shape.id} className="flex items-center justify-between text-xs bg-background/60 rounded-lg px-2 py-1.5 border border-border/30">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="font-medium truncate">{label}</span>
+                      <span className="text-muted-foreground">{shape.areaSqm.toFixed(1)} m²</span>
+                    </div>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => removeBuildingById(shape.id)} className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 flex-shrink-0">
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </Card>
       )}
       {isTerrainNu && buildingShapes.length > 0 && (
@@ -2591,19 +2582,9 @@ export const ParcelMapPreview = ({
             <div className="flex items-center gap-2">
               <Building2 className="h-4 w-4 text-red-500" />
               <span className="text-sm font-medium text-red-700 dark:text-red-300">
-                {buildingShapes.length} construction{buildingShapes.length > 1 ? 's' : ''}
+                {buildingShapes.length} construction{buildingShapes.length > 1 ? 's' : ''} (incohérent avec terrain nu)
               </span>
             </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={removeLastBuilding}
-              className="h-7 text-xs rounded-lg text-destructive hover:bg-destructive/10"
-            >
-              <Trash2 className="h-3 w-3 mr-1" />
-              Supprimer
-            </Button>
           </div>
         </Card>
       )}
