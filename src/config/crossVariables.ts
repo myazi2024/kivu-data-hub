@@ -19,6 +19,7 @@ export const CROSS_VARIABLE_REGISTRY: Record<string, Record<string, CrossVariabl
     'surface': [{ label: 'Province', field: 'province' }, { label: 'Usage', field: 'declared_usage' }, { label: 'Statut', field: 'status' }],
     'construction-type': [{ label: 'Usage', field: 'declared_usage' }, { label: 'Province', field: 'province' }, { label: 'Statut', field: 'status' }],
     'construction-nature': [{ label: 'Province', field: 'province' }, { label: 'Usage', field: 'declared_usage' }],
+    'lease-type': [{ label: 'Usage', field: 'declared_usage' }, { label: 'Province', field: 'province' }, { label: 'Statut', field: 'status' }],
   },
   'parcels-titled': {
     'title-type': [{ label: 'Statut juridique', field: 'current_owner_legal_status' }, { label: 'Usage', field: 'declared_usage' }, { label: 'Province', field: 'province' }],
@@ -27,7 +28,7 @@ export const CROSS_VARIABLE_REGISTRY: Record<string, Record<string, CrossVariabl
     'construction-type': [{ label: 'Usage', field: 'declared_usage' }, { label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }],
     'construction-nature': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }],
     'usage': [{ label: 'Type titre', field: 'property_title_type' }, { label: 'Province', field: 'province' }],
-    'lease-type': [{ label: 'Usage', field: 'declared_usage' }, { label: 'Province', field: 'province' }],
+    
     'surface': [{ label: 'Province', field: 'province' }, { label: 'Usage', field: 'declared_usage' }],
   },
   'contributions': {
