@@ -181,6 +181,8 @@ export const ParcelMapPreview = ({
   const dimensionLongPressRef = useRef<number | null>(null);
   const [editingBorneIndex, setEditingBorneIndex] = useState<number | null>(null);
   const [editingBorneCoords, setEditingBorneCoords] = useState<{ lat: string; lng: string }>({ lat: '', lng: '' });
+  const [editingBuildingVertex, setEditingBuildingVertex] = useState<{ shapeId: string; vertexIdx: number } | null>(null);
+  const [editingBuildingVertexCoords, setEditingBuildingVertexCoords] = useState<{ lat: string; lng: string }>({ lat: '', lng: '' });
   
   // Charger la configuration depuis Supabase
   const { config: dbConfig, loading: configLoading } = useMapConfig();
