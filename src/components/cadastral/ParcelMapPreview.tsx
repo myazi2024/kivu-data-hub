@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,6 +51,7 @@ interface BuildingShape {
   sides: { name: string; length: string }[];
   areaSqm: number;
   perimeterM: number;
+  linkedIndex?: number; // 0 = construction principale, 1+ = additionnelles
   // Rétro-compatibilité : anciens champs ignorés au rendu
   type?: string;
   center?: { lat: number; lng: number };
@@ -72,6 +74,8 @@ interface ParcelMapPreviewProps {
   onBuildingShapesChange?: (shapes: BuildingShape[]) => void;
   servitude?: ServitudeInfo;
   onServitudeChange?: (servitude: ServitudeInfo) => void;
+  isTerrainNu?: boolean;
+  requiredBuildingCount?: number;
 }
 
 // Calculer la surface d'un polygone à partir de sommets GPS (Shoelace formula en mètres)
@@ -120,7 +124,9 @@ export const ParcelMapPreview = ({
   buildingShapes = [],
   onBuildingShapesChange,
   servitude,
-  onServitudeChange
+  onServitudeChange,
+  isTerrainNu = false,
+  requiredBuildingCount = 0,
 }: ParcelMapPreviewProps) => {
   const { isTestRoute } = useTestEnvironment();
   const mapRef = useRef<HTMLDivElement>(null);
@@ -1540,6 +1546,7 @@ export const ParcelMapPreview = ({
       sides,
       areaSqm: Math.round(areaSqm * 100) / 100,
       perimeterM: Math.round(perimeter * 100) / 100,
+      linkedIndex: buildingShapes.length, // 0 = principale, 1+ = additionnelles
     };
     
     onBuildingShapesChange([...buildingShapes, newShape]);
@@ -2163,20 +2170,44 @@ export const ParcelMapPreview = ({
           )}
           
           {/* Bouton ajout construction */}
-          {isParcelComplete && onBuildingShapesChange && (
-            <Button
-              type="button"
-              size="sm"
-              variant={isDrawingBuilding ? "default" : "outline"}
-              onClick={startDrawingBuilding}
-              className={`h-8 w-8 p-0 rounded-xl shadow-md ${
-                isDrawingBuilding ? 'bg-red-500 text-white' : 'bg-white hover:bg-gray-50'
-              }`}
-              title={isDrawingBuilding ? "Annuler le tracé" : "Tracer une construction"}
-            >
-              <Building2 className="h-4 w-4" />
-            </Button>
-          )}
+          {isParcelComplete && onBuildingShapesChange && (() => {
+            const isBuildingDisabled = isTerrainNu || (!isDrawingBuilding && requiredBuildingCount > 0 && buildingShapes.length >= requiredBuildingCount);
+            const tooltipText = isTerrainNu
+              ? "La catégorie de bien sélectionnée est « Terrain nu ». L'ajout de constructions n'est pas disponible pour cette catégorie. Pour modifier ce choix, rendez-vous dans l'onglet Infos, bloc Construction."
+              : (!isDrawingBuilding && requiredBuildingCount > 0 && buildingShapes.length >= requiredBuildingCount)
+                ? `Toutes les constructions déclarées ont été tracées (${buildingShapes.length}/${requiredBuildingCount}).`
+                : '';
+            
+            const btn = (
+              <Button
+                type="button"
+                size="sm"
+                variant={isDrawingBuilding ? "default" : "outline"}
+                onClick={isBuildingDisabled ? undefined : startDrawingBuilding}
+                disabled={isBuildingDisabled}
+                className={`h-8 w-8 p-0 rounded-xl shadow-md ${
+                  isDrawingBuilding ? 'bg-red-500 text-white' : isBuildingDisabled ? 'opacity-50 cursor-not-allowed bg-white' : 'bg-white hover:bg-gray-50'
+                }`}
+                title={isDrawingBuilding ? "Annuler le tracé" : "Tracer une construction"}
+              >
+                <Building2 className="h-4 w-4" />
+              </Button>
+            );
+            
+            if (isBuildingDisabled && tooltipText) {
+              return (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span tabIndex={0}>{btn}</span>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-[260px] text-xs text-center">
+                    {tooltipText}
+                  </TooltipContent>
+                </Tooltip>
+              );
+            }
+            return btn;
+          })()}
         </div>
         
         {/* Mode Dessin indicateur */}
@@ -2427,8 +2458,32 @@ export const ParcelMapPreview = ({
       )}
 
 
-      {/* Constructions ajoutées */}
-      {buildingShapes.length > 0 && (
+      {/* Constructions ajoutées + compteur */}
+      {!isTerrainNu && requiredBuildingCount > 0 && (
+        <Card className={`p-3 rounded-2xl shadow-sm border-border/50 ${buildingShapes.length >= requiredBuildingCount ? 'bg-green-50 dark:bg-green-950/20 border-green-200/50' : 'bg-orange-50 dark:bg-orange-950/20 border-orange-200/50'}`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Building2 className={`h-4 w-4 ${buildingShapes.length >= requiredBuildingCount ? 'text-green-500' : 'text-orange-500'}`} />
+              <span className={`text-sm font-medium ${buildingShapes.length >= requiredBuildingCount ? 'text-green-700 dark:text-green-300' : 'text-orange-700 dark:text-orange-300'}`}>
+                {buildingShapes.length}/{requiredBuildingCount} construction{requiredBuildingCount > 1 ? 's' : ''} tracée{requiredBuildingCount > 1 ? 's' : ''}
+              </span>
+            </div>
+            {buildingShapes.length > 0 && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={removeLastBuilding}
+                className="h-7 text-xs rounded-lg text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="h-3 w-3 mr-1" />
+                Supprimer
+              </Button>
+            )}
+          </div>
+        </Card>
+      )}
+      {isTerrainNu && buildingShapes.length > 0 && (
         <Card className="p-3 bg-red-50 dark:bg-red-950/20 rounded-2xl shadow-sm border-red-200/50">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -2442,7 +2497,7 @@ export const ParcelMapPreview = ({
               variant="ghost"
               size="sm"
               onClick={removeLastBuilding}
-              className="h-7 text-xs rounded-lg text-red-600 hover:bg-red-100"
+              className="h-7 text-xs rounded-lg text-destructive hover:bg-destructive/10"
             >
               <Trash2 className="h-3 w-3 mr-1" />
               Supprimer

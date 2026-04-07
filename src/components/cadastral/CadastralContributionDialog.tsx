@@ -146,6 +146,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   parcelSides={state.parcelSides} onParcelSidesUpdate={state.setParcelSides}
                   servitude={state.servitude} onServitudeChange={state.setServitude}
                   buildingShapes={state.buildingShapes} onBuildingShapesChange={state.setBuildingShapes}
+                  constructionMode={state.constructionMode} additionalConstructions={state.additionalConstructions}
                   handleTabChange={state.handleTabChange} handleNextTab={state.handleNextTab}
                   resetLocationBlock={state.resetLocationBlock}
                 />
