@@ -606,47 +606,28 @@ export const ParcelMapPreview = ({
     };
   }, [isMapReady]);
 
-  // Ajouter une forme de construction
-  const addBuildingShape = useCallback((lat: number, lng: number) => {
-    if (!selectedShapeType || !isParcelComplete) return;
+  // Synchroniser la ref des sommets de construction en cours
+  useEffect(() => { buildingVerticesRef.current = buildingVertices; }, [buildingVertices]);
+
+  // Ajouter un sommet de construction (clic sur carte en mode tracé construction)
+  const addBuildingVertex = useCallback((lat: number, lng: number) => {
+    if (!isParcelComplete) return;
     
     // Vérifier si le point est dans la parcelle
     const latLngs = validCoords.map(c => [parseFloat(c.lat), parseFloat(c.lng)] as [number, number]);
     if (!isPointInPolygon([lat, lng], latLngs)) {
-      toast.error("Cliquez à l'intérieur de la parcelle pour placer la construction");
+      toast.error("Cliquez à l'intérieur de la parcelle pour placer le sommet");
       return;
     }
     
-    const newShape: BuildingShape = {
-      id: `building-${Date.now()}`,
-      type: selectedShapeType,
-      center: { lat, lng },
-      size: 5, // 5 mètres par défaut
-    };
-    
-    const updatedShapes = [...buildingShapes, newShape];
-    if (onBuildingShapesChange) {
-      onBuildingShapesChange(updatedShapes);
-    }
-    
-    // Désactiver le mode ajout et réactiver les interactions carte
-    setIsAddingBuilding(false);
-    setSelectedShapeType(null);
-    const map = mapInstanceRef.current;
-    if (map) {
-      map.getContainer().dataset.addingBuilding = 'false';
-      map.getContainer().style.cursor = 'grab';
-      map.dragging.enable();
-      map.scrollWheelZoom.enable();
-      map.doubleClickZoom.enable();
-      map.touchZoom.enable();
-    }
-  }, [selectedShapeType, isParcelComplete, validCoords, buildingShapes, onBuildingShapesChange]);
+    const newVertices = [...buildingVerticesRef.current, { lat, lng }];
+    setBuildingVertices(newVertices);
+  }, [isParcelComplete, validCoords]);
 
   // Mettre à jour la ref du callback building pour éviter les closures obsolètes
   useEffect(() => {
-    addBuildingCallbackRef.current = addBuildingShape;
-  }, [addBuildingShape]);
+    addBuildingCallbackRef.current = addBuildingVertex;
+  }, [addBuildingVertex]);
 
   // Vérifier les parcelles voisines (manuel)
   const checkNeighborParcels = useCallback(async () => {
@@ -1033,13 +1014,105 @@ export const ParcelMapPreview = ({
           lastParcelSidesLengthRef.current = '';
         }
 
-        // Dessiner les formes de construction
-        buildingShapes.forEach(shape => {
-          const shapeLayer = drawBuildingShape(L, map, shape);
-          if (shapeLayer) {
-            buildingLayersRef.current.push(shapeLayer);
-          }
+        // Dessiner les constructions validées (polygones à partir de vertices)
+        buildingShapes.forEach((shape, idx) => {
+          if (!shape.vertices || shape.vertices.length < 3) return;
+          const bldLatLngs = shape.vertices.map(v => [v.lat, v.lng] as [number, number]);
+          const bldPolygon = L.polygon(bldLatLngs, {
+            color: '#dc2626',
+            fillColor: '#dc2626',
+            fillOpacity: 0.3,
+            weight: 2,
+          }).addTo(map);
+          bldPolygon.bindPopup(`
+            <div style="font-size: 12px;">
+              <strong style="color: #dc2626;">Construction ${idx + 1}</strong><br/>
+              <span>Surface: ${shape.areaSqm.toFixed(1)} m²</span><br/>
+              <span>Périmètre: ${shape.perimeterM.toFixed(1)} m</span><br/>
+              <button onclick="this.closest('.leaflet-popup').remove(); document.dispatchEvent(new CustomEvent('remove-building', {detail: '${shape.id}'}))" 
+                style="margin-top:4px; padding:2px 8px; background:#dc2626; color:white; border:none; border-radius:4px; cursor:pointer; font-size:11px;">
+                Supprimer
+              </button>
+            </div>
+          `);
+          buildingLayersRef.current.push(bldPolygon);
+          
+          // Afficher les dimensions des côtés de la construction
+          shape.vertices.forEach((v, vi) => {
+            const nextV = shape.vertices[(vi + 1) % shape.vertices.length];
+            const midLat = (v.lat + nextV.lat) / 2;
+            const midLng = (v.lng + nextV.lng) / 2;
+            const side = shape.sides[vi];
+            if (!side) return;
+            const dimMarker = L.marker([midLat, midLng], {
+              icon: L.divIcon({
+                className: 'building-dim-label',
+                html: `<div style="background:rgba(220,38,38,0.9);color:white;padding:1px 4px;border-radius:3px;font-size:9px;font-weight:600;white-space:nowrap;">${side.length}m</div>`,
+                iconSize: [0, 0],
+                iconAnchor: [0, 0],
+              }),
+              interactive: false,
+            }).addTo(map);
+            buildingLayersRef.current.push(dimMarker);
+          });
         });
+
+        // Dessiner le tracé de construction en cours
+        const currentBuildingVerts = buildingVerticesRef.current;
+        if (currentBuildingVerts.length > 0) {
+          // Lignes entre sommets
+          const bvLatLngs = currentBuildingVerts.map(v => [v.lat, v.lng] as [number, number]);
+          if (bvLatLngs.length >= 2) {
+            const polyline = L.polyline(bvLatLngs, {
+              color: '#dc2626',
+              weight: 2,
+              dashArray: '6,4',
+              opacity: 0.8,
+            }).addTo(map);
+            buildingLayersRef.current.push(polyline);
+            
+            // Ligne de fermeture en pointillé (preview)
+            if (bvLatLngs.length >= 3) {
+              const closingLine = L.polyline([bvLatLngs[bvLatLngs.length - 1], bvLatLngs[0]], {
+                color: '#dc2626',
+                weight: 1.5,
+                dashArray: '3,6',
+                opacity: 0.4,
+              }).addTo(map);
+              buildingLayersRef.current.push(closingLine);
+            }
+          }
+          
+          // Marqueurs pour chaque sommet
+          currentBuildingVerts.forEach((v, vi) => {
+            const vertMarker = L.circleMarker([v.lat, v.lng], {
+              radius: 5,
+              color: '#dc2626',
+              fillColor: '#ffffff',
+              fillOpacity: 1,
+              weight: 2,
+            }).addTo(map);
+            buildingLayersRef.current.push(vertMarker);
+            
+            // Afficher la distance du segment
+            if (vi > 0) {
+              const prevV = currentBuildingVerts[vi - 1];
+              const dist = calculateDistance(prevV.lat, prevV.lng, v.lat, v.lng);
+              const midLat = (prevV.lat + v.lat) / 2;
+              const midLng = (prevV.lng + v.lng) / 2;
+              const dimLabel = L.marker([midLat, midLng], {
+                icon: L.divIcon({
+                  className: 'building-dim-temp',
+                  html: `<div style="background:rgba(220,38,38,0.8);color:white;padding:1px 4px;border-radius:3px;font-size:9px;font-weight:600;white-space:nowrap;">${dist.toFixed(1)}m</div>`,
+                  iconSize: [0, 0],
+                  iconAnchor: [0, 0],
+                }),
+                interactive: false,
+              }).addTo(map);
+              buildingLayersRef.current.push(dimLabel);
+            }
+          });
+        }
       } catch (err) {
         console.error('ParcelMapPreview updateMap error:', err);
       }
@@ -1054,105 +1127,19 @@ export const ParcelMapPreview = ({
       cancelAnimationFrame(rafId);
       cancelled = true;
     };
-  }, [isMapReady, validCoords, roadSides, mapConfig, isGroupDragMode, isDrawingMode, selectedBorne, isAddingBuilding]);
+  }, [isMapReady, validCoords, roadSides, mapConfig, isGroupDragMode, isDrawingMode, selectedBorne, isDrawingBuilding, buildingVertices]);
 
-  // Dessiner une forme de construction
-  const drawBuildingShape = (L: any, map: any, shape: BuildingShape) => {
-    const metersToLat = 1 / 111320;
-    const metersToLng = 1 / (111320 * Math.cos(shape.center.lat * Math.PI / 180));
-    
-    let layer;
-    
-    switch (shape.type) {
-      case 'circle':
-        layer = L.circle([shape.center.lat, shape.center.lng], {
-          radius: shape.size,
-          color: '#dc2626',
-          fillColor: '#dc2626',
-          fillOpacity: 0.4,
-          weight: 2,
-        }).addTo(map);
-        break;
-        
-      case 'square':
-        const halfSize = shape.size * metersToLat;
-        const halfSizeLng = shape.size * metersToLng;
-        layer = L.rectangle([
-          [shape.center.lat - halfSize, shape.center.lng - halfSizeLng],
-          [shape.center.lat + halfSize, shape.center.lng + halfSizeLng]
-        ], {
-          color: '#dc2626',
-          fillColor: '#dc2626',
-          fillOpacity: 0.4,
-          weight: 2,
-        }).addTo(map);
-        break;
-        
-      case 'rectangle':
-        const halfWidth = shape.size * metersToLat;
-        const halfHeight = (shape.size * 0.6) * metersToLng;
-        layer = L.rectangle([
-          [shape.center.lat - halfWidth, shape.center.lng - halfHeight],
-          [shape.center.lat + halfWidth, shape.center.lng + halfHeight]
-        ], {
-          color: '#dc2626',
-          fillColor: '#dc2626',
-          fillOpacity: 0.4,
-          weight: 2,
-        }).addTo(map);
-        break;
-        
-      case 'trapeze': {
-        // Vrai trapèze : base large en bas, base courte en haut
-        const halfBase = shape.size * metersToLat;
-        const halfTop = halfBase * 0.5; // base supérieure = 50% de la base inférieure
-        const halfH = shape.size * 0.8 * metersToLng;
-        const trapPoints: [number, number][] = [
-          [shape.center.lat - halfBase, shape.center.lng - halfH],  // bas-gauche
-          [shape.center.lat + halfBase, shape.center.lng - halfH],  // bas-droite (via lat pour symétrie)
-          [shape.center.lat + halfTop, shape.center.lng + halfH],   // haut-droite
-          [shape.center.lat - halfTop, shape.center.lng + halfH],   // haut-gauche
-        ];
-        layer = L.polygon(trapPoints, {
-          color: '#dc2626',
-          fillColor: '#dc2626',
-          fillOpacity: 0.4,
-          weight: 2,
-        }).addTo(map);
-        break;
+  // Écouter l'événement de suppression de construction
+  useEffect(() => {
+    const handler = (e: any) => {
+      const buildingId = e.detail;
+      if (onBuildingShapesChange) {
+        onBuildingShapesChange(buildingShapes.filter(s => s.id !== buildingId));
       }
-
-      default: {
-        const radius = shape.size * metersToLat;
-        const points: [number, number][] = [];
-        const sides = 6;
-        for (let i = 0; i < sides; i++) {
-          const angle = (2 * Math.PI * i) / sides;
-          points.push([
-            shape.center.lat + radius * Math.cos(angle),
-            shape.center.lng + radius * Math.sin(angle) * metersToLng / metersToLat
-          ]);
-        }
-        layer = L.polygon(points, {
-          color: '#dc2626',
-          fillColor: '#dc2626',
-          fillOpacity: 0.4,
-          weight: 2,
-        }).addTo(map);
-      }
-    }
-    
-    if (layer) {
-      layer.bindPopup(`
-        <div style="font-size: 12px;">
-          <strong style="color: #dc2626;">Construction</strong><br/>
-          <span>Type: ${shape.type}</span>
-        </div>
-      `);
-    }
-    
-    return layer;
-  };
+    };
+    document.addEventListener('remove-building', handler);
+    return () => document.removeEventListener('remove-building', handler);
+  }, [buildingShapes, onBuildingShapesChange]);
 
   // Gérer le mode déplacement groupé
   useEffect(() => {
