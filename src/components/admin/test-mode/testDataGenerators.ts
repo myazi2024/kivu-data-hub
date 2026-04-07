@@ -364,10 +364,11 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
     // Batch the .in() calls in chunks of 200 to stay under Supabase limits
     for (let i = 0; i < ids.length; i += 200) {
       const chunk = ids.slice(i, i + 200);
-      await supabase
+      const { error: updateError } = await supabase
         .from('cadastral_contributions')
         .update({ status })
         .in('id', chunk);
+      if (updateError) console.error(`Contribution status update (${status}, batch ${i}):`, updateError.message);
     }
   }
 
@@ -912,14 +913,19 @@ export const generateTaxHistory = async (
   const currentYear = new Date().getFullYear();
   const selected = parcels.filter((_, i) => i % 7 === 0); // ~15%
 
+  const TAX_STATUSES_PAID = ['paid', 'payé', 'paid', 'payé'];
+  const TAX_STATUSES_UNPAID = ['unpaid', 'en_attente', 'pending', 'unpaid'];
   const records = selected.flatMap((p, i) =>
-    [0, 1, 2].map((yearOffset) => ({
-      parcel_id: p.id,
-      tax_year: currentYear - 2 + yearOffset,
-      amount_usd: randInt(20, 300),
-      payment_status: (yearOffset === 2 && i % 3 !== 0) ? 'unpaid' : 'paid',
-      payment_date: (yearOffset === 2 && i % 3 !== 0) ? null : `${currentYear - 2 + yearOffset}-${String(randInt(1, 6)).padStart(2, '0')}-${String(randInt(1, 28)).padStart(2, '0')}`,
-    }))
+    [0, 1, 2].map((yearOffset) => {
+      const isUnpaid = yearOffset === 2 && i % 3 !== 0;
+      return {
+        parcel_id: p.id,
+        tax_year: currentYear - 2 + yearOffset,
+        amount_usd: randInt(20, 300),
+        payment_status: isUnpaid ? pick(TAX_STATUSES_UNPAID, i) : pick(TAX_STATUSES_PAID, i),
+        payment_date: isUnpaid ? null : `${currentYear - 2 + yearOffset}-${String(randInt(1, 6)).padStart(2, '0')}-${String(randInt(1, 28)).padStart(2, '0')}`,
+      };
+    })
   );
 
   // Insert in batches
@@ -973,7 +979,7 @@ export const generateMortgages = async (
   const selected = parcels.filter((_, i) => i % 12 === 3); // ~8%
   const CREDITORS = ['Banque Commerciale du Congo', 'Trust Merchant Bank', 'Rawbank', 'Equity BCDC', 'KCB Bank'];
   const CREDITOR_TYPES = ['Banque', 'Microfinance', 'Banque', 'Banque', 'Microfinance'];
-  const STATUSES = ['Active', 'Soldée', 'Soldée', 'Active', 'Active'];
+  const STATUSES = ['active', 'soldée', 'soldée', 'active', 'en_défaut'];
 
   const records = selected.map((p, i) => ({
     parcel_id: p.id,
@@ -1015,15 +1021,20 @@ export const generateBuildingPermits = async (
   ];
   const ADM_STATUSES = ['Approuvé', 'Rejeté', 'Approuvé', 'En attente', 'Approuvé'];
 
-  const records = selected.map((p, i) => ({
-    parcel_id: p.id,
-    permit_number: `TEST-PC-${Date.now().toString(36)}-${i}`,
-    issue_date: randomDateInPast(5),
-    issuing_service: pick(SERVICES, i),
-    validity_period_months: pick([12, 24, 36], i),
-    administrative_status: pick(ADM_STATUSES, i),
-    is_current: i % 3 !== 1,
-  }));
+  const records = selected.map((p, i) => {
+    // ~30% regularization permits (permit_number contains "reg" for heuristic detection)
+    const isRegularization = i % 3 === 0;
+    const permitPrefix = isRegularization ? 'TEST-PC-REG' : 'TEST-PC';
+    return {
+      parcel_id: p.id,
+      permit_number: `${permitPrefix}-${Date.now().toString(36)}-${i}`,
+      issue_date: randomDateInPast(5),
+      issuing_service: pick(SERVICES, i),
+      validity_period_months: pick([12, 24, 36], i),
+      administrative_status: pick(ADM_STATUSES, i),
+      is_current: i % 3 !== 1,
+    };
+  });
 
   // Insert in batches
   const allInserted: Array<{ id: string }> = [];

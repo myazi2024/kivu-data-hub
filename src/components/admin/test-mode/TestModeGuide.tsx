@@ -6,11 +6,11 @@ import { ExternalLink } from 'lucide-react';
 const guidelines = [
   <>Activez le <strong>mode test</strong> avant de tester les flux critiques (paiements, contributions, etc.)</>,
   <>Toutes les données créées en mode test auront le préfixe <strong>TEST-</strong> dans leur numéro de parcelle ou référence</>,
-  <>À l'activation, un <strong>jeu complet de données</strong> est généré automatiquement : 7 020 parcelles (26 provinces × densité variable), contributions, factures, paiements, codes CCC, titres, expertises, litiges, conflits, historique et certificats</>,
-  <>Le <strong>nettoyage automatique</strong> supprimera les données de test après le délai configuré (nécessite un cron configuré dans Supabase)</>,
-  <>Utilisez <strong>"Nettoyer tout"</strong> pour supprimer manuellement toutes les données de test (respecte l'ordre FK)</>,
+  <>À l'activation, un <strong>jeu complet de données</strong> est généré automatiquement : ~7 020 parcelles (26 provinces × densité variable), ~7 020 contributions, ~2 340 factures, ~1 000 historiques propriété/taxes, ~700 permis, ~585 hypothèques, ~470 bornages, 52 litiges, 52 conflits, 52 certificats, 52 mutations, 26 lotissements</>,
+  <>Le <strong>nettoyage automatique</strong> peut être configuré via une tâche cron SQL directe (<code>SELECT cleanup_all_test_data()</code>) — le nettoyage via Edge Function n'est plus recommandé</>,
+  <>Utilisez <strong>"Nettoyer tout"</strong> pour supprimer manuellement toutes les données de test (respecte l'ordre FK via la RPC serveur)</>,
   <>Utilisez <strong>"Régénérer"</strong> pour supprimer et recréer un jeu de données test frais en une seule action</>,
-  <><strong>Important :</strong> Les données test sont isolées dans l'environnement <code>/test/*</code> et n'apparaissent plus dans les routes de production</>,
+  <><strong>Important :</strong> Les données test sont isolées dans l'environnement <code>/test/*</code> et sont exclues des analytics de production</>,
 ];
 
 const TestModeGuide: React.FC = () => (
