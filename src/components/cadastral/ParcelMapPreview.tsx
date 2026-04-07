@@ -1522,6 +1522,8 @@ export const ParcelMapPreview = ({
   const cancelDrawingBuilding = useCallback(() => {
     setIsDrawingBuilding(false);
     setBuildingVertices([]);
+    setSelectedBuildingTarget(null);
+    setShowBuildingTargetSelector(false);
     const map = mapInstanceRef.current;
     if (map) {
       map.getContainer().dataset.addingBuilding = 'false';
