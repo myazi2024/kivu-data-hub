@@ -13,8 +13,14 @@ interface ParcelSide {
 }
 
 interface BuildingShape {
-  type: string;
-  size: number;
+  id?: string;
+  vertices?: { lat: number; lng: number }[];
+  sides?: { name: string; length: string }[];
+  areaSqm?: number;
+  perimeterM?: number;
+  // Rétro-compatibilité
+  type?: string;
+  size?: number;
   rotation?: number;
   position?: { lat: number; lng: number };
 }
