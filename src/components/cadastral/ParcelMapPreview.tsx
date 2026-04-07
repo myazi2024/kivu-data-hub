@@ -1591,6 +1591,7 @@ export const ParcelMapPreview = ({
     }
     
     const areaSqm = calculateBuildingArea(buildingVertices);
+    const targetIdx = selectedBuildingTarget ?? buildingShapes.length;
     
     const newShape: BuildingShape = {
       id: `building-${Date.now()}`,
@@ -1598,14 +1599,14 @@ export const ParcelMapPreview = ({
       sides,
       areaSqm: Math.round(areaSqm * 100) / 100,
       perimeterM: Math.round(perimeter * 100) / 100,
-      linkedIndex: buildingShapes.length,
+      linkedIndex: targetIdx,
     };
     
-    const label = constructionLabels[newShape.linkedIndex] || `Construction ${newShape.linkedIndex + 1}`;
+    const label = constructionLabels[targetIdx] || `Construction ${targetIdx + 1}`;
     onBuildingShapesChange([...buildingShapes, newShape]);
     cancelDrawingBuilding();
     toast.success(`${label} ajoutée: ${newShape.areaSqm} m², ${newShape.perimeterM} m de périmètre`);
-  }, [buildingVertices, buildingShapes, onBuildingShapesChange, cancelDrawingBuilding, constructionLabels]);
+  }, [buildingVertices, buildingShapes, onBuildingShapesChange, cancelDrawingBuilding, constructionLabels, selectedBuildingTarget]);
 
   // Supprimer le dernier sommet en cours de tracé
   const removeLastBuildingVertex = useCallback(() => {
