@@ -153,7 +153,7 @@ export const useTestDataActions = ({
         updateStep(2, 'done');
       } catch (contribError) {
         updateStep(2, 'error');
-        await supabase.rpc('cleanup_all_test_data').catch(e => console.error('Rollback RPC failed:', e));
+        try { await supabase.rpc('cleanup_all_test_data'); } catch (e) { console.error('Rollback RPC failed:', e); }
         throw contribError;
       }
 
@@ -165,7 +165,7 @@ export const useTestDataActions = ({
         updateStep(3, 'done');
       } catch (invoiceError) {
         updateStep(3, 'error');
-        await supabase.rpc('cleanup_all_test_data').catch(e => console.error('Rollback RPC failed:', e));
+        try { await supabase.rpc('cleanup_all_test_data'); } catch (e) { console.error('Rollback RPC failed:', e); }
         throw invoiceError;
       }
 
@@ -176,7 +176,7 @@ export const useTestDataActions = ({
         updateStep(4, 'done');
       } catch (paymentError) {
         updateStep(4, 'error');
-        await supabase.rpc('cleanup_all_test_data').catch(e => console.error('Rollback RPC failed:', e));
+        try { await supabase.rpc('cleanup_all_test_data'); } catch (e) { console.error('Rollback RPC failed:', e); }
         throw paymentError;
       }
 
