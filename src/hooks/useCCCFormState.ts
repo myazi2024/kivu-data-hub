@@ -119,7 +119,7 @@ export const useCCCFormState = ({
     contractDate: '', mortgageStatus: 'Active', receiptFile: null
   }]);
 
-  const [permitMode, setPermitMode] = useState<'existing' | 'request'>('existing');
+  const [permitMode, setPermitMode] = useState<'existing' | 'request' | null>(null);
   const [constructionMode, setConstructionMode] = useState<'unique' | 'multiple'>('unique');
   const [additionalConstructions, setAdditionalConstructions] = useState<AdditionalConstruction[]>([]);
 
@@ -1025,7 +1025,7 @@ export const useCCCFormState = ({
     setServitude({ hasServitude: false });
     setBuildingShapes([]);
     setDisputeFormData(null);
-    setPermitMode('existing');
+    setPermitMode(null);
     setBuildingPermits([{ permitType: 'construction', permitNumber: '', issueDate: '', validityMonths: '36', administrativeStatus: 'En attente', issuingService: '', attachmentFile: null }]);
     setPermitRequest({ permitType: 'construction', hasExistingConstruction: false, constructionDescription: '', plannedUsage: '', estimatedArea: '', applicantName: '', applicantPhone: '', applicantEmail: '', selectedOwnerIndex: -1, numberOfFloors: '', buildingMaterials: '', architecturalPlanImages: [], constructionYear: '', regularizationReason: '', originalPermitNumber: '', previousPermitNumber: '', constructionPhotos: [] });
     setGpsCoordinates([]);
@@ -1455,7 +1455,7 @@ export const useCCCFormState = ({
       permitType: 'construction', permitNumber: '', issueDate: '',
       validityMonths: '36', administrativeStatus: 'En attente', issuingService: '', attachmentFile: null
     }]);
-    setPermitMode('existing');
+    setPermitMode(null);
     markDirty();
   }, []);
 
