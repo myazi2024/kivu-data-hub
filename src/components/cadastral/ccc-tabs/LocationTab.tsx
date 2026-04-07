@@ -210,6 +210,7 @@ const LocationTab: React.FC<LocationTabProps> = ({
             onBuildingShapesChange={onBuildingShapesChange}
             isTerrainNu={isTerrainNu}
             requiredBuildingCount={requiredBuildingCount}
+            constructionLabels={constructionLabels}
           />
         </div>
       )}
