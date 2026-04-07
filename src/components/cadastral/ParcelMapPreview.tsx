@@ -16,7 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { AlertCircle, MapPin, AlertTriangle, Info, Move, Hand, Plus, Trash2, Target, Pencil, Check, Navigation, Eye, Square, Circle, Triangle, Hexagon, Building2, Layers, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, X, RotateCw, RotateCcw, Compass } from 'lucide-react';
+import { AlertCircle, MapPin, AlertTriangle, Info, Move, Hand, Plus, Trash2, Target, Pencil, Check, Navigation, Eye, Building2, Layers, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, X, RotateCw, RotateCcw, Compass } from 'lucide-react';
 import { BoundaryConflictDialog } from './BoundaryConflictDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
