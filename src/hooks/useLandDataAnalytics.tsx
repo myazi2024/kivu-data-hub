@@ -48,7 +48,7 @@ async function fetchAll(
 
 export const useLandDataAnalytics = () => {
   return useQuery({
-    queryKey: ['land-analytics-v7'],
+    queryKey: ['land-analytics-v8'],
     queryFn: async (): Promise<LandAnalyticsData> => {
       const [
         parcels, contribs, titleReqs, permits,
@@ -65,7 +65,7 @@ export const useLandDataAnalytics = () => {
           'id, parcel_number, parcel_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, property_title_type, current_owner_legal_status, current_owners_details, declared_usage, construction_type, construction_nature, construction_year, contribution_type, area_sqm, is_suspicious, fraud_score, fraud_reason, appeal_submitted, appeal_status, lease_type, property_category, construction_materials, standing, status, reviewed_at, created_at'),
         // Title requests
         fetchAll('land_title_requests',
-          'id, request_type, requester_type, requester_gender, owner_gender, nationality, section_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, declared_usage, construction_type, construction_nature, owner_legal_status, status, payment_status, total_amount_usd, area_sqm, deduced_title_type, estimated_processing_days, is_owner_same_as_requester, created_at, reviewed_at'),
+          'id, request_type, requester_type, requester_gender, owner_gender, nationality, section_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, declared_usage, construction_type, construction_nature, construction_materials, standing, construction_year, floor_number, owner_legal_status, status, payment_status, total_amount_usd, area_sqm, deduced_title_type, estimated_processing_days, is_owner_same_as_requester, created_at, reviewed_at'),
         // Building permits — added validity_period_months, is_current, issuing_service
         fetchAll('cadastral_building_permits',
           'id, parcel_id, permit_number, administrative_status, issue_date, validity_period_months, is_current, issuing_service, created_at'),
@@ -78,7 +78,7 @@ export const useLandDataAnalytics = () => {
         fetchAll('real_estate_expertise_requests',
           'id, parcel_number, parcel_id, status, payment_status, market_value_usd, property_condition, construction_quality, construction_year, number_of_floors, total_built_area_sqm, road_access_type, has_electricity, has_water_supply, has_internet, has_sewage_system, has_parking, has_security_system, has_garden, garden_area_sqm, flood_risk_zone, erosion_risk_zone, distance_to_main_road_m, distance_to_market_km, distance_to_school_km, distance_to_hospital_km, expertise_date, assigned_at, created_at'),
         fetchAll('mutation_requests',
-          'id, parcel_number, parcel_id, mutation_type, requester_type, status, payment_status, total_amount_usd, reviewed_at, created_at'),
+          'id, parcel_number, parcel_id, mutation_type, requester_type, status, payment_status, total_amount_usd, market_value_usd, title_age, late_fee_amount, reviewed_at, created_at'),
         fetchAll('subdivision_requests',
           'id, parcel_number, parcel_id, status, number_of_lots, purpose_of_subdivision, requester_type, submission_payment_status, total_amount_usd, parent_parcel_area_sqm, reviewed_at, created_at'),
         // Disputes — added lifting_reason
