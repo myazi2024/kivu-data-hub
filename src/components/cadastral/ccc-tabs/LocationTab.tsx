@@ -39,6 +39,9 @@ interface LocationTabProps {
   onServitudeChange: (s: { hasServitude: boolean; width?: number }) => void;
   buildingShapes: any[];
   onBuildingShapesChange: (shapes: any[]) => void;
+  // Construction linking
+  constructionMode?: 'unique' | 'multiple';
+  additionalConstructions?: any[];
   // Navigation
   handleTabChange: (tab: string) => void;
   handleNextTab: (current: string, next: string) => void;
@@ -52,8 +55,11 @@ const LocationTab: React.FC<LocationTabProps> = ({
   gpsCoordinates, onCoordinatesUpdate, mapConfig, parcelNumber,
   roadSides, onRoadSidesChange, parcelSides, onParcelSidesUpdate,
   servitude, onServitudeChange, buildingShapes, onBuildingShapesChange,
+  constructionMode = 'unique', additionalConstructions = [],
   handleTabChange, handleNextTab, resetLocationBlock
 }) => {
+  const isTerrainNu = formData.propertyCategory === 'Terrain nu' || formData.constructionType === 'Terrain nu';
+  const requiredBuildingCount = isTerrainNu ? 0 : (constructionMode === 'multiple' ? 1 + additionalConstructions.length : 1);
   return (
     <div className="space-y-3 md:space-y-6 mt-4 md:mt-6 animate-fade-in">
       {/* Localisation de la parcelle */}
