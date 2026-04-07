@@ -284,11 +284,12 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
                             ? `Construction ${(shape.linkedIndex ?? idx) + 1}`
                             : `Construction ${idx + 1}`;
                           return (
-                            <div key={idx} className="text-muted-foreground">
-                              {label} — {shape.areaSqm?.toFixed(1) ?? '?'} m²
-                              {shape.perimeterM ? ` (P: ${shape.perimeterM.toFixed(1)}m)` : ''}
-                              {shape.sides?.length ? ` · ${shape.sides.length} côtés` : ''}
-                            </div>
+                             <div key={idx} className="text-muted-foreground">
+                               {label} — {shape.areaSqm?.toFixed(1) ?? '?'} m²
+                               {shape.heightM ? ` · H: ${shape.heightM}m` : ''}
+                               {shape.perimeterM ? ` (P: ${shape.perimeterM.toFixed(1)}m)` : ''}
+                               {shape.sides?.length ? ` · ${shape.sides.length} côtés` : ''}
+                             </div>
                           );
                         })}
                       </div>

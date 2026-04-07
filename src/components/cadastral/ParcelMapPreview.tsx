@@ -53,6 +53,7 @@ interface BuildingShape {
   areaSqm: number;
   perimeterM: number;
   linkedIndex?: number; // 0 = construction principale, 1+ = additionnelles
+  heightM?: number; // Hauteur de la construction en mètres
 }
 
 interface ParcelMapPreviewProps {
@@ -2626,37 +2627,58 @@ export const ParcelMapPreview = ({
               {buildingShapes.map((shape, idx) => {
                 const label = constructionLabels[shape.linkedIndex ?? idx] || `Construction ${idx + 1}`;
                 return (
-                  <div key={shape.id} className="flex items-center justify-between text-xs bg-background/60 rounded-lg px-2 py-1.5 border border-border/30 gap-1.5">
-                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                      <Layers className="h-3 w-3 text-primary flex-shrink-0" />
-                      {requiredBuildingCount > 1 && constructionLabels.length > 1 ? (
-                        <Select
-                          value={String(shape.linkedIndex ?? idx)}
-                          onValueChange={(val) => reassignBuildingLinkedIndex(shape.id, parseInt(val))}
-                        >
-                          <SelectTrigger className="h-6 text-xs border-border/50 rounded-md px-1.5 min-w-0 flex-1">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {constructionLabels.map((cl, i) => {
-                              const takenBy = buildingShapes.find(s => s.linkedIndex === i && s.id !== shape.id);
-                              return (
-                                <SelectItem key={i} value={String(i)}>
-                                  {cl}{takenBy ? ' ↔ permuter' : ''}
-                                </SelectItem>
-                              );
-                            })}
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <span className="font-medium truncate">{label}</span>
-                      )}
-                      <span className="text-muted-foreground flex-shrink-0">{shape.areaSqm.toFixed(1)} m²</span>
+                    <div key={shape.id} className="space-y-1.5 text-xs bg-background/60 rounded-lg px-2 py-1.5 border border-border/30">
+                      <div className="flex items-center justify-between gap-1.5">
+                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                          <Layers className="h-3 w-3 text-primary flex-shrink-0" />
+                          {requiredBuildingCount > 1 && constructionLabels.length > 1 ? (
+                            <Select
+                              value={String(shape.linkedIndex ?? idx)}
+                              onValueChange={(val) => reassignBuildingLinkedIndex(shape.id, parseInt(val))}
+                            >
+                              <SelectTrigger className="h-6 text-xs border-border/50 rounded-md px-1.5 min-w-0 flex-1">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {constructionLabels.map((cl, i) => {
+                                  const takenBy = buildingShapes.find(s => s.linkedIndex === i && s.id !== shape.id);
+                                  return (
+                                    <SelectItem key={i} value={String(i)}>
+                                      {cl}{takenBy ? ' ↔ permuter' : ''}
+                                    </SelectItem>
+                                  );
+                                })}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <span className="font-medium truncate">{label}</span>
+                          )}
+                          <span className="text-muted-foreground flex-shrink-0">{shape.areaSqm.toFixed(1)} m²</span>
+                        </div>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => removeBuildingById(shape.id)} className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 flex-shrink-0">
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <div className="flex items-center gap-1.5 pl-4">
+                        <label className="text-muted-foreground whitespace-nowrap">Hauteur :</label>
+                        <Input
+                          type="number"
+                          min={0}
+                          step={0.1}
+                          placeholder="m"
+                          value={shape.heightM ?? ''}
+                          onChange={(e) => {
+                            const val = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                            const updated = buildingShapes.map(s =>
+                              s.id === shape.id ? { ...s, heightM: val } : s
+                            );
+                            onBuildingShapesChange(updated);
+                          }}
+                          className={`h-6 w-20 text-xs px-1.5 ${!shape.heightM ? 'border-destructive' : ''}`}
+                        />
+                        <span className="text-muted-foreground">m</span>
+                      </div>
                     </div>
-                    <Button type="button" variant="ghost" size="sm" onClick={() => removeBuildingById(shape.id)} className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 flex-shrink-0">
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
                 );
               })}
             </div>

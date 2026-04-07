@@ -690,6 +690,10 @@ export const useCCCFormState = ({
       if (buildingShapes.length < expectedBuildingCount) {
         missing.push({ field: 'buildingShapes', label: `Tracés de construction dans le croquis (${buildingShapes.length}/${expectedBuildingCount})`, tab: 'location' });
       }
+      const missingHeight = buildingShapes.some((s: any) => !s.heightM || s.heightM <= 0);
+      if (buildingShapes.length > 0 && missingHeight) {
+        missing.push({ field: 'buildingHeight', label: 'Hauteur de construction manquante', tab: 'location' });
+      }
     }
 
     // HISTORY
