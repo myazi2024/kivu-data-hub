@@ -1,119 +1,96 @@
 
 
-# Audit détaillé — Menu "Données foncières" (Analytics)
+# Audit — Config Graphiques (Admin Analytics)
 
-## A. Données non fetchées (graphiques toujours vides)
+## A. Graphiques enregistrés dans le registre mais NON rendus dans les blocs
 
-| # | Problème | Bloc | Impact |
-|---|----------|------|--------|
-| 1 | **`lease_type` absent de `land_title_requests`** — La table DB n'a pas de colonne `lease_type`, or le bloc Titres fonciers affiche un graphique "Type bail" avec `countBy(filtered, 'lease_type')`. Ce graphique sera **toujours vide**. | TitleRequestsBlock | Graphique mort |
-| 2 | **`construction_materials`, `standing`, `construction_year`, `floor_number`** non fetchés pour `land_title_requests` — Ces colonnes existent en DB mais le SELECT (ligne 68) ne les inclut pas. | TitleRequestsBlock | Données disponibles mais non exploitées |
-| 3 | **`property_category`** non fetchée pour `land_title_requests` — Existe en DB via `construction_type` mais aucun graphique catégorie dans ce bloc. | TitleRequestsBlock | Absent |
-| 4 | **`lease_years`** non fetchée pour `cadastral_contributions` — La colonne existe mais n'est pas dans le SELECT. | ContributionsBlock | Aucune analyse de durée de bail |
-| 5 | **`permit_type`** non fetchée pour `cadastral_building_permits` — La colonne n'existe pas en DB. Le bloc déduit le type via `permit_number` (heuristique fragile). | BuildingPermitsBlock | Résultat approximatif |
+Le registre `ANALYTICS_TABS_REGISTRY` déclare des `item_key` que l'admin affiche et permet de configurer, mais qui ne sont **jamais utilisés** par le bloc correspondant (pas de `v('key')` dans le JSX). L'admin donne l'illusion que ces graphiques existent.
 
-## B. Variables croisées manquantes
+| # | Onglet | `item_key` dans registre | Rendu dans bloc ? | Impact |
+|---|--------|--------------------------|-------------------|--------|
+| 1 | `taxes` | `tax-type` | NON | Le registre déclare un graphique "Type de taxe" mais `TaxesBlock` ne contient aucun `v('tax-type')`. Le toggle admin est **fictif**. |
+| 2 | `taxes` | `fiscal-zone` | NON | "Zone fiscale" déclaré mais jamais rendu. Toggle fictif. |
+| 3 | `taxes` | `penalties` | NON | "Avec/sans pénalités" déclaré mais jamais rendu. |
+| 4 | `taxes` | `exemptions` | NON | "Exonérations" déclaré mais jamais rendu. |
+| 5 | `taxes` | `province` | NON | "Par province" déclaré mais jamais rendu (le bloc utilise `GeoCharts` via `v('geo')` qui est un composant distinct). |
+| 6 | `building-permits` | `estimated-cost` | A vérifier | Déclaré dans registre mais potentiellement pas rendu. |
+| 7 | `building-permits` | `roofing-type` | A vérifier | Idem. |
+| 8 | `building-permits` | `water-supply` | A vérifier | Idem. |
+| 9 | `building-permits` | `electricity` | A vérifier | Idem. |
 
-| # | Graphique | Cross-variables absentes |
-|---|-----------|--------------------------|
-| 6 | Parcelles > `property-category` | Pas de cross-variables dans le registre (absent de `crossVariables.ts` pour `parcels-titled`) |
-| 7 | Parcelles > `construction-materials` | Idem — absent du registre |
-| 8 | Parcelles > `standing` | Idem |
-| 9 | Parcelles > `subdivided` | Idem |
-| 10 | Contributions > `property-category` | Absent du registre `contributions` |
-| 11 | Building Permits > `permit-type` | Absent du registre `building-permits` |
+## B. Variables croisées manquantes dans `crossVariables.ts`
 
-## C. Métriques dérivées absentes (moyennes, ratios, pourcentages)
+Les graphiques suivants sont dans le registre et rendus dans les blocs, mais n'ont **aucune entrée** dans `CROSS_VARIABLE_REGISTRY`, empêchant tout croisement :
 
-| # | Métrique manquante | Bloc |
-|---|-------------------|------|
-| 12 | **Surface moyenne par parcelle** (`totalSurface / count`) — KPI disponible mais pas affiché | Parcelles |
-| 13 | **Densité parcellaire** (parcelles/hectare) — Métrique clé pour l'urbanisme, absente | Parcelles |
-| 14 | **Taux de recouvrement fiscal** (`montant payé / montant total`) | Taxes |
-| 15 | **Montant moyen des taxes** — Ni KPI ni graphique | Taxes |
-| 16 | **Revenu moyen par hypothèque** — `avgField` disponible mais non utilisé | Hypothèques |
-| 17 | **Durée moyenne des hypothèques** (mois) — Données disponibles, pas de KPI | Hypothèques |
-| 18 | **Taux de rejet** (% rejetées/total) — Absent des KPI Titres, Mutations, Subdivisions | Titres, Mutations, Subdivisions |
-| 19 | **Surface bâtie moyenne** via `building_shapes` — Données JSONB collectées mais jamais exploitées | Parcelles/Expertise |
-| 20 | **Hauteur moyenne des constructions** via `building_shapes[].heightM` — Idem | Parcelles |
+| # | Onglet | `item_key` | Cross-variables ? |
+|---|--------|------------|-------------------|
+| 10 | `taxes` | `tax-type` | NON (même le graphique n'est pas rendu — cf. point 1) |
+| 11 | `taxes` | `fiscal-zone` | NON |
+| 12 | `taxes` | `penalties` | NON |
+| 13 | `taxes` | `exemptions` | NON |
+| 14 | `mortgages` | `request-type` | NON — déclaré "Enreg. vs Radiation" mais absent de `crossVariables.ts` |
+| 15 | `mortgages` | `request-status` | NON — "Statut demandes" absent |
+| 16 | `building-permits` | `estimated-cost` | NON |
+| 17 | `building-permits` | `roofing-type` | NON |
+| 18 | `building-permits` | `water-supply` | NON |
+| 19 | `building-permits` | `electricity` | NON |
+| 20 | `building-permits` | `payment` | NON |
 
-## D. Incohérences logiques
-
-| # | Problème |
-|---|----------|
-| 21 | **`TitleRequestsBlock` affiche "Type bail" mais `land_title_requests` n'a pas `lease_type`** — Le graphique est structurellement cassé. Il faudrait soit ajouter la colonne en DB, soit supprimer le graphique, soit le baser sur les parcelles liées. |
-| 22 | **`BuildingPermitsBlock` déduit `permit_type` du `permit_number`** (lignes 36-43) — Heuristique fragile basée sur la présence de "reg"/"régul" dans le numéro. Si le numéro ne contient pas ce mot-clé, tout est classé "Construction" par défaut. |
-| 23 | **`TaxesBlock` — statuts mixtes** — Le filtre payé utilise `'paid' || 'payé'` et en attente `['pending', 'en_attente', 'unpaid']`. Si la DB a d'autres variantes, les KPI seront faux. Pas de normalisation comme dans `BuildingPermitsBlock`. |
-| 24 | **`MortgagesBlock` — statuts mixtes** — `'paid' || 'soldée'` pour le KPI "Soldées". Même problème de normalisation manquante. |
-| 25 | **`OwnershipHistoryBlock` — durée calculée avec `Date.now()`** — Pour les propriétaires actifs (sans `ownership_end_date`), la durée est calculée par rapport à "maintenant", ce qui biaise la moyenne avec le temps. |
-
-## E. Redondances
+## C. Incohérences logiques entre registre et blocs
 
 | # | Problème |
 |---|----------|
-| 26 | **Parcelles vs Contributions** — Les graphiques `title-type`, `legal-status`, `usage`, `construction-type`, `property-category` existent dans les deux blocs avec les mêmes normaliseurs. Après approbation, les données se retrouvent dans les deux tables → double comptage. |
-| 27 | **`evolution` + `revenue-trend`** dans le même bloc — Titres, Mutations, Subdivisions, Factures ont les deux. Ce sont essentiellement deux area charts similaires (volume vs montant). |
-| 28 | **Boilerplate identique dans 14 blocs** — Le pattern `MapProvinceContext` + `useEffect` + `filterLabel` + `useTabChartsConfig` est copié-collé dans chaque bloc (~15 lignes identiques). Pourrait être un hook partagé `useBlockSetup(TAB_KEY, data)`. |
+| 21 | **`display_order` dupliqué** dans `title-requests` : `construction-materials` et `revenue-trend` ont tous les deux `display_order: 13`. `standing` et `processing-comparison` ont tous les deux `display_order: 14`. Cela rend l'ordre non déterministe dans l'admin. |
+| 22 | **Mode Filtres : `_global` et `rdc-map` absents** — `TAB_FILTER_DEFAULTS` ne contient pas d'entrée pour `_global` ni `rdc-map`, donc ces onglets n'apparaissent pas dans le mode Filtres. Cohérent mais pas documenté. |
+| 23 | **Mode Croisements : l'admin n'affiche pas les onglets sans cross-variables** — `_global`, `rdc-map` et `invoices` n'apparaissent pas dans la liste des onglets croisables si on y est mais n'ont pas de graphique croisable. `invoices` a des entrées mais elles ne couvrent pas tous les graphiques. |
+| 24 | **Bouton "Sauvegarder filtres" dans FilterManager est indépendant** — Le mode Filtres a son propre bouton "Sauvegarder filtres" (ligne 331) qui sauvegarde uniquement les filtres. Mais le bouton global "Sauvegarder tout" (ligne 1001) sauvegarde aussi les filtres. Pas d'incohérence fonctionnelle mais la duplication peut prêter à confusion. |
+| 25 | **`handleSave` ne sauvegarde qu'un onglet** (ligne 819-832) — En mode Graphiques, le bouton "Sauvegarder" ne sauvegarde que l'onglet actif (`activeTab`). Si l'admin modifie 3 onglets et clique "Sauvegarder" (pas "Sauvegarder tout"), seul l'onglet visible est persisté. Le comportement est correct mais le badge "modifié" sur les autres onglets reste, ce qui peut être déroutant. |
 
-## F. Données fictives / non alimentées
+## D. Fonctionnalités absentes
 
-| # | Problème |
-|---|----------|
-| 29 | **`fraud_attempts`** — Aucun mécanisme fonctionnel ne crée des lignes dans cette table en production. Le bloc "Fraude" affiche potentiellement des données de test/seed uniquement. |
-| 30 | **`cadastral_invoices.geographical_zone`** — Non alimenté dynamiquement. Le graphique "Zone géographique" montre des données vides ou fictives. |
-| 31 | **`MutationBlock` — `market_value_usd` et `title_age`** — Le code accède à `(r as any).market_value_usd` et `(r.proposed_changes as any)?.market_value_usd`, mais `proposed_changes` n'est pas fetchée dans le SELECT. Les graphiques "Valeur vénale" et "Ancienneté titre" seront vides. |
-| 32 | **`MutationBlock` — `late_fee_amount`** — Même problème : non fetchée, graphique "Retard mutation" vide. |
+| # | Fonctionnalité |
+|---|----------------|
+| 26 | **Pas de prévisualisation** — L'admin ne peut pas voir le résultat de ses modifications sans quitter la page pour aller dans "Données foncières". Un aperçu inline serait utile. |
+| 27 | **Pas de recherche/filtre dans la liste des graphiques** — Certains onglets ont 15+ items. Aucun champ de recherche pour trouver rapidement un graphique. |
+| 28 | **Pas d'export/import de configuration** — L'admin ne peut pas sauvegarder une snapshot de configuration pour la restaurer ultérieurement. La seule option est "Réinitialiser" qui revient aux defaults hardcodés. |
+| 29 | **Pas de validation des champs `field` dans les croisements** — L'admin peut taper n'importe quel nom de champ dans l'input `field_name` des croisements. Aucune validation que le champ existe réellement dans les données. Un sélecteur de champs connus serait plus sûr. |
+| 30 | **Pas de compteur global** — L'admin ne voit pas le total de graphiques/KPI/croisements configurés sur l'ensemble du système. Un résumé serait utile dans l'en-tête. |
 
-## G. Optimisations
+## E. Optimisations
 
 | # | Proposition |
 |---|-------------|
-| 33 | **Hook `useBlockSetup`** — Factoriser le boilerplate commun (context, filter, config, filterLabel) en un hook réutilisable. ~15 lignes × 14 blocs = 210 lignes de code mort. |
-| 34 | **Lazy loading par onglet** — Le hook charge 14 tables simultanément même si un seul onglet est consulté. Découper en requêtes individuelles par onglet actif. |
+| 31 | **Corriger les `display_order` dupliqués** dans `title-requests` (points 21). Réindexer séquentiellement. |
+| 32 | **Supprimer les entrées fictives du registre** — Retirer les `item_key` qui ne sont pas rendus dans les blocs (points 1-5), ou les implémenter dans les blocs correspondants. |
+| 33 | **Ajouter les cross-variables manquantes** pour les graphiques rendus qui n'en ont pas (points 14-20). |
 
 ---
 
 ## Plan de corrections
 
-### Priorité 1 — Graphiques cassés (données inaccessibles)
+### Priorité 1 — Supprimer les graphiques fictifs du registre
 
-**`useLandDataAnalytics.tsx`** :
-- `land_title_requests` SELECT : ajouter `construction_materials, standing, construction_year, floor_number, property_category` (Note : ne PAS ajouter `lease_type` car la colonne n'existe pas dans cette table)
-- `mutation_requests` SELECT : ajouter `proposed_changes, market_value_usd, late_fee_amount, title_age` (vérifier existence en DB)
+**Fichier** : `src/hooks/useAnalyticsChartsConfig.ts`
+- Retirer de `taxes.charts` : `tax-type`, `fiscal-zone`, `penalties`, `exemptions`, `province` (5 entrées) — ces graphiques ne sont pas rendus dans `TaxesBlock`
+- OU implémenter ces 5 graphiques dans `TaxesBlock.tsx` (si les données existent)
 
-**`TitleRequestsBlock.tsx`** :
-- Supprimer le graphique `lease-type` (la table `land_title_requests` n'a pas de colonne `lease_type`)
-- Ajouter graphiques `property-category`, `construction-materials`, `standing`
+### Priorité 2 — Corriger les `display_order` dupliqués
 
-**`crossVariables.ts`** :
-- Ajouter les entrées manquantes pour `property-category`, `construction-materials`, `standing`, `subdivided` dans `parcels-titled`
-- Ajouter `property-category` dans `contributions`
-- Ajouter `permit-type` dans `building-permits`
+**Fichier** : `src/hooks/useAnalyticsChartsConfig.ts`
+- `title-requests.charts` : réindexer `construction-materials` (13), `standing` (14), `revenue-trend` (15), `processing-comparison` (16), `geo` (17), `evolution` (18)
 
-### Priorité 2 — KPI dérivés manquants
+### Priorité 3 — Ajouter les cross-variables manquantes
 
-**`ParcelsWithTitleBlock.tsx`** :
-- Ajouter KPI `kpi-avg-surface` : Surface moyenne (totalSurface / count)
-- Ajouter KPI `kpi-density` : Densité (parcelles/ha)
+**Fichier** : `src/config/crossVariables.ts`
+- `mortgages` : ajouter `request-type` et `request-status`
+- `building-permits` : ajouter `estimated-cost`, `roofing-type`, `water-supply`, `electricity`, `payment`
+- `taxes` : ajouter les entrées si les graphiques correspondants sont implémentés
 
-**`TaxesBlock.tsx`** :
-- Ajouter KPI `kpi-recovery` : Taux de recouvrement (payé / total)
-- Ajouter KPI `kpi-avg` : Montant moyen
+### Priorité 4 — Vérifier l'alignement `BuildingPermitsBlock`
 
-**`MortgagesBlock.tsx`** :
-- Ajouter KPI `kpi-avg-amount` : Montant moyen
-- Ajouter KPI `kpi-avg-duration` : Durée moyenne
+**Fichier** : `src/components/visualizations/blocks/BuildingPermitsBlock.tsx`
+- Vérifier que les 12 graphiques déclarés dans le registre sont bien tous rendus avec `v('key')`
+- Supprimer du registre ceux qui ne sont pas rendus, ou les implémenter
 
-### Priorité 3 — Normalisation des statuts
-
-**`TaxesBlock.tsx`** : Ajouter une fonction `statusNorm` comme dans `BuildingPermitsBlock`
-**`MortgagesBlock.tsx`** : Ajouter une normalisation des statuts
-
-### Priorité 4 — Nettoyage
-
-- Supprimer graphiques vides dans `MutationBlock` (`market-value`, `title-age`, `late-fees`) si les colonnes n'existent pas en DB
-- Supprimer `lease-type` du registre `useAnalyticsChartsConfig.ts` pour `title-requests`
-- Documenter le statut fictif de `fraud_attempts` et `geographical_zone`
-
-**Impact total** : ~80 lignes modifiées dans 7 fichiers.
+**Impact total** : ~30 lignes modifiées dans 3 fichiers.
 
