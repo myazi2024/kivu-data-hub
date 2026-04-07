@@ -2457,7 +2457,7 @@ export const ParcelMapPreview = ({
           <Info className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
           <p className="text-xs text-muted-foreground leading-relaxed">
             {isDrawingBuilding 
-              ? "Touchez dans la parcelle pour placer la construction."
+              ? "Touchez la carte pour tracer les sommets de la construction. Min. 3 points, puis cliquez Valider."
               : isDrawingMode 
                 ? "Touchez la carte pour ajouter des bornes."
                 : "Placez les bornes sur la carte en activant le mode tracé. Double-cliquez sur une borne pour modifier ses coordonnées GPS manuellement. Pour éviter l'empiètement des limites de votre parcelle sur le voisinage, prélevez les coordonnées GPS de chaque borne avec un équipement professionnel de précision (ex : Garmin GPS), puis double-cliquez sur chaque borne pour entrer les coordonnées prélevées."
