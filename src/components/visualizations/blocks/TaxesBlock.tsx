@@ -51,9 +51,18 @@ export const TaxesBlock: React.FC<Props> = memo(({ data }) => {
     })).filter(b => b.value > 0);
   }, [filtered]);
 
+  const statusNorm = (s: string) => {
+    const v = (s || '').trim().toLowerCase();
+    if (['paid', 'payé', 'payée'].includes(v)) return 'paid';
+    if (['pending', 'en_attente', 'unpaid', 'en attente', 'impayé'].includes(v)) return 'pending';
+    return v;
+  };
   const totalAmount = filtered.reduce((s: number, t: any) => s + (t.amount_usd || 0), 0);
-  const paid = filtered.filter((t: any) => t.payment_status === 'paid' || t.payment_status === 'payé').length;
-  const pendingCount = filtered.filter((t: any) => ['pending', 'en_attente', 'unpaid'].includes(t.payment_status)).length;
+  const paid = filtered.filter((t: any) => statusNorm(t.payment_status) === 'paid').length;
+  const paidAmount = filtered.filter((t: any) => statusNorm(t.payment_status) === 'paid').reduce((s: number, t: any) => s + (t.amount_usd || 0), 0);
+  const pendingCount = filtered.filter((t: any) => statusNorm(t.payment_status) === 'pending').length;
+  const avgAmount = filtered.length > 0 ? Math.round(totalAmount / filtered.length) : 0;
+  const recoveryRate = totalAmount > 0 ? `${Math.round((paidAmount / totalAmount) * 100)}%` : 'N/A';
 
   const dt = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
 
@@ -62,7 +71,9 @@ export const TaxesBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'kpi-revenue', label: dt('kpi-revenue', 'Montant total'), value: `$${totalAmount.toLocaleString()}`, cls: 'text-emerald-600' },
     { key: 'kpi-pending', label: dt('kpi-pending', 'En attente'), value: pendingCount, cls: 'text-amber-600', tooltip: pct(pendingCount, filtered.length) },
     { key: 'kpi-approved', label: dt('kpi-approved', 'Payées'), value: paid, cls: 'text-blue-600', tooltip: pct(paid, filtered.length) },
-  ].filter(k => v(k.key)), [filtered, totalAmount, pendingCount, paid, v, getChartConfig]);
+    { key: 'kpi-recovery', label: dt('kpi-recovery', 'Recouvrement'), value: recoveryRate, cls: 'text-rose-600', tooltip: `Payé: $${paidAmount.toLocaleString()}` },
+    { key: 'kpi-avg', label: dt('kpi-avg', 'Montant moy.'), value: `$${avgAmount.toLocaleString()}`, cls: 'text-violet-600' },
+  ].filter(k => v(k.key)), [filtered, totalAmount, pendingCount, paid, recoveryRate, paidAmount, avgAmount, v, getChartConfig]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>

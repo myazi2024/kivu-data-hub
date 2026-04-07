@@ -61,9 +61,17 @@ export const MortgagesBlock: React.FC<Props> = memo(({ data }) => {
     })).filter(b => b.value > 0);
   }, [filtered]);
 
-  const active = filtered.filter(m => m.mortgage_status === 'active').length;
-  const paid = filtered.filter(m => m.mortgage_status === 'paid' || m.mortgage_status === 'soldée').length;
+  const statusNorm = (s: string) => {
+    const v = (s || '').trim().toLowerCase();
+    if (['active', 'actif', 'en_cours'].includes(v)) return 'active';
+    if (['paid', 'soldée', 'soldee', 'closed'].includes(v)) return 'paid';
+    return v;
+  };
+  const active = filtered.filter(m => statusNorm(m.mortgage_status) === 'active').length;
+  const paid = filtered.filter(m => statusNorm(m.mortgage_status) === 'paid').length;
   const totalAmount = filtered.reduce((s: number, m: any) => s + (m.mortgage_amount_usd || 0), 0);
+  const avgAmount = filtered.length > 0 ? Math.round(totalAmount / filtered.length) : 0;
+  const avgDuration = filtered.length > 0 ? Math.round(filtered.reduce((s: number, m: any) => s + (m.duration_months || 0), 0) / filtered.length) : 0;
 
   const t = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
 
@@ -72,7 +80,9 @@ export const MortgagesBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'kpi-active', label: t('kpi-active', 'Actives'), value: active, cls: 'text-emerald-600', tooltip: pct(active, filtered.length) },
     { key: 'kpi-paid', label: t('kpi-paid', 'Soldées'), value: paid, cls: 'text-blue-600', tooltip: pct(paid, filtered.length) },
     { key: 'kpi-amount', label: t('kpi-amount', 'Montant total'), value: `$${totalAmount.toLocaleString()}`, cls: 'text-amber-600' },
-  ].filter(k => v(k.key)), [filtered, active, paid, totalAmount, v, getChartConfig]);
+    { key: 'kpi-avg-amount', label: t('kpi-avg-amount', 'Montant moy.'), value: `$${avgAmount.toLocaleString()}`, cls: 'text-rose-600' },
+    { key: 'kpi-avg-duration', label: t('kpi-avg-duration', 'Durée moy.'), value: avgDuration > 0 ? `${avgDuration} mois` : 'N/A', cls: 'text-violet-600' },
+  ].filter(k => v(k.key)), [filtered, active, paid, totalAmount, avgAmount, avgDuration, v, getChartConfig]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>

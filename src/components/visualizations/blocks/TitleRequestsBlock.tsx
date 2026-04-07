@@ -3,7 +3,7 @@ import { AnalyticsFilters } from '../filters/AnalyticsFilters';
 import { AnalyticsFilter, defaultFilter, applyFilters, countBy, countBoolean, trendByMonth, getSectionType, avgProcessingDays, surfaceDistribution, numericDistribution, buildFilterLabel, sumByMonth } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { FileText, Users, DollarSign, TrendingUp, Building, Globe, Ruler, Clock, UserCheck, Home } from 'lucide-react';
+import { FileText, Users, DollarSign, TrendingUp, Building, Globe, Ruler, Clock, UserCheck } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, ColorMappedPieCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
@@ -50,7 +50,8 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
   const byOwnerLegalStatus = useMemo(() => countBy(filtered, 'owner_legal_status'), [filtered]);
   const byConstructionType = useMemo(() => countBy(normalized, 'construction_type'), [normalized]);
   const byConstructionNature = useMemo(() => countBy(filtered, 'construction_nature'), [filtered]);
-  const byLeaseType = useMemo(() => countBy(filtered, 'lease_type'), [filtered]);
+  const byConstructionMaterials = useMemo(() => countBy(filtered, 'construction_materials'), [filtered]);
+  const byStanding = useMemo(() => countBy(filtered, 'standing'), [filtered]);
   const byDeducedTitleType = useMemo(() => countBy(filtered, 'deduced_title_type'), [filtered]);
   const byNationality = useMemo(() => countBy(filtered, 'nationality'), [filtered]);
   
@@ -156,8 +157,10 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(byConstructionType, 'bar-h', 'les types de construction')} crossVariables={cx('construction-type')} rawRecords={normalized} groupField="construction_type" />}
         {v('construction-nature') && <ChartCard title={t('construction-nature', 'Nature construction')} data={byConstructionNature} type="bar-h" colorIndex={7} labelWidth={100}
           insight="Mesure l'évolution des matériaux de construction d'une zone à l'autre." crossVariables={cx('construction-nature')} rawRecords={filtered} groupField="construction_nature" />}
-        {v('lease-type') && <ChartCard title={t('lease-type', 'Type bail')} icon={Home} data={byLeaseType} type="donut" colorIndex={9} hidden={byLeaseType.length === 0}
-          insight={generateInsight(byLeaseType, 'donut', 'les types de bail')} crossVariables={cx('lease-type')} rawRecords={filtered} groupField="lease_type" />}
+        {v('construction-materials') && <ChartCard title={t('construction-materials', 'Matériaux')} data={byConstructionMaterials} type="bar-h" colorIndex={8} hidden={byConstructionMaterials.length === 0}
+          insight={generateInsight(byConstructionMaterials, 'bar-h', 'les matériaux de construction')} crossVariables={cx('construction-materials')} rawRecords={filtered} groupField="construction_materials" />}
+        {v('standing') && <ChartCard title={t('standing', 'Standing')} data={byStanding} type="donut" colorIndex={6} hidden={byStanding.length === 0}
+          insight={generateInsight(byStanding, 'donut', 'les niveaux de standing')} crossVariables={cx('standing')} rawRecords={filtered} groupField="standing" />}
         {v('revenue-trend') && <ChartCard title={t('revenue-trend', 'Revenus/mois')} icon={DollarSign} data={revenueTrend} type="area" colorIndex={2} hidden={revenueTrend.length < 2}
           insight={generateInsight(revenueTrend, 'area', 'les revenus mensuels')} />}
         {v('processing-comparison') && <ChartCard title={t('processing-comparison', 'Délai estimé vs réel')} icon={Clock} data={processingComparison} type="bar-v" colorIndex={5} hidden={processingComparison.length === 0}
