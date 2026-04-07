@@ -2359,7 +2359,7 @@ export const ParcelMapPreview = ({
             <div className="flex items-center gap-1.5">
               <Badge className="bg-red-500 text-white text-xs h-6 px-2 rounded-lg shadow-md animate-pulse">
                 <Building2 className="h-3 w-3 mr-1" />
-                {constructionLabels[buildingShapes.length] || `Construction ${buildingShapes.length + 1}`} ({buildingVertices.length} pts)
+                {constructionLabels[selectedBuildingTarget ?? buildingShapes.length] || `Construction ${(selectedBuildingTarget ?? buildingShapes.length) + 1}`} ({buildingVertices.length} pts)
               </Badge>
               {buildingVertices.length > 0 && (
                 <Button type="button" size="sm" variant="outline" onClick={removeLastBuildingVertex} className="h-6 w-6 p-0 rounded-lg bg-white/95 shadow-md" title="Supprimer dernier point">
