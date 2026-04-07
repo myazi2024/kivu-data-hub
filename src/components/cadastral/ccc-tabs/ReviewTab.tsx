@@ -280,11 +280,14 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
                       <div className="p-2 rounded-lg bg-muted/30 space-y-0.5">
                         <div className="font-semibold text-foreground">Constructions ({buildingShapes.length})</div>
                         {buildingShapes.map((shape: any, idx: number) => {
-                          const labels: Record<string, string> = { circle: 'Cercle', square: 'Carré', rectangle: 'Rectangle', trapeze: 'Trapèze', polygon: 'Polygone' };
+                          const label = shape.linkedIndex !== undefined
+                            ? `Construction ${(shape.linkedIndex ?? idx) + 1}`
+                            : `Construction ${idx + 1}`;
                           return (
                             <div key={idx} className="text-muted-foreground">
-                              {labels[shape.type] || shape.type} — {shape.size}m
-                              {shape.rotation ? ` (${shape.rotation}°)` : ''}
+                              {label} — {shape.areaSqm?.toFixed(1) ?? '?'} m²
+                              {shape.perimeterM ? ` (P: ${shape.perimeterM.toFixed(1)}m)` : ''}
+                              {shape.sides?.length ? ` · ${shape.sides.length} côtés` : ''}
                             </div>
                           );
                         })}
