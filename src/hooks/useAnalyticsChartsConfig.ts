@@ -329,6 +329,8 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'parcels-titled', item_key: 'kpi-urban', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Urbaines' },
       { tab_key: 'parcels-titled', item_key: 'kpi-rural', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'Rurales' },
       { tab_key: 'parcels-titled', item_key: 'kpi-surface', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Surface tot.' },
+      { tab_key: 'parcels-titled', item_key: 'kpi-avg-surface', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Surface moy.' },
+      { tab_key: 'parcels-titled', item_key: 'kpi-density', item_type: 'kpi', is_visible: true, display_order: 5, custom_title: 'Densité' },
     ],
   },
   'contributions': {
@@ -430,7 +432,9 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'mortgages', item_key: 'kpi-active', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Actives' },
       { tab_key: 'mortgages', item_key: 'kpi-paid', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'Soldées' },
       { tab_key: 'mortgages', item_key: 'kpi-amount', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Montant total' },
-      { tab_key: 'mortgages', item_key: 'kpi-pending', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Demandes en att.' },
+      { tab_key: 'mortgages', item_key: 'kpi-avg-amount', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Montant moy.' },
+      { tab_key: 'mortgages', item_key: 'kpi-avg-duration', item_type: 'kpi', is_visible: true, display_order: 5, custom_title: 'Durée moy.' },
+      { tab_key: 'mortgages', item_key: 'kpi-pending', item_type: 'kpi', is_visible: true, display_order: 6, custom_title: 'Demandes en att.' },
     ],
   },
   'subdivision': {
