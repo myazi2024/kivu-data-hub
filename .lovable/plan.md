@@ -1,52 +1,66 @@
 
 
-# Refonte : Tracer les constructions comme le croquis parcelle
+# Liaison Constructions (Infos) ↔ Croquis Parcelle (Localisation)
 
-## Concept
+## Contexte
 
-Remplacer le système actuel (choix d'une forme prédéfinie → clic pour placer au centre avec taille fixe 5m) par un système de **tracé par bornes** identique à celui de la parcelle. L'utilisateur place des points (sommets) sur la carte pour dessiner le contour de la construction. Les distances entre sommets sont calculées automatiquement, donnant les mesures réelles de la construction.
+Actuellement, les constructions déclarées dans l'onglet Infos (construction principale + `additionalConstructions`) et les constructions tracées dans le croquis parcelle (`buildingShapes`) sont complètement indépendantes. Il faut :
 
-## Nouvelle interface utilisateur
+1. Désactiver le bouton Building2 si `propertyCategory === 'Terrain nu'` avec infobulle explicative
+2. Imposer une correspondance 1:1 entre constructions déclarées et constructions tracées
+3. Bloquer la progression si le nombre de tracés ne correspond pas
 
-1. Cliquer sur le bouton **Building2** → active un mode "Tracé construction" (similaire au mode dessin parcelle)
-2. Chaque clic sur la carte ajoute un sommet de la construction (minimum 3 pour former un polygone)
-3. Le polygone se ferme automatiquement et affiche les dimensions de chaque côté (comme `parcelSides`)
-4. Un bouton **Valider** confirme la construction, un bouton **Annuler** supprime le tracé en cours
-5. Possibilité d'ajouter plusieurs constructions (chacune est un polygone indépendant)
-6. Bouton pour supprimer une construction spécifique
+## Modifications
 
-## Nouveau modèle de données
+### Fichier 1 : `src/components/cadastral/ParcelMapPreview.tsx`
+
+**Nouvelles props** : `isTerrainNu?: boolean`, `requiredBuildingCount?: number` (nombre total de constructions à tracer = 1 + additionalConstructions.length si pas terrain nu, sinon 0)
+
+**Bouton Building2** :
+- Si `isTerrainNu` → bouton désactivé (`disabled`) + wrappé dans un `Tooltip` (shadcn) affichant : *"La catégorie de bien sélectionnée est « Terrain nu ». L'ajout de constructions n'est pas disponible pour cette catégorie. Pour modifier ce choix, rendez-vous dans l'onglet Infos, bloc Construction."*
+- Si `buildingShapes.length >= requiredBuildingCount` → bouton désactivé + tooltip : *"Toutes les constructions déclarées ont été tracées (N/N)."*
+
+**Badge indicateur** : Afficher sous la carte un compteur `{buildingShapes.length}/{requiredBuildingCount} constructions tracées` quand `requiredBuildingCount > 0`.
+
+**Lors de `validateBuilding`** : Ajouter un champ `linkedIndex` (0-based) au `BuildingShape` validé, correspondant à l'index de la construction liée (0 = principale, 1+ = additionnelles). L'auto-assigner séquentiellement.
+
+### Fichier 2 : `src/components/cadastral/ccc-tabs/LocationTab.tsx`
+
+**Nouvelles props** : `constructionMode`, `additionalConstructions`, `propertyCategory` (déjà disponible via `formData.propertyCategory`)
+
+Calculer `isTerrainNu = formData.propertyCategory === 'Terrain nu' || formData.constructionType === 'Terrain nu'` et `requiredBuildingCount = isTerrainNu ? 0 : (constructionMode === 'multiple' ? 1 + additionalConstructions.length : 1)`. Attention : si `propertyCategory` est "Terrain nu", `requiredBuildingCount = 0`.
+
+Passer `isTerrainNu` et `requiredBuildingCount` à `ParcelMapPreview`.
+
+### Fichier 3 : `src/hooks/useCCCFormState.ts`
+
+**`getMissingFields`** : Ajouter une validation dans la section LOCATION :
+- Si `!isTerrainNu && !isAppartement` : vérifier que `buildingShapes.length >= expectedCount` (1 + additionalConstructions.length si mode multiple, sinon 1). Si insuffisant, ajouter un champ manquant : *"Tracés de construction dans le croquis (N/M)"* tab `location`.
+
+**Export** : `constructionMode` et `additionalConstructions` sont déjà exportés.
+
+### Fichier 4 : `src/components/cadastral/ccc-tabs/LocationTab.tsx` (props)
+
+Ajouter `constructionMode` et `additionalConstructions` à l'interface `LocationTabProps` et les recevoir depuis le parent.
+
+### Fichier 5 : Parent du LocationTab (passage des props)
+
+Identifier où `LocationTab` est rendu et passer `constructionMode` et `additionalConstructions` déjà disponibles depuis `useCCCFormState`.
+
+## Interface BuildingShape mise à jour
 
 ```typescript
-// Remplace l'ancien BuildingShape
 interface BuildingShape {
   id: string;
-  vertices: { lat: number; lng: number }[];  // sommets GPS
-  sides: { name: string; length: string }[];  // dimensions calculées
-  areaSqm: number;                            // surface calculée
-  perimeterM: number;                         // périmètre calculé
+  vertices: { lat: number; lng: number }[];
+  sides: { name: string; length: string }[];
+  areaSqm: number;
+  perimeterM: number;
+  linkedIndex?: number; // 0 = construction principale, 1+ = additionnelles
 }
 ```
 
-Rétro-compatible : l'ancien format (center + type + size) sera ignoré au chargement si `vertices` est absent.
+## Impact
 
-## Modifications techniques
-
-**Fichier** : `src/components/cadastral/ParcelMapPreview.tsx`
-
-1. **Remplacer `BuildingShape` interface** — nouveau modèle avec `vertices[]` au lieu de `center + type + size`
-2. **Supprimer** `SHAPE_OPTIONS`, `drawBuildingShape`, `selectedShapeType`, `showShapePicker` et tout le Popover de choix de forme
-3. **Ajouter un état `buildingVertices`** — tableau temporaire des sommets en cours de tracé (comme `coordinates` pour la parcelle)
-4. **Nouveau mode `isDrawingBuilding`** — quand actif, les clics ajoutent des sommets au `buildingVertices` (avec vérification `isPointInPolygon` pour rester dans la parcelle)
-5. **Rendu du tracé en cours** — afficher les sommets placés + lignes entre eux + dimensions de chaque segment en temps réel
-6. **Bouton "Valider construction"** — ferme le polygone, calcule surface/périmètre/côtés via Haversine, crée un `BuildingShape` et l'ajoute à `buildingShapes[]`
-7. **Bouton "Annuler"** — vide `buildingVertices` et quitte le mode
-8. **Rendu des constructions validées** — dessiner chaque `BuildingShape` comme un `L.polygon` rouge avec popup montrant surface et périmètre
-9. **Suppression individuelle** — clic sur une construction validée → popup avec bouton "Supprimer"
-
-**Fichier** : `src/components/cadastral/ParcelSketchSVG.tsx`
-
-10. **Adapter le rendu SVG** — dessiner les constructions comme des polygones à partir de `vertices[]` au lieu de formes prédéfinies centrées
-
-**Impact** : ~200 lignes modifiées/ajoutées dans 2 fichiers. Le modèle de données reste compatible avec le stockage existant (localStorage + Supabase JSONB).
+~60 lignes modifiées/ajoutées dans 4 fichiers. Aucun changement de schéma DB (le champ `linkedIndex` est stocké dans le JSONB existant `building_shapes`).
 
