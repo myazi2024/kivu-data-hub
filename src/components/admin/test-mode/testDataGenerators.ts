@@ -529,9 +529,12 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
       declared_usage: pick(DECLARED_USAGES, i),
       construction_type: pick(CONSTRUCTION_TYPES, i),
       construction_nature: i % 4 === 0 ? null : pick(['Durable', 'Semi-durable', 'Précaire'], i),
+      construction_materials: i % 4 === 0 ? null : pick(CONSTRUCTION_MATERIALS, i),
+      standing: i % 4 === 0 ? null : pick(STANDINGS, i),
+      construction_year: i % 4 === 0 ? null : randInt(1990, 2024),
+      floor_number: i % 4 === 0 ? null : String(randInt(0, 3)),
       deduced_title_type: pick(TITLE_TYPES, i),
       area_sqm: randInt(200, 3000),
-      // occupation_duration removed from business logic
       estimated_processing_days: randInt(20, 90),
       status,
       rejection_reason: status === 'rejected' ? 'Documents incomplets (données de test)' : null,
@@ -970,7 +973,7 @@ export const generateMortgages = async (
   const selected = parcels.filter((_, i) => i % 12 === 3); // ~8%
   const CREDITORS = ['Banque Commerciale du Congo', 'Trust Merchant Bank', 'Rawbank', 'Equity BCDC', 'KCB Bank'];
   const CREDITOR_TYPES = ['Banque', 'Microfinance', 'Banque', 'Banque', 'Microfinance'];
-  const STATUSES = ['Active', 'Renégociée', 'Soldée', 'Active', 'Active'];
+  const STATUSES = ['Active', 'Soldée', 'Soldée', 'Active', 'Active'];
 
   const records = selected.map((p, i) => ({
     parcel_id: p.id,
@@ -1010,7 +1013,7 @@ export const generateBuildingPermits = async (
     'Service Urbanisme - Lubumbashi',
     'Division Urbanisme - Matadi',
   ];
-  const ADM_STATUSES = ['Approuvé', 'Rejeté', 'Approuvé', 'Approuvé', 'Rejeté'];
+  const ADM_STATUSES = ['Approuvé', 'Rejeté', 'Approuvé', 'En attente', 'Approuvé'];
 
   const records = selected.map((p, i) => ({
     parcel_id: p.id,

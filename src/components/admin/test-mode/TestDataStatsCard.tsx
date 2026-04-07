@@ -21,9 +21,12 @@ interface TestDataStatsCardProps {
   cleaningUp: boolean;
   statsLoading: boolean;
   regenerating?: boolean;
+  generatingData?: boolean;
+  isTestModeActive?: boolean;
   onCleanup: () => void;
   onRefresh: () => void;
   onRegenerate?: () => void;
+  onGenerate?: () => void;
 }
 
 const STAT_ITEMS: { key: keyof TestDataStats; label: string }[] = [
@@ -55,9 +58,12 @@ const TestDataStatsCard: React.FC<TestDataStatsCardProps> = ({
   cleaningUp,
   statsLoading,
   regenerating,
+  generatingData,
+  isTestModeActive,
   onCleanup,
   onRefresh,
   onRegenerate,
+  onGenerate,
 }) => {
   return (
     <Card>
