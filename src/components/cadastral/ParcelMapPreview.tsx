@@ -56,7 +56,6 @@ interface ParcelMapPreviewProps {
   onCoordinatesUpdate: (coordinates: Coordinate[]) => void;
   config?: MapConfig;
   currentParcelNumber?: string;
-  enableConflictDetection?: boolean;
   roadSides?: RoadSideInfo[];
   onRoadSidesChange?: (roadSides: RoadSideInfo[]) => void;
   parcelSides?: ParcelSide[];
@@ -77,12 +76,25 @@ const SHAPE_OPTIONS = [
   { type: 'polygon' as const, label: 'Polygone', icon: Hexagon },
 ];
 
+// Calculer la distance entre 2 points GPS (Haversine)
+const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+  const R = 6371000;
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c * 100) / 100;
+};
+
 export const ParcelMapPreview = ({ 
   coordinates, 
   onCoordinatesUpdate, 
   config: propConfig,
   currentParcelNumber,
-  enableConflictDetection = true,
   roadSides = [],
   onRoadSidesChange,
   parcelSides = [],
@@ -141,7 +153,8 @@ export const ParcelMapPreview = ({
   const [selectedBorne, setSelectedBorne] = useState<string | null>(null);
   const [moveStepMeters, setMoveStepMeters] = useState<number>(0.5);
   const [parcelRotationDegrees, setParcelRotationDegrees] = useState<number>(0);
-  const [showParcelControls, setShowParcelControls] = useState(false);
+  // Ref pour stocker les coordonnées originales avant rotation (prévient la dérive)
+  const originalCoordsBeforeRotationRef = useRef<Coordinate[] | null>(null);
   const [showClearAllDialog, setShowClearAllDialog] = useState(false);
   const [mapBearing, setMapBearing] = useState<number>(0);
   const [editingSideIndex, setEditingSideIndex] = useState<number | null>(null);
@@ -216,33 +229,7 @@ export const ParcelMapPreview = ({
     const updatedCoords = [...coordinates, newCoordinate];
     onCoordinatesUpdate(updatedCoords);
     
-    if (onParcelSidesUpdate && updatedCoords.length >= 2) {
-      const validUpdated = updatedCoords.filter(
-        c => c.lat && c.lng && !isNaN(parseFloat(c.lat)) && !isNaN(parseFloat(c.lng))
-      );
-      
-      if (validUpdated.length >= 2) {
-        const newSides: ParcelSide[] = [];
-        for (let i = 0; i < validUpdated.length; i++) {
-          const nextIndex = (i + 1) % validUpdated.length;
-          const current = validUpdated[i];
-          const next = validUpdated[nextIndex];
-          
-          const distance = calculateDistance(
-            parseFloat(current.lat),
-            parseFloat(current.lng),
-            parseFloat(next.lat),
-            parseFloat(next.lng)
-          );
-          
-          newSides.push({
-            name: `Côté ${i + 1}`,
-            length: distance.toFixed(2)
-          });
-        }
-        onParcelSidesUpdate(newSides);
-      }
-    }
+    updateParcelSidesFromCoordinates(updatedCoords);
   }, [coordinates, onCoordinatesUpdate, onParcelSidesUpdate]);
 
   // Mettre à jour la ref du callback pour que le handler de clic utilise toujours la version courante
@@ -257,35 +244,7 @@ export const ParcelMapPreview = ({
     const updatedCoords = coordinates.slice(0, -1);
     onCoordinatesUpdate(updatedCoords);
     
-    if (onParcelSidesUpdate) {
-      const validUpdated = updatedCoords.filter(
-        c => c.lat && c.lng && !isNaN(parseFloat(c.lat)) && !isNaN(parseFloat(c.lng))
-      );
-      
-      if (validUpdated.length >= 2) {
-        const newSides: ParcelSide[] = [];
-        for (let i = 0; i < validUpdated.length; i++) {
-          const nextIndex = (i + 1) % validUpdated.length;
-          const current = validUpdated[i];
-          const next = validUpdated[nextIndex];
-          
-          const distance = calculateDistance(
-            parseFloat(current.lat),
-            parseFloat(current.lng),
-            parseFloat(next.lat),
-            parseFloat(next.lng)
-          );
-          
-          newSides.push({
-            name: `Côté ${i + 1}`,
-            length: distance.toFixed(2)
-          });
-        }
-        onParcelSidesUpdate(newSides);
-      } else {
-        onParcelSidesUpdate([]);
-      }
-    }
+    updateParcelSidesFromCoordinates(updatedCoords);
   }, [coordinates, onCoordinatesUpdate, onParcelSidesUpdate]);
 
   // Réinitialiser tous les marqueurs
@@ -407,24 +366,7 @@ export const ParcelMapPreview = ({
     }
   }, [validCoords.length, mapBearing, calculateOrientation]);
 
-  // Calculer la distance entre 2 points GPS
-  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
-    const R = 6371000;
-    const toRad = (deg: number) => (deg * Math.PI) / 180;
-    
-    const dLat = toRad(lat2 - lat1);
-    const dLng = toRad(lng2 - lng1);
-    
-    const a = 
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-      Math.sin(dLng / 2) * Math.sin(dLng / 2);
-    
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const distance = R * c;
-    
-    return Math.round(distance * 100) / 100;
-  };
+  // calculateDistance est définie en dehors du composant (fonction pure)
 
   // Initialiser la carte une seule fois
   useEffect(() => {
@@ -527,7 +469,7 @@ export const ParcelMapPreview = ({
             // Centrer la carte sur la position de l'utilisateur
             map.setView([latitude, longitude], 18);
             
-        9   // Nettoyer les ancie9s marqueurs de position
+        // Nettoyer les anciens marqueurs de position
             userLocationLayersRef.current.forEach(layer => {
               try {
                 if (map.hasLayer(layer)) map.removeLayer(layer);
@@ -638,11 +580,9 @@ export const ParcelMapPreview = ({
 
     computeStep();
     map.on('zoomend', computeStep);
-    map.on('moveend', computeStep);
 
     return () => {
       map.off('zoomend', computeStep);
-      map.off('moveend', computeStep);
     };
   }, [isMapReady]);
 
