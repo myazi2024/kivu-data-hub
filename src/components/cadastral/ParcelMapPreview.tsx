@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -169,6 +170,8 @@ export const ParcelMapPreview = ({
   const [isDrawingBuilding, setIsDrawingBuilding] = useState(false);
   const [buildingVertices, setBuildingVertices] = useState<{ lat: number; lng: number }[]>([]);
   const buildingVerticesRef = useRef<{ lat: number; lng: number }[]>([]);
+  const [selectedBuildingTarget, setSelectedBuildingTarget] = useState<number | null>(null);
+  const [showBuildingTargetSelector, setShowBuildingTargetSelector] = useState(false);
   const [selectedBorne, setSelectedBorne] = useState<string | null>(null);
   const [moveStepMeters, setMoveStepMeters] = useState<number>(0.5);
   const [parcelRotationDegrees, setParcelRotationDegrees] = useState<number>(0);
@@ -1168,13 +1171,28 @@ export const ParcelMapPreview = ({
     };
   }, [isMapReady, validCoords, roadSides, mapConfig, isGroupDragMode, isDrawingMode, selectedBorne, isDrawingBuilding, buildingVertices]);
 
-  // Supprimer une construction par ID et recalculer les linkedIndex
+  // Supprimer une construction par ID (préserve les linkedIndex des autres)
   const removeBuildingById = useCallback((buildingId: string) => {
     if (!onBuildingShapesChange) return;
-    const remaining = buildingShapes
-      .filter(s => s.id !== buildingId)
-      .map((s, i) => ({ ...s, linkedIndex: i }));
+    const remaining = buildingShapes.filter(s => s.id !== buildingId);
     onBuildingShapesChange(remaining);
+  }, [buildingShapes, onBuildingShapesChange]);
+
+  // Réattribuer le linkedIndex d'une construction tracée
+  const reassignBuildingLinkedIndex = useCallback((buildingId: string, newLinkedIndex: number) => {
+    if (!onBuildingShapesChange) return;
+    // Trouver si une autre construction a déjà ce linkedIndex → permuter
+    const updated = buildingShapes.map(s => {
+      if (s.id === buildingId) return { ...s, linkedIndex: newLinkedIndex };
+      if (s.linkedIndex === newLinkedIndex) {
+        // Permuter : donner l'ancien linkedIndex de la construction qu'on réattribue
+        const oldLinkedIndex = buildingShapes.find(b => b.id === buildingId)?.linkedIndex;
+        return { ...s, linkedIndex: oldLinkedIndex ?? s.linkedIndex };
+      }
+      return s;
+    });
+    onBuildingShapesChange(updated);
+    toast.success('Attribution mise à jour');
   }, [buildingShapes, onBuildingShapesChange]);
 
   // Gérer le mode déplacement groupé
@@ -1519,6 +1537,8 @@ export const ParcelMapPreview = ({
   const cancelDrawingBuilding = useCallback(() => {
     setIsDrawingBuilding(false);
     setBuildingVertices([]);
+    setSelectedBuildingTarget(null);
+    setShowBuildingTargetSelector(false);
     const map = mapInstanceRef.current;
     if (map) {
       map.getContainer().dataset.addingBuilding = 'false';
@@ -1536,10 +1556,27 @@ export const ParcelMapPreview = ({
       return;
     }
 
+    // Déterminer les indices non encore tracés
+    const usedIndices = new Set(buildingShapes.map(s => s.linkedIndex));
+    const availableIndices = Array.from({ length: requiredBuildingCount }, (_, i) => i).filter(i => !usedIndices.has(i));
+
+    if (requiredBuildingCount > 1 && availableIndices.length > 1) {
+      // Afficher le sélecteur — ne pas encore démarrer le tracé
+      setShowBuildingTargetSelector(true);
+      return;
+    }
+
+    // Attribution automatique (1 seule cible ou 1 seule restante)
+    const targetIdx = availableIndices.length === 1 ? availableIndices[0] : 0;
+    setSelectedBuildingTarget(targetIdx);
+    actuallyStartDrawing();
+  }, [isDrawingBuilding, cancelDrawingBuilding, buildingShapes, requiredBuildingCount]);
+
+  // Démarrer effectivement le tracé (appelé après sélection de la cible)
+  const actuallyStartDrawing = useCallback(() => {
     setIsDrawingBuilding(true);
     setBuildingVertices([]);
-
-    // Désactiver le mode dessin parcelle s'il est actif
+    setShowBuildingTargetSelector(false);
     setIsDrawingMode(false);
 
     const map = mapInstanceRef.current;
@@ -1552,7 +1589,7 @@ export const ParcelMapPreview = ({
       map.getContainer().dataset.addingBuilding = 'true';
       map.getContainer().style.cursor = 'crosshair';
     }
-  }, [isDrawingBuilding, cancelDrawingBuilding]);
+  }, []);
 
   // Valider la construction en cours
   const validateBuilding = useCallback(() => {
@@ -1569,6 +1606,7 @@ export const ParcelMapPreview = ({
     }
     
     const areaSqm = calculateBuildingArea(buildingVertices);
+    const targetIdx = selectedBuildingTarget ?? buildingShapes.length;
     
     const newShape: BuildingShape = {
       id: `building-${Date.now()}`,
@@ -1576,14 +1614,14 @@ export const ParcelMapPreview = ({
       sides,
       areaSqm: Math.round(areaSqm * 100) / 100,
       perimeterM: Math.round(perimeter * 100) / 100,
-      linkedIndex: buildingShapes.length,
+      linkedIndex: targetIdx,
     };
     
-    const label = constructionLabels[newShape.linkedIndex] || `Construction ${newShape.linkedIndex + 1}`;
+    const label = constructionLabels[targetIdx] || `Construction ${targetIdx + 1}`;
     onBuildingShapesChange([...buildingShapes, newShape]);
     cancelDrawingBuilding();
     toast.success(`${label} ajoutée: ${newShape.areaSqm} m², ${newShape.perimeterM} m de périmètre`);
-  }, [buildingVertices, buildingShapes, onBuildingShapesChange, cancelDrawingBuilding, constructionLabels]);
+  }, [buildingVertices, buildingShapes, onBuildingShapesChange, cancelDrawingBuilding, constructionLabels, selectedBuildingTarget]);
 
   // Supprimer le dernier sommet en cours de tracé
   const removeLastBuildingVertex = useCallback(() => {
@@ -2305,6 +2343,38 @@ export const ParcelMapPreview = ({
             }
             return btn;
           })()}
+          
+          {/* Sélecteur de construction cible */}
+          {showBuildingTargetSelector && !isDrawingBuilding && (() => {
+            const usedIndices = new Set(buildingShapes.map(s => s.linkedIndex));
+            const availableTargets = Array.from({ length: requiredBuildingCount }, (_, i) => i).filter(i => !usedIndices.has(i));
+            return (
+              <div className="absolute top-12 right-2 z-[1001] bg-background border border-border rounded-xl shadow-lg p-2 min-w-[180px]">
+                <p className="text-[10px] font-medium text-muted-foreground mb-1.5">Quelle construction tracer ?</p>
+                <div className="space-y-1">
+                  {availableTargets.map(idx => (
+                    <Button
+                      key={idx}
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="w-full justify-start h-7 text-xs rounded-lg"
+                      onClick={() => {
+                        setSelectedBuildingTarget(idx);
+                        actuallyStartDrawing();
+                      }}
+                    >
+                      <Building2 className="h-3 w-3 mr-1.5 text-primary" />
+                      {constructionLabels[idx] || `Construction ${idx + 1}`}
+                    </Button>
+                  ))}
+                </div>
+                <Button type="button" size="sm" variant="ghost" className="w-full h-6 text-[10px] mt-1" onClick={() => setShowBuildingTargetSelector(false)}>
+                  Annuler
+                </Button>
+              </div>
+            );
+          })()}
         </div>
         
         {/* Mode Dessin indicateur */}
@@ -2321,7 +2391,7 @@ export const ParcelMapPreview = ({
             <div className="flex items-center gap-1.5">
               <Badge className="bg-red-500 text-white text-xs h-6 px-2 rounded-lg shadow-md animate-pulse">
                 <Building2 className="h-3 w-3 mr-1" />
-                {constructionLabels[buildingShapes.length] || `Construction ${buildingShapes.length + 1}`} ({buildingVertices.length} pts)
+                {constructionLabels[selectedBuildingTarget ?? buildingShapes.length] || `Construction ${(selectedBuildingTarget ?? buildingShapes.length) + 1}`} ({buildingVertices.length} pts)
               </Badge>
               {buildingVertices.length > 0 && (
                 <Button type="button" size="sm" variant="outline" onClick={removeLastBuildingVertex} className="h-6 w-6 p-0 rounded-lg bg-white/95 shadow-md" title="Supprimer dernier point">
@@ -2552,14 +2622,36 @@ export const ParcelMapPreview = ({
             </span>
           </div>
           {buildingShapes.length > 0 && (
-            <div className="space-y-1.5">
+           <div className="space-y-1.5">
               {buildingShapes.map((shape, idx) => {
                 const label = constructionLabels[shape.linkedIndex ?? idx] || `Construction ${idx + 1}`;
                 return (
-                  <div key={shape.id} className="flex items-center justify-between text-xs bg-background/60 rounded-lg px-2 py-1.5 border border-border/30">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="font-medium truncate">{label}</span>
-                      <span className="text-muted-foreground">{shape.areaSqm.toFixed(1)} m²</span>
+                  <div key={shape.id} className="flex items-center justify-between text-xs bg-background/60 rounded-lg px-2 py-1.5 border border-border/30 gap-1.5">
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                      <Layers className="h-3 w-3 text-primary flex-shrink-0" />
+                      {requiredBuildingCount > 1 && constructionLabels.length > 1 ? (
+                        <Select
+                          value={String(shape.linkedIndex ?? idx)}
+                          onValueChange={(val) => reassignBuildingLinkedIndex(shape.id, parseInt(val))}
+                        >
+                          <SelectTrigger className="h-6 text-xs border-border/50 rounded-md px-1.5 min-w-0 flex-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {constructionLabels.map((cl, i) => {
+                              const takenBy = buildingShapes.find(s => s.linkedIndex === i && s.id !== shape.id);
+                              return (
+                                <SelectItem key={i} value={String(i)}>
+                                  {cl}{takenBy ? ' ↔ permuter' : ''}
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <span className="font-medium truncate">{label}</span>
+                      )}
+                      <span className="text-muted-foreground flex-shrink-0">{shape.areaSqm.toFixed(1)} m²</span>
                     </div>
                     <Button type="button" variant="ghost" size="sm" onClick={() => removeBuildingById(shape.id)} className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 flex-shrink-0">
                       <Trash2 className="h-3 w-3" />
