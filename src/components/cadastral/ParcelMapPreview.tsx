@@ -50,6 +50,7 @@ interface BuildingShape {
   sides: { name: string; length: string }[];
   areaSqm: number;
   perimeterM: number;
+  linkedIndex?: number; // 0 = construction principale, 1+ = additionnelles
   // Rétro-compatibilité : anciens champs ignorés au rendu
   type?: string;
   center?: { lat: number; lng: number };
@@ -72,6 +73,8 @@ interface ParcelMapPreviewProps {
   onBuildingShapesChange?: (shapes: BuildingShape[]) => void;
   servitude?: ServitudeInfo;
   onServitudeChange?: (servitude: ServitudeInfo) => void;
+  isTerrainNu?: boolean;
+  requiredBuildingCount?: number;
 }
 
 // Calculer la surface d'un polygone à partir de sommets GPS (Shoelace formula en mètres)
