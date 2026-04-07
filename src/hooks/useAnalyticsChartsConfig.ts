@@ -432,7 +432,6 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'mortgages', item_key: 'kpi-amount', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Montant total' },
       { tab_key: 'mortgages', item_key: 'kpi-avg-amount', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Montant moy.' },
       { tab_key: 'mortgages', item_key: 'kpi-avg-duration', item_type: 'kpi', is_visible: true, display_order: 5, custom_title: 'Durée moy.' },
-      { tab_key: 'mortgages', item_key: 'kpi-pending', item_type: 'kpi', is_visible: true, display_order: 6, custom_title: 'Demandes en att.' },
     ],
   },
   'subdivision': {

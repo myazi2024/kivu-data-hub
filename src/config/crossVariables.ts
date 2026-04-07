@@ -99,7 +99,7 @@ export const CROSS_VARIABLE_REGISTRY: Record<string, Record<string, CrossVariabl
     'current-status': [{ label: 'Province', field: 'province' }, { label: 'Service', field: 'issuing_service' }],
     'issuing-service': [{ label: 'Statut', field: 'administrative_status' }, { label: 'Province', field: 'province' }],
     'permit-type': [{ label: 'Statut', field: 'administrative_status' }, { label: 'Province', field: 'province' }],
-    'validity-period': [{ label: 'Province', field: 'province' }],
+    'validity-period': [{ label: 'Province', field: 'province' }, { label: 'Statut', field: 'administrative_status' }],
   },
   'taxes': {
     'status': [{ label: 'Exercice', field: 'tax_year' }, { label: 'Province', field: 'province' }],
