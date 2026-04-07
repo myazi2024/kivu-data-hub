@@ -502,6 +502,7 @@ export type Database = {
           is_suspicious: boolean | null
           is_title_in_current_owner_name: boolean | null
           lease_type: string | null
+          lease_years: number | null
           mortgage_history: Json | null
           original_parcel_id: string | null
           owner_document_url: string | null
@@ -577,6 +578,7 @@ export type Database = {
           is_suspicious?: boolean | null
           is_title_in_current_owner_name?: boolean | null
           lease_type?: string | null
+          lease_years?: number | null
           mortgage_history?: Json | null
           original_parcel_id?: string | null
           owner_document_url?: string | null
@@ -652,6 +654,7 @@ export type Database = {
           is_suspicious?: boolean | null
           is_title_in_current_owner_name?: boolean | null
           lease_type?: string | null
+          lease_years?: number | null
           mortgage_history?: Json | null
           original_parcel_id?: string | null
           owner_document_url?: string | null
@@ -1098,9 +1101,12 @@ export type Database = {
       }
       cadastral_parcels: {
         Row: {
+          additional_constructions: Json | null
+          apartment_number: string | null
           area_hectares: number | null
           area_sqm: number
           avenue: string | null
+          building_shapes: Json | null
           collectivite: string | null
           commune: string | null
           construction_materials: string | null
@@ -1113,14 +1119,18 @@ export type Database = {
           current_owner_since: string
           declared_usage: string | null
           deleted_at: string | null
+          dispute_data: Json | null
+          floor_number: string | null
           gps_coordinates: Json | null
           groupement: string | null
           has_dispute: boolean | null
           house_number: string | null
           id: string
           is_subdivided: boolean | null
+          is_title_in_current_owner_name: boolean | null
           latitude: number | null
           lease_type: string | null
+          lease_years: number | null
           location: string
           longitude: number | null
           nombre_bornes: number | null
@@ -1128,10 +1138,13 @@ export type Database = {
           parcel_number: string
           parcel_sides: Json | null
           parcel_type: string
+          property_category: string | null
           property_title_document_url: string | null
           property_title_type: string
           province: string | null
           quartier: string | null
+          road_sides: Json | null
+          servitude_data: Json | null
           standing: string | null
           surface_calculee_bornes: number | null
           territoire: string | null
@@ -1143,9 +1156,12 @@ export type Database = {
           whatsapp_number: string | null
         }
         Insert: {
+          additional_constructions?: Json | null
+          apartment_number?: string | null
           area_hectares?: number | null
           area_sqm?: number
           avenue?: string | null
+          building_shapes?: Json | null
           collectivite?: string | null
           commune?: string | null
           construction_materials?: string | null
@@ -1158,14 +1174,18 @@ export type Database = {
           current_owner_since?: string
           declared_usage?: string | null
           deleted_at?: string | null
+          dispute_data?: Json | null
+          floor_number?: string | null
           gps_coordinates?: Json | null
           groupement?: string | null
           has_dispute?: boolean | null
           house_number?: string | null
           id?: string
           is_subdivided?: boolean | null
+          is_title_in_current_owner_name?: boolean | null
           latitude?: number | null
           lease_type?: string | null
+          lease_years?: number | null
           location: string
           longitude?: number | null
           nombre_bornes?: number | null
@@ -1173,10 +1193,13 @@ export type Database = {
           parcel_number: string
           parcel_sides?: Json | null
           parcel_type: string
+          property_category?: string | null
           property_title_document_url?: string | null
           property_title_type?: string
           province?: string | null
           quartier?: string | null
+          road_sides?: Json | null
+          servitude_data?: Json | null
           standing?: string | null
           surface_calculee_bornes?: number | null
           territoire?: string | null
@@ -1188,9 +1211,12 @@ export type Database = {
           whatsapp_number?: string | null
         }
         Update: {
+          additional_constructions?: Json | null
+          apartment_number?: string | null
           area_hectares?: number | null
           area_sqm?: number
           avenue?: string | null
+          building_shapes?: Json | null
           collectivite?: string | null
           commune?: string | null
           construction_materials?: string | null
@@ -1203,14 +1229,18 @@ export type Database = {
           current_owner_since?: string
           declared_usage?: string | null
           deleted_at?: string | null
+          dispute_data?: Json | null
+          floor_number?: string | null
           gps_coordinates?: Json | null
           groupement?: string | null
           has_dispute?: boolean | null
           house_number?: string | null
           id?: string
           is_subdivided?: boolean | null
+          is_title_in_current_owner_name?: boolean | null
           latitude?: number | null
           lease_type?: string | null
+          lease_years?: number | null
           location?: string
           longitude?: number | null
           nombre_bornes?: number | null
@@ -1218,10 +1248,13 @@ export type Database = {
           parcel_number?: string
           parcel_sides?: Json | null
           parcel_type?: string
+          property_category?: string | null
           property_title_document_url?: string | null
           property_title_type?: string
           province?: string | null
           quartier?: string | null
+          road_sides?: Json | null
+          servitude_data?: Json | null
           standing?: string | null
           surface_calculee_bornes?: number | null
           territoire?: string | null
