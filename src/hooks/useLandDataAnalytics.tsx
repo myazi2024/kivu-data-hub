@@ -48,7 +48,7 @@ async function fetchAll(
 
 export const useLandDataAnalytics = () => {
   return useQuery({
-    queryKey: ['land-analytics-v6'],
+    queryKey: ['land-analytics-v7'],
     queryFn: async (): Promise<LandAnalyticsData> => {
       const [
         parcels, contribs, titleReqs, permits,
@@ -58,17 +58,17 @@ export const useLandDataAnalytics = () => {
       ] = await Promise.all([
         // Parcels
         fetchAll('cadastral_parcels',
-          'id, parcel_number, parcel_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, property_title_type, current_owner_legal_status, declared_usage, construction_type, construction_nature, construction_year, area_sqm, gps_coordinates, lease_type, created_at',
+          'id, parcel_number, parcel_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, property_title_type, current_owner_legal_status, declared_usage, construction_type, construction_nature, construction_year, area_sqm, gps_coordinates, lease_type, property_category, construction_materials, standing, lease_years, is_subdivided, has_dispute, created_at',
           q => q.is('deleted_at', null)),
         // Contributions — full fields for dedicated block
         fetchAll('cadastral_contributions',
-          'id, parcel_number, parcel_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, property_title_type, current_owner_legal_status, current_owners_details, declared_usage, construction_type, construction_nature, contribution_type, area_sqm, is_suspicious, fraud_score, fraud_reason, appeal_submitted, appeal_status, lease_type, status, reviewed_at, created_at'),
+          'id, parcel_number, parcel_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, property_title_type, current_owner_legal_status, current_owners_details, declared_usage, construction_type, construction_nature, construction_year, contribution_type, area_sqm, is_suspicious, fraud_score, fraud_reason, appeal_submitted, appeal_status, lease_type, property_category, construction_materials, standing, status, reviewed_at, created_at'),
         // Title requests
         fetchAll('land_title_requests',
           'id, request_type, requester_type, requester_gender, owner_gender, nationality, section_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, declared_usage, construction_type, construction_nature, owner_legal_status, status, payment_status, total_amount_usd, area_sqm, deduced_title_type, estimated_processing_days, is_owner_same_as_requester, created_at, reviewed_at'),
         // Building permits — added validity_period_months, is_current, issuing_service
         fetchAll('cadastral_building_permits',
-          'id, parcel_id, administrative_status, issue_date, validity_period_months, is_current, issuing_service, created_at'),
+          'id, parcel_id, permit_number, administrative_status, issue_date, validity_period_months, is_current, issuing_service, created_at'),
         // Tax history — added payment_date
         fetchAll('cadastral_tax_history',
           'id, parcel_id, tax_year, payment_status, amount_usd, payment_date, created_at'),
@@ -126,9 +126,7 @@ export const useLandDataAnalytics = () => {
       // Enrich records by parcel_number lookup (certificates, invoices)
       const enrichByParcelNumber = (records: any[]) =>
         records.map(r => {
-          const p1 = r.reporting_parcel_number && byNum.get(r.reporting_parcel_number);
-          const p2 = r.parcel_number && byNum.get(r.parcel_number);
-          const p = p1 || p2;
+          const p = r.parcel_number && byNum.get(r.parcel_number);
           if (!p) return r;
           return {
             ...r,

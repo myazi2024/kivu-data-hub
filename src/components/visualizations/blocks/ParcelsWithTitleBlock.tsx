@@ -53,6 +53,9 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     byLegalStatus: countBy(filteredParcels, 'current_owner_legal_status'),
     byConstructionType: countBy(normalizedParcels, 'construction_type'),
     byConstructionNature: countBy(filteredParcels, 'construction_nature'),
+    byConstructionMaterials: countBy(filteredParcels, 'construction_materials'),
+    byStanding: countBy(filteredParcels, 'standing'),
+    byPropertyCategory: countBy(filteredParcels, 'property_category'),
     byDeclaredUsage: countBy(normalizedParcels, 'declared_usage'),
     byLeaseType: countBy(filteredParcels, 'lease_type'),
     surfaceDist: surfaceDistribution(filteredParcels),
@@ -78,8 +81,16 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     return generateInsight(genderData, 'pie', 'le genre des propriétaires');
   }, [genderData]);
 
-  const urbanCount = useMemo(() => filteredParcels.filter(p => p.parcel_type === 'SU' || p.parcel_type === 'Terrain bâti').length, [filteredParcels]);
-  const ruralCount = useMemo(() => filteredParcels.filter(p => p.parcel_type === 'SR' || p.parcel_type === 'Terrain nu').length, [filteredParcels]);
+  const urbanCount = useMemo(() => filteredParcels.filter(p => p.parcel_type === 'SU').length, [filteredParcels]);
+  const ruralCount = useMemo(() => filteredParcels.filter(p => p.parcel_type === 'SR').length, [filteredParcels]);
+  const subdividedData = useMemo(() => {
+    const lotie = filteredParcels.filter(p => p.is_subdivided === true).length;
+    const nonLotie = filteredParcels.filter(p => p.is_subdivided === false).length;
+    return [
+      ...(lotie > 0 ? [{ name: 'Loties', value: lotie }] : []),
+      ...(nonLotie > 0 ? [{ name: 'Non loties', value: nonLotie }] : []),
+    ];
+  }, [filteredParcels]);
   const totalSurface = useMemo(() => filteredParcels.reduce((s, p) => s + (p.area_sqm || 0), 0), [filteredParcels]);
 
   const trend = useMemo(() => trendByMonth(filteredParcels), [filteredParcels]);
@@ -110,6 +121,12 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(charts.byConstructionType, 'bar-h', 'les constructions')} crossVariables={cx('construction-type')} rawRecords={normalizedParcels} groupField="construction_type" />}
         {v('construction-nature') && <ChartCard title={ct('construction-nature', 'Nature construction')} data={charts.byConstructionNature} type="bar-h" colorIndex={7}
           insight="Répartition des matériaux et natures de construction par localisation." crossVariables={cx('construction-nature')} rawRecords={filteredParcels} groupField="construction_nature" />}
+        {v('property-category') && <ChartCard title={ct('property-category', 'Catégorie de bien')} data={charts.byPropertyCategory} type="bar-h" colorIndex={2} hidden={charts.byPropertyCategory.length === 0}
+          insight={generateInsight(charts.byPropertyCategory, 'bar-h', 'les catégories de bien')} crossVariables={cx('property-category')} rawRecords={filteredParcels} groupField="property_category" />}
+        {v('construction-materials') && <ChartCard title={ct('construction-materials', 'Matériaux')} data={charts.byConstructionMaterials} type="bar-h" colorIndex={8} hidden={charts.byConstructionMaterials.length === 0}
+          insight={generateInsight(charts.byConstructionMaterials, 'bar-h', 'les matériaux de construction')} crossVariables={cx('construction-materials')} rawRecords={filteredParcels} groupField="construction_materials" />}
+        {v('standing') && <ChartCard title={ct('standing', 'Standing')} data={charts.byStanding} type="donut" colorIndex={6} hidden={charts.byStanding.length === 0}
+          insight={generateInsight(charts.byStanding, 'donut', 'les niveaux de standing')} crossVariables={cx('standing')} rawRecords={filteredParcels} groupField="standing" />}
         {v('construction-decade') && <ChartCard title={ct('construction-decade', 'Année construction')} icon={Clock} data={charts.byDecade} type="bar-v" colorIndex={0} hidden={charts.byDecade.length === 0}
           insight={generateInsight(charts.byDecade, 'bar-v', 'les décennies de construction')} />}
         {v('usage') && <ChartCard title={ct('usage', 'Usage déclaré')} data={charts.byDeclaredUsage} type="bar-h" colorIndex={5}
@@ -118,6 +135,8 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(charts.byLeaseType, 'donut', 'les types de bail')} crossVariables={cx('lease-type')} rawRecords={filteredParcels} groupField="lease_type" />}
         {v('surface') && <ChartCard title={ct('surface', 'Superficie')} icon={Ruler} data={charts.surfaceDist} type="bar-v" colorIndex={9}
           insight={generateInsight(charts.surfaceDist, 'bar-v', 'les tranches de superficie')} crossVariables={cx('surface')} rawRecords={filteredParcels} groupField="area_sqm" />}
+        {v('subdivided') && <ChartCard title={ct('subdivided', 'Loties vs Non loties')} data={subdividedData} type="pie" colorIndex={3} hidden={subdividedData.length === 0}
+          insight={generateInsight(subdividedData, 'pie', 'le lotissement des parcelles')} crossVariables={cx('subdivided')} rawRecords={filteredParcels} groupField="is_subdivided" />}
         {v('geo') && <GeoCharts records={filteredParcels} />}
         {v('evolution') && <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type="area" colorIndex={0} colSpan={2}
           insight={generateInsight(trend, 'area', 'les parcelles')} />}

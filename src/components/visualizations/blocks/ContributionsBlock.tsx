@@ -45,6 +45,7 @@ export const ContributionsBlock: React.FC<Props> = memo(({ data }) => {
   const byLegalStatus = useMemo(() => countBy(filtered, 'current_owner_legal_status'), [filtered]);
   const byDeclaredUsage = useMemo(() => countBy(normalized, 'declared_usage'), [normalized]);
   const byConstructionType = useMemo(() => countBy(normalized, 'construction_type'), [normalized]);
+  const byPropertyCategory = useMemo(() => countBy(filtered, 'property_category'), [filtered]);
   const trend = useMemo(() => trendByMonth(filtered), [filtered]);
 
   const fraudData = useMemo(() => {
@@ -109,6 +110,8 @@ export const ContributionsBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(byDeclaredUsage, 'bar-h', 'les usages déclarés')} crossVariables={cx('usage')} rawRecords={normalized} groupField="declared_usage" />}
         {v('construction-type') && <ChartCard title={ct('construction-type', 'Type construction')} data={byConstructionType} type="bar-h" colorIndex={7} hidden={byConstructionType.length === 0}
           insight={generateInsight(byConstructionType, 'bar-h', 'les types de construction')} crossVariables={cx('construction-type')} rawRecords={normalized} groupField="construction_type" />}
+        {v('property-category') && <ChartCard title={ct('property-category', 'Catégorie de bien')} data={byPropertyCategory} type="bar-h" colorIndex={2} hidden={byPropertyCategory.length === 0}
+          insight={generateInsight(byPropertyCategory, 'bar-h', 'les catégories de bien')} crossVariables={cx('property-category')} rawRecords={filtered} groupField="property_category" />}
         {v('fraud-detection') && <ChartCard title={ct('fraud-detection', 'Détection fraude')} icon={ShieldAlert} data={fraudData.distribution} type="pie" colorIndex={4}
           insight={fraudData.suspicious > 0 ? `${fraudData.suspicious} contribution${fraudData.suspicious > 1 ? 's' : ''} signalée${fraudData.suspicious > 1 ? 's' : ''} comme suspecte${fraudData.suspicious > 1 ? 's' : ''}.` : 'Aucune contribution suspecte détectée.'}
           crossVariables={cx('fraud-detection')} rawRecords={filtered} groupField="is_suspicious" />}

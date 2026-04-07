@@ -32,6 +32,16 @@ export const BuildingPermitsBlock: React.FC<Props> = memo(({ data }) => {
 
   const byStatus = useMemo(() => countBy(filtered, 'administrative_status'), [filtered]);
   const byService = useMemo(() => countBy(filtered, 'issuing_service'), [filtered]);
+  const byPermitType = useMemo(() => {
+    const types = filtered.map(p => {
+      const num = (p.permit_number || '').toLowerCase();
+      if (num.includes('reg') || num.includes('régul')) return 'Régularisation';
+      return 'Construction';
+    });
+    const map = new Map<string, number>();
+    types.forEach(t => map.set(t, (map.get(t) || 0) + 1));
+    return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
+  }, [filtered]);
   const trend = useMemo(() => trendByMonth(filtered, 'issue_date'), [filtered]);
 
   const byCurrent = useMemo(() => {
@@ -56,9 +66,16 @@ export const BuildingPermitsBlock: React.FC<Props> = memo(({ data }) => {
     })).filter(b => b.value > 0);
   }, [filtered]);
 
-  const approved = filtered.filter(p => ['approved', 'approuvé'].includes(p.administrative_status)).length;
-  const pending = filtered.filter(p => ['pending', 'en_attente'].includes(p.administrative_status)).length;
-  const rejected = filtered.filter(p => ['rejected', 'rejeté'].includes(p.administrative_status)).length;
+  const statusNorm = (s: string) => {
+    const low = (s || '').toLowerCase().trim();
+    if (['approved', 'approuvé', 'conforme', 'délivré'].includes(low)) return 'approved';
+    if (['pending', 'en_attente', 'en attente'].includes(low)) return 'pending';
+    if (['rejected', 'rejeté', 'non conforme'].includes(low)) return 'rejected';
+    return low;
+  };
+  const approved = filtered.filter(p => statusNorm(p.administrative_status) === 'approved').length;
+  const pending = filtered.filter(p => statusNorm(p.administrative_status) === 'pending').length;
+  const rejected = filtered.filter(p => statusNorm(p.administrative_status) === 'rejected').length;
   const approvalRate = filtered.length > 0 ? Math.round((approved / filtered.length) * 100) : 0;
 
   const t = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
@@ -81,6 +98,7 @@ export const BuildingPermitsBlock: React.FC<Props> = memo(({ data }) => {
           {v('current-status') && <ChartCard title={t('current-status', 'En cours vs Expiré')} data={byCurrent} type="pie" colorIndex={1} insight={generateInsight(byCurrent, 'pie', 'la validité des permis')} crossVariables={cx('current-status')} rawRecords={filtered} groupField="is_current" />}
           {v('issuing-service') && <ChartCard title={t('issuing-service', 'Service émetteur')} data={byService} type="bar-h" colorIndex={2} labelWidth={100} insight={generateInsight(byService, 'bar-h', 'les services émetteurs')} crossVariables={cx('issuing-service')} rawRecords={filtered} groupField="issuing_service" />}
           {v('validity-period') && <ChartCard title={t('validity-period', 'Période de validité')} data={validityBrackets} type="bar-v" colorIndex={3} insight={generateInsight(validityBrackets, 'bar-v', 'les périodes de validité')} crossVariables={cx('validity-period')} rawRecords={filtered} groupField="validity_period_months" />}
+          {v('permit-type') && <ChartCard title={t('permit-type', 'Type de permis')} data={byPermitType} type="pie" colorIndex={5} hidden={byPermitType.length === 0} insight={generateInsight(byPermitType, 'pie', 'les types de permis')} crossVariables={cx('permit-type')} rawRecords={filtered} groupField="permit_number" />}
           {v('geo') && <GeoCharts records={filtered} />}
           {v('evolution') && <ChartCard title={t('evolution', 'Évolution')} data={trend} type="area" colorIndex={4} colSpan={2} icon={TrendingUp} insight={generateInsight(trend, 'area', "l'évolution des autorisations")} />}
         </div>
