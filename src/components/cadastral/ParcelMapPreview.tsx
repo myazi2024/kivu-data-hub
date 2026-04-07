@@ -2343,6 +2343,38 @@ export const ParcelMapPreview = ({
             }
             return btn;
           })()}
+          
+          {/* Sélecteur de construction cible */}
+          {showBuildingTargetSelector && !isDrawingBuilding && (() => {
+            const usedIndices = new Set(buildingShapes.map(s => s.linkedIndex));
+            const availableTargets = Array.from({ length: requiredBuildingCount }, (_, i) => i).filter(i => !usedIndices.has(i));
+            return (
+              <div className="absolute top-12 right-2 z-[1001] bg-background border border-border rounded-xl shadow-lg p-2 min-w-[180px]">
+                <p className="text-[10px] font-medium text-muted-foreground mb-1.5">Quelle construction tracer ?</p>
+                <div className="space-y-1">
+                  {availableTargets.map(idx => (
+                    <Button
+                      key={idx}
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="w-full justify-start h-7 text-xs rounded-lg"
+                      onClick={() => {
+                        setSelectedBuildingTarget(idx);
+                        actuallyStartDrawing();
+                      }}
+                    >
+                      <Building2 className="h-3 w-3 mr-1.5 text-primary" />
+                      {constructionLabels[idx] || `Construction ${idx + 1}`}
+                    </Button>
+                  ))}
+                </div>
+                <Button type="button" size="sm" variant="ghost" className="w-full h-6 text-[10px] mt-1" onClick={() => setShowBuildingTargetSelector(false)}>
+                  Annuler
+                </Button>
+              </div>
+            );
+          })()}
         </div>
         
         {/* Mode Dessin indicateur */}
