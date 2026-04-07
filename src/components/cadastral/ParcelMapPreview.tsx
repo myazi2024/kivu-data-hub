@@ -1029,7 +1029,7 @@ export const ParcelMapPreview = ({
       cancelAnimationFrame(rafId);
       cancelled = true;
     };
-  }, [isMapReady, JSON.stringify(validCoords), JSON.stringify(roadSides), mapConfig, isGroupDragMode, isDrawingMode, selectedBorne, isAddingBuilding]);
+  }, [isMapReady, validCoords, roadSides, mapConfig, isGroupDragMode, isDrawingMode, selectedBorne, isAddingBuilding]);
 
   // Dessiner une forme de construction
   const drawBuildingShape = (L: any, map: any, shape: BuildingShape) => {
@@ -1077,10 +1077,30 @@ export const ParcelMapPreview = ({
         }).addTo(map);
         break;
         
-      default:
+      case 'trapeze': {
+        // Vrai trapèze : base large en bas, base courte en haut
+        const halfBase = shape.size * metersToLat;
+        const halfTop = halfBase * 0.5; // base supérieure = 50% de la base inférieure
+        const halfH = shape.size * 0.8 * metersToLng;
+        const trapPoints: [number, number][] = [
+          [shape.center.lat - halfBase, shape.center.lng - halfH],  // bas-gauche
+          [shape.center.lat + halfBase, shape.center.lng - halfH],  // bas-droite (via lat pour symétrie)
+          [shape.center.lat + halfTop, shape.center.lng + halfH],   // haut-droite
+          [shape.center.lat - halfTop, shape.center.lng + halfH],   // haut-gauche
+        ];
+        layer = L.polygon(trapPoints, {
+          color: '#dc2626',
+          fillColor: '#dc2626',
+          fillOpacity: 0.4,
+          weight: 2,
+        }).addTo(map);
+        break;
+      }
+
+      default: {
         const radius = shape.size * metersToLat;
         const points: [number, number][] = [];
-        const sides = shape.type === 'trapeze' ? 4 : 6;
+        const sides = 6;
         for (let i = 0; i < sides; i++) {
           const angle = (2 * Math.PI * i) / sides;
           points.push([
@@ -1094,6 +1114,7 @@ export const ParcelMapPreview = ({
           fillOpacity: 0.4,
           weight: 2,
         }).addTo(map);
+      }
     }
     
     if (layer) {
@@ -1569,26 +1590,35 @@ export const ParcelMapPreview = ({
   // Rotation de la parcelle autour de son centre (visuelle uniquement)
   // Les orientations des côtés restent fixes car elles représentent des directions géographiques réelles
   const rotateParcel = useCallback((angleDegrees: number) => {
+    const currentCoords = coordinatesRef.current;
     const currentValid = validCoordsRef.current;
     if (currentValid.length < 2) return;
 
-    const currentCoords = coordinatesRef.current;
+    // Stocker les coordonnées originales au premier appel de rotation
+    if (!originalCoordsBeforeRotationRef.current) {
+      originalCoordsBeforeRotationRef.current = currentCoords.map(c => ({ ...c }));
+    }
 
-    // Centre (en degrés)
-    const centerLat =
-      currentValid.reduce((sum, c) => sum + parseFloat(c.lat), 0) / currentValid.length;
-    const centerLng =
-      currentValid.reduce((sum, c) => sum + parseFloat(c.lng), 0) / currentValid.length;
+    const newTotalAngle = (parcelRotationDegrees + angleDegrees) % 360;
+    const origCoords = originalCoordsBeforeRotationRef.current;
 
-    const angleRad = (angleDegrees * Math.PI) / 180;
+    // Calculer le centre à partir des originaux
+    const origValid = origCoords.filter(
+      c => c.lat && c.lng && !isNaN(parseFloat(c.lat)) && !isNaN(parseFloat(c.lng))
+    );
+    if (origValid.length < 2) return;
+
+    const centerLat = origValid.reduce((sum, c) => sum + parseFloat(c.lat), 0) / origValid.length;
+    const centerLng = origValid.reduce((sum, c) => sum + parseFloat(c.lng), 0) / origValid.length;
+
+    const angleRad = (newTotalAngle * Math.PI) / 180;
     const cosA = Math.cos(angleRad);
     const sinA = Math.sin(angleRad);
 
-    // Conversion locale degrés <-> mètres (approx)
     const metersPerDegLat = 111320;
     const metersPerDegLng = 111320 * Math.cos((centerLat * Math.PI) / 180);
 
-    const updated = currentCoords.map((coord) => {
+    const updated = origCoords.map((coord) => {
       const lat = parseFloat(coord.lat);
       const lng = parseFloat(coord.lng);
       if (Number.isNaN(lat) || Number.isNaN(lng)) return coord;
@@ -1599,20 +1629,16 @@ export const ParcelMapPreview = ({
       const newX = x * cosA - y * sinA;
       const newY = x * sinA + y * cosA;
 
-      const newLat = centerLat + newY / metersPerDegLat;
-      const newLng = centerLng + newX / metersPerDegLng;
-
       return {
         ...coord,
-        lat: newLat.toFixed(6),
-        lng: newLng.toFixed(6),
+        lat: (centerLat + newY / metersPerDegLat).toFixed(6),
+        lng: (centerLng + newX / metersPerDegLng).toFixed(6),
       };
     });
 
-    setParcelRotationDegrees((prev) => (prev + angleDegrees) % 360);
+    setParcelRotationDegrees(newTotalAngle);
     onCoordinatesUpdate(updated);
-    // Pas de recalcul des orientations - elles représentent des directions fixes
-  }, [onCoordinatesUpdate]);
+  }, [onCoordinatesUpdate, parcelRotationDegrees]);
 
   // Retour haptique (vibration légère)
   const triggerHaptic = useCallback(() => {
@@ -1795,18 +1821,7 @@ export const ParcelMapPreview = ({
                     step="0.000001"
                     value={editingBorneCoords.lat}
                     onChange={(e) => setEditingBorneCoords(prev => ({ ...prev, lat: e.target.value }))}
-                    onBlur={() => {
-                      if (editingBorneIndex !== null) {
-                        const lat = parseFloat(editingBorneCoords.lat);
-                        const lng = parseFloat(editingBorneCoords.lng);
-                        if (!isNaN(lat) && !isNaN(lng)) {
-                          const updatedCoords = [...coordinates];
-                          updatedCoords[editingBorneIndex] = { ...updatedCoords[editingBorneIndex], lat: lat.toFixed(6), lng: lng.toFixed(6) };
-                          onCoordinatesUpdate(updatedCoords);
-                          updateParcelSidesFromCoordinates(updatedCoords);
-                        }
-                      }
-                    }}
+                    onBlur={() => {}}
                     onKeyDown={(e) => {
                       if (e.key === 'Escape') { setEditingBorneIndex(null); }
                     }}
@@ -1821,18 +1836,7 @@ export const ParcelMapPreview = ({
                     step="0.000001"
                     value={editingBorneCoords.lng}
                     onChange={(e) => setEditingBorneCoords(prev => ({ ...prev, lng: e.target.value }))}
-                    onBlur={() => {
-                      if (editingBorneIndex !== null) {
-                        const lat = parseFloat(editingBorneCoords.lat);
-                        const lng = parseFloat(editingBorneCoords.lng);
-                        if (!isNaN(lat) && !isNaN(lng)) {
-                          const updatedCoords = [...coordinates];
-                          updatedCoords[editingBorneIndex] = { ...updatedCoords[editingBorneIndex], lat: lat.toFixed(6), lng: lng.toFixed(6) };
-                          onCoordinatesUpdate(updatedCoords);
-                          updateParcelSidesFromCoordinates(updatedCoords);
-                        }
-                      }
-                    }}
+                    onBlur={() => {}}
                     onKeyDown={(e) => {
                       if (e.key === 'Escape') { setEditingBorneIndex(null); }
                     }}
@@ -1991,9 +1995,7 @@ export const ParcelMapPreview = ({
                     onClick={() => {
                       const newBearing = (mapBearing - 15 + 360) % 360;
                       setMapBearing(newBearing);
-                      if (mapInstanceRef.current) {
-                        mapInstanceRef.current.setBearing?.(newBearing);
-                      }
+                      // Note: Leaflet standard ne supporte pas setBearing — seule la boussole et les orientations changent
                     }}
                     className="h-8 w-8 p-0 rounded-lg"
                     title="-15°"
@@ -2012,9 +2014,6 @@ export const ParcelMapPreview = ({
                     onClick={() => {
                       const newBearing = (mapBearing + 15) % 360;
                       setMapBearing(newBearing);
-                      if (mapInstanceRef.current) {
-                        mapInstanceRef.current.setBearing?.(newBearing);
-                      }
                     }}
                     className="h-8 w-8 p-0 rounded-lg"
                     title="+15°"
@@ -2030,9 +2029,6 @@ export const ParcelMapPreview = ({
                   variant="default"
                   onClick={() => {
                     setMapBearing(0);
-                    if (mapInstanceRef.current) {
-                      mapInstanceRef.current.setBearing?.(0);
-                    }
                   }}
                   className="w-full h-8 rounded-lg text-xs"
                 >
@@ -2296,20 +2292,7 @@ export const ParcelMapPreview = ({
                     type="button"
                     size="sm"
                     variant="destructive"
-                    onClick={() => {
-                      selectedBorneRef.current = null;
-                      selectedMarkerRef.current = null;
-                      setSelectedBorne(null);
-                      const map = mapInstanceRef.current;
-                      if (map) {
-                        const container = map.getContainer();
-                        container.dataset.markerMoving = 'false';
-                        map.dragging.enable();
-                        map.scrollWheelZoom.enable();
-                        map.doubleClickZoom.enable();
-                        map.touchZoom.enable();
-                      }
-                    }}
+                    onClick={exitMarkerMoveMode}
                     className="h-8 w-8 p-0 rounded-lg"
                     title="Quitter mode déplacement"
                   >
