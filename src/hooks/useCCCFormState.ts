@@ -274,15 +274,7 @@ export const useCCCFormState = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'owner' | 'title') => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
-    if (!validTypes.includes(file.type)) {
-      toast({ title: "Type de fichier non valide", description: "Seuls les fichiers JPG, PNG, WEBP et PDF sont acceptés", variant: "destructive" });
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      toast({ title: "Fichier trop volumineux", description: "La taille maximale est de 10 MB", variant: "destructive" });
-      return;
-    }
+    if (!validateAttachmentFile(file)) return;
     if (type === 'owner') {
       setOwnerDocFile(file);
     } else {
@@ -1491,6 +1483,7 @@ export const useCCCFormState = ({
     ]);
     setRoadSides([]);
     setServitude({ hasServitude: false });
+    setBuildingShapes([]);
     markDirty();
   }, []);
 
