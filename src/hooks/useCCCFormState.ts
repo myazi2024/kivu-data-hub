@@ -684,6 +684,14 @@ export const useCCCFormState = ({
       if (!formData.apartmentOrientation) missing.push({ field: 'apartmentOrientation', label: "Orientation de l'appartement", tab: 'location' });
     }
 
+    // LOCATION - BUILDING SHAPES (correspondance avec constructions déclarées)
+    if (!isTerrainNu && !isAppartement) {
+      const expectedBuildingCount = constructionMode === 'multiple' ? 1 + additionalConstructions.length : 1;
+      if (buildingShapes.length < expectedBuildingCount) {
+        missing.push({ field: 'buildingShapes', label: `Tracés de construction dans le croquis (${buildingShapes.length}/${expectedBuildingCount})`, tab: 'location' });
+      }
+    }
+
     // HISTORY
     const hasValidPreviousOwner = previousOwners.some(o => o.name && o.name.trim() !== '');
     if (!hasValidPreviousOwner) missing.push({ field: 'previousOwner', label: 'Historique de propriété (au moins un ancien propriétaire)', tab: 'history' });
