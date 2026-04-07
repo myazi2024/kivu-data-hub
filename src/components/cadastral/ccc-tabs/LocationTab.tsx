@@ -177,7 +177,7 @@ const LocationTab: React.FC<LocationTabProps> = ({
             onCoordinatesUpdate={onCoordinatesUpdate}
             config={mapConfig}
             currentParcelNumber={parcelNumber}
-            enableConflictDetection={true}
+            
             roadSides={roadSides}
             onRoadSidesChange={onRoadSidesChange}
             parcelSides={parcelSides}

@@ -219,7 +219,7 @@ export const AdminParcelEditDialog = ({ parcel, open, onClose, onSave }: AdminPa
               coordinates={coordinates}
               onCoordinatesUpdate={handleCoordinatesUpdate}
               currentParcelNumber={parcel.parcel_number}
-              enableConflictDetection={true}
+              
               config={{
                 enableDragging: true,
                 showSideDimensions: true,
