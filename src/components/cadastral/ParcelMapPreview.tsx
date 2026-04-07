@@ -1590,11 +1590,6 @@ export const ParcelMapPreview = ({
     setBuildingVertices(prev => prev.slice(0, -1));
   }, []);
 
-  // Supprimer dernière construction
-  const removeLastBuilding = useCallback(() => {
-    if (buildingShapes.length === 0 || !onBuildingShapesChange) return;
-    onBuildingShapesChange(buildingShapes.slice(0, -1));
-  }, [buildingShapes, onBuildingShapesChange]);
 
   const exitMarkerMoveMode = useCallback(() => {
     selectedBorneRef.current = null;
