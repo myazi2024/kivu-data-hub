@@ -47,9 +47,7 @@ interface ParcelSketchSVGProps {
   height?: number;
 }
 
-const SHAPE_LABELS: Record<string, string> = {
-  circle: 'C', square: 'Ca', rectangle: 'R', trapeze: 'T', polygon: 'P',
-};
+const SHAPE_LABELS: Record<string, string> = {}; // kept for backward compat
 
 const ROAD_TYPE_LABELS: Record<string, string> = {
   nationale: 'Route Nationale',
