@@ -601,8 +601,9 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'taxes', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Total déclarations' },
       { tab_key: 'taxes', item_key: 'kpi-revenue', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Montant total' },
       { tab_key: 'taxes', item_key: 'kpi-pending', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'En attente' },
-      { tab_key: 'taxes', item_key: 'kpi-approved', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Approuvées' },
-      { tab_key: 'taxes', item_key: 'kpi-penalty-rate', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Taux pénalités' },
+      { tab_key: 'taxes', item_key: 'kpi-approved', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Payées' },
+      { tab_key: 'taxes', item_key: 'kpi-recovery', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Recouvrement' },
+      { tab_key: 'taxes', item_key: 'kpi-avg', item_type: 'kpi', is_visible: true, display_order: 5, custom_title: 'Montant moy.' },
     ],
   },
   '_global': {

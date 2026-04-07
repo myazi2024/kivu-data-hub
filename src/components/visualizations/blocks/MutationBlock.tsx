@@ -56,9 +56,8 @@ export const MutationBlock: React.FC<Props> = memo(({ data }) => {
   const byMarketValue = useMemo(() => {
     const buckets: Record<string, number> = { '< $10k': 0, '$10k–$50k': 0, '$50k–$100k': 0, '$100k–$500k': 0, '> $500k': 0 };
     filtered.forEach(r => {
-      const v = (r as any).market_value_usd ?? (r.proposed_changes as any)?.market_value_usd;
-      if (!v || Number(v) <= 0) return;
-      const val = Number(v);
+      const val = Number(r.market_value_usd || 0);
+      if (val <= 0) return;
       if (val < 10000) buckets['< $10k']++;
       else if (val < 50000) buckets['$10k–$50k']++;
       else if (val < 100000) buckets['$50k–$100k']++;
@@ -71,7 +70,7 @@ export const MutationBlock: React.FC<Props> = memo(({ data }) => {
   const byTitleAge = useMemo(() => {
     const counts: Record<string, number> = { '< 10 ans': 0, '≥ 10 ans': 0, 'Non renseigné': 0 };
     filtered.forEach(r => {
-      const age = (r as any).title_age ?? (r.proposed_changes as any)?.title_age;
+      const age = r.title_age;
       if (age === 'less_than_10') counts['< 10 ans']++;
       else if (age === '10_or_more') counts['≥ 10 ans']++;
       else counts['Non renseigné']++;
@@ -82,8 +81,8 @@ export const MutationBlock: React.FC<Props> = memo(({ data }) => {
   const byLateFees = useMemo(() => {
     let withLate = 0, withoutLate = 0;
     filtered.forEach(r => {
-      const lateFee = (r as any).late_fee_amount ?? (r.proposed_changes as any)?.late_fees?.fee;
-      if (lateFee && Number(lateFee) > 0) withLate++;
+      const lateFee = Number(r.late_fee_amount || 0);
+      if (lateFee > 0) withLate++;
       else withoutLate++;
     });
     return [
