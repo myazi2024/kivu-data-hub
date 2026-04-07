@@ -1149,7 +1149,7 @@ const AdminCCCContributions: React.FC = () => {
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground">Type de bail</Label>
-                      <p className="text-sm">{selectedContribution.lease_type === 'initial' ? 'Bail initial' : selectedContribution.lease_type === 'renewal' ? 'Renouvellement' : 'Non renseigné'}</p>
+                      <p className="text-sm">{selectedContribution.lease_type === 'initial' ? 'Bail initial' : selectedContribution.lease_type === 'renewal' ? 'Renouvellement' : 'Non renseigné'}{selectedContribution.lease_years ? ` (${selectedContribution.lease_years} ans)` : ''}</p>
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground">N° de référence du titre</Label>
@@ -1162,6 +1162,10 @@ const AdminCCCContributions: React.FC = () => {
                     <div>
                       <Label className="text-xs text-muted-foreground">Type de parcelle</Label>
                       <p className="text-sm">{selectedContribution.parcel_type === 'SU' ? 'Section Urbaine (SU)' : selectedContribution.parcel_type === 'SR' ? 'Section Rurale (SR)' : 'Non renseigné'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Titre au nom du propriétaire actuel</Label>
+                      <p className="text-sm">{selectedContribution.is_title_in_current_owner_name === true ? 'Oui' : selectedContribution.is_title_in_current_owner_name === false ? 'Non' : 'Non renseigné'}</p>
                     </div>
                   </div>
 
@@ -1185,6 +1189,10 @@ const AdminCCCContributions: React.FC = () => {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
                     <div>
+                      <Label className="text-xs text-muted-foreground">Catégorie de bien</Label>
+                      <p className="text-sm">{selectedContribution.property_category || 'Non renseigné'}</p>
+                    </div>
+                    <div>
                       <Label className="text-xs text-muted-foreground">Superficie</Label>
                       <p className="text-sm">{selectedContribution.area_sqm ? `${selectedContribution.area_sqm} m²` : 'Non renseigné'}</p>
                     </div>
@@ -1197,10 +1205,54 @@ const AdminCCCContributions: React.FC = () => {
                       <p className="text-sm">{selectedContribution.construction_nature || 'Non renseigné'}</p>
                     </div>
                     <div>
+                      <Label className="text-xs text-muted-foreground">Matériaux</Label>
+                      <p className="text-sm">{selectedContribution.construction_materials || 'Non renseigné'}</p>
+                    </div>
+                    <div>
                       <Label className="text-xs text-muted-foreground">Usage déclaré</Label>
                       <p className="text-sm">{selectedContribution.declared_usage || 'Non renseigné'}</p>
                     </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Standing</Label>
+                      <p className="text-sm">{selectedContribution.standing || 'Non renseigné'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Année de construction</Label>
+                      <p className="text-sm">{selectedContribution.construction_year || 'Non renseigné'}</p>
+                    </div>
+                    {selectedContribution.apartment_number && (
+                      <div>
+                        <Label className="text-xs text-muted-foreground">N° appartement</Label>
+                        <p className="text-sm">{selectedContribution.apartment_number}</p>
+                      </div>
+                    )}
+                    {selectedContribution.floor_number && (
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Étage</Label>
+                        <p className="text-sm">{selectedContribution.floor_number}</p>
+                      </div>
+                    )}
+                    {selectedContribution.house_number && (
+                      <div>
+                        <Label className="text-xs text-muted-foreground">N° parcelle (voirie)</Label>
+                        <p className="text-sm">{selectedContribution.house_number}</p>
+                      </div>
+                    )}
                   </div>
+
+                  {selectedContribution.additional_constructions && Array.isArray(selectedContribution.additional_constructions) && selectedContribution.additional_constructions.length > 0 && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Constructions additionnelles ({selectedContribution.additional_constructions.length})</Label>
+                      <div className="space-y-1 mt-1">
+                        {selectedContribution.additional_constructions.map((c: any, idx: number) => (
+                          <div key={idx} className="p-1.5 md:p-2 bg-secondary rounded text-xs md:text-sm">
+                            <p><strong>{c.propertyCategory || c.constructionType}</strong> — {c.constructionNature || ''} / {c.declaredUsage || ''}</p>
+                            {c.constructionMaterials && <p className="text-muted-foreground">Matériaux: {c.constructionMaterials}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {selectedContribution.parcel_sides && Array.isArray(selectedContribution.parcel_sides) && selectedContribution.parcel_sides.length > 0 && (
                     <div>
