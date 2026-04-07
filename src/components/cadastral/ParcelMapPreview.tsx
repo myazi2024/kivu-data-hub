@@ -52,11 +52,6 @@ interface BuildingShape {
   areaSqm: number;
   perimeterM: number;
   linkedIndex?: number; // 0 = construction principale, 1+ = additionnelles
-  // Rétro-compatibilité : anciens champs ignorés au rendu
-  type?: string;
-  center?: { lat: number; lng: number };
-  size?: number;
-  rotation?: number;
 }
 
 interface ParcelMapPreviewProps {
