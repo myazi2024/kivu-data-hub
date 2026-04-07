@@ -1,23 +1,31 @@
 
 
-# Tripler l'intensité des ombres (×3)
+# Corriger la valeur par défaut du choix "Autorisation de bâtir" dans le formulaire CCC
 
-**Fichier** : `src/pages/CadastralMap.tsx`
+## Problème
 
-### 1. Barre de recherche (ligne 990)
-```
-shadow-[0_10px_40px_-8px_rgba(0,0,0,0.3),0_4px_16px_-4px_rgba(0,0,0,0.2)]
-→
-shadow-[0_10px_40px_-8px_rgba(0,0,0,0.9),0_4px_16px_-4px_rgba(0,0,0,0.6)]
-```
+Dans l'onglet Infos du formulaire CCC, le bouton "Oui" (autorisation de bâtir) est coché par défaut car `permitMode` est initialisé à `'existing'` dans `useCCCFormState.ts`. L'utilisateur doit pouvoir choisir lui-même.
 
-### 2. Panneau Actions (ligne 1325)
-```
-shadow-[0_8px_40px_-12px_hsl(var(--primary)/0.75),0_4px_16px_-4px_rgba(0,0,0,0.45)]
-→
-shadow-[0_8px_40px_-12px_hsl(var(--primary)/1),0_4px_16px_-4px_rgba(0,0,0,1)]
-```
-(Les opacités sont plafonnées à 1.0 car `0.75×3=2.25` et `0.45×3=1.35` dépassent le max.)
+## Modifications
 
-2 lignes modifiées dans 1 fichier.
+**Fichier** : `src/hooks/useCCCFormState.ts`
+
+1. **Ligne 122** — Changer le type et la valeur initiale :
+   ```
+   useState<'existing' | 'request'>('existing')
+   →
+   useState<'existing' | 'request' | null>(null)
+   ```
+
+2. **Ligne 1028** (resetForm) — Réinitialiser à `null` au lieu de `'existing'`.
+
+3. **Ligne 723** (getMissingFields) — Ajuster la condition pour ne vérifier les permis que si `permitMode === 'existing'` (inchangé, fonctionne déjà).
+
+4. **Lignes 934/941** (submitForm) — Les conditions `=== 'existing'` et `=== 'request'` excluent déjà `null`, pas de changement nécessaire.
+
+**Fichier** : `src/components/cadastral/ccc-tabs/GeneralTab.tsx`
+
+5. **Lignes 1094-1097** — Les boutons utilisent déjà une comparaison stricte (`permitMode === 'existing'`), donc quand `permitMode` est `null`, aucun bouton ne sera mis en surbrillance. Aucun changement nécessaire ici.
+
+**Impact** : 2 lignes modifiées dans 1 fichier (`useCCCFormState.ts`).
 
