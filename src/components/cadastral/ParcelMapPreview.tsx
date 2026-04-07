@@ -834,7 +834,7 @@ export const ParcelMapPreview = ({
 
           // Appui prolongé = sélection + mode déplacement précis
           const startLongPress = () => {
-            if (isDrawingMode || isGroupDragMode || isAddingBuilding) return;
+            if (isDrawingMode || isGroupDragMode || isDrawingBuilding) return;
             if (longPressTimerRef.current) window.clearTimeout(longPressTimerRef.current);
 
             longPressTimerRef.current = window.setTimeout(() => {
@@ -1482,7 +1482,7 @@ export const ParcelMapPreview = ({
   // Toggle mode ajout construction
   const cancelAddingBuilding = useCallback(() => {
     setSelectedShapeType(null);
-    setIsAddingBuilding(false);
+    setIsDrawingBuilding(false);
     setShowShapePicker(false);
     const map = mapInstanceRef.current;
     if (map) {
@@ -1497,13 +1497,13 @@ export const ParcelMapPreview = ({
 
   const startAddingBuilding = useCallback((shapeType: BuildingShape['type']) => {
     // Si déjà en mode construction avec le même type, annuler
-    if (isAddingBuilding && selectedShapeType === shapeType) {
+    if (isDrawingBuilding && selectedShapeType === shapeType) {
       cancelAddingBuilding();
       return;
     }
 
     setSelectedShapeType(shapeType);
-    setIsAddingBuilding(true);
+    setIsDrawingBuilding(true);
     setShowShapePicker(false);
 
     // Désactiver le mode dessin s'il est actif
@@ -1520,7 +1520,7 @@ export const ParcelMapPreview = ({
       map.getContainer().dataset.addingBuilding = 'true';
       map.getContainer().style.cursor = 'crosshair';
     }
-  }, [isAddingBuilding, selectedShapeType, cancelAddingBuilding]);
+  }, [isDrawingBuilding, selectedShapeType, cancelAddingBuilding]);
 
   // Supprimer dernière construction
   const removeLastBuilding = useCallback(() => {
@@ -1554,8 +1554,8 @@ export const ParcelMapPreview = ({
     map.scrollWheelZoom.enable();
     map.doubleClickZoom.enable();
     map.touchZoom.enable();
-    container.style.cursor = isAddingBuilding ? 'crosshair' : 'grab';
-  }, [isDrawingMode, isAddingBuilding]);
+    container.style.cursor = isDrawingBuilding ? 'crosshair' : 'grab';
+  }, [isDrawingMode, isDrawingBuilding]);
 
   const nudgeSelectedMarker = useCallback((direction: 'N' | 'S' | 'E' | 'W') => {
     const borne = selectedBorneRef.current;
@@ -1793,14 +1793,14 @@ export const ParcelMapPreview = ({
       <Card className={`overflow-hidden relative rounded-2xl shadow-lg transition-all ${
         isDrawingMode 
           ? 'border-2 border-orange-400/60 ring-4 ring-orange-500/15' 
-          : isAddingBuilding
+          : isDrawingBuilding
             ? 'border-2 border-red-400/60 ring-4 ring-red-500/15'
             : 'border-2 border-primary/25'
       }`}>
         <div 
           ref={mapRef} 
           className="h-[340px] w-full"
-          style={{ cursor: isDrawingMode || isAddingBuilding ? 'crosshair' : 'grab' }}
+          style={{ cursor: isDrawingMode || isDrawingBuilding ? 'crosshair' : 'grab' }}
         />
         
         {/* Overlay d'édition de dimension */}
@@ -2139,9 +2139,9 @@ export const ParcelMapPreview = ({
                 <Button
                   type="button"
                   size="sm"
-                  variant={isAddingBuilding ? "default" : "outline"}
+                  variant={isDrawingBuilding ? "default" : "outline"}
                   className={`h-8 w-8 p-0 rounded-xl shadow-md ${
-                    isAddingBuilding ? 'bg-red-500 text-white' : 'bg-white hover:bg-gray-50'
+                    isDrawingBuilding ? 'bg-red-500 text-white' : 'bg-white hover:bg-gray-50'
                   }`}
                   title="Ajouter une construction"
                 >
@@ -2185,7 +2185,7 @@ export const ParcelMapPreview = ({
           </div>
         )}
         
-        {isAddingBuilding && !isDrawingMode && (
+        {isDrawingBuilding && !isDrawingMode && (
           <div className="absolute bottom-10 left-2 z-[1000]">
             <Badge className="bg-red-500 text-white text-xs h-6 px-2 rounded-lg shadow-md animate-pulse">
               <Building2 className="h-3 w-3 mr-1" />
@@ -2194,7 +2194,7 @@ export const ParcelMapPreview = ({
           </div>
         )}
         
-        {showNeighbors && !isDrawingMode && !isAddingBuilding && (
+        {showNeighbors && !isDrawingMode && !isDrawingBuilding && (
           <div className="absolute bottom-10 left-2 z-[1000]">
             <Badge className="bg-indigo-500 text-white text-xs h-6 px-2 rounded-lg shadow-md">
               <Eye className="h-3 w-3 mr-1" />
@@ -2420,7 +2420,7 @@ export const ParcelMapPreview = ({
         <div className="flex items-start gap-2">
           <Info className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
           <p className="text-xs text-muted-foreground leading-relaxed">
-            {isAddingBuilding 
+            {isDrawingBuilding 
               ? "Touchez dans la parcelle pour placer la construction."
               : isDrawingMode 
                 ? "Touchez la carte pour ajouter des bornes."
