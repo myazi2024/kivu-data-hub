@@ -43,17 +43,27 @@ interface Contribution {
   // Données complètes - TOUTES les données du formulaire
   property_title_type: string | null;
   lease_type: string | null;
+  lease_years: number | null;
+  is_title_in_current_owner_name: boolean | null;
   title_reference_number: string | null;
-  title_issue_date: string | null; // Date de délivrance du titre foncier
+  title_issue_date: string | null;
   current_owner_name: string | null;
   current_owners_details: any;
   current_owner_legal_status: string | null;
   current_owner_since: string | null;
   area_sqm: number | null;
   parcel_sides: any;
+  property_category: string | null;
   construction_type: string | null;
   construction_nature: string | null;
+  construction_materials: string | null;
+  construction_year: number | null;
+  standing: string | null;
   declared_usage: string | null;
+  apartment_number: string | null;
+  floor_number: string | null;
+  house_number: string | null;
+  additional_constructions: any;
   province: string | null;
   ville: string | null;
   commune: string | null;
@@ -65,6 +75,11 @@ interface Contribution {
   village: string | null;
   
   gps_coordinates: any;
+  road_sides: any;
+  servitude_data: any;
+  building_shapes: any;
+  has_dispute: boolean | null;
+  dispute_data: any;
   ownership_history: any;
   boundary_history: any;
   tax_history: any;
@@ -332,6 +347,17 @@ const AdminCCCContributions: React.FC = () => {
             declared_usage: updatedContribution.declared_usage,
             standing: updatedContribution.standing,
             house_number: updatedContribution.house_number,
+            property_category: updatedContribution.property_category,
+            apartment_number: updatedContribution.apartment_number,
+            floor_number: updatedContribution.floor_number,
+            is_title_in_current_owner_name: updatedContribution.is_title_in_current_owner_name,
+            lease_years: updatedContribution.lease_years,
+            additional_constructions: updatedContribution.additional_constructions,
+            road_sides: updatedContribution.road_sides,
+            servitude_data: updatedContribution.servitude_data,
+            has_dispute: updatedContribution.has_dispute,
+            dispute_data: updatedContribution.dispute_data,
+            building_shapes: updatedContribution.building_shapes,
             province: updatedContribution.province,
             ville: updatedContribution.ville,
             commune: updatedContribution.commune,
@@ -378,7 +404,6 @@ const AdminCCCContributions: React.FC = () => {
             current_owner_legal_status: updatedContribution.current_owner_legal_status,
             current_owner_since: updatedContribution.current_owner_since,
             area_sqm: updatedContribution.area_sqm,
-            // area_hectares est une colonne GENERATED - NE PAS L'INCLURE
             parcel_type: updatedContribution.parcel_type || 'SU',
             property_title_type: updatedContribution.property_title_type,
             title_reference_number: updatedContribution.title_reference_number,
@@ -391,6 +416,17 @@ const AdminCCCContributions: React.FC = () => {
             declared_usage: updatedContribution.declared_usage,
             standing: updatedContribution.standing,
             house_number: updatedContribution.house_number,
+            property_category: updatedContribution.property_category,
+            apartment_number: updatedContribution.apartment_number,
+            floor_number: updatedContribution.floor_number,
+            is_title_in_current_owner_name: updatedContribution.is_title_in_current_owner_name,
+            lease_years: updatedContribution.lease_years,
+            additional_constructions: updatedContribution.additional_constructions,
+            road_sides: updatedContribution.road_sides,
+            servitude_data: updatedContribution.servitude_data,
+            has_dispute: updatedContribution.has_dispute,
+            dispute_data: updatedContribution.dispute_data,
+            building_shapes: updatedContribution.building_shapes,
             province: updatedContribution.province,
             ville: updatedContribution.ville,
             commune: updatedContribution.commune,
@@ -400,7 +436,6 @@ const AdminCCCContributions: React.FC = () => {
             collectivite: updatedContribution.collectivite,
             groupement: updatedContribution.groupement,
             village: updatedContribution.village,
-            
             location: [
               updatedContribution.province,
               updatedContribution.ville,
@@ -632,21 +667,24 @@ const AdminCCCContributions: React.FC = () => {
 
   const calculateCompleteness = (contribution: Contribution) => {
     let filled = 0;
-    const total = 10; // Total des champs vérifiés
+    const total = 16;
 
-    // Champs obligatoires (alignés avec validate_contribution_completeness RPC)
     if (contribution.property_title_type) filled++;
     if (contribution.current_owner_name || contribution.current_owners_details) filled++;
     if (contribution.area_sqm && contribution.area_sqm > 0) filled++;
     if (contribution.province) filled++;
-    
-    // Champs recommandés
+    if (contribution.property_category) filled++;
+    if (contribution.construction_type) filled++;
     if (contribution.ownership_history && Array.isArray(contribution.ownership_history) && contribution.ownership_history.length > 0) filled++;
     if (contribution.boundary_history && Array.isArray(contribution.boundary_history) && contribution.boundary_history.length > 0) filled++;
     if (contribution.tax_history && Array.isArray(contribution.tax_history) && contribution.tax_history.length > 0) filled++;
     if (contribution.gps_coordinates && Array.isArray(contribution.gps_coordinates) && contribution.gps_coordinates.length > 0) filled++;
     if (contribution.owner_document_url) filled++;
     if (contribution.property_title_document_url) filled++;
+    if (contribution.building_shapes && Array.isArray(contribution.building_shapes) && contribution.building_shapes.length > 0) filled++;
+    if (contribution.road_sides && Array.isArray(contribution.road_sides) && contribution.road_sides.length > 0) filled++;
+    if (contribution.has_dispute !== null) filled++;
+    if (contribution.whatsapp_number) filled++;
 
     return Math.round((filled / total) * 100);
   };
@@ -914,8 +952,9 @@ const AdminCCCContributions: React.FC = () => {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-5 h-8 md:h-10">
+            <TabsList className="grid w-full grid-cols-6 h-8 md:h-10">
               <TabsTrigger value="pending" className="text-xs md:text-sm px-1 md:px-3">Attente</TabsTrigger>
+              <TabsTrigger value="returned" className="text-xs md:text-sm px-1 md:px-3">Renvoyés</TabsTrigger>
               <TabsTrigger value="approved" className="text-xs md:text-sm px-1 md:px-3">Approuvés</TabsTrigger>
               <TabsTrigger value="rejected" className="text-xs md:text-sm px-1 md:px-3">Rejetés</TabsTrigger>
               <TabsTrigger value="suspicious" className="text-xs md:text-sm px-1 md:px-3">Suspects</TabsTrigger>
@@ -1110,7 +1149,7 @@ const AdminCCCContributions: React.FC = () => {
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground">Type de bail</Label>
-                      <p className="text-sm">{selectedContribution.lease_type === 'initial' ? 'Bail initial' : selectedContribution.lease_type === 'renewal' ? 'Renouvellement' : 'Non renseigné'}</p>
+                      <p className="text-sm">{selectedContribution.lease_type === 'initial' ? 'Bail initial' : selectedContribution.lease_type === 'renewal' ? 'Renouvellement' : 'Non renseigné'}{selectedContribution.lease_years ? ` (${selectedContribution.lease_years} ans)` : ''}</p>
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground">N° de référence du titre</Label>
@@ -1123,6 +1162,10 @@ const AdminCCCContributions: React.FC = () => {
                     <div>
                       <Label className="text-xs text-muted-foreground">Type de parcelle</Label>
                       <p className="text-sm">{selectedContribution.parcel_type === 'SU' ? 'Section Urbaine (SU)' : selectedContribution.parcel_type === 'SR' ? 'Section Rurale (SR)' : 'Non renseigné'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Titre au nom du propriétaire actuel</Label>
+                      <p className="text-sm">{selectedContribution.is_title_in_current_owner_name === true ? 'Oui' : selectedContribution.is_title_in_current_owner_name === false ? 'Non' : 'Non renseigné'}</p>
                     </div>
                   </div>
 
@@ -1146,6 +1189,10 @@ const AdminCCCContributions: React.FC = () => {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
                     <div>
+                      <Label className="text-xs text-muted-foreground">Catégorie de bien</Label>
+                      <p className="text-sm">{selectedContribution.property_category || 'Non renseigné'}</p>
+                    </div>
+                    <div>
                       <Label className="text-xs text-muted-foreground">Superficie</Label>
                       <p className="text-sm">{selectedContribution.area_sqm ? `${selectedContribution.area_sqm} m²` : 'Non renseigné'}</p>
                     </div>
@@ -1158,10 +1205,54 @@ const AdminCCCContributions: React.FC = () => {
                       <p className="text-sm">{selectedContribution.construction_nature || 'Non renseigné'}</p>
                     </div>
                     <div>
+                      <Label className="text-xs text-muted-foreground">Matériaux</Label>
+                      <p className="text-sm">{selectedContribution.construction_materials || 'Non renseigné'}</p>
+                    </div>
+                    <div>
                       <Label className="text-xs text-muted-foreground">Usage déclaré</Label>
                       <p className="text-sm">{selectedContribution.declared_usage || 'Non renseigné'}</p>
                     </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Standing</Label>
+                      <p className="text-sm">{selectedContribution.standing || 'Non renseigné'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Année de construction</Label>
+                      <p className="text-sm">{selectedContribution.construction_year || 'Non renseigné'}</p>
+                    </div>
+                    {selectedContribution.apartment_number && (
+                      <div>
+                        <Label className="text-xs text-muted-foreground">N° appartement</Label>
+                        <p className="text-sm">{selectedContribution.apartment_number}</p>
+                      </div>
+                    )}
+                    {selectedContribution.floor_number && (
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Étage</Label>
+                        <p className="text-sm">{selectedContribution.floor_number}</p>
+                      </div>
+                    )}
+                    {selectedContribution.house_number && (
+                      <div>
+                        <Label className="text-xs text-muted-foreground">N° parcelle (voirie)</Label>
+                        <p className="text-sm">{selectedContribution.house_number}</p>
+                      </div>
+                    )}
                   </div>
+
+                  {selectedContribution.additional_constructions && Array.isArray(selectedContribution.additional_constructions) && selectedContribution.additional_constructions.length > 0 && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Constructions additionnelles ({selectedContribution.additional_constructions.length})</Label>
+                      <div className="space-y-1 mt-1">
+                        {selectedContribution.additional_constructions.map((c: any, idx: number) => (
+                          <div key={idx} className="p-1.5 md:p-2 bg-secondary rounded text-xs md:text-sm">
+                            <p><strong>{c.propertyCategory || c.constructionType}</strong> — {c.constructionNature || ''} / {c.declaredUsage || ''}</p>
+                            {c.constructionMaterials && <p className="text-muted-foreground">Matériaux: {c.constructionMaterials}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {selectedContribution.parcel_sides && Array.isArray(selectedContribution.parcel_sides) && selectedContribution.parcel_sides.length > 0 && (
                     <div>
@@ -1251,6 +1342,41 @@ const AdminCCCContributions: React.FC = () => {
                         ))}
                       </div>
                     </div>
+                   )}
+
+                  {selectedContribution.road_sides && Array.isArray(selectedContribution.road_sides) && selectedContribution.road_sides.length > 0 && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Voirie des côtés</Label>
+                      <div className="space-y-1 mt-1">
+                        {selectedContribution.road_sides.map((side: any, idx: number) => (
+                          <div key={idx} className="p-1.5 bg-secondary rounded text-xs md:text-sm">
+                            <p><strong>{side.name}:</strong> {side.bordersRoad ? '🛣️ Borde une route' : '🚫 Pas de route'}{side.hasEntrance ? ' — 🚪 Entrée' : ''}</p>
+                            {side.bordersRoad && <p className="text-muted-foreground ml-4">{side.roadType || ''} {side.roadName ? `- ${side.roadName}` : ''} {side.roadWidth ? `(${side.roadWidth}m)` : ''}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedContribution.servitude_data && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Servitude de passage</Label>
+                      <p className="text-sm">{selectedContribution.servitude_data.hasServitude ? `Oui — Largeur: ${selectedContribution.servitude_data.width || '?'}m` : 'Non'}</p>
+                    </div>
+                  )}
+
+                  {selectedContribution.building_shapes && Array.isArray(selectedContribution.building_shapes) && selectedContribution.building_shapes.length > 0 && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Constructions tracées ({selectedContribution.building_shapes.length})</Label>
+                      <div className="space-y-1 mt-1">
+                        {selectedContribution.building_shapes.map((shape: any, idx: number) => (
+                          <div key={idx} className="p-1.5 bg-secondary rounded text-xs md:text-sm">
+                            <p><strong>{shape.label || `Construction ${idx + 1}`}</strong> — {shape.areaSqm?.toFixed(1) || '?'} m² — H: {shape.heightM || '?'}m</p>
+                            <p className="text-muted-foreground">{shape.sides?.length || '?'} côtés, périmètre: {shape.perimeterM?.toFixed(1) || '?'}m</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </TabsContent>
 
@@ -1311,14 +1437,17 @@ const AdminCCCContributions: React.FC = () => {
                     <div>
                       <Label className="text-xs text-muted-foreground">Historique de propriété</Label>
                       <div className="space-y-2 mt-1">
-                        {selectedContribution.ownership_history.map((owner: any, idx: number) => (
+                        {selectedContribution.ownership_history.map((owner: any, idx: number) => {
+                          const rr = (obj: any, ...keys: string[]) => { for (const k of keys) { if (obj?.[k] !== undefined && obj[k] !== null) return obj[k]; } return null; };
+                          return (
                           <div key={idx} className="p-2 bg-secondary rounded text-sm">
-                            <p><strong>Propriétaire:</strong> {owner.ownerName}</p>
-                            <p><strong>Statut:</strong> {owner.legalStatus}</p>
-                            <p><strong>Période:</strong> {new Date(owner.startDate).toLocaleDateString('fr-FR')} - {owner.endDate ? new Date(owner.endDate).toLocaleDateString('fr-FR') : 'Actuel'}</p>
-                            {owner.mutationType && <p><strong>Type de mutation:</strong> {owner.mutationType}</p>}
+                            <p><strong>Propriétaire:</strong> {rr(owner, 'owner_name', 'ownerName') || 'Non renseigné'}</p>
+                            <p><strong>Statut:</strong> {rr(owner, 'legal_status', 'legalStatus') || 'Non renseigné'}</p>
+                            <p><strong>Période:</strong> {new Date(rr(owner, 'ownership_start_date', 'startDate')).toLocaleDateString('fr-FR')} - {rr(owner, 'ownership_end_date', 'endDate') ? new Date(rr(owner, 'ownership_end_date', 'endDate')).toLocaleDateString('fr-FR') : 'Actuel'}</p>
+                            {rr(owner, 'mutation_type', 'mutationType') && <p><strong>Type de mutation:</strong> {rr(owner, 'mutation_type', 'mutationType')}</p>}
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   ) : (
@@ -1329,14 +1458,17 @@ const AdminCCCContributions: React.FC = () => {
                     <div className="mt-4">
                       <Label className="text-xs text-muted-foreground">Historique de bornage</Label>
                       <div className="space-y-2 mt-1">
-                        {selectedContribution.boundary_history.map((boundary: any, idx: number) => (
+                        {selectedContribution.boundary_history.map((boundary: any, idx: number) => {
+                          const rr = (obj: any, ...keys: string[]) => { for (const k of keys) { if (obj?.[k] !== undefined && obj[k] !== null) return obj[k]; } return null; };
+                          return (
                           <div key={idx} className="p-2 bg-secondary rounded text-sm">
-                            <p><strong>PV N°:</strong> {boundary.pvReferenceNumber}</p>
-                            <p><strong>Objet:</strong> {boundary.boundaryPurpose}</p>
-                            <p><strong>Géomètre:</strong> {boundary.surveyorName}</p>
-                            <p><strong>Date:</strong> {new Date(boundary.surveyDate).toLocaleDateString('fr-FR')}</p>
+                            <p><strong>PV N°:</strong> {rr(boundary, 'pv_reference_number', 'pvReferenceNumber')}</p>
+                            <p><strong>Objet:</strong> {rr(boundary, 'boundary_purpose', 'boundaryPurpose')}</p>
+                            <p><strong>Géomètre:</strong> {rr(boundary, 'surveyor_name', 'surveyorName')}</p>
+                            <p><strong>Date:</strong> {new Date(rr(boundary, 'survey_date', 'surveyDate') || '').toLocaleDateString('fr-FR')}</p>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -1367,16 +1499,33 @@ const AdminCCCContributions: React.FC = () => {
                     <div className="mt-2 md:mt-4">
                       <Label className="text-xs text-muted-foreground">Historique hypothécaire</Label>
                       <div className="space-y-1 md:space-y-2 mt-1">
-                        {selectedContribution.mortgage_history.map((mortgage: any, idx: number) => (
+                        {selectedContribution.mortgage_history.map((mortgage: any, idx: number) => {
+                          const rr = (obj: any, ...keys: string[]) => { for (const k of keys) { if (obj?.[k] !== undefined && obj[k] !== null) return obj[k]; } return null; };
+                          return (
                           <div key={idx} className="p-1.5 md:p-2 bg-secondary rounded text-xs md:text-sm">
-                            <p><strong>Montant:</strong> ${mortgage.mortgageAmountUsd}</p>
-                            <p><strong>Durée:</strong> {mortgage.durationMonths} mois</p>
-                            <p><strong>Créancier:</strong> {mortgage.creditorName} ({mortgage.creditorType})</p>
-                            <p><strong>Date:</strong> {new Date(mortgage.contractDate).toLocaleDateString('fr-FR')}</p>
-                            <p><strong>Statut:</strong> {mortgage.mortgageStatus}</p>
+                            <p><strong>Montant:</strong> ${rr(mortgage, 'mortgage_amount_usd', 'mortgageAmountUsd') || 0}</p>
+                            <p><strong>Durée:</strong> {rr(mortgage, 'duration_months', 'durationMonths') || 0} mois</p>
+                            <p><strong>Créancier:</strong> {rr(mortgage, 'creditor_name', 'creditorName') || 'Non renseigné'} ({rr(mortgage, 'creditor_type', 'creditorType') || ''})</p>
+                            <p><strong>Date:</strong> {new Date(rr(mortgage, 'contract_date', 'contractDate') || '').toLocaleDateString('fr-FR')}</p>
+                            <p><strong>Statut:</strong> {rr(mortgage, 'mortgage_status', 'mortgageStatus') || 'Non renseigné'}</p>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
+                    </div>
+                  )}
+
+                  {selectedContribution.has_dispute !== null && (
+                    <div className="mt-2 md:mt-4">
+                      <Label className="text-xs text-muted-foreground">Litige foncier</Label>
+                      <p className="text-sm">{selectedContribution.has_dispute ? '⚠️ Oui — Litige déclaré' : '✅ Non'}</p>
+                      {selectedContribution.has_dispute && selectedContribution.dispute_data && (
+                        <div className="p-2 bg-secondary rounded text-xs md:text-sm mt-1">
+                          {selectedContribution.dispute_data.disputeType && <p><strong>Type:</strong> {selectedContribution.dispute_data.disputeType}</p>}
+                          {selectedContribution.dispute_data.disputeNature && <p><strong>Nature:</strong> {selectedContribution.dispute_data.disputeNature}</p>}
+                          {selectedContribution.dispute_data.description && <p><strong>Description:</strong> {selectedContribution.dispute_data.description}</p>}
+                        </div>
+                      )}
                     </div>
                   )}
                 </TabsContent>
