@@ -93,6 +93,21 @@ const TestDataStatsCard: React.FC<TestDataStatsCardProps> = ({
             Actualiser
           </Button>
 
+          {onGenerate && isTestModeActive && total === 0 && (
+            <Button
+              variant="default"
+              onClick={onGenerate}
+              disabled={generatingData || cleaningUp}
+            >
+              {generatingData ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Play className="mr-2 h-4 w-4" />
+              )}
+              Générer les données
+            </Button>
+          )}
+
           {onRegenerate && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
