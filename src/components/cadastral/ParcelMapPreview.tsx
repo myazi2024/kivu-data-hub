@@ -2164,45 +2164,18 @@ export const ParcelMapPreview = ({
           
           {/* Bouton ajout construction */}
           {isParcelComplete && onBuildingShapesChange && (
-            <Popover open={showShapePicker} onOpenChange={setShowShapePicker}>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={isDrawingBuilding ? "default" : "outline"}
-                  className={`h-8 w-8 p-0 rounded-xl shadow-md ${
-                    isDrawingBuilding ? 'bg-red-500 text-white' : 'bg-white hover:bg-gray-50'
-                  }`}
-                  title="Ajouter une construction"
-                >
-                  <Building2 className="h-4 w-4" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent 
-                side="left" 
-                align="start" 
-                className="w-48 p-2 rounded-xl shadow-lg z-[1001]"
-              >
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-muted-foreground px-2 py-1">
-                    Forme de construction
-                  </p>
-                  {SHAPE_OPTIONS.map((option) => (
-                    <Button
-                      key={option.type}
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => startAddingBuilding(option.type)}
-                      className="w-full justify-start gap-2 h-8 rounded-lg text-sm"
-                    >
-                      <option.icon className="h-4 w-4 text-red-500" />
-                      {option.label}
-                    </Button>
-                  ))}
-                </div>
-              </PopoverContent>
-            </Popover>
+            <Button
+              type="button"
+              size="sm"
+              variant={isDrawingBuilding ? "default" : "outline"}
+              onClick={startDrawingBuilding}
+              className={`h-8 w-8 p-0 rounded-xl shadow-md ${
+                isDrawingBuilding ? 'bg-red-500 text-white' : 'bg-white hover:bg-gray-50'
+              }`}
+              title={isDrawingBuilding ? "Annuler le tracé" : "Tracer une construction"}
+            >
+              <Building2 className="h-4 w-4" />
+            </Button>
           )}
         </div>
         
@@ -2216,11 +2189,44 @@ export const ParcelMapPreview = ({
         )}
         
         {isDrawingBuilding && !isDrawingMode && (
-          <div className="absolute bottom-10 left-2 z-[1000]">
+          <div className="absolute bottom-10 left-2 z-[1000] flex items-center gap-1.5">
             <Badge className="bg-red-500 text-white text-xs h-6 px-2 rounded-lg shadow-md animate-pulse">
               <Building2 className="h-3 w-3 mr-1" />
-              {SHAPE_OPTIONS.find(s => s.type === selectedShapeType)?.label}
+              Tracé construction ({buildingVertices.length} pts)
             </Badge>
+            {buildingVertices.length > 0 && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={removeLastBuildingVertex}
+                className="h-6 w-6 p-0 rounded-lg bg-white/95 shadow-md"
+                title="Supprimer dernier point"
+              >
+                <Trash2 className="h-3 w-3 text-destructive" />
+              </Button>
+            )}
+            {buildingVertices.length >= 3 && (
+              <Button
+                type="button"
+                size="sm"
+                onClick={validateBuilding}
+                className="h-6 px-2 rounded-lg bg-green-600 text-white shadow-md text-xs hover:bg-green-700"
+              >
+                <Check className="h-3 w-3 mr-1" />
+                Valider
+              </Button>
+            )}
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={cancelDrawingBuilding}
+              className="h-6 px-2 rounded-lg bg-white/95 shadow-md text-xs"
+            >
+              <X className="h-3 w-3 mr-1" />
+              Annuler
+            </Button>
           </div>
         )}
         
