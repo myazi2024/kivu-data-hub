@@ -120,6 +120,26 @@ export const useLandDataAnalytics = () => {
         byNum.set(p.parcel_number, p);
       });
 
+      // Set of TEST parcel IDs for FK-table filtering
+      const testParcelIds = new Set<string>();
+      parcels.forEach(p => {
+        if (p.parcel_number?.toUpperCase().startsWith('TEST-')) {
+          testParcelIds.add(p.id);
+        }
+      });
+
+      /** Exclude records linked to TEST-% parcels via parcel_id FK */
+      const excludeTestFK = (records: any[]) =>
+        records.filter(r => !r.parcel_id || !testParcelIds.has(r.parcel_id));
+
+      /** Exclude records linked to TEST-% via contribution_id → contribution → parcel */
+      const excludeTestContribFK = (records: any[]) =>
+        records.filter(r => {
+          if (!r.contribution_id) return true;
+          const contrib = contribs.find((c: any) => c.id === r.contribution_id);
+          return !contrib || !contrib.parcel_number?.toUpperCase().startsWith('TEST-');
+        });
+
       const enrich = (records: any[]) =>
         records.map(r => {
           const p = (r.parcel_id && byId.get(r.parcel_id)) || (r.parcel_number && byNum.get(r.parcel_number));
@@ -193,16 +213,16 @@ export const useLandDataAnalytics = () => {
         titleRequests: titleReqs,
         parcels,
         contributions: contribs,
-        buildingPermits: enrich(permits),
-        taxHistory: enrich(taxes),
-        mortgages: enrich(mortgages),
+        buildingPermits: enrich(excludeTestFK(permits)),
+        taxHistory: enrich(excludeTestFK(taxes)),
+        mortgages: enrich(excludeTestFK(mortgages)),
         expertiseRequests: enrich(expertise),
         mutationRequests: enrich(mutations),
         subdivisionRequests: enrich(subdivisions),
         disputes: enrich(disputes),
         
-        ownershipHistory: enrich(ownershipHistory),
-        fraudAttempts: enrichFraud(fraudAttempts),
+        ownershipHistory: enrich(excludeTestFK(ownershipHistory)),
+        fraudAttempts: enrichFraud(excludeTestContribFK(fraudAttempts)),
         certificates: enrichByParcelNumber(certificates),
         invoices: enrichByParcelNumber(invoices),
       };
