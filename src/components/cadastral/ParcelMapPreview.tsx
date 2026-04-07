@@ -1479,11 +1479,10 @@ export const ParcelMapPreview = ({
     }
   }, []);
 
-  // Toggle mode ajout construction
-  const cancelAddingBuilding = useCallback(() => {
-    setSelectedShapeType(null);
+  // Toggle mode tracé construction
+  const cancelDrawingBuilding = useCallback(() => {
     setIsDrawingBuilding(false);
-    setShowShapePicker(false);
+    setBuildingVertices([]);
     const map = mapInstanceRef.current;
     if (map) {
       map.getContainer().dataset.addingBuilding = 'false';
@@ -1495,23 +1494,20 @@ export const ParcelMapPreview = ({
     }
   }, []);
 
-  const startAddingBuilding = useCallback((shapeType: BuildingShape['type']) => {
-    // Si déjà en mode construction avec le même type, annuler
-    if (isDrawingBuilding && selectedShapeType === shapeType) {
-      cancelAddingBuilding();
+  const startDrawingBuilding = useCallback(() => {
+    if (isDrawingBuilding) {
+      cancelDrawingBuilding();
       return;
     }
 
-    setSelectedShapeType(shapeType);
     setIsDrawingBuilding(true);
-    setShowShapePicker(false);
+    setBuildingVertices([]);
 
-    // Désactiver le mode dessin s'il est actif
+    // Désactiver le mode dessin parcelle s'il est actif
     setIsDrawingMode(false);
 
     const map = mapInstanceRef.current;
     if (map) {
-      // Désactiver les interactions carte pour capturer les clics
       map.dragging.disable();
       map.scrollWheelZoom.disable();
       map.doubleClickZoom.disable();
@@ -1520,7 +1516,41 @@ export const ParcelMapPreview = ({
       map.getContainer().dataset.addingBuilding = 'true';
       map.getContainer().style.cursor = 'crosshair';
     }
-  }, [isDrawingBuilding, selectedShapeType, cancelAddingBuilding]);
+  }, [isDrawingBuilding, cancelDrawingBuilding]);
+
+  // Valider la construction en cours
+  const validateBuilding = useCallback(() => {
+    if (buildingVertices.length < 3 || !onBuildingShapesChange) return;
+    
+    const sides: { name: string; length: string }[] = [];
+    let perimeter = 0;
+    
+    for (let i = 0; i < buildingVertices.length; i++) {
+      const next = buildingVertices[(i + 1) % buildingVertices.length];
+      const dist = calculateDistance(buildingVertices[i].lat, buildingVertices[i].lng, next.lat, next.lng);
+      sides.push({ name: `Côté ${i + 1}`, length: dist.toFixed(2) });
+      perimeter += dist;
+    }
+    
+    const areaSqm = calculateBuildingArea(buildingVertices);
+    
+    const newShape: BuildingShape = {
+      id: `building-${Date.now()}`,
+      vertices: [...buildingVertices],
+      sides,
+      areaSqm: Math.round(areaSqm * 100) / 100,
+      perimeterM: Math.round(perimeter * 100) / 100,
+    };
+    
+    onBuildingShapesChange([...buildingShapes, newShape]);
+    cancelDrawingBuilding();
+    toast.success(`Construction ajoutée: ${newShape.areaSqm} m², ${newShape.perimeterM} m de périmètre`);
+  }, [buildingVertices, buildingShapes, onBuildingShapesChange, cancelDrawingBuilding]);
+
+  // Supprimer le dernier sommet en cours de tracé
+  const removeLastBuildingVertex = useCallback(() => {
+    setBuildingVertices(prev => prev.slice(0, -1));
+  }, []);
 
   // Supprimer dernière construction
   const removeLastBuilding = useCallback(() => {
