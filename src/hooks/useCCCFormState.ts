@@ -975,6 +975,7 @@ export const useCCCFormState = ({
 
       const dataToSubmit = {
         ...formData,
+        leaseYears: leaseYears > 0 ? leaseYears : undefined,
         propertyTitleType: getEffectiveTitleName(formData.propertyTitleType, customTitleName) || formData.propertyTitleType,
         parcelType: sectionType === 'urbaine' ? 'SU' as const : sectionType === 'rurale' ? 'SR' as const : undefined,
         currentOwners: currentOwners.filter(o => o.lastName && (o.firstName || o.legalStatus === 'Personne morale')),
