@@ -71,6 +71,7 @@ interface ParcelMapPreviewProps {
   onServitudeChange?: (servitude: ServitudeInfo) => void;
   isTerrainNu?: boolean;
   requiredBuildingCount?: number;
+  constructionLabels?: string[];
 }
 
 // Calculer la surface d'un polygone à partir de sommets GPS (Shoelace formula en mètres)
