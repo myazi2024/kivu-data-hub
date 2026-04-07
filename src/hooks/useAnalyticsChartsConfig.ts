@@ -289,6 +289,7 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'title-requests', item_key: 'surface', item_type: 'chart', is_visible: true, display_order: 10, custom_title: 'Superficie demandée', chart_type: 'bar-v' },
       { tab_key: 'title-requests', item_key: 'construction-type', item_type: 'chart', is_visible: true, display_order: 11, custom_title: 'Type construction', chart_type: 'bar-h' },
       { tab_key: 'title-requests', item_key: 'construction-nature', item_type: 'chart', is_visible: true, display_order: 12, custom_title: 'Nature construction', chart_type: 'bar-h' },
+      { tab_key: 'title-requests', item_key: 'lease-type', item_type: 'chart', is_visible: true, display_order: 13, custom_title: 'Type bail', chart_type: 'donut' },
       { tab_key: 'title-requests', item_key: 'revenue-trend', item_type: 'chart', is_visible: true, display_order: 13, custom_title: 'Revenus/mois', chart_type: 'area' },
       { tab_key: 'title-requests', item_key: 'processing-comparison', item_type: 'chart', is_visible: true, display_order: 14, custom_title: 'Délai estimé vs réel', chart_type: 'bar-v' },
       { tab_key: 'title-requests', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 15, custom_title: 'Géographie' },
@@ -316,7 +317,7 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'parcels-titled', item_key: 'standing', item_type: 'chart', is_visible: true, display_order: 7, custom_title: 'Standing', chart_type: 'donut' },
       { tab_key: 'parcels-titled', item_key: 'construction-decade', item_type: 'chart', is_visible: true, display_order: 8, custom_title: 'Année construction', chart_type: 'bar-v' },
       { tab_key: 'parcels-titled', item_key: 'usage', item_type: 'chart', is_visible: true, display_order: 9, custom_title: 'Usage déclaré', chart_type: 'bar-h' },
-      { tab_key: 'parcels-titled', item_key: 'lease-type', item_type: 'chart', is_visible: true, display_order: 10, custom_title: 'Type bail', chart_type: 'donut' },
+      
       { tab_key: 'parcels-titled', item_key: 'surface', item_type: 'chart', is_visible: true, display_order: 11, custom_title: 'Superficie', chart_type: 'bar-v' },
       { tab_key: 'parcels-titled', item_key: 'subdivided', item_type: 'chart', is_visible: true, display_order: 12, custom_title: 'Loties vs Non loties', chart_type: 'pie' },
       { tab_key: 'parcels-titled', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 13, custom_title: 'Géographie' },

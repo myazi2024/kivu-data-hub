@@ -3,7 +3,7 @@ import { AnalyticsFilters } from '../filters/AnalyticsFilters';
 import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, surfaceDistribution, yearDecadeDistribution, buildFilterLabel } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { FileText, Users, Building, TrendingUp, Ruler, Home, Clock } from 'lucide-react';
+import { FileText, Users, Building, TrendingUp, Ruler, Clock } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, ColorMappedPieCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
@@ -57,7 +57,7 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     byStanding: countBy(filteredParcels, 'standing'),
     byPropertyCategory: countBy(filteredParcels, 'property_category'),
     byDeclaredUsage: countBy(normalizedParcels, 'declared_usage'),
-    byLeaseType: countBy(filteredParcels, 'lease_type'),
+    
     surfaceDist: surfaceDistribution(filteredParcels),
     byDecade: yearDecadeDistribution(filteredParcels, 'construction_year'),
   }), [filteredParcels, normalizedParcels]);
@@ -131,8 +131,6 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(charts.byDecade, 'bar-v', 'les décennies de construction')} />}
         {v('usage') && <ChartCard title={ct('usage', 'Usage déclaré')} data={charts.byDeclaredUsage} type="bar-h" colorIndex={5}
           insight={generateInsight(charts.byDeclaredUsage, 'bar-h', 'les usages déclarés')} crossVariables={cx('usage')} rawRecords={normalizedParcels} groupField="declared_usage" />}
-        {v('lease-type') && <ChartCard title={ct('lease-type', 'Type bail')} icon={Home} data={charts.byLeaseType} type="donut" colorIndex={9} hidden={charts.byLeaseType.length === 0}
-          insight={generateInsight(charts.byLeaseType, 'donut', 'les types de bail')} crossVariables={cx('lease-type')} rawRecords={filteredParcels} groupField="lease_type" />}
         {v('surface') && <ChartCard title={ct('surface', 'Superficie')} icon={Ruler} data={charts.surfaceDist} type="bar-v" colorIndex={9}
           insight={generateInsight(charts.surfaceDist, 'bar-v', 'les tranches de superficie')} crossVariables={cx('surface')} rawRecords={filteredParcels} groupField="area_sqm" />}
         {v('subdivided') && <ChartCard title={ct('subdivided', 'Loties vs Non loties')} data={subdividedData} type="pie" colorIndex={3} hidden={subdividedData.length === 0}
