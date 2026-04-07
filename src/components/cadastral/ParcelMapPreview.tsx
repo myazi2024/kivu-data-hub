@@ -1029,18 +1029,33 @@ export const ParcelMapPreview = ({
             fillOpacity: 0.3,
             weight: 2,
           }).addTo(map);
+          const label = constructionLabels[shape.linkedIndex ?? idx] || `Construction ${idx + 1}`;
           bldPolygon.bindPopup(`
             <div style="font-size: 12px;">
-              <strong style="color: #dc2626;">Construction ${idx + 1}</strong><br/>
+              <strong style="color: #dc2626;">${label}</strong><br/>
               <span>Surface: ${shape.areaSqm.toFixed(1)} m²</span><br/>
-              <span>Périmètre: ${shape.perimeterM.toFixed(1)} m</span><br/>
-              <button onclick="this.closest('.leaflet-popup').remove(); document.dispatchEvent(new CustomEvent('remove-building', {detail: '${shape.id}'}))" 
-                style="margin-top:4px; padding:2px 8px; background:#dc2626; color:white; border:none; border-radius:4px; cursor:pointer; font-size:11px;">
-                Supprimer
-              </button>
+              <span>Périmètre: ${shape.perimeterM.toFixed(1)} m</span>
             </div>
           `);
           buildingLayersRef.current.push(bldPolygon);
+          
+          // Marqueurs interactifs sur chaque sommet (double-clic = éditer GPS)
+          shape.vertices.forEach((v, vi) => {
+            const vertexMarker = L.circleMarker([v.lat, v.lng], {
+              radius: 5,
+              color: '#dc2626',
+              fillColor: '#ffffff',
+              fillOpacity: 1,
+              weight: 2,
+            }).addTo(map);
+            vertexMarker.on('dblclick', (e: any) => {
+              e.originalEvent?.stopPropagation();
+              e.originalEvent?.preventDefault();
+              setEditingBuildingVertex({ shapeId: shape.id, vertexIdx: vi });
+              setEditingBuildingVertexCoords({ lat: v.lat.toFixed(6), lng: v.lng.toFixed(6) });
+            });
+            buildingLayersRef.current.push(vertexMarker);
+          });
           
           // Afficher les dimensions des côtés de la construction
           shape.vertices.forEach((v, vi) => {
@@ -1117,6 +1132,25 @@ export const ParcelMapPreview = ({
               buildingLayersRef.current.push(dimLabel);
             }
           });
+          
+          // Afficher la distance de fermeture et la surface en temps réel
+          if (currentBuildingVerts.length >= 3) {
+            const firstV = currentBuildingVerts[0];
+            const lastV = currentBuildingVerts[currentBuildingVerts.length - 1];
+            const closingDist = calculateDistance(lastV.lat, lastV.lng, firstV.lat, firstV.lng);
+            const closingMidLat = (lastV.lat + firstV.lat) / 2;
+            const closingMidLng = (lastV.lng + firstV.lng) / 2;
+            const closingLabel = L.marker([closingMidLat, closingMidLng], {
+              icon: L.divIcon({
+                className: 'building-dim-closing',
+                html: `<div style="background:rgba(220,38,38,0.5);color:white;padding:1px 4px;border-radius:3px;font-size:9px;font-weight:600;white-space:nowrap;font-style:italic;">${closingDist.toFixed(1)}m</div>`,
+                iconSize: [0, 0],
+                iconAnchor: [0, 0],
+              }),
+              interactive: false,
+            }).addTo(map);
+            buildingLayersRef.current.push(closingLabel);
+          }
         }
       } catch (err) {
         console.error('ParcelMapPreview updateMap error:', err);
@@ -1134,16 +1168,13 @@ export const ParcelMapPreview = ({
     };
   }, [isMapReady, validCoords, roadSides, mapConfig, isGroupDragMode, isDrawingMode, selectedBorne, isDrawingBuilding, buildingVertices]);
 
-  // Écouter l'événement de suppression de construction
-  useEffect(() => {
-    const handler = (e: any) => {
-      const buildingId = e.detail;
-      if (onBuildingShapesChange) {
-        onBuildingShapesChange(buildingShapes.filter(s => s.id !== buildingId));
-      }
-    };
-    document.addEventListener('remove-building', handler);
-    return () => document.removeEventListener('remove-building', handler);
+  // Supprimer une construction par ID et recalculer les linkedIndex
+  const removeBuildingById = useCallback((buildingId: string) => {
+    if (!onBuildingShapesChange) return;
+    const remaining = buildingShapes
+      .filter(s => s.id !== buildingId)
+      .map((s, i) => ({ ...s, linkedIndex: i }));
+    onBuildingShapesChange(remaining);
   }, [buildingShapes, onBuildingShapesChange]);
 
   // Gérer le mode déplacement groupé
