@@ -10,6 +10,7 @@ export interface CadastralContributionData {
   // Informations générales
   propertyTitleType?: string;
   leaseType?: 'initial' | 'renewal';
+  leaseYears?: number;
   titleReferenceNumber?: string;
   titleIssueDate?: string;
   isTitleInCurrentOwnerName?: boolean;
@@ -242,6 +243,8 @@ export const useCadastralContribution = () => {
       parcel_type: data.parcelType,
       property_title_type: data.propertyTitleType,
       lease_type: data.leaseType,
+      lease_years: data.leaseYears || null,
+      is_title_in_current_owner_name: data.isTitleInCurrentOwnerName ?? null,
       title_reference_number: data.titleReferenceNumber,
       title_issue_date: data.titleIssueDate,
       current_owners_details: data.currentOwners && data.currentOwners.length > 0 
