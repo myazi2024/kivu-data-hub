@@ -1342,6 +1342,41 @@ const AdminCCCContributions: React.FC = () => {
                         ))}
                       </div>
                     </div>
+                   )}
+
+                  {selectedContribution.road_sides && Array.isArray(selectedContribution.road_sides) && selectedContribution.road_sides.length > 0 && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Voirie des côtés</Label>
+                      <div className="space-y-1 mt-1">
+                        {selectedContribution.road_sides.map((side: any, idx: number) => (
+                          <div key={idx} className="p-1.5 bg-secondary rounded text-xs md:text-sm">
+                            <p><strong>{side.name}:</strong> {side.bordersRoad ? '🛣️ Borde une route' : '🚫 Pas de route'}{side.hasEntrance ? ' — 🚪 Entrée' : ''}</p>
+                            {side.bordersRoad && <p className="text-muted-foreground ml-4">{side.roadType || ''} {side.roadName ? `- ${side.roadName}` : ''} {side.roadWidth ? `(${side.roadWidth}m)` : ''}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedContribution.servitude_data && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Servitude de passage</Label>
+                      <p className="text-sm">{selectedContribution.servitude_data.hasServitude ? `Oui — Largeur: ${selectedContribution.servitude_data.width || '?'}m` : 'Non'}</p>
+                    </div>
+                  )}
+
+                  {selectedContribution.building_shapes && Array.isArray(selectedContribution.building_shapes) && selectedContribution.building_shapes.length > 0 && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Constructions tracées ({selectedContribution.building_shapes.length})</Label>
+                      <div className="space-y-1 mt-1">
+                        {selectedContribution.building_shapes.map((shape: any, idx: number) => (
+                          <div key={idx} className="p-1.5 bg-secondary rounded text-xs md:text-sm">
+                            <p><strong>{shape.label || `Construction ${idx + 1}`}</strong> — {shape.areaSqm?.toFixed(1) || '?'} m² — H: {shape.heightM || '?'}m</p>
+                            <p className="text-muted-foreground">{shape.sides?.length || '?'} côtés, périmètre: {shape.perimeterM?.toFixed(1) || '?'}m</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </TabsContent>
 
@@ -1402,14 +1437,17 @@ const AdminCCCContributions: React.FC = () => {
                     <div>
                       <Label className="text-xs text-muted-foreground">Historique de propriété</Label>
                       <div className="space-y-2 mt-1">
-                        {selectedContribution.ownership_history.map((owner: any, idx: number) => (
+                        {selectedContribution.ownership_history.map((owner: any, idx: number) => {
+                          const rr = (obj: any, ...keys: string[]) => { for (const k of keys) { if (obj?.[k] !== undefined && obj[k] !== null) return obj[k]; } return null; };
+                          return (
                           <div key={idx} className="p-2 bg-secondary rounded text-sm">
-                            <p><strong>Propriétaire:</strong> {owner.ownerName}</p>
-                            <p><strong>Statut:</strong> {owner.legalStatus}</p>
-                            <p><strong>Période:</strong> {new Date(owner.startDate).toLocaleDateString('fr-FR')} - {owner.endDate ? new Date(owner.endDate).toLocaleDateString('fr-FR') : 'Actuel'}</p>
-                            {owner.mutationType && <p><strong>Type de mutation:</strong> {owner.mutationType}</p>}
+                            <p><strong>Propriétaire:</strong> {rr(owner, 'owner_name', 'ownerName') || 'Non renseigné'}</p>
+                            <p><strong>Statut:</strong> {rr(owner, 'legal_status', 'legalStatus') || 'Non renseigné'}</p>
+                            <p><strong>Période:</strong> {new Date(rr(owner, 'ownership_start_date', 'startDate')).toLocaleDateString('fr-FR')} - {rr(owner, 'ownership_end_date', 'endDate') ? new Date(rr(owner, 'ownership_end_date', 'endDate')).toLocaleDateString('fr-FR') : 'Actuel'}</p>
+                            {rr(owner, 'mutation_type', 'mutationType') && <p><strong>Type de mutation:</strong> {rr(owner, 'mutation_type', 'mutationType')}</p>}
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   ) : (
