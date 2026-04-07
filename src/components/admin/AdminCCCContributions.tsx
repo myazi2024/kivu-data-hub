@@ -667,21 +667,24 @@ const AdminCCCContributions: React.FC = () => {
 
   const calculateCompleteness = (contribution: Contribution) => {
     let filled = 0;
-    const total = 10; // Total des champs vérifiés
+    const total = 16;
 
-    // Champs obligatoires (alignés avec validate_contribution_completeness RPC)
     if (contribution.property_title_type) filled++;
     if (contribution.current_owner_name || contribution.current_owners_details) filled++;
     if (contribution.area_sqm && contribution.area_sqm > 0) filled++;
     if (contribution.province) filled++;
-    
-    // Champs recommandés
+    if (contribution.property_category) filled++;
+    if (contribution.construction_type) filled++;
     if (contribution.ownership_history && Array.isArray(contribution.ownership_history) && contribution.ownership_history.length > 0) filled++;
     if (contribution.boundary_history && Array.isArray(contribution.boundary_history) && contribution.boundary_history.length > 0) filled++;
     if (contribution.tax_history && Array.isArray(contribution.tax_history) && contribution.tax_history.length > 0) filled++;
     if (contribution.gps_coordinates && Array.isArray(contribution.gps_coordinates) && contribution.gps_coordinates.length > 0) filled++;
     if (contribution.owner_document_url) filled++;
     if (contribution.property_title_document_url) filled++;
+    if (contribution.building_shapes && Array.isArray(contribution.building_shapes) && contribution.building_shapes.length > 0) filled++;
+    if (contribution.road_sides && Array.isArray(contribution.road_sides) && contribution.road_sides.length > 0) filled++;
+    if (contribution.has_dispute !== null) filled++;
+    if (contribution.whatsapp_number) filled++;
 
     return Math.round((filled / total) * 100);
   };
@@ -949,8 +952,9 @@ const AdminCCCContributions: React.FC = () => {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-5 h-8 md:h-10">
+            <TabsList className="grid w-full grid-cols-6 h-8 md:h-10">
               <TabsTrigger value="pending" className="text-xs md:text-sm px-1 md:px-3">Attente</TabsTrigger>
+              <TabsTrigger value="returned" className="text-xs md:text-sm px-1 md:px-3">Renvoyés</TabsTrigger>
               <TabsTrigger value="approved" className="text-xs md:text-sm px-1 md:px-3">Approuvés</TabsTrigger>
               <TabsTrigger value="rejected" className="text-xs md:text-sm px-1 md:px-3">Rejetés</TabsTrigger>
               <TabsTrigger value="suspicious" className="text-xs md:text-sm px-1 md:px-3">Suspects</TabsTrigger>
