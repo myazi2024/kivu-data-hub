@@ -597,7 +597,8 @@ export const ParcelMapPreview = ({
     // Vérifier si le point est dans la parcelle
     const latLngs = validCoords.map(c => [parseFloat(c.lat), parseFloat(c.lng)] as [number, number]);
     if (!isPointInPolygon([lat, lng], latLngs)) {
-      return; // Le point n'est pas dans la parcelle
+      toast.error("Cliquez à l'intérieur de la parcelle pour placer la construction");
+      return;
     }
     
     const newShape: BuildingShape = {
@@ -612,13 +613,17 @@ export const ParcelMapPreview = ({
       onBuildingShapesChange(updatedShapes);
     }
     
-    // Désactiver le mode ajout après l'ajout
+    // Désactiver le mode ajout et réactiver les interactions carte
     setIsAddingBuilding(false);
     setSelectedShapeType(null);
     const map = mapInstanceRef.current;
     if (map) {
       map.getContainer().dataset.addingBuilding = 'false';
       map.getContainer().style.cursor = 'grab';
+      map.dragging.enable();
+      map.scrollWheelZoom.enable();
+      map.doubleClickZoom.enable();
+      map.touchZoom.enable();
     }
   }, [selectedShapeType, isParcelComplete, validCoords, buildingShapes, onBuildingShapesChange]);
 
@@ -1472,16 +1477,47 @@ export const ParcelMapPreview = ({
   }, []);
 
   // Toggle mode ajout construction
-  const startAddingBuilding = useCallback((shapeType: BuildingShape['type']) => {
-    setSelectedShapeType(shapeType);
-    setIsAddingBuilding(true);
+  const cancelAddingBuilding = useCallback(() => {
+    setSelectedShapeType(null);
+    setIsAddingBuilding(false);
     setShowShapePicker(false);
     const map = mapInstanceRef.current;
     if (map) {
+      map.getContainer().dataset.addingBuilding = 'false';
+      map.getContainer().style.cursor = 'grab';
+      map.dragging.enable();
+      map.scrollWheelZoom.enable();
+      map.doubleClickZoom.enable();
+      map.touchZoom.enable();
+    }
+  }, []);
+
+  const startAddingBuilding = useCallback((shapeType: BuildingShape['type']) => {
+    // Si déjà en mode construction avec le même type, annuler
+    if (isAddingBuilding && selectedShapeType === shapeType) {
+      cancelAddingBuilding();
+      return;
+    }
+
+    setSelectedShapeType(shapeType);
+    setIsAddingBuilding(true);
+    setShowShapePicker(false);
+
+    // Désactiver le mode dessin s'il est actif
+    setIsDrawingMode(false);
+
+    const map = mapInstanceRef.current;
+    if (map) {
+      // Désactiver les interactions carte pour capturer les clics
+      map.dragging.disable();
+      map.scrollWheelZoom.disable();
+      map.doubleClickZoom.disable();
+      map.touchZoom.disable();
+      map.getContainer().dataset.drawingMode = 'false';
       map.getContainer().dataset.addingBuilding = 'true';
       map.getContainer().style.cursor = 'crosshair';
     }
-  }, []);
+  }, [isAddingBuilding, selectedShapeType, cancelAddingBuilding]);
 
   // Supprimer dernière construction
   const removeLastBuilding = useCallback(() => {
