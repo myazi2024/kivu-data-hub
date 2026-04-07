@@ -1,32 +1,52 @@
 
 
-# Corriger le mode "Ajouter une construction" dans le croquis parcelle
+# Refonte : Tracer les constructions comme le croquis parcelle
 
-## Problème identifié
+## Concept
 
-Quand l'utilisateur clique sur "Ajouter une construction" puis choisit une forme, le mode construction s'active visuellement (curseur crosshair, badge rouge) mais **les clics sur la carte ne dessinent rien**. Deux causes :
+Remplacer le système actuel (choix d'une forme prédéfinie → clic pour placer au centre avec taille fixe 5m) par un système de **tracé par bornes** identique à celui de la parcelle. L'utilisateur place des points (sommets) sur la carte pour dessiner le contour de la construction. Les distances entre sommets sont calculées automatiquement, donnant les mesures réelles de la construction.
 
-1. **Le dragging de la carte n'est pas désactivé** : `startAddingBuilding` (ligne 1475) ne désactive ni le dragging, ni le scrollWheelZoom, ni le touchZoom. Résultat : sur mobile/tactile, le tap est interprété comme un drag plutôt qu'un clic. Même sur desktop, un micro-mouvement de souris transforme le clic en pan.
+## Nouvelle interface utilisateur
 
-2. **Le mode dessin n'est pas explicitement désactivé** : Si `drawingMode` est encore `'true'` dans le dataset (cas rare mais possible), le handler de clic (ligne 451) route vers `addMarkerCallbackRef` au lieu de `addBuildingCallbackRef`.
+1. Cliquer sur le bouton **Building2** → active un mode "Tracé construction" (similaire au mode dessin parcelle)
+2. Chaque clic sur la carte ajoute un sommet de la construction (minimum 3 pour former un polygone)
+3. Le polygone se ferme automatiquement et affiche les dimensions de chaque côté (comme `parcelSides`)
+4. Un bouton **Valider** confirme la construction, un bouton **Annuler** supprime le tracé en cours
+5. Possibilité d'ajouter plusieurs constructions (chacune est un polygone indépendant)
+6. Bouton pour supprimer une construction spécifique
 
-3. **Pas de feedback en cas de clic hors parcelle** : `addBuildingShape` (ligne 599) fait un `return` silencieux si le clic est hors du polygone. L'utilisateur ne sait pas pourquoi rien ne se passe.
+## Nouveau modèle de données
 
-## Corrections
+```typescript
+// Remplace l'ancien BuildingShape
+interface BuildingShape {
+  id: string;
+  vertices: { lat: number; lng: number }[];  // sommets GPS
+  sides: { name: string; length: string }[];  // dimensions calculées
+  areaSqm: number;                            // surface calculée
+  perimeterM: number;                         // périmètre calculé
+}
+```
+
+Rétro-compatible : l'ancien format (center + type + size) sera ignoré au chargement si `vertices` est absent.
+
+## Modifications techniques
 
 **Fichier** : `src/components/cadastral/ParcelMapPreview.tsx`
 
-### 1. `startAddingBuilding` — Désactiver les interactions carte (ligne 1475)
-Ajouter la désactivation du dragging, scrollWheelZoom, doubleClickZoom et touchZoom (comme `toggleDrawingMode` le fait). Également forcer `dataset.drawingMode = 'false'` et `setIsDrawingMode(false)` pour éviter les conflits.
+1. **Remplacer `BuildingShape` interface** — nouveau modèle avec `vertices[]` au lieu de `center + type + size`
+2. **Supprimer** `SHAPE_OPTIONS`, `drawBuildingShape`, `selectedShapeType`, `showShapePicker` et tout le Popover de choix de forme
+3. **Ajouter un état `buildingVertices`** — tableau temporaire des sommets en cours de tracé (comme `coordinates` pour la parcelle)
+4. **Nouveau mode `isDrawingBuilding`** — quand actif, les clics ajoutent des sommets au `buildingVertices` (avec vérification `isPointInPolygon` pour rester dans la parcelle)
+5. **Rendu du tracé en cours** — afficher les sommets placés + lignes entre eux + dimensions de chaque segment en temps réel
+6. **Bouton "Valider construction"** — ferme le polygone, calcule surface/périmètre/côtés via Haversine, crée un `BuildingShape` et l'ajoute à `buildingShapes[]`
+7. **Bouton "Annuler"** — vide `buildingVertices` et quitte le mode
+8. **Rendu des constructions validées** — dessiner chaque `BuildingShape` comme un `L.polygon` rouge avec popup montrant surface et périmètre
+9. **Suppression individuelle** — clic sur une construction validée → popup avec bouton "Supprimer"
 
-### 2. `addBuildingShape` — Réactiver les interactions après placement (ligne 614)
-Après le placement de la construction, réactiver dragging, scrollWheelZoom, doubleClickZoom et touchZoom.
+**Fichier** : `src/components/cadastral/ParcelSketchSVG.tsx`
 
-### 3. `addBuildingShape` — Ajouter un feedback visuel si clic hors parcelle (ligne 599)
-Au lieu du `return` silencieux, afficher un toast ou une alerte éphémère pour informer l'utilisateur qu'il doit cliquer à l'intérieur de la parcelle.
+10. **Adapter le rendu SVG** — dessiner les constructions comme des polygones à partir de `vertices[]` au lieu de formes prédéfinies centrées
 
-### 4. Bouton d'annulation du mode construction
-Actuellement, il n'y a pas de moyen d'annuler le mode construction une fois activé (pas de bouton pour sortir). Ajouter une logique pour que re-cliquer sur le bouton Building2 annule le mode et réactive les interactions carte.
-
-**Impact** : ~30 lignes modifiées/ajoutées dans 1 fichier.
+**Impact** : ~200 lignes modifiées/ajoutées dans 2 fichiers. Le modèle de données reste compatible avec le stockage existant (localStorage + Supabase JSONB).
 
