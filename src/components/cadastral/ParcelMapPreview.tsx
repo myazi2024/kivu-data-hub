@@ -43,12 +43,17 @@ interface ParcelSide {
   length: string;
 }
 
-// Type pour les formes géométriques (constructions)
+// Type pour les formes géométriques (constructions) — tracé par sommets
 interface BuildingShape {
   id: string;
-  type: 'circle' | 'square' | 'rectangle' | 'trapeze' | 'polygon';
-  center: { lat: number; lng: number };
-  size: number; // en mètres
+  vertices: { lat: number; lng: number }[];
+  sides: { name: string; length: string }[];
+  areaSqm: number;
+  perimeterM: number;
+  // Rétro-compatibilité : anciens champs ignorés au rendu
+  type?: string;
+  center?: { lat: number; lng: number };
+  size?: number;
   rotation?: number;
 }
 
@@ -69,13 +74,23 @@ interface ParcelMapPreviewProps {
   onServitudeChange?: (servitude: ServitudeInfo) => void;
 }
 
-const SHAPE_OPTIONS = [
-  { type: 'circle' as const, label: 'Cercle', icon: Circle },
-  { type: 'square' as const, label: 'Carré', icon: Square },
-  { type: 'rectangle' as const, label: 'Rectangle', icon: Square },
-  { type: 'trapeze' as const, label: 'Trapèze', icon: Triangle },
-  { type: 'polygon' as const, label: 'Polygone', icon: Hexagon },
-];
+// Calculer la surface d'un polygone à partir de sommets GPS (Shoelace formula en mètres)
+const calculateBuildingArea = (vertices: { lat: number; lng: number }[]): number => {
+  if (vertices.length < 3) return 0;
+  const avgLat = vertices.reduce((s, v) => s + v.lat, 0) / vertices.length;
+  const metersPerDegLat = 111320;
+  const metersPerDegLng = 111320 * Math.cos((avgLat * Math.PI) / 180);
+  let area = 0;
+  for (let i = 0; i < vertices.length; i++) {
+    const j = (i + 1) % vertices.length;
+    const xi = vertices[i].lng * metersPerDegLng;
+    const yi = vertices[i].lat * metersPerDegLat;
+    const xj = vertices[j].lng * metersPerDegLng;
+    const yj = vertices[j].lat * metersPerDegLat;
+    area += xi * yj - xj * yi;
+  }
+  return Math.abs(area / 2);
+};
 
 // Calculer la distance entre 2 points GPS (Haversine)
 const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
