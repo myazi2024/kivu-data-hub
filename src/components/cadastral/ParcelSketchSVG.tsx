@@ -298,22 +298,58 @@ const ParcelSketchSVG: React.FC<ParcelSketchSVGProps> = ({
           </g>
         ))}
 
-        {/* ─── Constructions ─── */}
+        {/* ─── Constructions (polygones à partir de vertices) ─── */}
         {buildingShapes.map((shape, i) => {
-          const angle = (i / buildingShapes.length) * Math.PI * 2 - Math.PI / 2;
-          const radius = 28;
-          const sx = cx + Math.cos(angle) * radius;
-          const sy = cy + Math.sin(angle) * radius;
-          const sz = Math.min(shape.size * 2, 30);
-          const label = SHAPE_LABELS[shape.type] || '?';
+          if (!shape.vertices || shape.vertices.length < 3) return null;
+          
+          // Projeter les sommets de la construction dans l'espace SVG
+          const lats = validCoords.map(c => c.lat);
+          const lngs = validCoords.map(c => c.lng);
+          const minLat = Math.min(...lats);
+          const maxLat = Math.max(...lats);
+          const minLng = Math.min(...lngs);
+          const maxLng = Math.max(...lngs);
+          
+          const padding = 80;
+          const usableW = SVG_W - padding * 2;
+          const usableH = height - padding * 2;
+          const rangeX = (maxLng - minLng) || 0.0001;
+          const rangeY = (maxLat - minLat) || 0.0001;
+          const scale = Math.min(usableW / rangeX, usableH / rangeY);
+          
+          const bldPoints = shape.vertices.map(v => ({
+            x: padding + (v.lng - minLng) * scale + (usableW - rangeX * scale) / 2,
+            y: padding + (maxLat - v.lat) * scale + (usableH - rangeY * scale) / 2,
+          }));
+          
+          const bldPath = bldPoints.map((p, j) => `${j === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ') + ' Z';
+          
           return (
-            <g key={`bld-${i}`} transform={`translate(${sx}, ${sy})${shape.rotation ? ` rotate(${shape.rotation})` : ''}`}>
-              {shape.type === 'circle' ? (
-                <circle cx="0" cy="0" r={sz / 2} fill="hsl(var(--accent))" stroke="hsl(var(--accent-foreground))" strokeWidth="1" opacity="0.7" />
-              ) : (
-                <rect x={-sz / 2} y={-sz / 2} width={sz} height={sz} rx="2" fill="hsl(var(--accent))" stroke="hsl(var(--accent-foreground))" strokeWidth="1" opacity="0.7" />
+            <g key={`bld-${i}`}>
+              <path d={bldPath} fill="hsl(var(--destructive))" fillOpacity="0.2" stroke="hsl(var(--destructive))" strokeWidth="1.5" strokeDasharray="4 2" />
+              {/* Dimensions des côtés de la construction */}
+              {bldPoints.map((p, j) => {
+                const nextP = bldPoints[(j + 1) % bldPoints.length];
+                const side = shape.sides?.[j];
+                if (!side) return null;
+                const mx = (p.x + nextP.x) / 2;
+                const my = (p.y + nextP.y) / 2;
+                return (
+                  <text key={`bld-dim-${i}-${j}`} x={mx} y={my - 4} textAnchor="middle" fontSize="7" fontWeight="600" fill="hsl(var(--destructive))">
+                    {side.length}m
+                  </text>
+                );
+              })}
+              {/* Label surface au centre */}
+              {shape.areaSqm && (
+                <text
+                  x={bldPoints.reduce((s, p) => s + p.x, 0) / bldPoints.length}
+                  y={bldPoints.reduce((s, p) => s + p.y, 0) / bldPoints.length + 4}
+                  textAnchor="middle" fontSize="8" fontWeight="700" fill="hsl(var(--destructive))"
+                >
+                  {shape.areaSqm.toFixed(1)}m²
+                </text>
               )}
-              <text x="0" y="4" textAnchor="middle" fontSize="9" fontWeight="600" fill="hsl(var(--accent-foreground))">{label}</text>
             </g>
           );
         })}
