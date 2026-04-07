@@ -1496,16 +1496,33 @@ const AdminCCCContributions: React.FC = () => {
                     <div className="mt-2 md:mt-4">
                       <Label className="text-xs text-muted-foreground">Historique hypothécaire</Label>
                       <div className="space-y-1 md:space-y-2 mt-1">
-                        {selectedContribution.mortgage_history.map((mortgage: any, idx: number) => (
+                        {selectedContribution.mortgage_history.map((mortgage: any, idx: number) => {
+                          const rr = (obj: any, ...keys: string[]) => { for (const k of keys) { if (obj?.[k] !== undefined && obj[k] !== null) return obj[k]; } return null; };
+                          return (
                           <div key={idx} className="p-1.5 md:p-2 bg-secondary rounded text-xs md:text-sm">
-                            <p><strong>Montant:</strong> ${mortgage.mortgageAmountUsd}</p>
-                            <p><strong>Durée:</strong> {mortgage.durationMonths} mois</p>
-                            <p><strong>Créancier:</strong> {mortgage.creditorName} ({mortgage.creditorType})</p>
-                            <p><strong>Date:</strong> {new Date(mortgage.contractDate).toLocaleDateString('fr-FR')}</p>
-                            <p><strong>Statut:</strong> {mortgage.mortgageStatus}</p>
+                            <p><strong>Montant:</strong> ${rr(mortgage, 'mortgage_amount_usd', 'mortgageAmountUsd') || 0}</p>
+                            <p><strong>Durée:</strong> {rr(mortgage, 'duration_months', 'durationMonths') || 0} mois</p>
+                            <p><strong>Créancier:</strong> {rr(mortgage, 'creditor_name', 'creditorName') || 'Non renseigné'} ({rr(mortgage, 'creditor_type', 'creditorType') || ''})</p>
+                            <p><strong>Date:</strong> {new Date(rr(mortgage, 'contract_date', 'contractDate') || '').toLocaleDateString('fr-FR')}</p>
+                            <p><strong>Statut:</strong> {rr(mortgage, 'mortgage_status', 'mortgageStatus') || 'Non renseigné'}</p>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
+                    </div>
+                  )}
+
+                  {selectedContribution.has_dispute !== null && (
+                    <div className="mt-2 md:mt-4">
+                      <Label className="text-xs text-muted-foreground">Litige foncier</Label>
+                      <p className="text-sm">{selectedContribution.has_dispute ? '⚠️ Oui — Litige déclaré' : '✅ Non'}</p>
+                      {selectedContribution.has_dispute && selectedContribution.dispute_data && (
+                        <div className="p-2 bg-secondary rounded text-xs md:text-sm mt-1">
+                          {selectedContribution.dispute_data.disputeType && <p><strong>Type:</strong> {selectedContribution.dispute_data.disputeType}</p>}
+                          {selectedContribution.dispute_data.disputeNature && <p><strong>Nature:</strong> {selectedContribution.dispute_data.disputeNature}</p>}
+                          {selectedContribution.dispute_data.description && <p><strong>Description:</strong> {selectedContribution.dispute_data.description}</p>}
+                        </div>
+                      )}
                     </div>
                   )}
                 </TabsContent>
