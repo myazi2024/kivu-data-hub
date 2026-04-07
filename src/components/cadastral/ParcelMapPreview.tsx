@@ -123,6 +123,7 @@ export const ParcelMapPreview = ({
   onServitudeChange,
   isTerrainNu = false,
   requiredBuildingCount = 0,
+  constructionLabels = [],
 }: ParcelMapPreviewProps) => {
   const { isTestRoute } = useTestEnvironment();
   const mapRef = useRef<HTMLDivElement>(null);
