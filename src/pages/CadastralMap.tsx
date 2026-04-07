@@ -987,7 +987,7 @@ const CadastralMap = () => {
           }`}
           style={{ transition: 'top 0.3s ease, transform 0.3s ease' }}
         >
-          <div className="bg-background/95 backdrop-blur-md rounded-2xl shadow-[0_10px_40px_-8px_rgba(0,0,0,0.3),0_4px_16px_-4px_rgba(0,0,0,0.2)] border border-border/50 overflow-hidden">
+          <div className="bg-background/95 backdrop-blur-md rounded-2xl shadow-[0_10px_40px_-8px_rgba(0,0,0,0.9),0_4px_16px_-4px_rgba(0,0,0,0.6)] border border-border/50 overflow-hidden">
             <div className={`${selectedParcel && isMobile ? 'p-2' : 'p-2.5'}`}>
               {/* Barre de recherche */}
               <div className="flex items-center gap-2">
@@ -1322,7 +1322,7 @@ const CadastralMap = () => {
         {/* Panneau d'information de la parcelle sélectionnée - Design moderne */}
         {selectedParcel && (
           <div className={`absolute ${isMobile ? 'bottom-2 left-3 right-3 max-w-[340px] mx-auto' : 'bottom-4 right-4 w-80'} z-[1000]`}>
-            <div className="bg-background/98 backdrop-blur-xl rounded-3xl shadow-[0_8px_40px_-12px_hsl(var(--primary)/0.75),0_4px_16px_-4px_rgba(0,0,0,0.45)] border border-border/40 overflow-hidden">
+            <div className="bg-background/98 backdrop-blur-xl rounded-3xl shadow-[0_8px_40px_-12px_hsl(var(--primary)/1),0_4px_16px_-4px_rgba(0,0,0,1)] border border-border/40 overflow-hidden">
               {/* Expandable services panel — expands upward within the card */}
               <ParcelActionsDropdown
                 parcelNumber={selectedParcel.parcel_number}
