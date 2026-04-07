@@ -1576,13 +1576,14 @@ export const ParcelMapPreview = ({
       sides,
       areaSqm: Math.round(areaSqm * 100) / 100,
       perimeterM: Math.round(perimeter * 100) / 100,
-      linkedIndex: buildingShapes.length, // 0 = principale, 1+ = additionnelles
+      linkedIndex: buildingShapes.length,
     };
     
+    const label = constructionLabels[newShape.linkedIndex] || `Construction ${newShape.linkedIndex + 1}`;
     onBuildingShapesChange([...buildingShapes, newShape]);
     cancelDrawingBuilding();
-    toast.success(`Construction ajoutée: ${newShape.areaSqm} m², ${newShape.perimeterM} m de périmètre`);
-  }, [buildingVertices, buildingShapes, onBuildingShapesChange, cancelDrawingBuilding]);
+    toast.success(`${label} ajoutée: ${newShape.areaSqm} m², ${newShape.perimeterM} m de périmètre`);
+  }, [buildingVertices, buildingShapes, onBuildingShapesChange, cancelDrawingBuilding, constructionLabels]);
 
   // Supprimer le dernier sommet en cours de tracé
   const removeLastBuildingVertex = useCallback(() => {
@@ -1617,11 +1618,21 @@ export const ParcelMapPreview = ({
       return;
     }
 
+    if (isDrawingBuilding) {
+      map.dragging.disable();
+      map.scrollWheelZoom.disable();
+      map.doubleClickZoom.disable();
+      map.touchZoom.disable();
+      container.dataset.addingBuilding = 'true';
+      container.style.cursor = 'crosshair';
+      return;
+    }
+
     map.dragging.enable();
     map.scrollWheelZoom.enable();
     map.doubleClickZoom.enable();
     map.touchZoom.enable();
-    container.style.cursor = isDrawingBuilding ? 'crosshair' : 'grab';
+    container.style.cursor = 'grab';
   }, [isDrawingMode, isDrawingBuilding]);
 
   const nudgeSelectedMarker = useCallback((direction: 'N' | 'S' | 'E' | 'W') => {
