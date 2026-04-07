@@ -1171,13 +1171,28 @@ export const ParcelMapPreview = ({
     };
   }, [isMapReady, validCoords, roadSides, mapConfig, isGroupDragMode, isDrawingMode, selectedBorne, isDrawingBuilding, buildingVertices]);
 
-  // Supprimer une construction par ID et recalculer les linkedIndex
+  // Supprimer une construction par ID (préserve les linkedIndex des autres)
   const removeBuildingById = useCallback((buildingId: string) => {
     if (!onBuildingShapesChange) return;
-    const remaining = buildingShapes
-      .filter(s => s.id !== buildingId)
-      .map((s, i) => ({ ...s, linkedIndex: i }));
+    const remaining = buildingShapes.filter(s => s.id !== buildingId);
     onBuildingShapesChange(remaining);
+  }, [buildingShapes, onBuildingShapesChange]);
+
+  // Réattribuer le linkedIndex d'une construction tracée
+  const reassignBuildingLinkedIndex = useCallback((buildingId: string, newLinkedIndex: number) => {
+    if (!onBuildingShapesChange) return;
+    // Trouver si une autre construction a déjà ce linkedIndex → permuter
+    const updated = buildingShapes.map(s => {
+      if (s.id === buildingId) return { ...s, linkedIndex: newLinkedIndex };
+      if (s.linkedIndex === newLinkedIndex) {
+        // Permuter : donner l'ancien linkedIndex de la construction qu'on réattribue
+        const oldLinkedIndex = buildingShapes.find(b => b.id === buildingId)?.linkedIndex;
+        return { ...s, linkedIndex: oldLinkedIndex ?? s.linkedIndex };
+      }
+      return s;
+    });
+    onBuildingShapesChange(updated);
+    toast.success('Attribution mise à jour');
   }, [buildingShapes, onBuildingShapesChange]);
 
   // Gérer le mode déplacement groupé
