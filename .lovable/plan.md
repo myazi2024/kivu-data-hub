@@ -1,96 +1,82 @@
 
+# Audit détaillé — Mode Test (Admin > Système)
 
-# Audit — Config Graphiques (Admin Analytics)
+## A. Architecture — Constat positif
 
-## A. Graphiques enregistrés dans le registre mais NON rendus dans les blocs
+Le mode test repose sur une architecture solide :
+- ✅ Isolation par préfixe `TEST-` dans les numéros de parcelle/référence
+- ✅ Routes dédiées `/test/*` via `TestEnvironmentProvider`
+- ✅ Helper `applyTestFilter` appliqué dans 13 composants pour séparer test/production
+- ✅ RPC côté serveur (`cleanup_all_test_data`, `count_test_data_stats`) pour éviter les limites client
+- ✅ Rollback en cas d'échec pendant la génération (FK-safe)
+- ✅ Batching par 50 pour les insertions massives
+- ✅ Progression pas-à-pas avec UI (`GenerationProgress`)
+- ✅ Cron quotidien configuré (`cleanup-test-data-daily` à 3h)
+- ✅ Audit log systématique (`TEST_MODE_ENABLED`, `TEST_DATA_GENERATED`)
 
-Le registre `ANALYTICS_TABS_REGISTRY` déclare des `item_key` que l'admin affiche et permet de configurer, mais qui ne sont **jamais utilisés** par le bloc correspondant (pas de `v('key')` dans le JSX). L'admin donne l'illusion que ces graphiques existent.
+## B. Problèmes identifiés
 
-| # | Onglet | `item_key` dans registre | Rendu dans bloc ? | Impact |
-|---|--------|--------------------------|-------------------|--------|
-| 1 | `taxes` | `tax-type` | NON | Le registre déclare un graphique "Type de taxe" mais `TaxesBlock` ne contient aucun `v('tax-type')`. Le toggle admin est **fictif**. |
-| 2 | `taxes` | `fiscal-zone` | NON | "Zone fiscale" déclaré mais jamais rendu. Toggle fictif. |
-| 3 | `taxes` | `penalties` | NON | "Avec/sans pénalités" déclaré mais jamais rendu. |
-| 4 | `taxes` | `exemptions` | NON | "Exonérations" déclaré mais jamais rendu. |
-| 5 | `taxes` | `province` | NON | "Par province" déclaré mais jamais rendu (le bloc utilise `GeoCharts` via `v('geo')` qui est un composant distinct). |
-| 6 | `building-permits` | `estimated-cost` | A vérifier | Déclaré dans registre mais potentiellement pas rendu. |
-| 7 | `building-permits` | `roofing-type` | A vérifier | Idem. |
-| 8 | `building-permits` | `water-supply` | A vérifier | Idem. |
-| 9 | `building-permits` | `electricity` | A vérifier | Idem. |
+### B1. Données analytics NON filtrées en mode test
 
-## B. Variables croisées manquantes dans `crossVariables.ts`
+| # | Problème | Impact |
+|---|----------|--------|
+| 1 | **`useLandDataAnalytics.tsx` ne filtre PAS les données TEST-** — Le hook `fetchAll` charge toutes les lignes sans `applyTestFilter`. Les 7 020 parcelles de test apparaissent dans les graphiques de production (onglet "Données foncières"). | **Critique** — Pollution des analytics en production |
+| 2 | **`DRCInteractiveMap` ne filtre pas les données TEST-** — La carte RDC en production affiche les données test (les tooltips province incluent les compteurs TEST-). | **Élevé** — Fausse l'analyse géographique |
 
-Les graphiques suivants sont dans le registre et rendus dans les blocs, mais n'ont **aucune entrée** dans `CROSS_VARIABLE_REGISTRY`, empêchant tout croisement :
+### B2. Nettoyage automatique — Fonctionnalité fictive
 
-| # | Onglet | `item_key` | Cross-variables ? |
-|---|--------|------------|-------------------|
-| 10 | `taxes` | `tax-type` | NON (même le graphique n'est pas rendu — cf. point 1) |
-| 11 | `taxes` | `fiscal-zone` | NON |
-| 12 | `taxes` | `penalties` | NON |
-| 13 | `taxes` | `exemptions` | NON |
-| 14 | `mortgages` | `request-type` | NON — déclaré "Enreg. vs Radiation" mais absent de `crossVariables.ts` |
-| 15 | `mortgages` | `request-status` | NON — "Statut demandes" absent |
-| 16 | `building-permits` | `estimated-cost` | NON |
-| 17 | `building-permits` | `roofing-type` | NON |
-| 18 | `building-permits` | `water-supply` | NON |
-| 19 | `building-permits` | `electricity` | NON |
-| 20 | `building-permits` | `payment` | NON |
+| # | Problème | Impact |
+|---|----------|--------|
+| 3 | **Le cron appelle une Edge Function `cleanup-test-data`** mais utilise la clé **anon** (`role: anon`) dans le header Authorization. L'Edge Function exige un JWT admin (vérification rôle). Le cron **ne peut pas fonctionner** car la clé anon n'est pas admin. | **Critique** — Le nettoyage automatique est inactif |
+| 4 | **Le paramètre `test_data_retention_days` est affiché et configurable mais jamais utilisé** — Ni le cron, ni l'Edge Function, ni le RPC `cleanup_all_test_data` ne prennent en compte la durée de rétention. Toutes les données TEST- sont supprimées à chaque exécution. | **Moyen** — Paramètre fictif |
 
-## C. Incohérences logiques entre registre et blocs
+### B3. Générateur de données — Lacunes d'alignement
 
-| # | Problème |
-|---|----------|
-| 21 | **`display_order` dupliqué** dans `title-requests` : `construction-materials` et `revenue-trend` ont tous les deux `display_order: 13`. `standing` et `processing-comparison` ont tous les deux `display_order: 14`. Cela rend l'ordre non déterministe dans l'admin. |
-| 22 | **Mode Filtres : `_global` et `rdc-map` absents** — `TAB_FILTER_DEFAULTS` ne contient pas d'entrée pour `_global` ni `rdc-map`, donc ces onglets n'apparaissent pas dans le mode Filtres. Cohérent mais pas documenté. |
-| 23 | **Mode Croisements : l'admin n'affiche pas les onglets sans cross-variables** — `_global`, `rdc-map` et `invoices` n'apparaissent pas dans la liste des onglets croisables si on y est mais n'ont pas de graphique croisable. `invoices` a des entrées mais elles ne couvrent pas tous les graphiques. |
-| 24 | **Bouton "Sauvegarder filtres" dans FilterManager est indépendant** — Le mode Filtres a son propre bouton "Sauvegarder filtres" (ligne 331) qui sauvegarde uniquement les filtres. Mais le bouton global "Sauvegarder tout" (ligne 1001) sauvegarde aussi les filtres. Pas d'incohérence fonctionnelle mais la duplication peut prêter à confusion. |
-| 25 | **`handleSave` ne sauvegarde qu'un onglet** (ligne 819-832) — En mode Graphiques, le bouton "Sauvegarder" ne sauvegarde que l'onglet actif (`activeTab`). Si l'admin modifie 3 onglets et clique "Sauvegarder" (pas "Sauvegarder tout"), seul l'onglet visible est persisté. Le comportement est correct mais le badge "modifié" sur les autres onglets reste, ce qui peut être déroutant. |
+| # | Problème | Impact |
+|---|----------|--------|
+| 5 | **`generateTitleRequests` ne génère pas `construction_materials`, `standing`, `floor_number`, `construction_year`** pour les demandes de titres. Ces champs ont été récemment ajoutés au SELECT analytics mais les données test ne les remplissent pas → graphiques "Matériaux" et "Standing" vides dans l'onglet Titres. | **Moyen** — Graphiques vides en test |
+| 6 | **`generateBuildingPermits` ne génère pas de statut `En attente`** — Seuls `Approuvé` et `Rejeté` sont utilisés. Le KPI "En attente" sera toujours à 0. | **Faible** — Couverture incomplète |
+| 7 | **`generateTaxHistory` utilise `'unpaid'` comme statut** mais `TaxesBlock.statusNorm` normalise vers `'pending'` pour `['pending', 'en_attente', 'unpaid', 'impayé']`. Fonctionnel mais inconsistant avec les données CCC réelles qui utilisent "En attente". | **Faible** — Incohérence stylistique |
+| 8 | **`generateMortgages` utilise `'Renégociée'`** — `MortgagesBlock.statusNorm` ne reconnaît pas ce statut (uniquement `active`/`paid`). Les hypothèques "Renégociée" tombent dans "Autre". | **Faible** — Statut non normalisé |
+| 9 | **`rollbackTestData` utilise `.in()` avec potentiellement 7 020 parcel_numbers** — Dépasse la limite d'URI de Supabase. En cas d'erreur pendant la génération, le rollback peut échouer silencieusement. | **Moyen** — Rollback fragile |
 
-## D. Fonctionnalités absentes
+### B4. Interface admin — Points d'amélioration
 
-| # | Fonctionnalité |
-|---|----------------|
-| 26 | **Pas de prévisualisation** — L'admin ne peut pas voir le résultat de ses modifications sans quitter la page pour aller dans "Données foncières". Un aperçu inline serait utile. |
-| 27 | **Pas de recherche/filtre dans la liste des graphiques** — Certains onglets ont 15+ items. Aucun champ de recherche pour trouver rapidement un graphique. |
-| 28 | **Pas d'export/import de configuration** — L'admin ne peut pas sauvegarder une snapshot de configuration pour la restaurer ultérieurement. La seule option est "Réinitialiser" qui revient aux defaults hardcodés. |
-| 29 | **Pas de validation des champs `field` dans les croisements** — L'admin peut taper n'importe quel nom de champ dans l'input `field_name` des croisements. Aucune validation que le champ existe réellement dans les données. Un sélecteur de champs connus serait plus sûr. |
-| 30 | **Pas de compteur global** — L'admin ne voit pas le total de graphiques/KPI/croisements configurés sur l'ensemble du système. Un résumé serait utile dans l'en-tête. |
+| # | Problème | Impact |
+|---|----------|--------|
+| 10 | **Pas d'indicateur de durée de génération** — La génération de 7 020 parcelles prend 30-60 secondes. Aucun timer visible. | **Faible** — UX |
+| 11 | **Le bouton "Régénérer" est désactivé quand `total === 0`** mais le bouton "Générer" n'existe pas séparément. Si les données ont été supprimées manuellement, l'admin ne peut pas relancer la génération sans toggler le mode test off/on. | **Moyen** — Workflow bloquant |
+| 12 | **Pas de comptage par province** dans les stats — L'admin voit le total par table mais pas la répartition géographique. | **Faible** — Info manquante |
 
-## E. Optimisations
+### B5. Sécurité
 
-| # | Proposition |
-|---|-------------|
-| 31 | **Corriger les `display_order` dupliqués** dans `title-requests` (points 21). Réindexer séquentiellement. |
-| 32 | **Supprimer les entrées fictives du registre** — Retirer les `item_key` qui ne sont pas rendus dans les blocs (points 1-5), ou les implémenter dans les blocs correspondants. |
-| 33 | **Ajouter les cross-variables manquantes** pour les graphiques rendus qui n'en ont pas (points 14-20). |
+| # | Problème | Impact |
+|---|----------|--------|
+| 13 | **La clé anon est en clair dans le cron job** — Exposée dans `cron.job.command`. Pas critique (c'est la clé publique) mais mauvaise pratique. | **Faible** — Hygiène |
 
----
+## C. Plan de corrections
 
-## Plan de corrections
+### Priorité 1 — Filtrer les données TEST- dans les analytics (critique)
 
-### Priorité 1 — Supprimer les graphiques fictifs du registre
+**Fichier** : `src/hooks/useLandDataAnalytics.tsx`
+- Dans `fetchAll`, ajouter un filtre global qui exclut les lignes `TEST-%` pour les tables qui utilisent `parcel_number` ou `reference_number`
+- Concrètement : chaque appel `fetchAll` doit passer un filtre `.not('parcel_number', 'ilike', 'TEST-%')` (ou `reference_number` selon la table)
 
-**Fichier** : `src/hooks/useAnalyticsChartsConfig.ts`
-- Retirer de `taxes.charts` : `tax-type`, `fiscal-zone`, `penalties`, `exemptions`, `province` (5 entrées) — ces graphiques ne sont pas rendus dans `TaxesBlock`
-- OU implémenter ces 5 graphiques dans `TaxesBlock.tsx` (si les données existent)
+### Priorité 2 — Aligner le générateur avec les données CCC
 
-### Priorité 2 — Corriger les `display_order` dupliqués
+**Fichier** : `src/components/admin/test-mode/testDataGenerators.ts`
+- `generateTitleRequests` : ajouter `construction_materials`, `standing`, `floor_number`, `construction_year`
+- `generateBuildingPermits` : ajouter le statut `'En attente'` dans le cycle
+- `generateMortgages` : remplacer `'Renégociée'` par `'Soldée'` pour aligner avec `statusNorm`
 
-**Fichier** : `src/hooks/useAnalyticsChartsConfig.ts`
-- `title-requests.charts` : réindexer `construction-materials` (13), `standing` (14), `revenue-trend` (15), `processing-comparison` (16), `geo` (17), `evolution` (18)
+### Priorité 3 — Ajouter un bouton "Générer" indépendant
 
-### Priorité 3 — Ajouter les cross-variables manquantes
+**Fichier** : `src/components/admin/test-mode/TestDataStatsCard.tsx`
+- Ajouter un bouton "Générer" visible quand `total === 0` et le mode test est actif
 
-**Fichier** : `src/config/crossVariables.ts`
-- `mortgages` : ajouter `request-type` et `request-status`
-- `building-permits` : ajouter `estimated-cost`, `roofing-type`, `water-supply`, `electricity`, `payment`
-- `taxes` : ajouter les entrées si les graphiques correspondants sont implémentés
+### Priorité 4 — Documenter les limitations
 
-### Priorité 4 — Vérifier l'alignement `BuildingPermitsBlock`
+- Le nettoyage automatique via cron est non fonctionnel (clé anon, pas de gestion rétention)
+- `rollbackTestData` est fragile pour les gros volumes
 
-**Fichier** : `src/components/visualizations/blocks/BuildingPermitsBlock.tsx`
-- Vérifier que les 12 graphiques déclarés dans le registre sont bien tous rendus avec `v('key')`
-- Supprimer du registre ceux qui ne sont pas rendus, ou les implémenter
-
-**Impact total** : ~30 lignes modifiées dans 3 fichiers.
-
+**Impact total** : ~40 lignes modifiées dans 3 fichiers.
