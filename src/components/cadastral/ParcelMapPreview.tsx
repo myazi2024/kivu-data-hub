@@ -52,11 +52,6 @@ interface BuildingShape {
   areaSqm: number;
   perimeterM: number;
   linkedIndex?: number; // 0 = construction principale, 1+ = additionnelles
-  // Rétro-compatibilité : anciens champs ignorés au rendu
-  type?: string;
-  center?: { lat: number; lng: number };
-  size?: number;
-  rotation?: number;
 }
 
 interface ParcelMapPreviewProps {
@@ -76,6 +71,7 @@ interface ParcelMapPreviewProps {
   onServitudeChange?: (servitude: ServitudeInfo) => void;
   isTerrainNu?: boolean;
   requiredBuildingCount?: number;
+  constructionLabels?: string[];
 }
 
 // Calculer la surface d'un polygone à partir de sommets GPS (Shoelace formula en mètres)
@@ -127,6 +123,7 @@ export const ParcelMapPreview = ({
   onServitudeChange,
   isTerrainNu = false,
   requiredBuildingCount = 0,
+  constructionLabels = [],
 }: ParcelMapPreviewProps) => {
   const { isTestRoute } = useTestEnvironment();
   const mapRef = useRef<HTMLDivElement>(null);
@@ -184,6 +181,8 @@ export const ParcelMapPreview = ({
   const dimensionLongPressRef = useRef<number | null>(null);
   const [editingBorneIndex, setEditingBorneIndex] = useState<number | null>(null);
   const [editingBorneCoords, setEditingBorneCoords] = useState<{ lat: string; lng: string }>({ lat: '', lng: '' });
+  const [editingBuildingVertex, setEditingBuildingVertex] = useState<{ shapeId: string; vertexIdx: number } | null>(null);
+  const [editingBuildingVertexCoords, setEditingBuildingVertexCoords] = useState<{ lat: string; lng: string }>({ lat: '', lng: '' });
   
   // Charger la configuration depuis Supabase
   const { config: dbConfig, loading: configLoading } = useMapConfig();
@@ -1030,18 +1029,33 @@ export const ParcelMapPreview = ({
             fillOpacity: 0.3,
             weight: 2,
           }).addTo(map);
+          const label = constructionLabels[shape.linkedIndex ?? idx] || `Construction ${idx + 1}`;
           bldPolygon.bindPopup(`
             <div style="font-size: 12px;">
-              <strong style="color: #dc2626;">Construction ${idx + 1}</strong><br/>
+              <strong style="color: #dc2626;">${label}</strong><br/>
               <span>Surface: ${shape.areaSqm.toFixed(1)} m²</span><br/>
-              <span>Périmètre: ${shape.perimeterM.toFixed(1)} m</span><br/>
-              <button onclick="this.closest('.leaflet-popup').remove(); document.dispatchEvent(new CustomEvent('remove-building', {detail: '${shape.id}'}))" 
-                style="margin-top:4px; padding:2px 8px; background:#dc2626; color:white; border:none; border-radius:4px; cursor:pointer; font-size:11px;">
-                Supprimer
-              </button>
+              <span>Périmètre: ${shape.perimeterM.toFixed(1)} m</span>
             </div>
           `);
           buildingLayersRef.current.push(bldPolygon);
+          
+          // Marqueurs interactifs sur chaque sommet (double-clic = éditer GPS)
+          shape.vertices.forEach((v, vi) => {
+            const vertexMarker = L.circleMarker([v.lat, v.lng], {
+              radius: 5,
+              color: '#dc2626',
+              fillColor: '#ffffff',
+              fillOpacity: 1,
+              weight: 2,
+            }).addTo(map);
+            vertexMarker.on('dblclick', (e: any) => {
+              e.originalEvent?.stopPropagation();
+              e.originalEvent?.preventDefault();
+              setEditingBuildingVertex({ shapeId: shape.id, vertexIdx: vi });
+              setEditingBuildingVertexCoords({ lat: v.lat.toFixed(6), lng: v.lng.toFixed(6) });
+            });
+            buildingLayersRef.current.push(vertexMarker);
+          });
           
           // Afficher les dimensions des côtés de la construction
           shape.vertices.forEach((v, vi) => {
@@ -1118,6 +1132,25 @@ export const ParcelMapPreview = ({
               buildingLayersRef.current.push(dimLabel);
             }
           });
+          
+          // Afficher la distance de fermeture et la surface en temps réel
+          if (currentBuildingVerts.length >= 3) {
+            const firstV = currentBuildingVerts[0];
+            const lastV = currentBuildingVerts[currentBuildingVerts.length - 1];
+            const closingDist = calculateDistance(lastV.lat, lastV.lng, firstV.lat, firstV.lng);
+            const closingMidLat = (lastV.lat + firstV.lat) / 2;
+            const closingMidLng = (lastV.lng + firstV.lng) / 2;
+            const closingLabel = L.marker([closingMidLat, closingMidLng], {
+              icon: L.divIcon({
+                className: 'building-dim-closing',
+                html: `<div style="background:rgba(220,38,38,0.5);color:white;padding:1px 4px;border-radius:3px;font-size:9px;font-weight:600;white-space:nowrap;font-style:italic;">${closingDist.toFixed(1)}m</div>`,
+                iconSize: [0, 0],
+                iconAnchor: [0, 0],
+              }),
+              interactive: false,
+            }).addTo(map);
+            buildingLayersRef.current.push(closingLabel);
+          }
         }
       } catch (err) {
         console.error('ParcelMapPreview updateMap error:', err);
@@ -1135,16 +1168,13 @@ export const ParcelMapPreview = ({
     };
   }, [isMapReady, validCoords, roadSides, mapConfig, isGroupDragMode, isDrawingMode, selectedBorne, isDrawingBuilding, buildingVertices]);
 
-  // Écouter l'événement de suppression de construction
-  useEffect(() => {
-    const handler = (e: any) => {
-      const buildingId = e.detail;
-      if (onBuildingShapesChange) {
-        onBuildingShapesChange(buildingShapes.filter(s => s.id !== buildingId));
-      }
-    };
-    document.addEventListener('remove-building', handler);
-    return () => document.removeEventListener('remove-building', handler);
+  // Supprimer une construction par ID et recalculer les linkedIndex
+  const removeBuildingById = useCallback((buildingId: string) => {
+    if (!onBuildingShapesChange) return;
+    const remaining = buildingShapes
+      .filter(s => s.id !== buildingId)
+      .map((s, i) => ({ ...s, linkedIndex: i }));
+    onBuildingShapesChange(remaining);
   }, [buildingShapes, onBuildingShapesChange]);
 
   // Gérer le mode déplacement groupé
@@ -1546,24 +1576,20 @@ export const ParcelMapPreview = ({
       sides,
       areaSqm: Math.round(areaSqm * 100) / 100,
       perimeterM: Math.round(perimeter * 100) / 100,
-      linkedIndex: buildingShapes.length, // 0 = principale, 1+ = additionnelles
+      linkedIndex: buildingShapes.length,
     };
     
+    const label = constructionLabels[newShape.linkedIndex] || `Construction ${newShape.linkedIndex + 1}`;
     onBuildingShapesChange([...buildingShapes, newShape]);
     cancelDrawingBuilding();
-    toast.success(`Construction ajoutée: ${newShape.areaSqm} m², ${newShape.perimeterM} m de périmètre`);
-  }, [buildingVertices, buildingShapes, onBuildingShapesChange, cancelDrawingBuilding]);
+    toast.success(`${label} ajoutée: ${newShape.areaSqm} m², ${newShape.perimeterM} m de périmètre`);
+  }, [buildingVertices, buildingShapes, onBuildingShapesChange, cancelDrawingBuilding, constructionLabels]);
 
   // Supprimer le dernier sommet en cours de tracé
   const removeLastBuildingVertex = useCallback(() => {
     setBuildingVertices(prev => prev.slice(0, -1));
   }, []);
 
-  // Supprimer dernière construction
-  const removeLastBuilding = useCallback(() => {
-    if (buildingShapes.length === 0 || !onBuildingShapesChange) return;
-    onBuildingShapesChange(buildingShapes.slice(0, -1));
-  }, [buildingShapes, onBuildingShapesChange]);
 
   const exitMarkerMoveMode = useCallback(() => {
     selectedBorneRef.current = null;
@@ -1587,11 +1613,21 @@ export const ParcelMapPreview = ({
       return;
     }
 
+    if (isDrawingBuilding) {
+      map.dragging.disable();
+      map.scrollWheelZoom.disable();
+      map.doubleClickZoom.disable();
+      map.touchZoom.disable();
+      container.dataset.addingBuilding = 'true';
+      container.style.cursor = 'crosshair';
+      return;
+    }
+
     map.dragging.enable();
     map.scrollWheelZoom.enable();
     map.doubleClickZoom.enable();
     map.touchZoom.enable();
-    container.style.cursor = isDrawingBuilding ? 'crosshair' : 'grab';
+    container.style.cursor = 'grab';
   }, [isDrawingMode, isDrawingBuilding]);
 
   const nudgeSelectedMarker = useCallback((direction: 'N' | 'S' | 'E' | 'W') => {
@@ -1959,6 +1995,67 @@ export const ParcelMapPreview = ({
           </div>
         )}
         
+        {/* Overlay d'édition GPS d'un sommet de construction */}
+        {editingBuildingVertex !== null && (
+          <div className="absolute inset-0 z-[1100] flex items-center justify-center bg-black/30 rounded-2xl">
+            <div className="bg-card rounded-xl p-4 shadow-2xl border border-border/50 w-64 space-y-3">
+              <p className="text-xs font-semibold text-foreground text-center">
+                🏗️ {constructionLabels[buildingShapes.find(s => s.id === editingBuildingVertex.shapeId)?.linkedIndex ?? 0] || 'Construction'} — Sommet {editingBuildingVertex.vertexIdx + 1}
+              </p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-medium text-muted-foreground w-8">Lat</span>
+                  <input
+                    type="number" step="0.000001"
+                    value={editingBuildingVertexCoords.lat}
+                    onChange={(e) => setEditingBuildingVertexCoords(prev => ({ ...prev, lat: e.target.value }))}
+                    onKeyDown={(e) => { if (e.key === 'Escape') setEditingBuildingVertex(null); }}
+                    autoFocus
+                    className="flex-1 h-9 rounded-lg border border-border bg-background px-3 text-sm font-mono text-center focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-medium text-muted-foreground w-8">Lng</span>
+                  <input
+                    type="number" step="0.000001"
+                    value={editingBuildingVertexCoords.lng}
+                    onChange={(e) => setEditingBuildingVertexCoords(prev => ({ ...prev, lng: e.target.value }))}
+                    onKeyDown={(e) => { if (e.key === 'Escape') setEditingBuildingVertex(null); }}
+                    className="flex-1 h-9 rounded-lg border border-border bg-background px-3 text-sm font-mono text-center focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button type="button" size="sm" variant="outline" className="flex-1 h-8 rounded-lg text-xs" onClick={() => setEditingBuildingVertex(null)}>Fermer</Button>
+                <Button type="button" size="sm" className="flex-1 h-8 rounded-lg text-xs" onClick={() => {
+                  if (editingBuildingVertex && onBuildingShapesChange) {
+                    const lat = parseFloat(editingBuildingVertexCoords.lat);
+                    const lng = parseFloat(editingBuildingVertexCoords.lng);
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                      const updated = buildingShapes.map(s => {
+                        if (s.id !== editingBuildingVertex.shapeId) return s;
+                        const newVerts = [...s.vertices];
+                        newVerts[editingBuildingVertex.vertexIdx] = { lat, lng };
+                        const newSides: { name: string; length: string }[] = [];
+                        let newPerimeter = 0;
+                        for (let i = 0; i < newVerts.length; i++) {
+                          const nxt = newVerts[(i + 1) % newVerts.length];
+                          const d = calculateDistance(newVerts[i].lat, newVerts[i].lng, nxt.lat, nxt.lng);
+                          newSides.push({ name: `Côté ${i + 1}`, length: d.toFixed(2) });
+                          newPerimeter += d;
+                        }
+                        return { ...s, vertices: newVerts, sides: newSides, areaSqm: Math.round(calculateBuildingArea(newVerts) * 100) / 100, perimeterM: Math.round(newPerimeter * 100) / 100 };
+                      });
+                      onBuildingShapesChange(updated);
+                    }
+                  }
+                  setEditingBuildingVertex(null);
+                }}>Appliquer</Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Boutons Tracer/Terminer + Superficie/Périmètre sur la carte (en haut à gauche) */}
         {enableDrawingMode && (
           <div className="absolute top-2 left-2 z-[1000] flex items-center gap-1.5">
@@ -2220,44 +2317,31 @@ export const ParcelMapPreview = ({
         )}
         
         {isDrawingBuilding && !isDrawingMode && (
-          <div className="absolute bottom-10 left-2 z-[1000] flex items-center gap-1.5">
-            <Badge className="bg-red-500 text-white text-xs h-6 px-2 rounded-lg shadow-md animate-pulse">
-              <Building2 className="h-3 w-3 mr-1" />
-              Tracé construction ({buildingVertices.length} pts)
-            </Badge>
-            {buildingVertices.length > 0 && (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={removeLastBuildingVertex}
-                className="h-6 w-6 p-0 rounded-lg bg-white/95 shadow-md"
-                title="Supprimer dernier point"
-              >
-                <Trash2 className="h-3 w-3 text-destructive" />
+          <div className="absolute bottom-10 left-2 z-[1000] flex flex-col gap-1 items-start">
+            <div className="flex items-center gap-1.5">
+              <Badge className="bg-red-500 text-white text-xs h-6 px-2 rounded-lg shadow-md animate-pulse">
+                <Building2 className="h-3 w-3 mr-1" />
+                {constructionLabels[buildingShapes.length] || `Construction ${buildingShapes.length + 1}`} ({buildingVertices.length} pts)
+              </Badge>
+              {buildingVertices.length > 0 && (
+                <Button type="button" size="sm" variant="outline" onClick={removeLastBuildingVertex} className="h-6 w-6 p-0 rounded-lg bg-white/95 shadow-md" title="Supprimer dernier point">
+                  <Trash2 className="h-3 w-3 text-destructive" />
+                </Button>
+              )}
+              {buildingVertices.length >= 3 && (
+                <Button type="button" size="sm" onClick={validateBuilding} className="h-6 px-2 rounded-lg bg-green-600 text-white shadow-md text-xs hover:bg-green-700">
+                  <Check className="h-3 w-3 mr-1" />Valider
+                </Button>
+              )}
+              <Button type="button" size="sm" variant="outline" onClick={cancelDrawingBuilding} className="h-6 px-2 rounded-lg bg-white/95 shadow-md text-xs">
+                <X className="h-3 w-3 mr-1" />Annuler
               </Button>
-            )}
+            </div>
             {buildingVertices.length >= 3 && (
-              <Button
-                type="button"
-                size="sm"
-                onClick={validateBuilding}
-                className="h-6 px-2 rounded-lg bg-green-600 text-white shadow-md text-xs hover:bg-green-700"
-              >
-                <Check className="h-3 w-3 mr-1" />
-                Valider
-              </Button>
+              <Badge variant="outline" className="text-[10px] h-5 px-2 rounded-lg bg-white/90 shadow-sm border-red-200">
+                ~{calculateBuildingArea(buildingVertices).toFixed(1)} m²
+              </Badge>
             )}
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={cancelDrawingBuilding}
-              className="h-6 px-2 rounded-lg bg-white/95 shadow-md text-xs"
-            >
-              <X className="h-3 w-3 mr-1" />
-              Annuler
-            </Button>
           </div>
         )}
         
@@ -2458,29 +2542,33 @@ export const ParcelMapPreview = ({
       )}
 
 
-      {/* Constructions ajoutées + compteur */}
+      {/* Constructions ajoutées — liste détaillée avec suppression individuelle */}
       {!isTerrainNu && requiredBuildingCount > 0 && (
         <Card className={`p-3 rounded-2xl shadow-sm border-border/50 ${buildingShapes.length >= requiredBuildingCount ? 'bg-green-50 dark:bg-green-950/20 border-green-200/50' : 'bg-orange-50 dark:bg-orange-950/20 border-orange-200/50'}`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Building2 className={`h-4 w-4 ${buildingShapes.length >= requiredBuildingCount ? 'text-green-500' : 'text-orange-500'}`} />
-              <span className={`text-sm font-medium ${buildingShapes.length >= requiredBuildingCount ? 'text-green-700 dark:text-green-300' : 'text-orange-700 dark:text-orange-300'}`}>
-                {buildingShapes.length}/{requiredBuildingCount} construction{requiredBuildingCount > 1 ? 's' : ''} tracée{requiredBuildingCount > 1 ? 's' : ''}
-              </span>
-            </div>
-            {buildingShapes.length > 0 && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={removeLastBuilding}
-                className="h-7 text-xs rounded-lg text-destructive hover:bg-destructive/10"
-              >
-                <Trash2 className="h-3 w-3 mr-1" />
-                Supprimer
-              </Button>
-            )}
+          <div className="flex items-center gap-2 mb-2">
+            <Building2 className={`h-4 w-4 ${buildingShapes.length >= requiredBuildingCount ? 'text-green-500' : 'text-orange-500'}`} />
+            <span className={`text-sm font-medium ${buildingShapes.length >= requiredBuildingCount ? 'text-green-700 dark:text-green-300' : 'text-orange-700 dark:text-orange-300'}`}>
+              {buildingShapes.length}/{requiredBuildingCount} construction{requiredBuildingCount > 1 ? 's' : ''} tracée{requiredBuildingCount > 1 ? 's' : ''}
+            </span>
           </div>
+          {buildingShapes.length > 0 && (
+            <div className="space-y-1.5">
+              {buildingShapes.map((shape, idx) => {
+                const label = constructionLabels[shape.linkedIndex ?? idx] || `Construction ${idx + 1}`;
+                return (
+                  <div key={shape.id} className="flex items-center justify-between text-xs bg-background/60 rounded-lg px-2 py-1.5 border border-border/30">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="font-medium truncate">{label}</span>
+                      <span className="text-muted-foreground">{shape.areaSqm.toFixed(1)} m²</span>
+                    </div>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => removeBuildingById(shape.id)} className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 flex-shrink-0">
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </Card>
       )}
       {isTerrainNu && buildingShapes.length > 0 && (
@@ -2489,19 +2577,9 @@ export const ParcelMapPreview = ({
             <div className="flex items-center gap-2">
               <Building2 className="h-4 w-4 text-red-500" />
               <span className="text-sm font-medium text-red-700 dark:text-red-300">
-                {buildingShapes.length} construction{buildingShapes.length > 1 ? 's' : ''}
+                {buildingShapes.length} construction{buildingShapes.length > 1 ? 's' : ''} (incohérent avec terrain nu)
               </span>
             </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={removeLastBuilding}
-              className="h-7 text-xs rounded-lg text-destructive hover:bg-destructive/10"
-            >
-              <Trash2 className="h-3 w-3 mr-1" />
-              Supprimer
-            </Button>
           </div>
         </Card>
       )}

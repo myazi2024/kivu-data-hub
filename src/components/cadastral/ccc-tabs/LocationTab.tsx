@@ -60,6 +60,18 @@ const LocationTab: React.FC<LocationTabProps> = ({
 }) => {
   const isTerrainNu = formData.propertyCategory === 'Terrain nu' || formData.constructionType === 'Terrain nu';
   const requiredBuildingCount = isTerrainNu ? 0 : (constructionMode === 'multiple' ? 1 + additionalConstructions.length : 1);
+  
+  // Build labels for each construction
+  const constructionLabels = React.useMemo(() => {
+    if (isTerrainNu) return [];
+    const labels: string[] = [formData.propertyCategory || 'Construction principale'];
+    if (constructionMode === 'multiple') {
+      additionalConstructions.forEach((c: any, i: number) => {
+        labels.push(c.propertyCategory || `Construction ${i + 2}`);
+      });
+    }
+    return labels;
+  }, [isTerrainNu, formData.propertyCategory, constructionMode, additionalConstructions]);
   return (
     <div className="space-y-3 md:space-y-6 mt-4 md:mt-6 animate-fade-in">
       {/* Localisation de la parcelle */}
@@ -198,6 +210,7 @@ const LocationTab: React.FC<LocationTabProps> = ({
             onBuildingShapesChange={onBuildingShapesChange}
             isTerrainNu={isTerrainNu}
             requiredBuildingCount={requiredBuildingCount}
+            constructionLabels={constructionLabels}
           />
         </div>
       )}
