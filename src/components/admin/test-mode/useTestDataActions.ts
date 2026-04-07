@@ -29,7 +29,6 @@ import {
   generateCertificates,
   generateMutationRequests,
   generateSubdivisionRequests,
-  rollbackTestData,
 } from './testDataGenerators';
 
 interface UseTestDataActionsProps {
