@@ -1,95 +1,100 @@
 
 
-# Audit complet du formulaire CCC
+# Audit — Menu "Données foncières" (Analytics)
 
-## A. Données collectées mais NON affichées dans l'Admin
+## A. Champs CCC collectés mais absents des analytics
 
-L'interface admin (`AdminCCCContributions.tsx`) ne montre **pas** les champs suivants dans le panneau de détails, bien qu'ils soient enregistrés en base :
+Le hook `useLandDataAnalytics` ne récupère pas plusieurs colonnes ajoutées récemment aux tables, rendant impossible leur analyse :
 
-1. **`property_category`** — Catégorie de bien (Villa, Appartement, etc.) : collectée, persistée, mais jamais affichée dans l'onglet "Général" de l'admin.
-2. **`construction_materials`** — Matériaux de construction : collecté, persisté, absent de l'affichage admin.
-3. **`standing`** — Standing/niveau de finition : collecté, persisté, absent de l'affichage admin.
-4. **`construction_year`** — Année de construction : collectée, persistée, absente.
-5. **`apartment_number` / `floor_number`** — N° appartement et étage : collectés, persistés, absents.
-6. **`house_number`** — Numéro de la parcelle (voirie) : collecté, persisté, absent.
-7. **`lease_years`** — Durée du bail (quand bail initial/renouvellement) : collectée côté formulaire mais **jamais envoyée en DB** (pas dans `buildContributionPayload`).
-8. **`is_title_in_current_owner_name`** — Titre au nom du propriétaire actuel : collecté, persisté via `isTitleInCurrentOwnerName` dans `useCadastralContribution.tsx` mais **absent du payload** (`buildContributionPayload` ne l'inclut pas).
-9. **`additional_constructions`** — Constructions additionnelles : persistées, mais **pas affichées** dans l'admin.
-10. **`road_sides`** — Données de voirie (types de routes, entrées) : persistées, absentes de l'affichage admin (les côtés de parcelle dans l'onglet "Général" montrent `parcel_sides` mais pas `road_sides`).
-11. **`servitude_data`** — Servitude de passage : persistée, absente de l'affichage admin.
-12. **`has_dispute` / `dispute_data`** — Litige foncier : persistés, absents de l'affichage admin.
-13. **`building_shapes`** — Tracés de construction (polygones, surfaces, hauteurs) : persistés, absents de l'affichage admin.
+| Champ | Table source | Impact |
+|---|---|---|
+| `property_category` | `cadastral_parcels` / `cadastral_contributions` | Aucun graphique par catégorie de bien (Villa, Appartement, etc.) |
+| `construction_materials` | `cadastral_parcels` | Absent du bloc "Parcelles titrées" — seul `construction_nature` est analysé |
+| `standing` | `cadastral_parcels` | Aucune analyse du niveau de finition |
+| `lease_years` | `cadastral_parcels` / `cadastral_contributions` | Aucune distribution de durée de bail |
+| `construction_year` | `cadastral_contributions` | Présent pour `parcels` mais **non fetchée** pour `contributions` |
+| `is_subdivided` | `cadastral_parcels` | Aucun compteur parcelles subdivisées |
+| `has_dispute` | `cadastral_parcels` | Aucun indicateur direct (le bloc Litiges utilise la table `disputes` séparément) |
+| `additional_constructions` | `cadastral_parcels` / `cadastral_contributions` | JSONB non exploité |
+| `building_shapes` | `cadastral_parcels` / `cadastral_contributions` | JSONB non exploité (hauteurs, surfaces bâties) |
+| `road_sides` | `cadastral_parcels` / `cadastral_contributions` | Données de voirie non analysées |
+| `is_title_in_current_owner_name` | `cadastral_contributions` | Non fetchée |
+| `permit_type` | `cadastral_building_permits` | Non fetchée — impossible de distinguer "bâtir" vs "régularisation" |
 
-## B. Données NON envoyées en DB (perte de données)
+## B. Graphiques manquants (fonctionnalités absentes)
 
-14. **`lease_years`** — La durée du bail en années est gérée dans le formulaire (`leaseYears` state) mais n'est **jamais** incluse dans `buildContributionPayload`. La donnée est perdue à la soumission.
-15. **`isTitleInCurrentOwnerName`** — Bien qu'il y ait `formData.isTitleInCurrentOwnerName`, le `buildContributionPayload` ne mappe pas ce champ vers la colonne DB `is_title_in_current_owner_name`.
-16. **`heightM` des constructions** — La hauteur est stockée dans `buildingShapes[].heightM` qui est envoyé dans le JSONB `building_shapes`, mais l'approbation admin (`handleApprove`) ne propage pas `building_shapes` vers `cadastral_parcels`.
-17. **`additional_constructions`** — L'approbation admin ne propage pas non plus `additional_constructions`, `road_sides`, `servitude_data`, `has_dispute`, `dispute_data`, `building_shapes` vers `cadastral_parcels`.
+1. **Bloc "Parcelles titrées"** — Pas de graphique `property_category` (Villa/Appartement/Terrain nu). C'est la donnée pivot du formulaire CCC.
+2. **Bloc "Parcelles titrées"** — Pas de graphique `construction_materials` (Béton armé, Pierres, etc.) alors que `construction_nature` (Durable/Semi-durable/Précaire) est présent. Les matériaux sont plus granulaires.
+3. **Bloc "Parcelles titrées"** — Pas de graphique `standing` (Haut/Moyen/Bas).
+4. **Bloc "Parcelles titrées"** — Pas de graphique `is_subdivided` (parcelles loties vs non loties).
+5. **Bloc "Autorisations de bâtir"** — Pas de graphique `permit_type` (construction vs régularisation). C'est une distinction fondamentale du formulaire CCC.
+6. **Bloc "Contributions"** — Pas de graphique `property_category`. Les contributions collectent cette donnée mais elle n'est ni fetchée ni analysée.
+7. **Aucun bloc** n'exploite les données de `building_shapes` (surface bâtie totale par parcelle, hauteur moyenne des constructions). Ces données pourraient alimenter le bloc Expertise ou un sous-bloc dans Parcelles titrées.
+8. **Bloc "Taxes"** — Pas de graphique par type de taxe (`tax_type`). Le champ n'est pas non plus fetchée dans la requête.
 
-## C. Bugs et incohérences logiques
+## C. Incohérences logiques
 
-18. **`calculateCompleteness` admin diverge du formulaire** — L'admin utilise 10 champs fixes (ligne 633-651) pour calculer la complétude, tandis que le formulaire (`calculateCCCValue`) utilise ~30 champs pondérés. Le score admin est significativement différent du score CCC affiché au contributeur.
-19. **`ownershipHistory` affichage avec mauvais clés** — L'admin onglet "Historiques" (ligne 1316-1321) lit `owner.ownerName`, `owner.startDate`, etc. (camelCase), mais `buildContributionPayload` convertit en snake_case (`owner_name`, `ownership_start_date`). Résultat : les historiques s'affichent comme "Propriétaire: undefined" pour les contributions soumises via le formulaire normal.
-20. **`mortgageHistory` affichage avec mauvais clés** — Même problème : l'admin lit `mortgage.mortgageAmountUsd` (camelCase) mais les données stockées sont en snake_case (`mortgage_amount_usd`).
-21. **Statut `returned` absent du filtre admin** — L'onglet des filtres (ligne 917-923) affiche : pending, approved, rejected, suspicious, all. Les contributions "renvoyées pour correction" (`returned`) n'ont **pas** d'onglet dédié et sont noyées dans "Tous".
-22. **`resetLocationBlock` ne reset pas `buildingShapes`** — Le bouton reset de l'onglet Localisation (ligne 1474-1494) ne réinitialise pas `buildingShapes` ni `constructionMode`/`additionalConstructions`. Les tracés orphelins persistent.
+9. **`BuildingPermitsBlock` — statuts hardcodés en anglais** (lignes 59-61) : filtre `approved`/`pending`/`rejected` mais le formulaire CCC et l'admin utilisent des statuts français : `Conforme`, `Approuvé`, `Délivré`, `En attente`, `Rejeté`. Le KPI "Approuvées" sera toujours à 0 si les données sont en français.
+10. **`ParcelsWithTitleBlock` — `parcel_type` mixte** (ligne 81-82) : filtre urbain/rural sur `SU`/`SR` ET `Terrain bâti`/`Terrain nu`. Or `Terrain bâti`/`Terrain nu` est `property_category`, pas `parcel_type`. C'est un vestige d'une confusion de mapping.
+11. **`ContributionsBlock` — `construction_year` non fetchée** : le SELECT de `cadastral_contributions` omet `construction_year`, donc le graphique "Année construction" ne pourra jamais apparaître dans ce bloc (il est d'ailleurs absent).
+12. **`applyFilters` dateField** : certains blocs passent un `dateField` custom (`payment_date`, `issue_date`, `ownership_start_date`) mais l'`AnalyticsFilters` component ne sait pas quel champ est utilisé pour le filtre temporel, ce qui peut créer un décalage entre le filtre affiché et le filtrage réel.
 
-## D. Redondances
+## D. Données potentiellement fictives ou non vérifiées
 
-23. **Validation de fichier dupliquée** — `handleFileChange` (lignes 274-296) et `validateAttachmentFile` (lignes 303-314) effectuent exactement les mêmes vérifications (type MIME + taille 10MB). `handleFileChange` devrait simplement appeler `validateAttachmentFile`.
-24. **États d'avertissement inutilisés** — `showRequiredFieldsPopover`, `highlightSuperficie`, `showGPSWarning`, `showAreaMismatchWarning`, `areaMismatchMessage`, `shouldBlinkSuperficie`, `showUsageLockedWarning`, `showPermitTypeBlockedWarning`, `permitTypeBlockedMessage` sont déclarés dans le state mais ne sont **jamais exportés** ou sont exportés sans être consommés par aucun composant enfant.
-25. **`permitRequest` state résiduel** — L'état `permitRequest` (ligne 131-138) est maintenu mais le mode "request" semble peu utilisé dans les validations actuelles. Beaucoup de champs (`architecturalPlanImages`, `constructionPhotos`, etc.) sont gérés séparément.
+13. **`fraud_attempts`** — Cette table est alimentée uniquement par du code de test/seed (`generateFraudAttempts`). En production, aucun mécanisme fonctionnel ne crée de lignes dans cette table. Le bloc "Fraude" affiche potentiellement des données de test.
+14. **`generated_certificates`** — Les certificats sont générés automatiquement par le système. Les KPI "En attente" supposent un workflow de validation qui n'existe pas (les certificats sont directement `generated`).
+15. **`cadastral_invoices`** — Le champ `geographical_zone` n'est pas alimenté dynamiquement par le système de facturation actuel. Le graphique "Zone géographique" montre des données incomplètes ou vides.
 
-## E. Fonctionnalités visuelles absentes
+## E. Redondances
 
-26. **Pas de badge de complétude par onglet** — Les onglets (Infos, Localisation, Passé, Obligations, Envoi) affichent des noms mais pas de badge visuel (check vert, point rouge) indiquant si l'onglet est complet ou contient des erreurs.
-27. **Pas de résumé des erreurs en mode brouillon** — Quand l'utilisateur ferme et revient, il n'a aucun indicateur visuel montrant quels onglets restent incomplets.
-28. **Pas d'indicateur de progression globale** — Pas de barre de progression montrant l'avancement global du formulaire (ex: "65% complété").
-29. **Pas de visualisation du croquis dans l'admin** — L'admin voit les coordonnées GPS en texte mais pas de rendu visuel (SVG ou carte) des tracés de parcelle et construction.
+16. **Graphique "Évolution" dupliqué** — Chacun des 14 blocs contient un graphique `evolution` (tendance par mois). C'est cohérent mais prend de la place. Pas un bug, mais beaucoup de blocs ont aussi un `revenue-trend` (Titres, Mutations, Subdivisions, Factures) qui est essentiellement la même area chart sur un champ différent.
+17. **`GeoCharts` identique partout** — Les 14 blocs incluent un composant `GeoCharts` qui produit 2 graphiques (par province + par section). C'est le même pattern dans chaque bloc sans différenciation.
+18. **Contributions vs Parcelles titrées** — Les graphiques `title-type`, `legal-status`, `usage`, `construction-type` apparaissent dans les DEUX blocs avec les mêmes données normalisées. Les contributions sont censées devenir des parcelles après approbation — les compteurs se chevauchent.
 
 ## F. Optimisations
 
-30. **`useCCCFormState.ts` fait 1577 lignes** — Ce hook monolithique gère tout : state, validation, soumission, reset, effets. Il devrait être décomposé en hooks spécialisés (ex: `useCCCValidation`, `useCCCSubmission`, `useCCCConstruction`, `useCCCGeography`).
-31. **Auto-save toutes les 1500ms** — L'effet d'auto-save (ligne 1182-1187) déclenche `saveFormDataToStorage` à chaque changement de n'importe quel state. Avec ~20 dépendances dans l'array, cela cause des sauvegardes très fréquentes et potentiellement coûteuses en sérialisation JSON.
-32. **`handleApprove` ne propage pas toutes les données** — Quand l'admin approuve une contribution, le code (lignes 315-417) copie manuellement chaque champ vers `cadastral_parcels`. Il manque : `property_category`, `apartment_number`, `floor_number`, `additional_constructions`, `road_sides`, `servitude_data`, `has_dispute`, `dispute_data`, `building_shapes`, `is_title_in_current_owner_name`, `lease_years`.
+19. **Requête monolithique `fetchAll` × 14** — Le hook charge les 14 tables en parallèle avec `Promise.all`, même si l'utilisateur ne consulte qu'un seul onglet. Pour les bases volumineuses, charger ~14000+ lignes au premier rendu est coûteux. Un chargement par onglet actif (lazy) serait plus performant.
+20. **Pas de normalisation des `permit_type` / `administrative_status`** — Les blocs filtrent sur des valeurs hardcodées (`approved`, `pending`) sans passer par un normaliseur comme pour les titres (`normalizeTitleType`). Les statuts en français ou anglais ne matchent pas.
+21. **`enrichByParcelNumber` cherche `reporting_parcel_number`** — Ce champ n'existe pas dans les tables `certificates` ou `invoices`. C'est du code mort (ligne 129).
 
 ---
 
-## Plan de corrections prioritaires
+## Plan de corrections
 
-### Priorité 1 — Perte de données (critique)
+### Priorite 1 — Données manquantes dans le fetch
 
-**Fichier** : `src/hooks/useCadastralContribution.tsx` — `buildContributionPayload`
-- Ajouter `lease_years: data.leaseYears || null`
-- Ajouter `is_title_in_current_owner_name: data.isTitleInCurrentOwnerName ?? null`
+**Fichier** : `src/hooks/useLandDataAnalytics.tsx`
 
-**Fichier** : `src/components/admin/AdminCCCContributions.tsx` — `handleApprove`
-- Ajouter dans les insert/update de `cadastral_parcels` : `property_category`, `apartment_number`, `floor_number`, `additional_constructions`, `road_sides`, `servitude_data`, `has_dispute`, `dispute_data`, `building_shapes`, `is_title_in_current_owner_name`
+- Ajouter au SELECT de `cadastral_parcels` : `property_category, construction_materials, standing, lease_years, is_subdivided, has_dispute`
+- Ajouter au SELECT de `cadastral_contributions` : `construction_year, property_category, construction_materials, standing`
+- Ajouter au SELECT de `cadastral_building_permits` : `permit_type`
+- Supprimer `reporting_parcel_number` de `enrichByParcelNumber` (code mort)
 
-### Priorité 2 — Affichage admin incomplet
+### Priorite 2 — Graphiques manquants
 
-**Fichier** : `src/components/admin/AdminCCCContributions.tsx`
-- Interface `Contribution` : ajouter les champs manquants typés
-- Onglet "Général" : afficher `property_category`, `construction_materials`, `standing`, `construction_year`, `apartment_number`, `floor_number`, `house_number`, `is_title_in_current_owner_name`, `additional_constructions`
-- Onglet "Localisation" : afficher `road_sides`, `servitude_data`, `building_shapes` (avec rendu visuel via `ParcelSketchSVG`)
-- Onglet "Obligations" : afficher `has_dispute`, `dispute_data`
-- Onglet "Historiques" : corriger les clés camelCase/snake_case (utiliser un helper `rr()` comme pour les taxes)
-- Ajouter un onglet/filtre `returned` dans les TabsList
+**Fichier** : `src/components/visualizations/blocks/ParcelsWithTitleBlock.tsx`
+- Ajouter graphiques : `property_category`, `construction_materials`, `standing`, `is_subdivided`
+- Corriger le filtre urbain/rural (retirer `Terrain bâti`/`Terrain nu`)
 
-### Priorité 3 — Nettoyage et UX
+**Fichier** : `src/components/visualizations/blocks/BuildingPermitsBlock.tsx`
+- Ajouter graphique `permit_type` (construction vs régularisation)
+- Corriger les statuts hardcodés anglais → utiliser normalisation
 
-**Fichier** : `src/hooks/useCCCFormState.ts`
-- `resetLocationBlock` : ajouter `setBuildingShapes([])`
-- Supprimer les états d'avertissement inutilisés
-- Factoriser `handleFileChange` pour utiliser `validateAttachmentFile`
-- Aligner `calculateCompleteness` admin avec `calculateCCCValue` formulaire
+**Fichier** : `src/components/visualizations/blocks/ContributionsBlock.tsx`
+- Ajouter graphique `property_category`
 
-### Priorité 4 — UX visuelle
+### Priorite 3 — Corrections logiques
 
-**Fichier** : `src/components/cadastral/CadastralContributionDialog.tsx`
-- Ajouter des badges de complétude sur chaque onglet (check vert si `isTabComplete`, point rouge sinon)
-- Ajouter une barre de progression globale sous le header
+**Fichier** : `src/components/visualizations/blocks/BuildingPermitsBlock.tsx`
+- Normaliser `administrative_status` pour matcher les statuts français du formulaire CCC
 
-**Impact total** : ~200 lignes modifiées dans 3 fichiers principaux.
+**Fichier** : `src/components/visualizations/blocks/ParcelsWithTitleBlock.tsx`
+- Supprimer la confusion `Terrain bâti`/`Terrain nu` dans le compteur urbain/rural
+
+### Priorite 4 — Nettoyage
+
+- Documenter que `fraud_attempts` nécessite un mécanisme de création fonctionnel en production
+- Supprimer le code mort `reporting_parcel_number` dans `enrichByParcelNumber`
+
+**Impact total** : ~60 lignes modifiees dans 4 fichiers.
 
