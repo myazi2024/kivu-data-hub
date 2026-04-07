@@ -1541,10 +1541,27 @@ export const ParcelMapPreview = ({
       return;
     }
 
+    // Déterminer les indices non encore tracés
+    const usedIndices = new Set(buildingShapes.map(s => s.linkedIndex));
+    const availableIndices = Array.from({ length: requiredBuildingCount }, (_, i) => i).filter(i => !usedIndices.has(i));
+
+    if (requiredBuildingCount > 1 && availableIndices.length > 1) {
+      // Afficher le sélecteur — ne pas encore démarrer le tracé
+      setShowBuildingTargetSelector(true);
+      return;
+    }
+
+    // Attribution automatique (1 seule cible ou 1 seule restante)
+    const targetIdx = availableIndices.length === 1 ? availableIndices[0] : 0;
+    setSelectedBuildingTarget(targetIdx);
+    actuallyStartDrawing();
+  }, [isDrawingBuilding, cancelDrawingBuilding, buildingShapes, requiredBuildingCount]);
+
+  // Démarrer effectivement le tracé (appelé après sélection de la cible)
+  const actuallyStartDrawing = useCallback(() => {
     setIsDrawingBuilding(true);
     setBuildingVertices([]);
-
-    // Désactiver le mode dessin parcelle s'il est actif
+    setShowBuildingTargetSelector(false);
     setIsDrawingMode(false);
 
     const map = mapInstanceRef.current;
@@ -1557,7 +1574,7 @@ export const ParcelMapPreview = ({
       map.getContainer().dataset.addingBuilding = 'true';
       map.getContainer().style.cursor = 'crosshair';
     }
-  }, [isDrawingBuilding, cancelDrawingBuilding]);
+  }, []);
 
   // Valider la construction en cours
   const validateBuilding = useCallback(() => {
