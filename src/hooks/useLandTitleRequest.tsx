@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 
 export interface LandTitleRequestData {
   // Type de demande
-  requestType?: 'initial' | 'renouvellement' | '';
+  requestType?: 'initial' | 'renouvellement' | 'conversion' | '';
   selectedParcelNumber?: string;
   
   // Demandeur

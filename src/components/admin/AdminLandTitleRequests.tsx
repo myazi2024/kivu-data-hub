@@ -475,7 +475,7 @@ const AdminLandTitleRequests: React.FC = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <p className="text-xs text-muted-foreground">Type de demande</p>
-                      <p className="text-sm font-medium capitalize">{(detailData || selectedRequest).request_type || 'initial'}</p>
+                      <p className="text-sm font-medium">{{ initial: 'Demande initiale', renouvellement: 'Renouvellement', conversion: 'Conversion' }[(detailData || selectedRequest).request_type || 'initial'] || (detailData || selectedRequest).request_type}</p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Titre déduit</p>
