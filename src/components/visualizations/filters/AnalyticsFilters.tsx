@@ -29,6 +29,12 @@ export const QuartierFilterContext = createContext<string | null>(null);
 /** Context for quartier change callback */
 export const QuartierChangeContext = createContext<((quartier: string | undefined) => void) | null>(null);
 
+/** Context to propagate territoire selection to the map (current value) */
+export const TerritoireFilterContext = createContext<string | null>(null);
+
+/** Context for territoire change callback */
+export const TerritoireChangeContext = createContext<((territoire: string | undefined) => void) | null>(null);
+
 import {
   getAllProvinces,
   getVillesForProvince,
@@ -62,6 +68,7 @@ export const AnalyticsFilters: React.FC<Props> = ({
   const villeChangeCtx = useContext(VilleChangeContext);
   const communeChangeCtx = useContext(CommuneChangeContext);
   const quartierChangeCtx = useContext(QuartierChangeContext);
+  const territoireChangeCtx = useContext(TerritoireChangeContext);
   const handleVilleChange = onVilleChange || villeChangeCtx || (() => {});
   const handleCommuneChange = onCommuneChange || communeChangeCtx || (() => {});
   const handleQuartierChange = quartierChangeCtx || (() => {});
@@ -412,7 +419,11 @@ export const AnalyticsFilters: React.FC<Props> = ({
         {showRuralSub && (
           <>
             {sep}
-            <Select value={filter.territoire || '__all__'} onValueChange={v => onChange({ ...filter, territoire: v === '__all__' ? undefined : v, collectivite: undefined, groupement: undefined, villageFilter: undefined })}>
+            <Select value={filter.territoire || '__all__'} onValueChange={v => {
+              const newTerritoire = v === '__all__' ? undefined : v;
+              onChange({ ...filter, territoire: newTerritoire, collectivite: undefined, groupement: undefined, villageFilter: undefined });
+              territoireChangeCtx?.(newTerritoire);
+            }}>
               <SelectTrigger className={selectCls}><SelectValue placeholder="Territoire" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="__all__">Tous les territoires</SelectItem>

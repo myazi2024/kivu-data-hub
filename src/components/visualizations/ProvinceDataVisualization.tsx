@@ -17,7 +17,7 @@ import { CertificatesBlock } from './blocks/CertificatesBlock';
 import { InvoicesBlock } from './blocks/InvoicesBlock';
 import { ProvinceData } from '@/types/province';
 import { useAnalyticsTabsConfig, useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
-import { ProvinceFilterContext, MapProvinceContext, VilleFilterContext, CommuneFilterContext, VilleChangeContext, CommuneChangeContext, QuartierFilterContext, QuartierChangeContext } from './filters/AnalyticsFilters';
+import { ProvinceFilterContext, MapProvinceContext, VilleFilterContext, CommuneFilterContext, VilleChangeContext, CommuneChangeContext, QuartierFilterContext, QuartierChangeContext, TerritoireFilterContext, TerritoireChangeContext } from './filters/AnalyticsFilters';
 import { WatermarkContext } from './shared/ChartCard';
 
 interface ProvinceDataVisualizationProps {
@@ -27,9 +27,11 @@ interface ProvinceDataVisualizationProps {
   onVilleChange?: (ville: string | undefined) => void;
   onCommuneChange?: (commune: string | undefined) => void;
   onQuartierChange?: (quartier: string | undefined) => void;
+  onTerritoireChange?: (territoire: string | undefined) => void;
   selectedVille?: string | null;
   selectedCommune?: string | null;
   selectedQuartier?: string | null;
+  selectedTerritoire?: string | null;
 }
 
 const ICON_MAP: Record<string, React.ComponentType<any>> = {
@@ -67,8 +69,8 @@ const BLOCK_MAP: Record<string, React.ComponentType<{ data: any }>> = {
 };
 
 const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
-  analytics, selectedProvince, onProvinceFilter, onVilleChange, onCommuneChange, onQuartierChange,
-  selectedVille, selectedCommune, selectedQuartier,
+  analytics, selectedProvince, onProvinceFilter, onVilleChange, onCommuneChange, onQuartierChange, onTerritoireChange,
+  selectedVille, selectedCommune, selectedQuartier, selectedTerritoire,
 }) => {
   const { visibleTabs, isLoading: tabsLoading } = useAnalyticsTabsConfig();
   const [activeTab, setActiveTab] = useState('');
@@ -133,13 +135,17 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
               <VilleChangeContext.Provider value={onVilleChange || null}>
                 <CommuneChangeContext.Provider value={onCommuneChange || null}>
                   <QuartierChangeContext.Provider value={onQuartierChange || null}>
-                    <VilleFilterContext.Provider value={selectedVille || null}>
-                      <CommuneFilterContext.Provider value={selectedCommune || null}>
-                        <QuartierFilterContext.Provider value={selectedQuartier || null}>
-                          {BlockComponent ? <BlockComponent data={analytics} /> : null}
-                        </QuartierFilterContext.Provider>
-                      </CommuneFilterContext.Provider>
-                    </VilleFilterContext.Provider>
+                    <TerritoireChangeContext.Provider value={onTerritoireChange || null}>
+                      <VilleFilterContext.Provider value={selectedVille || null}>
+                        <CommuneFilterContext.Provider value={selectedCommune || null}>
+                          <QuartierFilterContext.Provider value={selectedQuartier || null}>
+                            <TerritoireFilterContext.Provider value={selectedTerritoire || null}>
+                              {BlockComponent ? <BlockComponent data={analytics} /> : null}
+                            </TerritoireFilterContext.Provider>
+                          </QuartierFilterContext.Provider>
+                        </CommuneFilterContext.Provider>
+                      </VilleFilterContext.Provider>
+                    </TerritoireChangeContext.Provider>
                   </QuartierChangeContext.Provider>
                 </CommuneChangeContext.Provider>
               </VilleChangeContext.Provider>
