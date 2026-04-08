@@ -376,10 +376,12 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   <div className="bg-muted/20 px-2 py-0.5 border-b border-border/30 flex-shrink-0">
                     <h2 className="text-[10px] sm:text-xs font-medium text-foreground flex items-center gap-1">
                       <MapPin className="h-3 w-3 text-primary" />
-                      <span>{selectedVille ? `${selectedVille}${selectedCommune ? ` — ${selectedCommune}` : ''}${selectedQuartier ? ` — ${selectedQuartier}` : ''}` : selectedProvince ? selectedProvince.name : 'République Démocratique du Congo'}</span>
+                      <span>{selectedTerritoire ? `${selectedTerritoire} — ${selectedProvince?.name || ''}` : selectedVille ? `${selectedVille}${selectedCommune ? ` — ${selectedCommune}` : ''}${selectedQuartier ? ` — ${selectedQuartier}` : ''}` : selectedProvince ? selectedProvince.name : 'République Démocratique du Congo'}</span>
                     </h2>
                     <p className="text-[10px] text-muted-foreground leading-tight">
-                      {selectedVille && selectedCommune && selectedVille.toLowerCase() === 'goma'
+                      {selectedTerritoire
+                        ? `Découpe du territoire de ${selectedTerritoire} — ${selectedProvince?.name || ''}`
+                        : selectedVille && selectedCommune && selectedVille.toLowerCase() === 'goma'
                         ? `Découpage des quartiers de la commune de ${selectedCommune} — ${selectedVille}`
                         : selectedVille
                         ? `Découpage communal de la ville de ${selectedVille}`
@@ -391,7 +393,16 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   </div>
                   
                   <div className="flex-1 min-h-0 overflow-hidden flex items-center justify-center p-1">
-                    {selectedVille && selectedCommune && selectedVille.toLowerCase() === 'goma' ? (
+                    {selectedTerritoire && selectedProvince ? (
+                      <div className="w-full h-full">
+                        <DRCTerritoiresMap
+                          province={selectedProvince.name}
+                          territoire={selectedTerritoire}
+                          onTerritoireSelect={setSelectedTerritoire}
+                          territoireNames={getTerritoiresForProvince(selectedProvince.name)}
+                        />
+                      </div>
+                    ) : selectedVille && selectedCommune && selectedVille.toLowerCase() === 'goma' ? (
                       <div className="w-full h-full">
                         <DRCQuartiersMap ville={selectedVille} commune={selectedCommune} quartier={selectedQuartier} onQuartierSelect={setSelectedQuartier} />
                       </div>
