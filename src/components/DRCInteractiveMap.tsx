@@ -679,9 +679,11 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                     onVilleChange={setSelectedVille}
                     onCommuneChange={setSelectedCommune}
                     onQuartierChange={setSelectedQuartier}
+                    onTerritoireChange={setSelectedTerritoire}
                     selectedVille={selectedVille}
                     selectedCommune={selectedCommune}
                     selectedQuartier={selectedQuartier}
+                    selectedTerritoire={selectedTerritoire}
                   />
                 </div>
               </CardContent>
