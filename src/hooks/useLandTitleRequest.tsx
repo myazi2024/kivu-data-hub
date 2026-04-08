@@ -17,6 +17,11 @@ export interface LandTitleRequestData {
   requesterLegalStatus?: string;
   requesterGender?: string;
   requesterIdDocumentFile?: File | null;
+  // Champs conditionnels demandeur (Personne morale / État)
+  requesterEntityType?: string;
+  requesterEntitySubType?: string;
+  requesterEntitySubTypeOther?: string;
+  requesterRightType?: string;
   
   // Propriétaire
   isOwnerSameAsRequester: boolean;
@@ -27,6 +32,11 @@ export interface LandTitleRequestData {
   ownerGender?: string;
   ownerPhone?: string;
   ownerIdDocumentFile?: File | null;
+  // Champs conditionnels propriétaire (Personne morale / État)
+  ownerEntityType?: string;
+  ownerEntitySubType?: string;
+  ownerEntitySubTypeOther?: string;
+  ownerRightType?: string;
   
   // Localisation
   sectionType: 'urbaine' | 'rurale' | '';
