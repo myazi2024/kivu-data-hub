@@ -42,11 +42,6 @@ const mediaColumns = [
   },
 ];
 
-const simpleNavItems = [
-  { name: 'Accueil', href: '/' },
-  { name: 'Données foncières', href: '/map' },
-  { name: 'Carte Cadastrale', href: '/cadastral-map' },
-];
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
