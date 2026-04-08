@@ -1692,6 +1692,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                   <Label className="text-sm">Email</Label>
                                   <Input type="email" value={formData.requesterEmail} onChange={(e) => handleInputChange('requesterEmail', e.target.value)} placeholder="email@exemple.com" className="h-9 text-sm rounded-lg border" />
                                 </div>
+                              </div>
                             </div>
                           )}
                         </>
