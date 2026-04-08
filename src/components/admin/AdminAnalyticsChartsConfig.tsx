@@ -972,6 +972,15 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
                 </Button>
                 <Button
                   size="sm"
+                  variant={viewMode === 'kpis' ? 'default' : 'ghost'}
+                  className="rounded-none h-8 text-xs"
+                  onClick={() => setViewMode('kpis')}
+                >
+                  <LayoutGrid className="h-3.5 w-3.5 mr-1" />
+                  KPIs
+                </Button>
+                <Button
+                  size="sm"
                   variant={viewMode === 'charts' ? 'default' : 'ghost'}
                   className="rounded-none h-8 text-xs"
                   onClick={() => setViewMode('charts')}
@@ -1018,6 +1027,101 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
             {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Save className="h-3.5 w-3.5 mr-1" />}
             Sauvegarder la configuration des onglets
           </Button>
+        </div>
+      )}
+
+      {/* ─── KPIs MANAGEMENT VIEW ─── */}
+      {viewMode === 'kpis' && (
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          <Card className="lg:col-span-1">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <LayoutGrid className="h-4 w-4 text-primary" />
+                Onglets
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <ScrollArea className="h-[500px]">
+                <div className="space-y-0.5 p-2">
+                  {Object.entries(ANALYTICS_TABS_REGISTRY).filter(([key]) => key !== '_global' && key !== 'rdc-map').map(([key, tab]) => {
+                    const kpis = (localItems[key] || []).filter(i => i.item_type === 'kpi');
+                    const hiddenKpis = kpis.filter(k => !k.is_visible).length;
+                    const tabConf = localTabs.find(t => t.key === key);
+                    const tabLabel = tabConf?.label || tab.label;
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => handleTabSwitch(key)}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors flex items-center justify-between ${
+                          activeTab === key
+                            ? 'bg-primary text-primary-foreground'
+                            : 'hover:bg-accent text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        <span className="font-medium">{tabLabel}</span>
+                        <div className="flex items-center gap-1">
+                          <Badge variant="outline" className="text-[9px] h-4 px-1">{kpis.length}</Badge>
+                          {hiddenKpis > 0 && (
+                            <Badge variant="secondary" className="text-[9px] h-4 px-1">
+                              {hiddenKpis} masqué{hiddenKpis > 1 ? 's' : ''}
+                            </Badge>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+
+          <Card className="lg:col-span-3">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <LayoutGrid className="h-4 w-4" />
+                  KPIs — {ANALYTICS_TABS_REGISTRY[activeTab]?.label}
+                  <Badge variant="outline" className="text-[9px] ml-1">
+                    {currentKpis.length} indicateurs
+                  </Badge>
+                </CardTitle>
+                <div className="flex items-center gap-1">
+                  <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => toggleAll('kpi', true)}>
+                    <Eye className="h-3 w-3 mr-1" />Tout afficher
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => toggleAll('kpi', false)}>
+                    <EyeOff className="h-3 w-3 mr-1" />Tout masquer
+                  </Button>
+                  <Button size="sm" onClick={handleSave} disabled={!hasChanges || isSaving}>
+                    {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                    Sauvegarder
+                  </Button>
+                </div>
+              </div>
+              <CardDescription className="text-xs mt-1">
+                Gérez la visibilité, l'ordre et les titres des indicateurs clés affichés en haut de chaque onglet Analytics.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-1">
+                {currentKpis.length > 0 ? currentKpis.map((item, idx) => (
+                  <ItemEditor
+                    key={item.item_key}
+                    item={item}
+                    onChange={(updated) => updateItem(item.item_key, updated)}
+                    onMoveUp={() => moveItem(item.item_key, 'up', 'kpi')}
+                    onMoveDown={() => moveItem(item.item_key, 'down', 'kpi')}
+                    isFirst={idx === 0}
+                    isLast={idx === currentKpis.length - 1}
+                  />
+                )) : (
+                  <div className="text-sm text-muted-foreground text-center py-8">
+                    Aucun KPI configuré pour cet onglet.
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 
