@@ -1,41 +1,78 @@
 
+## Audit ciblé — pourquoi l’utilisateur ne voit pas les analytics test
 
-# Audit — Données test invisibles dans "Données foncières"
+Le hook analytics n’est plus le problème principal :
+- `DRCInteractiveMap.tsx` lit bien `isTestRoute`
+- `useLandDataAnalytics(isTestRoute)` est déjà branché sur `/test/map`
+- la route miroir `/test/map` existe déjà dans `App.tsx`
 
-## Diagnostic
+Le vrai blocage est le parcours utilisateur :
+- dans `AdminTestMode.tsx`, le lien générique “Accéder à l’environnement de test” ouvre `/test/cadastral-map`, pas l’écran analytics
+- ensuite, la navigation globale (`src/components/ui/navigation.tsx`) reste câblée en dur vers `/map`, `/cadastral-map` et `/mon-compte`
+- donc dès que l’utilisateur clique “Données foncières” depuis l’environnement test, il sort de `/test/*` et revient en production, ce qui masque les données `TEST-*`
 
-Le probleme est dans `useLandDataAnalytics.tsx`, ligne 51 :
+## Plan de correction
 
-```typescript
-if (testCol) query = query.not(testCol, 'ilike', 'TEST-%');
-```
+### 1. Rendre la navigation sensible au contexte test
+**Fichier :** `src/components/ui/navigation.tsx`
 
-Ce filtre exclut **systematiquement** les donnees `TEST-%`, que l'utilisateur soit sur `/map` (production) ou `/test/map` (test). Le hook ne recoit jamais l'information `isTestRoute` et n'adapte donc jamais son comportement.
+- utiliser `useTestEnvironment()`
+- construire les liens de navigation avec préfixe `/test` quand `isTestRoute === true`
+- couvrir au minimum :
+  - `Données foncières` → `/test/map`
+  - `Carte cadastrale` → `/test/cadastral-map`
+  - `Mon compte` → `/test/mon-compte`
+- laisser `Accueil` et `Admin` inchangés
 
-Consequence : sur la route `/test/map`, les graphiques et KPIs affichent 0 donnees test.
+Effet attendu :
+- depuis n’importe quelle page test, le menu conserve l’utilisateur dans l’environnement test
+- les visuels analytics continuent donc à consommer les données `TEST-*`
 
-De plus, les tables FK (permis, taxes, hypotheques, ownership, fraudes) subissent un double filtrage :
-1. `fetchAll` exclut les TEST-% via `TEST_FILTER_COLUMN` (pour celles qui ont une colonne directe)
-2. `excludeTestFK` / `excludeTestContribFK` exclut aussi les records lies a des parcelles TEST-%
+### 2. Corriger le point d’entrée depuis l’admin
+**Fichier :** `src/components/admin/AdminTestMode.tsx`
 
-Sur la route test, **aucun de ces filtres ne s'inverse** pour montrer uniquement les donnees test.
+- remplacer le lien unique actuel par une entrée plus claire
+- faire de `/test/map` le point d’entrée principal pour tester les visuels analytics
+- conserver un accès explicite à `/test/cadastral-map` si on veut aussi tester la recherche cadastrale
 
-## Correction
+Recommandation UX :
+- soit renommer le lien actuel en “Ouvrir Analytics (test)”
+- soit afficher 2 liens :
+  - `Analytics / Données foncières (test)`
+  - `Carte cadastrale (test)`
 
-### Fichier : `src/hooks/useLandDataAnalytics.tsx`
+### 3. Harmoniser le guide du mode test
+**Fichier :** `src/components/admin/test-mode/TestModeGuide.tsx`
 
-1. Ajouter un parametre `isTestRoute` au hook (ou le detecter via `useTestEnvironment`)
-2. Modifier `fetchAll` pour inverser le filtre selon le contexte :
-   - Production : `query.not(testCol, 'ilike', 'TEST-%')` (actuel)
-   - Test : `query.ilike(testCol, 'TEST-%')` (inverse)
-3. Inverser `excludeTestFK` et `excludeTestContribFK` :
-   - Production : exclure les records lies a des parcelles TEST-%
-   - Test : ne garder **que** les records lies a des parcelles TEST-%
-4. Ajouter `isTestRoute` dans la `queryKey` pour que le cache differencie les deux contextes
+- mettre en avant `/test/map` comme écran principal pour vérifier les graphiques, KPIs et filtres
+- garder `/test/cadastral-map` comme second parcours de test
+- expliciter que les visuels analytics test ne sont visibles que dans `/test/*`
 
-### Fichier : `src/components/DRCInteractiveMap.tsx`
+## Détails techniques
 
-5. Importer `useTestEnvironment` et passer `isTestRoute` a `useLandDataAnalytics`
+### Fichiers concernés
+- `src/components/ui/navigation.tsx`
+- `src/components/admin/AdminTestMode.tsx`
+- `src/components/admin/test-mode/TestModeGuide.tsx`
 
-**Impact** : ~15 lignes modifiees dans 2 fichiers. Aucune migration SQL.
+### Ce qu’on ne change pas
+- pas de migration SQL
+- pas de changement RLS
+- pas de retouche du hook `useLandDataAnalytics` sauf si une vérification finale révèle un cas résiduel
 
+## Résultat attendu après implémentation
+
+1. L’admin active le mode test
+2. Il clique sur l’accès test depuis l’admin
+3. Il arrive sur `/test/map`
+4. Les KPIs, graphiques et filtres analytics affichent les données `TEST-*`
+5. S’il navigue ensuite avec le menu, il reste dans `/test/*`
+6. La production `/map` continue d’exclure les données test
+
+## Vérifications à faire
+
+- depuis `/admin?tab=test-mode`, ouvrir l’environnement test et vérifier que l’entrée principale mène à `/test/map`
+- sur `/test/map`, confirmer la présence de la bannière test et de visuels alimentés par les données générées
+- depuis `/test/cadastral-map`, cliquer “Données foncières” et vérifier qu’on arrive bien sur `/test/map`
+- depuis `/test/map`, cliquer “Carte cadastrale” et vérifier qu’on reste sur `/test/cadastral-map`
+- vérifier enfin que `/map` hors test n’affiche toujours aucune donnée `TEST-*`
