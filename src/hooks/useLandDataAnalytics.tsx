@@ -33,10 +33,11 @@ const TEST_FILTER_COLUMN: Record<string, string> = {
 };
 
 /** Fetch all rows with pagination to bypass 1000-row limit.
- *  Automatically excludes TEST-% rows in production analytics. */
+ *  Filters TEST-% rows based on isTestRoute context. */
 async function fetchAll(
   table: string,
   select: string,
+  isTestRoute: boolean,
   filters?: (q: any) => any
 ): Promise<any[]> {
   const PAGE = 1000;
@@ -47,8 +48,12 @@ async function fetchAll(
   while (true) {
     let query = (supabase.from as any)(table).select(select);
     if (filters) query = filters(query);
-    // Exclude test data from production analytics
-    if (testCol) query = query.not(testCol, 'ilike', 'TEST-%');
+    // Filter test data based on route context
+    if (testCol) {
+      query = isTestRoute
+        ? query.ilike(testCol, 'TEST-%')
+        : query.not(testCol, 'ilike', 'TEST-%');
+    }
     const { data, error } = await query.range(from, from + PAGE - 1);
     if (error) {
       console.error(`[Analytics] Error fetching ${table}:`, error.message);
@@ -63,9 +68,9 @@ async function fetchAll(
   return allRows;
 }
 
-export const useLandDataAnalytics = () => {
+export const useLandDataAnalytics = (isTestRoute = false) => {
   return useQuery({
-    queryKey: ['land-analytics-v8'],
+    queryKey: ['land-analytics-v8', isTestRoute],
     queryFn: async (): Promise<LandAnalyticsData> => {
       const [
         parcels, contribs, titleReqs, permits,
@@ -128,17 +133,25 @@ export const useLandDataAnalytics = () => {
         }
       });
 
-      /** Exclude records linked to TEST-% parcels via parcel_id FK */
-      const excludeTestFK = (records: any[]) =>
-        records.filter(r => !r.parcel_id || !testParcelIds.has(r.parcel_id));
+      /** Filter records linked to TEST-% parcels via parcel_id FK */
+      const filterByTestFK = (records: any[]) =>
+        isTestRoute
+          ? records.filter(r => r.parcel_id && testParcelIds.has(r.parcel_id))
+          : records.filter(r => !r.parcel_id || !testParcelIds.has(r.parcel_id));
 
-      /** Exclude records linked to TEST-% via contribution_id → contribution → parcel */
-      const excludeTestContribFK = (records: any[]) =>
-        records.filter(r => {
-          if (!r.contribution_id) return true;
-          const contrib = contribs.find((c: any) => c.id === r.contribution_id);
-          return !contrib || !contrib.parcel_number?.toUpperCase().startsWith('TEST-');
-        });
+      /** Filter records linked to TEST-% via contribution_id → contribution → parcel */
+      const filterByTestContribFK = (records: any[]) =>
+        isTestRoute
+          ? records.filter(r => {
+              if (!r.contribution_id) return false;
+              const contrib = contribs.find((c: any) => c.id === r.contribution_id);
+              return contrib && contrib.parcel_number?.toUpperCase().startsWith('TEST-');
+            })
+          : records.filter(r => {
+              if (!r.contribution_id) return true;
+              const contrib = contribs.find((c: any) => c.id === r.contribution_id);
+              return !contrib || !contrib.parcel_number?.toUpperCase().startsWith('TEST-');
+            });
 
       const enrich = (records: any[]) =>
         records.map(r => {
