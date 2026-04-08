@@ -149,8 +149,8 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(byNationality, 'bar-h', 'les nationalités')} crossVariables={cx('nationality')} rawRecords={filtered} groupField="nationality" />}
         {v('deduced-title') && <ChartCard title={t('deduced-title', 'Titre déduit')} data={byDeducedTitleType} type="bar-h" colorIndex={3} labelWidth={100} hidden={byDeducedTitleType.length === 0}
           insight={generateInsight(byDeducedTitleType, 'bar-h', 'les types de titre')} crossVariables={cx('deduced-title')} rawRecords={filtered} groupField="deduced_title_type" />}
-        {v('owner-same') && <ChartCard title={t('owner-same', 'Demandeur = Proprio')} icon={UserCheck} data={ownerSameData} type="pie" colorIndex={0} hidden={ownerSameData.length === 0}
-          insight={generateInsight(ownerSameData, 'pie', 'propriétaire vs mandataire')} crossVariables={cx('owner-same')} rawRecords={filtered} groupField="is_owner_same_as_requester" />}
+        {v('owner-same') && <ChartCard title={t('owner-same', 'Qualité du demandeur')} icon={UserCheck} data={ownerSameData} type="pie" colorIndex={0} hidden={ownerSameData.length === 0}
+          insight={generateInsight(ownerSameData, 'pie', 'qualité du demandeur')} crossVariables={cx('owner-same')} rawRecords={filtered} groupField="requester_type" />}
         {v('surface') && <ChartCard title={t('surface', 'Superficie demandée')} icon={Ruler} data={surfaceDist} type="bar-v" colorIndex={10} hidden={surfaceDist.length === 0}
           insight={generateInsight(surfaceDist, 'bar-v', 'les superficies')} crossVariables={cx('surface')} rawRecords={filtered} groupField="area_sqm" />}
         {v('construction-type') && <ChartCard title={t('construction-type', 'Type construction')} icon={Building} data={byConstructionType} type="bar-h" colorIndex={3} hidden={byConstructionType.length === 0}
