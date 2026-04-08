@@ -487,7 +487,7 @@ const AdminLandTitleRequests: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Type</p>
-                      <p className="text-sm font-medium capitalize">{selectedRequest.requester_type}</p>
+                      <p className="text-sm font-medium">{{ owner: 'Propriétaire', beneficiary: 'Ayant droit', representative: 'Mandataire' }[selectedRequest.requester_type] || selectedRequest.requester_type}</p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Téléphone</p>

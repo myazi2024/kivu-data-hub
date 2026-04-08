@@ -67,7 +67,7 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
   }, [filtered]);
 
   const surfaceDist = useMemo(() => surfaceDistribution(filtered), [filtered]);
-  const ownerSameData = useMemo(() => countBoolean(filtered, 'is_owner_same_as_requester', 'Propriétaire', 'Mandataire'), [filtered]);
+  const ownerSameData = useMemo(() => countBy(filtered, 'requester_type'), [filtered]);
 
   const revenueTrend = useMemo(() => sumByMonth(filtered.filter(r => r.payment_status === 'paid')), [filtered]);
 

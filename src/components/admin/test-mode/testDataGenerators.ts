@@ -495,7 +495,7 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
   const REQ_STATUSES = ['pending', 'approved', 'rejected', 'pending', 'approved', 'pending', 'rejected', 'approved', 'pending', 'approved'];
   const PAY_STATUSES = ['pending', 'paid', 'paid', 'pending', 'paid', 'pending', 'paid', 'paid', 'pending', 'paid'];
   const REQUEST_TYPES = ['initial', 'renouvellement', 'conversion'];
-  const REQUESTER_TYPES = ['proprietaire', 'mandataire', 'heritier'];
+  const REQUESTER_TYPES = ['owner', 'beneficiary', 'representative'];
   const NATIONALITIES = ['congolais', 'congolais', 'congolais', 'congolais', 'congolais', 'congolais', 'congolais', 'congolais', 'etranger', 'etranger'];
 
   // ~5% of total parcels, spread across provinces proportionally

@@ -8,7 +8,7 @@ export interface LandTitleRequestData {
   selectedParcelNumber?: string;
   
   // Demandeur
-  requesterType: 'owner' | 'representative';
+  requesterType: 'owner' | 'beneficiary' | 'representative';
   requesterLastName: string;
   requesterFirstName: string;
   requesterMiddleName?: string;
