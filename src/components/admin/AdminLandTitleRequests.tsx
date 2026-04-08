@@ -486,9 +486,39 @@ const AdminLandTitleRequests: React.FC = () => {
                       <p className="text-sm font-medium">{getRequestFullName(selectedRequest)}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Type</p>
+                      <p className="text-xs text-muted-foreground">Qualité</p>
                       <p className="text-sm font-medium">{{ owner: 'Propriétaire', beneficiary: 'Ayant droit', representative: 'Mandataire' }[selectedRequest.requester_type] || selectedRequest.requester_type}</p>
                     </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Statut juridique</p>
+                      <p className="text-sm font-medium">{selectedRequest.requester_legal_status || 'Personne physique'}</p>
+                    </div>
+                    {(() => {
+                      const ad = (detailData || selectedRequest).additional_documents as any;
+                      if (!ad) return null;
+                      return (
+                        <>
+                          {ad.requester_entity_type && (
+                            <div>
+                              <p className="text-xs text-muted-foreground">Type d'entreprise</p>
+                              <p className="text-sm font-medium">{ad.requester_entity_type}</p>
+                            </div>
+                          )}
+                          {ad.requester_entity_sub_type && (
+                            <div>
+                              <p className="text-xs text-muted-foreground">{ad.requester_entity_type === 'Société' ? 'Forme juridique' : "Type d'association"}</p>
+                              <p className="text-sm font-medium">{ad.requester_entity_sub_type}{ad.requester_entity_sub_type === 'Autre' && ad.requester_entity_sub_type_other ? ` (${ad.requester_entity_sub_type_other})` : ''}</p>
+                            </div>
+                          )}
+                          {ad.requester_right_type && (
+                            <div>
+                              <p className="text-xs text-muted-foreground">Type de droit</p>
+                              <p className="text-sm font-medium">{ad.requester_right_type}</p>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                     <div>
                       <p className="text-xs text-muted-foreground">Téléphone</p>
                       <p className="text-sm font-medium">{selectedRequest.requester_phone}</p>
@@ -536,8 +566,34 @@ const AdminLandTitleRequests: React.FC = () => {
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Statut juridique</p>
-                          <p className="text-sm font-medium">{(detailData || selectedRequest).owner_legal_status || '-'}</p>
+                          <p className="text-sm font-medium">{(detailData || selectedRequest).owner_legal_status || 'Personne physique'}</p>
                         </div>
+                        {(() => {
+                          const ad = (detailData || selectedRequest).additional_documents as any;
+                          if (!ad) return null;
+                          return (
+                            <>
+                              {ad.owner_entity_type && (
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Type d'entreprise</p>
+                                  <p className="text-sm font-medium">{ad.owner_entity_type}</p>
+                                </div>
+                              )}
+                              {ad.owner_entity_sub_type && (
+                                <div>
+                                  <p className="text-xs text-muted-foreground">{ad.owner_entity_type === 'Société' ? 'Forme juridique' : "Type d'association"}</p>
+                                  <p className="text-sm font-medium">{ad.owner_entity_sub_type}{ad.owner_entity_sub_type === 'Autre' && ad.owner_entity_sub_type_other ? ` (${ad.owner_entity_sub_type_other})` : ''}</p>
+                                </div>
+                              )}
+                              {ad.owner_right_type && (
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Type de droit</p>
+                                  <p className="text-sm font-medium">{ad.owner_right_type}</p>
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
                         <div>
                           <p className="text-xs text-muted-foreground">Téléphone</p>
                           <p className="text-sm font-medium">{(detailData || selectedRequest).owner_phone || '-'}</p>

@@ -616,6 +616,28 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       if (field === 'requesterType') {
         updated.isOwnerSameAsRequester = value === 'owner';
       }
+      // Reset requester entity fields when legal status changes
+      if (field === 'requesterLegalStatus') {
+        updated.requesterEntityType = '';
+        updated.requesterEntitySubType = '';
+        updated.requesterEntitySubTypeOther = '';
+        updated.requesterRightType = '';
+        if (value !== 'Personne physique') {
+          updated.requesterGender = '';
+          updated.requesterMiddleName = '';
+        }
+      }
+      // Reset owner entity fields when legal status changes
+      if (field === 'ownerLegalStatus') {
+        updated.ownerEntityType = '';
+        updated.ownerEntitySubType = '';
+        updated.ownerEntitySubTypeOther = '';
+        updated.ownerRightType = '';
+        if (value !== 'Personne physique') {
+          updated.ownerGender = '';
+          updated.ownerMiddleName = '';
+        }
+      }
       return updated;
     });
     
@@ -1526,25 +1548,20 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                   <Label className="text-sm">Statut juridique *</Label>
                                   <Select
                                     value={formData.requesterLegalStatus || 'Personne physique'}
-                                    onValueChange={(value) => {
-                                      handleInputChange('requesterLegalStatus', value);
-                                      if (value !== 'Personne physique') {
-                                        handleInputChange('requesterGender', '');
-                                      }
-                                    }}
+                                    onValueChange={(value) => handleInputChange('requesterLegalStatus', value)}
                                   >
                                     <SelectTrigger className="h-9 text-sm rounded-lg border">
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
                                       <SelectItem value="Personne physique">Personne physique</SelectItem>
-                                      <SelectItem value="Société">Société</SelectItem>
-                                      <SelectItem value="Association">Association</SelectItem>
+                                      <SelectItem value="Personne morale">Personne morale</SelectItem>
+                                      <SelectItem value="État">État</SelectItem>
                                     </SelectContent>
                                   </Select>
                                 </div>
                                 {(formData.requesterLegalStatus || 'Personne physique') === 'Personne physique' && (
-                                  <div className="space-y-1.5">
+                                  <div className="space-y-1.5 animate-fade-in">
                                     <Label className="text-sm">Genre *</Label>
                                     <Select
                                       value={formData.requesterGender || ''}
@@ -1561,61 +1578,120 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                   </div>
                                 )}
                               </div>
+
+                              {/* Personne morale conditional fields */}
+                              {formData.requesterLegalStatus === 'Personne morale' && (
+                                <div className="space-y-2 animate-fade-in">
+                                  <div className="space-y-1.5">
+                                    <Label className="text-sm">Type d'entreprise *</Label>
+                                    <Select value={formData.requesterEntityType || ''} onValueChange={(value) => { handleInputChange('requesterEntityType', value); handleInputChange('requesterEntitySubType', ''); handleInputChange('requesterEntitySubTypeOther', ''); }}>
+                                      <SelectTrigger className="h-9 text-sm rounded-lg border"><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="Société">Société</SelectItem>
+                                        <SelectItem value="Association">Association</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  {formData.requesterEntityType === 'Société' && (
+                                    <div className="space-y-1.5 animate-fade-in">
+                                      <Label className="text-sm">Forme juridique *</Label>
+                                      <Select value={formData.requesterEntitySubType || ''} onValueChange={(value) => { handleInputChange('requesterEntitySubType', value); if (value !== 'Autre') handleInputChange('requesterEntitySubTypeOther', ''); }}>
+                                        <SelectTrigger className="h-9 text-sm rounded-lg border"><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+                                        <SelectContent>
+                                          {['Entreprise individuelle (Ets)', 'Société en Participation (SEP)', 'Société à Responsabilité Limitée (SARL)', 'Société Anonyme (SA)', 'Société par Actions Simplifiée (SAS)', 'Société en Nom Collectif (SNC)', 'Société en Commandite Simple (SCS)', "Groupement d'Intérêt Économique (GIE)", 'Autre'].map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                                        </SelectContent>
+                                      </Select>
+                                      {formData.requesterEntitySubType === 'Autre' && (
+                                        <Input placeholder="Précisez la forme juridique" value={formData.requesterEntitySubTypeOther || ''} onChange={(e) => handleInputChange('requesterEntitySubTypeOther', e.target.value)} className="h-9 text-sm rounded-lg border mt-1" />
+                                      )}
+                                    </div>
+                                  )}
+                                  {formData.requesterEntityType === 'Association' && (
+                                    <div className="space-y-1.5 animate-fade-in">
+                                      <Label className="text-sm">Type d'association *</Label>
+                                      <Select value={formData.requesterEntitySubType || ''} onValueChange={(value) => { handleInputChange('requesterEntitySubType', value); if (value !== 'Autre') handleInputChange('requesterEntitySubTypeOther', ''); }}>
+                                        <SelectTrigger className="h-9 text-sm rounded-lg border"><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+                                        <SelectContent>
+                                          {['Association sans but lucratif (ASBL)', "Établissement d'Utilité Publique (EUP)", 'Autre'].map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                                        </SelectContent>
+                                      </Select>
+                                      {formData.requesterEntitySubType === 'Autre' && (
+                                        <Input placeholder="Précisez le type d'association" value={formData.requesterEntitySubTypeOther || ''} onChange={(e) => handleInputChange('requesterEntitySubTypeOther', e.target.value)} className="h-9 text-sm rounded-lg border mt-1" />
+                                      )}
+                                    </div>
+                                  )}
+                                  {formData.requesterEntityType && (
+                                    <div className="space-y-2 animate-fade-in">
+                                      <div className="space-y-1.5">
+                                        <Label className="text-sm">{formData.requesterEntityType === 'Association' ? 'Dénomination *' : 'Raison sociale *'}</Label>
+                                        <Input value={formData.requesterLastName} onChange={(e) => handleInputChange('requesterLastName', e.target.value)} placeholder={formData.requesterEntityType === 'Association' ? "Dénomination de l'association" : "Dénomination officielle"} className="h-9 text-sm rounded-lg border" />
+                                      </div>
+                                      <div className="space-y-1.5">
+                                        <Label className="text-sm">{formData.requesterEntityType === 'Association' ? "N° d'Arrêté ministériel *" : "N° d'identification (RCCM) *"}</Label>
+                                        <Input value={formData.requesterFirstName} onChange={(e) => handleInputChange('requesterFirstName', e.target.value)} placeholder={formData.requesterEntityType === 'Association' ? "Ex: 0XX/CAB/MIN/..." : "Ex: CD/KIN/RCCM/XX-X-XXXXX"} className="h-9 text-sm rounded-lg border" />
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* État conditional fields */}
+                              {formData.requesterLegalStatus === 'État' && (
+                                <div className="space-y-2 animate-fade-in">
+                                  <div className="space-y-1.5">
+                                    <Label className="text-sm">Type de droit *</Label>
+                                    <Select value={formData.requesterRightType || ''} onValueChange={(value) => handleInputChange('requesterRightType', value)}>
+                                      <SelectTrigger className="h-9 text-sm rounded-lg border"><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="Concession">Concession</SelectItem>
+                                        <SelectItem value="Affectation">Affectation</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div className="space-y-1.5">
+                                    <Label className="text-sm">Service / Agence *</Label>
+                                    <Input value={formData.requesterLastName} onChange={(e) => handleInputChange('requesterLastName', e.target.value)} placeholder="Nom du service ou agence de l'État" className="h-9 text-sm rounded-lg border" />
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Personne physique: standard name fields */}
+                              {(formData.requesterLegalStatus || 'Personne physique') === 'Personne physique' && (
+                                <>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div className="space-y-1.5">
+                                      <Label className="text-sm">Nom *</Label>
+                                      <Input value={formData.requesterLastName} onChange={(e) => handleInputChange('requesterLastName', e.target.value)} placeholder="Nom" className="h-9 text-sm rounded-lg border" />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                      <Label className="text-sm">Prénom *</Label>
+                                      <Input value={formData.requesterFirstName} onChange={(e) => handleInputChange('requesterFirstName', e.target.value)} placeholder="Prénom" className="h-9 text-sm rounded-lg border" />
+                                    </div>
+                                  </div>
+                                  <div className="space-y-1.5">
+                                    <Label className="text-sm">Post-nom</Label>
+                                    <Input value={formData.requesterMiddleName} onChange={(e) => handleInputChange('requesterMiddleName', e.target.value)} placeholder="Post-nom" className="h-9 text-sm rounded-lg border" />
+                                  </div>
+                                </>
+                              )}
+
                               <div className="grid grid-cols-2 gap-2">
-                                <div className="space-y-1.5">
-                                  <Label className="text-sm">Nom *</Label>
-                                  <Input
-                                    value={formData.requesterLastName}
-                                    onChange={(e) => handleInputChange('requesterLastName', e.target.value)}
-                                    placeholder="Nom du mandataire"
-                                    className="h-9 text-sm rounded-lg border"
-                                  />
-                                </div>
-                                <div className="space-y-1.5">
-                                  <Label className="text-sm">Prénom *</Label>
-                                  <Input
-                                    value={formData.requesterFirstName}
-                                    onChange={(e) => handleInputChange('requesterFirstName', e.target.value)}
-                                    placeholder="Prénom du mandataire"
-                                    className="h-9 text-sm rounded-lg border"
-                                  />
-                                </div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2">
-                                <div className="space-y-1.5">
-                                  <Label className="text-sm">Post-nom</Label>
-                                  <Input
-                                    value={formData.requesterMiddleName}
-                                    onChange={(e) => handleInputChange('requesterMiddleName', e.target.value)}
-                                    placeholder="Post-nom"
-                                    className="h-9 text-sm rounded-lg border"
-                                  />
-                                </div>
                                 <div className="space-y-1.5">
                                   <Label className="text-sm">Téléphone *</Label>
                                   <Input
                                     value={formData.requesterPhone}
                                     onChange={(e) => handleInputChange('requesterPhone', e.target.value)}
                                     placeholder="+243..."
-                                    className={cn(
-                                      "h-9 text-sm rounded-lg border",
-                                      formData.requesterPhone && !validatePhone(formData.requesterPhone) && "border-destructive"
-                                    )}
+                                    className={cn("h-9 text-sm rounded-lg border", formData.requesterPhone && !validatePhone(formData.requesterPhone) && "border-destructive")}
                                   />
                                   {formData.requesterPhone && !validatePhone(formData.requesterPhone) && (
                                     <p className="text-[10px] text-destructive">Format: +243 suivi de 9 chiffres</p>
                                   )}
                                 </div>
-                              </div>
-                              <div className="space-y-1.5">
-                                <Label className="text-sm">Email</Label>
-                                <Input
-                                  type="email"
-                                  value={formData.requesterEmail}
-                                  onChange={(e) => handleInputChange('requesterEmail', e.target.value)}
-                                  placeholder="email@exemple.com"
-                                  className="h-9 text-sm rounded-lg border"
-                                />
+                                <div className="space-y-1.5">
+                                  <Label className="text-sm">Email</Label>
+                                  <Input type="email" value={formData.requesterEmail} onChange={(e) => handleInputChange('requesterEmail', e.target.value)} placeholder="email@exemple.com" className="h-9 text-sm rounded-lg border" />
+                                </div>
                               </div>
                             </div>
                           )}
@@ -1679,26 +1755,20 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               <Label className="text-sm">Statut juridique *</Label>
                               <Select
                                 value={formData.requesterLegalStatus || 'Personne physique'}
-                                onValueChange={(value) => {
-                                  handleInputChange('requesterLegalStatus', value);
-                                  if (value !== 'Personne physique') {
-                                    handleInputChange('requesterGender', '');
-                                  }
-                                }}
+                                onValueChange={(value) => handleInputChange('requesterLegalStatus', value)}
                               >
                                 <SelectTrigger className="h-9 text-sm rounded-lg border">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="Personne physique">Personne physique</SelectItem>
-                                  <SelectItem value="Société">Société</SelectItem>
-                                  <SelectItem value="Association">Association</SelectItem>
+                                  <SelectItem value="Personne morale">Personne morale</SelectItem>
                                   <SelectItem value="État">État</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
                             {(formData.requesterLegalStatus || 'Personne physique') === 'Personne physique' && (
-                              <div className="space-y-1.5">
+                              <div className="space-y-1.5 animate-fade-in">
                                 <Label className="text-sm">Genre *</Label>
                                 <Select
                                   value={formData.requesterGender || ''}
@@ -1716,63 +1786,125 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                             )}
                           </div>
 
-                          <div className="grid grid-cols-2 gap-2">
-                            <div className="space-y-1.5">
-                              <Label className="text-sm">Nom *</Label>
-                              <Input
-                                value={formData.requesterLastName}
-                                onChange={(e) => handleInputChange('requesterLastName', e.target.value)}
-                                placeholder="Votre nom"
-                                className="h-9 text-sm rounded-lg border"
-                              />
+                          {/* Personne morale conditional fields */}
+                          {formData.requesterLegalStatus === 'Personne morale' && (
+                            <div className="space-y-2 animate-fade-in">
+                              <div className="space-y-1.5">
+                                <Label className="text-sm">Type d'entreprise *</Label>
+                                <Select value={formData.requesterEntityType || ''} onValueChange={(value) => { handleInputChange('requesterEntityType', value); handleInputChange('requesterEntitySubType', ''); handleInputChange('requesterEntitySubTypeOther', ''); }}>
+                                  <SelectTrigger className="h-9 text-sm rounded-lg border"><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Société">Société</SelectItem>
+                                    <SelectItem value="Association">Association</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              {formData.requesterEntityType === 'Société' && (
+                                <div className="space-y-1.5 animate-fade-in">
+                                  <Label className="text-sm">Forme juridique *</Label>
+                                  <Select value={formData.requesterEntitySubType || ''} onValueChange={(value) => { handleInputChange('requesterEntitySubType', value); if (value !== 'Autre') handleInputChange('requesterEntitySubTypeOther', ''); }}>
+                                    <SelectTrigger className="h-9 text-sm rounded-lg border"><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+                                    <SelectContent>
+                                      {['Entreprise individuelle (Ets)', 'Société en Participation (SEP)', 'Société à Responsabilité Limitée (SARL)', 'Société Anonyme (SA)', 'Société par Actions Simplifiée (SAS)', 'Société en Nom Collectif (SNC)', 'Société en Commandite Simple (SCS)', "Groupement d'Intérêt Économique (GIE)", 'Autre'].map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                                    </SelectContent>
+                                  </Select>
+                                  {formData.requesterEntitySubType === 'Autre' && (
+                                    <Input placeholder="Précisez la forme juridique" value={formData.requesterEntitySubTypeOther || ''} onChange={(e) => handleInputChange('requesterEntitySubTypeOther', e.target.value)} className="h-9 text-sm rounded-lg border mt-1" />
+                                  )}
+                                </div>
+                              )}
+                              {formData.requesterEntityType === 'Association' && (
+                                <div className="space-y-1.5 animate-fade-in">
+                                  <Label className="text-sm">Type d'association *</Label>
+                                  <Select value={formData.requesterEntitySubType || ''} onValueChange={(value) => { handleInputChange('requesterEntitySubType', value); if (value !== 'Autre') handleInputChange('requesterEntitySubTypeOther', ''); }}>
+                                    <SelectTrigger className="h-9 text-sm rounded-lg border"><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+                                    <SelectContent>
+                                      {['Association sans but lucratif (ASBL)', "Établissement d'Utilité Publique (EUP)", 'Autre'].map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                                    </SelectContent>
+                                  </Select>
+                                  {formData.requesterEntitySubType === 'Autre' && (
+                                    <Input placeholder="Précisez le type d'association" value={formData.requesterEntitySubTypeOther || ''} onChange={(e) => handleInputChange('requesterEntitySubTypeOther', e.target.value)} className="h-9 text-sm rounded-lg border mt-1" />
+                                  )}
+                                </div>
+                              )}
+                              {formData.requesterEntityType && (
+                                <div className="space-y-2 animate-fade-in">
+                                  <div className="space-y-1.5">
+                                    <Label className="text-sm">{formData.requesterEntityType === 'Association' ? 'Dénomination *' : 'Raison sociale *'}</Label>
+                                    <Input value={formData.requesterLastName} onChange={(e) => handleInputChange('requesterLastName', e.target.value)} placeholder={formData.requesterEntityType === 'Association' ? "Dénomination de l'association" : "Dénomination officielle"} className="h-9 text-sm rounded-lg border" />
+                                  </div>
+                                  <div className="space-y-1.5">
+                                    <Label className="text-sm">{formData.requesterEntityType === 'Association' ? "N° d'Arrêté ministériel *" : "N° d'identification (RCCM) *"}</Label>
+                                    <Input value={formData.requesterFirstName} onChange={(e) => handleInputChange('requesterFirstName', e.target.value)} placeholder={formData.requesterEntityType === 'Association' ? "Ex: 0XX/CAB/MIN/..." : "Ex: CD/KIN/RCCM/XX-X-XXXXX"} className="h-9 text-sm rounded-lg border" />
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                            <div className="space-y-1.5">
-                              <Label className="text-sm">Prénom *</Label>
-                              <Input
-                                value={formData.requesterFirstName}
-                                onChange={(e) => handleInputChange('requesterFirstName', e.target.value)}
-                                placeholder="Votre prénom"
-                                className="h-9 text-sm rounded-lg border"
-                              />
+                          )}
+
+                          {/* État conditional fields */}
+                          {formData.requesterLegalStatus === 'État' && (
+                            <div className="space-y-2 animate-fade-in">
+                              <div className="space-y-1.5">
+                                <Label className="text-sm">Type de droit *</Label>
+                                <Select value={formData.requesterRightType || ''} onValueChange={(value) => handleInputChange('requesterRightType', value)}>
+                                  <SelectTrigger className="h-9 text-sm rounded-lg border"><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Concession">Concession</SelectItem>
+                                    <SelectItem value="Affectation">Affectation</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-1.5">
+                                <Label className="text-sm">Service / Agence *</Label>
+                                <Input value={formData.requesterLastName} onChange={(e) => handleInputChange('requesterLastName', e.target.value)} placeholder="Nom du service ou agence de l'État" className="h-9 text-sm rounded-lg border" />
+                              </div>
                             </div>
-                          </div>
+                          )}
+
+                          {/* Personne physique: standard name fields */}
+                          {(formData.requesterLegalStatus || 'Personne physique') === 'Personne physique' && (
+                            <>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div className="space-y-1.5">
+                                  <Label className="text-sm">Nom *</Label>
+                                  <Input value={formData.requesterLastName} onChange={(e) => handleInputChange('requesterLastName', e.target.value)} placeholder="Votre nom" className="h-9 text-sm rounded-lg border" />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <Label className="text-sm">Prénom *</Label>
+                                  <Input value={formData.requesterFirstName} onChange={(e) => handleInputChange('requesterFirstName', e.target.value)} placeholder="Votre prénom" className="h-9 text-sm rounded-lg border" />
+                                </div>
+                              </div>
+                              <div className="space-y-1.5">
+                                <Label className="text-sm">Post-nom</Label>
+                                <Input value={formData.requesterMiddleName} onChange={(e) => handleInputChange('requesterMiddleName', e.target.value)} placeholder="Post-nom" className="h-9 text-sm rounded-lg border" />
+                              </div>
+                            </>
+                          )}
 
                           <div className="grid grid-cols-2 gap-2">
-                            <div className="space-y-1.5">
-                              <Label className="text-sm">Post-nom</Label>
-                              <Input
-                                value={formData.requesterMiddleName}
-                                onChange={(e) => handleInputChange('requesterMiddleName', e.target.value)}
-                                placeholder="Post-nom"
-                                className="h-9 text-sm rounded-lg border"
-                              />
-                            </div>
                             <div className="space-y-1.5">
                               <Label className="text-sm">Téléphone *</Label>
                               <Input
                                 value={formData.requesterPhone}
                                 onChange={(e) => handleInputChange('requesterPhone', e.target.value)}
                                 placeholder="+243..."
-                                className={cn(
-                                  "h-9 text-sm rounded-lg border",
-                                  formData.requesterPhone && !validatePhone(formData.requesterPhone) && "border-destructive"
-                                )}
+                                className={cn("h-9 text-sm rounded-lg border", formData.requesterPhone && !validatePhone(formData.requesterPhone) && "border-destructive")}
                               />
                               {formData.requesterPhone && !validatePhone(formData.requesterPhone) && (
                                 <p className="text-[10px] text-destructive">Format: +243 suivi de 9 chiffres</p>
                               )}
                             </div>
-                          </div>
-
-                          <div className="space-y-1.5">
-                            <Label className="text-sm">Email</Label>
-                            <Input
-                              type="email"
-                              value={formData.requesterEmail}
-                              onChange={(e) => handleInputChange('requesterEmail', e.target.value)}
-                              placeholder="votre@email.com"
-                              className="h-9 text-sm rounded-lg border"
-                            />
+                            <div className="space-y-1.5">
+                              <Label className="text-sm">Email</Label>
+                              <Input
+                                type="email"
+                                value={formData.requesterEmail}
+                                onChange={(e) => handleInputChange('requesterEmail', e.target.value)}
+                                placeholder="votre@email.com"
+                                className="h-9 text-sm rounded-lg border"
+                              />
+                            </div>
                           </div>
                         </>
                       )}
@@ -1793,85 +1925,140 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-1.5">
-                            <Label className="text-sm">Nom *</Label>
-                            <Input
-                              value={formData.ownerLastName || ''}
-                              onChange={(e) => handleInputChange('ownerLastName', e.target.value)}
-                              placeholder="Nom du propriétaire"
-                              className="h-9 text-sm rounded-lg border"
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-sm">Prénom *</Label>
-                            <Input
-                              value={formData.ownerFirstName || ''}
-                              onChange={(e) => handleInputChange('ownerFirstName', e.target.value)}
-                              placeholder="Prénom"
-                              className="h-9 text-sm rounded-lg border"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="space-y-1.5">
-                            <Label className="text-sm">Post-nom</Label>
-                            <Input
-                              value={formData.ownerMiddleName || ''}
-                              onChange={(e) => handleInputChange('ownerMiddleName', e.target.value)}
-                              placeholder="Post-nom"
-                              className="h-9 text-sm rounded-lg border"
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-sm">Téléphone</Label>
-                            <Input
-                              value={formData.ownerPhone || ''}
-                              onChange={(e) => handleInputChange('ownerPhone', e.target.value)}
-                              placeholder="+243..."
-                              className="h-9 text-sm rounded-lg border"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <Label className="text-sm">Statut juridique</Label>
-                          <Select
-                            value={formData.ownerLegalStatus || 'Personne physique'}
-                            onValueChange={(value) => {
-                              handleInputChange('ownerLegalStatus', value);
-                              if (value !== 'Personne physique') {
-                                handleInputChange('ownerGender', '');
-                              }
-                            }}
-                          >
-                            <SelectTrigger className="h-9 text-sm rounded-lg border">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-lg">
-                              <SelectItem value="Personne physique" className="text-sm py-2">Personne physique</SelectItem>
-                              <SelectItem value="Personne morale" className="text-sm py-2">Personne morale</SelectItem>
-                              <SelectItem value="Indivision" className="text-sm py-2">Indivision</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {(formData.ownerLegalStatus || 'Personne physique') === 'Personne physique' && (
-                          <div className="space-y-1.5 animate-fade-in">
-                            <Label className="text-sm">Genre *</Label>
+                            <Label className="text-sm">Statut juridique *</Label>
                             <Select
-                              value={formData.ownerGender || ''}
-                              onValueChange={(value) => handleInputChange('ownerGender', value)}
+                              value={formData.ownerLegalStatus || 'Personne physique'}
+                              onValueChange={(value) => handleInputChange('ownerLegalStatus', value)}
                             >
                               <SelectTrigger className="h-9 text-sm rounded-lg border">
-                                <SelectValue placeholder="Sélectionner le genre" />
+                                <SelectValue />
                               </SelectTrigger>
                               <SelectContent className="rounded-lg">
-                                <SelectItem value="Masculin" className="text-sm py-2">Masculin</SelectItem>
-                                <SelectItem value="Féminin" className="text-sm py-2">Féminin</SelectItem>
+                                <SelectItem value="Personne physique">Personne physique</SelectItem>
+                                <SelectItem value="Personne morale">Personne morale</SelectItem>
+                                <SelectItem value="État">État</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
+                          {(formData.ownerLegalStatus || 'Personne physique') === 'Personne physique' && (
+                            <div className="space-y-1.5 animate-fade-in">
+                              <Label className="text-sm">Genre *</Label>
+                              <Select
+                                value={formData.ownerGender || ''}
+                                onValueChange={(value) => handleInputChange('ownerGender', value)}
+                              >
+                                <SelectTrigger className="h-9 text-sm rounded-lg border">
+                                  <SelectValue placeholder="Sélectionner" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-lg">
+                                  <SelectItem value="Masculin">Masculin</SelectItem>
+                                  <SelectItem value="Féminin">Féminin</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Personne morale conditional fields - Owner */}
+                        {formData.ownerLegalStatus === 'Personne morale' && (
+                          <div className="space-y-2 animate-fade-in">
+                            <div className="space-y-1.5">
+                              <Label className="text-sm">Type d'entreprise *</Label>
+                              <Select value={formData.ownerEntityType || ''} onValueChange={(value) => { handleInputChange('ownerEntityType', value); handleInputChange('ownerEntitySubType', ''); handleInputChange('ownerEntitySubTypeOther', ''); }}>
+                                <SelectTrigger className="h-9 text-sm rounded-lg border"><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Société">Société</SelectItem>
+                                  <SelectItem value="Association">Association</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            {formData.ownerEntityType === 'Société' && (
+                              <div className="space-y-1.5 animate-fade-in">
+                                <Label className="text-sm">Forme juridique *</Label>
+                                <Select value={formData.ownerEntitySubType || ''} onValueChange={(value) => { handleInputChange('ownerEntitySubType', value); if (value !== 'Autre') handleInputChange('ownerEntitySubTypeOther', ''); }}>
+                                  <SelectTrigger className="h-9 text-sm rounded-lg border"><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+                                  <SelectContent>
+                                    {['Entreprise individuelle (Ets)', 'Société en Participation (SEP)', 'Société à Responsabilité Limitée (SARL)', 'Société Anonyme (SA)', 'Société par Actions Simplifiée (SAS)', 'Société en Nom Collectif (SNC)', 'Société en Commandite Simple (SCS)', "Groupement d'Intérêt Économique (GIE)", 'Autre'].map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                                  </SelectContent>
+                                </Select>
+                                {formData.ownerEntitySubType === 'Autre' && (
+                                  <Input placeholder="Précisez la forme juridique" value={formData.ownerEntitySubTypeOther || ''} onChange={(e) => handleInputChange('ownerEntitySubTypeOther', e.target.value)} className="h-9 text-sm rounded-lg border mt-1" />
+                                )}
+                              </div>
+                            )}
+                            {formData.ownerEntityType === 'Association' && (
+                              <div className="space-y-1.5 animate-fade-in">
+                                <Label className="text-sm">Type d'association *</Label>
+                                <Select value={formData.ownerEntitySubType || ''} onValueChange={(value) => { handleInputChange('ownerEntitySubType', value); if (value !== 'Autre') handleInputChange('ownerEntitySubTypeOther', ''); }}>
+                                  <SelectTrigger className="h-9 text-sm rounded-lg border"><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+                                  <SelectContent>
+                                    {['Association sans but lucratif (ASBL)', "Établissement d'Utilité Publique (EUP)", 'Autre'].map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                                  </SelectContent>
+                                </Select>
+                                {formData.ownerEntitySubType === 'Autre' && (
+                                  <Input placeholder="Précisez le type d'association" value={formData.ownerEntitySubTypeOther || ''} onChange={(e) => handleInputChange('ownerEntitySubTypeOther', e.target.value)} className="h-9 text-sm rounded-lg border mt-1" />
+                                )}
+                              </div>
+                            )}
+                            {formData.ownerEntityType && (
+                              <div className="space-y-2 animate-fade-in">
+                                <div className="space-y-1.5">
+                                  <Label className="text-sm">{formData.ownerEntityType === 'Association' ? 'Dénomination *' : 'Raison sociale *'}</Label>
+                                  <Input value={formData.ownerLastName || ''} onChange={(e) => handleInputChange('ownerLastName', e.target.value)} placeholder={formData.ownerEntityType === 'Association' ? "Dénomination de l'association" : "Dénomination officielle"} className="h-9 text-sm rounded-lg border" />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <Label className="text-sm">{formData.ownerEntityType === 'Association' ? "N° d'Arrêté ministériel *" : "N° d'identification (RCCM) *"}</Label>
+                                  <Input value={formData.ownerFirstName || ''} onChange={(e) => handleInputChange('ownerFirstName', e.target.value)} placeholder={formData.ownerEntityType === 'Association' ? "Ex: 0XX/CAB/MIN/..." : "Ex: CD/KIN/RCCM/XX-X-XXXXX"} className="h-9 text-sm rounded-lg border" />
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         )}
+
+                        {/* État conditional fields - Owner */}
+                        {formData.ownerLegalStatus === 'État' && (
+                          <div className="space-y-2 animate-fade-in">
+                            <div className="space-y-1.5">
+                              <Label className="text-sm">Type de droit *</Label>
+                              <Select value={formData.ownerRightType || ''} onValueChange={(value) => handleInputChange('ownerRightType', value)}>
+                                <SelectTrigger className="h-9 text-sm rounded-lg border"><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Concession">Concession</SelectItem>
+                                  <SelectItem value="Affectation">Affectation</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-sm">Service / Agence *</Label>
+                              <Input value={formData.ownerLastName || ''} onChange={(e) => handleInputChange('ownerLastName', e.target.value)} placeholder="Nom du service ou agence de l'État" className="h-9 text-sm rounded-lg border" />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Personne physique: standard name/postnom fields - Owner */}
+                        {(formData.ownerLegalStatus || 'Personne physique') === 'Personne physique' && (
+                          <>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="space-y-1.5">
+                                <Label className="text-sm">Nom *</Label>
+                                <Input value={formData.ownerLastName || ''} onChange={(e) => handleInputChange('ownerLastName', e.target.value)} placeholder="Nom du propriétaire" className="h-9 text-sm rounded-lg border" />
+                              </div>
+                              <div className="space-y-1.5">
+                                <Label className="text-sm">Prénom *</Label>
+                                <Input value={formData.ownerFirstName || ''} onChange={(e) => handleInputChange('ownerFirstName', e.target.value)} placeholder="Prénom" className="h-9 text-sm rounded-lg border" />
+                              </div>
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-sm">Post-nom</Label>
+                              <Input value={formData.ownerMiddleName || ''} onChange={(e) => handleInputChange('ownerMiddleName', e.target.value)} placeholder="Post-nom" className="h-9 text-sm rounded-lg border" />
+                            </div>
+                          </>
+                        )}
+
+                        <div className="space-y-1.5">
+                          <Label className="text-sm">Téléphone</Label>
+                          <Input value={formData.ownerPhone || ''} onChange={(e) => handleInputChange('ownerPhone', e.target.value)} placeholder="+243..." className="h-9 text-sm rounded-lg border" />
+                        </div>
                       </CardContent>
                     </Card>
                   )}

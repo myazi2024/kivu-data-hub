@@ -17,6 +17,11 @@ export interface LandTitleRequestData {
   requesterLegalStatus?: string;
   requesterGender?: string;
   requesterIdDocumentFile?: File | null;
+  // Champs conditionnels demandeur (Personne morale / État)
+  requesterEntityType?: string;
+  requesterEntitySubType?: string;
+  requesterEntitySubTypeOther?: string;
+  requesterRightType?: string;
   
   // Propriétaire
   isOwnerSameAsRequester: boolean;
@@ -27,6 +32,11 @@ export interface LandTitleRequestData {
   ownerGender?: string;
   ownerPhone?: string;
   ownerIdDocumentFile?: File | null;
+  // Champs conditionnels propriétaire (Personne morale / État)
+  ownerEntityType?: string;
+  ownerEntitySubType?: string;
+  ownerEntitySubTypeOther?: string;
+  ownerRightType?: string;
   
   // Localisation
   sectionType: 'urbaine' | 'rurale' | '';
@@ -241,6 +251,16 @@ export const useLandTitleRequest = () => {
            proposed_permit_date: data.proposedPermitDate || null,
            proposed_permit_service: data.proposedPermitService || null,
            proposed_permit_document_url: proposedPermitDocUrl,
+          additional_documents: {
+            requester_entity_type: data.requesterEntityType || null,
+            requester_entity_sub_type: data.requesterEntitySubType || null,
+            requester_entity_sub_type_other: data.requesterEntitySubTypeOther || null,
+            requester_right_type: data.requesterRightType || null,
+            owner_entity_type: data.ownerEntityType || null,
+            owner_entity_sub_type: data.ownerEntitySubType || null,
+            owner_entity_sub_type_other: data.ownerEntitySubTypeOther || null,
+            owner_right_type: data.ownerRightType || null,
+          },
           fee_items: feeItems,
           total_amount_usd: totalAmount,
           payment_status: 'pending'
