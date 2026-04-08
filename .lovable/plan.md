@@ -1,41 +1,54 @@
 
 
-# Rendre la gestion des KPIs plus visible dans Config Graphique
+# Ajout de "Conversion" au picklist Type de demande + alignement global
 
 ## Constat
 
-Les KPIs **sont** deja configurables dans le mode "Graphiques" de Config Graphique. Quand on selectionne un onglet (ex: "Titres fonciers"), une section "Indicateurs KPI (6)" apparait en haut du panneau de droite, avec :
-- Toggle visibilite (afficher/masquer chaque KPI)
-- Edition du titre personnalise
-- Reordonnancement (fleches haut/bas)
-- Boutons "Tout afficher" / "Tout masquer"
+Le picklist du type de demande dans `LandTitleRequestDialog.tsx` ne contient que 2 valeurs (`initial`, `renouvellement`). Le label "Renouvellement d'un titre foncier" doit être raccourci en "Renouvellement". Il faut ajouter "Conversion" comme 3e option et propager ce changement partout.
 
-Le probleme : cette section est noyee dans la vue "Graphiques", sans indication claire dans l'interface qu'elle existe. L'utilisateur doit d'abord passer en mode "Graphiques", puis selectionner un onglet, puis scroller pour voir les KPIs.
+## Modifications
 
-## Proposition
+### 1. Formulaire — Picklist et logique (`LandTitleRequestDialog.tsx`)
 
-Ajouter un **5e mode "KPIs"** dans la barre de modes de Config Graphique (a cote de Onglets / Graphiques / Filtres / Croisements) qui offre une vue dediee a la gestion des KPIs de tous les onglets.
+- Élargir le type TypeScript de `requestType` : `'initial' | 'renouvellement' | 'conversion' | ''`
+- Ajouter `<SelectItem value="conversion">Conversion</SelectItem>` dans le picklist
+- Renommer le label "Renouvellement d'un titre foncier" → "Renouvellement"
+- Mettre à jour la description du `SectionHelpPopover` pour mentionner les 3 types
+- Adapter la logique d'éligibilité (lignes ~2880-2925) : la conversion suit la même logique que l'initial (pas de vérification de titre temporaire)
+- Adapter `isParcelLinkedMode` et `isFormBlocked` : la conversion se comporte comme une demande initiale (nécessite fiche parcellaire)
 
-### Fichier : `src/components/admin/AdminAnalyticsChartsConfig.tsx`
+### 2. Hook de soumission (`useLandTitleRequest.tsx`)
 
-1. Ajouter le bouton "KPIs" dans la barre de modes (entre "Onglets" et "Graphiques")
-2. Creer une vue `viewMode === 'kpis'` qui affiche :
-   - Un selecteur d'onglet a gauche (comme pour les graphiques)
-   - A droite, uniquement les KPIs de l'onglet selectionne, avec les memes controles existants (visibilite, titre, ordre)
-   - Un apercu visuel montrant les 6 cases telles qu'elles apparaissent dans Analytics
-3. Conserver les KPIs dans la vue "Graphiques" egalement (pas de regression)
+- Élargir le type `requestType` dans `LandTitleRequestData` : ajouter `'conversion'`
+- La valeur est déjà passée telle quelle à `request_type` en base → aucun changement d'insertion nécessaire
 
-### Detail technique
+### 3. Onglet de résumé (`LandTitleReviewTab.tsx`)
 
-- Le state `viewMode` passe de `'tabs' | 'charts' | 'filters' | 'cross'` a `'tabs' | 'kpis' | 'charts' | 'filters' | 'cross'`
-- La vue KPIs reutilise les memes composants (`ItemEditor`, `toggleAll('kpi', ...)`) deja utilises dans la section KPI du mode Graphiques
-- L'apercu utilise le composant `KpiGrid` existant pour montrer un rendu fidele
+- Ajouter le cas `conversion` dans le mapping d'affichage (ligne 176) : `'initial' → 'Demande initiale'`, `'renouvellement' → 'Renouvellement'`, `'conversion' → 'Conversion'`
 
-### Fichiers concernes
+### 4. Admin — Détail des demandes (`AdminLandTitleRequests.tsx`)
+
+- Remplacer le `capitalize` brut (ligne 478) par un mapping de labels : `{ initial: 'Demande initiale', renouvellement: 'Renouvellement', conversion: 'Conversion' }`
+
+### 5. Analytics — Labels des graphiques (`analyticsHelpers.ts`)
+
+- `countBy` affiche les valeurs brutes de la base (`initial`, `renouvellement`, `conversion`). Ajouter un dictionnaire de labels humains dans `countBy` ou dans `TitleRequestsBlock.tsx` pour que le graphique "Type de demande" affiche les bons libellés français.
+- Option retenue : ajouter une map `FIELD_LABELS` dans `analyticsHelpers.ts` avec une entrée `request_type` → `{ initial: 'Demande initiale', renouvellement: 'Renouvellement', conversion: 'Conversion' }`, et l'appliquer dans `countBy` quand le champ correspond.
+
+### 6. Données test (`testDataGenerators.ts`)
+
+- Aligner les valeurs générées : remplacer `['nouveau_titre', 'renouvellement', 'duplicata', 'conversion']` par `['initial', 'renouvellement', 'conversion']` pour correspondre aux vraies valeurs du formulaire.
+
+## Fichiers concernés
 
 | Fichier | Action |
 |---------|--------|
-| `src/components/admin/AdminAnalyticsChartsConfig.tsx` | Modifie — ajout mode KPIs |
+| `src/components/cadastral/LandTitleRequestDialog.tsx` | Ajout 3e option, renommage, logique |
+| `src/hooks/useLandTitleRequest.tsx` | Type élargi |
+| `src/components/cadastral/LandTitleReviewTab.tsx` | Mapping label |
+| `src/components/admin/AdminLandTitleRequests.tsx` | Mapping label |
+| `src/utils/analyticsHelpers.ts` | Labels humains dans countBy |
+| `src/components/admin/test-mode/testDataGenerators.ts` | Correction valeurs test |
 
-**Impact** : ~60 lignes ajoutees dans 1 fichier. Aucune migration, aucun changement fonctionnel sur le rendu Analytics.
+**Impact** : ~30 lignes modifiées dans 6 fichiers. Aucune migration SQL (le champ `request_type` est un `text`).
 
