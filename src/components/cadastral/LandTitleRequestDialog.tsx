@@ -300,11 +300,11 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     }
   }, []);
 
-  // Computed: is the form in "parcel-linked" mode (renewal OR initial with fiche parcellaire)
-  const isParcelLinkedMode = (requestType === 'renouvellement' && knowsParcelNumber === 'yes') || ((requestType === 'initial' || requestType === 'conversion') && hasFicheParcellaire === 'yes');
+  // Computed: parcel-linked mode is always active once a request type is selected
+  const isParcelLinkedMode = !!requestType;
 
-  // Computed: form is blocked when user has no fiche parcellaire for initial request OR doesn't know parcel number for renewal
-  const isFormBlocked = ((requestType === 'initial' || requestType === 'conversion') && hasFicheParcellaire === 'no') || (requestType === 'renouvellement' && knowsParcelNumber === 'no');
+  // Computed: form is blocked until a valid parcel is selected
+  const isFormBlocked = !requestType || !parcelValidated;
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -669,10 +669,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const isFormValid = (): boolean => {
     // Check request type
     if (!requestType) return false;
-    if (requestType === 'renouvellement' && knowsParcelNumber !== 'yes') return false;
-    if (requestType === 'renouvellement' && knowsParcelNumber === 'yes' && !parcelValidated) return false;
-    if (requestType === 'initial' && hasFicheParcellaire === 'yes' && !parcelValidated) return false;
-    if ((requestType === 'initial' || requestType === 'conversion') && hasFicheParcellaire !== 'yes') return false;
+    if (!parcelValidated) return false;
     // Renewal mode with owner as requester: skip requester identity fields
     const isParcelAsOwner = isParcelLinkedMode && parcelValidated && parcelOwnerData && formData.requesterType === 'owner';
     
@@ -1145,80 +1142,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         </SelectContent>
                       </Select>
 
-                      {/* Radio buttons for initial: fiche parcellaire */}
-                      {(requestType === 'initial' || requestType === 'conversion') && (
-                        <div className="space-y-2 animate-fade-in">
-                          <Label className="text-sm">Avez-vous une fiche parcellaire ? *</Label>
-                          <RadioGroup
-                            value={hasFicheParcellaire}
-                            onValueChange={(value: string) => setHasFicheParcellaire(value as 'yes' | 'no')}
-                            className="flex gap-4"
-                          >
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="yes" id="fiche-yes" />
-                              <Label htmlFor="fiche-yes" className="text-sm cursor-pointer">J'ai une fiche parcellaire</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="no" id="fiche-no" />
-                              <Label htmlFor="fiche-no" className="text-sm cursor-pointer">Je n'ai pas de fiche parcellaire</Label>
-                            </div>
-                          </RadioGroup>
-
-                          {hasFicheParcellaire === 'no' && (
-                            <Alert variant="destructive" className="mt-3 animate-fade-in">
-                              <AlertTriangle className="h-4 w-4" />
-                              <AlertTitle>Fiche parcellaire requise</AlertTitle>
-                              <AlertDescription className="text-xs space-y-2">
-                                <p>
-                                  La demande d'un titre foncier sur une parcelle nécessite au préalable une <strong>fiche parcellaire</strong> — un document administratif local délivré par les autorités compétentes qui atteste de l'occupation du terrain par la personne qui se déclare être le propriétaire.
-                                </p>
-                                <p>
-                                  Veuillez vous adresser au <strong>bureau de la commune ou du quartier</strong> si votre parcelle se trouve dans une <strong>section urbaine</strong>, ou au <strong>bureau de la chefferie</strong> si elle se trouve dans une <strong>section rurale</strong>, afin d'obtenir ce document avant de soumettre votre demande.
-                                </p>
-                              </AlertDescription>
-                            </Alert>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Radio buttons for renewal: knows parcel number */}
-                      {requestType === 'renouvellement' && (
-                        <div className="space-y-2 animate-fade-in">
-                          <Label className="text-sm">Connaissez-vous le numéro (SU ou SR) de la parcelle ? *</Label>
-                          <RadioGroup
-                            value={knowsParcelNumber}
-                            onValueChange={(value: string) => setKnowsParcelNumber(value as 'yes' | 'no')}
-                            className="flex gap-4"
-                          >
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="yes" id="parcel-num-yes" />
-                              <Label htmlFor="parcel-num-yes" className="text-sm cursor-pointer">Je connais le numéro (SU ou SR) de la parcelle</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="no" id="parcel-num-no" />
-                              <Label htmlFor="parcel-num-no" className="text-sm cursor-pointer">Je ne connais pas le numéro (SU ou SR) de la parcelle</Label>
-                            </div>
-                          </RadioGroup>
-
-                          {knowsParcelNumber === 'no' && (
-                            <Alert variant="destructive" className="mt-3 animate-fade-in">
-                              <AlertTriangle className="h-4 w-4" />
-                              <AlertTitle>Numéro de parcelle requis</AlertTitle>
-                              <AlertDescription className="text-xs space-y-2">
-                                 <p>
-                                   Le renouvellement d'un titre foncier nécessite le <strong>numéro (SU ou SR) de la parcelle</strong> concernée. Ce numéro figure sur votre <strong>titre de propriété</strong> délivrées par les autorités compétentes.
-                                 </p>
-                                 <p>
-                                   Veuillez vérifier votre titre de propriété pour retrouver ce numéro avant de soumettre votre demande de renouvellement.
-                                 </p>
-                              </AlertDescription>
-                            </Alert>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Parcel number search for renewal OR initial with fiche parcellaire */}
-                      {isParcelLinkedMode && (
+                      {/* Parcel number search — always shown once requestType is selected */}
+                      {requestType && (
                         <div className="space-y-2 animate-fade-in">
                           <Label className="text-sm">
                             {requestType === 'initial' ? 'Numéro de la fiche parcellaire (SU ou SR) *' : 'Numéro de la parcelle (SU ou SR) *'}
