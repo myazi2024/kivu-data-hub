@@ -102,7 +102,7 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
       (formData.requesterType === 'owner' && !!selectedParcelNumber) ||
       (!!formData.requesterLastName && !!formData.requesterFirstName && !!formData.requesterPhone)
     ) &&
-    (formData.requesterType !== "representative" || (!!formData.ownerLastName && !!formData.ownerFirstName)) &&
+    (formData.requesterType === 'owner' || (!!formData.ownerLastName && !!formData.ownerFirstName)) &&
     (requestType === 'initial' || !!selectedParcelNumber);
 
   const locationComplete =
@@ -406,7 +406,7 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
               <span className="font-medium">Pièce d'identité (demandeur):</span>{" "}
               {requesterIdFile ? requesterIdFile.name : <span className="italic text-muted-foreground">Non jointe</span>}
             </div>
-            {formData.requesterType === "representative" && (
+            {(formData.requesterType === "representative" || formData.requesterType === "beneficiary") && (
               <div>
                 <span className="font-medium">Pièce d'identité (propriétaire):</span>{" "}
                 {ownerIdFile ? ownerIdFile.name : <span className="italic text-muted-foreground">Non jointe</span>}
@@ -420,6 +420,12 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
               <div>
                 <span className="font-medium">Procuration:</span>{" "}
                 {procurationFile ? procurationFile.name : <span className="italic text-amber-600 dark:text-amber-400">Non jointe (requise)</span>}
+              </div>
+            )}
+            {formData.requesterType === "beneficiary" && (
+              <div>
+                <span className="font-medium">Preuve de filiation / succession:</span>{" "}
+                {proofOfOwnershipFile ? proofOfOwnershipFile.name : <span className="italic text-muted-foreground">Non jointe</span>}
               </div>
             )}
             {!documentsComplete && (
