@@ -1146,7 +1146,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       {requestType && (
                         <div className="space-y-2 animate-fade-in">
                           <Label className="text-sm">
-                            {requestType === 'initial' ? 'Numéro de la fiche parcellaire (SU ou SR) *' : 'Numéro de la parcelle (SU ou SR) *'}
+                            Numéro de la parcelle (SU ou SR) *
                           </Label>
                           <div className="relative">
                             <div className="relative">
