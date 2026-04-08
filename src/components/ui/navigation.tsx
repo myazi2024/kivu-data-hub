@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Menu, X, User, LogOut, ChevronDown, Shield, Newspaper, Briefcase, Tag, Heart, Building2, Handshake, Scale, Presentation } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
+import { useTestEnvironment } from '@/hooks/useTestEnvironment';
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -51,8 +52,17 @@ const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [mobileMediaOpen, setMobileMediaOpen] = useState(false);
   const { user, profile, signOut, loading } = useAuth();
+  const { isTestRoute } = useTestEnvironment();
 
   const isAdminOrSuperAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
+
+  // Prefix test-sensitive routes when in test environment
+  const testPrefix = isTestRoute ? '/test' : '';
+  const navItems = useMemo(() => [
+    { name: 'Données foncières', href: `${testPrefix}/map` },
+    { name: 'Carte Cadastrale', href: `${testPrefix}/cadastral-map` },
+  ], [testPrefix]);
+  const monCompteHref = `${testPrefix}/mon-compte`;
 
   return (
     <nav className="bg-background/95 backdrop-blur-sm border-b border-border sticky top-0 z-50">
@@ -120,7 +130,7 @@ const Navigation = () => {
                 </NavigationMenuItem>
 
                 {/* Simple nav items */}
-                {simpleNavItems.slice(1).map((item) => (
+                {navItems.map((item) => (
                   <NavigationMenuItem key={item.name}>
                     <Link
                       to={item.href}
@@ -151,7 +161,7 @@ const Navigation = () => {
                   <>
                     <div className="hidden sm:flex items-center space-x-2">
                       <Button variant="ghost" size="sm" asChild className="text-xs">
-                        <Link to="/mon-compte" className="flex items-center space-x-1">
+                        <Link to={monCompteHref} className="flex items-center space-x-1">
                           <User className="h-3 w-3 sm:h-4 sm:w-4" />
                           <span className="truncate max-w-24 sm:max-w-32">
                             {profile?.full_name || user.email}
@@ -250,7 +260,7 @@ const Navigation = () => {
             </div>
 
             {/* Other simple items */}
-            {simpleNavItems.slice(1).map((item) => (
+            {navItems.map((item) => (
               <Link
                 key={item.name}
                 to={item.href}
@@ -268,8 +278,8 @@ const Navigation = () => {
                   {user ? (
                     <>
                       <div className="px-3 py-2 border-b border-border mb-2">
-                        <Link
-                          to="/mon-compte"
+                       <Link
+                          to={monCompteHref}
                           className="flex items-center space-x-3 text-sm font-medium"
                           onClick={() => setIsOpen(false)}
                         >
