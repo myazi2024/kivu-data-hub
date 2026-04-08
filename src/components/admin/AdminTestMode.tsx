@@ -208,14 +208,22 @@ const AdminTestMode: React.FC = () => {
             </Badge>
           </div>
           {isTestModeActive && (
-            <div className="mt-3">
+            <div className="mt-3 flex flex-wrap gap-3">
+              <a
+                href="/test/map"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+              >
+                📊 Analytics / Données foncières (test)
+              </a>
               <a
                 href="/test/cadastral-map"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
               >
-                🔗 Accéder à l'environnement de test
+                🗺️ Carte cadastrale (test)
               </a>
             </div>
           )}

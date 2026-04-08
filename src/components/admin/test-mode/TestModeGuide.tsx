@@ -10,7 +10,7 @@ const guidelines = [
   <>Le <strong>nettoyage automatique</strong> peut être configuré via une tâche cron SQL directe (<code>SELECT cleanup_all_test_data()</code>) — le nettoyage via Edge Function n'est plus recommandé</>,
   <>Utilisez <strong>"Nettoyer tout"</strong> pour supprimer manuellement toutes les données de test (respecte l'ordre FK via la RPC serveur)</>,
   <>Utilisez <strong>"Régénérer"</strong> pour supprimer et recréer un jeu de données test frais en une seule action</>,
-  <><strong>Important :</strong> Les données test sont isolées dans l'environnement <code>/test/*</code> et sont exclues des analytics de production</>,
+  <><strong>Important :</strong> Les données test sont isolées dans l'environnement <code>/test/*</code> et sont exclues des analytics de production. Pour vérifier les visuels analytics, ouvrez <code>/test/map</code> (Données foncières test). La navigation reste dans l'environnement test automatiquement.</>,
 ];
 
 const TestModeGuide: React.FC = () => (
@@ -28,16 +28,16 @@ const TestModeGuide: React.FC = () => (
       <div className="pt-3 border-t">
         <p className="font-medium text-foreground mb-2">Accéder à l'environnement de test :</p>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <a href="/test/cadastral-map" target="_blank" rel="noopener noreferrer">
+          <Button variant="default" size="sm" asChild>
+            <a href="/test/map" target="_blank" rel="noopener noreferrer">
               <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
-              Carte cadastrale (test)
+              📊 Analytics / Données foncières (test)
             </a>
           </Button>
           <Button variant="outline" size="sm" asChild>
-            <a href="/test/map" target="_blank" rel="noopener noreferrer">
+            <a href="/test/cadastral-map" target="_blank" rel="noopener noreferrer">
               <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
-              Carte (test)
+              🗺️ Carte cadastrale (test)
             </a>
           </Button>
         </div>
