@@ -1095,14 +1095,15 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
                       <Select
                         value={requestType}
-                        onValueChange={(value) => setRequestType(value as 'initial' | 'renouvellement')}
+                        onValueChange={(value) => setRequestType(value as 'initial' | 'renouvellement' | 'conversion')}
                       >
                         <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
                           <SelectValue placeholder="Sélectionnez le type de demande" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl">
                           <SelectItem value="initial" className="text-sm py-2">Demande initiale</SelectItem>
-                          <SelectItem value="renouvellement" className="text-sm py-2">Renouvellement d'un titre foncier</SelectItem>
+                          <SelectItem value="renouvellement" className="text-sm py-2">Renouvellement</SelectItem>
+                          <SelectItem value="conversion" className="text-sm py-2">Conversion</SelectItem>
                         </SelectContent>
                       </Select>
 
