@@ -520,7 +520,7 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
       requester_legal_status: pick(LEGAL_STATUSES, i),
       owner_legal_status: pick(LEGAL_STATUSES, i + 1),
       nationality: pick(NATIONALITIES, i),
-      is_owner_same_as_requester: i % 2 === 0,
+      is_owner_same_as_requester: pick(REQUESTER_TYPES, i) === 'owner',
       section_type: isRural ? 'rural' : 'urbain',
       province: prov.province,
       ville: prov.ville,
