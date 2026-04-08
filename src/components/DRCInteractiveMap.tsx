@@ -9,11 +9,13 @@ import { toast } from 'sonner';
 import DRCMapWithTooltip from './DRCMapWithTooltip';
 import DRCCommunesMap from './DRCCommunesMap';
 import DRCQuartiersMap from './DRCQuartiersMap';
+import DRCTerritoiresMap from './DRCTerritoiresMap';
 
 import { ProvinceData } from '@/types/province';
 import ProvinceDataVisualization from './visualizations/ProvinceDataVisualization';
 import { useLandDataAnalytics } from '@/hooks/useLandDataAnalytics';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
+import { getTerritoiresForProvince } from '@/lib/geographicData';
 
 /** Province IDs and names for the 26 provinces */
 const PROVINCE_META: { id: string; name: string }[] = [
@@ -66,10 +68,12 @@ function buildScopePredicate(
   ville?: string,
   commune?: string,
   quartier?: string,
+  territoire?: string,
 ): (record: any) => boolean {
   if (quartier) return (r) => norm(r.quartier) === norm(quartier) && norm(r.commune) === norm(commune) && norm(r.ville) === norm(ville) && norm(r.province) === norm(province);
   if (commune) return (r) => norm(r.commune) === norm(commune) && norm(r.ville) === norm(ville) && norm(r.province) === norm(province);
   if (ville) return (r) => norm(r.ville) === norm(ville) && norm(r.province) === norm(province);
+  if (territoire) return (r) => norm(r.territoire) === norm(territoire) && norm(r.province) === norm(province);
   if (province) return (r) => norm(r.province) === norm(province);
   return () => false;
 }
@@ -90,6 +94,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const [selectedVille, setSelectedVille] = useState<string | undefined>(undefined);
   const [selectedCommune, setSelectedCommune] = useState<string | undefined>(undefined);
   const [selectedQuartier, setSelectedQuartier] = useState<string | undefined>(undefined);
+  const [selectedTerritoire, setSelectedTerritoire] = useState<string | undefined>(undefined);
   const mapCardRef = React.useRef<HTMLDivElement>(null);
 
   const { data: analytics, isLoading } = useLandDataAnalytics();
