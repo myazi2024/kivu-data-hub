@@ -616,6 +616,28 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       if (field === 'requesterType') {
         updated.isOwnerSameAsRequester = value === 'owner';
       }
+      // Reset requester entity fields when legal status changes
+      if (field === 'requesterLegalStatus') {
+        updated.requesterEntityType = '';
+        updated.requesterEntitySubType = '';
+        updated.requesterEntitySubTypeOther = '';
+        updated.requesterRightType = '';
+        if (value !== 'Personne physique') {
+          updated.requesterGender = '';
+          updated.requesterMiddleName = '';
+        }
+      }
+      // Reset owner entity fields when legal status changes
+      if (field === 'ownerLegalStatus') {
+        updated.ownerEntityType = '';
+        updated.ownerEntitySubType = '';
+        updated.ownerEntitySubTypeOther = '';
+        updated.ownerRightType = '';
+        if (value !== 'Personne physique') {
+          updated.ownerGender = '';
+          updated.ownerMiddleName = '';
+        }
+      }
       return updated;
     });
     
