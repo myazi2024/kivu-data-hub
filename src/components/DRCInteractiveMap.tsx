@@ -14,6 +14,7 @@ import DRCTerritoiresMap from './DRCTerritoiresMap';
 import { ProvinceData } from '@/types/province';
 import ProvinceDataVisualization from './visualizations/ProvinceDataVisualization';
 import { useLandDataAnalytics } from '@/hooks/useLandDataAnalytics';
+import { useTestEnvironment } from '@/hooks/useTestEnvironment';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { getTerritoiresForProvince } from '@/lib/geographicData';
 
@@ -97,7 +98,8 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const [selectedTerritoire, setSelectedTerritoire] = useState<string | undefined>(undefined);
   const mapCardRef = React.useRef<HTMLDivElement>(null);
 
-  const { data: analytics, isLoading } = useLandDataAnalytics();
+  const { isTestRoute } = useTestEnvironment();
+  const { data: analytics, isLoading } = useLandDataAnalytics(isTestRoute);
 
   const rdcMapDefaults = ANALYTICS_TABS_REGISTRY['rdc-map']
     ? [...ANALYTICS_TABS_REGISTRY['rdc-map'].kpis, ...ANALYTICS_TABS_REGISTRY['rdc-map'].charts]
