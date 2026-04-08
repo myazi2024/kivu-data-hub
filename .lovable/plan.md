@@ -1,70 +1,73 @@
 
 
-# Ajout de "Ayant droit" au picklist Qualité du demandeur + alignement global
+# Aligner les blocs demandeur/propriétaire du formulaire Titre Foncier sur le bloc Propriétaire CCC
 
-## Constat actuel
+## Constat
 
-Le formulaire de demande de titre foncier propose 2 valeurs pour la qualité du demandeur :
-- `owner` → "Propriétaire"
-- `representative` → "Mandataire"
+Le bloc "Propriétaire actuel" du formulaire CCC (GeneralTab.tsx) possède une logique de dépendance riche selon le statut juridique :
 
-Il faut ajouter `beneficiary` → "Ayant droit" comme 3e valeur. L'ayant droit (héritier, successeur) n'est pas le propriétaire enregistré : il faut donc collecter les informations du propriétaire séparément, comme pour le mandataire. Cependant, contrairement au mandataire, l'ayant droit n'a pas besoin de procuration mais peut nécessiter un justificatif de droit (déjà couvert par le document de preuve de propriété existant).
+| Statut juridique | Champs conditionnels |
+|---|---|
+| **Personne physique** | Genre, Nom, Post-nom, Prénom |
+| **Personne morale** | Type d'entreprise (Société/Association) → Forme juridique ou Type d'association → Raison sociale/Dénomination + N° RCCM/Arrêté |
+| **État** | Type de droit (Concession/Affectation) → Libellé adapté |
 
-## Logique métier
+Le formulaire Titre Foncier (`LandTitleRequestDialog.tsx`) utilise des blocs simplifiés sans ces dépendances :
 
-| Qualité | `isOwnerSameAsRequester` | Bloc "Infos propriétaire" | Procuration requise |
-|---------|--------------------------|--------------------------|---------------------|
-| Propriétaire | `true` | Non | Non |
-| Ayant droit | `false` | Oui | Non |
-| Mandataire | `false` | Oui | Oui |
+- **Bloc demandeur** (3 endroits : parcel-linked representative/beneficiary ~L1524, standard mode ~L1677, standard representative/beneficiary ~L1524) : statut juridique plat (Personne physique/Société/Association/État) avec les mêmes champs Nom/Prénom/Post-nom quel que soit le statut — pas de Raison sociale, RCCM, type d'entreprise, etc.
+- **Bloc propriétaire** (~L1782) : encore plus simplifié (Personne physique/Personne morale/Indivision) — valeurs de picklist incorrectes et aucun champ conditionnel.
 
 ## Modifications
 
-### 1. Type TypeScript (`useLandTitleRequest.tsx`)
-- Élargir `requesterType`: `'owner' | 'beneficiary' | 'representative'`
+### 1. Fichier : `src/components/cadastral/LandTitleRequestDialog.tsx`
 
-### 2. Formulaire (`LandTitleRequestDialog.tsx`)
+**a) Bloc demandeur (standard mode, ~L1677-1776)** :
+- Remplacer les valeurs du picklist Statut juridique par : `Personne physique`, `Personne morale`, `État` (aligner sur CCC)
+- Quand `Personne morale` : afficher les champs conditionnels identiques au CCC :
+  - Type d'entreprise (Société/Association)
+  - Forme juridique (si Société) ou Type d'association (si Association)
+  - Raison sociale/Dénomination au lieu de "Nom"
+  - N° RCCM / N° Arrêté au lieu de "Prénom"
+  - Masquer Post-nom
+- Quand `État` : afficher Type de droit (Concession/Affectation) et adapter les labels
+- Quand `Personne physique` : garder Genre + Nom/Post-nom/Prénom (comme actuellement)
 
-**Picklist (2 endroits : mode parcel-linked ~L1490 et mode standard ~L1630)** :
-- Ajouter le bouton/radio "Ayant droit" (`value="beneficiary"`) entre Propriétaire et Mandataire
-- Logique `isOwnerSameAsRequester` : `true` uniquement si `owner`, sinon `false` (ayant droit et mandataire)
+**b) Bloc demandeur (parcel-linked mode representative/beneficiary, ~L1524-1620)** :
+- Appliquer la même logique conditionnelle que ci-dessus
 
-**Bloc "Informations du propriétaire" (~L1766)** :
-- Afficher aussi quand `requesterType === 'beneficiary'` (actuellement seulement pour `representative`)
+**c) Bloc propriétaire (~L1794-1874)** :
+- Remplacer les valeurs du picklist : `Personne physique`, `Personne morale`, `État` (au lieu de Personne physique/Personne morale/Indivision)
+- Ajouter les mêmes champs conditionnels (type d'entreprise, forme juridique, raison sociale, etc.)
 
-**Bloc procuration** :
-- Conserver la condition existante : procuration requise uniquement pour `representative`
+**d) Nouveaux champs de state** :
+- Ajouter dans `formData` : `requesterEntityType`, `requesterEntitySubType`, `requesterEntitySubTypeOther`, `requesterRightType`, `ownerEntityType`, `ownerEntitySubType`, `ownerEntitySubTypeOther`, `ownerRightType`
+- Reset ces champs quand le statut juridique change
 
-**Placeholders et labels** :
-- Adapter les labels contextuellement : "Informations du mandataire" → "Informations du mandataire" si representative, "Informations de l'ayant droit" si beneficiary, dans les sections du formulaire standard (~L1519 et ~L1661-1760)
+### 2. Fichier : `src/hooks/useLandTitleRequest.tsx`
 
-### 3. Onglet résumé (`LandTitleReviewTab.tsx`)
-- Afficher "Qualité: Ayant droit" dans le récapitulatif (~L196)
-- Afficher le bloc propriétaire aussi quand `beneficiary`
+- Ajouter les nouveaux champs au type `LandTitleRequestData`
+- Inclure les champs dans l'objet d'insertion Supabase (en tant que `additional_documents` JSON ou colonnes dédiées si elles existent)
 
-### 4. Admin — Détail des demandes (`AdminLandTitleRequests.tsx`)
-- Remplacer le `capitalize` brut (~L490) par un mapping : `{ owner: 'Propriétaire', beneficiary: 'Ayant droit', representative: 'Mandataire' }`
+### 3. Fichier : `src/components/cadastral/LandTitleReviewTab.tsx`
 
-### 5. Analytics (`TitleRequestsBlock.tsx` + `analyticsHelpers.ts`)
-- Le graphique "Demandeur = Proprio" (~L70) utilise `countBoolean` sur `is_owner_same_as_requester` avec labels "Propriétaire" / "Mandataire"
-- Remplacer par un `countBy` sur `requester_type` avec les 3 labels via `FIELD_LABELS`
-- Ajouter dans `FIELD_LABELS` : `requester_type: { owner: 'Propriétaire', beneficiary: 'Ayant droit', representative: 'Mandataire' }`
-- Adapter le titre du graphique : "Qualité du demandeur" au lieu de "Demandeur = Proprio"
+- Afficher les champs conditionnels dans le récapitulatif (type d'entreprise, forme juridique, raison sociale, etc.) au lieu du simple nom/prénom quand le statut juridique n'est pas Personne physique
 
-### 6. Données test (`testDataGenerators.ts`)
-- Aligner `REQUESTER_TYPES` (~L498) : `['owner', 'beneficiary', 'representative']` (actuellement `['proprietaire', 'mandataire', 'heritier']` — valeurs incorrectes)
+### 4. Fichier : `src/components/admin/AdminLandTitleRequests.tsx`
+
+- Adapter l'affichage du détail pour inclure les champs conditionnels
+
+### 5. Vérification : colonnes Supabase
+
+- Vérifier si les colonnes `requester_entity_type`, `requester_entity_sub_type`, `requester_right_type`, `owner_entity_type`, etc. existent dans la table `land_title_requests`. Si non, stocker ces données dans le champ JSONB `additional_documents` existant pour éviter une migration.
 
 ## Fichiers concernés
 
 | Fichier | Action |
-|---------|--------|
-| `src/hooks/useLandTitleRequest.tsx` | Type élargi |
-| `src/components/cadastral/LandTitleRequestDialog.tsx` | 3e option + logique |
-| `src/components/cadastral/LandTitleReviewTab.tsx` | Label + bloc proprio |
-| `src/components/admin/AdminLandTitleRequests.tsx` | Mapping label |
-| `src/utils/analyticsHelpers.ts` | FIELD_LABELS requester_type |
-| `src/components/visualizations/blocks/TitleRequestsBlock.tsx` | countBy au lieu de countBoolean |
-| `src/components/admin/test-mode/testDataGenerators.ts` | Valeurs corrigées |
+|---|---|
+| `src/components/cadastral/LandTitleRequestDialog.tsx` | Champs conditionnels demandeur + propriétaire |
+| `src/hooks/useLandTitleRequest.tsx` | Nouveaux champs dans le type + insertion |
+| `src/components/cadastral/LandTitleReviewTab.tsx` | Affichage conditionnel résumé |
+| `src/components/admin/AdminLandTitleRequests.tsx` | Affichage conditionnel admin |
 
-**Impact** : ~40 lignes modifiées dans 7 fichiers. Aucune migration SQL (`requester_type` est un champ `text`).
+**Impact** : ~150 lignes modifiées/ajoutées dans 4 fichiers. La logique conditionnelle est copiée depuis GeneralTab.tsx (PersonneMoraleFields, EtatFields) et adaptée au contexte du titre foncier.
 
