@@ -173,7 +173,7 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
             {requestType && (
               <div className="pb-1 mb-1 border-b border-border/50">
                 <span className="font-medium">Type de demande :</span>{" "}
-                {requestType === 'initial' ? 'Demande initiale' : 'Renouvellement de titre foncier'}
+                {requestType === 'initial' ? 'Demande initiale' : requestType === 'renouvellement' ? 'Renouvellement' : 'Conversion'}
                 {selectedParcelNumber && (
                   <div className="text-muted-foreground mt-0.5">Parcelle : {selectedParcelNumber}</div>
                 )}

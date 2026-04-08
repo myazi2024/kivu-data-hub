@@ -88,12 +88,18 @@ export function applyFilters(records: any[], filter: AnalyticsFilter, dateField 
   );
 }
 
+const FIELD_LABELS: Record<string, Record<string, string>> = {
+  request_type: { initial: 'Demande initiale', renouvellement: 'Renouvellement', conversion: 'Conversion' },
+};
+
 export function countBy(records: any[], field: string): { name: string; value: number }[] {
+  const labels = FIELD_LABELS[field];
   const map = new Map<string, number>();
   records.forEach(r => {
     const raw = r[field];
-    const val = (raw === null || raw === undefined || raw === '') ? '(Non renseigné)' : String(raw);
-    map.set(val, (map.get(val) || 0) + 1);
+    const key = (raw === null || raw === undefined || raw === '') ? '(Non renseigné)' : String(raw);
+    const label = labels?.[key] || key;
+    map.set(label, (map.get(label) || 0) + 1);
   });
   return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
 }

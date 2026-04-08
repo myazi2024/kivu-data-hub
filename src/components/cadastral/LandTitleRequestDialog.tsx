@@ -85,7 +85,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [showCloseConfirmation, setShowCloseConfirmation] = useState(false);
   
   // Request type state
-  const [requestType, setRequestType] = useState<'initial' | 'renouvellement' | ''>('');
+  const [requestType, setRequestType] = useState<'initial' | 'renouvellement' | 'conversion' | ''>('');
   const [hasFicheParcellaire, setHasFicheParcellaire] = useState<'yes' | 'no' | ''>('');
   const [knowsParcelNumber, setKnowsParcelNumber] = useState<'yes' | 'no' | ''>('');
   const [parcelNumberSearch, setParcelNumberSearch] = useState('');
@@ -301,10 +301,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   }, []);
 
   // Computed: is the form in "parcel-linked" mode (renewal OR initial with fiche parcellaire)
-  const isParcelLinkedMode = (requestType === 'renouvellement' && knowsParcelNumber === 'yes') || (requestType === 'initial' && hasFicheParcellaire === 'yes');
+  const isParcelLinkedMode = (requestType === 'renouvellement' && knowsParcelNumber === 'yes') || ((requestType === 'initial' || requestType === 'conversion') && hasFicheParcellaire === 'yes');
 
   // Computed: form is blocked when user has no fiche parcellaire for initial request OR doesn't know parcel number for renewal
-  const isFormBlocked = (requestType === 'initial' && hasFicheParcellaire === 'no') || (requestType === 'renouvellement' && knowsParcelNumber === 'no');
+  const isFormBlocked = ((requestType === 'initial' || requestType === 'conversion') && hasFicheParcellaire === 'no') || (requestType === 'renouvellement' && knowsParcelNumber === 'no');
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -335,7 +335,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       setFormData(prev => ({ ...prev, requesterType: 'owner', isOwnerSameAsRequester: true }));
     }
     // Force back to requester tab when form is blocked
-    if ((requestType === 'initial' && hasFicheParcellaire === 'no') || (requestType === 'renouvellement' && knowsParcelNumber === 'no')) {
+    if (((requestType === 'initial' || requestType === 'conversion') && hasFicheParcellaire === 'no') || (requestType === 'renouvellement' && knowsParcelNumber === 'no')) {
       setActiveTab('requester');
     }
   }, [requestType, hasFicheParcellaire, knowsParcelNumber]);
@@ -650,7 +650,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     if (requestType === 'renouvellement' && knowsParcelNumber !== 'yes') return false;
     if (requestType === 'renouvellement' && knowsParcelNumber === 'yes' && !parcelValidated) return false;
     if (requestType === 'initial' && hasFicheParcellaire === 'yes' && !parcelValidated) return false;
-    if (requestType === 'initial' && hasFicheParcellaire !== 'yes') return false;
+    if ((requestType === 'initial' || requestType === 'conversion') && hasFicheParcellaire !== 'yes') return false;
     // Renewal mode with owner as requester: skip requester identity fields
     const isParcelAsOwner = isParcelLinkedMode && parcelValidated && parcelOwnerData && formData.requesterType === 'owner';
     
@@ -1088,7 +1088,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           Informations sur la demande *
                           <SectionHelpPopover
                             title="Type de demande"
-                            description="Indiquez s'il s'agit d'une demande initiale de titre foncier ou d'un renouvellement d'un titre existant. Ce choix influence l'évaluation de votre dossier."
+                            description="Indiquez s'il s'agit d'une demande initiale, d'un renouvellement ou d'une conversion de titre foncier. Ce choix influence l'évaluation de votre dossier."
                           />
                         </Label>
                       </div>
@@ -1107,7 +1107,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       </Select>
 
                       {/* Radio buttons for initial: fiche parcellaire */}
-                      {requestType === 'initial' && (
+                      {(requestType === 'initial' || requestType === 'conversion') && (
                         <div className="space-y-2 animate-fade-in">
                           <Label className="text-sm">Avez-vous une fiche parcellaire ? *</Label>
                           <RadioGroup
