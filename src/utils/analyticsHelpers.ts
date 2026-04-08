@@ -91,6 +91,15 @@ export function applyFilters(records: any[], filter: AnalyticsFilter, dateField 
 const FIELD_LABELS: Record<string, Record<string, string>> = {
   request_type: { initial: 'Demande initiale', renouvellement: 'Renouvellement', conversion: 'Conversion' },
   requester_type: { owner: 'Propriétaire', beneficiary: 'Ayant droit', representative: 'Mandataire' },
+  requester_legal_status: { 'Personne physique': 'Personne physique', 'Personne morale': 'Personne morale', 'État': 'État' },
+  section_type: { urbaine: 'Urbaine', rurale: 'Rurale' },
+  deduced_title_type: {
+    'Certificat d\'enregistrement': 'Certificat d\'enregistrement',
+    'Concession ordinaire': 'Concession ordinaire',
+    'Bail emphytéotique': 'Bail emphytéotique',
+    'Bail foncier': 'Bail foncier',
+    'Contrat de location': 'Contrat de location',
+  },
 };
 
 export function countBy(records: any[], field: string): { name: string; value: number }[] {

@@ -692,6 +692,16 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       if (rLegalStatus === 'Personne physique' && !formData.requesterGender) {
         return false;
       }
+      // Validate personne morale required fields (F3)
+      if (rLegalStatus === 'Personne morale') {
+        if (!formData.requesterEntityType) return false;
+        if (!formData.requesterEntitySubType) return false;
+        if (!formData.requesterLastName || !formData.requesterFirstName) return false; // raison sociale + RCCM
+      }
+      // Validate État required fields (F3)
+      if (rLegalStatus === 'État' && !formData.requesterRightType) {
+        return false;
+      }
     }
     
     // Check owner info if different (skip for renewal with auto-loaded owner data)
@@ -700,6 +710,12 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       if (!formData.ownerLastName || !formData.ownerFirstName) {
         return false;
       }
+      // Validate owner legal status conditional fields (F4)
+      const oLegalStatus = formData.ownerLegalStatus || 'Personne physique';
+      if (oLegalStatus === 'Personne morale') {
+        if (!formData.ownerEntityType || !formData.ownerEntitySubType) return false;
+      }
+      if (oLegalStatus === 'État' && !formData.ownerRightType) return false;
       // Procuration document required for representatives
       if (formData.requesterType === 'representative' && !procurationFile) {
         return false;
@@ -3088,6 +3104,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                             "p-3 rounded-lg text-sm leading-relaxed",
                             (() => {
                               const requestTypeLabel = requestType === 'initial' ? 'une demande initiale de titre foncier' 
+                                : requestType === 'conversion' ? 'une conversion de titre foncier'
                                 : 'un renouvellement de titre foncier';
                               
                               // Check alignment
@@ -3095,7 +3112,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               const isTemporaryDeduced = deducedTitleType.type === 'Concession ordinaire' || deducedTitleType.type === 'Bail emphytéotique' || deducedTitleType.type === 'Bail foncier';
                               
                               const isAligned = (isRenewalRequest && isTemporaryDeduced) ||
-                                requestType === 'initial';
+                                requestType === 'initial' || requestType === 'conversion';
                               
                               return isAligned 
                                 ? "bg-green-50 dark:bg-green-950/30 text-green-800 dark:text-green-300" 
@@ -3104,6 +3121,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           )}>
                             {(() => {
                               const requestTypeLabel = requestType === 'initial' ? 'une demande initiale de titre foncier' 
+                                : requestType === 'conversion' ? 'une conversion de titre foncier'
                                 : 'un renouvellement de titre foncier';
                               
                               const isRenewalRequest = requestType === 'renouvellement';
@@ -3229,7 +3247,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           )}
                         </div>
 
-                        {formData.requesterType === 'representative' && (
+                        {(formData.requesterType === 'representative' || formData.requesterType === 'beneficiary') && (
                           <div className="space-y-1.5 animate-fade-in">
                             <Label className="text-sm">Pièce d'identité du propriétaire</Label>
                             {!ownerIdFile ? (

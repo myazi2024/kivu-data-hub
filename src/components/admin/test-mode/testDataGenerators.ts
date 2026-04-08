@@ -128,7 +128,7 @@ function getProvinceInfo(globalIdx: number): { pIdx: number; localIdx: number; c
 const DECLARED_USAGES = ['Résidentiel', 'Commercial', 'Mixte', 'Institutionnel', 'Industriel', 'Agricole'];
 const CONSTRUCTION_NATURES: (string | null)[] = ['Durable', 'Semi-durable', 'Précaire', 'Durable', null]; // ~20% null
 const TITLE_TYPES = ['Certificat d\'enregistrement', 'Contrat de location (Contrat d\'occupation provisoire)', 'Fiche parcellaire'];
-const LEGAL_STATUSES = ['Personne physique', 'Personne morale'];
+const LEGAL_STATUSES = ['Personne physique', 'Personne morale', 'État'];
 const CONSTRUCTION_TYPES = ['Résidentielle', 'Commerciale', 'Industrielle', 'Institutionnelle', 'Terrain nu'];
 const CONSTRUCTION_MATERIALS = ['Briques cuites', 'Parpaings', 'Bois', 'Tôles', 'Briques adobe'];
 const STANDINGS = ['Haut standing', 'Moyen standing', 'Économique'];
