@@ -179,12 +179,35 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
                 )}
               </div>
             )}
-            <div>
-              <span className="font-medium">Nom:</span> {formData.requesterLastName || <span className="italic text-muted-foreground">Non renseigné</span>}
-            </div>
-            <div>
-              <span className="font-medium">Prénom:</span> {formData.requesterFirstName || <span className="italic text-muted-foreground">Non renseigné</span>}
-            </div>
+            {formData.requesterLegalStatus && (
+              <div>
+                <span className="font-medium">Statut juridique:</span> {formData.requesterLegalStatus}
+              </div>
+            )}
+            {formData.requesterLegalStatus === 'Personne morale' && formData.requesterEntityType && (
+              <>
+                <div><span className="font-medium">Type d'entreprise:</span> {formData.requesterEntityType}</div>
+                {formData.requesterEntitySubType && <div><span className="font-medium">{formData.requesterEntityType === 'Société' ? 'Forme juridique:' : "Type d'association:"}</span> {formData.requesterEntitySubType}{formData.requesterEntitySubType === 'Autre' && formData.requesterEntitySubTypeOther ? ` (${formData.requesterEntitySubTypeOther})` : ''}</div>}
+                <div><span className="font-medium">{formData.requesterEntityType === 'Association' ? 'Dénomination:' : 'Raison sociale:'}</span> {formData.requesterLastName || <span className="italic text-muted-foreground">Non renseigné</span>}</div>
+                <div><span className="font-medium">{formData.requesterEntityType === 'Association' ? "N° Arrêté:" : "N° RCCM:"}</span> {formData.requesterFirstName || <span className="italic text-muted-foreground">Non renseigné</span>}</div>
+              </>
+            )}
+            {formData.requesterLegalStatus === 'État' && (
+              <>
+                {formData.requesterRightType && <div><span className="font-medium">Type de droit:</span> {formData.requesterRightType}</div>}
+                <div><span className="font-medium">Service/Agence:</span> {formData.requesterLastName || <span className="italic text-muted-foreground">Non renseigné</span>}</div>
+              </>
+            )}
+            {(formData.requesterLegalStatus || 'Personne physique') === 'Personne physique' && (
+              <>
+                <div>
+                  <span className="font-medium">Nom:</span> {formData.requesterLastName || <span className="italic text-muted-foreground">Non renseigné</span>}
+                </div>
+                <div>
+                  <span className="font-medium">Prénom:</span> {formData.requesterFirstName || <span className="italic text-muted-foreground">Non renseigné</span>}
+                </div>
+              </>
+            )}
             <div>
               <span className="font-medium">Téléphone:</span> {formData.requesterPhone || <span className="italic text-muted-foreground">Non renseigné</span>}
             </div>
@@ -200,7 +223,12 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
               <div className="pt-1 border-t border-border/50">
                 <div className="font-medium">Propriétaire:</div>
                 <div className="text-muted-foreground">
-                  {formData.ownerLastName} {formData.ownerFirstName}
+                  {formData.ownerLegalStatus === 'Personne morale' && formData.ownerEntityType
+                    ? `${formData.ownerEntityType === 'Association' ? 'Dénomination' : 'Raison sociale'}: ${formData.ownerLastName || '—'} | ${formData.ownerEntityType === 'Association' ? 'Arrêté' : 'RCCM'}: ${formData.ownerFirstName || '—'}`
+                    : formData.ownerLegalStatus === 'État'
+                      ? `${formData.ownerRightType || 'État'} — ${formData.ownerLastName || '—'}`
+                      : `${formData.ownerLastName || ''} ${formData.ownerFirstName || ''}`
+                  }
                 </div>
               </div>
             )}
