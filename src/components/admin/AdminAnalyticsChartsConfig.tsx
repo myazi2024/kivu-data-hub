@@ -674,7 +674,7 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
   const [hasFilterChanges, setHasFilterChanges] = useState(false);
   const [hasCrossChanges, setHasCrossChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [viewMode, setViewMode] = useState<'tabs' | 'charts' | 'filters' | 'cross'>('tabs');
+  const [viewMode, setViewMode] = useState<'tabs' | 'kpis' | 'charts' | 'filters' | 'cross'>('tabs');
   const [modifiedTabs, setModifiedTabs] = useState<Set<string>>(new Set());
   const [pendingTabSwitch, setPendingTabSwitch] = useState<string | null>(null);
 
