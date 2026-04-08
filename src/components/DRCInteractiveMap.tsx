@@ -214,7 +214,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   /** Scoped stats: recalculate KPIs based on the most specific geographic filter */
   const scopedStats = useMemo(() => {
     if (!analytics || !selectedProvince) return null;
-    const predicate = buildScopePredicate(selectedProvince.name, selectedVille, selectedCommune, selectedQuartier);
+    const predicate = buildScopePredicate(selectedProvince.name, selectedVille, selectedCommune, selectedQuartier, selectedTerritoire);
     const { parcels, titleRequests, contributions, invoices, disputes, mutationRequests, certificates, expertiseRequests, taxHistory } = analytics;
 
     const filteredParcels = parcels.filter(predicate);
@@ -255,7 +255,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
       disputeResolutionRate: disputeCount > 0 ? Math.round((resolvedDisputes / disputeCount) * 100) : 0,
       densityLevel: density as ProvinceData['densityLevel'],
     };
-  }, [analytics, selectedProvince, selectedVille, selectedCommune, selectedQuartier]);
+  }, [analytics, selectedProvince, selectedVille, selectedCommune, selectedQuartier, selectedTerritoire]);
 
   /** Label for the detail block header */
   const scopeLabel = useMemo(() => {
@@ -263,9 +263,10 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     if (selectedQuartier) parts.push(selectedQuartier);
     if (selectedCommune) parts.push(selectedCommune);
     if (selectedVille) parts.push(selectedVille);
+    if (selectedTerritoire) parts.push(selectedTerritoire);
     if (selectedProvince) parts.push(selectedProvince.name);
     return parts.join(' — ') || '';
-  }, [selectedProvince, selectedVille, selectedCommune, selectedQuartier]);
+  }, [selectedProvince, selectedVille, selectedCommune, selectedQuartier, selectedTerritoire]);
 
   /** Handle province filter from Analytics → zoom map */
   const handleProvinceFilter = React.useCallback((provinceName: string | undefined) => {
@@ -275,6 +276,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
       setSelectedVille(undefined);
       setSelectedCommune(undefined);
       setSelectedQuartier(undefined);
+      setSelectedTerritoire(undefined);
       return;
     }
     const normalize = (s: string) => s.toLowerCase().replace(/[-\s]/g, '');
@@ -285,6 +287,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
       setSelectedVille(undefined);
       setSelectedCommune(undefined);
       setSelectedQuartier(undefined);
+      setSelectedTerritoire(undefined);
     }
   }, [provincesData]);
 
