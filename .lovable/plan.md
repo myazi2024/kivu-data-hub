@@ -1,78 +1,41 @@
 
-## Audit ciblé — pourquoi l’utilisateur ne voit pas les analytics test
 
-Le hook analytics n’est plus le problème principal :
-- `DRCInteractiveMap.tsx` lit bien `isTestRoute`
-- `useLandDataAnalytics(isTestRoute)` est déjà branché sur `/test/map`
-- la route miroir `/test/map` existe déjà dans `App.tsx`
+# Rendre la gestion des KPIs plus visible dans Config Graphique
 
-Le vrai blocage est le parcours utilisateur :
-- dans `AdminTestMode.tsx`, le lien générique “Accéder à l’environnement de test” ouvre `/test/cadastral-map`, pas l’écran analytics
-- ensuite, la navigation globale (`src/components/ui/navigation.tsx`) reste câblée en dur vers `/map`, `/cadastral-map` et `/mon-compte`
-- donc dès que l’utilisateur clique “Données foncières” depuis l’environnement test, il sort de `/test/*` et revient en production, ce qui masque les données `TEST-*`
+## Constat
 
-## Plan de correction
+Les KPIs **sont** deja configurables dans le mode "Graphiques" de Config Graphique. Quand on selectionne un onglet (ex: "Titres fonciers"), une section "Indicateurs KPI (6)" apparait en haut du panneau de droite, avec :
+- Toggle visibilite (afficher/masquer chaque KPI)
+- Edition du titre personnalise
+- Reordonnancement (fleches haut/bas)
+- Boutons "Tout afficher" / "Tout masquer"
 
-### 1. Rendre la navigation sensible au contexte test
-**Fichier :** `src/components/ui/navigation.tsx`
+Le probleme : cette section est noyee dans la vue "Graphiques", sans indication claire dans l'interface qu'elle existe. L'utilisateur doit d'abord passer en mode "Graphiques", puis selectionner un onglet, puis scroller pour voir les KPIs.
 
-- utiliser `useTestEnvironment()`
-- construire les liens de navigation avec préfixe `/test` quand `isTestRoute === true`
-- couvrir au minimum :
-  - `Données foncières` → `/test/map`
-  - `Carte cadastrale` → `/test/cadastral-map`
-  - `Mon compte` → `/test/mon-compte`
-- laisser `Accueil` et `Admin` inchangés
+## Proposition
 
-Effet attendu :
-- depuis n’importe quelle page test, le menu conserve l’utilisateur dans l’environnement test
-- les visuels analytics continuent donc à consommer les données `TEST-*`
+Ajouter un **5e mode "KPIs"** dans la barre de modes de Config Graphique (a cote de Onglets / Graphiques / Filtres / Croisements) qui offre une vue dediee a la gestion des KPIs de tous les onglets.
 
-### 2. Corriger le point d’entrée depuis l’admin
-**Fichier :** `src/components/admin/AdminTestMode.tsx`
+### Fichier : `src/components/admin/AdminAnalyticsChartsConfig.tsx`
 
-- remplacer le lien unique actuel par une entrée plus claire
-- faire de `/test/map` le point d’entrée principal pour tester les visuels analytics
-- conserver un accès explicite à `/test/cadastral-map` si on veut aussi tester la recherche cadastrale
+1. Ajouter le bouton "KPIs" dans la barre de modes (entre "Onglets" et "Graphiques")
+2. Creer une vue `viewMode === 'kpis'` qui affiche :
+   - Un selecteur d'onglet a gauche (comme pour les graphiques)
+   - A droite, uniquement les KPIs de l'onglet selectionne, avec les memes controles existants (visibilite, titre, ordre)
+   - Un apercu visuel montrant les 6 cases telles qu'elles apparaissent dans Analytics
+3. Conserver les KPIs dans la vue "Graphiques" egalement (pas de regression)
 
-Recommandation UX :
-- soit renommer le lien actuel en “Ouvrir Analytics (test)”
-- soit afficher 2 liens :
-  - `Analytics / Données foncières (test)`
-  - `Carte cadastrale (test)`
+### Detail technique
 
-### 3. Harmoniser le guide du mode test
-**Fichier :** `src/components/admin/test-mode/TestModeGuide.tsx`
+- Le state `viewMode` passe de `'tabs' | 'charts' | 'filters' | 'cross'` a `'tabs' | 'kpis' | 'charts' | 'filters' | 'cross'`
+- La vue KPIs reutilise les memes composants (`ItemEditor`, `toggleAll('kpi', ...)`) deja utilises dans la section KPI du mode Graphiques
+- L'apercu utilise le composant `KpiGrid` existant pour montrer un rendu fidele
 
-- mettre en avant `/test/map` comme écran principal pour vérifier les graphiques, KPIs et filtres
-- garder `/test/cadastral-map` comme second parcours de test
-- expliciter que les visuels analytics test ne sont visibles que dans `/test/*`
+### Fichiers concernes
 
-## Détails techniques
+| Fichier | Action |
+|---------|--------|
+| `src/components/admin/AdminAnalyticsChartsConfig.tsx` | Modifie — ajout mode KPIs |
 
-### Fichiers concernés
-- `src/components/ui/navigation.tsx`
-- `src/components/admin/AdminTestMode.tsx`
-- `src/components/admin/test-mode/TestModeGuide.tsx`
+**Impact** : ~60 lignes ajoutees dans 1 fichier. Aucune migration, aucun changement fonctionnel sur le rendu Analytics.
 
-### Ce qu’on ne change pas
-- pas de migration SQL
-- pas de changement RLS
-- pas de retouche du hook `useLandDataAnalytics` sauf si une vérification finale révèle un cas résiduel
-
-## Résultat attendu après implémentation
-
-1. L’admin active le mode test
-2. Il clique sur l’accès test depuis l’admin
-3. Il arrive sur `/test/map`
-4. Les KPIs, graphiques et filtres analytics affichent les données `TEST-*`
-5. S’il navigue ensuite avec le menu, il reste dans `/test/*`
-6. La production `/map` continue d’exclure les données test
-
-## Vérifications à faire
-
-- depuis `/admin?tab=test-mode`, ouvrir l’environnement test et vérifier que l’entrée principale mène à `/test/map`
-- sur `/test/map`, confirmer la présence de la bannière test et de visuels alimentés par les données générées
-- depuis `/test/cadastral-map`, cliquer “Données foncières” et vérifier qu’on arrive bien sur `/test/map`
-- depuis `/test/map`, cliquer “Carte cadastrale” et vérifier qu’on reste sur `/test/cadastral-map`
-- vérifier enfin que `/map` hors test n’affiche toujours aucune donnée `TEST-*`
