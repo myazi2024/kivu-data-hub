@@ -193,7 +193,10 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
                 <span className="font-medium">Email:</span> {formData.requesterEmail}
               </div>
             )}
-            {formData.requesterType === "representative" && (
+            <div>
+              <span className="font-medium">Qualité :</span> {{ owner: 'Propriétaire', beneficiary: 'Ayant droit', representative: 'Mandataire' }[formData.requesterType] || formData.requesterType}
+            </div>
+            {(formData.requesterType === "representative" || formData.requesterType === "beneficiary") && (
               <div className="pt-1 border-t border-border/50">
                 <div className="font-medium">Propriétaire:</div>
                 <div className="text-muted-foreground">

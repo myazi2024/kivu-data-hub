@@ -1507,6 +1507,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                 <Label htmlFor="renewal-owner" className="text-sm cursor-pointer">Propriétaire</Label>
                               </div>
                               <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="beneficiary" id="renewal-beneficiary" />
+                                <Label htmlFor="renewal-beneficiary" className="text-sm cursor-pointer">Ayant droit</Label>
+                              </div>
+                              <div className="flex items-center space-x-2">
                                 <RadioGroupItem value="representative" id="renewal-representative" />
                                 <Label htmlFor="renewal-representative" className="text-sm cursor-pointer">Mandataire</Label>
                               </div>
@@ -1514,9 +1518,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           </div>
 
                           {/* If Mandataire: show fields for representative identity */}
-                          {formData.requesterType === 'representative' && (
+                          {(formData.requesterType === 'representative' || formData.requesterType === 'beneficiary') && (
                             <div className="space-y-3 animate-fade-in border-t border-border pt-3">
-                              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Informations du mandataire</h4>
+                              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{formData.requesterType === 'representative' ? 'Informations du mandataire' : "Informations de l'ayant droit"}</h4>
                               <div className="grid grid-cols-2 gap-2">
                                 <div className="space-y-1.5">
                                   <Label className="text-sm">Statut juridique *</Label>
@@ -1645,6 +1649,18 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               </button>
                               <button
                                 type="button"
+                                onClick={() => handleInputChange('requesterType', 'beneficiary')}
+                                className={cn(
+                                  "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
+                                  formData.requesterType === 'beneficiary'
+                                    ? 'bg-primary text-primary-foreground shadow-md'
+                                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                )}
+                              >
+                                Ayant droit
+                              </button>
+                              <button
+                                type="button"
                                 onClick={() => handleInputChange('requesterType', 'representative')}
                                 className={cn(
                                   "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
@@ -1763,7 +1779,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                     </CardContent>
                   </Card>
 
-                  {formData.requesterType === 'representative' && !(requestType === 'renouvellement' && parcelValidated && parcelOwnerData) && (
+                  {(formData.requesterType === 'representative' || formData.requesterType === 'beneficiary') && !(requestType === 'renouvellement' && parcelValidated && parcelOwnerData) && (
                     <Card className="border-2 border-dashed rounded-lg">
                       <CardContent className="p-3 space-y-3">
                         <h4 className="text-sm font-semibold text-primary flex items-center gap-2">

@@ -90,6 +90,7 @@ export function applyFilters(records: any[], filter: AnalyticsFilter, dateField 
 
 const FIELD_LABELS: Record<string, Record<string, string>> = {
   request_type: { initial: 'Demande initiale', renouvellement: 'Renouvellement', conversion: 'Conversion' },
+  requester_type: { owner: 'Propriétaire', beneficiary: 'Ayant droit', representative: 'Mandataire' },
 };
 
 export function countBy(records: any[], field: string): { name: string; value: number }[] {
