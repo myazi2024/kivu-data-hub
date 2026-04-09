@@ -90,6 +90,21 @@ const CadastralMap = () => {
   const [showInvalidCharNotification, setShowInvalidCharNotification] = useState(false);
   const invalidCharTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Viewport height dynamique pour positionnement responsive
+  const [viewportHeight, setViewportHeight] = useState(typeof window !== 'undefined' ? window.innerHeight : 800);
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    const handleResize = () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => setViewportHeight(window.innerHeight), 150);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(timeout);
+    };
+  }, []);
+
   // Advanced search hooks
   const advancedSearch = useAdvancedCadastralSearch();
   const searchHistory = useSearchHistory();
@@ -952,10 +967,10 @@ const CadastralMap = () => {
             margin-bottom: ${
               selectedParcel
                 ? isMobile
-                  ? actionsExpanded ? '26rem' : '11rem'
-                  : actionsExpanded ? '24rem' : '10rem'
+                  ? actionsExpanded ? `${Math.min(viewportHeight * 0.55, 416)}px` : `${Math.min(viewportHeight * 0.28, 176)}px`
+                  : actionsExpanded ? `${Math.min(viewportHeight * 0.5, 384)}px` : `${Math.min(viewportHeight * 0.22, 160)}px`
                 : isMobile
-                  ? isSearchBarActive ? '1rem' : '13rem'
+                  ? isSearchBarActive ? '1rem' : `${Math.min(viewportHeight * 0.28, 208)}px`
                   : '1rem'
             } !important;
             transition: margin-bottom 0.3s ease !important;
@@ -980,18 +995,19 @@ const CadastralMap = () => {
 
         {/* Overlay de recherche - Design moderne avec animation de rebond */}
         <div 
-          className={`absolute left-3 z-[900] ${isMobile ? 'right-3' : 'w-96'} transform-gpu ${
-            isSearchBarActive || selectedParcel 
-              ? 'top-3' 
-              : 'translate-y-[calc(100dvh-12rem)] top-3'
-          }`}
-          style={{ transition: 'top 0.3s ease, transform 0.3s ease' }}
+          className={`absolute left-3 z-[900] ${isMobile ? 'right-3' : 'w-[min(24rem,calc(100vw-1.5rem))]'} transform-gpu`}
+          style={{ 
+            transition: 'top 0.3s ease, transform 0.3s ease',
+            top: isSearchBarActive || selectedParcel 
+              ? '0.75rem' 
+              : `${viewportHeight - 180}px`
+          }}
         >
           <div className="bg-background/95 backdrop-blur-md rounded-2xl shadow-[0_10px_40px_-8px_rgba(0,0,0,0.9),0_4px_16px_-4px_rgba(0,0,0,0.6)] border border-border/50 overflow-hidden">
             <div className={`${selectedParcel && isMobile ? 'p-2' : 'p-2.5'}`}>
               {/* Barre de recherche */}
               <div className="flex items-center gap-2">
-                <div className={`relative ${isMobile ? 'flex-1 max-w-[220px]' : 'flex-1'}`}>
+                <div className="relative flex-1">
                   <div className={`absolute left-2.5 top-1/2 -translate-y-1/2 ${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'} text-muted-foreground z-10`}>
                     <Search className="h-full w-full" />
                   </div>
@@ -1488,7 +1504,7 @@ const CadastralMap = () => {
           return (
             <>
               {/* Desktop legend */}
-              <div className="absolute top-16 right-3 z-[800] hidden md:block">
+              <div className="absolute top-3 right-3 z-[800] hidden md:block max-h-[calc(100vh-8rem)] overflow-auto">
                 <div className="bg-background/95 backdrop-blur-md rounded-lg shadow-lg border border-border/50 p-1.5">
                   <p className="text-[7px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Légende</p>
                   <div className="space-y-0.5">
@@ -1505,9 +1521,9 @@ const CadastralMap = () => {
               <div 
                 className="absolute left-3 z-[800] md:hidden"
                 style={{
-                  bottom: selectedParcel 
-                    ? (actionsExpanded ? '30rem' : '15rem') 
-                    : '12rem',
+                  bottom: `${selectedParcel 
+                    ? (actionsExpanded ? Math.min(viewportHeight * 0.55, 480) : Math.min(viewportHeight * 0.3, 240)) 
+                    : Math.min(viewportHeight * 0.25, 192)}px`,
                   transition: 'bottom 0.3s ease'
                 }}
               >
