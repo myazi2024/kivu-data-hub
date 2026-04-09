@@ -160,7 +160,7 @@ const TabManager: React.FC<TabManagerProps> = ({ localTabs, onUpdate }) => {
   const showAll = () => onUpdate(localTabs.map(t => ({ ...t, is_visible: true })));
   const hideAll = () => onUpdate(localTabs.map(t => ({ ...t, is_visible: false })));
   const resetAll = () => {
-    onUpdate(Object.entries(ANALYTICS_TABS_REGISTRY).map(([key, reg], i) => ({
+    onUpdate(Object.entries(ANALYTICS_TABS_REGISTRY).filter(([key]) => isUserTab(key)).map(([key, reg], i) => ({
       key,
       label: reg.label,
       defaultLabel: reg.label,
@@ -1053,7 +1053,7 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
             <CardContent className="p-0">
               <ScrollArea className="h-[500px]">
                 <div className="space-y-0.5 p-2">
-                  {Object.entries(ANALYTICS_TABS_REGISTRY).filter(([key]) => key !== '_global' && key !== 'rdc-map').map(([key, tab]) => {
+                  {Object.entries(ANALYTICS_TABS_REGISTRY).filter(([key]) => isUserTab(key)).map(([key, tab]) => {
                     const kpis = (localItems[key] || []).filter(i => i.item_type === 'kpi');
                     const hiddenKpis = kpis.filter(k => !k.is_visible).length;
                     const tabConf = localTabs.find(t => t.key === key);
@@ -1146,7 +1146,7 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
             <CardContent className="p-0">
               <ScrollArea className="h-[500px]">
                 <div className="space-y-0.5 p-2">
-                  {Object.entries(ANALYTICS_TABS_REGISTRY).filter(([key]) => key !== '_global').map(([key, tab]) => {
+                  {Object.entries(ANALYTICS_TABS_REGISTRY).filter(([key]) => isChartsViewTab(key)).map(([key, tab]) => {
                     const stat = tabStats[key];
                     const tabConf = localTabs.find(t => t.key === key);
                     const tabLabel = tabConf?.label || tab.label;
