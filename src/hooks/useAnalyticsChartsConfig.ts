@@ -74,8 +74,7 @@ export const STATUS_FIELD_OPTIONS = [
 
 /** Build default filter config items for a given tab */
 function buildFilterDefaults(tabKey: string): ChartConfigItem[] {
-  const defaults = TAB_FILTER_DEFAULTS[tabKey];
-  if (!defaults) return [];
+  const defaults = TAB_FILTER_DEFAULTS[tabKey] || { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' };
   return [
     { tab_key: tabKey, item_key: 'filter-status', item_type: 'filter', is_visible: !defaults.hideStatus, display_order: 0, custom_title: 'Filtre statut' },
     { tab_key: tabKey, item_key: 'filter-time', item_type: 'filter', is_visible: !defaults.hideTime, display_order: 1, custom_title: 'Filtre temps' },
@@ -114,7 +113,7 @@ export function useAnalyticsTabsConfig() {
     const dbTabMap = new Map<string, ChartConfigItem>();
     configs.filter(c => c.item_type === 'tab' && c.item_key === '__tab__').forEach(c => dbTabMap.set(c.tab_key, c));
 
-    return Object.entries(ANALYTICS_TABS_REGISTRY).filter(([key]) => key !== '_global').map(([key, reg], i) => {
+    return Object.entries(ANALYTICS_TABS_REGISTRY).filter(([key]) => key !== '_global' && key !== 'rdc-map').map(([key, reg], i) => {
       const override = dbTabMap.get(key);
       return {
         key,

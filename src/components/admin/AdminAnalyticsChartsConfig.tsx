@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +16,7 @@ import {
 import {
   Settings, Save, Eye, EyeOff, ChevronUp, ChevronDown, RotateCcw, Loader2,
   BarChart3, PieChart as PieChartIcon, TrendingUp, LayoutGrid, Palette, GripVertical,
-  Layers, Map as MapIcon, Globe, Filter, GitBranch, Plus, Trash2
+  Layers, Map as MapIcon, Globe, Filter, GitBranch, Plus, Trash2, ExternalLink, AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -31,6 +32,15 @@ import {
   TabConfig,
 } from '@/hooks/useAnalyticsChartsConfig';
 import { CROSS_VARIABLE_REGISTRY, CrossVariable } from '@/config/crossVariables';
+
+/** Tabs excluded from all user-facing views (system-level only) */
+const EXCLUDED_SYSTEM_TABS = ['_global'];
+/** Tabs that only appear in the Charts view (no KPIs/Filters/Cross) */
+const CHARTS_ONLY_TABS = ['rdc-map'];
+/** Filter helper: exclude system + charts-only tabs */
+const isUserTab = (key: string) => !EXCLUDED_SYSTEM_TABS.includes(key) && !CHARTS_ONLY_TABS.includes(key);
+/** Filter helper: exclude system tabs only (charts view includes rdc-map) */
+const isChartsViewTab = (key: string) => !EXCLUDED_SYSTEM_TABS.includes(key);
 
 const CHART_TYPE_OPTIONS = [
   { value: 'bar-h', label: 'Barres horiz.', icon: '▬' },
