@@ -1037,12 +1037,24 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
                   Croisements
                 </Button>
               </div>
+              <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => navigate(`/analytics${activeTab && activeTab !== '_global' ? `?tab=${activeTab}` : ''}`)}>
+                <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                Voir dans Analytics
+              </Button>
               <Button size="sm" variant="outline" onClick={handleSaveAll} disabled={!hasChanges || isSaving}>
                 {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Save className="h-3.5 w-3.5 mr-1" />}
                 Sauvegarder tout
               </Button>
             </div>
           </div>
+          {desyncWarnings.length > 0 && (
+            <div className="mt-2 flex items-start gap-2 p-2 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+              <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+              <div className="text-xs text-amber-700 dark:text-amber-400 space-y-0.5">
+                {desyncWarnings.map((w, i) => <div key={i}>{w}</div>)}
+              </div>
+            </div>
+          )}
         </CardHeader>
       </Card>
 
