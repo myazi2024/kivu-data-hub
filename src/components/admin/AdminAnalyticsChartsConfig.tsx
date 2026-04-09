@@ -528,7 +528,7 @@ const CrossVariableManager: React.FC<CrossVariableManagerProps> = ({ localCross,
     return item?.custom_title || chartKey;
   };
 
-  const analyticsTabKeys = Object.keys(CROSS_VARIABLE_REGISTRY);
+  const analyticsTabKeys = Object.keys(CROSS_VARIABLE_REGISTRY).filter(key => !!ANALYTICS_TABS_REGISTRY[key]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
