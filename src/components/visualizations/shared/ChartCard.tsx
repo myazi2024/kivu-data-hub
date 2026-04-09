@@ -252,6 +252,7 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
   const { ref, copied, copy } = useCopyAsImage();
   const filterLabel = useContext(FilterLabelContext);
   const [crossField, setCrossField] = useState<string | null>(null);
+  const [focused, setFocused] = useState(false);
   if (hidden) return null;
 
   const hasCross = crossVariables && crossVariables.length > 0 && rawRecords && groupField;
@@ -263,7 +264,7 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
   const CH = type === 'bar-h' && displayData.length > 5 ? Math.max(BASE_CH, displayData.length * 28) : BASE_CH;
 
   return (
-    <Card ref={ref} className={`border-border/30 ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
+    <Card ref={ref} onClick={() => setFocused(f => !f)} className={`border-border/30 cursor-pointer transition-all duration-200 ${focused ? 'scale-[1.03] shadow-xl z-10 ring-2 ring-primary/30' : ''} ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
       <CardHeader className="pb-1 px-2 pt-2">
         <div className="flex items-start gap-1">
           {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'} shrink-0 mt-0.5`} />}
@@ -356,12 +357,13 @@ export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
 }) => {
   const { ref, copied, copy } = useCopyAsImage();
   const filterLabel = useContext(FilterLabelContext);
+  const [focused, setFocused] = useState(false);
   if (hidden) return null;
 
   const displayData = data.slice(0, maxItems);
 
   return (
-    <Card ref={ref} className={`border-border/30 ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
+    <Card ref={ref} onClick={() => setFocused(f => !f)} className={`border-border/30 cursor-pointer transition-all duration-200 ${focused ? 'scale-[1.03] shadow-xl z-10 ring-2 ring-primary/30' : ''} ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
       <CardHeader className="pb-1 px-2 pt-2">
         <div className="flex items-start gap-1">
           {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'} shrink-0 mt-0.5`} />}
@@ -410,12 +412,13 @@ export const ColorMappedPieCard: React.FC<MultiDataPieProps> = memo(({
   const { ref, copied, copy } = useCopyAsImage();
   const filterLabel = useContext(FilterLabelContext);
   const [crossField, setCrossField] = useState<string | null>(null);
+  const [focused, setFocused] = useState(false);
 
   const hasCross = crossVariables && crossVariables.length > 0 && rawRecords && groupField;
   const isCrossMode = hasCross && crossField;
   
   return (
-    <Card ref={ref} className="border-border/30">
+    <Card ref={ref} onClick={() => setFocused(f => !f)} className={`border-border/30 cursor-pointer transition-all duration-200 ${focused ? 'scale-[1.03] shadow-xl z-10 ring-2 ring-primary/30' : ''}`}>
       <CardHeader className="pb-1 px-2 pt-2">
         <div className="flex items-start gap-1">
           {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'} shrink-0 mt-0.5`} />}
