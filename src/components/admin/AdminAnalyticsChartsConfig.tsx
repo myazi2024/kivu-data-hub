@@ -257,7 +257,7 @@ const FILTER_LABELS: Record<string, { label: string; description: string }> = {
 };
 
 const FilterManager: React.FC<FilterManagerProps> = ({ localFilters, onUpdateFilters, localTabs, onSave, isSaving }) => {
-  const [selectedTab, setSelectedTab] = useState(Object.keys(TAB_FILTER_DEFAULTS)[0]);
+  const [selectedTab, setSelectedTab] = useState(Object.keys(ANALYTICS_TABS_REGISTRY).filter(isUserTab)[0]);
 
   const currentFilters = localFilters[selectedTab] || [];
   const toggleFilters = currentFilters.filter(f => ['filter-status', 'filter-time', 'filter-location'].includes(f.item_key));
@@ -287,7 +287,7 @@ const FilterManager: React.FC<FilterManagerProps> = ({ localFilters, onUpdateFil
     await onSave(allFilterItems);
   };
 
-  const analyticsTabKeys = Object.keys(TAB_FILTER_DEFAULTS);
+  const analyticsTabKeys = Object.keys(ANALYTICS_TABS_REGISTRY).filter(isUserTab);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
