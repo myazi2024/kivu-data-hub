@@ -152,7 +152,7 @@ export const useTestDataActions = ({
         updateStep(2, 'done');
       } catch (contribError) {
         updateStep(2, 'error');
-        try { await supabase.rpc('cleanup_all_test_data'); } catch (e) { console.error('Rollback RPC failed:', e); }
+        toast.warning('Génération partielle — utilisez « Nettoyer » pour supprimer les données incomplètes');
         throw contribError;
       }
 
@@ -164,7 +164,7 @@ export const useTestDataActions = ({
         updateStep(3, 'done');
       } catch (invoiceError) {
         updateStep(3, 'error');
-        try { await supabase.rpc('cleanup_all_test_data'); } catch (e) { console.error('Rollback RPC failed:', e); }
+        toast.warning('Génération partielle — utilisez « Nettoyer » pour supprimer les données incomplètes');
         throw invoiceError;
       }
 
@@ -175,7 +175,7 @@ export const useTestDataActions = ({
         updateStep(4, 'done');
       } catch (paymentError) {
         updateStep(4, 'error');
-        try { await supabase.rpc('cleanup_all_test_data'); } catch (e) { console.error('Rollback RPC failed:', e); }
+        toast.warning('Génération partielle — utilisez « Nettoyer » pour supprimer les données incomplètes');
         throw paymentError;
       }
 

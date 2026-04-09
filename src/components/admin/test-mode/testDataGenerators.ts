@@ -210,10 +210,10 @@ export const generateParcels = async (parcelNumbers: string[]) => {
     };
   });
 
-  // Insert in batches of 50 to stay under payload limits
+  // Insert in batches of 200 to stay under payload limits
   const allInserted: Array<{ id: string; parcel_number: string }> = [];
-  for (let i = 0; i < records.length; i += 50) {
-    const batch = records.slice(i, i + 50);
+  for (let i = 0; i < records.length; i += 200) {
+    const batch = records.slice(i, i + 200);
     const { data, error } = await supabase
       .from('cadastral_parcels')
       .insert(batch)
@@ -341,8 +341,8 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
 
   // Insert in batches
   const allInserted: Array<{ id: string; parcel_number: string }> = [];
-  for (let i = 0; i < records.length; i += 50) {
-    const batch = records.slice(i, i + 50);
+  for (let i = 0; i < records.length; i += 200) {
+    const batch = records.slice(i, i + 200);
     const { data, error } = await supabase
       .from('cadastral_contributions')
       .insert(batch)
@@ -405,8 +405,8 @@ export const generateInvoices = async (userId: string, parcelNumbers: string[]) 
 
   // Insert in batches
   const allInserted: Array<{ id: string; parcel_number: string; status: string }> = [];
-  for (let i = 0; i < records.length; i += 50) {
-    const batch = records.slice(i, i + 50);
+  for (let i = 0; i < records.length; i += 200) {
+    const batch = records.slice(i, i + 200);
     const { data, error } = await supabase
       .from('cadastral_invoices')
       .insert(batch)
@@ -444,8 +444,8 @@ export const generatePayments = async (
 
   // Insert in batches
   const allInserted: Array<{ id: string }> = [];
-  for (let i = 0; i < records.length; i += 50) {
-    const batch = records.slice(i, i + 50);
+  for (let i = 0; i < records.length; i += 200) {
+    const batch = records.slice(i, i + 200);
     const { data, error } = await supabase
       .from('payment_transactions')
       .insert(batch)
@@ -478,8 +478,8 @@ export const generateServiceAccess = async (
   });
 
   // Insert in batches
-  for (let i = 0; i < records.length; i += 50) {
-    const batch = records.slice(i, i + 50);
+  for (let i = 0; i < records.length; i += 200) {
+    const batch = records.slice(i, i + 200);
     const { error } = await supabase
       .from('cadastral_service_access')
       .insert(batch);
@@ -552,8 +552,8 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
 
   // Insert in batches
   const allInserted: Array<{ id: string }> = [];
-  for (let i = 0; i < records.length; i += 50) {
-    const batch = records.slice(i, i + 50);
+  for (let i = 0; i < records.length; i += 200) {
+    const batch = records.slice(i, i + 200);
     const { data, error } = await supabase
       .from('land_title_requests')
       .insert(batch)
@@ -645,8 +645,8 @@ export const generateExpertiseRequests = async (userId: string, parcelNumbers: s
 
   // Insert in batches
   const allInserted: Array<{ id: string; reference_number: string }> = [];
-  for (let i = 0; i < records.length; i += 50) {
-    const batch = records.slice(i, i + 50);
+  for (let i = 0; i < records.length; i += 200) {
+    const batch = records.slice(i, i + 200);
     const { data, error } = await supabase
       .from('real_estate_expertise_requests')
       .insert(batch)
@@ -677,8 +677,8 @@ export const generateExpertisePayments = async (userId: string, expertiseRequest
   }));
 
   const allInserted: Array<{ id: string }> = [];
-  for (let i = 0; i < records.length; i += 50) {
-    const batch = records.slice(i, i + 50);
+  for (let i = 0; i < records.length; i += 200) {
+    const batch = records.slice(i, i + 200);
     const { data, error } = await supabase
       .from('expertise_payments')
       .insert(batch)
@@ -733,8 +733,8 @@ export const generateDisputes = async (parcelNumbers: string[], suffix: string, 
 
   // Insert in batches
   const allInserted: Array<{ id: string }> = [];
-  for (let i = 0; i < records.length; i += 50) {
-    const batch = records.slice(i, i + 50);
+  for (let i = 0; i < records.length; i += 200) {
+    const batch = records.slice(i, i + 200);
     const { data, error } = await supabase
       .from('cadastral_land_disputes')
       .insert(batch)
@@ -767,8 +767,8 @@ export const generateContributorCodes = async (
 
   // Insert in batches
   const allInserted: Array<{ id: string }> = [];
-  for (let i = 0; i < records.length; i += 50) {
-    const batch = records.slice(i, i + 50);
+  for (let i = 0; i < records.length; i += 200) {
+    const batch = records.slice(i, i + 200);
     const { data, error } = await supabase
       .from('cadastral_contributor_codes')
       .insert(batch)
@@ -800,8 +800,8 @@ export const generateFraudAttempts = async (
   }));
 
   const allInserted: Array<{ id: string }> = [];
-  for (let i = 0; i < records.length; i += 50) {
-    const batch = records.slice(i, i + 50);
+  for (let i = 0; i < records.length; i += 200) {
+    const batch = records.slice(i, i + 200);
     const { data, error } = await supabase
       .from('fraud_attempts')
       .insert(batch)
@@ -893,8 +893,8 @@ export const generateOwnershipHistory = async (
 
   // Insert in batches
   const allInserted: Array<{ id: string }> = [];
-  for (let i = 0; i < records.length; i += 50) {
-    const batch = records.slice(i, i + 50);
+  for (let i = 0; i < records.length; i += 200) {
+    const batch = records.slice(i, i + 200);
     const { data, error } = await supabase
       .from('cadastral_ownership_history')
       .insert(batch)
@@ -930,8 +930,8 @@ export const generateTaxHistory = async (
 
   // Insert in batches
   const allInserted: Array<{ id: string }> = [];
-  for (let i = 0; i < records.length; i += 50) {
-    const batch = records.slice(i, i + 50);
+  for (let i = 0; i < records.length; i += 200) {
+    const batch = records.slice(i, i + 200);
     const { data, error } = await supabase
       .from('cadastral_tax_history')
       .insert(batch)
@@ -959,8 +959,8 @@ export const generateBoundaryHistory = async (
   }));
 
   const allInserted: Array<{ id: string }> = [];
-  for (let i = 0; i < records.length; i += 50) {
-    const batch = records.slice(i, i + 50);
+  for (let i = 0; i < records.length; i += 200) {
+    const batch = records.slice(i, i + 200);
     const { data, error } = await supabase
       .from('cadastral_boundary_history')
       .insert(batch)
@@ -994,8 +994,8 @@ export const generateMortgages = async (
 
   // Insert in batches
   const allInserted: Array<{ id: string }> = [];
-  for (let i = 0; i < records.length; i += 50) {
-    const batch = records.slice(i, i + 50);
+  for (let i = 0; i < records.length; i += 200) {
+    const batch = records.slice(i, i + 200);
     const { data, error } = await supabase
       .from('cadastral_mortgages')
       .insert(batch)
@@ -1038,8 +1038,8 @@ export const generateBuildingPermits = async (
 
   // Insert in batches
   const allInserted: Array<{ id: string }> = [];
-  for (let i = 0; i < records.length; i += 50) {
-    const batch = records.slice(i, i + 50);
+  for (let i = 0; i < records.length; i += 200) {
+    const batch = records.slice(i, i + 200);
     const { data, error } = await supabase
       .from('cadastral_building_permits')
       .insert(batch)
@@ -1073,8 +1073,8 @@ export const generateCertificates = async (
   }));
 
   const allInserted: Array<{ id: string }> = [];
-  for (let i = 0; i < records.length; i += 50) {
-    const batch = records.slice(i, i + 50);
+  for (let i = 0; i < records.length; i += 200) {
+    const batch = records.slice(i, i + 200);
     const { data, error } = await supabase
       .from('generated_certificates')
       .insert(batch)
