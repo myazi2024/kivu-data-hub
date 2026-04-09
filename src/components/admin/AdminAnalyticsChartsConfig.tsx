@@ -672,10 +672,11 @@ const CrossVariableManager: React.FC<CrossVariableManagerProps> = ({ localCross,
 
 // ─── Main Component ──────────────────────────────────────────────────
 const AdminAnalyticsChartsConfig: React.FC = () => {
+  const navigate = useNavigate();
   const { configs, isLoading } = useAnalyticsChartsConfig();
   const { tabs: dbTabs } = useAnalyticsTabsConfig();
   const { upsertConfig, deleteTabOverrides } = useAnalyticsChartsConfigMutations();
-  const [activeTab, setActiveTab] = useState(Object.keys(ANALYTICS_TABS_REGISTRY)[0]);
+  const [activeTab, setActiveTab] = useState(Object.keys(ANALYTICS_TABS_REGISTRY).filter(isUserTab)[0]);
   const [localItems, setLocalItems] = useState<Record<string, ChartConfigItem[]>>({});
   const [localTabs, setLocalTabs] = useState<TabConfig[]>([]);
   const [localFilters, setLocalFilters] = useState<Record<string, ChartConfigItem[]>>({});
@@ -735,7 +736,7 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
     const dbFilterMap = new Map<string, ChartConfigItem>();
     configs.filter(c => c.item_type === 'filter').forEach(c => dbFilterMap.set(`${c.tab_key}::${c.item_key}`, c));
 
-    Object.keys(TAB_FILTER_DEFAULTS).forEach(tabKey => {
+    Object.entries(ANALYTICS_TABS_REGISTRY).filter(([key]) => isUserTab(key)).forEach(([tabKey]) => {
       const defaults = buildFilterDefaults(tabKey);
       result[tabKey] = defaults.map(d => {
         const override = dbFilterMap.get(`${d.tab_key}::${d.item_key}`);
