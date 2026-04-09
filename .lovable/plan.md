@@ -1,77 +1,112 @@
 
-# Audit detaille — Config Graphiques vs Analytics (Donnees foncieres)
 
-## 1. Architecture d'alignement
+# Audit detaille — Erreurs de generation de donnees test (Mode Test Admin)
 
-L'alignement repose sur un registre unique : **`ANALYTICS_TABS_REGISTRY`** dans `src/hooks/useAnalyticsChartsConfig.ts` (lignes 275-642). Ce registre definit les 14 onglets, leurs KPIs et leurs graphiques avec des `item_key` uniques.
+## 1. Erreur identifiee
 
-**Cote Analytics** : chaque Block (`TitleRequestsBlock.tsx`, `TaxesBlock.tsx`, etc.) importe ce registre et construit ses defaults avec `[...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TABS_REGISTRY[TAB_KEY].charts]`. Les cles `isChartVisible('xxx')` et `getChartConfig('xxx')` sont resolues par fusion DB + defaults.
-
-**Cote Admin** : `AdminAnalyticsChartsConfig.tsx` itere sur le meme `ANALYTICS_TABS_REGISTRY` pour generer l'interface d'edition. Toute cle ajoutee au registre apparait automatiquement dans l'admin.
-
-**Resultat** : l'alignement des cles est deja verrouille. Une comparaison exhaustive des 14 onglets confirme que **chaque `item_key` utilise dans un Block a une correspondance exacte dans le registre, et vice-versa**. Zero desalignement.
-
-## 2. Anomalies identifiees
-
-| # | Severite | Composant | Description |
-|---|----------|-----------|-------------|
-| C1 | **Moyenne** | `AdminAnalyticsChartsConfig.tsx` L153 | **`resetAll` dans TabManager inclut `_global` et `rdc-map`**. La fonction `resetAll` genere des TabConfig pour toutes les entrees du registre, y compris `_global` et `rdc-map` qui ne sont pas des onglets utilisateur. Cela peut creer des entrees `__tab__` parasites en base pour ces cles speciales. Devrait filtrer `_global` et `rdc-map` comme le fait deja `useAnalyticsTabsConfig` (L117). |
-| C2 | **Moyenne** | `AdminAnalyticsChartsConfig.tsx` L1046 vs L1139 | **Filtrage incoherent entre les vues KPIs et Charts**. La vue KPIs filtre `_global` ET `rdc-map` du selecteur d'onglets. La vue Charts filtre seulement `_global` (affiche `rdc-map`). La vue Filtres et Croisements filtrent differemment. Il faudrait un filtrage uniforme — `rdc-map` dans Charts est intentionnel (config carte), mais le manque de coherence peut induire en erreur. |
-| C3 | **Moyenne** | `crossVariables.ts` + admin | **Pas de validation de coherence cross → registry**. Les cles dans `CROSS_VARIABLE_REGISTRY` ne sont pas validees contre `ANALYTICS_TABS_REGISTRY`. Si un graphique est renomme (cle modifiee) dans le registre, la config croisements devient orpheline sans avertissement. |
-| C4 | **Basse** | `AdminAnalyticsChartsConfig.tsx` | **Pas de mode preview**. L'admin modifie titre, visibilite, type de graphique, mais ne peut pas previsualiser le rendu final sans naviguer manuellement vers Analytics. Un bouton "Apercu" ou un lien direct vers l'onglet concerne ameliorerait le workflow. |
-| C5 | **Basse** | `useAnalyticsChartsConfig.ts` L37-52 | **`TAB_FILTER_DEFAULTS` est statique**. Si un nouvel onglet est ajoute au registre sans ajouter son entree dans `TAB_FILTER_DEFAULTS`, la vue Filtres de l'admin ne l'affichera pas. Il n'y a pas de fallback automatique. |
-| C6 | **Basse** | `AdminAnalyticsChartsConfig.tsx` | **Pas de detection de desynchronisation**. Si un developpeur ajoute un graphique dans un Block mais oublie de l'ajouter au registre (ou vice-versa), il n'y a aucune alerte cote admin ou cote analytics. Un avertissement "X cles non configurees" ameliorerait la robustesse. |
-| C7 | **Info** | `useAnalyticsChartsConfig.ts` L223 | **`as any` sur l'upsert Supabase**. Le cast bypasse le typage TypeScript pour l'insertion dans `analytics_charts_config`. |
-
-## 3. Resume
-
-```text
-Severite    Count
-─────────   ─────
-Moyenne     3 (C1-C3)
-Basse       3 (C4-C6)
-Info        1 (C7)
-─────────   ─────
-Total       7
+L'erreur console est :
+```
+canceling statement due to statement timeout
+at useTestDataActions.ts:90
 ```
 
-**Verdict** : l'alignement est structurellement verrouille grace au registre partage `ANALYTICS_TABS_REGISTRY`. Les anomalies sont des problemes de robustesse (coherence du filtrage, detection de desynchronisation) et non des desalignements de donnees.
+Cette erreur provient de l'appel RPC `cleanup_all_test_data()` qui est invoque dans **3 contextes** :
+- **Rollback** lors d'un echec de generation (lignes 155, 167, 178 de `useTestDataActions.ts`)
+- **Nettoyage manuel** via le bouton "Nettoyer tout" (ligne 83)
+- **Regeneration** via le bouton "Regenerer" (ligne 339)
 
-## 4. Plan de correction recommande
+## 2. Causes racines
 
-### Fichier : `src/hooks/useAnalyticsChartsConfig.ts`
+### E1 — **Statement timeout sur la RPC `cleanup_all_test_data`** (critique)
 
-**a) C5 — Fallback automatique pour TAB_FILTER_DEFAULTS** :
-- Modifier `useTabFilterConfig` pour retourner un default generique `{ hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' }` quand le tabKey n'existe pas dans `TAB_FILTER_DEFAULTS`, au lieu de rien
+La RPC effectue **~20 DELETE sequentiels** sur des tables pouvant contenir 7 000+ enregistrements chacune. Supabase impose un `statement_timeout` par defaut (typiquement 30-60s pour les appels via l'API REST/anon key). Avec 7 020 parcelles + 7 020 contributions + milliers d'enfants FK, le cumul des DELETE depasse ce timeout.
 
-**b) C7 — Supprimer `as any`** :
-- Typer correctement l'objet d'upsert
+**Facteurs aggravants** :
+- Utilisation de `ILIKE 'TEST-%'` sans index dedie → sequential scan sur chaque table
+- Sous-requetes imbriquees (`DELETE WHERE contribution_id IN (SELECT id FROM ... WHERE ILIKE)`) → scans multiplies
+- `DELETE FROM notifications WHERE title ILIKE '%TEST-%'` → wildcard leading `%` = full table scan garanti
+- `metadata->>'test_mode' = 'true'` sur `payment_transactions` → extraction JSON sans index
 
-### Fichier : `src/components/admin/AdminAnalyticsChartsConfig.tsx`
+### E2 — **Generation massive sans batching suffisant** (moyenne)
 
-**c) C1 — Filtrer `resetAll`** :
-- Ajouter `.filter(([key]) => key !== '_global' && key !== 'rdc-map')` dans `resetAll` du TabManager
+La generation insere 7 020 parcelles + 7 020 contributions en batchs de 50 (= 140 requetes HTTP sequentielles rien que pour les parcelles). Chaque batch attend la reponse avant le suivant. Sur une connexion lente ou avec le overhead RLS, ca peut prendre plusieurs minutes et risquer un timeout cote client.
 
-**d) C2 — Unifier le filtrage des vues** :
-- Extraire une constante `EXCLUDED_SPECIAL_TABS = ['_global']` et `TAB_WITH_CHARTS_ONLY = ['rdc-map']` pour rendre le filtrage explicite et coherent entre les 5 vues
+### E3 — **Rollback en cascade aggrave le probleme** (moyenne)
 
-**e) C4 — Lien vers Analytics** :
-- Ajouter un bouton "Voir dans Analytics" qui navigue vers `/analytics?tab={activeTab}` dans le header de chaque vue
+Quand une etape echoue (ex: contributions batch N timeout), le code appelle `supabase.rpc('cleanup_all_test_data')` en rollback (lignes 155, 167, 178). Mais cette RPC timeout elle aussi (E1), generant une **seconde erreur** qui masque l'erreur originale. Le rollback echoue silencieusement (`try/catch` avec `console.error`).
 
-**f) C6 — Detection de desynchronisation** :
-- A l'initialisation, comparer les cles du registre avec les cles effectivement utilisees dans les configs DB et afficher un badge d'avertissement si des orphelins sont detectes
+### E4 — **Pas de timeout cote client** (basse)
 
-### Fichier : `src/config/crossVariables.ts`
+Aucun `AbortController` ou timeout n'est configure sur les appels Supabase. L'utilisateur attend indefiniment jusqu'au timeout serveur.
 
-**g) C3 — Validation cross → registry** :
-- Ajouter une verification au build (ou au runtime en dev) que chaque cle dans `CROSS_VARIABLE_REGISTRY` existe dans `ANALYTICS_TABS_REGISTRY`
+## 3. Resume des anomalies
+
+```text
+#   Severite   Description
+E1  Critique   cleanup_all_test_data timeout (pas d'index, ILIKE full scan, 7000+ rows × 20 tables)
+E2  Moyenne    Generation sequentielle trop lente (140+ requetes HTTP pour parcelles seules)
+E3  Moyenne    Rollback appelle la meme RPC qui timeout → echec en cascade
+E4  Basse      Pas de timeout/abort cote client
+```
+
+## 4. Plan de correction
+
+### A) Migration SQL — Ajouter des index partiels pour les donnees TEST (corrige E1)
+
+Creer des index partiels sur les colonnes filtrees par `ILIKE 'TEST-%'`. Comme `ILIKE 'TEST-%'` equivaut a `parcel_number LIKE 'TEST-%'` (majuscules deja), on peut utiliser `text_pattern_ops` :
+
+```sql
+-- Index partiels pour accelerer cleanup et count
+CREATE INDEX IF NOT EXISTS idx_parcels_test ON cadastral_parcels (parcel_number text_pattern_ops) WHERE parcel_number LIKE 'TEST-%';
+CREATE INDEX IF NOT EXISTS idx_contributions_test ON cadastral_contributions (parcel_number text_pattern_ops) WHERE parcel_number LIKE 'TEST-%';
+CREATE INDEX IF NOT EXISTS idx_invoices_test ON cadastral_invoices (parcel_number text_pattern_ops) WHERE parcel_number LIKE 'TEST-%';
+CREATE INDEX IF NOT EXISTS idx_contributor_codes_test ON cadastral_contributor_codes (parcel_number text_pattern_ops) WHERE parcel_number LIKE 'TEST-%';
+CREATE INDEX IF NOT EXISTS idx_service_access_test ON cadastral_service_access (parcel_number text_pattern_ops) WHERE parcel_number LIKE 'TEST-%';
+CREATE INDEX IF NOT EXISTS idx_title_requests_test ON land_title_requests (reference_number text_pattern_ops) WHERE reference_number LIKE 'TEST-%';
+CREATE INDEX IF NOT EXISTS idx_expertise_requests_test ON real_estate_expertise_requests (reference_number text_pattern_ops) WHERE reference_number LIKE 'TEST-%';
+CREATE INDEX IF NOT EXISTS idx_disputes_test ON cadastral_land_disputes (parcel_number text_pattern_ops) WHERE parcel_number LIKE 'TEST-%';
+CREATE INDEX IF NOT EXISTS idx_boundary_conflicts_test ON cadastral_boundary_conflicts (reporting_parcel_number text_pattern_ops) WHERE reporting_parcel_number LIKE 'TEST-%';
+CREATE INDEX IF NOT EXISTS idx_certificates_test ON generated_certificates (reference_number text_pattern_ops) WHERE reference_number LIKE 'TEST-%';
+CREATE INDEX IF NOT EXISTS idx_mutations_test ON mutation_requests (reference_number text_pattern_ops) WHERE reference_number LIKE 'TEST-%';
+CREATE INDEX IF NOT EXISTS idx_subdivisions_test ON subdivision_requests (reference_number text_pattern_ops) WHERE reference_number LIKE 'TEST-%';
+CREATE INDEX IF NOT EXISTS idx_payments_test_mode ON payment_transactions ((metadata->>'test_mode')) WHERE metadata->>'test_mode' = 'true';
+```
+
+### B) Migration SQL — Remplacer `ILIKE` par `LIKE` dans les RPC (corrige E1)
+
+`ILIKE` empeche l'utilisation des index `text_pattern_ops`. Comme les prefixes TEST sont toujours en majuscules, remplacer `ILIKE 'TEST-%'` par `LIKE 'TEST-%'` dans `cleanup_all_test_data` et `count_test_data_stats`.
+
+Aussi, remplacer `notifications WHERE title ILIKE '%TEST-%'` par `WHERE title LIKE '%TEST-%'` (ou mieux: `WHERE title LIKE 'TEST-%'` si possible, sinon accepter le full scan sur une petite table).
+
+### C) Migration SQL — Augmenter le `statement_timeout` dans la RPC (corrige E1)
+
+Ajouter `SET statement_timeout = '120s'` a la declaration de la fonction pour eviter le timeout par defaut :
+
+```sql
+CREATE OR REPLACE FUNCTION public.cleanup_all_test_data()
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+SET statement_timeout = '120s'
+AS $$ ... $$;
+```
+
+### D) Frontend — Augmenter le batch size de 50 a 200 (corrige E2)
+
+Dans `testDataGenerators.ts`, augmenter les batchs d'insertion de 50 a 200 pour reduire le nombre de requetes HTTP de 140+ a ~35 pour les parcelles.
+
+### E) Frontend — Remplacer le rollback par un noop ou un message (corrige E3)
+
+Dans `useTestDataActions.ts`, supprimer les appels `supabase.rpc('cleanup_all_test_data')` dans les blocs catch intermediaires (lignes 155, 167, 178). A la place, afficher un toast avec "Generation partielle — utilisez Nettoyer pour supprimer les donnees incompletes".
 
 ## Fichiers concernes
 
 | Fichier | Action |
 |---------|--------|
-| `src/hooks/useAnalyticsChartsConfig.ts` | Fallback filter, typage upsert |
-| `src/components/admin/AdminAnalyticsChartsConfig.tsx` | Filtrage coherent, lien preview, detection orphelins |
-| `src/config/crossVariables.ts` | Validation coherence |
+| Migration SQL | Index partiels + LIKE au lieu de ILIKE + statement_timeout sur RPC |
+| `src/components/admin/test-mode/testDataGenerators.ts` | Batch size 50 → 200 |
+| `src/components/admin/test-mode/useTestDataActions.ts` | Supprimer rollback auto, toast informatif |
 
-**Impact** : ~30 lignes modifiees dans 3 fichiers. Aucune migration.
+**Impact** : 1 migration SQL (~50 lignes), ~15 lignes modifiees dans 2 fichiers TypeScript.
+
