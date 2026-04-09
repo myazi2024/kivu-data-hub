@@ -1,112 +1,51 @@
 
 
-# Audit detaille — Erreurs de generation de donnees test (Mode Test Admin)
+# Ajouter des slides "Livrables Data" a la Presentation BIC
 
-## 1. Erreur identifiee
+## Constat
 
-L'erreur console est :
-```
-canceling statement due to statement timeout
-at useTestDataActions.ts:90
-```
+La presentation couvre les services (collecte, recherche, titres, etc.) mais ne montre pas ce que l'application **produit** a partir des donnees collectees. Le module Analytics ("Donnees foncieres") offre 14 onglets avec des graphiques riches (tendances, comparaisons, cartographie choroplethe, KPIs derives) — aucun de ces livrables n'est presente aux partenaires.
 
-Cette erreur provient de l'appel RPC `cleanup_all_test_data()` qui est invoque dans **3 contextes** :
-- **Rollback** lors d'un echec de generation (lignes 155, 167, 178 de `useTestDataActions.ts`)
-- **Nettoyage manuel** via le bouton "Nettoyer tout" (ligne 83)
-- **Regeneration** via le bouton "Regenerer" (ligne 339)
+## Slides a ajouter
 
-## 2. Causes racines
+Trois nouvelles slides, inserees apres "Programme CCC" (slide 18) et avant "Impact & Objectifs" (slide 19) :
 
-### E1 — **Statement timeout sur la RPC `cleanup_all_test_data`** (critique)
+### Slide A : "Cartographie des donnees foncieres"
+- Titre : "Cartographie interactive des donnees foncieres"
+- Visuel : grille de 4 cartes avec icones representant les couches (parcelles, titres, litiges, taxes)
+- Points cles : carte choroplethe multi-niveaux (Province → Quartier), filtrage geographique, attenuation des zones hors perimetre, export des donnees spatiales
+- Style : fond gradient avec illustration carte
 
-La RPC effectue **~20 DELETE sequentiels** sur des tables pouvant contenir 7 000+ enregistrements chacune. Supabase impose un `statement_timeout` par defaut (typiquement 30-60s pour les appels via l'API REST/anon key). Avec 7 020 parcelles + 7 020 contributions + milliers d'enfants FK, le cumul des DELETE depasse ce timeout.
+### Slide B : "Tendances & Evolution"
+- Titre : "Suivi des tendances en temps reel"
+- Visuel : mockup de graphiques area/line montrant les courbes d'evolution
+- Points cles : evolution temporelle par onglet (titres, parcelles, contributions, etc.), KPIs derives (surface moyenne, densite, taux de recouvrement), filtrage par periode et localisation
+- Style : grille de 4-6 cards avec icones TrendingUp, BarChart3, Activity, Gauge
 
-**Facteurs aggravants** :
-- Utilisation de `ILIKE 'TEST-%'` sans index dedie → sequential scan sur chaque table
-- Sous-requetes imbriquees (`DELETE WHERE contribution_id IN (SELECT id FROM ... WHERE ILIKE)`) → scans multiplies
-- `DELETE FROM notifications WHERE title ILIKE '%TEST-%'` → wildcard leading `%` = full table scan garanti
-- `metadata->>'test_mode' = 'true'` sur `payment_transactions` → extraction JSON sans index
+### Slide C : "Comparaison & Croisement"
+- Titre : "Analyse comparative multi-variables"
+- Visuel : representation de croisements (ex: Type x Statut, Genre x Usage)
+- Points cles : croisement de variables configurable, comparaison entre zones geographiques, 14 domaines d'analyse (titres, parcelles, taxes, litiges, hypotheques, etc.), tableaux de bord personnalisables via l'admin
+- Style : grille de 3 colonnes avec exemples concrets
 
-### E2 — **Generation massive sans batching suffisant** (moyenne)
+## Modifications
 
-La generation insere 7 020 parcelles + 7 020 contributions en batchs de 50 (= 140 requetes HTTP sequentielles rien que pour les parcelles). Chaque batch attend la reponse avant le suivant. Sur une connexion lente ou avec le overhead RLS, ca peut prendre plusieurs minutes et risquer un timeout cote client.
+### Fichier : `src/pages/PitchPartenaires.tsx`
 
-### E3 — **Rollback en cascade aggrave le probleme** (moyenne)
+- Ajouter 3 composants slides (~80 lignes chacun) : `SlideDataCartography`, `SlideDataTrends`, `SlideDataComparison`
+- Les inserer dans le tableau `slides` apres `ccc` (index 17) avec les ids `data-cartography`, `data-trends`, `data-comparison`
+- Style coherent avec les slides existantes (AnimateIn, SlideWrapper, icones Lucide, grilles cards)
 
-Quand une etape echoue (ex: contributions batch N timeout), le code appelle `supabase.rpc('cleanup_all_test_data')` en rollback (lignes 155, 167, 178). Mais cette RPC timeout elle aussi (E1), generant une **seconde erreur** qui masque l'erreur originale. Le rollback echoue silencieusement (`try/catch` avec `console.error`).
+### Fichier : `src/components/admin/AdminPitchConfig.tsx`
 
-### E4 — **Pas de timeout cote client** (basse)
-
-Aucun `AbortController` ou timeout n'est configure sur les appels Supabase. L'utilisateur attend indefiniment jusqu'au timeout serveur.
-
-## 3. Resume des anomalies
-
-```text
-#   Severite   Description
-E1  Critique   cleanup_all_test_data timeout (pas d'index, ILIKE full scan, 7000+ rows × 20 tables)
-E2  Moyenne    Generation sequentielle trop lente (140+ requetes HTTP pour parcelles seules)
-E3  Moyenne    Rollback appelle la meme RPC qui timeout → echec en cascade
-E4  Basse      Pas de timeout/abort cote client
-```
-
-## 4. Plan de correction
-
-### A) Migration SQL — Ajouter des index partiels pour les donnees TEST (corrige E1)
-
-Creer des index partiels sur les colonnes filtrees par `ILIKE 'TEST-%'`. Comme `ILIKE 'TEST-%'` equivaut a `parcel_number LIKE 'TEST-%'` (majuscules deja), on peut utiliser `text_pattern_ops` :
-
-```sql
--- Index partiels pour accelerer cleanup et count
-CREATE INDEX IF NOT EXISTS idx_parcels_test ON cadastral_parcels (parcel_number text_pattern_ops) WHERE parcel_number LIKE 'TEST-%';
-CREATE INDEX IF NOT EXISTS idx_contributions_test ON cadastral_contributions (parcel_number text_pattern_ops) WHERE parcel_number LIKE 'TEST-%';
-CREATE INDEX IF NOT EXISTS idx_invoices_test ON cadastral_invoices (parcel_number text_pattern_ops) WHERE parcel_number LIKE 'TEST-%';
-CREATE INDEX IF NOT EXISTS idx_contributor_codes_test ON cadastral_contributor_codes (parcel_number text_pattern_ops) WHERE parcel_number LIKE 'TEST-%';
-CREATE INDEX IF NOT EXISTS idx_service_access_test ON cadastral_service_access (parcel_number text_pattern_ops) WHERE parcel_number LIKE 'TEST-%';
-CREATE INDEX IF NOT EXISTS idx_title_requests_test ON land_title_requests (reference_number text_pattern_ops) WHERE reference_number LIKE 'TEST-%';
-CREATE INDEX IF NOT EXISTS idx_expertise_requests_test ON real_estate_expertise_requests (reference_number text_pattern_ops) WHERE reference_number LIKE 'TEST-%';
-CREATE INDEX IF NOT EXISTS idx_disputes_test ON cadastral_land_disputes (parcel_number text_pattern_ops) WHERE parcel_number LIKE 'TEST-%';
-CREATE INDEX IF NOT EXISTS idx_boundary_conflicts_test ON cadastral_boundary_conflicts (reporting_parcel_number text_pattern_ops) WHERE reporting_parcel_number LIKE 'TEST-%';
-CREATE INDEX IF NOT EXISTS idx_certificates_test ON generated_certificates (reference_number text_pattern_ops) WHERE reference_number LIKE 'TEST-%';
-CREATE INDEX IF NOT EXISTS idx_mutations_test ON mutation_requests (reference_number text_pattern_ops) WHERE reference_number LIKE 'TEST-%';
-CREATE INDEX IF NOT EXISTS idx_subdivisions_test ON subdivision_requests (reference_number text_pattern_ops) WHERE reference_number LIKE 'TEST-%';
-CREATE INDEX IF NOT EXISTS idx_payments_test_mode ON payment_transactions ((metadata->>'test_mode')) WHERE metadata->>'test_mode' = 'true';
-```
-
-### B) Migration SQL — Remplacer `ILIKE` par `LIKE` dans les RPC (corrige E1)
-
-`ILIKE` empeche l'utilisation des index `text_pattern_ops`. Comme les prefixes TEST sont toujours en majuscules, remplacer `ILIKE 'TEST-%'` par `LIKE 'TEST-%'` dans `cleanup_all_test_data` et `count_test_data_stats`.
-
-Aussi, remplacer `notifications WHERE title ILIKE '%TEST-%'` par `WHERE title LIKE '%TEST-%'` (ou mieux: `WHERE title LIKE 'TEST-%'` si possible, sinon accepter le full scan sur une petite table).
-
-### C) Migration SQL — Augmenter le `statement_timeout` dans la RPC (corrige E1)
-
-Ajouter `SET statement_timeout = '120s'` a la declaration de la fonction pour eviter le timeout par defaut :
-
-```sql
-CREATE OR REPLACE FUNCTION public.cleanup_all_test_data()
-RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-SET statement_timeout = '120s'
-AS $$ ... $$;
-```
-
-### D) Frontend — Augmenter le batch size de 50 a 200 (corrige E2)
-
-Dans `testDataGenerators.ts`, augmenter les batchs d'insertion de 50 a 200 pour reduire le nombre de requetes HTTP de 140+ a ~35 pour les parcelles.
-
-### E) Frontend — Remplacer le rollback par un noop ou un message (corrige E3)
-
-Dans `useTestDataActions.ts`, supprimer les appels `supabase.rpc('cleanup_all_test_data')` dans les blocs catch intermediaires (lignes 155, 167, 178). A la place, afficher un toast avec "Generation partielle — utilisez Nettoyer pour supprimer les donnees incompletes".
+- Ajouter les 3 nouvelles entrees dans `DEFAULT_SLIDES` avec les bons `sort_order` (decaler les suivants de +3)
 
 ## Fichiers concernes
 
 | Fichier | Action |
 |---------|--------|
-| Migration SQL | Index partiels + LIKE au lieu de ILIKE + statement_timeout sur RPC |
-| `src/components/admin/test-mode/testDataGenerators.ts` | Batch size 50 → 200 |
-| `src/components/admin/test-mode/useTestDataActions.ts` | Supprimer rollback auto, toast informatif |
+| `src/pages/PitchPartenaires.tsx` | +3 slides (~240 lignes), mise a jour du tableau slides |
+| `src/components/admin/AdminPitchConfig.tsx` | +3 entrees dans DEFAULT_SLIDES, decalage sort_order |
 
-**Impact** : 1 migration SQL (~50 lignes), ~15 lignes modifiees dans 2 fichiers TypeScript.
+**Impact** : ~250 lignes ajoutees dans 2 fichiers. Aucune migration.
 
