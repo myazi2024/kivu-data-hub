@@ -1,51 +1,26 @@
 
 
-# Ajouter des slides "Livrables Data" a la Presentation BIC
+# Effet de zoom au clic sur les visuels Analytics
 
-## Constat
+## Objectif
 
-La presentation couvre les services (collecte, recherche, titres, etc.) mais ne montre pas ce que l'application **produit** a partir des donnees collectees. Le module Analytics ("Donnees foncieres") offre 14 onglets avec des graphiques riches (tendances, comparaisons, cartographie choroplethe, KPIs derives) — aucun de ces livrables n'est presente aux partenaires.
+Quand l'utilisateur clique sur un graphique (ChartCard, StackedBarCard, ColorMappedPieCard), celui-ci s'agrandit visuellement avec un effet de zoom et une ombre renforcée pour indiquer le focus. Un second clic (ou clic ailleurs) retire l'effet.
 
-## Slides a ajouter
+## Approche
 
-Trois nouvelles slides, inserees apres "Programme CCC" (slide 18) et avant "Impact & Objectifs" (slide 19) :
-
-### Slide A : "Cartographie des donnees foncieres"
-- Titre : "Cartographie interactive des donnees foncieres"
-- Visuel : grille de 4 cartes avec icones representant les couches (parcelles, titres, litiges, taxes)
-- Points cles : carte choroplethe multi-niveaux (Province → Quartier), filtrage geographique, attenuation des zones hors perimetre, export des donnees spatiales
-- Style : fond gradient avec illustration carte
-
-### Slide B : "Tendances & Evolution"
-- Titre : "Suivi des tendances en temps reel"
-- Visuel : mockup de graphiques area/line montrant les courbes d'evolution
-- Points cles : evolution temporelle par onglet (titres, parcelles, contributions, etc.), KPIs derives (surface moyenne, densite, taux de recouvrement), filtrage par periode et localisation
-- Style : grille de 4-6 cards avec icones TrendingUp, BarChart3, Activity, Gauge
-
-### Slide C : "Comparaison & Croisement"
-- Titre : "Analyse comparative multi-variables"
-- Visuel : representation de croisements (ex: Type x Statut, Genre x Usage)
-- Points cles : croisement de variables configurable, comparaison entre zones geographiques, 14 domaines d'analyse (titres, parcelles, taxes, litiges, hypotheques, etc.), tableaux de bord personnalisables via l'admin
-- Style : grille de 3 colonnes avec exemples concrets
+Ajouter un état `focused` (toggle au clic) sur chaque composant carte. Quand `focused = true`, appliquer les classes Tailwind `scale-[1.03] shadow-xl z-10 ring-2 ring-primary/30` avec une transition fluide. Cela évite toute dépendance externe et reste cohérent avec le design existant.
 
 ## Modifications
 
-### Fichier : `src/pages/PitchPartenaires.tsx`
+### Fichier : `src/components/visualizations/shared/ChartCard.tsx`
 
-- Ajouter 3 composants slides (~80 lignes chacun) : `SlideDataCartography`, `SlideDataTrends`, `SlideDataComparison`
-- Les inserer dans le tableau `slides` apres `ccc` (index 17) avec les ids `data-cartography`, `data-trends`, `data-comparison`
-- Style coherent avec les slides existantes (AnimateIn, SlideWrapper, icones Lucide, grilles cards)
+Pour les 3 composants exportés (`ChartCard`, `StackedBarCard`, `ColorMappedPieCard`) :
 
-### Fichier : `src/components/admin/AdminPitchConfig.tsx`
+1. Ajouter `const [focused, setFocused] = useState(false)` dans chaque composant
+2. Sur le `<Card>`, ajouter `onClick={() => setFocused(f => !f)}` et `cursor-pointer`
+3. Appliquer conditionnellement les classes de zoom :
+   - Normal : `transition-all duration-200`
+   - Focused : `scale-[1.03] shadow-xl z-10 ring-2 ring-primary/30`
 
-- Ajouter les 3 nouvelles entrees dans `DEFAULT_SLIDES` avec les bons `sort_order` (decaler les suivants de +3)
-
-## Fichiers concernes
-
-| Fichier | Action |
-|---------|--------|
-| `src/pages/PitchPartenaires.tsx` | +3 slides (~240 lignes), mise a jour du tableau slides |
-| `src/components/admin/AdminPitchConfig.tsx` | +3 entrees dans DEFAULT_SLIDES, decalage sort_order |
-
-**Impact** : ~250 lignes ajoutees dans 2 fichiers. Aucune migration.
+**Impact** : ~15 lignes modifiées dans 1 fichier. Aucune migration.
 
