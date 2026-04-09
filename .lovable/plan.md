@@ -1,62 +1,77 @@
 
+# Audit detaille — Config Graphiques vs Analytics (Donnees foncieres)
 
-# Rendre la barre de recherche et la légende dynamiquement responsives
+## 1. Architecture d'alignement
 
-## Constat
+L'alignement repose sur un registre unique : **`ANALYTICS_TABS_REGISTRY`** dans `src/hooks/useAnalyticsChartsConfig.ts` (lignes 275-642). Ce registre definit les 14 onglets, leurs KPIs et leurs graphiques avec des `item_key` uniques.
 
-La barre de recherche et le bloc légende utilisent des valeurs positionnelles codées en dur (ex: `w-96`, `top-16`, `bottom: 12rem/15rem/30rem`, `max-w-[220px]`) et un breakpoint unique (`isMobile` = 768px via `md:`). Cela crée des problèmes sur les tailles d'écran intermédiaires (tablettes, petits laptops) et ne s'adapte pas fluidement au redimensionnement.
+**Cote Analytics** : chaque Block (`TitleRequestsBlock.tsx`, `TaxesBlock.tsx`, etc.) importe ce registre et construit ses defaults avec `[...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TABS_REGISTRY[TAB_KEY].charts]`. Les cles `isChartVisible('xxx')` et `getChartConfig('xxx')` sont resolues par fusion DB + defaults.
 
-### Problèmes identifiés
+**Cote Admin** : `AdminAnalyticsChartsConfig.tsx` itere sur le meme `ANALYTICS_TABS_REGISTRY` pour generer l'interface d'edition. Toute cle ajoutee au registre apparait automatiquement dans l'admin.
 
-**Barre de recherche (`CadastralMap.tsx` L982-1277)** :
-- Largeur fixe `w-96` (384px) en desktop — déborde sur petits écrans non-mobile (768-900px)
-- `max-w-[220px]` sur l'input mobile — trop étroit sur tablettes (768-1024px)
-- Position inactive (`translate-y-[calc(100dvh-12rem)]`) — valeur fixe inadaptée aux différentes hauteurs d'écran
-- Padding, taille des boutons et taille du texte ne s'adaptent qu'avec un switch binaire `isMobile`
+**Resultat** : l'alignement des cles est deja verrouille. Une comparaison exhaustive des 14 onglets confirme que **chaque `item_key` utilise dans un Block a une correspondance exacte dans le registre, et vice-versa**. Zero desalignement.
 
-**Légende (`CadastralMap.tsx` L1458-1535)** :
-- Desktop : position fixe `top-16 right-3` — peut chevaucher la barre de recherche sur écrans étroits
-- Mobile : `bottom` calculé avec des `rem` fixes (`12rem`, `15rem`, `30rem`) selon l'état — pas de calcul dynamique basé sur la taille réelle de l'écran
-- Le breakpoint `md:hidden` / `hidden md:block` est abrupt — pas de transition entre les deux modes
+## 2. Anomalies identifiees
 
-## Modifications
+| # | Severite | Composant | Description |
+|---|----------|-----------|-------------|
+| C1 | **Moyenne** | `AdminAnalyticsChartsConfig.tsx` L153 | **`resetAll` dans TabManager inclut `_global` et `rdc-map`**. La fonction `resetAll` genere des TabConfig pour toutes les entrees du registre, y compris `_global` et `rdc-map` qui ne sont pas des onglets utilisateur. Cela peut creer des entrees `__tab__` parasites en base pour ces cles speciales. Devrait filtrer `_global` et `rdc-map` comme le fait deja `useAnalyticsTabsConfig` (L117). |
+| C2 | **Moyenne** | `AdminAnalyticsChartsConfig.tsx` L1046 vs L1139 | **Filtrage incoherent entre les vues KPIs et Charts**. La vue KPIs filtre `_global` ET `rdc-map` du selecteur d'onglets. La vue Charts filtre seulement `_global` (affiche `rdc-map`). La vue Filtres et Croisements filtrent differemment. Il faudrait un filtrage uniforme — `rdc-map` dans Charts est intentionnel (config carte), mais le manque de coherence peut induire en erreur. |
+| C3 | **Moyenne** | `crossVariables.ts` + admin | **Pas de validation de coherence cross → registry**. Les cles dans `CROSS_VARIABLE_REGISTRY` ne sont pas validees contre `ANALYTICS_TABS_REGISTRY`. Si un graphique est renomme (cle modifiee) dans le registre, la config croisements devient orpheline sans avertissement. |
+| C4 | **Basse** | `AdminAnalyticsChartsConfig.tsx` | **Pas de mode preview**. L'admin modifie titre, visibilite, type de graphique, mais ne peut pas previsualiser le rendu final sans naviguer manuellement vers Analytics. Un bouton "Apercu" ou un lien direct vers l'onglet concerne ameliorerait le workflow. |
+| C5 | **Basse** | `useAnalyticsChartsConfig.ts` L37-52 | **`TAB_FILTER_DEFAULTS` est statique**. Si un nouvel onglet est ajoute au registre sans ajouter son entree dans `TAB_FILTER_DEFAULTS`, la vue Filtres de l'admin ne l'affichera pas. Il n'y a pas de fallback automatique. |
+| C6 | **Basse** | `AdminAnalyticsChartsConfig.tsx` | **Pas de detection de desynchronisation**. Si un developpeur ajoute un graphique dans un Block mais oublie de l'ajouter au registre (ou vice-versa), il n'y a aucune alerte cote admin ou cote analytics. Un avertissement "X cles non configurees" ameliorerait la robustesse. |
+| C7 | **Info** | `useAnalyticsChartsConfig.ts` L223 | **`as any` sur l'upsert Supabase**. Le cast bypasse le typage TypeScript pour l'insertion dans `analytics_charts_config`. |
 
-### Fichier : `src/pages/CadastralMap.tsx`
+## 3. Resume
 
-**a) Barre de recherche — largeur responsive** :
-- Remplacer `w-96` par `w-[min(24rem,calc(100vw-1.5rem))]` en desktop pour ne jamais déborder
-- Supprimer `max-w-[220px]` sur l'input mobile — utiliser `flex-1` partout pour que l'input prenne toute la largeur disponible
-- Ajouter des breakpoints Tailwind intermédiaires (`sm:`, `lg:`) pour les paddings et tailles de boutons
+```text
+Severite    Count
+─────────   ─────
+Moyenne     3 (C1-C3)
+Basse       3 (C4-C6)
+Info        1 (C7)
+─────────   ─────
+Total       7
+```
 
-**b) Barre de recherche — position inactive responsive** :
-- Remplacer `translate-y-[calc(100dvh-12rem)]` par une position calculée dynamiquement avec un state `windowHeight` via un `useEffect` + `resize` listener
-- Ou utiliser `bottom-20` au lieu de `top-3 + translate-y` pour positionner la barre en bas quand inactive
+**Verdict** : l'alignement est structurellement verrouille grace au registre partage `ANALYTICS_TABS_REGISTRY`. Les anomalies sont des problemes de robustesse (coherence du filtrage, detection de desynchronisation) et non des desalignements de donnees.
 
-**c) Légende — positionnement dynamique** :
-- Desktop : remplacer `top-16` par `top-3` et ajouter un `max-h-[calc(100vh-8rem)] overflow-auto` pour que la légende ne déborde pas
-- Mobile : calculer la position `bottom` dynamiquement en fonction de la hauteur du viewport via `dvh` ou un state `windowHeight` plutôt que des valeurs `rem` fixes
-- Utiliser `bottom-[calc(100dvh-var(--legend-offset))]` ou simplement ancrer relativement au panneau sélectionné
+## 4. Plan de correction recommande
 
-**d) Zoom Leaflet — dynamique aussi** :
-- Les marges du contrôle zoom (`margin-bottom` dans `<style>`) utilisent les mêmes `rem` fixes — les aligner avec la nouvelle logique responsive
+### Fichier : `src/hooks/useAnalyticsChartsConfig.ts`
 
-**e) Ajouter un listener `resize`** :
-- Un seul `useEffect` avec `window.addEventListener('resize', ...)` pour mettre à jour un state `viewportHeight` utilisé par la barre de recherche, la légende et le zoom control
-- Debouncer le resize pour éviter les re-renders excessifs
+**a) C5 — Fallback automatique pour TAB_FILTER_DEFAULTS** :
+- Modifier `useTabFilterConfig` pour retourner un default generique `{ hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' }` quand le tabKey n'existe pas dans `TAB_FILTER_DEFAULTS`, au lieu de rien
 
-### Détails techniques
+**b) C7 — Supprimer `as any`** :
+- Typer correctement l'objet d'upsert
 
-- Nouveau state : `const [viewportHeight, setViewportHeight] = useState(window.innerHeight)`
-- Hook resize avec debounce 150ms
-- Calculs de position basés sur `viewportHeight` au lieu de `rem` fixes
-- La barre de recherche inactive se positionne à `viewportHeight - 180` px du haut
-- La légende mobile se positionne à `viewportHeight - (selectedParcel ? (actionsExpanded ? 480 : 240) : 192)` px du haut
+### Fichier : `src/components/admin/AdminAnalyticsChartsConfig.tsx`
 
-## Fichiers concernés
+**c) C1 — Filtrer `resetAll`** :
+- Ajouter `.filter(([key]) => key !== '_global' && key !== 'rdc-map')` dans `resetAll` du TabManager
+
+**d) C2 — Unifier le filtrage des vues** :
+- Extraire une constante `EXCLUDED_SPECIAL_TABS = ['_global']` et `TAB_WITH_CHARTS_ONLY = ['rdc-map']` pour rendre le filtrage explicite et coherent entre les 5 vues
+
+**e) C4 — Lien vers Analytics** :
+- Ajouter un bouton "Voir dans Analytics" qui navigue vers `/analytics?tab={activeTab}` dans le header de chaque vue
+
+**f) C6 — Detection de desynchronisation** :
+- A l'initialisation, comparer les cles du registre avec les cles effectivement utilisees dans les configs DB et afficher un badge d'avertissement si des orphelins sont detectes
+
+### Fichier : `src/config/crossVariables.ts`
+
+**g) C3 — Validation cross → registry** :
+- Ajouter une verification au build (ou au runtime en dev) que chaque cle dans `CROSS_VARIABLE_REGISTRY` existe dans `ANALYTICS_TABS_REGISTRY`
+
+## Fichiers concernes
 
 | Fichier | Action |
 |---------|--------|
-| `src/pages/CadastralMap.tsx` | Responsive search bar + legend + zoom controls |
+| `src/hooks/useAnalyticsChartsConfig.ts` | Fallback filter, typage upsert |
+| `src/components/admin/AdminAnalyticsChartsConfig.tsx` | Filtrage coherent, lien preview, detection orphelins |
+| `src/config/crossVariables.ts` | Validation coherence |
 
-**Impact** : ~40 lignes modifiées dans 1 fichier. Aucune migration.
-
+**Impact** : ~30 lignes modifiees dans 3 fichiers. Aucune migration.
