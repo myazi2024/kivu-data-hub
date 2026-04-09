@@ -778,6 +778,25 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
     setHasCrossChanges(false);
   }, [configs, isLoading]);
 
+  // ─── C6: Desync detection — warn if cross registry keys don't match analytics registry ───
+  const desyncWarnings = useMemo(() => {
+    const warnings: string[] = [];
+    Object.keys(CROSS_VARIABLE_REGISTRY).forEach(tabKey => {
+      if (!ANALYTICS_TABS_REGISTRY[tabKey]) {
+        warnings.push(`Croisements: onglet orphelin « ${tabKey} » absent du registre Analytics`);
+      } else {
+        const chartKeys = Object.keys(CROSS_VARIABLE_REGISTRY[tabKey]);
+        const regChartKeys = new Set(ANALYTICS_TABS_REGISTRY[tabKey].charts.map(c => c.item_key));
+        chartKeys.forEach(ck => {
+          if (!regChartKeys.has(ck)) {
+            warnings.push(`Croisements: clé « ${ck} » (onglet ${tabKey}) absente du registre Charts`);
+          }
+        });
+      }
+    });
+    return warnings;
+  }, []);
+
   const currentItems = localItems[activeTab] || [];
   const currentKpis = currentItems.filter(i => i.item_type === 'kpi');
   const currentCharts = currentItems.filter(i => i.item_type === 'chart');
