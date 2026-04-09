@@ -683,6 +683,138 @@ const SlideCCC = () => (
     </div>
   </SlideWrapper>
 );
+/* ── Slide: Cartographie des données foncières ── */
+const SlideDataCartography = () => (
+  <SlideWrapper>
+    <div className="flex-1 flex flex-col bg-gradient-to-br from-primary/10 via-background to-accent/10 px-6 md:px-16 py-10 md:py-16">
+      <AnimateIn delay={100} className="mb-8">
+        <span className="text-sm font-semibold text-primary uppercase tracking-wider">Livrables Data</span>
+        <h2 className="text-3xl md:text-5xl font-bold text-foreground mt-2">Cartographie interactive des données foncières</h2>
+        <p className="text-lg text-muted-foreground mt-3 max-w-3xl italic">
+          Visualisez l'ensemble du patrimoine foncier sur une carte choroplèthe multi-niveaux — de la province jusqu'au quartier.
+        </p>
+      </AnimateIn>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 flex-1 max-w-5xl">
+        {[
+          { icon: Layers, title: 'Carte choroplèthe', desc: 'Densité des parcelles, titres, litiges et taxes par zone géographique avec dégradé de couleurs.' },
+          { icon: MapPin, title: 'Filtrage géographique', desc: 'Navigation Province → Territoire → Collectivité → Groupement → Village avec zoom dynamique.' },
+          { icon: Eye, title: 'Atténuation hors périmètre', desc: 'Les zones non sélectionnées sont grisées pour focaliser l\'attention sur la zone d\'intérêt.' },
+          { icon: Database, title: 'Export spatial', desc: 'Téléchargez les données géolocalisées pour intégration dans vos systèmes SIG existants.' },
+        ].map((s) => (
+          <AnimateIn key={s.title} delay={300} className="h-full">
+            <div className="bg-card rounded-xl border p-6 h-full hover:shadow-md transition-shadow">
+              <div className="p-3 rounded-xl bg-primary/10 w-fit mb-4">
+                <s.icon className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">{s.title}</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">{s.desc}</p>
+            </div>
+          </AnimateIn>
+        ))}
+      </div>
+    </div>
+  </SlideWrapper>
+);
+
+/* ── Slide: Tendances & Évolution ── */
+const SlideDataTrends = () => (
+  <SlideWrapper>
+    <div className="flex-1 flex flex-col bg-gradient-to-br from-accent/5 via-background to-primary/10 px-6 md:px-16 py-10 md:py-16">
+      <AnimateIn delay={100} className="mb-8">
+        <span className="text-sm font-semibold text-primary uppercase tracking-wider">Livrables Data</span>
+        <h2 className="text-3xl md:text-5xl font-bold text-foreground mt-2">Suivi des tendances en temps réel</h2>
+        <p className="text-lg text-muted-foreground mt-3 max-w-3xl italic">
+          Suivez l'évolution temporelle de chaque indicateur foncier — parcelles, titres, contributions, taxes — avec des KPIs dérivés automatiques.
+        </p>
+      </AnimateIn>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 flex-1 max-w-5xl">
+        {[
+          { icon: TrendingUp, title: 'Courbes d\'évolution', desc: 'Graphiques Area & Line par période (jour, semaine, mois, année) pour chaque domaine d\'analyse.' },
+          { icon: Gauge, title: 'KPIs dérivés', desc: 'Surface moyenne, densité parcellaire, taux de recouvrement fiscal, ratio litiges/parcelles — calculés en temps réel.' },
+          { icon: Activity, title: 'Filtrage temporel', desc: 'Sélectionnez une période personnalisée et comparez avec la période précédente pour détecter les tendances.' },
+          { icon: BarChart3, title: '14 domaines d\'analyse', desc: 'Parcelles, titres, taxes, litiges, hypothèques, mutations, subdivisions, expertises et plus encore.' },
+          { icon: Globe, title: 'Par localisation', desc: 'Filtrez les tendances par province, territoire ou ville pour une analyse géographique fine.' },
+          { icon: Target, title: 'Alertes & seuils', desc: 'Identifiez les anomalies et pics d\'activité grâce aux indicateurs visuels intégrés.' },
+        ].map((s) => (
+          <AnimateIn key={s.title} delay={300} className="h-full">
+            <div className="bg-card rounded-xl border p-6 h-full hover:shadow-md transition-shadow">
+              <div className="p-3 rounded-xl bg-primary/10 w-fit mb-4">
+                <s.icon className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">{s.title}</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">{s.desc}</p>
+            </div>
+          </AnimateIn>
+        ))}
+      </div>
+    </div>
+  </SlideWrapper>
+);
+
+/* ── Slide: Comparaison & Croisement ── */
+const SlideDataComparison = () => (
+  <SlideWrapper>
+    <div className="flex-1 flex flex-col bg-gradient-to-br from-primary/5 via-background to-accent/10 px-6 md:px-16 py-10 md:py-16">
+      <AnimateIn delay={100} className="mb-8">
+        <span className="text-sm font-semibold text-primary uppercase tracking-wider">Livrables Data</span>
+        <h2 className="text-3xl md:text-5xl font-bold text-foreground mt-2">Analyse comparative multi-variables</h2>
+        <p className="text-lg text-muted-foreground mt-3 max-w-3xl italic">
+          Croisez les données foncières selon plusieurs axes — type, statut, genre, usage, zone — pour des insights décisionnels puissants.
+        </p>
+      </AnimateIn>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 flex-1 max-w-5xl">
+        <AnimateIn delay={300} className="h-full">
+          <div className="bg-card rounded-xl border p-6 h-full hover:shadow-md transition-shadow">
+            <div className="p-3 rounded-xl bg-primary/10 w-fit mb-4">
+              <GanttChart className="h-6 w-6 text-primary" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground mb-3">Croisement configurable</h3>
+            <p className="text-muted-foreground text-sm leading-relaxed mb-4">
+              Choisissez deux variables à croiser : Type de titre × Statut juridique, Genre du propriétaire × Usage déclaré, Province × Type de parcelle…
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {['Type × Statut', 'Genre × Usage', 'Zone × Titre'].map(t => (
+                <span key={t} className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">{t}</span>
+              ))}
+            </div>
+          </div>
+        </AnimateIn>
+        <AnimateIn delay={500} className="h-full">
+          <div className="bg-card rounded-xl border p-6 h-full hover:shadow-md transition-shadow">
+            <div className="p-3 rounded-xl bg-primary/10 w-fit mb-4">
+              <Scale className="h-6 w-6 text-primary" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground mb-3">Comparaison inter-zones</h3>
+            <p className="text-muted-foreground text-sm leading-relaxed mb-4">
+              Comparez les indicateurs entre provinces, territoires ou villes. Identifiez les disparités et priorisez les interventions.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {['Nord-Kivu vs Sud-Kivu', 'Goma vs Bukavu', 'Urbain vs Rural'].map(t => (
+                <span key={t} className="text-xs px-2 py-1 rounded-full bg-accent/20 text-accent-foreground font-medium">{t}</span>
+              ))}
+            </div>
+          </div>
+        </AnimateIn>
+        <AnimateIn delay={700} className="h-full">
+          <div className="bg-card rounded-xl border p-6 h-full hover:shadow-md transition-shadow">
+            <div className="p-3 rounded-xl bg-primary/10 w-fit mb-4">
+              <Briefcase className="h-6 w-6 text-primary" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground mb-3">Tableaux de bord admin</h3>
+            <p className="text-muted-foreground text-sm leading-relaxed mb-4">
+              L'administrateur configure les graphiques visibles, leur ordre d'affichage et les variables croisées — directement depuis le panneau d'administration.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {['14 domaines', 'Ordre personnalisé', 'Visibilité par rôle'].map(t => (
+                <span key={t} className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground font-medium">{t}</span>
+              ))}
+            </div>
+          </div>
+        </AnimateIn>
+      </div>
+    </div>
+  </SlideWrapper>
+);
 
 /* ── Slide 11: Impact & Objectifs ── */
 const SlideStats = () => (
