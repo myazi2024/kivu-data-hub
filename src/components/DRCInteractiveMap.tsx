@@ -173,53 +173,20 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const provincesData: ProvinceData[] = useMemo(() => {
     if (!analytics) return PROVINCE_META.map(p => buildEmptyProvince(p));
 
-    const { parcels, titleRequests, contributions, invoices, disputes, mutationRequests, certificates, expertiseRequests } = analytics;
+    const { parcels, titleRequests, contributions, disputes, mutationRequests, expertiseRequests, mortgages } = analytics;
 
     return PROVINCE_META.map(meta => {
-      const pCount = countForProvince(parcels, meta.name);
-      const trCount = countForProvince(titleRequests, meta.name);
-      const contribCount = countForProvince(contributions, meta.name);
-      const disputeCount = countForProvince(disputes, meta.name);
-      const mutationCount = countForProvince(mutationRequests, meta.name);
-      const certCount = countForProvince(certificates, meta.name);
-      const expertiseCount = countForProvince(expertiseRequests, meta.name);
-
-      const paidInvoices = invoices.filter(i => i.province === meta.name && i.status === 'paid');
-      const totalRevenue = paidInvoices.reduce((s, i) => s + (i.total_amount_usd || 0), 0);
-      const allInvoices = invoices.filter(i => i.province === meta.name);
-      const totalInvoiceAmount = allInvoices.reduce((s, i) => s + (i.total_amount_usd || 0), 0);
-
-      const taxPaid = analytics.taxHistory.filter(t => t.province === meta.name && t.payment_status === 'paid');
-      const fiscalRevenue = taxPaid.reduce((s, t) => s + (t.amount_usd || 0), 0);
-
-      // Surface totale
-      const totalSurface = parcels.filter(p => p.province === meta.name).reduce((s, p) => s + (p.area_sqm || 0), 0);
-      const surfaceHa = totalSurface / 10000;
-
-      // Disputes resolved ratio
-      const resolvedDisputes = disputes.filter(d => d.province === meta.name && (d.current_status === 'resolved' || d.current_status === 'resolu')).length;
-
-      const density = surfaceHa > 0
-        ? (pCount / surfaceHa > 50 ? 'Très élevé' : pCount / surfaceHa > 20 ? 'Élevé' : pCount / surfaceHa > 5 ? 'Modéré' : 'Faible')
-        : (pCount > 500 ? 'Très élevé' : pCount > 100 ? 'Élevé' : pCount > 30 ? 'Modéré' : 'Faible');
-
-      return {
-        id: meta.id,
-        name: meta.name,
-        parcelsCount: pCount,
-        titleRequestsCount: trCount,
-        revenueUsd: totalRevenue,
-        contributionsCount: contribCount,
-        mutationsCount: mutationCount,
-        disputesCount: disputeCount,
-        densityLevel: density as ProvinceData['densityLevel'],
-        certificatesCount: certCount,
-        invoicesCount: allInvoices.length,
-        expertisesCount: expertiseCount,
-        fiscalRevenueUsd: fiscalRevenue,
-        disputeResolutionRate: disputeCount > 0 ? Math.round((resolvedDisputes / disputeCount) * 100) : 0,
-        totalSurfaceHa: Math.round(totalSurface / 10000),
-      };
+      const pFilter = (r: any) => r.province === meta.name;
+      const indicators = computeIndicators(
+        parcels.filter(pFilter),
+        titleRequests.filter(pFilter),
+        disputes.filter(pFilter),
+        (mortgages || []).filter(pFilter),
+        mutationRequests.filter(pFilter),
+        expertiseRequests.filter(pFilter),
+        contributions.filter(pFilter),
+      );
+      return { id: meta.id, name: meta.name, ...indicators };
     });
   }, [analytics]);
 
@@ -259,46 +226,17 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const scopedStats = useMemo(() => {
     if (!analytics || !selectedProvince) return null;
     const predicate = buildScopePredicate(selectedProvince.name, selectedVille, selectedCommune, selectedQuartier, selectedTerritoire);
-    const { parcels, titleRequests, contributions, invoices, disputes, mutationRequests, certificates, expertiseRequests, taxHistory } = analytics;
+    const { parcels, titleRequests, contributions, disputes, mutationRequests, expertiseRequests, mortgages } = analytics;
 
-    const filteredParcels = parcels.filter(predicate);
-    const pCount = filteredParcels.length;
-    const trCount = titleRequests.filter(predicate).length;
-    const contribCount = contributions.filter(predicate).length;
-    const disputeCount = disputes.filter(predicate).length;
-    const mutationCount = mutationRequests.filter(predicate).length;
-    const certCount = certificates.filter(predicate).length;
-    const expertiseCount = expertiseRequests.filter(predicate).length;
-
-    const paidInvoices = invoices.filter(i => predicate(i) && i.status === 'paid');
-    const totalRevenue = paidInvoices.reduce((s, i) => s + (i.total_amount_usd || 0), 0);
-    const allInvoices = invoices.filter(predicate);
-
-    const taxPaid = taxHistory.filter(t => predicate(t) && t.payment_status === 'paid');
-    const fiscalRevenue = taxPaid.reduce((s, t) => s + (t.amount_usd || 0), 0);
-
-    const totalSurface = filteredParcels.reduce((s, p) => s + (p.area_sqm || 0), 0);
-    const resolvedDisputes = disputes.filter(d => predicate(d) && (d.current_status === 'resolved' || d.current_status === 'resolu')).length;
-    const surfaceHa = totalSurface / 10000;
-    const density = surfaceHa > 0
-      ? (pCount / surfaceHa > 50 ? 'Très élevé' : pCount / surfaceHa > 20 ? 'Élevé' : pCount / surfaceHa > 5 ? 'Modéré' : 'Faible')
-      : (pCount > 500 ? 'Très élevé' : pCount > 100 ? 'Élevé' : pCount > 30 ? 'Modéré' : 'Faible');
-
-    return {
-      parcelsCount: pCount,
-      titleRequestsCount: trCount,
-      contributionsCount: contribCount,
-      mutationsCount: mutationCount,
-      disputesCount: disputeCount,
-      certificatesCount: certCount,
-      expertisesCount: expertiseCount,
-      revenueUsd: totalRevenue,
-      fiscalRevenueUsd: fiscalRevenue,
-      invoicesCount: allInvoices.length,
-      totalSurfaceHa: Math.round(surfaceHa),
-      disputeResolutionRate: disputeCount > 0 ? Math.round((resolvedDisputes / disputeCount) * 100) : 0,
-      densityLevel: density as ProvinceData['densityLevel'],
-    };
+    return computeIndicators(
+      parcels.filter(predicate),
+      titleRequests.filter(predicate),
+      disputes.filter(predicate),
+      (mortgages || []).filter(predicate),
+      mutationRequests.filter(predicate),
+      expertiseRequests.filter(predicate),
+      contributions.filter(predicate),
+    );
   }, [analytics, selectedProvince, selectedVille, selectedCommune, selectedQuartier, selectedTerritoire]);
 
   /** Label for the detail block header */
