@@ -208,6 +208,12 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
         {v('geo') && <GeoCharts records={filteredParcels} />}
         {v('evolution') && <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type="area" colorIndex={0} colSpan={2}
           insight={generateInsight(trend, 'area', 'les parcelles')} />}
+        {v('permit-type') && <ChartCard title={ct('permit-type', 'Autorisation de bâtir')} icon={ShieldCheck} data={permitTypeData} type="donut" colorIndex={4} hidden={permitTypeData.length === 0}
+          insight={generateInsight(permitTypeData, 'donut', 'les autorisations de bâtir')} crossVariables={cx('permit-type')} rawRecords={filteredContribs} groupField="building_permits" />}
+        {v('building-size') && <ChartCard title={ct('building-size', 'Taille construction')} icon={Maximize} data={buildingSizeData} type="bar-v" colorIndex={2} hidden={buildingSizeData.length === 0}
+          insight={generateInsight(buildingSizeData, 'bar-v', 'les tailles de construction')} />}
+        {v('building-height') && <ChartCard title={ct('building-height', 'Hauteur construction')} icon={ArrowUpFromLine} data={buildingHeightData} type="bar-v" colorIndex={5} hidden={buildingHeightData.length === 0}
+          insight={generateInsight(buildingHeightData, 'bar-v', 'les hauteurs de construction')} />}
       </div>
     </div>
     </FilterLabelContext.Provider>
