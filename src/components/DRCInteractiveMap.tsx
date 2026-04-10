@@ -4,7 +4,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { MapPin, DollarSign, BarChart3, Info, FileText, Database, AlertTriangle, Loader2, Copy, Check, Maximize, Minimize } from 'lucide-react';
+import { MapPin, BarChart3, Info, Database, Loader2, Copy, Check, Maximize, Minimize } from 'lucide-react';
+import { toast } from 'sonner';
+import { normalizeTitleType } from '@/utils/titleTypeNormalizer';
 import { toast } from 'sonner';
 import DRCMapWithTooltip from './DRCMapWithTooltip';
 import DRCCommunesMap from './DRCCommunesMap';
@@ -114,9 +116,9 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   /** Build tooltip line configs from admin config */
   const tooltipLineConfigs = useMemo(() => {
     const keys = [
-      'tooltip-parcels', 'tooltip-titles', 'tooltip-contributions', 'tooltip-mutations',
-      'tooltip-disputes', 'tooltip-expertises', 'tooltip-certificates', 'tooltip-invoices',
-      'tooltip-revenue', 'tooltip-fiscal', 'tooltip-density',
+      'tooltip-cert-enreg', 'tooltip-contrat-loc', 'tooltip-fiche-parc', 'tooltip-title-req',
+      'tooltip-disputes', 'tooltip-mortgages', 'tooltip-mutations', 'tooltip-expertises',
+      'tooltip-avg-surface', 'tooltip-avg-building', 'tooltip-avg-height',
     ];
     return keys.map(key => ({
       key,
