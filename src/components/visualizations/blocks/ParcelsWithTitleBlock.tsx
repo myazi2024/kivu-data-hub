@@ -38,6 +38,11 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
   const filterConfig = useTabFilterConfig(TAB_KEY);
   const filteredParcels = useMemo(() => applyFilters(data.parcels, filter), [data.parcels, filter]);
   const filteredContribs = useMemo(() => applyFilters(data.contributions, filter), [data.contributions, filter]);
+  const filteredTitleReqs = useMemo(() => data.titleRequests ? applyFilters(data.titleRequests, filter) : [], [data.titleRequests, filter]);
+  const filteredDisputes = useMemo(() => data.disputes ? applyFilters(data.disputes, filter) : [], [data.disputes, filter]);
+  const filteredMortgages = useMemo(() => data.mortgages ? applyFilters(data.mortgages, filter) : [], [data.mortgages, filter]);
+  const filteredMutations = useMemo(() => data.mutationRequests ? applyFilters(data.mutationRequests, filter) : [], [data.mutationRequests, filter]);
+  const filteredExpertise = useMemo(() => data.expertiseRequests ? applyFilters(data.expertiseRequests, filter) : [], [data.expertiseRequests, filter]);
 
   const normalizedParcels = useMemo(() =>
     filteredParcels.map(p => ({
@@ -166,16 +171,51 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
   const v = isChartVisible;
 
   const avgSurface = useMemo(() => filteredParcels.length > 0 ? Math.round(totalSurface / filteredParcels.length) : 0, [totalSurface, filteredParcels.length]);
-  const density = useMemo(() => totalSurface > 0 ? (filteredParcels.length / (totalSurface / 10000)).toFixed(1) : 'N/A', [totalSurface, filteredParcels.length]);
+
+  const certEnregistrement = useMemo(() => normalizedParcels.filter(p => p.property_title_type === "Certificat d'enregistrement").length, [normalizedParcels]);
+  const contratLocation = useMemo(() => normalizedParcels.filter(p => p.property_title_type === 'Contrat de location').length, [normalizedParcels]);
+  const ficheParcellaire = useMemo(() => normalizedParcels.filter(p => p.property_title_type === 'Fiche parcellaire').length, [normalizedParcels]);
+  const activeMortgages = useMemo(() => filteredMortgages.filter((m: any) => m.mortgage_status === 'active').length, [filteredMortgages]);
+  const mutationsEnCours = useMemo(() => filteredMutations.filter((m: any) => ['pending', 'submitted', 'in_progress'].includes(m.status)).length, [filteredMutations]);
+  const expertisesEnCours = useMemo(() => filteredExpertise.filter((e: any) => ['pending', 'submitted', 'in_progress'].includes(e.status)).length, [filteredExpertise]);
+
+  const avgConstructionArea = useMemo(() => {
+    let total = 0, count = 0;
+    filteredContribs.forEach(c => {
+      const shapes = c.building_shapes;
+      if (Array.isArray(shapes)) shapes.forEach((s: any) => {
+        const area = s?.areaSqm ?? (s?.width && s?.height ? s.width * s.height : null);
+        if (area != null && area > 0) { total += area; count++; }
+      });
+    });
+    return count > 0 ? Math.round(total / count) : 0;
+  }, [filteredContribs]);
+
+  const avgConstructionHeight = useMemo(() => {
+    let total = 0, count = 0;
+    filteredContribs.forEach(c => {
+      const shapes = c.building_shapes;
+      if (Array.isArray(shapes)) shapes.forEach((s: any) => {
+        const h = s?.heightM ?? s?.height_m;
+        if (h != null && h > 0) { total += h; count++; }
+      });
+    });
+    return count > 0 ? (total / count).toFixed(1) : '0';
+  }, [filteredContribs]);
 
   const kpiItems = useMemo(() => [
-    { key: 'kpi-parcels', label: ct('kpi-parcels', 'Parcelles'), value: filteredParcels.length, cls: 'text-primary' },
-    { key: 'kpi-urban', label: ct('kpi-urban', 'Urbaines'), value: urbanCount, cls: 'text-emerald-600', tooltip: pct(urbanCount, filteredParcels.length) },
-    { key: 'kpi-rural', label: ct('kpi-rural', 'Rurales'), value: ruralCount, cls: 'text-amber-600', tooltip: pct(ruralCount, filteredParcels.length) },
-    { key: 'kpi-surface', label: ct('kpi-surface', 'Surface tot.'), value: totalSurface > 0 ? `${(totalSurface / 10000).toFixed(1)} ha` : 'N/A', cls: 'text-violet-600', tooltip: `${totalSurface.toLocaleString()} m²` },
-    { key: 'kpi-avg-surface', label: ct('kpi-avg-surface', 'Surface moy.'), value: avgSurface > 0 ? `${avgSurface.toLocaleString()} m²` : 'N/A', cls: 'text-blue-600' },
-    { key: 'kpi-density', label: ct('kpi-density', 'Densité'), value: density !== 'N/A' ? `${density}/ha` : 'N/A', cls: 'text-rose-600', tooltip: 'Parcelles par hectare' },
-  ].filter(k => v(k.key)), [filteredParcels, urbanCount, ruralCount, totalSurface, avgSurface, density, v, getChartConfig]);
+    { key: 'kpi-cert-enregistrement', label: ct('kpi-cert-enregistrement', "Certificat d'enregistrement"), value: certEnregistrement, cls: 'text-primary', tooltip: pct(certEnregistrement, filteredParcels.length) },
+    { key: 'kpi-contrat-location', label: ct('kpi-contrat-location', 'Contrat de location'), value: contratLocation, cls: 'text-emerald-600', tooltip: pct(contratLocation, filteredParcels.length) },
+    { key: 'kpi-fiche-parcellaire', label: ct('kpi-fiche-parcellaire', 'Fiche parcellaire'), value: ficheParcellaire, cls: 'text-amber-600', tooltip: pct(ficheParcellaire, filteredParcels.length) },
+    { key: 'kpi-titres-demandes', label: ct('kpi-titres-demandes', 'Titres demandés'), value: filteredTitleReqs.length, cls: 'text-violet-600' },
+    { key: 'kpi-litiges', label: ct('kpi-litiges', 'Litiges fonciers'), value: filteredDisputes.length, cls: 'text-red-600' },
+    { key: 'kpi-hypotheques-actives', label: ct('kpi-hypotheques-actives', 'Hypothèques actives'), value: activeMortgages, cls: 'text-orange-600' },
+    { key: 'kpi-mutations-cours', label: ct('kpi-mutations-cours', 'Mutations en cours'), value: mutationsEnCours, cls: 'text-blue-600' },
+    { key: 'kpi-expertises-cours', label: ct('kpi-expertises-cours', 'Expertises en cours'), value: expertisesEnCours, cls: 'text-pink-600' },
+    { key: 'kpi-superficie-moy', label: ct('kpi-superficie-moy', 'Superficie moy. parcelle'), value: avgSurface > 0 ? `${avgSurface.toLocaleString()} m²` : 'N/A', cls: 'text-teal-600' },
+    { key: 'kpi-superficie-construction-moy', label: ct('kpi-superficie-construction-moy', 'Superficie moy. construction'), value: avgConstructionArea > 0 ? `${avgConstructionArea} m²` : 'N/A', cls: 'text-indigo-600' },
+    { key: 'kpi-hauteur-construction-moy', label: ct('kpi-hauteur-construction-moy', 'Hauteur moy. construction'), value: avgConstructionHeight !== '0' ? `${avgConstructionHeight} m` : 'N/A', cls: 'text-cyan-600' },
+  ].filter(k => v(k.key)), [filteredParcels, normalizedParcels, certEnregistrement, contratLocation, ficheParcellaire, filteredTitleReqs, filteredDisputes, activeMortgages, mutationsEnCours, expertisesEnCours, avgSurface, avgConstructionArea, avgConstructionHeight, v, getChartConfig]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
