@@ -54,11 +54,52 @@ function countForProvince(records: any[], provinceName: string): number {
   return records.filter(r => r.province === provinceName).length;
 }
 
-/** Sum a field for records matching a province */
-function sumForProvince(records: any[], provinceName: string, field: string): number {
-  return records
-    .filter(r => r.province === provinceName)
-    .reduce((s, r) => s + (r[field] || 0), 0);
+/** Compute the 11 new indicators from filtered record sets */
+function computeIndicators(
+  parcels: any[],
+  titleRequests: any[],
+  disputes: any[],
+  mortgages: any[],
+  mutationRequests: any[],
+  expertiseRequests: any[],
+  contributions: any[],
+) {
+  const certEnreg = parcels.filter(p => normalizeTitleType(p.property_title_type) === "Certificat d'enregistrement").length;
+  const contratLoc = parcels.filter(p => normalizeTitleType(p.property_title_type) === "Contrat de location (Contrat d'occupation provisoire)").length;
+  const ficheParc = parcels.filter(p => normalizeTitleType(p.property_title_type) === "Fiche parcellaire").length;
+
+  const activeMortgages = mortgages.filter((m: any) => m.mortgage_status === 'active').length;
+  const pendingMutations = mutationRequests.filter((m: any) => m.status === 'pending' || m.status === 'en_cours').length;
+  const pendingExpertises = expertiseRequests.filter((e: any) => e.status === 'pending' || e.status === 'en_cours').length;
+
+  const totalArea = parcels.reduce((s: number, p: any) => s + (p.area_sqm || 0), 0);
+  const avgSurface = parcels.length > 0 ? totalArea / parcels.length : 0;
+
+  let buildingSurfaceSum = 0, buildingSurfaceCount = 0;
+  let buildingHeightSum = 0, buildingHeightCount = 0;
+  contributions.forEach((c: any) => {
+    const shapes = Array.isArray(c.building_shapes) ? c.building_shapes : [];
+    shapes.forEach((s: any) => {
+      const area = s.areaSqm || (s.width && s.height ? s.width * s.height : 0);
+      if (area > 0) { buildingSurfaceSum += area; buildingSurfaceCount++; }
+      if (s.heightM > 0) { buildingHeightSum += s.heightM; buildingHeightCount++; }
+    });
+  });
+
+  return {
+    certEnregCount: certEnreg,
+    contratLocCount: contratLoc,
+    ficheParcCount: ficheParc,
+    titleRequestsCount: titleRequests.length,
+    disputesCount: disputes.length,
+    activeMortgagesCount: activeMortgages,
+    pendingMutationsCount: pendingMutations,
+    pendingExpertisesCount: pendingExpertises,
+    avgParcelSurfaceSqm: Math.round(avgSurface * 10) / 10,
+    avgBuildingSurfaceSqm: buildingSurfaceCount > 0 ? Math.round((buildingSurfaceSum / buildingSurfaceCount) * 10) / 10 : 0,
+    avgBuildingHeightM: buildingHeightCount > 0 ? Math.round((buildingHeightSum / buildingHeightCount) * 10) / 10 : 0,
+    parcelsCount: parcels.length,
+  };
 }
 
 /** Normalize string for comparison */
