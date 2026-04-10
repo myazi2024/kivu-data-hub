@@ -38,6 +38,11 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
   const filterConfig = useTabFilterConfig(TAB_KEY);
   const filteredParcels = useMemo(() => applyFilters(data.parcels, filter), [data.parcels, filter]);
   const filteredContribs = useMemo(() => applyFilters(data.contributions, filter), [data.contributions, filter]);
+  const filteredTitleReqs = useMemo(() => data.titleRequests ? applyFilters(data.titleRequests, filter) : [], [data.titleRequests, filter]);
+  const filteredDisputes = useMemo(() => data.disputes ? applyFilters(data.disputes, filter) : [], [data.disputes, filter]);
+  const filteredMortgages = useMemo(() => data.mortgages ? applyFilters(data.mortgages, filter) : [], [data.mortgages, filter]);
+  const filteredMutations = useMemo(() => data.mutationRequests ? applyFilters(data.mutationRequests, filter) : [], [data.mutationRequests, filter]);
+  const filteredExpertise = useMemo(() => data.expertiseRequests ? applyFilters(data.expertiseRequests, filter) : [], [data.expertiseRequests, filter]);
 
   const normalizedParcels = useMemo(() =>
     filteredParcels.map(p => ({
