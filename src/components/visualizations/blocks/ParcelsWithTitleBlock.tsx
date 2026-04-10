@@ -67,11 +67,13 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     const map = new Map<string, number>();
     filteredContribs.forEach(c => {
       const permits = c.building_permits;
-      if (Array.isArray(permits)) {
+      if (Array.isArray(permits) && permits.length > 0) {
         permits.forEach((p: any) => {
           const t = p?.permitType === 'regularization' ? 'Régularisation' : p?.permitType === 'construction' ? 'Construction' : null;
           if (t) map.set(t, (map.get(t) || 0) + 1);
         });
+      } else {
+        map.set('Sans autorisation', (map.get('Sans autorisation') || 0) + 1);
       }
     });
     return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
