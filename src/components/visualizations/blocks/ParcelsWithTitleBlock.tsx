@@ -62,6 +62,71 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     byDecade: yearDecadeDistribution(filteredParcels, 'construction_year'),
   }), [filteredParcels, normalizedParcels]);
 
+  // Building permit type from contributions' building_permits JSONB
+  const permitTypeData = useMemo(() => {
+    const map = new Map<string, number>();
+    filteredContribs.forEach(c => {
+      const permits = c.building_permits;
+      if (Array.isArray(permits)) {
+        permits.forEach((p: any) => {
+          const t = p?.permitType === 'regularization' ? 'Régularisation' : p?.permitType === 'construction' ? 'Construction' : null;
+          if (t) map.set(t, (map.get(t) || 0) + 1);
+        });
+      }
+    });
+    return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  }, [filteredContribs]);
+
+  // Building size distribution from contributions' building_shapes JSONB
+  const buildingSizeData = useMemo(() => {
+    const buckets = [
+      { label: '< 50 m²', min: 0, max: 50 },
+      { label: '50-100 m²', min: 50, max: 100 },
+      { label: '100-200 m²', min: 100, max: 200 },
+      { label: '200-500 m²', min: 200, max: 500 },
+      { label: '> 500 m²', min: 500, max: Infinity },
+    ];
+    const counts = buckets.map(b => ({ name: b.label, value: 0, min: b.min, max: b.max }));
+    filteredContribs.forEach(c => {
+      const shapes = c.building_shapes;
+      if (Array.isArray(shapes)) {
+        shapes.forEach((s: any) => {
+          const area = s?.areaSqm ?? (s?.width && s?.height ? s.width * s.height : null);
+          if (area != null && area > 0) {
+            const bucket = counts.find(b => area >= b.min && area < b.max);
+            if (bucket) bucket.value++;
+          }
+        });
+      }
+    });
+    return counts.filter(c => c.value > 0).map(({ name, value }) => ({ name, value }));
+  }, [filteredContribs]);
+
+  // Building height distribution from contributions' building_shapes JSONB
+  const buildingHeightData = useMemo(() => {
+    const buckets = [
+      { label: '< 3m', min: 0, max: 3 },
+      { label: '3-6m', min: 3, max: 6 },
+      { label: '6-10m', min: 6, max: 10 },
+      { label: '10-15m', min: 10, max: 15 },
+      { label: '> 15m', min: 15, max: Infinity },
+    ];
+    const counts = buckets.map(b => ({ name: b.label, value: 0, min: b.min, max: b.max }));
+    filteredContribs.forEach(c => {
+      const shapes = c.building_shapes;
+      if (Array.isArray(shapes)) {
+        shapes.forEach((s: any) => {
+          const h = s?.heightM ?? s?.height_m;
+          if (h != null && h > 0) {
+            const bucket = counts.find(b => h >= b.min && h < b.max);
+            if (bucket) bucket.value++;
+          }
+        });
+      }
+    });
+    return counts.filter(c => c.value > 0).map(({ name, value }) => ({ name, value }));
+  }, [filteredContribs]);
+
   const genderData = useMemo(() => {
     const map = new Map<string, number>();
     filteredContribs.forEach(c => {
