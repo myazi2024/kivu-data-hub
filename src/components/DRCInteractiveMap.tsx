@@ -216,8 +216,6 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     return mapWm || globalWm || 'BIC - Tous droits réservés';
   }, [getChartConfig, getGlobalConfig]);
   const formatNumber = (value: number): string => new Intl.NumberFormat('fr-FR').format(value);
-  const formatCurrency = (value: number): string =>
-    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
 
   const totalParcels = useMemo(() => provincesData.reduce((s, p) => s + p.parcelsCount, 0), [provincesData]);
   const todayStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
