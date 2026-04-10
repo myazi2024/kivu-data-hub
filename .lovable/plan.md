@@ -1,62 +1,42 @@
 
 
-# Ajouter 3 graphiques manquants a l'onglet Parcelles
+# Ajouter "Sans autorisation de bâtir" au graphique Autorisation de bâtir
 
 ## Constat
 
-L'onglet "Parcelles" ne visualise pas les donnees de construction collectees dans le formulaire CCC :
-- **Autorisation de batir** : stocke dans `cadastral_contributions.building_permits` (JSONB) avec `permitType: 'construction' | 'regularization'`
-- **Taille de construction** : stocke dans `cadastral_contributions.building_shapes` (JSONB) avec `areaSqm` (ou `width * height` pour les anciennes donnees)
-- **Hauteur de construction** : stocke dans `cadastral_contributions.building_shapes` (JSONB) avec `heightM`
+Le graphique actuel ne compte que les contributions ayant des permis (`building_permits` JSONB non vide). Or, quand l'utilisateur repond "Non" a la question "Avez-vous obtenu une autorisation de batir ?", `permitMode = 'request'` et `building_permits` reste vide/null. Ces cas doivent apparaitre comme "Sans autorisation".
 
-Ces donnees proviennent des contributions et non des parcelles directement. Les contributions sont deja chargees dans `useLandDataAnalytics`.
+## Modification
 
-## Modifications
+### `ParcelsWithTitleBlock.tsx` — bloc `permitTypeData` (lignes 66-78)
 
-### 1. `useLandDataAnalytics.tsx` — Ajouter `building_permits, building_shapes` au SELECT des contributions
+Modifier la logique pour :
+1. Compter les permis existants comme avant (Construction / Regularisation)
+2. Compter les contributions sans permis (`building_permits` null, vide, ou tableau vide) comme "Sans autorisation"
 
-Ajouter ces 2 colonnes a la requete `fetchAll('cadastral_contributions', ...)` pour qu'elles soient disponibles cote client.
+```typescript
+const permitTypeData = useMemo(() => {
+  const map = new Map<string, number>();
+  filteredContribs.forEach(c => {
+    const permits = c.building_permits;
+    if (Array.isArray(permits) && permits.length > 0) {
+      permits.forEach((p: any) => {
+        const t = p?.permitType === 'regularization' ? 'Régularisation' 
+                : p?.permitType === 'construction' ? 'Construction' : null;
+        if (t) map.set(t, (map.get(t) || 0) + 1);
+      });
+    } else {
+      map.set('Sans autorisation', (map.get('Sans autorisation') || 0) + 1);
+    }
+  });
+  return Array.from(map.entries())
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value);
+}, [filteredContribs]);
+```
 
-### 2. `ParcelsWithTitleBlock.tsx` — 3 nouveaux graphiques
+## Impact
 
-Utiliser les **contributions filtrees** (`filteredContribs`) pour calculer :
-
-**a) Autorisation de batir** (cle: `permit-type`)
-- Parcourir `building_permits` JSONB de chaque contribution
-- Compter par `permitType` : "Construction" vs "Regularisation"
-- Graphique donut
-
-**b) Taille de construction** (cle: `building-size`)
-- Parcourir `building_shapes` de chaque contribution
-- Calculer la surface (`areaSqm` ou `width * height` en fallback)
-- Distribuer en tranches : `< 50 m²`, `50-100`, `100-200`, `200-500`, `> 500 m²`
-- Graphique bar-v
-
-**c) Hauteur de construction** (cle: `building-height`)
-- Parcourir `building_shapes` de chaque contribution
-- Extraire `heightM`
-- Distribuer en tranches : `< 3m`, `3-6m`, `6-10m`, `10-15m`, `> 15m`
-- Graphique bar-v
-
-### 3. `useAnalyticsChartsConfig.ts` — Registre
-
-Ajouter les 3 entrees dans `ANALYTICS_TABS_REGISTRY['parcels-titled'].charts` :
-- `permit-type` (display_order 15, donut)
-- `building-size` (display_order 16, bar-v)
-- `building-height` (display_order 17, bar-v)
-
-### 4. `crossVariables.ts` — Variables de croisement
-
-Ajouter pour les 3 nouveaux graphiques des variables de croisement pertinentes (Province, Usage, Type titre).
-
-## Fichiers concernes
-
-| Fichier | Action |
-|---------|--------|
-| `src/hooks/useLandDataAnalytics.tsx` | Ajouter `building_permits, building_shapes` au SELECT contributions |
-| `src/components/visualizations/blocks/ParcelsWithTitleBlock.tsx` | +3 graphiques (~40 lignes) |
-| `src/hooks/useAnalyticsChartsConfig.ts` | +3 entrees registre |
-| `src/config/crossVariables.ts` | +3 entrees croisement |
-
-**Impact** : ~60 lignes ajoutees dans 4 fichiers. Aucune migration.
+- 1 fichier modifie (~5 lignes changees)
+- Aucune migration
 
