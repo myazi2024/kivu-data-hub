@@ -43,11 +43,9 @@ export const CROSS_VARIABLE_REGISTRY: Record<string, Record<string, CrossVariabl
     'status': [{ label: 'Type contribution', field: 'contribution_type' }, { label: 'Province', field: 'province' }],
     'title-type': [{ label: 'Statut', field: 'status' }, { label: 'Province', field: 'province' }, { label: 'Usage', field: 'declared_usage' }],
     'legal-status': [{ label: 'Type contribution', field: 'contribution_type' }, { label: 'Province', field: 'province' }],
-    'usage': [{ label: 'Type contribution', field: 'contribution_type' }, { label: 'Statut', field: 'status' }, { label: 'Province', field: 'province' }],
-    'construction-type': [{ label: 'Province', field: 'province' }, { label: 'Statut', field: 'status' }],
     'fraud-detection': [{ label: 'Type contribution', field: 'contribution_type' }, { label: 'Province', field: 'province' }],
     'fraud-score': [{ label: 'Type contribution', field: 'contribution_type' }, { label: 'Province', field: 'province' }],
-    'property-category': [{ label: 'Type contribution', field: 'contribution_type' }, { label: 'Province', field: 'province' }],
+    
     'appeal-status': [{ label: 'Province', field: 'province' }],
   },
   'expertise': {
