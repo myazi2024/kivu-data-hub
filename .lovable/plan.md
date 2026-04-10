@@ -1,26 +1,33 @@
 
 
-# Effet de zoom au clic sur les visuels Analytics
+# Correction du CHECK constraint sur `analytics_charts_config`
 
-## Objectif
+## Probleme
 
-Quand l'utilisateur clique sur un graphique (ChartCard, StackedBarCard, ColorMappedPieCard), celui-ci s'agrandit visuellement avec un effet de zoom et une ombre renforcée pour indiquer le focus. Un second clic (ou clic ailleurs) retire l'effet.
+La contrainte CHECK sur la colonne `item_type` n'autorise que 3 valeurs : `'chart'`, `'kpi'`, `'tab'`. Or le code envoie aussi `'filter'` et `'cross'` lors du "Sauvegarder tout" (ligne 884 de `AdminAnalyticsChartsConfig.tsx`), ce qui provoque l'erreur PostgreSQL `analytics_charts_config_item_type_check`.
 
-## Approche
+De meme, la contrainte `chart_type_check` n'autorise que `'bar-h'`, `'bar-v'`, `'pie'`, `'donut'`, `'area'`, `NULL`. Si un nouveau type de graphique est ajouté cote code, le meme probleme surviendrait.
 
-Ajouter un état `focused` (toggle au clic) sur chaque composant carte. Quand `focused = true`, appliquer les classes Tailwind `scale-[1.03] shadow-xl z-10 ring-2 ring-primary/30` avec une transition fluide. Cela évite toute dépendance externe et reste cohérent avec le design existant.
+## Correction
 
-## Modifications
+### Migration SQL (1 fichier)
 
-### Fichier : `src/components/visualizations/shared/ChartCard.tsx`
+1. **Supprimer** l'ancien CHECK `analytics_charts_config_item_type_check`
+2. **Recreer** le CHECK avec les 5 valeurs : `'chart'`, `'kpi'`, `'tab'`, `'filter'`, `'cross'`
 
-Pour les 3 composants exportés (`ChartCard`, `StackedBarCard`, `ColorMappedPieCard`) :
+```sql
+ALTER TABLE analytics_charts_config DROP CONSTRAINT analytics_charts_config_item_type_check;
+ALTER TABLE analytics_charts_config ADD CONSTRAINT analytics_charts_config_item_type_check
+  CHECK (item_type IN ('chart', 'kpi', 'tab', 'filter', 'cross'));
+```
 
-1. Ajouter `const [focused, setFocused] = useState(false)` dans chaque composant
-2. Sur le `<Card>`, ajouter `onClick={() => setFocused(f => !f)}` et `cursor-pointer`
-3. Appliquer conditionnellement les classes de zoom :
-   - Normal : `transition-all duration-200`
-   - Focused : `scale-[1.03] shadow-xl z-10 ring-2 ring-primary/30`
+### Aucune modification de code necessaire
 
-**Impact** : ~15 lignes modifiées dans 1 fichier. Aucune migration.
+Le code TypeScript est deja correct (`item_type: 'chart' | 'kpi' | 'tab' | 'filter' | 'cross'`). Seul le schema DB est desynchronise.
+
+## Impact
+
+- 1 migration SQL (2 lignes)
+- Zero fichier TypeScript modifie
+- Corrige immediatement l'erreur de sauvegarde
 
