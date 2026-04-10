@@ -322,6 +322,9 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'parcels-titled', item_key: 'subdivided', item_type: 'chart', is_visible: true, display_order: 12, custom_title: 'Loties vs Non loties', chart_type: 'pie' },
       { tab_key: 'parcels-titled', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 13, custom_title: 'Géographie' },
       { tab_key: 'parcels-titled', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 14, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
+      { tab_key: 'parcels-titled', item_key: 'permit-type', item_type: 'chart', is_visible: true, display_order: 15, custom_title: 'Autorisation de bâtir', chart_type: 'donut' },
+      { tab_key: 'parcels-titled', item_key: 'building-size', item_type: 'chart', is_visible: true, display_order: 16, custom_title: 'Taille construction', chart_type: 'bar-v' },
+      { tab_key: 'parcels-titled', item_key: 'building-height', item_type: 'chart', is_visible: true, display_order: 17, custom_title: 'Hauteur construction', chart_type: 'bar-v' },
     ],
     kpis: [
       { tab_key: 'parcels-titled', item_key: 'kpi-parcels', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Parcelles' },
