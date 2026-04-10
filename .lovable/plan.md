@@ -1,42 +1,57 @@
 
 
-# Corrections graphique "Hauteur construction" et ordre d'affichage
+# Refonte des KPIs de l'onglet Parcelles
 
-## Problemes identifies
+## Constat
 
-1. **Ordre JSX incorrect** : Dans `ParcelsWithTitleBlock.tsx`, le graphique "Evolution" (ligne 211) est rendu AVANT permit-type, building-size et building-height. L'utilisateur veut que "Evolution" soit le dernier graphique affiché.
+Les 6 KPIs actuels (Parcelles, Urbaines, Rurales, Surface tot., Surface moy., Densité) ne reflètent pas les indicateurs métier demandés. Ils doivent être remplacés par 11 indicateurs couvrant l'ensemble des services cadastraux.
 
-2. **Props manquantes** : Les graphiques `building-size` et `building-height` n'ont pas les props `crossVariables` et `rawRecords`, contrairement aux autres graphiques. Cela empêche l'analyse croisée.
+## Nouveaux indicateurs
 
-3. **Registry display_order** : Les `display_order` dans le registre sont déjà corrects (evolution=14, permit=15, size=16, height=17) mais le JSX ne suit pas cet ordre.
+| # | KPI | Source | Calcul |
+|---|-----|--------|--------|
+| 1 | Parcelle avec certificat d'enregistrement | `data.parcels` | `property_title_type` normalisé === "Certificat d'enregistrement" |
+| 2 | Parcelle avec contrat de location | `data.parcels` | `property_title_type` normalisé === "Contrat de location" |
+| 3 | Parcelle avec fiche parcellaire | `data.parcels` | `property_title_type` normalisé === "Fiche parcellaire" |
+| 4 | Titres fonciers demandés | `data.titleRequests` | count (filtré par province/localisation) |
+| 5 | Litiges fonciers | `data.disputes` | count |
+| 6 | Hypothèques actives | `data.mortgages` | `mortgage_status === 'active'` |
+| 7 | Mutations en cours | `data.mutationRequests` | `status === 'pending'` ou similaire |
+| 8 | Expertises en cours | `data.expertiseRequests` | `status === 'pending'` ou similaire |
+| 9 | Superficie moy. parcelle | `data.parcels` | moyenne `area_sqm` |
+| 10 | Superficie moy. construction | `data.contributions` | moyenne des `areaSqm` dans `building_shapes` |
+| 11 | Hauteur moy. construction | `data.contributions` | moyenne des `heightM` dans `building_shapes` |
 
 ## Modifications
 
-### 1. `ParcelsWithTitleBlock.tsx` — Reordonner et completer
+### 1. `KpiGrid.tsx` — Supporter jusqu'à 12 colonnes
 
-- Deplacer les 3 graphiques (permit-type, building-size, building-height) **avant** le graphique "Evolution"
-- Ajouter `crossVariables={cx('building-size')} rawRecords={filteredContribs} groupField="building_shapes"` sur building-size
-- Ajouter `crossVariables={cx('building-height')} rawRecords={filteredContribs} groupField="building_shapes"` sur building-height
+Ajouter des classes grid pour 7-12 items :
+- 7-8 : `grid-cols-4 md:grid-cols-4` (2 lignes)
+- 9-12 : `grid-cols-3 md:grid-cols-4 lg:grid-cols-6` (2 lignes sur desktop)
 
-Ordre final dans le JSX :
+Rendre le texte plus compact pour accommoder 11 items.
+
+### 2. `ParcelsWithTitleBlock.tsx` — Remplacer les KPIs
+
+- Supprimer les 6 anciens KPIs (parcels, urban, rural, surface, avg-surface, density)
+- Ajouter les 11 nouveaux avec filtrage géographique appliqué sur toutes les sources de données (pas uniquement parcels)
+- Utiliser `applyFilters` sur `data.titleRequests`, `data.disputes`, `data.mortgages`, `data.mutationRequests`, `data.expertiseRequests`
+
+### 3. `useAnalyticsChartsConfig.ts` — Mettre à jour le registre KPIs
+
+Remplacer les 6 entrées KPI par 11 nouvelles :
 ```
-...subdivided → geo → permit-type → building-size → building-height → evolution (dernier)
+kpi-certificat, kpi-contrat, kpi-fiche, kpi-titres, kpi-litiges,
+kpi-hypotheques, kpi-mutations, kpi-expertises,
+kpi-surf-parcelle, kpi-surf-construction, kpi-hauteur-construction
 ```
 
-### 2. `useAnalyticsChartsConfig.ts` — Ajuster display_order
-
-Reordonner pour refléter l'ordre voulu :
-- permit-type: 14
-- building-size: 15
-- building-height: 16
-- evolution: 17 (dernier)
-
-## Fichiers concernes
+## Fichiers concernés
 
 | Fichier | Action |
 |---------|--------|
-| `src/components/visualizations/blocks/ParcelsWithTitleBlock.tsx` | Reordonner JSX + ajouter props cross |
-| `src/hooks/useAnalyticsChartsConfig.ts` | Ajuster display_order |
-
-**Impact** : ~10 lignes modifiées dans 2 fichiers. Aucune migration.
+| `src/components/visualizations/shared/KpiGrid.tsx` | Etendre grid pour 7-12 items |
+| `src/components/visualizations/blocks/ParcelsWithTitleBlock.tsx` | Remplacer 6 KPIs par 11 nouveaux |
+| `src/hooks/useAnalyticsChartsConfig.ts` | Mettre à jour registre KPIs parcels-titled |
 
