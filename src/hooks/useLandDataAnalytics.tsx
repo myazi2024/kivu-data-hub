@@ -245,7 +245,7 @@ export const useLandDataAnalytics = (isTestRoute = false) => {
         disputes: enrich(disputes),
         
         ownershipHistory: enrich(filterByTestFK(ownershipHistory)),
-        fraudAttempts: enrichFraud(filterByTestContribFK(fraudAttempts)),
+        
         certificates: enrichByParcelNumber(certificates),
         invoices: enrichByParcelNumber(invoices),
       };
