@@ -149,19 +149,6 @@ export const useLandDataAnalytics = (isTestRoute = false) => {
           ? records.filter(r => r.parcel_id && testParcelIds.has(r.parcel_id))
           : records.filter(r => !r.parcel_id || !testParcelIds.has(r.parcel_id));
 
-      /** Filter records linked to TEST-% via contribution_id → contribution → parcel */
-      const filterByTestContribFK = (records: any[]) =>
-        isTestRoute
-          ? records.filter(r => {
-              if (!r.contribution_id) return false;
-              const contrib = contribs.find((c: any) => c.id === r.contribution_id);
-              return contrib && contrib.parcel_number?.toUpperCase().startsWith('TEST-');
-            })
-          : records.filter(r => {
-              if (!r.contribution_id) return true;
-              const contrib = contribs.find((c: any) => c.id === r.contribution_id);
-              return !contrib || !contrib.parcel_number?.toUpperCase().startsWith('TEST-');
-            });
 
       const enrich = (records: any[]) =>
         records.map(r => {
@@ -204,33 +191,6 @@ export const useLandDataAnalytics = (isTestRoute = false) => {
           };
         });
 
-      // Enrich fraud attempts via contribution_id → contribution → parcel
-      const enrichFraud = (records: any[]) =>
-        records.map(r => {
-          if (r.province) return r; // already has geo
-          // Try to find via contribution
-          if (r.contribution_id) {
-            const contrib = contribs.find((c: any) => c.id === r.contribution_id);
-            if (contrib) {
-              const p = byNum.get(contrib.parcel_number);
-              const src = p || contrib;
-              return {
-                ...r,
-                province: src.province,
-                ville: src.ville,
-                commune: src.commune,
-                quartier: src.quartier,
-                territoire: src.territoire,
-                collectivite: src.collectivite,
-                groupement: src.groupement,
-                village: src.village,
-                parcel_type: src.parcel_type,
-                section_type: src.parcel_type === 'SU' ? 'urbaine' : 'rurale',
-              };
-            }
-          }
-          return r;
-        });
 
       return {
         titleRequests: titleReqs,
