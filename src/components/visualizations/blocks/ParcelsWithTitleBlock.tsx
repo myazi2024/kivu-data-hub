@@ -1,7 +1,7 @@
 import React, { useState, useMemo, memo, useContext, useEffect } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
 import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, surfaceDistribution, yearDecadeDistribution, buildFilterLabel } from '@/utils/analyticsHelpers';
-import { pct } from '@/utils/analyticsConstants';
+
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { FileText, Users, Building, TrendingUp, Ruler, Clock, ShieldCheck, Maximize, ArrowUpFromLine } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
