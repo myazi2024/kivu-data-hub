@@ -1,0 +1,1 @@
+DELETE FROM analytics_charts_config WHERE tab_key = 'fraud';
