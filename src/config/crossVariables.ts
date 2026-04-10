@@ -110,11 +110,6 @@ export const CROSS_VARIABLE_REGISTRY: Record<string, Record<string, CrossVariabl
     'legal-status': [{ label: 'Type mutation', field: 'mutation_type' }, { label: 'Province', field: 'province' }],
     'mutation-type': [{ label: 'Statut juridique', field: 'legal_status' }, { label: 'Province', field: 'province' }],
   },
-  'fraud': {
-    'fraud-type': [{ label: 'Sévérité', field: 'severity' }, { label: 'Province', field: 'province' }],
-    'severity': [{ label: 'Type fraude', field: 'fraud_type' }, { label: 'Province', field: 'province' }],
-    'linked': [{ label: 'Type fraude', field: 'fraud_type' }, { label: 'Sévérité', field: 'severity' }],
-  },
   'certificates': {
     'cert-type': [{ label: 'Statut', field: 'status' }, { label: 'Province', field: 'province' }],
     'status': [{ label: 'Type certificat', field: 'certificate_type' }, { label: 'Province', field: 'province' }],

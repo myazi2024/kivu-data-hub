@@ -12,7 +12,7 @@ import { MortgagesBlock } from './blocks/MortgagesBlock';
 import { BuildingPermitsBlock } from './blocks/BuildingPermitsBlock';
 import { TaxesBlock } from './blocks/TaxesBlock';
 import { OwnershipHistoryBlock } from './blocks/OwnershipHistoryBlock';
-import { FraudAttemptsBlock } from './blocks/FraudAttemptsBlock';
+
 import { CertificatesBlock } from './blocks/CertificatesBlock';
 import { InvoicesBlock } from './blocks/InvoicesBlock';
 import { ProvinceData } from '@/types/province';
@@ -46,7 +46,7 @@ const ICON_MAP: Record<string, React.ComponentType<any>> = {
   'building-permits': FileCheck,
   'taxes': DollarSign,
   'ownership': History,
-  'fraud': ShieldAlert,
+  
   'certificates': Award,
   'invoices': Receipt,
 };
@@ -63,7 +63,7 @@ const BLOCK_MAP: Record<string, React.ComponentType<{ data: any }>> = {
   'building-permits': BuildingPermitsBlock,
   'taxes': TaxesBlock,
   'ownership': OwnershipHistoryBlock,
-  'fraud': FraudAttemptsBlock,
+  
   'certificates': CertificatesBlock,
   'invoices': InvoicesBlock,
 };

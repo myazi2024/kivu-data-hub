@@ -44,7 +44,7 @@ const TAB_FILTER_DEFAULTS: Record<string, TabFilterConfig> = {
   'subdivision': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
   'disputes': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at', statusField: 'current_status' },
   'ownership': { hideStatus: true, hideTime: false, hideLocation: false, dateField: 'ownership_start_date' },
-  'fraud': { hideStatus: true, hideTime: false, hideLocation: false, dateField: 'created_at' },
+  
   'certificates': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'generated_at' },
   'invoices': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
   'building-permits': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
