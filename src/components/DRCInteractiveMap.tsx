@@ -4,8 +4,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { MapPin, DollarSign, BarChart3, Info, FileText, Database, AlertTriangle, Loader2, Copy, Check, Maximize, Minimize } from 'lucide-react';
+import { MapPin, BarChart3, Info, Database, Loader2, Copy, Check, Maximize, Minimize } from 'lucide-react';
 import { toast } from 'sonner';
+import { normalizeTitleType } from '@/utils/titleTypeNormalizer';
 import DRCMapWithTooltip from './DRCMapWithTooltip';
 import DRCCommunesMap from './DRCCommunesMap';
 import DRCQuartiersMap from './DRCQuartiersMap';
@@ -53,11 +54,52 @@ function countForProvince(records: any[], provinceName: string): number {
   return records.filter(r => r.province === provinceName).length;
 }
 
-/** Sum a field for records matching a province */
-function sumForProvince(records: any[], provinceName: string, field: string): number {
-  return records
-    .filter(r => r.province === provinceName)
-    .reduce((s, r) => s + (r[field] || 0), 0);
+/** Compute the 11 new indicators from filtered record sets */
+function computeIndicators(
+  parcels: any[],
+  titleRequests: any[],
+  disputes: any[],
+  mortgages: any[],
+  mutationRequests: any[],
+  expertiseRequests: any[],
+  contributions: any[],
+) {
+  const certEnreg = parcels.filter(p => normalizeTitleType(p.property_title_type) === "Certificat d'enregistrement").length;
+  const contratLoc = parcels.filter(p => normalizeTitleType(p.property_title_type) === "Contrat de location (Contrat d'occupation provisoire)").length;
+  const ficheParc = parcels.filter(p => normalizeTitleType(p.property_title_type) === "Fiche parcellaire").length;
+
+  const activeMortgages = mortgages.filter((m: any) => m.mortgage_status === 'active').length;
+  const pendingMutations = mutationRequests.filter((m: any) => m.status === 'pending' || m.status === 'en_cours').length;
+  const pendingExpertises = expertiseRequests.filter((e: any) => e.status === 'pending' || e.status === 'en_cours').length;
+
+  const totalArea = parcels.reduce((s: number, p: any) => s + (p.area_sqm || 0), 0);
+  const avgSurface = parcels.length > 0 ? totalArea / parcels.length : 0;
+
+  let buildingSurfaceSum = 0, buildingSurfaceCount = 0;
+  let buildingHeightSum = 0, buildingHeightCount = 0;
+  contributions.forEach((c: any) => {
+    const shapes = Array.isArray(c.building_shapes) ? c.building_shapes : [];
+    shapes.forEach((s: any) => {
+      const area = s.areaSqm || (s.width && s.height ? s.width * s.height : 0);
+      if (area > 0) { buildingSurfaceSum += area; buildingSurfaceCount++; }
+      if (s.heightM > 0) { buildingHeightSum += s.heightM; buildingHeightCount++; }
+    });
+  });
+
+  return {
+    certEnregCount: certEnreg,
+    contratLocCount: contratLoc,
+    ficheParcCount: ficheParc,
+    titleRequestsCount: titleRequests.length,
+    disputesCount: disputes.length,
+    activeMortgagesCount: activeMortgages,
+    pendingMutationsCount: pendingMutations,
+    pendingExpertisesCount: pendingExpertises,
+    avgParcelSurfaceSqm: Math.round(avgSurface * 10) / 10,
+    avgBuildingSurfaceSqm: buildingSurfaceCount > 0 ? Math.round((buildingSurfaceSum / buildingSurfaceCount) * 10) / 10 : 0,
+    avgBuildingHeightM: buildingHeightCount > 0 ? Math.round((buildingHeightSum / buildingHeightCount) * 10) / 10 : 0,
+    parcelsCount: parcels.length,
+  };
 }
 
 /** Normalize string for comparison */
@@ -114,9 +156,9 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   /** Build tooltip line configs from admin config */
   const tooltipLineConfigs = useMemo(() => {
     const keys = [
-      'tooltip-parcels', 'tooltip-titles', 'tooltip-contributions', 'tooltip-mutations',
-      'tooltip-disputes', 'tooltip-expertises', 'tooltip-certificates', 'tooltip-invoices',
-      'tooltip-revenue', 'tooltip-fiscal', 'tooltip-density',
+      'tooltip-cert-enreg', 'tooltip-contrat-loc', 'tooltip-fiche-parc', 'tooltip-title-req',
+      'tooltip-disputes', 'tooltip-mortgages', 'tooltip-mutations', 'tooltip-expertises',
+      'tooltip-avg-surface', 'tooltip-avg-building', 'tooltip-avg-height',
     ];
     return keys.map(key => ({
       key,
@@ -131,53 +173,20 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const provincesData: ProvinceData[] = useMemo(() => {
     if (!analytics) return PROVINCE_META.map(p => buildEmptyProvince(p));
 
-    const { parcels, titleRequests, contributions, invoices, disputes, mutationRequests, certificates, expertiseRequests } = analytics;
+    const { parcels, titleRequests, contributions, disputes, mutationRequests, expertiseRequests, mortgages } = analytics;
 
     return PROVINCE_META.map(meta => {
-      const pCount = countForProvince(parcels, meta.name);
-      const trCount = countForProvince(titleRequests, meta.name);
-      const contribCount = countForProvince(contributions, meta.name);
-      const disputeCount = countForProvince(disputes, meta.name);
-      const mutationCount = countForProvince(mutationRequests, meta.name);
-      const certCount = countForProvince(certificates, meta.name);
-      const expertiseCount = countForProvince(expertiseRequests, meta.name);
-
-      const paidInvoices = invoices.filter(i => i.province === meta.name && i.status === 'paid');
-      const totalRevenue = paidInvoices.reduce((s, i) => s + (i.total_amount_usd || 0), 0);
-      const allInvoices = invoices.filter(i => i.province === meta.name);
-      const totalInvoiceAmount = allInvoices.reduce((s, i) => s + (i.total_amount_usd || 0), 0);
-
-      const taxPaid = analytics.taxHistory.filter(t => t.province === meta.name && t.payment_status === 'paid');
-      const fiscalRevenue = taxPaid.reduce((s, t) => s + (t.amount_usd || 0), 0);
-
-      // Surface totale
-      const totalSurface = parcels.filter(p => p.province === meta.name).reduce((s, p) => s + (p.area_sqm || 0), 0);
-      const surfaceHa = totalSurface / 10000;
-
-      // Disputes resolved ratio
-      const resolvedDisputes = disputes.filter(d => d.province === meta.name && (d.current_status === 'resolved' || d.current_status === 'resolu')).length;
-
-      const density = surfaceHa > 0
-        ? (pCount / surfaceHa > 50 ? 'Très élevé' : pCount / surfaceHa > 20 ? 'Élevé' : pCount / surfaceHa > 5 ? 'Modéré' : 'Faible')
-        : (pCount > 500 ? 'Très élevé' : pCount > 100 ? 'Élevé' : pCount > 30 ? 'Modéré' : 'Faible');
-
-      return {
-        id: meta.id,
-        name: meta.name,
-        parcelsCount: pCount,
-        titleRequestsCount: trCount,
-        revenueUsd: totalRevenue,
-        contributionsCount: contribCount,
-        mutationsCount: mutationCount,
-        disputesCount: disputeCount,
-        densityLevel: density as ProvinceData['densityLevel'],
-        certificatesCount: certCount,
-        invoicesCount: allInvoices.length,
-        expertisesCount: expertiseCount,
-        fiscalRevenueUsd: fiscalRevenue,
-        disputeResolutionRate: disputeCount > 0 ? Math.round((resolvedDisputes / disputeCount) * 100) : 0,
-        totalSurfaceHa: Math.round(totalSurface / 10000),
-      };
+      const pFilter = (r: any) => r.province === meta.name;
+      const indicators = computeIndicators(
+        parcels.filter(pFilter),
+        titleRequests.filter(pFilter),
+        disputes.filter(pFilter),
+        (mortgages || []).filter(pFilter),
+        mutationRequests.filter(pFilter),
+        expertiseRequests.filter(pFilter),
+        contributions.filter(pFilter),
+      );
+      return { id: meta.id, name: meta.name, ...indicators };
     });
   }, [analytics]);
 
@@ -207,8 +216,6 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     return mapWm || globalWm || 'BIC - Tous droits réservés';
   }, [getChartConfig, getGlobalConfig]);
   const formatNumber = (value: number): string => new Intl.NumberFormat('fr-FR').format(value);
-  const formatCurrency = (value: number): string =>
-    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
 
   const totalParcels = useMemo(() => provincesData.reduce((s, p) => s + p.parcelsCount, 0), [provincesData]);
   const todayStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -217,46 +224,17 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const scopedStats = useMemo(() => {
     if (!analytics || !selectedProvince) return null;
     const predicate = buildScopePredicate(selectedProvince.name, selectedVille, selectedCommune, selectedQuartier, selectedTerritoire);
-    const { parcels, titleRequests, contributions, invoices, disputes, mutationRequests, certificates, expertiseRequests, taxHistory } = analytics;
+    const { parcels, titleRequests, contributions, disputes, mutationRequests, expertiseRequests, mortgages } = analytics;
 
-    const filteredParcels = parcels.filter(predicate);
-    const pCount = filteredParcels.length;
-    const trCount = titleRequests.filter(predicate).length;
-    const contribCount = contributions.filter(predicate).length;
-    const disputeCount = disputes.filter(predicate).length;
-    const mutationCount = mutationRequests.filter(predicate).length;
-    const certCount = certificates.filter(predicate).length;
-    const expertiseCount = expertiseRequests.filter(predicate).length;
-
-    const paidInvoices = invoices.filter(i => predicate(i) && i.status === 'paid');
-    const totalRevenue = paidInvoices.reduce((s, i) => s + (i.total_amount_usd || 0), 0);
-    const allInvoices = invoices.filter(predicate);
-
-    const taxPaid = taxHistory.filter(t => predicate(t) && t.payment_status === 'paid');
-    const fiscalRevenue = taxPaid.reduce((s, t) => s + (t.amount_usd || 0), 0);
-
-    const totalSurface = filteredParcels.reduce((s, p) => s + (p.area_sqm || 0), 0);
-    const resolvedDisputes = disputes.filter(d => predicate(d) && (d.current_status === 'resolved' || d.current_status === 'resolu')).length;
-    const surfaceHa = totalSurface / 10000;
-    const density = surfaceHa > 0
-      ? (pCount / surfaceHa > 50 ? 'Très élevé' : pCount / surfaceHa > 20 ? 'Élevé' : pCount / surfaceHa > 5 ? 'Modéré' : 'Faible')
-      : (pCount > 500 ? 'Très élevé' : pCount > 100 ? 'Élevé' : pCount > 30 ? 'Modéré' : 'Faible');
-
-    return {
-      parcelsCount: pCount,
-      titleRequestsCount: trCount,
-      contributionsCount: contribCount,
-      mutationsCount: mutationCount,
-      disputesCount: disputeCount,
-      certificatesCount: certCount,
-      expertisesCount: expertiseCount,
-      revenueUsd: totalRevenue,
-      fiscalRevenueUsd: fiscalRevenue,
-      invoicesCount: allInvoices.length,
-      totalSurfaceHa: Math.round(surfaceHa),
-      disputeResolutionRate: disputeCount > 0 ? Math.round((resolvedDisputes / disputeCount) * 100) : 0,
-      densityLevel: density as ProvinceData['densityLevel'],
-    };
+    return computeIndicators(
+      parcels.filter(predicate),
+      titleRequests.filter(predicate),
+      disputes.filter(predicate),
+      (mortgages || []).filter(predicate),
+      mutationRequests.filter(predicate),
+      expertiseRequests.filter(predicate),
+      contributions.filter(predicate),
+    );
   }, [analytics, selectedProvince, selectedVille, selectedCommune, selectedQuartier, selectedTerritoire]);
 
   /** Label for the detail block header */
@@ -453,10 +431,10 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                     <div className="absolute bottom-5 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30 animate-fade-in">
                       <div className="text-[10px] font-medium text-foreground mb-0.5">{scopeLabel}</div>
                       <div className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
-                        <div className="flex justify-between gap-2"><span>Parcelles</span><span className="font-medium text-foreground">{formatNumber(scopedStats.parcelsCount)}</span></div>
+                        <div className="flex justify-between gap-2"><span>Certif. enreg.</span><span className="font-medium text-foreground">{formatNumber(scopedStats.certEnregCount)}</span></div>
                         <div className="flex justify-between gap-2"><span>Titres dem.</span><span className="font-medium text-foreground">{formatNumber(scopedStats.titleRequestsCount)}</span></div>
-                        <div className="flex justify-between gap-2"><span>Revenus</span><span className="font-medium text-foreground">{formatCurrency(scopedStats.revenueUsd)}</span></div>
-                        <div className="flex justify-between gap-2"><span>Densité</span><span className="font-medium text-foreground">{scopedStats.densityLevel}</span></div>
+                        <div className="flex justify-between gap-2"><span>Litiges</span><span className="font-medium text-foreground">{formatNumber(scopedStats.disputesCount)}</span></div>
+                        <div className="flex justify-between gap-2"><span>Sup. moy.</span><span className="font-medium text-foreground">{scopedStats.avgParcelSurfaceSqm > 0 ? `${scopedStats.avgParcelSurfaceSqm} m²` : '—'}</span></div>
                       </div>
                     </div>
                   )}
@@ -533,124 +511,80 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                         </button>
                       </div>
                       
-                      {/* Cadastre */}
+                      {/* Indicateurs fonciers */}
                       <div className="space-y-1">
                         <h5 className="text-[10px] font-medium text-foreground flex items-center gap-1">
                           <Database className="h-3 w-3 text-primary" />
-                          Cadastre
+                          Indicateurs fonciers
                         </h5>
-                        <div className="grid grid-cols-3 gap-1">
-                          {isChartVisible('detail-parcels') && (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1">
+                          {isChartVisible('detail-cert-enreg') && (
                             <Card className="p-1 border-border/30">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-parcels', 'Parcelles')}</div>
-                              <div className="text-[11px] font-bold text-primary">{formatNumber(scopedStats.parcelsCount)}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-cert-enreg', 'Certif. enregistrement')}</div>
+                              <div className="text-[11px] font-bold text-primary">{formatNumber(scopedStats.certEnregCount)}</div>
                             </Card>
                           )}
-                          {isChartVisible('detail-titles') && (
+                          {isChartVisible('detail-contrat-loc') && (
                             <Card className="p-1 border-border/30">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-titles', 'Titres dem.')}</div>
-                              <div className="text-[11px] font-bold text-blue-600">{formatNumber(scopedStats.titleRequestsCount)}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-contrat-loc', 'Contrat location')}</div>
+                              <div className="text-[11px] font-bold text-blue-600">{formatNumber(scopedStats.contratLocCount)}</div>
                             </Card>
                           )}
-                          {isChartVisible('detail-contributions') && (
+                          {isChartVisible('detail-fiche-parc') && (
                             <Card className="p-1 border-border/30">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-contributions', 'Contributions')}</div>
-                              <div className="text-[11px] font-bold text-emerald-600">{formatNumber(scopedStats.contributionsCount)}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-fiche-parc', 'Fiche parcellaire')}</div>
+                              <div className="text-[11px] font-bold text-emerald-600">{formatNumber(scopedStats.ficheParcCount)}</div>
                             </Card>
                           )}
-                        </div>
-                      </div>
-
-                      {/* Activité */}
-                      <div className="space-y-1">
-                        <h5 className="text-[10px] font-medium text-foreground flex items-center gap-1">
-                          <FileText className="h-3 w-3 text-primary" />
-                          Activité
-                        </h5>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1">
-                          {isChartVisible('detail-mutations') && (
+                          {isChartVisible('detail-title-req') && (
                             <Card className="p-1 border-border/30">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-mutations', 'Mutations')}</div>
-                              <div className="text-[11px] font-bold text-violet-600">{formatNumber(scopedStats.mutationsCount)}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-title-req', 'Titres demandés')}</div>
+                              <div className="text-[11px] font-bold text-violet-600">{formatNumber(scopedStats.titleRequestsCount)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-disputes') && (
                             <Card className="p-1 border-border/30">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-disputes', 'Litiges')}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-disputes', 'Litiges fonciers')}</div>
                               <div className="text-[11px] font-bold text-orange-500">{formatNumber(scopedStats.disputesCount)}</div>
                             </Card>
                           )}
-                          {isChartVisible('detail-certificates') && (
+                          {isChartVisible('detail-mortgages') && (
                             <Card className="p-1 border-border/30">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-certificates', 'Certificats')}</div>
-                              <div className="text-[11px] font-bold text-emerald-600">{formatNumber(scopedStats.certificatesCount)}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-mortgages', 'Hypothèques actives')}</div>
+                              <div className="text-[11px] font-bold text-red-600">{formatNumber(scopedStats.activeMortgagesCount)}</div>
+                            </Card>
+                          )}
+                          {isChartVisible('detail-mutations') && (
+                            <Card className="p-1 border-border/30">
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-mutations', 'Mutations en cours')}</div>
+                              <div className="text-[11px] font-bold text-violet-600">{formatNumber(scopedStats.pendingMutationsCount)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-expertises') && (
                             <Card className="p-1 border-border/30">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-expertises', 'Expertises')}</div>
-                              <div className="text-[11px] font-bold text-blue-600">{formatNumber(scopedStats.expertisesCount)}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-expertises', 'Expertises en cours')}</div>
+                              <div className="text-[11px] font-bold text-blue-600">{formatNumber(scopedStats.pendingExpertisesCount)}</div>
+                            </Card>
+                          )}
+                          {isChartVisible('detail-avg-surface') && (
+                            <Card className="p-1 border-border/30">
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-avg-surface', 'Sup. moy. parcelle')}</div>
+                              <div className="text-[11px] font-bold text-emerald-700">{scopedStats.avgParcelSurfaceSqm > 0 ? `${formatNumber(scopedStats.avgParcelSurfaceSqm)} m²` : '—'}</div>
+                            </Card>
+                          )}
+                          {isChartVisible('detail-avg-building') && (
+                            <Card className="p-1 border-border/30">
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-avg-building', 'Sup. moy. construction')}</div>
+                              <div className="text-[11px] font-bold text-emerald-600">{scopedStats.avgBuildingSurfaceSqm > 0 ? `${formatNumber(scopedStats.avgBuildingSurfaceSqm)} m²` : '—'}</div>
+                            </Card>
+                          )}
+                          {isChartVisible('detail-avg-height') && (
+                            <Card className="p-1 border-border/30">
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-avg-height', 'Haut. moy. construction')}</div>
+                              <div className="text-[11px] font-bold text-blue-600">{scopedStats.avgBuildingHeightM > 0 ? `${scopedStats.avgBuildingHeightM} m` : '—'}</div>
                             </Card>
                           )}
                         </div>
-                      </div>
-
-                      {/* Finances */}
-                      <div className="space-y-1">
-                        <h5 className="text-[10px] font-medium text-foreground flex items-center gap-1">
-                          <DollarSign className="h-3 w-3 text-primary" />
-                          Finances
-                        </h5>
-                        <div className="grid grid-cols-3 gap-1">
-                          {isChartVisible('detail-revenue') && (
-                            <Card className="p-1 border-border/30">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-revenue', 'Revenus')}</div>
-                              <div className="text-[11px] font-bold text-primary">{formatCurrency(scopedStats.revenueUsd)}</div>
-                            </Card>
-                          )}
-                          {isChartVisible('detail-fiscal') && (
-                            <Card className="p-1 border-border/30">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-fiscal', 'Recettes fisc.')}</div>
-                              <div className="text-[11px] font-bold text-emerald-600">{formatCurrency(scopedStats.fiscalRevenueUsd)}</div>
-                            </Card>
-                          )}
-                          {isChartVisible('detail-invoices') && (
-                            <Card className="p-1 border-border/30">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-invoices', 'Factures')}</div>
-                              <div className="text-[11px] font-bold text-blue-600">{formatNumber(scopedStats.invoicesCount)}</div>
-                            </Card>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Indicateurs */}
-                      <div className="grid grid-cols-3 gap-1">
-                        {isChartVisible('detail-density') && (
-                          <Card className="p-1 border-border/30">
-                            <div className="text-[10px] text-muted-foreground truncate">{dt('detail-density', 'Densité')}</div>
-                            <Badge 
-                              variant={
-                                scopedStats.densityLevel === 'Très élevé' ? 'destructive' :
-                                scopedStats.densityLevel === 'Élevé' ? 'secondary' : 'outline'
-                              }
-                              className="text-[10px] px-1 py-0"
-                            >
-                              {scopedStats.densityLevel}
-                            </Badge>
-                          </Card>
-                        )}
-                        {isChartVisible('detail-surface') && (
-                          <Card className="p-1 border-border/30">
-                            <div className="text-[10px] text-muted-foreground truncate">{dt('detail-surface', 'Surface (ha)')}</div>
-                            <div className="text-[11px] font-bold text-accent">{formatNumber(scopedStats.totalSurfaceHa || 0)}</div>
-                          </Card>
-                        )}
-                        {isChartVisible('detail-resolution') && (
-                          <Card className="p-1 border-border/30">
-                            <div className="text-[10px] text-muted-foreground truncate">{dt('detail-resolution', 'Résol. litiges')}</div>
-                            <div className="text-[11px] font-bold text-emerald-600">{scopedStats.disputeResolutionRate || 0}%</div>
-                          </Card>
-                        )}
                       </div>
                     </div>
                   ) : (
@@ -701,17 +635,18 @@ function buildEmptyProvince(meta: { id: string; name: string }): ProvinceData {
   return {
     id: meta.id,
     name: meta.name,
-    parcelsCount: 0,
+    certEnregCount: 0,
+    contratLocCount: 0,
+    ficheParcCount: 0,
     titleRequestsCount: 0,
-    revenueUsd: 0,
-    contributionsCount: 0,
-    mutationsCount: 0,
     disputesCount: 0,
-    densityLevel: 'Faible',
-    certificatesCount: 0,
-    invoicesCount: 0,
-    expertisesCount: 0,
-    fiscalRevenueUsd: 0,
+    activeMortgagesCount: 0,
+    pendingMutationsCount: 0,
+    pendingExpertisesCount: 0,
+    avgParcelSurfaceSqm: 0,
+    avgBuildingSurfaceSqm: 0,
+    avgBuildingHeightM: 0,
+    parcelsCount: 0,
   };
 }
 

@@ -1,19 +1,20 @@
 export interface ProvinceData {
   id: string;
   name: string;
-  // Données cadastrales réelles
-  parcelsCount: number;
+  // Indicateurs par type de titre
+  certEnregCount: number;
+  contratLocCount: number;
+  ficheParcCount: number;
+  // Volumes
   titleRequestsCount: number;
-  revenueUsd: number;
-  contributionsCount: number;
-  mutationsCount: number;
   disputesCount: number;
-  densityLevel: 'Faible' | 'Modéré' | 'Élevé' | 'Très élevé';
-  certificatesCount: number;
-  invoicesCount: number;
-  expertisesCount: number;
-  fiscalRevenueUsd: number;
-  // Indicateurs calculés
-  disputeResolutionRate?: number; // %
-  totalSurfaceHa?: number; // hectares
+  activeMortgagesCount: number;
+  pendingMutationsCount: number;
+  pendingExpertisesCount: number;
+  // Moyennes
+  avgParcelSurfaceSqm: number;
+  avgBuildingSurfaceSqm: number;
+  avgBuildingHeightM: number;
+  // Kept for choropleth (parcels total)
+  parcelsCount: number;
 }
