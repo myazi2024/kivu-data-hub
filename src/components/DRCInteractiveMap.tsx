@@ -433,10 +433,10 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                     <div className="absolute bottom-5 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30 animate-fade-in">
                       <div className="text-[10px] font-medium text-foreground mb-0.5">{scopeLabel}</div>
                       <div className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
-                        <div className="flex justify-between gap-2"><span>Parcelles</span><span className="font-medium text-foreground">{formatNumber(scopedStats.parcelsCount)}</span></div>
+                        <div className="flex justify-between gap-2"><span>Certif. enreg.</span><span className="font-medium text-foreground">{formatNumber(scopedStats.certEnregCount)}</span></div>
                         <div className="flex justify-between gap-2"><span>Titres dem.</span><span className="font-medium text-foreground">{formatNumber(scopedStats.titleRequestsCount)}</span></div>
-                        <div className="flex justify-between gap-2"><span>Revenus</span><span className="font-medium text-foreground">{formatCurrency(scopedStats.revenueUsd)}</span></div>
-                        <div className="flex justify-between gap-2"><span>Densité</span><span className="font-medium text-foreground">{scopedStats.densityLevel}</span></div>
+                        <div className="flex justify-between gap-2"><span>Litiges</span><span className="font-medium text-foreground">{formatNumber(scopedStats.disputesCount)}</span></div>
+                        <div className="flex justify-between gap-2"><span>Sup. moy.</span><span className="font-medium text-foreground">{scopedStats.avgParcelSurfaceSqm > 0 ? `${scopedStats.avgParcelSurfaceSqm} m²` : '—'}</span></div>
                       </div>
                     </div>
                   )}
@@ -513,124 +513,80 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                         </button>
                       </div>
                       
-                      {/* Cadastre */}
+                      {/* Indicateurs fonciers */}
                       <div className="space-y-1">
                         <h5 className="text-[10px] font-medium text-foreground flex items-center gap-1">
                           <Database className="h-3 w-3 text-primary" />
-                          Cadastre
+                          Indicateurs fonciers
                         </h5>
-                        <div className="grid grid-cols-3 gap-1">
-                          {isChartVisible('detail-parcels') && (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1">
+                          {isChartVisible('detail-cert-enreg') && (
                             <Card className="p-1 border-border/30">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-parcels', 'Parcelles')}</div>
-                              <div className="text-[11px] font-bold text-primary">{formatNumber(scopedStats.parcelsCount)}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-cert-enreg', 'Certif. enregistrement')}</div>
+                              <div className="text-[11px] font-bold text-primary">{formatNumber(scopedStats.certEnregCount)}</div>
                             </Card>
                           )}
-                          {isChartVisible('detail-titles') && (
+                          {isChartVisible('detail-contrat-loc') && (
                             <Card className="p-1 border-border/30">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-titles', 'Titres dem.')}</div>
-                              <div className="text-[11px] font-bold text-blue-600">{formatNumber(scopedStats.titleRequestsCount)}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-contrat-loc', 'Contrat location')}</div>
+                              <div className="text-[11px] font-bold text-blue-600">{formatNumber(scopedStats.contratLocCount)}</div>
                             </Card>
                           )}
-                          {isChartVisible('detail-contributions') && (
+                          {isChartVisible('detail-fiche-parc') && (
                             <Card className="p-1 border-border/30">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-contributions', 'Contributions')}</div>
-                              <div className="text-[11px] font-bold text-emerald-600">{formatNumber(scopedStats.contributionsCount)}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-fiche-parc', 'Fiche parcellaire')}</div>
+                              <div className="text-[11px] font-bold text-emerald-600">{formatNumber(scopedStats.ficheParcCount)}</div>
                             </Card>
                           )}
-                        </div>
-                      </div>
-
-                      {/* Activité */}
-                      <div className="space-y-1">
-                        <h5 className="text-[10px] font-medium text-foreground flex items-center gap-1">
-                          <FileText className="h-3 w-3 text-primary" />
-                          Activité
-                        </h5>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1">
-                          {isChartVisible('detail-mutations') && (
+                          {isChartVisible('detail-title-req') && (
                             <Card className="p-1 border-border/30">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-mutations', 'Mutations')}</div>
-                              <div className="text-[11px] font-bold text-violet-600">{formatNumber(scopedStats.mutationsCount)}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-title-req', 'Titres demandés')}</div>
+                              <div className="text-[11px] font-bold text-violet-600">{formatNumber(scopedStats.titleRequestsCount)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-disputes') && (
                             <Card className="p-1 border-border/30">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-disputes', 'Litiges')}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-disputes', 'Litiges fonciers')}</div>
                               <div className="text-[11px] font-bold text-orange-500">{formatNumber(scopedStats.disputesCount)}</div>
                             </Card>
                           )}
-                          {isChartVisible('detail-certificates') && (
+                          {isChartVisible('detail-mortgages') && (
                             <Card className="p-1 border-border/30">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-certificates', 'Certificats')}</div>
-                              <div className="text-[11px] font-bold text-emerald-600">{formatNumber(scopedStats.certificatesCount)}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-mortgages', 'Hypothèques actives')}</div>
+                              <div className="text-[11px] font-bold text-red-600">{formatNumber(scopedStats.activeMortgagesCount)}</div>
+                            </Card>
+                          )}
+                          {isChartVisible('detail-mutations') && (
+                            <Card className="p-1 border-border/30">
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-mutations', 'Mutations en cours')}</div>
+                              <div className="text-[11px] font-bold text-violet-600">{formatNumber(scopedStats.pendingMutationsCount)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-expertises') && (
                             <Card className="p-1 border-border/30">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-expertises', 'Expertises')}</div>
-                              <div className="text-[11px] font-bold text-blue-600">{formatNumber(scopedStats.expertisesCount)}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-expertises', 'Expertises en cours')}</div>
+                              <div className="text-[11px] font-bold text-blue-600">{formatNumber(scopedStats.pendingExpertisesCount)}</div>
+                            </Card>
+                          )}
+                          {isChartVisible('detail-avg-surface') && (
+                            <Card className="p-1 border-border/30">
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-avg-surface', 'Sup. moy. parcelle')}</div>
+                              <div className="text-[11px] font-bold text-emerald-700">{scopedStats.avgParcelSurfaceSqm > 0 ? `${formatNumber(scopedStats.avgParcelSurfaceSqm)} m²` : '—'}</div>
+                            </Card>
+                          )}
+                          {isChartVisible('detail-avg-building') && (
+                            <Card className="p-1 border-border/30">
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-avg-building', 'Sup. moy. construction')}</div>
+                              <div className="text-[11px] font-bold text-emerald-600">{scopedStats.avgBuildingSurfaceSqm > 0 ? `${formatNumber(scopedStats.avgBuildingSurfaceSqm)} m²` : '—'}</div>
+                            </Card>
+                          )}
+                          {isChartVisible('detail-avg-height') && (
+                            <Card className="p-1 border-border/30">
+                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-avg-height', 'Haut. moy. construction')}</div>
+                              <div className="text-[11px] font-bold text-blue-600">{scopedStats.avgBuildingHeightM > 0 ? `${scopedStats.avgBuildingHeightM} m` : '—'}</div>
                             </Card>
                           )}
                         </div>
-                      </div>
-
-                      {/* Finances */}
-                      <div className="space-y-1">
-                        <h5 className="text-[10px] font-medium text-foreground flex items-center gap-1">
-                          <DollarSign className="h-3 w-3 text-primary" />
-                          Finances
-                        </h5>
-                        <div className="grid grid-cols-3 gap-1">
-                          {isChartVisible('detail-revenue') && (
-                            <Card className="p-1 border-border/30">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-revenue', 'Revenus')}</div>
-                              <div className="text-[11px] font-bold text-primary">{formatCurrency(scopedStats.revenueUsd)}</div>
-                            </Card>
-                          )}
-                          {isChartVisible('detail-fiscal') && (
-                            <Card className="p-1 border-border/30">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-fiscal', 'Recettes fisc.')}</div>
-                              <div className="text-[11px] font-bold text-emerald-600">{formatCurrency(scopedStats.fiscalRevenueUsd)}</div>
-                            </Card>
-                          )}
-                          {isChartVisible('detail-invoices') && (
-                            <Card className="p-1 border-border/30">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-invoices', 'Factures')}</div>
-                              <div className="text-[11px] font-bold text-blue-600">{formatNumber(scopedStats.invoicesCount)}</div>
-                            </Card>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Indicateurs */}
-                      <div className="grid grid-cols-3 gap-1">
-                        {isChartVisible('detail-density') && (
-                          <Card className="p-1 border-border/30">
-                            <div className="text-[10px] text-muted-foreground truncate">{dt('detail-density', 'Densité')}</div>
-                            <Badge 
-                              variant={
-                                scopedStats.densityLevel === 'Très élevé' ? 'destructive' :
-                                scopedStats.densityLevel === 'Élevé' ? 'secondary' : 'outline'
-                              }
-                              className="text-[10px] px-1 py-0"
-                            >
-                              {scopedStats.densityLevel}
-                            </Badge>
-                          </Card>
-                        )}
-                        {isChartVisible('detail-surface') && (
-                          <Card className="p-1 border-border/30">
-                            <div className="text-[10px] text-muted-foreground truncate">{dt('detail-surface', 'Surface (ha)')}</div>
-                            <div className="text-[11px] font-bold text-accent">{formatNumber(scopedStats.totalSurfaceHa || 0)}</div>
-                          </Card>
-                        )}
-                        {isChartVisible('detail-resolution') && (
-                          <Card className="p-1 border-border/30">
-                            <div className="text-[10px] text-muted-foreground truncate">{dt('detail-resolution', 'Résol. litiges')}</div>
-                            <div className="text-[11px] font-bold text-emerald-600">{scopedStats.disputeResolutionRate || 0}%</div>
-                          </Card>
-                        )}
                       </div>
                     </div>
                   ) : (
@@ -681,17 +637,18 @@ function buildEmptyProvince(meta: { id: string; name: string }): ProvinceData {
   return {
     id: meta.id,
     name: meta.name,
-    parcelsCount: 0,
+    certEnregCount: 0,
+    contratLocCount: 0,
+    ficheParcCount: 0,
     titleRequestsCount: 0,
-    revenueUsd: 0,
-    contributionsCount: 0,
-    mutationsCount: 0,
     disputesCount: 0,
-    densityLevel: 'Faible',
-    certificatesCount: 0,
-    invoicesCount: 0,
-    expertisesCount: 0,
-    fiscalRevenueUsd: 0,
+    activeMortgagesCount: 0,
+    pendingMutationsCount: 0,
+    pendingExpertisesCount: 0,
+    avgParcelSurfaceSqm: 0,
+    avgBuildingSurfaceSqm: 0,
+    avgBuildingHeightM: 0,
+    parcelsCount: 0,
   };
 }
 
