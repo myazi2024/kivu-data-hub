@@ -1,42 +1,42 @@
 
 
-# Ajouter "Sans autorisation de bâtir" au graphique Autorisation de bâtir
+# Corrections graphique "Hauteur construction" et ordre d'affichage
 
-## Constat
+## Problemes identifies
 
-Le graphique actuel ne compte que les contributions ayant des permis (`building_permits` JSONB non vide). Or, quand l'utilisateur repond "Non" a la question "Avez-vous obtenu une autorisation de batir ?", `permitMode = 'request'` et `building_permits` reste vide/null. Ces cas doivent apparaitre comme "Sans autorisation".
+1. **Ordre JSX incorrect** : Dans `ParcelsWithTitleBlock.tsx`, le graphique "Evolution" (ligne 211) est rendu AVANT permit-type, building-size et building-height. L'utilisateur veut que "Evolution" soit le dernier graphique affiché.
 
-## Modification
+2. **Props manquantes** : Les graphiques `building-size` et `building-height` n'ont pas les props `crossVariables` et `rawRecords`, contrairement aux autres graphiques. Cela empêche l'analyse croisée.
 
-### `ParcelsWithTitleBlock.tsx` — bloc `permitTypeData` (lignes 66-78)
+3. **Registry display_order** : Les `display_order` dans le registre sont déjà corrects (evolution=14, permit=15, size=16, height=17) mais le JSX ne suit pas cet ordre.
 
-Modifier la logique pour :
-1. Compter les permis existants comme avant (Construction / Regularisation)
-2. Compter les contributions sans permis (`building_permits` null, vide, ou tableau vide) comme "Sans autorisation"
+## Modifications
 
-```typescript
-const permitTypeData = useMemo(() => {
-  const map = new Map<string, number>();
-  filteredContribs.forEach(c => {
-    const permits = c.building_permits;
-    if (Array.isArray(permits) && permits.length > 0) {
-      permits.forEach((p: any) => {
-        const t = p?.permitType === 'regularization' ? 'Régularisation' 
-                : p?.permitType === 'construction' ? 'Construction' : null;
-        if (t) map.set(t, (map.get(t) || 0) + 1);
-      });
-    } else {
-      map.set('Sans autorisation', (map.get('Sans autorisation') || 0) + 1);
-    }
-  });
-  return Array.from(map.entries())
-    .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value);
-}, [filteredContribs]);
+### 1. `ParcelsWithTitleBlock.tsx` — Reordonner et completer
+
+- Deplacer les 3 graphiques (permit-type, building-size, building-height) **avant** le graphique "Evolution"
+- Ajouter `crossVariables={cx('building-size')} rawRecords={filteredContribs} groupField="building_shapes"` sur building-size
+- Ajouter `crossVariables={cx('building-height')} rawRecords={filteredContribs} groupField="building_shapes"` sur building-height
+
+Ordre final dans le JSX :
+```
+...subdivided → geo → permit-type → building-size → building-height → evolution (dernier)
 ```
 
-## Impact
+### 2. `useAnalyticsChartsConfig.ts` — Ajuster display_order
 
-- 1 fichier modifie (~5 lignes changees)
-- Aucune migration
+Reordonner pour refléter l'ordre voulu :
+- permit-type: 14
+- building-size: 15
+- building-height: 16
+- evolution: 17 (dernier)
+
+## Fichiers concernes
+
+| Fichier | Action |
+|---------|--------|
+| `src/components/visualizations/blocks/ParcelsWithTitleBlock.tsx` | Reordonner JSX + ajouter props cross |
+| `src/hooks/useAnalyticsChartsConfig.ts` | Ajuster display_order |
+
+**Impact** : ~10 lignes modifiées dans 2 fichiers. Aucune migration.
 
