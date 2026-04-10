@@ -14,7 +14,7 @@ export interface LandAnalyticsData {
   disputes: any[];
   
   ownershipHistory: any[];
-  fraudAttempts: any[];
+  
   certificates: any[];
   invoices: any[];
 }
@@ -76,7 +76,7 @@ export const useLandDataAnalytics = (isTestRoute = false) => {
         parcels, contribs, titleReqs, permits,
         taxes, mortgages, expertise, mutations,
         subdivisions, disputes,
-        ownershipHistory, fraudAttempts, certificates, invoices,
+        ownershipHistory, certificates, invoices,
       ] = await Promise.all([
         // Parcels
         fetchAll('cadastral_parcels',
@@ -118,9 +118,6 @@ export const useLandDataAnalytics = (isTestRoute = false) => {
         // New tables
         fetchAll('cadastral_ownership_history',
           'id, parcel_id, owner_name, legal_status, mutation_type, ownership_start_date, ownership_end_date, created_at',
-          isTestRoute),
-        fetchAll('fraud_attempts',
-          'id, user_id, fraud_type, severity, description, contribution_id, created_at',
           isTestRoute),
         fetchAll('generated_certificates',
           'id, certificate_type, parcel_number, recipient_name, reference_number, status, generated_at',

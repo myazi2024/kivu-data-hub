@@ -503,24 +503,6 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'ownership', item_key: 'kpi-duration', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Durée moy.' },
     ],
   },
-  'fraud': {
-    label: 'Fraude',
-    charts: [
-      { tab_key: 'fraud', item_key: 'fraud-type', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Type de fraude', chart_type: 'bar-h' },
-      { tab_key: 'fraud', item_key: 'severity', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Sévérité', chart_type: 'pie' },
-      { tab_key: 'fraud', item_key: 'type-severity-cross', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Type × Sévérité' },
-      { tab_key: 'fraud', item_key: 'linked', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Liées à contrib.', chart_type: 'donut' },
-      { tab_key: 'fraud', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Géographie' },
-      { tab_key: 'fraud', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
-    ],
-    kpis: [
-      { tab_key: 'fraud', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Total' },
-      { tab_key: 'fraud', item_key: 'kpi-critical', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Critiques/Élevées' },
-      { tab_key: 'fraud', item_key: 'kpi-medium', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'Moyennes' },
-      { tab_key: 'fraud', item_key: 'kpi-low', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Faibles' },
-      { tab_key: 'fraud', item_key: 'kpi-linked', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Liées contrib.' },
-    ],
-  },
   'certificates': {
     label: 'Certificats',
     charts: [
