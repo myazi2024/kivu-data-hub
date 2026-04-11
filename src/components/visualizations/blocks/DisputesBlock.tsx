@@ -1,34 +1,21 @@
-import React, { useState, useMemo, memo, useContext, useEffect } from 'react';
+import React, { useMemo, memo } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
-import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, CHART_COLORS, VALID_LIFTING_STATUSES, buildFilterLabel } from '@/utils/analyticsHelpers';
+import { countBy, trendByMonth, CHART_COLORS, VALID_LIFTING_STATUSES } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { AlertTriangle, Scale, TrendingUp, Users, ShieldCheck, MessageSquare } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, StackedBarCard, FilterLabelContext, MultiAreaChartCard } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
-import { MapProvinceContext, VilleFilterContext, CommuneFilterContext, QuartierFilterContext } from '../filters/AnalyticsFilters';
 import { generateInsight, generateStackedInsight } from '@/utils/chartInsights';
-import { useTabChartsConfig, useTabFilterConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
-import { getCrossVariables } from '@/config/crossVariables';
+import { useBlockFilter } from '@/hooks/useBlockFilter';
 
 interface Props { data: LandAnalyticsData; }
 
 const TAB_KEY = 'disputes';
-const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TABS_REGISTRY[TAB_KEY].charts];
-const cx = (key: string) => getCrossVariables(TAB_KEY, key);
 
 export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
-  const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
-  const mapProvince = useContext(MapProvinceContext);
-  const mapVille = useContext(VilleFilterContext);
-  const mapCommune = useContext(CommuneFilterContext);
-  const mapQuartier = useContext(QuartierFilterContext);
-  useEffect(() => { setFilter(f => ({ ...f, province: mapProvince || undefined, ville: mapVille || undefined, commune: mapCommune || undefined, quartier: mapQuartier || undefined })); }, [mapProvince, mapVille, mapCommune, mapQuartier]);
-  const filterLabel = useMemo(() => buildFilterLabel(filter), [filter]);
-  const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
-  const filterConfig = useTabFilterConfig(TAB_KEY);
-  const filtered = useMemo(() => applyFilters(data.disputes, filter), [data.disputes, filter]);
+  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx } = useBlockFilter(TAB_KEY, data.disputes);
 
   const { enCours, resolus, byNature, byType, byStatus, byResolutionLevel, byDeclarantQuality, trend, natureStatusCross, resolutionStatus } = useMemo(() => {
     const enCours = filtered.filter(d => !['resolved', 'closed', 'resolu', 'leve'].includes(d.current_status));
@@ -128,9 +115,6 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
     });
   }, [liftingDisputes]);
 
-  const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
-  const v = isChartVisible;
-
   const kpiItems = useMemo(() => [
     { key: 'kpi-total', label: ct('kpi-total', 'Total'), value: filtered.length, cls: 'text-red-600' },
     { key: 'kpi-en-cours', label: ct('kpi-en-cours', 'En cours'), value: enCours.length, cls: 'text-amber-600', tooltip: pct(enCours.length, filtered.length) },
@@ -141,7 +125,7 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'kpi-lifting-approved', label: ct('kpi-lifting-approved', 'Levées approuvées'), value: liftingStats.approved, cls: 'text-emerald-600', tooltip: pct(liftingStats.approved, liftingDisputes.length) },
     { key: 'kpi-lifting-pending', label: ct('kpi-lifting-pending', 'Levées en attente'), value: liftingStats.pending, cls: 'text-amber-600', tooltip: pct(liftingStats.pending, liftingDisputes.length) },
     { key: 'kpi-lifting-success', label: ct('kpi-lifting-success', 'Taux réussite levée'), value: pct(liftingStats.approved, liftingDisputes.length), cls: 'text-purple-600' },
-  ].filter(k => v(k.key)), [filtered, enCours, resolus, avgDuration, liftingDisputes, liftingStats, v, getChartConfig]);
+  ].filter(k => v(k.key)), [filtered, enCours, resolus, avgDuration, liftingDisputes, liftingStats, v, ct]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
