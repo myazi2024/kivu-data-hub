@@ -1,48 +1,63 @@
 
 
-# Fix: Superposition des courbes sur la meme periode
+# Filigrane logo sur les visuels Analytics
 
-## Probleme
+## Objectif
 
-Le `mergedData` actuel ne garantit pas que toutes les series partagent les memes points temporels. Si une nature n'a pas de donnees pour un mois donne, ce mois est absent pour cette serie, ce qui decale les courbes au lieu de les superposer sur le meme axe X.
+Ajouter une filigrane du logo BIC (image `src/assets/bic-logo.png`) en bleu ciel, superposee sur chaque visuel (ChartCard, StackedBarCard, MultiDataPieCard, MultiAreaChartCard). La configuration (taille, opacite, position) se fait dans l'admin Config graphiques, sous l'onglet Global.
 
-## Solution
+## Modifications
 
-Modifier le calcul de `mergedData` dans `MultiAreaChartCard` (lignes 449-458 de `ChartCard.tsx`) pour :
+### 1. `src/hooks/useAnalyticsChartsConfig.ts` — Registre `_global`
 
-1. Collecter l'union de TOUS les mois de TOUTES les series visibles
-2. Trier chronologiquement
-3. Pour chaque mois, remplir avec 0 les series qui n'ont pas de donnee ce mois-la
+Ajouter 3 entrees de configuration dans `_global.charts` :
 
-```text
-// Pseudo-code du fix
-const mergedData = useMemo(() => {
-  // 1. Collecter tous les mois de toutes les series visibles
-  const allMonths = new Set<string>();
-  visibleSeries.forEach(s => s.data.forEach(pt => allMonths.add(pt.name)));
-  
-  // 2. Trier (les labels sont "janv. 25", etc.)
-  const sorted = Array.from(allMonths).sort(/* tri chronologique */);
-  
-  // 3. Pour chaque mois, creer un objet avec toutes les valeurs
-  return sorted.map(month => {
-    const row: Record<string, any> = { name: month };
-    visibleSeries.forEach((s, idx) => {
-      const pt = s.data.find(d => d.name === month);
-      row[`v${idx}`] = pt?.value ?? 0;  // 0 si pas de donnee
-    });
-    return row;
-  });
-}, [visibleSeries]);
-```
+| item_key | custom_title (defaut) | Description |
+|---|---|---|
+| `logo-watermark-opacity` | `0.06` | Opacite (0.01 a 0.3) |
+| `logo-watermark-size` | `80` | Taille en px (30 a 200) |
+| `logo-watermark-position` | `center` | Position : `center`, `top-left`, `top-right`, `bottom-left`, `bottom-right` |
 
-Le tri chronologique utilisera un parsing des labels fr-FR ou, plus fiable, on triera en se basant sur l'ordre d'apparition dans la serie "Tous" (qui contient tous les mois).
+### 2. `src/components/visualizations/shared/ChartCard.tsx` — Composant `LogoWatermark`
 
-## Fichier concerne
+Creer un nouveau Context `WatermarkConfigContext` qui transporte `{ opacity: number; size: number; position: string }`.
+
+Creer un composant interne `LogoWatermark` :
+- Importe `bicLogo` depuis `@/assets/bic-logo.png`
+- Lit la config depuis `WatermarkConfigContext`
+- Rendu : `<img>` en `position: absolute` avec `pointer-events-none`, `opacity` dynamique, filtre CSS `brightness(0) sepia(1) saturate(5) hue-rotate(185deg)` pour teinter en bleu ciel, taille selon config
+- Positionnement CSS selon la valeur `position` (center = `top:50% left:50% transform:-translate`, corners = combinaisons top/bottom/left/right avec petit offset)
+
+Integrer `<LogoWatermark />` dans le `<CardContent>` de :
+- `ChartCard` (ligne ~288, dans un wrapper `relative`)
+- `StackedBarCard` (ligne ~377)
+- `MultiDataPieCard`
+- `MultiAreaChartCard` (ligne ~508)
+
+### 3. `src/components/visualizations/ProvinceDataVisualization.tsx` — Fournir le contexte
+
+Lire les 3 configs globales (`logo-watermark-opacity`, `logo-watermark-size`, `logo-watermark-position`) via `getGlobalConfig` (deja utilise pour le watermark texte).
+
+Wrapper le contenu avec `<WatermarkConfigContext.Provider value={...}>`.
+
+### 4. `src/components/admin/AdminAnalyticsChartsConfig.tsx` — UI admin
+
+Dans le mode `charts`, quand l'onglet actif est `_global`, ajouter un panneau de configuration pour la filigrane logo avec :
+- Un slider pour l'opacite (0.01 a 0.3, pas de 0.01)
+- Un slider pour la taille (30 a 200 px)
+- Un select pour la position (Centre, Haut-gauche, Haut-droite, Bas-gauche, Bas-droite)
+- Un apercu en temps reel du rendu
+
+Ces controles modifient les `custom_title` des 3 entrees `logo-watermark-*` dans `localItems['_global']`, comme les autres configs.
+
+## Fichiers concernes
 
 | Fichier | Action |
 |---------|--------|
-| `src/components/visualizations/shared/ChartCard.tsx` | Corriger `mergedData` (lignes 449-458) pour aligner toutes les courbes sur le meme axe temporel |
+| `useAnalyticsChartsConfig.ts` | Ajouter 3 entrees `_global` |
+| `ChartCard.tsx` | Creer `LogoWatermark` + `WatermarkConfigContext`, integrer dans 4 composants |
+| `ProvinceDataVisualization.tsx` | Lire config globale, fournir contexte |
+| `AdminAnalyticsChartsConfig.tsx` | Ajouter panneau config filigrane logo |
 
-**Impact** : ~15 lignes modifiees dans 1 fichier.
+**Impact** : ~100 lignes ajoutees dans 4 fichiers. Aucune migration.
 
