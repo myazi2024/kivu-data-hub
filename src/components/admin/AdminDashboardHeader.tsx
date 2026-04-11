@@ -85,6 +85,16 @@ export function AdminDashboardHeader({ onMenuClick }: AdminDashboardHeaderProps)
     ).slice(0, 8);
   }, [searchTerm, flatItems]);
 
+  const filteredConfigTabs = useMemo(() => {
+    if (!searchTerm.trim()) return [];
+    const term = searchTerm.toLowerCase();
+    return configTabItems.filter(item =>
+      item.label.toLowerCase().includes(term) ||
+      item.key.toLowerCase().includes(term) ||
+      item.keywords.some(k => k.includes(term))
+    ).slice(0, 6);
+  }, [searchTerm, configTabItems]);
+
   // Group menu results by category
   const menuGroups = useMemo(() => {
     const groups: Record<string, typeof filteredMenuItems> = {};
