@@ -110,8 +110,9 @@ export function useAnalyticsChartsConfig() {
 /** Returns tab-level config merged with defaults from ANALYTICS_TABS_REGISTRY */
 export function useAnalyticsTabsConfig() {
   const { configs, isLoading } = useAnalyticsChartsConfig();
-  // Import dynamically to avoid circular deps at module level
-  const { ANALYTICS_TABS_REGISTRY } = require('@/config/analyticsTabsRegistry');
+  // Already re-exported at top of file, use directly
+  const { ANALYTICS_TABS_REGISTRY: reg } = require('@/config/analyticsTabsRegistry');
+  const ANALYTICS_TABS_REGISTRY_LOCAL = reg;
 
   const tabs = useMemo(() => {
     const dbTabMap = new Map<string, ChartConfigItem>();

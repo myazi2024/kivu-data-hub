@@ -7,7 +7,7 @@ import { CROSS_VARIABLE_REGISTRY } from '@/config/crossVariables';
 const EXCLUDED_SYSTEM_TABS = ['_global'];
 const CHARTS_ONLY_TABS = ['rdc-map'];
 export const isUserTab = (key: string) => !EXCLUDED_SYSTEM_TABS.includes(key) && !CHARTS_ONLY_TABS.includes(key);
-export const isChartsViewTab = (key: string) => !EXCLUDED_SYSTEM_TABS.includes(key) || key === '_global';
+export const isChartsViewTab = (key: string) => isUserTab(key) || CHARTS_ONLY_TABS.includes(key);
 
 export type LocalCrossConfig = Record<string, Record<string, { enabled: boolean; variables: { label: string; field: string; enabled: boolean }[] }>>;
 
