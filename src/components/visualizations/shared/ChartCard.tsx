@@ -406,7 +406,8 @@ export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
           <CopyButton onClick={copy} copied={copied} />
         </div>
       </CardHeader>
-      <CardContent className="px-2 pb-2">
+      <CardContent className="px-2 pb-2 relative">
+        <LogoWatermark />
         {displayData.length === 0 ? <NoData /> : (
           <>
              <ResponsiveContainer width="100%" height={BASE_CH}>
