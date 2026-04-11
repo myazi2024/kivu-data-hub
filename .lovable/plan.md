@@ -1,177 +1,87 @@
 
 
-# Audit detaille — Menu "Donnees foncieres"
+# Audit detaille — Config Graphiques (Admin > Vue d'ensemble)
 
-## Architecture globale
+## Architecture
 
-Le menu "Donnees foncieres" correspond a la page `/map` (src/pages/Map.tsx) qui integre le composant `DRCInteractiveMap` (653 lignes). L'interface se divise en 3 zones :
+L'interface "Config Graphiques" (`AdminAnalyticsChartsConfig.tsx` — **1 569 lignes**) pilote la configuration visuelle de tous les dashboards Analytics via 5 modes : Onglets, KPIs, Graphiques, Filtres, Croisements.
 
 ```text
-┌─────────────────────────────────────────────────────┐
-│  Navigation                                          │
-├──────────────┬──────────────────────────────────────┤
-│  Col gauche  │        Col droite (Analytics)         │
-│  (4/12)      │             (8/12)                    │
-│              │                                       │
-│  Carte RDC   │  ProvinceDataVisualization            │
-│  SVG         │  ┌───────────────────────────┐       │
-│              │  │ Onglets: 13 blocs         │       │
-│  Indicateurs │  │ Filtres + KPIs + Charts   │       │
-│  province    │  │ Watermark logo BIC        │       │
-│              │  └───────────────────────────┘       │
-└──────────────┴──────────────────────────────────────┘
-Mobile: panneau bascule Carte/Analytics (bouton flottant)
+┌─────────────────────────────────────────────────────────────┐
+│  Barre de modes: [Onglets] [KPIs] [Graphiques] [Filtres] [Croisements]  │
+├─────────────────────────────────────────────────────────────┤
+│  Chaque mode = layout 2 panneaux :                         │
+│  ┌──────────────┬──────────────────────────────────────┐    │
+│  │ Liste onglets│  Editeur contextuel                   │    │
+│  │ (ScrollArea) │  (items + save)                       │    │
+│  └──────────────┴──────────────────────────────────────┘    │
+│  + Bouton "Sauvegarder tout" global                        │
+│  + Bouton "Voir dans Analytics" (navigation)               │
+│  + Detection desync croisements                            │
+└─────────────────────────────────────────────────────────────┘
 ```
 
----
-
-## 1. Donnees (useLandDataAnalytics.tsx — 216 lignes)
-
-**Sources** : 13 tables Supabase chargees en parallele via `Promise.all` :
-- `cadastral_parcels`, `cadastral_contributions`, `land_title_requests`, `cadastral_building_permits`, `cadastral_tax_history`, `cadastral_mortgages`, `real_estate_expertise_requests`, `mutation_requests`, `subdivision_requests`, `cadastral_land_disputes`, `cadastral_ownership_history`, `generated_certificates`, `cadastral_invoices`
-
-**Points forts** :
-- Pagination automatique (par tranches de 1000 lignes) pour contourner la limite Supabase
-- Separation TEST-/Production via `isTestRoute`
-- Enrichissement geographique des enregistrements FK via lookup maps
-- Cache React Query (staleTime: 5 min)
-
-**Points faibles identifies** :
-- **Typage `any[]` partout** : `LandAnalyticsData` declare toutes ses proprietes comme `any[]`. Aucune interface typee pour les enregistrements individuels. Risque de regressions silencieuses si le schema DB change.
-- **Chargement monolithique** : Les 13 requetes sont declenchees simultanement a chaque visite, meme si l'utilisateur ne consulte qu'un seul onglet. Sur un jeu de donnees volumineux (> 10 000 parcelles), cela entraine un temps de chargement initial eleve.
-- **Pas de filtrage cote serveur** : Tous les filtres (province, ville, commune, statut, date) s'appliquent en memoire cote client via `applyFilters`. Cela fonctionne pour quelques milliers de lignes mais ne passera pas a l'echelle.
-- **Retry = 1** : une seule tentative en cas d'erreur reseau. Sur les connexions instables (contexte RDC), cela peut causer des ecrans blancs.
+**Flux de donnees** : `ANALYTICS_TABS_REGISTRY` (624 lignes, 15 onglets, ~160 charts + ~80 KPIs) → fusion avec DB (`analytics_charts_config`) via React Query → etat local (`localItems`, `localTabs`, `localFilters`, `localCross`) → upsert Supabase.
 
 ---
 
-## 2. Carte RDC (DRCInteractiveMap.tsx — 653 lignes)
-
-**Fonctionnalites** :
-- Choropleth SVG avec 4 paliers de densite configurables
-- Drill-down: Province → Ville/Territoire → Commune → Quartier
-- Tooltip dynamique avec 11 indicateurs configurables
-- Mode plein ecran + copie en image (html2canvas)
-- Legende contextuelle avec stats scopees
-- Filigrane copyright configurable
-
-**Points forts** :
-- `useMemo` sur les donnees derivees (provincesData, scopedStats, tooltipLineConfigs)
-- Integration admin complete : titres, visibilite, couleurs des paliers
-- Responsive : bouton bascule mobile Carte/Analytics
-
-**Points faibles** :
-- **Fichier trop long** (653 lignes) : melange logique de donnees, gestion d'etat (10+ useState), rendu SVG et UI. Devrait etre decoupe en sous-composants (ex: MapLegend, ProvinceDetails, MapControls).
-- **`countForProvince` inutilisee** (ligne 53-55) : fonction definie mais jamais appelee.
-- **`buildScopePredicate` retourne `() => false`** si aucun scope n'est selectionne : pas d'erreur mais semantique confuse.
-- **Zoom externe** : `externalProvinceId` gere un cas de synchronisation Analytics→Carte qui pourrait etre simplifie avec un store partage.
-
----
-
-## 3. Visualisation Analytics (ProvinceDataVisualization.tsx — 167 lignes)
-
-**Architecture** :
-- Systeme d'onglets dynamiques via `ANALYTICS_TABS_REGISTRY` (13 onglets)
-- Chaque onglet = un Block component (ex: TitleRequestsBlock, ContributionsBlock)
-- Configuration admin : visibilite/ordre/titres des onglets, graphiques et KPIs
-- Contextes imbriques (12 niveaux) pour propager filtres geographiques et watermark
-
-**Points forts** :
-- Architecture modulaire : BLOCK_MAP + ICON_MAP = ajout d'onglet facile
-- Watermark logo BIC configurable (opacite, taille, position)
-- Synchronisation bidirectionnelle carte ↔ filtres analytics
-
-**Points faibles** :
-- **12 Contextes imbriques** dans le JSX (ligne 137-161) : lisibilite mediocre. Un contexte unique regroupant tous les filtres geo serait plus maintenable.
-- **Performance** : chaque changement de filtre geo recalcule tous les blocs via les `useEffect` dans chaque block (ex: ContributionsBlock ligne 30).
-
----
-
-## 4. Composants graphiques (ChartCard.tsx — 625 lignes)
-
-**Composants** : `ChartCard`, `StackedBarCard`, `MultiAreaChartCard`, `MultiDataPieCard`, `ColorMappedPieCard`
-
-**Points forts** :
-- Copie en image (toPng + roundCorners + fallback download)
-- Variable de croisement (CrossVariablePicker) pour analyses croisees
-- Effet zoom interactif (scale-1.03) au clic
-- Logo watermark integre dans chaque graphique
-- Footer avec date + copyright
-
-**Points faibles** :
-- **Fichier monolithique de 625 lignes** : 5 composants + utilitaires dans un seul fichier. Devrait etre decoupe.
-- **`focused` state sans keyboard support** : le clic toggle `focused` mais il n'y a pas de gestion du `onKeyDown` ni de `role="button"` pour l'accessibilite.
-- **`memo` sur les composants parents** mais les callbacks `onClick={() => setFocused(f => !f)}` creent une nouvelle reference a chaque rendu, neutralisant partiellement le `memo`.
-
----
-
-## 5. Blocs Analytics (13 fichiers)
-
-Chaque bloc suit le meme pattern :
-1. Etat filtre local + sync via `useContext(MapProvinceContext)`
-2. `applyFilters` sur les donnees
-3. `countBy` / `trendByMonth` pour preparer les series
-4. Grille de KPIs + Graphiques configurables
-
-**Points forts** :
-- Pattern uniforme = maintenabilite elevee
-- Config admin granulaire par graphique (visibilite, titre, type, couleur)
-- Insights textuels automatiques via `generateInsight`
-- Variables de croisement par graphique
-
-**Points faibles** :
-- **Code duplique** : les lignes 26-34 (gestion du filtre, sync province, config tabs) sont identiques dans les 13 blocs. Un hook custom `useBlockFilter(TAB_KEY)` eliminerait ~80 lignes de duplication.
-- **Pas de lazy loading** : les 13 blocs sont importes statiquement dans ProvinceDataVisualization.tsx meme si un seul est affiche a la fois.
-
----
-
-## 6. Filtres (AnalyticsFilters.tsx — 475 lignes)
-
-**Fonctionnalites** : Province → Ville/Territoire → Commune → Quartier → Avenue, Section (Urbaine/Rurale), Statut, Annee
-
-**Points forts** :
-- Drill-down geographique complet avec donnees reelles
-- Propagation bidirectionnelle carte ↔ filtres
-- Badges de filtres actifs avec suppression individuelle
-
-**Points faibles** :
-- **475 lignes** pour un composant de filtres : les sous-sections (geo, temps, statut) devraient etre des composants separes.
-
----
-
-## 7. Configuration Admin (useAnalyticsChartsConfig.ts — 624 lignes)
-
-**Fonctionnalites** : CRUD complet sur `analytics_charts_config` pour gerer visibilite, titres, types de graphiques, couleurs, ordres d'affichage, filtres et variables de croisement.
-
-**Points forts** :
-- Registre centralise `ANALYTICS_TABS_REGISTRY` avec valeurs par defaut
-- Support des types `filter` et `cross` pour une configuration dynamique
-- Cache React Query avec invalidation automatique
-
----
-
-## Resume des problemes identifies
+## Problemes identifies
 
 | Priorite | Probleme | Impact |
 |----------|----------|--------|
-| Haute | Typage `any[]` dans LandAnalyticsData | Regressions silencieuses, DX degradee |
-| Haute | Chargement monolithique de 13 tables | Performance initiale |
-| Moyenne | Fichiers monolithiques (ChartCard 625L, DRCInteractiveMap 653L, AnalyticsFilters 475L) | Maintenabilite |
-| Moyenne | Code duplique dans les 13 blocs (hook filtre) | Duplication ~130 lignes |
-| Moyenne | 12 contextes imbriques dans ProvinceDataVisualization | Lisibilite |
-| Basse | Pas de lazy loading des blocs | Bundle size |
-| Basse | Accessibilite du zoom focus (pas de keyboard) | A11y |
-| Basse | `countForProvince` inutilisee | Code mort |
-| Info | Filtrage cote client uniquement | Scalabilite future |
+| **Haute** | **Fichier monolithique de 1 569 lignes** : 5 sous-composants (`ItemEditor`, `TabManager`, `FilterManager`, `CrossVariableManager`, composant principal) + logique de sauvegarde + initialisation dans un seul fichier | Maintenabilite tres faible, risque de regressions |
+| **Haute** | **Registre de 624 lignes dans le hook** : `ANALYTICS_TABS_REGISTRY` melange config statique (350 lignes de donnees JSON) avec la logique de hooks React Query | Lisibilite, separation des responsabilites |
+| **Haute** | **4 `useEffect` d'initialisation identiques** (lignes 696-778) : chacun filtre `configs`, construit un Map, fusionne avec des defaults. Pattern duplique 4 fois | Duplication, risque de desync |
+| **Moyenne** | **`custom_title` surcharge pour stocker des valeurs heterogenes** : texte de titre, nom de champ DB (`created_at`), valeur numerique (`0.06`, `80`), JSON stringify de variables de croisement, position (`center`) — tout dans la meme colonne | Confusion semantique, parsing fragile |
+| **Moyenne** | **Pas de validation des inputs** : le champ `field` des croisements accepte n'importe quelle valeur texte sans verifier si le champ existe dans la table cible. Idem pour les champs date/statut source. | Erreurs silencieuses cote Analytics |
+| **Moyenne** | **Sauvegarde dupliquee** : la logique de sauvegarde des croisements est copiee 2 fois — dans `handleSaveAll` (lignes 871-883) et dans le `onClick` inline du bouton (lignes 1519-1531) | Duplication, divergence potentielle |
+| **Moyenne** | **Pas de drag-and-drop** : `GripVertical` icon est affiche mais le reordonnancement se fait par boutons haut/bas un a un. Pour 19 charts (expertise), c'est tres fastidieux | UX degradee |
+| **Basse** | **`isChartsViewTab` logique inversee** : `!EXCLUDED_SYSTEM_TABS.includes(key) || key === '_global'` inclut `_global` mais aussi tout ce qui n'est pas system — la condition OR est redondante car `_global` est dans `EXCLUDED_SYSTEM_TABS` | Code confus mais fonctionnel |
+| **Basse** | **Pas de confirmation avant "Reinitialiser"** : `handleReset` (ligne 913) remet les valeurs par defaut sans dialogue de confirmation | Perte de donnees accidentelle |
+| **Basse** | **`display_order` duplique** dans le registre : `title-requests` a deux items a `display_order: 9` (`owner-same` et `surface`) | Ordre ambigu |
+| **Basse** | **Imports inutilises** : `Palette`, `PieChartIcon`, `TrendingUp`, `MapIcon`, `Globe` sont importes mais certains ne sont utilises que conditionnellement dans le JSX inline | Bundle size marginal |
 
 ---
 
 ## Recommandations prioritaires
 
-1. **Typer les entites** : Creer des interfaces pour chaque table (Parcel, Contribution, TitleRequest, etc.) et remplacer `any[]`
-2. **Extraire un hook `useBlockFilter`** : Mutualiser la logique commune des 13 blocs
-3. **Decouper les gros fichiers** : DRCInteractiveMap → MapCard + MapControls + ProvinceDetails ; ChartCard → fichiers separes par composant
-4. **Lazy load des blocs** : `React.lazy()` + `Suspense` sur les block components
-5. **Supprimer le code mort** : `countForProvince`
+### 1. Decouper le fichier principal (1 569 → ~5 fichiers)
 
-Souhaitez-vous que j'implemente l'une de ces recommandations ?
+Extraire les sous-composants dans des fichiers dedies :
+- `src/components/admin/analytics-config/ItemEditor.tsx`
+- `src/components/admin/analytics-config/TabManager.tsx`
+- `src/components/admin/analytics-config/FilterManager.tsx`
+- `src/components/admin/analytics-config/CrossVariableManager.tsx`
+- `src/components/admin/analytics-config/GlobalWatermarkConfig.tsx`
+
+Le fichier principal ne conserverait que l'orchestration (~300 lignes).
+
+### 2. Extraire le registre statique
+
+Deplacer `ANALYTICS_TABS_REGISTRY` dans `src/config/analyticsTabsRegistry.ts` (fichier de donnees pur, ~350 lignes). Le hook ne garderait que la logique React Query (~270 lignes). Corriger les `display_order` dupliques.
+
+### 3. Factoriser l'initialisation
+
+Creer un hook `useInitializedConfig(configs, isLoading)` qui retourne `{ localItems, localTabs, localFilters, localCross }` en une seule passe au lieu de 4 `useEffect` independants.
+
+### 4. Factoriser la sauvegarde des croisements
+
+Extraire `buildCrossItems(localCross)` dans un utilitaire et l'utiliser dans `handleSaveAll` et le bouton de sauvegarde croisements.
+
+### 5. Ajouter la confirmation avant reinitialisation
+
+Reutiliser le pattern `AlertDialog` deja en place pour les changements d'onglet.
+
+---
+
+## Section technique
+
+**Fichiers a modifier** :
+- `src/components/admin/AdminAnalyticsChartsConfig.tsx` — decoupage en 5+ fichiers
+- `src/hooks/useAnalyticsChartsConfig.ts` — extraction du registre, factorisation des inits
+- `src/config/crossVariables.ts` — pas de modification, mais reference pour validation
+
+**Risque** : Le decoupage est un refactoring pur sans changement de comportement. La fusion des `useEffect` doit etre testee pour s'assurer que les 4 etats restent synchronises.
+
+**Estimation** : ~400 lignes de code a deplacer/reorganiser, 0 nouvelle fonctionnalite, 0 migration DB.
 
