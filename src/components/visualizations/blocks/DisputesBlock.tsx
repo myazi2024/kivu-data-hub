@@ -9,6 +9,7 @@ import { ChartCard, StackedBarCard, FilterLabelContext } from '../shared/ChartCa
 import { GeoCharts } from '../shared/GeoCharts';
 import { MapProvinceContext, VilleFilterContext, CommuneFilterContext, QuartierFilterContext } from '../filters/AnalyticsFilters';
 import { generateInsight, generateStackedInsight } from '@/utils/chartInsights';
+import { DisputeEvolutionChart } from '../shared/DisputeEvolutionChart';
 import { useTabChartsConfig, useTabFilterConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { getCrossVariables } from '@/config/crossVariables';
 
@@ -162,8 +163,7 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
         {v('geo') && <GeoCharts records={filtered} />}
         {v('resolution-rate') && <ChartCard title={ct('resolution-rate', 'Taux résolution %')} icon={TrendingUp} data={resolutionTrend} type="area" colorIndex={2} colSpan={2} hidden={resolutionTrend.length < 2}
           insight={generateInsight(resolutionTrend, 'area', 'le taux de résolution mensuel')} />}
-        {v('evolution') && <ChartCard title={ct('evolution', 'Évolution signalements')} icon={TrendingUp} data={trend} type="area" colorIndex={4} colSpan={2}
-          insight={generateInsight(trend, 'area', 'les litiges')} />}
+        {v('evolution') && <DisputeEvolutionChart title={ct('evolution', 'Évolution signalements')} records={filtered} hidden={trend.length < 2} />}
       </div>
 
       {liftingDisputes.length > 0 && (

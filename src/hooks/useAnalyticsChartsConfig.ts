@@ -465,7 +465,7 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'disputes', item_key: 'nature-resolution', item_type: 'chart', is_visible: true, display_order: 6, custom_title: 'Nature × Résolution' },
       { tab_key: 'disputes', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 7, custom_title: 'Géographie' },
       { tab_key: 'disputes', item_key: 'resolution-rate', item_type: 'chart', is_visible: true, display_order: 8, custom_title: 'Taux résolution %', chart_type: 'area', col_span: 2 },
-      { tab_key: 'disputes', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 9, custom_title: 'Évolution signalements', chart_type: 'area', col_span: 2 },
+      { tab_key: 'disputes', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 9, custom_title: 'Évolution signalements', chart_type: 'multi-area', col_span: 2 },
       { tab_key: 'disputes', item_key: 'lifting-status', item_type: 'chart', is_visible: true, display_order: 10, custom_title: 'Statut levée', chart_type: 'pie' },
       { tab_key: 'disputes', item_key: 'lifting-resolution-level', item_type: 'chart', is_visible: true, display_order: 11, custom_title: 'Niveau résolution (levée)', chart_type: 'bar-h' },
       { tab_key: 'disputes', item_key: 'lifting-nature', item_type: 'chart', is_visible: true, display_order: 12, custom_title: 'Nature litige (levée)', chart_type: 'bar-h' },
