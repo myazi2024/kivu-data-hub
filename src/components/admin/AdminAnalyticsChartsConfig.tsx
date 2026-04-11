@@ -40,7 +40,7 @@ const CHARTS_ONLY_TABS = ['rdc-map'];
 /** Filter helper: exclude system + charts-only tabs */
 const isUserTab = (key: string) => !EXCLUDED_SYSTEM_TABS.includes(key) && !CHARTS_ONLY_TABS.includes(key);
 /** Filter helper: exclude system tabs only (charts view includes rdc-map) */
-const isChartsViewTab = (key: string) => !EXCLUDED_SYSTEM_TABS.includes(key);
+const isChartsViewTab = (key: string) => !EXCLUDED_SYSTEM_TABS.includes(key) || key === '_global';
 
 const CHART_TYPE_OPTIONS = [
   { value: 'bar-h', label: 'Barres horiz.', icon: '▬' },
