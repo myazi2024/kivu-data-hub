@@ -1,34 +1,23 @@
-import React, { useState, useMemo, memo, useContext, useEffect } from 'react';
+import React, { useMemo, memo } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
-import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, buildFilterLabel } from '@/utils/analyticsHelpers';
+import { countBy, trendByMonth } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { Users, TrendingUp, ArrowRightLeft } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
-import { MapProvinceContext, VilleFilterContext, CommuneFilterContext, QuartierFilterContext } from '../filters/AnalyticsFilters';
 import { generateInsight } from '@/utils/chartInsights';
-import { useTabChartsConfig, useTabFilterConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { getCrossVariables } from '@/config/crossVariables';
+import { useBlockFilter } from '@/hooks/useBlockFilter';
 
 interface Props { data: LandAnalyticsData; }
 
 const TAB_KEY = 'ownership';
-const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TABS_REGISTRY[TAB_KEY].charts];
 const cx = (key: string) => getCrossVariables(TAB_KEY, key);
 
 export const OwnershipHistoryBlock: React.FC<Props> = memo(({ data }) => {
-  const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
-  const mapProvince = useContext(MapProvinceContext);
-  const mapVille = useContext(VilleFilterContext);
-  const mapCommune = useContext(CommuneFilterContext);
-  const mapQuartier = useContext(QuartierFilterContext);
-  useEffect(() => { setFilter(f => ({ ...f, province: mapProvince || undefined, ville: mapVille || undefined, commune: mapCommune || undefined, quartier: mapQuartier || undefined })); }, [mapProvince, mapVille, mapCommune, mapQuartier]);
-  const filterLabel = useMemo(() => buildFilterLabel(filter), [filter]);
-  const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
-  const filterConfig = useTabFilterConfig(TAB_KEY);
-  const filtered = useMemo(() => applyFilters(data.ownershipHistory, filter, filterConfig.dateField), [data.ownershipHistory, filter, filterConfig.dateField]);
+  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct } = useBlockFilter(TAB_KEY, data.ownershipHistory);
 
   const byLegalStatus = useMemo(() => countBy(filtered, 'legal_status'), [filtered]);
   const byMutationType = useMemo(() => countBy(filtered, 'mutation_type'), [filtered]);
@@ -49,15 +38,12 @@ export const OwnershipHistoryBlock: React.FC<Props> = memo(({ data }) => {
     return { avgYears, activeOwners, transfers: withDates.length };
   }, [filtered]);
 
-  const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
-  const v = isChartVisible;
-
   const kpiItems = useMemo(() => [
     { key: 'kpi-total', label: ct('kpi-total', 'Total transferts'), value: filtered.length, cls: 'text-primary' },
     { key: 'kpi-active', label: ct('kpi-active', 'Propriétaires actifs'), value: stats.activeOwners, cls: 'text-emerald-600', tooltip: pct(stats.activeOwners, filtered.length) },
     { key: 'kpi-closed', label: ct('kpi-closed', 'Transferts clos'), value: stats.transfers, cls: 'text-amber-600' },
     { key: 'kpi-duration', label: ct('kpi-duration', 'Durée moy.'), value: stats.avgYears > 0 ? `${stats.avgYears} ans` : 'N/A', cls: 'text-violet-600', tooltip: 'Durée moyenne de détention' },
-  ].filter(k => v(k.key)), [filtered, stats, v, getChartConfig]);
+  ].filter(k => v(k.key)), [filtered, stats, v, ct]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
