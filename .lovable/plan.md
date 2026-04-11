@@ -1,89 +1,75 @@
 
+Audit de l’origine du bug
 
-# Audit detaille — Barre de recherche admin (Header)
+- La correction précédente est bien présente dans `src/hooks/useInitializedConfig.ts` : `_global` est déjà dans `CHARTS_ONLY_TABS`. Donc le bug ne vient plus du registre.
+- Le vrai problème est un bug de navigation/état dans `src/components/admin/AdminAnalyticsChartsConfig.tsx` :
+  - la page s’ouvre par défaut sur `viewMode = 'tabs'`
+  - or la sidebar de cette vue “Onglets” dépend de `localTabs`
+- Or `localTabs` vient de `useAnalyticsTabsConfig()` dans `src/hooks/useAnalyticsChartsConfig.ts`, qui exclut volontairement `_global` et `rdc-map`.
+- Résultat : même si `_global` est maintenant autorisé dans la vue “Graphiques”, il reste invisible pour l’admin à l’ouverture normale du module, car il tombe d’abord sur la vue “Onglets”.
+- Deuxième cause : `AdminAnalyticsChartsConfig.tsx` ne lit aucun query param interne. Donc on ne peut pas ouvrir directement `Config Graphiques > Global` via URL.
+- Troisième cause : la barre de recherche admin (`src/components/admin/AdminDashboardHeader.tsx`) n’indexe que :
+  - les menus admin de 1er niveau (`menuItems`)
+  - les résultats base de données
+  Elle n’indexe pas les sous-entrées internes de “Config Graphiques”. La session replay confirme que chercher “Global” renvoie “Aucun résultat”.
 
-## Etat actuel
+Conclusion
+- Le bug réel n’est pas un bug de visibilité du registre.
+- C’est un bug de découverte + deep-linking :
+  1. `_global` n’existe que dans la vue “Graphiques”
+  2. la page s’ouvre sur “Onglets”
+  3. la recherche ne sait pas ouvrir directement `_global`
 
-La barre de recherche dans `AdminDashboardHeader.tsx` (lignes 141-176) fonctionne comme un simple filtre textuel sur les labels des entrees de la sidebar (`menuItems`). Elle ne recherche que les **noms de menus** et leurs **categories**.
+Plan de correction
 
-### Lacunes identifiees
+1. Corriger l’entrée dans `Config Graphiques`
+- Fichier : `src/components/admin/AdminAnalyticsChartsConfig.tsx`
+- Ajouter `useSearchParams`
+- Remplacer les états initiaux statiques par une synchro URL :
+  - `mode=tabs|kpis|charts|filters|cross`
+  - `configTab=<tabKey>`
+- Ouvrir `Config Graphiques` sur `charts` par défaut au lieu de `tabs`
+- Si `configTab` vaut `_global` ou `rdc-map`, forcer automatiquement `mode=charts`
+- Synchroniser l’URL quand l’admin change de mode ou d’onglet
+- Prévoir un fallback propre si `configTab` est invalide
 
-**1. Recherche limitee aux menus uniquement**
-La barre ne cherche que dans les ~50 labels de navigation (ex: "Utilisateurs", "Dashboard"). Elle ne recherche pas dans le contenu reel : utilisateurs, parcelles, factures, contributions, codes CCC, etc. Un admin qui tape "dupont@email.com" ou "AB-1234" n'obtient aucun resultat.
+2. Rendre “Global” accessible directement
+- Toujours dans `AdminAnalyticsChartsConfig.tsx`
+- Faire en sorte que l’URL suivante ouvre directement le bon écran :
+  - `/admin?tab=analytics-charts-config&mode=charts&configTab=_global`
+- Garder `_global` uniquement dans la sidebar “Graphiques” (logique correcte), mais le rendre immédiatement visible grâce au mode par défaut + deep-linking
 
-**2. Pas de raccourcis clavier**
-Aucun shortcut pour ouvrir la recherche rapidement (ex: `Ctrl+K` ou `/`). L'admin doit cliquer manuellement dans le champ.
+3. Intégrer cette logique dans la barre de recherche admin
+- Fichier : `src/components/admin/AdminDashboardHeader.tsx`
+- Ajouter un groupe de résultats “Config Graphiques”
+- Générer ces résultats à partir de `ANALYTICS_TABS_REGISTRY`
+- Inclure des entrées internes directes vers chaque onglet configurable, en particulier :
+  - `Global`
+  - `Carte RDC`
+- Chaque résultat doit naviguer vers :
+  - `/admin?tab=analytics-charts-config&mode=charts&configTab=<key>`
+- Ajouter les mots-clés pertinents pour `Global` :
+  - `global`, `filigrane`, `watermark`, `logo`
 
-**3. Pas de recherche par mots-cles / synonymes**
-Taper "paiement" ne trouve pas "Factures" ni "Revenus". Aucun mapping de termes equivalents.
+4. Aligner la recherche top-level
+- Fichier : `src/components/admin/AdminSidebar.tsx`
+- Compléter les `keywords` de “Config Graphiques” avec `global` et `logo`
+- Cela améliore le match large, mais la vraie correction sera la nouvelle entrée interne dans la Command Palette
 
-**4. Pas d'historique de recherche**
-Les recherches precedentes ne sont pas memorisees. Pas de suggestions recentes.
+5. Vérifications après implémentation
+- Ouvrir `/admin?tab=analytics-charts-config` :
+  - la vue “Graphiques” doit être affichée par défaut
+  - `Global` doit apparaître dans la sidebar
+- Ouvrir `/admin?tab=analytics-charts-config&mode=charts&configTab=_global` :
+  - l’éditeur filigrane doit s’ouvrir directement
+- Chercher `Global`, `filigrane`, `watermark`, `logo` dans la recherche admin :
+  - un résultat direct vers `Config Graphiques > Global` doit apparaître
+- Vérifier le flux complet sur mobile (viewport 360px) pour confirmer que sidebar et palette restent utilisables
 
-**5. Dropdown basique sans categories visuelles**
-Les resultats sont affiches dans une liste plate sans regroupement par categorie, sans highlighting du terme recherche, et sans icones distinctives pour les types de resultats.
-
-**6. Pas de recherche multi-entites**
-Impossible de chercher directement un utilisateur, une parcelle ou une facture depuis la barre — il faut d'abord naviguer vers le module puis utiliser le filtre local.
-
-**7. Navigation clavier incomplete**
-Seul `Enter` selectionne le premier resultat et `Escape` ferme. Pas de navigation avec fleches haut/bas pour parcourir la liste.
-
-**8. Pas de debounce**
-Le filtrage se fait a chaque frappe sans delai. Pour une recherche locale sur ~50 items c'est negligeable, mais si on ajoute des requetes Supabase ce sera problematique.
-
-**9. Responsive insuffisant**
-Sur mobile (360px, viewport actuel), le champ de recherche occupe tout l'espace mais le dropdown de resultats peut deborder.
-
----
-
-## Plan d'optimisation
-
-### Phase 1 — UX et navigation (sans backend)
-
-**Fichier : `src/components/admin/AdminDashboardHeader.tsx`**
-
-- **Raccourci clavier `Ctrl+K`** : Ouvrir/focus la barre de recherche avec un shortcut global. Afficher un badge `⌘K` dans le placeholder.
-- **Navigation clavier complete** : Ajouter un `selectedIndex` pour naviguer avec les fleches haut/bas dans les resultats, `Enter` pour valider la selection courante.
-- **Highlighting du terme** : Mettre en surbrillance la partie du texte qui correspond a la recherche dans chaque resultat.
-- **Regroupement par categorie** : Afficher les resultats groupes par leur `category` avec des headers de section.
-- **Mots-cles / synonymes** : Ajouter un champ `keywords` aux items de menu (ex: "Factures" → `['paiement', 'invoice', 'argent']`) pour elargir la recherche.
-- **Historique recent** : Stocker les 5 dernieres recherches dans `localStorage`, les afficher quand le champ est vide et focus.
-
-### Phase 2 — Recherche multi-entites (avec Supabase)
-
-**Nouveau fichier : `src/hooks/useAdminGlobalSearch.ts`**
-
-Hook qui, au-dela de 2 caracteres, lance des requetes paralleles (avec debounce 300ms) sur :
-- `profiles` (nom, email) → resultats "Utilisateurs"
-- `parcels` (numero) → resultats "Parcelles"  
-- `invoices` (numero, client) → resultats "Factures"
-- `ccc_contributions` (numero parcelle) → resultats "Contributions"
-
-Chaque resultat inclut un type, un label, une icone et une URL de navigation directe.
-
-**Fichier : `src/components/admin/AdminDashboardHeader.tsx`**
-
-Fusionner les resultats menu + resultats Supabase dans le dropdown, regroupes par type avec un indicateur de chargement.
-
-### Phase 3 — Composant Command Palette
-
-Remplacer le dropdown custom par le composant `Command` (cmdk) deja installe dans le projet (`src/components/ui/command.tsx`), affiche dans un dialog modal (`CommandDialog`). Cela donne automatiquement :
-- Navigation clavier native
-- Groupes de resultats
-- Animation et style coherent avec le design system
-- Meilleure accessibilite (ARIA)
-
----
-
-## Section technique
-
-**Fichiers crees** :
-- `src/hooks/useAdminGlobalSearch.ts` — hook de recherche multi-entites
-
-**Fichiers modifies** :
-- `src/components/admin/AdminDashboardHeader.tsx` — remplacement du search par CommandDialog, raccourci Ctrl+K, historique
-- `src/components/admin/AdminSidebar.tsx` — ajout de `keywords` sur les `menuItems`
-
-**Dependances** : Aucune nouvelle — `cmdk` et `useDebounce` sont deja disponibles.
-
+Section technique
+- Fichiers à modifier :
+  - `src/components/admin/AdminAnalyticsChartsConfig.tsx`
+  - `src/components/admin/AdminDashboardHeader.tsx`
+  - `src/components/admin/AdminSidebar.tsx`
+- Aucun changement base de données
+- La correction précédente dans `useInitializedConfig.ts` reste valide ; elle n’est pas à annuler, mais à compléter
