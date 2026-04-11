@@ -1,43 +1,54 @@
 
 
-# Deplacer 5 visuels de l'onglet Titre foncier vers Parcelles
+# Ajouter un filtre multi-nature sur le graphique "Évolution signalements" (Litiges)
 
-## Constat
+## Objectif
 
-Les graphiques suivants existent dans **les deux onglets** (titre-foncier ET parcelles) :
-- Type de construction (`construction-type`)
-- Nature de construction (`construction-nature`)
-- Materiaux utilises (`construction-materials`)
-- Standing (`standing`)
-- Usage declare (`declared-usage` dans titre-foncier, `usage` dans parcelles)
+Transformer le graphique "Évolution signalements" (actuellement une seule courbe) en un graphique multi-courbes où l'utilisateur peut cocher/décocher les natures de litige (Tous, Succession, Délimitation, Double vente, Occupation illégale, etc.) pour superposer leurs courbes d'évolution avec des couleurs distinctes.
 
-Ces donnees concernent la parcelle, pas le titre foncier. L'onglet Parcelles les a deja. Il faut donc **supprimer ces 5 graphiques de l'onglet Titre foncier** pour eliminer la redondance.
+## Approche
+
+Le graphique `evolution` actuel utilise `ChartCard` avec `type="area"` (courbe unique). Il faut le remplacer par un composant dédié qui :
+1. Calcule un trend mensuel **par nature de litige**
+2. Affiche des checkboxes pour chaque nature + "Tous"
+3. Rend un `AreaChart` multi-séries (une `<Area>` par nature cochée, couleurs distinctes)
 
 ## Modifications
 
-### 1. `src/components/visualizations/blocks/TitleRequestsBlock.tsx`
+### 1. `src/components/visualizations/blocks/DisputesBlock.tsx`
 
-- Supprimer les `useMemo` pour `byDeclaredUsage`, `byConstructionType`, `byConstructionNature`, `byConstructionMaterials`, `byStanding` (lignes 49-54)
-- Supprimer la normalisation `declared_usage` et `construction_type` dans `normalized` (lignes 40-44)
-- Supprimer les 5 rendus JSX : `declared-usage` (ligne 144), `construction-type` (156-157), `construction-nature` (158-159), `construction-materials` (160-161), `standing` (162-163)
-- Nettoyer les imports inutilises (`normalizeConstructionType`, `normalizeDeclaredUsage`, `Building`)
+- Ajouter un `useMemo` calculant `trendByNature` : une structure `{ month, succession: N, delimitation: N, ... }[]`
+- Remplacer le rendu `ChartCard` pour `evolution` par un nouveau composant `DisputeEvolutionChart` qui gère les checkboxes et le multi-area
+- Importer `DISPUTE_NATURES` depuis `disputeSharedTypes.ts` pour les labels
 
-### 2. `src/hooks/useAnalyticsChartsConfig.ts`
+### 2. `src/components/visualizations/shared/DisputeEvolutionChart.tsx` (nouveau)
 
-- Supprimer les 5 entrees du registre `title-requests` : `declared-usage` (display_order 5), `construction-type` (11), `construction-nature` (12), `construction-materials` (13), `standing` (14)
-- Reajuster les `display_order` des graphiques restants pour combler les trous
+Composant dédié contenant :
+- State `selectedNatures: Set<string>` (par défaut : toutes cochées = courbe "Tous")
+- Checkbox "Tous" qui affiche la courbe agrégée
+- Checkboxes individuelles pour chaque nature présente dans les données
+- `AreaChart` avec une `<Area>` par nature sélectionnée, chacune avec une couleur de `CHART_COLORS`
+- Légende intégrée via les checkboxes elles-mêmes (pastille colorée + label)
+- Même style Card que `ChartCard` (copier le wrapper)
 
-### 3. `src/config/crossVariables.ts`
+### 3. `src/hooks/useAnalyticsChartsConfig.ts`
 
-- Supprimer les 5 entrees de `title-requests` : `declared-usage`, `construction-type`, `construction-nature`, `construction-materials`, `standing`
+- Mettre à jour l'entrée `evolution` du registre `disputes` pour refléter le nouveau type `multi-area` (informatif pour l'admin)
 
-## Fichiers concernes
+## Comportement UX
+
+- Par défaut : checkbox "Tous" cochée → affiche la courbe totale
+- L'utilisateur décoche "Tous" et coche des natures individuelles → superposition des courbes par nature
+- Cocher "Tous" décoche automatiquement les individuelles (et vice-versa)
+- Chaque courbe a une couleur différente issue de `CHART_COLORS`
+
+## Fichiers concernés
 
 | Fichier | Action |
 |---------|--------|
-| `TitleRequestsBlock.tsx` | Supprimer 5 graphiques et leurs donnees |
-| `useAnalyticsChartsConfig.ts` | Supprimer 5 entrees du registre title-requests |
-| `crossVariables.ts` | Supprimer 5 entrees de croisement title-requests |
+| `DisputeEvolutionChart.tsx` | Nouveau composant multi-courbes |
+| `DisputesBlock.tsx` | Calculer trendByNature, remplacer le rendu evolution |
+| `useAnalyticsChartsConfig.ts` | Annotation chart_type pour l'admin |
 
-**Impact** : ~30 lignes supprimees dans 3 fichiers. Aucune migration. L'onglet Parcelles reste inchange (il a deja tous ces visuels).
+**Impact** : 1 nouveau fichier (~80 lignes), 2 fichiers modifiés (~20 lignes). Aucune migration.
 
