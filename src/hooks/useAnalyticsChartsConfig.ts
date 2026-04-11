@@ -576,6 +576,9 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
     label: 'Global',
     charts: [
       { tab_key: '_global', item_key: 'global-watermark', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'BIC - Tous droits réservés' },
+      { tab_key: '_global', item_key: 'logo-watermark-opacity', item_type: 'chart', is_visible: true, display_order: 1, custom_title: '0.06' },
+      { tab_key: '_global', item_key: 'logo-watermark-size', item_type: 'chart', is_visible: true, display_order: 2, custom_title: '80' },
+      { tab_key: '_global', item_key: 'logo-watermark-position', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'center' },
     ],
     kpis: [],
   },
