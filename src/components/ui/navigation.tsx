@@ -13,7 +13,8 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from '@/components/ui/navigation-menu';
-import bicLogo from '@/assets/bic-logo.png';
+import bicLogoFallback from '@/assets/bic-logo.png';
+import { useAppAppearance } from '@/hooks/useAppAppearance';
 
 const mediaColumns = [
   {
@@ -48,6 +49,10 @@ const Navigation = () => {
   const [mobileMediaOpen, setMobileMediaOpen] = useState(false);
   const { user, profile, signOut, loading } = useAuth();
   const { isTestRoute } = useTestEnvironment();
+  const { config: appearanceConfig } = useAppAppearance();
+  const logoSrc = appearanceConfig.logo_url || bicLogoFallback;
+  const displayName = appearanceConfig.app_name || 'BIC';
+  const displayTagline = appearanceConfig.app_tagline || "Bureau d'Informations Cadastrales";
 
   const isAdminOrSuperAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
 
@@ -65,10 +70,10 @@ const Navigation = () => {
         <div className="flex justify-between items-center h-14 sm:h-16 md:h-18">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
-            <img src={bicLogo} alt="BIC Logo" className="h-8 w-8 sm:h-10 sm:w-10" />
+            <img src={logoSrc} alt={`${displayName} Logo`} className="h-8 w-8 sm:h-10 sm:w-10" />
             <div className="flex flex-col">
-              <span className="text-base sm:text-lg font-bold text-foreground">BIC</span>
-              <span className="text-xs text-muted-foreground hidden sm:block">Bureau d'Informations Cadastrales</span>
+              <span className="text-base sm:text-lg font-bold text-foreground">{displayName}</span>
+              <span className="text-xs text-muted-foreground hidden sm:block">{displayTagline}</span>
             </div>
           </Link>
 

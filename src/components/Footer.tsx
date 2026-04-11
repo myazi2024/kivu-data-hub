@@ -1,9 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Phone, Mail, Globe } from 'lucide-react';
-import bicLogo from '@/assets/bic-logo.png';
+import bicLogoFallback from '@/assets/bic-logo.png';
+import { useAppAppearance } from '@/hooks/useAppAppearance';
 
 const Footer = () => {
+  const { config } = useAppAppearance();
+  const logoSrc = config.logo_url || bicLogoFallback;
+  const appName = config.app_name || 'BIC';
+  const appTagline = config.app_tagline || "Bureau d'Informations Cadastrales";
   const currentYear = new Date().getFullYear();
 
   const quickLinks = [
@@ -27,10 +32,10 @@ const Footer = () => {
           {/* Company Info */}
           <div className="lg:col-span-2">
             <div className="flex items-center space-x-2 mb-2">
-              <img src={bicLogo} alt="BIC" className="h-6 w-6 brightness-0 invert" />
+              <img src={logoSrc} alt={appName} className="h-6 w-6 brightness-0 invert" />
               <div>
-                <h3 className="text-sm font-bold leading-tight">Bureau d'Informations Cadastrales</h3>
-                <p className="text-primary text-xs font-semibold">BIC</p>
+                <h3 className="text-sm font-bold leading-tight">{appTagline}</h3>
+                <p className="text-primary text-xs font-semibold">{appName}</p>
               </div>
             </div>
             
@@ -97,7 +102,7 @@ const Footer = () => {
         <div className="border-t border-border/20 py-3">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
             <div className="text-muted-foreground text-center sm:text-left">
-              © {currentYear} BIC - Tous droits réservés
+              © {currentYear} {appName} - Tous droits réservés
             </div>
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1 bg-background/10 px-2 py-1 rounded">
