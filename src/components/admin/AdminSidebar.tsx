@@ -183,6 +183,7 @@ export const menuItems = [
     category: 'Système',
     items: [
       { icon: Settings, label: 'Actions Parcelle', value: 'parcel-actions-config', badge: null },
+      { icon: Paintbrush, label: 'Apparence', value: 'appearance', badge: null },
       { icon: TestTube, label: 'Mode Test', value: 'test-mode', badge: null },
       { icon: Shield, label: 'Logs d\'Audit', value: 'audit-logs', badge: null },
       { icon: Activity, label: 'Santé Système', value: 'system-health', badge: null },
