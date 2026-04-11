@@ -216,23 +216,18 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
     <div className="space-y-4">
       {/* Header Card */}
       <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-primary" />
-                Configuration des graphiques Analytics
-              </CardTitle>
-              <CardDescription className="mt-1">
-                Gérez les onglets, la visibilité, l'ordre, les titres, couleurs et types de chaque graphique et KPI.
-              </CardDescription>
-            </div>
+        <CardHeader className="pb-3 space-y-3">
+          <div>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              Configuration des graphiques Analytics
+            </CardTitle>
+            <CardDescription className="mt-1">
+              Gérez les onglets, la visibilité, l'ordre, les titres, couleurs et types de chaque graphique et KPI.
+            </CardDescription>
+          </div>
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
-              {hasChanges && (
-                <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-950/30">
-                  Non sauvegardé
-                </Badge>
-              )}
               <div className="flex items-center border rounded-lg overflow-hidden">
                 {(['tabs', 'kpis', 'charts', 'filters', 'cross'] as const).map(mode => {
                   const icons = { tabs: Layers, kpis: LayoutGrid, charts: BarChart3, filters: Filter, cross: GitBranch };
@@ -246,7 +241,14 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
                   );
                 })}
               </div>
-              <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => navigate(`/analytics${activeTab && activeTab !== '_global' ? `?tab=${activeTab}` : ''}`)}>
+            </div>
+            <div className="flex items-center gap-2">
+              {hasChanges && (
+                <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-950/30">
+                  Non sauvegardé
+                </Badge>
+              )}
+              <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => navigate(`/admin?tab=analytics${activeTab && activeTab !== '_global' ? `&subtab=${activeTab}` : ''}`)}>
                 <ExternalLink className="h-3.5 w-3.5 mr-1" />Voir dans Analytics
               </Button>
               <Button size="sm" variant="outline" onClick={handleSaveAll} disabled={!hasChanges || isSaving}>
