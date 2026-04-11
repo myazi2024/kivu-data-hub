@@ -3,13 +3,15 @@ import { AnalyticsFilters } from '../filters/AnalyticsFilters';
 import { AnalyticsFilter, defaultFilter, applyFilters, countBy, countBoolean, trendByMonth, getSectionType, avgProcessingDays, surfaceDistribution, numericDistribution, buildFilterLabel, sumByMonth } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { FileText, Users, DollarSign, TrendingUp, Globe, Ruler, Clock, UserCheck } from 'lucide-react';
+import { FileText, Users, DollarSign, TrendingUp, Building, Globe, Ruler, Clock, UserCheck } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, ColorMappedPieCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
 import { MapProvinceContext, VilleFilterContext, CommuneFilterContext, QuartierFilterContext } from '../filters/AnalyticsFilters';
 import { generateInsight } from '@/utils/chartInsights';
 import { useTabChartsConfig, useTabFilterConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
+import { normalizeConstructionType } from '@/utils/constructionTypeNormalizer';
+import { normalizeDeclaredUsage } from '@/utils/declaredUsageNormalizer';
 import { getCrossVariables } from '@/config/crossVariables';
 
 interface Props { data: LandAnalyticsData; }
@@ -35,11 +37,21 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
   const filterConfig = useTabFilterConfig(TAB_KEY);
   const filtered = useMemo(() => applyFilters(data.titleRequests, filter), [data.titleRequests, filter]);
 
+  const normalized = useMemo(() => filtered.map(r => ({
+    ...r,
+    construction_type: normalizeConstructionType(r.construction_type),
+    declared_usage: normalizeDeclaredUsage(r.declared_usage),
+  })), [filtered]);
   const byRequestType = useMemo(() => countBy(filtered, 'request_type'), [filtered]);
   const byRequesterType = useMemo(() => countBy(filtered, 'requester_type'), [filtered]);
   const byStatus = useMemo(() => countBy(filtered, 'status'), [filtered]);
   const byPayment = useMemo(() => countBy(filtered, 'payment_status'), [filtered]);
+  const byDeclaredUsage = useMemo(() => countBy(normalized, 'declared_usage'), [normalized]);
   const byOwnerLegalStatus = useMemo(() => countBy(filtered, 'owner_legal_status'), [filtered]);
+  const byConstructionType = useMemo(() => countBy(normalized, 'construction_type'), [normalized]);
+  const byConstructionNature = useMemo(() => countBy(filtered, 'construction_nature'), [filtered]);
+  const byConstructionMaterials = useMemo(() => countBy(filtered, 'construction_materials'), [filtered]);
+  const byStanding = useMemo(() => countBy(filtered, 'standing'), [filtered]);
   const byDeducedTitleType = useMemo(() => countBy(filtered, 'deduced_title_type'), [filtered]);
   const byNationality = useMemo(() => countBy(filtered, 'nationality'), [filtered]);
   
@@ -129,6 +141,8 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(byPayment, 'donut', 'les paiements')} crossVariables={cx('payment')} rawRecords={filtered} groupField="payment_status" />}
         {v('legal-status') && <ChartCard title={t('legal-status', 'Statut juridique')} data={byOwnerLegalStatus} type="donut" colorIndex={4}
           insight={generateInsight(byOwnerLegalStatus, 'donut', 'les statuts juridiques')} crossVariables={cx('legal-status')} rawRecords={filtered} groupField="owner_legal_status" />}
+        {v('declared-usage') && <ChartCard title={t('declared-usage', 'Usage déclaré')} data={byDeclaredUsage} type="bar-h" colorIndex={5}
+          insight={generateInsight(byDeclaredUsage, 'bar-h', 'les usages')} crossVariables={cx('declared-usage')} rawRecords={normalized} groupField="declared_usage" />}
         {v('gender') && <ColorMappedPieCard title={t('gender', 'Genre')} icon={Users} iconColor="text-pink-500" data={genderData} colorMap={GENDER_COLORS}
           insight={genderInsight} crossVariables={cx('gender')} rawRecords={filtered} groupField="requester_gender" />}
         {v('nationality') && <ChartCard title={t('nationality', 'Nationalité')} icon={Globe} data={byNationality} type="bar-h" colorIndex={9} labelWidth={80} hidden={byNationality.length === 0}
@@ -139,6 +153,14 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
           insight={generateInsight(ownerSameData, 'pie', 'qualité du demandeur')} crossVariables={cx('owner-same')} rawRecords={filtered} groupField="requester_type" />}
         {v('surface') && <ChartCard title={t('surface', 'Superficie demandée')} icon={Ruler} data={surfaceDist} type="bar-v" colorIndex={10} hidden={surfaceDist.length === 0}
           insight={generateInsight(surfaceDist, 'bar-v', 'les superficies')} crossVariables={cx('surface')} rawRecords={filtered} groupField="area_sqm" />}
+        {v('construction-type') && <ChartCard title={t('construction-type', 'Type construction')} icon={Building} data={byConstructionType} type="bar-h" colorIndex={3} hidden={byConstructionType.length === 0}
+          insight={generateInsight(byConstructionType, 'bar-h', 'les types de construction')} crossVariables={cx('construction-type')} rawRecords={normalized} groupField="construction_type" />}
+        {v('construction-nature') && <ChartCard title={t('construction-nature', 'Nature construction')} data={byConstructionNature} type="bar-h" colorIndex={7} labelWidth={100}
+          insight="Mesure l'évolution des matériaux de construction d'une zone à l'autre." crossVariables={cx('construction-nature')} rawRecords={filtered} groupField="construction_nature" />}
+        {v('construction-materials') && <ChartCard title={t('construction-materials', 'Matériaux')} data={byConstructionMaterials} type="bar-h" colorIndex={8} hidden={byConstructionMaterials.length === 0}
+          insight={generateInsight(byConstructionMaterials, 'bar-h', 'les matériaux de construction')} crossVariables={cx('construction-materials')} rawRecords={filtered} groupField="construction_materials" />}
+        {v('standing') && <ChartCard title={t('standing', 'Standing')} data={byStanding} type="donut" colorIndex={6} hidden={byStanding.length === 0}
+          insight={generateInsight(byStanding, 'donut', 'les niveaux de standing')} crossVariables={cx('standing')} rawRecords={filtered} groupField="standing" />}
         {v('revenue-trend') && <ChartCard title={t('revenue-trend', 'Revenus/mois')} icon={DollarSign} data={revenueTrend} type="area" colorIndex={2} hidden={revenueTrend.length < 2}
           insight={generateInsight(revenueTrend, 'area', 'les revenus mensuels')} />}
         {v('processing-comparison') && <ChartCard title={t('processing-comparison', 'Délai estimé vs réel')} icon={Clock} data={processingComparison} type="bar-v" colorIndex={5} hidden={processingComparison.length === 0}
