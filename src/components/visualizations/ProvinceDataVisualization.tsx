@@ -1,4 +1,4 @@
-import React, { useState, memo } from 'react';
+import React, { useState, memo, useMemo } from 'react';
 import { FileText, Map, Search, ArrowRightLeft, Scissors, AlertTriangle, Loader2, Database, History, Award, Receipt, Landmark, FileCheck, DollarSign } from 'lucide-react';
 import { useLandDataAnalytics, LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { TitleRequestsBlock } from './blocks/TitleRequestsBlock';
@@ -18,7 +18,7 @@ import { InvoicesBlock } from './blocks/InvoicesBlock';
 import { ProvinceData } from '@/types/province';
 import { useAnalyticsTabsConfig, useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { ProvinceFilterContext, MapProvinceContext, VilleFilterContext, CommuneFilterContext, VilleChangeContext, CommuneChangeContext, QuartierFilterContext, QuartierChangeContext, TerritoireFilterContext, TerritoireChangeContext } from './filters/AnalyticsFilters';
-import { WatermarkContext } from './shared/ChartCard';
+import { WatermarkContext, WatermarkConfigContext, WatermarkConfig } from './shared/ChartCard';
 
 interface ProvinceDataVisualizationProps {
   analytics: LandAnalyticsData;
@@ -81,6 +81,11 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
     : [];
   const { getChartConfig: getGlobalConfig } = useTabChartsConfig('_global', globalDefaults);
   const watermarkText = getGlobalConfig('global-watermark')?.custom_title || 'BIC - Tous droits réservés';
+  const watermarkConfig: WatermarkConfig = useMemo(() => ({
+    opacity: parseFloat(getGlobalConfig('logo-watermark-opacity')?.custom_title || '0.06') || 0.06,
+    size: parseInt(getGlobalConfig('logo-watermark-size')?.custom_title || '80', 10) || 80,
+    position: getGlobalConfig('logo-watermark-position')?.custom_title || 'center',
+  }), [getGlobalConfig]);
 
   // Set default active tab once visible tabs are loaded
   React.useEffect(() => {
@@ -130,27 +135,29 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
       {/* Content */}
       <div className="flex-1 min-w-0 min-h-0 overflow-y-auto overflow-x-hidden p-1 lg:p-0 lg:mt-1.5">
         <WatermarkContext.Provider value={watermarkText}>
-          <MapProvinceContext.Provider value={selectedProvince?.name || null}>
-            <ProvinceFilterContext.Provider value={onProvinceFilter || null}>
-              <VilleChangeContext.Provider value={onVilleChange || null}>
-                <CommuneChangeContext.Provider value={onCommuneChange || null}>
-                  <QuartierChangeContext.Provider value={onQuartierChange || null}>
-                    <TerritoireChangeContext.Provider value={onTerritoireChange || null}>
-                      <VilleFilterContext.Provider value={selectedVille || null}>
-                        <CommuneFilterContext.Provider value={selectedCommune || null}>
-                          <QuartierFilterContext.Provider value={selectedQuartier || null}>
-                            <TerritoireFilterContext.Provider value={selectedTerritoire || null}>
-                              {BlockComponent ? <BlockComponent data={analytics} /> : null}
-                            </TerritoireFilterContext.Provider>
-                          </QuartierFilterContext.Provider>
-                        </CommuneFilterContext.Provider>
-                      </VilleFilterContext.Provider>
-                    </TerritoireChangeContext.Provider>
-                  </QuartierChangeContext.Provider>
-                </CommuneChangeContext.Provider>
-              </VilleChangeContext.Provider>
-            </ProvinceFilterContext.Provider>
-          </MapProvinceContext.Provider>
+          <WatermarkConfigContext.Provider value={watermarkConfig}>
+            <MapProvinceContext.Provider value={selectedProvince?.name || null}>
+              <ProvinceFilterContext.Provider value={onProvinceFilter || null}>
+                <VilleChangeContext.Provider value={onVilleChange || null}>
+                  <CommuneChangeContext.Provider value={onCommuneChange || null}>
+                    <QuartierChangeContext.Provider value={onQuartierChange || null}>
+                      <TerritoireChangeContext.Provider value={onTerritoireChange || null}>
+                        <VilleFilterContext.Provider value={selectedVille || null}>
+                          <CommuneFilterContext.Provider value={selectedCommune || null}>
+                            <QuartierFilterContext.Provider value={selectedQuartier || null}>
+                              <TerritoireFilterContext.Provider value={selectedTerritoire || null}>
+                                {BlockComponent ? <BlockComponent data={analytics} /> : null}
+                              </TerritoireFilterContext.Provider>
+                            </QuartierFilterContext.Provider>
+                          </CommuneFilterContext.Provider>
+                        </VilleFilterContext.Provider>
+                      </TerritoireChangeContext.Provider>
+                    </QuartierChangeContext.Provider>
+                  </CommuneChangeContext.Provider>
+                </VilleChangeContext.Provider>
+              </ProvinceFilterContext.Provider>
+            </MapProvinceContext.Provider>
+          </WatermarkConfigContext.Provider>
         </WatermarkContext.Provider>
       </div>
     </div>

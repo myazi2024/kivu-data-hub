@@ -77,6 +77,37 @@ const InsightText: React.FC<{ text?: string }> = ({ text }) => {
 /** Context providing configurable watermark text */
 export const WatermarkContext = createContext<string>('BIC - Tous droits réservés');
 
+/** Context providing logo watermark config */
+export interface WatermarkConfig { opacity: number; size: number; position: string }
+export const WatermarkConfigContext = createContext<WatermarkConfig>({ opacity: 0.06, size: 80, position: 'center' });
+
+/** Logo watermark overlay */
+const LogoWatermark: React.FC = () => {
+  const config = useContext(WatermarkConfigContext);
+  const positionStyles: Record<string, React.CSSProperties> = {
+    'center': { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' },
+    'top-left': { top: '8px', left: '8px' },
+    'top-right': { top: '8px', right: '8px' },
+    'bottom-left': { bottom: '24px', left: '8px' },
+    'bottom-right': { bottom: '24px', right: '8px' },
+  };
+  return (
+    <img
+      src="/bic-logo.png"
+      alt=""
+      className="absolute pointer-events-none select-none"
+      style={{
+        width: config.size,
+        height: config.size,
+        objectFit: 'contain',
+        opacity: config.opacity,
+        filter: 'brightness(0) sepia(1) saturate(5) hue-rotate(185deg)',
+        ...positionStyles[config.position] || positionStyles['center'],
+      }}
+    />
+  );
+};
+
 const ChartFooter: React.FC = () => {
   const watermark = useContext(WatermarkContext);
   const today = new Date();
@@ -285,7 +316,8 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="px-2 pb-2">
+      <CardContent className="px-2 pb-2 relative">
+        <LogoWatermark />
         {isCrossMode ? (
           <>
             <CrossStackedChart
@@ -374,7 +406,8 @@ export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
           <CopyButton onClick={copy} copied={copied} />
         </div>
       </CardHeader>
-      <CardContent className="px-2 pb-2">
+      <CardContent className="px-2 pb-2 relative">
+        <LogoWatermark />
         {displayData.length === 0 ? <NoData /> : (
           <>
              <ResponsiveContainer width="100%" height={BASE_CH}>
@@ -502,7 +535,8 @@ export const MultiAreaChartCard: React.FC<MultiAreaChartCardProps> = memo(({
           })}
         </div>
       </CardHeader>
-      <CardContent className="px-2 pb-2">
+      <CardContent className="px-2 pb-2 relative">
+        <LogoWatermark />
         <ResponsiveContainer width="100%" height={BASE_CH}>
           <AreaChart data={mergedData}>
             <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
@@ -556,7 +590,8 @@ export const ColorMappedPieCard: React.FC<MultiDataPieProps> = memo(({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="px-2 pb-2">
+      <CardContent className="px-2 pb-2 relative">
+        <LogoWatermark />
         {isCrossMode ? (
           <>
             <CrossStackedChart
