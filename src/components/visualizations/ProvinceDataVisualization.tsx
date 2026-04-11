@@ -18,7 +18,7 @@ import { InvoicesBlock } from './blocks/InvoicesBlock';
 import { ProvinceData } from '@/types/province';
 import { useAnalyticsTabsConfig, useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { ProvinceFilterContext, MapProvinceContext, VilleFilterContext, CommuneFilterContext, VilleChangeContext, CommuneChangeContext, QuartierFilterContext, QuartierChangeContext, TerritoireFilterContext, TerritoireChangeContext } from './filters/AnalyticsFilters';
-import { WatermarkContext } from './shared/ChartCard';
+import { WatermarkContext, WatermarkConfigContext, WatermarkConfig } from './shared/ChartCard';
 
 interface ProvinceDataVisualizationProps {
   analytics: LandAnalyticsData;
@@ -81,6 +81,11 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
     : [];
   const { getChartConfig: getGlobalConfig } = useTabChartsConfig('_global', globalDefaults);
   const watermarkText = getGlobalConfig('global-watermark')?.custom_title || 'BIC - Tous droits réservés';
+  const watermarkConfig: WatermarkConfig = useMemo(() => ({
+    opacity: parseFloat(getGlobalConfig('logo-watermark-opacity')?.custom_title || '0.06') || 0.06,
+    size: parseInt(getGlobalConfig('logo-watermark-size')?.custom_title || '80', 10) || 80,
+    position: getGlobalConfig('logo-watermark-position')?.custom_title || 'center',
+  }), [getGlobalConfig]);
 
   // Set default active tab once visible tabs are loaded
   React.useEffect(() => {
