@@ -5,6 +5,7 @@ import { getCrossVariablesWithOverrides } from '@/config/crossVariables';
 
 // Re-export registry from its dedicated config file
 export { ANALYTICS_TABS_REGISTRY } from '@/config/analyticsTabsRegistry';
+import { ANALYTICS_TABS_REGISTRY } from '@/config/analyticsTabsRegistry';
 
 export interface ChartConfigItem {
   id?: string;

@@ -58,8 +58,6 @@ export function useBlockFilter(tabKey: string, records: any[]) {
     return (chartKey: string): CrossVariable[] => {
       const override = crossOverrides.get(chartKey);
       if (!override) return getCrossVariables(tabKey, chartKey);
-      // Use the override-aware function from crossVariables
-      const { getCrossVariablesWithOverrides } = require('@/config/crossVariables');
       return getCrossVariablesWithOverrides(tabKey, chartKey, override);
     };
   }, [tabKey, crossOverrides]);
