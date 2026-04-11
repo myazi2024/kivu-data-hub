@@ -15,6 +15,7 @@ import { TestEnvironmentProvider } from '@/hooks/useTestEnvironment';
 import TestEnvironmentBanner from '@/components/TestEnvironmentBanner';
 import React, { Suspense } from "react";
 import { Loader2 } from "lucide-react";
+import { useAppAppearance } from "@/hooks/useAppAppearance";
 import { Navigate } from "react-router-dom";
 
 // Eagerly loaded pages
@@ -60,6 +61,11 @@ const PageLoader = () => (
   </div>
 );
 
+const AppearanceLoader = () => {
+  useAppAppearance();
+  return null;
+};
+
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
@@ -71,6 +77,7 @@ const App = () => (
               <TestEnvironmentProvider>
               <Toaster />
               <Sonner />
+              <AppearanceLoader />
               <TestEnvironmentBanner />
               <Suspense fallback={<PageLoader />}>
                 <Routes>
