@@ -30,10 +30,12 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { useTestMode } from '@/hooks/useTestMode';
 import { menuItems } from '@/components/admin/AdminSidebar';
 import { useAdminGlobalSearch, getSearchHistory, addToSearchHistory, clearSearchHistory } from '@/hooks/useAdminGlobalSearch';
+import { ANALYTICS_TABS_REGISTRY } from '@/config/analyticsTabsRegistry';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { Settings, BarChart3, Globe, Map as MapIcon } from 'lucide-react';
 
 interface AdminDashboardHeaderProps {
   onMenuClick: () => void;
@@ -57,6 +59,21 @@ export function AdminDashboardHeader({ onMenuClick }: AdminDashboardHeaderProps)
       section.items.map(item => ({ ...item, category: section.category }))
     ), []
   );
+
+  // Config Graphiques internal tabs for deep-linking
+  const configTabItems = useMemo(() => {
+    const KEYWORDS_MAP: Record<string, string[]> = {
+      '_global': ['global', 'filigrane', 'watermark', 'logo', 'opacité'],
+      'rdc-map': ['carte', 'map', 'rdc', 'congo', 'géographie'],
+    };
+    return Object.entries(ANALYTICS_TABS_REGISTRY).map(([key, reg]) => ({
+      key,
+      label: reg.label,
+      keywords: KEYWORDS_MAP[key] || [],
+      url: `/admin?tab=analytics-charts-config&mode=charts&configTab=${key}`,
+      icon: key === '_global' ? Globe : key === 'rdc-map' ? MapIcon : BarChart3,
+    }));
+  }, []);
 
   const filteredMenuItems = useMemo(() => {
     if (!searchTerm.trim()) return [];
