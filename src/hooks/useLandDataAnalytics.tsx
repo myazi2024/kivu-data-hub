@@ -1,22 +1,26 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type {
+  ParcelRecord, ContributionRecord, TitleRequestRecord,
+  BuildingPermitRecord, TaxHistoryRecord, MortgageRecord,
+  ExpertiseRequestRecord, MutationRequestRecord, SubdivisionRequestRecord,
+  DisputeRecord, OwnershipHistoryRecord, CertificateRecord, InvoiceRecord,
+} from '@/types/landAnalytics';
 
 export interface LandAnalyticsData {
-  titleRequests: any[];
-  parcels: any[];
-  contributions: any[];
-  buildingPermits: any[];
-  taxHistory: any[];
-  mortgages: any[];
-  expertiseRequests: any[];
-  mutationRequests: any[];
-  subdivisionRequests: any[];
-  disputes: any[];
-  
-  ownershipHistory: any[];
-  
-  certificates: any[];
-  invoices: any[];
+  titleRequests: TitleRequestRecord[];
+  parcels: ParcelRecord[];
+  contributions: ContributionRecord[];
+  buildingPermits: BuildingPermitRecord[];
+  taxHistory: TaxHistoryRecord[];
+  mortgages: MortgageRecord[];
+  expertiseRequests: ExpertiseRequestRecord[];
+  mutationRequests: MutationRequestRecord[];
+  subdivisionRequests: SubdivisionRequestRecord[];
+  disputes: DisputeRecord[];
+  ownershipHistory: OwnershipHistoryRecord[];
+  certificates: CertificateRecord[];
+  invoices: InvoiceRecord[];
 }
 
 /** Column used to filter TEST- data per table */
