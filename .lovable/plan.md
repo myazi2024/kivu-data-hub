@@ -1,43 +1,60 @@
+# Graphique multi-series "Évolution signalements" par nature de litige
 
+## Objectif
 
-# Deplacer 5 visuels de l'onglet Titre foncier vers Parcelles
-
-## Constat
-
-Les graphiques suivants existent dans **les deux onglets** (titre-foncier ET parcelles) :
-- Type de construction (`construction-type`)
-- Nature de construction (`construction-nature`)
-- Materiaux utilises (`construction-materials`)
-- Standing (`standing`)
-- Usage declare (`declared-usage` dans titre-foncier, `usage` dans parcelles)
-
-Ces donnees concernent la parcelle, pas le titre foncier. L'onglet Parcelles les a deja. Il faut donc **supprimer ces 5 graphiques de l'onglet Titre foncier** pour eliminer la redondance.
+(Transformer le graphique "Évolution signalements" (onglet Litiges) en graphique multi-courbes. L'utilisateur pourra cocher/decocher les natures de litige (Succession, Delimitation, Double vente, Occupation illegale, etc.) pour superposer leurs courbes d'evolution. Une option "Tous" affiche la courbe agregee.) Le graphique est "**Évolution du nombre de litige foncier" est le graphique qui va intégrer ces modifications.**
 
 ## Modifications
 
-### 1. `src/components/visualizations/blocks/TitleRequestsBlock.tsx`
+### 1. `src/components/visualizations/shared/ChartCard.tsx` — Nouveau composant `MultiAreaChartCard`
 
-- Supprimer les `useMemo` pour `byDeclaredUsage`, `byConstructionType`, `byConstructionNature`, `byConstructionMaterials`, `byStanding` (lignes 49-54)
-- Supprimer la normalisation `declared_usage` et `construction_type` dans `normalized` (lignes 40-44)
-- Supprimer les 5 rendus JSX : `declared-usage` (ligne 144), `construction-type` (156-157), `construction-nature` (158-159), `construction-materials` (160-161), `standing` (162-163)
-- Nettoyer les imports inutilises (`normalizeConstructionType`, `normalizeDeclaredUsage`, `Building`)
+Creer un composant exporte `MultiAreaChartCard` dans le meme fichier (ou un fichier dedie) :
 
-### 2. `src/hooks/useAnalyticsChartsConfig.ts`
+- Props : `title`, `icon`, `iconColor`, `colSpan`, `series` (tableau `{ key: string; label: string; data: {name:string; value:number}[] }[]`), `insight?`
+- Etat local : `selectedKeys: Set<string>` initialise avec `'all'`
+- Rendu : 
+  - Rangee de checkboxes (Tous + chaque nature) au-dessus du graphique
+  - Quand "Tous" est coche : une seule courbe Area agregee
+  - Quand des natures specifiques sont cochees : une courbe Area par nature, chacune avec une couleur differente de `CHART_COLORS`
+  - Recharts `AreaChart` avec `Legend` et `Tooltip`
+- Meme style (Card, copy-as-image, focused state) que `ChartCard`
 
-- Supprimer les 5 entrees du registre `title-requests` : `declared-usage` (display_order 5), `construction-type` (11), `construction-nature` (12), `construction-materials` (13), `standing` (14)
-- Reajuster les `display_order` des graphiques restants pour combler les trous
+### 2. `src/components/visualizations/blocks/DisputesBlock.tsx` — Remplacer le rendu evolution
 
-### 3. `src/config/crossVariables.ts`
+- Calculer `trendByNature` : un `useMemo` qui genere pour chaque nature un tableau mensuel `{name, value}[]`, plus un "Tous" agrege (= le `trend` actuel)
+- Utiliser les labels depuis `DISPUTE_NATURES_MAP` pour afficher les noms lisibles
+- Remplacer la ligne 165 (`ChartCard` simple) par le nouveau `MultiAreaChartCard` avec les series calculees
 
-- Supprimer les 5 entrees de `title-requests` : `declared-usage`, `construction-type`, `construction-nature`, `construction-materials`, `standing`
+### 3. `src/hooks/useAnalyticsChartsConfig.ts` — Mettre a jour le type
+
+- Changer `chart_type: 'area'` en `chart_type: 'multi-area'` pour l'entree `disputes > evolution` (ligne 468) afin que l'admin voie le bon type
+
+## Detail technique : calcul trendByNature
+
+```text
+const trendByNature = useMemo(() => {
+  // Collecter toutes les natures presentes
+  const natures = [...new Set(filtered.map(d => d.dispute_nature).filter(Boolean))];
+  // Pour chaque nature, grouper par mois
+  const series = natures.map(nature => ({
+    key: nature,
+    label: DISPUTE_NATURES_MAP[nature] || nature,
+    data: trendByMonth(filtered.filter(d => d.dispute_nature === nature))
+  }));
+  // Ajouter "Tous"
+  series.unshift({ key: 'all', label: 'Tous', data: trend });
+  return series;
+}, [filtered, trend]);
+```
 
 ## Fichiers concernes
 
-| Fichier | Action |
-|---------|--------|
-| `TitleRequestsBlock.tsx` | Supprimer 5 graphiques et leurs donnees |
-| `useAnalyticsChartsConfig.ts` | Supprimer 5 entrees du registre title-requests |
-| `crossVariables.ts` | Supprimer 5 entrees de croisement title-requests |
 
-**Impact** : ~30 lignes supprimees dans 3 fichiers. Aucune migration. L'onglet Parcelles reste inchange (il a deja tous ces visuels).
+| Fichier                                                  | Action                                                    |
+| -------------------------------------------------------- | --------------------------------------------------------- |
+| `src/components/visualizations/shared/ChartCard.tsx`     | Ajouter `MultiAreaChartCard`                              |
+| `src/components/visualizations/blocks/DisputesBlock.tsx` | Calculer series par nature, utiliser `MultiAreaChartCard` |
+| `src/hooks/useAnalyticsChartsConfig.ts`                  | Changer chart_type en 'multi-area'                        |
 
+
+**Impact** : ~80 lignes ajoutees dans 3 fichiers. Aucune migration.
