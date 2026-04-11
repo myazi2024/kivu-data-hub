@@ -5,7 +5,7 @@ import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { AlertTriangle, Scale, TrendingUp, Users, ShieldCheck, MessageSquare } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
-import { ChartCard, StackedBarCard, FilterLabelContext } from '../shared/ChartCard';
+import { ChartCard, StackedBarCard, FilterLabelContext, MultiAreaChartCard } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
 import { MapProvinceContext, VilleFilterContext, CommuneFilterContext, QuartierFilterContext } from '../filters/AnalyticsFilters';
 import { generateInsight, generateStackedInsight } from '@/utils/chartInsights';
@@ -92,6 +92,17 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
   const byLiftingReason = useMemo(() => countBy(liftingDisputes.filter(r => r.lifting_reason), 'lifting_reason'), [liftingDisputes]);
   const liftingTrend = useMemo(() => trendByMonth(liftingDisputes), [liftingDisputes]);
 
+  const trendByNature = useMemo(() => {
+    const natures = [...new Set(filtered.map(d => d.dispute_nature).filter(Boolean))].sort();
+    const series = natures.map(nature => ({
+      key: nature,
+      label: nature,
+      data: trendByMonth(filtered.filter(d => d.dispute_nature === nature)),
+    }));
+    series.unshift({ key: 'all', label: 'Tous', data: trend });
+    return series;
+  }, [filtered, trend]);
+
   const liftingStats = useMemo(() => {
     const approved = liftingDisputes.filter(d => d.lifting_status === 'approved').length;
     const pending = liftingDisputes.filter(d => ['pending', 'demande_levee', 'in_review'].includes(d.lifting_status)).length;
@@ -162,7 +173,7 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
         {v('geo') && <GeoCharts records={filtered} />}
         {v('resolution-rate') && <ChartCard title={ct('resolution-rate', 'Taux résolution %')} icon={TrendingUp} data={resolutionTrend} type="area" colorIndex={2} colSpan={2} hidden={resolutionTrend.length < 2}
           insight={generateInsight(resolutionTrend, 'area', 'le taux de résolution mensuel')} />}
-        {v('evolution') && <ChartCard title={ct('evolution', 'Évolution signalements')} icon={TrendingUp} data={trend} type="area" colorIndex={4} colSpan={2}
+        {v('evolution') && <MultiAreaChartCard title={ct('evolution', 'Évolution du nombre de litige foncier')} icon={TrendingUp} colSpan={2} series={trendByNature}
           insight={generateInsight(trend, 'area', 'les litiges')} />}
       </div>
 
