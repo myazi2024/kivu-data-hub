@@ -535,7 +535,8 @@ export const MultiAreaChartCard: React.FC<MultiAreaChartCardProps> = memo(({
           })}
         </div>
       </CardHeader>
-      <CardContent className="px-2 pb-2">
+      <CardContent className="px-2 pb-2 relative">
+        <LogoWatermark />
         <ResponsiveContainer width="100%" height={BASE_CH}>
           <AreaChart data={mergedData}>
             <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
@@ -589,7 +590,8 @@ export const ColorMappedPieCard: React.FC<MultiDataPieProps> = memo(({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="px-2 pb-2">
+      <CardContent className="px-2 pb-2 relative">
+        <LogoWatermark />
         {isCrossMode ? (
           <>
             <CrossStackedChart
