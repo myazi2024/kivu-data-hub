@@ -262,6 +262,7 @@ Deno.serve(async (req) => {
           })
           .eq('id', transaction.id);
 
+        await createPublicationPaymentRecord(`REAL-${transaction.id}`);
         await syncExpertisePaymentState('completed', transaction.id);
       }, 5000);
 
