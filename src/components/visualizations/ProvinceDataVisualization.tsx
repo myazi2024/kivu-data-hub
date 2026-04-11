@@ -60,6 +60,20 @@ const BLOCK_MAP: Record<string, React.ComponentType<{ data: any }>> = {
   'invoices': InvoicesBlock,
 };
 
+interface ProvinceDataVisualizationProps {
+  analytics: LandAnalyticsData;
+  selectedProvince?: ProvinceData | null;
+  onProvinceFilter?: (provinceName: string | undefined) => void;
+  onVilleChange?: (ville: string | undefined) => void;
+  onCommuneChange?: (commune: string | undefined) => void;
+  onQuartierChange?: (quartier: string | undefined) => void;
+  onTerritoireChange?: (territoire: string | undefined) => void;
+  selectedVille?: string | null;
+  selectedCommune?: string | null;
+  selectedQuartier?: string | null;
+  selectedTerritoire?: string | null;
+}
+
 const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
   analytics, selectedProvince, onProvinceFilter, onVilleChange, onCommuneChange, onQuartierChange, onTerritoireChange,
   selectedVille, selectedCommune, selectedQuartier, selectedTerritoire,
