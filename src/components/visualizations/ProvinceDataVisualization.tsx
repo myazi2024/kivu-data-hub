@@ -1,38 +1,32 @@
-import React, { useState, memo, useMemo } from 'react';
+import React, { useState, memo, useMemo, Suspense } from 'react';
 import { FileText, Map, Search, ArrowRightLeft, Scissors, AlertTriangle, Loader2, Database, History, Award, Receipt, Landmark, FileCheck, DollarSign } from 'lucide-react';
 import { useLandDataAnalytics, LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { TitleRequestsBlock } from './blocks/TitleRequestsBlock';
-import { ParcelsWithTitleBlock } from './blocks/ParcelsWithTitleBlock';
-import { ContributionsBlock } from './blocks/ContributionsBlock';
-import { ExpertiseBlock } from './blocks/ExpertiseBlock';
-import { MutationBlock } from './blocks/MutationBlock';
-import { SubdivisionBlock } from './blocks/SubdivisionBlock';
-import { DisputesBlock } from './blocks/DisputesBlock';
-import { MortgagesBlock } from './blocks/MortgagesBlock';
-import { BuildingPermitsBlock } from './blocks/BuildingPermitsBlock';
-import { TaxesBlock } from './blocks/TaxesBlock';
-import { OwnershipHistoryBlock } from './blocks/OwnershipHistoryBlock';
-
-import { CertificatesBlock } from './blocks/CertificatesBlock';
-import { InvoicesBlock } from './blocks/InvoicesBlock';
 import { ProvinceData } from '@/types/province';
 import { useAnalyticsTabsConfig, useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { ProvinceFilterContext, MapProvinceContext, VilleFilterContext, CommuneFilterContext, VilleChangeContext, CommuneChangeContext, QuartierFilterContext, QuartierChangeContext, TerritoireFilterContext, TerritoireChangeContext } from './filters/AnalyticsFilters';
 import { WatermarkContext, WatermarkConfigContext, WatermarkConfig } from './shared/ChartCard';
 
-interface ProvinceDataVisualizationProps {
-  analytics: LandAnalyticsData;
-  selectedProvince?: ProvinceData | null;
-  onProvinceFilter?: (provinceName: string | undefined) => void;
-  onVilleChange?: (ville: string | undefined) => void;
-  onCommuneChange?: (commune: string | undefined) => void;
-  onQuartierChange?: (quartier: string | undefined) => void;
-  onTerritoireChange?: (territoire: string | undefined) => void;
-  selectedVille?: string | null;
-  selectedCommune?: string | null;
-  selectedQuartier?: string | null;
-  selectedTerritoire?: string | null;
-}
+// Lazy-loaded block components
+const TitleRequestsBlock = React.lazy(() => import('./blocks/TitleRequestsBlock').then(m => ({ default: m.TitleRequestsBlock })));
+const ParcelsWithTitleBlock = React.lazy(() => import('./blocks/ParcelsWithTitleBlock').then(m => ({ default: m.ParcelsWithTitleBlock })));
+const ContributionsBlock = React.lazy(() => import('./blocks/ContributionsBlock').then(m => ({ default: m.ContributionsBlock })));
+const ExpertiseBlock = React.lazy(() => import('./blocks/ExpertiseBlock').then(m => ({ default: m.ExpertiseBlock })));
+const MutationBlock = React.lazy(() => import('./blocks/MutationBlock').then(m => ({ default: m.MutationBlock })));
+const SubdivisionBlock = React.lazy(() => import('./blocks/SubdivisionBlock').then(m => ({ default: m.SubdivisionBlock })));
+const DisputesBlock = React.lazy(() => import('./blocks/DisputesBlock').then(m => ({ default: m.DisputesBlock })));
+const MortgagesBlock = React.lazy(() => import('./blocks/MortgagesBlock').then(m => ({ default: m.MortgagesBlock })));
+const BuildingPermitsBlock = React.lazy(() => import('./blocks/BuildingPermitsBlock').then(m => ({ default: m.BuildingPermitsBlock })));
+const TaxesBlock = React.lazy(() => import('./blocks/TaxesBlock').then(m => ({ default: m.TaxesBlock })));
+const OwnershipHistoryBlock = React.lazy(() => import('./blocks/OwnershipHistoryBlock').then(m => ({ default: m.OwnershipHistoryBlock })));
+const CertificatesBlock = React.lazy(() => import('./blocks/CertificatesBlock').then(m => ({ default: m.CertificatesBlock })));
+const InvoicesBlock = React.lazy(() => import('./blocks/InvoicesBlock').then(m => ({ default: m.InvoicesBlock })));
+
+const BlockFallback = () => (
+  <div className="flex items-center justify-center p-8">
+    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+    <span className="ml-2 text-xs text-muted-foreground">Chargement du bloc...</span>
+  </div>
+);
 
 const ICON_MAP: Record<string, React.ComponentType<any>> = {
   'title-requests': FileText,
@@ -46,7 +40,6 @@ const ICON_MAP: Record<string, React.ComponentType<any>> = {
   'building-permits': FileCheck,
   'taxes': DollarSign,
   'ownership': History,
-  
   'certificates': Award,
   'invoices': Receipt,
 };
@@ -63,7 +56,6 @@ const BLOCK_MAP: Record<string, React.ComponentType<{ data: any }>> = {
   'building-permits': BuildingPermitsBlock,
   'taxes': TaxesBlock,
   'ownership': OwnershipHistoryBlock,
-  
   'certificates': CertificatesBlock,
   'invoices': InvoicesBlock,
 };
