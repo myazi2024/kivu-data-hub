@@ -4743,6 +4743,7 @@ export type Database = {
         Args: { allowed_types: string[]; file_name: string; file_size: number }
         Returns: Json
       }
+      validate_reseller_code: { Args: { code_input: string }; Returns: boolean }
       verify_document_by_code: { Args: { p_code: string }; Returns: Json }
       verify_expertise_certificate: {
         Args: { p_reference: string }
