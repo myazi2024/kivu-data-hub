@@ -5,7 +5,7 @@ import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { AlertTriangle, Scale, TrendingUp, Users, ShieldCheck, MessageSquare } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
-import { ChartCard, StackedBarCard, FilterLabelContext } from '../shared/ChartCard';
+import { ChartCard, StackedBarCard, FilterLabelContext, MultiAreaChartCard } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
 import { MapProvinceContext, VilleFilterContext, CommuneFilterContext, QuartierFilterContext } from '../filters/AnalyticsFilters';
 import { generateInsight, generateStackedInsight } from '@/utils/chartInsights';

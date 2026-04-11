@@ -405,6 +405,111 @@ export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
   );
 });
 
+/* ── MultiAreaChartCard ── */
+interface MultiAreaSeries { key: string; label: string; data: { name: string; value: number }[] }
+interface MultiAreaChartCardProps {
+  title: string;
+  icon?: LucideIcon;
+  iconColor?: string;
+  colSpan?: number;
+  series: MultiAreaSeries[];
+  insight?: string;
+}
+
+export const MultiAreaChartCard: React.FC<MultiAreaChartCardProps> = memo(({
+  title, icon: Icon, iconColor, colSpan, series, insight,
+}) => {
+  const { ref, copied, copy } = useCopyAsImage();
+  const filterLabel = useContext(FilterLabelContext);
+  const [focused, setFocused] = useState(false);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(() => new Set(['all']));
+
+  const toggle = useCallback((key: string) => {
+    setSelectedKeys(prev => {
+      const next = new Set(prev);
+      if (key === 'all') {
+        // Toggle "Tous": if active, deselect; else select only "all"
+        if (next.has('all')) { next.delete('all'); } else { return new Set(['all']); }
+        return next;
+      }
+      // Deselect "all" when picking specific
+      next.delete('all');
+      if (next.has(key)) next.delete(key); else next.add(key);
+      if (next.size === 0) next.add('all');
+      return next;
+    });
+  }, []);
+
+  const visibleSeries = useMemo(() => {
+    if (selectedKeys.has('all')) return series.filter(s => s.key === 'all');
+    return series.filter(s => selectedKeys.has(s.key));
+  }, [selectedKeys, series]);
+
+  // Build merged data: all months as keys, each series as a column
+  const mergedData = useMemo(() => {
+    const monthSet = new Map<string, Record<string, number>>();
+    visibleSeries.forEach((s, idx) => {
+      s.data.forEach(pt => {
+        if (!monthSet.has(pt.name)) monthSet.set(pt.name, {});
+        monthSet.get(pt.name)![`v${idx}`] = pt.value;
+      });
+    });
+    return Array.from(monthSet.entries()).map(([name, vals]) => ({ name, ...vals }));
+  }, [visibleSeries]);
+
+  const allData = series.find(s => s.key === 'all')?.data || [];
+  if (allData.length === 0) return null;
+
+  return (
+    <Card ref={ref} onClick={() => setFocused(f => !f)} className={`border-border/30 cursor-pointer transition-all duration-200 ${focused ? 'scale-[1.03] shadow-xl z-10 ring-2 ring-primary/30' : ''} ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
+      <CardHeader className="pb-1 px-2 pt-2">
+        <div className="flex items-start gap-1">
+          {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'} shrink-0 mt-0.5`} />}
+          <div className="min-w-0 flex-1">
+            <CardTitle className="text-xs font-semibold leading-tight break-words">{title}</CardTitle>
+            {filterLabel && <ChartFilterSubtitle filterLabel={filterLabel} />}
+          </div>
+          <CopyButton onClick={copy} copied={copied} />
+        </div>
+        {/* Checkboxes */}
+        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5" onClick={e => e.stopPropagation()}>
+          {series.map((s, i) => {
+            const color = s.key === 'all' ? CHART_COLORS[0] : CHART_COLORS[(i) % CHART_COLORS.length];
+            return (
+              <label key={s.key} className="flex items-center gap-1 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={selectedKeys.has(s.key)}
+                  onChange={() => toggle(s.key)}
+                  className="h-3 w-3 rounded border-border accent-primary"
+                />
+                <span className="text-[9px] font-medium" style={{ color }}>{s.label}</span>
+              </label>
+            );
+          })}
+        </div>
+      </CardHeader>
+      <CardContent className="px-2 pb-2">
+        <ResponsiveContainer width="100%" height={BASE_CH}>
+          <AreaChart data={mergedData}>
+            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+            <XAxis dataKey="name" tick={{ fontSize: 8 }} />
+            <YAxis tick={{ fontSize: 9 }} />
+            <Tooltip contentStyle={tooltipStyle} />
+            {visibleSeries.map((s, idx) => {
+              const color = s.key === 'all' ? CHART_COLORS[0] : CHART_COLORS[(series.findIndex(x => x.key === s.key)) % CHART_COLORS.length];
+              return <Area key={s.key} type="monotone" dataKey={`v${idx}`} name={s.label} stroke={color} fill={color} fillOpacity={0.12} />;
+            })}
+            {visibleSeries.length > 1 && <Legend wrapperStyle={{ fontSize: 9 }} />}
+          </AreaChart>
+        </ResponsiveContainer>
+        <InsightText text={insight} />
+        <ChartFooter />
+      </CardContent>
+    </Card>
+  );
+});
+
 export const ColorMappedPieCard: React.FC<MultiDataPieProps> = memo(({
   title, icon: Icon, iconColor, data, colorMap = {}, insight,
   crossVariables, rawRecords, groupField,
