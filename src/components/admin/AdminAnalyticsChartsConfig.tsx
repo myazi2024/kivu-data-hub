@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -42,12 +42,54 @@ const CHART_TYPE_OPTIONS = [
   { value: 'area', label: 'Courbe', icon: '〜' },
 ];
 
+const SYSTEM_TABS = ['_global', 'rdc-map'];
+
 const AdminAnalyticsChartsConfig: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { configs, isLoading } = useAnalyticsChartsConfig();
   const { tabs: dbTabs } = useAnalyticsTabsConfig();
   const { upsertConfig } = useAnalyticsChartsConfigMutations();
-  const [activeTab, setActiveTab] = useState(Object.keys(ANALYTICS_TABS_REGISTRY).filter(isUserTab)[0]);
+
+  // URL-synced state: mode & configTab
+  const urlMode = searchParams.get('mode') as 'tabs' | 'kpis' | 'charts' | 'filters' | 'cross' | null;
+  const urlConfigTab = searchParams.get('configTab');
+
+  const defaultFirstTab = Object.keys(ANALYTICS_TABS_REGISTRY).filter(isUserTab)[0];
+  const [activeTab, setActiveTab] = useState(urlConfigTab && ANALYTICS_TABS_REGISTRY[urlConfigTab] ? urlConfigTab : defaultFirstTab);
+  const [viewMode, setViewMode] = useState<'tabs' | 'kpis' | 'charts' | 'filters' | 'cross'>(
+    urlMode || (urlConfigTab && SYSTEM_TABS.includes(urlConfigTab) ? 'charts' : 'charts')
+  );
+
+  // Force charts mode for system tabs
+  useEffect(() => {
+    if (SYSTEM_TABS.includes(activeTab) && viewMode !== 'charts') {
+      setViewMode('charts');
+    }
+  }, [activeTab, viewMode]);
+
+  // Sync URL when mode or tab changes
+  const updateUrl = useCallback((mode: string, tab: string) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.set('mode', mode);
+      next.set('configTab', tab);
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
+
+  const handleSetViewMode = useCallback((mode: 'tabs' | 'kpis' | 'charts' | 'filters' | 'cross') => {
+    setViewMode(mode);
+    updateUrl(mode, activeTab);
+  }, [activeTab, updateUrl]);
+
+  const handleSetActiveTab = useCallback((tab: string) => {
+    setActiveTab(tab);
+    const newMode = SYSTEM_TABS.includes(tab) ? 'charts' : viewMode;
+    if (SYSTEM_TABS.includes(tab)) setViewMode('charts');
+    updateUrl(newMode, tab);
+  }, [viewMode, updateUrl]);
+
   const {
     localItems, setLocalItems, localTabs, setLocalTabs,
     localFilters, setLocalFilters, localCross, setLocalCross,
@@ -57,7 +99,6 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
   const [hasFilterChanges, setHasFilterChanges] = useState(false);
   const [hasCrossChanges, setHasCrossChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [viewMode, setViewMode] = useState<'tabs' | 'kpis' | 'charts' | 'filters' | 'cross'>('tabs');
   const [modifiedTabs, setModifiedTabs] = useState<Set<string>>(new Set());
   const [pendingTabSwitch, setPendingTabSwitch] = useState<string | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -184,12 +225,12 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
 
   const handleTabSwitch = useCallback((targetTab: string) => {
     if (modifiedTabs.has(activeTab)) { setPendingTabSwitch(targetTab); }
-    else { setActiveTab(targetTab); }
-  }, [activeTab, modifiedTabs]);
+    else { handleSetActiveTab(targetTab); }
+  }, [activeTab, modifiedTabs, handleSetActiveTab]);
 
   const confirmTabSwitch = useCallback(() => {
-    if (pendingTabSwitch) { setActiveTab(pendingTabSwitch); setPendingTabSwitch(null); }
-  }, [pendingTabSwitch]);
+    if (pendingTabSwitch) { handleSetActiveTab(pendingTabSwitch); setPendingTabSwitch(null); }
+  }, [pendingTabSwitch, handleSetActiveTab]);
 
   const tabStats = useMemo(() => {
     const stats: Record<string, { kpis: number; charts: number; hidden: number }> = {};
@@ -235,7 +276,7 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
                   const Icon = icons[mode];
                   return (
                     <Button key={mode} size="sm" variant={viewMode === mode ? 'default' : 'ghost'}
-                      className="rounded-none h-8 text-xs" onClick={() => setViewMode(mode)}>
+                      className="rounded-none h-8 text-xs" onClick={() => handleSetViewMode(mode)}>
                       <Icon className="h-3.5 w-3.5 mr-1" />{labels[mode]}
                     </Button>
                   );

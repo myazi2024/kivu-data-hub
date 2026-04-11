@@ -30,10 +30,12 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { useTestMode } from '@/hooks/useTestMode';
 import { menuItems } from '@/components/admin/AdminSidebar';
 import { useAdminGlobalSearch, getSearchHistory, addToSearchHistory, clearSearchHistory } from '@/hooks/useAdminGlobalSearch';
+import { ANALYTICS_TABS_REGISTRY } from '@/config/analyticsTabsRegistry';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { Settings, BarChart3, Globe, Map as MapIcon } from 'lucide-react';
 
 interface AdminDashboardHeaderProps {
   onMenuClick: () => void;
@@ -58,6 +60,21 @@ export function AdminDashboardHeader({ onMenuClick }: AdminDashboardHeaderProps)
     ), []
   );
 
+  // Config Graphiques internal tabs for deep-linking
+  const configTabItems = useMemo(() => {
+    const KEYWORDS_MAP: Record<string, string[]> = {
+      '_global': ['global', 'filigrane', 'watermark', 'logo', 'opacité'],
+      'rdc-map': ['carte', 'map', 'rdc', 'congo', 'géographie'],
+    };
+    return Object.entries(ANALYTICS_TABS_REGISTRY).map(([key, reg]) => ({
+      key,
+      label: reg.label,
+      keywords: KEYWORDS_MAP[key] || [],
+      url: `/admin?tab=analytics-charts-config&mode=charts&configTab=${key}`,
+      icon: key === '_global' ? Globe : key === 'rdc-map' ? MapIcon : BarChart3,
+    }));
+  }, []);
+
   const filteredMenuItems = useMemo(() => {
     if (!searchTerm.trim()) return [];
     const term = searchTerm.toLowerCase();
@@ -67,6 +84,16 @@ export function AdminDashboardHeader({ onMenuClick }: AdminDashboardHeaderProps)
       (item.keywords && item.keywords.some((k: string) => k.toLowerCase().includes(term)))
     ).slice(0, 8);
   }, [searchTerm, flatItems]);
+
+  const filteredConfigTabs = useMemo(() => {
+    if (!searchTerm.trim()) return [];
+    const term = searchTerm.toLowerCase();
+    return configTabItems.filter(item =>
+      item.label.toLowerCase().includes(term) ||
+      item.key.toLowerCase().includes(term) ||
+      item.keywords.some(k => k.includes(term))
+    ).slice(0, 6);
+  }, [searchTerm, configTabItems]);
 
   // Group menu results by category
   const menuGroups = useMemo(() => {
@@ -152,8 +179,9 @@ export function AdminDashboardHeader({ onMenuClick }: AdminDashboardHeaderProps)
 
   const showHistory = !searchTerm.trim() && history.length > 0;
   const showMenuResults = Object.keys(menuGroups).length > 0;
+  const showConfigResults = filteredConfigTabs.length > 0;
   const showDbResults = hasResults;
-  const noResults = searchTerm.trim().length >= 2 && !showMenuResults && !showDbResults && !isLoading;
+  const noResults = searchTerm.trim().length >= 2 && !showMenuResults && !showConfigResults && !showDbResults && !isLoading;
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -241,8 +269,27 @@ export function AdminDashboardHeader({ onMenuClick }: AdminDashboardHeaderProps)
               </CommandGroup>
             ))}
 
+            {/* Config Graphiques internal tabs */}
+            {showConfigResults && (
+              <CommandGroup heading="Config Graphiques">
+                {filteredConfigTabs.map(item => {
+                  const Icon = item.icon;
+                  return (
+                    <CommandItem
+                      key={item.key}
+                      onSelect={() => handleSelect(item.url, `Config > ${item.label}`)}
+                    >
+                      <Icon className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
+                      <span className="flex-1">{item.label}</span>
+                      <span className="text-xs text-muted-foreground">Config</span>
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            )}
+
             {/* Separator between menu and DB results */}
-            {showMenuResults && showDbResults && <CommandSeparator />}
+            {(showMenuResults || showConfigResults) && showDbResults && <CommandSeparator />}
 
             {/* Database results */}
             {showDbResults && Object.entries(grouped).map(([type, group]) => (
