@@ -80,7 +80,7 @@ export const menuItems = [
     items: [
       { icon: LayoutDashboard, label: 'Dashboard', value: 'dashboard', badge: null, keywords: ['accueil', 'home', 'tableau de bord', 'overview', 'résumé'] },
       { icon: PieChart, label: 'Analytics', value: 'analytics', badge: null, keywords: ['statistiques', 'stats', 'graphiques', 'données', 'rapports'] },
-      { icon: SlidersHorizontal, label: 'Config Graphiques', value: 'analytics-charts-config', badge: null, keywords: ['charts', 'filigrane', 'watermark', 'visualisation', 'diagrammes'] },
+      { icon: SlidersHorizontal, label: 'Config Graphiques', value: 'analytics-charts-config', badge: null, keywords: ['charts', 'filigrane', 'watermark', 'visualisation', 'diagrammes', 'global', 'logo', 'carte', 'rdc'] },
     ]
   },
   {
