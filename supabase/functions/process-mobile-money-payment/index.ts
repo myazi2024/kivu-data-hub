@@ -97,6 +97,38 @@ Deno.serve(async (req) => {
       ip_address: req.headers.get("x-forwarded-for") || null,
     });
 
+    // Helper: create payment record + download access for publication payments
+    const createPublicationPaymentRecord = async (transactionRef: string) => {
+      if (payment_type !== 'publication' || !body.item_id) return null;
+
+      const { data: paymentRecord } = await supabase
+        .from('payments')
+        .insert({
+          user_id: user.id,
+          publication_id: body.item_id,
+          amount_usd: amount_usd,
+          payment_method: 'mobile_money',
+          payment_provider: payment_provider,
+          phone_number: phone_number,
+          status: 'completed',
+          transaction_id: transactionRef,
+        })
+        .select()
+        .single();
+
+      if (paymentRecord) {
+        await supabase
+          .from('publication_downloads')
+          .insert({
+            user_id: user.id,
+            publication_id: body.item_id,
+            payment_id: paymentRecord.id,
+          });
+      }
+
+      return paymentRecord;
+    };
+
     const syncExpertisePaymentState = async (
       status: 'completed' | 'failed',
       transactionId?: string,
@@ -134,7 +166,6 @@ Deno.serve(async (req) => {
           .eq('id', expertisePayment.expertise_request_id);
       }
     };
-
     // Validate payment provider is enabled
     const { data: providerConfig, error: providerError } = await supabase
       .from('payment_methods_config')
