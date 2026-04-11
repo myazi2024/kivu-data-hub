@@ -179,8 +179,9 @@ export function AdminDashboardHeader({ onMenuClick }: AdminDashboardHeaderProps)
 
   const showHistory = !searchTerm.trim() && history.length > 0;
   const showMenuResults = Object.keys(menuGroups).length > 0;
+  const showConfigResults = filteredConfigTabs.length > 0;
   const showDbResults = hasResults;
-  const noResults = searchTerm.trim().length >= 2 && !showMenuResults && !showDbResults && !isLoading;
+  const noResults = searchTerm.trim().length >= 2 && !showMenuResults && !showConfigResults && !showDbResults && !isLoading;
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -268,8 +269,27 @@ export function AdminDashboardHeader({ onMenuClick }: AdminDashboardHeaderProps)
               </CommandGroup>
             ))}
 
+            {/* Config Graphiques internal tabs */}
+            {showConfigResults && (
+              <CommandGroup heading="Config Graphiques">
+                {filteredConfigTabs.map(item => {
+                  const Icon = item.icon;
+                  return (
+                    <CommandItem
+                      key={item.key}
+                      onSelect={() => handleSelect(item.url, `Config > ${item.label}`)}
+                    >
+                      <Icon className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
+                      <span className="flex-1">{item.label}</span>
+                      <span className="text-xs text-muted-foreground">Config</span>
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            )}
+
             {/* Separator between menu and DB results */}
-            {showMenuResults && showDbResults && <CommandSeparator />}
+            {(showMenuResults || showConfigResults) && showDbResults && <CommandSeparator />}
 
             {/* Database results */}
             {showDbResults && Object.entries(grouped).map(([type, group]) => (
