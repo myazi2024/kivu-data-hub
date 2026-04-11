@@ -12,7 +12,7 @@ export interface ChartConfigItem {
   display_order: number;
   custom_title?: string | null;
   custom_color?: string | null;
-  chart_type?: 'bar-h' | 'bar-v' | 'pie' | 'donut' | 'area' | null;
+  chart_type?: 'bar-h' | 'bar-v' | 'pie' | 'donut' | 'area' | 'multi-area' | null;
   custom_icon?: string | null;
   col_span?: number;
 }
