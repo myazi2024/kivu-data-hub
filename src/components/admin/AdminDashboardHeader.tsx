@@ -1,6 +1,5 @@
-import { Bell, Menu, Search, User, Trash2, TestTube } from 'lucide-react';
+import { Bell, Menu, Search, User, Trash2, TestTube, Clock, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,14 +15,25 @@ import {
 } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  CommandDialog,
+  Command,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+  CommandSeparator,
+} from '@/components/ui/command';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useTestMode } from '@/hooks/useTestMode';
 import { menuItems } from '@/components/admin/AdminSidebar';
+import { useAdminGlobalSearch, getSearchHistory, addToSearchHistory, clearSearchHistory } from '@/hooks/useAdminGlobalSearch';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 
 interface AdminDashboardHeaderProps {
   onMenuClick: () => void;
@@ -35,80 +45,94 @@ export function AdminDashboardHeader({ onMenuClick }: AdminDashboardHeaderProps)
   const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
   const { testMode } = useTestMode();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showResults, setShowResults] = useState(false);
-  const searchRef = useRef<HTMLDivElement>(null);
+  const [history, setHistory] = useState<string[]>([]);
 
-  const flatItems = useMemo(() => 
-    menuItems.flatMap(section => 
+  const { grouped, isLoading, hasResults } = useAdminGlobalSearch(searchTerm);
+
+  // Flatten menu items with keyword matching
+  const flatItems = useMemo(() =>
+    menuItems.flatMap(section =>
       section.items.map(item => ({ ...item, category: section.category }))
     ), []
   );
 
-  const filteredItems = useMemo(() => {
+  const filteredMenuItems = useMemo(() => {
     if (!searchTerm.trim()) return [];
     const term = searchTerm.toLowerCase();
-    return flatItems.filter(item => 
-      item.label.toLowerCase().includes(term) || 
-      item.category.toLowerCase().includes(term)
+    return flatItems.filter(item =>
+      item.label.toLowerCase().includes(term) ||
+      item.category.toLowerCase().includes(term) ||
+      (item.keywords && item.keywords.some((k: string) => k.toLowerCase().includes(term)))
     ).slice(0, 8);
   }, [searchTerm, flatItems]);
 
+  // Group menu results by category
+  const menuGroups = useMemo(() => {
+    const groups: Record<string, typeof filteredMenuItems> = {};
+    for (const item of filteredMenuItems) {
+      if (!groups[item.category]) groups[item.category] = [];
+      groups[item.category].push(item);
+    }
+    return groups;
+  }, [filteredMenuItems]);
+
+  // Ctrl+K shortcut
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
-        setShowResults(false);
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setCommandOpen(prev => !prev);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
   }, []);
 
-  const handleSearchSelect = (value: string) => {
-    navigate(`/admin?tab=${value}`);
-    setSearchTerm('');
-    setShowResults(false);
-  };
-
-  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      setShowResults(false);
+  // Load history when dialog opens
+  useEffect(() => {
+    if (commandOpen) {
+      setHistory(getSearchHistory());
       setSearchTerm('');
-    } else if (e.key === 'Enter' && filteredItems.length > 0) {
-      handleSearchSelect(filteredItems[0].value);
     }
-  };
+  }, [commandOpen]);
+
+  const handleSelect = useCallback((url: string, label?: string) => {
+    if (label) addToSearchHistory(label);
+    setCommandOpen(false);
+    setSearchTerm('');
+    navigate(url);
+  }, [navigate]);
+
+  const handleHistorySelect = useCallback((term: string) => {
+    setSearchTerm(term);
+  }, []);
 
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
       navigate('/auth');
       toast.success('Déconnexion réussie');
-    } catch (error) {
+    } catch {
       toast.error('Erreur lors de la déconnexion');
     }
   };
 
   const resolveActionUrl = (actionUrl: string): string => {
-    // Mapping des routes obsolètes vers les routes actuelles
     const routeMapping: Record<string, string> = {
       '/user-dashboard': '/mon-compte',
     };
-    
-    // Si l'URL contient des paramètres de requête ou des fragments, les préserver
     const [basePath, queryString] = actionUrl.split('?');
     const resolvedPath = routeMapping[basePath] || basePath;
-    
     return queryString ? `${resolvedPath}?${queryString}` : resolvedPath;
   };
 
   const handleNotificationClick = async (notification: typeof notifications[0]) => {
     await markAsRead(notification.id);
-    
     if (notification.action_url) {
       setNotificationsOpen(false);
-      const resolvedUrl = resolveActionUrl(notification.action_url);
-      navigate(resolvedUrl);
+      navigate(resolveActionUrl(notification.action_url));
     }
   };
 
@@ -126,6 +150,11 @@ export function AdminDashboardHeader({ onMenuClick }: AdminDashboardHeaderProps)
     }
   };
 
+  const showHistory = !searchTerm.trim() && history.length > 0;
+  const showMenuResults = Object.keys(menuGroups).length > 0;
+  const showDbResults = hasResults;
+  const noResults = searchTerm.trim().length >= 2 && !showMenuResults && !showDbResults && !isLoading;
+
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-12 md:h-14 items-center gap-2 md:gap-4 px-2 md:px-4">
@@ -139,45 +168,113 @@ export function AdminDashboardHeader({ onMenuClick }: AdminDashboardHeaderProps)
         </Button>
 
         <div className="flex-1">
-          <div className="relative max-w-md" ref={searchRef}>
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Rechercher dans l'admin..."
-              className="pl-8 w-full h-8 md:h-9 text-xs md:text-sm rounded-xl"
-              value={searchTerm}
-              onChange={(e) => { setSearchTerm(e.target.value); setShowResults(true); }}
-              onFocus={() => searchTerm.trim() && setShowResults(true)}
-              onKeyDown={handleSearchKeyDown}
-            />
-            {showResults && filteredItems.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-popover border rounded-lg shadow-lg z-50 overflow-hidden">
-                {filteredItems.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <button
-                      key={item.value}
-                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left hover:bg-accent transition-colors"
-                      onClick={() => handleSearchSelect(item.value)}
-                    >
-                      <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-                      <span className="flex-1 truncate">{item.label}</span>
-                      <span className="text-xs text-muted-foreground truncate">{item.category}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            {showResults && searchTerm.trim() && filteredItems.length === 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-popover border rounded-lg shadow-lg z-50 p-3 text-sm text-muted-foreground text-center">
-                Aucun résultat
-              </div>
-            )}
-          </div>
+          <Button
+            variant="outline"
+            className="relative w-full max-w-md h-8 md:h-9 justify-start text-xs md:text-sm text-muted-foreground rounded-xl px-3"
+            onClick={() => setCommandOpen(true)}
+          >
+            <Search className="mr-2 h-4 w-4 shrink-0" />
+            <span className="flex-1 text-left truncate">Rechercher dans l'admin...</span>
+            <kbd className="hidden md:inline-flex pointer-events-none h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+              <span className="text-xs">⌘</span>K
+            </kbd>
+          </Button>
         </div>
 
+        <CommandDialog open={commandOpen} onOpenChange={setCommandOpen}>
+          <CommandInput
+            placeholder="Rechercher menus, utilisateurs, parcelles, factures..."
+            value={searchTerm}
+            onValueChange={setSearchTerm}
+          />
+          <CommandList>
+            {/* Loading indicator */}
+            {isLoading && searchTerm.trim().length >= 2 && (
+              <div className="py-4 text-center text-sm text-muted-foreground animate-pulse">
+                Recherche en cours...
+              </div>
+            )}
+
+            {/* No results */}
+            {noResults && (
+              <CommandEmpty>Aucun résultat pour « {searchTerm} »</CommandEmpty>
+            )}
+
+            {/* Search history */}
+            {showHistory && (
+              <CommandGroup heading={
+                <div className="flex items-center justify-between">
+                  <span>Recherches récentes</span>
+                  <button
+                    onClick={() => { clearSearchHistory(); setHistory([]); }}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Effacer
+                  </button>
+                </div>
+              }>
+                {history.map((term) => (
+                  <CommandItem key={term} onSelect={() => handleHistorySelect(term)}>
+                    <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+                    {term}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+
+            {/* Menu navigation results */}
+            {showMenuResults && Object.entries(menuGroups).map(([category, items]) => (
+              <CommandGroup key={category} heading={category}>
+                {items.map(item => {
+                  const Icon = item.icon;
+                  return (
+                    <CommandItem
+                      key={item.value}
+                      onSelect={() => handleSelect(`/admin?tab=${item.value}`, item.label)}
+                    >
+                      <Icon className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
+                      <span className="flex-1">{item.label}</span>
+                      <span className="text-xs text-muted-foreground">Navigation</span>
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            ))}
+
+            {/* Separator between menu and DB results */}
+            {showMenuResults && showDbResults && <CommandSeparator />}
+
+            {/* Database results */}
+            {showDbResults && Object.entries(grouped).map(([type, group]) => (
+              <CommandGroup key={type} heading={group.label}>
+                {group.items.map(item => {
+                  const Icon = item.icon;
+                  return (
+                    <CommandItem
+                      key={item.id}
+                      onSelect={() => handleSelect(item.url, item.label)}
+                    >
+                      <Icon className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
+                      <div className="flex-1 min-w-0">
+                        <span className="block truncate">{item.label}</span>
+                        <span className="block text-xs text-muted-foreground truncate">{item.sublabel}</span>
+                      </div>
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            ))}
+
+            {/* Show empty prompt when no search term */}
+            {!searchTerm.trim() && !showHistory && (
+              <div className="py-8 text-center text-sm text-muted-foreground">
+                Tapez pour rechercher des menus, utilisateurs, parcelles ou factures
+              </div>
+            )}
+          </CommandList>
+        </CommandDialog>
+
         <div className="flex items-center gap-1 md:gap-2">
-          {/* Indicateur mode test */}
           {testMode.enabled && (
             <Button
               variant="outline"
@@ -208,8 +305,8 @@ export function AdminDashboardHeader({ onMenuClick }: AdminDashboardHeaderProps)
               <div className="flex items-center justify-between p-4 border-b">
                 <h3 className="font-semibold">Notifications</h3>
                 {unreadCount > 0 && (
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     size="sm"
                     onClick={markAllAsRead}
                   >
@@ -217,7 +314,7 @@ export function AdminDashboardHeader({ onMenuClick }: AdminDashboardHeaderProps)
                   </Button>
                 )}
               </div>
-              
+
               <ScrollArea className="h-[400px]">
                 {notifications.length === 0 ? (
                   <div className="p-8 text-center text-muted-foreground">
