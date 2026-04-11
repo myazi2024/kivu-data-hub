@@ -61,6 +61,11 @@ const PageLoader = () => (
   </div>
 );
 
+const AppearanceLoader = () => {
+  useAppAppearance();
+  return null;
+};
+
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
