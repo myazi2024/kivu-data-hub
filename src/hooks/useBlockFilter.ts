@@ -1,11 +1,13 @@
 import { useState, useContext, useEffect, useMemo } from 'react';
 import { AnalyticsFilter, defaultFilter, applyFilters, buildFilterLabel } from '@/utils/analyticsHelpers';
 import { MapProvinceContext, VilleFilterContext, CommuneFilterContext, QuartierFilterContext } from '@/components/visualizations/filters/AnalyticsFilters';
-import { useTabChartsConfig, useTabFilterConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
+import { useTabChartsConfig, useTabFilterConfig, useTabCrossConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
+import { getCrossVariables, CrossVariable } from '@/config/crossVariables';
+import { useAnalyticsChartsConfig } from '@/hooks/useAnalyticsChartsConfig';
 
 /**
  * Centralised hook for analytics blocks.
- * Handles filter state, geo-context sync, chart config, and data filtering.
+ * Handles filter state, geo-context sync, chart config, data filtering, and cross-variables.
  */
 export function useBlockFilter(tabKey: string, records: any[]) {
   const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
@@ -40,6 +42,28 @@ export function useBlockFilter(tabKey: string, records: any[]) {
     [records, filter, filterConfig.dateField]
   );
 
+  // Cross-variables with DB overrides
+  const { configs } = useAnalyticsChartsConfig();
+  const crossOverrides = useMemo(() => {
+    const map = new Map<string, { is_visible: boolean; custom_title?: string | null }>();
+    configs.filter(c => c.tab_key === tabKey && c.item_type === 'cross').forEach(c => {
+      const chartKey = c.item_key.replace(/^cross-/, '');
+      map.set(chartKey, { is_visible: c.is_visible, custom_title: c.custom_title });
+    });
+    return map;
+  }, [configs, tabKey]);
+
+  /** Get cross-variables for a chart key, applying admin overrides */
+  const cx = useMemo(() => {
+    return (chartKey: string): CrossVariable[] => {
+      const override = crossOverrides.get(chartKey);
+      if (!override) return getCrossVariables(tabKey, chartKey);
+      // Use the override-aware function from crossVariables
+      const { getCrossVariablesWithOverrides } = require('@/config/crossVariables');
+      return getCrossVariablesWithOverrides(tabKey, chartKey, override);
+    };
+  }, [tabKey, crossOverrides]);
+
   /** Shorthand: get custom title or fallback */
   const ct = (key: string, fallback: string) =>
     getChartConfig(key)?.custom_title || fallback;
@@ -56,5 +80,7 @@ export function useBlockFilter(tabKey: string, records: any[]) {
     v: isChartVisible,
     /** Get custom title with fallback */
     ct,
+    /** Get cross-variables with admin overrides */
+    cx,
   };
 }

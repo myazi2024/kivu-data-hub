@@ -1,37 +1,24 @@
-import React, { useState, useMemo, memo, useContext, useEffect } from 'react';
+import React, { useMemo, memo } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
-import { AnalyticsFilter, defaultFilter, applyFilters, countBy, countBoolean, trendByMonth, avgProcessingDays, buildFilterLabel } from '@/utils/analyticsHelpers';
+import { countBy, trendByMonth, avgProcessingDays } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { FileText, TrendingUp, AlertTriangle, ShieldAlert, Users, Gavel } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
-import { MapProvinceContext, VilleFilterContext, CommuneFilterContext, QuartierFilterContext } from '../filters/AnalyticsFilters';
 import { generateInsight } from '@/utils/chartInsights';
-import { useTabChartsConfig, useTabFilterConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { normalizeTitleType } from '@/utils/titleTypeNormalizer';
 import { normalizeConstructionType } from '@/utils/constructionTypeNormalizer';
 import { normalizeDeclaredUsage } from '@/utils/declaredUsageNormalizer';
-import { getCrossVariables } from '@/config/crossVariables';
+import { useBlockFilter } from '@/hooks/useBlockFilter';
 
 interface Props { data: LandAnalyticsData; }
 
 const TAB_KEY = 'contributions';
-const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TABS_REGISTRY[TAB_KEY].charts];
-const cx = (key: string) => getCrossVariables(TAB_KEY, key);
 
 export const ContributionsBlock: React.FC<Props> = memo(({ data }) => {
-  const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
-  const mapProvince = useContext(MapProvinceContext);
-  const mapVille = useContext(VilleFilterContext);
-  const mapCommune = useContext(CommuneFilterContext);
-  const mapQuartier = useContext(QuartierFilterContext);
-  useEffect(() => { setFilter(f => ({ ...f, province: mapProvince || undefined, ville: mapVille || undefined, commune: mapCommune || undefined, quartier: mapQuartier || undefined })); }, [mapProvince, mapVille, mapCommune, mapQuartier]);
-  const filterLabel = useMemo(() => buildFilterLabel(filter), [filter]);
-  const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
-  const filterConfig = useTabFilterConfig(TAB_KEY);
-  const filtered = useMemo(() => applyFilters(data.contributions, filter), [data.contributions, filter]);
+  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx } = useBlockFilter(TAB_KEY, data.contributions);
 
   const byContributionType = useMemo(() => countBy(filtered, 'contribution_type'), [filtered]);
   const byStatus = useMemo(() => countBy(filtered, 'status'), [filtered]);
@@ -80,9 +67,6 @@ export const ContributionsBlock: React.FC<Props> = memo(({ data }) => {
     return { approved, pending, rejected, avgDays };
   }, [filtered]);
 
-  const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
-  const v = isChartVisible;
-
   const kpiItems = useMemo(() => [
     { key: 'kpi-total', label: ct('kpi-total', 'Total'), value: filtered.length, cls: 'text-primary' },
     { key: 'kpi-approved', label: ct('kpi-approved', 'Approuvées'), value: stats.approved, cls: 'text-emerald-600', tooltip: pct(stats.approved, filtered.length) },
@@ -90,7 +74,7 @@ export const ContributionsBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'kpi-suspicious', label: ct('kpi-suspicious', 'Suspectes'), value: fraudData.suspicious, cls: 'text-red-600', tooltip: pct(fraudData.suspicious, filtered.length) },
     { key: 'kpi-appeals', label: ct('kpi-appeals', 'Appels'), value: appealData.submitted, cls: 'text-blue-600', tooltip: pct(appealData.submitted, filtered.length) },
     { key: 'kpi-delay', label: ct('kpi-delay', 'Délai moy.'), value: stats.avgDays > 0 ? `${stats.avgDays}j` : 'N/A', cls: 'text-violet-600', tooltip: 'Délai moyen de traitement' },
-  ].filter(k => v(k.key)), [filtered, stats, fraudData, appealData, v, getChartConfig]);
+  ].filter(k => v(k.key)), [filtered, stats, fraudData, appealData, v, ct]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
