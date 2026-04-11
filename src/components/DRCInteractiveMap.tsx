@@ -49,10 +49,6 @@ const PROVINCE_META: { id: string; name: string }[] = [
   { id: 'CDEQ', name: 'Équateur' },
 ];
 
-/** Count records matching a province name */
-function countForProvince(records: any[], provinceName: string): number {
-  return records.filter(r => r.province === provinceName).length;
-}
 
 /** Compute the 11 new indicators from filtered record sets */
 function computeIndicators(
