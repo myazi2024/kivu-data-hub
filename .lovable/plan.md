@@ -1,60 +1,48 @@
-# Graphique multi-series "Évolution signalements" par nature de litige
 
-## Objectif
 
-(Transformer le graphique "Évolution signalements" (onglet Litiges) en graphique multi-courbes. L'utilisateur pourra cocher/decocher les natures de litige (Succession, Delimitation, Double vente, Occupation illegale, etc.) pour superposer leurs courbes d'evolution. Une option "Tous" affiche la courbe agregee.) Le graphique est "**Évolution du nombre de litige foncier" est le graphique qui va intégrer ces modifications.**
+# Fix: Superposition des courbes sur la meme periode
 
-## Modifications
+## Probleme
 
-### 1. `src/components/visualizations/shared/ChartCard.tsx` — Nouveau composant `MultiAreaChartCard`
+Le `mergedData` actuel ne garantit pas que toutes les series partagent les memes points temporels. Si une nature n'a pas de donnees pour un mois donne, ce mois est absent pour cette serie, ce qui decale les courbes au lieu de les superposer sur le meme axe X.
 
-Creer un composant exporte `MultiAreaChartCard` dans le meme fichier (ou un fichier dedie) :
+## Solution
 
-- Props : `title`, `icon`, `iconColor`, `colSpan`, `series` (tableau `{ key: string; label: string; data: {name:string; value:number}[] }[]`), `insight?`
-- Etat local : `selectedKeys: Set<string>` initialise avec `'all'`
-- Rendu : 
-  - Rangee de checkboxes (Tous + chaque nature) au-dessus du graphique
-  - Quand "Tous" est coche : une seule courbe Area agregee
-  - Quand des natures specifiques sont cochees : une courbe Area par nature, chacune avec une couleur differente de `CHART_COLORS`
-  - Recharts `AreaChart` avec `Legend` et `Tooltip`
-- Meme style (Card, copy-as-image, focused state) que `ChartCard`
+Modifier le calcul de `mergedData` dans `MultiAreaChartCard` (lignes 449-458 de `ChartCard.tsx`) pour :
 
-### 2. `src/components/visualizations/blocks/DisputesBlock.tsx` — Remplacer le rendu evolution
-
-- Calculer `trendByNature` : un `useMemo` qui genere pour chaque nature un tableau mensuel `{name, value}[]`, plus un "Tous" agrege (= le `trend` actuel)
-- Utiliser les labels depuis `DISPUTE_NATURES_MAP` pour afficher les noms lisibles
-- Remplacer la ligne 165 (`ChartCard` simple) par le nouveau `MultiAreaChartCard` avec les series calculees
-
-### 3. `src/hooks/useAnalyticsChartsConfig.ts` — Mettre a jour le type
-
-- Changer `chart_type: 'area'` en `chart_type: 'multi-area'` pour l'entree `disputes > evolution` (ligne 468) afin que l'admin voie le bon type
-
-## Detail technique : calcul trendByNature
+1. Collecter l'union de TOUS les mois de TOUTES les series visibles
+2. Trier chronologiquement
+3. Pour chaque mois, remplir avec 0 les series qui n'ont pas de donnee ce mois-la
 
 ```text
-const trendByNature = useMemo(() => {
-  // Collecter toutes les natures presentes
-  const natures = [...new Set(filtered.map(d => d.dispute_nature).filter(Boolean))];
-  // Pour chaque nature, grouper par mois
-  const series = natures.map(nature => ({
-    key: nature,
-    label: DISPUTE_NATURES_MAP[nature] || nature,
-    data: trendByMonth(filtered.filter(d => d.dispute_nature === nature))
-  }));
-  // Ajouter "Tous"
-  series.unshift({ key: 'all', label: 'Tous', data: trend });
-  return series;
-}, [filtered, trend]);
+// Pseudo-code du fix
+const mergedData = useMemo(() => {
+  // 1. Collecter tous les mois de toutes les series visibles
+  const allMonths = new Set<string>();
+  visibleSeries.forEach(s => s.data.forEach(pt => allMonths.add(pt.name)));
+  
+  // 2. Trier (les labels sont "janv. 25", etc.)
+  const sorted = Array.from(allMonths).sort(/* tri chronologique */);
+  
+  // 3. Pour chaque mois, creer un objet avec toutes les valeurs
+  return sorted.map(month => {
+    const row: Record<string, any> = { name: month };
+    visibleSeries.forEach((s, idx) => {
+      const pt = s.data.find(d => d.name === month);
+      row[`v${idx}`] = pt?.value ?? 0;  // 0 si pas de donnee
+    });
+    return row;
+  });
+}, [visibleSeries]);
 ```
 
-## Fichiers concernes
+Le tri chronologique utilisera un parsing des labels fr-FR ou, plus fiable, on triera en se basant sur l'ordre d'apparition dans la serie "Tous" (qui contient tous les mois).
 
+## Fichier concerne
 
-| Fichier                                                  | Action                                                    |
-| -------------------------------------------------------- | --------------------------------------------------------- |
-| `src/components/visualizations/shared/ChartCard.tsx`     | Ajouter `MultiAreaChartCard`                              |
-| `src/components/visualizations/blocks/DisputesBlock.tsx` | Calculer series par nature, utiliser `MultiAreaChartCard` |
-| `src/hooks/useAnalyticsChartsConfig.ts`                  | Changer chart_type en 'multi-area'                        |
+| Fichier | Action |
+|---------|--------|
+| `src/components/visualizations/shared/ChartCard.tsx` | Corriger `mergedData` (lignes 449-458) pour aligner toutes les courbes sur le meme axe temporel |
 
+**Impact** : ~15 lignes modifiees dans 1 fichier.
 
-**Impact** : ~80 lignes ajoutees dans 3 fichiers. Aucune migration.
