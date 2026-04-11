@@ -221,6 +221,7 @@ Deno.serve(async (req) => {
           })
           .eq('id', transaction.id);
 
+        await createPublicationPaymentRecord(`TEST-${Date.now()}`);
         await syncExpertisePaymentState('completed', transaction.id);
       }, 3000);
 
