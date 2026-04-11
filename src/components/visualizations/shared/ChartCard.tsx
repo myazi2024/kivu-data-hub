@@ -445,17 +445,30 @@ export const MultiAreaChartCard: React.FC<MultiAreaChartCardProps> = memo(({
     return series.filter(s => selectedKeys.has(s.key));
   }, [selectedKeys, series]);
 
-  // Build merged data: all months as keys, each series as a column
+  // Build merged data: unified X-axis so all curves overlay on the same time periods
   const mergedData = useMemo(() => {
-    const monthSet = new Map<string, Record<string, number>>();
-    visibleSeries.forEach((s, idx) => {
-      s.data.forEach(pt => {
-        if (!monthSet.has(pt.name)) monthSet.set(pt.name, {});
-        monthSet.get(pt.name)![`v${idx}`] = pt.value;
+    // Use "Tous" series order as canonical month ordering (it has all months)
+    const allSeries = series.find(s => s.key === 'all');
+    const canonicalOrder = allSeries?.data.map(d => d.name) || [];
+
+    // Collect any extra months not in "Tous" (edge case)
+    const allMonths = new Set<string>(canonicalOrder);
+    visibleSeries.forEach(s => s.data.forEach(pt => allMonths.add(pt.name)));
+
+    // Sort: canonical order first, then any extras appended
+    const sorted = canonicalOrder.concat(
+      Array.from(allMonths).filter(m => !canonicalOrder.includes(m))
+    );
+
+    return sorted.map(month => {
+      const row: Record<string, any> = { name: month };
+      visibleSeries.forEach((s, idx) => {
+        const pt = s.data.find(d => d.name === month);
+        row[`v${idx}`] = pt?.value ?? 0;
       });
+      return row;
     });
-    return Array.from(monthSet.entries()).map(([name, vals]) => ({ name, ...vals }));
-  }, [visibleSeries]);
+  }, [visibleSeries, series]);
 
   const allData = series.find(s => s.key === 'all')?.data || [];
   if (allData.length === 0) return null;
