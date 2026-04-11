@@ -3,6 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useMemo } from 'react';
 import { getCrossVariablesWithOverrides } from '@/config/crossVariables';
 
+// Re-export registry from its dedicated config file
+export { ANALYTICS_TABS_REGISTRY } from '@/config/analyticsTabsRegistry';
+
 export interface ChartConfigItem {
   id?: string;
   tab_key: string;
@@ -44,7 +47,6 @@ const TAB_FILTER_DEFAULTS: Record<string, TabFilterConfig> = {
   'subdivision': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
   'disputes': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at', statusField: 'current_status' },
   'ownership': { hideStatus: true, hideTime: false, hideLocation: false, dateField: 'ownership_start_date' },
-  
   'certificates': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'generated_at' },
   'invoices': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
   'building-permits': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
@@ -73,7 +75,7 @@ export const STATUS_FIELD_OPTIONS = [
 ];
 
 /** Build default filter config items for a given tab */
-function buildFilterDefaults(tabKey: string): ChartConfigItem[] {
+export function buildFilterDefaults(tabKey: string): ChartConfigItem[] {
   const defaults = TAB_FILTER_DEFAULTS[tabKey] || { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' };
   return [
     { tab_key: tabKey, item_key: 'filter-status', item_type: 'filter', is_visible: !defaults.hideStatus, display_order: 0, custom_title: 'Filtre statut' },
@@ -108,12 +110,14 @@ export function useAnalyticsChartsConfig() {
 /** Returns tab-level config merged with defaults from ANALYTICS_TABS_REGISTRY */
 export function useAnalyticsTabsConfig() {
   const { configs, isLoading } = useAnalyticsChartsConfig();
+  // Import dynamically to avoid circular deps at module level
+  const { ANALYTICS_TABS_REGISTRY } = require('@/config/analyticsTabsRegistry');
 
   const tabs = useMemo(() => {
     const dbTabMap = new Map<string, ChartConfigItem>();
     configs.filter(c => c.item_type === 'tab' && c.item_key === '__tab__').forEach(c => dbTabMap.set(c.tab_key, c));
 
-    return Object.entries(ANALYTICS_TABS_REGISTRY).filter(([key]) => key !== '_global' && key !== 'rdc-map').map(([key, reg], i) => {
+    return Object.entries(ANALYTICS_TABS_REGISTRY).filter(([key]) => key !== '_global' && key !== 'rdc-map').map(([key, reg]: [string, any], i) => {
       const override = dbTabMap.get(key);
       return {
         key,
@@ -204,7 +208,6 @@ export function useAnalyticsChartsConfigMutations() {
 
   const upsertConfig = useMutation({
     mutationFn: async (items: ChartConfigItem[]) => {
-      // Strip client-only id field; keep only DB-relevant columns
       const toUpsert = items.map(({ id, ...rest }) => ({
         tab_key: rest.tab_key,
         item_key: rest.item_key,
@@ -268,357 +271,4 @@ export function useTabCrossConfig(tabKey: string, chartKey: string) {
 }
 
 /** Exported for admin UI filter management */
-export { TAB_FILTER_DEFAULTS, buildFilterDefaults };
-
-/** Registry of all analytics tabs with their default charts and KPIs */
-export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: ChartConfigItem[]; kpis: ChartConfigItem[] }> = {
-  'title-requests': {
-    label: 'Titres fonciers',
-    charts: [
-      { tab_key: 'title-requests', item_key: 'request-type', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Type de demande', chart_type: 'bar-h' },
-      { tab_key: 'title-requests', item_key: 'requester-type', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Demandeur', chart_type: 'donut' },
-      { tab_key: 'title-requests', item_key: 'status', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Statut', chart_type: 'bar-v' },
-      { tab_key: 'title-requests', item_key: 'payment', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Paiement', chart_type: 'donut' },
-      { tab_key: 'title-requests', item_key: 'legal-status', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Statut juridique', chart_type: 'donut' },
-      { tab_key: 'title-requests', item_key: 'gender', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Genre', chart_type: 'pie' },
-      { tab_key: 'title-requests', item_key: 'nationality', item_type: 'chart', is_visible: true, display_order: 6, custom_title: 'Nationalité', chart_type: 'bar-h' },
-      { tab_key: 'title-requests', item_key: 'deduced-title', item_type: 'chart', is_visible: true, display_order: 8, custom_title: 'Titre déduit', chart_type: 'bar-h' },
-      { tab_key: 'title-requests', item_key: 'owner-same', item_type: 'chart', is_visible: true, display_order: 9, custom_title: 'Demandeur = Proprio', chart_type: 'pie' },
-      { tab_key: 'title-requests', item_key: 'surface', item_type: 'chart', is_visible: true, display_order: 9, custom_title: 'Superficie demandée', chart_type: 'bar-v' },
-      { tab_key: 'title-requests', item_key: 'revenue-trend', item_type: 'chart', is_visible: true, display_order: 10, custom_title: 'Revenus/mois', chart_type: 'area' },
-      { tab_key: 'title-requests', item_key: 'processing-comparison', item_type: 'chart', is_visible: true, display_order: 11, custom_title: 'Délai estimé vs réel', chart_type: 'bar-v' },
-      { tab_key: 'title-requests', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 12, custom_title: 'Géographie' },
-      { tab_key: 'title-requests', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 13, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
-    ],
-    kpis: [
-      { tab_key: 'title-requests', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Total' },
-      { tab_key: 'title-requests', item_key: 'kpi-urbaine', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Urbaine' },
-      { tab_key: 'title-requests', item_key: 'kpi-rurale', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'Rurale' },
-      { tab_key: 'title-requests', item_key: 'kpi-approval', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Taux approbation' },
-      { tab_key: 'title-requests', item_key: 'kpi-revenue', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Revenus payés' },
-      { tab_key: 'title-requests', item_key: 'kpi-delay', item_type: 'kpi', is_visible: true, display_order: 5, custom_title: 'Délai moy.' },
-    ],
-  },
-  'parcels-titled': {
-    label: 'Parcelles',
-    charts: [
-      { tab_key: 'parcels-titled', item_key: 'title-type', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Type titre', chart_type: 'bar-h' },
-      { tab_key: 'parcels-titled', item_key: 'legal-status', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Propriétaires', chart_type: 'donut' },
-      { tab_key: 'parcels-titled', item_key: 'gender', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Genre propriétaires', chart_type: 'pie' },
-      { tab_key: 'parcels-titled', item_key: 'property-category', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Catégorie de bien', chart_type: 'bar-h' },
-      { tab_key: 'parcels-titled', item_key: 'construction-type', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Construction', chart_type: 'bar-h' },
-      { tab_key: 'parcels-titled', item_key: 'construction-nature', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Nature construction', chart_type: 'bar-h' },
-      { tab_key: 'parcels-titled', item_key: 'construction-materials', item_type: 'chart', is_visible: true, display_order: 6, custom_title: 'Matériaux', chart_type: 'bar-h' },
-      { tab_key: 'parcels-titled', item_key: 'standing', item_type: 'chart', is_visible: true, display_order: 7, custom_title: 'Standing', chart_type: 'donut' },
-      { tab_key: 'parcels-titled', item_key: 'construction-decade', item_type: 'chart', is_visible: true, display_order: 8, custom_title: 'Année construction', chart_type: 'bar-v' },
-      { tab_key: 'parcels-titled', item_key: 'usage', item_type: 'chart', is_visible: true, display_order: 9, custom_title: 'Usage déclaré', chart_type: 'bar-h' },
-      
-      { tab_key: 'parcels-titled', item_key: 'surface', item_type: 'chart', is_visible: true, display_order: 11, custom_title: 'Superficie', chart_type: 'bar-v' },
-      { tab_key: 'parcels-titled', item_key: 'subdivided', item_type: 'chart', is_visible: true, display_order: 12, custom_title: 'Loties vs Non loties', chart_type: 'pie' },
-      { tab_key: 'parcels-titled', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 13, custom_title: 'Géographie' },
-      { tab_key: 'parcels-titled', item_key: 'permit-type', item_type: 'chart', is_visible: true, display_order: 14, custom_title: 'Autorisation de bâtir', chart_type: 'donut' },
-      { tab_key: 'parcels-titled', item_key: 'building-size', item_type: 'chart', is_visible: true, display_order: 15, custom_title: 'Taille construction', chart_type: 'bar-v' },
-      { tab_key: 'parcels-titled', item_key: 'building-height', item_type: 'chart', is_visible: true, display_order: 16, custom_title: 'Hauteur construction', chart_type: 'bar-v' },
-      { tab_key: 'parcels-titled', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 17, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
-    ],
-    kpis: [
-      { tab_key: 'parcels-titled', item_key: 'kpi-parcels', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Parcelles' },
-      { tab_key: 'parcels-titled', item_key: 'kpi-urban', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Urbaines' },
-      { tab_key: 'parcels-titled', item_key: 'kpi-rural', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'Rurales' },
-      { tab_key: 'parcels-titled', item_key: 'kpi-surface', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Surface tot.' },
-      { tab_key: 'parcels-titled', item_key: 'kpi-avg-surface', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Surface moy.' },
-      { tab_key: 'parcels-titled', item_key: 'kpi-density', item_type: 'kpi', is_visible: true, display_order: 5, custom_title: 'Densité' },
-    ],
-  },
-  'contributions': {
-    label: 'Contributions',
-    charts: [
-      { tab_key: 'contributions', item_key: 'contribution-type', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Type contribution', chart_type: 'bar-h' },
-      { tab_key: 'contributions', item_key: 'status', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Statut', chart_type: 'pie' },
-      { tab_key: 'contributions', item_key: 'title-type', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Type titre', chart_type: 'bar-h' },
-      { tab_key: 'contributions', item_key: 'legal-status', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Statut juridique', chart_type: 'donut' },
-      { tab_key: 'contributions', item_key: 'property-category', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Catégorie de bien', chart_type: 'bar-h' },
-      { tab_key: 'contributions', item_key: 'usage', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Usage déclaré', chart_type: 'bar-h' },
-      { tab_key: 'contributions', item_key: 'construction-type', item_type: 'chart', is_visible: true, display_order: 6, custom_title: 'Type construction', chart_type: 'bar-h' },
-      { tab_key: 'contributions', item_key: 'fraud-detection', item_type: 'chart', is_visible: true, display_order: 7, custom_title: 'Détection fraude', chart_type: 'pie' },
-      { tab_key: 'contributions', item_key: 'fraud-score', item_type: 'chart', is_visible: true, display_order: 8, custom_title: 'Score fraude', chart_type: 'bar-v' },
-      { tab_key: 'contributions', item_key: 'fraud-reason', item_type: 'chart', is_visible: true, display_order: 9, custom_title: 'Motif fraude', chart_type: 'bar-h' },
-      { tab_key: 'contributions', item_key: 'appeal-status', item_type: 'chart', is_visible: true, display_order: 10, custom_title: 'Statut appel', chart_type: 'donut' },
-      { tab_key: 'contributions', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 11, custom_title: 'Géographie' },
-      { tab_key: 'contributions', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 12, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
-    ],
-    kpis: [
-      { tab_key: 'contributions', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Total' },
-      { tab_key: 'contributions', item_key: 'kpi-approved', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Approuvées' },
-      { tab_key: 'contributions', item_key: 'kpi-pending', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'En attente' },
-      { tab_key: 'contributions', item_key: 'kpi-suspicious', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Suspectes' },
-      { tab_key: 'contributions', item_key: 'kpi-appeals', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Appels' },
-      { tab_key: 'contributions', item_key: 'kpi-delay', item_type: 'kpi', is_visible: true, display_order: 5, custom_title: 'Délai moy.' },
-    ],
-  },
-  'expertise': {
-    label: 'Expertise',
-    charts: [
-      { tab_key: 'expertise', item_key: 'status', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Statut détaillé', chart_type: 'bar-v' },
-      { tab_key: 'expertise', item_key: 'payment', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Paiement', chart_type: 'donut' },
-      { tab_key: 'expertise', item_key: 'property-condition', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'État du bien', chart_type: 'bar-h' },
-      { tab_key: 'expertise', item_key: 'construction-quality', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Qualité construction', chart_type: 'donut' },
-      { tab_key: 'expertise', item_key: 'construction-decade', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Année construction', chart_type: 'bar-v' },
-      { tab_key: 'expertise', item_key: 'built-area', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Surface bâtie', chart_type: 'bar-v' },
-      { tab_key: 'expertise', item_key: 'equipment', item_type: 'chart', is_visible: true, display_order: 6, custom_title: 'Équipements', chart_type: 'bar-h' },
-      { tab_key: 'expertise', item_key: 'wall-material', item_type: 'chart', is_visible: true, display_order: 7, custom_title: 'Matériau murs', chart_type: 'bar-h' },
-      { tab_key: 'expertise', item_key: 'roof-material', item_type: 'chart', is_visible: true, display_order: 8, custom_title: 'Matériau toiture', chart_type: 'pie' },
-      { tab_key: 'expertise', item_key: 'sound-env', item_type: 'chart', is_visible: true, display_order: 9, custom_title: 'Env. sonore', chart_type: 'donut' },
-      { tab_key: 'expertise', item_key: 'building-position', item_type: 'chart', is_visible: true, display_order: 10, custom_title: 'Position bâtiment', chart_type: 'pie' },
-      { tab_key: 'expertise', item_key: 'road-access', item_type: 'chart', is_visible: true, display_order: 11, custom_title: 'Accès routier', chart_type: 'pie' },
-      { tab_key: 'expertise', item_key: 'proximity', item_type: 'chart', is_visible: true, display_order: 12, custom_title: 'Proximité moy.', chart_type: 'bar-h' },
-      { tab_key: 'expertise', item_key: 'risk-zones', item_type: 'chart', is_visible: true, display_order: 13, custom_title: 'Zones à risque', chart_type: 'pie' },
-      { tab_key: 'expertise', item_key: 'market-value', item_type: 'chart', is_visible: true, display_order: 14, custom_title: 'Valeur marchande', chart_type: 'bar-v' },
-      { tab_key: 'expertise', item_key: 'floors', item_type: 'chart', is_visible: true, display_order: 15, custom_title: 'Nbre d\'étages', chart_type: 'bar-v' },
-      { tab_key: 'expertise', item_key: 'garden', item_type: 'chart', is_visible: true, display_order: 16, custom_title: 'Surface jardin', chart_type: 'bar-v' },
-      { tab_key: 'expertise', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 17, custom_title: 'Géographie' },
-      { tab_key: 'expertise', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 18, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
-    ],
-    kpis: [
-      { tab_key: 'expertise', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Total' },
-      { tab_key: 'expertise', item_key: 'kpi-completed', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Complétées' },
-      { tab_key: 'expertise', item_key: 'kpi-in-progress', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'En cours' },
-      { tab_key: 'expertise', item_key: 'kpi-delay-total', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Délai total' },
-      { tab_key: 'expertise', item_key: 'kpi-delay-assign', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Délai assign.' },
-      { tab_key: 'expertise', item_key: 'kpi-avg-value', item_type: 'kpi', is_visible: true, display_order: 5, custom_title: 'Valeur moy.' },
-    ],
-  },
-  'mutations': {
-    label: 'Mutations',
-    charts: [
-      { tab_key: 'mutations', item_key: 'status', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Statut', chart_type: 'pie' },
-      { tab_key: 'mutations', item_key: 'mutation-type', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Type mutation', chart_type: 'bar-h' },
-      { tab_key: 'mutations', item_key: 'requester-type', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Type demandeur', chart_type: 'donut' },
-      { tab_key: 'mutations', item_key: 'payment', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Paiement', chart_type: 'donut' },
-      { tab_key: 'mutations', item_key: 'type-status', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Type × Statut' },
-      { tab_key: 'mutations', item_key: 'market-value', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Valeur vénale', chart_type: 'bar-v' },
-      { tab_key: 'mutations', item_key: 'title-age', item_type: 'chart', is_visible: true, display_order: 6, custom_title: 'Ancienneté titre', chart_type: 'pie' },
-      { tab_key: 'mutations', item_key: 'late-fees', item_type: 'chart', is_visible: true, display_order: 7, custom_title: 'Retard mutation', chart_type: 'pie' },
-      { tab_key: 'mutations', item_key: 'revenue-trend', item_type: 'chart', is_visible: true, display_order: 8, custom_title: 'Revenus/mois', chart_type: 'area' },
-      { tab_key: 'mutations', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 9, custom_title: 'Géographie' },
-      { tab_key: 'mutations', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 10, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
-    ],
-    kpis: [
-      { tab_key: 'mutations', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Total' },
-      { tab_key: 'mutations', item_key: 'kpi-approved', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Approuvées' },
-      { tab_key: 'mutations', item_key: 'kpi-pending', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'En attente' },
-      { tab_key: 'mutations', item_key: 'kpi-rejected', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Rejetées' },
-      { tab_key: 'mutations', item_key: 'kpi-delay', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Délai moy.' },
-      { tab_key: 'mutations', item_key: 'kpi-revenue', item_type: 'kpi', is_visible: true, display_order: 5, custom_title: 'Revenus' },
-    ],
-  },
-  'mortgages': {
-    label: 'Hypothèques',
-    charts: [
-      { tab_key: 'mortgages', item_key: 'creditor-type', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Type créancier', chart_type: 'donut' },
-      { tab_key: 'mortgages', item_key: 'amount-brackets', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Montants', chart_type: 'bar-v' },
-      { tab_key: 'mortgages', item_key: 'status', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Statut', chart_type: 'pie' },
-      { tab_key: 'mortgages', item_key: 'duration', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Durée (mois)', chart_type: 'bar-v' },
-      { tab_key: 'mortgages', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Géographie' },
-      { tab_key: 'mortgages', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
-    ],
-    kpis: [
-      { tab_key: 'mortgages', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Total' },
-      { tab_key: 'mortgages', item_key: 'kpi-active', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Actives' },
-      { tab_key: 'mortgages', item_key: 'kpi-paid', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'Soldées' },
-      { tab_key: 'mortgages', item_key: 'kpi-amount', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Montant total' },
-      { tab_key: 'mortgages', item_key: 'kpi-avg-amount', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Montant moy.' },
-      { tab_key: 'mortgages', item_key: 'kpi-avg-duration', item_type: 'kpi', is_visible: true, display_order: 5, custom_title: 'Durée moy.' },
-    ],
-  },
-  'subdivision': {
-    label: 'Lotissement',
-    charts: [
-      { tab_key: 'subdivision', item_key: 'status', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Statut', chart_type: 'pie' },
-      { tab_key: 'subdivision', item_key: 'lots-distribution', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Distribution lots', chart_type: 'bar-v' },
-      { tab_key: 'subdivision', item_key: 'purpose', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Objet lotissement', chart_type: 'bar-h' },
-      { tab_key: 'subdivision', item_key: 'requester-type', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Type demandeur', chart_type: 'donut' },
-      { tab_key: 'subdivision', item_key: 'payment', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Paiement', chart_type: 'donut' },
-      { tab_key: 'subdivision', item_key: 'surface', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Surface parcelle mère', chart_type: 'bar-v' },
-      { tab_key: 'subdivision', item_key: 'revenue-trend', item_type: 'chart', is_visible: true, display_order: 6, custom_title: 'Revenus/mois', chart_type: 'area' },
-      { tab_key: 'subdivision', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 7, custom_title: 'Géographie' },
-      { tab_key: 'subdivision', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 8, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
-    ],
-    kpis: [
-      { tab_key: 'subdivision', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Total' },
-      { tab_key: 'subdivision', item_key: 'kpi-lots', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Lots prévus' },
-      { tab_key: 'subdivision', item_key: 'kpi-avg-lots', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'Moy. lots/dem.' },
-      { tab_key: 'subdivision', item_key: 'kpi-approved', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Approuvées' },
-      { tab_key: 'subdivision', item_key: 'kpi-delay', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Délai moy.' },
-      { tab_key: 'subdivision', item_key: 'kpi-surface', item_type: 'kpi', is_visible: true, display_order: 5, custom_title: 'Surface tot.' },
-    ],
-  },
-  'disputes': {
-    label: 'Litiges fonciers',
-    charts: [
-      { tab_key: 'disputes', item_key: 'nature', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Nature', chart_type: 'bar-h' },
-      { tab_key: 'disputes', item_key: 'resolution-status', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'En cours vs Résolus', chart_type: 'pie' },
-      { tab_key: 'disputes', item_key: 'status-detail', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Statut détaillé', chart_type: 'bar-v' },
-      { tab_key: 'disputes', item_key: 'type', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Type litige', chart_type: 'donut' },
-      { tab_key: 'disputes', item_key: 'resolution-level', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Niveau résolution', chart_type: 'bar-h' },
-      { tab_key: 'disputes', item_key: 'declarant-quality', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Qualité déclarant', chart_type: 'donut' },
-      { tab_key: 'disputes', item_key: 'nature-resolution', item_type: 'chart', is_visible: true, display_order: 6, custom_title: 'Nature × Résolution' },
-      { tab_key: 'disputes', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 7, custom_title: 'Géographie' },
-      { tab_key: 'disputes', item_key: 'resolution-rate', item_type: 'chart', is_visible: true, display_order: 8, custom_title: 'Taux résolution %', chart_type: 'area', col_span: 2 },
-      { tab_key: 'disputes', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 9, custom_title: 'Évolution signalements', chart_type: 'multi-area', col_span: 2 },
-      { tab_key: 'disputes', item_key: 'lifting-status', item_type: 'chart', is_visible: true, display_order: 10, custom_title: 'Statut levée', chart_type: 'pie' },
-      { tab_key: 'disputes', item_key: 'lifting-resolution-level', item_type: 'chart', is_visible: true, display_order: 11, custom_title: 'Niveau résolution (levée)', chart_type: 'bar-h' },
-      { tab_key: 'disputes', item_key: 'lifting-nature', item_type: 'chart', is_visible: true, display_order: 12, custom_title: 'Nature litige (levée)', chart_type: 'bar-h' },
-      { tab_key: 'disputes', item_key: 'lifting-reason', item_type: 'chart', is_visible: true, display_order: 13, custom_title: 'Motif de levée', chart_type: 'bar-h' },
-      { tab_key: 'disputes', item_key: 'lifting-geo', item_type: 'chart', is_visible: true, display_order: 14, custom_title: 'Géographie (levée)' },
-      { tab_key: 'disputes', item_key: 'lifting-success-rate', item_type: 'chart', is_visible: true, display_order: 15, custom_title: 'Taux réussite %', chart_type: 'area', col_span: 2 },
-      { tab_key: 'disputes', item_key: 'lifting-evolution', item_type: 'chart', is_visible: true, display_order: 16, custom_title: 'Évolution levées', chart_type: 'area', col_span: 2 },
-    ],
-    kpis: [
-      { tab_key: 'disputes', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Total' },
-      { tab_key: 'disputes', item_key: 'kpi-en-cours', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'En cours' },
-      { tab_key: 'disputes', item_key: 'kpi-resolus', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'Résolus' },
-      { tab_key: 'disputes', item_key: 'kpi-rate', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Taux résolution' },
-      { tab_key: 'disputes', item_key: 'kpi-duration', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Durée moy.' },
-      { tab_key: 'disputes', item_key: 'kpi-lifting-total', item_type: 'kpi', is_visible: true, display_order: 5, custom_title: 'Demandes levée' },
-      { tab_key: 'disputes', item_key: 'kpi-lifting-approved', item_type: 'kpi', is_visible: true, display_order: 6, custom_title: 'Levées approuvées' },
-      { tab_key: 'disputes', item_key: 'kpi-lifting-pending', item_type: 'kpi', is_visible: true, display_order: 7, custom_title: 'Levées en attente' },
-      { tab_key: 'disputes', item_key: 'kpi-lifting-success', item_type: 'kpi', is_visible: true, display_order: 8, custom_title: 'Taux réussite levée' },
-    ],
-  },
-  'ownership': {
-    label: 'Historique prop.',
-    charts: [
-      { tab_key: 'ownership', item_key: 'legal-status', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Statut juridique', chart_type: 'donut' },
-      { tab_key: 'ownership', item_key: 'mutation-type', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Type mutation', chart_type: 'bar-h' },
-      { tab_key: 'ownership', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Géographie' },
-      { tab_key: 'ownership', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
-    ],
-    kpis: [
-      { tab_key: 'ownership', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Total transferts' },
-      { tab_key: 'ownership', item_key: 'kpi-active', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Propriétaires actifs' },
-      { tab_key: 'ownership', item_key: 'kpi-closed', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'Transferts clos' },
-      { tab_key: 'ownership', item_key: 'kpi-duration', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Durée moy.' },
-    ],
-  },
-  'certificates': {
-    label: 'Certificats',
-    charts: [
-      { tab_key: 'certificates', item_key: 'cert-type', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Type certificat', chart_type: 'bar-h' },
-      { tab_key: 'certificates', item_key: 'status', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Statut', chart_type: 'pie' },
-      { tab_key: 'certificates', item_key: 'type-trend', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Type × Mois' },
-      { tab_key: 'certificates', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Géographie' },
-      { tab_key: 'certificates', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
-    ],
-    kpis: [
-      { tab_key: 'certificates', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Total' },
-      { tab_key: 'certificates', item_key: 'kpi-generated', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Générés' },
-      { tab_key: 'certificates', item_key: 'kpi-pending', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'En attente' },
-      { tab_key: 'certificates', item_key: 'kpi-types', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Types distincts' },
-    ],
-  },
-  'invoices': {
-    label: 'Factures',
-    charts: [
-      { tab_key: 'invoices', item_key: 'status', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Statut', chart_type: 'pie' },
-      { tab_key: 'invoices', item_key: 'payment-method', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Moyen paiement', chart_type: 'donut' },
-      { tab_key: 'invoices', item_key: 'geo-zone', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Zone géographique', chart_type: 'bar-h' },
-      { tab_key: 'invoices', item_key: 'revenue-trend', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Revenus/mois', chart_type: 'area' },
-      { tab_key: 'invoices', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Géographie' },
-      { tab_key: 'invoices', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
-    ],
-    kpis: [
-      { tab_key: 'invoices', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Total' },
-      { tab_key: 'invoices', item_key: 'kpi-paid', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Payées' },
-      { tab_key: 'invoices', item_key: 'kpi-revenue', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'Revenus payés' },
-      { tab_key: 'invoices', item_key: 'kpi-avg', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Montant moy.' },
-      { tab_key: 'invoices', item_key: 'kpi-discounts', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Remises' },
-    ],
-  },
-  'building-permits': {
-    label: 'Autorisations',
-    charts: [
-      { tab_key: 'building-permits', item_key: 'status', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Statut administratif', chart_type: 'bar-v' },
-      { tab_key: 'building-permits', item_key: 'current-status', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'En cours vs Expiré', chart_type: 'pie' },
-      { tab_key: 'building-permits', item_key: 'issuing-service', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Service émetteur', chart_type: 'bar-h' },
-      { tab_key: 'building-permits', item_key: 'validity-period', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Période de validité', chart_type: 'bar-v' },
-      { tab_key: 'building-permits', item_key: 'permit-type', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Type de permis', chart_type: 'pie' },
-      { tab_key: 'building-permits', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Géographie' },
-      { tab_key: 'building-permits', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 6, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
-    ],
-    kpis: [
-      { tab_key: 'building-permits', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Total' },
-      { tab_key: 'building-permits', item_key: 'kpi-approved', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Approuvées' },
-      { tab_key: 'building-permits', item_key: 'kpi-pending', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'En attente' },
-      { tab_key: 'building-permits', item_key: 'kpi-rejected', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Rejetées' },
-      { tab_key: 'building-permits', item_key: 'kpi-approval-rate', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Taux approbation' },
-    ],
-  },
-  'taxes': {
-    label: 'Taxes foncières',
-    charts: [
-      { tab_key: 'taxes', item_key: 'status', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Statut paiement', chart_type: 'bar-v' },
-      { tab_key: 'taxes', item_key: 'fiscal-year', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Exercice fiscal', chart_type: 'bar-v' },
-      { tab_key: 'taxes', item_key: 'amount-range', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Tranche montant', chart_type: 'bar-h' },
-      { tab_key: 'taxes', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Géographie' },
-      { tab_key: 'taxes', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
-    ],
-    kpis: [
-      { tab_key: 'taxes', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Total déclarations' },
-      { tab_key: 'taxes', item_key: 'kpi-revenue', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Montant total' },
-      { tab_key: 'taxes', item_key: 'kpi-pending', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'En attente' },
-      { tab_key: 'taxes', item_key: 'kpi-approved', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Payées' },
-      { tab_key: 'taxes', item_key: 'kpi-recovery', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Recouvrement' },
-      { tab_key: 'taxes', item_key: 'kpi-avg', item_type: 'kpi', is_visible: true, display_order: 5, custom_title: 'Montant moy.' },
-    ],
-  },
-  '_global': {
-    label: 'Global',
-    charts: [
-      { tab_key: '_global', item_key: 'global-watermark', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'BIC - Tous droits réservés' },
-      { tab_key: '_global', item_key: 'logo-watermark-opacity', item_type: 'chart', is_visible: true, display_order: 1, custom_title: '0.06' },
-      { tab_key: '_global', item_key: 'logo-watermark-size', item_type: 'chart', is_visible: true, display_order: 2, custom_title: '80' },
-      { tab_key: '_global', item_key: 'logo-watermark-position', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'center' },
-    ],
-    kpis: [],
-  },
-  'rdc-map': {
-    label: 'Carte RDC',
-    charts: [
-      { tab_key: 'rdc-map', item_key: 'map-legend-title', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Densité parcelles cadastrées' },
-      { tab_key: 'rdc-map', item_key: 'map-header-note', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Répartition géographique des données foncières cadastrales' },
-      { tab_key: 'rdc-map', item_key: 'map-watermark', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'BIC - Tous droits réservés' },
-      { tab_key: 'rdc-map', item_key: 'map-copy-button', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Bouton copier image' },
-      { tab_key: 'rdc-map', item_key: 'map-tier-1', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Faible (0–30)', custom_color: '#bec8d1' },
-      { tab_key: 'rdc-map', item_key: 'map-tier-2', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Modéré (31–100)', custom_color: '#f0b90b' },
-      { tab_key: 'rdc-map', item_key: 'map-tier-3', item_type: 'chart', is_visible: true, display_order: 6, custom_title: 'Élevé (101–500)', custom_color: '#e87422' },
-      { tab_key: 'rdc-map', item_key: 'map-tier-4', item_type: 'chart', is_visible: true, display_order: 7, custom_title: 'Très élevé (501+)', custom_color: '#b31942' },
-    ],
-    kpis: [
-      // Tooltip indicators
-      { tab_key: 'rdc-map', item_key: 'tooltip-cert-enreg', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Certif. enregistrement' },
-      { tab_key: 'rdc-map', item_key: 'tooltip-contrat-loc', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Contrat location' },
-      { tab_key: 'rdc-map', item_key: 'tooltip-fiche-parc', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'Fiche parcellaire' },
-      { tab_key: 'rdc-map', item_key: 'tooltip-title-req', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Titres demandés' },
-      { tab_key: 'rdc-map', item_key: 'tooltip-disputes', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Litiges fonciers' },
-      { tab_key: 'rdc-map', item_key: 'tooltip-mortgages', item_type: 'kpi', is_visible: true, display_order: 5, custom_title: 'Hypothèques actives' },
-      { tab_key: 'rdc-map', item_key: 'tooltip-mutations', item_type: 'kpi', is_visible: true, display_order: 6, custom_title: 'Mutations en cours' },
-      { tab_key: 'rdc-map', item_key: 'tooltip-expertises', item_type: 'kpi', is_visible: true, display_order: 7, custom_title: 'Expertises en cours' },
-      { tab_key: 'rdc-map', item_key: 'tooltip-avg-surface', item_type: 'kpi', is_visible: true, display_order: 8, custom_title: 'Sup. moy. parcelle' },
-      { tab_key: 'rdc-map', item_key: 'tooltip-avg-building', item_type: 'kpi', is_visible: true, display_order: 9, custom_title: 'Sup. moy. construction' },
-      { tab_key: 'rdc-map', item_key: 'tooltip-avg-height', item_type: 'kpi', is_visible: true, display_order: 10, custom_title: 'Haut. moy. construction' },
-      // Detail indicators
-      { tab_key: 'rdc-map', item_key: 'detail-cert-enreg', item_type: 'kpi', is_visible: true, display_order: 11, custom_title: 'Certif. enregistrement' },
-      { tab_key: 'rdc-map', item_key: 'detail-contrat-loc', item_type: 'kpi', is_visible: true, display_order: 12, custom_title: 'Contrat location' },
-      { tab_key: 'rdc-map', item_key: 'detail-fiche-parc', item_type: 'kpi', is_visible: true, display_order: 13, custom_title: 'Fiche parcellaire' },
-      { tab_key: 'rdc-map', item_key: 'detail-title-req', item_type: 'kpi', is_visible: true, display_order: 14, custom_title: 'Titres demandés' },
-      { tab_key: 'rdc-map', item_key: 'detail-disputes', item_type: 'kpi', is_visible: true, display_order: 15, custom_title: 'Litiges fonciers' },
-      { tab_key: 'rdc-map', item_key: 'detail-mortgages', item_type: 'kpi', is_visible: true, display_order: 16, custom_title: 'Hypothèques actives' },
-      { tab_key: 'rdc-map', item_key: 'detail-mutations', item_type: 'kpi', is_visible: true, display_order: 17, custom_title: 'Mutations en cours' },
-      { tab_key: 'rdc-map', item_key: 'detail-expertises', item_type: 'kpi', is_visible: true, display_order: 18, custom_title: 'Expertises en cours' },
-      { tab_key: 'rdc-map', item_key: 'detail-avg-surface', item_type: 'kpi', is_visible: true, display_order: 19, custom_title: 'Sup. moy. parcelle' },
-      { tab_key: 'rdc-map', item_key: 'detail-avg-building', item_type: 'kpi', is_visible: true, display_order: 20, custom_title: 'Sup. moy. construction' },
-      { tab_key: 'rdc-map', item_key: 'detail-avg-height', item_type: 'kpi', is_visible: true, display_order: 21, custom_title: 'Haut. moy. construction' },
-    ],
-  },
-};
+export { TAB_FILTER_DEFAULTS };
