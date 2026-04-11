@@ -1,4 +1,4 @@
-import React, { useState, memo } from 'react';
+import React, { useState, memo, useMemo } from 'react';
 import { FileText, Map, Search, ArrowRightLeft, Scissors, AlertTriangle, Loader2, Database, History, Award, Receipt, Landmark, FileCheck, DollarSign } from 'lucide-react';
 import { useLandDataAnalytics, LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { TitleRequestsBlock } from './blocks/TitleRequestsBlock';
