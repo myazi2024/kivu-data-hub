@@ -1,34 +1,21 @@
-import React, { useState, useMemo, memo, useContext, useEffect } from 'react';
+import React, { useMemo, memo } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
-import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, buildFilterLabel, CHART_COLORS } from '@/utils/analyticsHelpers';
+import { countBy, trendByMonth, CHART_COLORS } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { Award, TrendingUp, CheckCircle } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, StackedBarCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
-import { MapProvinceContext, VilleFilterContext, CommuneFilterContext, QuartierFilterContext } from '../filters/AnalyticsFilters';
 import { generateInsight, generateStackedInsight } from '@/utils/chartInsights';
-import { useTabChartsConfig, useTabFilterConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
-import { getCrossVariables } from '@/config/crossVariables';
+import { useBlockFilter } from '@/hooks/useBlockFilter';
 
 interface Props { data: LandAnalyticsData; }
 
 const TAB_KEY = 'certificates';
-const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TABS_REGISTRY[TAB_KEY].charts];
-const cx = (key: string) => getCrossVariables(TAB_KEY, key);
 
 export const CertificatesBlock: React.FC<Props> = memo(({ data }) => {
-  const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
-  const mapProvince = useContext(MapProvinceContext);
-  const mapVille = useContext(VilleFilterContext);
-  const mapCommune = useContext(CommuneFilterContext);
-  const mapQuartier = useContext(QuartierFilterContext);
-  useEffect(() => { setFilter(f => ({ ...f, province: mapProvince || undefined, ville: mapVille || undefined, commune: mapCommune || undefined, quartier: mapQuartier || undefined })); }, [mapProvince, mapVille, mapCommune, mapQuartier]);
-  const filterLabel = useMemo(() => buildFilterLabel(filter), [filter]);
-  const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
-  const filterConfig = useTabFilterConfig(TAB_KEY);
-  const filtered = useMemo(() => applyFilters(data.certificates, filter, filterConfig.dateField), [data.certificates, filter, filterConfig.dateField]);
+  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx } = useBlockFilter(TAB_KEY, data.certificates);
 
   const byType = useMemo(() => countBy(filtered, 'certificate_type'), [filtered]);
   const byStatus = useMemo(() => countBy(filtered, 'status'), [filtered]);
@@ -66,15 +53,12 @@ export const CertificatesBlock: React.FC<Props> = memo(({ data }) => {
     return { generated, pending, uniqueTypes };
   }, [filtered]);
 
-  const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
-  const v = isChartVisible;
-
   const kpiItems = useMemo(() => [
     { key: 'kpi-total', label: ct('kpi-total', 'Total'), value: filtered.length, cls: 'text-primary' },
     { key: 'kpi-generated', label: ct('kpi-generated', 'Générés'), value: stats.generated, cls: 'text-emerald-600', tooltip: pct(stats.generated, filtered.length) },
     { key: 'kpi-pending', label: ct('kpi-pending', 'En attente'), value: stats.pending, cls: 'text-amber-600', tooltip: pct(stats.pending, filtered.length) },
     { key: 'kpi-types', label: ct('kpi-types', 'Types distincts'), value: stats.uniqueTypes, cls: 'text-blue-600' },
-  ].filter(k => v(k.key)), [filtered, stats, v, getChartConfig]);
+  ].filter(k => v(k.key)), [filtered, stats, v, ct]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>

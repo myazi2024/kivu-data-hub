@@ -1,25 +1,22 @@
-import React, { useState, useMemo, memo, useContext, useEffect } from 'react';
+import React, { useMemo, memo } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
-import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, surfaceDistribution, yearDecadeDistribution, buildFilterLabel } from '@/utils/analyticsHelpers';
+import { countBy, trendByMonth, surfaceDistribution, yearDecadeDistribution } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { FileText, Users, Building, TrendingUp, Ruler, Clock, ShieldCheck, Maximize, ArrowUpFromLine } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, ColorMappedPieCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
-import { MapProvinceContext, VilleFilterContext, CommuneFilterContext, QuartierFilterContext } from '../filters/AnalyticsFilters';
 import { generateInsight } from '@/utils/chartInsights';
-import { useTabChartsConfig, useTabFilterConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { normalizeTitleType } from '@/utils/titleTypeNormalizer';
 import { normalizeConstructionType } from '@/utils/constructionTypeNormalizer';
 import { normalizeDeclaredUsage } from '@/utils/declaredUsageNormalizer';
-import { getCrossVariables } from '@/config/crossVariables';
+import { useBlockFilter } from '@/hooks/useBlockFilter';
+import { applyFilters } from '@/utils/analyticsHelpers';
 
 interface Props { data: LandAnalyticsData; }
 
 const TAB_KEY = 'parcels-titled';
-const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TABS_REGISTRY[TAB_KEY].charts];
-const cx = (key: string) => getCrossVariables(TAB_KEY, key);
 
 const GENDER_COLORS: Record<string, string> = {
   'Masculin': '#3b82f6', 'Féminin': '#ec4899', 'M': '#3b82f6', 'F': '#ec4899',
@@ -27,17 +24,8 @@ const GENDER_COLORS: Record<string, string> = {
 };
 
 export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
-  const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
-  const mapProvince = useContext(MapProvinceContext);
-  const mapVille = useContext(VilleFilterContext);
-  const mapCommune = useContext(CommuneFilterContext);
-  const mapQuartier = useContext(QuartierFilterContext);
-  useEffect(() => { setFilter(f => ({ ...f, province: mapProvince || undefined, ville: mapVille || undefined, commune: mapCommune || undefined, quartier: mapQuartier || undefined })); }, [mapProvince, mapVille, mapCommune, mapQuartier]);
-  const filterLabel = useMemo(() => buildFilterLabel(filter), [filter]);
-  const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
-  const filterConfig = useTabFilterConfig(TAB_KEY);
-  const filteredParcels = useMemo(() => applyFilters(data.parcels, filter), [data.parcels, filter]);
-  const filteredContribs = useMemo(() => applyFilters(data.contributions, filter), [data.contributions, filter]);
+  const { filter, setFilter, filterLabel, filtered: filteredParcels, filterConfig, v, ct, cx } = useBlockFilter(TAB_KEY, data.parcels);
+  const filteredContribs = useMemo(() => applyFilters(data.contributions, filter, filterConfig.dateField), [data.contributions, filter, filterConfig.dateField]);
 
   const normalizedParcels = useMemo(() =>
     filteredParcels.map(p => ({
@@ -57,12 +45,10 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     byStanding: countBy(filteredParcels, 'standing'),
     byPropertyCategory: countBy(filteredParcels, 'property_category'),
     byDeclaredUsage: countBy(normalizedParcels, 'declared_usage'),
-    
     surfaceDist: surfaceDistribution(filteredParcels),
     byDecade: yearDecadeDistribution(filteredParcels, 'construction_year'),
   }), [filteredParcels, normalizedParcels]);
 
-  // Building permit type from contributions' building_permits JSONB
   const permitTypeData = useMemo(() => {
     const map = new Map<string, number>();
     filteredContribs.forEach(c => {
@@ -79,7 +65,6 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
   }, [filteredContribs]);
 
-  // Building size distribution from contributions' building_shapes JSONB
   const buildingSizeData = useMemo(() => {
     const buckets = [
       { label: '< 50 m²', min: 0, max: 50 },
@@ -104,7 +89,6 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     return counts.filter(c => c.value > 0).map(({ name, value }) => ({ name, value }));
   }, [filteredContribs]);
 
-  // Building height distribution from contributions' building_shapes JSONB
   const buildingHeightData = useMemo(() => {
     const buckets = [
       { label: '< 3m', min: 0, max: 3 },
@@ -162,9 +146,6 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
 
   const trend = useMemo(() => trendByMonth(filteredParcels), [filteredParcels]);
 
-  const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
-  const v = isChartVisible;
-
   const avgSurface = useMemo(() => filteredParcels.length > 0 ? Math.round(totalSurface / filteredParcels.length) : 0, [totalSurface, filteredParcels.length]);
   const density = useMemo(() => totalSurface > 0 ? (filteredParcels.length / (totalSurface / 10000)).toFixed(1) : 'N/A', [totalSurface, filteredParcels.length]);
 
@@ -175,7 +156,7 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'kpi-surface', label: ct('kpi-surface', 'Surface tot.'), value: totalSurface > 0 ? `${(totalSurface / 10000).toFixed(1)} ha` : 'N/A', cls: 'text-violet-600', tooltip: `${totalSurface.toLocaleString()} m²` },
     { key: 'kpi-avg-surface', label: ct('kpi-avg-surface', 'Surface moy.'), value: avgSurface > 0 ? `${avgSurface.toLocaleString()} m²` : 'N/A', cls: 'text-blue-600' },
     { key: 'kpi-density', label: ct('kpi-density', 'Densité'), value: density !== 'N/A' ? `${density}/ha` : 'N/A', cls: 'text-rose-600', tooltip: 'Parcelles par hectare' },
-  ].filter(k => v(k.key)), [filteredParcels, urbanCount, ruralCount, totalSurface, avgSurface, density, v, getChartConfig]);
+  ].filter(k => v(k.key)), [filteredParcels, urbanCount, ruralCount, totalSurface, avgSurface, density, v, ct]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>

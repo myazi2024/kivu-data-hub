@@ -1,34 +1,21 @@
-import React, { useState, useMemo, memo, useContext, useEffect } from 'react';
+import React, { useMemo, memo } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
-import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, buildFilterLabel } from '@/utils/analyticsHelpers';
+import { countBy, trendByMonth } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { Receipt, DollarSign, Clock, CheckCircle, TrendingUp } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
-import { MapProvinceContext, VilleFilterContext, CommuneFilterContext, QuartierFilterContext } from '../filters/AnalyticsFilters';
 import { generateInsight } from '@/utils/chartInsights';
-import { useTabChartsConfig, useTabFilterConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
-import { getCrossVariables } from '@/config/crossVariables';
+import { useBlockFilter } from '@/hooks/useBlockFilter';
 
 interface Props { data: LandAnalyticsData; }
 
 const TAB_KEY = 'taxes';
-const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TABS_REGISTRY[TAB_KEY].charts];
-const cx = (key: string) => getCrossVariables(TAB_KEY, key);
 
 export const TaxesBlock: React.FC<Props> = memo(({ data }) => {
-  const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
-  const mapProvince = useContext(MapProvinceContext);
-  const mapVille = useContext(VilleFilterContext);
-  const mapCommune = useContext(CommuneFilterContext);
-  const mapQuartier = useContext(QuartierFilterContext);
-  useEffect(() => { setFilter(f => ({ ...f, province: mapProvince || undefined, ville: mapVille || undefined, commune: mapCommune || undefined, quartier: mapQuartier || undefined })); }, [mapProvince, mapVille, mapCommune, mapQuartier]);
-  const filterLabel = useMemo(() => buildFilterLabel(filter), [filter]);
-  const { isChartVisible: v, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
-  const filterConfig = useTabFilterConfig(TAB_KEY);
-  const filtered = useMemo(() => applyFilters(data.taxHistory, filter), [data.taxHistory, filter]);
+  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx } = useBlockFilter(TAB_KEY, data.taxHistory);
 
   const byStatus = useMemo(() => countBy(filtered, 'payment_status'), [filtered]);
   const byYear = useMemo(() => {
@@ -52,10 +39,10 @@ export const TaxesBlock: React.FC<Props> = memo(({ data }) => {
   }, [filtered]);
 
   const statusNorm = (s: string) => {
-    const v = (s || '').trim().toLowerCase();
-    if (['paid', 'payé', 'payée'].includes(v)) return 'paid';
-    if (['pending', 'en_attente', 'unpaid', 'en attente', 'impayé'].includes(v)) return 'pending';
-    return v;
+    const val = (s || '').trim().toLowerCase();
+    if (['paid', 'payé', 'payée'].includes(val)) return 'paid';
+    if (['pending', 'en_attente', 'unpaid', 'en attente', 'impayé'].includes(val)) return 'pending';
+    return val;
   };
   const totalAmount = filtered.reduce((s: number, t: any) => s + (t.amount_usd || 0), 0);
   const paid = filtered.filter((t: any) => statusNorm(t.payment_status) === 'paid').length;
@@ -64,16 +51,14 @@ export const TaxesBlock: React.FC<Props> = memo(({ data }) => {
   const avgAmount = filtered.length > 0 ? Math.round(totalAmount / filtered.length) : 0;
   const recoveryRate = totalAmount > 0 ? `${Math.round((paidAmount / totalAmount) * 100)}%` : 'N/A';
 
-  const dt = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
-
   const kpiItems = useMemo(() => [
-    { key: 'kpi-total', label: dt('kpi-total', 'Total déclarations'), value: filtered.length, cls: 'text-purple-600' },
-    { key: 'kpi-revenue', label: dt('kpi-revenue', 'Montant total'), value: `$${totalAmount.toLocaleString()}`, cls: 'text-emerald-600' },
-    { key: 'kpi-pending', label: dt('kpi-pending', 'En attente'), value: pendingCount, cls: 'text-amber-600', tooltip: pct(pendingCount, filtered.length) },
-    { key: 'kpi-approved', label: dt('kpi-approved', 'Payées'), value: paid, cls: 'text-blue-600', tooltip: pct(paid, filtered.length) },
-    { key: 'kpi-recovery', label: dt('kpi-recovery', 'Recouvrement'), value: recoveryRate, cls: 'text-rose-600', tooltip: `Payé: $${paidAmount.toLocaleString()}` },
-    { key: 'kpi-avg', label: dt('kpi-avg', 'Montant moy.'), value: `$${avgAmount.toLocaleString()}`, cls: 'text-violet-600' },
-  ].filter(k => v(k.key)), [filtered, totalAmount, pendingCount, paid, recoveryRate, paidAmount, avgAmount, v, getChartConfig]);
+    { key: 'kpi-total', label: ct('kpi-total', 'Total déclarations'), value: filtered.length, cls: 'text-purple-600' },
+    { key: 'kpi-revenue', label: ct('kpi-revenue', 'Montant total'), value: `$${totalAmount.toLocaleString()}`, cls: 'text-emerald-600' },
+    { key: 'kpi-pending', label: ct('kpi-pending', 'En attente'), value: pendingCount, cls: 'text-amber-600', tooltip: pct(pendingCount, filtered.length) },
+    { key: 'kpi-approved', label: ct('kpi-approved', 'Payées'), value: paid, cls: 'text-blue-600', tooltip: pct(paid, filtered.length) },
+    { key: 'kpi-recovery', label: ct('kpi-recovery', 'Recouvrement'), value: recoveryRate, cls: 'text-rose-600', tooltip: `Payé: $${paidAmount.toLocaleString()}` },
+    { key: 'kpi-avg', label: ct('kpi-avg', 'Montant moy.'), value: `$${avgAmount.toLocaleString()}`, cls: 'text-violet-600' },
+  ].filter(k => v(k.key)), [filtered, totalAmount, pendingCount, paid, recoveryRate, paidAmount, avgAmount, v, ct]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
@@ -81,11 +66,11 @@ export const TaxesBlock: React.FC<Props> = memo(({ data }) => {
         <AnalyticsFilters data={data.taxHistory} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} />
         <KpiGrid items={kpiItems} />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          {v('status') && <ChartCard title={dt('status', 'Statut paiement')} data={byStatus} type="bar-v" colorIndex={0} insight={generateInsight(byStatus, 'bar-v', 'les statuts de taxe')} crossVariables={cx('status')} rawRecords={filtered} groupField="payment_status" />}
-          {v('fiscal-year') && <ChartCard title={dt('fiscal-year', 'Exercice fiscal')} data={byYear} type="bar-v" colorIndex={1} insight={generateInsight(byYear, 'bar-v', 'les exercices fiscaux')} crossVariables={cx('fiscal-year')} rawRecords={filtered} groupField="tax_year" />}
-          {v('amount-range') && <ChartCard title={dt('amount-range', 'Tranche montant')} data={amountBrackets} type="bar-h" colorIndex={2} insight={generateInsight(amountBrackets, 'bar-h', 'les tranches de montant')} crossVariables={cx('amount-range')} rawRecords={filtered} groupField="amount_usd" />}
+          {v('status') && <ChartCard title={ct('status', 'Statut paiement')} data={byStatus} type="bar-v" colorIndex={0} insight={generateInsight(byStatus, 'bar-v', 'les statuts de taxe')} crossVariables={cx('status')} rawRecords={filtered} groupField="payment_status" />}
+          {v('fiscal-year') && <ChartCard title={ct('fiscal-year', 'Exercice fiscal')} data={byYear} type="bar-v" colorIndex={1} insight={generateInsight(byYear, 'bar-v', 'les exercices fiscaux')} crossVariables={cx('fiscal-year')} rawRecords={filtered} groupField="tax_year" />}
+          {v('amount-range') && <ChartCard title={ct('amount-range', 'Tranche montant')} data={amountBrackets} type="bar-h" colorIndex={2} insight={generateInsight(amountBrackets, 'bar-h', 'les tranches de montant')} crossVariables={cx('amount-range')} rawRecords={filtered} groupField="amount_usd" />}
           {v('geo') && <GeoCharts records={filtered} />}
-          {v('evolution') && <ChartCard title={dt('evolution', 'Évolution')} data={trend} type="area" colorIndex={3} colSpan={2} icon={TrendingUp} insight={generateInsight(trend, 'area', "l'évolution des taxes")} />}
+          {v('evolution') && <ChartCard title={ct('evolution', 'Évolution')} data={trend} type="area" colorIndex={3} colSpan={2} icon={TrendingUp} insight={generateInsight(trend, 'area', "l'évolution des taxes")} />}
         </div>
       </div>
     </FilterLabelContext.Provider>

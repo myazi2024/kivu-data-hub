@@ -1,40 +1,26 @@
-import React, { useState, useMemo, memo, useContext, useEffect } from 'react';
+import React, { useMemo, memo } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
-import { AnalyticsFilter, defaultFilter, applyFilters, countBy, trendByMonth, buildFilterLabel, sumByMonth } from '@/utils/analyticsHelpers';
+import { countBy, trendByMonth, sumByMonth } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { Receipt, TrendingUp, DollarSign, CreditCard, MapPin } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
-import { MapProvinceContext, VilleFilterContext, CommuneFilterContext, QuartierFilterContext } from '../filters/AnalyticsFilters';
 import { generateInsight } from '@/utils/chartInsights';
-import { useTabChartsConfig, useTabFilterConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
-import { getCrossVariables } from '@/config/crossVariables';
+import { useBlockFilter } from '@/hooks/useBlockFilter';
 
 interface Props { data: LandAnalyticsData; }
 
 const TAB_KEY = 'invoices';
-const defaultItems = [...ANALYTICS_TABS_REGISTRY[TAB_KEY].kpis, ...ANALYTICS_TABS_REGISTRY[TAB_KEY].charts];
-const cx = (key: string) => getCrossVariables(TAB_KEY, key);
 
 export const InvoicesBlock: React.FC<Props> = memo(({ data }) => {
-  const [filter, setFilter] = useState<AnalyticsFilter>(defaultFilter);
-  const mapProvince = useContext(MapProvinceContext);
-  const mapVille = useContext(VilleFilterContext);
-  const mapCommune = useContext(CommuneFilterContext);
-  const mapQuartier = useContext(QuartierFilterContext);
-  useEffect(() => { setFilter(f => ({ ...f, province: mapProvince || undefined, ville: mapVille || undefined, commune: mapCommune || undefined, quartier: mapQuartier || undefined })); }, [mapProvince, mapVille, mapCommune, mapQuartier]);
-  const filterLabel = useMemo(() => buildFilterLabel(filter), [filter]);
-  const { isChartVisible, getChartConfig } = useTabChartsConfig(TAB_KEY, defaultItems);
-  const filterConfig = useTabFilterConfig(TAB_KEY);
-  const filtered = useMemo(() => applyFilters(data.invoices, filter), [data.invoices, filter]);
+  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx } = useBlockFilter(TAB_KEY, data.invoices);
 
   const byStatus = useMemo(() => countBy(filtered, 'status'), [filtered]);
   const byPaymentMethod = useMemo(() => countBy(filtered, 'payment_method'), [filtered]);
   const byGeoZone = useMemo(() => countBy(filtered, 'geographical_zone'), [filtered]);
   const trend = useMemo(() => trendByMonth(filtered), [filtered]);
-
   const revenueTrend = useMemo(() => sumByMonth(filtered.filter(r => r.status === 'paid')), [filtered]);
 
   const stats = useMemo(() => {
@@ -46,16 +32,13 @@ export const InvoicesBlock: React.FC<Props> = memo(({ data }) => {
     return { paidRevenue, totalRevenue, totalDiscount, avgAmount, paidCount: paid.length };
   }, [filtered]);
 
-  const ct = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
-  const v = isChartVisible;
-
   const kpiItems = useMemo(() => [
     { key: 'kpi-total', label: ct('kpi-total', 'Total'), value: filtered.length, cls: 'text-primary' },
     { key: 'kpi-paid', label: ct('kpi-paid', 'Payées'), value: stats.paidCount, cls: 'text-emerald-600', tooltip: pct(stats.paidCount, filtered.length) },
     { key: 'kpi-revenue', label: ct('kpi-revenue', 'Revenus payés'), value: `$${stats.paidRevenue.toLocaleString()}`, cls: 'text-blue-600', tooltip: `Facturé: $${stats.totalRevenue.toLocaleString()}` },
     { key: 'kpi-avg', label: ct('kpi-avg', 'Montant moy.'), value: `$${stats.avgAmount}`, cls: 'text-violet-600' },
     { key: 'kpi-discounts', label: ct('kpi-discounts', 'Remises'), value: `$${stats.totalDiscount.toLocaleString()}`, cls: 'text-rose-600', tooltip: 'Total des remises accordées' },
-  ].filter(k => v(k.key)), [filtered, stats, v, getChartConfig]);
+  ].filter(k => v(k.key)), [filtered, stats, v, ct]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
