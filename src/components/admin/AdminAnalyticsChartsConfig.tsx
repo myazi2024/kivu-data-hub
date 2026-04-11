@@ -8,9 +8,9 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-  Save, Loader2, BarChart3, LayoutGrid, GripVertical, Filter, GitBranch,
+  Save, Loader2, BarChart3, LayoutGrid, Filter, GitBranch,
   ExternalLink, AlertTriangle, Layers, Eye, EyeOff, RotateCcw, Settings,
-  ChevronUp, ChevronDown, Palette, Separator as SepIcon, Map as MapIcon, Globe
+  Palette, Map as MapIcon, Globe
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
