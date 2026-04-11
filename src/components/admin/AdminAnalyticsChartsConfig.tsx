@@ -225,12 +225,12 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
 
   const handleTabSwitch = useCallback((targetTab: string) => {
     if (modifiedTabs.has(activeTab)) { setPendingTabSwitch(targetTab); }
-    else { setActiveTab(targetTab); }
-  }, [activeTab, modifiedTabs]);
+    else { handleSetActiveTab(targetTab); }
+  }, [activeTab, modifiedTabs, handleSetActiveTab]);
 
   const confirmTabSwitch = useCallback(() => {
-    if (pendingTabSwitch) { setActiveTab(pendingTabSwitch); setPendingTabSwitch(null); }
-  }, [pendingTabSwitch]);
+    if (pendingTabSwitch) { handleSetActiveTab(pendingTabSwitch); setPendingTabSwitch(null); }
+  }, [pendingTabSwitch, handleSetActiveTab]);
 
   const tabStats = useMemo(() => {
     const stats: Record<string, { kpis: number; charts: number; hidden: number }> = {};
@@ -276,7 +276,7 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
                   const Icon = icons[mode];
                   return (
                     <Button key={mode} size="sm" variant={viewMode === mode ? 'default' : 'ghost'}
-                      className="rounded-none h-8 text-xs" onClick={() => setViewMode(mode)}>
+                      className="rounded-none h-8 text-xs" onClick={() => handleSetViewMode(mode)}>
                       <Icon className="h-3.5 w-3.5 mr-1" />{labels[mode]}
                     </Button>
                   );
