@@ -5,6 +5,7 @@ import { getCrossVariablesWithOverrides } from '@/config/crossVariables';
 
 // Re-export registry from its dedicated config file
 export { ANALYTICS_TABS_REGISTRY } from '@/config/analyticsTabsRegistry';
+import { ANALYTICS_TABS_REGISTRY } from '@/config/analyticsTabsRegistry';
 
 export interface ChartConfigItem {
   id?: string;
@@ -110,15 +111,12 @@ export function useAnalyticsChartsConfig() {
 /** Returns tab-level config merged with defaults from ANALYTICS_TABS_REGISTRY */
 export function useAnalyticsTabsConfig() {
   const { configs, isLoading } = useAnalyticsChartsConfig();
-  // Already re-exported at top of file, use directly
-  const { ANALYTICS_TABS_REGISTRY: reg } = require('@/config/analyticsTabsRegistry');
-  const ANALYTICS_TABS_REGISTRY_LOCAL = reg;
 
   const tabs = useMemo(() => {
     const dbTabMap = new Map<string, ChartConfigItem>();
     configs.filter(c => c.item_type === 'tab' && c.item_key === '__tab__').forEach(c => dbTabMap.set(c.tab_key, c));
 
-    return Object.entries(ANALYTICS_TABS_REGISTRY_LOCAL).filter(([key]) => key !== '_global' && key !== 'rdc-map').map(([key, reg]: [string, any], i) => {
+    return Object.entries(ANALYTICS_TABS_REGISTRY).filter(([key]) => key !== '_global' && key !== 'rdc-map').map(([key, reg]: [string, any], i) => {
       const override = dbTabMap.get(key);
       return {
         key,

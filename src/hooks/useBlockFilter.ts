@@ -2,7 +2,7 @@ import { useState, useContext, useEffect, useMemo } from 'react';
 import { AnalyticsFilter, defaultFilter, applyFilters, buildFilterLabel } from '@/utils/analyticsHelpers';
 import { MapProvinceContext, VilleFilterContext, CommuneFilterContext, QuartierFilterContext } from '@/components/visualizations/filters/AnalyticsFilters';
 import { useTabChartsConfig, useTabFilterConfig, useTabCrossConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
-import { getCrossVariables, CrossVariable } from '@/config/crossVariables';
+import { getCrossVariables, getCrossVariablesWithOverrides, CrossVariable } from '@/config/crossVariables';
 import { useAnalyticsChartsConfig } from '@/hooks/useAnalyticsChartsConfig';
 
 /**
@@ -58,8 +58,6 @@ export function useBlockFilter(tabKey: string, records: any[]) {
     return (chartKey: string): CrossVariable[] => {
       const override = crossOverrides.get(chartKey);
       if (!override) return getCrossVariables(tabKey, chartKey);
-      // Use the override-aware function from crossVariables
-      const { getCrossVariablesWithOverrides } = require('@/config/crossVariables');
       return getCrossVariablesWithOverrides(tabKey, chartKey, override);
     };
   }, [tabKey, crossOverrides]);
