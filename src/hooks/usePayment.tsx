@@ -66,37 +66,8 @@ export const usePayment = () => {
         return null;
       }
 
-      // Fetch transaction reference for the completed payment
-      const { data: transaction } = await supabase
-        .from('payment_transactions')
-        .select('transaction_reference')
-        .eq('id', transactionId)
-        .single();
-
-      // Create payment record for compatibility
-      const { data: paymentRecord } = await supabase
-        .from('payments')
-        .insert({
-          user_id: user.id,
-          publication_id: item.id,
-          amount_usd: item.price,
-          payment_method: 'mobile_money',
-          payment_provider: paymentData.provider,
-          phone_number: paymentData.phoneNumber,
-          status: 'completed',
-          transaction_id: transaction?.transaction_reference || transactionId
-        })
-        .select()
-        .single();
-
-      // Create download access
-      await supabase
-        .from('publication_downloads')
-        .insert({
-          user_id: user.id,
-          publication_id: item.id,
-          payment_id: paymentRecord.id
-        });
+      // Payment record and download access are now created server-side
+      // by the edge function when the transaction completes
 
       setPaymentStep('success');
       toast({
@@ -104,7 +75,7 @@ export const usePayment = () => {
         description: "Votre publication est maintenant disponible"
       });
 
-      return paymentRecord;
+      return { id: transactionId, status: 'completed' };
 
     } catch (error: any) {
       console.error('Erreur de paiement:', error);
