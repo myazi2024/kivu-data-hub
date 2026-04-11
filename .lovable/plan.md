@@ -1,29 +1,66 @@
 
 
-# Fix: Layout titre Config Graphiques + lien "Voir dans Analytics" cassé
+# Nouveau module Admin : Apparence de l'application
 
-## Problème 1 — Layout titre/sous-titre
-Le titre "Configuration des graphiques Analytics" et sa description sont actuellement dans un `flex` horizontal (`items-center justify-between`) à côté des onglets de mode. Il faut restructurer pour que le titre/description soient au-dessus de la barre d'onglets, pas à côté.
+## Constat
 
-## Problème 2 — Lien "Voir dans Analytics" → 404
-Le bouton navigue vers `/analytics` (ligne 249), mais cette route n'existe pas dans `App.tsx`. Analytics est un onglet interne de la page Admin (`/admin` avec tab `analytics`). Le lien correct doit être `/admin?tab=analytics` (ou utiliser le mécanisme de tabs interne de la page Admin).
+Aucun module n'existe actuellement dans l'espace admin pour configurer l'apparence globale de l'application (logo, favicon, thème, couleurs). Cette configuration est uniquement codée en dur dans le CSS et les fichiers statiques.
 
-## Modifications
+## Plan d'implémentation
 
-### Fichier : `src/components/admin/AdminAnalyticsChartsConfig.tsx`
+### 1. Créer le composant `AdminAppearance.tsx`
 
-**Layout (lignes 220-257)** : Restructurer le `CardHeader` pour empiler verticalement :
-1. Titre + description (pleine largeur)
-2. Barre d'onglets + boutons d'action (en dessous)
+Nouveau fichier `src/components/admin/AdminAppearance.tsx` avec 4 sections :
 
-**Lien Analytics (ligne 249)** : Remplacer :
+- **Logo & Favicon** : Upload d'image pour le logo (navbar/footer) et le favicon, avec preview. Stockage dans Supabase Storage (bucket `app-assets`), URL sauvegardée dans une table de config.
+- **Couleurs du thème** : Éditeur pour les couleurs sémantiques principales (`primary`, `secondary`, `accent`, `destructive`, `muted`) avec color pickers et preview live.
+- **Mode sombre/clair** : Toggle pour définir le mode par défaut de l'application.
+- **Typographie** : Sélection de la police principale parmi un jeu prédéfini (Inter, Poppins, Roboto, etc.).
+
+### 2. Table Supabase `app_appearance_config`
+
+Migration pour créer une table clé-valeur :
+```sql
+create table public.app_appearance_config (
+  id uuid primary key default gen_random_uuid(),
+  config_key text unique not null,
+  config_value jsonb not null,
+  updated_at timestamptz default now(),
+  updated_by uuid references auth.users(id)
+);
 ```
-navigate(`/analytics${...}`)
+
+Clés prévues : `logo_url`, `favicon_url`, `theme_colors`, `default_theme_mode`, `font_family`.
+
+### 3. Hook `useAppAppearance`
+
+Hook React qui charge la config depuis `app_appearance_config` et applique les valeurs CSS au `document.documentElement` au démarrage. Appelé dans `App.tsx`.
+
+### 4. Intégration dans la sidebar admin
+
+Ajouter l'entrée dans la catégorie **Système** de `AdminSidebar.tsx` :
 ```
-par :
-```
-navigate(`/admin?tab=analytics`)
+{ icon: Paintbrush, label: 'Apparence', value: 'appearance', badge: null }
 ```
 
-Cela redirigera vers la page Admin avec l'onglet Analytics pré-sélectionné.
+Ajouter le lazy import dans `Admin.tsx` :
+```
+'appearance': lazy(() => import('@/components/admin/AdminAppearance'))
+```
+
+### 5. Bucket Supabase Storage
+
+Créer le bucket `app-assets` (public) pour stocker logo et favicon uploadés.
+
+### Section technique
+
+**Fichiers créés** :
+- `src/components/admin/AdminAppearance.tsx`
+- `src/hooks/useAppAppearance.ts`
+- Migration SQL pour `app_appearance_config` + bucket + RLS
+
+**Fichiers modifiés** :
+- `src/components/admin/AdminSidebar.tsx` — ajout entrée menu
+- `src/pages/Admin.tsx` — ajout lazy import
+- `src/App.tsx` — intégration du hook `useAppAppearance`
 
