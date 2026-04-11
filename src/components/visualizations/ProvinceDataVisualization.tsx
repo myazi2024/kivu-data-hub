@@ -152,7 +152,11 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
                           <CommuneFilterContext.Provider value={selectedCommune || null}>
                             <QuartierFilterContext.Provider value={selectedQuartier || null}>
                               <TerritoireFilterContext.Provider value={selectedTerritoire || null}>
-                                {BlockComponent ? <BlockComponent data={analytics} /> : null}
+                                {BlockComponent ? (
+                                  <Suspense fallback={<BlockFallback />}>
+                                    <BlockComponent data={analytics} />
+                                  </Suspense>
+                                ) : null}
                               </TerritoireFilterContext.Provider>
                             </QuartierFilterContext.Provider>
                           </CommuneFilterContext.Provider>
