@@ -77,6 +77,7 @@ const App = () => (
               <TestEnvironmentProvider>
               <Toaster />
               <Sonner />
+              <AppearanceLoader />
               <TestEnvironmentBanner />
               <Suspense fallback={<PageLoader />}>
                 <Routes>
