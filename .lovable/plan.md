@@ -1,26 +1,29 @@
 
 
-# Fix: `require is not defined` crash in Config Graphiques
+# Fix: Layout titre Config Graphiques + lien "Voir dans Analytics" cassé
 
-## Root Cause
+## Problème 1 — Layout titre/sous-titre
+Le titre "Configuration des graphiques Analytics" et sa description sont actuellement dans un `flex` horizontal (`items-center justify-between`) à côté des onglets de mode. Il faut restructurer pour que le titre/description soient au-dessus de la barre d'onglets, pas à côté.
 
-Two files use `require()` (CommonJS) inside ES modules, which crashes in the browser:
+## Problème 2 — Lien "Voir dans Analytics" → 404
+Le bouton navigue vers `/analytics` (ligne 249), mais cette route n'existe pas dans `App.tsx`. Analytics est un onglet interne de la page Admin (`/admin` avec tab `analytics`). Le lien correct doit être `/admin?tab=analytics` (ou utiliser le mécanisme de tabs interne de la page Admin).
 
-1. **`src/hooks/useAnalyticsChartsConfig.ts` line 114**: `require('@/config/analyticsTabsRegistry')` — even though `ANALYTICS_TABS_REGISTRY` is already re-exported via ES import on line 7.
-2. **`src/hooks/useBlockFilter.ts` line 62**: `require('@/config/crossVariables')` — even though `getCrossVariablesWithOverrides` is already imported at line 4 of `useAnalyticsChartsConfig.ts` (and `getCrossVariables` is imported at line 5 of this file).
+## Modifications
 
-## Fix
+### Fichier : `src/components/admin/AdminAnalyticsChartsConfig.tsx`
 
-### File 1: `src/hooks/useAnalyticsChartsConfig.ts`
-- Line 114: Replace `const { ANALYTICS_TABS_REGISTRY: reg } = require(...)` with a standard import.
-- Add `import { ANALYTICS_TABS_REGISTRY } from '@/config/analyticsTabsRegistry';` at the top (it's already re-exported on line 7, so we can use that binding directly).
-- Replace `ANALYTICS_TABS_REGISTRY_LOCAL` references in the function with `ANALYTICS_TABS_REGISTRY`.
-- Remove lines 114-115.
+**Layout (lignes 220-257)** : Restructurer le `CardHeader` pour empiler verticalement :
+1. Titre + description (pleine largeur)
+2. Barre d'onglets + boutons d'action (en dessous)
 
-### File 2: `src/hooks/useBlockFilter.ts`
-- Line 62: Replace `require('@/config/crossVariables')` with the already-available `getCrossVariablesWithOverrides` import.
-- Add `getCrossVariablesWithOverrides` to the existing import from `@/config/crossVariables` on line 5.
-- Remove the `require()` call.
+**Lien Analytics (ligne 249)** : Remplacer :
+```
+navigate(`/analytics${...}`)
+```
+par :
+```
+navigate(`/admin?tab=analytics`)
+```
 
-Both fixes are mechanical — replace `require()` with the ES import that already exists or can be trivially added. No behavior change.
+Cela redirigera vers la page Admin avec l'onglet Analytics pré-sélectionné.
 
