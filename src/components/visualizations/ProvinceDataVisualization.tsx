@@ -135,27 +135,29 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
       {/* Content */}
       <div className="flex-1 min-w-0 min-h-0 overflow-y-auto overflow-x-hidden p-1 lg:p-0 lg:mt-1.5">
         <WatermarkContext.Provider value={watermarkText}>
-          <MapProvinceContext.Provider value={selectedProvince?.name || null}>
-            <ProvinceFilterContext.Provider value={onProvinceFilter || null}>
-              <VilleChangeContext.Provider value={onVilleChange || null}>
-                <CommuneChangeContext.Provider value={onCommuneChange || null}>
-                  <QuartierChangeContext.Provider value={onQuartierChange || null}>
-                    <TerritoireChangeContext.Provider value={onTerritoireChange || null}>
-                      <VilleFilterContext.Provider value={selectedVille || null}>
-                        <CommuneFilterContext.Provider value={selectedCommune || null}>
-                          <QuartierFilterContext.Provider value={selectedQuartier || null}>
-                            <TerritoireFilterContext.Provider value={selectedTerritoire || null}>
-                              {BlockComponent ? <BlockComponent data={analytics} /> : null}
-                            </TerritoireFilterContext.Provider>
-                          </QuartierFilterContext.Provider>
-                        </CommuneFilterContext.Provider>
-                      </VilleFilterContext.Provider>
-                    </TerritoireChangeContext.Provider>
-                  </QuartierChangeContext.Provider>
-                </CommuneChangeContext.Provider>
-              </VilleChangeContext.Provider>
-            </ProvinceFilterContext.Provider>
-          </MapProvinceContext.Provider>
+          <WatermarkConfigContext.Provider value={watermarkConfig}>
+            <MapProvinceContext.Provider value={selectedProvince?.name || null}>
+              <ProvinceFilterContext.Provider value={onProvinceFilter || null}>
+                <VilleChangeContext.Provider value={onVilleChange || null}>
+                  <CommuneChangeContext.Provider value={onCommuneChange || null}>
+                    <QuartierChangeContext.Provider value={onQuartierChange || null}>
+                      <TerritoireChangeContext.Provider value={onTerritoireChange || null}>
+                        <VilleFilterContext.Provider value={selectedVille || null}>
+                          <CommuneFilterContext.Provider value={selectedCommune || null}>
+                            <QuartierFilterContext.Provider value={selectedQuartier || null}>
+                              <TerritoireFilterContext.Provider value={selectedTerritoire || null}>
+                                {BlockComponent ? <BlockComponent data={analytics} /> : null}
+                              </TerritoireFilterContext.Provider>
+                            </QuartierFilterContext.Provider>
+                          </CommuneFilterContext.Provider>
+                        </VilleFilterContext.Provider>
+                      </TerritoireChangeContext.Provider>
+                    </QuartierChangeContext.Provider>
+                  </CommuneChangeContext.Provider>
+                </VilleChangeContext.Provider>
+              </ProvinceFilterContext.Provider>
+            </MapProvinceContext.Provider>
+          </WatermarkConfigContext.Provider>
         </WatermarkContext.Provider>
       </div>
     </div>
