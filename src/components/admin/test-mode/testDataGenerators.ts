@@ -157,6 +157,10 @@ export function generateParcelNumbers(suffix: string): string[] {
 // ─── Step 0b: Generate 7 020 cadastral parcels (26 provinces × variable) ──────
 
 export const generateParcels = async (parcelNumbers: string[]) => {
+  const GROUPEMENTS_SR = ['Mudaka', 'Irhambi', 'Bugorhe', 'Miti', 'Katana'];
+  const VILLAGES_SR = ['Mugogo', 'Nyantende', 'Walungu-Centre', 'Kamanyola', 'Luhihi', 'Mulamba'];
+  const TERRITOIRES_SR = ['Kabare', 'Kalehe', 'Nyiragongo', 'Walungu', 'Uvira', 'Fizi'];
+
   const records = parcelNumbers.map((pn, idx) => {
     const { pIdx, localIdx, count } = getProvinceInfo(idx);
     const prov = PROVINCES[pIdx];
@@ -190,6 +194,13 @@ export const generateParcels = async (parcelNumbers: string[]) => {
       construction_materials: constructionNature ? pick(CONSTRUCTION_MATERIALS, idx) : null,
       standing: constructionNature ? pick(STANDINGS, idx) : null,
       lease_type: localIdx % 7 === 0 ? 'initial' : localIdx % 11 === 0 ? 'renewal' : null,
+      lease_years: isSR ? randInt(10, 99) : (localIdx % 7 === 0 ? randInt(5, 25) : null),
+      is_subdivided: idx % 20 === 0,
+      property_category: pick(PROPERTY_CATEGORIES, idx),
+      groupement: isSR ? pick(GROUPEMENTS_SR, idx) : null,
+      village: isSR ? pick(VILLAGES_SR, idx) : null,
+      territoire: isSR ? pick(TERRITOIRES_SR, idx) : null,
+      collectivite: isSR ? pick(COLLECTIVITES_SR, idx) : null,
       title_reference_number: `REF-${prov.province.substring(0, 3).toUpperCase()}-${String(idx).padStart(4, '0')}`,
       title_issue_date: randomDateInPast(10),
       house_number: houseNumber,
@@ -270,6 +281,8 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
       construction_materials: constructionNature ? pick(CONSTRUCTION_MATERIALS, idx) : null,
       standing: constructionNature ? pick(STANDINGS, idx) : null,
       lease_type: localIdx % 7 === 0 ? 'initial' : localIdx % 11 === 0 ? 'renewal' : null,
+      lease_years: isSR ? randInt(10, 99) : (localIdx % 7 === 0 ? randInt(5, 25) : null),
+      groupement: isSR ? pick(['Mudaka', 'Irhambi', 'Bugorhe', 'Miti'], idx) : null,
       current_owner_legal_status: pick(LEGAL_STATUSES, idx),
       property_category: pick(PROPERTY_CATEGORIES, idx),
       title_reference_number: `REF-${prov.province.substring(0, 3).toUpperCase()}-${String(idx).padStart(4, '0')}`,
@@ -566,7 +579,7 @@ export const generateTitleRequests = async (userId: string, suffix: string) => {
 
 // ─── Step 6: Expertise requests — ~5% of parcels (351) ──────────────────────
 
-export const generateExpertiseRequests = async (userId: string, parcelNumbers: string[], suffix: string) => {
+export const generateExpertiseRequests = async (userId: string, parcels: Array<{ id: string; parcel_number: string }>, suffix: string) => {
   const EXP_STATUSES = ['pending', 'completed', 'in_progress', 'pending', 'completed', 'pending', 'in_progress', 'completed', 'pending', 'completed'];
   const ROAD_TYPES = ['asphalte', 'terre', 'piste', 'asphalte', 'terre'];
   const PROPERTY_CONDITIONS = ['neuf', 'bon', 'moyen', 'mauvais', 'a_renover'];
@@ -578,10 +591,10 @@ export const generateExpertiseRequests = async (userId: string, parcelNumbers: s
 
   // ~5% of total parcels
   const totalCount = Math.max(PROVINCES.length * 2, Math.round(TOTAL_PARCELS * 0.05));
-  const step = Math.max(1, Math.floor(parcelNumbers.length / totalCount));
-  const selectedParcels = parcelNumbers.filter((_, i) => i % step === 0).slice(0, totalCount);
+  const step = Math.max(1, Math.floor(parcels.length / totalCount));
+  const selectedParcels = parcels.filter((_, i) => i % step === 0).slice(0, totalCount);
 
-  const records = selectedParcels.map((pn, i) => {
+  const records = selectedParcels.map((p, i) => {
     const status = pick(EXP_STATUSES, i);
     const createdAt = new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000);
     const assignedAt = status !== 'pending' ? new Date(createdAt.getTime() + randInt(1, 15) * 24 * 3600 * 1000) : null;
@@ -589,7 +602,8 @@ export const generateExpertiseRequests = async (userId: string, parcelNumbers: s
 
     return {
       reference_number: `TEST-EXP-${String(i + 1).padStart(3, '0')}-${suffix}`,
-      parcel_number: pn,
+      parcel_number: p.parcel_number,
+      parcel_id: p.id,
       user_id: userId,
       requester_name: `Test Expert ${i + 1}`,
       requester_email: `test-exp${i + 1}@example.com`,
@@ -691,7 +705,7 @@ export const generateExpertisePayments = async (userId: string, expertiseRequest
 
 // ─── Step 7: Disputes — 52 total (2/province) ───────────────────────────────
 
-export const generateDisputes = async (parcelNumbers: string[], suffix: string, userId?: string) => {
+export const generateDisputes = async (parcels: Array<{ id: string; parcel_number: string }>, suffix: string, userId?: string) => {
   const DISPUTE_NATURES = ['delimitation', 'double_vente', 'occupation_illegale', 'succession', 'delimitation'];
   const DISPUTE_STATUSES = ['en_cours', 'resolu', 'demande_levee', 'en_cours', 'resolu', 'en_cours', 'demande_levee', 'resolu', 'en_cours', 'resolu'];
   const DISPUTE_TYPES = ['report', 'lifting', 'report', 'lifting', 'report'];
@@ -701,13 +715,14 @@ export const generateDisputes = async (parcelNumbers: string[], suffix: string, 
   const RESOLUTION_LEVELS = ['conciliation_amiable', 'mediation_communautaire', 'tribunal_paix', 'tribunal_grande_instance'];
 
   // Pick 2 parcels per province (52 total)
-  const selectedParcels = parcelNumbers.filter((_, i) => i % 10 === 5).slice(0, PROVINCES.length * 2);
+  const selectedParcels = parcels.filter((_, i) => i % 10 === 5).slice(0, PROVINCES.length * 2);
 
-  const records = selectedParcels.map((pn, i) => {
+  const records = selectedParcels.map((p, i) => {
     const status = pick(DISPUTE_STATUSES, i);
     return {
       reference_number: `TEST-DISP-${String(i + 1).padStart(3, '0')}-${suffix}`,
-      parcel_number: pn,
+      parcel_number: p.parcel_number,
+      parcel_id: p.id,
       dispute_type: pick(DISPUTE_TYPES, i),
       dispute_nature: pick(DISPUTE_NATURES, i),
       declarant_name: `Test Déclarant ${i + 1}`,
@@ -1137,8 +1152,8 @@ export const generateMutationRequests = async (
     .insert(records)
     .select('id');
 
-  if (error) console.error('Mutations (non-bloquant):', error);
-  return data ?? [];
+  if (error) throw new Error(`Mutations: ${error.message}`);
+  return assertInserted(data, 'Mutations');
 };
 
 // ─── Step 17b: Subdivision requests — 26 total (1/province) — enriched ──────
@@ -1198,8 +1213,8 @@ export const generateSubdivisionRequests = async (
     .insert(records)
     .select('id');
 
-  if (error) console.error('Lotissements (non-bloquant):', error);
-  return data ?? [];
+  if (error) throw new Error(`Lotissements: ${error.message}`);
+  return assertInserted(data, 'Lotissements');
 };
 
 // ─── Rollback ─────────────────────────────────────────────────────────────────

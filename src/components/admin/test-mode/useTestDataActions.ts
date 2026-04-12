@@ -232,7 +232,7 @@ export const useTestDataActions = ({
       // Step 8: Expertise requests + payments
       updateStep(8, 'running');
       try {
-        const expertiseRequests = await generateExpertiseRequests(userId, parcelNumbers, suffix);
+        const expertiseRequests = await generateExpertiseRequests(userId, parcels, suffix);
         await generateExpertisePayments(userId, expertiseRequests);
         updateStep(8, 'done');
       } catch (expError) {
@@ -244,7 +244,7 @@ export const useTestDataActions = ({
       // Step 9: Disputes (with lifting data)
       updateStep(9, 'running');
       try {
-        await generateDisputes(parcelNumbers, suffix, userId);
+        await generateDisputes(parcels, suffix, userId);
         updateStep(9, 'done');
       } catch (dispError) {
         updateStep(9, 'error');
