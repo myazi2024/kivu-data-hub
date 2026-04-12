@@ -1,63 +1,82 @@
 
 
-# Audit Mode Test — Donnees non generees
+# Audit Mode Test — Mise a jour pour les modifications recentes
 
 ## Problemes identifies
 
-### Bug 1 : `buildingPermits` — 0 enregistrement (au lieu de ~700)
-**Cause** : Contrainte CHECK sur `administrative_status` dans la table `cadastral_building_permits` :
-```
-CHECK (administrative_status IN ('Conforme', 'En attente', 'Non autorisé'))
-```
-Le generateur utilise `['Approuvé', 'Rejeté', 'En attente']` — seul `'En attente'` est valide. Les inserts echouent silencieusement.
+### 1. Parcelles : champs manquants pour les analytics
+Le hook `useLandDataAnalytics` fetch `lease_years`, `is_subdivided`, `groupement`, `village`, `territoire`, `collectivite` sur les parcelles, mais `generateParcels` ne remplit pas :
+- **`lease_years`** : jamais defini (la colonne existe en DB)
+- **`is_subdivided`** : jamais defini
+- **`groupement`** : jamais defini
+- **`village`** : jamais defini (seul dans contributions)
+- **`territoire`** : jamais defini sur les parcelles (seul dans contributions)
+- **`collectivite`** : jamais definie sur les parcelles (seul dans contributions)
+- **`property_category`** : jamais definie sur les parcelles (seul dans contributions)
 
-### Bug 2 : `taxHistory` — 0 enregistrement (au lieu de ~3000)
-**Cause** : Contrainte CHECK sur `payment_status` dans la table `cadastral_tax_history` :
-```
-CHECK (payment_status IN ('pending', 'paid', 'overdue'))
-```
-Le generateur utilise `'payé'`, `'unpaid'`, `'en_attente'` — aucune de ces valeurs n'est valide sauf `'paid'`. Les inserts echouent silencieusement.
+Consequence : les graphiques d'analytics sur ces dimensions affichent 0 donnees en mode test.
 
-### Bug 3 : Erreurs silencieuses
-Les generateurs `generateTaxHistory` et `generateBuildingPermits` utilisent `console.error` sans propager l'erreur. Le `failedSteps` dans le log d'audit affiche `[]` alors que ces etapes ont echoue — l'admin ne voit aucun signal d'echec.
+### 2. Expertises : `parcel_id` manquant
+`generateExpertiseRequests` recoit `parcelNumbers` (strings) mais n'a pas acces aux IDs des parcelles. La colonne `parcel_id` existe dans `real_estate_expertise_requests` mais n'est jamais remplie. Analytics utilise `enrich()` qui cherche `parcel_id` — les expertises test ne sont pas enrichies geographiquement.
 
-### Bug 4 : Donnees dupliquees
-`parcels: 14040` (2x le volume attendu de 7020) et `contributions: 10220` — des generations multiples s'accumulent sans nettoyage prealable. Le bouton "Generer" ne verifie pas si des donnees existent deja.
+### 3. Litiges : `parcel_id` manquant
+Meme probleme : `generateDisputes` utilise `parcel_number` mais ne remplit pas `parcel_id`. Le filtre FK dans `useLandDataAnalytics` (`filterByTestFK`) ne fonctionne pas pour ces entites.
+
+### 4. Mutations et lotissements : erreurs silencieuses
+`generateMutationRequests` (ligne 1140) et `generateSubdivisionRequests` (ligne 1201) utilisent `console.error` sans `throw` — les echecs ne remontent pas dans `failedSteps`.
+
+### 5. Contributions : champs manquants
+`lease_years` n'est jamais defini dans `generateContributions` alors que la colonne existe.
+
+### 6. Signature des generateurs incompatible
+`generateExpertiseRequests` et `generateDisputes` ne recoivent pas l'objet `parcels` (avec IDs), empechant de remplir `parcel_id`.
 
 ---
 
 ## Plan de correction
 
-### 1. Corriger les valeurs de statut dans les generateurs
+### Fichier : `src/components/admin/test-mode/testDataGenerators.ts`
 
-**Fichier : `src/components/admin/test-mode/testDataGenerators.ts`**
+**A. Enrichir `generateParcels`** — ajouter les champs manquants :
+- `lease_years` : `isSR ? randInt(10, 99) : null` (bail rural)
+- `is_subdivided` : `idx % 20 === 0` (~5%)
+- `groupement` : pour SR, `pick(['Mudaka', 'Irhambi', 'Bugorhe', 'Miti'], idx)`
+- `village` : pour SR, `'Test Village ' + localIdx`
+- `territoire` : pour SR, `pick(['Kabare', 'Kalehe', 'Nyiragongo', 'Walungu'], idx)`
+- `collectivite` : pour SR, `pick(COLLECTIVITES_SR, idx)`
+- `property_category` : `pick(PROPERTY_CATEGORIES, idx)`
 
-- `generateBuildingPermits` : remplacer `['Approuvé', 'Rejeté', 'Approuvé', 'En attente', 'Approuvé']` par `['Conforme', 'Non autorisé', 'Conforme', 'En attente', 'Conforme']`
-- `generateTaxHistory` : remplacer les cycles `TAX_STATUSES_PAID` et `TAX_STATUSES_UNPAID` par des valeurs conformes au CHECK : `'paid'`, `'pending'`, `'overdue'`
+**B. Modifier la signature de `generateExpertiseRequests`** :
+- Changer le 2e parametre de `parcelNumbers: string[]` a `parcels: Array<{ id: string; parcel_number: string }>`
+- Ajouter `parcel_id: p.id` dans chaque record
+- Adapter la selection proportionnelle
 
-### 2. Ameliorer la remontee d'erreurs
+**C. Modifier la signature de `generateDisputes`** :
+- Changer le 1er parametre de `parcelNumbers: string[]` a `parcels: Array<{ id: string; parcel_number: string }>`
+- Ajouter `parcel_id: p.id` dans chaque record
 
-**Fichier : `src/components/admin/test-mode/testDataGenerators.ts`**
+**D. Corriger les erreurs silencieuses** dans `generateMutationRequests` et `generateSubdivisionRequests` :
+- Remplacer `console.error` par `throw new Error()`
+- Utiliser `assertInserted()` pour validation
 
-- Dans `generateTaxHistory` et `generateBuildingPermits`, ajouter `assertInserted()` ou au minimum propager l'erreur (`throw`) au lieu de `console.error` seul. Cela permet au code appelant dans `useTestDataActions.ts` de capturer l'echec et de l'ajouter a `failedSteps`.
+**E. Enrichir `generateContributions`** :
+- Ajouter `lease_years` : `localIdx % 7 === 0 ? randInt(10, 99) : null`
+- Ajouter `groupement` : pour SR, valeur coherente avec parcelles
 
-### 3. Ajouter un garde anti-duplication
+### Fichier : `src/components/admin/test-mode/useTestDataActions.ts`
 
-**Fichier : `src/components/admin/test-mode/useTestDataActions.ts`**
-
-- Dans `generateTestData`, avant de lancer la generation, verifier si des donnees TEST existent deja (via `count_test_data_stats`). Si oui, afficher un avertissement et proposer une regeneration au lieu de generer en double.
-
-### 4. Corriger le runtime error existant
-
-Le build actuel a un `TypeError: Failed to fetch dynamically imported module` sur `Admin.tsx`. Cela est probablement lie a une erreur de syntaxe introduite par les modifications precedentes. Il faut verifier et corriger pour que la page admin charge correctement.
+**F. Adapter les appels aux generateurs modifies** :
+- `generateExpertiseRequests(userId, parcels, suffix)` au lieu de `(userId, parcelNumbers, suffix)`
+- `generateDisputes(parcels, suffix, userId)` au lieu de `(parcelNumbers, suffix, userId)`
+- Passer `parcelNumbers` ou `parcels` selon le nouveau contrat
 
 ---
 
 ## Section technique
 
-**Fichiers modifies :**
-- `src/components/admin/test-mode/testDataGenerators.ts` — correction des valeurs CHECK, meilleure propagation d'erreurs
-- `src/components/admin/test-mode/useTestDataActions.ts` — garde anti-duplication
+**Fichiers modifies** :
+- `src/components/admin/test-mode/testDataGenerators.ts` — enrichissement des champs, changement de signatures, correction erreurs silencieuses
+- `src/components/admin/test-mode/useTestDataActions.ts` — adaptation des appels
 
-**Aucune migration** requise — les contraintes CHECK sont correctes, c'est le code client qui envoie des valeurs non conformes.
+**Aucune migration** requise — les colonnes existent deja.
 
