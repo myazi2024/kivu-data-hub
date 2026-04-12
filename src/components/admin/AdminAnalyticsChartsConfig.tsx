@@ -33,6 +33,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const CHART_TYPE_OPTIONS = [
   { value: 'bar-h', label: 'Barres horiz.', icon: '▬' },
@@ -44,14 +45,22 @@ const CHART_TYPE_OPTIONS = [
 
 const SYSTEM_TABS = ['_global', 'rdc-map'];
 
+const MODE_CONFIG = [
+  { key: 'tabs' as const, icon: Layers, label: 'Onglets' },
+  { key: 'kpis' as const, icon: LayoutGrid, label: 'KPIs' },
+  { key: 'charts' as const, icon: BarChart3, label: 'Graphiques' },
+  { key: 'filters' as const, icon: Filter, label: 'Filtres' },
+  { key: 'cross' as const, icon: GitBranch, label: 'Croisements' },
+];
+
 const AdminAnalyticsChartsConfig: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const isMobile = useIsMobile();
   const { configs, isLoading } = useAnalyticsChartsConfig();
   const { tabs: dbTabs } = useAnalyticsTabsConfig();
   const { upsertConfig } = useAnalyticsChartsConfigMutations();
 
-  // URL-synced state: mode & configTab
   const urlMode = searchParams.get('mode') as 'tabs' | 'kpis' | 'charts' | 'filters' | 'cross' | null;
   const urlConfigTab = searchParams.get('configTab');
 
@@ -61,14 +70,12 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
     urlMode || (urlConfigTab && SYSTEM_TABS.includes(urlConfigTab) ? 'charts' : 'charts')
   );
 
-  // Force charts mode for system tabs
   useEffect(() => {
     if (SYSTEM_TABS.includes(activeTab) && viewMode !== 'charts') {
       setViewMode('charts');
     }
   }, [activeTab, viewMode]);
 
-  // Sync URL when mode or tab changes
   const updateUrl = useCallback((mode: string, tab: string) => {
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);
@@ -244,6 +251,12 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
     return stats;
   }, [localItems]);
 
+  // Build sidebar entries for reuse (charts & kpis views)
+  const chartsViewEntries = useMemo(() => 
+    Object.entries(ANALYTICS_TABS_REGISTRY).filter(([key]) => isChartsViewTab(key)), []);
+  const kpisViewEntries = useMemo(() => 
+    Object.entries(ANALYTICS_TABS_REGISTRY).filter(([key]) => isUserTab(key)), []);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -253,51 +266,89 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
     );
   }
 
+  // Mobile sidebar replacement: a <Select> dropdown
+  const renderMobileSidebarSelect = (entries: [string, any][], showIcons?: boolean) => (
+    <Select value={activeTab} onValueChange={(v) => handleTabSwitch(v)}>
+      <SelectTrigger className="h-9 text-xs w-full">
+        <SelectValue placeholder="Choisir un onglet..." />
+      </SelectTrigger>
+      <SelectContent>
+        {entries.map(([key, tab]) => {
+          const tabConf = localTabs.find(t => t.key === key);
+          return (
+            <SelectItem key={key} value={key} className="text-xs">
+              {showIcons && key === '_global' && '🌐 '}
+              {showIcons && key === 'rdc-map' && '🗺️ '}
+              {tabConf?.label || tab.label}
+              {modifiedTabs.has(key) ? ' •' : ''}
+            </SelectItem>
+          );
+        })}
+      </SelectContent>
+    </Select>
+  );
+
+  // Toggle buttons (show all / hide all) — compact on mobile
+  const renderToggleButtons = (type: 'kpi' | 'chart') => (
+    <div className="flex gap-1">
+      <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => toggleAll(type, true)}>
+        <Eye className="h-3 w-3" />{!isMobile && <span className="ml-1">Tout afficher</span>}
+      </Button>
+      <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => toggleAll(type, false)}>
+        <EyeOff className="h-3 w-3" />{!isMobile && <span className="ml-1">Tout masquer</span>}
+      </Button>
+    </div>
+  );
+
   return (
     <div className="space-y-4">
       {/* Header Card */}
       <Card>
         <CardHeader className="pb-3 space-y-3">
           <div>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-primary" />
-              Configuration des graphiques Analytics
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-primary shrink-0" />
+              <span className="truncate">Configuration des graphiques Analytics</span>
             </CardTitle>
-            <CardDescription className="mt-1">
-              Gérez les onglets, la visibilité, l'ordre, les titres, couleurs et types de chaque graphique et KPI.
-            </CardDescription>
+            {!isMobile && (
+              <CardDescription className="mt-1">
+                Gérez les onglets, la visibilité, l'ordre, les titres, couleurs et types de chaque graphique et KPI.
+              </CardDescription>
+            )}
           </div>
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <div className="flex items-center gap-2">
-              <div className="flex items-center border rounded-lg overflow-hidden">
-                {(['tabs', 'kpis', 'charts', 'filters', 'cross'] as const).map(mode => {
-                  const icons = { tabs: Layers, kpis: LayoutGrid, charts: BarChart3, filters: Filter, cross: GitBranch };
-                  const labels = { tabs: 'Onglets', kpis: 'KPIs', charts: 'Graphiques', filters: 'Filtres', cross: 'Croisements' };
-                  const Icon = icons[mode];
-                  return (
-                    <Button key={mode} size="sm" variant={viewMode === mode ? 'default' : 'ghost'}
-                      className="rounded-none h-8 text-xs" onClick={() => handleSetViewMode(mode)}>
-                      <Icon className="h-3.5 w-3.5 mr-1" />{labels[mode]}
-                    </Button>
-                  );
-                })}
+
+          {/* Mode bar + actions */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            {/* Mode switcher */}
+            <div className="overflow-x-auto -mx-2 px-2">
+              <div className="flex items-center border rounded-lg overflow-hidden w-max">
+                {MODE_CONFIG.map(({ key, icon: Icon, label }) => (
+                  <Button key={key} size="sm" variant={viewMode === key ? 'default' : 'ghost'}
+                    className="rounded-none h-8 text-xs px-2 sm:px-3 shrink-0" onClick={() => handleSetViewMode(key)}>
+                    <Icon className="h-3.5 w-3.5" />
+                    {!isMobile && <span className="ml-1">{label}</span>}
+                  </Button>
+                ))}
               </div>
             </div>
-            <div className="flex items-center gap-2">
+
+            {/* Actions */}
+            <div className="flex items-center gap-2 flex-wrap">
               {hasChanges && (
-                <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-950/30">
+                <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-950/30 text-[10px]">
                   Non sauvegardé
                 </Badge>
               )}
               <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => navigate(`/admin?tab=analytics${activeTab && activeTab !== '_global' ? `&subtab=${activeTab}` : ''}`)}>
-                <ExternalLink className="h-3.5 w-3.5 mr-1" />Voir dans Analytics
+                <ExternalLink className="h-3.5 w-3.5" />{!isMobile && <span className="ml-1">Voir dans Analytics</span>}
               </Button>
-              <Button size="sm" variant="outline" onClick={handleSaveAll} disabled={!hasChanges || isSaving}>
+              <Button size="sm" variant="outline" onClick={handleSaveAll} disabled={!hasChanges || isSaving} className={isMobile ? 'flex-1' : ''}>
                 {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Save className="h-3.5 w-3.5 mr-1" />}
-                Sauvegarder tout
+                {isMobile ? 'Sauvegarder' : 'Sauvegarder tout'}
               </Button>
             </div>
           </div>
+
           {desyncWarnings.length > 0 && (
             <div className="mt-2 flex items-start gap-2 p-2 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
               <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
@@ -323,50 +374,59 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
       {/* KPIs VIEW */}
       {viewMode === 'kpis' && (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          <Card className="lg:col-span-1">
+          {/* Sidebar: Select on mobile, full list on desktop */}
+          {isMobile ? (
+            <div className="px-1">
+              {renderMobileSidebarSelect(kpisViewEntries)}
+            </div>
+          ) : (
+            <Card className="lg:col-span-1">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2"><LayoutGrid className="h-4 w-4 text-primary" />Onglets</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <ScrollArea className="h-[500px]">
+                  <div className="space-y-0.5 p-2">
+                    {kpisViewEntries.map(([key, tab]) => {
+                      const kpis = (localItems[key] || []).filter(i => i.item_type === 'kpi');
+                      const hiddenKpis = kpis.filter(k => !k.is_visible).length;
+                      const tabConf = localTabs.find(t => t.key === key);
+                      return (
+                        <button key={key} onClick={() => handleTabSwitch(key)}
+                          className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors flex items-center justify-between ${
+                            activeTab === key ? 'bg-primary text-primary-foreground' : 'hover:bg-accent text-muted-foreground hover:text-foreground'
+                          }`}>
+                          <span className="font-medium">{tabConf?.label || tab.label}</span>
+                          <div className="flex items-center gap-1">
+                            <Badge variant="outline" className="text-[9px] h-4 px-1">{kpis.length}</Badge>
+                            {hiddenKpis > 0 && <Badge variant="secondary" className="text-[9px] h-4 px-1">{hiddenKpis} masqué{hiddenKpis > 1 ? 's' : ''}</Badge>}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card className={isMobile ? '' : 'lg:col-span-3'}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2"><LayoutGrid className="h-4 w-4 text-primary" />Onglets</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <ScrollArea className="h-[500px]">
-                <div className="space-y-0.5 p-2">
-                  {Object.entries(ANALYTICS_TABS_REGISTRY).filter(([key]) => isUserTab(key)).map(([key, tab]) => {
-                    const kpis = (localItems[key] || []).filter(i => i.item_type === 'kpi');
-                    const hiddenKpis = kpis.filter(k => !k.is_visible).length;
-                    const tabConf = localTabs.find(t => t.key === key);
-                    return (
-                      <button key={key} onClick={() => handleTabSwitch(key)}
-                        className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors flex items-center justify-between ${
-                          activeTab === key ? 'bg-primary text-primary-foreground' : 'hover:bg-accent text-muted-foreground hover:text-foreground'
-                        }`}>
-                        <span className="font-medium">{tabConf?.label || tab.label}</span>
-                        <div className="flex items-center gap-1">
-                          <Badge variant="outline" className="text-[9px] h-4 px-1">{kpis.length}</Badge>
-                          {hiddenKpis > 0 && <Badge variant="secondary" className="text-[9px] h-4 px-1">{hiddenKpis} masqué{hiddenKpis > 1 ? 's' : ''}</Badge>}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-          <Card className="lg:col-span-3">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-1">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <LayoutGrid className="h-4 w-4" />KPIs — {ANALYTICS_TABS_REGISTRY[activeTab]?.label}
-                  <Badge variant="outline" className="text-[9px] ml-1">{currentKpis.length} indicateurs</Badge>
+                  <LayoutGrid className="h-4 w-4" />
+                  <span className="truncate">KPIs — {ANALYTICS_TABS_REGISTRY[activeTab]?.label}</span>
+                  <Badge variant="outline" className="text-[9px] ml-1">{currentKpis.length}</Badge>
                 </CardTitle>
                 <div className="flex items-center gap-1">
-                  <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => toggleAll('kpi', true)}><Eye className="h-3 w-3 mr-1" />Tout afficher</Button>
-                  <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => toggleAll('kpi', false)}><EyeOff className="h-3 w-3 mr-1" />Tout masquer</Button>
+                  {renderToggleButtons('kpi')}
                   <Button size="sm" onClick={handleSave} disabled={!hasChanges || isSaving}>
-                    {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Save className="h-3.5 w-3.5 mr-1" />}Sauvegarder
+                    {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                    {!isMobile && 'Sauvegarder'}
                   </Button>
                 </div>
               </div>
-              <CardDescription className="text-xs mt-1">Gérez la visibilité, l'ordre et les titres des indicateurs clés.</CardDescription>
+              {!isMobile && <CardDescription className="text-xs mt-1">Gérez la visibilité, l'ordre et les titres des indicateurs clés.</CardDescription>}
             </CardHeader>
             <CardContent>
               <div className="space-y-1">
@@ -386,59 +446,69 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
       {/* CHARTS VIEW */}
       {viewMode === 'charts' && (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          <Card className="lg:col-span-1">
-            <CardHeader className="pb-2"><CardTitle className="text-sm">Onglets Analytics</CardTitle></CardHeader>
-            <CardContent className="p-0">
-              <ScrollArea className="h-[500px]">
-                <div className="space-y-0.5 p-2">
-                  {Object.entries(ANALYTICS_TABS_REGISTRY).filter(([key]) => isChartsViewTab(key)).map(([key, tab]) => {
-                    const stat = tabStats[key];
-                    const tabConf = localTabs.find(t => t.key === key);
-                    const isHiddenTab = tabConf && !tabConf.is_visible;
-                    const isModified = modifiedTabs.has(key);
-                    return (
-                      <button key={key} onClick={() => handleTabSwitch(key)}
-                        className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors flex items-center justify-between ${
-                          activeTab === key ? 'bg-primary text-primary-foreground' : 'hover:bg-accent text-muted-foreground hover:text-foreground'
-                        } ${isHiddenTab ? 'opacity-50' : ''}`}>
-                        <span className="font-medium flex items-center gap-1">
-                          {isHiddenTab && <EyeOff className="h-3 w-3" />}
-                          {key === 'rdc-map' && <MapIcon className="h-3 w-3" />}
-                          {key === '_global' && <Globe className="h-3 w-3" />}
-                          {tabConf?.label || tab.label}
-                        </span>
-                        <div className="flex items-center gap-1">
-                          {isModified && <Badge variant="destructive" className="text-[8px] h-3.5 px-1">modifié</Badge>}
-                          {key === 'rdc-map' && <Badge variant="outline" className="text-[8px] h-3.5 px-1">Carte</Badge>}
-                          {key === '_global' && <Badge variant="outline" className="text-[8px] h-3.5 px-1">Global</Badge>}
-                          {stat && stat.hidden > 0 && <Badge variant="secondary" className="text-[9px] h-4 px-1">{stat.hidden} masqué{stat.hidden > 1 ? 's' : ''}</Badge>}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-          <Card className="lg:col-span-3">
+          {/* Sidebar: Select on mobile, full list on desktop */}
+          {isMobile ? (
+            <div className="px-1">
+              {renderMobileSidebarSelect(chartsViewEntries, true)}
+            </div>
+          ) : (
+            <Card className="lg:col-span-1">
+              <CardHeader className="pb-2"><CardTitle className="text-sm">Onglets Analytics</CardTitle></CardHeader>
+              <CardContent className="p-0">
+                <ScrollArea className="h-[500px]">
+                  <div className="space-y-0.5 p-2">
+                    {chartsViewEntries.map(([key, tab]) => {
+                      const stat = tabStats[key];
+                      const tabConf = localTabs.find(t => t.key === key);
+                      const isHiddenTab = tabConf && !tabConf.is_visible;
+                      const isModified = modifiedTabs.has(key);
+                      return (
+                        <button key={key} onClick={() => handleTabSwitch(key)}
+                          className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors flex items-center justify-between ${
+                            activeTab === key ? 'bg-primary text-primary-foreground' : 'hover:bg-accent text-muted-foreground hover:text-foreground'
+                          } ${isHiddenTab ? 'opacity-50' : ''}`}>
+                          <span className="font-medium flex items-center gap-1">
+                            {isHiddenTab && <EyeOff className="h-3 w-3" />}
+                            {key === 'rdc-map' && <MapIcon className="h-3 w-3" />}
+                            {key === '_global' && <Globe className="h-3 w-3" />}
+                            {tabConf?.label || tab.label}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            {isModified && <Badge variant="destructive" className="text-[8px] h-3.5 px-1">modifié</Badge>}
+                            {key === 'rdc-map' && <Badge variant="outline" className="text-[8px] h-3.5 px-1">Carte</Badge>}
+                            {key === '_global' && <Badge variant="outline" className="text-[8px] h-3.5 px-1">Global</Badge>}
+                            {stat && stat.hidden > 0 && <Badge variant="secondary" className="text-[9px] h-4 px-1">{stat.hidden} masqué{stat.hidden > 1 ? 's' : ''}</Badge>}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card className={isMobile ? '' : 'lg:col-span-3'}>
             <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-1">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Settings className="h-4 w-4" />{ANALYTICS_TABS_REGISTRY[activeTab]?.label}
-                  <Badge variant="outline" className="text-[9px] ml-1">{currentKpis.length} KPIs · {currentCharts.length} Charts</Badge>
+                  <Settings className="h-4 w-4" />
+                  <span className="truncate">{ANALYTICS_TABS_REGISTRY[activeTab]?.label}</span>
+                  {!isMobile && <Badge variant="outline" className="text-[9px] ml-1">{currentKpis.length} KPIs · {currentCharts.length} Charts</Badge>}
                 </CardTitle>
                 <div className="flex items-center gap-1">
                   <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowResetConfirm(true)}>
-                    <RotateCcw className="h-3 w-3 mr-1" />Réinitialiser
+                    <RotateCcw className="h-3 w-3" />{!isMobile && <span className="ml-1">Réinitialiser</span>}
                   </Button>
                   <Button size="sm" onClick={handleSave} disabled={!hasChanges || isSaving}>
-                    {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Save className="h-3.5 w-3.5 mr-1" />}Sauvegarder
+                    {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                    {!isMobile && 'Sauvegarder'}
                   </Button>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              <ScrollArea className="h-[460px]">
+              <ScrollArea className={isMobile ? 'max-h-[60vh]' : 'h-[460px]'}>
                 <div className="space-y-4">
                   {/* rdc-map special section */}
                   {activeTab === 'rdc-map' && currentCharts.length > 0 && (
@@ -450,17 +520,19 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
                       </div>
                       <div className="space-y-1">
                         {currentCharts.map((item) => (
-                          <div key={item.item_key} className={`flex items-center gap-2 p-2 rounded-lg border transition-colors ${
+                          <div key={item.item_key} className={`flex flex-col sm:flex-row sm:items-center gap-2 p-2 rounded-lg border transition-colors ${
                             item.is_visible ? 'bg-card border-border/50' : 'bg-muted/30 border-border/20 opacity-60'
                           }`}>
-                            <Switch checked={item.is_visible} onCheckedChange={(checked) => updateItem(item.item_key, { ...item, is_visible: checked })} className="shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <Input value={item.custom_title || ''} onChange={(e) => updateItem(item.item_key, { ...item, custom_title: e.target.value })} className="h-7 text-xs" placeholder="Valeur..." />
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <Switch checked={item.is_visible} onCheckedChange={(checked) => updateItem(item.item_key, { ...item, is_visible: checked })} className="shrink-0" />
+                              <Input value={item.custom_title || ''} onChange={(e) => updateItem(item.item_key, { ...item, custom_title: e.target.value })} className="h-7 text-xs flex-1" placeholder="Valeur..." />
                             </div>
-                            {item.item_key.startsWith('map-tier-') && (
-                              <input type="color" value={item.custom_color || '#3b82f6'} onChange={(e) => updateItem(item.item_key, { ...item, custom_color: e.target.value })} className="w-6 h-6 rounded cursor-pointer border-0 p-0" title="Couleur du palier" />
-                            )}
-                            <Badge variant="outline" className="text-[9px] shrink-0 font-mono">{item.item_key}</Badge>
+                            <div className="flex items-center gap-1.5">
+                              {item.item_key.startsWith('map-tier-') && (
+                                <input type="color" value={item.custom_color || '#3b82f6'} onChange={(e) => updateItem(item.item_key, { ...item, custom_color: e.target.value })} className="w-6 h-6 rounded cursor-pointer border-0 p-0" title="Couleur du palier" />
+                              )}
+                              <Badge variant="outline" className="text-[9px] shrink-0 font-mono">{item.item_key}</Badge>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -476,10 +548,7 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
                           <LayoutGrid className="h-3.5 w-3.5" />
                           {activeTab === 'rdc-map' ? 'KPIs Tooltip & Détails' : `Indicateurs KPI (${currentKpis.length})`}
                         </h4>
-                        <div className="flex gap-1">
-                          <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => toggleAll('kpi', true)}><Eye className="h-3 w-3 mr-1" />Tout afficher</Button>
-                          <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => toggleAll('kpi', false)}><EyeOff className="h-3 w-3 mr-1" />Tout masquer</Button>
-                        </div>
+                        {renderToggleButtons('kpi')}
                       </div>
                       <div className="space-y-1">
                         {currentKpis.map((item, idx) => (
@@ -507,10 +576,7 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
                           <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                             <BarChart3 className="h-3.5 w-3.5" />Graphiques ({currentCharts.length})
                           </h4>
-                          <div className="flex gap-1">
-                            <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => toggleAll('chart', true)}><Eye className="h-3 w-3 mr-1" />Tout afficher</Button>
-                            <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => toggleAll('chart', false)}><EyeOff className="h-3 w-3 mr-1" />Tout masquer</Button>
-                          </div>
+                          {renderToggleButtons('chart')}
                         </div>
                         <div className="space-y-1">
                           {currentCharts.map((item, idx) => (
