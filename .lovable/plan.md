@@ -1,49 +1,63 @@
 
 
-# Optimisation mobile — Config Graphiques
+# Audit Mode Test — Donnees non generees
 
-## Problemes identifies (viewport 360px)
+## Problemes identifies
 
-1. **Barre de modes** (5 boutons horizontaux "Onglets/KPIs/Graphiques/Filtres/Croisements") : deborde horizontalement, les labels sont tronques
-2. **Boutons d'action header** ("Voir dans Analytics" + "Sauvegarder tout" + badge) : s'empilent mal, texte coupe
-3. **Grille sidebar + contenu** (`lg:grid-cols-4`) : sur mobile, la sidebar prend 100% de largeur avec une hauteur fixe de 500px — l'admin doit scroller enormement avant d'atteindre le contenu
-4. **ItemEditor** : ligne horizontale avec 7 elements (grip, fleches, switch, input, select, couleur, badge) — tout est ecrase sur 360px
-5. **Groupes de boutons** dans les en-tetes de section ("Tout afficher"/"Tout masquer"/"Sauvegarder") : debordent
+### Bug 1 : `buildingPermits` — 0 enregistrement (au lieu de ~700)
+**Cause** : Contrainte CHECK sur `administrative_status` dans la table `cadastral_building_permits` :
+```
+CHECK (administrative_status IN ('Conforme', 'En attente', 'Non autorisé'))
+```
+Le generateur utilise `['Approuvé', 'Rejeté', 'En attente']` — seul `'En attente'` est valide. Les inserts echouent silencieusement.
 
-## Corrections prevues
+### Bug 2 : `taxHistory` — 0 enregistrement (au lieu de ~3000)
+**Cause** : Contrainte CHECK sur `payment_status` dans la table `cadastral_tax_history` :
+```
+CHECK (payment_status IN ('pending', 'paid', 'overdue'))
+```
+Le generateur utilise `'payé'`, `'unpaid'`, `'en_attente'` — aucune de ces valeurs n'est valide sauf `'paid'`. Les inserts echouent silencieusement.
 
-### 1. Barre de modes responsive
-- Sur mobile : afficher uniquement les icones (sans labels texte), dans un conteneur `overflow-x-auto`
-- Sur desktop : garder icone + label
+### Bug 3 : Erreurs silencieuses
+Les generateurs `generateTaxHistory` et `generateBuildingPermits` utilisent `console.error` sans propager l'erreur. Le `failedSteps` dans le log d'audit affiche `[]` alors que ces etapes ont echoue — l'admin ne voit aucun signal d'echec.
 
-### 2. Header actions empilees
-- Wrapper les actions dans un `flex-col` sur mobile au lieu de `flex-row`
-- Masquer le texte "Voir dans Analytics" sur mobile (garder l'icone seule)
-- "Sauvegarder tout" en pleine largeur sur mobile
+### Bug 4 : Donnees dupliquees
+`parcels: 14040` (2x le volume attendu de 7020) et `contributions: 10220` — des generations multiples s'accumulent sans nettoyage prealable. Le bouton "Generer" ne verifie pas si des donnees existent deja.
 
-### 3. Sidebar collapsible sur mobile
-- Remplacer la sidebar permanente par un selecteur `<Select>` dropdown sur mobile (liste des onglets)
-- Garder la sidebar classique sur `lg:` et au-dessus
-- Supprimer le `h-[500px]` fixe sur mobile
+---
 
-### 4. ItemEditor empile sur mobile
-- Sur mobile : passer en layout vertical (2 lignes) :
-  - Ligne 1 : switch + titre (input)
-  - Ligne 2 : fleches + type chart + couleur + badge
-- Sur desktop : garder la ligne horizontale actuelle
+## Plan de correction
 
-### 5. Boutons de section compacts
-- Sur mobile : icones seules pour "Tout afficher"/"Tout masquer"
-- Bouton "Sauvegarder" en largeur adaptee
+### 1. Corriger les valeurs de statut dans les generateurs
 
-## Fichiers modifies
+**Fichier : `src/components/admin/test-mode/testDataGenerators.ts`**
 
-- `src/components/admin/AdminAnalyticsChartsConfig.tsx` — header, barre de modes, grilles sidebar/contenu, boutons
-- `src/components/admin/analytics-config/ItemEditor.tsx` — layout responsive vertical/horizontal
+- `generateBuildingPermits` : remplacer `['Approuvé', 'Rejeté', 'Approuvé', 'En attente', 'Approuvé']` par `['Conforme', 'Non autorisé', 'Conforme', 'En attente', 'Conforme']`
+- `generateTaxHistory` : remplacer les cycles `TAX_STATUSES_PAID` et `TAX_STATUSES_UNPAID` par des valeurs conformes au CHECK : `'paid'`, `'pending'`, `'overdue'`
+
+### 2. Ameliorer la remontee d'erreurs
+
+**Fichier : `src/components/admin/test-mode/testDataGenerators.ts`**
+
+- Dans `generateTaxHistory` et `generateBuildingPermits`, ajouter `assertInserted()` ou au minimum propager l'erreur (`throw`) au lieu de `console.error` seul. Cela permet au code appelant dans `useTestDataActions.ts` de capturer l'echec et de l'ajouter a `failedSteps`.
+
+### 3. Ajouter un garde anti-duplication
+
+**Fichier : `src/components/admin/test-mode/useTestDataActions.ts`**
+
+- Dans `generateTestData`, avant de lancer la generation, verifier si des donnees TEST existent deja (via `count_test_data_stats`). Si oui, afficher un avertissement et proposer une regeneration au lieu de generer en double.
+
+### 4. Corriger le runtime error existant
+
+Le build actuel a un `TypeError: Failed to fetch dynamically imported module` sur `Admin.tsx`. Cela est probablement lie a une erreur de syntaxe introduite par les modifications precedentes. Il faut verifier et corriger pour que la page admin charge correctement.
+
+---
 
 ## Section technique
 
-- Utilisation du hook `useIsMobile()` existant pour conditionner les layouts
-- Remplacement des sidebars par `<Select>` sur mobile (pattern deja utilise ailleurs dans le projet)
-- Aucune dependance ajoutee, aucun changement base de donnees
+**Fichiers modifies :**
+- `src/components/admin/test-mode/testDataGenerators.ts` — correction des valeurs CHECK, meilleure propagation d'erreurs
+- `src/components/admin/test-mode/useTestDataActions.ts` — garde anti-duplication
+
+**Aucune migration** requise — les contraintes CHECK sont correctes, c'est le code client qui envoie des valeurs non conformes.
 
