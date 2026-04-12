@@ -113,6 +113,23 @@ export const useTestDataActions = ({
       return;
     }
 
+    // Duplication guard: check if test data already exists
+    try {
+      const { count } = await supabase
+        .from('cadastral_parcels')
+        .select('id', { count: 'exact', head: true })
+        .like('parcel_number', 'TEST-%');
+      if (count && count > 0) {
+        toast.warning('Données test existantes détectées', {
+          description: `${count} parcelles test existent déjà. Utilisez « Régénérer » pour remplacer les données.`,
+          duration: 6000,
+        });
+        return;
+      }
+    } catch {
+      // Non-blocking: proceed with generation if check fails
+    }
+
     const suffix = uniqueSuffix();
     const parcelNumbers = generateParcelNumbers(suffix);
     const failedSteps: string[] = [];
