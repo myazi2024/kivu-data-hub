@@ -913,8 +913,8 @@ export const generateTaxHistory = async (
   const currentYear = new Date().getFullYear();
   const selected = parcels.filter((_, i) => i % 7 === 0); // ~15%
 
-  const TAX_STATUSES_PAID = ['paid', 'payé', 'paid', 'payé'];
-  const TAX_STATUSES_UNPAID = ['unpaid', 'en_attente', 'pending', 'unpaid'];
+  const TAX_STATUSES_PAID = ['paid', 'paid', 'paid', 'paid'];
+  const TAX_STATUSES_UNPAID = ['pending', 'overdue', 'pending', 'overdue'];
   const records = selected.flatMap((p, i) =>
     [0, 1, 2].map((yearOffset) => {
       const isUnpaid = yearOffset === 2 && i % 3 !== 0;
@@ -936,8 +936,8 @@ export const generateTaxHistory = async (
       .from('cadastral_tax_history')
       .insert(batch)
       .select('id');
-    if (error) console.error(`Historique taxes (batch ${i}, non-bloquant):`, error);
-    if (data) allInserted.push(...data);
+    if (error) throw new Error(`Historique taxes (batch ${i}): ${error.message}`);
+    allInserted.push(...assertInserted(data, 'Historique taxes'));
   }
   return allInserted;
 };
@@ -1019,7 +1019,7 @@ export const generateBuildingPermits = async (
     'Service Urbanisme - Lubumbashi',
     'Division Urbanisme - Matadi',
   ];
-  const ADM_STATUSES = ['Approuvé', 'Rejeté', 'Approuvé', 'En attente', 'Approuvé'];
+  const ADM_STATUSES = ['Conforme', 'Non autorisé', 'Conforme', 'En attente', 'Conforme'];
 
   const records = selected.map((p, i) => {
     // ~30% regularization permits (permit_number contains "reg" for heuristic detection)
@@ -1044,8 +1044,8 @@ export const generateBuildingPermits = async (
       .from('cadastral_building_permits')
       .insert(batch)
       .select('id');
-    if (error) console.error(`Autorisation de bâtir (batch ${i}, non-bloquant):`, error);
-    if (data) allInserted.push(...data);
+    if (error) throw new Error(`Autorisation de bâtir (batch ${i}): ${error.message}`);
+    allInserted.push(...assertInserted(data, 'Autorisation de bâtir'));
   }
   return allInserted;
 };
