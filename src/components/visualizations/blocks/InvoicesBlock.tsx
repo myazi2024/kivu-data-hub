@@ -15,7 +15,7 @@ interface Props { data: LandAnalyticsData; }
 const TAB_KEY = 'invoices';
 
 export const InvoicesBlock: React.FC<Props> = memo(({ data }) => {
-  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx } = useBlockFilter(TAB_KEY, data.invoices);
+  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx, ty, ord } = useBlockFilter(TAB_KEY, data.invoices);
 
   const byStatus = useMemo(() => countBy(filtered, 'status'), [filtered]);
   const byPaymentMethod = useMemo(() => countBy(filtered, 'payment_method'), [filtered]);
@@ -40,23 +40,27 @@ export const InvoicesBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'kpi-discounts', label: ct('kpi-discounts', 'Remises'), value: `$${stats.totalDiscount.toLocaleString()}`, cls: 'text-rose-600', tooltip: 'Total des remises accordées' },
   ].filter(k => v(k.key)), [filtered, stats, v, ct]);
 
+  const chartDefs = useMemo(() => [
+    { key: 'status', el: () => <ChartCard title={ct('status', 'Statut')} icon={Receipt} data={byStatus} type={ty('status', 'pie')} colorIndex={2}
+      insight={generateInsight(byStatus, 'pie', 'les statuts de facture')} crossVariables={cx('status')} rawRecords={filtered} groupField="status" /> },
+    { key: 'payment-method', el: () => <ChartCard title={ct('payment-method', 'Moyen paiement')} icon={CreditCard} data={byPaymentMethod} type={ty('payment-method', 'donut')} colorIndex={0} hidden={byPaymentMethod.length === 0}
+      insight={generateInsight(byPaymentMethod, 'donut', 'les moyens de paiement')} crossVariables={cx('payment-method')} rawRecords={filtered} groupField="payment_method" /> },
+    { key: 'geo-zone', el: () => <ChartCard title={ct('geo-zone', 'Zone géographique')} icon={MapPin} data={byGeoZone} type={ty('geo-zone', 'bar-h')} colorIndex={6} labelWidth={100} hidden={byGeoZone.length === 0}
+      insight={generateInsight(byGeoZone, 'bar-h', 'les zones géographiques')} crossVariables={cx('geo-zone')} rawRecords={filtered} groupField="geographical_zone" /> },
+    { key: 'revenue-trend', el: () => <ChartCard title={ct('revenue-trend', 'Revenus/mois')} icon={DollarSign} data={revenueTrend} type={ty('revenue-trend', 'area')} colorIndex={2} hidden={revenueTrend.length < 2}
+      insight={generateInsight(revenueTrend, 'area', 'les revenus mensuels')} /> },
+    { key: 'geo', el: () => <GeoCharts records={filtered} /> },
+    { key: 'evolution', el: () => <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type={ty('evolution', 'area')} colorIndex={0} colSpan={2}
+      insight={generateInsight(trend, 'area', 'les factures')} /> },
+  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filtered, byStatus, byPaymentMethod, byGeoZone, revenueTrend, trend, v, ct, cx, ty, ord]);
+
   return (
     <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
       <AnalyticsFilters data={data.invoices} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} />
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        {v('status') && <ChartCard title={ct('status', 'Statut')} icon={Receipt} data={byStatus} type="pie" colorIndex={2}
-          insight={generateInsight(byStatus, 'pie', 'les statuts de facture')} crossVariables={cx('status')} rawRecords={filtered} groupField="status" />}
-        {v('payment-method') && <ChartCard title={ct('payment-method', 'Moyen paiement')} icon={CreditCard} data={byPaymentMethod} type="donut" colorIndex={0} hidden={byPaymentMethod.length === 0}
-          insight={generateInsight(byPaymentMethod, 'donut', 'les moyens de paiement')} crossVariables={cx('payment-method')} rawRecords={filtered} groupField="payment_method" />}
-        {v('geo-zone') && <ChartCard title={ct('geo-zone', 'Zone géographique')} icon={MapPin} data={byGeoZone} type="bar-h" colorIndex={6} labelWidth={100} hidden={byGeoZone.length === 0}
-          insight={generateInsight(byGeoZone, 'bar-h', 'les zones géographiques')} crossVariables={cx('geo-zone')} rawRecords={filtered} groupField="geographical_zone" />}
-        {v('revenue-trend') && <ChartCard title={ct('revenue-trend', 'Revenus/mois')} icon={DollarSign} data={revenueTrend} type="area" colorIndex={2} hidden={revenueTrend.length < 2}
-          insight={generateInsight(revenueTrend, 'area', 'les revenus mensuels')} />}
-        {v('geo') && <GeoCharts records={filtered} />}
-        {v('evolution') && <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type="area" colorIndex={0} colSpan={2}
-          insight={generateInsight(trend, 'area', 'les factures')} />}
+        {chartDefs.map(d => <React.Fragment key={d.key}>{d.el()}</React.Fragment>)}
       </div>
     </div>
     </FilterLabelContext.Provider>

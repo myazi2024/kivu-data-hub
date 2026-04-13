@@ -15,7 +15,7 @@ interface Props { data: LandAnalyticsData; }
 const TAB_KEY = 'subdivision';
 
 export const SubdivisionBlock: React.FC<Props> = memo(({ data }) => {
-  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx } = useBlockFilter(TAB_KEY, data.subdivisionRequests);
+  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx, ty, ord } = useBlockFilter(TAB_KEY, data.subdivisionRequests);
 
   const byStatus = useMemo(() => countBy(filtered, 'status'), [filtered]);
   const byPurpose = useMemo(() => countBy(filtered, 'purpose_of_subdivision'), [filtered]);
@@ -81,29 +81,33 @@ export const SubdivisionBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'kpi-surface', label: ct('kpi-surface', 'Surface tot.'), value: stats.totalSurface > 0 ? `${(stats.totalSurface / 10000).toFixed(1)} ha` : 'N/A', cls: 'text-primary', tooltip: `${stats.totalSurface.toLocaleString()} m²` },
   ].filter(k => v(k.key)), [filtered, stats, v, ct]);
 
+  const chartDefs = useMemo(() => [
+    { key: 'status', el: () => <ChartCard title={ct('status', 'Statut')} icon={Scissors} data={byStatus} type={ty('status', 'pie')} colorIndex={7}
+      insight={generateInsight(byStatus, 'pie', 'les statuts de lotissement')} crossVariables={cx('status')} rawRecords={filtered} groupField="status" /> },
+    { key: 'lots-distribution', el: () => <ChartCard title={ct('lots-distribution', 'Distribution lots')} icon={BarChart3} data={lotsDistribution} type={ty('lots-distribution', 'bar-v')} colorIndex={9} hidden={lotsDistribution.length === 0}
+      insight={generateInsight(lotsDistribution, 'bar-v', 'la distribution des lots')} crossVariables={cx('lots-distribution')} rawRecords={filtered} groupField="number_of_lots" /> },
+    { key: 'purpose', el: () => <ChartCard title={ct('purpose', 'Objet lotissement')} icon={Target} data={byPurpose} type={ty('purpose', 'bar-h')} colorIndex={0} labelWidth={100} hidden={byPurpose.length === 0}
+      insight={generateInsight(byPurpose, 'bar-h', 'les objets de lotissement')} crossVariables={cx('purpose')} rawRecords={filtered} groupField="purpose_of_subdivision" /> },
+    { key: 'requester-type', el: () => <ChartCard title={ct('requester-type', 'Type demandeur')} icon={Users} data={byRequesterType} type={ty('requester-type', 'donut')} colorIndex={1} hidden={byRequesterType.length === 0}
+      insight={generateInsight(byRequesterType, 'donut', 'les demandeurs')} crossVariables={cx('requester-type')} rawRecords={filtered} groupField="requester_type" /> },
+    { key: 'payment', el: () => <ChartCard title={ct('payment', 'Paiement')} icon={DollarSign} data={byPaymentStatus} type={ty('payment', 'donut')} colorIndex={2} hidden={byPaymentStatus.length === 0}
+      insight={generateInsight(byPaymentStatus, 'donut', 'les paiements')} crossVariables={cx('payment')} rawRecords={filtered} groupField="submission_payment_status" /> },
+    { key: 'surface', el: () => <ChartCard title={ct('surface', 'Surface parcelle mère')} icon={Ruler} data={surfaceDist} type={ty('surface', 'bar-v')} colorIndex={5} hidden={surfaceDist.length === 0}
+      insight={generateInsight(surfaceDist, 'bar-v', 'les surfaces des parcelles mères')} crossVariables={cx('surface')} rawRecords={filtered} groupField="parent_parcel_area_sqm" /> },
+    { key: 'revenue-trend', el: () => <ChartCard title={ct('revenue-trend', 'Revenus/mois')} icon={DollarSign} data={revenueTrend} type={ty('revenue-trend', 'area')} colorIndex={2} hidden={revenueTrend.length < 2}
+      insight={generateInsight(revenueTrend, 'area', 'les revenus de lotissement')} /> },
+    { key: 'geo', el: () => <GeoCharts records={filtered} /> },
+    { key: 'evolution', el: () => <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type={ty('evolution', 'area')} colorIndex={7} colSpan={2}
+      insight={generateInsight(trend, 'area', 'les demandes de lotissement')} /> },
+  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filtered, byStatus, lotsDistribution, byPurpose, byRequesterType, byPaymentStatus, surfaceDist, revenueTrend, trend, v, ct, cx, ty, ord]);
+
   return (
     <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
       <AnalyticsFilters data={data.subdivisionRequests} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} />
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        {v('status') && <ChartCard title={ct('status', 'Statut')} icon={Scissors} data={byStatus} type="pie" colorIndex={7}
-          insight={generateInsight(byStatus, 'pie', 'les statuts de lotissement')} crossVariables={cx('status')} rawRecords={filtered} groupField="status" />}
-        {v('lots-distribution') && <ChartCard title={ct('lots-distribution', 'Distribution lots')} icon={BarChart3} data={lotsDistribution} type="bar-v" colorIndex={9} hidden={lotsDistribution.length === 0}
-          insight={generateInsight(lotsDistribution, 'bar-v', 'la distribution des lots')} crossVariables={cx('lots-distribution')} rawRecords={filtered} groupField="number_of_lots" />}
-        {v('purpose') && <ChartCard title={ct('purpose', 'Objet lotissement')} icon={Target} data={byPurpose} type="bar-h" colorIndex={0} labelWidth={100} hidden={byPurpose.length === 0}
-          insight={generateInsight(byPurpose, 'bar-h', 'les objets de lotissement')} crossVariables={cx('purpose')} rawRecords={filtered} groupField="purpose_of_subdivision" />}
-        {v('requester-type') && <ChartCard title={ct('requester-type', 'Type demandeur')} icon={Users} data={byRequesterType} type="donut" colorIndex={1} hidden={byRequesterType.length === 0}
-          insight={generateInsight(byRequesterType, 'donut', 'les demandeurs')} crossVariables={cx('requester-type')} rawRecords={filtered} groupField="requester_type" />}
-        {v('payment') && <ChartCard title={ct('payment', 'Paiement')} icon={DollarSign} data={byPaymentStatus} type="donut" colorIndex={2} hidden={byPaymentStatus.length === 0}
-          insight={generateInsight(byPaymentStatus, 'donut', 'les paiements')} crossVariables={cx('payment')} rawRecords={filtered} groupField="submission_payment_status" />}
-        {v('surface') && <ChartCard title={ct('surface', 'Surface parcelle mère')} icon={Ruler} data={surfaceDist} type="bar-v" colorIndex={5} hidden={surfaceDist.length === 0}
-          insight={generateInsight(surfaceDist, 'bar-v', 'les surfaces des parcelles mères')} crossVariables={cx('surface')} rawRecords={filtered} groupField="parent_parcel_area_sqm" />}
-        {v('revenue-trend') && <ChartCard title={ct('revenue-trend', 'Revenus/mois')} icon={DollarSign} data={revenueTrend} type="area" colorIndex={2} hidden={revenueTrend.length < 2}
-          insight={generateInsight(revenueTrend, 'area', 'les revenus de lotissement')} />}
-        {v('geo') && <GeoCharts records={filtered} />}
-        {v('evolution') && <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type="area" colorIndex={7} colSpan={2}
-          insight={generateInsight(trend, 'area', 'les demandes de lotissement')} />}
+        {chartDefs.map(d => <React.Fragment key={d.key}>{d.el()}</React.Fragment>)}
       </div>
     </div>
     </FilterLabelContext.Provider>

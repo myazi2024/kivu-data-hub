@@ -15,7 +15,7 @@ interface Props { data: LandAnalyticsData; }
 const TAB_KEY = 'taxes';
 
 export const TaxesBlock: React.FC<Props> = memo(({ data }) => {
-  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx } = useBlockFilter(TAB_KEY, data.taxHistory);
+  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx, ty, ord } = useBlockFilter(TAB_KEY, data.taxHistory);
 
   const byStatus = useMemo(() => countBy(filtered, 'payment_status'), [filtered]);
   const byYear = useMemo(() => {
@@ -60,17 +60,21 @@ export const TaxesBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'kpi-avg', label: ct('kpi-avg', 'Montant moy.'), value: `$${avgAmount.toLocaleString()}`, cls: 'text-violet-600' },
   ].filter(k => v(k.key)), [filtered, totalAmount, pendingCount, paid, recoveryRate, paidAmount, avgAmount, v, ct]);
 
+  const chartDefs = useMemo(() => [
+    { key: 'status', el: () => <ChartCard title={ct('status', 'Statut paiement')} data={byStatus} type={ty('status', 'bar-v')} colorIndex={0} insight={generateInsight(byStatus, 'bar-v', 'les statuts de taxe')} crossVariables={cx('status')} rawRecords={filtered} groupField="payment_status" /> },
+    { key: 'fiscal-year', el: () => <ChartCard title={ct('fiscal-year', 'Exercice fiscal')} data={byYear} type={ty('fiscal-year', 'bar-v')} colorIndex={1} insight={generateInsight(byYear, 'bar-v', 'les exercices fiscaux')} crossVariables={cx('fiscal-year')} rawRecords={filtered} groupField="tax_year" /> },
+    { key: 'amount-range', el: () => <ChartCard title={ct('amount-range', 'Tranche montant')} data={amountBrackets} type={ty('amount-range', 'bar-h')} colorIndex={2} insight={generateInsight(amountBrackets, 'bar-h', 'les tranches de montant')} crossVariables={cx('amount-range')} rawRecords={filtered} groupField="amount_usd" /> },
+    { key: 'geo', el: () => <GeoCharts records={filtered} /> },
+    { key: 'evolution', el: () => <ChartCard title={ct('evolution', 'Évolution')} data={trend} type={ty('evolution', 'area')} colorIndex={3} colSpan={2} icon={TrendingUp} insight={generateInsight(trend, 'area', "l'évolution des taxes")} /> },
+  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filtered, byStatus, byYear, amountBrackets, trend, v, ct, cx, ty, ord]);
+
   return (
     <FilterLabelContext.Provider value={filterLabel}>
       <div className="space-y-2">
         <AnalyticsFilters data={data.taxHistory} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} />
         <KpiGrid items={kpiItems} />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          {v('status') && <ChartCard title={ct('status', 'Statut paiement')} data={byStatus} type="bar-v" colorIndex={0} insight={generateInsight(byStatus, 'bar-v', 'les statuts de taxe')} crossVariables={cx('status')} rawRecords={filtered} groupField="payment_status" />}
-          {v('fiscal-year') && <ChartCard title={ct('fiscal-year', 'Exercice fiscal')} data={byYear} type="bar-v" colorIndex={1} insight={generateInsight(byYear, 'bar-v', 'les exercices fiscaux')} crossVariables={cx('fiscal-year')} rawRecords={filtered} groupField="tax_year" />}
-          {v('amount-range') && <ChartCard title={ct('amount-range', 'Tranche montant')} data={amountBrackets} type="bar-h" colorIndex={2} insight={generateInsight(amountBrackets, 'bar-h', 'les tranches de montant')} crossVariables={cx('amount-range')} rawRecords={filtered} groupField="amount_usd" />}
-          {v('geo') && <GeoCharts records={filtered} />}
-          {v('evolution') && <ChartCard title={ct('evolution', 'Évolution')} data={trend} type="area" colorIndex={3} colSpan={2} icon={TrendingUp} insight={generateInsight(trend, 'area', "l'évolution des taxes")} />}
+          {chartDefs.map(d => <React.Fragment key={d.key}>{d.el()}</React.Fragment>)}
         </div>
       </div>
     </FilterLabelContext.Provider>

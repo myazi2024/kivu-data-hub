@@ -18,7 +18,7 @@ interface Props { data: LandAnalyticsData; }
 const TAB_KEY = 'contributions';
 
 export const ContributionsBlock: React.FC<Props> = memo(({ data }) => {
-  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx } = useBlockFilter(TAB_KEY, data.contributions);
+  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx, ty, ord } = useBlockFilter(TAB_KEY, data.contributions);
 
   const byContributionType = useMemo(() => countBy(filtered, 'contribution_type'), [filtered]);
   const byStatus = useMemo(() => countBy(filtered, 'status'), [filtered]);
@@ -76,38 +76,42 @@ export const ContributionsBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'kpi-delay', label: ct('kpi-delay', 'Délai moy.'), value: stats.avgDays > 0 ? `${stats.avgDays}j` : 'N/A', cls: 'text-violet-600', tooltip: 'Délai moyen de traitement' },
   ].filter(k => v(k.key)), [filtered, stats, fraudData, appealData, v, ct]);
 
+  const chartDefs = useMemo(() => [
+    { key: 'contribution-type', el: () => <ChartCard title={ct('contribution-type', 'Type contribution')} icon={FileText} data={byContributionType} type={ty('contribution-type', 'bar-h')} colorIndex={0} labelWidth={100}
+      insight={generateInsight(byContributionType, 'bar-h', 'les types de contribution')} crossVariables={cx('contribution-type')} rawRecords={filtered} groupField="contribution_type" /> },
+    { key: 'status', el: () => <ChartCard title={ct('status', 'Statut')} data={byStatus} type={ty('status', 'pie')} colorIndex={1}
+      insight={generateInsight(byStatus, 'pie', 'les statuts')} crossVariables={cx('status')} rawRecords={filtered} groupField="status" /> },
+    { key: 'title-type', el: () => <ChartCard title={ct('title-type', 'Type titre')} data={byPropertyTitleType} type={ty('title-type', 'bar-h')} colorIndex={3} labelWidth={100} hidden={byPropertyTitleType.length === 0}
+      insight={generateInsight(byPropertyTitleType, 'bar-h', 'les types de titre')} crossVariables={cx('title-type')} rawRecords={normalized} groupField="property_title_type" /> },
+    { key: 'legal-status', el: () => <ChartCard title={ct('legal-status', 'Statut juridique')} icon={Users} data={byLegalStatus} type={ty('legal-status', 'donut')} colorIndex={4}
+      insight={generateInsight(byLegalStatus, 'donut', 'les statuts juridiques')} crossVariables={cx('legal-status')} rawRecords={filtered} groupField="current_owner_legal_status" /> },
+    { key: 'usage', el: () => <ChartCard title={ct('usage', 'Usage déclaré')} data={byDeclaredUsage} type={ty('usage', 'bar-h')} colorIndex={5} hidden={byDeclaredUsage.length === 0}
+      insight={generateInsight(byDeclaredUsage, 'bar-h', 'les usages déclarés')} crossVariables={cx('usage')} rawRecords={normalized} groupField="declared_usage" /> },
+    { key: 'construction-type', el: () => <ChartCard title={ct('construction-type', 'Type construction')} data={byConstructionType} type={ty('construction-type', 'bar-h')} colorIndex={7} hidden={byConstructionType.length === 0}
+      insight={generateInsight(byConstructionType, 'bar-h', 'les types de construction')} crossVariables={cx('construction-type')} rawRecords={normalized} groupField="construction_type" /> },
+    { key: 'property-category', el: () => <ChartCard title={ct('property-category', 'Catégorie de bien')} data={byPropertyCategory} type={ty('property-category', 'bar-h')} colorIndex={2} hidden={byPropertyCategory.length === 0}
+      insight={generateInsight(byPropertyCategory, 'bar-h', 'les catégories de bien')} crossVariables={cx('property-category')} rawRecords={filtered} groupField="property_category" /> },
+    { key: 'fraud-detection', el: () => <ChartCard title={ct('fraud-detection', 'Détection fraude')} icon={ShieldAlert} data={fraudData.distribution} type={ty('fraud-detection', 'pie')} colorIndex={4}
+      insight={fraudData.suspicious > 0 ? `${fraudData.suspicious} contribution${fraudData.suspicious > 1 ? 's' : ''} signalée${fraudData.suspicious > 1 ? 's' : ''} comme suspecte${fraudData.suspicious > 1 ? 's' : ''}.` : 'Aucune contribution suspecte détectée.'}
+      crossVariables={cx('fraud-detection')} rawRecords={filtered} groupField="is_suspicious" /> },
+    { key: 'fraud-score', el: () => <ChartCard title={ct('fraud-score', 'Score fraude')} icon={AlertTriangle} data={fraudData.byScore} type={ty('fraud-score', 'bar-v')} colorIndex={4} hidden={fraudData.byScore.length === 0}
+      insight={generateInsight(fraudData.byScore, 'bar-v', 'les niveaux de risque')} crossVariables={cx('fraud-score')} rawRecords={filtered} groupField="fraud_score" /> },
+    { key: 'fraud-reason', el: () => <ChartCard title={ct('fraud-reason', 'Motif fraude')} data={fraudData.byFraudReason} type={ty('fraud-reason', 'bar-h')} colorIndex={4} labelWidth={120} hidden={fraudData.byFraudReason.length === 0}
+      insight={generateInsight(fraudData.byFraudReason, 'bar-h', 'les motifs de fraude')} /> },
+    { key: 'appeal-status', el: () => <ChartCard title={ct('appeal-status', 'Statut appel')} icon={Gavel} data={appealData.byAppealStatus} type={ty('appeal-status', 'donut')} colorIndex={9} hidden={appealData.byAppealStatus.length === 0}
+      insight={generateInsight(appealData.byAppealStatus, 'donut', 'les appels')} crossVariables={cx('appeal-status')} rawRecords={filtered} groupField="appeal_status" /> },
+    { key: 'geo', el: () => <GeoCharts records={filtered} /> },
+    { key: 'evolution', el: () => <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type={ty('evolution', 'area')} colorIndex={0} colSpan={2}
+      insight={generateInsight(trend, 'area', 'les contributions')} /> },
+  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filtered, normalized, byContributionType, byStatus, byPropertyTitleType, byLegalStatus, byDeclaredUsage, byConstructionType, byPropertyCategory, fraudData, appealData, trend, v, ct, cx, ty, ord]);
+
   return (
     <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
       <AnalyticsFilters data={data.contributions} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} />
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        {v('contribution-type') && <ChartCard title={ct('contribution-type', 'Type contribution')} icon={FileText} data={byContributionType} type="bar-h" colorIndex={0} labelWidth={100}
-          insight={generateInsight(byContributionType, 'bar-h', 'les types de contribution')} crossVariables={cx('contribution-type')} rawRecords={filtered} groupField="contribution_type" />}
-        {v('status') && <ChartCard title={ct('status', 'Statut')} data={byStatus} type="pie" colorIndex={1}
-          insight={generateInsight(byStatus, 'pie', 'les statuts')} crossVariables={cx('status')} rawRecords={filtered} groupField="status" />}
-        {v('title-type') && <ChartCard title={ct('title-type', 'Type titre')} data={byPropertyTitleType} type="bar-h" colorIndex={3} labelWidth={100} hidden={byPropertyTitleType.length === 0}
-          insight={generateInsight(byPropertyTitleType, 'bar-h', 'les types de titre')} crossVariables={cx('title-type')} rawRecords={normalized} groupField="property_title_type" />}
-        {v('legal-status') && <ChartCard title={ct('legal-status', 'Statut juridique')} icon={Users} data={byLegalStatus} type="donut" colorIndex={4}
-          insight={generateInsight(byLegalStatus, 'donut', 'les statuts juridiques')} crossVariables={cx('legal-status')} rawRecords={filtered} groupField="current_owner_legal_status" />}
-        {v('usage') && <ChartCard title={ct('usage', 'Usage déclaré')} data={byDeclaredUsage} type="bar-h" colorIndex={5} hidden={byDeclaredUsage.length === 0}
-          insight={generateInsight(byDeclaredUsage, 'bar-h', 'les usages déclarés')} crossVariables={cx('usage')} rawRecords={normalized} groupField="declared_usage" />}
-        {v('construction-type') && <ChartCard title={ct('construction-type', 'Type construction')} data={byConstructionType} type="bar-h" colorIndex={7} hidden={byConstructionType.length === 0}
-          insight={generateInsight(byConstructionType, 'bar-h', 'les types de construction')} crossVariables={cx('construction-type')} rawRecords={normalized} groupField="construction_type" />}
-        {v('property-category') && <ChartCard title={ct('property-category', 'Catégorie de bien')} data={byPropertyCategory} type="bar-h" colorIndex={2} hidden={byPropertyCategory.length === 0}
-          insight={generateInsight(byPropertyCategory, 'bar-h', 'les catégories de bien')} crossVariables={cx('property-category')} rawRecords={filtered} groupField="property_category" />}
-        {v('fraud-detection') && <ChartCard title={ct('fraud-detection', 'Détection fraude')} icon={ShieldAlert} data={fraudData.distribution} type="pie" colorIndex={4}
-          insight={fraudData.suspicious > 0 ? `${fraudData.suspicious} contribution${fraudData.suspicious > 1 ? 's' : ''} signalée${fraudData.suspicious > 1 ? 's' : ''} comme suspecte${fraudData.suspicious > 1 ? 's' : ''}.` : 'Aucune contribution suspecte détectée.'}
-          crossVariables={cx('fraud-detection')} rawRecords={filtered} groupField="is_suspicious" />}
-        {v('fraud-score') && <ChartCard title={ct('fraud-score', 'Score fraude')} icon={AlertTriangle} data={fraudData.byScore} type="bar-v" colorIndex={4} hidden={fraudData.byScore.length === 0}
-          insight={generateInsight(fraudData.byScore, 'bar-v', 'les niveaux de risque')} crossVariables={cx('fraud-score')} rawRecords={filtered} groupField="fraud_score" />}
-        {v('fraud-reason') && <ChartCard title={ct('fraud-reason', 'Motif fraude')} data={fraudData.byFraudReason} type="bar-h" colorIndex={4} labelWidth={120} hidden={fraudData.byFraudReason.length === 0}
-          insight={generateInsight(fraudData.byFraudReason, 'bar-h', 'les motifs de fraude')} />}
-        {v('appeal-status') && <ChartCard title={ct('appeal-status', 'Statut appel')} icon={Gavel} data={appealData.byAppealStatus} type="donut" colorIndex={9} hidden={appealData.byAppealStatus.length === 0}
-          insight={generateInsight(appealData.byAppealStatus, 'donut', 'les appels')} crossVariables={cx('appeal-status')} rawRecords={filtered} groupField="appeal_status" />}
-        {v('geo') && <GeoCharts records={filtered} />}
-        {v('evolution') && <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type="area" colorIndex={0} colSpan={2}
-          insight={generateInsight(trend, 'area', 'les contributions')} />}
+        {chartDefs.map(d => <React.Fragment key={d.key}>{d.el()}</React.Fragment>)}
       </div>
     </div>
     </FilterLabelContext.Provider>

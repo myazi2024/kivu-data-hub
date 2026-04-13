@@ -24,7 +24,7 @@ const GENDER_COLORS: Record<string, string> = {
 };
 
 export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
-  const { filter, setFilter, filterLabel, filtered: filteredParcels, filterConfig, v, ct, cx } = useBlockFilter(TAB_KEY, data.parcels);
+  const { filter, setFilter, filterLabel, filtered: filteredParcels, filterConfig, v, ct, cx, ty, ord } = useBlockFilter(TAB_KEY, data.parcels);
   const filteredContribs = useMemo(() => applyFilters(data.contributions, filter, filterConfig.dateField), [data.contributions, filter, filterConfig.dateField]);
 
   const normalizedParcels = useMemo(() =>
@@ -158,45 +158,49 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'kpi-density', label: ct('kpi-density', 'Densité'), value: density !== 'N/A' ? `${density}/ha` : 'N/A', cls: 'text-rose-600', tooltip: 'Parcelles par hectare' },
   ].filter(k => v(k.key)), [filteredParcels, urbanCount, ruralCount, totalSurface, avgSurface, density, v, ct]);
 
+  const chartDefs = useMemo(() => [
+    { key: 'title-type', el: () => <ChartCard title={ct('title-type', 'Type titre')} icon={FileText} data={charts.byTitleType} type={ty('title-type', 'bar-h')} colorIndex={0} labelWidth={110}
+      insight={generateInsight(charts.byTitleType, 'bar-h', 'les types de titre')} crossVariables={cx('title-type')} rawRecords={normalizedParcels} groupField="property_title_type" /> },
+    { key: 'legal-status', el: () => <ChartCard title={ct('legal-status', 'Propriétaires')} icon={Users} data={charts.byLegalStatus} type={ty('legal-status', 'donut')} colorIndex={1}
+      insight={generateInsight(charts.byLegalStatus, 'donut', 'les statuts juridiques')} crossVariables={cx('legal-status')} rawRecords={filteredParcels} groupField="current_owner_legal_status" /> },
+    { key: 'gender', el: () => <ColorMappedPieCard title={ct('gender', 'Genre propriétaires')} icon={Users} iconColor="text-pink-500" data={genderData} colorMap={GENDER_COLORS}
+      insight={genderInsight} crossVariables={cx('gender')} rawRecords={filteredParcels} groupField="current_owner_legal_status" /> },
+    { key: 'construction-type', el: () => <ChartCard title={ct('construction-type', 'Construction')} icon={Building} data={charts.byConstructionType} type={ty('construction-type', 'bar-h')} colorIndex={3}
+      insight={generateInsight(charts.byConstructionType, 'bar-h', 'les constructions')} crossVariables={cx('construction-type')} rawRecords={normalizedParcels} groupField="construction_type" /> },
+    { key: 'construction-nature', el: () => <ChartCard title={ct('construction-nature', 'Nature construction')} data={charts.byConstructionNature} type={ty('construction-nature', 'bar-h')} colorIndex={7}
+      insight="Répartition des matériaux et natures de construction par localisation." crossVariables={cx('construction-nature')} rawRecords={filteredParcels} groupField="construction_nature" /> },
+    { key: 'property-category', el: () => <ChartCard title={ct('property-category', 'Catégorie de bien')} data={charts.byPropertyCategory} type={ty('property-category', 'bar-h')} colorIndex={2} hidden={charts.byPropertyCategory.length === 0}
+      insight={generateInsight(charts.byPropertyCategory, 'bar-h', 'les catégories de bien')} crossVariables={cx('property-category')} rawRecords={filteredParcels} groupField="property_category" /> },
+    { key: 'construction-materials', el: () => <ChartCard title={ct('construction-materials', 'Matériaux')} data={charts.byConstructionMaterials} type={ty('construction-materials', 'bar-h')} colorIndex={8} hidden={charts.byConstructionMaterials.length === 0}
+      insight={generateInsight(charts.byConstructionMaterials, 'bar-h', 'les matériaux de construction')} crossVariables={cx('construction-materials')} rawRecords={filteredParcels} groupField="construction_materials" /> },
+    { key: 'standing', el: () => <ChartCard title={ct('standing', 'Standing')} data={charts.byStanding} type={ty('standing', 'donut')} colorIndex={6} hidden={charts.byStanding.length === 0}
+      insight={generateInsight(charts.byStanding, 'donut', 'les niveaux de standing')} crossVariables={cx('standing')} rawRecords={filteredParcels} groupField="standing" /> },
+    { key: 'construction-decade', el: () => <ChartCard title={ct('construction-decade', 'Année construction')} icon={Clock} data={charts.byDecade} type={ty('construction-decade', 'bar-v')} colorIndex={0} hidden={charts.byDecade.length === 0}
+      insight={generateInsight(charts.byDecade, 'bar-v', 'les décennies de construction')} /> },
+    { key: 'usage', el: () => <ChartCard title={ct('usage', 'Usage déclaré')} data={charts.byDeclaredUsage} type={ty('usage', 'bar-h')} colorIndex={5}
+      insight={generateInsight(charts.byDeclaredUsage, 'bar-h', 'les usages déclarés')} crossVariables={cx('usage')} rawRecords={normalizedParcels} groupField="declared_usage" /> },
+    { key: 'surface', el: () => <ChartCard title={ct('surface', 'Superficie')} icon={Ruler} data={charts.surfaceDist} type={ty('surface', 'bar-v')} colorIndex={9}
+      insight={generateInsight(charts.surfaceDist, 'bar-v', 'les tranches de superficie')} crossVariables={cx('surface')} rawRecords={filteredParcels} groupField="area_sqm" /> },
+    { key: 'subdivided', el: () => <ChartCard title={ct('subdivided', 'Loties vs Non loties')} data={subdividedData} type={ty('subdivided', 'pie')} colorIndex={3} hidden={subdividedData.length === 0}
+      insight={generateInsight(subdividedData, 'pie', 'le lotissement des parcelles')} crossVariables={cx('subdivided')} rawRecords={filteredParcels} groupField="is_subdivided" /> },
+    { key: 'geo', el: () => <GeoCharts records={filteredParcels} /> },
+    { key: 'permit-type', el: () => <ChartCard title={ct('permit-type', 'Autorisation de bâtir')} icon={ShieldCheck} data={permitTypeData} type={ty('permit-type', 'donut')} colorIndex={4} hidden={permitTypeData.length === 0}
+      insight={generateInsight(permitTypeData, 'donut', 'les autorisations de bâtir')} crossVariables={cx('permit-type')} rawRecords={filteredContribs} groupField="building_permits" /> },
+    { key: 'building-size', el: () => <ChartCard title={ct('building-size', 'Taille construction')} icon={Maximize} data={buildingSizeData} type={ty('building-size', 'bar-v')} colorIndex={2} hidden={buildingSizeData.length === 0}
+      insight={generateInsight(buildingSizeData, 'bar-v', 'les tailles de construction')} crossVariables={cx('building-size')} rawRecords={filteredContribs} groupField="building_shapes" /> },
+    { key: 'building-height', el: () => <ChartCard title={ct('building-height', 'Hauteur construction')} icon={ArrowUpFromLine} data={buildingHeightData} type={ty('building-height', 'bar-v')} colorIndex={5} hidden={buildingHeightData.length === 0}
+      insight={generateInsight(buildingHeightData, 'bar-v', 'les hauteurs de construction')} crossVariables={cx('building-height')} rawRecords={filteredContribs} groupField="building_shapes" /> },
+    { key: 'evolution', el: () => <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type={ty('evolution', 'area')} colorIndex={0} colSpan={2}
+      insight={generateInsight(trend, 'area', 'les parcelles')} /> },
+  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filteredParcels, filteredContribs, normalizedParcels, charts, permitTypeData, buildingSizeData, buildingHeightData, genderData, genderInsight, subdividedData, trend, v, ct, cx, ty, ord]);
+
   return (
     <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
       <AnalyticsFilters data={data.parcels} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} />
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        {v('title-type') && <ChartCard title={ct('title-type', 'Type titre')} icon={FileText} data={charts.byTitleType} type="bar-h" colorIndex={0} labelWidth={110}
-          insight={generateInsight(charts.byTitleType, 'bar-h', 'les types de titre')} crossVariables={cx('title-type')} rawRecords={normalizedParcels} groupField="property_title_type" />}
-        {v('legal-status') && <ChartCard title={ct('legal-status', 'Propriétaires')} icon={Users} data={charts.byLegalStatus} type="donut" colorIndex={1}
-          insight={generateInsight(charts.byLegalStatus, 'donut', 'les statuts juridiques')} crossVariables={cx('legal-status')} rawRecords={filteredParcels} groupField="current_owner_legal_status" />}
-        {v('gender') && <ColorMappedPieCard title={ct('gender', 'Genre propriétaires')} icon={Users} iconColor="text-pink-500" data={genderData} colorMap={GENDER_COLORS}
-          insight={genderInsight} crossVariables={cx('gender')} rawRecords={filteredParcels} groupField="current_owner_legal_status" />}
-        {v('construction-type') && <ChartCard title={ct('construction-type', 'Construction')} icon={Building} data={charts.byConstructionType} type="bar-h" colorIndex={3}
-          insight={generateInsight(charts.byConstructionType, 'bar-h', 'les constructions')} crossVariables={cx('construction-type')} rawRecords={normalizedParcels} groupField="construction_type" />}
-        {v('construction-nature') && <ChartCard title={ct('construction-nature', 'Nature construction')} data={charts.byConstructionNature} type="bar-h" colorIndex={7}
-          insight="Répartition des matériaux et natures de construction par localisation." crossVariables={cx('construction-nature')} rawRecords={filteredParcels} groupField="construction_nature" />}
-        {v('property-category') && <ChartCard title={ct('property-category', 'Catégorie de bien')} data={charts.byPropertyCategory} type="bar-h" colorIndex={2} hidden={charts.byPropertyCategory.length === 0}
-          insight={generateInsight(charts.byPropertyCategory, 'bar-h', 'les catégories de bien')} crossVariables={cx('property-category')} rawRecords={filteredParcels} groupField="property_category" />}
-        {v('construction-materials') && <ChartCard title={ct('construction-materials', 'Matériaux')} data={charts.byConstructionMaterials} type="bar-h" colorIndex={8} hidden={charts.byConstructionMaterials.length === 0}
-          insight={generateInsight(charts.byConstructionMaterials, 'bar-h', 'les matériaux de construction')} crossVariables={cx('construction-materials')} rawRecords={filteredParcels} groupField="construction_materials" />}
-        {v('standing') && <ChartCard title={ct('standing', 'Standing')} data={charts.byStanding} type="donut" colorIndex={6} hidden={charts.byStanding.length === 0}
-          insight={generateInsight(charts.byStanding, 'donut', 'les niveaux de standing')} crossVariables={cx('standing')} rawRecords={filteredParcels} groupField="standing" />}
-        {v('construction-decade') && <ChartCard title={ct('construction-decade', 'Année construction')} icon={Clock} data={charts.byDecade} type="bar-v" colorIndex={0} hidden={charts.byDecade.length === 0}
-          insight={generateInsight(charts.byDecade, 'bar-v', 'les décennies de construction')} />}
-        {v('usage') && <ChartCard title={ct('usage', 'Usage déclaré')} data={charts.byDeclaredUsage} type="bar-h" colorIndex={5}
-          insight={generateInsight(charts.byDeclaredUsage, 'bar-h', 'les usages déclarés')} crossVariables={cx('usage')} rawRecords={normalizedParcels} groupField="declared_usage" />}
-        {v('surface') && <ChartCard title={ct('surface', 'Superficie')} icon={Ruler} data={charts.surfaceDist} type="bar-v" colorIndex={9}
-          insight={generateInsight(charts.surfaceDist, 'bar-v', 'les tranches de superficie')} crossVariables={cx('surface')} rawRecords={filteredParcels} groupField="area_sqm" />}
-        {v('subdivided') && <ChartCard title={ct('subdivided', 'Loties vs Non loties')} data={subdividedData} type="pie" colorIndex={3} hidden={subdividedData.length === 0}
-          insight={generateInsight(subdividedData, 'pie', 'le lotissement des parcelles')} crossVariables={cx('subdivided')} rawRecords={filteredParcels} groupField="is_subdivided" />}
-        {v('geo') && <GeoCharts records={filteredParcels} />}
-        {v('permit-type') && <ChartCard title={ct('permit-type', 'Autorisation de bâtir')} icon={ShieldCheck} data={permitTypeData} type="donut" colorIndex={4} hidden={permitTypeData.length === 0}
-          insight={generateInsight(permitTypeData, 'donut', 'les autorisations de bâtir')} crossVariables={cx('permit-type')} rawRecords={filteredContribs} groupField="building_permits" />}
-        {v('building-size') && <ChartCard title={ct('building-size', 'Taille construction')} icon={Maximize} data={buildingSizeData} type="bar-v" colorIndex={2} hidden={buildingSizeData.length === 0}
-          insight={generateInsight(buildingSizeData, 'bar-v', 'les tailles de construction')} crossVariables={cx('building-size')} rawRecords={filteredContribs} groupField="building_shapes" />}
-        {v('building-height') && <ChartCard title={ct('building-height', 'Hauteur construction')} icon={ArrowUpFromLine} data={buildingHeightData} type="bar-v" colorIndex={5} hidden={buildingHeightData.length === 0}
-          insight={generateInsight(buildingHeightData, 'bar-v', 'les hauteurs de construction')} crossVariables={cx('building-height')} rawRecords={filteredContribs} groupField="building_shapes" />}
-        {v('evolution') && <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type="area" colorIndex={0} colSpan={2}
-          insight={generateInsight(trend, 'area', 'les parcelles')} />}
+        {chartDefs.map(d => <React.Fragment key={d.key}>{d.el()}</React.Fragment>)}
       </div>
     </div>
     </FilterLabelContext.Provider>
