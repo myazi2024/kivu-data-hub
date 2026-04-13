@@ -241,16 +241,21 @@ export const generateParcels = async (parcelNumbers: string[]) => {
     };
   });
 
-  // Insert in batches of 200 to stay under payload limits
+  // Insert in small batches with retry + throttle to avoid network timeouts
+  const PARCEL_BATCH = 50;
   const allInserted: Array<{ id: string; parcel_number: string }> = [];
-  for (let i = 0; i < records.length; i += 200) {
-    const batch = records.slice(i, i + 200);
-    const { data, error } = await supabase
-      .from('cadastral_parcels')
-      .insert(batch)
-      .select('id, parcel_number');
-    if (error) throw new Error(`Parcelles (batch ${i}): ${error.message}`);
-    allInserted.push(...assertInserted(data, 'Parcelles'));
+  for (let i = 0; i < records.length; i += PARCEL_BATCH) {
+    const batch = records.slice(i, i + PARCEL_BATCH);
+    const result = await withRetry(async () => {
+      const { data, error } = await supabase
+        .from('cadastral_parcels')
+        .insert(batch)
+        .select('id, parcel_number');
+      if (error) throw new Error(`Parcelles (batch ${i}): ${error.message}`);
+      return assertInserted(data, 'Parcelles');
+    }, `Parcelles batch ${i}`);
+    allInserted.push(...result);
+    if (i + PARCEL_BATCH < records.length) await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
   }
   return allInserted;
 };
@@ -372,16 +377,21 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
     };
   });
 
-  // Insert in batches
+  // Insert in small batches with retry + throttle
+  const CONTRIB_BATCH = 50;
   const allInserted: Array<{ id: string; parcel_number: string }> = [];
-  for (let i = 0; i < records.length; i += 200) {
-    const batch = records.slice(i, i + 200);
-    const { data, error } = await supabase
-      .from('cadastral_contributions')
-      .insert(batch)
-      .select('id, parcel_number');
-    if (error) throw new Error(`Contributions (batch ${i}): ${error.message}`);
-    allInserted.push(...assertInserted(data, 'Contributions'));
+  for (let i = 0; i < records.length; i += CONTRIB_BATCH) {
+    const batch = records.slice(i, i + CONTRIB_BATCH);
+    const result = await withRetry(async () => {
+      const { data, error } = await supabase
+        .from('cadastral_contributions')
+        .insert(batch)
+        .select('id, parcel_number');
+      if (error) throw new Error(`Contributions (batch ${i}): ${error.message}`);
+      return assertInserted(data, 'Contributions');
+    }, `Contributions batch ${i}`);
+    allInserted.push(...result);
+    if (i + CONTRIB_BATCH < records.length) await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
   }
 
   // Now update non-pending statuses — grouped by status to avoid N+1 queries
