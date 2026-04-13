@@ -7,7 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Search, UserCheck, Clock, UserX, Pencil, Trash2, Eye } from 'lucide-react';
+import { Plus, Search, UserCheck, Clock, UserX, Pencil, Trash2, Eye, Download } from 'lucide-react';
+import { exportRecordsToCSV } from '@/utils/csvExport';
 import { departments } from './hrData';
 import type { HREmployee, HREmployeeInsert } from '@/hooks/useHREmployees';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -133,8 +134,12 @@ export default function AdminHREmployees({ hook }: Props) {
           <h2 className="text-xl font-bold">Employés</h2>
           <p className="text-sm text-muted-foreground">{employees.length} employé(s) enregistré(s)</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" /> Ajouter</Button></DialogTrigger>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => exportRecordsToCSV(employees, 'employes_rh', ['matricule', 'first_name', 'last_name', 'email', 'phone', 'department', 'position', 'status', 'salary_usd', 'hire_date', 'gender'])}>
+            <Download className="h-4 w-4 mr-1" /> Export CSV
+          </Button>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" /> Ajouter</Button></DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader><DialogTitle>Nouvel employé</DialogTitle></DialogHeader>
             {renderFormFields(form, setForm)}
