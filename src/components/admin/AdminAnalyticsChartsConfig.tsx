@@ -156,9 +156,8 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
       if (idx < 0) return prev;
       const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
       if (swapIdx < 0 || swapIdx >= typeItems.length) return prev;
-      const tempOrder = typeItems[idx].display_order;
-      typeItems[idx] = { ...typeItems[idx], display_order: typeItems[swapIdx].display_order };
-      typeItems[swapIdx] = { ...typeItems[swapIdx], display_order: tempOrder };
+      [typeItems[idx], typeItems[swapIdx]] = [typeItems[swapIdx], typeItems[idx]];
+      typeItems.forEach((item, i) => { typeItems[i] = { ...item, display_order: i }; });
       const otherItems = items.filter(i => i.item_type !== type);
       return { ...prev, [activeTab]: [...otherItems, ...typeItems].sort((a, b) => {
         if (a.item_type !== b.item_type) return a.item_type === 'kpi' ? -1 : 1;
