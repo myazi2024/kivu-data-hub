@@ -339,9 +339,9 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
                   Non sauvegardé
                 </Badge>
               )}
-              <Button size="sm" variant="outline" onClick={handleSaveAll} disabled={!hasChanges || isSaving} className={isMobile ? 'flex-1' : ''}>
-                {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Save className="h-3.5 w-3.5 mr-1" />}
-                {isMobile ? 'Sauvegarder' : 'Sauvegarder tout'}
+              <Button size="sm" variant="outline" onClick={handleSaveAll} disabled={!hasChanges || isSaving}>
+                {isSaving ? <Loader2 className={`h-3.5 w-3.5 animate-spin ${!isMobile ? 'mr-1' : ''}`} /> : <Save className={`h-3.5 w-3.5 ${!isMobile ? 'mr-1' : ''}`} />}
+                {!isMobile && 'Sauvegarder tout'}
               </Button>
             </div>
           </div>
