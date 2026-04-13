@@ -1,6 +1,5 @@
-import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LayoutDashboard, Users, Briefcase, CalendarDays, Star, GitBranch, FileText } from 'lucide-react';
+import { LayoutDashboard, Users, Briefcase, CalendarDays, Star, GitBranch, FileText, Loader2 } from 'lucide-react';
 import AdminHRDashboard from './AdminHRDashboard';
 import AdminHREmployees from './AdminHREmployees';
 import AdminHRRecruitment from './AdminHRRecruitment';
@@ -8,12 +7,29 @@ import AdminHRLeaves from './AdminHRLeaves';
 import AdminHRPerformance from './AdminHRPerformance';
 import AdminHROrgChart from './AdminHROrgChart';
 import AdminHRDocuments from './AdminHRDocuments';
-import type { Employee, LeaveRequest, PerformanceReview } from './hrData';
+import { useHREmployees } from '@/hooks/useHREmployees';
+import { useHRLeaves } from '@/hooks/useHRLeaves';
+import { useHRReviews } from '@/hooks/useHRReviews';
+import { useHRJobPositions } from '@/hooks/useHRJobPositions';
+import { useHRDocuments } from '@/hooks/useHRDocuments';
 
 export default function AdminHR() {
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
-  const [reviews, setReviews] = useState<PerformanceReview[]>([]);
+  const employeesHook = useHREmployees();
+  const leavesHook = useHRLeaves();
+  const reviewsHook = useHRReviews();
+  const jobsHook = useHRJobPositions();
+  const docsHook = useHRDocuments();
+
+  const isLoading = employeesHook.isLoading || leavesHook.isLoading || reviewsHook.isLoading || jobsHook.isLoading || docsHook.isLoading;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <span className="ml-2 text-sm text-muted-foreground">Chargement du module RH...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -28,13 +44,27 @@ export default function AdminHR() {
           <TabsTrigger value="documents"><FileText className="h-3.5 w-3.5 mr-1" />Documents</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="dashboard"><AdminHRDashboard employees={employees} leaves={leaves} /></TabsContent>
-        <TabsContent value="employees"><AdminHREmployees employees={employees} setEmployees={setEmployees} /></TabsContent>
-        <TabsContent value="recruitment"><AdminHRRecruitment /></TabsContent>
-        <TabsContent value="leaves"><AdminHRLeaves leaves={leaves} setLeaves={setLeaves} employees={employees} /></TabsContent>
-        <TabsContent value="performance"><AdminHRPerformance reviews={reviews} setReviews={setReviews} employees={employees} /></TabsContent>
-        <TabsContent value="orgchart"><AdminHROrgChart employees={employees} /></TabsContent>
-        <TabsContent value="documents"><AdminHRDocuments employees={employees} /></TabsContent>
+        <TabsContent value="dashboard">
+          <AdminHRDashboard employees={employeesHook.employees} leaves={leavesHook.leaves} positions={jobsHook.positions} />
+        </TabsContent>
+        <TabsContent value="employees">
+          <AdminHREmployees hook={employeesHook} />
+        </TabsContent>
+        <TabsContent value="recruitment">
+          <AdminHRRecruitment hook={jobsHook} />
+        </TabsContent>
+        <TabsContent value="leaves">
+          <AdminHRLeaves hook={leavesHook} employees={employeesHook.employees} balances={leavesHook.balances} />
+        </TabsContent>
+        <TabsContent value="performance">
+          <AdminHRPerformance hook={reviewsHook} employees={employeesHook.employees} />
+        </TabsContent>
+        <TabsContent value="orgchart">
+          <AdminHROrgChart employees={employeesHook.employees} />
+        </TabsContent>
+        <TabsContent value="documents">
+          <AdminHRDocuments hook={docsHook} employees={employeesHook.employees} />
+        </TabsContent>
       </Tabs>
     </div>
   );

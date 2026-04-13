@@ -1,11 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { departments } from './hrData';
-import type { Employee } from './hrData';
+import type { HREmployee } from '@/hooks/useHREmployees';
 import { Users, Crown, Code, ClipboardList, TrendingUp, Headphones } from 'lucide-react';
 
 interface Props {
-  employees: Employee[];
+  employees: HREmployee[];
 }
 
 const iconMap: Record<string, any> = {
@@ -20,7 +20,6 @@ export default function AdminHROrgChart({ employees }: Props) {
         <p className="text-sm text-muted-foreground">Structure organisationnelle de l'équipe</p>
       </div>
 
-      {/* Direction */}
       <div className="flex justify-center">
         <Card className="w-64 border-2 border-primary/30">
           <CardContent className="p-4 text-center">
@@ -28,21 +27,15 @@ export default function AdminHROrgChart({ employees }: Props) {
             <p className="font-bold text-sm">Direction Générale</p>
             <p className="text-xs text-muted-foreground">Pilotage stratégique</p>
             {employees.filter(e => e.department === 'direction' && e.status !== 'departed').map(e => (
-              <Badge key={e.id} variant="outline" className="mt-2 text-[10px]">{e.firstName} {e.lastName}</Badge>
+              <Badge key={e.id} variant="outline" className="mt-2 text-[10px]">{e.first_name} {e.last_name}</Badge>
             ))}
           </CardContent>
         </Card>
       </div>
 
-      {/* Connector */}
-      <div className="flex justify-center">
-        <div className="w-px h-8 bg-border" />
-      </div>
-      <div className="flex justify-center">
-        <div className="w-3/4 h-px bg-border" />
-      </div>
+      <div className="flex justify-center"><div className="w-px h-8 bg-border" /></div>
+      <div className="flex justify-center"><div className="w-3/4 h-px bg-border" /></div>
 
-      {/* Departments */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {departments.filter(d => d.id !== 'direction').map(dept => {
           const Icon = iconMap[dept.icon] || Users;
@@ -68,10 +61,10 @@ export default function AdminHROrgChart({ employees }: Props) {
                     {deptEmployees.map(e => (
                       <div key={e.id} className="flex items-center gap-2 text-xs">
                         <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center text-[8px] font-bold text-primary">
-                          {e.firstName[0]}{e.lastName[0]}
+                          {e.first_name[0]}{e.last_name[0]}
                         </div>
                         <div>
-                          <span className="font-medium">{e.firstName} {e.lastName}</span>
+                          <span className="font-medium">{e.first_name} {e.last_name}</span>
                           <span className="text-muted-foreground ml-1">· {e.position}</span>
                         </div>
                       </div>
