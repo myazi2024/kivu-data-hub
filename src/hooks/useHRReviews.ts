@@ -62,6 +62,21 @@ export function useHRReviews() {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: async (review: Partial<HRReview> & { id: string }) => {
+      const { id, ...rest } = review;
+      const { error } = await supabase.from('hr_reviews').update(rest).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hr-reviews'] });
+      toast({ title: 'Évaluation mise à jour' });
+    },
+    onError: (err: any) => {
+      toast({ title: 'Erreur', description: err.message, variant: 'destructive' });
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('hr_reviews').delete().eq('id', id);
@@ -80,6 +95,7 @@ export function useHRReviews() {
     reviews: query.data || [],
     isLoading: query.isLoading,
     addReview: addMutation.mutateAsync,
+    updateReview: updateMutation.mutateAsync,
     deleteReview: deleteMutation.mutateAsync,
     isAdding: addMutation.isPending,
   };
