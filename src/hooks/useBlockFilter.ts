@@ -80,5 +80,10 @@ export function useBlockFilter(tabKey: string, records: any[]) {
     ct,
     /** Get cross-variables with admin overrides */
     cx,
+    /** Get chart type with fallback */
+    ty: <T extends string>(key: string, fallback: T): T =>
+      ((getChartConfig(key)?.chart_type as T) || fallback),
+    /** Get display_order for sorting */
+    ord: (key: string) => getChartConfig(key)?.display_order ?? 99,
   };
 }

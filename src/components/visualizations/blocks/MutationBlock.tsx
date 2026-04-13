@@ -15,7 +15,7 @@ interface Props { data: LandAnalyticsData; }
 const TAB_KEY = 'mutations';
 
 export const MutationBlock: React.FC<Props> = memo(({ data }) => {
-  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx } = useBlockFilter(TAB_KEY, data.mutationRequests);
+  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx, ty, ord } = useBlockFilter(TAB_KEY, data.mutationRequests);
 
   const byStatus = useMemo(() => countBy(filtered, 'status'), [filtered]);
   const byType = useMemo(() => countBy(filtered, 'mutation_type'), [filtered]);
@@ -98,41 +98,45 @@ export const MutationBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'kpi-revenue', label: ct('kpi-revenue', 'Revenus'), value: `$${stats.paidRevenue.toLocaleString()}`, cls: 'text-blue-600', tooltip: `Total facturé: $${stats.totalRevenue.toLocaleString()}` },
   ].filter(k => v(k.key)), [filtered, stats, v, ct]);
 
+  const chartDefs = useMemo(() => [
+    { key: 'status', el: () => <ChartCard title={ct('status', 'Statut')} icon={ArrowRightLeft} data={byStatus} type={ty('status', 'pie')} colorIndex={6}
+      insight={generateInsight(byStatus, 'pie', 'les statuts de mutation')} crossVariables={cx('status')} rawRecords={filtered} groupField="status" /> },
+    { key: 'mutation-type', el: () => <ChartCard title={ct('mutation-type', 'Type mutation')} data={byType} type={ty('mutation-type', 'bar-h')} colorIndex={6} labelWidth={100}
+      insight={generateInsight(byType, 'bar-h', 'les types de mutation')} crossVariables={cx('mutation-type')} rawRecords={filtered} groupField="mutation_type" /> },
+    { key: 'requester-type', el: () => <ChartCard title={ct('requester-type', 'Type demandeur')} icon={Users} data={byRequesterType} type={ty('requester-type', 'donut')} colorIndex={1}
+      insight={generateInsight(byRequesterType, 'donut', 'les demandeurs')} crossVariables={cx('requester-type')} rawRecords={filtered} groupField="requester_type" /> },
+    { key: 'payment', el: () => <ChartCard title={ct('payment', 'Paiement')} icon={DollarSign} data={byPaymentStatus} type={ty('payment', 'donut')} colorIndex={2}
+      insight={generateInsight(byPaymentStatus, 'donut', 'les paiements')} crossVariables={cx('payment')} rawRecords={filtered} groupField="payment_status" /> },
+    { key: 'type-status', el: () => <StackedBarCard title={ct('type-status', 'Type × Statut')} data={typeStatusCross} bars={[
+      { dataKey: 'approved', name: 'Approuvées', color: CHART_COLORS[2] },
+      { dataKey: 'pending', name: 'En attente', color: CHART_COLORS[3] },
+      { dataKey: 'rejected', name: 'Rejetées', color: CHART_COLORS[4] },
+    ]} layout="vertical" labelWidth={90} hidden={typeStatusCross.length === 0}
+      insight={generateStackedInsight(typeStatusCross, [
+        { dataKey: 'approved', name: 'Approuvées' },
+        { dataKey: 'pending', name: 'En attente' },
+        { dataKey: 'rejected', name: 'Rejetées' },
+      ], 'croisement type/statut')} /> },
+    { key: 'market-value', el: () => <ChartCard title={ct('market-value', 'Valeur vénale')} icon={DollarSign} data={byMarketValue} type={ty('market-value', 'bar-v')} colorIndex={5} hidden={byMarketValue.length === 0}
+      insight={generateInsight(byMarketValue, 'bar-v', 'la valeur vénale des mutations')} crossVariables={cx('market-value')} rawRecords={filtered} groupField="market_value_usd" /> },
+    { key: 'title-age', el: () => <ChartCard title={ct('title-age', 'Ancienneté titre')} data={byTitleAge} type={ty('title-age', 'pie')} colorIndex={3} hidden={byTitleAge.length === 0}
+      insight={generateInsight(byTitleAge, 'pie', "l'ancienneté des titres")} crossVariables={cx('title-age')} rawRecords={filtered} groupField="title_age" /> },
+    { key: 'late-fees', el: () => <ChartCard title={ct('late-fees', 'Retard mutation')} data={byLateFees} type={ty('late-fees', 'pie')} colorIndex={4} hidden={byLateFees.length === 0}
+      insight={generateInsight(byLateFees, 'pie', 'les retards de mutation')} crossVariables={cx('late-fees')} rawRecords={filtered} groupField="late_fee_amount" /> },
+    { key: 'revenue-trend', el: () => <ChartCard title={ct('revenue-trend', 'Revenus/mois')} icon={TrendingUp} data={revenueTrend} type={ty('revenue-trend', 'area')} colorIndex={2} hidden={revenueTrend.length < 2}
+      insight={generateInsight(revenueTrend, 'area', 'les revenus de mutation')} /> },
+    { key: 'geo', el: () => <GeoCharts records={filtered} /> },
+    { key: 'evolution', el: () => <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type={ty('evolution', 'area')} colorIndex={6} colSpan={2}
+      insight={generateInsight(trend, 'area', 'les demandes de mutation')} /> },
+  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filtered, byStatus, byType, byRequesterType, byPaymentStatus, typeStatusCross, byMarketValue, byTitleAge, byLateFees, revenueTrend, trend, v, ct, cx, ty, ord]);
+
   return (
     <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
       <AnalyticsFilters data={data.mutationRequests} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} />
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        {v('status') && <ChartCard title={ct('status', 'Statut')} icon={ArrowRightLeft} data={byStatus} type="pie" colorIndex={6}
-          insight={generateInsight(byStatus, 'pie', 'les statuts de mutation')} crossVariables={cx('status')} rawRecords={filtered} groupField="status" />}
-        {v('mutation-type') && <ChartCard title={ct('mutation-type', 'Type mutation')} data={byType} type="bar-h" colorIndex={6} labelWidth={100}
-          insight={generateInsight(byType, 'bar-h', 'les types de mutation')} crossVariables={cx('mutation-type')} rawRecords={filtered} groupField="mutation_type" />}
-        {v('requester-type') && <ChartCard title={ct('requester-type', 'Type demandeur')} icon={Users} data={byRequesterType} type="donut" colorIndex={1}
-          insight={generateInsight(byRequesterType, 'donut', 'les demandeurs')} crossVariables={cx('requester-type')} rawRecords={filtered} groupField="requester_type" />}
-        {v('payment') && <ChartCard title={ct('payment', 'Paiement')} icon={DollarSign} data={byPaymentStatus} type="donut" colorIndex={2}
-          insight={generateInsight(byPaymentStatus, 'donut', 'les paiements')} crossVariables={cx('payment')} rawRecords={filtered} groupField="payment_status" />}
-        {v('type-status') && <StackedBarCard title={ct('type-status', 'Type × Statut')} data={typeStatusCross} bars={[
-          { dataKey: 'approved', name: 'Approuvées', color: CHART_COLORS[2] },
-          { dataKey: 'pending', name: 'En attente', color: CHART_COLORS[3] },
-          { dataKey: 'rejected', name: 'Rejetées', color: CHART_COLORS[4] },
-        ]} layout="vertical" labelWidth={90} hidden={typeStatusCross.length === 0}
-          insight={generateStackedInsight(typeStatusCross, [
-            { dataKey: 'approved', name: 'Approuvées' },
-            { dataKey: 'pending', name: 'En attente' },
-            { dataKey: 'rejected', name: 'Rejetées' },
-          ], 'croisement type/statut')} />}
-        {v('market-value') && <ChartCard title={ct('market-value', 'Valeur vénale')} icon={DollarSign} data={byMarketValue} type="bar-v" colorIndex={5} hidden={byMarketValue.length === 0}
-          insight={generateInsight(byMarketValue, 'bar-v', 'la valeur vénale des mutations')} crossVariables={cx('market-value')} rawRecords={filtered} groupField="market_value_usd" />}
-        {v('title-age') && <ChartCard title={ct('title-age', 'Ancienneté titre')} data={byTitleAge} type="pie" colorIndex={3} hidden={byTitleAge.length === 0}
-          insight={generateInsight(byTitleAge, 'pie', "l'ancienneté des titres")} crossVariables={cx('title-age')} rawRecords={filtered} groupField="title_age" />}
-        {v('late-fees') && <ChartCard title={ct('late-fees', 'Retard mutation')} data={byLateFees} type="pie" colorIndex={4} hidden={byLateFees.length === 0}
-          insight={generateInsight(byLateFees, 'pie', 'les retards de mutation')} crossVariables={cx('late-fees')} rawRecords={filtered} groupField="late_fee_amount" />}
-        {v('revenue-trend') && <ChartCard title={ct('revenue-trend', 'Revenus/mois')} icon={TrendingUp} data={revenueTrend} type="area" colorIndex={2} hidden={revenueTrend.length < 2}
-          insight={generateInsight(revenueTrend, 'area', 'les revenus de mutation')} />}
-        {v('geo') && <GeoCharts records={filtered} />}
-        {v('evolution') && <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type="area" colorIndex={6} colSpan={2}
-          insight={generateInsight(trend, 'area', 'les demandes de mutation')} />}
+        {chartDefs.map(d => <React.Fragment key={d.key}>{d.el()}</React.Fragment>)}
       </div>
     </div>
     </FilterLabelContext.Provider>

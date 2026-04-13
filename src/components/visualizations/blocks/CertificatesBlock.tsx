@@ -15,7 +15,7 @@ interface Props { data: LandAnalyticsData; }
 const TAB_KEY = 'certificates';
 
 export const CertificatesBlock: React.FC<Props> = memo(({ data }) => {
-  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx } = useBlockFilter(TAB_KEY, data.certificates);
+  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx, ty, ord } = useBlockFilter(TAB_KEY, data.certificates);
 
   const byType = useMemo(() => countBy(filtered, 'certificate_type'), [filtered]);
   const byStatus = useMemo(() => countBy(filtered, 'status'), [filtered]);
@@ -60,23 +60,27 @@ export const CertificatesBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'kpi-types', label: ct('kpi-types', 'Types distincts'), value: stats.uniqueTypes, cls: 'text-blue-600' },
   ].filter(k => v(k.key)), [filtered, stats, v, ct]);
 
+  const chartDefs = useMemo(() => [
+    { key: 'cert-type', el: () => <ChartCard title={ct('cert-type', 'Type certificat')} icon={Award} data={byType} type={ty('cert-type', 'bar-h')} colorIndex={0} labelWidth={120}
+      insight={generateInsight(byType, 'bar-h', 'les types de certificat')} crossVariables={cx('cert-type')} rawRecords={filtered} groupField="certificate_type" /> },
+    { key: 'status', el: () => <ChartCard title={ct('status', 'Statut')} icon={CheckCircle} data={byStatus} type={ty('status', 'pie')} colorIndex={2}
+      insight={generateInsight(byStatus, 'pie', 'les statuts de certificat')} crossVariables={cx('status')} rawRecords={filtered} groupField="status" /> },
+    { key: 'type-trend', el: () => typeTrend.data.length > 1 ? <StackedBarCard title={ct('type-trend', 'Type × Mois')} data={typeTrend.data}
+      bars={typeTrend.types.map((t, i) => ({ dataKey: t, name: t, color: CHART_COLORS[i % CHART_COLORS.length] }))}
+      maxItems={12}
+      insight={generateStackedInsight(typeTrend.data, typeTrend.types.map(t => ({ dataKey: t, name: t })), 'l\'évolution des types de certificat')} /> : null },
+    { key: 'geo', el: () => <GeoCharts records={filtered} /> },
+    { key: 'evolution', el: () => <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type={ty('evolution', 'area')} colorIndex={0} colSpan={2}
+      insight={generateInsight(trend, 'area', 'la génération de certificats')} /> },
+  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filtered, byType, byStatus, typeTrend, trend, v, ct, cx, ty, ord]);
+
   return (
     <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
       <AnalyticsFilters data={data.certificates} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} />
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        {v('cert-type') && <ChartCard title={ct('cert-type', 'Type certificat')} icon={Award} data={byType} type="bar-h" colorIndex={0} labelWidth={120}
-          insight={generateInsight(byType, 'bar-h', 'les types de certificat')} crossVariables={cx('cert-type')} rawRecords={filtered} groupField="certificate_type" />}
-        {v('status') && <ChartCard title={ct('status', 'Statut')} icon={CheckCircle} data={byStatus} type="pie" colorIndex={2}
-          insight={generateInsight(byStatus, 'pie', 'les statuts de certificat')} crossVariables={cx('status')} rawRecords={filtered} groupField="status" />}
-        {v('type-trend') && typeTrend.data.length > 1 && <StackedBarCard title={ct('type-trend', 'Type × Mois')} data={typeTrend.data}
-          bars={typeTrend.types.map((t, i) => ({ dataKey: t, name: t, color: CHART_COLORS[i % CHART_COLORS.length] }))}
-          maxItems={12}
-          insight={generateStackedInsight(typeTrend.data, typeTrend.types.map(t => ({ dataKey: t, name: t })), 'l\'évolution des types de certificat')} />}
-        {v('geo') && <GeoCharts records={filtered} />}
-        {v('evolution') && <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type="area" colorIndex={0} colSpan={2}
-          insight={generateInsight(trend, 'area', 'la génération de certificats')} />}
+        {chartDefs.map(d => <React.Fragment key={d.key}>{d.el()}</React.Fragment>)}
       </div>
     </div>
     </FilterLabelContext.Provider>
