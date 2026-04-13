@@ -19,11 +19,9 @@ export const TabManager: React.FC<TabManagerProps> = ({ localTabs, onUpdate }) =
     const swapIdx = direction === 'up' ? index - 1 : index + 1;
     if (swapIdx < 0 || swapIdx >= localTabs.length) return;
     const updated = [...localTabs];
-    const tempOrder = updated[index].display_order;
-    updated[index] = { ...updated[index], display_order: updated[swapIdx].display_order };
-    updated[swapIdx] = { ...updated[swapIdx], display_order: tempOrder };
-    updated.sort((a, b) => a.display_order - b.display_order);
-    onUpdate(updated);
+    [updated[index], updated[swapIdx]] = [updated[swapIdx], updated[index]];
+    const reindexed = updated.map((t, i) => ({ ...t, display_order: i }));
+    onUpdate(reindexed);
   };
 
   const toggleVisibility = (index: number) => {
