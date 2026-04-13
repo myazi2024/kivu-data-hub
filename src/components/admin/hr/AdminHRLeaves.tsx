@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Check, X } from 'lucide-react';
+import { Plus, Check, X, Download } from 'lucide-react';
+import { exportRecordsToCSV } from '@/utils/csvExport';
 import { leaveTypes } from './hrData';
 import type { HREmployee } from '@/hooks/useHREmployees';
 import type { HRLeaveRequest, HRLeaveBalance } from '@/hooks/useHRLeaves';
@@ -57,8 +58,12 @@ export default function AdminHRLeaves({ hook, employees, balances }: Props) {
           <h2 className="text-xl font-bold">Congés & Absences</h2>
           <p className="text-sm text-muted-foreground">{leaves.filter(l => l.status === 'pending').length} demande(s) en attente</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" /> Nouvelle demande</Button></DialogTrigger>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => exportRecordsToCSV(leaves.map(l => ({ ...l, employee_name: getEmployeeName(l.employee_id) })), 'conges_rh', ['employee_name', 'leave_type', 'start_date', 'end_date', 'days_count', 'status', 'reason'])}>
+            <Download className="h-4 w-4 mr-1" /> Export CSV
+          </Button>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" /> Nouvelle demande</Button></DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>Nouvelle demande de congé</DialogTitle></DialogHeader>
             <div className="space-y-3">
