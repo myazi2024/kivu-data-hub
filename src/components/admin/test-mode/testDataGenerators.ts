@@ -246,13 +246,13 @@ export const generateParcels = async (parcelNumbers: string[]) => {
   const allInserted: Array<{ id: string; parcel_number: string }> = [];
   for (let i = 0; i < records.length; i += PARCEL_BATCH) {
     const batch = records.slice(i, i + PARCEL_BATCH);
-    const result = await withRetry(async () => {
+    const result = await withRetry<Array<{ id: string; parcel_number: string }>>(async () => {
       const { data, error } = await supabase
         .from('cadastral_parcels')
         .insert(batch)
         .select('id, parcel_number');
       if (error) throw new Error(`Parcelles (batch ${i}): ${error.message}`);
-      return assertInserted(data, 'Parcelles');
+      return assertInserted(data, 'Parcelles') as Array<{ id: string; parcel_number: string }>;
     }, `Parcelles batch ${i}`);
     allInserted.push(...result);
     if (i + PARCEL_BATCH < records.length) await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
