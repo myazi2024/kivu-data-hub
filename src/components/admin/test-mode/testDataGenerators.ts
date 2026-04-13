@@ -344,7 +344,7 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
         ? { hasServitude: true, width: randInt(1, 3) }
         : { hasServitude: false }) as unknown as Json,
       building_shapes: constructionNature
-        ? [{ type: 'rectangle', x: 50, y: 50, width: randInt(30, 80), height: randInt(20, 60) }] as unknown as Json
+        ? [{ type: 'rectangle', x: 50, y: 50, width: randInt(30, 80), height: randInt(20, 60), heightM: randInt(3, 15), areaSqm: randInt(40, 300) }] as unknown as Json
         : [] as unknown as Json,
       ownership_history: idx % 3 === 0 ? [{
         name: `Ancien ${pick(OWNER_NAMES, idx + 5)}`,
