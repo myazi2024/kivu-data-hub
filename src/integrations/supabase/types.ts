@@ -1894,6 +1894,62 @@ export type Database = {
         }
         Relationships: []
       }
+      hr_candidates: {
+        Row: {
+          applied_at: string
+          created_at: string
+          cv_url: string | null
+          email: string | null
+          first_name: string
+          id: string
+          last_name: string
+          notes: string | null
+          phone: string | null
+          pipeline_stage: string
+          position_id: string | null
+          score: number | null
+          updated_at: string
+        }
+        Insert: {
+          applied_at?: string
+          created_at?: string
+          cv_url?: string | null
+          email?: string | null
+          first_name: string
+          id?: string
+          last_name: string
+          notes?: string | null
+          phone?: string | null
+          pipeline_stage?: string
+          position_id?: string | null
+          score?: number | null
+          updated_at?: string
+        }
+        Update: {
+          applied_at?: string
+          created_at?: string
+          cv_url?: string | null
+          email?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          notes?: string | null
+          phone?: string | null
+          pipeline_stage?: string
+          position_id?: string | null
+          score?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_candidates_position_id_fkey"
+            columns: ["position_id"]
+            isOneToOne: false
+            referencedRelation: "hr_job_positions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hr_documents: {
         Row: {
           created_at: string
