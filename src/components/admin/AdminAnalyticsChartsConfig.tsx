@@ -41,6 +41,7 @@ const CHART_TYPE_OPTIONS = [
   { value: 'pie', label: 'Camembert', icon: '◕' },
   { value: 'donut', label: 'Donut', icon: '◔' },
   { value: 'area', label: 'Courbe', icon: '〜' },
+  { value: 'multi-area', label: 'Multi-courbes', icon: '≋' },
 ];
 
 const SYSTEM_TABS = ['_global', 'rdc-map'];

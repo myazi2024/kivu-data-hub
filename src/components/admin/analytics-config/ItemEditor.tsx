@@ -14,6 +14,7 @@ const CHART_TYPE_OPTIONS = [
   { value: 'pie', label: 'Camembert', icon: '◕' },
   { value: 'donut', label: 'Donut', icon: '◔' },
   { value: 'area', label: 'Courbe', icon: '〜' },
+  { value: 'multi-area', label: 'Multi-courbes', icon: '≋' },
 ];
 
 interface ItemEditorProps {
@@ -25,8 +26,13 @@ interface ItemEditorProps {
   isLast: boolean;
 }
 
+/** A chart with chart_type === null in the registry is a special/composite chart (StackedBar, MultiArea) whose type cannot be changed */
+const isFixedTypeChart = (item: ChartConfigItem) =>
+  item.item_type === 'chart' && !item.chart_type;
+
 export const ItemEditor: React.FC<ItemEditorProps> = ({ item, onChange, onMoveUp, onMoveDown, isFirst, isLast }) => {
   const isMobile = useIsMobile();
+  const fixedType = isFixedTypeChart(item);
 
   if (isMobile) {
     return (
@@ -40,13 +46,13 @@ export const ItemEditor: React.FC<ItemEditorProps> = ({ item, onChange, onMoveUp
             <Input value={item.custom_title || ''} onChange={(e) => onChange({ ...item, custom_title: e.target.value })} className="h-7 text-xs" placeholder="Titre..." />
           </div>
         </div>
-        {/* Line 2: Arrows + Chart type + Color + Badge */}
+        {/* Line 2: Arrows + Chart type + Icon + Color + Badge */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <div className="flex items-center gap-0.5">
             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onMoveUp} disabled={isFirst}><ChevronUp className="h-3 w-3" /></Button>
             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onMoveDown} disabled={isLast}><ChevronDown className="h-3 w-3" /></Button>
           </div>
-          {item.item_type === 'chart' && item.chart_type && (
+          {item.item_type === 'chart' && !fixedType && item.chart_type && (
             <Select value={item.chart_type || ''} onValueChange={(v) => onChange({ ...item, chart_type: v as any })}>
               <SelectTrigger className="w-[100px] h-7 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -55,6 +61,18 @@ export const ItemEditor: React.FC<ItemEditorProps> = ({ item, onChange, onMoveUp
                 ))}
               </SelectContent>
             </Select>
+          )}
+          {fixedType && (
+            <Badge variant="outline" className="text-[9px] text-muted-foreground">Type fixe</Badge>
+          )}
+          {item.item_type === 'chart' && (
+            <Input
+              value={item.custom_icon || ''}
+              onChange={(e) => onChange({ ...item, custom_icon: e.target.value || null })}
+              className="w-[70px] h-6 text-[10px]"
+              placeholder="Icône"
+              title="Nom icône Lucide (ex: FileText)"
+            />
           )}
           {item.item_type === 'chart' && (
             <input type="color" value={item.custom_color || '#3b82f6'} onChange={(e) => onChange({ ...item, custom_color: e.target.value })} className="w-6 h-6 rounded cursor-pointer border-0 p-0" title="Couleur" />
@@ -80,7 +98,7 @@ export const ItemEditor: React.FC<ItemEditorProps> = ({ item, onChange, onMoveUp
       <div className="flex-1 min-w-0">
         <Input value={item.custom_title || ''} onChange={(e) => onChange({ ...item, custom_title: e.target.value })} className="h-7 text-xs" placeholder="Titre..." />
       </div>
-      {item.item_type === 'chart' && item.chart_type && (
+      {item.item_type === 'chart' && !fixedType && item.chart_type && (
         <Select value={item.chart_type || ''} onValueChange={(v) => onChange({ ...item, chart_type: v as any })}>
           <SelectTrigger className="w-[110px] h-7 text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -89,6 +107,18 @@ export const ItemEditor: React.FC<ItemEditorProps> = ({ item, onChange, onMoveUp
             ))}
           </SelectContent>
         </Select>
+      )}
+      {fixedType && (
+        <Badge variant="outline" className="text-[9px] text-muted-foreground shrink-0">Type fixe</Badge>
+      )}
+      {item.item_type === 'chart' && (
+        <Input
+          value={item.custom_icon || ''}
+          onChange={(e) => onChange({ ...item, custom_icon: e.target.value || null })}
+          className="w-[80px] h-7 text-xs shrink-0"
+          placeholder="Icône"
+          title="Nom icône Lucide (ex: FileText)"
+        />
       )}
       {item.item_type === 'chart' && (
         <div className="flex items-center gap-1 shrink-0">
