@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import {
   Save, Loader2, BarChart3, LayoutGrid, Filter, GitBranch,
-  ExternalLink, AlertTriangle, Layers, Eye, EyeOff, RotateCcw, Settings,
+  AlertTriangle, Layers, Eye, EyeOff, RotateCcw, Settings,
   Palette, Map as MapIcon, Globe
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
@@ -340,9 +340,6 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
                   Non sauvegardé
                 </Badge>
               )}
-              <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => navigate(`/admin?tab=analytics${activeTab && activeTab !== '_global' ? `&subtab=${activeTab}` : ''}`)}>
-                <ExternalLink className="h-3.5 w-3.5" />{!isMobile && <span className="ml-1">Voir dans Analytics</span>}
-              </Button>
               <Button size="sm" variant="outline" onClick={handleSaveAll} disabled={!hasChanges || isSaving} className={isMobile ? 'flex-1' : ''}>
                 {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Save className="h-3.5 w-3.5 mr-1" />}
                 {isMobile ? 'Sauvegarder' : 'Sauvegarder tout'}
