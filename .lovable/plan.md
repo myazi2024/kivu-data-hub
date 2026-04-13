@@ -1,82 +1,43 @@
 
 
-# Audit Mode Test — Mise a jour pour les modifications recentes
+# Audit Mode Test — Echec de generation
 
-## Problemes identifies
+## Cause racine
 
-### 1. Parcelles : champs manquants pour les analytics
-Le hook `useLandDataAnalytics` fetch `lease_years`, `is_subdivided`, `groupement`, `village`, `territoire`, `collectivite` sur les parcelles, mais `generateParcels` ne remplit pas :
-- **`lease_years`** : jamais defini (la colonne existe en DB)
-- **`is_subdivided`** : jamais defini
-- **`groupement`** : jamais defini
-- **`village`** : jamais defini (seul dans contributions)
-- **`territoire`** : jamais defini sur les parcelles (seul dans contributions)
-- **`collectivite`** : jamais definie sur les parcelles (seul dans contributions)
-- **`property_category`** : jamais definie sur les parcelles (seul dans contributions)
+L'erreur `"Parcelles (batch 6000): TypeError: Failed to fetch"` est un echec reseau (pas une erreur DB). Voici pourquoi :
 
-Consequence : les graphiques d'analytics sur ces dimensions affichent 0 donnees en mode test.
+- **7 020 parcelles** sont generees, decoupees en batches de 200 = **35 requetes POST sequentielles**
+- Chaque enregistrement de parcelle contient ~30 champs dont 4 tableaux JSONB (`gps_coordinates`, `parcel_sides`, `road_sides`, `servitude_data`) = **payload tres lourd** (~1-2 KB par enregistrement, ~200-400 KB par batch)
+- Apres ~30 requetes lourdes en rafale, le navigateur ou Supabase coupe la connexion (timeout/rate limit)
+- Le meme probleme se reproduit pour les contributions (7 020 records)
 
-### 2. Expertises : `parcel_id` manquant
-`generateExpertiseRequests` recoit `parcelNumbers` (strings) mais n'a pas acces aux IDs des parcelles. La colonne `parcel_id` existe dans `real_estate_expertise_requests` mais n'est jamais remplie. Analytics utilise `enrich()` qui cherche `parcel_id` — les expertises test ne sont pas enrichies geographiquement.
+## Corrections prevues
 
-### 3. Litiges : `parcel_id` manquant
-Meme probleme : `generateDisputes` utilise `parcel_number` mais ne remplit pas `parcel_id`. Le filtre FK dans `useLandDataAnalytics` (`filterByTestFK`) ne fonctionne pas pour ces entites.
+### 1. Reduire la taille des batches pour les tables lourdes
 
-### 4. Mutations et lotissements : erreurs silencieuses
-`generateMutationRequests` (ligne 1140) et `generateSubdivisionRequests` (ligne 1201) utilisent `console.error` sans `throw` — les echecs ne remontent pas dans `failedSteps`.
+**Fichier : `testDataGenerators.ts`**
 
-### 5. Contributions : champs manquants
-`lease_years` n'est jamais defini dans `generateContributions` alors que la colonne existe.
+- `generateParcels` : passer de batches de 200 a **50** (parcelles avec JSONB lourd)
+- `generateContributions` : idem, batches de **50**
+- Les autres tables (invoices, payments, etc.) peuvent rester a 200 car les records sont plus legers
 
-### 6. Signature des generateurs incompatible
-`generateExpertiseRequests` et `generateDisputes` ne recoivent pas l'objet `parcels` (avec IDs), empechant de remplir `parcel_id`.
+### 2. Ajouter un delai entre les batches
 
----
+Inserer un `await new Promise(r => setTimeout(r, 50))` entre chaque batch pour eviter le rate limiting. Appliquer sur `generateParcels` et `generateContributions`.
 
-## Plan de correction
+### 3. Ajouter une logique de retry
 
-### Fichier : `src/components/admin/test-mode/testDataGenerators.ts`
+Pour chaque batch echoue avec `TypeError: Failed to fetch`, retenter 2 fois avec un delai exponentiel (500ms, 1s) avant de throw. Cela couvre les echecs reseau transitoires.
 
-**A. Enrichir `generateParcels`** — ajouter les champs manquants :
-- `lease_years` : `isSR ? randInt(10, 99) : null` (bail rural)
-- `is_subdivided` : `idx % 20 === 0` (~5%)
-- `groupement` : pour SR, `pick(['Mudaka', 'Irhambi', 'Bugorhe', 'Miti'], idx)`
-- `village` : pour SR, `'Test Village ' + localIdx`
-- `territoire` : pour SR, `pick(['Kabare', 'Kalehe', 'Nyiragongo', 'Walungu'], idx)`
-- `collectivite` : pour SR, `pick(COLLECTIVITES_SR, idx)`
-- `property_category` : `pick(PROPERTY_CATEGORIES, idx)`
+### 4. Reduire le volume total (optionnel mais recommande)
 
-**B. Modifier la signature de `generateExpertiseRequests`** :
-- Changer le 2e parametre de `parcelNumbers: string[]` a `parcels: Array<{ id: string; parcel_number: string }>`
-- Ajouter `parcel_id: p.id` dans chaque record
-- Adapter la selection proportionnelle
+Reduire `BASE_PARCELS` de 20 a 10, passant le total de 7 020 a **3 510 parcelles**. C'est largement suffisant pour tester les analytics sur 26 provinces avec densite variable.
 
-**C. Modifier la signature de `generateDisputes`** :
-- Changer le 1er parametre de `parcelNumbers: string[]` a `parcels: Array<{ id: string; parcel_number: string }>`
-- Ajouter `parcel_id: p.id` dans chaque record
+## Fichiers modifies
 
-**D. Corriger les erreurs silencieuses** dans `generateMutationRequests` et `generateSubdivisionRequests` :
-- Remplacer `console.error` par `throw new Error()`
-- Utiliser `assertInserted()` pour validation
-
-**E. Enrichir `generateContributions`** :
-- Ajouter `lease_years` : `localIdx % 7 === 0 ? randInt(10, 99) : null`
-- Ajouter `groupement` : pour SR, valeur coherente avec parcelles
-
-### Fichier : `src/components/admin/test-mode/useTestDataActions.ts`
-
-**F. Adapter les appels aux generateurs modifies** :
-- `generateExpertiseRequests(userId, parcels, suffix)` au lieu de `(userId, parcelNumbers, suffix)`
-- `generateDisputes(parcels, suffix, userId)` au lieu de `(parcelNumbers, suffix, userId)`
-- Passer `parcelNumbers` ou `parcels` selon le nouveau contrat
-
----
+- `src/components/admin/test-mode/testDataGenerators.ts` — batch size, delai, retry, volume
 
 ## Section technique
 
-**Fichiers modifies** :
-- `src/components/admin/test-mode/testDataGenerators.ts` — enrichissement des champs, changement de signatures, correction erreurs silencieuses
-- `src/components/admin/test-mode/useTestDataActions.ts` — adaptation des appels
-
-**Aucune migration** requise — les colonnes existent deja.
+Changements localises dans les boucles d'insertion de `generateParcels` et `generateContributions`. Aucun changement de schema, aucune migration.
 
