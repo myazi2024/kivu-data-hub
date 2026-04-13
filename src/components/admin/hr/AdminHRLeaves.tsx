@@ -103,6 +103,7 @@ export default function AdminHRLeaves({ hook, employees, balances }: Props) {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <div className="grid gap-3">
