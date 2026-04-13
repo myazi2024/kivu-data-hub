@@ -32,6 +32,26 @@ function assertInserted<T>(data: T[] | null, entity: string): T[] {
   return data;
 }
 
+/** Retry wrapper for transient network failures (TypeError: Failed to fetch) */
+async function withRetry<T>(fn: () => Promise<T>, label: string, maxRetries = 2): Promise<T> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err: unknown) {
+      const isTransient =
+        err instanceof TypeError && /failed to fetch/i.test(err.message);
+      if (!isTransient || attempt === maxRetries) throw err;
+      const delay = 500 * Math.pow(2, attempt); // 500ms, 1s
+      console.warn(`${label}: tentative ${attempt + 1} échouée, retry dans ${delay}ms…`);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw new Error(`${label}: échec après ${maxRetries + 1} tentatives`);
+}
+
+/** Throttle delay between batches to avoid rate limiting */
+const BATCH_DELAY_MS = 60;
+
 /** Pick a deterministic item from an array based on index */
 function pick<T>(arr: T[], i: number): T {
   return arr[i % arr.length];
@@ -101,7 +121,7 @@ const PROVINCES = [
   { province: 'Tshuapa', multiplier: 1, ville: 'Boende', commune: 'Boende', quartier: 'Centre', avenue: 'Av. de la Tshuapa', lat: -0.2833, lng: 20.8667 },
 ];
 
-const BASE_PARCELS = 20; // 15 SU + 5 SR per multiplier unit
+const BASE_PARCELS = 10; // reduced from 20 to avoid network timeouts (~3 510 total)
 const getParcelsForProvince = (pIdx: number) => BASE_PARCELS * PROVINCES[pIdx].multiplier;
 
 // Pre-compute cumulative offsets for fast global-index → province lookup
@@ -221,16 +241,21 @@ export const generateParcels = async (parcelNumbers: string[]) => {
     };
   });
 
-  // Insert in batches of 200 to stay under payload limits
+  // Insert in small batches with retry + throttle to avoid network timeouts
+  const PARCEL_BATCH = 50;
   const allInserted: Array<{ id: string; parcel_number: string }> = [];
-  for (let i = 0; i < records.length; i += 200) {
-    const batch = records.slice(i, i + 200);
-    const { data, error } = await supabase
-      .from('cadastral_parcels')
-      .insert(batch)
-      .select('id, parcel_number');
-    if (error) throw new Error(`Parcelles (batch ${i}): ${error.message}`);
-    allInserted.push(...assertInserted(data, 'Parcelles'));
+  for (let i = 0; i < records.length; i += PARCEL_BATCH) {
+    const batch = records.slice(i, i + PARCEL_BATCH);
+    const result = await withRetry<Array<{ id: string; parcel_number: string }>>(async () => {
+      const { data, error } = await supabase
+        .from('cadastral_parcels')
+        .insert(batch)
+        .select('id, parcel_number');
+      if (error) throw new Error(`Parcelles (batch ${i}): ${error.message}`);
+      return assertInserted(data, 'Parcelles') as Array<{ id: string; parcel_number: string }>;
+    }, `Parcelles batch ${i}`);
+    allInserted.push(...result);
+    if (i + PARCEL_BATCH < records.length) await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
   }
   return allInserted;
 };
@@ -352,16 +377,21 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
     };
   });
 
-  // Insert in batches
+  // Insert in small batches with retry + throttle
+  const CONTRIB_BATCH = 50;
   const allInserted: Array<{ id: string; parcel_number: string }> = [];
-  for (let i = 0; i < records.length; i += 200) {
-    const batch = records.slice(i, i + 200);
-    const { data, error } = await supabase
-      .from('cadastral_contributions')
-      .insert(batch)
-      .select('id, parcel_number');
-    if (error) throw new Error(`Contributions (batch ${i}): ${error.message}`);
-    allInserted.push(...assertInserted(data, 'Contributions'));
+  for (let i = 0; i < records.length; i += CONTRIB_BATCH) {
+    const batch = records.slice(i, i + CONTRIB_BATCH);
+    const result = await withRetry<Array<{ id: string; parcel_number: string }>>(async () => {
+      const { data, error } = await supabase
+        .from('cadastral_contributions')
+        .insert(batch)
+        .select('id, parcel_number');
+      if (error) throw new Error(`Contributions (batch ${i}): ${error.message}`);
+      return assertInserted(data, 'Contributions') as Array<{ id: string; parcel_number: string }>;
+    }, `Contributions batch ${i}`);
+    allInserted.push(...result);
+    if (i + CONTRIB_BATCH < records.length) await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
   }
 
   // Now update non-pending statuses — grouped by status to avoid N+1 queries
