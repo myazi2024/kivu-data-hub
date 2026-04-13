@@ -1,5 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LayoutDashboard, Users, Briefcase, CalendarDays, Star, GitBranch, FileText, Loader2 } from 'lucide-react';
+import { LayoutDashboard, Users, Briefcase, CalendarDays, Star, GitBranch, FileText, Loader2, UserPlus } from 'lucide-react';
 import AdminHRDashboard from './AdminHRDashboard';
 import AdminHREmployees from './AdminHREmployees';
 import AdminHRRecruitment from './AdminHRRecruitment';
@@ -12,6 +12,9 @@ import { useHRLeaves } from '@/hooks/useHRLeaves';
 import { useHRReviews } from '@/hooks/useHRReviews';
 import { useHRJobPositions } from '@/hooks/useHRJobPositions';
 import { useHRDocuments } from '@/hooks/useHRDocuments';
+import { useHRCandidates } from '@/hooks/useHRCandidates';
+import type { HRCandidate } from '@/hooks/useHRCandidates';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminHR() {
   const employeesHook = useHREmployees();
@@ -19,8 +22,30 @@ export default function AdminHR() {
   const reviewsHook = useHRReviews();
   const jobsHook = useHRJobPositions();
   const docsHook = useHRDocuments();
+  const candidatesHook = useHRCandidates();
+  const { toast } = useToast();
 
-  const isLoading = employeesHook.isLoading || leavesHook.isLoading || reviewsHook.isLoading || jobsHook.isLoading || docsHook.isLoading;
+  const isLoading = employeesHook.isLoading || leavesHook.isLoading || reviewsHook.isLoading || jobsHook.isLoading || docsHook.isLoading || candidatesHook.isLoading;
+
+  const handleConvertToEmployee = async (candidate: HRCandidate) => {
+    const position = jobsHook.positions.find(p => p.id === candidate.position_id);
+    try {
+      await employeesHook.addEmployee({
+        first_name: candidate.first_name,
+        last_name: candidate.last_name,
+        email: candidate.email,
+        phone: candidate.phone,
+        department: position?.department || '',
+        position: position?.title || '',
+        status: 'active',
+        hire_date: new Date().toISOString().split('T')[0],
+      });
+      await candidatesHook.updateCandidate({ id: candidate.id, pipeline_stage: 'hired' });
+      toast({ title: 'Candidat converti en employé' });
+    } catch {
+      toast({ title: 'Erreur lors de la conversion', variant: 'destructive' });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -45,13 +70,13 @@ export default function AdminHR() {
         </TabsList>
 
         <TabsContent value="dashboard">
-          <AdminHRDashboard employees={employeesHook.employees} leaves={leavesHook.leaves} positions={jobsHook.positions} />
+          <AdminHRDashboard employees={employeesHook.employees} leaves={leavesHook.leaves} positions={jobsHook.positions} documents={docsHook.documents} />
         </TabsContent>
         <TabsContent value="employees">
           <AdminHREmployees hook={employeesHook} />
         </TabsContent>
         <TabsContent value="recruitment">
-          <AdminHRRecruitment hook={jobsHook} />
+          <AdminHRRecruitment hook={jobsHook} candidatesHook={candidatesHook} onConvertToEmployee={handleConvertToEmployee} />
         </TabsContent>
         <TabsContent value="leaves">
           <AdminHRLeaves hook={leavesHook} employees={employeesHook.employees} balances={leavesHook.balances} />
