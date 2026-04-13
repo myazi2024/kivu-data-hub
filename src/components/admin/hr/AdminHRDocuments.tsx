@@ -6,21 +6,19 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, FileText, Search, Download } from 'lucide-react';
-import type { Employee } from './hrData';
-import { useToast } from '@/hooks/use-toast';
-
-interface HRDocument {
-  id: string;
-  employeeId: string;
-  employeeName: string;
-  type: string;
-  title: string;
-  createdAt: string;
-}
+import { Plus, FileText, Search, Trash2 } from 'lucide-react';
+import type { HREmployee } from '@/hooks/useHREmployees';
+import type { HRDocument } from '@/hooks/useHRDocuments';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface Props {
-  employees: Employee[];
+  hook: {
+    documents: HRDocument[];
+    addDocument: (d: Partial<HRDocument>) => Promise<any>;
+    deleteDocument: (id: string) => Promise<void>;
+    isAdding: boolean;
+  };
+  employees: HREmployee[];
 }
 
 const docTypes = [
@@ -29,38 +27,42 @@ const docTypes = [
   { value: 'payslip', label: 'Bulletin de paie' },
   { value: 'certificate', label: 'Attestation' },
   { value: 'warning', label: 'Avertissement' },
+  { value: 'diploma', label: 'Diplôme' },
+  { value: 'id_document', label: 'Pièce d\'identité' },
   { value: 'other', label: 'Autre' },
 ];
 
-export default function AdminHRDocuments({ employees }: Props) {
-  const [documents, setDocuments] = useState<HRDocument[]>([]);
+export default function AdminHRDocuments({ hook, employees }: Props) {
+  const { documents, addDocument, deleteDocument, isAdding } = hook;
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [form, setForm] = useState({ employeeId: '', type: 'contract', title: '' });
-  const { toast } = useToast();
+  const [form, setForm] = useState({ employee_id: '', document_type: 'contract', file_name: '', expires_at: '' });
 
-  const handleAdd = () => {
-    if (!form.employeeId || !form.title) {
-      toast({ title: 'Erreur', description: 'Remplissez tous les champs', variant: 'destructive' });
-      return;
-    }
-    const emp = employees.find(e => e.id === form.employeeId);
-    setDocuments([...documents, {
-      id: crypto.randomUUID(),
-      employeeId: form.employeeId,
-      employeeName: emp ? `${emp.firstName} ${emp.lastName}` : 'Inconnu',
-      type: form.type,
-      title: form.title,
-      createdAt: new Date().toISOString().split('T')[0],
-    }]);
+  const handleAdd = async () => {
+    if (!form.employee_id || !form.file_name) return;
+    await addDocument({
+      employee_id: form.employee_id,
+      document_type: form.document_type,
+      file_name: form.file_name,
+      expires_at: form.expires_at || null,
+    });
     setDialogOpen(false);
-    setForm({ employeeId: '', type: 'contract', title: '' });
-    toast({ title: 'Document ajouté' });
+    setForm({ employee_id: '', document_type: 'contract', file_name: '', expires_at: '' });
+  };
+
+  const getEmployeeName = (id: string) => {
+    const emp = employees.find(e => e.id === id);
+    return emp ? `${emp.first_name} ${emp.last_name}` : 'Inconnu';
   };
 
   const filtered = documents.filter(d =>
-    `${d.title} ${d.employeeName}`.toLowerCase().includes(search.toLowerCase())
+    `${d.file_name} ${getEmployeeName(d.employee_id)}`.toLowerCase().includes(search.toLowerCase())
   );
+
+  const isExpired = (date: string | null) => {
+    if (!date) return false;
+    return new Date(date) < new Date();
+  };
 
   return (
     <div className="space-y-4">
@@ -76,20 +78,21 @@ export default function AdminHRDocuments({ employees }: Props) {
             <div className="space-y-3">
               <div>
                 <Label>Employé</Label>
-                <Select value={form.employeeId} onValueChange={v => setForm({ ...form, employeeId: v })}>
+                <Select value={form.employee_id} onValueChange={v => setForm({ ...form, employee_id: v })}>
                   <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
-                  <SelectContent>{employees.map(e => <SelectItem key={e.id} value={e.id}>{e.firstName} {e.lastName}</SelectItem>)}</SelectContent>
+                  <SelectContent>{employees.map(e => <SelectItem key={e.id} value={e.id}>{e.first_name} {e.last_name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
                 <Label>Type</Label>
-                <Select value={form.type} onValueChange={v => setForm({ ...form, type: v })}>
+                <Select value={form.document_type} onValueChange={v => setForm({ ...form, document_type: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{docTypes.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div><Label>Titre</Label><Input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} /></div>
-              <Button onClick={handleAdd}>Enregistrer</Button>
+              <div><Label>Nom du document</Label><Input value={form.file_name} onChange={e => setForm({ ...form, file_name: e.target.value })} /></div>
+              <div><Label>Date d'expiration</Label><Input type="date" value={form.expires_at} onChange={e => setForm({ ...form, expires_at: e.target.value })} /></div>
+              <Button onClick={handleAdd} disabled={isAdding}>{isAdding ? 'Ajout...' : 'Enregistrer'}</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -107,11 +110,35 @@ export default function AdminHRDocuments({ employees }: Props) {
               <div className="flex items-center gap-3">
                 <FileText className="h-5 w-5 text-primary" />
                 <div>
-                  <p className="font-medium text-sm">{doc.title}</p>
-                  <p className="text-xs text-muted-foreground">{doc.employeeName} · {doc.createdAt}</p>
+                  <p className="font-medium text-sm">{doc.file_name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {getEmployeeName(doc.employee_id)} · {doc.created_at?.split('T')[0]}
+                    {doc.expires_at && (
+                      <span className={isExpired(doc.expires_at) ? ' text-destructive font-medium' : ''}>
+                        {' '}· Expire : {doc.expires_at}
+                      </span>
+                    )}
+                  </p>
                 </div>
               </div>
-              <Badge variant="outline" className="text-[10px]">{docTypes.find(t => t.value === doc.type)?.label}</Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-[10px]">{docTypes.find(t => t.value === doc.document_type)?.label || doc.document_type}</Badge>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Supprimer ce document ?</AlertDialogTitle>
+                      <AlertDialogDescription>Le document "{doc.file_name}" sera définitivement supprimé.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Annuler</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => deleteDocument(doc.id)}>Supprimer</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
             </CardContent>
           </Card>
         ))}

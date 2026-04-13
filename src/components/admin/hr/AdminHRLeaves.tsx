@@ -9,13 +9,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, Check, X } from 'lucide-react';
 import { leaveTypes } from './hrData';
-import type { LeaveRequest, Employee } from './hrData';
-import { useToast } from '@/hooks/use-toast';
+import type { HREmployee } from '@/hooks/useHREmployees';
+import type { HRLeaveRequest, HRLeaveBalance } from '@/hooks/useHRLeaves';
 
 interface Props {
-  leaves: LeaveRequest[];
-  setLeaves: (l: LeaveRequest[]) => void;
-  employees: Employee[];
+  hook: {
+    leaves: HRLeaveRequest[];
+    addLeave: (l: Partial<HRLeaveRequest>) => Promise<any>;
+    updateStatus: (p: { id: string; status: 'approved' | 'rejected' }) => Promise<void>;
+    isAdding: boolean;
+  };
+  employees: HREmployee[];
+  balances: HRLeaveBalance[];
 }
 
 const statusBadge: Record<string, 'default' | 'secondary' | 'destructive'> = {
@@ -24,43 +29,32 @@ const statusBadge: Record<string, 'default' | 'secondary' | 'destructive'> = {
   rejected: 'destructive',
 };
 
-export default function AdminHRLeaves({ leaves, setLeaves, employees }: Props) {
+export default function AdminHRLeaves({ hook, employees, balances }: Props) {
+  const { leaves, addLeave, updateStatus, isAdding } = hook;
   const [dialogOpen, setDialogOpen] = useState(false);
-  const { toast } = useToast();
-  const [form, setForm] = useState<Partial<LeaveRequest>>({ type: 'annual', status: 'pending' });
+  const [form, setForm] = useState({ employee_id: '', leave_type: 'annual', start_date: '', end_date: '', reason: '' });
 
-  const handleAdd = () => {
-    if (!form.employeeId || !form.startDate || !form.endDate) {
-      toast({ title: 'Erreur', description: 'Remplissez tous les champs', variant: 'destructive' });
-      return;
-    }
-    const emp = employees.find(e => e.id === form.employeeId);
-    const newLeave: LeaveRequest = {
-      id: crypto.randomUUID(),
-      employeeId: form.employeeId!,
-      employeeName: emp ? `${emp.firstName} ${emp.lastName}` : 'Inconnu',
-      type: (form.type as LeaveRequest['type']) || 'annual',
-      startDate: form.startDate!,
-      endDate: form.endDate!,
-      status: 'pending',
-      reason: form.reason || '',
-    };
-    setLeaves([...leaves, newLeave]);
+  const handleAdd = async () => {
+    if (!form.employee_id || !form.start_date || !form.end_date) return;
+    await addLeave(form);
     setDialogOpen(false);
-    setForm({ type: 'annual', status: 'pending' });
-    toast({ title: 'Demande de congé ajoutée' });
+    setForm({ employee_id: '', leave_type: 'annual', start_date: '', end_date: '', reason: '' });
   };
 
-  const updateStatus = (id: string, status: 'approved' | 'rejected') => {
-    setLeaves(leaves.map(l => l.id === id ? { ...l, status } : l));
-    toast({ title: status === 'approved' ? 'Congé approuvé' : 'Congé refusé' });
+  const getEmployeeName = (id: string) => {
+    const emp = employees.find(e => e.id === id);
+    return emp ? `${emp.first_name} ${emp.last_name}` : 'Inconnu';
+  };
+
+  const getBalance = (empId: string, type: string) => {
+    return balances.find(b => b.employee_id === empId && b.leave_type === type);
   };
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">Congés & Présences</h2>
+          <h2 className="text-xl font-bold">Congés & Absences</h2>
           <p className="text-sm text-muted-foreground">{leaves.filter(l => l.status === 'pending').length} demande(s) en attente</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -70,24 +64,37 @@ export default function AdminHRLeaves({ leaves, setLeaves, employees }: Props) {
             <div className="space-y-3">
               <div>
                 <Label>Employé</Label>
-                <Select value={form.employeeId || ''} onValueChange={v => setForm({ ...form, employeeId: v })}>
+                <Select value={form.employee_id} onValueChange={v => setForm({ ...form, employee_id: v })}>
                   <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
-                  <SelectContent>{employees.filter(e => e.status === 'active').map(e => <SelectItem key={e.id} value={e.id}>{e.firstName} {e.lastName}</SelectItem>)}</SelectContent>
+                  <SelectContent>{employees.filter(e => e.status === 'active').map(e => <SelectItem key={e.id} value={e.id}>{e.first_name} {e.last_name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
+              {form.employee_id && (
+                <div className="p-2 bg-muted rounded text-xs">
+                  {(() => {
+                    const bal = getBalance(form.employee_id, form.leave_type);
+                    return bal ? `Solde ${leaveTypes[form.leave_type]?.label || form.leave_type} : ${bal.days_remaining} jour(s) restant(s) sur ${bal.days_entitled}` : 'Aucun solde enregistré pour ce type';
+                  })()}
+                </div>
+              )}
               <div>
                 <Label>Type</Label>
-                <Select value={form.type || 'annual'} onValueChange={v => setForm({ ...form, type: v as LeaveRequest['type'] })}>
+                <Select value={form.leave_type} onValueChange={v => setForm({ ...form, leave_type: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{Object.entries(leaveTypes).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><Label>Du</Label><Input type="date" value={form.startDate || ''} onChange={e => setForm({ ...form, startDate: e.target.value })} /></div>
-                <div><Label>Au</Label><Input type="date" value={form.endDate || ''} onChange={e => setForm({ ...form, endDate: e.target.value })} /></div>
+                <div><Label>Du</Label><Input type="date" value={form.start_date} onChange={e => setForm({ ...form, start_date: e.target.value })} /></div>
+                <div><Label>Au</Label><Input type="date" value={form.end_date} onChange={e => setForm({ ...form, end_date: e.target.value })} /></div>
               </div>
-              <div><Label>Motif</Label><Textarea value={form.reason || ''} onChange={e => setForm({ ...form, reason: e.target.value })} /></div>
-              <Button onClick={handleAdd}>Soumettre</Button>
+              {form.start_date && form.end_date && (
+                <p className="text-xs text-muted-foreground">
+                  Durée : {Math.max(1, Math.ceil((new Date(form.end_date).getTime() - new Date(form.start_date).getTime()) / 86400000) + 1)} jour(s)
+                </p>
+              )}
+              <div><Label>Motif</Label><Textarea value={form.reason} onChange={e => setForm({ ...form, reason: e.target.value })} /></div>
+              <Button onClick={handleAdd} disabled={isAdding}>{isAdding ? 'Ajout...' : 'Soumettre'}</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -98,10 +105,11 @@ export default function AdminHRLeaves({ leaves, setLeaves, employees }: Props) {
           <Card key={leave.id}>
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="font-medium text-sm">{leave.employeeName}</p>
+                <p className="font-medium text-sm">{getEmployeeName(leave.employee_id)}</p>
                 <div className="flex gap-2 text-xs text-muted-foreground mt-0.5">
-                  <Badge variant="outline" className="text-[10px]">{leaveTypes[leave.type]?.label}</Badge>
-                  <span>{leave.startDate} → {leave.endDate}</span>
+                  <Badge variant="outline" className="text-[10px]">{leaveTypes[leave.leave_type]?.label || leave.leave_type}</Badge>
+                  <span>{leave.start_date} → {leave.end_date}</span>
+                  {leave.days_count && <span>({leave.days_count}j)</span>}
                 </div>
                 {leave.reason && <p className="text-xs text-muted-foreground mt-1">{leave.reason}</p>}
               </div>
@@ -111,8 +119,8 @@ export default function AdminHRLeaves({ leaves, setLeaves, employees }: Props) {
                 </Badge>
                 {leave.status === 'pending' && (
                   <div className="flex gap-1">
-                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => updateStatus(leave.id, 'approved')}><Check className="h-3.5 w-3.5 text-green-600" /></Button>
-                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => updateStatus(leave.id, 'rejected')}><X className="h-3.5 w-3.5 text-destructive" /></Button>
+                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => updateStatus({ id: leave.id, status: 'approved' })}><Check className="h-3.5 w-3.5 text-green-600" /></Button>
+                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => updateStatus({ id: leave.id, status: 'rejected' })}><X className="h-3.5 w-3.5 text-destructive" /></Button>
                   </div>
                 )}
               </div>
