@@ -148,6 +148,7 @@ export default function AdminHREmployees({ hook }: Props) {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <div className="flex gap-2">
