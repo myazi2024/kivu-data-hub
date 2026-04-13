@@ -32,6 +32,26 @@ function assertInserted<T>(data: T[] | null, entity: string): T[] {
   return data;
 }
 
+/** Retry wrapper for transient network failures (TypeError: Failed to fetch) */
+async function withRetry<T>(fn: () => Promise<T>, label: string, maxRetries = 2): Promise<T> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err: unknown) {
+      const isTransient =
+        err instanceof TypeError && /failed to fetch/i.test(err.message);
+      if (!isTransient || attempt === maxRetries) throw err;
+      const delay = 500 * Math.pow(2, attempt); // 500ms, 1s
+      console.warn(`${label}: tentative ${attempt + 1} échouée, retry dans ${delay}ms…`);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw new Error(`${label}: échec après ${maxRetries + 1} tentatives`);
+}
+
+/** Throttle delay between batches to avoid rate limiting */
+const BATCH_DELAY_MS = 60;
+
 /** Pick a deterministic item from an array based on index */
 function pick<T>(arr: T[], i: number): T {
   return arr[i % arr.length];
@@ -101,7 +121,7 @@ const PROVINCES = [
   { province: 'Tshuapa', multiplier: 1, ville: 'Boende', commune: 'Boende', quartier: 'Centre', avenue: 'Av. de la Tshuapa', lat: -0.2833, lng: 20.8667 },
 ];
 
-const BASE_PARCELS = 20; // 15 SU + 5 SR per multiplier unit
+const BASE_PARCELS = 10; // reduced from 20 to avoid network timeouts (~3 510 total)
 const getParcelsForProvince = (pIdx: number) => BASE_PARCELS * PROVINCES[pIdx].multiplier;
 
 // Pre-compute cumulative offsets for fast global-index → province lookup
