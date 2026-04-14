@@ -165,6 +165,7 @@ const SuggestivePicklist: React.FC<SuggestivePicklistProps> = ({
   const dropdownContent = showDropdown && (hasDropdownContent || loading) && dropdownPos ? createPortal(
     <div
       ref={dropdownRef}
+      data-suggestive-dropdown="true"
       className="bg-popover border border-border rounded-xl shadow-lg max-h-[180px] overflow-y-auto"
       style={{
         position: 'fixed',
@@ -174,6 +175,7 @@ const SuggestivePicklist: React.FC<SuggestivePicklistProps> = ({
         zIndex: 10001,
       }}
       onMouseDown={(e) => e.preventDefault()}
+      onPointerDown={(e) => e.stopPropagation()}
     >
       {loading && filteredOptions.length === 0 && (
         <div className="px-3 py-2 text-xs text-muted-foreground flex items-center gap-2">
