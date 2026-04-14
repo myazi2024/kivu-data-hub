@@ -12,6 +12,9 @@ interface AppearanceConfig {
   border_radius?: string;
   app_name?: string;
   app_tagline?: string;
+  hero_image_url?: string;
+  hero_title?: string;
+  hero_overlay_opacity?: number;
 }
 
 export const useAppAppearance = () => {
