@@ -32,7 +32,7 @@ export const useAppAppearance = () => {
           const mapped: AppearanceConfig = {};
           for (const row of data) {
             const key = row.config_key as keyof AppearanceConfig;
-            mapped[key] = row.config_value as any;
+            (mapped as any)[key] = row.config_value;
           }
           setConfig(mapped);
           applyConfig(mapped);
