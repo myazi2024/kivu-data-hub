@@ -18,10 +18,6 @@ import { ParcelMapPreview } from '../ParcelMapPreview';
 import SuggestivePicklist from '../SuggestivePicklist';
 import SectionHelpPopover from '../SectionHelpPopover';
 import { SOUND_LABELS } from '@/constants/expertiseLabels';
-import { MdLocationOn } from 'react-icons/md';
-import { CadastralContributionData } from '@/hooks/useCadastralContribution';
-import { getAllProvinces } from '@/lib/geographicData';
-import { ParcelMapPreview } from '../ParcelMapPreview';
 
 interface LocationTabProps {
   formData: CadastralContributionData;
