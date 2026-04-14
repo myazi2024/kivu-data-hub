@@ -1,65 +1,87 @@
 
 
-# Phase 2 — Fonctionnalites avancees du module RH
+# Audit detaille -- Prise en charge des cookies
 
-Phase 1 (fondations) est complete : tables Supabase, hooks CRUD, composants persistants. Voici le plan pour Phase 2.
+## Architecture actuelle
 
-## Portee
+L'application dispose de 3 couches :
+- **`CookieManager`** (lib/cookies.ts) -- classe utilitaire CRUD pour `document.cookie`
+- **`CookieProvider` / `useCookies`** (hooks/useCookies.tsx) -- contexte React gerant consentement + preferences
+- **`CookieBanner`** (components/CookieBanner.tsx) -- interface utilisateur RGPD
 
-5 chantiers principaux :
+Le consentement est verifie dans `useCart` et `useCadastralCart` avant de persister les paniers.
 
-### 1. Dashboard enrichi avec graphiques
-- Ajouter des graphiques Recharts au dashboard : repartition par departement (pie chart), evolution des effectifs, repartition des salaires
-- KPIs supplementaires : taux de turnover, ratio H/F, anciennete moyenne par departement
-- Section alertes : documents expiries, contrats arrivant a echeance, periodes d'essai en cours
+---
 
-### 2. Evaluations completes avec objectifs SMART
-- Ajouter un formulaire d'objectifs dans le dialogue de creation d'evaluation (titre, description, progression %, statut)
-- Afficher la progression des objectifs par employe avec barres de progression
-- Permettre l'edition des evaluations existantes (actuellement manquant)
-- Historique comparatif par employe (evolution des scores)
+## Problemes identifies
 
-### 3. Pipeline de recrutement
-- Nouvelle table `hr_candidates` (nom, email, poste_id, statut pipeline, score, notes, CV)
-- Pipeline visuel par etapes : Candidature → Preselecton → Entretien → Offre → Embauche
-- Scoring et notes par candidat
-- Conversion candidat → employe
+### 1. Bug : `httpOnly` dans `document.cookie` (critique)
+L'option `httpOnly` dans `CookieManager.set()` (ligne 41-43) est **impossible a definir cote client**. `document.cookie` ignore silencieusement `httponly`. L'option donne une fausse impression de securite et doit etre supprimee de l'interface.
 
-### 4. Documents avec upload reel
-- Creer un bucket Supabase Storage `hr-documents` (prive)
-- Integrer l'upload de fichiers dans le formulaire de documents
-- Telecharger les fichiers via URLs signees
-- Indicateurs visuels pour documents expires ou bientot expires
+### 2. Bug : `getAll()` coupe les valeurs contenant `=`
+Ligne 79 : `cookie.trim().split('=')` ne prend que le premier `=`. Les cookies dont la valeur contient `=` (Base64, JSON encode) sont tronques. Il faut utiliser `split('=', 2)` ou `indexOf('=')`.
 
-### 5. Export CSV
-- Boutons d'export sur chaque onglet (employes, conges, evaluations)
-- Utiliser l'utilitaire `exportRecordsToCSV` existant
+### 3. Race condition : preferences enregistrees apres consentement
+Dans `handleAcceptAll` du banner :
+```ts
+updatePreferences({ essential: true, analytics: true, marketing: true });
+giveConsent();
+```
+`updatePreferences` met a jour le state de facon **asynchrone** (useState), mais `giveConsent` est appele immediatement apres. L'ordre d'ecriture des cookies est correct (les deux appellent `CookieManager` directement), mais le state React `preferences` peut etre en retard.
 
-## Fichiers impactes
+### 4. RGPD : "Refuser" donne quand meme le consentement
+`handleRejectAll` appelle `giveConsent()` apres avoir mis les preferences a false. Cela stocke `bic-consent=true` meme quand l'utilisateur refuse. Semantiquement, refuser devrait stocker `bic-consent=false` ou un etat distinct (`rejected`). Actuellement, apres rechargement, le banner ne reapparait pas car `consent !== null`.
 
-**Nouvelles migrations :**
-- Table `hr_candidates` + RLS
-- Bucket storage `hr-documents` + policies
+### 5. RGPD : pas de moyen de modifier son choix apres coup
+Une fois le banner ferme, il n'y a **aucun bouton** dans l'application pour rouvrir les parametres de cookies (pas de lien en footer, pas de page `/legal` avec un bouton de gestion). Le RGPD exige que le retrait du consentement soit aussi facile que son octroi.
 
-**Nouveaux fichiers :**
-- `src/hooks/useHRCandidates.ts`
-- `src/components/admin/hr/AdminHRCandidatePipeline.tsx`
+### 6. RGPD : pas de lien vers la politique de confidentialite
+Le banner ne contient aucun lien vers une page expliquant en detail quels cookies sont utilises, par qui, et pour combien de temps.
 
-**Fichiers modifies :**
-- `AdminHRDashboard.tsx` — graphiques Recharts + alertes
-- `AdminHRPerformance.tsx` — objectifs SMART, edition, historique
-- `AdminHRRecruitment.tsx` — integration pipeline candidats
-- `AdminHRDocuments.tsx` — upload/download fichiers
-- `AdminHREmployees.tsx` — bouton export CSV
-- `AdminHRLeaves.tsx` — bouton export CSV
-- `AdminHR.tsx` — eventuel nouvel onglet pipeline
+### 7. localStorage non conditionne au consentement
+Au moins **15+ fichiers** utilisent `localStorage` directement sans verifier le consentement cookies :
+- `useCCCFormState`, `usePermitRequestForm`, `useSubdivisionForm`, `useMortgageDraft`, `landTitleDraftStorage`, `useConfigHistory`, `usePersistentPagination`, etc.
+Seuls `useCart` et `useCadastralCart` verifient le consentement. Les autres persistent des donnees utilisateur sans permission.
 
-## Ordre d'implementation
+### 8. Pas de nettoyage du localStorage lors du refus
+`revokeConsent()` supprime les cookies non-essentiels mais **ne vide pas le localStorage**. Les donnees de panier, brouillons de formulaires, et historiques y restent.
 
-1. Migration (table candidates + bucket storage)
-2. Dashboard graphiques + KPIs
-3. Evaluations avec objectifs SMART
-4. Pipeline recrutement + hook candidats
-5. Upload documents
-6. Exports CSV
+### 9. Preferences non consultees par le code metier
+Les preferences `analytics` et `marketing` sont stockees mais **jamais lues** ailleurs dans le code. Il n'y a aucun script analytics ni pixel marketing conditionne a ces preferences. Le toggle est purement decoratif.
+
+### 10. Duplication du code de verification du consentement
+`useCart` et `useCadastralCart` dupliquent chacun une fonction `getConsentStatus()` locale au lieu d'utiliser le hook `useCookies` ou `CookieManager.getConsentStatus()`.
+
+### 11. Valeur `maxAge` du consentement = 13 mois
+La CNIL recommande un maximum de 13 mois pour la validite du consentement. Le code utilise `365 * 24 * 60 * 60` (exactement 12 mois), ce qui est conforme, mais il n'y a pas de mecanisme de re-demande apres expiration.
+
+---
+
+## Plan de corrections
+
+### Fichier : `src/lib/cookies.ts`
+- Supprimer l'option `httpOnly` de l'interface et de la methode `set()`
+- Corriger `getAll()` pour gerer les valeurs contenant `=`
+
+### Fichier : `src/hooks/useCookies.tsx`
+- Ajouter une methode `clearAllStorage()` dans `revokeConsent()` qui nettoie aussi `localStorage`
+- Exposer une fonction `reopenBanner()` pour permettre la reouverture du banner
+
+### Fichier : `src/components/CookieBanner.tsx`
+- `handleRejectAll` : appeler `revokeConsent()` au lieu de `giveConsent()` pour stocker `bic-consent=false`
+- Ajouter un lien vers `/legal` dans le banner
+- Corriger le race condition `updatePreferences` + `giveConsent` en les combinant
+
+### Nouveau : bouton "Gerer les cookies" dans le footer / page Legal
+- Ajouter un bouton persistant (footer ou page `/legal`) qui reouvre le banner de cookies
+
+### Fichier : `useCart.tsx`, `useCadastralCart.tsx`
+- Remplacer les fonctions `getConsentStatus()` dupliquees par `CookieManager.getConsentStatus()`
+
+### localStorage conditionne (amelioration future)
+- Creer un utilitaire `ConsentAwareStorage` qui wrappe `localStorage` en verifiant le consentement avant toute ecriture. A integrer progressivement dans les 15+ fichiers concernes.
+
+## Volume
+- 6 fichiers modifies, 1 nouvel utilitaire
+- Complexite moderee, sans migration base de donnees
 
