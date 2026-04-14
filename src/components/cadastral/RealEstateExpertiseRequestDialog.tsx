@@ -495,11 +495,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const constructionImageUrlsRef = useRef<string[]>([]);
   useEffect(() => { constructionImageUrlsRef.current = constructionImageUrls; }, [constructionImageUrls]);
 
-  // Cleanup du microphone et Object URLs à la fermeture
+  // Cleanup Object URLs à la fermeture
   useEffect(() => {
     return () => {
-      stopSoundMeasurement();
-      // Revoke any outstanding Object URLs to prevent memory leaks
       constructionImageUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
     };
   }, []);
@@ -927,8 +925,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   };
 
   const handleClose = () => {
-    // Stop any active sound measurement
-    stopSoundMeasurement();
+    // Navigation & flow
 
     // Navigation & flow
     setStep('form');
@@ -1845,158 +1842,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
           {/* === ONGLET ENVIRONNEMENT === */}
           <TabsContent value="environnement" className="space-y-3 pr-2 mt-0">
-            {/* Environnement sonore */}
-            <Card className="border rounded-xl">
-              <CardContent className="p-3 space-y-3">
-                <h4 className="text-sm font-semibold flex items-center gap-2">
-                  <Volume2 className="h-4 w-4 text-muted-foreground" />
-                  Environnement sonore
-                  <SectionHelpPopover
-                    title="Environnement sonore"
-                    description="Évaluez le niveau de bruit autour du bien. Si vous êtes sur place, utilisez le microphone pour une mesure automatique. Un environnement calme valorise le bien."
-                  />
-                </h4>
-
-                {/* Question: êtes-vous sur le site? */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium">Êtes-vous actuellement sur la construction ?</Label>
-                  <RadioGroup 
-                    value={isOnSite === null ? '' : isOnSite ? 'yes' : 'no'} 
-                    onValueChange={(v) => {
-                      setIsOnSite(v === 'yes');
-                      if (v === 'no') {
-                        stopSoundMeasurement();
-                        setMeasuredDecibels(null);
-                      }
-                    }}
-                    className="flex gap-4"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="yes" id="onsite-yes" />
-                      <Label htmlFor="onsite-yes" className="text-sm cursor-pointer">Oui</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="no" id="onsite-no" />
-                      <Label htmlFor="onsite-no" className="text-sm cursor-pointer">Non</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-
-                {/* Mesure par microphone si sur site */}
-                {isOnSite === true && (
-                  <Card className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 rounded-xl">
-                    <CardContent className="p-3 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Mic className="h-4 w-4 text-blue-600" />
-                          <span className="text-sm font-medium">Mesure du bruit ambiant</span>
-                        </div>
-                        {measuredDecibels !== null && (
-                          <Badge variant="secondary" className="text-xs">
-                            ~{measuredDecibels} dB
-                          </Badge>
-                        )}
-                      </div>
-                      
-                      <p className="text-xs text-muted-foreground">
-                        Activez le microphone pour mesurer le niveau sonore en temps réel. Le niveau sera automatiquement déterminé.
-                      </p>
-                      
-                      {microphoneError && (
-                        <Alert className="bg-red-50 border-red-200 rounded-lg">
-                          <AlertTriangle className="h-4 w-4 text-red-600" />
-                          <AlertDescription className="text-xs text-red-700">{microphoneError}</AlertDescription>
-                        </Alert>
-                      )}
-
-                      <div className="flex gap-2">
-                        {!isRecordingSound ? (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={startSoundMeasurement}
-                            className="flex-1 h-9 text-sm rounded-xl border-blue-300 text-blue-700 hover:bg-blue-100"
-                          >
-                            <Mic className="h-4 w-4 mr-2" />
-                            Démarrer la mesure
-                          </Button>
-                        ) : (
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            onClick={stopSoundMeasurement}
-                            className="flex-1 h-9 text-sm rounded-xl"
-                          >
-                            <MicOff className="h-4 w-4 mr-2" />
-                            Arrêter la mesure
-                          </Button>
-                        )}
-                      </div>
-
-                      {isRecordingSound && measuredDecibels !== null && (
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between text-xs">
-                            <span>Niveau mesuré:</span>
-                            <span className="font-bold text-blue-700">{measuredDecibels} dB</span>
-                          </div>
-                          <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
-                            <div 
-                              className={`h-3 rounded-full transition-all duration-300 ${
-                                measuredDecibels < 40 ? 'bg-green-500' :
-                                measuredDecibels < 55 ? 'bg-lime-500' :
-                                measuredDecibels < 70 ? 'bg-yellow-500' :
-                                measuredDecibels < 85 ? 'bg-orange-500' : 'bg-red-500'
-                              }`}
-                              style={{ width: `${Math.min(100, measuredDecibels)}%` }}
-                            />
-                          </div>
-                          <p className="text-xs text-center font-medium text-blue-700">
-                            Niveau détecté: {SOUND_ENVIRONMENT_OPTIONS.find(o => o.value === soundEnvironment)?.label}
-                          </p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Picklist manuel si pas sur site ou après mesure */}
-                {(isOnSite === false || isOnSite === null) && (
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Niveau sonore estimé</Label>
-                    <Select value={soundEnvironment} onValueChange={(v) => { setSoundEnvironment(v); if (v === 'tres_calme') setNearbyNoiseSources([]); }}>
-                      <SelectTrigger className="h-9 text-sm rounded-xl border-2">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {SOUND_ENVIRONMENT_OPTIONS.map(opt => (
-                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {/* Afficher le résultat si mesuré */}
-                {isOnSite === true && measuredDecibels !== null && !isRecordingSound && (
-                  <div className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200">
-                    <span className="text-sm">Niveau sonore mesuré:</span>
-                    <Badge className="bg-green-600 text-white">
-                      {SOUND_ENVIRONMENT_OPTIONS.find(o => o.value === soundEnvironment)?.label} ({measuredDecibels} dB)
-                    </Badge>
-                  </div>
-                )}
-
-                {soundEnvironment !== 'tres_calme' && (
-                  <SuggestivePicklist
-                    picklistKey="noise_sources"
-                    label="Sources de bruit à proximité"
-                    placeholder="Rechercher ou ajouter une source..."
-                    selectedValues={nearbyNoiseSources}
-                    onSelectionChange={setNearbyNoiseSources}
-                  />
-                )}
-              </CardContent>
-            </Card>
+            {/* Environnement sonore — supprimé, maintenant dans le formulaire CCC */}
 
             {/* Accessibilité */}
             <Card className="border rounded-xl">
@@ -2332,7 +2178,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       const builtFields = isTerrainNu ? [] : [
         constructionYear, standing, numberOfFloors, totalBuiltAreaSqm,
         propertyCondition, numberOfRooms, numberOfBedrooms, numberOfBathrooms,
-        constructionMaterials, roofMaterial, windowType, floorMaterial, buildingPosition, soundEnvironment,
+        constructionMaterials, roofMaterial, windowType, floorMaterial, buildingPosition,
       ];
       const equipFields = [
         hasWaterSupply, hasElectricity, hasSewageSystem, hasInternet,
@@ -2871,25 +2717,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <span className="text-muted-foreground">Type de route</span>
                     <span className="font-medium">{ROAD_LABELS[roadAccessType] || roadAccessType}</span>
                   </div>
-                  <div className="flex justify-between text-xs py-1.5">
-                    <span className="text-muted-foreground">Environnement sonore</span>
-                    <div className="flex items-center gap-1">
-                      <span className="font-medium">{SOUND_LABELS[soundEnvironment] || soundEnvironment}</span>
-                      {measuredDecibels !== null && (
-                        <Badge variant="outline" className="text-[9px] ml-1">{measuredDecibels} dB</Badge>
-                      )}
-                    </div>
-                  </div>
-                  {nearbyNoiseSources.length > 0 && soundEnvironment !== 'tres_calme' && (
-                    <div className="py-1.5">
-                      <span className="text-muted-foreground text-xs">Sources de bruit</span>
-                      <div className="flex flex-wrap gap-1 mt-1 justify-end">
-                        {nearbyNoiseSources.map((src, idx) => (
-                          <Badge key={idx} variant="secondary" className="text-[10px]">{src}</Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  {/* Sound environment removed — now in CCC */}
                   {distanceToMainRoad && (
                     <div className="flex justify-between text-xs py-1.5">
                       <span className="text-muted-foreground">Distance route principale</span>
