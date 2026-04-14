@@ -677,7 +677,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       parcel_id: parcelId,
       property_description: propertyDescription || undefined,
       construction_year: constructionYear ? parseInt(constructionYear) : undefined,
-      construction_quality: propertyCondition || undefined,
+      construction_quality: standing || undefined,
       number_of_floors: numberOfFloors ? parseInt(numberOfFloors) : undefined,
       total_built_area_sqm: totalBuiltAreaSqm ? parseFloat(totalBuiltAreaSqm) : undefined,
       property_condition: propertyCondition,
