@@ -181,7 +181,7 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'geo', el: () => <GeoCharts records={filtered} /> },
     { key: 'evolution', el: () => <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type={ty('evolution', 'area')} colorIndex={5} colSpan={2}
       insight={generateInsight(trend, 'area', 'les demandes d\'expertise')} /> },
-  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filtered, byStatus, byPaymentStatus, byPropertyCondition, byConstructionQuality, byDecade, builtAreaDist, equipmentData, byWallMaterial, byRoofMaterial, bySoundEnv, byBuildingPosition, byRoadAccess, proximityData, riskData, valueDist, floorsDist, gardenDist, trend, v, ct, cx, ty, ord]);
+  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filtered, byStatus, byPaymentStatus, byPropertyCondition, byConstructionQuality, byDecade, builtAreaDist, equipmentData, byWallMaterial, byRoofMaterial, byBuildingPosition, byRoadAccess, proximityData, riskData, valueDist, floorsDist, gardenDist, trend, v, ct, cx, ty, ord]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
