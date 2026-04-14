@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload, Save, Paintbrush, Type, Image, Moon, Sun, RotateCcw, Trash2, Fingerprint, RectangleHorizontal, Eye } from 'lucide-react';
+import { Loader2, Upload, Save, Paintbrush, Type, Image, Moon, Sun, RotateCcw, Trash2, Fingerprint, RectangleHorizontal, Eye, Home } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 const FONT_OPTIONS = [
@@ -254,6 +254,12 @@ const AdminAppearance = () => {
   // Theme mode
   const [darkMode, setDarkMode] = useState(false);
 
+  // Hero
+  const [heroImageUrl, setHeroImageUrl] = useState('');
+  const [heroTitle, setHeroTitle] = useState('Consultez les informations cadastrales des parcelles depuis chez vous.');
+  const [heroOverlayOpacity, setHeroOverlayOpacity] = useState(80);
+  const [uploadingHero, setUploadingHero] = useState(false);
+
   const currentColors = colorMode === 'light' ? lightColors : darkColors;
   const setCurrentColors = colorMode === 'light' ? setLightColors : setDarkColors;
 
@@ -283,6 +289,9 @@ const AdminAppearance = () => {
               case 'font_family': setFontFamily(val || 'Inter, sans-serif'); break;
               case 'font_size_base': setFontSizeBase(val || '16'); break;
               case 'border_radius': setBorderRadius(val || '0.375'); break;
+              case 'hero_image_url': setHeroImageUrl(val || ''); break;
+              case 'hero_title': setHeroTitle(val || 'Consultez les informations cadastrales des parcelles depuis chez vous.'); break;
+              case 'hero_overlay_opacity': setHeroOverlayOpacity(typeof val === 'number' ? val : 80); break;
             }
           }
         }
@@ -319,6 +328,13 @@ const AdminAppearance = () => {
     if (url) setLogoUrl(url);
   };
 
+  const handleHeroUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = await uploadFile(file, 'hero', setUploadingHero);
+    if (url) setHeroImageUrl(url);
+  };
+
   const handleFaviconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -350,6 +366,9 @@ const AdminAppearance = () => {
         upsertConfig('font_family', fontFamily),
         upsertConfig('font_size_base', fontSizeBase),
         upsertConfig('border_radius', borderRadius),
+        upsertConfig('hero_image_url', heroImageUrl),
+        upsertConfig('hero_title', heroTitle),
+        upsertConfig('hero_overlay_opacity', heroOverlayOpacity),
       ]);
       toast({ title: 'Configuration sauvegardée', description: 'Les changements seront appliqués au prochain chargement.' });
     } catch (e: any) {
@@ -368,6 +387,9 @@ const AdminAppearance = () => {
     setDarkMode(false);
     setAppName('BIC');
     setAppTagline("Bureau d'Informations Cadastrales");
+    setHeroImageUrl('');
+    setHeroTitle('Consultez les informations cadastrales des parcelles depuis chez vous.');
+    setHeroOverlayOpacity(80);
     toast({ title: 'Valeurs réinitialisées', description: 'Cliquez sur Sauvegarder pour appliquer.' });
   };
 
@@ -473,7 +495,64 @@ const AdminAppearance = () => {
             </CardContent>
           </Card>
 
-          {/* Section 2: Couleurs */}
+          {/* Section 2: Page d'accueil (Hero) */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Home className="h-4 w-4" /> Page d'accueil
+              </CardTitle>
+              <CardDescription>Image de fond, titre et overlay de la section Hero.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Hero Image */}
+              <div className="space-y-2">
+                <Label className="text-xs">Image de fond</Label>
+                {heroImageUrl && (
+                  <div className="rounded-md border p-2 bg-muted/30 flex items-center justify-between">
+                    <img src={heroImageUrl} alt="Hero" className="max-h-20 object-cover rounded" />
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setHeroImageUrl('')}>
+                      <Trash2 className="h-3 w-3 text-destructive" />
+                    </Button>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" asChild disabled={uploadingHero}>
+                    <label className="cursor-pointer">
+                      {uploadingHero ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Upload className="h-3 w-3 mr-1" />}
+                      Choisir une image
+                      <input type="file" accept="image/*" className="hidden" onChange={handleHeroUpload} />
+                    </label>
+                  </Button>
+                </div>
+                <Input placeholder="Ou collez une URL d'image..." value={heroImageUrl} onChange={e => setHeroImageUrl(e.target.value)} className="text-xs" />
+              </div>
+
+              {/* Hero Title */}
+              <div className="space-y-2">
+                <Label className="text-xs">Titre principal</Label>
+                <Input
+                  value={heroTitle}
+                  onChange={e => setHeroTitle(e.target.value)}
+                  placeholder="Consultez les informations cadastrales..."
+                />
+              </div>
+
+              {/* Overlay Opacity */}
+              <div className="space-y-2">
+                <Label className="text-xs">Opacité de l'overlay : {heroOverlayOpacity}%</Label>
+                <Slider
+                  value={[heroOverlayOpacity]}
+                  onValueChange={([v]) => setHeroOverlayOpacity(v)}
+                  min={0}
+                  max={100}
+                  step={5}
+                />
+                <p className="text-[10px] text-muted-foreground">Contrôle la transparence du dégradé de couleur au-dessus de l'image.</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Section 3: Couleurs */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">

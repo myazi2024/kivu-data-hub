@@ -5,23 +5,32 @@ import { Link } from 'react-router-dom';
 import heroSkyline from '@/assets/hero-skyline.webp';
 import TypewriterAnimation from '@/components/TypewriterAnimation';
 import { useCatalogConfig } from '@/hooks/useCatalogConfig';
+import { useAppAppearance } from '@/hooks/useAppAppearance';
 
 const HeroSection = () => {
-  const { config } = useCatalogConfig();
-  const provinces = config.available_provinces || [];
+  const { config: catalogConfig } = useCatalogConfig();
+  const { config: appearanceConfig } = useAppAppearance();
+  const provinces = catalogConfig.available_provinces || [];
+
+  const heroImage = appearanceConfig.hero_image_url || heroSkyline;
+  const heroTitle = appearanceConfig.hero_title || 'Consultez les informations cadastrales des parcelles depuis chez vous.';
+  const overlayOpacity = appearanceConfig.hero_overlay_opacity ?? 80;
 
   return (
     <section className="relative min-h-[85dvh] flex items-center justify-center overflow-hidden">
       {/* Background Image with Overlay */}
       <div className="absolute inset-0">
         <img
-          src={heroSkyline}
+          src={heroImage}
           alt="Illustration urbaine stylisée — skyline et données territoriales"
           className="w-full h-full object-cover object-center"
           loading="eager"
           decoding="async"
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/90 via-primary/70 to-primary/80"></div>
+        <div
+          className="absolute inset-0 bg-gradient-to-br from-primary via-primary/70 to-primary"
+          style={{ opacity: overlayOpacity / 100 }}
+        />
       </div>
 
       {/* Content */}
@@ -29,7 +38,7 @@ const HeroSection = () => {
         {/* Main Heading */}
         <div className="mb-8 sm:mb-10">
           <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 sm:mb-3 leading-tight">
-            Consultez les informations cadastrales des parcelles depuis chez vous.
+            {heroTitle}
           </h1>
           
           <TypewriterAnimation />

@@ -12,6 +12,9 @@ interface AppearanceConfig {
   border_radius?: string;
   app_name?: string;
   app_tagline?: string;
+  hero_image_url?: string;
+  hero_title?: string;
+  hero_overlay_opacity?: number;
 }
 
 export const useAppAppearance = () => {
@@ -29,7 +32,7 @@ export const useAppAppearance = () => {
           const mapped: AppearanceConfig = {};
           for (const row of data) {
             const key = row.config_key as keyof AppearanceConfig;
-            mapped[key] = row.config_value as any;
+            (mapped as any)[key] = row.config_value;
           }
           setConfig(mapped);
           applyConfig(mapped);
