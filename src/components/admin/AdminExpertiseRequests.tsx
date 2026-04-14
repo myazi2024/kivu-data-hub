@@ -61,8 +61,7 @@ const getExtendedData = (req: ExpertiseRequest): { userNotes: string; extendedDa
     building_position: req.building_position || legacyExtended.building_position,
     facade_orientation: req.facade_orientation || legacyExtended.facade_orientation,
     is_corner_plot: req.is_corner_plot ?? legacyExtended.is_corner_plot,
-    sound_environment: req.sound_environment || legacyExtended.sound_environment,
-    nearby_noise_sources: req.nearby_noise_sources || legacyExtended.nearby_noise_sources,
+    // sound_environment and nearby_noise_sources moved to cadastral_parcels (CCC form)
     has_pool: req.has_pool ?? legacyExtended.has_pool,
     has_air_conditioning: req.has_air_conditioning ?? legacyExtended.has_air_conditioning,
     has_solar_panels: req.has_solar_panels ?? legacyExtended.has_solar_panels,
