@@ -871,10 +871,15 @@ export const useCCCFormState = ({
     // Building shapes scoring
     totalFields += 1;
     if (buildingShapes.length > 0) filledFields += 1;
+    // Sound environment scoring
+    totalFields += 1;
+    if (soundEnvironment) filledFields += 1;
+    if (soundEnvironment && soundEnvironment !== 'tres_calme' && nearbySoundSources) filledFields += 1;
+    if (soundEnvironment && soundEnvironment !== 'tres_calme') totalFields += 1;
     const percentage = totalFields > 0 ? (filledFields / totalFields) * 100 : 0;
     const value = (percentage / 100) * 5;
     return { value: Math.min(value, 5), percentage: Math.min(percentage, 100), filledFields, totalFields };
-  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, hasMortgage, hasDispute, buildingPermits, permitRequest, gpsCoordinates, parcelSides, sectionType, buildingShapes]);
+  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, hasMortgage, hasDispute, buildingPermits, permitRequest, gpsCoordinates, parcelSides, sectionType, buildingShapes, soundEnvironment, nearbySoundSources]);
 
   // ─── Confetti ───
   const triggerConfetti = async () => {
@@ -1057,6 +1062,8 @@ export const useCCCFormState = ({
     setBuildingPermits([{ permitType: 'construction', permitNumber: '', issueDate: '', validityMonths: '36', administrativeStatus: 'En attente', issuingService: '', attachmentFile: null }]);
     setPermitRequest({ permitType: 'construction', hasExistingConstruction: false, constructionDescription: '', plannedUsage: '', estimatedArea: '', applicantName: '', applicantPhone: '', applicantEmail: '', selectedOwnerIndex: -1, numberOfFloors: '', buildingMaterials: '', architecturalPlanImages: [], constructionYear: '', regularizationReason: '', originalPermitNumber: '', previousPermitNumber: '', constructionPhotos: [] });
     setGpsCoordinates([]);
+    setSoundEnvironment('');
+    setNearbySoundSources('');
     setShowRequiredFieldsPopover(false); setHighlightRequiredFields(false); setShowOwnerWarning(false); setHighlightIncompleteOwner(false);
     setShowPermitWarning(false); setHighlightIncompletePermit(false); setShowPreviousOwnerWarning(false); setHighlightIncompletePreviousOwner(false);
     setHighlightSuperficie(false); setShowGPSWarning(false); setShowTaxWarning(false); setHighlightIncompleteTax(false);
@@ -1188,6 +1195,10 @@ export const useCCCFormState = ({
 
         const savedBuildingShapes = (contrib as any).building_shapes as any[];
         if (savedBuildingShapes && Array.isArray(savedBuildingShapes)) setBuildingShapes(savedBuildingShapes);
+
+        // Restore sound environment
+        if ((contrib as any).sound_environment) setSoundEnvironment((contrib as any).sound_environment);
+        if ((contrib as any).nearby_noise_sources) setNearbySoundSources((contrib as any).nearby_noise_sources);
       } catch (err) { console.error('Erreur chargement contribution:', err); }
       finally { setTimeout(() => { isLoadingFromDbRef.current = false; }, 500); }
     };

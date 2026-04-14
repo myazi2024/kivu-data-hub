@@ -203,6 +203,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                    roadSides={state.roadSides} servitude={state.servitude}
                    buildingShapes={state.buildingShapes} disputeFormData={state.disputeFormData}
                    mapConfig={state.mapConfig}
+                  soundEnvironment={state.soundEnvironment} nearbySoundSources={state.nearbySoundSources}
                   calculateCCCValue={state.calculateCCCValue} isFormValidForSubmission={state.isFormValidForSubmission}
                   getMissingFields={state.getMissingFields} handleSubmit={state.handleSubmit}
                   handleTabChange={state.handleTabChange} saveFormDataToStorage={state.saveFormDataToStorage}
