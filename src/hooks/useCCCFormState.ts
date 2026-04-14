@@ -730,6 +730,16 @@ export const useCCCFormState = ({
       }
     }
 
+    // PERMIT MODE MANDATORY (must answer OUI or NON)
+    if (!isTerrainNu && !isAppartement && formData.constructionType !== 'Terrain nu' && permitMode === null) {
+      missing.push({ field: 'permitMode', label: "Avez-vous obtenu une autorisation de bâtir ?", tab: 'general' });
+    }
+
+    // SOUND ENVIRONMENT MANDATORY
+    if (!soundEnvironment || soundEnvironment.trim() === '') {
+      missing.push({ field: 'soundEnvironment', label: 'Environnement sonore', tab: 'location' });
+    }
+
     // BUILDING PERMITS
     if (!isTerrainNu && !isAppartement && formData.constructionType !== 'Terrain nu' && permitMode === 'existing') {
       const hasValidExistingPermit = buildingPermits.some(permit => permit.permitNumber && permit.permitNumber.trim() !== '' && permit.issueDate && permit.issueDate.trim() !== '');
@@ -754,7 +764,7 @@ export const useCCCFormState = ({
     }
 
     return missing;
-  }, [formData, customTitleName, currentOwners, previousOwners, sectionType, permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, hasDispute, mortgageRecords, ownerDocFile, titleDocFiles, editingContributionId, roadSides, servitude, buildingShapes, constructionMode, additionalConstructions]);
+  }, [formData, customTitleName, currentOwners, previousOwners, sectionType, permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, hasDispute, mortgageRecords, ownerDocFile, titleDocFiles, editingContributionId, roadSides, servitude, buildingShapes, constructionMode, additionalConstructions, soundEnvironment]);
 
   const getMissingFieldsForTab = useCallback((tab: string) => getMissingFields().filter(f => f.tab === tab), [getMissingFields]);
   const isTabComplete = useCallback((tab: string) => getMissingFieldsForTab(tab).length === 0, [getMissingFieldsForTab]);

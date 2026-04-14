@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +13,6 @@ interface SuggestivePicklistProps {
   selectedValues: string[];
   onSelectionChange: (values: string[]) => void;
   disabled?: boolean;
-  /** Max number of selections allowed. Use 1 for single-select mode. */
   maxSelection?: number;
 }
 
@@ -35,7 +35,9 @@ const SuggestivePicklist: React.FC<SuggestivePicklistProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const isSingleSelect = maxSelection === 1;
 
   const fetchOptions = useCallback(async () => {
@@ -61,6 +63,30 @@ const SuggestivePicklist: React.FC<SuggestivePicklistProps> = ({
     fetchOptions();
   }, [fetchOptions]);
 
+  // Compute dropdown position when showing
+  const updateDropdownPosition = useCallback(() => {
+    if (inputRef.current) {
+      const rect = inputRef.current.getBoundingClientRect();
+      setDropdownPos({
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (showDropdown) {
+      updateDropdownPosition();
+      window.addEventListener('scroll', updateDropdownPosition, true);
+      window.addEventListener('resize', updateDropdownPosition);
+      return () => {
+        window.removeEventListener('scroll', updateDropdownPosition, true);
+        window.removeEventListener('resize', updateDropdownPosition);
+      };
+    }
+  }, [showDropdown, updateDropdownPosition]);
+
   const trackUsage = async (value: string) => {
     try {
       const { data: existing } = await supabase
@@ -80,7 +106,6 @@ const SuggestivePicklist: React.FC<SuggestivePicklistProps> = ({
           .from('suggestive_picklist_values')
           .insert({ picklist_key: picklistKey, value, usage_count: 1, is_default: false });
       }
-      // Refetch so newly added values appear for future searches
       fetchOptions();
     } catch (err) {
       console.error('Error tracking picklist usage:', err);
@@ -92,10 +117,9 @@ const SuggestivePicklist: React.FC<SuggestivePicklistProps> = ({
     if (!trimmed || selectedValues.includes(trimmed)) return;
 
     if (isSingleSelect) {
-      // Single-select: replace
       onSelectionChange([trimmed]);
     } else if (maxSelection && selectedValues.length >= maxSelection) {
-      return; // max reached
+      return;
     } else {
       onSelectionChange([...selectedValues, trimmed]);
     }
@@ -131,14 +155,60 @@ const SuggestivePicklist: React.FC<SuggestivePicklistProps> = ({
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  // For single-select, show selected value in the input-like display
   const singleSelectedLabel = isSingleSelect && selectedValues.length > 0 ? selectedValues[0] : null;
+
+  const dropdownContent = showDropdown && (hasDropdownContent || loading) && dropdownPos ? createPortal(
+    <div
+      className="bg-popover border border-border rounded-xl shadow-lg max-h-[180px] overflow-y-auto"
+      style={{
+        position: 'fixed',
+        top: dropdownPos.top,
+        left: dropdownPos.left,
+        width: dropdownPos.width,
+        zIndex: 10001,
+      }}
+      onMouseDown={(e) => e.preventDefault()}
+    >
+      {loading && filteredOptions.length === 0 && (
+        <div className="px-3 py-2 text-xs text-muted-foreground flex items-center gap-2">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          Chargement...
+        </div>
+      )}
+      {filteredOptions.slice(0, 8).map((opt) => (
+        <button
+          key={opt.value}
+          type="button"
+          onClick={() => addValue(opt.value)}
+          className="w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground flex items-center justify-between"
+        >
+          <span>{opt.value}</span>
+          {opt.is_default && (
+            <Badge variant="outline" className="text-[9px] h-4">suggéré</Badge>
+          )}
+        </button>
+      ))}
+      {showAddCustom && (
+        <button
+          type="button"
+          onClick={() => addValue(searchQuery.trim())}
+          className="w-full text-left px-3 py-2 text-sm hover:bg-primary/10 text-primary flex items-center gap-2 border-t border-border"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          Ajouter "{searchQuery.trim()}"
+        </button>
+      )}
+      {!loading && filteredOptions.length === 0 && !showAddCustom && (
+        <div className="px-3 py-2 text-xs text-muted-foreground">Aucun résultat</div>
+      )}
+    </div>,
+    document.body
+  ) : null;
 
   return (
     <div className="space-y-1.5" ref={containerRef}>
       {label && <Label className="text-xs">{label}</Label>}
 
-      {/* Selected values - multi-select mode badges */}
       {!isSingleSelect && selectedValues.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-1">
           {selectedValues.map((val) => (
@@ -154,12 +224,12 @@ const SuggestivePicklist: React.FC<SuggestivePicklistProps> = ({
         </div>
       )}
 
-      {/* Search input */}
       {!disabled && (
         <div className="relative">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
+              ref={inputRef}
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
@@ -169,7 +239,6 @@ const SuggestivePicklist: React.FC<SuggestivePicklistProps> = ({
               placeholder={singleSelectedLabel || placeholder}
               className={`h-9 text-sm rounded-xl border-2 pl-8 ${singleSelectedLabel ? 'pr-8' : ''}`}
             />
-            {/* Single-select: show clear button */}
             {isSingleSelect && singleSelectedLabel && (
               <button
                 type="button"
@@ -183,48 +252,10 @@ const SuggestivePicklist: React.FC<SuggestivePicklistProps> = ({
               <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-muted-foreground" />
             )}
           </div>
-
-          {/* Dropdown */}
-          {showDropdown && (hasDropdownContent || loading) && (
-            <div className="absolute z-[9999] w-full mt-1 bg-popover border border-border rounded-xl shadow-lg max-h-[180px] overflow-y-auto">
-              {loading && filteredOptions.length === 0 && (
-                <div className="px-3 py-2 text-xs text-muted-foreground flex items-center gap-2">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  Chargement...
-                </div>
-              )}
-              {filteredOptions.slice(0, 8).map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => addValue(opt.value)}
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground flex items-center justify-between"
-                >
-                  <span>{opt.value}</span>
-                  {opt.is_default && (
-                    <Badge variant="outline" className="text-[9px] h-4">suggéré</Badge>
-                  )}
-                </button>
-              ))}
-              {showAddCustom && (
-                <button
-                  type="button"
-                  onClick={() => addValue(searchQuery.trim())}
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-primary/10 text-primary flex items-center gap-2 border-t border-border"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  Ajouter "{searchQuery.trim()}"
-                </button>
-              )}
-              {!loading && filteredOptions.length === 0 && !showAddCustom && (
-                <div className="px-3 py-2 text-xs text-muted-foreground">Aucun résultat</div>
-              )}
-            </div>
-          )}
+          {dropdownContent}
         </div>
       )}
 
-      {/* Disabled single-select display */}
       {disabled && isSingleSelect && singleSelectedLabel && (
         <div className="h-9 px-3 flex items-center text-sm rounded-xl border-2 bg-muted text-muted-foreground">
           {singleSelectedLabel}
