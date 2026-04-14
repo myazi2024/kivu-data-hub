@@ -32,6 +32,7 @@ export const CROSS_VARIABLE_REGISTRY: Record<string, Record<string, CrossVariabl
     'permit-type': [{ label: 'Province', field: 'province' }, { label: 'Usage', field: 'declared_usage' }, { label: 'Type titre', field: 'property_title_type' }],
     'building-size': [{ label: 'Province', field: 'province' }, { label: 'Usage', field: 'declared_usage' }],
     'building-height': [{ label: 'Province', field: 'province' }, { label: 'Usage', field: 'declared_usage' }],
+    'sound-env': [{ label: 'Province', field: 'province' }, { label: 'Usage', field: 'declared_usage' }],
   },
   'contributions': {
     'contribution-type': [{ label: 'Statut', field: 'status' }, { label: 'Province', field: 'province' }, { label: 'Usage', field: 'declared_usage' }],

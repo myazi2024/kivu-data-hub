@@ -62,6 +62,8 @@ export interface ContributionRecord extends GeoFields {
   created_at: string;
   building_permits?: any;
   building_shapes?: any;
+  sound_environment?: string | null;
+  nearby_noise_sources?: string | null;
 }
 
 export interface TitleRequestRecord extends GeoFields {
