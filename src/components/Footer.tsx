@@ -1,11 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Phone, Mail, Globe } from 'lucide-react';
+import { MapPin, Phone, Mail, Globe, Cookie } from 'lucide-react';
 import bicLogoFallback from '@/assets/bic-logo.png';
 import { useAppAppearance } from '@/hooks/useAppAppearance';
+import { useCookies } from '@/hooks/useCookies';
 
 const Footer = () => {
   const { config } = useAppAppearance();
+  const { reopenBanner } = useCookies();
   const logoSrc = config.logo_url || bicLogoFallback;
   const appName = config.app_name || 'BIC';
   const appTagline = config.app_tagline || "Bureau d'Informations Cadastrales";
@@ -105,6 +107,13 @@ const Footer = () => {
               © {currentYear} {appName} - Tous droits réservés
             </div>
             <div className="flex items-center gap-2">
+              <button
+                onClick={reopenBanner}
+                className="flex items-center gap-1 bg-background/10 px-2 py-1 rounded hover:bg-background/20 transition-colors cursor-pointer"
+              >
+                <Cookie className="h-3 w-3 text-primary" />
+                <span className="text-background text-xs font-medium">Gérer les cookies</span>
+              </button>
               <div className="flex items-center gap-1 bg-background/10 px-2 py-1 rounded">
                 <Globe className="h-3 w-3 text-primary" />
                 <span className="text-background text-xs font-medium">26 provinces</span>

@@ -1,13 +1,14 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { CookieManager } from '@/lib/cookies';
 
 interface CookieContextType {
   consent: boolean | null;
   preferences: Record<string, boolean>;
-  giveConsent: () => void;
+  giveConsent: (prefs?: Record<string, boolean>) => void;
   revokeConsent: () => void;
   updatePreferences: (prefs: Record<string, boolean>) => void;
   isConsentRequired: boolean;
+  reopenBanner: () => void;
 }
 
 const CookieContext = createContext<CookieContextType | undefined>(undefined);
@@ -19,24 +20,35 @@ export const CookieProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     analytics: false,
     marketing: false
   });
+  const [bannerDismissed, setBannerDismissed] = useState(false);
 
   useEffect(() => {
-    // Charger le consentement existant
     const existingConsent = CookieManager.getConsentStatus();
     const existingPreferences = CookieManager.getPreferences();
     
     setConsent(existingConsent);
     setPreferences(existingPreferences);
+    if (existingConsent !== null) {
+      setBannerDismissed(true);
+    }
   }, []);
 
-  const giveConsent = () => {
+  // Accepter avec des préférences optionnelles (résout le race condition)
+  const giveConsent = useCallback((prefs?: Record<string, boolean>) => {
+    if (prefs) {
+      const safePrefs = { ...prefs, essential: true };
+      setPreferences(safePrefs);
+      CookieManager.setPreferences(safePrefs);
+    }
     setConsent(true);
     CookieManager.setConsentCookie(true);
-  };
+    setBannerDismissed(true);
+  }, []);
 
-  const revokeConsent = () => {
+  const revokeConsent = useCallback(() => {
     setConsent(false);
     CookieManager.setConsentCookie(false);
+    setBannerDismissed(true);
     
     // Supprimer tous les cookies non-essentiels
     const allCookies = CookieManager.getAll();
@@ -45,15 +57,27 @@ export const CookieProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         CookieManager.remove(name);
       }
     });
-  };
 
-  const updatePreferences = (prefs: Record<string, boolean>) => {
-    const newPrefs = { ...prefs, essential: true }; // Essential toujours true
+    // Nettoyer le localStorage applicatif
+    CookieManager.clearApplicationStorage();
+    
+    // Réinitialiser les préférences
+    const rejectedPrefs = { essential: true, analytics: false, marketing: false };
+    setPreferences(rejectedPrefs);
+    CookieManager.setPreferences(rejectedPrefs);
+  }, []);
+
+  const updatePreferences = useCallback((prefs: Record<string, boolean>) => {
+    const newPrefs = { ...prefs, essential: true };
     setPreferences(newPrefs);
     CookieManager.setPreferences(newPrefs);
-  };
+  }, []);
 
-  const isConsentRequired = consent === null;
+  const reopenBanner = useCallback(() => {
+    setBannerDismissed(false);
+  }, []);
+
+  const isConsentRequired = !bannerDismissed;
 
   return (
     <CookieContext.Provider value={{
@@ -62,7 +86,8 @@ export const CookieProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       giveConsent,
       revokeConsent,
       updatePreferences,
-      isConsentRequired
+      isConsentRequired,
+      reopenBanner
     }}>
       {children}
     </CookieContext.Provider>
@@ -72,14 +97,14 @@ export const CookieProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 export const useCookies = () => {
   const context = useContext(CookieContext);
   if (!context) {
-    // Fallback gracieux si utilisé en dehors du provider
     return {
       consent: null,
       preferences: { essential: true, analytics: false, marketing: false },
       giveConsent: () => {},
       revokeConsent: () => {},
       updatePreferences: () => {},
-      isConsentRequired: false
+      isConsentRequired: false,
+      reopenBanner: () => {}
     };
   }
   return context;

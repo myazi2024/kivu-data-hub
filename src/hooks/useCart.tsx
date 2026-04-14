@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { CookieManager } from '@/lib/cookies';
+import { CookieManager, ConsentAwareStorage } from '@/lib/cookies';
 
 export interface CartItem {
   id: string;
@@ -27,20 +27,13 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
-  // Fonction pour vérifier le consentement aux cookies
-  const getConsentStatus = (): boolean | null => {
-    const consent = CookieManager.get('bic-consent');
-    return consent === null ? null : consent === 'true';
-  };
-
   // Load cart from localStorage/cookies on mount
   useEffect(() => {
-    const consent = getConsentStatus();
-    if (consent === false) return; // Ne pas charger si consentement refusé
+    const consent = CookieManager.getConsentStatus();
+    if (consent === false) return;
     
-    // Essayer de charger depuis localStorage d'abord (plus rapide)
     try {
-      const savedCart = localStorage.getItem('bic-cart');
+      const savedCart = ConsentAwareStorage.getItem('bic-cart');
       if (savedCart) {
         setCartItems(JSON.parse(savedCart));
         return;
@@ -49,7 +42,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Error loading cart from localStorage:', error);
     }
     
-    // Fallback vers les cookies si localStorage échoue
     try {
       const cartCookie = CookieManager.get('bic-cart');
       if (cartCookie) {
@@ -60,24 +52,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Persist cart to localStorage/cookies whenever it changes
+  // Persist cart whenever it changes
   useEffect(() => {
-    const consent = getConsentStatus();
-    if (consent === false) return; // Ne pas sauvegarder si consentement refusé
+    const consent = CookieManager.getConsentStatus();
+    if (consent === false) return;
     
     const cartData = JSON.stringify(cartItems);
-    
-    // Sauvegarder dans localStorage (priorité)
-    try {
-      localStorage.setItem('bic-cart', cartData);
-    } catch (error) {
-      console.warn('localStorage unavailable, using cookies:', error);
-      // Fallback vers les cookies si localStorage n'est pas disponible
-      CookieManager.set('bic-cart', cartData, {
-        maxAge: 7 * 24 * 60 * 60, // 7 jours
-        sameSite: 'lax'
-      });
-    }
+    ConsentAwareStorage.setItem('bic-cart', cartData);
   }, [cartItems]);
 
   const addToCart = (item: CartItem, openCart?: () => void) => {
