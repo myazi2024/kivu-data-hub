@@ -808,7 +808,7 @@ export const ParcelMapPreview = ({
         const latLngs: [number, number][] = [];
         const markerColor = mapConfig.markerColor || '#3b82f6';
         const isMarkerMoveMode = Boolean(selectedBorneRef.current);
-        const shouldAutoCenter = !isDrawingMode && !isGroupDragMode && !selectedBorne && !isMarkerMoveMode;
+        const shouldAutoCenter = !isDrawingMode && !isDrawingBuilding && !isGroupDragMode && !selectedBorne && !isMarkerMoveMode;
 
         // Créer les marqueurs
         validCoords.forEach((coord, index) => {
@@ -1047,18 +1047,98 @@ export const ParcelMapPreview = ({
           // Marqueurs interactifs sur chaque sommet (double-clic = éditer GPS)
           shape.vertices.forEach((v, vi) => {
             const vertexMarker = L.circleMarker([v.lat, v.lng], {
-              radius: 5,
+              radius: 7,
               color: '#dc2626',
               fillColor: '#ffffff',
               fillOpacity: 1,
               weight: 2,
             }).addTo(map);
+
+            // Double-clic = édition manuelle GPS
             vertexMarker.on('dblclick', (e: any) => {
               e.originalEvent?.stopPropagation();
               e.originalEvent?.preventDefault();
               setEditingBuildingVertex({ shapeId: shape.id, vertexIdx: vi });
               setEditingBuildingVertexCoords({ lat: v.lat.toFixed(6), lng: v.lng.toFixed(6) });
             });
+
+            // Appui prolongé = mode drag du sommet de construction
+            let bvLongPressTimer: number | null = null;
+            let bvDragging = false;
+
+            const startBvLongPress = (e: any) => {
+              if (isDrawingMode || isGroupDragMode || isDrawingBuilding) return;
+              e.originalEvent?.preventDefault();
+              if (bvLongPressTimer) window.clearTimeout(bvLongPressTimer);
+              bvLongPressTimer = window.setTimeout(() => {
+                bvDragging = true;
+                vertexMarker.setStyle({ color: '#facc15', fillColor: '#facc15', radius: 9 });
+                if (map) {
+                  map.dragging.disable();
+                  map.scrollWheelZoom.disable();
+                  map.touchZoom.disable();
+                  map.getContainer().style.cursor = 'grabbing';
+                }
+              }, 450);
+            };
+
+            const cancelBvLongPress = () => {
+              if (bvLongPressTimer) { window.clearTimeout(bvLongPressTimer); bvLongPressTimer = null; }
+            };
+
+            const moveBvDrag = (e: any) => {
+              if (!bvDragging) return;
+              const latlng = e.latlng || (map && map.mouseEventToLatLng(e.originalEvent));
+              if (!latlng) return;
+              vertexMarker.setLatLng(latlng);
+            };
+
+            const endBvDrag = (e: any) => {
+              cancelBvLongPress();
+              if (!bvDragging) return;
+              bvDragging = false;
+              vertexMarker.setStyle({ color: '#dc2626', fillColor: '#ffffff', radius: 7 });
+              if (map) {
+                map.dragging.enable();
+                map.scrollWheelZoom.enable();
+                map.touchZoom.enable();
+                map.getContainer().style.cursor = '';
+              }
+              const finalLatLng = vertexMarker.getLatLng();
+              if (onBuildingShapesChange) {
+                const updated = buildingShapes.map(s => {
+                  if (s.id !== shape.id) return s;
+                  const newVerts = [...s.vertices];
+                  newVerts[vi] = { lat: finalLatLng.lat, lng: finalLatLng.lng };
+                  const newSides: { name: string; length: string }[] = [];
+                  let newPerimeter = 0;
+                  for (let i = 0; i < newVerts.length; i++) {
+                    const nxt = newVerts[(i + 1) % newVerts.length];
+                    const d = calculateDistance(newVerts[i].lat, newVerts[i].lng, nxt.lat, nxt.lng);
+                    newSides.push({ name: `Côté ${i + 1}`, length: d.toFixed(2) });
+                    newPerimeter += d;
+                  }
+                  return { ...s, vertices: newVerts, sides: newSides, areaSqm: Math.round(calculateBuildingArea(newVerts) * 100) / 100, perimeterM: Math.round(newPerimeter * 100) / 100 };
+                });
+                onBuildingShapesChange(updated);
+              }
+            };
+
+            vertexMarker.on('mousedown', startBvLongPress);
+            vertexMarker.on('touchstart', startBvLongPress);
+            vertexMarker.on('mouseup', (e: any) => { cancelBvLongPress(); endBvDrag(e); });
+            vertexMarker.on('touchend', (e: any) => { cancelBvLongPress(); endBvDrag(e); });
+            vertexMarker.on('mouseout', (e: any) => { if (bvDragging) return; cancelBvLongPress(); });
+            map.on('mousemove', moveBvDrag);
+            map.on('touchmove', (e: any) => {
+              if (!bvDragging) return;
+              const touch = e.originalEvent?.touches?.[0];
+              if (touch && map) {
+                const latlng = map.containerPointToLatLng(L.point(touch.clientX - map.getContainer().getBoundingClientRect().left, touch.clientY - map.getContainer().getBoundingClientRect().top));
+                vertexMarker.setLatLng(latlng);
+              }
+            });
+
             buildingLayersRef.current.push(vertexMarker);
           });
           
