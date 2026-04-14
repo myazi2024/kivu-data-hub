@@ -81,10 +81,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           className="sm:max-w-xl w-[calc(100%-1rem)] max-w-[380px] sm:max-w-xl max-h-[92vh] overflow-y-auto border-0 shadow-2xl p-0 rounded-2xl z-[9999]"
           onInteractOutside={(e) => {
             const target = e.target as HTMLElement;
-            if (
-              target.closest('[data-whatsapp-button="true"]') ||
-              target.closest('[data-suggestive-dropdown="true"]')
-            ) {
+            if (target.closest('[data-whatsapp-button="true"]')) {
               e.preventDefault();
             }
           }}
