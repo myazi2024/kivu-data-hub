@@ -5,7 +5,6 @@ export interface CookieOptions {
   domain?: string;
   secure?: boolean;
   sameSite?: 'strict' | 'lax' | 'none';
-  httpOnly?: boolean;
 }
 
 export class CookieManager {
@@ -36,10 +35,6 @@ export class CookieManager {
 
     if (options.sameSite) {
       cookieString += `; samesite=${options.sameSite}`;
-    }
-
-    if (options.httpOnly) {
-      cookieString += `; httponly`;
     }
 
     document.cookie = cookieString;
@@ -76,8 +71,11 @@ export class CookieManager {
     const cookieArray = document.cookie.split(';');
     
     for (const cookie of cookieArray) {
-      const [name, value] = cookie.trim().split('=');
-      if (name && value) {
+      const trimmed = cookie.trim();
+      const eqIndex = trimmed.indexOf('=');
+      if (eqIndex > 0) {
+        const name = trimmed.substring(0, eqIndex);
+        const value = trimmed.substring(eqIndex + 1);
         cookies[name] = decodeURIComponent(value);
       }
     }
@@ -88,7 +86,7 @@ export class CookieManager {
   // Méthodes spécifiques pour la conformité RGPD
   static setConsentCookie(consent: boolean): void {
     this.set('bic-consent', consent.toString(), {
-      maxAge: 365 * 24 * 60 * 60, // 1 an
+      maxAge: 365 * 24 * 60 * 60, // 12 mois (conforme CNIL)
       sameSite: 'strict',
       secure: window.location.protocol === 'https:'
     });
@@ -101,7 +99,7 @@ export class CookieManager {
 
   static setPreferences(preferences: Record<string, boolean>): void {
     this.set('bic-preferences', JSON.stringify(preferences), {
-      maxAge: 365 * 24 * 60 * 60, // 1 an
+      maxAge: 365 * 24 * 60 * 60,
       sameSite: 'strict',
       secure: window.location.protocol === 'https:'
     });
@@ -114,5 +112,64 @@ export class CookieManager {
       analytics: false,
       marketing: false
     };
+  }
+
+  /**
+   * Nettoie tout le localStorage lié à l'application BIC.
+   * Appelé lors du refus/retrait du consentement.
+   */
+  static clearApplicationStorage(): void {
+    if (typeof localStorage === 'undefined') return;
+    
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (
+        key.startsWith('bic-') ||
+        key.startsWith('land_title_') ||
+        key.startsWith('pagination_') ||
+        key.startsWith('ccc_') ||
+        key.startsWith('permit_') ||
+        key.startsWith('subdivision_') ||
+        key.startsWith('mortgage_') ||
+        key.startsWith('config_history_')
+      )) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+  }
+}
+
+/**
+ * Wrapper autour de localStorage qui vérifie le consentement cookies
+ * avant toute opération d'écriture.
+ */
+export class ConsentAwareStorage {
+  static getItem(key: string): string | null {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  }
+
+  static setItem(key: string, value: string): void {
+    const consent = CookieManager.getConsentStatus();
+    if (consent === false) return; // Ne pas persister si refusé
+    
+    try {
+      localStorage.setItem(key, value);
+    } catch {
+      // localStorage plein ou indisponible
+    }
+  }
+
+  static removeItem(key: string): void {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // silently fail
+    }
   }
 }

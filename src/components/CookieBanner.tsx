@@ -5,10 +5,10 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { useCookies } from '@/hooks/useCookies';
 import { Cookie, Shield, BarChart, Megaphone, Settings } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const CookieBanner: React.FC = () => {
   const { 
-    consent, 
     preferences, 
     giveConsent, 
     revokeConsent, 
@@ -17,38 +17,30 @@ const CookieBanner: React.FC = () => {
   } = useCookies();
 
   const [showDetails, setShowDetails] = React.useState(false);
+  const [localPrefs, setLocalPrefs] = React.useState(preferences);
+
+  React.useEffect(() => {
+    setLocalPrefs(preferences);
+  }, [preferences]);
 
   if (!isConsentRequired) {
     return null;
   }
 
   const handleAcceptAll = () => {
-    updatePreferences({
-      essential: true,
-      analytics: true,
-      marketing: true
-    });
-    giveConsent();
+    giveConsent({ essential: true, analytics: true, marketing: true });
   };
 
   const handleAcceptSelected = () => {
-    giveConsent();
+    giveConsent(localPrefs);
   };
 
   const handleRejectAll = () => {
-    updatePreferences({
-      essential: true,
-      analytics: false,
-      marketing: false
-    });
-    giveConsent();
+    revokeConsent();
   };
 
   const handlePreferenceChange = (type: string, value: boolean) => {
-    updatePreferences({
-      ...preferences,
-      [type]: value
-    });
+    setLocalPrefs(prev => ({ ...prev, [type]: value }));
   };
 
   if (showDetails) {
@@ -62,6 +54,10 @@ const CookieBanner: React.FC = () => {
             </CardTitle>
             <CardDescription>
               Gérez vos préférences de cookies pour une expérience personnalisée.
+              {' '}
+              <Link to="/legal" className="text-primary underline hover:no-underline">
+                Politique de confidentialité
+              </Link>
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -89,7 +85,7 @@ const CookieBanner: React.FC = () => {
                   <h3 className="font-medium">Cookies d'analyse</h3>
                 </div>
                 <Switch 
-                  checked={preferences.analytics} 
+                  checked={localPrefs.analytics} 
                   onCheckedChange={(value) => handlePreferenceChange('analytics', value)}
                 />
               </div>
@@ -107,7 +103,7 @@ const CookieBanner: React.FC = () => {
                   <h3 className="font-medium">Cookies marketing</h3>
                 </div>
                 <Switch 
-                  checked={preferences.marketing} 
+                  checked={localPrefs.marketing} 
                   onCheckedChange={(value) => handlePreferenceChange('marketing', value)}
                 />
               </div>
@@ -143,6 +139,10 @@ const CookieBanner: React.FC = () => {
           <p className="text-sm text-muted-foreground">
             Nous utilisons des cookies pour améliorer votre expérience sur notre site. 
             Vous pouvez choisir quels cookies accepter.
+            {' '}
+            <Link to="/legal" className="text-primary underline hover:no-underline">
+              En savoir plus
+            </Link>
           </p>
           
           <div className="flex flex-col gap-2">

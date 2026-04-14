@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
-import { CookieManager } from '@/lib/cookies';
+import { CookieManager, ConsentAwareStorage } from '@/lib/cookies';
 
 export interface CadastralCartService {
   id: string;
@@ -32,23 +32,18 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
   const [selectedServices, setSelectedServices] = useState<CadastralCartService[]>([]);
   const [parcelNumber, setParcelNumberState] = useState<string | null>(null);
 
-  const getConsentStatus = (): boolean | null => {
-    const consent = CookieManager.get('bic-consent');
-    return consent === null ? null : consent === 'true';
-  };
-
   useEffect(() => {
-    const consent = getConsentStatus();
+    const consent = CookieManager.getConsentStatus();
     if (consent === false) return;
     
     try {
-      const savedCart = localStorage.getItem('bic-cadastral-cart');
+      const savedCart = ConsentAwareStorage.getItem('bic-cadastral-cart');
       if (savedCart) {
         const parsed = JSON.parse(savedCart);
         const CART_TTL_MS = 24 * 60 * 60 * 1000;
         const savedAt = parsed.savedAt || 0;
         if (Date.now() - savedAt > CART_TTL_MS) {
-          localStorage.removeItem('bic-cadastral-cart');
+          ConsentAwareStorage.removeItem('bic-cadastral-cart');
           return;
         }
         setSelectedServices(parsed.services || []);
@@ -59,9 +54,8 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
     }
   }, []);
 
-  // Fix #20: Debounce localStorage pour éviter les écritures rapides (ex: "Tout sélectionner")
   useEffect(() => {
-    const consent = getConsentStatus();
+    const consent = CookieManager.getConsentStatus();
     if (consent === false) return;
     
     const timer = setTimeout(() => {
@@ -70,18 +64,12 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
         parcelNumber,
         savedAt: Date.now()
       });
-      
-      try {
-        localStorage.setItem('bic-cadastral-cart', cartData);
-      } catch (error) {
-        console.warn('localStorage unavailable:', error);
-      }
+      ConsentAwareStorage.setItem('bic-cadastral-cart', cartData);
     }, 300);
 
     return () => clearTimeout(timer);
   }, [selectedServices, parcelNumber]);
 
-  // Fix #7: Ne vider le panier que si prev est non-null ET différent (pas sur remontage)
   const setParcelNumber = useCallback((newParcelNumber: string) => {
     setParcelNumberState(prev => {
       if (prev !== null && prev !== newParcelNumber) {
@@ -99,7 +87,6 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
     });
   }, []);
 
-  // Fix: Ajout batch pour "Tout sélectionner" — un seul setState au lieu de N
   const addServices = useCallback((services: CadastralCartService[]) => {
     setSelectedServices(prev => {
       const existingIds = new Set(prev.map(s => s.id));
@@ -123,7 +110,6 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
     });
   }, []);
 
-  // Fix #18: Mise à jour batch des prix sans re-render multiples
   const updateServicePrices = useCallback((updates: { id: string; price: number }[]) => {
     setSelectedServices(prev => {
       const priceMap = new Map(updates.map(u => [u.id, u.price]));
@@ -140,12 +126,10 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
     });
   }, []);
 
-  // Fix: clearServices ne reset plus parcelNumber (nécessaire après paiement)
   const clearServices = useCallback(() => {
     setSelectedServices([]);
   }, []);
 
-  // Méthode séparée pour tout réinitialiser (changement de parcelle, etc.)
   const resetCart = useCallback(() => {
     setSelectedServices([]);
     setParcelNumberState(null);
