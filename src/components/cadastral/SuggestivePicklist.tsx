@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { X, Plus, Search, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -33,11 +33,8 @@ const SuggestivePicklist: React.FC<SuggestivePicklistProps> = ({
 }) => {
   const [options, setOptions] = useState<PicklistOption[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showDropdown, setShowDropdown] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
   const isSingleSelect = maxSelection === 1;
 
   const fetchOptions = useCallback(async () => {
@@ -62,30 +59,6 @@ const SuggestivePicklist: React.FC<SuggestivePicklistProps> = ({
   useEffect(() => {
     fetchOptions();
   }, [fetchOptions]);
-
-  // Compute dropdown position when showing
-  const updateDropdownPosition = useCallback(() => {
-    if (inputRef.current) {
-      const rect = inputRef.current.getBoundingClientRect();
-      setDropdownPos({
-        top: rect.bottom + 4,
-        left: rect.left,
-        width: rect.width,
-      });
-    }
-  }, []);
-
-  useEffect(() => {
-    if (showDropdown) {
-      updateDropdownPosition();
-      window.addEventListener('scroll', updateDropdownPosition, true);
-      window.addEventListener('resize', updateDropdownPosition);
-      return () => {
-        window.removeEventListener('scroll', updateDropdownPosition, true);
-        window.removeEventListener('resize', updateDropdownPosition);
-      };
-    }
-  }, [showDropdown, updateDropdownPosition]);
 
   const trackUsage = async (value: string) => {
     try {
@@ -126,7 +99,7 @@ const SuggestivePicklist: React.FC<SuggestivePicklistProps> = ({
 
     trackUsage(trimmed);
     setSearchQuery('');
-    setShowDropdown(false);
+    setPopoverOpen(false);
   };
 
   const removeValue = (value: string) => {
@@ -142,79 +115,12 @@ const SuggestivePicklist: React.FC<SuggestivePicklistProps> = ({
     !options.some(o => o.value.toLowerCase() === searchQuery.trim().toLowerCase()) &&
     !selectedValues.includes(searchQuery.trim());
 
-  const hasDropdownContent = filteredOptions.length > 0 || showAddCustom;
-
-  // Close dropdown on outside click (portal-aware)
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (
-        containerRef.current && !containerRef.current.contains(target) &&
-        (!dropdownRef.current || !dropdownRef.current.contains(target))
-      ) {
-        setShowDropdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
+  const hasDropdownContent = filteredOptions.length > 0 || showAddCustom || loading;
 
   const singleSelectedLabel = isSingleSelect && selectedValues.length > 0 ? selectedValues[0] : null;
 
-  const dropdownContent = showDropdown && (hasDropdownContent || loading) && dropdownPos ? createPortal(
-    <div
-      ref={dropdownRef}
-      data-suggestive-dropdown="true"
-      className="bg-popover border border-border rounded-xl shadow-lg max-h-[180px] overflow-y-auto"
-      style={{
-        position: 'fixed',
-        top: dropdownPos.top,
-        left: dropdownPos.left,
-        width: dropdownPos.width,
-        zIndex: 10001,
-      }}
-      onMouseDown={(e) => e.preventDefault()}
-      onPointerDown={(e) => e.stopPropagation()}
-    >
-      {loading && filteredOptions.length === 0 && (
-        <div className="px-3 py-2 text-xs text-muted-foreground flex items-center gap-2">
-          <Loader2 className="h-3 w-3 animate-spin" />
-          Chargement...
-        </div>
-      )}
-      {filteredOptions.slice(0, 8).map((opt) => (
-        <button
-          key={opt.value}
-          type="button"
-          onClick={() => addValue(opt.value)}
-          className="w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground flex items-center justify-between"
-        >
-          <span>{opt.value}</span>
-          {opt.is_default && (
-            <Badge variant="outline" className="text-[9px] h-4">suggéré</Badge>
-          )}
-        </button>
-      ))}
-      {showAddCustom && (
-        <button
-          type="button"
-          onClick={() => addValue(searchQuery.trim())}
-          className="w-full text-left px-3 py-2 text-sm hover:bg-primary/10 text-primary flex items-center gap-2 border-t border-border"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Ajouter "{searchQuery.trim()}"
-        </button>
-      )}
-      {!loading && filteredOptions.length === 0 && !showAddCustom && (
-        <div className="px-3 py-2 text-xs text-muted-foreground">Aucun résultat</div>
-      )}
-    </div>,
-    document.body
-  ) : null;
-
   return (
-    <div className="space-y-1.5" ref={containerRef}>
+    <div className="space-y-1.5">
       {label && <Label className="text-xs">{label}</Label>}
 
       {!isSingleSelect && selectedValues.length > 0 && (
@@ -233,35 +139,80 @@ const SuggestivePicklist: React.FC<SuggestivePicklistProps> = ({
       )}
 
       {!disabled && (
-        <div className="relative">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              ref={inputRef}
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setShowDropdown(true);
-              }}
-              onFocus={() => setShowDropdown(true)}
-              placeholder={singleSelectedLabel || placeholder}
-              className={`h-9 text-sm rounded-xl border-2 pl-8 ${singleSelectedLabel ? 'pr-8' : ''}`}
-            />
-            {isSingleSelect && singleSelectedLabel && (
+        <Popover open={popoverOpen && hasDropdownContent} onOpenChange={setPopoverOpen}>
+          <PopoverTrigger asChild>
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground z-10" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setPopoverOpen(true);
+                }}
+                onFocus={() => setPopoverOpen(true)}
+                placeholder={singleSelectedLabel || placeholder}
+                className={`h-9 text-sm rounded-xl border-2 pl-8 ${singleSelectedLabel ? 'pr-8' : ''}`}
+              />
+              {isSingleSelect && singleSelectedLabel && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onSelectionChange([]); setSearchQuery(''); }}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-destructive z-10"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+              {loading && (
+                <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-muted-foreground" />
+              )}
+            </div>
+          </PopoverTrigger>
+          <PopoverContent
+            className="p-0 rounded-xl max-h-[180px] overflow-y-auto"
+            align="start"
+            sideOffset={4}
+            onOpenAutoFocus={(e) => e.preventDefault()}
+          >
+            {loading && filteredOptions.length === 0 && (
+              <div className="px-3 py-2 text-xs text-muted-foreground flex items-center gap-2">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Chargement...
+              </div>
+            )}
+            {filteredOptions.slice(0, 8).map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  addValue(opt.value);
+                }}
+                className="w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground flex items-center justify-between"
+              >
+                <span>{opt.value}</span>
+                {opt.is_default && (
+                  <Badge variant="outline" className="text-[9px] h-4">suggéré</Badge>
+                )}
+              </button>
+            ))}
+            {showAddCustom && (
               <button
                 type="button"
-                onClick={() => { onSelectionChange([]); setSearchQuery(''); }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-destructive"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  addValue(searchQuery.trim());
+                }}
+                className="w-full text-left px-3 py-2 text-sm hover:bg-primary/10 text-primary flex items-center gap-2 border-t border-border"
               >
-                <X className="h-3.5 w-3.5" />
+                <Plus className="h-3.5 w-3.5" />
+                Ajouter "{searchQuery.trim()}"
               </button>
             )}
-            {loading && (
-              <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-muted-foreground" />
+            {!loading && filteredOptions.length === 0 && !showAddCustom && (
+              <div className="px-3 py-2 text-xs text-muted-foreground">Aucun résultat</div>
             )}
-          </div>
-          {dropdownContent}
-        </div>
+          </PopoverContent>
+        </Popover>
       )}
 
       {disabled && isSingleSelect && singleSelectedLabel && (
