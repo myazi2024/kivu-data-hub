@@ -1015,6 +1015,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
      setConstructionImages([]);
      setConstructionImageUrls([]);
 
+    // Building permit
+    setHasBuildingPermit(null);
+    setBuildingPermitType('construction');
+    setBuildingPermitNumber('');
+    setBuildingPermitIssueDate('');
+    setBuildingPermitIssuingService('');
+    setBuildingPermitFile(null);
+
     // Payment
     setPaymentMethod('mobile_money');
     setPaymentProvider('');
@@ -1035,7 +1043,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     onOpenChange(false);
   };
 
-  const isTerrainNu = propertyCategory === 'Terrain nu' || constructionType === 'Terrain nu';
+  const isTerrainNu = propertyCategory === 'Terrain nu';
   const isApartmentOrBuilding = propertyCategory === 'Appartement';
 
   const renderForm = () => (
@@ -1874,8 +1882,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <Label className="text-xs">Route principale (m)</Label>
                     <Input
                       type="number"
+                      min="0"
                       value={distanceToMainRoad}
-                      onChange={(e) => setDistanceToMainRoad(e.target.value)}
+                      onChange={handleNonNegativeChange(setDistanceToMainRoad)}
                       placeholder="Ex: 50"
                       className="h-9 text-sm rounded-xl border-2"
                     />
@@ -1884,8 +1893,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <Label className="text-xs">Hôpital (km)</Label>
                     <Input
                       type="number"
+                      min="0"
                       value={distanceToHospital}
-                      onChange={(e) => setDistanceToHospital(e.target.value)}
+                      onChange={handleNonNegativeChange(setDistanceToHospital)}
                       placeholder="Ex: 2"
                       className="h-9 text-sm rounded-xl border-2"
                     />
@@ -1894,8 +1904,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <Label className="text-xs">École (km)</Label>
                     <Input
                       type="number"
+                      min="0"
                       value={distanceToSchool}
-                      onChange={(e) => setDistanceToSchool(e.target.value)}
+                      onChange={handleNonNegativeChange(setDistanceToSchool)}
                       placeholder="Ex: 1"
                       className="h-9 text-sm rounded-xl border-2"
                     />
@@ -1904,8 +1915,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <Label className="text-xs">Marché (km)</Label>
                     <Input
                       type="number"
+                      min="0"
                       value={distanceToMarket}
-                      onChange={(e) => setDistanceToMarket(e.target.value)}
+                      onChange={handleNonNegativeChange(setDistanceToMarket)}
                       placeholder="Ex: 0.5"
                       className="h-9 text-sm rounded-xl border-2"
                     />
@@ -2024,6 +2036,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                   ref={constructionImagesInputRef}
                   type="file"
                   accept="image/*"
+                  capture="environment"
                   multiple
                   onChange={handleConstructionImageSelect}
                   className="hidden"
@@ -2151,6 +2164,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       const missing: Array<{ label: string; tab: string; required: boolean }> = [];
       
       // Champs obligatoires
+      if (!propertyCategory) missing.push({ label: 'Catégorie de bien', tab: 'general', required: true });
       if (!constructionType) missing.push({ label: 'Type de construction', tab: 'general', required: true });
       
       if (constructionType !== 'terrain_nu') {
@@ -2180,15 +2194,13 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         propertyCondition, numberOfRooms, numberOfBedrooms, numberOfBathrooms,
         constructionMaterials, roofMaterial, windowType, floorMaterial, buildingPosition,
       ];
-      const equipFields = [
-        hasWaterSupply, hasElectricity, hasSewageSystem, hasInternet,
-        hasSecuritySystem, hasParking, hasGarden,
-      ];
+      // Equipment booleans: any defined response (true or false) counts as filled
+      const equipCount = 7; // water, electricity, sewage, internet, security, parking, garden
+      const filledEquip = equipCount; // All are always answered (initialized with defaults)
       const docScore = (parcelDocuments.length > 0 ? 1 : 0) + (constructionImages.length > 0 && !isTerrainNu ? 1 : 0);
       const filledBase = baseFields.filter(Boolean).length;
       const filledBuilt = builtFields.filter(Boolean).length;
-      const filledEquip = equipFields.filter(Boolean).length;
-      const totalPossible = baseFields.length + builtFields.length + equipFields.length + (isTerrainNu ? 1 : 2);
+      const totalPossible = baseFields.length + builtFields.length + equipCount + (isTerrainNu ? 1 : 2);
       return Math.round(((filledBase + filledBuilt + filledEquip + docScore) / totalPossible) * 100);
     };
     const completionPercentage = computeCompletion();
@@ -2808,6 +2820,15 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                       <span className="text-orange-600 text-xs">⚠️ Recommandé</span>
                     )}
                   </div>
+                  {hasBuildingPermit === 'yes' && buildingPermitFile && (
+                    <div className="flex justify-between text-xs py-1.5">
+                      <span className="text-muted-foreground">Document permis</span>
+                      <Badge variant="outline" className="text-[10px] text-green-600 border-green-300">
+                        <FileCheck className="h-3 w-3 mr-1" />
+                        {buildingPermitFile.name}
+                      </Badge>
+                    </div>
+                  )}
                 </div>
                 {additionalNotes && (
                   <div className="pt-1.5 border-t border-border/30">
@@ -3069,7 +3090,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     if (!certificateChecked) return null;
 
     if (existingCertificate) {
-      const validity = checkCertificateValidity(existingCertificate.certificate_issue_date);
+      const validity = checkCertificateValidity(existingCertificate.certificate_issue_date, existingCertificate.certificate_expiry_date);
       const issueDate = existingCertificate.certificate_issue_date
         ? new Date(existingCertificate.certificate_issue_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
         : 'N/A';
