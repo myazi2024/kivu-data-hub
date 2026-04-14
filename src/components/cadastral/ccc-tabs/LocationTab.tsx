@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import BlockResetButton from '../BlockResetButton';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CheckCircle2, Info, ChevronRight, ChevronLeft, Ruler } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { CheckCircle2, Info, ChevronRight, ChevronLeft, Ruler, Volume2, Mic, MicOff, AlertTriangle } from 'lucide-react';
+import { MdLocationOn } from 'react-icons/md';
+import { CadastralContributionData } from '@/hooks/useCadastralContribution';
+import { getAllProvinces } from '@/lib/geographicData';
+import { ParcelMapPreview } from '../ParcelMapPreview';
+import SuggestivePicklist from '../SuggestivePicklist';
+import SectionHelpPopover from '../SectionHelpPopover';
+import { SOUND_LABELS } from '@/constants/expertiseLabels';
 import { MdLocationOn } from 'react-icons/md';
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
 import { getAllProvinces } from '@/lib/geographicData';
@@ -39,6 +49,11 @@ interface LocationTabProps {
   onServitudeChange: (s: { hasServitude: boolean; width?: number }) => void;
   buildingShapes: any[];
   onBuildingShapesChange: (shapes: any[]) => void;
+  // Sound environment
+  soundEnvironment: string;
+  onSoundEnvironmentChange: (v: string) => void;
+  nearbySoundSources: string;
+  onNearbySoundSourcesChange: (v: string) => void;
   // Construction linking
   constructionMode?: 'unique' | 'multiple';
   additionalConstructions?: any[];
@@ -55,6 +70,7 @@ const LocationTab: React.FC<LocationTabProps> = ({
   gpsCoordinates, onCoordinatesUpdate, mapConfig, parcelNumber,
   roadSides, onRoadSidesChange, parcelSides, onParcelSidesUpdate,
   servitude, onServitudeChange, buildingShapes, onBuildingShapesChange,
+  soundEnvironment, onSoundEnvironmentChange, nearbySoundSources, onNearbySoundSourcesChange,
   constructionMode = 'unique', additionalConstructions = [],
   handleTabChange, handleNextTab, resetLocationBlock
 }) => {

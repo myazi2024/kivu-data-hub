@@ -995,6 +995,8 @@ export const useCCCFormState = ({
         hasDispute: hasDispute ?? undefined,
         disputeData: disputeFormData || undefined,
         buildingShapes: buildingShapes.length > 0 ? buildingShapes : undefined,
+        soundEnvironment: soundEnvironment || undefined,
+        nearbySoundSources: nearbySoundSources || undefined,
       };
 
       const result = editingContributionId ? await updateContribution(editingContributionId, dataToSubmit) : await submitContribution(dataToSubmit);
@@ -1551,6 +1553,7 @@ export const useCCCFormState = ({
     gpsCoordinates, setGpsCoordinates, parcelSides, setParcelSides,
     roadSides, setRoadSides, servitude, setServitude,
     buildingShapes, setBuildingShapes,
+    soundEnvironment, setSoundEnvironment, nearbySoundSources, setNearbySoundSources,
     // Obligations
     obligationType, setObligationType,
     taxRecords, updateTaxRecord, addTaxRecord, removeTaxRecord, handleTaxFileChange, removeTaxFile,
