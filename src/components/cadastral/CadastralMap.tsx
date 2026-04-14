@@ -117,16 +117,20 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
           }).addTo(map);
 
           // Ajuster la vue pour inclure tout le polygone avec un zoom minimum
-          map.fitBounds(polygon.getBounds(), {
-            padding: [20, 20],
-            maxZoom: 18 // Zoom maximum pour assurer une bonne visibilité
-          });
+          if (map._container && map._loaded) {
+            map.fitBounds(polygon.getBounds(), {
+              padding: [20, 20],
+              maxZoom: 18
+            });
+          }
         } else if (coordinates.length > 0) {
-          // Si pas de polygone mais des coordonnées, centrer sur la première
-          map.setView([coordinates[0].lat, coordinates[0].lng], 18);
+          if (map._container && map._loaded) {
+            map.setView([coordinates[0].lat, coordinates[0].lng], 18);
+          }
         } else {
-          // Centrer sur le centre fourni
-          map.setView([center.lat, center.lng], 18);
+          if (map._container && map._loaded) {
+            map.setView([center.lat, center.lng], 18);
+          }
         }
       } catch (error) {
         console.error('Erreur lors de la mise à jour de la carte:', error);

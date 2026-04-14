@@ -37,6 +37,8 @@ interface ReviewTabProps {
   buildingShapes: any[];
   disputeFormData: any;
   mapConfig: any;
+  soundEnvironment: string;
+  nearbySoundSources: string;
   // CCC value
   calculateCCCValue: { value: number };
   // Validation
@@ -325,17 +327,17 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
             )}
 
             {/* Environnement sonore */}
-            {(formData.soundEnvironment || formData.nearbySoundSources) && (
+            {(soundEnvironment || nearbySoundSources) && (
               <div className="pt-1 border-t border-border/50">
                 <div className="font-medium">🔊 Environnement sonore:</div>
-                {formData.soundEnvironment && (
+                {soundEnvironment && (
                   <div className="ml-2 text-muted-foreground">
-                  Niveau: {SOUND_LABELS[formData.soundEnvironment] || formData.soundEnvironment}
+                  Niveau: {SOUND_LABELS[soundEnvironment] || soundEnvironment}
                   </div>
                 )}
-                {formData.nearbySoundSources && (
+                {nearbySoundSources && (
                   <div className="ml-2 text-muted-foreground">
-                    Sources: {formData.nearbySoundSources}
+                    Sources: {nearbySoundSources}
                   </div>
                 )}
               </div>
