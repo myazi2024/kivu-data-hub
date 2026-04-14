@@ -528,6 +528,7 @@ export type Database = {
           lease_type: string | null
           lease_years: number | null
           mortgage_history: Json | null
+          nearby_noise_sources: string | null
           original_parcel_id: string | null
           owner_document_url: string | null
           ownership_history: Json | null
@@ -549,6 +550,7 @@ export type Database = {
           reviewed_by: string | null
           road_sides: Json | null
           servitude_data: Json | null
+          sound_environment: string | null
           standing: string | null
           status: string
           tax_history: Json | null
@@ -604,6 +606,7 @@ export type Database = {
           lease_type?: string | null
           lease_years?: number | null
           mortgage_history?: Json | null
+          nearby_noise_sources?: string | null
           original_parcel_id?: string | null
           owner_document_url?: string | null
           ownership_history?: Json | null
@@ -625,6 +628,7 @@ export type Database = {
           reviewed_by?: string | null
           road_sides?: Json | null
           servitude_data?: Json | null
+          sound_environment?: string | null
           standing?: string | null
           status?: string
           tax_history?: Json | null
@@ -680,6 +684,7 @@ export type Database = {
           lease_type?: string | null
           lease_years?: number | null
           mortgage_history?: Json | null
+          nearby_noise_sources?: string | null
           original_parcel_id?: string | null
           owner_document_url?: string | null
           ownership_history?: Json | null
@@ -701,6 +706,7 @@ export type Database = {
           reviewed_by?: string | null
           road_sides?: Json | null
           servitude_data?: Json | null
+          sound_environment?: string | null
           standing?: string | null
           status?: string
           tax_history?: Json | null
@@ -1157,6 +1163,7 @@ export type Database = {
           lease_years: number | null
           location: string
           longitude: number | null
+          nearby_noise_sources: string | null
           nombre_bornes: number | null
           owner_document_url: string | null
           parcel_number: string
@@ -1169,6 +1176,7 @@ export type Database = {
           quartier: string | null
           road_sides: Json | null
           servitude_data: Json | null
+          sound_environment: string | null
           standing: string | null
           surface_calculee_bornes: number | null
           territoire: string | null
@@ -1212,6 +1220,7 @@ export type Database = {
           lease_years?: number | null
           location: string
           longitude?: number | null
+          nearby_noise_sources?: string | null
           nombre_bornes?: number | null
           owner_document_url?: string | null
           parcel_number: string
@@ -1224,6 +1233,7 @@ export type Database = {
           quartier?: string | null
           road_sides?: Json | null
           servitude_data?: Json | null
+          sound_environment?: string | null
           standing?: string | null
           surface_calculee_bornes?: number | null
           territoire?: string | null
@@ -1267,6 +1277,7 @@ export type Database = {
           lease_years?: number | null
           location?: string
           longitude?: number | null
+          nearby_noise_sources?: string | null
           nombre_bornes?: number | null
           owner_document_url?: string | null
           parcel_number?: string
@@ -1279,6 +1290,7 @@ export type Database = {
           quartier?: string | null
           road_sides?: Json | null
           servitude_data?: Json | null
+          sound_environment?: string | null
           standing?: string | null
           surface_calculee_bornes?: number | null
           territoire?: string | null
