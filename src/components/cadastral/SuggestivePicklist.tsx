@@ -164,6 +164,7 @@ const SuggestivePicklist: React.FC<SuggestivePicklistProps> = ({
 
   const dropdownContent = showDropdown && (hasDropdownContent || loading) && dropdownPos ? createPortal(
     <div
+      ref={dropdownRef}
       className="bg-popover border border-border rounded-xl shadow-lg max-h-[180px] overflow-y-auto"
       style={{
         position: 'fixed',
