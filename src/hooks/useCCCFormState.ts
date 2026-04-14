@@ -739,6 +739,10 @@ export const useCCCFormState = ({
     if (!soundEnvironment || soundEnvironment.trim() === '') {
       missing.push({ field: 'soundEnvironment', label: 'Environnement sonore', tab: 'location' });
     }
+    // Noise sources mandatory when not very quiet
+    if (soundEnvironment && soundEnvironment !== 'tres_calme' && (!nearbySoundSources || nearbySoundSources.trim() === '')) {
+      missing.push({ field: 'nearbySoundSources', label: 'Sources de bruit à proximité', tab: 'location' });
+    }
 
     // BUILDING PERMITS
     if (!isTerrainNu && !isAppartement && formData.constructionType !== 'Terrain nu' && permitMode === 'existing') {
@@ -764,7 +768,7 @@ export const useCCCFormState = ({
     }
 
     return missing;
-  }, [formData, customTitleName, currentOwners, previousOwners, sectionType, permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, hasDispute, mortgageRecords, ownerDocFile, titleDocFiles, editingContributionId, roadSides, servitude, buildingShapes, constructionMode, additionalConstructions, soundEnvironment]);
+  }, [formData, customTitleName, currentOwners, previousOwners, sectionType, permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, hasDispute, mortgageRecords, ownerDocFile, titleDocFiles, editingContributionId, roadSides, servitude, buildingShapes, constructionMode, additionalConstructions, soundEnvironment, nearbySoundSources]);
 
   const getMissingFieldsForTab = useCallback((tab: string) => getMissingFields().filter(f => f.tab === tab), [getMissingFields]);
   const isTabComplete = useCallback((tab: string) => getMissingFieldsForTab(tab).length === 0, [getMissingFieldsForTab]);
@@ -1503,6 +1507,8 @@ export const useCCCFormState = ({
     setRoadSides([]);
     setServitude({ hasServitude: false });
     setBuildingShapes([]);
+    setSoundEnvironment('');
+    setNearbySoundSources('');
     markDirty();
   }, []);
 

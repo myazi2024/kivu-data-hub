@@ -144,10 +144,15 @@ const SuggestivePicklist: React.FC<SuggestivePicklistProps> = ({
 
   const hasDropdownContent = filteredOptions.length > 0 || showAddCustom;
 
-  // Close dropdown on outside click
+  // Close dropdown on outside click (portal-aware)
+  const dropdownRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        containerRef.current && !containerRef.current.contains(target) &&
+        (!dropdownRef.current || !dropdownRef.current.contains(target))
+      ) {
         setShowDropdown(false);
       }
     };
@@ -159,6 +164,7 @@ const SuggestivePicklist: React.FC<SuggestivePicklistProps> = ({
 
   const dropdownContent = showDropdown && (hasDropdownContent || loading) && dropdownPos ? createPortal(
     <div
+      ref={dropdownRef}
       className="bg-popover border border-border rounded-xl shadow-lg max-h-[180px] overflow-y-auto"
       style={{
         position: 'fixed',

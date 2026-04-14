@@ -10,6 +10,7 @@ import { AdditionalConstruction } from '../AdditionalConstructionBlock';
 import { PreviousOwner } from './HistoryTab';
 import { TaxRecord, MortgageRecord } from './ObligationsTab';
 import { DISPUTE_NATURES_MAP, DECLARANT_QUALITIES_MAP, RESOLUTION_LEVELS } from '@/utils/disputeSharedTypes';
+import { SOUND_LABELS } from '@/constants/expertiseLabels';
 import ParcelSketchSVG from '../ParcelSketchSVG';
 
 interface ReviewTabProps {
@@ -329,9 +330,7 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
                 <div className="font-medium">🔊 Environnement sonore:</div>
                 {formData.soundEnvironment && (
                   <div className="ml-2 text-muted-foreground">
-                    Niveau: {
-                      { 'tres_calme': 'Très calme', 'calme': 'Calme', 'modere': 'Modéré', 'bruyant': 'Bruyant', 'tres_bruyant': 'Très bruyant' }[formData.soundEnvironment] || formData.soundEnvironment
-                    }
+                  Niveau: {SOUND_LABELS[formData.soundEnvironment] || formData.soundEnvironment}
                   </div>
                 )}
                 {formData.nearbySoundSources && (

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import BlockResetButton from '../BlockResetButton';
 import { Input } from '@/components/ui/input';
@@ -605,11 +605,11 @@ const ApartmentMeasurements: React.FC<ApartmentMeasurementsProps> = ({ formData,
 /* ─── Sound Environment Block ───────────────────────────────── */
 
 const SOUND_ENVIRONMENT_OPTIONS = [
-  { value: 'tres_calme', label: (SOUND_LABELS as Record<string, string>).tres_calme + ' (< 40 dB)', minDb: 0, maxDb: 40 },
-  { value: 'calme', label: (SOUND_LABELS as Record<string, string>).calme + ' (40-55 dB)', minDb: 40, maxDb: 55 },
-  { value: 'modere', label: (SOUND_LABELS as Record<string, string>).modere + ' (55-70 dB)', minDb: 55, maxDb: 70 },
-  { value: 'bruyant', label: (SOUND_LABELS as Record<string, string>).bruyant + ' (70-85 dB)', minDb: 70, maxDb: 85 },
-  { value: 'tres_bruyant', label: (SOUND_LABELS as Record<string, string>).tres_bruyant + ' (> 85 dB)', minDb: 85, maxDb: 200 },
+  { value: 'tres_calme', label: SOUND_LABELS.tres_calme + ' (< 40 dB)', minDb: 0, maxDb: 40 },
+  { value: 'calme', label: SOUND_LABELS.calme + ' (40-55 dB)', minDb: 40, maxDb: 55 },
+  { value: 'modere', label: SOUND_LABELS.modere + ' (55-70 dB)', minDb: 55, maxDb: 70 },
+  { value: 'bruyant', label: SOUND_LABELS.bruyant + ' (70-85 dB)', minDb: 70, maxDb: 85 },
+  { value: 'tres_bruyant', label: SOUND_LABELS.tres_bruyant + ' (> 85 dB)', minDb: 85, maxDb: 200 },
 ];
 
 interface SoundEnvironmentBlockProps {
@@ -632,6 +632,15 @@ const SoundEnvironmentBlock: React.FC<SoundEnvironmentBlockProps> = ({
   const streamRef = useRef<MediaStream | null>(null);
   const animFrameRef = useRef<number | null>(null);
 
+  // Cleanup microphone on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      streamRef.current?.getTracks().forEach(t => t.stop());
+      audioCtxRef.current?.close();
+    };
+  }, []);
+
   const getSoundLevel = useCallback((db: number): string => {
     const match = SOUND_ENVIRONMENT_OPTIONS.find(o => db >= o.minDb && db < o.maxDb);
     return match?.value || 'modere';
@@ -652,9 +661,15 @@ const SoundEnvironmentBlock: React.FC<SoundEnvironmentBlockProps> = ({
       const buf = new Uint8Array(analyser.frequencyBinCount);
       const measure = () => {
         if (!analyserRef.current) return;
-        analyserRef.current.getByteFrequencyData(buf);
-        const avg = buf.reduce((s, v) => s + v, 0) / buf.length;
-        const db = Math.round((avg / 255) * 100);
+        analyserRef.current.getByteTimeDomainData(buf);
+        // Calculate RMS for proper logarithmic dB scale
+        let sumSquares = 0;
+        for (let i = 0; i < buf.length; i++) {
+          const normalized = (buf[i] - 128) / 128;
+          sumSquares += normalized * normalized;
+        }
+        const rms = Math.sqrt(sumSquares / buf.length);
+        const db = Math.round(Math.max(0, Math.min(100, 20 * Math.log10(rms + 1e-10) + 100)));
         setMeasuredDb(db);
         onSoundEnvironmentChange(getSoundLevel(db));
         animFrameRef.current = requestAnimationFrame(measure);
