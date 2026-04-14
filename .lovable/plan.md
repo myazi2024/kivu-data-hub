@@ -1,36 +1,27 @@
 
 
-# Finalisation du deplacement "Environnement sonore" — Fichiers restants
+# Correction zoom construction + drag sommets construction
 
-5 fichiers restent a aligner apres les modifications deja effectuees.
+## Probleme 1 : Zoom se reinitialise a chaque cote trace
 
-## Modifications
+**Cause** : Ligne 811, `shouldAutoCenter` ne prend pas en compte `isDrawingBuilding`. Quand l'utilisateur ajoute un sommet, `buildingVertices` change, l'effet `updateMap` se relance, et `shouldAutoCenter` est `true` ce qui appelle `fitBounds` (ligne 1013-1014), reinitialisant le zoom.
 
-### 1. AdminCCCContributions.tsx — Propager sound_environment a l'approbation
-Ajouter `sound_environment` et `nearby_noise_sources` dans les deux blocs de propagation vers `cadastral_parcels` :
-- Bloc **update** (ligne ~360, avant `province`) : ajouter `sound_environment: updatedContribution.sound_environment, nearby_noise_sources: updatedContribution.nearby_noise_sources`
-- Bloc **insert** (ligne ~451, avant la fermeture) : idem
+**Correction** : Ajouter `!isDrawingBuilding` a la condition `shouldAutoCenter` :
+```
+const shouldAutoCenter = !isDrawingMode && !isDrawingBuilding && !isGroupDragMode && !selectedBorne && !isMarkerMoveMode;
+```
 
-### 2. ReviewTab.tsx — Afficher le son dans le recapitulatif
-Apres le bloc "Limites et entrees" (ligne ~324), ajouter une section conditionnelle affichant `formData.soundEnvironment` et `formData.nearbySoundSources` avec les labels traduits (reutiliser les constantes SOUND_ENVIRONMENT_OPTIONS de LocationTab).
+## Probleme 2 : Pas de drag des sommets de construction validee
 
-### 3. ExpertiseBlock.tsx — Retirer le graphique sonore
-Le bloc lit `data.expertiseRequests` qui ne contient plus `sound_environment`. Supprimer :
-- Le `useMemo` `bySoundEnv` (lignes 40-43)
-- L'entree `sound-env` dans le tableau de definitions de graphiques (lignes 171-172)
-- L'import `Volume2` s'il n'est plus utilise
+Actuellement, les sommets de construction validee supportent uniquement le double-clic (edition GPS manuelle). Il n'y a aucune logique d'appui prolonge + drag pour les deplacer.
 
-### 4. testDataGenerators.ts — Deplacer sound_environment
-- **generateContributions** (ligne ~283) : ajouter `sound_environment: pick(SOUND_ENVS, idx)` et `nearby_noise_sources` au record, avec la constante `SOUND_ENVS` definie localement
-- **generateExpertiseRequests** (ligne ~648) : retirer `sound_environment: pick(SOUND_ENVS, i)` et la constante `SOUND_ENVS`
+**Implementation** : Sur chaque `vertexMarker` de construction validee (lignes 1048-1062), ajouter :
+- Un handler `mousedown`/`touchstart` qui demarre un timer d'appui prolonge (450ms)
+- Si le timer expire : activer un mode drag (desactiver le dragging de la carte, changer le curseur)
+- Sur `mousemove`/`touchmove` : deplacer le sommet en temps reel (mettre a jour les coordonnees GPS du vertex dans `buildingShapes`)
+- Sur `mouseup`/`touchend` : finaliser la position, recalculer surface/perimetre/dimensions, reactiver le dragging de la carte
+- Reutiliser le pattern existant du long-press des bornes de parcelle (lignes 845-863) comme reference
 
-### 5. crossVariables.ts — Verification
-Verifier si des croisements referent a `sound-env` dans le bloc expertise et les retirer ou les deplacer vers un bloc cadastral si necessaire.
-
-## Fichiers impactes
-- `src/components/admin/AdminCCCContributions.tsx`
-- `src/components/cadastral/ccc-tabs/ReviewTab.tsx`
-- `src/components/visualizations/blocks/ExpertiseBlock.tsx`
-- `src/components/admin/test-mode/testDataGenerators.ts`
-- `src/config/crossVariables.ts` (verification)
+### Fichiers modifies
+- `src/components/cadastral/ParcelMapPreview.tsx` : 2 modifications (shouldAutoCenter + drag vertex construction)
 
