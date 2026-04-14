@@ -227,6 +227,16 @@ const LocationTab: React.FC<LocationTabProps> = ({
         </div>
       )}
 
+      {/* Sound environment block — after map/limits */}
+      {sectionType && (
+        <SoundEnvironmentBlock
+          soundEnvironment={soundEnvironment}
+          onSoundEnvironmentChange={onSoundEnvironmentChange}
+          nearbySoundSources={nearbySoundSources}
+          onNearbySoundSourcesChange={onNearbySoundSourcesChange}
+        />
+      )}
+
       {/* Apartment measurements */}
       {sectionType && formData.propertyCategory === 'Appartement' && (
         <ApartmentMeasurements formData={formData} handleInputChange={handleInputChange} />
