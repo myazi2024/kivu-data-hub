@@ -3,7 +3,7 @@ import { AnalyticsFilters } from '../filters/AnalyticsFilters';
 import { countBy, trendByMonth, surfaceDistribution, yearDecadeDistribution } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { FileText, Users, Building, TrendingUp, Ruler, Clock, ShieldCheck, Maximize, ArrowUpFromLine, Volume2 } from 'lucide-react';
+import { FileText, Users, Building, TrendingUp, Ruler, Clock, ShieldCheck, Maximize, ArrowUpFromLine, Volume2, Ear } from 'lucide-react';
 import { SOUND_LABELS } from '@/constants/expertiseLabels';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, ColorMappedPieCard, FilterLabelContext } from '../shared/ChartCard';
@@ -126,6 +126,20 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
   }, [filteredContribs]);
 
+  const noiseSourcesData = useMemo(() => {
+    const map = new Map<string, number>();
+    filteredContribs.forEach(c => {
+      const src = c.nearby_noise_sources;
+      if (src && typeof src === 'string') {
+        src.split(',').forEach(s => {
+          const trimmed = s.trim();
+          if (trimmed) map.set(trimmed, (map.get(trimmed) || 0) + 1);
+        });
+      }
+    });
+    return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  }, [filteredContribs]);
+
   const genderData = useMemo(() => {
     const map = new Map<string, number>();
     filteredContribs.forEach(c => {
@@ -205,9 +219,11 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
       insight={generateInsight(buildingHeightData, 'bar-v', 'les hauteurs de construction')} crossVariables={cx('building-height')} rawRecords={filteredContribs} groupField="building_shapes" /> },
     { key: 'sound-env', el: () => <ChartCard title={ct('sound-env', 'Environnement sonore')} icon={Volume2} data={soundEnvData} type={ty('sound-env', 'donut')} colorIndex={10} hidden={soundEnvData.length === 0}
       insight={generateInsight(soundEnvData, 'donut', "l'environnement sonore")} crossVariables={cx('sound-env')} rawRecords={filteredContribs} groupField="sound_environment" /> },
+    { key: 'noise-sources', el: () => <ChartCard title={ct('noise-sources', 'Sources de bruit')} icon={Ear} data={noiseSourcesData} type={ty('noise-sources', 'bar-v')} colorIndex={11} hidden={noiseSourcesData.length === 0}
+      insight={generateInsight(noiseSourcesData, 'bar-v', 'les sources de bruit')} crossVariables={cx('noise-sources')} rawRecords={filteredContribs} groupField="nearby_noise_sources" /> },
     { key: 'evolution', el: () => <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type={ty('evolution', 'area')} colorIndex={0} colSpan={2}
       insight={generateInsight(trend, 'area', 'les parcelles')} /> },
-  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filteredParcels, filteredContribs, normalizedParcels, charts, permitTypeData, buildingSizeData, buildingHeightData, soundEnvData, genderData, genderInsight, subdividedData, trend, v, ct, cx, ty, ord]);
+  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filteredParcels, filteredContribs, normalizedParcels, charts, permitTypeData, buildingSizeData, buildingHeightData, soundEnvData, noiseSourcesData, genderData, genderInsight, subdividedData, trend, v, ct, cx, ty, ord]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
