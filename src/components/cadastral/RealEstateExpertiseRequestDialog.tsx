@@ -2820,6 +2820,15 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                       <span className="text-orange-600 text-xs">⚠️ Recommandé</span>
                     )}
                   </div>
+                  {hasBuildingPermit === 'yes' && buildingPermitFile && (
+                    <div className="flex justify-between text-xs py-1.5">
+                      <span className="text-muted-foreground">Document permis</span>
+                      <Badge variant="outline" className="text-[10px] text-green-600 border-green-300">
+                        <FileCheck className="h-3 w-3 mr-1" />
+                        {buildingPermitFile.name}
+                      </Badge>
+                    </div>
+                  )}
                 </div>
                 {additionalNotes && (
                   <div className="pt-1.5 border-t border-border/30">
