@@ -3,7 +3,8 @@ import { AnalyticsFilters } from '../filters/AnalyticsFilters';
 import { countBy, trendByMonth, surfaceDistribution, yearDecadeDistribution } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { FileText, Users, Building, TrendingUp, Ruler, Clock, ShieldCheck, Maximize, ArrowUpFromLine } from 'lucide-react';
+import { FileText, Users, Building, TrendingUp, Ruler, Clock, ShieldCheck, Maximize, ArrowUpFromLine, Volume2 } from 'lucide-react';
+import { SOUND_LABELS } from '@/constants/expertiseLabels';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, ColorMappedPieCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
@@ -113,6 +114,18 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     return counts.filter(c => c.value > 0).map(({ name, value }) => ({ name, value }));
   }, [filteredContribs]);
 
+  const soundEnvData = useMemo(() => {
+    const map = new Map<string, number>();
+    filteredContribs.forEach(c => {
+      const env = c.sound_environment;
+      if (env) {
+        const label = SOUND_LABELS[env] || env;
+        map.set(label, (map.get(label) || 0) + 1);
+      }
+    });
+    return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  }, [filteredContribs]);
+
   const genderData = useMemo(() => {
     const map = new Map<string, number>();
     filteredContribs.forEach(c => {
@@ -190,9 +203,11 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
       insight={generateInsight(buildingSizeData, 'bar-v', 'les tailles de construction')} crossVariables={cx('building-size')} rawRecords={filteredContribs} groupField="building_shapes" /> },
     { key: 'building-height', el: () => <ChartCard title={ct('building-height', 'Hauteur construction')} icon={ArrowUpFromLine} data={buildingHeightData} type={ty('building-height', 'bar-v')} colorIndex={5} hidden={buildingHeightData.length === 0}
       insight={generateInsight(buildingHeightData, 'bar-v', 'les hauteurs de construction')} crossVariables={cx('building-height')} rawRecords={filteredContribs} groupField="building_shapes" /> },
+    { key: 'sound-env', el: () => <ChartCard title={ct('sound-env', 'Environnement sonore')} icon={Volume2} data={soundEnvData} type={ty('sound-env', 'donut')} colorIndex={10} hidden={soundEnvData.length === 0}
+      insight={generateInsight(soundEnvData, 'donut', "l'environnement sonore")} crossVariables={cx('sound-env')} rawRecords={filteredContribs} groupField="sound_environment" /> },
     { key: 'evolution', el: () => <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type={ty('evolution', 'area')} colorIndex={0} colSpan={2}
       insight={generateInsight(trend, 'area', 'les parcelles')} /> },
-  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filteredParcels, filteredContribs, normalizedParcels, charts, permitTypeData, buildingSizeData, buildingHeightData, genderData, genderInsight, subdividedData, trend, v, ct, cx, ty, ord]);
+  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filteredParcels, filteredContribs, normalizedParcels, charts, permitTypeData, buildingSizeData, buildingHeightData, soundEnvData, genderData, genderInsight, subdividedData, trend, v, ct, cx, ty, ord]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
