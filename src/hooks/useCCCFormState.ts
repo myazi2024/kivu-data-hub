@@ -1503,6 +1503,8 @@ export const useCCCFormState = ({
     setRoadSides([]);
     setServitude({ hasServitude: false });
     setBuildingShapes([]);
+    setSoundEnvironment('');
+    setNearbySoundSources('');
     markDirty();
   }, []);
 
