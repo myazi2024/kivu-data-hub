@@ -730,6 +730,16 @@ export const useCCCFormState = ({
       }
     }
 
+    // PERMIT MODE MANDATORY (must answer OUI or NON)
+    if (!isTerrainNu && !isAppartement && formData.constructionType !== 'Terrain nu' && permitMode === null) {
+      missing.push({ field: 'permitMode', label: "Avez-vous obtenu une autorisation de bâtir ?", tab: 'general' });
+    }
+
+    // SOUND ENVIRONMENT MANDATORY
+    if (!soundEnvironment || soundEnvironment.trim() === '') {
+      missing.push({ field: 'soundEnvironment', label: 'Environnement sonore', tab: 'location' });
+    }
+
     // BUILDING PERMITS
     if (!isTerrainNu && !isAppartement && formData.constructionType !== 'Terrain nu' && permitMode === 'existing') {
       const hasValidExistingPermit = buildingPermits.some(permit => permit.permitNumber && permit.permitNumber.trim() !== '' && permit.issueDate && permit.issueDate.trim() !== '');
