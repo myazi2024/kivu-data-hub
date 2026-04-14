@@ -323,6 +323,25 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
               </div>
             )}
 
+            {/* Environnement sonore */}
+            {(formData.soundEnvironment || formData.nearbySoundSources) && (
+              <div className="pt-1 border-t border-border/50">
+                <div className="font-medium">🔊 Environnement sonore:</div>
+                {formData.soundEnvironment && (
+                  <div className="ml-2 text-muted-foreground">
+                    Niveau: {
+                      { 'tres_calme': 'Très calme', 'calme': 'Calme', 'modere': 'Modéré', 'bruyant': 'Bruyant', 'tres_bruyant': 'Très bruyant' }[formData.soundEnvironment] || formData.soundEnvironment
+                    }
+                  </div>
+                )}
+                {formData.nearbySoundSources && (
+                  <div className="ml-2 text-muted-foreground">
+                    Sources: {formData.nearbySoundSources}
+                  </div>
+                )}
+              </div>
+            )}
+
             {(!formData.province && !formData.areaSqm) && <div className="text-muted-foreground italic">Aucune localisation renseignée</div>}
           </div>
         </CardContent>

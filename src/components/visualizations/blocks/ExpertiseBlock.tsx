@@ -3,7 +3,7 @@ import { AnalyticsFilters } from '../filters/AnalyticsFilters';
 import { countBy, trendByMonth, avgProcessingDays, numericDistribution, yearDecadeDistribution, avgField } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { Search, TrendingUp, DollarSign, Building, Zap, ShieldAlert, MapPin, Ruler, Clock, Trees, Volume2, Layers } from 'lucide-react';
+import { Search, TrendingUp, DollarSign, Building, Zap, ShieldAlert, MapPin, Ruler, Clock, Trees, Layers } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
@@ -37,10 +37,6 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
     return raw.map(d => ({ ...d, name: ROOF_LABELS[d.name] || d.name }));
   }, [filtered]);
 
-  const bySoundEnv = useMemo(() => {
-    const raw = countBy(filtered.filter(r => r.sound_environment), 'sound_environment');
-    return raw.map(d => ({ ...d, name: SOUND_LABELS[d.name] || d.name }));
-  }, [filtered]);
 
   const byBuildingPosition = useMemo(() => {
     const raw = countBy(filtered.filter(r => r.building_position), 'building_position');
@@ -168,8 +164,6 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
       insight={generateInsight(byWallMaterial, 'bar-h', 'les matériaux de murs')} crossVariables={cx('wall-material')} rawRecords={filtered} groupField="wall_material" /> },
     { key: 'roof-material', el: () => <ChartCard title={ct('roof-material', 'Matériau toiture')} icon={Building} data={byRoofMaterial} type={ty('roof-material', 'pie')} colorIndex={1} hidden={byRoofMaterial.length === 0}
       insight={generateInsight(byRoofMaterial, 'pie', 'les matériaux de toiture')} crossVariables={cx('roof-material')} rawRecords={filtered} groupField="roof_material" /> },
-    { key: 'sound-env', el: () => <ChartCard title={ct('sound-env', 'Env. sonore')} icon={Volume2} data={bySoundEnv} type={ty('sound-env', 'donut')} colorIndex={6} hidden={bySoundEnv.length === 0}
-      insight={generateInsight(bySoundEnv, 'donut', 'l\'environnement sonore')} crossVariables={cx('sound-env')} rawRecords={filtered} groupField="sound_environment" /> },
     { key: 'building-position', el: () => <ChartCard title={ct('building-position', 'Position bâtiment')} icon={MapPin} data={byBuildingPosition} type={ty('building-position', 'pie')} colorIndex={8} hidden={byBuildingPosition.length === 0}
       insight={generateInsight(byBuildingPosition, 'pie', 'les positions sur parcelle')} crossVariables={cx('building-position')} rawRecords={filtered} groupField="building_position" /> },
     { key: 'road-access', el: () => <ChartCard title={ct('road-access', 'Accès routier')} icon={MapPin} data={byRoadAccess} type={ty('road-access', 'pie')} colorIndex={0} hidden={byRoadAccess.length === 0}

@@ -373,6 +373,8 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
         mortgageStatus: 'Active',
       }] as unknown as Json : [] as unknown as Json,
       is_title_in_current_owner_name: idx % 3 !== 0,
+      sound_environment: pick(['tres_calme', 'calme', 'modere', 'bruyant', 'tres_bruyant'], idx),
+      nearby_noise_sources: idx % 3 === 0 ? 'Route principale, Marché' : idx % 3 === 1 ? 'Église' : null,
       created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
     };
   });
@@ -615,7 +617,7 @@ export const generateExpertiseRequests = async (userId: string, parcels: Array<{
   const PROPERTY_CONDITIONS = ['neuf', 'bon', 'moyen', 'mauvais', 'a_renover'];
   const WALL_MATERIALS = ['beton', 'briques_cuites', 'briques_adobe', 'parpaings', 'bois', 'tole', 'mixte'];
   const ROOF_MATERIALS = ['tole_bac', 'tuiles', 'dalle_beton', 'ardoise', 'chaume', 'autre'];
-  const SOUND_ENVS = ['tres_calme', 'calme', 'modere', 'bruyant', 'tres_bruyant'];
+  
   const BUILDING_POSITIONS = ['premiere_position', 'deuxieme_position', 'fond_parcelle', 'dans_servitude', 'coin_parcelle'];
   const PAYMENT_STATUSES_EXP = ['pending', 'paid', 'paid', 'pending', 'paid'];
 
@@ -645,7 +647,7 @@ export const generateExpertiseRequests = async (userId: string, parcels: Array<{
       wall_material: pick(WALL_MATERIALS, i),
       roof_material: pick(ROOF_MATERIALS, i),
       floor_material: pick(['carrelage', 'ciment_lisse', 'parquet', 'marbre', 'terre_battue', 'autre'], i),
-      sound_environment: pick(SOUND_ENVS, i),
+      
       building_position: pick(BUILDING_POSITIONS, i),
       construction_year: i % 3 === 0 ? null : randInt(1995, 2023),
       number_of_floors: i % 3 === 0 ? 0 : randInt(1, 4),
