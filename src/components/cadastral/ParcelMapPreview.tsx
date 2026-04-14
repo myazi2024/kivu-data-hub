@@ -150,6 +150,13 @@ export const ParcelMapPreview = ({
   const selectedMarkerRef = useRef<any>(null);
   const longPressTimerRef = useRef<number | null>(null);
   const renderSeqRef = useRef(0);
+
+  // Refs pour le drag des sommets de construction
+  const bvDragActiveRef = useRef(false);
+  const bvDragShapeIdRef = useRef<string | null>(null);
+  const bvDragVertexIdxRef = useRef<number>(-1);
+  const bvDragMarkerRef = useRef<any>(null);
+  const bvDragHandlersRef = useRef<{ move: (e: any) => void; touchMove: (e: any) => void } | null>(null);
   
   // Ref pour appui prolongé sur les boutons de contrôle
   const controlButtonIntervalRef = useRef<number | null>(null);
@@ -796,14 +803,17 @@ export const ParcelMapPreview = ({
         });
         segmentLayersRef.current = [];
 
-        buildingLayersRef.current.forEach(layer => {
-          try {
-            if (layer && map.hasLayer(layer)) map.removeLayer(layer);
-          } catch (e) {
-            console.error('remove building layer error', e);
-          }
-        });
-        buildingLayersRef.current = [];
+        // Ne pas détruire les markers de construction pendant un drag actif
+        if (!bvDragActiveRef.current) {
+          buildingLayersRef.current.forEach(layer => {
+            try {
+              if (layer && map.hasLayer(layer)) map.removeLayer(layer);
+            } catch (e) {
+              console.error('remove building layer error', e);
+            }
+          });
+          buildingLayersRef.current = [];
+        }
 
         const latLngs: [number, number][] = [];
         const markerColor = mapConfig.markerColor || '#3b82f6';
@@ -1062,16 +1072,18 @@ export const ParcelMapPreview = ({
               setEditingBuildingVertexCoords({ lat: v.lat.toFixed(6), lng: v.lng.toFixed(6) });
             });
 
-            // Appui prolongé = mode drag du sommet de construction
+            // Appui prolongé = mode drag du sommet de construction (via refs)
             let bvLongPressTimer: number | null = null;
-            let bvDragging = false;
 
             const startBvLongPress = (e: any) => {
               if (isDrawingMode || isGroupDragMode || isDrawingBuilding) return;
               e.originalEvent?.preventDefault();
               if (bvLongPressTimer) window.clearTimeout(bvLongPressTimer);
               bvLongPressTimer = window.setTimeout(() => {
-                bvDragging = true;
+                bvDragActiveRef.current = true;
+                bvDragShapeIdRef.current = shape.id;
+                bvDragVertexIdxRef.current = vi;
+                bvDragMarkerRef.current = vertexMarker;
                 vertexMarker.setStyle({ color: '#facc15', fillColor: '#facc15', radius: 9 });
                 if (map) {
                   map.dragging.disable();
@@ -1087,29 +1099,51 @@ export const ParcelMapPreview = ({
             };
 
             const moveBvDrag = (e: any) => {
-              if (!bvDragging) return;
+              if (!bvDragActiveRef.current || bvDragMarkerRef.current !== vertexMarker) return;
               const latlng = e.latlng || (map && map.mouseEventToLatLng(e.originalEvent));
               if (!latlng) return;
               vertexMarker.setLatLng(latlng);
             };
 
-            const endBvDrag = (e: any) => {
+            const touchMoveBvDrag = (e: any) => {
+              if (!bvDragActiveRef.current || bvDragMarkerRef.current !== vertexMarker) return;
+              const touch = e.originalEvent?.touches?.[0];
+              if (touch && map) {
+                const latlng = map.containerPointToLatLng(L.point(touch.clientX - map.getContainer().getBoundingClientRect().left, touch.clientY - map.getContainer().getBoundingClientRect().top));
+                vertexMarker.setLatLng(latlng);
+              }
+            };
+
+            const endBvDrag = () => {
               cancelBvLongPress();
-              if (!bvDragging) return;
-              bvDragging = false;
+              if (!bvDragActiveRef.current || bvDragMarkerRef.current !== vertexMarker) return;
+              
+              const finalLatLng = vertexMarker.getLatLng();
+              const dragShapeId = bvDragShapeIdRef.current;
+              const dragVertexIdx = bvDragVertexIdxRef.current;
+
+              // Reset refs BEFORE triggering re-render
+              bvDragActiveRef.current = false;
+              bvDragShapeIdRef.current = null;
+              bvDragVertexIdxRef.current = -1;
+              bvDragMarkerRef.current = null;
+
               vertexMarker.setStyle({ color: '#dc2626', fillColor: '#ffffff', radius: 7 });
               if (map) {
                 map.dragging.enable();
                 map.scrollWheelZoom.enable();
                 map.touchZoom.enable();
                 map.getContainer().style.cursor = '';
+                // Clean up map-level listeners for this vertex
+                map.off('mousemove', moveBvDrag);
+                map.off('touchmove', touchMoveBvDrag);
               }
-              const finalLatLng = vertexMarker.getLatLng();
-              if (onBuildingShapesChange) {
+
+              if (onBuildingShapesChange && dragShapeId) {
                 const updated = buildingShapes.map(s => {
-                  if (s.id !== shape.id) return s;
+                  if (s.id !== dragShapeId) return s;
                   const newVerts = [...s.vertices];
-                  newVerts[vi] = { lat: finalLatLng.lat, lng: finalLatLng.lng };
+                  newVerts[dragVertexIdx] = { lat: finalLatLng.lat, lng: finalLatLng.lng };
                   const newSides: { name: string; length: string }[] = [];
                   let newPerimeter = 0;
                   for (let i = 0; i < newVerts.length; i++) {
@@ -1126,18 +1160,11 @@ export const ParcelMapPreview = ({
 
             vertexMarker.on('mousedown', startBvLongPress);
             vertexMarker.on('touchstart', startBvLongPress);
-            vertexMarker.on('mouseup', (e: any) => { cancelBvLongPress(); endBvDrag(e); });
-            vertexMarker.on('touchend', (e: any) => { cancelBvLongPress(); endBvDrag(e); });
-            vertexMarker.on('mouseout', (e: any) => { if (bvDragging) return; cancelBvLongPress(); });
+            vertexMarker.on('mouseup', () => { cancelBvLongPress(); endBvDrag(); });
+            vertexMarker.on('touchend', () => { cancelBvLongPress(); endBvDrag(); });
+            vertexMarker.on('mouseout', () => { if (bvDragActiveRef.current) return; cancelBvLongPress(); });
             map.on('mousemove', moveBvDrag);
-            map.on('touchmove', (e: any) => {
-              if (!bvDragging) return;
-              const touch = e.originalEvent?.touches?.[0];
-              if (touch && map) {
-                const latlng = map.containerPointToLatLng(L.point(touch.clientX - map.getContainer().getBoundingClientRect().left, touch.clientY - map.getContainer().getBoundingClientRect().top));
-                vertexMarker.setLatLng(latlng);
-              }
-            });
+            map.on('touchmove', touchMoveBvDrag);
 
             buildingLayersRef.current.push(vertexMarker);
           });
