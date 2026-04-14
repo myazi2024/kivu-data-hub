@@ -226,18 +226,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const [hasCommonAreas, setHasCommonAreas] = useState(false);
   const [monthlyCharges, setMonthlyCharges] = useState('');
 
-  // === ENVIRONNEMENT SONORE ===
-  const [soundEnvironment, setSoundEnvironment] = useState('calme');
-  const [nearbyNoiseSources, setNearbyNoiseSources] = useState<string[]>([]);
+   // === ENVIRONNEMENT SONORE (removed — now in CCC form) ===
   const [hasDoubleGlazing, setHasDoubleGlazing] = useState(false);
-  const [isOnSite, setIsOnSite] = useState<boolean | null>(null);
-  const [isRecordingSound, setIsRecordingSound] = useState(false);
-  const [measuredDecibels, setMeasuredDecibels] = useState<number | null>(null);
-  const [microphoneError, setMicrophoneError] = useState<string | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
 
   // === ÉQUIPEMENTS ===
   const [hasWaterSupply, setHasWaterSupply] = useState(false);
@@ -787,8 +777,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       building_position: buildingPosition || undefined,
       facade_orientation: facadeOrientation || undefined,
       is_corner_plot: isCornerPlot,
-      sound_environment: soundEnvironment || undefined,
-      nearby_noise_sources: nearbyNoiseSources.length > 0 ? nearbyNoiseSources.join(', ') : undefined,
+      // sound_environment removed — now collected in CCC form
       has_pool: hasPool,
       has_air_conditioning: hasAirConditioning,
       has_solar_panels: hasSolarPanels,
@@ -1049,13 +1038,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setHasCommonAreas(false);
     setMonthlyCharges('');
 
-    // Sound
-    setSoundEnvironment('calme');
-    setNearbyNoiseSources([]);
+    // Sound (removed — now in CCC)
     setHasDoubleGlazing(false);
-    setIsOnSite(null);
-    setMeasuredDecibels(null);
-    setMicrophoneError(null);
 
     // Equipment
     setHasWaterSupply(false);

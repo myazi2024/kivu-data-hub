@@ -147,7 +147,7 @@ export async function generateExpertiseCertificatePDF(data: ExpertiseCertificate
   if (ext.window_type) addRow('Menuiserie:', WINDOW_LABELS[ext.window_type] || ext.window_type);
   if (ext.facade_orientation) addRow('Orientation:', FACADE_ORIENTATION_LABELS[ext.facade_orientation] || ext.facade_orientation);
   if (ext.building_position) addRow('Position:', BUILDING_POSITION_LABELS[ext.building_position] || ext.building_position);
-  if (ext.sound_environment) addRow('Env. sonore:', SOUND_LABELS[ext.sound_environment] || ext.sound_environment);
+  // sound_environment removed — now in cadastral_parcels via CCC
   if (ext.number_of_rooms) addRow('Pièces:', ext.number_of_rooms.toString());
   if (ext.number_of_bedrooms) addRow('Chambres:', ext.number_of_bedrooms.toString());
   if (ext.number_of_bathrooms) addRow('Salles de bain:', ext.number_of_bathrooms.toString());

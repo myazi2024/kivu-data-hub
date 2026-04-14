@@ -62,8 +62,7 @@ export interface ExpertiseRequest {
   building_position?: string;
   facade_orientation?: string;
   is_corner_plot?: boolean;
-  sound_environment?: string;
-  nearby_noise_sources?: string;
+  // sound_environment and nearby_noise_sources removed — now in CCC/cadastral_parcels
   has_pool?: boolean;
   has_air_conditioning?: boolean;
   has_solar_panels?: boolean;
@@ -138,8 +137,7 @@ export interface CreateExpertiseRequestData {
   building_position?: string;
   facade_orientation?: string;
   is_corner_plot?: boolean;
-  sound_environment?: string;
-  nearby_noise_sources?: string;
+  // sound_environment and nearby_noise_sources removed — now in CCC/cadastral_parcels
   has_pool?: boolean;
   has_air_conditioning?: boolean;
   has_solar_panels?: boolean;
