@@ -495,7 +495,64 @@ const AdminAppearance = () => {
             </CardContent>
           </Card>
 
-          {/* Section 2: Couleurs */}
+          {/* Section 2: Page d'accueil (Hero) */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Home className="h-4 w-4" /> Page d'accueil
+              </CardTitle>
+              <CardDescription>Image de fond, titre et overlay de la section Hero.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Hero Image */}
+              <div className="space-y-2">
+                <Label className="text-xs">Image de fond</Label>
+                {heroImageUrl && (
+                  <div className="rounded-md border p-2 bg-muted/30 flex items-center justify-between">
+                    <img src={heroImageUrl} alt="Hero" className="max-h-20 object-cover rounded" />
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setHeroImageUrl('')}>
+                      <Trash2 className="h-3 w-3 text-destructive" />
+                    </Button>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" asChild disabled={uploadingHero}>
+                    <label className="cursor-pointer">
+                      {uploadingHero ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Upload className="h-3 w-3 mr-1" />}
+                      Choisir une image
+                      <input type="file" accept="image/*" className="hidden" onChange={handleHeroUpload} />
+                    </label>
+                  </Button>
+                </div>
+                <Input placeholder="Ou collez une URL d'image..." value={heroImageUrl} onChange={e => setHeroImageUrl(e.target.value)} className="text-xs" />
+              </div>
+
+              {/* Hero Title */}
+              <div className="space-y-2">
+                <Label className="text-xs">Titre principal</Label>
+                <Input
+                  value={heroTitle}
+                  onChange={e => setHeroTitle(e.target.value)}
+                  placeholder="Consultez les informations cadastrales..."
+                />
+              </div>
+
+              {/* Overlay Opacity */}
+              <div className="space-y-2">
+                <Label className="text-xs">Opacité de l'overlay : {heroOverlayOpacity}%</Label>
+                <Slider
+                  value={[heroOverlayOpacity]}
+                  onValueChange={([v]) => setHeroOverlayOpacity(v)}
+                  min={0}
+                  max={100}
+                  step={5}
+                />
+                <p className="text-[10px] text-muted-foreground">Contrôle la transparence du dégradé de couleur au-dessus de l'image.</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Section 3: Couleurs */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
