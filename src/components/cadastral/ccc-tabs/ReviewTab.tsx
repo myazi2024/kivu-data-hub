@@ -61,7 +61,7 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
   taxRecords, mortgageRecords, hasMortgage, hasDispute,
   buildingPermits, permitMode, constructionMode, additionalConstructions, ownerDocFile, titleDocFiles,
   gpsCoordinates, parcelSides, leaseYears, customTitleName,
-  roadSides, servitude, buildingShapes, disputeFormData, mapConfig,
+  roadSides, servitude, buildingShapes, disputeFormData, mapConfig, soundEnvironment, nearbySoundSources,
   calculateCCCValue, isFormValidForSubmission, getMissingFields,
   handleSubmit, handleTabChange, saveFormDataToStorage,
   setShowQuickAuth, setPendingSubmission,
