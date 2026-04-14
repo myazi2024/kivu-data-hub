@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import BlockResetButton from '../BlockResetButton';
 import { Input } from '@/components/ui/input';
@@ -7,11 +7,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CheckCircle2, Info, ChevronRight, ChevronLeft, Ruler } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { CheckCircle2, Info, ChevronRight, ChevronLeft, Ruler, Volume2, Mic, MicOff, AlertTriangle } from 'lucide-react';
 import { MdLocationOn } from 'react-icons/md';
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
 import { getAllProvinces } from '@/lib/geographicData';
 import { ParcelMapPreview } from '../ParcelMapPreview';
+import SuggestivePicklist from '../SuggestivePicklist';
+import SectionHelpPopover from '../SectionHelpPopover';
+import { SOUND_LABELS } from '@/constants/expertiseLabels';
 
 interface LocationTabProps {
   formData: CadastralContributionData;
@@ -39,6 +45,11 @@ interface LocationTabProps {
   onServitudeChange: (s: { hasServitude: boolean; width?: number }) => void;
   buildingShapes: any[];
   onBuildingShapesChange: (shapes: any[]) => void;
+  // Sound environment
+  soundEnvironment: string;
+  onSoundEnvironmentChange: (v: string) => void;
+  nearbySoundSources: string;
+  onNearbySoundSourcesChange: (v: string) => void;
   // Construction linking
   constructionMode?: 'unique' | 'multiple';
   additionalConstructions?: any[];
@@ -55,6 +66,7 @@ const LocationTab: React.FC<LocationTabProps> = ({
   gpsCoordinates, onCoordinatesUpdate, mapConfig, parcelNumber,
   roadSides, onRoadSidesChange, parcelSides, onParcelSidesUpdate,
   servitude, onServitudeChange, buildingShapes, onBuildingShapesChange,
+  soundEnvironment, onSoundEnvironmentChange, nearbySoundSources, onNearbySoundSourcesChange,
   constructionMode = 'unique', additionalConstructions = [],
   handleTabChange, handleNextTab, resetLocationBlock
 }) => {
@@ -213,6 +225,16 @@ const LocationTab: React.FC<LocationTabProps> = ({
             constructionLabels={constructionLabels}
           />
         </div>
+      )}
+
+      {/* Sound environment block — after map/limits */}
+      {sectionType && (
+        <SoundEnvironmentBlock
+          soundEnvironment={soundEnvironment}
+          onSoundEnvironmentChange={onSoundEnvironmentChange}
+          nearbySoundSources={nearbySoundSources}
+          onNearbySoundSourcesChange={onNearbySoundSourcesChange}
+        />
       )}
 
       {/* Apartment measurements */}
@@ -579,5 +601,200 @@ const ApartmentMeasurements: React.FC<ApartmentMeasurementsProps> = ({ formData,
     </div>
   </div>
 );
+
+/* ─── Sound Environment Block ───────────────────────────────── */
+
+const SOUND_ENVIRONMENT_OPTIONS = [
+  { value: 'tres_calme', label: (SOUND_LABELS as Record<string, string>).tres_calme + ' (< 40 dB)', minDb: 0, maxDb: 40 },
+  { value: 'calme', label: (SOUND_LABELS as Record<string, string>).calme + ' (40-55 dB)', minDb: 40, maxDb: 55 },
+  { value: 'modere', label: (SOUND_LABELS as Record<string, string>).modere + ' (55-70 dB)', minDb: 55, maxDb: 70 },
+  { value: 'bruyant', label: (SOUND_LABELS as Record<string, string>).bruyant + ' (70-85 dB)', minDb: 70, maxDb: 85 },
+  { value: 'tres_bruyant', label: (SOUND_LABELS as Record<string, string>).tres_bruyant + ' (> 85 dB)', minDb: 85, maxDb: 200 },
+];
+
+interface SoundEnvironmentBlockProps {
+  soundEnvironment: string;
+  onSoundEnvironmentChange: (v: string) => void;
+  nearbySoundSources: string;
+  onNearbySoundSourcesChange: (v: string) => void;
+}
+
+const SoundEnvironmentBlock: React.FC<SoundEnvironmentBlockProps> = ({
+  soundEnvironment, onSoundEnvironmentChange,
+  nearbySoundSources, onNearbySoundSourcesChange,
+}) => {
+  const [isOnSite, setIsOnSite] = useState<boolean | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [measuredDb, setMeasuredDb] = useState<number | null>(null);
+  const [micError, setMicError] = useState<string | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const animFrameRef = useRef<number | null>(null);
+
+  const getSoundLevel = useCallback((db: number): string => {
+    const match = SOUND_ENVIRONMENT_OPTIONS.find(o => db >= o.minDb && db < o.maxDb);
+    return match?.value || 'modere';
+  }, []);
+
+  const startMeasurement = async () => {
+    try {
+      setMicError(null);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      const ctx = new AudioContext();
+      audioCtxRef.current = ctx;
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      analyserRef.current = analyser;
+      ctx.createMediaStreamSource(stream).connect(analyser);
+      setIsRecording(true);
+      const buf = new Uint8Array(analyser.frequencyBinCount);
+      const measure = () => {
+        if (!analyserRef.current) return;
+        analyserRef.current.getByteFrequencyData(buf);
+        const avg = buf.reduce((s, v) => s + v, 0) / buf.length;
+        const db = Math.round((avg / 255) * 100);
+        setMeasuredDb(db);
+        onSoundEnvironmentChange(getSoundLevel(db));
+        animFrameRef.current = requestAnimationFrame(measure);
+      };
+      measure();
+    } catch {
+      setMicError("Impossible d'accéder au microphone. Vérifiez les autorisations.");
+      setIsOnSite(false);
+    }
+  };
+
+  const stopMeasurement = () => {
+    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    audioCtxRef.current?.close();
+    setIsRecording(false);
+  };
+
+  // Parse nearbyNoiseSources string to array
+  const sourcesArray = nearbySoundSources ? nearbySoundSources.split(', ').filter(Boolean) : [];
+
+  return (
+    <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
+      <CardContent className="p-3 space-y-3">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="p-1.5 bg-primary/10 rounded-lg">
+            <Volume2 className="h-4 w-4 text-primary" />
+          </div>
+          <Label className="text-sm font-semibold">Environnement sonore</Label>
+          <SectionHelpPopover
+            title="Environnement sonore"
+            description="Évaluez le niveau de bruit autour du bien. Si vous êtes sur place, utilisez le microphone pour une mesure automatique."
+          />
+        </div>
+
+        {/* On site? */}
+        <div className="space-y-2">
+          <Label className="text-xs font-medium">Êtes-vous actuellement sur la parcelle ?</Label>
+          <RadioGroup
+            value={isOnSite === null ? '' : isOnSite ? 'yes' : 'no'}
+            onValueChange={(v) => { setIsOnSite(v === 'yes'); if (v === 'no') { stopMeasurement(); setMeasuredDb(null); } }}
+            className="flex gap-4"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="yes" id="ccc-onsite-yes" />
+              <Label htmlFor="ccc-onsite-yes" className="text-sm cursor-pointer">Oui</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="no" id="ccc-onsite-no" />
+              <Label htmlFor="ccc-onsite-no" className="text-sm cursor-pointer">Non</Label>
+            </div>
+          </RadioGroup>
+        </div>
+
+        {/* Microphone measurement */}
+        {isOnSite === true && (
+          <Card className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 rounded-xl">
+            <CardContent className="p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Mic className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium">Mesure du bruit ambiant</span>
+                </div>
+                {measuredDb !== null && <Badge variant="secondary" className="text-xs">~{measuredDb} dB</Badge>}
+              </div>
+              <p className="text-xs text-muted-foreground">Activez le microphone pour mesurer le niveau sonore en temps réel.</p>
+              {micError && (
+                <Alert className="bg-red-50 border-red-200 rounded-lg">
+                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                  <AlertDescription className="text-xs text-red-700">{micError}</AlertDescription>
+                </Alert>
+              )}
+              <div className="flex gap-2">
+                {!isRecording ? (
+                  <Button type="button" variant="outline" onClick={startMeasurement} className="flex-1 h-9 text-sm rounded-xl border-blue-300 text-blue-700 hover:bg-blue-100">
+                    <Mic className="h-4 w-4 mr-2" /> Démarrer la mesure
+                  </Button>
+                ) : (
+                  <Button type="button" variant="destructive" onClick={stopMeasurement} className="flex-1 h-9 text-sm rounded-xl">
+                    <MicOff className="h-4 w-4 mr-2" /> Arrêter la mesure
+                  </Button>
+                )}
+              </div>
+              {isRecording && measuredDb !== null && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span>Niveau mesuré:</span>
+                    <span className="font-bold text-blue-700">{measuredDb} dB</span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
+                    <div
+                      className={`h-3 rounded-full transition-all duration-300 ${measuredDb < 40 ? 'bg-green-500' : measuredDb < 55 ? 'bg-lime-500' : measuredDb < 70 ? 'bg-yellow-500' : measuredDb < 85 ? 'bg-orange-500' : 'bg-red-500'}`}
+                      style={{ width: `${Math.min(100, measuredDb)}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-center font-medium text-blue-700">
+                    Niveau détecté: {SOUND_ENVIRONMENT_OPTIONS.find(o => o.value === soundEnvironment)?.label}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Manual picklist */}
+        {(isOnSite === false || isOnSite === null) && (
+          <div className="space-y-1.5">
+            <Label className="text-xs">Niveau sonore estimé</Label>
+            <Select value={soundEnvironment} onValueChange={(v) => { onSoundEnvironmentChange(v); if (v === 'tres_calme') onNearbySoundSourcesChange(''); }}>
+              <SelectTrigger className="h-9 text-sm rounded-xl border-2"><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+              <SelectContent>
+                {SOUND_ENVIRONMENT_OPTIONS.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* Show result after measurement */}
+        {isOnSite === true && measuredDb !== null && !isRecording && (
+          <div className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200">
+            <span className="text-sm">Niveau sonore mesuré:</span>
+            <Badge className="bg-green-600 text-white">
+              {SOUND_ENVIRONMENT_OPTIONS.find(o => o.value === soundEnvironment)?.label} ({measuredDb} dB)
+            </Badge>
+          </div>
+        )}
+
+        {/* Noise sources */}
+        {soundEnvironment && soundEnvironment !== 'tres_calme' && (
+          <SuggestivePicklist
+            picklistKey="noise_sources"
+            label="Sources de bruit à proximité"
+            placeholder="Rechercher ou ajouter une source..."
+            selectedValues={sourcesArray}
+            onSelectionChange={(vals) => onNearbySoundSourcesChange(vals.join(', '))}
+          />
+        )}
+      </CardContent>
+    </Card>
+  );
+};
 
 export default LocationTab;

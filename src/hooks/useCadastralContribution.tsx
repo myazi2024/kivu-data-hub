@@ -76,6 +76,10 @@ export interface CadastralContributionData {
   disputeData?: any;
   buildingShapes?: any[];
   
+  // Environnement sonore
+  soundEnvironment?: string;
+  nearbySoundSources?: string;
+  
   // Localisation
   areaSqm?: number;
   parcelSides?: Array<{ name: string; length: string }>;
@@ -299,6 +303,8 @@ export const useCadastralContribution = () => {
       has_dispute: data.hasDispute ?? null,
       dispute_data: data.disputeData || null,
       building_shapes: data.buildingShapes && data.buildingShapes.length > 0 ? data.buildingShapes : null,
+      sound_environment: data.soundEnvironment || null,
+      nearby_noise_sources: data.nearbySoundSources || null,
     };
 
     if (data.permitRequest) {

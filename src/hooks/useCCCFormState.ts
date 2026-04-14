@@ -206,6 +206,10 @@ export const useCCCFormState = ({
   };
 
   // ─── Storage: save/load/clear ───
+  // Sound environment state
+  const [soundEnvironment, setSoundEnvironment] = useState('');
+  const [nearbySoundSources, setNearbySoundSources] = useState('');
+
   const saveFormDataToStorage = useCallback(() => {
     const dataToSave = {
       formData, currentOwners, previousOwners,
@@ -221,6 +225,7 @@ export const useCCCFormState = ({
       additionalConstructions: additionalConstructions.map(c => ({
         ...c, permit: c.permit ? { ...c.permit, attachmentFile: null } : undefined
       })),
+      soundEnvironment, nearbySoundSources,
       timestamp: new Date().toISOString()
     };
     try {
@@ -229,7 +234,7 @@ export const useCCCFormState = ({
     } catch (error) {
       console.error('Erreur sauvegarde:', error);
     }
-  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, permitMode, buildingPermits, permitRequest, gpsCoordinates, parcelSides, obligationType, sectionType, hasMortgage, hasDispute, ownershipMode, leaseYears, roadSides, servitude, customTitleName, constructionMode, additionalConstructions, buildingShapes, disputeFormData, STORAGE_KEY]);
+  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, permitMode, buildingPermits, permitRequest, gpsCoordinates, parcelSides, obligationType, sectionType, hasMortgage, hasDispute, ownershipMode, leaseYears, roadSides, servitude, customTitleName, constructionMode, additionalConstructions, buildingShapes, disputeFormData, soundEnvironment, nearbySoundSources, STORAGE_KEY]);
 
   const loadFormDataFromStorage = () => {
     try {
@@ -259,6 +264,8 @@ export const useCCCFormState = ({
         if (parsed.additionalConstructions) setAdditionalConstructions(parsed.additionalConstructions);
         if (parsed.buildingShapes) setBuildingShapes(parsed.buildingShapes);
         if (parsed.disputeFormData) setDisputeFormData(parsed.disputeFormData);
+        if (parsed.soundEnvironment) setSoundEnvironment(parsed.soundEnvironment);
+        if (parsed.nearbySoundSources) setNearbySoundSources(parsed.nearbySoundSources);
         toast({ title: "Données restaurées", description: "Vos données précédentes ont été restaurées." });
       }
     } catch (error) {
@@ -988,6 +995,8 @@ export const useCCCFormState = ({
         hasDispute: hasDispute ?? undefined,
         disputeData: disputeFormData || undefined,
         buildingShapes: buildingShapes.length > 0 ? buildingShapes : undefined,
+        soundEnvironment: soundEnvironment || undefined,
+        nearbySoundSources: nearbySoundSources || undefined,
       };
 
       const result = editingContributionId ? await updateContribution(editingContributionId, dataToSubmit) : await submitContribution(dataToSubmit);
@@ -1544,6 +1553,7 @@ export const useCCCFormState = ({
     gpsCoordinates, setGpsCoordinates, parcelSides, setParcelSides,
     roadSides, setRoadSides, servitude, setServitude,
     buildingShapes, setBuildingShapes,
+    soundEnvironment, setSoundEnvironment, nearbySoundSources, setNearbySoundSources,
     // Obligations
     obligationType, setObligationType,
     taxRecords, updateTaxRecord, addTaxRecord, removeTaxRecord, handleTaxFileChange, removeTaxFile,
