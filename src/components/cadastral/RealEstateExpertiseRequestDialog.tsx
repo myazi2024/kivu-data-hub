@@ -489,69 +489,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
      return fees.length > 0 && getTotalAmount() > 0;
    };
 
-  // Fonctions pour la mesure du bruit avec microphone
-  const getSoundLevelFromDecibels = useCallback((db: number): string => {
-    const match = SOUND_ENVIRONMENT_OPTIONS.find(opt => db >= opt.minDb && db < opt.maxDb);
-    return match?.value || 'modere';
-  }, []);
-
-  const startSoundMeasurement = async () => {
-    try {
-      setMicrophoneError(null);
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-      
-      const audioContext = new AudioContext();
-      audioContextRef.current = audioContext;
-      
-      const analyser = audioContext.createAnalyser();
-      analyser.fftSize = 256;
-      analyserRef.current = analyser;
-      
-      const source = audioContext.createMediaStreamSource(stream);
-      source.connect(analyser);
-      
-      setIsRecordingSound(true);
-      
-      const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-      
-      const measureSound = () => {
-        if (!analyserRef.current) return;
-        
-        analyserRef.current.getByteFrequencyData(dataArray);
-        const average = dataArray.reduce((sum, value) => sum + value, 0) / bufferLength;
-        // Conversion approximative en dB (valeur normalisée 0-255 vers 0-100 dB)
-        const estimatedDb = Math.round((average / 255) * 100);
-        setMeasuredDecibels(estimatedDb);
-        
-        // Auto-déterminer le niveau sonore
-        const detectedLevel = getSoundLevelFromDecibels(estimatedDb);
-        setSoundEnvironment(detectedLevel);
-        
-        animationFrameRef.current = requestAnimationFrame(measureSound);
-      };
-      
-      measureSound();
-    } catch (error: any) {
-      console.error('Microphone error:', error);
-      setMicrophoneError('Impossible d\'accéder au microphone. Vérifiez les autorisations.');
-      setIsOnSite(false);
-    }
-  };
-
-  const stopSoundMeasurement = () => {
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-    }
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-    }
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-    }
-    setIsRecordingSound(false);
-  };
+  // Sound measurement functions removed — now in CCC LocationTab
 
   // Keep a ref to constructionImageUrls so the cleanup effect always has current values
   const constructionImageUrlsRef = useRef<string[]>([]);
