@@ -1,27 +1,43 @@
 
 
-# Correction zoom construction + drag sommets construction
+# Corrections formulaire CCC : Permis obligatoire + Picklist sonore + Validation sonore
 
-## Probleme 1 : Zoom se reinitialise a chaque cote trace
+## Problemes identifies
 
-**Cause** : Ligne 811, `shouldAutoCenter` ne prend pas en compte `isDrawingBuilding`. Quand l'utilisateur ajoute un sommet, `buildingVertices` change, l'effet `updateMap` se relance, et `shouldAutoCenter` est `true` ce qui appelle `fitBounds` (ligne 1013-1014), reinitialisant le zoom.
+1. **Permis de batir non obligatoire** : `permitMode` (OUI/NON) n'est verifie dans `getMissingFields` que si `permitMode === 'existing'`. Il manque une regle pour forcer la reponse quand `permitMode === null` (pas encore repondu).
 
-**Correction** : Ajouter `!isDrawingBuilding` a la condition `shouldAutoCenter` :
+2. **Picklist "Sources de bruit" invisible** : Le dropdown du `SuggestivePicklist` utilise `z-[9999]` mais il est a l'interieur d'un conteneur avec `overflow-y-auto` (le `DialogContent`). Le navigateur clippe le dropdown meme si le z-index est eleve. Il faut utiliser un portail (React Portal) pour le rendre hors du conteneur scrollable.
+
+3. **Environnement sonore non obligatoire** : `soundEnvironment` n'est pas verifie dans `getMissingFields`, donc l'utilisateur peut avancer sans remplir ce champ.
+
+## Modifications
+
+### 1. `src/hooks/useCCCFormState.ts` — getMissingFields (2 ajouts)
+
+**Permis obligatoire** (apres ligne 731, avant le bloc BUILDING PERMITS existant) :
+```typescript
+if (!isTerrainNu && !isAppartement && formData.constructionType !== 'Terrain nu' && permitMode === null) {
+  missing.push({ field: 'permitMode', label: "Avez-vous obtenu une autorisation de bâtir ?", tab: 'general' });
+}
 ```
-const shouldAutoCenter = !isDrawingMode && !isDrawingBuilding && !isGroupDragMode && !selectedBorne && !isMarkerMoveMode;
+
+**Environnement sonore obligatoire** (apres le bloc LOCATION existant, avant BUILDING PERMITS) :
+```typescript
+if (!soundEnvironment || soundEnvironment.trim() === '') {
+  missing.push({ field: 'soundEnvironment', label: 'Environnement sonore', tab: 'location' });
+}
 ```
+Ajouter `soundEnvironment` aux dependances du useCallback.
 
-## Probleme 2 : Pas de drag des sommets de construction validee
+### 2. `src/components/cadastral/SuggestivePicklist.tsx` — Portal pour le dropdown
 
-Actuellement, les sommets de construction validee supportent uniquement le double-clic (edition GPS manuelle). Il n'y a aucune logique d'appui prolonge + drag pour les deplacer.
-
-**Implementation** : Sur chaque `vertexMarker` de construction validee (lignes 1048-1062), ajouter :
-- Un handler `mousedown`/`touchstart` qui demarre un timer d'appui prolonge (450ms)
-- Si le timer expire : activer un mode drag (desactiver le dragging de la carte, changer le curseur)
-- Sur `mousemove`/`touchmove` : deplacer le sommet en temps reel (mettre a jour les coordonnees GPS du vertex dans `buildingShapes`)
-- Sur `mouseup`/`touchend` : finaliser la position, recalculer surface/perimetre/dimensions, reactiver le dragging de la carte
-- Reutiliser le pattern existant du long-press des bornes de parcelle (lignes 845-863) comme reference
+Remplacer le dropdown `<div className="absolute z-[9999] ...">` par un rendu via `ReactDOM.createPortal` positionne dynamiquement sous l'input :
+- Utiliser un `ref` sur l'input pour calculer `getBoundingClientRect()`
+- Rendre le dropdown dans `document.body` via `createPortal`
+- Positionner avec `position: fixed` + coordonnees calculees
+- Garder le `z-[10001]` pour passer au-dessus du dialog
 
 ### Fichiers modifies
-- `src/components/cadastral/ParcelMapPreview.tsx` : 2 modifications (shouldAutoCenter + drag vertex construction)
+- `src/hooks/useCCCFormState.ts` (2 regles de validation)
+- `src/components/cadastral/SuggestivePicklist.tsx` (portal dropdown)
 
