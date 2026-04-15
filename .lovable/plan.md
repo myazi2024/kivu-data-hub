@@ -1,30 +1,50 @@
 
 
-# Supprimer "Terrain nu" du graphique "Catégorie de bien"
+# Réorganisation des onglets Analytics : Parcelle → Construction + Titres fonciers
 
-## Problème
+## Analyse des doublons
 
-Dans l'onglet **Parcelle** du dashboard Analytics, le graphique "Catégorie de bien" (`property_category`) inclut "Terrain nu" comme catégorie. Or, "Terrain nu" n'est pas une catégorie de bien à proprement parler — c'est l'absence de construction. De plus, il existe déjà un graphique dédié "Construites vs Non construites" qui couvre cette distinction, créant une redondance.
+Visuels à déplacer depuis "Parcelles" vers "Titres fonciers" :
 
-## Solution
+| Visuel (Parcelles) | Existe déjà dans Titres ? | Action |
+|---|---|---|
+| `legal-status` — Propriétaires | ✅ Oui (`legal-status`) | **Supprimer** de Parcelles |
+| `gender` — Genre propriétaires | ✅ Oui (`gender`) | **Supprimer** de Parcelles |
+| `surface` — Superficie | ✅ Oui (`surface`) | **Supprimer** de Parcelles |
+| `geo` — Géographie | ✅ Oui (`geo`) | **Supprimer** de Parcelles |
+| `evolution` — Évolution | ✅ Oui (`evolution`) | **Supprimer** de Parcelles |
+| `subdivided` — Loties vs Non loties | ❌ Non | **Ajouter** dans TitleRequestsBlock |
 
-Filtrer "Terrain nu" du jeu de données `byPropertyCategory` dans les deux blocs qui utilisent ce graphique.
+## Modifications
 
-### Fichiers modifiés
+### 1. `src/config/analyticsTabsRegistry.ts`
 
-**1. `src/components/visualizations/blocks/ParcelsWithTitleBlock.tsx`** (ligne 46)
+- **Renommer** le label de `parcels-titled` : `'Parcelles'` → `'Construction'`
+- **Supprimer** les entrées charts : `legal-status`, `gender`, `surface`, `subdivided`, `geo`, `evolution`
+- **Ajouter** 2 nouveaux charts construction : `construction-evolution` (tendance mensuelle des constructions) et `construction-geo` (géographie des constructions)
+- **Ajouter** dans `title-requests.charts` : `subdivided` (Loties vs Non loties)
+- **Nettoyer les KPIs** : supprimer `kpi-parcels` (renommer en `kpi-constructions`), retirer `kpi-urban`, `kpi-rural`, `kpi-surface`, `kpi-avg-surface`, `kpi-density` (données parcellaires, pas construction). Garder `kpi-occupied`, `kpi-hosting`, `kpi-multi-constr`. Ajouter un KPI `kpi-constructions` (total constructions).
 
-```diff
--    byPropertyCategory: countBy(filteredParcels, 'property_category'),
-+    byPropertyCategory: countBy(filteredParcels, 'property_category').filter(d => d.name !== 'Terrain nu'),
-```
+### 2. `src/components/visualizations/blocks/ParcelsWithTitleBlock.tsx`
 
-**2. `src/components/visualizations/blocks/ContributionsBlock.tsx`** (ligne 35)
+- **Supprimer** les calculs et les chartDefs pour : `legal-status`, `gender`, `genderData`, `genderInsight`, `subdividedData`, `surface`/`surfaceDist`, `geo` (GeoCharts), `evolution` (trend)
+- **Supprimer** les KPIs parcellaires (`urbanCount`, `ruralCount`, `totalSurface`, `avgSurface`, `density`)
+- **Ajouter** `construction-evolution` : `trendByMonth` basé sur `construction_year` ou `created_at` des parcelles ayant une construction
+- **Ajouter** `construction-geo` : `<GeoCharts>` filtré sur les parcelles construites uniquement
+- **Adapter** les KPIs restants pour le contexte "Construction" (total = parcelles construites)
 
-```diff
--  const byPropertyCategory = useMemo(() => countBy(filtered, 'property_category'), [filtered]);
-+  const byPropertyCategory = useMemo(() => countBy(filtered, 'property_category').filter(d => d.name !== 'Terrain nu'), [filtered]);
-```
+### 3. `src/components/visualizations/blocks/TitleRequestsBlock.tsx`
 
-Deux lignes modifiées, zéro impact sur les autres graphiques.
+- **Ajouter** le visuel `subdivided` (Loties vs Non loties) utilisant `data.parcels` (même logique que dans ParcelsWithTitleBlock actuel)
+- Import de `countBy` pour `is_subdivided` sur `data.parcels`
+
+### 4. `src/components/visualizations/ProvinceDataVisualization.tsx`
+
+- **Changer l'icône** de `parcels-titled` : `Map` → `Building` (plus cohérent avec "Construction")
+
+### Fichiers modifiés (4)
+- `src/config/analyticsTabsRegistry.ts`
+- `src/components/visualizations/blocks/ParcelsWithTitleBlock.tsx`
+- `src/components/visualizations/blocks/TitleRequestsBlock.tsx`
+- `src/components/visualizations/ProvinceDataVisualization.tsx`
 
