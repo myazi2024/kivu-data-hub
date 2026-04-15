@@ -156,11 +156,11 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'lifting-status', el: () => <ChartCard title={ct('lifting-status', 'Statut levée')} icon={ShieldCheck} data={byLiftingStatus} type={ty('lifting-status', 'pie')} colorIndex={9}
       insight={generateInsight(byLiftingStatus, 'pie', 'les statuts de levée')} crossVariables={cx('lifting-status')} rawRecords={liftingDisputes} groupField="lifting_status" /> },
     { key: 'lifting-resolution-level', el: () => <ChartCard title={ct('lifting-resolution-level', 'Niveau résolution (levée)')} icon={Scale} iconColor="text-purple-500" data={byLiftingResolutionLevel} type={ty('lifting-resolution-level', 'bar-h')} colorIndex={9} labelWidth={100}
-      insight={generateInsight(byLiftingResolutionLevel, 'bar-h', 'les niveaux de résolution')} /> },
+      insight={generateInsight(byLiftingResolutionLevel, 'bar-h', 'les niveaux de résolution')} crossVariables={cx('lifting-resolution-level')} rawRecords={liftingDisputes} groupField="resolution_level" /> },
     { key: 'lifting-nature', el: () => <ChartCard title={ct('lifting-nature', 'Nature litige (levée)')} data={byLiftingNature} type={ty('lifting-nature', 'bar-h')} colorIndex={4} labelWidth={100}
       insight={generateInsight(byLiftingNature, 'bar-h', 'les natures de litige concernées')} crossVariables={cx('lifting-nature')} rawRecords={liftingDisputes} groupField="dispute_nature" /> },
     { key: 'lifting-reason', el: () => <ChartCard title={ct('lifting-reason', 'Motif de levée')} icon={MessageSquare} data={byLiftingReason} type={ty('lifting-reason', 'bar-h')} colorIndex={6} labelWidth={120} hidden={byLiftingReason.length === 0}
-      insight={generateInsight(byLiftingReason, 'bar-h', 'les motifs de levée')} /> },
+      insight={generateInsight(byLiftingReason, 'bar-h', 'les motifs de levée')} crossVariables={cx('lifting-reason')} rawRecords={liftingDisputes} groupField="lifting_reason" /> },
     { key: 'lifting-geo', el: () => <GeoCharts records={liftingDisputes} /> },
     { key: 'lifting-success-rate', el: () => <ChartCard title={ct('lifting-success-rate', 'Taux réussite %')} icon={TrendingUp} data={liftingSuccessTrend} type={ty('lifting-success-rate', 'area')} colorIndex={2} colSpan={2} hidden={liftingSuccessTrend.length < 2}
       insight={generateInsight(liftingSuccessTrend, 'area', 'le taux de réussite des levées')} /> },

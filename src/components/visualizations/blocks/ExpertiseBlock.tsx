@@ -155,9 +155,9 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'construction-quality', el: () => <ChartCard title={ct('construction-quality', 'Qualité construction')} data={byConstructionQuality} type={ty('construction-quality', 'donut')} colorIndex={3} hidden={byConstructionQuality.length === 0}
       insight={generateInsight(byConstructionQuality, 'donut', 'la qualité de construction')} crossVariables={cx('construction-quality')} rawRecords={filtered} groupField="construction_quality" /> },
     { key: 'construction-decade', el: () => <ChartCard title={ct('construction-decade', 'Année construction')} icon={Clock} data={byDecade} type={ty('construction-decade', 'bar-v')} colorIndex={0} hidden={byDecade.length === 0}
-      insight={generateInsight(byDecade, 'bar-v', 'les périodes de construction')} /> },
+      insight={generateInsight(byDecade, 'bar-v', 'les périodes de construction')} crossVariables={cx('construction-decade')} rawRecords={filtered} groupField="construction_year" /> },
     { key: 'built-area', el: () => <ChartCard title={ct('built-area', 'Surface bâtie')} icon={Ruler} data={builtAreaDist} type={ty('built-area', 'bar-v')} colorIndex={1} hidden={builtAreaDist.length === 0}
-      insight={generateInsight(builtAreaDist, 'bar-v', 'les surfaces bâties')} /> },
+      insight={generateInsight(builtAreaDist, 'bar-v', 'les surfaces bâties')} crossVariables={cx('built-area')} rawRecords={filtered} groupField="total_built_area_sqm" /> },
     { key: 'equipment', el: () => <ChartCard title={ct('equipment', 'Équipements')} icon={Zap} data={equipmentData} type={ty('equipment', 'bar-h')} colorIndex={9} labelWidth={100} hidden={equipmentData.length === 0}
       insight="Répartition des équipements disponibles dans les biens expertisés." /> },
     { key: 'wall-material', el: () => <ChartCard title={ct('wall-material', 'Matériau murs')} icon={Layers} data={byWallMaterial} type={ty('wall-material', 'bar-h')} colorIndex={3} labelWidth={110} hidden={byWallMaterial.length === 0}
@@ -177,7 +177,7 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'floors', el: () => <ChartCard title={ct('floors', 'Nbre d\'étages')} icon={Building} data={floorsDist} type={ty('floors', 'bar-v')} colorIndex={1} hidden={floorsDist.length === 0}
       insight={generateInsight(floorsDist, 'bar-v', 'le nombre d\'étages')} crossVariables={cx('floors')} rawRecords={filtered} groupField="number_of_floors" /> },
     { key: 'garden', el: () => <ChartCard title={ct('garden', 'Surface jardin')} icon={Trees} data={gardenDist} type={ty('garden', 'bar-v')} colorIndex={10} hidden={gardenDist.length === 0}
-      insight={generateInsight(gardenDist, 'bar-v', 'les surfaces de jardin')} /> },
+      insight={generateInsight(gardenDist, 'bar-v', 'les surfaces de jardin')} crossVariables={cx('garden')} rawRecords={filtered} groupField="garden_area_sqm" /> },
     { key: 'geo', el: () => <GeoCharts records={filtered} /> },
     { key: 'evolution', el: () => <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type={ty('evolution', 'area')} colorIndex={5} colSpan={2}
       insight={generateInsight(trend, 'area', 'les demandes d\'expertise')} /> },

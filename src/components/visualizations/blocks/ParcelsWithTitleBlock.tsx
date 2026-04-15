@@ -229,7 +229,7 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'legal-status', el: () => <ChartCard title={ct('legal-status', 'Propriétaires')} icon={Users} data={charts.byLegalStatus} type={ty('legal-status', 'donut')} colorIndex={1}
       insight={generateInsight(charts.byLegalStatus, 'donut', 'les statuts juridiques')} crossVariables={cx('legal-status')} rawRecords={filteredParcels} groupField="current_owner_legal_status" /> },
     { key: 'gender', el: () => <ColorMappedPieCard title={ct('gender', 'Genre propriétaires')} icon={Users} iconColor="text-pink-500" data={genderData} colorMap={GENDER_COLORS}
-      insight={genderInsight} crossVariables={cx('gender')} rawRecords={filteredParcels} groupField="current_owner_legal_status" /> },
+      insight={genderInsight} crossVariables={cx('gender')} rawRecords={filteredContribs} groupField="current_owners_details" /> },
     { key: 'construction-type', el: () => <ChartCard title={ct('construction-type', 'Construction')} icon={Building} data={charts.byConstructionType} type={ty('construction-type', 'bar-h')} colorIndex={3}
       insight={generateInsight(charts.byConstructionType, 'bar-h', 'les constructions')} crossVariables={cx('construction-type')} rawRecords={normalizedParcels} groupField="construction_type" /> },
     { key: 'construction-nature', el: () => <ChartCard title={ct('construction-nature', 'Nature construction')} data={charts.byConstructionNature} type={ty('construction-nature', 'bar-h')} colorIndex={7}
@@ -237,13 +237,13 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'property-category', el: () => <ChartCard title={ct('property-category', 'Catégorie de bien')} data={charts.byPropertyCategory} type={ty('property-category', 'bar-h')} colorIndex={2} hidden={charts.byPropertyCategory.length === 0}
       insight={generateInsight(charts.byPropertyCategory, 'bar-h', 'les catégories de bien')} crossVariables={cx('property-category')} rawRecords={filteredParcels} groupField="property_category" /> },
     { key: 'built-vs-unbuilt', el: () => <ChartCard title={ct('built-vs-unbuilt', 'Construites vs Non construites')} data={builtVsUnbuiltData} type={ty('built-vs-unbuilt', 'pie')} colorIndex={11} hidden={builtVsUnbuiltData.length === 0}
-      insight={generateInsight(builtVsUnbuiltData, 'pie', 'la construction des parcelles')} /> },
+      insight={generateInsight(builtVsUnbuiltData, 'pie', 'la construction des parcelles')} crossVariables={cx('built-vs-unbuilt')} rawRecords={filteredParcels} groupField="property_category" /> },
     { key: 'construction-materials', el: () => <ChartCard title={ct('construction-materials', 'Matériaux')} data={charts.byConstructionMaterials} type={ty('construction-materials', 'bar-h')} colorIndex={8} hidden={charts.byConstructionMaterials.length === 0}
       insight={generateInsight(charts.byConstructionMaterials, 'bar-h', 'les matériaux de construction')} crossVariables={cx('construction-materials')} rawRecords={filteredParcels} groupField="construction_materials" /> },
     { key: 'standing', el: () => <ChartCard title={ct('standing', 'Standing')} data={charts.byStanding} type={ty('standing', 'donut')} colorIndex={6} hidden={charts.byStanding.length === 0}
       insight={generateInsight(charts.byStanding, 'donut', 'les niveaux de standing')} crossVariables={cx('standing')} rawRecords={filteredParcels} groupField="standing" /> },
     { key: 'construction-decade', el: () => <ChartCard title={ct('construction-decade', 'Année construction')} icon={Clock} data={charts.byDecade} type={ty('construction-decade', 'bar-v')} colorIndex={0} hidden={charts.byDecade.length === 0}
-      insight={generateInsight(charts.byDecade, 'bar-v', 'les décennies de construction')} /> },
+      insight={generateInsight(charts.byDecade, 'bar-v', 'les décennies de construction')} crossVariables={cx('construction-decade')} rawRecords={filteredParcels} groupField="construction_year" /> },
     { key: 'usage', el: () => <ChartCard title={ct('usage', 'Usage déclaré')} data={charts.byDeclaredUsage} type={ty('usage', 'bar-h')} colorIndex={5}
       insight={generateInsight(charts.byDeclaredUsage, 'bar-h', 'les usages déclarés')} crossVariables={cx('usage')} rawRecords={normalizedParcels} groupField="declared_usage" /> },
     { key: 'surface', el: () => <ChartCard title={ct('surface', 'Superficie')} icon={Ruler} data={charts.surfaceDist} type={ty('surface', 'bar-v')} colorIndex={9}
