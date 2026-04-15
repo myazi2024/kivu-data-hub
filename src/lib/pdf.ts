@@ -447,6 +447,9 @@ export async function generateCadastralReport(
       : 'Non renseigné');
 
   const addPageHeader = () => {
+    if (logoBase64) {
+      try { doc.addImage(logoBase64, 'PNG', margin, 4, 8, 8); } catch { /* */ }
+    }
     doc.setTextColor(...BLUE);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
