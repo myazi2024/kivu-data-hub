@@ -38,7 +38,6 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     [filteredParcels]);
 
   const charts = useMemo(() => ({
-    byTitleType: countBy(normalizedParcels, 'property_title_type'),
     byLegalStatus: countBy(filteredParcels, 'current_owner_legal_status'),
     byConstructionType: countBy(normalizedParcels, 'construction_type'),
     byConstructionNature: countBy(filteredParcels, 'construction_nature'),
@@ -218,8 +217,6 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
   ].filter(k => v(k.key)), [filteredParcels, urbanCount, ruralCount, occupiedCount, totalHostingCapacity, multiConstructionCount, totalSurface, avgSurface, density, v, ct]);
 
   const chartDefs = useMemo(() => [
-    { key: 'title-type', el: () => <ChartCard title={ct('title-type', 'Type titre')} icon={FileText} data={charts.byTitleType} type={ty('title-type', 'bar-h')} colorIndex={0} labelWidth={110}
-      insight={generateInsight(charts.byTitleType, 'bar-h', 'les types de titre')} crossVariables={cx('title-type')} rawRecords={normalizedParcels} groupField="property_title_type" /> },
     { key: 'legal-status', el: () => <ChartCard title={ct('legal-status', 'Propriétaires')} icon={Users} data={charts.byLegalStatus} type={ty('legal-status', 'donut')} colorIndex={1}
       insight={generateInsight(charts.byLegalStatus, 'donut', 'les statuts juridiques')} crossVariables={cx('legal-status')} rawRecords={filteredParcels} groupField="current_owner_legal_status" /> },
     { key: 'gender', el: () => <ColorMappedPieCard title={ct('gender', 'Genre propriétaires')} icon={Users} iconColor="text-pink-500" data={genderData} colorMap={GENDER_COLORS}
