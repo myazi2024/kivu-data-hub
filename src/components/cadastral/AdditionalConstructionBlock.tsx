@@ -459,17 +459,19 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
               </div>
             )}
 
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium">Capacité d'accueil (personnes)</Label>
-              <Input
-                type="number"
-                min={1}
-                value={data.hostingCapacity || ''}
-                onChange={(e) => update('hostingCapacity', e.target.value ? parseInt(e.target.value) : undefined)}
-                placeholder="Ex: 10"
-                className="h-10 rounded-xl text-sm"
-              />
-            </div>
+            {data.isOccupied !== undefined && (
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">Capacité d'accueil (personnes)</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={data.hostingCapacity || ''}
+                  onChange={(e) => update('hostingCapacity', e.target.value ? parseInt(e.target.value) : undefined)}
+                  placeholder="Ex: 10"
+                  className="h-10 rounded-xl text-sm"
+                />
+              </div>
+            )}
           </div>
         </>
       )}
