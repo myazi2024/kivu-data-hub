@@ -3,7 +3,7 @@ import { FileText, Map, Search, ArrowRightLeft, Scissors, AlertTriangle, Loader2
 import { useLandDataAnalytics, LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { ProvinceData } from '@/types/province';
 import { useAnalyticsTabsConfig, useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
-import { ProvinceFilterContext, MapProvinceContext, VilleFilterContext, CommuneFilterContext, VilleChangeContext, CommuneChangeContext, QuartierFilterContext, QuartierChangeContext, TerritoireFilterContext, TerritoireChangeContext } from './filters/AnalyticsFilters';
+import { ProvinceFilterContext, MapProvinceContext, VilleFilterContext, CommuneFilterContext, VilleChangeContext, CommuneChangeContext, QuartierFilterContext, QuartierChangeContext, TerritoireFilterContext, TerritoireChangeContext, SectionTypeContext, SectionTypeChangeContext } from './filters/AnalyticsFilters';
 import { WatermarkContext, WatermarkConfigContext, WatermarkConfig } from './shared/ChartCard';
 
 // Lazy-loaded block components
@@ -68,15 +68,17 @@ interface ProvinceDataVisualizationProps {
   onCommuneChange?: (commune: string | undefined) => void;
   onQuartierChange?: (quartier: string | undefined) => void;
   onTerritoireChange?: (territoire: string | undefined) => void;
+  onSectionTypeChange?: (sectionType: string) => void;
   selectedVille?: string | null;
   selectedCommune?: string | null;
   selectedQuartier?: string | null;
   selectedTerritoire?: string | null;
+  selectedSectionType?: string | null;
 }
 
 const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
-  analytics, selectedProvince, onProvinceFilter, onVilleChange, onCommuneChange, onQuartierChange, onTerritoireChange,
-  selectedVille, selectedCommune, selectedQuartier, selectedTerritoire,
+  analytics, selectedProvince, onProvinceFilter, onVilleChange, onCommuneChange, onQuartierChange, onTerritoireChange, onSectionTypeChange,
+  selectedVille, selectedCommune, selectedQuartier, selectedTerritoire, selectedSectionType,
 }) => {
   const { visibleTabs, isLoading: tabsLoading } = useAnalyticsTabsConfig();
   const [activeTab, setActiveTab] = useState('');
@@ -148,19 +150,23 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
                   <CommuneChangeContext.Provider value={onCommuneChange || null}>
                     <QuartierChangeContext.Provider value={onQuartierChange || null}>
                       <TerritoireChangeContext.Provider value={onTerritoireChange || null}>
-                        <VilleFilterContext.Provider value={selectedVille || null}>
-                          <CommuneFilterContext.Provider value={selectedCommune || null}>
-                            <QuartierFilterContext.Provider value={selectedQuartier || null}>
-                              <TerritoireFilterContext.Provider value={selectedTerritoire || null}>
-                                {BlockComponent ? (
-                                  <Suspense fallback={<BlockFallback />}>
-                                    <BlockComponent data={analytics} />
-                                  </Suspense>
-                                ) : null}
-                              </TerritoireFilterContext.Provider>
-                            </QuartierFilterContext.Provider>
-                          </CommuneFilterContext.Provider>
-                        </VilleFilterContext.Provider>
+                        <SectionTypeContext.Provider value={selectedSectionType || null}>
+                          <SectionTypeChangeContext.Provider value={onSectionTypeChange || null}>
+                            <VilleFilterContext.Provider value={selectedVille || null}>
+                              <CommuneFilterContext.Provider value={selectedCommune || null}>
+                                <QuartierFilterContext.Provider value={selectedQuartier || null}>
+                                  <TerritoireFilterContext.Provider value={selectedTerritoire || null}>
+                                    {BlockComponent ? (
+                                      <Suspense fallback={<BlockFallback />}>
+                                        <BlockComponent data={analytics} />
+                                      </Suspense>
+                                    ) : null}
+                                  </TerritoireFilterContext.Provider>
+                                </QuartierFilterContext.Provider>
+                              </CommuneFilterContext.Provider>
+                            </VilleFilterContext.Provider>
+                          </SectionTypeChangeContext.Provider>
+                        </SectionTypeContext.Provider>
                       </TerritoireChangeContext.Provider>
                     </QuartierChangeContext.Provider>
                   </CommuneChangeContext.Provider>
