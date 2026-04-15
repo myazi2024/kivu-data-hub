@@ -38,10 +38,16 @@ Le mode test est un système transversal contrôlé depuis l'admin (`AdminTestMo
 - Toutes les données test ont un préfixe `TEST-` sur leur identifiant de référence
 - Convention : `parcel_number`, `reference_number`, `invoice_number`
 
-### 6. Nettoyage automatique
-- Edge Function `cleanup-test-data` supprime les données test expirées
-- Respecte l'ordre FK (enfants → parents)
-- Journalisé dans `audit_logs`
+### 6. Nettoyage
+
+#### Méthode recommandée : RPC serveur
+- La fonction `cleanup_all_test_data()` supprime toutes les données test en respectant l'ordre FK (enfants → parents)
+- Appelable depuis l'admin via le bouton « Nettoyer tout » ou manuellement : `SELECT cleanup_all_test_data()`
+- Peut être planifiée via une tâche cron SQL
+
+#### Méthode dépréciée : Edge Function
+- L'Edge Function `cleanup-test-data` n'est plus recommandée
+- Utilisez la RPC serveur à la place
 
 ### 7. Simulation de paiement
 - Bouton « Simuler le paiement (test) » dans le catalogue de services
@@ -50,8 +56,8 @@ Le mode test est un système transversal contrôlé depuis l'admin (`AdminTestMo
 
 ## Routes miroir
 
-| Production | Test |
-|------------|------|
-| `/map` | `/test/map` |
-| `/cadastral-map` | `/test/cadastral-map` |
-| `/mon-compte` | `/test/mon-compte` |
+| Production | Test | Description |
+|------------|------|-------------|
+| `/map` | `/test/map` | Analytics / Données foncières (Construction, Titres, etc.) |
+| `/cadastral-map` | `/test/cadastral-map` | Carte cadastrale |
+| `/mon-compte` | `/test/mon-compte` | Espace utilisateur |

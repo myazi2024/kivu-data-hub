@@ -49,7 +49,7 @@ const GENERATION_STEPS: GenerationStep[] = [
   { label: 'Litiges fonciers', status: 'pending' },
   
   { label: 'Historique propriété & taxes', status: 'pending' },
-  { label: 'Bornages & hypothèques & permis', status: 'pending' },
+  { label: 'Bornages & hypothèques & autorisations', status: 'pending' },
   { label: 'Fraudes & certificats', status: 'pending' },
   { label: 'Mutations & lotissements', status: 'pending' },
 ];
@@ -274,8 +274,8 @@ export const useTestDataActions = ({
         updateStep(11, 'done');
       } catch (bmError) {
         updateStep(11, 'error');
-        failedSteps.push('Bornages/hypothèques/permis');
-        console.error('Bornages/hypothèques/permis/conflits (non-blocking):', bmError);
+        failedSteps.push('Bornages/hypothèques/autorisations');
+        console.error('Bornages/hypothèques/autorisations/conflits (non-blocking):', bmError);
       }
 
       // Step 12: Fraud attempts + certificates (non-blocking)
