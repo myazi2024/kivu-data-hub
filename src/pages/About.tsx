@@ -160,6 +160,7 @@ const About = () => {
       </main>
       <Footer />
     </div>
+    </>
   );
 };
 
