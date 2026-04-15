@@ -167,7 +167,6 @@ const ArticleDetail = () => {
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
-            </Button>
 
             {/* Image de couverture */}
             {article.cover_image_url && (
