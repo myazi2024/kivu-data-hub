@@ -226,6 +226,7 @@ export const useCCCFormState = ({
         ...c, permit: c.permit ? { ...c.permit, attachmentFile: null } : undefined
       })),
       soundEnvironment, nearbySoundSources,
+      isOccupied: formData.isOccupied, occupantCount: formData.occupantCount, hostingCapacity: formData.hostingCapacity,
       timestamp: new Date().toISOString()
     };
     try {
@@ -266,6 +267,7 @@ export const useCCCFormState = ({
         if (parsed.disputeFormData) setDisputeFormData(parsed.disputeFormData);
         if (parsed.soundEnvironment) setSoundEnvironment(parsed.soundEnvironment);
         if (parsed.nearbySoundSources) setNearbySoundSources(parsed.nearbySoundSources);
+        if (parsed.isOccupied !== undefined) setFormData(prev => ({ ...prev, isOccupied: parsed.isOccupied, occupantCount: parsed.occupantCount, hostingCapacity: parsed.hostingCapacity }));
         toast({ title: "Données restaurées", description: "Vos données précédentes ont été restaurées." });
       }
     } catch (error) {
@@ -876,6 +878,16 @@ export const useCCCFormState = ({
     if (soundEnvironment) filledFields += 1;
     if (soundEnvironment && soundEnvironment !== 'tres_calme' && nearbySoundSources) filledFields += 1;
     if (soundEnvironment && soundEnvironment !== 'tres_calme') totalFields += 1;
+    // Hosting capacity scoring (only if not Terrain nu)
+    const isNotTerrainNuForCapacity = formData.propertyCategory && formData.propertyCategory !== 'Terrain nu';
+    if (isNotTerrainNuForCapacity) {
+      totalFields += 1;
+      if (formData.isOccupied !== undefined && formData.isOccupied !== null) filledFields += 1;
+      if (formData.isOccupied !== undefined && formData.isOccupied !== null) {
+        totalFields += 1;
+        if (formData.hostingCapacity && formData.hostingCapacity > 0) filledFields += 1;
+      }
+    }
     const percentage = totalFields > 0 ? (filledFields / totalFields) * 100 : 0;
     const value = (percentage / 100) * 5;
     return { value: Math.min(value, 5), percentage: Math.min(percentage, 100), filledFields, totalFields };
@@ -1016,6 +1028,9 @@ export const useCCCFormState = ({
         buildingShapes: buildingShapes.length > 0 ? buildingShapes : undefined,
         soundEnvironment: soundEnvironment || undefined,
         nearbySoundSources: nearbySoundSources || undefined,
+        isOccupied: formData.isOccupied ?? undefined,
+        occupantCount: formData.occupantCount || undefined,
+        hostingCapacity: formData.hostingCapacity || undefined,
       };
 
       const result = editingContributionId ? await updateContribution(editingContributionId, dataToSubmit) : await submitContribution(dataToSubmit);
@@ -1118,6 +1133,9 @@ export const useCCCFormState = ({
           constructionNature: contrib.construction_nature || undefined, constructionMaterials: contrib.construction_materials || undefined,
           declaredUsage: contrib.declared_usage || undefined, standing: contrib.standing || undefined,
           constructionYear: contrib.construction_year || undefined,
+          isOccupied: (contrib as any).is_occupied ?? undefined,
+          occupantCount: (contrib as any).occupant_count || undefined,
+          hostingCapacity: (contrib as any).hosting_capacity || undefined,
           apartmentNumber: (contrib as any).apartment_number || undefined, floorNumber: (contrib as any).floor_number || undefined,
           areaSqm: contrib.area_sqm || undefined, province: contrib.province || undefined,
           ville: contrib.ville || undefined, commune: contrib.commune || undefined,
@@ -1486,6 +1504,9 @@ export const useCCCFormState = ({
     handleInputChange('declaredUsage', undefined);
     handleInputChange('standing', undefined);
     handleInputChange('constructionYear', undefined);
+    handleInputChange('isOccupied', undefined);
+    handleInputChange('occupantCount', undefined);
+    handleInputChange('hostingCapacity', undefined);
     handleInputChange('floorNumber', undefined);
     handleInputChange('apartmentNumber', undefined);
     setConstructionMode('unique');

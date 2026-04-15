@@ -33,6 +33,11 @@ export interface CadastralContributionData {
   standing?: string;
   constructionYear?: number;
   
+  // Capacité d'accueil
+  isOccupied?: boolean;
+  occupantCount?: number;
+  hostingCapacity?: number;
+  
   // Autorisation de bâtir
   buildingPermits?: Array<{
     permitType: 'construction' | 'regularization';
@@ -273,6 +278,9 @@ export const useCadastralContribution = () => {
       construction_nature: data.constructionNature,
       construction_materials: data.constructionMaterials || null,
       construction_year: data.constructionYear || null,
+      is_occupied: data.isOccupied ?? null,
+      occupant_count: data.occupantCount || null,
+      hosting_capacity: data.hostingCapacity || null,
       declared_usage: data.declaredUsage,
       standing: data.standing || null,
       building_permits: buildingPermitsSnake,
