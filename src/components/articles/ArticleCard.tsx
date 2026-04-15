@@ -5,12 +5,15 @@ import { Calendar, Eye, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
+import { useAppAppearance } from '@/hooks/useAppAppearance';
 
 interface ArticleCardProps {
   article: Article;
 }
 
 const ArticleCard = ({ article }: ArticleCardProps) => {
+  const { config } = useAppAppearance();
+
   return (
     <Link to={`/articles/${article.slug}`}>
       <Card className="h-full hover:shadow-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer">
@@ -54,6 +57,13 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
             <div className="flex items-center gap-1">
               <Eye className="h-3 w-3" />
               <span>{article.view_count}</span>
+              {config.logo_url && (
+                <img 
+                  src={config.logo_url} 
+                  alt="" 
+                  className="h-3 w-auto object-contain opacity-70 ml-1"
+                />
+              )}
             </div>
           </div>
           <div className="flex items-center gap-1 text-primary font-medium">
