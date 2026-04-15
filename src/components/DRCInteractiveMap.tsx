@@ -374,35 +374,22 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   </div>
                   
                   <div className="flex-1 min-h-0 overflow-hidden flex items-center justify-center p-1">
-                    {selectedTerritoire && selectedProvince ? (
+                    {selectedSectionType === 'rurale' || (selectedTerritoire && selectedProvince) ? (
                       <div className="w-full h-full">
                         <DRCTerritoiresMap
-                          province={selectedProvince.name}
+                          province={selectedProvince?.name}
                           territoire={selectedTerritoire}
-                          onTerritoireSelect={setSelectedTerritoire}
-                          territoireNames={getTerritoiresForProvince(selectedProvince.name)}
-                        />
-                      </div>
-                    ) : selectedSectionType === 'rurale' && selectedProvince ? (
-                      <div className="w-full h-full">
-                        <DRCTerritoiresMap
-                          province={selectedProvince.name}
-                          onTerritoireSelect={setSelectedTerritoire}
-                          territoireNames={getTerritoiresForProvince(selectedProvince.name)}
-                        />
-                      </div>
-                    ) : selectedSectionType === 'rurale' && !selectedProvince ? (
-                      <div className="w-full h-full">
-                        <DRCTerritoiresMap
-                          showAll
+                          showAll={!selectedProvince}
+                          territoireNames={selectedProvince ? getTerritoiresForProvince(selectedProvince.name) : undefined}
                           onTerritoireSelect={(name) => {
-                            // Resolve the province for this territoire
-                            const provinceName = getProvinceForTerritoire(name);
-                            if (provinceName) {
-                              const province = provincesData.find(p => p.name === provinceName);
-                              if (province) {
-                                setSelectedProvince(province);
-                                setExternalProvinceId(province.id);
+                            if (!selectedProvince) {
+                              const provinceName = getProvinceForTerritoire(name);
+                              if (provinceName) {
+                                const province = provincesData.find(p => p.name === provinceName);
+                                if (province) {
+                                  setSelectedProvince(province);
+                                  setExternalProvinceId(province.id);
+                                }
                               }
                             }
                             setSelectedTerritoire(name);

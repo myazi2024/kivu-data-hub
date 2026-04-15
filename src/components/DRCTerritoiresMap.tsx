@@ -6,13 +6,18 @@ interface Feature {
   geometry: { type: string; coordinates: any[] };
 }
 
+interface BBox {
+  minLng: number;
+  maxLng: number;
+  minLat: number;
+  maxLat: number;
+}
+
 interface Props {
   province?: string;
   territoire?: string;
   onTerritoireSelect?: (territoire: string) => void;
-  /** List of territoire names valid for the current province (from geographicData) */
   territoireNames?: string[];
-  /** When true, show all 164 territories (ignores territoireNames filter) */
   showAll?: boolean;
 }
 
@@ -41,7 +46,7 @@ function flatCoords(geometry: any): [number, number][] {
 
 function projectFeature(
   geometry: any,
-  bbox: { minLng: number; maxLng: number; minLat: number; maxLat: number },
+  bbox: BBox,
   width: number, height: number, padding: number,
 ): string {
   const lngRange = bbox.maxLng - bbox.minLng || 0.01;
@@ -74,7 +79,7 @@ function projectFeature(
   return paths.join(' ');
 }
 
-function centroid(geometry: any, bbox: any, w: number, h: number, padding: number): [number, number] {
+function centroid(geometry: any, bbox: BBox, w: number, h: number, padding: number): [number, number] {
   const coords = flatCoords(geometry);
   if (coords.length === 0) return [w / 2, h / 2];
   const avgLng = coords.reduce((s, c) => s + c[0], 0) / coords.length;
@@ -91,6 +96,12 @@ function centroid(geometry: any, bbox: any, w: number, h: number, padding: numbe
     offsetY + (bbox.maxLat - avgLat) * scale,
   ];
 }
+
+function bboxEqual(a: BBox, b: BBox): boolean {
+  return a.minLng === b.minLng && a.maxLng === b.maxLng && a.minLat === b.minLat && a.maxLat === b.maxLat;
+}
+
+const ANIM_DURATION = 400;
 
 const DRCTerritoiresMap: React.FC<Props> = ({ province, territoire, onTerritoireSelect, territoireNames, showAll }) => {
   const [features, setFeatures] = useState<Feature[]>([]);
@@ -122,7 +133,7 @@ const DRCTerritoiresMap: React.FC<Props> = ({ province, territoire, onTerritoire
     return features.filter(f => namesLower.has(f.properties.name?.toLowerCase()));
   }, [features, territoireNames, showAll]);
 
-  const bbox = useMemo(() => {
+  const targetBbox = useMemo<BBox>(() => {
     if (filtered.length === 0) return { minLng: 0, maxLng: 1, minLat: 0, maxLat: 1 };
     const source = territoire
       ? filtered.filter(f => f.properties.name.toLowerCase() === territoire.toLowerCase())
@@ -142,6 +153,42 @@ const DRCTerritoiresMap: React.FC<Props> = ({ province, territoire, onTerritoire
     return { minLng: minLng - padLng, maxLng: maxLng + padLng, minLat: minLat - padLat, maxLat: maxLat + padLat };
   }, [filtered, territoire]);
 
+  // Animated bbox interpolation
+  const [animBbox, setAnimBbox] = useState<BBox>(targetBbox);
+  const animRef = useRef<{ start: number; from: BBox; to: BBox }>({ start: 0, from: targetBbox, to: targetBbox });
+  const isFirstRender = useRef(true);
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      setAnimBbox(targetBbox);
+      animRef.current = { start: 0, from: targetBbox, to: targetBbox };
+      return;
+    }
+    if (bboxEqual(targetBbox, animRef.current.to)) return;
+
+    const from = animBbox;
+    animRef.current = { start: performance.now(), from, to: targetBbox };
+
+    let rafId: number;
+    const tick = (now: number) => {
+      const t = Math.min((now - animRef.current.start) / ANIM_DURATION, 1);
+      const ease = t * (2 - t); // easeOutQuad
+      const lerp = (a: number, b: number) => a + (b - a) * ease;
+      const next: BBox = {
+        minLng: lerp(animRef.current.from.minLng, animRef.current.to.minLng),
+        maxLng: lerp(animRef.current.from.maxLng, animRef.current.to.maxLng),
+        minLat: lerp(animRef.current.from.minLat, animRef.current.to.minLat),
+        maxLat: lerp(animRef.current.from.maxLat, animRef.current.to.maxLat),
+      };
+      setAnimBbox(next);
+      if (t < 1) rafId = requestAnimationFrame(tick);
+    };
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetBbox]);
+
   if (!province && !showAll) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground text-[10px]">
@@ -159,6 +206,7 @@ const DRCTerritoiresMap: React.FC<Props> = ({ province, territoire, onTerritoire
   }
 
   const padding = 20;
+  const showLabels = !showAll || !!territoire;
 
   return (
     <div ref={containerRef} className="w-full h-full relative">
@@ -168,7 +216,7 @@ const DRCTerritoiresMap: React.FC<Props> = ({ province, territoire, onTerritoire
           const isSelected = territoire && name.toLowerCase() === territoire.toLowerCase();
           const isHovered = hovered === name;
           const hasSelection = !!territoire;
-          const path = projectFeature(f.geometry, bbox, dims.w, dims.h, padding);
+          const path = projectFeature(f.geometry, animBbox, dims.w, dims.h, padding);
           const fill = isSelected ? HIGHLIGHT : isHovered ? 'hsl(var(--primary) / 0.55)' : hasSelection ? 'hsl(var(--muted) / 0.15)' : COLORS[i % COLORS.length];
           const stroke = isSelected ? HIGHLIGHT_STROKE : hasSelection ? 'hsl(var(--foreground) / 0.1)' : STROKE;
           const strokeWidth = isSelected ? 2 : isHovered ? 1.5 : 0.8;
@@ -188,8 +236,8 @@ const DRCTerritoiresMap: React.FC<Props> = ({ province, territoire, onTerritoire
           );
         })}
 
-        {(!showAll || territoire) && filtered.map((f) => {
-          const [cx, cy] = centroid(f.geometry, bbox, dims.w, dims.h, padding);
+        {showLabels && filtered.map((f) => {
+          const [cx, cy] = centroid(f.geometry, animBbox, dims.w, dims.h, padding);
           const name = f.properties.name;
           const isSelected = territoire && name.toLowerCase() === territoire.toLowerCase();
           return (
@@ -199,7 +247,7 @@ const DRCTerritoiresMap: React.FC<Props> = ({ province, territoire, onTerritoire
               y={cy}
               textAnchor="middle"
               dominantBaseline="central"
-              className={`pointer-events-none select-none ${isSelected ? 'fill-primary-foreground font-semibold' : 'fill-foreground'}`}
+              className={`pointer-events-none select-none transition-opacity duration-300 ${isSelected ? 'fill-primary-foreground font-semibold' : 'fill-foreground'}`}
               fontSize={filtered.length > 10 ? 7 : 9}
             >
               {name}
