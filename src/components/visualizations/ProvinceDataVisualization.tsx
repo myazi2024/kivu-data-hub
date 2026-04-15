@@ -1,6 +1,6 @@
 import React, { useState, memo, useMemo, Suspense } from 'react';
 import { useAppAppearance } from '@/hooks/useAppAppearance';
-import { FileText, Map, Search, ArrowRightLeft, Scissors, AlertTriangle, Loader2, Database, History, Award, Receipt, Landmark, FileCheck, DollarSign } from 'lucide-react';
+import { FileText, Building, Search, ArrowRightLeft, Scissors, AlertTriangle, Loader2, Database, History, Award, Receipt, Landmark, FileCheck, DollarSign } from 'lucide-react';
 import { useLandDataAnalytics, LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { ProvinceData } from '@/types/province';
 import { useAnalyticsTabsConfig, useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
@@ -31,7 +31,7 @@ const BlockFallback = () => (
 
 const ICON_MAP: Record<string, React.ComponentType<any>> = {
   'title-requests': FileText,
-  'parcels-titled': Map,
+  'parcels-titled': Building,
   'contributions': Database,
   'expertise': Search,
   'mutations': ArrowRightLeft,
