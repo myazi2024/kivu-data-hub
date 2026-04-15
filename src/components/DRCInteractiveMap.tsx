@@ -134,6 +134,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const [selectedCommune, setSelectedCommune] = useState<string | undefined>(undefined);
   const [selectedQuartier, setSelectedQuartier] = useState<string | undefined>(undefined);
   const [selectedTerritoire, setSelectedTerritoire] = useState<string | undefined>(undefined);
+  const [selectedSectionType, setSelectedSectionType] = useState<string>('all');
   const mapCardRef = React.useRef<HTMLDivElement>(null);
 
   const { isTestRoute } = useTestEnvironment();
@@ -378,6 +379,21 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                           territoireNames={getTerritoiresForProvince(selectedProvince.name)}
                         />
                       </div>
+                    ) : selectedSectionType === 'rurale' && selectedProvince ? (
+                      <div className="w-full h-full">
+                        <DRCTerritoiresMap
+                          province={selectedProvince.name}
+                          onTerritoireSelect={setSelectedTerritoire}
+                          territoireNames={getTerritoiresForProvince(selectedProvince.name)}
+                        />
+                      </div>
+                    ) : selectedSectionType === 'rurale' && !selectedProvince ? (
+                      <div className="w-full h-full">
+                        <DRCTerritoiresMap
+                          showAll
+                          onTerritoireSelect={setSelectedTerritoire}
+                        />
+                      </div>
                     ) : selectedVille && selectedCommune && selectedVille.toLowerCase() === 'goma' ? (
                       <div className="w-full h-full">
                         <DRCQuartiersMap ville={selectedVille} commune={selectedCommune} quartier={selectedQuartier} onQuartierSelect={setSelectedQuartier} />
@@ -612,10 +628,12 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                     onCommuneChange={setSelectedCommune}
                     onQuartierChange={setSelectedQuartier}
                     onTerritoireChange={setSelectedTerritoire}
+                    onSectionTypeChange={setSelectedSectionType}
                     selectedVille={selectedVille}
                     selectedCommune={selectedCommune}
                     selectedQuartier={selectedQuartier}
                     selectedTerritoire={selectedTerritoire}
+                    selectedSectionType={selectedSectionType}
                   />
                 </div>
               </CardContent>
