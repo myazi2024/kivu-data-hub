@@ -12,6 +12,8 @@ interface Props {
   onTerritoireSelect?: (territoire: string) => void;
   /** List of territoire names valid for the current province (from geographicData) */
   territoireNames?: string[];
+  /** When true, show all 164 territories (ignores territoireNames filter) */
+  showAll?: boolean;
 }
 
 const COLORS = [
@@ -90,7 +92,7 @@ function centroid(geometry: any, bbox: any, w: number, h: number, padding: numbe
   ];
 }
 
-const DRCTerritoiresMap: React.FC<Props> = ({ province, territoire, onTerritoireSelect, territoireNames }) => {
+const DRCTerritoiresMap: React.FC<Props> = ({ province, territoire, onTerritoireSelect, territoireNames, showAll }) => {
   const [features, setFeatures] = useState<Feature[]>([]);
   const [hovered, setHovered] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -114,10 +116,11 @@ const DRCTerritoiresMap: React.FC<Props> = ({ province, territoire, onTerritoire
   }, []);
 
   const filtered = useMemo(() => {
+    if (showAll) return features;
     if (!territoireNames || territoireNames.length === 0) return [];
     const namesLower = new Set(territoireNames.map(n => n.toLowerCase()));
     return features.filter(f => namesLower.has(f.properties.name?.toLowerCase()));
-  }, [features, territoireNames]);
+  }, [features, territoireNames, showAll]);
 
   const bbox = useMemo(() => {
     if (filtered.length === 0) return { minLng: 0, maxLng: 1, minLat: 0, maxLat: 1 };
@@ -139,7 +142,7 @@ const DRCTerritoiresMap: React.FC<Props> = ({ province, territoire, onTerritoire
     return { minLng: minLng - padLng, maxLng: maxLng + padLng, minLat: minLat - padLat, maxLat: maxLat + padLat };
   }, [filtered, territoire]);
 
-  if (!province) {
+  if (!province && !showAll) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground text-[10px]">
         Sélectionnez une province pour afficher les territoires

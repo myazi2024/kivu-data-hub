@@ -35,6 +35,12 @@ export const TerritoireFilterContext = createContext<string | null>(null);
 /** Context for territoire change callback */
 export const TerritoireChangeContext = createContext<((territoire: string | undefined) => void) | null>(null);
 
+/** Context to propagate section type (urbaine/rurale/all) to the map */
+export const SectionTypeContext = createContext<string | null>(null);
+
+/** Context for section type change callback */
+export const SectionTypeChangeContext = createContext<((sectionType: string) => void) | null>(null);
+
 import {
   getAllProvinces,
   getVillesForProvince,
@@ -69,6 +75,7 @@ export const AnalyticsFilters: React.FC<Props> = ({
   const communeChangeCtx = useContext(CommuneChangeContext);
   const quartierChangeCtx = useContext(QuartierChangeContext);
   const territoireChangeCtx = useContext(TerritoireChangeContext);
+  const sectionTypeChangeCtx = useContext(SectionTypeChangeContext);
   const handleVilleChange = onVilleChange || villeChangeCtx || (() => {});
   const handleCommuneChange = onCommuneChange || communeChangeCtx || (() => {});
   const handleQuartierChange = quartierChangeCtx || (() => {});
@@ -333,6 +340,7 @@ export const AnalyticsFilters: React.FC<Props> = ({
           });
           handleVilleChange(undefined);
           handleCommuneChange(undefined);
+          sectionTypeChangeCtx?.(v);
         }}>
           <SelectTrigger className={selectCls}><SelectValue /></SelectTrigger>
           <SelectContent>
