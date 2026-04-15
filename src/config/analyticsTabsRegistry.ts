@@ -48,7 +48,12 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'parcels-titled', item_key: 'permit-type', item_type: 'chart', is_visible: true, display_order: 13, custom_title: 'Autorisation de bâtir', chart_type: 'donut' },
       { tab_key: 'parcels-titled', item_key: 'building-size', item_type: 'chart', is_visible: true, display_order: 14, custom_title: 'Taille construction', chart_type: 'bar-v' },
       { tab_key: 'parcels-titled', item_key: 'building-height', item_type: 'chart', is_visible: true, display_order: 15, custom_title: 'Hauteur construction', chart_type: 'bar-v' },
-      { tab_key: 'parcels-titled', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 16, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
+      { tab_key: 'parcels-titled', item_key: 'occupation', item_type: 'chart', is_visible: true, display_order: 16, custom_title: 'Occupation', chart_type: 'pie' },
+      { tab_key: 'parcels-titled', item_key: 'lease-type', item_type: 'chart', is_visible: true, display_order: 17, custom_title: 'Type de bail', chart_type: 'bar-h' },
+      { tab_key: 'parcels-titled', item_key: 'floor-dist', item_type: 'chart', is_visible: true, display_order: 18, custom_title: 'Étages', chart_type: 'bar-v' },
+      { tab_key: 'parcels-titled', item_key: 'sound-env', item_type: 'chart', is_visible: true, display_order: 19, custom_title: 'Env. sonore', chart_type: 'donut' },
+      { tab_key: 'parcels-titled', item_key: 'noise-sources', item_type: 'chart', is_visible: true, display_order: 20, custom_title: 'Sources de bruit', chart_type: 'bar-h' },
+      { tab_key: 'parcels-titled', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 21, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
     ],
     kpis: [
       { tab_key: 'parcels-titled', item_key: 'kpi-parcels', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Parcelles' },
@@ -57,6 +62,9 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'parcels-titled', item_key: 'kpi-surface', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Surface tot.' },
       { tab_key: 'parcels-titled', item_key: 'kpi-avg-surface', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Surface moy.' },
       { tab_key: 'parcels-titled', item_key: 'kpi-density', item_type: 'kpi', is_visible: true, display_order: 5, custom_title: 'Densité' },
+      { tab_key: 'parcels-titled', item_key: 'kpi-occupied', item_type: 'kpi', is_visible: true, display_order: 6, custom_title: 'Habitées' },
+      { tab_key: 'parcels-titled', item_key: 'kpi-hosting', item_type: 'kpi', is_visible: true, display_order: 7, custom_title: 'Capacité accueil' },
+      { tab_key: 'parcels-titled', item_key: 'kpi-multi-constr', item_type: 'kpi', is_visible: true, display_order: 8, custom_title: 'Multi-constructions' },
     ],
   },
   'contributions': {
@@ -74,7 +82,9 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'contributions', item_key: 'fraud-reason', item_type: 'chart', is_visible: true, display_order: 9, custom_title: 'Motif fraude', chart_type: 'bar-h' },
       { tab_key: 'contributions', item_key: 'appeal-status', item_type: 'chart', is_visible: true, display_order: 10, custom_title: 'Statut appel', chart_type: 'donut' },
       { tab_key: 'contributions', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 11, custom_title: 'Géographie' },
-      { tab_key: 'contributions', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 12, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
+      { tab_key: 'contributions', item_key: 'occupation', item_type: 'chart', is_visible: true, display_order: 12, custom_title: 'Occupation', chart_type: 'pie' },
+      { tab_key: 'contributions', item_key: 'lease-type', item_type: 'chart', is_visible: true, display_order: 13, custom_title: 'Type de bail', chart_type: 'donut' },
+      { tab_key: 'contributions', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 14, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
     ],
     kpis: [
       { tab_key: 'contributions', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Total' },
@@ -83,6 +93,7 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'contributions', item_key: 'kpi-suspicious', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Suspectes' },
       { tab_key: 'contributions', item_key: 'kpi-appeals', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Appels' },
       { tab_key: 'contributions', item_key: 'kpi-delay', item_type: 'kpi', is_visible: true, display_order: 5, custom_title: 'Délai moy.' },
+      { tab_key: 'contributions', item_key: 'kpi-with-lease', item_type: 'kpi', is_visible: true, display_order: 6, custom_title: 'Avec bail' },
     ],
   },
   'expertise': {
