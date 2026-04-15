@@ -78,7 +78,7 @@ const InsightText: React.FC<{ text?: string }> = ({ text }) => {
 export const WatermarkContext = createContext<string>('BIC - Tous droits réservés');
 
 /** Context providing logo watermark config */
-export interface WatermarkConfig { opacity: number; size: number; position: string }
+export interface WatermarkConfig { opacity: number; size: number; position: string; logoUrl?: string }
 export const WatermarkConfigContext = createContext<WatermarkConfig>({ opacity: 0.06, size: 80, position: 'center' });
 
 /** Logo watermark overlay */
@@ -93,7 +93,7 @@ const LogoWatermark: React.FC = () => {
   };
   return (
     <img
-      src="/bic-logo.png"
+      src={config.logoUrl || "/bic-logo.png"}
       alt=""
       className="absolute pointer-events-none select-none"
       style={{
