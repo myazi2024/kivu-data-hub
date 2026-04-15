@@ -1,48 +1,64 @@
 
 
-# Déplacer le visuel "Type de bail" vers l'onglet Titres fonciers
+# Afficher les territoires sur la carte quand filtre = Rurale
 
 ## Contexte
 
-Le champ `lease_type` (type de bail) est lié au type de titre de propriété collecté dans le formulaire CCC. Il appartient logiquement à l'onglet **Titres fonciers** (`title-requests`) et non à **Parcelles** (`parcels-titled`).
+Quand l'utilisateur sélectionne `Rurale > Tous les territoires` dans le filtre analytique, la carte RDC (panneau gauche) continue d'afficher la carte des provinces. Elle ne bascule vers `DRCTerritoiresMap` que si un territoire spécifique est sélectionné ET une province est choisie.
 
-Le graphique doit exploiter les données de `data.parcels` (où `lease_type` existe) tout en étant affiché dans le `TitleRequestsBlock`.
+**Objectif** : Quand le filtre de section est `rurale`, afficher automatiquement la couche des 164 territoires (depuis `drc-territoires.geojson` existant) sur la carte RDC.
 
 ## Modifications
 
-### 1. `TitleRequestsBlock.tsx` — Ajouter le graphique lease-type
+### 1. Créer un `SectionTypeContext` — `AnalyticsFilters.tsx`
 
-- Importer `KeyRound` de lucide-react
-- Ajouter `const byLeaseType = useMemo(() => countBy(data.parcels, 'lease_type'), [data.parcels]);`
-- Ajouter l'entrée `lease-type` dans `chartDefs` avec `data.parcels` comme `rawRecords`
+Ajouter un nouveau contexte `SectionTypeContext` et `SectionTypeChangeContext` pour propager le type de section sélectionné dans les filtres vers la carte.
 
-### 2. `ParcelsWithTitleBlock.tsx` — Retirer lease-type
+### 2. Propager le contexte — `ProvinceDataVisualization.tsx`
 
-- Supprimer l'entrée `lease-type` de `chartDefs`
-- Retirer `charts.byLeaseType` du calcul `useMemo` des charts
-- Nettoyer la référence dans les dépendances
+- Ajouter une prop `onSectionTypeChange` et `selectedSectionType` à l'interface
+- Envelopper le contenu avec les nouveaux providers de section type
 
-### 3. `analyticsTabsRegistry.ts` — Déplacer l'entrée de config
+### 3. Connecter dans `DRCInteractiveMap.tsx`
 
-- **Retirer** de `parcels-titled.charts` : `{ tab_key: 'parcels-titled', item_key: 'lease-type', ... }`
-- **Ajouter** dans `title-requests.charts` : `{ tab_key: 'title-requests', item_key: 'lease-type', item_type: 'chart', is_visible: true, display_order: 14, custom_title: 'Type de bail', chart_type: 'bar-h' }`
-- Renuméroter les `display_order` dans `parcels-titled` si nécessaire
+- Ajouter un state `selectedSectionType` (string)
+- Passer `onSectionTypeChange={setSelectedSectionType}` au composant `ProvinceDataVisualization`
+- Modifier la logique conditionnelle de la carte (lignes ~371-405) :
 
-### 4. `crossVariables.ts` — Déplacer les croisements
+```text
+Logique actuelle :
+  territoire + province → DRCTerritoiresMap
+  ville + commune (goma) → DRCQuartiersMap
+  ville → DRCCommunesMap
+  sinon → DRCMapWithTooltip (provinces)
 
-- **Retirer** `'lease-type'` de `parcels-titled`
-- **Ajouter** dans `title-requests` : `'lease-type': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }]`
+Nouvelle logique :
+  territoire + province → DRCTerritoiresMap (inchangé)
+  sectionType === 'rurale' + province → DRCTerritoiresMap (NOUVEAU)
+     avec tous les territoires de la province, aucun sélectionné
+  sectionType === 'rurale' + pas de province → DRCTerritoiresMap (NOUVEAU)
+     avec les 164 territoires, vue complète RDC
+  ville + commune (goma) → DRCQuartiersMap (inchangé)
+  ville → DRCCommunesMap (inchangé)
+  sinon → DRCMapWithTooltip (inchangé)
+```
 
-### 5. `ContributionsBlock.tsx` — Conserver tel quel
+### 4. Adapter `DRCTerritoiresMap.tsx`
 
-Le graphique `lease-type` dans Contributions reste en place car il montre les baux déclarés dans les contributions (source différente).
+- Modifier le filtrage : quand `territoireNames` est vide/undefined mais `showAll` est true, afficher toutes les features
+- Ajouter une prop optionnelle `showAll?: boolean` pour le mode tous-territoires
+- Adapter le bbox pour cadrer sur la RDC entière quand `showAll` est actif
+
+### 5. Propager le sectionType depuis les filtres — `AnalyticsFilters.tsx`
+
+Quand le select de section change, appeler le callback `SectionTypeChangeContext` pour informer la carte.
 
 ## Fichiers impactés
 
-| Fichier | Action |
-|---------|--------|
-| `src/components/visualizations/blocks/TitleRequestsBlock.tsx` | +chart lease-type (données parcels) |
-| `src/components/visualizations/blocks/ParcelsWithTitleBlock.tsx` | −chart lease-type |
-| `src/config/analyticsTabsRegistry.ts` | Déplacer entrée parcels→title-requests |
-| `src/config/crossVariables.ts` | Déplacer croisement parcels→title-requests |
+| Fichier | Modification |
+|---------|-------------|
+| `src/components/visualizations/filters/AnalyticsFilters.tsx` | +2 contextes (SectionType, SectionTypeChange), appeler le callback |
+| `src/components/visualizations/ProvinceDataVisualization.tsx` | +props sectionType, providers |
+| `src/components/DRCInteractiveMap.tsx` | +state sectionType, logique conditionnelle carte |
+| `src/components/DRCTerritoiresMap.tsx` | +prop showAll, afficher tous les territoires |
 
