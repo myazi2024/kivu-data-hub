@@ -1,50 +1,46 @@
 
 
-# Réorganisation des onglets Analytics : Parcelle → Construction + Titres fonciers
+# Audit de configuration graphique Analytics
 
-## Analyse des doublons
+## Résumé des anomalies trouvées
 
-Visuels à déplacer depuis "Parcelles" vers "Titres fonciers" :
+### 1. Variables croisées orphelines dans `parcels-titled` (crossVariables.ts)
 
-| Visuel (Parcelles) | Existe déjà dans Titres ? | Action |
+Après la migration "Parcelle → Construction", 4 entrées de variables croisées restent dans `CROSS_VARIABLE_REGISTRY['parcels-titled']` pour des graphiques **qui n'existent plus** dans cet onglet :
+
+| Clé orpheline | Anciennement | Statut |
 |---|---|---|
-| `legal-status` — Propriétaires | ✅ Oui (`legal-status`) | **Supprimer** de Parcelles |
-| `gender` — Genre propriétaires | ✅ Oui (`gender`) | **Supprimer** de Parcelles |
-| `surface` — Superficie | ✅ Oui (`surface`) | **Supprimer** de Parcelles |
-| `geo` — Géographie | ✅ Oui (`geo`) | **Supprimer** de Parcelles |
-| `evolution` — Évolution | ✅ Oui (`evolution`) | **Supprimer** de Parcelles |
-| `subdivided` — Loties vs Non loties | ❌ Non | **Ajouter** dans TitleRequestsBlock |
+| `legal-status` (ligne 22) | Déplacé vers title-requests | **À supprimer** |
+| `gender` (ligne 23) | Déplacé vers title-requests | **À supprimer** |
+| `subdivided` (ligne 32) | Déplacé vers title-requests | **À supprimer** |
+| `surface` (ligne 33) | Déplacé vers title-requests | **À supprimer** |
 
-## Modifications
+Ces entrées sont inoffensives (jamais lues car les charts correspondants n'existent plus dans `parcels-titled`) mais polluent la config admin.
 
-### 1. `src/config/analyticsTabsRegistry.ts`
+### 2. Variables croisées manquantes dans `title-requests`
 
-- **Renommer** le label de `parcels-titled` : `'Parcelles'` → `'Construction'`
-- **Supprimer** les entrées charts : `legal-status`, `gender`, `surface`, `subdivided`, `geo`, `evolution`
-- **Ajouter** 2 nouveaux charts construction : `construction-evolution` (tendance mensuelle des constructions) et `construction-geo` (géographie des constructions)
-- **Ajouter** dans `title-requests.charts` : `subdivided` (Loties vs Non loties)
-- **Nettoyer les KPIs** : supprimer `kpi-parcels` (renommer en `kpi-constructions`), retirer `kpi-urban`, `kpi-rural`, `kpi-surface`, `kpi-avg-surface`, `kpi-density` (données parcellaires, pas construction). Garder `kpi-occupied`, `kpi-hosting`, `kpi-multi-constr`. Ajouter un KPI `kpi-constructions` (total constructions).
+Le graphique `subdivided` a été ajouté dans `TitleRequestsBlock` avec `cx('subdivided')`, mais **aucune entrée `subdivided`** n'existe dans `CROSS_VARIABLE_REGISTRY['title-requests']`. Résultat : le picklist de variables croisées est vide pour ce graphique.
 
-### 2. `src/components/visualizations/blocks/ParcelsWithTitleBlock.tsx`
+### 3. Aucune autre incohérence détectée
 
-- **Supprimer** les calculs et les chartDefs pour : `legal-status`, `gender`, `genderData`, `genderInsight`, `subdividedData`, `surface`/`surfaceDist`, `geo` (GeoCharts), `evolution` (trend)
-- **Supprimer** les KPIs parcellaires (`urbanCount`, `ruralCount`, `totalSurface`, `avgSurface`, `density`)
-- **Ajouter** `construction-evolution` : `trendByMonth` basé sur `construction_year` ou `created_at` des parcelles ayant une construction
-- **Ajouter** `construction-geo` : `<GeoCharts>` filtré sur les parcelles construites uniquement
-- **Adapter** les KPIs restants pour le contexte "Construction" (total = parcelles construites)
+- **Registry ↔ Blocks** : tous les `item_key` dans `analyticsTabsRegistry.ts` ont un `chartDef` correspondant dans les blocs.
+- **Tabs système** (`_global`, `rdc-map`) : correctement exclus par `isUserTab` / `isChartsViewTab`.
+- **Filtres** : `buildFilterDefaults` couvre tous les onglets utilisateur.
+- **Terminologie** : "Autorisation" utilisé partout (pas de "Permis" résiduel).
 
-### 3. `src/components/visualizations/blocks/TitleRequestsBlock.tsx`
+---
 
-- **Ajouter** le visuel `subdivided` (Loties vs Non loties) utilisant `data.parcels` (même logique que dans ParcelsWithTitleBlock actuel)
-- Import de `countBy` pour `is_subdivided` sur `data.parcels`
+## Plan de correction
 
-### 4. `src/components/visualizations/ProvinceDataVisualization.tsx`
+### Fichier : `src/config/crossVariables.ts`
 
-- **Changer l'icône** de `parcels-titled` : `Map` → `Building` (plus cohérent avec "Construction")
+**A. Supprimer les 4 entrées orphelines** de `parcels-titled` :
+- Retirer `legal-status`, `gender`, `subdivided`, `surface`
 
-### Fichiers modifiés (4)
-- `src/config/analyticsTabsRegistry.ts`
-- `src/components/visualizations/blocks/ParcelsWithTitleBlock.tsx`
-- `src/components/visualizations/blocks/TitleRequestsBlock.tsx`
-- `src/components/visualizations/ProvinceDataVisualization.tsx`
+**B. Ajouter l'entrée manquante** dans `title-requests` :
+```ts
+'subdivided': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }],
+```
+
+Un seul fichier modifié, 5 lignes changées.
 
