@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Info, Trash2, X } from 'lucide-react';
+import { Info, Trash2, X, Users } from 'lucide-react';
 import { MdInsertDriveFile } from 'react-icons/md';
 import { cn } from '@/lib/utils';
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
@@ -29,6 +29,10 @@ export interface AdditionalConstruction {
   constructionYear?: number;
   apartmentNumber?: string;
   floorNumber?: string;
+  // Capacité d'accueil
+  isOccupied?: boolean;
+  occupantCount?: number;
+  hostingCapacity?: number;
   // Autorisation de bâtir
   permitMode?: 'existing' | 'request';
   permit?: AdditionalConstructionPermit;
@@ -397,6 +401,77 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
             </SelectContent>
           </Select>
         </div>
+      )}
+
+      {/* Capacité d'accueil */}
+      {isNotTerrainNu && (
+        <>
+          <div className="border-t border-border/50 my-2" />
+          <div className="flex items-start gap-2 mb-2">
+            <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+              <Users className="h-3.5 w-3.5 text-primary" />
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-foreground">Capacité d'accueil</h4>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">
+                Votre {data.propertyCategory?.toLowerCase() || 'bien'} est-il habité ?
+              </Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={data.isOccupied === true ? 'default' : 'outline'}
+                  size="sm"
+                  className="rounded-xl"
+                  onClick={() => update('isOccupied', true)}
+                >
+                  Oui
+                </Button>
+                <Button
+                  type="button"
+                  variant={data.isOccupied === false ? 'default' : 'outline'}
+                  size="sm"
+                  className="rounded-xl"
+                  onClick={() => {
+                    onChange(index, { ...data, isOccupied: false, occupantCount: undefined });
+                  }}
+                >
+                  Non
+                </Button>
+              </div>
+            </div>
+
+            {data.isOccupied === true && (
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">Combien de personnes y vivent ?</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={data.occupantCount || ''}
+                  onChange={(e) => update('occupantCount', e.target.value ? parseInt(e.target.value) : undefined)}
+                  placeholder="Ex: 4"
+                  className="h-10 rounded-xl text-sm"
+                />
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Capacité d'accueil (personnes)</Label>
+              <Input
+                type="number"
+                min={1}
+                value={data.hostingCapacity || ''}
+                onChange={(e) => update('hostingCapacity', e.target.value ? parseInt(e.target.value) : undefined)}
+                placeholder="Ex: 10"
+                className="h-10 rounded-xl text-sm"
+              />
+            </div>
+          </div>
+        </>
       )}
 
       {/* Section Autorisation de bâtir */}
