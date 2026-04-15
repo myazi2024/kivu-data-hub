@@ -1,106 +1,109 @@
 
-# Audit détaillé de l'espace Admin
 
-## Architecture générale
+# Audit d'alignement : Formulaire CCC ↔ Menu Données Foncières
 
-```text
-Admin.tsx (orchestrateur)
-  ├── AdminSidebar.tsx (navigation, 10 catégories, 65+ onglets)
-  ├── AdminDashboardHeader.tsx (barre recherche ⌘K, notifications, profil)
-  └── tabComponents{} (lazy-loaded, 66 composants)
-      ├── Vue d'ensemble (3)
-      ├── Utilisateurs & Sécurité (4)
-      ├── Contributions CCC (5)
-      ├── Paiements (7)
-      ├── Facturation & Commerce (8)
-      ├── Carte & Configuration (9)
-      ├── Demandes & Procédures (10)
-      ├── Historiques & Litiges (7)
-      ├── Contenu (6)
-      └── Système (6)
-```
+## Méthodologie
 
-Total : **~32 700 lignes** dans `src/components/admin/*.tsx` + ~9 700 dans sous-dossiers = **~42 400 lignes** de code admin.
-
-## Points positifs
-
-1. **Lazy loading** systématique de tous les onglets — bon temps de chargement initial
-2. **Recherche globale** (⌘K) avec résultats menus + DB (utilisateurs, parcelles, factures)
-3. **Badges en temps réel** pour 9 files d'attente (CCC, paiements, litiges, hypothèques, etc.)
-4. **Sidebar collapsible** avec recherche par mots-clés et totaux de badges par catégorie
-5. **Export CSV/JSON** sur le dashboard + plusieurs sous-modules
-6. **Breadcrumb** dynamique catégorie → label
-7. **Mode Test** avec génération/nettoyage de données de test
-8. **Vérification admin** côté client via `user_roles` (pas localStorage)
+Comparaison des champs collectés par le formulaire CCC (`useCadastralContribution.tsx`), stockés en DB (`cadastral_contributions`), et exploités dans les blocs analytics (`useLandDataAnalytics.tsx` → `ContributionsBlock.tsx` + `ParcelsWithTitleBlock.tsx`).
 
 ---
 
-## Anomalies détectées
+## Champs collectés par le CCC mais ABSENTS des requêtes analytics
 
-### Sévérité CRITIQUE
-
-| # | Localisation | Problème |
-|---|-------------|----------|
-| 1 | `AdminPayments.tsx:90-95` | **Mise à jour directe du statut de paiement** depuis le client (`supabase.update`). Viole la règle projet : les paiements doivent passer par des Edge Functions avec `SERVICE_ROLE_KEY`. Risque de manipulation de statuts. |
-| 2 | Toutes les requêtes admin (Payments, CCC, Mutations, LandTitle, Expertise) | **Aucun `.limit()`** sur les `SELECT`. Supabase tronque silencieusement à 1000 lignes. Un admin avec >1000 enregistrements verra des données incomplètes sans aucun avertissement. |
-
-### Sévérité MAJEURE
-
-| # | Localisation | Problème |
-|---|-------------|----------|
-| 3 | `Admin.tsx:45` | **Doublon de route** : `map-legend` et `contribution-config` chargent le même composant `AdminContributionConfig`. Le tab `map-legend` reçoit `{ initialTab: 'map', scrollToLegend: true }` mais `AdminContributionConfig` n'accepte peut-être pas ces props — à vérifier. |
-| 4 | `AdminCCCContributions.tsx` | **1762 lignes** — très au-dessus du seuil de 1000 lignes. Contient validation, approbation, rejet, galerie docs, appels, et autorisations dans un seul fichier. Candidat urgent à la modularisation. |
-| 5 | `AdminContributionConfig.tsx` | **1620 lignes** — même problème. |
-| 6 | `AdminMutationRequests.tsx` | **1123 lignes** — même problème. |
-| 7 | `AdminExpertiseRequests.tsx` | **1113 lignes** — même problème. |
-
-### Sévérité MINEURE
-
-| # | Localisation | Problème |
-|---|-------------|----------|
-| 8 | `AdminUserRoles.tsx` (388 lignes) | **Composant orphelin** : remplacé par `AdminUserRolesEnhanced.tsx` mais jamais supprimé. Code mort. |
-| 9 | `AdminDocumentVerifications.tsx` (190 lignes) | **Composant orphelin** : n'apparaît ni dans le sidebar ni dans `tabComponents`. Inaccessible. |
-| 10 | `AdminSearchConfig.tsx` (230 lignes) | **Composant orphelin** : le tab `search-config` charge `AdminSearchBarConfig`, pas `AdminSearchConfig`. |
-| 11 | `Admin.tsx:104-116` | **Vérification admin client-side uniquement** : la requête `user_roles` est faite côté client avec la clé anon. Les RLS doivent protéger les données des onglets admin, mais si une table a des policies trop permissives, un non-admin pourrait accéder aux données via l'API directe. |
-| 12 | `AdminPayments.tsx:46-48` | **`useEffect(() => { fetchPayments(); }, [])`** sans cleanup ni gestion d'abort. Si le composant se démonte avant la réponse, risque de `setState` sur composant démonté (warning React). Même pattern dans 6+ composants admin. |
-
-### INFO
-
-| # | Observation |
-|---|-------------|
-| 13 | **66 onglets** dans le sidebar — la densité est élevée. L'UX pourrait bénéficier d'un regroupement ou d'une hiérarchie plus profonde. |
-| 14 | Le `REFRESHABLE_TABS` (ligne 81) ne contient que `users`, `payments`, `publications`. D'autres onglets avec des files d'attente (CCC, mutations, etc.) ne bénéficient pas du refresh automatique après une action. |
-| 15 | Pas de gestion d'erreur globale (error boundary) autour du `Suspense` pour les composants lazy-loadés. Un composant qui crash affiche un écran blanc. |
+| # | Champ CCC (DB) | Type | Bloc concerné | Impact |
+|---|---------------|------|---------------|--------|
+| 1 | `is_occupied` | boolean | Contributions + Parcelles | **Données d'occupation jamais visualisées**. Le formulaire collecte si le bien est habité, mais aucun graphique ne l'exploite. |
+| 2 | `occupant_count` | integer | Contributions + Parcelles | **Nombre d'occupants ignoré**. Pourrait alimenter un KPI ou une distribution. |
+| 3 | `hosting_capacity` | integer | Contributions + Parcelles | **Capacité d'accueil ignorée**. Même situation. |
+| 4 | `lease_type` | text | Contributions | Collecté mais **non sélectionné** dans la requête `fetchAll` des contributions (ligne 91). Présent côté parcelles (ligne 87) mais aucun graphique ne l'exploite dans `ParcelsWithTitleBlock`. |
+| 5 | `lease_years` | integer | Contributions + Parcelles | Sélectionné pour parcelles mais **aucun graphique** ne l'exploite. |
+| 6 | `floor_number` | text | Contributions + Parcelles | Collecté, stocké en DB, mais **jamais sélectionné ni visualisé**. |
+| 7 | `apartment_number` | text | Contributions + Parcelles | Même situation que `floor_number`. |
+| 8 | `additional_constructions` | jsonb | Contributions + Parcelles | Stocké en DB, **jamais sélectionné ni exploité** dans les analytics. Données multi-constructions invisibles. |
+| 9 | `road_sides` | jsonb | Contributions + Parcelles | Côtés donnant sur route, types de voie — **jamais exploités**. |
+| 10 | `servitude_data` | jsonb | Contributions + Parcelles | Servitudes — **jamais exploitées**. |
+| 11 | `has_dispute` | boolean | Contributions | Sélectionné pour parcelles, mais **pas sélectionné** dans la requête contributions (ligne 91). |
+| 12 | `title_issue_date` | date | Contributions + Parcelles | Stocké mais **jamais exploité** (âge du titre). |
 
 ---
 
-## Plan de corrections proposé
+## Champs sélectionnés mais NON EXPLOITÉS dans les graphiques
 
-### Phase 1 — Sécurité & Données (prioritaire)
+| # | Champ | Sélectionné dans | Visualisé ? |
+|---|-------|-------------------|-------------|
+| 13 | `lease_type` (parcelles) | `fetchAll` parcelles | Non — aucun `countBy` ni chart |
+| 14 | `lease_years` (parcelles) | `fetchAll` parcelles | Non |
+| 15 | `gps_coordinates` (parcelles) | `fetchAll` parcelles | Non (seulement pour la carte interactive, pas les analytics) |
 
-| Action | Fichier | Détail |
-|--------|---------|--------|
-| A1 | `AdminPayments.tsx` | Remplacer `supabase.update` par un appel Edge Function pour la mise à jour de statut |
-| A2 | 5+ composants admin | Ajouter pagination serveur ou `.limit()` explicite + indicateur "résultats tronqués" |
-| A3 | `Admin.tsx` | Ajouter un `ErrorBoundary` autour du `Suspense` |
+---
 
-### Phase 2 — Nettoyage code mort
+## Champs correctement alignés (CCC → DB → Analytics)
 
-| Action | Fichier | Détail |
-|--------|---------|--------|
-| A4 | `AdminUserRoles.tsx` | Supprimer (remplacé par Enhanced) |
-| A5 | `AdminDocumentVerifications.tsx` | Supprimer ou intégrer dans le sidebar |
-| A6 | `AdminSearchConfig.tsx` | Supprimer (remplacé par SearchBarConfig) |
-| A7 | `Admin.tsx:45` | Corriger le doublon `map-legend` |
+| Champ | Contributions | Parcelles |
+|-------|:---:|:---:|
+| `property_title_type` | ✅ | ✅ |
+| `current_owner_legal_status` | ✅ | ✅ |
+| `current_owners_details` (genre) | ✅ | ✅ (via contribs) |
+| `declared_usage` | ✅ | ✅ |
+| `construction_type` | ✅ | ✅ |
+| `construction_nature` | — | ✅ |
+| `construction_materials` | — | ✅ |
+| `construction_year` | — | ✅ |
+| `property_category` | ✅ | ✅ |
+| `standing` | — | ✅ |
+| `area_sqm` | — | ✅ |
+| `building_permits` (type) | — | ✅ (via contribs) |
+| `building_shapes` (taille, hauteur) | — | ✅ (via contribs) |
+| `sound_environment` | — | ✅ (via contribs) |
+| `nearby_noise_sources` | — | ✅ (via contribs) |
+| `status` / fraude / appels | ✅ | — |
+| `is_subdivided` | — | ✅ |
+| `parcel_type` (SU/SR) | — | ✅ |
 
-### Phase 3 — Modularisation (maintenabilité)
+---
 
-| Action | Fichier | Détail |
-|--------|---------|--------|
-| A8 | `AdminCCCContributions.tsx` | Extraire en sous-composants (validation, détail, galerie) |
-| A9 | `AdminContributionConfig.tsx` | Même approche |
-| A10 | `AdminMutationRequests.tsx` | Même approche |
-| A11 | `AdminExpertiseRequests.tsx` | Même approche |
+## Plan de corrections
+
+### Phase 1 — Ajouter les champs manquants à la requête SELECT (prioritaire)
+
+**Fichier** : `src/hooks/useLandDataAnalytics.tsx`
+
+Ajouter à la requête `fetchAll` des contributions (ligne 91) :
+- `is_occupied, occupant_count, hosting_capacity`
+- `lease_type, lease_years`
+- `floor_number, apartment_number`
+- `additional_constructions`
+- `road_sides, servitude_data`
+- `has_dispute`
+- `title_issue_date`
+
+Ajouter à la requête `fetchAll` des parcelles (ligne 87) :
+- `is_occupied, occupant_count, hosting_capacity`
+
+**Fichier** : `src/types/landAnalytics.ts`
+
+Mettre à jour `ContributionRecord` et `ParcelRecord` pour inclure les types des nouveaux champs.
+
+### Phase 2 — Créer les graphiques manquants
+
+**Fichier** : `src/components/visualizations/blocks/ParcelsWithTitleBlock.tsx`
+
+Ajouter 4 nouveaux graphiques :
+1. **Occupation** : Pie chart `is_occupied` (Habité / Non habité)
+2. **Type de bail** : Bar chart `lease_type` (Initial / Renouvellement)
+3. **Nombre d'étages** : Distribution `floor_number`
+4. **Multi-constructions** : KPI comptant les parcelles avec `additional_constructions.length > 0`
+
+**Fichier** : `src/components/visualizations/blocks/ContributionsBlock.tsx`
+
+Ajouter 2 graphiques :
+1. **Occupation** : Pie chart `is_occupied`
+2. **Type de bail** : Donut `lease_type`
+
+### Phase 3 — Enrichir les KPIs existants
+
+- **ParcelsWithTitleBlock** : Ajouter KPI "Parcelles habitées" et "Capacité d'accueil totale"
+- **ContributionsBlock** : Ajouter KPI "Contributions avec bail"
 
 ---
 
@@ -108,9 +111,11 @@ Total : **~32 700 lignes** dans `src/components/admin/*.tsx` + ~9 700 dans sous-
 
 | Catégorie | Count |
 |-----------|-------|
-| Critique (sécurité/données) | 2 |
-| Majeur (maintenabilité) | 5 |
-| Mineur (code mort, patterns) | 5 |
-| Info | 3 |
+| Champs collectés mais non exploités | 12 |
+| Champs sélectionnés mais non visualisés | 3 |
+| Champs correctement alignés | 18 |
+| Nouveaux graphiques à créer | 6 |
+| Nouveaux KPIs à ajouter | 3 |
 
-**Recommandation** : Commencer par la Phase 1 (sécurité), puis Phase 2 (nettoyage rapide), puis Phase 3 (modularisation progressive).
+**Taux d'exploitation actuel** : ~60% des données CCC sont exploitées dans les analytics. Les 40% manquants concernent principalement l'occupation, les baux, les étages, et les données JSONB complexes (constructions additionnelles, côtés routiers, servitudes).
+
