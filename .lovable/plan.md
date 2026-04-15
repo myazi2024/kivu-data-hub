@@ -1,91 +1,116 @@
 
+# Audit détaillé de l'espace Admin
 
-# Audit detaille du formulaire CCC
-
-## Architecture generale
-
-| Fichier | Lignes | Role |
-|---------|--------|------|
-| `CadastralContributionDialog.tsx` | 249 | Orchestrateur (onglets, succes, auth) |
-| `useCCCFormState.ts` | 1629 | State central, validation, soumission, persistance |
-| `useCadastralContribution.tsx` | 721 | Interface donnees, payload builder, CRUD Supabase |
-| `GeneralTab.tsx` | 1315 | Onglet Infos (Titre, Proprietaires, Construction, Permis) |
-| `LocationTab.tsx` | 815 | Onglet Localisation (Adresse, GPS, Croquis, Son) |
-| `HistoryTab.tsx` | 287 | Onglet Passe (Anciens proprietaires) |
-| `ObligationsTab.tsx` | 475 | Onglet Obligations (Taxes, Hypotheques, Litiges) |
-| `ReviewTab.tsx` | 682 | Onglet Recapitulatif |
-| `AdditionalConstructionBlock.tsx` | 738 | Sous-composant constructions supplementaires |
-
-## Flux de donnees
+## Architecture générale
 
 ```text
-GeneralTab / LocationTab / HistoryTab / ObligationsTab
-       │ handleInputChange(field, value)
-       ▼
-  useCCCFormState.ts (formData + states annexes)
-       │ localStorage (auto-save 1.5s) + DB fetch (edit mode)
-       ▼
-  handleSubmit → buildContributionPayload → Supabase INSERT/UPDATE
+Admin.tsx (orchestrateur)
+  ├── AdminSidebar.tsx (navigation, 10 catégories, 65+ onglets)
+  ├── AdminDashboardHeader.tsx (barre recherche ⌘K, notifications, profil)
+  └── tabComponents{} (lazy-loaded, 66 composants)
+      ├── Vue d'ensemble (3)
+      ├── Utilisateurs & Sécurité (4)
+      ├── Contributions CCC (5)
+      ├── Paiements (7)
+      ├── Facturation & Commerce (8)
+      ├── Carte & Configuration (9)
+      ├── Demandes & Procédures (10)
+      ├── Historiques & Litiges (7)
+      ├── Contenu (6)
+      └── Système (6)
 ```
+
+Total : **~32 700 lignes** dans `src/components/admin/*.tsx` + ~9 700 dans sous-dossiers = **~42 400 lignes** de code admin.
 
 ## Points positifs
 
-1. **Persistance localStorage** : auto-save debounced (1.5s), restauration a la reouverture
-2. **Mode edition** : chargement complet depuis DB avec mapping snake_case ↔ camelCase
-3. **Validation progressive** : `getMissingFields()` bloque la navigation inter-onglets
-4. **Score de completude** : calcul CCC aligne frontend/backend
-5. **Upload securise** : `crypto.randomUUID()`, validation type + taille (10 MB)
-6. **Anti-fraude** : verification doublon parcelle/utilisateur avant soumission
-7. **Cascade construction** : Categorie → Type → Materiaux → Nature → Usage → Standing
-8. **Capacite d'accueil** : implementee pour construction principale ET supplementaires
-9. **DB alignee** : colonnes `is_occupied`, `occupant_count`, `hosting_capacity` presentes
-10. **Constructions additionnelles** : interface, persistance, chargement edit mode OK
+1. **Lazy loading** systématique de tous les onglets — bon temps de chargement initial
+2. **Recherche globale** (⌘K) avec résultats menus + DB (utilisateurs, parcelles, factures)
+3. **Badges en temps réel** pour 9 files d'attente (CCC, paiements, litiges, hypothèques, etc.)
+4. **Sidebar collapsible** avec recherche par mots-clés et totaux de badges par catégorie
+5. **Export CSV/JSON** sur le dashboard + plusieurs sous-modules
+6. **Breadcrumb** dynamique catégorie → label
+7. **Mode Test** avec génération/nettoyage de données de test
+8. **Vérification admin** côté client via `user_roles` (pas localStorage)
 
-## Anomalies detectees
+---
 
-| # | Severite | Localisation | Probleme |
-|---|----------|-------------|----------|
-| 1 | **Critique** | `GeneralTab.tsx:1076` | **Double imbrication `<Label>`** : `<Label><Label>Votre ... ?</Label></Label>`. Genere un DOM invalide (label dans label). |
-| 2 | **Majeur** | `ReviewTab.tsx:188-203` | **Capacite d'accueil absente des constructions additionnelles** dans le recapitulatif. Les champs `isOccupied`, `occupantCount`, `hostingCapacity` ne sont pas affiches. |
-| 3 | **Mineur** | `AdditionalConstructionBlock.tsx:462-472` | **Incohérence de visibilite** : le champ "Capacite d'accueil (personnes)" s'affiche toujours, meme avant de repondre "Oui/Non" a "Est-il habite ?". Dans `GeneralTab.tsx:1090`, il est conditionne a `isOccupied !== undefined`. |
-| 4 | **Mineur** | `GeneralTab.tsx:1076` | Le label utilise `formData.propertyCategory` (construction principale). Correct pour la construction principale, mais pourrait etre confus si la categorie est vide (fallback "bien" OK). |
-| 5 | **Info** | `useCCCFormState.ts` | Le fichier fait **1629 lignes**. Au-dessus du seuil de 1000 lignes defini en memoire projet (`complex-dialog-modularization-strategy`). Candidat a la modularisation. |
-| 6 | **Info** | `GeneralTab.tsx` | Le fichier fait **1315 lignes**. Meme observation. |
-| 7 | **Info** | `useCadastralContribution.tsx:147-164` | L'interface `additionalConstructions` dans `CadastralContributionData` ne contient PAS les champs `isOccupied`, `occupantCount`, `hostingCapacity`. Les donnees passent quand meme via le spread `...c`, mais le typage est incomplet. |
+## Anomalies détectées
 
-## Plan de correction (7 actions)
+### Sévérité CRITIQUE
 
-### Action 1 — Corriger le double `<Label>` (critique)
-**Fichier** : `GeneralTab.tsx:1076`
-Remplacer `<Label><Label>...</Label></Label>` par un seul `<Label>...</Label>`.
+| # | Localisation | Problème |
+|---|-------------|----------|
+| 1 | `AdminPayments.tsx:90-95` | **Mise à jour directe du statut de paiement** depuis le client (`supabase.update`). Viole la règle projet : les paiements doivent passer par des Edge Functions avec `SERVICE_ROLE_KEY`. Risque de manipulation de statuts. |
+| 2 | Toutes les requêtes admin (Payments, CCC, Mutations, LandTitle, Expertise) | **Aucun `.limit()`** sur les `SELECT`. Supabase tronque silencieusement à 1000 lignes. Un admin avec >1000 enregistrements verra des données incomplètes sans aucun avertissement. |
 
-### Action 2 — Afficher la capacite d'accueil dans le recapitulatif des constructions additionnelles
-**Fichier** : `ReviewTab.tsx:188-203`
-Apres la ligne `{c.permit?.permitNumber && ...}`, ajouter :
-- `isOccupied` (Oui/Non)
-- `occupantCount` (si habite)
-- `hostingCapacity`
+### Sévérité MAJEURE
 
-### Action 3 — Aligner la visibilite dans AdditionalConstructionBlock
-**Fichier** : `AdditionalConstructionBlock.tsx:462-472`
-Conditionner l'affichage du champ "Capacite d'accueil" a `data.isOccupied !== undefined` (comme dans GeneralTab).
+| # | Localisation | Problème |
+|---|-------------|----------|
+| 3 | `Admin.tsx:45` | **Doublon de route** : `map-legend` et `contribution-config` chargent le même composant `AdminContributionConfig`. Le tab `map-legend` reçoit `{ initialTab: 'map', scrollToLegend: true }` mais `AdminContributionConfig` n'accepte peut-être pas ces props — à vérifier. |
+| 4 | `AdminCCCContributions.tsx` | **1762 lignes** — très au-dessus du seuil de 1000 lignes. Contient validation, approbation, rejet, galerie docs, appels, et autorisations dans un seul fichier. Candidat urgent à la modularisation. |
+| 5 | `AdminContributionConfig.tsx` | **1620 lignes** — même problème. |
+| 6 | `AdminMutationRequests.tsx` | **1123 lignes** — même problème. |
+| 7 | `AdminExpertiseRequests.tsx` | **1113 lignes** — même problème. |
 
-### Action 4 — Completer le typage de CadastralContributionData
-**Fichier** : `useCadastralContribution.tsx:147-164`
-Ajouter `isOccupied?: boolean; occupantCount?: number; hostingCapacity?: number;` a l'interface `additionalConstructions`.
+### Sévérité MINEURE
 
-### Actions 5-7 — Informatif (pas d'action immediate)
-La modularisation de `useCCCFormState.ts` et `GeneralTab.tsx` est recommandee mais non bloquante.
+| # | Localisation | Problème |
+|---|-------------|----------|
+| 8 | `AdminUserRoles.tsx` (388 lignes) | **Composant orphelin** : remplacé par `AdminUserRolesEnhanced.tsx` mais jamais supprimé. Code mort. |
+| 9 | `AdminDocumentVerifications.tsx` (190 lignes) | **Composant orphelin** : n'apparaît ni dans le sidebar ni dans `tabComponents`. Inaccessible. |
+| 10 | `AdminSearchConfig.tsx` (230 lignes) | **Composant orphelin** : le tab `search-config` charge `AdminSearchBarConfig`, pas `AdminSearchConfig`. |
+| 11 | `Admin.tsx:104-116` | **Vérification admin client-side uniquement** : la requête `user_roles` est faite côté client avec la clé anon. Les RLS doivent protéger les données des onglets admin, mais si une table a des policies trop permissives, un non-admin pourrait accéder aux données via l'API directe. |
+| 12 | `AdminPayments.tsx:46-48` | **`useEffect(() => { fetchPayments(); }, [])`** sans cleanup ni gestion d'abort. Si le composant se démonte avant la réponse, risque de `setState` sur composant démonté (warning React). Même pattern dans 6+ composants admin. |
 
-## Resume
+### INFO
 
-| Categorie | Count |
+| # | Observation |
+|---|-------------|
+| 13 | **66 onglets** dans le sidebar — la densité est élevée. L'UX pourrait bénéficier d'un regroupement ou d'une hiérarchie plus profonde. |
+| 14 | Le `REFRESHABLE_TABS` (ligne 81) ne contient que `users`, `payments`, `publications`. D'autres onglets avec des files d'attente (CCC, mutations, etc.) ne bénéficient pas du refresh automatique après une action. |
+| 15 | Pas de gestion d'erreur globale (error boundary) autour du `Suspense` pour les composants lazy-loadés. Un composant qui crash affiche un écran blanc. |
+
+---
+
+## Plan de corrections proposé
+
+### Phase 1 — Sécurité & Données (prioritaire)
+
+| Action | Fichier | Détail |
+|--------|---------|--------|
+| A1 | `AdminPayments.tsx` | Remplacer `supabase.update` par un appel Edge Function pour la mise à jour de statut |
+| A2 | 5+ composants admin | Ajouter pagination serveur ou `.limit()` explicite + indicateur "résultats tronqués" |
+| A3 | `Admin.tsx` | Ajouter un `ErrorBoundary` autour du `Suspense` |
+
+### Phase 2 — Nettoyage code mort
+
+| Action | Fichier | Détail |
+|--------|---------|--------|
+| A4 | `AdminUserRoles.tsx` | Supprimer (remplacé par Enhanced) |
+| A5 | `AdminDocumentVerifications.tsx` | Supprimer ou intégrer dans le sidebar |
+| A6 | `AdminSearchConfig.tsx` | Supprimer (remplacé par SearchBarConfig) |
+| A7 | `Admin.tsx:45` | Corriger le doublon `map-legend` |
+
+### Phase 3 — Modularisation (maintenabilité)
+
+| Action | Fichier | Détail |
+|--------|---------|--------|
+| A8 | `AdminCCCContributions.tsx` | Extraire en sous-composants (validation, détail, galerie) |
+| A9 | `AdminContributionConfig.tsx` | Même approche |
+| A10 | `AdminMutationRequests.tsx` | Même approche |
+| A11 | `AdminExpertiseRequests.tsx` | Même approche |
+
+---
+
+## Résumé
+
+| Catégorie | Count |
 |-----------|-------|
-| Critique | 1 |
-| Majeur | 1 |
-| Mineur | 2 |
-| Info/Typage | 1 |
-| Info/Taille | 2 |
+| Critique (sécurité/données) | 2 |
+| Majeur (maintenabilité) | 5 |
+| Mineur (code mort, patterns) | 5 |
+| Info | 3 |
 
-**4 corrections a appliquer** (Actions 1 a 4). Les actions 5-7 sont des recommandations de maintenabilite.
-
+**Recommandation** : Commencer par la Phase 1 (sécurité), puis Phase 2 (nettoyage rapide), puis Phase 3 (modularisation progressive).
