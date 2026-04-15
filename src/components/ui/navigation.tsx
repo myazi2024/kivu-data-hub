@@ -97,34 +97,45 @@ const Navigation = () => {
                     Media
                   </NavigationMenuTrigger>
                   <NavigationMenuContent>
-                    <div className="grid grid-cols-3 gap-0 w-[550px] p-4">
-                      {mediaColumns.map((column) => (
-                        <div key={column.title} className="space-y-2">
-                          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">
-                            {column.title}
-                          </h4>
-                          <ul className="space-y-0.5">
-                            {column.items.map((item) => (
-                              <li key={item.name}>
-                                <NavigationMenuLink asChild>
-                                  <Link
-                                    to={item.href}
-                                    className="group flex items-start gap-2.5 rounded-md p-2 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                                  >
-                                    <item.icon className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground group-hover:text-accent-foreground" />
-                                    <div className="space-y-0.5">
-                                      <div className="text-sm font-medium leading-none">{item.name}</div>
-                                      <p className="text-xs leading-snug text-muted-foreground group-hover:text-accent-foreground/70">
-                                        {item.description}
-                                      </p>
-                                    </div>
-                                  </Link>
-                                </NavigationMenuLink>
-                              </li>
-                            ))}
-                          </ul>
+                    <div className="w-[550px]">
+                      {/* Branding banner */}
+                      <div className="flex items-center gap-3 px-4 py-3 bg-muted/50 border-b border-border rounded-t-md">
+                        <img src={logoSrc} alt={`${displayName} Logo`} className="h-8 w-8 shrink-0" />
+                        <div className="flex flex-col">
+                          <span className="text-sm font-semibold text-foreground">{displayName}</span>
+                          <span className="text-xs text-muted-foreground">{displayTagline}</span>
                         </div>
-                      ))}
+                      </div>
+                      {/* Links grid */}
+                      <div className="grid grid-cols-3 gap-0 p-4">
+                        {mediaColumns.map((column) => (
+                          <div key={column.title} className="space-y-2">
+                            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">
+                              {column.title}
+                            </h4>
+                            <ul className="space-y-0.5">
+                              {column.items.map((item) => (
+                                <li key={item.name}>
+                                  <NavigationMenuLink asChild>
+                                    <Link
+                                      to={item.href}
+                                      className="group flex items-start gap-2.5 rounded-md p-2 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                    >
+                                      <item.icon className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground group-hover:text-accent-foreground" />
+                                      <div className="space-y-0.5">
+                                        <div className="text-sm font-medium leading-none">{item.name}</div>
+                                        <p className="text-xs leading-snug text-muted-foreground group-hover:text-accent-foreground/70">
+                                          {item.description}
+                                        </p>
+                                      </div>
+                                    </Link>
+                                  </NavigationMenuLink>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </NavigationMenuContent>
                 </NavigationMenuItem>
