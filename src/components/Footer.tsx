@@ -35,10 +35,9 @@ const Footer = () => {
           <div className="lg:col-span-2">
             <div className="flex items-center space-x-2 mb-2">
               <img src={logoSrc} alt={appName} className="h-6 w-6 brightness-0 invert" />
-              <div>
-                <h3 className="text-sm font-bold leading-tight">{appTagline}</h3>
-                <p className="text-primary text-xs font-semibold">{appName}</p>
-              </div>
+            <div>
+              <h3 className="text-sm font-bold leading-tight">{appTagline}</h3>
+            </div>
             </div>
             
             <p className="text-muted-foreground text-xs leading-relaxed mb-3 max-w-md">
