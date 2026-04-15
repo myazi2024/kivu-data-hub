@@ -4,8 +4,11 @@ import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/Footer';
 import territorialMapIllustration from '@/assets/territorial-map-illustration.webp';
 import { Target, Briefcase, Layers, ShieldCheck } from 'lucide-react';
+import { useAppAppearance } from '@/hooks/useAppAppearance';
 
 const About = () => {
+  const { config } = useAppAppearance();
+
   return (
     <>
       <Helmet>
@@ -16,7 +19,16 @@ const About = () => {
       <Navigation />
       <main className="pt-20 pb-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-4xl font-bold text-foreground mb-10">À propos du BIC</h1>
+          <div className="flex items-center justify-between mb-10">
+            <h1 className="text-4xl font-bold text-foreground">À propos du BIC</h1>
+            {config.logo_url && (
+              <img 
+                src={config.logo_url} 
+                alt="Logo" 
+                className="h-16 w-auto object-contain opacity-90 -mr-2"
+              />
+            )}
+          </div>
 
           {/* Qui sommes-nous */}
           <section className="mb-12">
