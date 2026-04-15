@@ -112,10 +112,14 @@ export const ContributionsBlock: React.FC<Props> = memo(({ data }) => {
       insight={generateInsight(fraudData.byFraudReason, 'bar-h', 'les motifs de fraude')} /> },
     { key: 'appeal-status', el: () => <ChartCard title={ct('appeal-status', 'Statut appel')} icon={Gavel} data={appealData.byAppealStatus} type={ty('appeal-status', 'donut')} colorIndex={9} hidden={appealData.byAppealStatus.length === 0}
       insight={generateInsight(appealData.byAppealStatus, 'donut', 'les appels')} crossVariables={cx('appeal-status')} rawRecords={filtered} groupField="appeal_status" /> },
+    { key: 'occupation', el: () => <ChartCard title={ct('occupation', 'Occupation')} icon={Home} data={occupationData} type={ty('occupation', 'pie')} colorIndex={12} hidden={occupationData.length === 0}
+      insight={generateInsight(occupationData, 'pie', "l'occupation des biens")} crossVariables={cx('occupation')} rawRecords={filtered} groupField="is_occupied" /> },
+    { key: 'lease-type', el: () => <ChartCard title={ct('lease-type', 'Type de bail')} icon={KeyRound} data={byLeaseType} type={ty('lease-type', 'donut')} colorIndex={13} hidden={byLeaseType.length === 0}
+      insight={generateInsight(byLeaseType, 'donut', 'les types de bail')} crossVariables={cx('lease-type')} rawRecords={filtered} groupField="lease_type" /> },
     { key: 'geo', el: () => <GeoCharts records={filtered} /> },
     { key: 'evolution', el: () => <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type={ty('evolution', 'area')} colorIndex={0} colSpan={2}
       insight={generateInsight(trend, 'area', 'les contributions')} /> },
-  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filtered, normalized, byContributionType, byStatus, byPropertyTitleType, byLegalStatus, byDeclaredUsage, byConstructionType, byPropertyCategory, fraudData, appealData, trend, v, ct, cx, ty, ord]);
+  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filtered, normalized, byContributionType, byStatus, byPropertyTitleType, byLegalStatus, byDeclaredUsage, byConstructionType, byPropertyCategory, byLeaseType, occupationData, fraudData, appealData, trend, v, ct, cx, ty, ord]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
