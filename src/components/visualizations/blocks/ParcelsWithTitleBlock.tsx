@@ -201,6 +201,15 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
 
   const trend = useMemo(() => trendByMonth(filteredParcels), [filteredParcels]);
 
+  const builtVsUnbuiltData = useMemo(() => {
+    const built = filteredParcels.filter(p => p.property_category && p.property_category !== 'Terrain nu').length;
+    const unbuilt = filteredParcels.filter(p => p.property_category === 'Terrain nu').length;
+    return [
+      { name: 'Construites', value: built },
+      { name: 'Non construites', value: unbuilt },
+    ].filter(d => d.value > 0);
+  }, [filteredParcels]);
+
   const avgSurface = useMemo(() => filteredParcels.length > 0 ? Math.round(totalSurface / filteredParcels.length) : 0, [totalSurface, filteredParcels.length]);
   const density = useMemo(() => totalSurface > 0 ? (filteredParcels.length / (totalSurface / 10000)).toFixed(1) : 'N/A', [totalSurface, filteredParcels.length]);
 
