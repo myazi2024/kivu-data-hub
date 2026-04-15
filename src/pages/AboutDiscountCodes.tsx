@@ -1,4 +1,5 @@
 import React from 'react';
+import { Helmet } from 'react-helmet';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tag, Users, Percent, CheckCircle2, ArrowRight, ExternalLink, Phone, Mail, MessageCircle, HelpCircle } from 'lucide-react';
@@ -8,7 +9,12 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 
 const AboutDiscountCodes = () => {
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <>
+      <Helmet>
+        <title>Codes de remise | BIC - Bureau d'Informations Cadastrales</title>
+        <meta name="description" content="Profitez de réductions exclusives sur les services cadastraux du BIC grâce à nos codes promotionnels." />
+      </Helmet>
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="mb-6">
         <Link to="/" className="text-sm text-muted-foreground hover:text-primary">
           ← Retour au catalogue
@@ -281,6 +287,7 @@ const AboutDiscountCodes = () => {
         </CardContent>
       </Card>
     </div>
+    </>
   );
 };
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Navigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useSearchParams, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet';
 import { useAuth } from '@/hooks/useAuth';
 import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/Footer';
@@ -61,7 +62,12 @@ const UserDashboard = () => {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col bg-muted/30">
+    <>
+      <Helmet>
+        <title>Mon compte | BIC - Bureau d'Informations Cadastrales</title>
+        <meta name="description" content="Gérez votre compte BIC : contributions cadastrales, titres fonciers, expertises, mutations et paramètres." />
+      </Helmet>
+      <div className="min-h-dvh flex flex-col bg-muted/30">
       <Navigation />
       
       <main className="flex-grow px-3 py-4">
@@ -206,6 +212,7 @@ const UserDashboard = () => {
 
       <Footer />
     </div>
+    </>
   );
 };
 

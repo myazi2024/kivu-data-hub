@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { Helmet } from 'react-helmet';
 import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -34,7 +35,12 @@ const Publications = () => {
   }, [publications, searchTerm, categoryFilter]);
 
   return (
-    <div className="min-h-dvh">
+    <>
+      <Helmet>
+        <title>Publications | BIC - Bureau d'Informations Cadastrales</title>
+        <meta name="description" content="Consultez et téléchargez les publications officielles, rapports et documents du Bureau d'Informations Cadastrales de la RDC." />
+      </Helmet>
+      <div className="min-h-dvh">
       <Navigation />
       <main className="pt-16 pb-8">
         <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6">
@@ -117,6 +123,7 @@ const Publications = () => {
       </main>
       <Footer />
     </div>
+    </>
   );
 };
 
