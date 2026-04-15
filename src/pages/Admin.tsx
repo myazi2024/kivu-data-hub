@@ -208,9 +208,11 @@ const Admin = () => {
                 <span className="text-foreground font-medium">{label}</span>
               </div>
             )}
-            <Suspense fallback={<LazyFallback />}>
-              {renderContent()}
-            </Suspense>
+            <ErrorBoundary>
+              <Suspense fallback={<LazyFallback />}>
+                {renderContent()}
+              </Suspense>
+            </ErrorBoundary>
           </div>
         </main>
       </div>
