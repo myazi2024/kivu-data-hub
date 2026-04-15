@@ -19,6 +19,7 @@ import { UserMutationRequests } from '@/components/user/UserMutationRequests';
 import { UserMortgageRequests } from '@/components/user/UserMortgageRequests';
 import { UserSubdivisionRequests } from '@/components/user/UserSubdivisionRequests';
 import { User, FileText, Building, CreditCard, Settings, ScrollText, Scale, FileSearch, FileEdit, Landmark, LayoutGrid } from 'lucide-react';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 
 const VALID_TABS = [
   'profile', 'contributions', 'titles', 'permits', 'expertise',
