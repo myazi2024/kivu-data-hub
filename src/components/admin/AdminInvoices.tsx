@@ -71,7 +71,8 @@ const AdminInvoices = () => {
         .from('cadastral_invoices')
         .select('*')
         .not('parcel_number', 'ilike', 'TEST-%')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(2000);
 
       if (error) throw error;
       

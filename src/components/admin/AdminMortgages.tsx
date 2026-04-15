@@ -60,7 +60,8 @@ const AdminMortgages = () => {
       const { data: approvedData, error: approvedError } = await supabase
         .from('cadastral_mortgages')
         .select('id, parcel_id, creditor_name, creditor_type, mortgage_amount_usd, mortgage_status, contract_date, duration_months, created_at, reference_number, cadastral_parcels(parcel_number)')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(2000);
 
       if (approvedError) throw approvedError;
       setMortgages((approvedData || []).map(m => ({
@@ -72,7 +73,8 @@ const AdminMortgages = () => {
         .from('cadastral_contributions')
         .select('id, parcel_number, contribution_type, mortgage_history, status, created_at, user_id, original_parcel_id, rejection_reason, change_justification')
         .in('contribution_type', ['mortgage_registration', 'mortgage_cancellation'])
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(2000);
 
       if (requestError) throw requestError;
       setRequests((requestData || []).filter(item => {

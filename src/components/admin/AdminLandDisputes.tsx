@@ -87,7 +87,8 @@ const AdminLandDisputes: React.FC = () => {
       const { data, error } = await supabase
         .from('cadastral_land_disputes')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(2000);
 
       if (error) throw error;
       setDisputes((data || []) as LandDispute[]);

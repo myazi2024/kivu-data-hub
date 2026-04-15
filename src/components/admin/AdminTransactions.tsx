@@ -58,7 +58,8 @@ const AdminTransactions = () => {
       const { data: payments, error: paymentsError } = await supabase
         .from('payments')
         .select('id, amount_usd, status, payment_method, created_at, transaction_id, user_id')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(2000);
 
       if (paymentsError) throw paymentsError;
 

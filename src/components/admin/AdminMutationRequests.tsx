@@ -77,7 +77,8 @@ const AdminMutationRequests: React.FC = () => {
           *,
           profiles:user_id (full_name, email)
         `)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(2000);
 
       if (error) throw error;
       setRequests((data || []) as unknown as MutationRequestWithProfile[]);
