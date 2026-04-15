@@ -125,6 +125,16 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'lease-type', el: () => <ChartCard title={ct('lease-type', 'Type de bail')} icon={KeyRound} data={byLeaseType} type={ty('lease-type', 'bar-h')} colorIndex={13} hidden={byLeaseType.length === 0}
       insight={generateInsight(byLeaseType, 'bar-h', 'les types de bail')} crossVariables={cx('lease-type')} rawRecords={data.parcels} groupField="lease_type" /> },
     { key: 'geo', el: () => <GeoCharts records={filtered} /> },
+    { key: 'subdivided', el: () => {
+      const lotie = data.parcels.filter(p => p.is_subdivided === true).length;
+      const nonLotie = data.parcels.filter(p => p.is_subdivided === false).length;
+      const subdivData = [
+        ...(lotie > 0 ? [{ name: 'Loties', value: lotie }] : []),
+        ...(nonLotie > 0 ? [{ name: 'Non loties', value: nonLotie }] : []),
+      ];
+      return <ChartCard title={ct('subdivided', 'Loties vs Non loties')} data={subdivData} type={ty('subdivided', 'pie')} colorIndex={3} hidden={subdivData.length === 0}
+        insight={generateInsight(subdivData, 'pie', 'le lotissement des parcelles')} crossVariables={cx('subdivided')} rawRecords={data.parcels} groupField="is_subdivided" />;
+    }},
     { key: 'evolution', el: () => <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type={ty('evolution', 'area')} colorIndex={0} colSpan={2}
       insight={generateInsight(trend, 'area', 'les demandes de titres')} /> },
   ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filtered, byRequestType, byRequesterType, byStatus, byPayment, byOwnerLegalStatus, genderData, byNationality, byDeducedTitleType, ownerSameData, surfaceDist, revenueTrend, processingComparison, trend, genderInsight, processingInsight, byLeaseType, data.parcels, v, ct, cx, ty, ord]);
