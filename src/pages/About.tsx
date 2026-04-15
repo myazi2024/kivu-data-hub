@@ -25,7 +25,7 @@ const About = () => {
               <img 
                 src={config.logo_url} 
                 alt="Logo" 
-                className="h-16 w-auto object-contain opacity-90 -mr-2"
+                className="h-32 w-auto object-contain opacity-90 -mr-2"
               />
             )}
           </div>
