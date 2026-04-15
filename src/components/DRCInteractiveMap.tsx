@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useAppAppearance } from '@/hooks/useAppAppearance';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -140,6 +141,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
 
   const { isTestRoute } = useTestEnvironment();
   const { data: analytics, isLoading } = useLandDataAnalytics(isTestRoute);
+  const { config: brandingConfig } = useAppAppearance();
 
   const rdcMapDefaults = ANALYTICS_TABS_REGISTRY['rdc-map']
     ? [...ANALYTICS_TABS_REGISTRY['rdc-map'].kpis, ...ANALYTICS_TABS_REGISTRY['rdc-map'].charts]
