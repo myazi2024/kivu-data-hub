@@ -1,102 +1,52 @@
 
 
-# Audit et correction des variables de croisement — Analytics
+# Afficher le logo dynamique dans le footer + audit des emplacements
 
-## Résultat de l'audit
+## Problème
 
-### A. Visuels SANS variables de croisement (doivent en avoir)
+Le footer affiche le logo dans la section haute mais pas à côté de "Tous droits réservés". De plus, plusieurs emplacements utilisent le logo statique (`/bic-logo.png` ou `Building2` icon) au lieu du logo configuré dynamiquement via Admin → Apparence.
 
-| Onglet | Chart key | Titre | Raison manquante |
-|--------|-----------|-------|-----------------|
-| **parcels-titled** | `built-vs-unbuilt` | Construites vs Non construites | Vient d'être ajouté, oublié |
-| **parcels-titled** | `construction-decade` | Année construction | Oublié |
-| **parcels-titled** | `gender` | Genre propriétaires | A `cx('gender')` mais `groupField="current_owner_legal_status"` — **groupField incorrect**, devrait être un champ genre |
-| **contributions** | `fraud-reason` | Motif fraude | Oublié |
-| **expertise** | `construction-decade` | Année construction | Oublié |
-| **expertise** | `built-area` | Surface bâtie | Oublié |
-| **expertise** | `equipment` | Équipements | Oublié |
-| **expertise** | `sound-env` | Env. sonore (registry existe mais pas dans CROSS_VARIABLE_REGISTRY) | Manquant dans registry cross |
-| **expertise** | `proximity` | Proximité moy. | Oublié |
-| **expertise** | `garden` | Surface jardin | Oublié |
-| **disputes** | `lifting-resolution-level` | Niveau résolution (levée) | Manque `crossVariables`/`rawRecords`/`groupField` |
-| **disputes** | `lifting-reason` | Motif de levée | Manque `crossVariables`/`rawRecords`/`groupField` |
+## Audit des emplacements
 
-### B. Variables de croisement NON pertinentes
-
-| Onglet | Chart key | Variable problématique | Problème |
-|--------|-----------|----------------------|----------|
-| **parcels-titled** | `title-type` | Entrée entière | Chart supprimé mais reste dans CROSS_VARIABLE_REGISTRY — **à supprimer** |
-| **parcels-titled** | `gender` | `field: 'property_title_type'` | Le genre ne se croise pas utilement par type de titre ; mieux : `declared_usage`, `property_category` |
-| **mortgages** | `amount-brackets` | `field: 'creditor_type'` | OK mais manque `field: 'mortgage_status'` |
-| **invoices** | `status` | `field: 'geographical_zone'` | OK mais manque `field: 'payment_method'` — déjà présent comme `Paiement` → **en double avec payment-method cross** |
-
-### C. groupField incorrects dans les composants
-
-| Composant | Chart | groupField actuel | Correct |
-|-----------|-------|-------------------|---------|
-| ParcelsWithTitleBlock | `gender` | `current_owner_legal_status` | Devrait être un champ genre dérivé ou retiré (le genre est déduit, pas un champ direct) |
+| Emplacement | Fichier | Statut actuel | Action |
+|-------------|---------|---------------|--------|
+| **Footer "Tous droits réservés"** | `Footer.tsx` | ❌ Pas de logo | **Ajouter** le logo dynamique après la mention |
+| **Page Auth (connexion)** | `Auth.tsx` L.261 | ❌ Icône `Building2` + nom hardcodé | **Remplacer** par logo dynamique + nom/tagline dynamiques |
+| **Watermark charts analytics** | `ChartCard.tsx` L.96 | ❌ `src="/bic-logo.png"` statique | **Remplacer** par `logo_url` dynamique (fallback `/bic-logo.png`) |
+| **Aperçu watermark admin** | `GlobalWatermarkConfig.tsx` L.78 | ❌ `src="/bic-logo.png"` statique | **Remplacer** par logo dynamique |
+| **Page Pitch partenaires** | `PitchPartenaires.tsx` L.63 | ❌ Import statique `bic-logo.png` | **Remplacer** par logo dynamique |
+| **PDF fiche cadastrale** | `pdf.ts` | ❌ Aucun logo dans le PDF | **Ajouter** le logo en en-tête du PDF (fetch + embed base64) |
+| **Navigation** | `navigation.tsx` | ✅ Déjà dynamique | Aucune action |
+| **Footer section haute** | `Footer.tsx` | ✅ Déjà dynamique | Aucune action |
 
 ## Modifications prévues
 
-### 1. `src/config/crossVariables.ts` — Ajouter les entrées manquantes + nettoyer
+### 1. `src/components/Footer.tsx` — Logo après "Tous droits réservés"
+Ajouter une petite image du logo (même taille que le texte xs, ~14px) avec `brightness-0 invert` après le texte copyright.
 
-**Supprimer :** `parcels-titled` → `title-type` (chart supprimé)
+### 2. `src/pages/Auth.tsx` — Logo dynamique sur la page connexion
+Remplacer l'icône `Building2` par le logo dynamique via `useAppAppearance`, et remplacer le nom/tagline hardcodés.
 
-**Ajouter :**
+### 3. `src/components/visualizations/shared/ChartCard.tsx` — Watermark dynamique
+Le composant `LogoWatermark` doit utiliser le logo dynamique. Ajouter le `logo_url` au `WatermarkConfigContext` et le propager depuis le parent.
 
-```text
-parcels-titled:
-  built-vs-unbuilt: [Province, Usage déclaré, Statut juridique]
-  construction-decade: [Province, Usage déclaré, Catégorie de bien]
+### 4. `src/components/admin/analytics-config/GlobalWatermarkConfig.tsx` — Aperçu dynamique
+Utiliser `useAppAppearance` pour afficher le vrai logo dans l'aperçu.
 
-contributions:
-  fraud-reason: [Type contribution, Province, Statut]
+### 5. `src/pages/PitchPartenaires.tsx` — Logo dynamique
+Remplacer l'import statique par `useAppAppearance`.
 
-expertise:
-  construction-decade: [Province, Qualité construction, Condition]
-  built-area: [Province, Qualité construction, Condition]
-  equipment: [Province, Qualité construction, Condition]
-  sound-env: [Province, Qualité construction]
-  proximity: [Province, Accès routier, Condition]
-  garden: [Province, Qualité construction]
-
-disputes:
-  lifting-resolution-level: [Nature litige, Province, Statut levée]
-  lifting-reason: [Nature litige, Province]
-```
-
-**Corriger pertinence :**
-- `parcels-titled` → `gender` : remplacer `property_title_type` par `declared_usage` et `property_category`
-
-### 2. Composants — Ajouter `crossVariables`/`rawRecords`/`groupField` aux charts manquants
-
-**`ParcelsWithTitleBlock.tsx`** :
-- `built-vs-unbuilt` : ajouter `crossVariables={cx('built-vs-unbuilt')} rawRecords={filteredParcels} groupField="property_category"`
-- `construction-decade` : ajouter `crossVariables={cx('construction-decade')} rawRecords={filteredParcels} groupField="construction_year"`
-- `gender` : corriger `groupField` → retirer ou adapter (genre est dérivé, pas un champ direct ; garder le cross mais corriger le groupField)
-
-**`ContributionsBlock.tsx`** :
-- `fraud-reason` : ajouter `crossVariables={cx('fraud-reason')} rawRecords={filtered} groupField="fraud_reason"`
-
-**`ExpertiseBlock.tsx`** :
-- `construction-decade` : ajouter `crossVariables={cx('construction-decade')} rawRecords={filtered} groupField="construction_year"`
-- `built-area` : ajouter `crossVariables={cx('built-area')} rawRecords={filtered} groupField="total_built_area_sqm"`
-- `equipment` : pas de groupField unique (données agrégées boolean) — **ne pas ajouter de cross** (structure incompatible)
-- `proximity` : pas de groupField unique (données agrégées avg) — **ne pas ajouter de cross** (structure incompatible)
-- `sound-env` : ajouter entrée dans CROSS_VARIABLE_REGISTRY expertise + `crossVariables={cx('sound-env')} rawRecords={filtered} groupField="sound_environment"`
-- `garden` : ajouter `crossVariables={cx('garden')} rawRecords={filtered} groupField="garden_area_sqm"`
-
-**`DisputesBlock.tsx`** :
-- `lifting-resolution-level` : ajouter `crossVariables={cx('lifting-resolution-level')} rawRecords={liftingDisputes} groupField="resolution_level"`
-- `lifting-reason` : ajouter `crossVariables={cx('lifting-reason')} rawRecords={liftingDisputes} groupField="lifting_reason"`
+### 6. `src/lib/pdf.ts` — Logo en en-tête du PDF cadastral
+Fetcher le logo (ou utiliser le fallback), le convertir en base64, et l'insérer dans l'en-tête du PDF à côté du nom BIC.
 
 ## Fichiers impactés
 
 | Fichier | Modification |
 |---------|-------------|
-| `src/config/crossVariables.ts` | +12 entrées, -1 supprimée, 1 corrigée |
-| `src/components/visualizations/blocks/ParcelsWithTitleBlock.tsx` | +cross sur 2 charts, fix groupField genre |
-| `src/components/visualizations/blocks/ContributionsBlock.tsx` | +cross sur fraud-reason |
-| `src/components/visualizations/blocks/ExpertiseBlock.tsx` | +cross sur 4 charts |
-| `src/components/visualizations/blocks/DisputesBlock.tsx` | +cross sur 2 charts |
+| `src/components/Footer.tsx` | Ajouter logo après "Tous droits réservés" |
+| `src/pages/Auth.tsx` | Logo + nom/tagline dynamiques |
+| `src/components/visualizations/shared/ChartCard.tsx` | Watermark logo dynamique via context |
+| `src/components/admin/analytics-config/GlobalWatermarkConfig.tsx` | Aperçu avec logo dynamique |
+| `src/pages/PitchPartenaires.tsx` | Logo dynamique |
+| `src/lib/pdf.ts` | Logo en en-tête PDF |
 
