@@ -1,86 +1,77 @@
 
 
-# Audit d'alignement : Config graphiques Admin ↔ Menu Données foncières
+# Audit Mode Test : Alignement aux modifications récentes
 
-## Contexte
+## Problème central
 
-Le menu **Données foncières** affiche des graphiques/KPIs définis dans les blocs de visualisation (`ParcelsWithTitleBlock.tsx`, `ContributionsBlock.tsx`). L'admin configure ces éléments via `AdminAnalyticsChartsConfig.tsx`, qui lit ses defaults depuis `ANALYTICS_TABS_REGISTRY` dans `analyticsTabsRegistry.ts`. Les croisements sont configurés via `CROSS_VARIABLE_REGISTRY` dans `crossVariables.ts`.
-
-**Problème central** : des graphiques et KPIs ont été ajoutés récemment dans les blocs de visualisation mais **jamais déclarés dans le registre admin**, les rendant invisibles et non-configurables.
-
----
+Les récentes modifications d'alignement CCC → Données foncières ont ajouté des champs et graphiques (occupation, étages, constructions additionnelles, etc.) que le **générateur de données test ne peuple pas**. Résultat : les nouveaux graphiques analytics affichent des données vides en environnement test.
 
 ## Anomalies détectées
 
-### Onglet `parcels-titled` (Parcelles)
+### 1. Champs manquants dans `generateParcels` (7 champs)
 
-| # | Type | item_key | Dans le bloc UI | Dans le registre admin | Dans cross-variables |
-|---|------|----------|:-:|:-:|:-:|
-| 1 | **chart** | `occupation` | ✅ | ❌ MANQUANT | ❌ MANQUANT |
-| 2 | **chart** | `lease-type` | ✅ | ❌ MANQUANT | ❌ MANQUANT |
-| 3 | **chart** | `floor-dist` | ✅ | ❌ MANQUANT | ❌ MANQUANT |
-| 4 | **chart** | `sound-env` | ✅ | ✅ (absent du registre, mais présent via index 18+) | ❌ registre OK via `sound-env` |
-| 5 | **chart** | `noise-sources` | ✅ | ❌ MANQUANT | ✅ OK |
-| 6 | **kpi** | `kpi-occupied` | ✅ | ❌ MANQUANT | — |
-| 7 | **kpi** | `kpi-hosting` | ✅ | ❌ MANQUANT | — |
-| 8 | **kpi** | `kpi-multi-constr` | ✅ | ❌ MANQUANT | — |
+| Champ | Type | Impact visuel |
+|-------|------|---------------|
+| `is_occupied` | boolean | Graphique "Occupation" vide |
+| `occupant_count` | integer | KPI "Parcelles habitées" = 0 |
+| `hosting_capacity` | integer | KPI "Capacité d'accueil" = 0 |
+| `floor_number` | string | Graphique "Étages" vide |
+| `additional_constructions` | jsonb | KPI "Multi-constructions" = 0 |
+| `sound_environment` | string | Graphique "Environnement sonore" vide |
+| `nearby_noise_sources` | string | Graphique "Sources de bruit" vide |
 
-### Onglet `contributions` (Contributions)
+### 2. Champs manquants dans `generateContributions` (4 champs)
 
-| # | Type | item_key | Dans le bloc UI | Dans le registre admin | Dans cross-variables |
-|---|------|----------|:-:|:-:|:-:|
-| 9 | **chart** | `occupation` | ✅ | ❌ MANQUANT | ❌ MANQUANT |
-| 10 | **chart** | `lease-type` | ✅ | ❌ MANQUANT | ❌ MANQUANT |
-| 11 | **kpi** | `kpi-with-lease` | ✅ | ❌ MANQUANT | — |
+| Champ | Type | Impact visuel |
+|-------|------|---------------|
+| `is_occupied` | boolean | Graphique "Occupation" vide dans ContributionsBlock |
+| `occupant_count` | integer | — |
+| `hosting_capacity` | integer | — |
+| `additional_constructions` | jsonb | — |
 
----
+### 3. Terminologie non conforme
 
-## Résumé des écarts
-
-| Catégorie | Count |
-|-----------|-------|
-| Charts manquants dans le registre | 5 (3 parcelles + 2 contributions) |
-| KPIs manquants dans le registre | 4 (3 parcelles + 1 contributions) |
-| Cross-variables manquantes | 4 (occupation × 2, lease-type × 2) |
-| **Total éléments non-configurables** | **9** |
-
-**Impact** : L'admin ne peut ni masquer, ni réordonner, ni renommer, ni changer le type de ces 9 éléments depuis l'interface de configuration.
-
----
+| Fichier | Ligne | Problème |
+|---------|-------|----------|
+| `TestDataStatsCard.tsx:48` | `'Permis bâtir'` | Doit être **'Autorisations'** (règle projet) |
 
 ## Plan de corrections
 
-### 1. Mettre à jour `analyticsTabsRegistry.ts`
+### Phase 1 — Enrichir `generateParcels` (testDataGenerators.ts ~L196-241)
 
-**Onglet `parcels-titled`** — ajouter :
-- 3 charts : `occupation` (pie), `lease-type` (bar-h), `floor-dist` (bar-v)
-- 3 KPIs : `kpi-occupied`, `kpi-hosting`, `kpi-multi-constr`
+Ajouter après `has_dispute` :
+- `is_occupied`: ~65% `true`, ~25% `false`, ~10% `null` (terrain nu)
+- `occupant_count`: 1-8 si occupé, null sinon
+- `hosting_capacity`: 2-15 si construction, null sinon
+- `floor_number`: `'0'` à `'5'` si construction, null sinon
+- `additional_constructions`: ~20% des parcelles avec 1-2 constructions additionnelles (type, usage, surface)
+- `sound_environment`: distribution réaliste (tres_calme → tres_bruyant)
+- `nearby_noise_sources`: texte pour ~40% des parcelles
 
-**Onglet `contributions`** — ajouter :
-- 2 charts : `occupation` (pie), `lease-type` (donut)
-- 1 KPI : `kpi-with-lease`
+### Phase 2 — Enrichir `generateContributions` (testDataGenerators.ts ~L283-378)
 
-### 2. Mettre à jour `crossVariables.ts`
+Ajouter les 4 champs manquants :
+- `is_occupied`, `occupant_count`, `hosting_capacity` : mêmes distributions que parcelles
+- `additional_constructions` : ~15% avec données JSONB
 
-**Onglet `parcels-titled`** — ajouter :
-- `occupation` : croisements Province, Type titre, Usage
-- `lease-type` : croisements Province, Type titre
-- `floor-dist` : croisements Province, Usage
+### Phase 3 — Terminologie
 
-**Onglet `contributions`** — ajouter :
-- `occupation` : croisements Province, Statut, Type contribution
-- `lease-type` : croisements Province, Statut
-
-### 3. Aucune modification UI
-
-Les blocs de visualisation sont déjà fonctionnels. Seules les sources de configuration admin sont à mettre à jour.
-
----
+- `TestDataStatsCard.tsx:48` : `'Permis bâtir'` → `'Autorisations'`
 
 ## Fichiers impactés
 
 | Fichier | Modification |
 |---------|-------------|
-| `src/config/analyticsTabsRegistry.ts` | +9 entrées (6 charts + 3 KPIs) dans 2 onglets |
-| `src/config/crossVariables.ts` | +5 entrées de croisement dans 2 onglets |
+| `src/components/admin/test-mode/testDataGenerators.ts` | +7 champs parcelles, +4 champs contributions |
+| `src/components/admin/test-mode/TestDataStatsCard.tsx` | Renommer label |
+
+## Résumé
+
+| Catégorie | Count |
+|-----------|-------|
+| Champs manquants (parcelles) | 7 |
+| Champs manquants (contributions) | 4 |
+| Terminologie | 1 |
+
+Après ces corrections, tous les graphiques analytics (occupation, étages, baux, bruit, multi-constructions) afficheront des données significatives en environnement test.
 
