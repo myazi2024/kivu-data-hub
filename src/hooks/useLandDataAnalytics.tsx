@@ -74,7 +74,7 @@ async function fetchAll(
 
 export const useLandDataAnalytics = (isTestRoute = false) => {
   return useQuery({
-    queryKey: ['land-analytics-v8', isTestRoute],
+    queryKey: ['land-analytics-v9', isTestRoute],
     queryFn: async (): Promise<LandAnalyticsData> => {
       const [
         parcels, contribs, titleReqs, permits,

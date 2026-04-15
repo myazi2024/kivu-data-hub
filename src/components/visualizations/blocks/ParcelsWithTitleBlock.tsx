@@ -3,7 +3,7 @@ import { AnalyticsFilters } from '../filters/AnalyticsFilters';
 import { countBy, trendByMonth, surfaceDistribution, yearDecadeDistribution } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { FileText, Users, Building, TrendingUp, Ruler, Clock, ShieldCheck, Maximize, ArrowUpFromLine, Volume2, Ear } from 'lucide-react';
+import { FileText, Users, Building, TrendingUp, Ruler, Clock, ShieldCheck, Maximize, ArrowUpFromLine, Volume2, Ear, Home, KeyRound, Layers, Building2 } from 'lucide-react';
 import { SOUND_LABELS } from '@/constants/expertiseLabels';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, ColorMappedPieCard, FilterLabelContext } from '../shared/ChartCard';
