@@ -1,43 +1,91 @@
 
 
-# Ajouter "Capacité d'accueil" aux constructions supplémentaires
+# Audit detaille du formulaire CCC
 
-## Problème
-Le sous-bloc "Capacité d'accueil" n'existe que dans la construction principale (GeneralTab). Le composant `AdditionalConstructionBlock` ne possède ni les champs de données ni l'UI correspondante.
+## Architecture generale
 
-## Plan
+| Fichier | Lignes | Role |
+|---------|--------|------|
+| `CadastralContributionDialog.tsx` | 249 | Orchestrateur (onglets, succes, auth) |
+| `useCCCFormState.ts` | 1629 | State central, validation, soumission, persistance |
+| `useCadastralContribution.tsx` | 721 | Interface donnees, payload builder, CRUD Supabase |
+| `GeneralTab.tsx` | 1315 | Onglet Infos (Titre, Proprietaires, Construction, Permis) |
+| `LocationTab.tsx` | 815 | Onglet Localisation (Adresse, GPS, Croquis, Son) |
+| `HistoryTab.tsx` | 287 | Onglet Passe (Anciens proprietaires) |
+| `ObligationsTab.tsx` | 475 | Onglet Obligations (Taxes, Hypotheques, Litiges) |
+| `ReviewTab.tsx` | 682 | Onglet Recapitulatif |
+| `AdditionalConstructionBlock.tsx` | 738 | Sous-composant constructions supplementaires |
 
-### 1. Étendre l'interface `AdditionalConstruction`
-**Fichier** : `src/components/cadastral/AdditionalConstructionBlock.tsx`
+## Flux de donnees
 
-Ajouter 3 champs optionnels à l'interface :
-```ts
-isOccupied?: boolean;
-occupantCount?: number;
-hostingCapacity?: number;
+```text
+GeneralTab / LocationTab / HistoryTab / ObligationsTab
+       │ handleInputChange(field, value)
+       ▼
+  useCCCFormState.ts (formData + states annexes)
+       │ localStorage (auto-save 1.5s) + DB fetch (edit mode)
+       ▼
+  handleSubmit → buildContributionPayload → Supabase INSERT/UPDATE
 ```
 
-### 2. Ajouter le sous-bloc UI dans `AdditionalConstructionBlock`
-Après la section "Année de construction" (ligne ~400), insérer le même bloc conditionnel que dans GeneralTab :
-- Séparateur + titre "Capacité d'accueil" avec icône `Users`
-- Label dynamique : `Votre {data.propertyCategory?.toLowerCase() || 'bien'} est-il habité ?`
-- Boutons Oui/Non
-- Si Oui : champ "Combien de personnes y vivent ?" + champ "Capacité d'accueil"
-- Si Non : uniquement champ "Capacité d'accueil"
-- Condition d'affichage : `isNotTerrainNu` (déjà calculé ligne 186)
+## Points positifs
 
-### 3. Gestion du reset
-Quand `isOccupied` passe à `false`, remettre `occupantCount` à `undefined` (même logique que la construction principale).
+1. **Persistance localStorage** : auto-save debounced (1.5s), restauration a la reouverture
+2. **Mode edition** : chargement complet depuis DB avec mapping snake_case ↔ camelCase
+3. **Validation progressive** : `getMissingFields()` bloque la navigation inter-onglets
+4. **Score de completude** : calcul CCC aligne frontend/backend
+5. **Upload securise** : `crypto.randomUUID()`, validation type + taille (10 MB)
+6. **Anti-fraude** : verification doublon parcelle/utilisateur avant soumission
+7. **Cascade construction** : Categorie → Type → Materiaux → Nature → Usage → Standing
+8. **Capacite d'accueil** : implementee pour construction principale ET supplementaires
+9. **DB alignee** : colonnes `is_occupied`, `occupant_count`, `hosting_capacity` presentes
+10. **Constructions additionnelles** : interface, persistance, chargement edit mode OK
 
-### 4. Persistance & soumission
-Dans `useCCCFormState.ts`, les constructions supplémentaires sont déjà sérialisées en JSON complet (`additionalConstructions.map(c => ({...c}))`). Les 3 nouveaux champs seront automatiquement inclus dans la sauvegarde localStorage et la soumission — aucune modification nécessaire côté state.
+## Anomalies detectees
 
-### 5. Chargement en mode édition
-Dans `useCCCFormState.ts` ligne ~1197, ajouter le mapping des 3 champs lors du chargement des constructions supplémentaires existantes.
+| # | Severite | Localisation | Probleme |
+|---|----------|-------------|----------|
+| 1 | **Critique** | `GeneralTab.tsx:1076` | **Double imbrication `<Label>`** : `<Label><Label>Votre ... ?</Label></Label>`. Genere un DOM invalide (label dans label). |
+| 2 | **Majeur** | `ReviewTab.tsx:188-203` | **Capacite d'accueil absente des constructions additionnelles** dans le recapitulatif. Les champs `isOccupied`, `occupantCount`, `hostingCapacity` ne sont pas affiches. |
+| 3 | **Mineur** | `AdditionalConstructionBlock.tsx:462-472` | **Incohérence de visibilite** : le champ "Capacite d'accueil (personnes)" s'affiche toujours, meme avant de repondre "Oui/Non" a "Est-il habite ?". Dans `GeneralTab.tsx:1090`, il est conditionne a `isOccupied !== undefined`. |
+| 4 | **Mineur** | `GeneralTab.tsx:1076` | Le label utilise `formData.propertyCategory` (construction principale). Correct pour la construction principale, mais pourrait etre confus si la categorie est vide (fallback "bien" OK). |
+| 5 | **Info** | `useCCCFormState.ts` | Le fichier fait **1629 lignes**. Au-dessus du seuil de 1000 lignes defini en memoire projet (`complex-dialog-modularization-strategy`). Candidat a la modularisation. |
+| 6 | **Info** | `GeneralTab.tsx` | Le fichier fait **1315 lignes**. Meme observation. |
+| 7 | **Info** | `useCadastralContribution.tsx:147-164` | L'interface `additionalConstructions` dans `CadastralContributionData` ne contient PAS les champs `isOccupied`, `occupantCount`, `hostingCapacity`. Les donnees passent quand meme via le spread `...c`, mais le typage est incomplet. |
 
-## Fichiers impactés
-| Fichier | Modification |
-|---------|-------------|
-| `src/components/cadastral/AdditionalConstructionBlock.tsx` | Interface + UI capacité d'accueil |
-| `src/hooks/useCCCFormState.ts` | Mapping édition (3 champs) |
+## Plan de correction (7 actions)
+
+### Action 1 — Corriger le double `<Label>` (critique)
+**Fichier** : `GeneralTab.tsx:1076`
+Remplacer `<Label><Label>...</Label></Label>` par un seul `<Label>...</Label>`.
+
+### Action 2 — Afficher la capacite d'accueil dans le recapitulatif des constructions additionnelles
+**Fichier** : `ReviewTab.tsx:188-203`
+Apres la ligne `{c.permit?.permitNumber && ...}`, ajouter :
+- `isOccupied` (Oui/Non)
+- `occupantCount` (si habite)
+- `hostingCapacity`
+
+### Action 3 — Aligner la visibilite dans AdditionalConstructionBlock
+**Fichier** : `AdditionalConstructionBlock.tsx:462-472`
+Conditionner l'affichage du champ "Capacite d'accueil" a `data.isOccupied !== undefined` (comme dans GeneralTab).
+
+### Action 4 — Completer le typage de CadastralContributionData
+**Fichier** : `useCadastralContribution.tsx:147-164`
+Ajouter `isOccupied?: boolean; occupantCount?: number; hostingCapacity?: number;` a l'interface `additionalConstructions`.
+
+### Actions 5-7 — Informatif (pas d'action immediate)
+La modularisation de `useCCCFormState.ts` et `GeneralTab.tsx` est recommandee mais non bloquante.
+
+## Resume
+
+| Categorie | Count |
+|-----------|-------|
+| Critique | 1 |
+| Majeur | 1 |
+| Mineur | 2 |
+| Info/Typage | 1 |
+| Info/Taille | 2 |
+
+**4 corrections a appliquer** (Actions 1 a 4). Les actions 5-7 sont des recommandations de maintenabilite.
 
