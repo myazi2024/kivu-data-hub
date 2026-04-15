@@ -17,6 +17,9 @@ import { FcGoogle } from "react-icons/fc";
 import { FaFacebook, FaApple } from "react-icons/fa";
 
 const Auth = () => {
+  const { config: appConfig } = useAppAppearance();
+  const logoSrc = (appConfig.logo_url as string) || bicLogoFallback;
+  const appName = (appConfig.app_tagline as string) || "Bureau d'Informations Cadastrales";
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -260,9 +263,9 @@ const Auth = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
-            <Building2 className="h-12 w-12 text-primary" />
+            <img src={logoSrc} alt={appName} className="h-12 w-12 object-contain" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Bureau d&apos;Informations Cadastrales</h1>
+          <h1 className="text-2xl font-bold text-foreground">{appName}</h1>
           <p className="text-muted-foreground mt-2">Connectez-vous à votre espace</p>
         </div>
 
