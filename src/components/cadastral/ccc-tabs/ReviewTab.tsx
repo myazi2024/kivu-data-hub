@@ -199,6 +199,9 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
                     {c.standing && <div className="text-muted-foreground">Standing: {c.standing}</div>}
                     {c.constructionYear && <div className="text-muted-foreground">Année: {c.constructionYear}</div>}
                     {c.permit?.permitNumber && <div className="text-muted-foreground">Permis: N° {c.permit.permitNumber}</div>}
+                    {c.isOccupied !== undefined && <div className="text-muted-foreground">Habité: {c.isOccupied ? 'Oui' : 'Non'}</div>}
+                    {c.isOccupied && c.occupantCount && <div className="text-muted-foreground">Occupants: {c.occupantCount}</div>}
+                    {c.hostingCapacity && <div className="text-muted-foreground">Capacité d'accueil: {c.hostingCapacity}</div>}
                   </div>
                 ))}
               </div>

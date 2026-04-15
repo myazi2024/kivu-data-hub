@@ -154,6 +154,9 @@ export interface CadastralContributionData {
     constructionYear?: number;
     apartmentNumber?: string;
     floorNumber?: string;
+    isOccupied?: boolean;
+    occupantCount?: number;
+    hostingCapacity?: number;
     permitMode?: 'existing' | 'request';
     permit?: {
       permitType: 'construction' | 'regularization';
