@@ -109,7 +109,7 @@ export const ContributionsBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'fraud-score', el: () => <ChartCard title={ct('fraud-score', 'Score fraude')} icon={AlertTriangle} data={fraudData.byScore} type={ty('fraud-score', 'bar-v')} colorIndex={4} hidden={fraudData.byScore.length === 0}
       insight={generateInsight(fraudData.byScore, 'bar-v', 'les niveaux de risque')} crossVariables={cx('fraud-score')} rawRecords={filtered} groupField="fraud_score" /> },
     { key: 'fraud-reason', el: () => <ChartCard title={ct('fraud-reason', 'Motif fraude')} data={fraudData.byFraudReason} type={ty('fraud-reason', 'bar-h')} colorIndex={4} labelWidth={120} hidden={fraudData.byFraudReason.length === 0}
-      insight={generateInsight(fraudData.byFraudReason, 'bar-h', 'les motifs de fraude')} /> },
+      insight={generateInsight(fraudData.byFraudReason, 'bar-h', 'les motifs de fraude')} crossVariables={cx('fraud-reason')} rawRecords={filtered} groupField="fraud_reason" /> },
     { key: 'appeal-status', el: () => <ChartCard title={ct('appeal-status', 'Statut appel')} icon={Gavel} data={appealData.byAppealStatus} type={ty('appeal-status', 'donut')} colorIndex={9} hidden={appealData.byAppealStatus.length === 0}
       insight={generateInsight(appealData.byAppealStatus, 'donut', 'les appels')} crossVariables={cx('appeal-status')} rawRecords={filtered} groupField="appeal_status" /> },
     { key: 'occupation', el: () => <ChartCard title={ct('occupation', 'Occupation')} icon={Home} data={occupationData} type={ty('occupation', 'pie')} colorIndex={12} hidden={occupationData.length === 0}
