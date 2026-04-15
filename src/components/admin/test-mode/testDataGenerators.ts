@@ -226,6 +226,15 @@ export const generateParcels = async (parcelNumbers: string[]) => {
       house_number: houseNumber,
       whatsapp_number: `+243${seededInt(idx * 13 + 1, 810000000, 899999999)}`,
       has_dispute: idx % 10 === 0,
+      is_occupied: constructionNature ? (idx % 10 < 7 ? true : idx % 10 < 9 ? false : null) : null,
+      occupant_count: constructionNature && idx % 10 < 7 ? randInt(1, 8) : null,
+      hosting_capacity: constructionNature ? randInt(2, 15) : null,
+      floor_number: constructionNature ? String(randInt(0, 5)) : null,
+      additional_constructions: idx % 5 === 0 && constructionNature
+        ? [{ type: pick(['Garage', 'Dépendance', 'Kiosque', 'Clôture'], idx), usage: pick(['Stockage', 'Commerce', 'Habitation'], idx), surface_sqm: randInt(10, 80) }] as unknown as Json
+        : null,
+      sound_environment: pick(['tres_calme', 'calme', 'modere', 'bruyant', 'tres_bruyant'], idx),
+      nearby_noise_sources: idx % 5 < 2 ? pick(['Route principale', 'Marché', 'Église', 'École', 'Usine', 'Aéroport'], idx) : null,
       parcel_sides: [
         { name: 'Nord', length: String(sideN) },
         { name: 'Sud', length: String(sideS) },
@@ -361,6 +370,12 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
         paymentDate: randomDateInPast(1),
       }] as unknown as Json,
       has_dispute: idx % 10 === 0,
+      is_occupied: constructionNature ? (idx % 10 < 7 ? true : idx % 10 < 9 ? false : null) : null,
+      occupant_count: constructionNature && idx % 10 < 7 ? randInt(1, 8) : null,
+      hosting_capacity: constructionNature ? randInt(2, 15) : null,
+      additional_constructions: idx % 5 === 0 && constructionNature
+        ? [{ type: pick(['Garage', 'Dépendance', 'Kiosque', 'Clôture'], idx), usage: pick(['Stockage', 'Commerce', 'Habitation'], idx), surface_sqm: randInt(10, 80) }] as unknown as Json
+        : null,
       dispute_data: idx % 10 === 0
         ? { type: 'delimitation', description: 'Test litige de délimitation' } as unknown as Json
         : null,

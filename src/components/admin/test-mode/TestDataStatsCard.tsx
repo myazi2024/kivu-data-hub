@@ -45,7 +45,7 @@ const STAT_ITEMS: { key: keyof TestDataStats; label: string }[] = [
   { key: 'taxHistory', label: 'Hist. taxes' },
   { key: 'boundaryHistory', label: 'Hist. bornages' },
   { key: 'mortgages', label: 'Hypothèques' },
-  { key: 'buildingPermits', label: 'Permis bâtir' },
+  { key: 'buildingPermits', label: 'Autorisations' },
   { key: 'fraudAttempts', label: 'Fraudes' },
   { key: 'certificates', label: 'Certificats' },
   { key: 'mutationRequests', label: 'Mutations' },
