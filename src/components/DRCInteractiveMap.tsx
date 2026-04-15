@@ -423,6 +423,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                         />
                       </div>
                     )}
+                  </div>
                   {/* Légende contextuelle — scope dynamique */}
                   {selectedProvince && scopedStats && (
                     <div className="absolute bottom-5 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30 animate-fade-in">
