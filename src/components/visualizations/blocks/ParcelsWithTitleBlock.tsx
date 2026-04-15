@@ -48,6 +48,7 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     byDeclaredUsage: countBy(normalizedParcels, 'declared_usage'),
     surfaceDist: surfaceDistribution(filteredParcels),
     byDecade: yearDecadeDistribution(filteredParcels, 'construction_year'),
+    byLeaseType: countBy(filteredParcels, 'lease_type'),
   }), [filteredParcels, normalizedParcels]);
 
   const permitTypeData = useMemo(() => {
