@@ -1,4 +1,5 @@
 import React, { useState, memo, useMemo, Suspense } from 'react';
+import { useAppAppearance } from '@/hooks/useAppAppearance';
 import { FileText, Map, Search, ArrowRightLeft, Scissors, AlertTriangle, Loader2, Database, History, Award, Receipt, Landmark, FileCheck, DollarSign } from 'lucide-react';
 import { useLandDataAnalytics, LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { ProvinceData } from '@/types/province';
@@ -89,11 +90,13 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
     : [];
   const { getChartConfig: getGlobalConfig } = useTabChartsConfig('_global', globalDefaults);
   const watermarkText = getGlobalConfig('global-watermark')?.custom_title || 'BIC - Tous droits réservés';
+  const { config: appearanceConfig } = useAppAppearance();
   const watermarkConfig: WatermarkConfig = useMemo(() => ({
     opacity: parseFloat(getGlobalConfig('logo-watermark-opacity')?.custom_title || '0.06') || 0.06,
     size: parseInt(getGlobalConfig('logo-watermark-size')?.custom_title || '80', 10) || 80,
     position: getGlobalConfig('logo-watermark-position')?.custom_title || 'center',
-  }), [getGlobalConfig]);
+    logoUrl: (appearanceConfig.logo_url as string) || undefined,
+  }), [getGlobalConfig, appearanceConfig.logo_url]);
 
   // Set default active tab once visible tabs are loaded
   React.useEffect(() => {
