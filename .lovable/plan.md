@@ -1,121 +1,86 @@
 
 
-# Audit d'alignement : Formulaire CCC ↔ Menu Données Foncières
+# Audit d'alignement : Config graphiques Admin ↔ Menu Données foncières
 
-## Méthodologie
+## Contexte
 
-Comparaison des champs collectés par le formulaire CCC (`useCadastralContribution.tsx`), stockés en DB (`cadastral_contributions`), et exploités dans les blocs analytics (`useLandDataAnalytics.tsx` → `ContributionsBlock.tsx` + `ParcelsWithTitleBlock.tsx`).
+Le menu **Données foncières** affiche des graphiques/KPIs définis dans les blocs de visualisation (`ParcelsWithTitleBlock.tsx`, `ContributionsBlock.tsx`). L'admin configure ces éléments via `AdminAnalyticsChartsConfig.tsx`, qui lit ses defaults depuis `ANALYTICS_TABS_REGISTRY` dans `analyticsTabsRegistry.ts`. Les croisements sont configurés via `CROSS_VARIABLE_REGISTRY` dans `crossVariables.ts`.
 
----
-
-## Champs collectés par le CCC mais ABSENTS des requêtes analytics
-
-| # | Champ CCC (DB) | Type | Bloc concerné | Impact |
-|---|---------------|------|---------------|--------|
-| 1 | `is_occupied` | boolean | Contributions + Parcelles | **Données d'occupation jamais visualisées**. Le formulaire collecte si le bien est habité, mais aucun graphique ne l'exploite. |
-| 2 | `occupant_count` | integer | Contributions + Parcelles | **Nombre d'occupants ignoré**. Pourrait alimenter un KPI ou une distribution. |
-| 3 | `hosting_capacity` | integer | Contributions + Parcelles | **Capacité d'accueil ignorée**. Même situation. |
-| 4 | `lease_type` | text | Contributions | Collecté mais **non sélectionné** dans la requête `fetchAll` des contributions (ligne 91). Présent côté parcelles (ligne 87) mais aucun graphique ne l'exploite dans `ParcelsWithTitleBlock`. |
-| 5 | `lease_years` | integer | Contributions + Parcelles | Sélectionné pour parcelles mais **aucun graphique** ne l'exploite. |
-| 6 | `floor_number` | text | Contributions + Parcelles | Collecté, stocké en DB, mais **jamais sélectionné ni visualisé**. |
-| 7 | `apartment_number` | text | Contributions + Parcelles | Même situation que `floor_number`. |
-| 8 | `additional_constructions` | jsonb | Contributions + Parcelles | Stocké en DB, **jamais sélectionné ni exploité** dans les analytics. Données multi-constructions invisibles. |
-| 9 | `road_sides` | jsonb | Contributions + Parcelles | Côtés donnant sur route, types de voie — **jamais exploités**. |
-| 10 | `servitude_data` | jsonb | Contributions + Parcelles | Servitudes — **jamais exploitées**. |
-| 11 | `has_dispute` | boolean | Contributions | Sélectionné pour parcelles, mais **pas sélectionné** dans la requête contributions (ligne 91). |
-| 12 | `title_issue_date` | date | Contributions + Parcelles | Stocké mais **jamais exploité** (âge du titre). |
+**Problème central** : des graphiques et KPIs ont été ajoutés récemment dans les blocs de visualisation mais **jamais déclarés dans le registre admin**, les rendant invisibles et non-configurables.
 
 ---
 
-## Champs sélectionnés mais NON EXPLOITÉS dans les graphiques
+## Anomalies détectées
 
-| # | Champ | Sélectionné dans | Visualisé ? |
-|---|-------|-------------------|-------------|
-| 13 | `lease_type` (parcelles) | `fetchAll` parcelles | Non — aucun `countBy` ni chart |
-| 14 | `lease_years` (parcelles) | `fetchAll` parcelles | Non |
-| 15 | `gps_coordinates` (parcelles) | `fetchAll` parcelles | Non (seulement pour la carte interactive, pas les analytics) |
+### Onglet `parcels-titled` (Parcelles)
+
+| # | Type | item_key | Dans le bloc UI | Dans le registre admin | Dans cross-variables |
+|---|------|----------|:-:|:-:|:-:|
+| 1 | **chart** | `occupation` | ✅ | ❌ MANQUANT | ❌ MANQUANT |
+| 2 | **chart** | `lease-type` | ✅ | ❌ MANQUANT | ❌ MANQUANT |
+| 3 | **chart** | `floor-dist` | ✅ | ❌ MANQUANT | ❌ MANQUANT |
+| 4 | **chart** | `sound-env` | ✅ | ✅ (absent du registre, mais présent via index 18+) | ❌ registre OK via `sound-env` |
+| 5 | **chart** | `noise-sources` | ✅ | ❌ MANQUANT | ✅ OK |
+| 6 | **kpi** | `kpi-occupied` | ✅ | ❌ MANQUANT | — |
+| 7 | **kpi** | `kpi-hosting` | ✅ | ❌ MANQUANT | — |
+| 8 | **kpi** | `kpi-multi-constr` | ✅ | ❌ MANQUANT | — |
+
+### Onglet `contributions` (Contributions)
+
+| # | Type | item_key | Dans le bloc UI | Dans le registre admin | Dans cross-variables |
+|---|------|----------|:-:|:-:|:-:|
+| 9 | **chart** | `occupation` | ✅ | ❌ MANQUANT | ❌ MANQUANT |
+| 10 | **chart** | `lease-type` | ✅ | ❌ MANQUANT | ❌ MANQUANT |
+| 11 | **kpi** | `kpi-with-lease` | ✅ | ❌ MANQUANT | — |
 
 ---
 
-## Champs correctement alignés (CCC → DB → Analytics)
+## Résumé des écarts
 
-| Champ | Contributions | Parcelles |
-|-------|:---:|:---:|
-| `property_title_type` | ✅ | ✅ |
-| `current_owner_legal_status` | ✅ | ✅ |
-| `current_owners_details` (genre) | ✅ | ✅ (via contribs) |
-| `declared_usage` | ✅ | ✅ |
-| `construction_type` | ✅ | ✅ |
-| `construction_nature` | — | ✅ |
-| `construction_materials` | — | ✅ |
-| `construction_year` | — | ✅ |
-| `property_category` | ✅ | ✅ |
-| `standing` | — | ✅ |
-| `area_sqm` | — | ✅ |
-| `building_permits` (type) | — | ✅ (via contribs) |
-| `building_shapes` (taille, hauteur) | — | ✅ (via contribs) |
-| `sound_environment` | — | ✅ (via contribs) |
-| `nearby_noise_sources` | — | ✅ (via contribs) |
-| `status` / fraude / appels | ✅ | — |
-| `is_subdivided` | — | ✅ |
-| `parcel_type` (SU/SR) | — | ✅ |
+| Catégorie | Count |
+|-----------|-------|
+| Charts manquants dans le registre | 5 (3 parcelles + 2 contributions) |
+| KPIs manquants dans le registre | 4 (3 parcelles + 1 contributions) |
+| Cross-variables manquantes | 4 (occupation × 2, lease-type × 2) |
+| **Total éléments non-configurables** | **9** |
+
+**Impact** : L'admin ne peut ni masquer, ni réordonner, ni renommer, ni changer le type de ces 9 éléments depuis l'interface de configuration.
 
 ---
 
 ## Plan de corrections
 
-### Phase 1 — Ajouter les champs manquants à la requête SELECT (prioritaire)
+### 1. Mettre à jour `analyticsTabsRegistry.ts`
 
-**Fichier** : `src/hooks/useLandDataAnalytics.tsx`
+**Onglet `parcels-titled`** — ajouter :
+- 3 charts : `occupation` (pie), `lease-type` (bar-h), `floor-dist` (bar-v)
+- 3 KPIs : `kpi-occupied`, `kpi-hosting`, `kpi-multi-constr`
 
-Ajouter à la requête `fetchAll` des contributions (ligne 91) :
-- `is_occupied, occupant_count, hosting_capacity`
-- `lease_type, lease_years`
-- `floor_number, apartment_number`
-- `additional_constructions`
-- `road_sides, servitude_data`
-- `has_dispute`
-- `title_issue_date`
+**Onglet `contributions`** — ajouter :
+- 2 charts : `occupation` (pie), `lease-type` (donut)
+- 1 KPI : `kpi-with-lease`
 
-Ajouter à la requête `fetchAll` des parcelles (ligne 87) :
-- `is_occupied, occupant_count, hosting_capacity`
+### 2. Mettre à jour `crossVariables.ts`
 
-**Fichier** : `src/types/landAnalytics.ts`
+**Onglet `parcels-titled`** — ajouter :
+- `occupation` : croisements Province, Type titre, Usage
+- `lease-type` : croisements Province, Type titre
+- `floor-dist` : croisements Province, Usage
 
-Mettre à jour `ContributionRecord` et `ParcelRecord` pour inclure les types des nouveaux champs.
+**Onglet `contributions`** — ajouter :
+- `occupation` : croisements Province, Statut, Type contribution
+- `lease-type` : croisements Province, Statut
 
-### Phase 2 — Créer les graphiques manquants
+### 3. Aucune modification UI
 
-**Fichier** : `src/components/visualizations/blocks/ParcelsWithTitleBlock.tsx`
-
-Ajouter 4 nouveaux graphiques :
-1. **Occupation** : Pie chart `is_occupied` (Habité / Non habité)
-2. **Type de bail** : Bar chart `lease_type` (Initial / Renouvellement)
-3. **Nombre d'étages** : Distribution `floor_number`
-4. **Multi-constructions** : KPI comptant les parcelles avec `additional_constructions.length > 0`
-
-**Fichier** : `src/components/visualizations/blocks/ContributionsBlock.tsx`
-
-Ajouter 2 graphiques :
-1. **Occupation** : Pie chart `is_occupied`
-2. **Type de bail** : Donut `lease_type`
-
-### Phase 3 — Enrichir les KPIs existants
-
-- **ParcelsWithTitleBlock** : Ajouter KPI "Parcelles habitées" et "Capacité d'accueil totale"
-- **ContributionsBlock** : Ajouter KPI "Contributions avec bail"
+Les blocs de visualisation sont déjà fonctionnels. Seules les sources de configuration admin sont à mettre à jour.
 
 ---
 
-## Résumé
+## Fichiers impactés
 
-| Catégorie | Count |
-|-----------|-------|
-| Champs collectés mais non exploités | 12 |
-| Champs sélectionnés mais non visualisés | 3 |
-| Champs correctement alignés | 18 |
-| Nouveaux graphiques à créer | 6 |
-| Nouveaux KPIs à ajouter | 3 |
-
-**Taux d'exploitation actuel** : ~60% des données CCC sont exploitées dans les analytics. Les 40% manquants concernent principalement l'occupation, les baux, les étages, et les données JSONB complexes (constructions additionnelles, côtés routiers, servitudes).
+| Fichier | Modification |
+|---------|-------------|
+| `src/config/analyticsTabsRegistry.ts` | +9 entrées (6 charts + 3 KPIs) dans 2 onglets |
+| `src/config/crossVariables.ts` | +5 entrées de croisement dans 2 onglets |
 
