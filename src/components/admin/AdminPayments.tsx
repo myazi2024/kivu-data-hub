@@ -56,7 +56,8 @@ const AdminPayments: React.FC<AdminPaymentsProps> = ({ onRefresh }) => {
           *,
           publications(id, title)
         `)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(2000);
 
       if (error) throw error;
 
@@ -89,12 +90,12 @@ const AdminPayments: React.FC<AdminPaymentsProps> = ({ onRefresh }) => {
 
   const updatePaymentStatus = async (paymentId: string, newStatus: string) => {
     try {
-      const { error } = await supabase
-        .from('payments')
-        .update({ status: newStatus })
-        .eq('id', paymentId);
+      const { data, error } = await supabase.functions.invoke('update-payment-status', {
+        body: { paymentId, newStatus },
+      });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       
       toast.success('Statut du paiement mis à jour');
       fetchPayments();

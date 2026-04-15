@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -208,9 +209,11 @@ const Admin = () => {
                 <span className="text-foreground font-medium">{label}</span>
               </div>
             )}
-            <Suspense fallback={<LazyFallback />}>
-              {renderContent()}
-            </Suspense>
+            <ErrorBoundary>
+              <Suspense fallback={<LazyFallback />}>
+                {renderContent()}
+              </Suspense>
+            </ErrorBoundary>
           </div>
         </main>
       </div>
