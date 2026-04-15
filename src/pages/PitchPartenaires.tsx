@@ -61,7 +61,7 @@ const SlideCover = () => (
   <SlideWrapper bg={heroSkyline} overlay>
     <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
       <AnimateIn variant="scale-in" delay={100}>
-        <img src={bicLogo} alt="Logo BIC" className="h-20 md:h-28 mb-8 drop-shadow-xl" />
+        <img src={bicLogoFallback} alt="Logo BIC" className="h-20 md:h-28 mb-8 drop-shadow-xl" />
       </AnimateIn>
       <AnimateIn delay={300}>
         <span className="inline-block mb-4 px-5 py-1.5 rounded-full bg-white/15 backdrop-blur text-white text-sm font-medium border border-white/20">
