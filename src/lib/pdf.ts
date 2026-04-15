@@ -71,7 +71,7 @@ export async function generateInvoicePDF(
 /**
  * Génère un mini-justificatif compact
  */
-function generateMiniInvoicePDF(
+async function generateMiniInvoicePDF(
   invoice: CadastralInvoice,
   servicesCatalog: CadastralService[],
   filename?: string
