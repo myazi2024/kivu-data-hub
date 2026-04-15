@@ -20,6 +20,7 @@ import {
   useAnalyticsTabsConfig,
   ChartConfigItem,
   TabConfig,
+  buildFilterDefaults,
 } from '@/hooks/useAnalyticsChartsConfig';
 import { ANALYTICS_TABS_REGISTRY } from '@/config/analyticsTabsRegistry';
 import { CROSS_VARIABLE_REGISTRY } from '@/config/crossVariables';
