@@ -560,3 +560,11 @@ export const getAvenuesForQuartier = (province: string, ville: string, commune: 
   if (!communeData) return [];
   return communeData[quartier] || [];
 };
+
+/** Reverse-lookup: find the province that contains a given territoire */
+export const getProvinceForTerritoire = (territoire: string): string | undefined => {
+  for (const [province, data] of Object.entries(geographicData)) {
+    if (data.territoires[territoire]) return province;
+  }
+  return undefined;
+};

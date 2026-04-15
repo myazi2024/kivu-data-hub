@@ -17,7 +17,7 @@ import ProvinceDataVisualization from './visualizations/ProvinceDataVisualizatio
 import { useLandDataAnalytics } from '@/hooks/useLandDataAnalytics';
 import { useTestEnvironment } from '@/hooks/useTestEnvironment';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
-import { getTerritoiresForProvince } from '@/lib/geographicData';
+import { getTerritoiresForProvince, getProvinceForTerritoire } from '@/lib/geographicData';
 
 /** Province IDs and names for the 26 provinces */
 const PROVINCE_META: { id: string; name: string }[] = [
