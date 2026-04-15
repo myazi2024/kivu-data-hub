@@ -73,6 +73,19 @@ const UserDashboard = () => {
       
       <main className="flex-grow px-3 py-4">
         <div className="max-w-[360px] sm:max-w-md lg:max-w-2xl mx-auto">
+          {/* Breadcrumb */}
+          <Breadcrumb className="mb-3">
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild><Link to="/">Accueil</Link></BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Mon compte</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+
           {/* Header with notification bell */}
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-lg font-semibold">Mon compte</h1>
