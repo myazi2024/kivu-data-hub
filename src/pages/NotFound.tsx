@@ -2,9 +2,11 @@ import { Link, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Home, ArrowLeft } from "lucide-react";
+import { useAppAppearance } from "@/hooks/useAppAppearance";
 
 const NotFound = () => {
   const location = useLocation();
+  const { config } = useAppAppearance();
 
   useEffect(() => {
     console.error(
@@ -16,6 +18,13 @@ const NotFound = () => {
   return (
     <div className="min-h-dvh flex items-center justify-center bg-background px-4">
       <div className="text-center max-w-md">
+        {config.logo_url && (
+          <img
+            src={String(config.logo_url)}
+            alt={String(config.app_name || 'Logo')}
+            className="h-12 w-12 object-contain mx-auto mb-4"
+          />
+        )}
         <h1 className="text-7xl font-extrabold text-primary mb-4">404</h1>
         <p className="text-xl font-semibold text-foreground mb-2">
           Page introuvable

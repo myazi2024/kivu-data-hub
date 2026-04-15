@@ -3,6 +3,7 @@ import autoTable from 'jspdf-autotable';
 import QRCode from 'qrcode';
 import type { CadastralService } from '@/hooks/useCadastralServices';
 import { createDocumentVerification } from '@/lib/documentVerification';
+import { fetchAppLogo } from '@/utils/pdfLogoHelper';
 
 // Type minimal pour les factures dans le PDF
 interface CadastralInvoice {
@@ -80,7 +81,14 @@ function generateMiniInvoicePDF(
   const margin = 5;
   let cursorY = margin;
 
-  // En-tête compact
+  // En-tête compact avec logo
+  const miniLogo = await fetchAppLogo();
+  if (miniLogo) {
+    try {
+      doc.addImage(miniLogo, 'PNG', pageWidth / 2 - 3, cursorY - 3, 6, 6);
+      cursorY += 4;
+    } catch { /* ignore logo errors */ }
+  }
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
   doc.text(BIC_COMPANY_INFO.abbreviation, pageWidth / 2, cursorY, { align: 'center' });
@@ -184,15 +192,23 @@ async function generateA4InvoicePDF(
   const margin = 20;
   let cursorY = margin;
 
-  // En-tête ultra compact
+  // En-tête ultra compact avec logo
+  const a4Logo = await fetchAppLogo();
+  let logoOffsetX = 0;
+  if (a4Logo) {
+    try {
+      doc.addImage(a4Logo, 'PNG', margin, cursorY - 5, 8, 8);
+      logoOffsetX = 10;
+    } catch { /* ignore logo errors */ }
+  }
   doc.setTextColor(44, 62, 80);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(16);
-  doc.text("BIC", margin, cursorY);
+  doc.text("BIC", margin + logoOffsetX, cursorY);
   
   doc.setFontSize(8);
   doc.setTextColor(127, 140, 141);
-  doc.text("Bureau d'Informations Cadastrales", margin + 20, cursorY);
+  doc.text("Bureau d'Informations Cadastrales", margin + logoOffsetX + 20, cursorY);
   
   // Date et numéro à droite
   doc.text(`${new Date(invoice.search_date).toLocaleDateString('fr-FR')}`, pageWidth - margin, cursorY, { align: 'right' });
