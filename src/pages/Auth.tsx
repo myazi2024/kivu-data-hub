@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -248,7 +249,12 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-dvh bg-gradient-to-br from-primary/5 to-primary/10 flex items-center justify-center p-4">
+    <>
+      <Helmet>
+        <title>Connexion | BIC - Bureau d'Informations Cadastrales</title>
+        <meta name="description" content="Connectez-vous ou créez un compte pour accéder aux services cadastraux du BIC en RDC." />
+      </Helmet>
+      <div className="min-h-dvh bg-gradient-to-br from-primary/5 to-primary/10 flex items-center justify-center p-4">
       {/* Back Button */}
       <Button
         variant="ghost"
@@ -564,6 +570,7 @@ const Auth = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

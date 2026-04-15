@@ -17,6 +17,8 @@ import React, { Suspense } from "react";
 import { Loader2 } from "lucide-react";
 import { useAppAppearance } from "@/hooks/useAppAppearance";
 import { Navigate } from "react-router-dom";
+import useScrollToTop from "@/hooks/useScrollToTop";
+import ScrollToTopButton from "@/components/ScrollToTopButton";
 
 // Eagerly loaded pages
 import Index from "./pages/Index";
@@ -66,6 +68,11 @@ const AppearanceLoader = () => {
   return null;
 };
 
+const ScrollToTopOnRouteChange = () => {
+  useScrollToTop();
+  return null;
+};
+
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
@@ -78,6 +85,7 @@ const App = () => (
               <Toaster />
               <Sonner />
               <AppearanceLoader />
+              <ScrollToTopOnRouteChange />
               <TestEnvironmentBanner />
               <Suspense fallback={<PageLoader />}>
                 <Routes>
@@ -140,6 +148,7 @@ const App = () => (
               </Suspense>
               {/* Global floating cart button */}
               <CartButton />
+              <ScrollToTopButton />
               <CookieBanner />
               </TestEnvironmentProvider>
               </TooltipProvider>

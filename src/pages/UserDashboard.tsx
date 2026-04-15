@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Navigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useSearchParams, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet';
 import { useAuth } from '@/hooks/useAuth';
 import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/Footer';
@@ -18,6 +19,7 @@ import { UserMutationRequests } from '@/components/user/UserMutationRequests';
 import { UserMortgageRequests } from '@/components/user/UserMortgageRequests';
 import { UserSubdivisionRequests } from '@/components/user/UserSubdivisionRequests';
 import { User, FileText, Building, CreditCard, Settings, ScrollText, Scale, FileSearch, FileEdit, Landmark, LayoutGrid } from 'lucide-react';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 
 const VALID_TABS = [
   'profile', 'contributions', 'titles', 'permits', 'expertise',
@@ -61,11 +63,29 @@ const UserDashboard = () => {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col bg-muted/30">
+    <>
+      <Helmet>
+        <title>Mon compte | BIC - Bureau d'Informations Cadastrales</title>
+        <meta name="description" content="Gérez votre compte BIC : contributions cadastrales, titres fonciers, expertises, mutations et paramètres." />
+      </Helmet>
+      <div className="min-h-dvh flex flex-col bg-muted/30">
       <Navigation />
       
       <main className="flex-grow px-3 py-4">
         <div className="max-w-[360px] sm:max-w-md lg:max-w-2xl mx-auto">
+          {/* Breadcrumb */}
+          <Breadcrumb className="mb-3">
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild><Link to="/">Accueil</Link></BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Mon compte</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+
           {/* Header with notification bell */}
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-lg font-semibold">Mon compte</h1>
@@ -206,6 +226,7 @@ const UserDashboard = () => {
 
       <Footer />
     </div>
+    </>
   );
 };
 

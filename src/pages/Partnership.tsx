@@ -1,4 +1,5 @@
 import React from 'react';
+import { Helmet } from 'react-helmet';
 import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -137,7 +138,12 @@ const Partnership = () => {
   ];
 
   return (
-    <div className="min-h-dvh">
+    <>
+      <Helmet>
+        <title>Partenariat | BIC - Bureau d'Informations Cadastrales</title>
+        <meta name="description" content="Devenez partenaire du BIC et accédez à la base cadastrale numérisée de la RDC. Revendeurs, institutions et organisations." />
+      </Helmet>
+      <div className="min-h-dvh">
       <Navigation />
       <main className="pt-20 pb-16">
         {/* Hero Section */}
@@ -320,6 +326,7 @@ const Partnership = () => {
       </main>
       <Footer />
     </div>
+    </>
   );
 };
 

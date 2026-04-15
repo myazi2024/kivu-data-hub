@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import { Helmet } from "react-helmet";
 import { Button } from "@/components/ui/button";
 import { Home, ArrowLeft } from "lucide-react";
 import { useAppAppearance } from "@/hooks/useAppAppearance";
@@ -16,7 +17,12 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-dvh flex items-center justify-center bg-background px-4">
+    <>
+      <Helmet>
+        <title>Page introuvable | BIC</title>
+        <meta name="description" content="La page demandée n'existe pas ou a été déplacée." />
+      </Helmet>
+      <div className="min-h-dvh flex items-center justify-center bg-background px-4">
       <div className="text-center max-w-md">
         {config.logo_url && (
           <img
@@ -45,7 +51,8 @@ const NotFound = () => {
           </Button>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

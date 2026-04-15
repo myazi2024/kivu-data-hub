@@ -1,4 +1,5 @@
 import React from 'react';
+import { Helmet } from 'react-helmet';
 import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,7 +28,12 @@ const Legal = () => {
   };
 
   return (
-    <div className="min-h-dvh">
+    <>
+      <Helmet>
+        <title>Mentions légales et CGU | BIC</title>
+        <meta name="description" content="Consultez les mentions légales, conditions générales d'utilisation, politique de confidentialité et CGV du Bureau d'Informations Cadastrales." />
+      </Helmet>
+      <div className="min-h-dvh">
       <Navigation />
       <main className="pt-20 pb-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -890,6 +896,7 @@ const Legal = () => {
       </main>
       <Footer />
     </div>
+    </>
   );
 };
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Helmet } from 'react-helmet';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -27,7 +28,12 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 
 const AboutCCC = () => {
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <>
+      <Helmet>
+        <title>Contribution Citoyenne Cadastrale | BIC</title>
+        <meta name="description" content="Découvrez le programme CCC du BIC : contribuez à la mise à jour des données cadastrales en RDC et recevez des codes de réduction." />
+      </Helmet>
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="mb-6">
         <Link to="/" className="text-sm text-muted-foreground hover:text-primary">
           ← Retour à l'accueil
@@ -791,6 +797,7 @@ const AboutCCC = () => {
         </CardContent>
       </Card>
     </div>
+    </>
   );
 };
 
