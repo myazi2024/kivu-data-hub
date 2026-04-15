@@ -209,10 +209,13 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'kpi-parcels', label: ct('kpi-parcels', 'Parcelles'), value: filteredParcels.length, cls: 'text-primary' },
     { key: 'kpi-urban', label: ct('kpi-urban', 'Urbaines'), value: urbanCount, cls: 'text-emerald-600', tooltip: pct(urbanCount, filteredParcels.length) },
     { key: 'kpi-rural', label: ct('kpi-rural', 'Rurales'), value: ruralCount, cls: 'text-amber-600', tooltip: pct(ruralCount, filteredParcels.length) },
+    { key: 'kpi-occupied', label: ct('kpi-occupied', 'Habitées'), value: occupiedCount, cls: 'text-teal-600', tooltip: pct(occupiedCount, filteredParcels.length) },
+    { key: 'kpi-hosting', label: ct('kpi-hosting', 'Cap. accueil'), value: totalHostingCapacity > 0 ? totalHostingCapacity.toLocaleString() : 'N/A', cls: 'text-indigo-600', tooltip: 'Capacité d\'accueil totale' },
+    { key: 'kpi-multi-constr', label: ct('kpi-multi-constr', 'Multi-constr.'), value: multiConstructionCount, cls: 'text-orange-600', tooltip: pct(multiConstructionCount, filteredParcels.length) },
     { key: 'kpi-surface', label: ct('kpi-surface', 'Surface tot.'), value: totalSurface > 0 ? `${(totalSurface / 10000).toFixed(1)} ha` : 'N/A', cls: 'text-violet-600', tooltip: `${totalSurface.toLocaleString()} m²` },
     { key: 'kpi-avg-surface', label: ct('kpi-avg-surface', 'Surface moy.'), value: avgSurface > 0 ? `${avgSurface.toLocaleString()} m²` : 'N/A', cls: 'text-blue-600' },
     { key: 'kpi-density', label: ct('kpi-density', 'Densité'), value: density !== 'N/A' ? `${density}/ha` : 'N/A', cls: 'text-rose-600', tooltip: 'Parcelles par hectare' },
-  ].filter(k => v(k.key)), [filteredParcels, urbanCount, ruralCount, totalSurface, avgSurface, density, v, ct]);
+  ].filter(k => v(k.key)), [filteredParcels, urbanCount, ruralCount, occupiedCount, totalHostingCapacity, multiConstructionCount, totalSurface, avgSurface, density, v, ct]);
 
   const chartDefs = useMemo(() => [
     { key: 'title-type', el: () => <ChartCard title={ct('title-type', 'Type titre')} icon={FileText} data={charts.byTitleType} type={ty('title-type', 'bar-h')} colorIndex={0} labelWidth={110}
