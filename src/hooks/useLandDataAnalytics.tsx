@@ -74,7 +74,7 @@ async function fetchAll(
 
 export const useLandDataAnalytics = (isTestRoute = false) => {
   return useQuery({
-    queryKey: ['land-analytics-v8', isTestRoute],
+    queryKey: ['land-analytics-v9', isTestRoute],
     queryFn: async (): Promise<LandAnalyticsData> => {
       const [
         parcels, contribs, titleReqs, permits,
@@ -84,11 +84,11 @@ export const useLandDataAnalytics = (isTestRoute = false) => {
       ] = await Promise.all([
         // Parcels
         fetchAll('cadastral_parcels',
-          'id, parcel_number, parcel_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, property_title_type, current_owner_legal_status, declared_usage, construction_type, construction_nature, construction_year, area_sqm, gps_coordinates, lease_type, property_category, construction_materials, standing, lease_years, is_subdivided, has_dispute, created_at',
+          'id, parcel_number, parcel_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, property_title_type, current_owner_legal_status, declared_usage, construction_type, construction_nature, construction_year, area_sqm, gps_coordinates, lease_type, property_category, construction_materials, standing, lease_years, is_subdivided, has_dispute, is_occupied, occupant_count, hosting_capacity, floor_number, additional_constructions, created_at',
           isTestRoute, q => q.is('deleted_at', null)),
         // Contributions
         fetchAll('cadastral_contributions',
-          'id, parcel_number, parcel_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, property_title_type, current_owner_legal_status, current_owners_details, declared_usage, construction_type, construction_nature, construction_year, contribution_type, area_sqm, is_suspicious, fraud_score, fraud_reason, appeal_submitted, appeal_status, lease_type, property_category, construction_materials, standing, status, reviewed_at, created_at, building_permits, building_shapes, sound_environment, nearby_noise_sources',
+          'id, parcel_number, parcel_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, property_title_type, current_owner_legal_status, current_owners_details, declared_usage, construction_type, construction_nature, construction_year, contribution_type, area_sqm, is_suspicious, fraud_score, fraud_reason, appeal_submitted, appeal_status, lease_type, property_category, construction_materials, standing, status, reviewed_at, created_at, building_permits, building_shapes, sound_environment, nearby_noise_sources, is_occupied, occupant_count, hosting_capacity, lease_years, floor_number, apartment_number, additional_constructions, has_dispute, title_issue_date',
           isTestRoute),
         // Title requests
         fetchAll('land_title_requests',

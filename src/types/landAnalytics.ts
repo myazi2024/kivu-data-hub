@@ -33,6 +33,11 @@ export interface ParcelRecord extends GeoFields {
   lease_years?: number | null;
   is_subdivided?: boolean | null;
   has_dispute?: boolean | null;
+  is_occupied?: boolean | null;
+  occupant_count?: number | null;
+  hosting_capacity?: number | null;
+  floor_number?: string | null;
+  additional_constructions?: any;
   created_at: string;
 }
 
@@ -64,6 +69,15 @@ export interface ContributionRecord extends GeoFields {
   building_shapes?: any;
   sound_environment?: string | null;
   nearby_noise_sources?: string | null;
+  is_occupied?: boolean | null;
+  occupant_count?: number | null;
+  hosting_capacity?: number | null;
+  lease_years?: number | null;
+  floor_number?: string | null;
+  apartment_number?: string | null;
+  additional_constructions?: any;
+  has_dispute?: boolean | null;
+  title_issue_date?: string | null;
 }
 
 export interface TitleRequestRecord extends GeoFields {

@@ -3,7 +3,7 @@ import { AnalyticsFilters } from '../filters/AnalyticsFilters';
 import { countBy, trendByMonth, avgProcessingDays } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { FileText, TrendingUp, AlertTriangle, ShieldAlert, Users, Gavel } from 'lucide-react';
+import { FileText, TrendingUp, AlertTriangle, ShieldAlert, Users, Gavel, Home, KeyRound } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
@@ -33,6 +33,15 @@ export const ContributionsBlock: React.FC<Props> = memo(({ data }) => {
   const byDeclaredUsage = useMemo(() => countBy(normalized, 'declared_usage'), [normalized]);
   const byConstructionType = useMemo(() => countBy(normalized, 'construction_type'), [normalized]);
   const byPropertyCategory = useMemo(() => countBy(filtered, 'property_category'), [filtered]);
+  const byLeaseType = useMemo(() => countBy(filtered, 'lease_type'), [filtered]);
+  const occupationData = useMemo(() => {
+    const occupied = filtered.filter(r => r.is_occupied === true).length;
+    const vacant = filtered.filter(r => r.is_occupied === false).length;
+    return [
+      ...(occupied > 0 ? [{ name: 'Habité', value: occupied }] : []),
+      ...(vacant > 0 ? [{ name: 'Non habité', value: vacant }] : []),
+    ];
+  }, [filtered]);
   const trend = useMemo(() => trendByMonth(filtered), [filtered]);
 
   const fraudData = useMemo(() => {
@@ -67,14 +76,17 @@ export const ContributionsBlock: React.FC<Props> = memo(({ data }) => {
     return { approved, pending, rejected, avgDays };
   }, [filtered]);
 
+  const withLease = useMemo(() => filtered.filter(r => r.lease_type).length, [filtered]);
+
   const kpiItems = useMemo(() => [
     { key: 'kpi-total', label: ct('kpi-total', 'Total'), value: filtered.length, cls: 'text-primary' },
     { key: 'kpi-approved', label: ct('kpi-approved', 'Approuvées'), value: stats.approved, cls: 'text-emerald-600', tooltip: pct(stats.approved, filtered.length) },
     { key: 'kpi-pending', label: ct('kpi-pending', 'En attente'), value: stats.pending, cls: 'text-amber-600', tooltip: pct(stats.pending, filtered.length) },
     { key: 'kpi-suspicious', label: ct('kpi-suspicious', 'Suspectes'), value: fraudData.suspicious, cls: 'text-red-600', tooltip: pct(fraudData.suspicious, filtered.length) },
     { key: 'kpi-appeals', label: ct('kpi-appeals', 'Appels'), value: appealData.submitted, cls: 'text-blue-600', tooltip: pct(appealData.submitted, filtered.length) },
+    { key: 'kpi-with-lease', label: ct('kpi-with-lease', 'Avec bail'), value: withLease, cls: 'text-teal-600', tooltip: pct(withLease, filtered.length) },
     { key: 'kpi-delay', label: ct('kpi-delay', 'Délai moy.'), value: stats.avgDays > 0 ? `${stats.avgDays}j` : 'N/A', cls: 'text-violet-600', tooltip: 'Délai moyen de traitement' },
-  ].filter(k => v(k.key)), [filtered, stats, fraudData, appealData, v, ct]);
+  ].filter(k => v(k.key)), [filtered, stats, fraudData, appealData, withLease, v, ct]);
 
   const chartDefs = useMemo(() => [
     { key: 'contribution-type', el: () => <ChartCard title={ct('contribution-type', 'Type contribution')} icon={FileText} data={byContributionType} type={ty('contribution-type', 'bar-h')} colorIndex={0} labelWidth={100}
@@ -100,10 +112,14 @@ export const ContributionsBlock: React.FC<Props> = memo(({ data }) => {
       insight={generateInsight(fraudData.byFraudReason, 'bar-h', 'les motifs de fraude')} /> },
     { key: 'appeal-status', el: () => <ChartCard title={ct('appeal-status', 'Statut appel')} icon={Gavel} data={appealData.byAppealStatus} type={ty('appeal-status', 'donut')} colorIndex={9} hidden={appealData.byAppealStatus.length === 0}
       insight={generateInsight(appealData.byAppealStatus, 'donut', 'les appels')} crossVariables={cx('appeal-status')} rawRecords={filtered} groupField="appeal_status" /> },
+    { key: 'occupation', el: () => <ChartCard title={ct('occupation', 'Occupation')} icon={Home} data={occupationData} type={ty('occupation', 'pie')} colorIndex={12} hidden={occupationData.length === 0}
+      insight={generateInsight(occupationData, 'pie', "l'occupation des biens")} crossVariables={cx('occupation')} rawRecords={filtered} groupField="is_occupied" /> },
+    { key: 'lease-type', el: () => <ChartCard title={ct('lease-type', 'Type de bail')} icon={KeyRound} data={byLeaseType} type={ty('lease-type', 'donut')} colorIndex={13} hidden={byLeaseType.length === 0}
+      insight={generateInsight(byLeaseType, 'donut', 'les types de bail')} crossVariables={cx('lease-type')} rawRecords={filtered} groupField="lease_type" /> },
     { key: 'geo', el: () => <GeoCharts records={filtered} /> },
     { key: 'evolution', el: () => <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type={ty('evolution', 'area')} colorIndex={0} colSpan={2}
       insight={generateInsight(trend, 'area', 'les contributions')} /> },
-  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filtered, normalized, byContributionType, byStatus, byPropertyTitleType, byLegalStatus, byDeclaredUsage, byConstructionType, byPropertyCategory, fraudData, appealData, trend, v, ct, cx, ty, ord]);
+  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filtered, normalized, byContributionType, byStatus, byPropertyTitleType, byLegalStatus, byDeclaredUsage, byConstructionType, byPropertyCategory, byLeaseType, occupationData, fraudData, appealData, trend, v, ct, cx, ty, ord]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
