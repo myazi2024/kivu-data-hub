@@ -3,7 +3,7 @@ import { AnalyticsFilters } from '../filters/AnalyticsFilters';
 import { countBy, trendByMonth, getSectionType, avgProcessingDays, surfaceDistribution, sumByMonth } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { FileText, Users, DollarSign, TrendingUp, Globe, Ruler, Clock, UserCheck } from 'lucide-react';
+import { FileText, Users, DollarSign, TrendingUp, Globe, Ruler, Clock, UserCheck, KeyRound } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, ColorMappedPieCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
@@ -43,6 +43,7 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
 
   const surfaceDist = useMemo(() => surfaceDistribution(filtered), [filtered]);
   const ownerSameData = useMemo(() => countBy(filtered, 'requester_type'), [filtered]);
+  const byLeaseType = useMemo(() => countBy(data.parcels, 'lease_type'), [data.parcels]);
 
   const revenueTrend = useMemo(() => sumByMonth(filtered.filter(r => r.payment_status === 'paid')), [filtered]);
 
@@ -121,10 +122,12 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
       insight={generateInsight(revenueTrend, 'area', 'les revenus mensuels')} /> },
     { key: 'processing-comparison', el: () => <ChartCard title={ct('processing-comparison', 'Délai estimé vs réel')} icon={Clock} data={processingComparison} type={ty('processing-comparison', 'bar-v')} colorIndex={5} hidden={processingComparison.length === 0}
       insight={processingInsight} /> },
+    { key: 'lease-type', el: () => <ChartCard title={ct('lease-type', 'Type de bail')} icon={KeyRound} data={byLeaseType} type={ty('lease-type', 'bar-h')} colorIndex={13} hidden={byLeaseType.length === 0}
+      insight={generateInsight(byLeaseType, 'bar-h', 'les types de bail')} crossVariables={cx('lease-type')} rawRecords={data.parcels} groupField="lease_type" /> },
     { key: 'geo', el: () => <GeoCharts records={filtered} /> },
     { key: 'evolution', el: () => <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type={ty('evolution', 'area')} colorIndex={0} colSpan={2}
       insight={generateInsight(trend, 'area', 'les demandes de titres')} /> },
-  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filtered, byRequestType, byRequesterType, byStatus, byPayment, byOwnerLegalStatus, genderData, byNationality, byDeducedTitleType, ownerSameData, surfaceDist, revenueTrend, processingComparison, trend, genderInsight, processingInsight, v, ct, cx, ty, ord]);
+  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filtered, byRequestType, byRequesterType, byStatus, byPayment, byOwnerLegalStatus, genderData, byNationality, byDeducedTitleType, ownerSameData, surfaceDist, revenueTrend, processingComparison, trend, genderInsight, processingInsight, byLeaseType, data.parcels, v, ct, cx, ty, ord]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
