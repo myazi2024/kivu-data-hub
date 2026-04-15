@@ -48,7 +48,7 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     byDeclaredUsage: countBy(normalizedParcels, 'declared_usage'),
     surfaceDist: surfaceDistribution(filteredParcels),
     byDecade: yearDecadeDistribution(filteredParcels, 'construction_year'),
-    byLeaseType: countBy(filteredParcels, 'lease_type'),
+    
   }), [filteredParcels, normalizedParcels]);
 
   const permitTypeData = useMemo(() => {
@@ -244,8 +244,6 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
       insight={generateInsight(subdividedData, 'pie', 'le lotissement des parcelles')} crossVariables={cx('subdivided')} rawRecords={filteredParcels} groupField="is_subdivided" /> },
     { key: 'occupation', el: () => <ChartCard title={ct('occupation', 'Occupation')} icon={Home} data={occupationData} type={ty('occupation', 'pie')} colorIndex={12} hidden={occupationData.length === 0}
       insight={generateInsight(occupationData, 'pie', "l'occupation des parcelles")} crossVariables={cx('occupation')} rawRecords={filteredParcels} groupField="is_occupied" /> },
-    { key: 'lease-type', el: () => <ChartCard title={ct('lease-type', 'Type de bail')} icon={KeyRound} data={charts.byLeaseType} type={ty('lease-type', 'bar-h')} colorIndex={13} hidden={charts.byLeaseType.length === 0}
-      insight={generateInsight(charts.byLeaseType, 'bar-h', 'les types de bail')} crossVariables={cx('lease-type')} rawRecords={filteredParcels} groupField="lease_type" /> },
     { key: 'floor-dist', el: () => <ChartCard title={ct('floor-dist', 'Nombre d\'étages')} icon={Layers} data={floorDistData} type={ty('floor-dist', 'bar-v')} colorIndex={14} hidden={floorDistData.length === 0}
       insight={generateInsight(floorDistData, 'bar-v', 'la distribution des étages')} crossVariables={cx('floor-dist')} rawRecords={filteredParcels} groupField="floor_number" /> },
     { key: 'geo', el: () => <GeoCharts records={filteredParcels} /> },

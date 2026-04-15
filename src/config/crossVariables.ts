@@ -16,6 +16,7 @@ export const CROSS_VARIABLE_REGISTRY: Record<string, Record<string, CrossVariabl
     'deduced-title': [{ label: 'Statut', field: 'status' }, { label: 'Province', field: 'province' }],
     'owner-same': [{ label: 'Statut', field: 'status' }, { label: 'Province', field: 'province' }],
     'surface': [{ label: 'Province', field: 'province' }, { label: 'Usage', field: 'declared_usage' }, { label: 'Statut', field: 'status' }],
+    'lease-type': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }],
   },
   'parcels-titled': {
     'title-type': [{ label: 'Statut juridique', field: 'current_owner_legal_status' }, { label: 'Usage', field: 'declared_usage' }, { label: 'Province', field: 'province' }],
@@ -35,7 +36,6 @@ export const CROSS_VARIABLE_REGISTRY: Record<string, Record<string, CrossVariabl
     'sound-env': [{ label: 'Province', field: 'province' }, { label: 'Usage', field: 'declared_usage' }],
     'noise-sources': [{ label: 'Province', field: 'province' }, { label: 'Env. sonore', field: 'sound_environment' }],
     'occupation': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }, { label: 'Usage', field: 'declared_usage' }],
-    'lease-type': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }],
     'floor-dist': [{ label: 'Province', field: 'province' }, { label: 'Usage', field: 'declared_usage' }],
   },
   'contributions': {

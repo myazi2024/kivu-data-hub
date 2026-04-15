@@ -18,7 +18,8 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'title-requests', item_key: 'revenue-trend', item_type: 'chart', is_visible: true, display_order: 10, custom_title: 'Revenus/mois', chart_type: 'area' },
       { tab_key: 'title-requests', item_key: 'processing-comparison', item_type: 'chart', is_visible: true, display_order: 11, custom_title: 'Délai estimé vs réel', chart_type: 'bar-v' },
       { tab_key: 'title-requests', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 12, custom_title: 'Géographie' },
-      { tab_key: 'title-requests', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 13, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
+      { tab_key: 'title-requests', item_key: 'lease-type', item_type: 'chart', is_visible: true, display_order: 13, custom_title: 'Type de bail', chart_type: 'bar-h' },
+      { tab_key: 'title-requests', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 14, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
     ],
     kpis: [
       { tab_key: 'title-requests', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Total' },
@@ -49,7 +50,7 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'parcels-titled', item_key: 'building-size', item_type: 'chart', is_visible: true, display_order: 14, custom_title: 'Taille construction', chart_type: 'bar-v' },
       { tab_key: 'parcels-titled', item_key: 'building-height', item_type: 'chart', is_visible: true, display_order: 15, custom_title: 'Hauteur construction', chart_type: 'bar-v' },
       { tab_key: 'parcels-titled', item_key: 'occupation', item_type: 'chart', is_visible: true, display_order: 16, custom_title: 'Occupation', chart_type: 'pie' },
-      { tab_key: 'parcels-titled', item_key: 'lease-type', item_type: 'chart', is_visible: true, display_order: 17, custom_title: 'Type de bail', chart_type: 'bar-h' },
+      
       { tab_key: 'parcels-titled', item_key: 'floor-dist', item_type: 'chart', is_visible: true, display_order: 18, custom_title: 'Étages', chart_type: 'bar-v' },
       { tab_key: 'parcels-titled', item_key: 'sound-env', item_type: 'chart', is_visible: true, display_order: 19, custom_title: 'Env. sonore', chart_type: 'donut' },
       { tab_key: 'parcels-titled', item_key: 'noise-sources', item_type: 'chart', is_visible: true, display_order: 20, custom_title: 'Sources de bruit', chart_type: 'bar-h' },
