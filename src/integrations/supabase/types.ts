@@ -521,14 +521,17 @@ export type Database = {
           gps_coordinates: Json | null
           groupement: string | null
           has_dispute: boolean | null
+          hosting_capacity: number | null
           house_number: string | null
           id: string
+          is_occupied: boolean | null
           is_suspicious: boolean | null
           is_title_in_current_owner_name: boolean | null
           lease_type: string | null
           lease_years: number | null
           mortgage_history: Json | null
           nearby_noise_sources: string | null
+          occupant_count: number | null
           original_parcel_id: string | null
           owner_document_url: string | null
           ownership_history: Json | null
@@ -599,14 +602,17 @@ export type Database = {
           gps_coordinates?: Json | null
           groupement?: string | null
           has_dispute?: boolean | null
+          hosting_capacity?: number | null
           house_number?: string | null
           id?: string
+          is_occupied?: boolean | null
           is_suspicious?: boolean | null
           is_title_in_current_owner_name?: boolean | null
           lease_type?: string | null
           lease_years?: number | null
           mortgage_history?: Json | null
           nearby_noise_sources?: string | null
+          occupant_count?: number | null
           original_parcel_id?: string | null
           owner_document_url?: string | null
           ownership_history?: Json | null
@@ -677,14 +683,17 @@ export type Database = {
           gps_coordinates?: Json | null
           groupement?: string | null
           has_dispute?: boolean | null
+          hosting_capacity?: number | null
           house_number?: string | null
           id?: string
+          is_occupied?: boolean | null
           is_suspicious?: boolean | null
           is_title_in_current_owner_name?: boolean | null
           lease_type?: string | null
           lease_years?: number | null
           mortgage_history?: Json | null
           nearby_noise_sources?: string | null
+          occupant_count?: number | null
           original_parcel_id?: string | null
           owner_document_url?: string | null
           ownership_history?: Json | null
@@ -1154,8 +1163,10 @@ export type Database = {
           gps_coordinates: Json | null
           groupement: string | null
           has_dispute: boolean | null
+          hosting_capacity: number | null
           house_number: string | null
           id: string
+          is_occupied: boolean | null
           is_subdivided: boolean | null
           is_title_in_current_owner_name: boolean | null
           latitude: number | null
@@ -1165,6 +1176,7 @@ export type Database = {
           longitude: number | null
           nearby_noise_sources: string | null
           nombre_bornes: number | null
+          occupant_count: number | null
           owner_document_url: string | null
           parcel_number: string
           parcel_sides: Json | null
@@ -1211,8 +1223,10 @@ export type Database = {
           gps_coordinates?: Json | null
           groupement?: string | null
           has_dispute?: boolean | null
+          hosting_capacity?: number | null
           house_number?: string | null
           id?: string
+          is_occupied?: boolean | null
           is_subdivided?: boolean | null
           is_title_in_current_owner_name?: boolean | null
           latitude?: number | null
@@ -1222,6 +1236,7 @@ export type Database = {
           longitude?: number | null
           nearby_noise_sources?: string | null
           nombre_bornes?: number | null
+          occupant_count?: number | null
           owner_document_url?: string | null
           parcel_number: string
           parcel_sides?: Json | null
@@ -1268,8 +1283,10 @@ export type Database = {
           gps_coordinates?: Json | null
           groupement?: string | null
           has_dispute?: boolean | null
+          hosting_capacity?: number | null
           house_number?: string | null
           id?: string
+          is_occupied?: boolean | null
           is_subdivided?: boolean | null
           is_title_in_current_owner_name?: boolean | null
           latitude?: number | null
@@ -1279,6 +1296,7 @@ export type Database = {
           longitude?: number | null
           nearby_noise_sources?: string | null
           nombre_bornes?: number | null
+          occupant_count?: number | null
           owner_document_url?: string | null
           parcel_number?: string
           parcel_sides?: Json | null

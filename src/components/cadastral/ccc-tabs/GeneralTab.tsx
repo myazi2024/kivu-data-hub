@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Plus, Trash2, Info, X, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, Info, X, ChevronRight, Users } from 'lucide-react';
 import { MdDashboard, MdLocationOn, MdInsertDriveFile } from 'react-icons/md';
 import BlockResetButton from '../BlockResetButton';
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
@@ -1058,6 +1058,43 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({
             </SelectContent>
           </Select>
         </div>
+      )}
+
+      {/* Hosting capacity sub-block */}
+      {formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && formData.constructionType && formData.constructionType !== 'Terrain nu' && (
+        <>
+          <div className="border-t border-border/50 my-2" />
+          <div className="flex items-start gap-2 mb-2">
+            <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+              <Users className="h-3.5 w-3.5 text-primary" />
+            </div>
+            <Label className="text-sm font-semibold leading-tight">Capacité d'accueil</Label>
+          </div>
+
+          <div className="space-y-3 pl-1">
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Est-il habité ?</Label>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => { handleInputChange('isOccupied', true); }} className={cn("flex-1 py-3 px-4 rounded-2xl text-sm font-semibold transition-all", formData.isOccupied === true ? 'bg-primary text-primary-foreground shadow-lg' : 'bg-muted text-muted-foreground hover:bg-muted/80')}>Oui</button>
+                <button type="button" onClick={() => { handleInputChange('isOccupied', false); handleInputChange('occupantCount', undefined); }} className={cn("flex-1 py-3 px-4 rounded-2xl text-sm font-semibold transition-all", formData.isOccupied === false ? 'bg-primary text-primary-foreground shadow-lg' : 'bg-muted text-muted-foreground hover:bg-muted/80')}>Non</button>
+              </div>
+            </div>
+
+            {formData.isOccupied === true && (
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">Combien de personnes y vivent ?</Label>
+                <Input type="number" min={1} value={formData.occupantCount || ''} onChange={(e) => handleInputChange('occupantCount', e.target.value ? parseInt(e.target.value) : undefined)} placeholder="Nombre de personnes" className="h-10 rounded-xl text-sm" />
+              </div>
+            )}
+
+            {formData.isOccupied !== undefined && formData.isOccupied !== null && (
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">Quelle est sa capacité d'accueil ?</Label>
+                <Input type="number" min={1} value={formData.hostingCapacity || ''} onChange={(e) => handleInputChange('hostingCapacity', e.target.value ? parseInt(e.target.value) : undefined)} placeholder="Nombre de personnes" className="h-10 rounded-xl text-sm" />
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       {/* Building permit section */}
