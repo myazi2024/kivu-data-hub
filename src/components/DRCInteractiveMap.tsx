@@ -395,7 +395,19 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                       <div className="w-full h-full">
                         <DRCTerritoiresMap
                           showAll
-                          onTerritoireSelect={setSelectedTerritoire}
+                          onTerritoireSelect={(name) => {
+                            // Resolve the province for this territoire
+                            const provinceName = getProvinceForTerritoire(name);
+                            if (provinceName) {
+                              const province = provincesData.find(p => p.name === provinceName);
+                              if (province) {
+                                setSelectedProvince(province);
+                                setExternalProvinceId(province.id);
+                              }
+                            }
+                            setSelectedTerritoire(name);
+                            setSelectedSectionType('rurale');
+                          }}
                         />
                       </div>
                     ) : selectedVille && selectedCommune && selectedVille.toLowerCase() === 'goma' ? (
