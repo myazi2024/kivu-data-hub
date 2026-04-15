@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,10 +15,21 @@ interface CrossVariableManagerProps {
   localCross: LocalCrossConfig;
   onUpdateCross: (cross: LocalCrossConfig) => void;
   localTabs: TabConfig[];
+  activeTab?: string;
 }
 
-export const CrossVariableManager: React.FC<CrossVariableManagerProps> = ({ localCross, onUpdateCross, localTabs }) => {
-  const [selectedTab, setSelectedTab] = useState(Object.keys(CROSS_VARIABLE_REGISTRY)[0]);
+export const CrossVariableManager: React.FC<CrossVariableManagerProps> = ({ localCross, onUpdateCross, localTabs, activeTab: externalTab }) => {
+  const analyticsTabKeys = Object.keys(CROSS_VARIABLE_REGISTRY).filter(key => !!ANALYTICS_TABS_REGISTRY[key]);
+  const [selectedTab, setSelectedTab] = React.useState(
+    externalTab && analyticsTabKeys.includes(externalTab) ? externalTab : analyticsTabKeys[0]
+  );
+
+  // Sync with parent activeTab when switching to Cross view
+  useEffect(() => {
+    if (externalTab && analyticsTabKeys.includes(externalTab)) {
+      setSelectedTab(externalTab);
+    }
+  }, [externalTab, analyticsTabKeys]);
 
   const tabCross = localCross[selectedTab] || {};
   const chartKeys = Object.keys(CROSS_VARIABLE_REGISTRY[selectedTab] || {});
@@ -84,8 +95,6 @@ export const CrossVariableManager: React.FC<CrossVariableManagerProps> = ({ loca
     const item = [...tab.charts, ...tab.kpis].find(c => c.item_key === chartKey);
     return item?.custom_title || chartKey;
   };
-
-  const analyticsTabKeys = Object.keys(CROSS_VARIABLE_REGISTRY).filter(key => !!ANALYTICS_TABS_REGISTRY[key]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
