@@ -1,52 +1,33 @@
 
 
-# Afficher le logo dynamique dans le footer + audit des emplacements
+# Ajouter le logo après "Tous droits réservés" dans Analytics et Carte RDC
 
 ## Problème
 
-Le footer affiche le logo dans la section haute mais pas à côté de "Tous droits réservés". De plus, plusieurs emplacements utilisent le logo statique (`/bic-logo.png` ou `Building2` icon) au lieu du logo configuré dynamiquement via Admin → Apparence.
+Le logo dynamique n'apparaît pas après la mention "Tous droits réservés" dans deux emplacements :
+1. Le pied de chaque graphique analytics (`ChartCard` footer)
+2. Le pied de la carte interactive RDC
 
-## Audit des emplacements
+## Modifications
 
-| Emplacement | Fichier | Statut actuel | Action |
-|-------------|---------|---------------|--------|
-| **Footer "Tous droits réservés"** | `Footer.tsx` | ❌ Pas de logo | **Ajouter** le logo dynamique après la mention |
-| **Page Auth (connexion)** | `Auth.tsx` L.261 | ❌ Icône `Building2` + nom hardcodé | **Remplacer** par logo dynamique + nom/tagline dynamiques |
-| **Watermark charts analytics** | `ChartCard.tsx` L.96 | ❌ `src="/bic-logo.png"` statique | **Remplacer** par `logo_url` dynamique (fallback `/bic-logo.png`) |
-| **Aperçu watermark admin** | `GlobalWatermarkConfig.tsx` L.78 | ❌ `src="/bic-logo.png"` statique | **Remplacer** par logo dynamique |
-| **Page Pitch partenaires** | `PitchPartenaires.tsx` L.63 | ❌ Import statique `bic-logo.png` | **Remplacer** par logo dynamique |
-| **PDF fiche cadastrale** | `pdf.ts` | ❌ Aucun logo dans le PDF | **Ajouter** le logo en en-tête du PDF (fetch + embed base64) |
-| **Navigation** | `navigation.tsx` | ✅ Déjà dynamique | Aucune action |
-| **Footer section haute** | `Footer.tsx` | ✅ Déjà dynamique | Aucune action |
+### 1. `src/components/visualizations/shared/ChartCard.tsx` — ChartFooter
 
-## Modifications prévues
+Le composant `ChartFooter` (ligne 111-120) affiche uniquement du texte. Ajouter le logo inline après le texte watermark, à la même échelle (7px de texte → image ~10px).
 
-### 1. `src/components/Footer.tsx` — Logo après "Tous droits réservés"
-Ajouter une petite image du logo (même taille que le texte xs, ~14px) avec `brightness-0 invert` après le texte copyright.
+- Récupérer `logoUrl` depuis `WatermarkConfigContext`
+- Ajouter une `<img>` inline après `{watermark}`, classe `h-2.5 w-2.5 inline-block ml-0.5 opacity-60`
 
-### 2. `src/pages/Auth.tsx` — Logo dynamique sur la page connexion
-Remplacer l'icône `Building2` par le logo dynamique via `useAppAppearance`, et remplacer le nom/tagline hardcodés.
+### 2. `src/components/DRCInteractiveMap.tsx` — Pied de carte
 
-### 3. `src/components/visualizations/shared/ChartCard.tsx` — Watermark dynamique
-Le composant `LogoWatermark` doit utiliser le logo dynamique. Ajouter le `logo_url` au `WatermarkConfigContext` et le propager depuis le parent.
+La ligne 442 affiche `{todayStr} — {watermarkText}` en texte seul. Ajouter le logo dynamique inline.
 
-### 4. `src/components/admin/analytics-config/GlobalWatermarkConfig.tsx` — Aperçu dynamique
-Utiliser `useAppAppearance` pour afficher le vrai logo dans l'aperçu.
-
-### 5. `src/pages/PitchPartenaires.tsx` — Logo dynamique
-Remplacer l'import statique par `useAppAppearance`.
-
-### 6. `src/lib/pdf.ts` — Logo en en-tête du PDF cadastral
-Fetcher le logo (ou utiliser le fallback), le convertir en base64, et l'insérer dans l'en-tête du PDF à côté du nom BIC.
+- Importer `useAppAppearance` (ou récupérer le logo depuis le config existant)
+- Ajouter une `<img>` inline après le `<span>`, même taille que le texte (10px → image ~14px), classe `h-3 w-3 inline-block ml-0.5`
 
 ## Fichiers impactés
 
 | Fichier | Modification |
 |---------|-------------|
-| `src/components/Footer.tsx` | Ajouter logo après "Tous droits réservés" |
-| `src/pages/Auth.tsx` | Logo + nom/tagline dynamiques |
-| `src/components/visualizations/shared/ChartCard.tsx` | Watermark logo dynamique via context |
-| `src/components/admin/analytics-config/GlobalWatermarkConfig.tsx` | Aperçu avec logo dynamique |
-| `src/pages/PitchPartenaires.tsx` | Logo dynamique |
-| `src/lib/pdf.ts` | Logo en en-tête PDF |
+| `src/components/visualizations/shared/ChartCard.tsx` | Logo inline dans `ChartFooter` |
+| `src/components/DRCInteractiveMap.tsx` | Logo inline dans le pied de carte |
 
