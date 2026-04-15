@@ -110,11 +110,13 @@ const LogoWatermark: React.FC = () => {
 
 const ChartFooter: React.FC = () => {
   const watermark = useContext(WatermarkContext);
+  const config = useContext(WatermarkConfigContext);
   const today = new Date();
   const formatted = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
   return (
-    <p className="text-[7px] text-muted-foreground text-right mt-1 select-none">
-      {formatted} · {watermark}
+    <p className="text-[7px] text-muted-foreground text-right mt-1 select-none flex items-center justify-end gap-0.5">
+      <span>{formatted} · {watermark}</span>
+      {config.logoUrl && <img src={config.logoUrl} alt="" className="h-2.5 w-2.5 inline-block object-contain opacity-60" />}
     </p>
   );
 };

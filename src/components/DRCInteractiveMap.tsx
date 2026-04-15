@@ -438,8 +438,9 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   )}
 
                   {/* Pied de carte : date + copyright */}
-                  <div className="absolute bottom-0 left-0 right-0 z-10 text-center py-0.5">
+                  <div className="absolute bottom-0 left-0 right-0 z-10 text-center py-0.5 flex items-center justify-center gap-0.5">
                     <span className="text-[10px] text-muted-foreground">{todayStr} — {watermarkText}</span>
+                    {brandingConfig?.logo_url && <img src={String(brandingConfig.logo_url)} alt="" className="h-3 w-3 inline-block object-contain" />}
                   </div>
                   
                   <div className="absolute bottom-5 right-2 z-10 flex gap-1">
