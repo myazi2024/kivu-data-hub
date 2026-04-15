@@ -3,7 +3,7 @@ import { AnalyticsFilters } from '../filters/AnalyticsFilters';
 import { countBy, trendByMonth, avgProcessingDays } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { FileText, TrendingUp, AlertTriangle, ShieldAlert, Users, Gavel } from 'lucide-react';
+import { FileText, TrendingUp, AlertTriangle, ShieldAlert, Users, Gavel, Home, KeyRound } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
@@ -33,6 +33,15 @@ export const ContributionsBlock: React.FC<Props> = memo(({ data }) => {
   const byDeclaredUsage = useMemo(() => countBy(normalized, 'declared_usage'), [normalized]);
   const byConstructionType = useMemo(() => countBy(normalized, 'construction_type'), [normalized]);
   const byPropertyCategory = useMemo(() => countBy(filtered, 'property_category'), [filtered]);
+  const byLeaseType = useMemo(() => countBy(filtered, 'lease_type'), [filtered]);
+  const occupationData = useMemo(() => {
+    const occupied = filtered.filter(r => r.is_occupied === true).length;
+    const vacant = filtered.filter(r => r.is_occupied === false).length;
+    return [
+      ...(occupied > 0 ? [{ name: 'Habité', value: occupied }] : []),
+      ...(vacant > 0 ? [{ name: 'Non habité', value: vacant }] : []),
+    ];
+  }, [filtered]);
   const trend = useMemo(() => trendByMonth(filtered), [filtered]);
 
   const fraudData = useMemo(() => {
