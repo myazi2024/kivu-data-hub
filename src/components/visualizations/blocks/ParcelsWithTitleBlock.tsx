@@ -227,6 +227,8 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
       insight="Répartition des matériaux et natures de construction par localisation." crossVariables={cx('construction-nature')} rawRecords={filteredParcels} groupField="construction_nature" /> },
     { key: 'property-category', el: () => <ChartCard title={ct('property-category', 'Catégorie de bien')} data={charts.byPropertyCategory} type={ty('property-category', 'bar-h')} colorIndex={2} hidden={charts.byPropertyCategory.length === 0}
       insight={generateInsight(charts.byPropertyCategory, 'bar-h', 'les catégories de bien')} crossVariables={cx('property-category')} rawRecords={filteredParcels} groupField="property_category" /> },
+    { key: 'built-vs-unbuilt', el: () => <ChartCard title={ct('built-vs-unbuilt', 'Construites vs Non construites')} data={builtVsUnbuiltData} type={ty('built-vs-unbuilt', 'pie')} colorIndex={11} hidden={builtVsUnbuiltData.length === 0}
+      insight={generateInsight(builtVsUnbuiltData, 'pie', 'la construction des parcelles')} /> },
     { key: 'construction-materials', el: () => <ChartCard title={ct('construction-materials', 'Matériaux')} data={charts.byConstructionMaterials} type={ty('construction-materials', 'bar-h')} colorIndex={8} hidden={charts.byConstructionMaterials.length === 0}
       insight={generateInsight(charts.byConstructionMaterials, 'bar-h', 'les matériaux de construction')} crossVariables={cx('construction-materials')} rawRecords={filteredParcels} groupField="construction_materials" /> },
     { key: 'standing', el: () => <ChartCard title={ct('standing', 'Standing')} data={charts.byStanding} type={ty('standing', 'donut')} colorIndex={6} hidden={charts.byStanding.length === 0}
