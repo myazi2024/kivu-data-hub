@@ -1,4 +1,5 @@
 import React from 'react';
+import { Helmet } from 'react-helmet';
 import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/Footer';
 import territorialMapIllustration from '@/assets/territorial-map-illustration.webp';
@@ -6,7 +7,12 @@ import { Target, Briefcase, Layers, ShieldCheck } from 'lucide-react';
 
 const About = () => {
   return (
-    <div className="min-h-dvh">
+    <>
+      <Helmet>
+        <title>À propos | BIC - Bureau d'Informations Cadastrales</title>
+        <meta name="description" content="Découvrez le BIC, plateforme numérique dédiée à la transparence et l'accessibilité des données foncières en République Démocratique du Congo." />
+      </Helmet>
+      <div className="min-h-dvh">
       <Navigation />
       <main className="pt-20 pb-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
