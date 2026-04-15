@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useContext, createContext } from 'react';
+import React, { useMemo, useCallback, useContext, createContext, useEffect, useRef } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -71,14 +71,38 @@ export const AnalyticsFilters: React.FC<Props> = ({
   statusField, hideStatus = false, hideTime = false, hideLocation = false,
 }) => {
   const provinceFilterCallback = useContext(ProvinceFilterContext);
+  const mapProvince = useContext(MapProvinceContext);
   const villeChangeCtx = useContext(VilleChangeContext);
   const communeChangeCtx = useContext(CommuneChangeContext);
   const quartierChangeCtx = useContext(QuartierChangeContext);
   const territoireChangeCtx = useContext(TerritoireChangeContext);
+  const mapTerritoire = useContext(TerritoireFilterContext);
   const sectionTypeChangeCtx = useContext(SectionTypeChangeContext);
+  const mapSectionType = useContext(SectionTypeContext);
   const handleVilleChange = onVilleChange || villeChangeCtx || (() => {});
   const handleCommuneChange = onCommuneChange || communeChangeCtx || (() => {});
   const handleQuartierChange = quartierChangeCtx || (() => {});
+
+  // Sync filter when map-driven territoire/province change (e.g. click on territory in showAll mode)
+  const prevMapTerritoire = useRef(mapTerritoire);
+  useEffect(() => {
+    if (mapTerritoire && mapTerritoire !== prevMapTerritoire.current && mapTerritoire !== filter.territoire) {
+      onChange({
+        ...filter,
+        province: mapProvince || filter.province,
+        sectionType: 'rurale',
+        territoire: mapTerritoire,
+        collectivite: undefined,
+        groupement: undefined,
+        villageFilter: undefined,
+        ville: undefined,
+        commune: undefined,
+        quartier: undefined,
+        avenue: undefined,
+      });
+    }
+    prevMapTerritoire.current = mapTerritoire;
+  }, [mapTerritoire, mapProvince]);
   const years = useMemo(() => {
     const dataYears = getAvailableYears(data, dateField);
     const currentYear = new Date().getFullYear();
