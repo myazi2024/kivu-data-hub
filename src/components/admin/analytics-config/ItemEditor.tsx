@@ -4,18 +4,10 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronUp, ChevronDown, GripVertical } from 'lucide-react';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 import { ChartConfigItem } from '@/hooks/useAnalyticsChartsConfig';
 import { useIsMobile } from '@/hooks/use-mobile';
-
-const CHART_TYPE_OPTIONS = [
-  { value: 'bar-h', label: 'Barres horiz.', icon: '▬' },
-  { value: 'bar-v', label: 'Barres vert.', icon: '▮' },
-  { value: 'pie', label: 'Camembert', icon: '◕' },
-  { value: 'donut', label: 'Donut', icon: '◔' },
-  { value: 'area', label: 'Courbe', icon: '〜' },
-  { value: 'multi-area', label: 'Multi-courbes', icon: '≋' },
-];
+import { CHART_TYPE_OPTIONS } from '@/config/chartTypeOptions';
 
 interface ItemEditorProps {
   item: ChartConfigItem;
@@ -26,7 +18,7 @@ interface ItemEditorProps {
   isLast: boolean;
 }
 
-/** A chart with chart_type === null in the registry is a special/composite chart (StackedBar, MultiArea) whose type cannot be changed */
+/** A chart with chart_type === null in the registry is a special/composite chart (StackedBar, MultiArea, Geo) whose type cannot be changed */
 const isFixedTypeChart = (item: ChartConfigItem) =>
   item.item_type === 'chart' && !item.chart_type;
 
@@ -89,7 +81,6 @@ export const ItemEditor: React.FC<ItemEditorProps> = ({ item, onChange, onMoveUp
     <div className={`flex items-center gap-2 p-2 rounded-lg border transition-colors ${
       item.is_visible ? 'bg-card border-border/50' : 'bg-muted/30 border-border/20 opacity-60'
     }`}>
-      <GripVertical className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
       <div className="flex items-center gap-1 shrink-0">
         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onMoveUp} disabled={isFirst}><ChevronUp className="h-3 w-3" /></Button>
         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onMoveDown} disabled={isLast}><ChevronDown className="h-3 w-3" /></Button>

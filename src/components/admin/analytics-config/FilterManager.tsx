@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -27,10 +27,19 @@ interface FilterManagerProps {
   localTabs: TabConfig[];
   onSave: (items: ChartConfigItem[]) => Promise<void>;
   isSaving: boolean;
+  activeTab?: string;
 }
 
-export const FilterManager: React.FC<FilterManagerProps> = ({ localFilters, onUpdateFilters, localTabs, onSave, isSaving }) => {
-  const [selectedTab, setSelectedTab] = useState(Object.keys(ANALYTICS_TABS_REGISTRY).filter(isUserTab)[0]);
+export const FilterManager: React.FC<FilterManagerProps> = ({ localFilters, onUpdateFilters, localTabs, onSave, isSaving, activeTab: externalTab }) => {
+  const analyticsTabKeys = Object.keys(ANALYTICS_TABS_REGISTRY).filter(isUserTab);
+  const [selectedTab, setSelectedTab] = React.useState(externalTab && analyticsTabKeys.includes(externalTab) ? externalTab : analyticsTabKeys[0]);
+
+  // Sync with parent activeTab when switching to Filters view
+  useEffect(() => {
+    if (externalTab && analyticsTabKeys.includes(externalTab)) {
+      setSelectedTab(externalTab);
+    }
+  }, [externalTab, analyticsTabKeys]);
 
   const currentFilters = localFilters[selectedTab] || [];
   const toggleFilters = currentFilters.filter(f => ['filter-status', 'filter-time', 'filter-location'].includes(f.item_key));
@@ -58,8 +67,6 @@ export const FilterManager: React.FC<FilterManagerProps> = ({ localFilters, onUp
   const handleSave = async () => {
     await onSave(Object.values(localFilters).flat());
   };
-
-  const analyticsTabKeys = Object.keys(ANALYTICS_TABS_REGISTRY).filter(isUserTab);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">

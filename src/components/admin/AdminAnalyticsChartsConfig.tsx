@@ -20,6 +20,7 @@ import {
   useAnalyticsTabsConfig,
   ChartConfigItem,
   TabConfig,
+  buildFilterDefaults,
 } from '@/hooks/useAnalyticsChartsConfig';
 import { ANALYTICS_TABS_REGISTRY } from '@/config/analyticsTabsRegistry';
 import { CROSS_VARIABLE_REGISTRY } from '@/config/crossVariables';
@@ -35,14 +36,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-const CHART_TYPE_OPTIONS = [
-  { value: 'bar-h', label: 'Barres horiz.', icon: '▬' },
-  { value: 'bar-v', label: 'Barres vert.', icon: '▮' },
-  { value: 'pie', label: 'Camembert', icon: '◕' },
-  { value: 'donut', label: 'Donut', icon: '◔' },
-  { value: 'area', label: 'Courbe', icon: '〜' },
-  { value: 'multi-area', label: 'Multi-courbes', icon: '≋' },
-];
+import { CHART_TYPE_OPTIONS } from '@/config/chartTypeOptions';
 
 const SYSTEM_TABS = ['_global', 'rdc-map'];
 
@@ -216,11 +210,31 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
   const handleReset = useCallback(() => {
     const tab = ANALYTICS_TABS_REGISTRY[activeTab];
     if (!tab) return;
+    // Reset charts/KPIs
     setLocalItems(prev => ({ ...prev, [activeTab]: [...tab.kpis, ...tab.charts] }));
+    // Reset filters for this tab
+    // Reset filters for this tab (buildFilterDefaults imported at top)
+    if (isUserTab(activeTab)) {
+      setLocalFilters(prev => ({ ...prev, [activeTab]: buildFilterDefaults(activeTab) }));
+      setHasFilterChanges(true);
+    }
+    // Reset cross variables for this tab
+    if (CROSS_VARIABLE_REGISTRY[activeTab]) {
+      const defaults = CROSS_VARIABLE_REGISTRY[activeTab];
+      const resetCross: Record<string, { enabled: boolean; variables: { label: string; field: string; enabled: boolean }[] }> = {};
+      Object.entries(defaults).forEach(([chartKey, vars]) => {
+        resetCross[chartKey] = {
+          enabled: true,
+          variables: (vars as any[]).map((d: any) => ({ label: d.label, field: d.field, enabled: true })),
+        };
+      });
+      setLocalCross(prev => ({ ...prev, [activeTab]: resetCross }));
+      setHasCrossChanges(true);
+    }
     markTabModified(activeTab);
     setShowResetConfirm(false);
-    toast.info('Configuration réinitialisée (non sauvegardée)');
-  }, [activeTab, markTabModified, setLocalItems]);
+    toast.info('Configuration réinitialisée (KPIs, graphiques, filtres, croisements — non sauvegardée)');
+  }, [activeTab, markTabModified, setLocalItems, setLocalFilters, setLocalCross]);
 
   const toggleAll = useCallback((type: 'kpi' | 'chart', visible: boolean) => {
     setLocalItems(prev => ({
@@ -600,6 +614,7 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
           localFilters={localFilters}
           onUpdateFilters={(filters) => { setLocalFilters(filters); setHasFilterChanges(true); }}
           localTabs={localTabs}
+          activeTab={activeTab}
           onSave={async (items: ChartConfigItem[]) => {
             setIsSaving(true);
             try {
@@ -621,6 +636,7 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
             localCross={localCross}
             onUpdateCross={(cross) => { setLocalCross(cross); setHasCrossChanges(true); }}
             localTabs={localTabs}
+            activeTab={activeTab}
           />
           <Button
             onClick={async () => {
