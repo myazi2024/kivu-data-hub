@@ -1194,7 +1194,7 @@ export const useCCCFormState = ({
         const additionalConstr = (contrib as any).additional_constructions as any[];
         if (additionalConstr && Array.isArray(additionalConstr) && additionalConstr.length > 0) {
           setConstructionMode('multiple');
-          setAdditionalConstructions(additionalConstr.map((c: any) => ({ propertyCategory: c.propertyCategory || '', constructionType: c.constructionType || '', constructionNature: c.constructionNature || '', constructionMaterials: c.constructionMaterials || '', declaredUsage: c.declaredUsage || '', standing: c.standing || '', constructionYear: c.constructionYear || undefined, apartmentNumber: c.apartmentNumber || undefined, floorNumber: c.floorNumber || undefined, permitMode: c.permitMode || undefined, permit: c.permit || undefined })));
+          setAdditionalConstructions(additionalConstr.map((c: any) => ({ propertyCategory: c.propertyCategory || '', constructionType: c.constructionType || '', constructionNature: c.constructionNature || '', constructionMaterials: c.constructionMaterials || '', declaredUsage: c.declaredUsage || '', standing: c.standing || '', constructionYear: c.constructionYear || undefined, apartmentNumber: c.apartmentNumber || undefined, floorNumber: c.floorNumber || undefined, isOccupied: c.isOccupied ?? undefined, occupantCount: c.occupantCount ?? undefined, hostingCapacity: c.hostingCapacity ?? undefined, permitMode: c.permitMode || undefined, permit: c.permit || undefined })));
         }
 
         // Restore roadSides, servitude, hasDispute, disputeData, buildingShapes from DB
