@@ -188,7 +188,7 @@ const DRCTerritoiresMap: React.FC<Props> = ({ province, territoire, onTerritoire
           );
         })}
 
-        {filtered.map((f) => {
+        {(!showAll || territoire) && filtered.map((f) => {
           const [cx, cy] = centroid(f.geometry, bbox, dims.w, dims.h, padding);
           const name = f.properties.name;
           const isSelected = territoire && name.toLowerCase() === territoire.toLowerCase();
