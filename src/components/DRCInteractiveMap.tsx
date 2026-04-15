@@ -374,9 +374,9 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                     </p>
                   </div>
                   
-                  <div className="flex-1 min-h-0 overflow-hidden flex items-center justify-center p-1">
+                   <div className="flex-1 min-h-0 overflow-hidden flex items-center justify-center p-1">
                     {selectedSectionType === 'rurale' || (selectedTerritoire && selectedProvince) ? (
-                      <div className="w-full h-full">
+                      <div key="territoires" className="w-full h-full animate-fade-in">
                         <DRCTerritoiresMap
                           province={selectedProvince?.name}
                           territoire={selectedTerritoire}
@@ -399,15 +399,15 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                         />
                       </div>
                     ) : selectedVille && selectedCommune && selectedVille.toLowerCase() === 'goma' ? (
-                      <div className="w-full h-full">
+                      <div key="quartiers" className="w-full h-full animate-fade-in">
                         <DRCQuartiersMap ville={selectedVille} commune={selectedCommune} quartier={selectedQuartier} onQuartierSelect={setSelectedQuartier} />
                       </div>
                     ) : selectedVille ? (
-                      <div className="w-full h-full">
+                      <div key="communes" className="w-full h-full animate-fade-in">
                         <DRCCommunesMap ville={selectedVille} commune={selectedCommune} onCommuneSelect={setSelectedCommune} />
                       </div>
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center" style={{ transform: 'scale(0.9)', transformOrigin: 'center center' }}>
+                      <div key="provinces" className="w-full h-full flex items-center justify-center animate-fade-in" style={{ transform: 'scale(0.9)', transformOrigin: 'center center' }}>
                         <DRCMapWithTooltip
                           provincesData={provincesData}
                           selectedProvince={selectedProvince?.id || null}
@@ -423,25 +423,6 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                         />
                       </div>
                     )}
-                  </div>
-                  
-                  {/* Légende choroplèthe à 4 paliers — masquée pendant le zoom */}
-                  {!isMapZoomed && !selectedVille && !selectedProvince && (
-                    <div className="absolute bottom-5 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30">
-                      <div className="text-[10px] text-muted-foreground mb-0.5">{getChartConfig('map-legend-title')?.custom_title || 'Densité parcelles cadastrées'}</div>
-                      <div className="flex flex-col gap-0.5">
-                        {DENSITY_TIERS.map(tier => (
-                          <div key={tier.label} className="flex items-center gap-1">
-                            <div className="w-3 h-2 rounded-sm flex-shrink-0" style={{ background: tier.color }} />
-                            <span className="text-[10px] text-muted-foreground">
-                              {tier.label} ({tier.min}{tier.max === Infinity ? '+' : `–${tier.max}`})
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
                   {/* Légende contextuelle — scope dynamique */}
                   {selectedProvince && scopedStats && (
                     <div className="absolute bottom-5 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30 animate-fade-in">
