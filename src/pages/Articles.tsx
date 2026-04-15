@@ -4,12 +4,14 @@ import Footer from '@/components/Footer';
 import ThemeMenu from '@/components/articles/ThemeMenu';
 import ArticleList from '@/components/articles/ArticleList';
 import { useArticleThemes, useArticles } from '@/hooks/useArticles';
+import { useAppAppearance } from '@/hooks/useAppAppearance';
 import { Helmet } from 'react-helmet';
 
 const Articles = () => {
   const [selectedThemeId, setSelectedThemeId] = useState<string | undefined>();
   const { themes, loading: themesLoading } = useArticleThemes();
   const { articles, loading: articlesLoading } = useArticles(selectedThemeId);
+  const { config } = useAppAppearance();
 
   const selectedTheme = themes.find(t => t.id === selectedThemeId);
   const pageTitle = selectedTheme 
@@ -38,9 +40,18 @@ const Articles = () => {
           {/* Header */}
           <section className="bg-gradient-to-b from-primary/5 to-background py-12 px-4">
             <div className="container max-w-7xl mx-auto">
-              <h1 className="text-3xl md:text-4xl font-bold mb-3">
-                {selectedTheme ? selectedTheme.name : 'Articles Fonciers'}
-              </h1>
+              <div className="flex items-center gap-4">
+                <h1 className="text-3xl md:text-4xl font-bold mb-3">
+                  {selectedTheme ? selectedTheme.name : 'Articles Fonciers'}
+                </h1>
+                {config.logo_url && (
+                  <img 
+                    src={config.logo_url} 
+                    alt="Logo" 
+                    className="h-10 md:h-12 w-auto object-contain opacity-90"
+                  />
+                )}
+              </div>
               <p className="text-muted-foreground text-lg max-w-2xl">
                 {selectedTheme 
                   ? selectedTheme.description
