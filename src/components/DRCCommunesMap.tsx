@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { projectFeature, centroid, computeBBox, useAnimatedBbox, useGeoJsonData, type BBox } from '@/lib/mapProjection';
 
 interface Feature {
   type: string;
@@ -25,83 +26,11 @@ const HIGHLIGHT = 'hsl(var(--primary) / 0.7)';
 const STROKE = 'hsl(var(--foreground) / 0.3)';
 const HIGHLIGHT_STROKE = 'hsl(var(--primary))';
 
-function flatCoords(geometry: any): [number, number][] {
-  const coords: [number, number][] = [];
-  const extract = (arr: any) => {
-    if (typeof arr[0] === 'number') { coords.push(arr as [number, number]); return; }
-    arr.forEach(extract);
-  };
-  extract(geometry.coordinates);
-  return coords;
-}
-
-function projectFeature(
-  geometry: any,
-  bbox: { minLng: number; maxLng: number; minLat: number; maxLat: number },
-  width: number,
-  height: number,
-  padding: number
-): string {
-  const lngRange = bbox.maxLng - bbox.minLng || 0.01;
-  const latRange = bbox.maxLat - bbox.minLat || 0.01;
-  const drawW = width - padding * 2;
-  const drawH = height - padding * 2;
-  const scale = Math.min(drawW / lngRange, drawH / latRange);
-  const offsetX = padding + (drawW - lngRange * scale) / 2;
-  const offsetY = padding + (drawH - latRange * scale) / 2;
-
-  const project = (lng: number, lat: number): [number, number] => [
-    offsetX + (lng - bbox.minLng) * scale,
-    offsetY + (bbox.maxLat - lat) * scale,
-  ];
-
-  const paths: string[] = [];
-  const renderRing = (ring: any[]) => {
-    if (ring.length === 0) return '';
-    const pts = ring.map((c: number[]) => project(c[0], c[1]));
-    return 'M' + pts.map(p => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join('L') + 'Z';
-  };
-
-  if (geometry.type === 'Polygon') {
-    geometry.coordinates.forEach((ring: any[]) => { paths.push(renderRing(ring)); });
-  } else if (geometry.type === 'MultiPolygon') {
-    geometry.coordinates.forEach((poly: any[][]) => {
-      poly.forEach((ring: any[]) => { paths.push(renderRing(ring)); });
-    });
-  }
-  return paths.join(' ');
-}
-
-function centroid(geometry: any, bbox: any, w: number, h: number, padding: number): [number, number] {
-  const coords = flatCoords(geometry);
-  if (coords.length === 0) return [w / 2, h / 2];
-  const avgLng = coords.reduce((s, c) => s + c[0], 0) / coords.length;
-  const avgLat = coords.reduce((s, c) => s + c[1], 0) / coords.length;
-  const lngRange = bbox.maxLng - bbox.minLng || 0.01;
-  const latRange = bbox.maxLat - bbox.minLat || 0.01;
-  const drawW = w - padding * 2;
-  const drawH = h - padding * 2;
-  const scale = Math.min(drawW / lngRange, drawH / latRange);
-  const offsetX = padding + (drawW - lngRange * scale) / 2;
-  const offsetY = padding + (drawH - latRange * scale) / 2;
-  return [
-    offsetX + (avgLng - bbox.minLng) * scale,
-    offsetY + (bbox.maxLat - avgLat) * scale,
-  ];
-}
-
 const DRCCommunesMap: React.FC<Props> = ({ ville, commune, onCommuneSelect }) => {
-  const [features, setFeatures] = useState<Feature[]>([]);
+  const features = useGeoJsonData<Feature>('/drc-communes.geojson');
   const [hovered, setHovered] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dims, setDims] = useState({ w: 400, h: 300 });
-
-  useEffect(() => {
-    fetch('/drc-communes.geojson')
-      .then(r => r.json())
-      .then(data => setFeatures(data.features || []))
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -119,25 +48,11 @@ const DRCCommunesMap: React.FC<Props> = ({ ville, commune, onCommuneSelect }) =>
     return features.filter(f => f.properties.is_in_admi?.toLowerCase() === normalizedVille);
   }, [features, ville]);
 
-  const bbox = useMemo(() => {
-    if (filtered.length === 0) return { minLng: 0, maxLng: 1, minLat: 0, maxLat: 1 };
-    const source = commune
-      ? filtered.filter(f => f.properties.name.toLowerCase() === commune.toLowerCase())
-      : filtered;
-    const target = source.length > 0 ? source : filtered;
-    let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity;
-    target.forEach(f => {
-      flatCoords(f.geometry).forEach(([lng, lat]) => {
-        if (lng < minLng) minLng = lng;
-        if (lng > maxLng) maxLng = lng;
-        if (lat < minLat) minLat = lat;
-        if (lat > maxLat) maxLat = lat;
-      });
-    });
-    const padLng = (maxLng - minLng) * 0.1;
-    const padLat = (maxLat - minLat) * 0.1;
-    return { minLng: minLng - padLng, maxLng: maxLng + padLng, minLat: minLat - padLat, maxLat: maxLat + padLat };
-  }, [filtered, commune]);
+  const targetBbox = useMemo<BBox>(() =>
+    computeBBox(filtered, commune, (f: Feature) => f.properties.name),
+  [filtered, commune]);
+
+  const animBbox = useAnimatedBbox(targetBbox);
 
   if (!ville) {
     return (
@@ -165,7 +80,7 @@ const DRCCommunesMap: React.FC<Props> = ({ ville, commune, onCommuneSelect }) =>
           const isSelected = commune && name.toLowerCase() === commune.toLowerCase();
           const isHovered = hovered === name;
           const hasSelection = !!commune;
-          const path = projectFeature(f.geometry, bbox, dims.w, dims.h, padding);
+          const path = projectFeature(f.geometry, animBbox, dims.w, dims.h, padding);
           const fill = isSelected ? HIGHLIGHT : isHovered ? 'hsl(var(--primary) / 0.55)' : hasSelection ? 'hsl(var(--muted) / 0.15)' : COLORS[i % COLORS.length];
           const stroke = isSelected ? HIGHLIGHT_STROKE : hasSelection ? 'hsl(var(--foreground) / 0.1)' : STROKE;
           const strokeWidth = isSelected ? 2 : isHovered ? 1.5 : 0.8;
@@ -185,9 +100,8 @@ const DRCCommunesMap: React.FC<Props> = ({ ville, commune, onCommuneSelect }) =>
           );
         })}
 
-        {/* Labels */}
-        {filtered.map((f, i) => {
-          const [cx, cy] = centroid(f.geometry, bbox, dims.w, dims.h, padding);
+        {filtered.map((f) => {
+          const [cx, cy] = centroid(f.geometry, animBbox, dims.w, dims.h, padding);
           const name = f.properties.name;
           const isSelected = commune && name.toLowerCase() === commune.toLowerCase();
           return (
@@ -197,7 +111,7 @@ const DRCCommunesMap: React.FC<Props> = ({ ville, commune, onCommuneSelect }) =>
               y={cy}
               textAnchor="middle"
               dominantBaseline="central"
-              className={`pointer-events-none select-none ${isSelected ? 'fill-primary-foreground font-semibold' : 'fill-foreground'}`}
+              className={`pointer-events-none select-none transition-opacity duration-300 ${isSelected ? 'fill-primary-foreground font-semibold' : 'fill-foreground'}`}
               fontSize={filtered.length > 8 ? 8 : 10}
             >
               {name}
@@ -206,7 +120,6 @@ const DRCCommunesMap: React.FC<Props> = ({ ville, commune, onCommuneSelect }) =>
         })}
       </svg>
 
-      {/* Tooltip */}
       {hovered && (
         <div className="absolute top-2 left-2 bg-background/90 backdrop-blur-sm border border-border/50 rounded px-2 py-1 text-[10px] shadow-sm pointer-events-none z-10">
           <span className="font-medium">{hovered}</span>
