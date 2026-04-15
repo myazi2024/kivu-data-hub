@@ -32,7 +32,7 @@ export const ContributionsBlock: React.FC<Props> = memo(({ data }) => {
   const byLegalStatus = useMemo(() => countBy(filtered, 'current_owner_legal_status'), [filtered]);
   const byDeclaredUsage = useMemo(() => countBy(normalized, 'declared_usage'), [normalized]);
   const byConstructionType = useMemo(() => countBy(normalized, 'construction_type'), [normalized]);
-  const byPropertyCategory = useMemo(() => countBy(filtered, 'property_category'), [filtered]);
+  const byPropertyCategory = useMemo(() => countBy(filtered, 'property_category').filter(d => d.name !== 'Terrain nu'), [filtered]);
   const byLeaseType = useMemo(() => countBy(filtered, 'lease_type'), [filtered]);
   const occupationData = useMemo(() => {
     const occupied = filtered.filter(r => r.is_occupied === true).length;
