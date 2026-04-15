@@ -18,7 +18,8 @@ import {
   Rocket, Flag, Globe2, User, Cpu, ShieldCheck, DollarSign, CreditCard, Activity,
   LogIn, MousePointerClick, ScanLine, Timer
 } from 'lucide-react';
-import bicLogo from '@/assets/bic-logo.png';
+import bicLogoFallback from '@/assets/bic-logo.png';
+import { useAppAppearance } from '@/hooks/useAppAppearance';
 import heroSkyline from '@/assets/hero-skyline.webp';
 import mapViz from '@/assets/bic-map-screenshot.jpg';
 import territorialMap from '@/assets/territorial-map-illustration.webp';
