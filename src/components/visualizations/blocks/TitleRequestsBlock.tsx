@@ -1,7 +1,6 @@
 import React, { useMemo, memo } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
 import { countBy, trendByMonth, getSectionType, avgProcessingDays, surfaceDistribution, sumByMonth } from '@/utils/analyticsHelpers';
-import { LandAnalyticsData as FullData } from '@/hooks/useLandDataAnalytics';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { FileText, Users, DollarSign, TrendingUp, Globe, Ruler, Clock, UserCheck, KeyRound } from 'lucide-react';
@@ -11,7 +10,7 @@ import { GeoCharts } from '../shared/GeoCharts';
 import { generateInsight } from '@/utils/chartInsights';
 import { useBlockFilter } from '@/hooks/useBlockFilter';
 
-interface Props { data: LandAnalyticsData & Pick<FullData, 'parcels'>; }
+interface Props { data: LandAnalyticsData; }
 
 const TAB_KEY = 'title-requests';
 
