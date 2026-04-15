@@ -76,14 +76,17 @@ export const ContributionsBlock: React.FC<Props> = memo(({ data }) => {
     return { approved, pending, rejected, avgDays };
   }, [filtered]);
 
+  const withLease = useMemo(() => filtered.filter(r => r.lease_type).length, [filtered]);
+
   const kpiItems = useMemo(() => [
     { key: 'kpi-total', label: ct('kpi-total', 'Total'), value: filtered.length, cls: 'text-primary' },
     { key: 'kpi-approved', label: ct('kpi-approved', 'Approuvées'), value: stats.approved, cls: 'text-emerald-600', tooltip: pct(stats.approved, filtered.length) },
     { key: 'kpi-pending', label: ct('kpi-pending', 'En attente'), value: stats.pending, cls: 'text-amber-600', tooltip: pct(stats.pending, filtered.length) },
     { key: 'kpi-suspicious', label: ct('kpi-suspicious', 'Suspectes'), value: fraudData.suspicious, cls: 'text-red-600', tooltip: pct(fraudData.suspicious, filtered.length) },
     { key: 'kpi-appeals', label: ct('kpi-appeals', 'Appels'), value: appealData.submitted, cls: 'text-blue-600', tooltip: pct(appealData.submitted, filtered.length) },
+    { key: 'kpi-with-lease', label: ct('kpi-with-lease', 'Avec bail'), value: withLease, cls: 'text-teal-600', tooltip: pct(withLease, filtered.length) },
     { key: 'kpi-delay', label: ct('kpi-delay', 'Délai moy.'), value: stats.avgDays > 0 ? `${stats.avgDays}j` : 'N/A', cls: 'text-violet-600', tooltip: 'Délai moyen de traitement' },
-  ].filter(k => v(k.key)), [filtered, stats, fraudData, appealData, v, ct]);
+  ].filter(k => v(k.key)), [filtered, stats, fraudData, appealData, withLease, v, ct]);
 
   const chartDefs = useMemo(() => [
     { key: 'contribution-type', el: () => <ChartCard title={ct('contribution-type', 'Type contribution')} icon={FileText} data={byContributionType} type={ty('contribution-type', 'bar-h')} colorIndex={0} labelWidth={100}
