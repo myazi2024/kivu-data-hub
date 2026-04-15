@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
+import { fetchAppLogo } from '@/utils/pdfLogoHelper';
 
 interface PermitData {
   permitNumber: string;
@@ -22,6 +23,14 @@ export async function generatePermitPDF(permitData: PermitData): Promise<Blob> {
   doc.setLineWidth(2);
   doc.setDrawColor(0, 100, 200);
   doc.rect(10, 10, pageWidth - 20, pageHeight - 20);
+
+  // Logo dynamique en haut à gauche
+  const permitLogo = await fetchAppLogo();
+  if (permitLogo) {
+    try {
+      doc.addImage(permitLogo, 'PNG', 15, 14, 12, 12);
+    } catch { /* ignore */ }
+  }
 
   // En-tête officiel
   doc.setFontSize(22);

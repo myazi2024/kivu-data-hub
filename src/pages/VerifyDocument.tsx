@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Helmet } from 'react-helmet';
+import { useAppAppearance } from '@/hooks/useAppAppearance';
 
 const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   report: 'Rapport Cadastral',
@@ -32,10 +33,13 @@ interface VerificationResult {
 const VerifyDocument: React.FC = () => {
   const { code } = useParams<{ code?: string }>();
   const navigate = useNavigate();
+  const { config } = useAppAppearance();
   const [searchCode, setSearchCode] = useState(code || '');
   const [result, setResult] = useState<VerificationResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+
+  const appName = config.app_name ? String(config.app_name) : 'BIC';
 
   useEffect(() => {
     if (code) {
@@ -74,8 +78,8 @@ const VerifyDocument: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Vérification de Document | BIC</title>
-        <meta name="description" content="Vérifiez l'authenticité d'un document cadastral BIC en entrant son code de vérification." />
+        <title>Vérification de Document | {appName}</title>
+        <meta name="description" content={`Vérifiez l'authenticité d'un document cadastral ${appName} en entrant son code de vérification.`} />
       </Helmet>
 
       <div className="min-h-dvh bg-background flex flex-col items-center justify-center p-4">
@@ -83,8 +87,16 @@ const VerifyDocument: React.FC = () => {
           {/* Header */}
           <div className="text-center space-y-2">
             <div className="flex items-center justify-center gap-2">
-              <Shield className="h-8 w-8 text-primary" />
-              <h1 className="text-2xl font-bold text-foreground">Vérification BIC</h1>
+              {config.logo_url ? (
+                <img
+                  src={String(config.logo_url)}
+                  alt={appName}
+                  className="h-8 w-8 object-contain"
+                />
+              ) : (
+                <Shield className="h-8 w-8 text-primary" />
+              )}
+              <h1 className="text-2xl font-bold text-foreground">Vérification {appName}</h1>
             </div>
             <p className="text-sm text-muted-foreground">
               Entrez le code de vérification imprimé sur votre document cadastral
@@ -121,7 +133,7 @@ const VerifyDocument: React.FC = () => {
                 <ShieldX className="h-12 w-12 text-destructive mx-auto" />
                 <h2 className="text-lg font-bold text-destructive">Document Non Reconnu</h2>
                 <p className="text-sm text-muted-foreground">
-                  Aucun document ne correspond à ce code de vérification. Vérifiez que le code est correct ou contactez BIC.
+                  Aucun document ne correspond à ce code de vérification. Vérifiez que le code est correct ou contactez {appName}.
                 </p>
               </CardContent>
             </Card>

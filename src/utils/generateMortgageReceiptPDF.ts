@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
 import { formatCurrency } from '@/utils/formatters';
+import { fetchAppLogo } from '@/utils/pdfLogoHelper';
 
 interface MortgageReceiptData {
   type: 'registration' | 'cancellation';
@@ -32,6 +33,14 @@ export async function generateMortgageReceiptPDF(data: MortgageReceiptData): Pro
   doc.setLineWidth(1.5);
   doc.setDrawColor(0, 100, 200);
   doc.rect(10, 10, pageWidth - 20, pageHeight - 20);
+
+  // Logo dynamique en haut à gauche
+  const mortgageLogo = await fetchAppLogo();
+  if (mortgageLogo) {
+    try {
+      doc.addImage(mortgageLogo, 'PNG', 15, 14, 12, 12);
+    } catch { /* ignore */ }
+  }
 
   // Header
   doc.setFontSize(18);
