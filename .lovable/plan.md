@@ -1,46 +1,60 @@
 
 
-# Audit de configuration graphique Analytics
+# Audit du mode test — Alignement post-modifications
 
-## Résumé des anomalies trouvées
+## Anomalies détectées
 
-### 1. Variables croisées orphelines dans `parcels-titled` (crossVariables.ts)
+### 1. Code mort : `TEST_TABLES_DELETION_ORDER` (types.ts)
 
-Après la migration "Parcelle → Construction", 4 entrées de variables croisées restent dans `CROSS_VARIABLE_REGISTRY['parcels-titled']` pour des graphiques **qui n'existent plus** dans cet onglet :
+Le tableau `TEST_TABLES_DELETION_ORDER` (lignes 50-78 de `src/components/admin/test-mode/types.ts`) n'est **importé nulle part**. Le nettoyage utilise désormais la RPC `cleanup_all_test_data`. Ce code mort est incomplet (manque `expertise_payments`, `cadastral_mortgage_payments`) et source de confusion.
 
-| Clé orpheline | Anciennement | Statut |
+**Action** : Supprimer `TEST_TABLES_DELETION_ORDER` de `types.ts`.
+
+### 2. Terminologie "permis" résiduelle (3 fichiers)
+
+Le mot "permis" subsiste dans 3 fichiers du mode test, en violation de la règle "Autorisation" :
+
+| Fichier | Texte actuel | Correction |
 |---|---|---|
-| `legal-status` (ligne 22) | Déplacé vers title-requests | **À supprimer** |
-| `gender` (ligne 23) | Déplacé vers title-requests | **À supprimer** |
-| `subdivided` (ligne 32) | Déplacé vers title-requests | **À supprimer** |
-| `surface` (ligne 33) | Déplacé vers title-requests | **À supprimer** |
+| `TestModeGuide.tsx` (ligne 9) | `~700 permis` | `~700 autorisations` |
+| `useTestDataActions.ts` (ligne 52) | `Bornages & hypothèques & permis` | `Bornages & hypothèques & autorisations` |
+| `useTestDataActions.ts` (ligne 277-278) | `Bornages/hypothèques/permis` | `Bornages/hypothèques/autorisations` |
+| `TestDataStatsCard.tsx` (ligne 165) | `bornages, hypothèques, permis` | `bornages, hypothèques, autorisations` |
 
-Ces entrées sont inoffensives (jamais lues car les charts correspondants n'existent plus dans `parcels-titled`) mais polluent la config admin.
+### 3. Documentation `docs/TEST_MODE.md` obsolète
 
-### 2. Variables croisées manquantes dans `title-requests`
+- La table des routes miroir ne reflète pas le renommage "Parcelle → Construction" dans les analytics
+- La section "Composants" ne mentionne pas la RPC `cleanup_all_test_data` (le Edge Function n'est plus la méthode principale)
+- Ajout de la mention que la RPC serveur est désormais la méthode recommandée
 
-Le graphique `subdivided` a été ajouté dans `TitleRequestsBlock` avec `cx('subdivided')`, mais **aucune entrée `subdivided`** n'existe dans `CROSS_VARIABLE_REGISTRY['title-requests']`. Résultat : le picklist de variables croisées est vide pour ce graphique.
+### 4. Aucune anomalie fonctionnelle
 
-### 3. Aucune autre incohérence détectée
-
-- **Registry ↔ Blocks** : tous les `item_key` dans `analyticsTabsRegistry.ts` ont un `chartDef` correspondant dans les blocs.
-- **Tabs système** (`_global`, `rdc-map`) : correctement exclus par `isUserTab` / `isChartsViewTab`.
-- **Filtres** : `buildFilterDefaults` couvre tous les onglets utilisateur.
-- **Terminologie** : "Autorisation" utilisé partout (pas de "Permis" résiduel).
+- Les filtres `applyTestFilter` / `isTestRoute` sont correctement appliqués dans toutes les requêtes utilisateur (13 fichiers) et dans le data fetching analytics (`useLandDataAnalytics.tsx`)
+- La RPC `cleanup_all_test_data` et `count_test_data_stats` sont bien utilisées
+- Les routes miroir `/test/map`, `/test/cadastral-map`, `/test/mon-compte` sont en place dans `App.tsx`
+- La bannière test, le provider, et le paiement simulé fonctionnent correctement
+- Le `TestDataStatsCard` utilise déjà "Autorisations" pour le label du KPI `buildingPermits`
 
 ---
 
 ## Plan de correction
 
-### Fichier : `src/config/crossVariables.ts`
+### Fichiers modifiés (4)
 
-**A. Supprimer les 4 entrées orphelines** de `parcels-titled` :
-- Retirer `legal-status`, `gender`, `subdivided`, `surface`
+**1. `src/components/admin/test-mode/types.ts`**
+- Supprimer `TEST_TABLES_DELETION_ORDER` (code mort, lignes 49-78)
 
-**B. Ajouter l'entrée manquante** dans `title-requests` :
-```ts
-'subdivided': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }],
-```
+**2. `src/components/admin/test-mode/TestModeGuide.tsx`**
+- Ligne 9 : `~700 permis` → `~700 autorisations`
 
-Un seul fichier modifié, 5 lignes changées.
+**3. `src/components/admin/test-mode/useTestDataActions.ts`**
+- Ligne 52 : `Bornages & hypothèques & permis` → `Bornages & hypothèques & autorisations`
+- Lignes 277-278 : `Bornages/hypothèques/permis` → `Bornages/hypothèques/autorisations`
+
+**4. `src/components/admin/test-mode/TestDataStatsCard.tsx`**
+- Ligne 165 : `permis` → `autorisations`
+
+**5. `docs/TEST_MODE.md`**
+- Mettre à jour la section nettoyage (RPC > Edge Function)
+- Supprimer la référence à l'onglet "Parcelle" dans les routes miroir (maintenant "Construction" dans analytics)
 
