@@ -361,17 +361,37 @@ export async function generateCadastralReport(
 
   // --- Load contribution data ---
   let contributionData: any = null;
+  let logoBase64: string | null = null;
   try {
     const { supabase } = await import('@/integrations/supabase/client');
-    const { data } = await supabase
-      .from('cadastral_contributions')
-      .select('*')
-      .eq('parcel_number', cadastralResult.parcel.parcel_number)
-      .eq('status', 'approved')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-    if (data) contributionData = data;
+    const [contribResult, configResult] = await Promise.all([
+      supabase
+        .from('cadastral_contributions')
+        .select('*')
+        .eq('parcel_number', cadastralResult.parcel.parcel_number)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single(),
+      supabase
+        .from('app_appearance_config')
+        .select('config_value')
+        .eq('config_key', 'logo_url')
+        .maybeSingle(),
+    ]);
+    if (contribResult.data) contributionData = contribResult.data;
+    const logoUrl = configResult.data?.config_value as string | null;
+    if (logoUrl) {
+      try {
+        const resp = await fetch(logoUrl);
+        const blob = await resp.blob();
+        logoBase64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+      } catch { /* fallback: no logo */ }
+    }
   } catch { /* use standard data */ }
 
   const parcel = contributionData || cadastralResult.parcel;
@@ -427,6 +447,9 @@ export async function generateCadastralReport(
       : 'Non renseigné');
 
   const addPageHeader = () => {
+    if (logoBase64) {
+      try { doc.addImage(logoBase64, 'PNG', margin, 4, 8, 8); } catch { /* */ }
+    }
     doc.setTextColor(...BLUE);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);

@@ -103,8 +103,9 @@ const Footer = () => {
         {/* Bottom Bar */}
         <div className="border-t border-border/20 py-3">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
-            <div className="text-muted-foreground text-center sm:text-left">
-              © {currentYear} {appName} - Tous droits réservés
+            <div className="flex items-center gap-1.5 text-muted-foreground text-center sm:text-left">
+              <span>© {currentYear} {appName} - Tous droits réservés</span>
+              <img src={logoSrc} alt={appName} className="h-3.5 w-3.5 brightness-0 invert inline-block" />
             </div>
             <div className="flex items-center gap-2">
               <button
