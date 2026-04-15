@@ -172,6 +172,34 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
   }, [filteredParcels]);
   const totalSurface = useMemo(() => filteredParcels.reduce((s, p) => s + (p.area_sqm || 0), 0), [filteredParcels]);
 
+  const occupationData = useMemo(() => {
+    const occupied = filteredParcels.filter(p => p.is_occupied === true).length;
+    const vacant = filteredParcels.filter(p => p.is_occupied === false).length;
+    return [
+      ...(occupied > 0 ? [{ name: 'Habité', value: occupied }] : []),
+      ...(vacant > 0 ? [{ name: 'Non habité', value: vacant }] : []),
+    ];
+  }, [filteredParcels]);
+
+  const floorDistData = useMemo(() => {
+    const map = new Map<string, number>();
+    filteredParcels.forEach(p => {
+      const f = p.floor_number;
+      if (f != null && f !== '') {
+        const label = f === '0' || f.toLowerCase() === 'rdc' ? 'RDC' : `${f} étage${parseInt(f) > 1 ? 's' : ''}`;
+        map.set(label, (map.get(label) || 0) + 1);
+      }
+    });
+    return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  }, [filteredParcels]);
+
+  const multiConstructionCount = useMemo(() =>
+    filteredParcels.filter(p => Array.isArray(p.additional_constructions) && p.additional_constructions.length > 0).length,
+    [filteredParcels]);
+
+  const occupiedCount = useMemo(() => filteredParcels.filter(p => p.is_occupied === true).length, [filteredParcels]);
+  const totalHostingCapacity = useMemo(() => filteredParcels.reduce((s, p) => s + (p.hosting_capacity || 0), 0), [filteredParcels]);
+
   const trend = useMemo(() => trendByMonth(filteredParcels), [filteredParcels]);
 
   const avgSurface = useMemo(() => filteredParcels.length > 0 ? Math.round(totalSurface / filteredParcels.length) : 0, [totalSurface, filteredParcels.length]);
