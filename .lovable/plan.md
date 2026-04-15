@@ -1,64 +1,30 @@
 
 
-# Afficher les territoires sur la carte quand filtre = Rurale
+# Masquer les noms de territoires en mode "showAll"
 
-## Contexte
+## Problème
 
-Quand l'utilisateur sélectionne `Rurale > Tous les territoires` dans le filtre analytique, la carte RDC (panneau gauche) continue d'afficher la carte des provinces. Elle ne bascule vers `DRCTerritoiresMap` que si un territoire spécifique est sélectionné ET une province est choisie.
+Quand les 164 territoires sont affichés simultanément (filtre Rurale + Tous les territoires), les labels texte se superposent et rendent la carte illisible.
 
-**Objectif** : Quand le filtre de section est `rurale`, afficher automatiquement la couche des 164 territoires (depuis `drc-territoires.geojson` existant) sur la carte RDC.
+## Modification
 
-## Modifications
+### `src/components/DRCTerritoiresMap.tsx` (ligne ~191)
 
-### 1. Créer un `SectionTypeContext` — `AnalyticsFilters.tsx`
+Conditionner le rendu des labels `<text>` : ne pas les afficher quand `showAll` est `true` et qu'aucun territoire n'est sélectionné. Les labels restent visibles quand :
+- On est en mode province (pas `showAll`)
+- Un territoire spécifique est sélectionné (même en `showAll`)
 
-Ajouter un nouveau contexte `SectionTypeContext` et `SectionTypeChangeContext` pour propager le type de section sélectionné dans les filtres vers la carte.
+Concrètement, entourer le bloc `filtered.map` des labels (lignes 191-208) avec une condition :
 
-### 2. Propager le contexte — `ProvinceDataVisualization.tsx`
-
-- Ajouter une prop `onSectionTypeChange` et `selectedSectionType` à l'interface
-- Envelopper le contenu avec les nouveaux providers de section type
-
-### 3. Connecter dans `DRCInteractiveMap.tsx`
-
-- Ajouter un state `selectedSectionType` (string)
-- Passer `onSectionTypeChange={setSelectedSectionType}` au composant `ProvinceDataVisualization`
-- Modifier la logique conditionnelle de la carte (lignes ~371-405) :
-
-```text
-Logique actuelle :
-  territoire + province → DRCTerritoiresMap
-  ville + commune (goma) → DRCQuartiersMap
-  ville → DRCCommunesMap
-  sinon → DRCMapWithTooltip (provinces)
-
-Nouvelle logique :
-  territoire + province → DRCTerritoiresMap (inchangé)
-  sectionType === 'rurale' + province → DRCTerritoiresMap (NOUVEAU)
-     avec tous les territoires de la province, aucun sélectionné
-  sectionType === 'rurale' + pas de province → DRCTerritoiresMap (NOUVEAU)
-     avec les 164 territoires, vue complète RDC
-  ville + commune (goma) → DRCQuartiersMap (inchangé)
-  ville → DRCCommunesMap (inchangé)
-  sinon → DRCMapWithTooltip (inchangé)
+```
+{(!showAll || territoire) && filtered.map(...)}
 ```
 
-### 4. Adapter `DRCTerritoiresMap.tsx`
+Le tooltip au survol (ligne 211+) reste actif pour identifier les territoires au hover.
 
-- Modifier le filtrage : quand `territoireNames` est vide/undefined mais `showAll` est true, afficher toutes les features
-- Ajouter une prop optionnelle `showAll?: boolean` pour le mode tous-territoires
-- Adapter le bbox pour cadrer sur la RDC entière quand `showAll` est actif
-
-### 5. Propager le sectionType depuis les filtres — `AnalyticsFilters.tsx`
-
-Quand le select de section change, appeler le callback `SectionTypeChangeContext` pour informer la carte.
-
-## Fichiers impactés
+## Fichier impacté
 
 | Fichier | Modification |
 |---------|-------------|
-| `src/components/visualizations/filters/AnalyticsFilters.tsx` | +2 contextes (SectionType, SectionTypeChange), appeler le callback |
-| `src/components/visualizations/ProvinceDataVisualization.tsx` | +props sectionType, providers |
-| `src/components/DRCInteractiveMap.tsx` | +state sectionType, logique conditionnelle carte |
-| `src/components/DRCTerritoiresMap.tsx` | +prop showAll, afficher tous les territoires |
+| `src/components/DRCTerritoiresMap.tsx` | Conditionner l'affichage des labels |
 
