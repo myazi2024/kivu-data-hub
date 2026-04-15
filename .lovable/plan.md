@@ -1,38 +1,25 @@
 
 
-# Ajouter le logo dans le menu Media
+# Redesign test environment banner — subtle bottom-right indicator
 
-## Problème
+## Current state
 
-Le mega-menu "Media" (dropdown dans la navigation) affiche uniquement une grille de liens sans aucun élément de branding. Le logo de l'application n'y apparaît pas.
+`TestEnvironmentBanner` displays as a full-width sticky banner at the top:
+- `bg-amber-500 text-amber-950` — high contrast, eye-catching
+- `text-sm font-medium py-1.5` — prominent size
+- Icon + long text: "Environnement de test — les données affichées sont fictives"
 
-## Modification
+## Target state
 
-### `src/components/ui/navigation.tsx` — Mega-menu Media
+Subtle indicator in bottom-right corner:
+- **Position**: Fixed bottom-right (`fixed bottom-2 right-2`)
+- **Text**: Shortened to "Environnement test"
+- **Size**: Very small (`text-[10px]` or `text-xs`)
+- **Colors**: Muted/opaque (`bg-muted/30 text-muted-foreground/60 border border-border/30`)
+- **Icon**: Removed or kept minimal
+- **Z-index**: Low but above content (`z-40`)
 
-Ajouter une section de branding dans le mega-menu, dans la partie gauche ou en en-tête du dropdown :
+## Implementation
 
-- Afficher le logo dynamique (`logoSrc` déjà disponible dans le composant) avec le nom de l'app et le tagline
-- Placer cette section comme un bandeau en haut du dropdown ou comme une colonne supplémentaire à gauche
-- Style : fond léger (`bg-muted/50`), logo petit (`h-8`), texte `app_name` + `app_tagline`
-
-Concrètement, transformer la grille du mega-menu de `grid-cols-3` en une structure avec un bandeau branding en haut suivi de la grille 3 colonnes :
-
-```
-┌──────────────────────────────────┐
-│  [Logo]  Nom App                 │
-│          Tagline                 │
-├──────────┬──────────┬────────────┤
-│ Actualités│ Ressources│ À propos  │
-│ ...      │ ...      │ ...        │
-└──────────┴──────────┴────────────┘
-```
-
-Les variables `logoSrc`, `displayName` et `displayTagline` sont déjà définies dans le composant — aucun import supplémentaire requis.
-
-## Fichier impacté
-
-| Fichier | Modification |
-|---------|-------------|
-| `src/components/ui/navigation.tsx` | Bandeau branding dans le mega-menu Media (lignes 99-129) |
+Transform `TestEnvironmentBanner.tsx` from a prominent banner to a subtle pill/badge in the bottom-right corner.
 
