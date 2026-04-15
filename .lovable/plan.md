@@ -1,77 +1,48 @@
 
 
-# Audit Mode Test : Alignement aux modifications récentes
+# Déplacer le visuel "Type de bail" vers l'onglet Titres fonciers
 
-## Problème central
+## Contexte
 
-Les récentes modifications d'alignement CCC → Données foncières ont ajouté des champs et graphiques (occupation, étages, constructions additionnelles, etc.) que le **générateur de données test ne peuple pas**. Résultat : les nouveaux graphiques analytics affichent des données vides en environnement test.
+Le champ `lease_type` (type de bail) est lié au type de titre de propriété collecté dans le formulaire CCC. Il appartient logiquement à l'onglet **Titres fonciers** (`title-requests`) et non à **Parcelles** (`parcels-titled`).
 
-## Anomalies détectées
+Le graphique doit exploiter les données de `data.parcels` (où `lease_type` existe) tout en étant affiché dans le `TitleRequestsBlock`.
 
-### 1. Champs manquants dans `generateParcels` (7 champs)
+## Modifications
 
-| Champ | Type | Impact visuel |
-|-------|------|---------------|
-| `is_occupied` | boolean | Graphique "Occupation" vide |
-| `occupant_count` | integer | KPI "Parcelles habitées" = 0 |
-| `hosting_capacity` | integer | KPI "Capacité d'accueil" = 0 |
-| `floor_number` | string | Graphique "Étages" vide |
-| `additional_constructions` | jsonb | KPI "Multi-constructions" = 0 |
-| `sound_environment` | string | Graphique "Environnement sonore" vide |
-| `nearby_noise_sources` | string | Graphique "Sources de bruit" vide |
+### 1. `TitleRequestsBlock.tsx` — Ajouter le graphique lease-type
 
-### 2. Champs manquants dans `generateContributions` (4 champs)
+- Importer `KeyRound` de lucide-react
+- Ajouter `const byLeaseType = useMemo(() => countBy(data.parcels, 'lease_type'), [data.parcels]);`
+- Ajouter l'entrée `lease-type` dans `chartDefs` avec `data.parcels` comme `rawRecords`
 
-| Champ | Type | Impact visuel |
-|-------|------|---------------|
-| `is_occupied` | boolean | Graphique "Occupation" vide dans ContributionsBlock |
-| `occupant_count` | integer | — |
-| `hosting_capacity` | integer | — |
-| `additional_constructions` | jsonb | — |
+### 2. `ParcelsWithTitleBlock.tsx` — Retirer lease-type
 
-### 3. Terminologie non conforme
+- Supprimer l'entrée `lease-type` de `chartDefs`
+- Retirer `charts.byLeaseType` du calcul `useMemo` des charts
+- Nettoyer la référence dans les dépendances
 
-| Fichier | Ligne | Problème |
-|---------|-------|----------|
-| `TestDataStatsCard.tsx:48` | `'Permis bâtir'` | Doit être **'Autorisations'** (règle projet) |
+### 3. `analyticsTabsRegistry.ts` — Déplacer l'entrée de config
 
-## Plan de corrections
+- **Retirer** de `parcels-titled.charts` : `{ tab_key: 'parcels-titled', item_key: 'lease-type', ... }`
+- **Ajouter** dans `title-requests.charts` : `{ tab_key: 'title-requests', item_key: 'lease-type', item_type: 'chart', is_visible: true, display_order: 14, custom_title: 'Type de bail', chart_type: 'bar-h' }`
+- Renuméroter les `display_order` dans `parcels-titled` si nécessaire
 
-### Phase 1 — Enrichir `generateParcels` (testDataGenerators.ts ~L196-241)
+### 4. `crossVariables.ts` — Déplacer les croisements
 
-Ajouter après `has_dispute` :
-- `is_occupied`: ~65% `true`, ~25% `false`, ~10% `null` (terrain nu)
-- `occupant_count`: 1-8 si occupé, null sinon
-- `hosting_capacity`: 2-15 si construction, null sinon
-- `floor_number`: `'0'` à `'5'` si construction, null sinon
-- `additional_constructions`: ~20% des parcelles avec 1-2 constructions additionnelles (type, usage, surface)
-- `sound_environment`: distribution réaliste (tres_calme → tres_bruyant)
-- `nearby_noise_sources`: texte pour ~40% des parcelles
+- **Retirer** `'lease-type'` de `parcels-titled`
+- **Ajouter** dans `title-requests` : `'lease-type': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }]`
 
-### Phase 2 — Enrichir `generateContributions` (testDataGenerators.ts ~L283-378)
+### 5. `ContributionsBlock.tsx` — Conserver tel quel
 
-Ajouter les 4 champs manquants :
-- `is_occupied`, `occupant_count`, `hosting_capacity` : mêmes distributions que parcelles
-- `additional_constructions` : ~15% avec données JSONB
-
-### Phase 3 — Terminologie
-
-- `TestDataStatsCard.tsx:48` : `'Permis bâtir'` → `'Autorisations'`
+Le graphique `lease-type` dans Contributions reste en place car il montre les baux déclarés dans les contributions (source différente).
 
 ## Fichiers impactés
 
-| Fichier | Modification |
-|---------|-------------|
-| `src/components/admin/test-mode/testDataGenerators.ts` | +7 champs parcelles, +4 champs contributions |
-| `src/components/admin/test-mode/TestDataStatsCard.tsx` | Renommer label |
-
-## Résumé
-
-| Catégorie | Count |
-|-----------|-------|
-| Champs manquants (parcelles) | 7 |
-| Champs manquants (contributions) | 4 |
-| Terminologie | 1 |
-
-Après ces corrections, tous les graphiques analytics (occupation, étages, baux, bruit, multi-constructions) afficheront des données significatives en environnement test.
+| Fichier | Action |
+|---------|--------|
+| `src/components/visualizations/blocks/TitleRequestsBlock.tsx` | +chart lease-type (données parcels) |
+| `src/components/visualizations/blocks/ParcelsWithTitleBlock.tsx` | −chart lease-type |
+| `src/config/analyticsTabsRegistry.ts` | Déplacer entrée parcels→title-requests |
+| `src/config/crossVariables.ts` | Déplacer croisement parcels→title-requests |
 
