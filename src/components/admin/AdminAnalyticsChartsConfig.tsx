@@ -213,7 +213,7 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
     // Reset charts/KPIs
     setLocalItems(prev => ({ ...prev, [activeTab]: [...tab.kpis, ...tab.charts] }));
     // Reset filters for this tab
-    const { buildFilterDefaults } = require('@/hooks/useAnalyticsChartsConfig');
+    // Reset filters for this tab (buildFilterDefaults imported at top)
     if (isUserTab(activeTab)) {
       setLocalFilters(prev => ({ ...prev, [activeTab]: buildFilterDefaults(activeTab) }));
       setHasFilterChanges(true);
