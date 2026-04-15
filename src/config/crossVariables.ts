@@ -34,6 +34,9 @@ export const CROSS_VARIABLE_REGISTRY: Record<string, Record<string, CrossVariabl
     'building-height': [{ label: 'Province', field: 'province' }, { label: 'Usage', field: 'declared_usage' }],
     'sound-env': [{ label: 'Province', field: 'province' }, { label: 'Usage', field: 'declared_usage' }],
     'noise-sources': [{ label: 'Province', field: 'province' }, { label: 'Env. sonore', field: 'sound_environment' }],
+    'occupation': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }, { label: 'Usage', field: 'declared_usage' }],
+    'lease-type': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }],
+    'floor-dist': [{ label: 'Province', field: 'province' }, { label: 'Usage', field: 'declared_usage' }],
   },
   'contributions': {
     'contribution-type': [{ label: 'Statut', field: 'status' }, { label: 'Province', field: 'province' }, { label: 'Usage', field: 'declared_usage' }],
@@ -46,6 +49,8 @@ export const CROSS_VARIABLE_REGISTRY: Record<string, Record<string, CrossVariabl
     'fraud-score': [{ label: 'Type contribution', field: 'contribution_type' }, { label: 'Province', field: 'province' }],
     'property-category': [{ label: 'Type contribution', field: 'contribution_type' }, { label: 'Province', field: 'province' }],
     'appeal-status': [{ label: 'Province', field: 'province' }],
+    'occupation': [{ label: 'Province', field: 'province' }, { label: 'Statut', field: 'status' }, { label: 'Type contribution', field: 'contribution_type' }],
+    'lease-type': [{ label: 'Province', field: 'province' }, { label: 'Statut', field: 'status' }],
   },
   'expertise': {
     'status': [{ label: 'Condition', field: 'property_condition' }, { label: 'Qualité', field: 'construction_quality' }, { label: 'Province', field: 'province' }],
