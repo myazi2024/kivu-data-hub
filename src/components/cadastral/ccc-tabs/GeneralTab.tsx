@@ -325,6 +325,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
         removeCurrentOwner={removeCurrentOwner}
         showOwnerWarning={showOwnerWarning}
         highlightIncompleteOwner={highlightIncompleteOwner}
+        highlightRequiredFields={highlightRequiredFields}
         handleFileChange={handleFileChange}
         removeFile={removeFile}
         getPicklistOptions={getPicklistOptions}
@@ -390,6 +391,7 @@ interface CurrentOwnersSectionProps {
   removeCurrentOwner: (index: number) => void;
   showOwnerWarning: boolean;
   highlightIncompleteOwner: boolean;
+  highlightRequiredFields: boolean;
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>, type: 'owner' | 'title') => void;
   removeFile: (type: 'owner' | 'title', index?: number) => void;
   getPicklistOptions: (key: string) => string[];
@@ -400,7 +402,7 @@ const CurrentOwnersSection: React.FC<CurrentOwnersSectionProps> = ({
   formData, handleInputChange, customTitleName,
   currentOwners, setCurrentOwners, ownershipMode, setOwnershipMode,
   ownerDocFile, updateCurrentOwner, addCurrentOwner, removeCurrentOwner,
-  showOwnerWarning, highlightIncompleteOwner,
+  showOwnerWarning, highlightIncompleteOwner, highlightRequiredFields,
   handleFileChange, removeFile, getPicklistOptions,
   resetOwnersBlock
 }) => (
