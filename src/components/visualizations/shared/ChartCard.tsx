@@ -334,7 +334,7 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
                 onSelect={setCrossField}
               />
             )}
-            <img src={useContext(WatermarkConfigContext).logoUrl || "/bic-logo.png"} alt="" className="h-3.5 w-3.5 object-contain opacity-80" />
+            <img src={wmConfig.logoUrl || "/bic-logo.png"} alt="" className="h-3.5 w-3.5 object-contain opacity-80" />
             <CopyButton onClick={copy} copied={copied} />
           </div>
         </div>
@@ -427,7 +427,7 @@ export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
             <CardTitle className="text-xs font-semibold leading-tight break-words">{title}</CardTitle>
             {filterLabel && <ChartFilterSubtitle filterLabel={filterLabel} />}
           </div>
-          <img src={useContext(WatermarkConfigContext).logoUrl || "/bic-logo.png"} alt="" className="h-3.5 w-3.5 object-contain opacity-80" />
+          <img src={wmConfig.logoUrl || "/bic-logo.png"} alt="" className="h-3.5 w-3.5 object-contain opacity-80" />
           <CopyButton onClick={copy} copied={copied} />
         </div>
       </CardHeader>
