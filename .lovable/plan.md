@@ -1,100 +1,63 @@
 
 
-# Audit des variables croisees — Analyse complete et ameliorations
+# Mise à jour du mode test — Wiring des cross-variables manquantes dans les blocs
 
-## Synthese
+## Problème
 
-Sur **143 charts** (hors `_global` et `rdc-map`), **67 ont des cross-variables** et **76 n'en ont pas**. En excluant les charts `geo`, `evolution`, et les matrices croisees (qui ne supportent pas de picklist), il reste **27 charts exploitables sans aucune variable croisee**.
+Les cross-variables ont été ajoutées dans `crossVariables.ts` mais **13 charts dans 4 blocs** ne passent pas les props `crossVariables={cx(...)}`, `rawRecords` et `groupField` — les picklists n'apparaissent donc pas dans l'UI.
 
-## Etat actuel par onglet
+Les données test générées sont déjà correctes (tous les champs nécessaires sont présents dans `testDataGenerators.ts`).
 
-| Onglet | Charts total | Avec cx | Sans cx (hors geo/evol) | Lacune |
-|--------|-------------|---------|------------------------|--------|
-| title-requests | 19 | 7 | **11** | Critique |
-| parcels-titled | 17 | 15 | 0 | OK |
-| contributions | 15 | 13 | 0 | OK |
-| expertise | 19 | 15 | **2** | Mineur |
-| mutations | 11 | 7 | **1** | Mineur |
-| subdivision | 9 | 6 | **1** | Mineur |
-| disputes | 17 | 10 | **0** | OK |
-| mortgages | 6 | 4 | 0 | OK |
-| building-permits | 7 | 5 | 0 | OK |
-| taxes | 5 | 3 | 0 | OK |
-| ownership | 4 | 2 | 0 | OK |
-| certificates | 5 | 2 | **1** | Mineur |
-| invoices | 6 | 3 | **1** | Mineur |
+## Charts à corriger
 
-## Charts sans cross-variables et variables proposees
+### TitleRequestsBlock.tsx (10 charts)
 
-### title-requests (11 charts manquants — priorite haute)
+| Chart | groupField |
+|-------|-----------|
+| `gender` (ColorMappedPieCard) | `current_owner_gender` |
+| `nationality` | `current_owner_nationality` |
+| `entity-type` | `entity_type` |
+| `right-type` | `state_right_type` |
+| `mutation-type` | `mutation_type` |
+| `hist-legal-status` | `legal_status` (owners JSONB) |
+| `hist-duration` | `legal_status` (owners JSONB) |
+| `transfers-per-parcel` | `property_title_type` |
+| `title-owner-match` | `is_title_in_current_owner_name` |
+| `mutation-urgency` | `property_title_type` |
+| `mismatch-by-title-type` | `property_title_type` |
 
-| Chart | Titre | Variables croisees proposees |
-|-------|-------|-----------------------------|
-| `gender` | Genre (pers. physique) | Province, Type titre, Usage |
-| `nationality` | Nationalite | Province, Type titre, Statut juridique |
-| `entity-type` | Type d'entite (pers. morale) | Province, Type titre |
-| `right-type` | Droit de l'Etat | Province, Type titre |
-| `mutation-type` | Type de mutation | Province, Type titre, Statut juridique |
-| `hist-legal-status` | Statut juridique (anciens) | Province, Type titre |
-| `hist-duration` | Duree detention (anciens) | Province, Type titre |
-| `transfers-per-parcel` | Transferts par parcelle | Province, Type titre, Usage |
-| `title-owner-match` | Concordance titre/proprio | Province, Type titre, Statut juridique |
-| `mutation-urgency` | Urgence de mutation | Province, Type titre |
-| `mismatch-by-title-type` | Discordants par type titre | Province, Statut juridique |
+Note: `mismatch-by-title-type` a déjà ses données calculées à partir de `filtered` donc `rawRecords={filtered}` suffit.
 
-### expertise (2 charts manquants)
+### ExpertiseBlock.tsx (2 charts)
 
-| Chart | Variables proposees |
-|-------|---------------------|
-| `equipment` | Province, Qualite construction, Condition |
-| `proximity` | Province, Qualite construction |
+| Chart | groupField |
+|-------|-----------|
+| `equipment` | `construction_quality` |
+| `proximity` | `construction_quality` |
 
-### mutations (1)
+### MutationBlock.tsx, SubdivisionBlock.tsx, InvoicesBlock.tsx (3 revenue-trend charts)
 
-| Chart | Variables proposees |
-|-------|---------------------|
-| `revenue-trend` | Type mutation, Province |
+Ces charts sont de type `area` — les cross-variables pour les `area` charts sont supportées si le composant sous-jacent gère le stacking. Ajouter `crossVariables={cx('revenue-trend')} rawRecords={filtered} groupField` approprié.
 
-### subdivision (1)
+| Bloc | groupField |
+|------|-----------|
+| MutationBlock | `mutation_type` |
+| SubdivisionBlock | `purpose_of_subdivision` |
+| InvoicesBlock | `payment_method` |
 
-| Chart | Variables proposees |
-|-------|---------------------|
-| `revenue-trend` | Objet, Province |
+### CertificatesBlock.tsx (1 chart)
 
-### certificates (1)
+`type-trend` utilise `StackedBarCard` (pas `ChartCard`) — les cross-variables ne s'appliquent pas ici (déjà croisé par type). Rien à faire.
 
-| Chart | Variables proposees |
-|-------|---------------------|
-| `type-trend` | Province, Type certificat |
+## Fichiers modifiés (4)
 
-### invoices (1)
+1. **`src/components/visualizations/blocks/TitleRequestsBlock.tsx`** — ajouter `crossVariables={cx(...)}, rawRecords={filtered}, groupField="..."` aux 10 charts
+2. **`src/components/visualizations/blocks/ExpertiseBlock.tsx`** — ajouter cx aux 2 charts
+3. **`src/components/visualizations/blocks/MutationBlock.tsx`** — ajouter cx à `revenue-trend`
+4. **`src/components/visualizations/blocks/SubdivisionBlock.tsx`** — ajouter cx à `revenue-trend`
+5. **`src/components/visualizations/blocks/InvoicesBlock.tsx`** — ajouter cx à `revenue-trend`
 
-| Chart | Variables proposees |
-|-------|---------------------|
-| `revenue-trend` | Moyen paiement, Province, Zone geo |
+## Aucune modification nécessaire dans testDataGenerators.ts
 
-## Pertinence des variables existantes — Ameliorations
-
-Certaines variables croisees existantes sont trop generiques (ex: `Province` partout sans variables metier). Ajustements :
-
-| Tab | Chart | Variable a ajouter | Justification analytique |
-|-----|-------|--------------------|--------------------------|
-| `mortgages` | `amount-brackets` | Statut (`mortgage_status`) | Comparer montants actifs vs soldes |
-| `mortgages` | `duration` | Statut (`mortgage_status`) | Durees des hypotheques actives vs soldees |
-| `building-permits` | `validity-period` | Type permis (`permit_type`) | Duree validite par type d'autorisation |
-| `building-permits` | `current-status` | Type permis (`permit_type`) | Taux expiration par type |
-| `taxes` | `amount-range` | Exercice (`tax_year`) | Evolution des tranches par annee |
-| `taxes` | `fiscal-year` | Statut (`payment_status`) deja present — ajouter Zone (`geographical_zone`) | Comparaison geographique |
-| `disputes` | `lifting-status` | Type litige (`dispute_type`) | Taux levee par type |
-| `disputes` | `lifting-reason` | Type litige (`dispute_type`) | Motifs de levee par type de conflit |
-
-## Plan d'implementation
-
-### Fichier modifie : `src/config/crossVariables.ts`
-
-Ajouter les 17 nouveaux charts au `CROSS_VARIABLE_REGISTRY` et enrichir 8 entrees existantes. Aucun autre fichier ne necessite de modification — les blocs de visualisation utilisent deja `cx(chartKey)` via `useBlockFilter`, et les charts qui n'avaient pas de `crossVariables` prop les recevront automatiquement car le composant `ChartCard` accepte deja ce prop de facon optionnelle (s'il est vide, pas de picklist affiche).
-
-**Note** : Les charts `geo`, `evolution`, `revenue-trend` (area), `type-status`/`nature-resolution` (matrices) et `type-trend` sont des visuels speciaux. Pour `revenue-trend` et `type-trend`, les cross-variables fonctionnent si le composant sous-jacent supporte le stacking — a verifier pour chaque bloc.
-
-### Volume : ~50 lignes ajoutees/modifiees dans 1 fichier.
+Les données test contiennent déjà tous les champs requis (`is_title_in_current_owner_name`, `current_owner_legal_status`, `current_owner_nationality`, `property_title_type`, etc.).
 
