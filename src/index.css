@@ -54,9 +54,9 @@ All colors MUST be HSL.
     --shadow-elegant: 0 10px 30px -10px hsl(var(--seloger-red) / 0.15);
     --shadow-card: 0 4px 15px -5px hsl(var(--seloger-red) / 0.1);
     --shadow-hover: 0 8px 25px -8px hsl(var(--seloger-red) / 0.2);
-    /* Analytics shadows (doubled) */
-    --shadow-analytics: 0 24px 90px -10px hsl(var(--seloger-red) / 0.6);
-    --shadow-analytics-hover: 0 48px 150px -16px hsl(var(--seloger-red) / 1);
+    /* Analytics shadows - individual visible shadow per card */
+    --shadow-analytics: 0 10px 25px -5px hsl(0 0% 0% / 0.25), 0 8px 10px -6px hsl(var(--seloger-red) / 0.3);
+    --shadow-analytics-hover: 0 20px 40px -10px hsl(0 0% 0% / 0.35), 0 12px 20px -8px hsl(var(--seloger-red) / 0.5);
     
     /* Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
