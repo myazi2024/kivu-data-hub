@@ -128,7 +128,7 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
   return (
     <div className="flex flex-row lg:flex-col h-full w-full min-h-0 overflow-hidden">
       {/* Tabs */}
-      <div className="w-20 sm:w-24 lg:w-full shrink-0 border-r lg:border-r-0 lg:border-b border-border/40 bg-background overflow-y-auto overflow-x-hidden lg:overflow-y-hidden lg:overflow-x-auto scrollbar-hide">
+      <div className={`${isIdle ? 'w-8' : 'w-20 sm:w-24'} lg:w-full shrink-0 border-r lg:border-r-0 lg:border-b border-border/40 bg-background ${isIdle ? 'overflow-hidden' : 'overflow-y-auto overflow-x-hidden'} lg:overflow-y-hidden lg:overflow-x-auto scrollbar-hide transition-all duration-300`}>
         <div className="flex flex-col lg:flex-row lg:items-center gap-0.5 p-0.5 lg:w-max">
           {visibleTabs.map((tab) => {
             const isActive = activeTab === tab.key;
@@ -137,15 +137,15 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-1 px-1.5 py-1.5 lg:px-2 lg:py-1.5 text-[12px] sm:text-[13px] lg:text-[10px] whitespace-nowrap rounded-md transition-all ${
+                className={`flex items-center justify-center lg:justify-start gap-1 px-1.5 py-1.5 lg:px-2 lg:py-1.5 text-[12px] sm:text-[13px] lg:text-[10px] whitespace-nowrap rounded-md transition-all ${
                   isActive
                     ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/80'
                 }`}
                 title={tab.label}
               >
-                {IconComp && <IconComp className="h-3 w-3 shrink-0 hidden lg:block" />}
-                <span>{tab.label}</span>
+                {IconComp && <IconComp className="h-3 w-3 shrink-0" />}
+                {!isIdle && <span>{tab.label}</span>}
               </button>
             );
           })}
