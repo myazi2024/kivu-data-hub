@@ -226,6 +226,7 @@ export const generateParcels = async (parcelNumbers: string[]) => {
       house_number: houseNumber,
       whatsapp_number: `+243${seededInt(idx * 13 + 1, 810000000, 899999999)}`,
       has_dispute: idx % 10 === 0,
+      is_title_in_current_owner_name: idx % 3 !== 0,
       is_occupied: constructionNature ? (idx % 10 < 7 ? true : idx % 10 < 9 ? false : null) : null,
       occupant_count: constructionNature && idx % 10 < 7 ? randInt(1, 8) : null,
       hosting_capacity: constructionNature ? randInt(2, 15) : null,
