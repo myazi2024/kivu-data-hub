@@ -30,13 +30,14 @@ function extractOwners(contributions: any[]): any[] {
     list.forEach((o: any) => {
       owners.push({
         ...o,
-        // carry geo from contribution
         province: c.province,
         ville: c.ville,
         commune: c.commune,
         quartier: c.quartier,
         parcel_type: c.parcel_type,
         section_type: c.section_type,
+        is_title_in_current_owner_name: c.is_title_in_current_owner_name,
+        property_title_type: c.property_title_type,
       });
     });
   });
