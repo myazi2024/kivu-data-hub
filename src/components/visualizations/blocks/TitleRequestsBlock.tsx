@@ -257,7 +257,7 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
       { key: 'kpi-discordants', label: ct('kpi-discordants', 'Titres discordants'), value: discordants.length, cls: 'text-orange-600', tooltip: filtered.length > 0 ? `${Math.round((discordants.length / filtered.length) * 100)}% des parcelles` : '' },
     ];
     return all.filter(k => v(k.key));
-  }, [filtered, stats, owners, linkedOwnership, v, ct]);
+  }, [filtered, stats, owners, linkedOwnership, discordants, v, ct]);
 
   // ── Chart definitions ──
   const chartDefs = useMemo(() => [
