@@ -1,10 +1,10 @@
 import React, { useMemo, memo } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
-import { countBy, trendByMonth, getSectionType, avgProcessingDays, surfaceDistribution, sumByMonth } from '@/utils/analyticsHelpers';
+import { countBy, getSectionType } from '@/utils/analyticsHelpers';
 import { normalizeTitleType } from '@/utils/titleTypeNormalizer';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { FileText, Users, DollarSign, TrendingUp, Globe, Ruler, Clock, UserCheck, KeyRound } from 'lucide-react';
+import { FileText, Users, Globe, Clock, KeyRound, UserCheck, Scale, ArrowRightLeft } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, ColorMappedPieCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
@@ -20,145 +20,249 @@ const GENDER_COLORS: Record<string, string> = {
   'Autre': '#8b5cf6', '(Non renseigné)': '#9ca3af',
 };
 
+/** Extract flattened owner records from contributions' current_owners_details JSONB */
+function extractOwners(contributions: any[]): any[] {
+  const owners: any[] = [];
+  contributions.forEach(c => {
+    const details = c.current_owners_details;
+    if (!details) return;
+    const list = Array.isArray(details) ? details : [details];
+    list.forEach((o: any) => {
+      owners.push({
+        ...o,
+        // carry geo from contribution
+        province: c.province,
+        ville: c.ville,
+        commune: c.commune,
+        quartier: c.quartier,
+        parcel_type: c.parcel_type,
+        section_type: c.section_type,
+      });
+    });
+  });
+  return owners;
+}
+
+function durationBucket(years: number): string {
+  if (years < 1) return '< 1 an';
+  if (years < 3) return '1-2 ans';
+  if (years < 6) return '3-5 ans';
+  if (years < 11) return '6-10 ans';
+  if (years < 21) return '11-20 ans';
+  return '20+ ans';
+}
+
+function leaseBucket(years: number | null | undefined): string {
+  if (!years) return '(Non renseigné)';
+  if (years <= 5) return '1-5 ans';
+  if (years <= 10) return '6-10 ans';
+  if (years <= 25) return '11-25 ans';
+  return '25+ ans';
+}
+
 export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
-  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx, ty, ord } = useBlockFilter(TAB_KEY, data.titleRequests);
+  // Primary filter on parcels
+  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx, ty, ord } = useBlockFilter(TAB_KEY, data.parcels);
 
-  const byRequestType = useMemo(() => countBy(filtered, 'request_type'), [filtered]);
-  const byRequesterType = useMemo(() => countBy(filtered, 'requester_type'), [filtered]);
-  const byStatus = useMemo(() => countBy(filtered, 'status'), [filtered]);
-  const byPayment = useMemo(() => countBy(filtered, 'payment_status'), [filtered]);
-  const byOwnerLegalStatus = useMemo(() => countBy(filtered, 'owner_legal_status'), [filtered]);
-  const byDeducedTitleType = useMemo(() => countBy(filtered, 'deduced_title_type'), [filtered]);
-  const byNationality = useMemo(() => countBy(filtered, 'nationality'), [filtered]);
-  
-  const trend = useMemo(() => trendByMonth(filtered), [filtered]);
+  // Extract parcel IDs from filtered set for joining
+  const filteredParcelIds = useMemo(() => new Set(filtered.map(p => p.id)), [filtered]);
+  const filteredParcelNums = useMemo(() => new Set(filtered.map(p => p.parcel_number)), [filtered]);
 
-  const genderData = useMemo(() => {
+  // Filtered contributions linked to filtered parcels
+  const linkedContribs = useMemo(() =>
+    data.contributions.filter(c =>
+      (c.parcel_number && filteredParcelNums.has(c.parcel_number)) ||
+      (c.original_parcel_id && filteredParcelIds.has(c.original_parcel_id))
+    ), [data.contributions, filteredParcelNums, filteredParcelIds]);
+
+  // Filtered ownership history
+  const linkedOwnership = useMemo(() =>
+    data.ownershipHistory.filter(o => filteredParcelIds.has(o.parcel_id)),
+    [data.ownershipHistory, filteredParcelIds]);
+
+  // Denormalized owners from contributions
+  const owners = useMemo(() => extractOwners(linkedContribs), [linkedContribs]);
+
+  // ── Title type charts ──
+  const byTitleType = useMemo(() => {
     const map = new Map<string, number>();
-    filtered.forEach(r => {
-      const g = r.requester_gender || r.owner_gender;
-      if (g) map.set(g, (map.get(g) || 0) + 1);
+    filtered.forEach(p => {
+      const n = normalizeTitleType(p.property_title_type);
+      map.set(n, (map.get(n) || 0) + 1);
     });
     return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
   }, [filtered]);
 
-  const surfaceDist = useMemo(() => surfaceDistribution(filtered), [filtered]);
-  const ownerSameData = useMemo(() => countBy(filtered, 'requester_type'), [filtered]);
-  const byLeaseType = useMemo(() => countBy(data.parcels, 'lease_type'), [data.parcels]);
+  const byLeaseType = useMemo(() => countBy(filtered, 'lease_type'), [filtered]);
 
-  const byParcelTitleType = useMemo(() => {
+  const byLeaseDuration = useMemo(() => {
     const map = new Map<string, number>();
-    data.parcels.forEach(p => {
-      const normalized = normalizeTitleType(p.property_title_type);
-      map.set(normalized, (map.get(normalized) || 0) + 1);
+    filtered.forEach(p => {
+      const bucket = leaseBucket(p.lease_years);
+      map.set(bucket, (map.get(bucket) || 0) + 1);
+    });
+    return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
+  }, [filtered]);
+
+  const byIssueYear = useMemo(() => {
+    const map = new Map<string, number>();
+    filtered.forEach(p => {
+      const d = p.title_issue_date || p.created_at;
+      if (!d) return;
+      const y = new Date(d).getFullYear().toString();
+      map.set(y, (map.get(y) || 0) + 1);
+    });
+    return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [filtered]);
+
+  const issueTrend = useMemo(() => {
+    const map = new Map<string, number>();
+    filtered.forEach(p => {
+      const d = p.title_issue_date || p.created_at;
+      if (!d) return;
+      const dt = new Date(d);
+      const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`;
+      map.set(key, (map.get(key) || 0) + 1);
+    });
+    return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [filtered]);
+
+  // ── Owner charts (from contributions JSONB) ──
+  const byLegalStatus = useMemo(() => countBy(owners, 'legalStatus'), [owners]);
+
+  const genderData = useMemo(() => {
+    const physique = owners.filter(o => o.legalStatus === 'Personne physique');
+    const map = new Map<string, number>();
+    physique.forEach(o => {
+      const g = o.gender || '(Non renseigné)';
+      map.set(g, (map.get(g) || 0) + 1);
     });
     return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-  }, [data.parcels]);
+  }, [owners]);
 
-  const byParcelOwnerStatus = useMemo(() => countBy(data.parcels, 'current_owner_legal_status'), [data.parcels]);
+  const byNationality = useMemo(() => countBy(owners, 'nationality'), [owners]);
 
-  const revenueTrend = useMemo(() => sumByMonth(filtered.filter(r => r.payment_status === 'paid')), [filtered]);
+  const byEntityType = useMemo(() => {
+    const morale = owners.filter(o => o.legalStatus === 'Personne morale');
+    return countBy(morale, 'entityType');
+  }, [owners]);
 
+  const byRightType = useMemo(() => {
+    const etat = owners.filter(o => o.legalStatus === 'État');
+    return countBy(etat, 'rightType');
+  }, [owners]);
+
+  const ownerDuration = useMemo(() => {
+    const now = Date.now();
+    const map = new Map<string, number>();
+    owners.forEach(o => {
+      if (!o.since) return;
+      const years = (now - new Date(o.since).getTime()) / (365.25 * 24 * 3600 * 1000);
+      const bucket = durationBucket(years);
+      map.set(bucket, (map.get(bucket) || 0) + 1);
+    });
+    return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
+  }, [owners]);
+
+  // ── Ownership history charts ──
+  const byMutationType = useMemo(() => countBy(linkedOwnership, 'mutation_type'), [linkedOwnership]);
+  const byHistLegalStatus = useMemo(() => countBy(linkedOwnership, 'legal_status'), [linkedOwnership]);
+
+  const histDuration = useMemo(() => {
+    const map = new Map<string, number>();
+    linkedOwnership.forEach(o => {
+      if (!o.ownership_start_date || !o.ownership_end_date) return;
+      const years = (new Date(o.ownership_end_date).getTime() - new Date(o.ownership_start_date).getTime()) / (365.25 * 24 * 3600 * 1000);
+      const bucket = durationBucket(Math.max(0, years));
+      map.set(bucket, (map.get(bucket) || 0) + 1);
+    });
+    return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
+  }, [linkedOwnership]);
+
+  const transfersPerParcel = useMemo(() => {
+    const countMap = new Map<string, number>();
+    linkedOwnership.forEach(o => {
+      countMap.set(o.parcel_id, (countMap.get(o.parcel_id) || 0) + 1);
+    });
+    const dist = new Map<string, number>();
+    countMap.forEach(count => {
+      const label = count >= 5 ? '5+' : `${count}`;
+      dist.set(label, (dist.get(label) || 0) + 1);
+    });
+    return Array.from(dist.entries()).map(([name, value]) => ({ name: `${name} transfert${name === '1' ? '' : 's'}`, value })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [linkedOwnership]);
+
+  // ── KPIs ──
   const stats = useMemo(() => {
     const urbanCount = filtered.filter(r => getSectionType(r) === 'urbaine').length;
     const ruralCount = filtered.filter(r => getSectionType(r) === 'rurale').length;
-    const paid = filtered.filter(r => r.payment_status === 'paid');
-    const paidRevenue = paid.reduce((s, r) => s + (r.total_amount_usd || 0), 0);
-    const totalRevenue = filtered.reduce((s, r) => s + (r.total_amount_usd || 0), 0);
-    const approved = filtered.filter(r => r.status === 'approved').length;
-    const avgDays = avgProcessingDays(filtered, 'created_at', 'reviewed_at');
-    const withEstimate = filtered.filter(r => r.estimated_processing_days && r.reviewed_at && r.created_at);
-    const avgEstimated = withEstimate.length > 0
-      ? Math.round(withEstimate.reduce((s, r) => s + r.estimated_processing_days, 0) / withEstimate.length)
-      : 0;
-    return { urbanCount, ruralCount, paidRevenue, totalRevenue, approved, avgDays, avgEstimated };
-  }, [filtered]);
-
-  const processingComparison = useMemo(() => {
-    const result: { name: string; value: number }[] = [];
-    if (stats.avgEstimated > 0) result.push({ name: 'Estimé (j)', value: stats.avgEstimated });
-    if (stats.avgDays > 0) result.push({ name: 'Réel (j)', value: stats.avgDays });
-    return result;
-  }, [stats]);
-
-  const processingInsight = useMemo(() => {
-    if (processingComparison.length < 2) return '';
-    const diff = stats.avgDays - stats.avgEstimated;
-    if (diff > 0) return `Le traitement réel dépasse l'estimation de ${diff} jour${diff > 1 ? 's' : ''} en moyenne.`;
-    if (diff < 0) return `Le traitement est plus rapide que l'estimation de ${Math.abs(diff)} jour${Math.abs(diff) > 1 ? 's' : ''}.`;
-    return 'Le délai réel correspond à l\'estimation.';
-  }, [processingComparison, stats]);
-
-  const genderInsight = useMemo(() => {
-    if (genderData.length === 0) return '';
-    const total = genderData.reduce((s, d) => s + d.value, 0);
-    const fem = genderData.find(d => d.name === 'Féminin' || d.name === 'F');
-    if (fem) return `Les femmes représentent ${Math.round((fem.value / total) * 100)}% des demandeurs de titres.`;
-    return generateInsight(genderData, 'pie', 'les demandeurs');
-  }, [genderData]);
+    const congolais = owners.filter(o => o.nationality === 'Congolais (RD)').length;
+    const pctCongolais = owners.length > 0 ? Math.round((congolais / owners.length) * 100) : 0;
+    const now = Date.now();
+    const durations = owners.filter(o => o.since).map(o => (now - new Date(o.since).getTime()) / (365.25 * 24 * 3600 * 1000));
+    const avgDuration = durations.length > 0 ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : 0;
+    return { urbanCount, ruralCount, pctCongolais, avgDuration };
+  }, [filtered, owners]);
 
   const kpiItems = useMemo(() => {
     const all = [
-      { key: 'kpi-total', label: ct('kpi-total', 'Total'), value: filtered.length, cls: 'text-primary' },
+      { key: 'kpi-total', label: ct('kpi-total', 'Parcelles titrées'), value: filtered.length, cls: 'text-primary' },
       { key: 'kpi-urbaine', label: ct('kpi-urbaine', 'Urbaine'), value: stats.urbanCount, cls: 'text-emerald-600', tooltip: pct(stats.urbanCount, filtered.length) },
       { key: 'kpi-rurale', label: ct('kpi-rurale', 'Rurale'), value: stats.ruralCount, cls: 'text-amber-600', tooltip: pct(stats.ruralCount, filtered.length) },
-      { key: 'kpi-approval', label: ct('kpi-approval', 'Taux approbation'), value: pct(stats.approved, filtered.length), cls: 'text-blue-600', tooltip: `${stats.approved} approuvées` },
-      { key: 'kpi-revenue', label: ct('kpi-revenue', 'Revenus payés'), value: `$${stats.paidRevenue.toLocaleString()}`, cls: 'text-rose-600', tooltip: `Facturé: $${stats.totalRevenue.toLocaleString()}` },
-      { key: 'kpi-delay', label: ct('kpi-delay', 'Délai moy.'), value: stats.avgDays > 0 ? `${stats.avgDays}j` : 'N/A', cls: 'text-violet-600', tooltip: stats.avgEstimated > 0 ? `Estimé: ${stats.avgEstimated}j` : 'Délai moyen de traitement' },
+      { key: 'kpi-congolais', label: ct('kpi-congolais', '% Congolais'), value: `${stats.pctCongolais}%`, cls: 'text-blue-600', tooltip: `${owners.filter(o => o.nationality === 'Congolais (RD)').length} sur ${owners.length}` },
+      { key: 'kpi-anciennete', label: ct('kpi-anciennete', 'Ancienneté moy.'), value: stats.avgDuration > 0 ? `${stats.avgDuration} ans` : 'N/A', cls: 'text-violet-600' },
+      { key: 'kpi-mutations', label: ct('kpi-mutations', 'Mutations'), value: linkedOwnership.length, cls: 'text-rose-600' },
     ];
     return all.filter(k => v(k.key));
-  }, [filtered, stats, v, ct]);
+  }, [filtered, stats, owners, linkedOwnership, v, ct]);
 
+  // ── Chart definitions ──
   const chartDefs = useMemo(() => [
-    { key: 'request-type', el: () => <ChartCard title={ct('request-type', 'Type de demande')} icon={FileText} data={byRequestType} type={ty('request-type', 'bar-h')} colorIndex={0} labelWidth={100}
-      insight={generateInsight(byRequestType, 'bar-h', 'les types de demande')} crossVariables={cx('request-type')} rawRecords={filtered} groupField="request_type" /> },
-    { key: 'requester-type', el: () => <ChartCard title={ct('requester-type', 'Demandeur')} icon={Users} data={byRequesterType} type={ty('requester-type', 'donut')} colorIndex={1}
-      insight={generateInsight(byRequesterType, 'donut', 'les demandeurs')} crossVariables={cx('requester-type')} rawRecords={filtered} groupField="requester_type" /> },
-    { key: 'status', el: () => <ChartCard title={ct('status', 'Statut')} data={byStatus} type={ty('status', 'bar-v')} colorIndex={1}
-      insight={generateInsight(byStatus, 'bar-v', 'les statuts')} crossVariables={cx('status')} rawRecords={filtered} groupField="status" /> },
-    { key: 'payment', el: () => <ChartCard title={ct('payment', 'Paiement')} icon={DollarSign} data={byPayment} type={ty('payment', 'donut')} colorIndex={2}
-      insight={generateInsight(byPayment, 'donut', 'les paiements')} crossVariables={cx('payment')} rawRecords={filtered} groupField="payment_status" /> },
-    { key: 'legal-status', el: () => <ChartCard title={ct('legal-status', 'Statut juridique')} data={byOwnerLegalStatus} type={ty('legal-status', 'donut')} colorIndex={4}
-      insight={generateInsight(byOwnerLegalStatus, 'donut', 'les statuts juridiques')} crossVariables={cx('legal-status')} rawRecords={filtered} groupField="owner_legal_status" /> },
-    { key: 'gender', el: () => <ColorMappedPieCard title={ct('gender', 'Genre')} icon={Users} iconColor="text-pink-500" data={genderData} colorMap={GENDER_COLORS}
-      insight={genderInsight} crossVariables={cx('gender')} rawRecords={filtered} groupField="requester_gender" /> },
-    { key: 'nationality', el: () => <ChartCard title={ct('nationality', 'Nationalité')} icon={Globe} data={byNationality} type={ty('nationality', 'bar-h')} colorIndex={9} labelWidth={80} hidden={byNationality.length === 0}
-      insight={generateInsight(byNationality, 'bar-h', 'les nationalités')} crossVariables={cx('nationality')} rawRecords={filtered} groupField="nationality" /> },
-    { key: 'deduced-title', el: () => <ChartCard title={ct('deduced-title', 'Titre déduit')} data={byDeducedTitleType} type={ty('deduced-title', 'bar-h')} colorIndex={3} labelWidth={100} hidden={byDeducedTitleType.length === 0}
-      insight={generateInsight(byDeducedTitleType, 'bar-h', 'les types de titre')} crossVariables={cx('deduced-title')} rawRecords={filtered} groupField="deduced_title_type" /> },
-    { key: 'owner-same', el: () => <ChartCard title={ct('owner-same', 'Qualité du demandeur')} icon={UserCheck} data={ownerSameData} type={ty('owner-same', 'pie')} colorIndex={0} hidden={ownerSameData.length === 0}
-      insight={generateInsight(ownerSameData, 'pie', 'qualité du demandeur')} crossVariables={cx('owner-same')} rawRecords={filtered} groupField="requester_type" /> },
-    { key: 'surface', el: () => <ChartCard title={ct('surface', 'Superficie demandée')} icon={Ruler} data={surfaceDist} type={ty('surface', 'bar-v')} colorIndex={10} hidden={surfaceDist.length === 0}
-      insight={generateInsight(surfaceDist, 'bar-v', 'les superficies')} crossVariables={cx('surface')} rawRecords={filtered} groupField="area_sqm" /> },
-    { key: 'revenue-trend', el: () => <ChartCard title={ct('revenue-trend', 'Revenus/mois')} icon={DollarSign} data={revenueTrend} type={ty('revenue-trend', 'area')} colorIndex={2} hidden={revenueTrend.length < 2}
-      insight={generateInsight(revenueTrend, 'area', 'les revenus mensuels')} /> },
-    { key: 'processing-comparison', el: () => <ChartCard title={ct('processing-comparison', 'Délai estimé vs réel')} icon={Clock} data={processingComparison} type={ty('processing-comparison', 'bar-v')} colorIndex={5} hidden={processingComparison.length === 0}
-      insight={processingInsight} /> },
-    { key: 'lease-type', el: () => <ChartCard title={ct('lease-type', 'Type de bail')} icon={KeyRound} data={byLeaseType} type={ty('lease-type', 'bar-h')} colorIndex={13} hidden={byLeaseType.length === 0}
-      insight={generateInsight(byLeaseType, 'bar-h', 'les types de bail')} crossVariables={cx('lease-type')} rawRecords={data.parcels} groupField="lease_type" /> },
-    { key: 'parcel-title-type', el: () => <ChartCard title={ct('parcel-title-type', 'Type de titre (cadastre)')} icon={FileText} data={byParcelTitleType} type={ty('parcel-title-type', 'bar-h')} colorIndex={7} labelWidth={120} hidden={byParcelTitleType.length === 0}
-      insight={generateInsight(byParcelTitleType, 'bar-h', 'les types de titre cadastrés')} crossVariables={cx('parcel-title-type')} rawRecords={data.parcels} groupField="property_title_type" /> },
-    { key: 'parcel-owner-status', el: () => <ChartCard title={ct('parcel-owner-status', 'Propriétaire actuel (cadastre)')} icon={UserCheck} data={byParcelOwnerStatus} type={ty('parcel-owner-status', 'donut')} colorIndex={8} hidden={byParcelOwnerStatus.length === 0}
-      insight={generateInsight(byParcelOwnerStatus, 'donut', 'les statuts des propriétaires cadastrés')} crossVariables={cx('parcel-owner-status')} rawRecords={data.parcels} groupField="current_owner_legal_status" /> },
+    // Title type block
+    { key: 'title-type', el: () => <ChartCard title={ct('title-type', 'Type de titre')} icon={FileText} data={byTitleType} type={ty('title-type', 'bar-h')} colorIndex={0} labelWidth={120}
+      insight={generateInsight(byTitleType, 'bar-h', 'les types de titre')} crossVariables={cx('title-type')} rawRecords={filtered} groupField="property_title_type" /> },
+    { key: 'lease-type', el: () => <ChartCard title={ct('lease-type', 'Type de bail')} icon={KeyRound} data={byLeaseType} type={ty('lease-type', 'pie')} colorIndex={13} hidden={byLeaseType.length === 0}
+      insight={generateInsight(byLeaseType, 'pie', 'les types de bail')} crossVariables={cx('lease-type')} rawRecords={filtered} groupField="lease_type" /> },
+    { key: 'lease-duration', el: () => <ChartCard title={ct('lease-duration', 'Durée de bail')} data={byLeaseDuration} type={ty('lease-duration', 'bar-v')} colorIndex={5} hidden={byLeaseDuration.length === 0}
+      insight={generateInsight(byLeaseDuration, 'bar-v', 'les durées de bail')} /> },
+    { key: 'issue-year', el: () => <ChartCard title={ct('issue-year', 'Année de délivrance')} data={byIssueYear} type={ty('issue-year', 'bar-v')} colorIndex={2} hidden={byIssueYear.length === 0}
+      insight={generateInsight(byIssueYear, 'bar-v', 'les années de délivrance')} /> },
+    { key: 'issue-trend', el: () => <ChartCard title={ct('issue-trend', 'Évolution des titres')} data={issueTrend} type={ty('issue-trend', 'area')} colorIndex={0} colSpan={2} hidden={issueTrend.length < 2}
+      insight={generateInsight(issueTrend, 'area', 'l\'évolution des titres')} /> },
+
+    // Owner block
+    { key: 'legal-status', el: () => <ChartCard title={ct('legal-status', 'Statut juridique')} icon={Scale} data={byLegalStatus} type={ty('legal-status', 'donut')} colorIndex={4} hidden={byLegalStatus.length === 0}
+      insight={generateInsight(byLegalStatus, 'donut', 'les statuts juridiques')} /> },
+    { key: 'gender', el: () => <ColorMappedPieCard title={ct('gender', 'Genre (pers. physique)')} icon={Users} iconColor="text-pink-500" data={genderData} colorMap={GENDER_COLORS} hidden={genderData.length === 0}
+      insight={generateInsight(genderData, 'pie', 'le genre des propriétaires')} /> },
+    { key: 'nationality', el: () => <ChartCard title={ct('nationality', 'Nationalité')} icon={Globe} data={byNationality} type={ty('nationality', 'pie')} colorIndex={9} hidden={byNationality.length === 0}
+      insight={generateInsight(byNationality, 'pie', 'les nationalités')} /> },
+    { key: 'entity-type', el: () => <ChartCard title={ct('entity-type', 'Type d\'entité (pers. morale)')} data={byEntityType} type={ty('entity-type', 'bar-h')} colorIndex={7} labelWidth={100} hidden={byEntityType.length === 0}
+      insight={generateInsight(byEntityType, 'bar-h', 'les types d\'entité')} /> },
+    { key: 'right-type', el: () => <ChartCard title={ct('right-type', 'Droit de l\'État')} data={byRightType} type={ty('right-type', 'pie')} colorIndex={11} hidden={byRightType.length === 0}
+      insight={generateInsight(byRightType, 'pie', 'les droits étatiques')} /> },
+    { key: 'owner-duration', el: () => <ChartCard title={ct('owner-duration', 'Ancienneté de détention')} icon={Clock} data={ownerDuration} type={ty('owner-duration', 'bar-v')} colorIndex={3} hidden={ownerDuration.length === 0}
+      insight={generateInsight(ownerDuration, 'bar-v', 'l\'ancienneté de détention')} /> },
+
+    // Ownership history block
+    { key: 'mutation-type', el: () => <ChartCard title={ct('mutation-type', 'Type de mutation')} icon={ArrowRightLeft} data={byMutationType} type={ty('mutation-type', 'bar-h')} colorIndex={1} labelWidth={100} hidden={byMutationType.length === 0}
+      insight={generateInsight(byMutationType, 'bar-h', 'les types de mutation')} /> },
+    { key: 'hist-legal-status', el: () => <ChartCard title={ct('hist-legal-status', 'Statut juridique (anciens)')} data={byHistLegalStatus} type={ty('hist-legal-status', 'donut')} colorIndex={8} hidden={byHistLegalStatus.length === 0}
+      insight={generateInsight(byHistLegalStatus, 'donut', 'les statuts juridiques historiques')} /> },
+    { key: 'hist-duration', el: () => <ChartCard title={ct('hist-duration', 'Durée détention (anciens)')} data={histDuration} type={ty('hist-duration', 'bar-v')} colorIndex={6} hidden={histDuration.length === 0}
+      insight={generateInsight(histDuration, 'bar-v', 'la durée de détention historique')} /> },
+    { key: 'transfers-per-parcel', el: () => <ChartCard title={ct('transfers-per-parcel', 'Transferts par parcelle')} icon={UserCheck} data={transfersPerParcel} type={ty('transfers-per-parcel', 'bar-v')} colorIndex={10} hidden={transfersPerParcel.length === 0}
+      insight={generateInsight(transfersPerParcel, 'bar-v', 'les transferts par parcelle')} /> },
+
+    // Geo
     { key: 'geo', el: () => <GeoCharts records={filtered} /> },
-    { key: 'subdivided', el: () => {
-      const lotie = data.parcels.filter(p => p.is_subdivided === true).length;
-      const nonLotie = data.parcels.filter(p => p.is_subdivided === false).length;
-      const subdivData = [
-        ...(lotie > 0 ? [{ name: 'Loties', value: lotie }] : []),
-        ...(nonLotie > 0 ? [{ name: 'Non loties', value: nonLotie }] : []),
-      ];
-      return <ChartCard title={ct('subdivided', 'Loties vs Non loties')} data={subdivData} type={ty('subdivided', 'pie')} colorIndex={3} hidden={subdivData.length === 0}
-        insight={generateInsight(subdivData, 'pie', 'le lotissement des parcelles')} crossVariables={cx('subdivided')} rawRecords={data.parcels} groupField="is_subdivided" />;
-    }},
-    { key: 'evolution', el: () => <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type={ty('evolution', 'area')} colorIndex={0} colSpan={2}
-      insight={generateInsight(trend, 'area', 'les demandes de titres')} /> },
-  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filtered, byRequestType, byRequesterType, byStatus, byPayment, byOwnerLegalStatus, genderData, byNationality, byDeducedTitleType, ownerSameData, surfaceDist, revenueTrend, processingComparison, trend, genderInsight, processingInsight, byLeaseType, byParcelTitleType, byParcelOwnerStatus, data.parcels, v, ct, cx, ty, ord]);
+  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)),
+  [filtered, byTitleType, byLeaseType, byLeaseDuration, byIssueYear, issueTrend, byLegalStatus, genderData, byNationality, byEntityType, byRightType, ownerDuration, byMutationType, byHistLegalStatus, histDuration, transfersPerParcel, v, ct, cx, ty, ord]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
-      <AnalyticsFilters data={data.titleRequests} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} />
+      <AnalyticsFilters data={data.parcels} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} />
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {chartDefs.map(d => <React.Fragment key={d.key}>{d.el()}</React.Fragment>)}

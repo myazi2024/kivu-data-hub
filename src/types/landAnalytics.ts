@@ -38,6 +38,7 @@ export interface ParcelRecord extends GeoFields {
   hosting_capacity?: number | null;
   floor_number?: string | null;
   additional_constructions?: any;
+  title_issue_date?: string | null;
   created_at: string;
 }
 
