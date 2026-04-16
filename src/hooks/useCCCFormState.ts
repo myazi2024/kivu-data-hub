@@ -103,7 +103,7 @@ export const useCCCFormState = ({
   const [currentOwners, setCurrentOwners] = useState<CurrentOwner[]>([{
     lastName: '', middleName: '', firstName: '', legalStatus: 'Personne physique',
     gender: '', entityType: '', entitySubType: '', entitySubTypeOther: '',
-    stateExploitedBy: '', rightType: '', since: '', previousTitleType: '', previousTitleCustomName: ''
+    stateExploitedBy: '', rightType: '', since: '', nationality: '', previousTitleType: '', previousTitleCustomName: ''
   }]);
 
   const [taxRecords, setTaxRecords] = useState<TaxRecord[]>([{
@@ -1489,7 +1489,7 @@ export const useCCCFormState = ({
     setCurrentOwners([{
       lastName: '', middleName: '', firstName: '', legalStatus: 'Personne physique',
       gender: '', entityType: '', entitySubType: '', entitySubTypeOther: '',
-      stateExploitedBy: '', rightType: '', since: '', previousTitleType: '', previousTitleCustomName: ''
+      stateExploitedBy: '', rightType: '', since: '', nationality: '', previousTitleType: '', previousTitleCustomName: ''
     }]);
     setOwnershipMode('unique');
     setOwnerDocFile(null);
