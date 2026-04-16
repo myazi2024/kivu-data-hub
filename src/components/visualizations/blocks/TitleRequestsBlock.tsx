@@ -71,9 +71,8 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
   // Filtered contributions linked to filtered parcels
   const linkedContribs = useMemo(() =>
     data.contributions.filter(c =>
-      (c.parcel_number && filteredParcelNums.has(c.parcel_number)) ||
-      (c.original_parcel_id && filteredParcelIds.has(c.original_parcel_id))
-    ), [data.contributions, filteredParcelNums, filteredParcelIds]);
+      filteredParcelNums.has(c.parcel_number)
+    ), [data.contributions, filteredParcelNums]);
 
   // Filtered ownership history
   const linkedOwnership = useMemo(() =>
@@ -233,7 +232,7 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
     // Owner block
     { key: 'legal-status', el: () => <ChartCard title={ct('legal-status', 'Statut juridique')} icon={Scale} data={byLegalStatus} type={ty('legal-status', 'donut')} colorIndex={4} hidden={byLegalStatus.length === 0}
       insight={generateInsight(byLegalStatus, 'donut', 'les statuts juridiques')} /> },
-    { key: 'gender', el: () => <ColorMappedPieCard title={ct('gender', 'Genre (pers. physique)')} icon={Users} iconColor="text-pink-500" data={genderData} colorMap={GENDER_COLORS} hidden={genderData.length === 0}
+    { key: 'gender', el: () => genderData.length === 0 ? null : <ColorMappedPieCard title={ct('gender', 'Genre (pers. physique)')} icon={Users} iconColor="text-pink-500" data={genderData} colorMap={GENDER_COLORS}
       insight={generateInsight(genderData, 'pie', 'le genre des propriétaires')} /> },
     { key: 'nationality', el: () => <ChartCard title={ct('nationality', 'Nationalité')} icon={Globe} data={byNationality} type={ty('nationality', 'pie')} colorIndex={9} hidden={byNationality.length === 0}
       insight={generateInsight(byNationality, 'pie', 'les nationalités')} /> },
