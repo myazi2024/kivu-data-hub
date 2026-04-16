@@ -318,8 +318,17 @@ export const AnalyticsFilters: React.FC<Props> = ({
         )}
 
 
-        {hasActiveFilters && (
-          <Button variant="ghost" size="sm" className="h-5 text-[10px] px-1.5 ml-auto" onClick={reset}><X className="h-2.5 w-2.5" /></Button>
+        {(hasActiveFilters || onExport) && (
+          <div className="flex items-center gap-0.5 ml-auto">
+            {onExport && (
+              <Button variant="ghost" size="sm" className="h-5 text-[10px] px-1.5" onClick={onExport} title="Exporter en CSV">
+                <Download className="h-2.5 w-2.5" />
+              </Button>
+            )}
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" className="h-5 text-[10px] px-1.5" onClick={reset}><X className="h-2.5 w-2.5" /></Button>
+            )}
+          </div>
         )}
       </div>
       )}
