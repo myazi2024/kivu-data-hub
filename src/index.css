@@ -473,11 +473,3 @@ All colors MUST be HSL.
 .animate-marquee:hover {
   animation-play-state: paused;
 }
-
-/* Hide scrollbar when idle (analytics) */
-.hide-scrollbar {
-  scrollbar-width: none;
-}
-.hide-scrollbar::-webkit-scrollbar {
-  display: none;
-}
