@@ -51,6 +51,7 @@ interface MultiDataPieProps {
   title: string;
   icon?: LucideIcon;
   iconColor?: string;
+  data: { name: string; value: number }[];
   colorMap?: Record<string, string>;
   insight?: string | ChartInsight;
   crossVariables?: CrossVariable[];
@@ -463,6 +464,8 @@ export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
 interface MultiAreaSeries { key: string; label: string; data: { name: string; value: number }[] }
 interface MultiAreaChartCardProps {
   title: string;
+  icon?: LucideIcon;
+  iconColor?: string;
   colSpan?: number;
   series: MultiAreaSeries[];
   insight?: string | ChartInsight;
