@@ -15,7 +15,7 @@ interface Props { data: LandAnalyticsData; }
 const TAB_KEY = 'taxes';
 
 export const TaxesBlock: React.FC<Props> = memo(({ data }) => {
-  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx, ty, ord } = useBlockFilter(TAB_KEY, data.taxHistory);
+  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx, ty, ord, exportCSV } = useBlockFilter(TAB_KEY, data.taxHistory);
 
   const byStatus = useMemo(() => countBy(filtered, 'payment_status'), [filtered]);
   const byYear = useMemo(() => {
@@ -71,7 +71,7 @@ export const TaxesBlock: React.FC<Props> = memo(({ data }) => {
   return (
     <FilterLabelContext.Provider value={filterLabel}>
       <div className="space-y-2">
-        <AnalyticsFilters data={data.taxHistory} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} />
+        <AnalyticsFilters data={data.taxHistory} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} onExport={() => exportCSV(['parcel_id', 'province', 'tax_year', 'payment_status', 'amount_usd', 'payment_date', 'created_at'])} />
         <KpiGrid items={kpiItems} />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {chartDefs.map(d => <React.Fragment key={d.key}>{d.el()}</React.Fragment>)}

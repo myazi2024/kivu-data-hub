@@ -63,7 +63,7 @@ function leaseBucket(years: number | null | undefined): string {
 
 export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
   // Primary filter on parcels
-  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx, ty, ord } = useBlockFilter(TAB_KEY, data.parcels);
+  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx, ty, ord, exportCSV } = useBlockFilter(TAB_KEY, data.parcels);
 
   // Extract parcel IDs from filtered set for joining
   const filteredParcelIds = useMemo(() => new Set(filtered.map(p => p.id)), [filtered]);
@@ -313,7 +313,7 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
   return (
     <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
-      <AnalyticsFilters data={data.parcels} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} />
+      <AnalyticsFilters data={data.parcels} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} onExport={() => exportCSV(['parcel_number', 'province', 'ville', 'commune', 'quartier', 'property_title_type', 'current_owner_legal_status', 'declared_usage', 'area_sqm', 'lease_type', 'lease_years', 'created_at'])} />
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {chartDefs.map(d => <React.Fragment key={d.key}>{d.el()}</React.Fragment>)}
