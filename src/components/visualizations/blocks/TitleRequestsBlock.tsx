@@ -267,15 +267,15 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'lease-type', el: () => <ChartCard title={ct('lease-type', 'Type de bail')} icon={KeyRound} data={byLeaseType} type={ty('lease-type', 'pie')} colorIndex={13} hidden={byLeaseType.length === 0}
       insight={generateInsight(byLeaseType, 'pie', 'les types de bail')} crossVariables={cx('lease-type')} rawRecords={filtered} groupField="lease_type" /> },
     { key: 'lease-duration', el: () => <ChartCard title={ct('lease-duration', 'Durée de bail')} data={byLeaseDuration} type={ty('lease-duration', 'bar-v')} colorIndex={5} hidden={byLeaseDuration.length === 0}
-      insight={generateInsight(byLeaseDuration, 'bar-v', 'les durées de bail')} /> },
+      insight={generateInsight(byLeaseDuration, 'bar-v', 'les durées de bail')} crossVariables={cx('lease-duration')} rawRecords={filtered} groupField="lease_years" /> },
     { key: 'issue-year', el: () => <ChartCard title={ct('issue-year', 'Année de délivrance')} data={byIssueYear} type={ty('issue-year', 'bar-v')} colorIndex={2} hidden={byIssueYear.length === 0}
-      insight={generateInsight(byIssueYear, 'bar-v', 'les années de délivrance')} /> },
+      insight={generateInsight(byIssueYear, 'bar-v', 'les années de délivrance')} crossVariables={cx('issue-year')} rawRecords={filtered} groupField="title_issue_date" /> },
     { key: 'issue-trend', el: () => <ChartCard title={ct('issue-trend', 'Évolution des titres')} data={issueTrend} type={ty('issue-trend', 'area')} colorIndex={0} colSpan={2} hidden={issueTrend.length < 2}
-      insight={generateInsight(issueTrend, 'area', 'l\'évolution des titres')} /> },
+      insight={generateInsight(issueTrend, 'area', 'l\'évolution des titres')} crossVariables={cx('issue-trend')} rawRecords={filtered} groupField="title_issue_date" /> },
 
     // Owner block
     { key: 'legal-status', el: () => <ChartCard title={ct('legal-status', 'Statut juridique')} icon={Scale} data={byLegalStatus} type={ty('legal-status', 'donut')} colorIndex={4} hidden={byLegalStatus.length === 0}
-      insight={generateInsight(byLegalStatus, 'donut', 'les statuts juridiques')} /> },
+      insight={generateInsight(byLegalStatus, 'donut', 'les statuts juridiques')} crossVariables={cx('legal-status')} rawRecords={filtered} groupField="current_owner_legal_status" /> },
     { key: 'gender', el: () => genderData.length === 0 ? null : <ColorMappedPieCard title={ct('gender', 'Genre (pers. physique)')} icon={Users} iconColor="text-pink-500" data={genderData} colorMap={GENDER_COLORS}
       insight={generateInsight(genderData, 'pie', 'le genre des propriétaires')} /> },
     { key: 'nationality', el: () => <ChartCard title={ct('nationality', 'Nationalité')} icon={Globe} data={byNationality} type={ty('nationality', 'pie')} colorIndex={9} hidden={byNationality.length === 0}
@@ -285,7 +285,7 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'right-type', el: () => <ChartCard title={ct('right-type', 'Droit de l\'État')} data={byRightType} type={ty('right-type', 'pie')} colorIndex={11} hidden={byRightType.length === 0}
       insight={generateInsight(byRightType, 'pie', 'les droits étatiques')} /> },
     { key: 'owner-duration', el: () => <ChartCard title={ct('owner-duration', 'Ancienneté de détention')} icon={Clock} data={ownerDuration} type={ty('owner-duration', 'bar-v')} colorIndex={3} hidden={ownerDuration.length === 0}
-      insight={generateInsight(ownerDuration, 'bar-v', 'l\'ancienneté de détention')} /> },
+      insight={generateInsight(ownerDuration, 'bar-v', 'l\'ancienneté de détention')} crossVariables={cx('owner-duration')} rawRecords={filtered} groupField="property_title_type" /> },
 
     // Ownership history block
     { key: 'mutation-type', el: () => <ChartCard title={ct('mutation-type', 'Type de mutation')} icon={ArrowRightLeft} data={byMutationType} type={ty('mutation-type', 'bar-h')} colorIndex={1} labelWidth={100} hidden={byMutationType.length === 0}
