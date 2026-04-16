@@ -254,6 +254,7 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
       { key: 'kpi-congolais', label: ct('kpi-congolais', '% Congolais'), value: `${stats.pctCongolais}%`, cls: 'text-blue-600', tooltip: `${owners.filter(o => o.nationality === 'Congolais (RD)').length} sur ${owners.length}` },
       { key: 'kpi-anciennete', label: ct('kpi-anciennete', 'Ancienneté moy.'), value: stats.avgDuration > 0 ? `${stats.avgDuration} ans` : 'N/A', cls: 'text-violet-600' },
       { key: 'kpi-mutations', label: ct('kpi-mutations', 'Mutations'), value: linkedOwnership.length, cls: 'text-rose-600' },
+      { key: 'kpi-discordants', label: ct('kpi-discordants', 'Titres discordants'), value: discordants.length, cls: 'text-orange-600', tooltip: filtered.length > 0 ? `${Math.round((discordants.length / filtered.length) * 100)}% des parcelles` : '' },
     ];
     return all.filter(k => v(k.key));
   }, [filtered, stats, owners, linkedOwnership, v, ct]);
@@ -296,10 +297,18 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'transfers-per-parcel', el: () => <ChartCard title={ct('transfers-per-parcel', 'Transferts par parcelle')} icon={UserCheck} data={transfersPerParcel} type={ty('transfers-per-parcel', 'bar-v')} colorIndex={10} hidden={transfersPerParcel.length === 0}
       insight={generateInsight(transfersPerParcel, 'bar-v', 'les transferts par parcelle')} /> },
 
+    // Title/owner concordance block
+    { key: 'title-owner-match', el: () => <ChartCard title={ct('title-owner-match', 'Concordance titre / propriétaire')} icon={ShieldCheck} data={titleOwnerMatch} type={ty('title-owner-match', 'donut')} colorIndex={12} hidden={titleOwnerMatch.length === 0}
+      insight={generateInsight(titleOwnerMatch, 'donut', 'la concordance titre/propriétaire')} /> },
+    { key: 'mutation-urgency', el: () => <ChartCard title={ct('mutation-urgency', 'Urgence de mutation')} icon={AlertTriangle} data={mutationUrgency} type={ty('mutation-urgency', 'bar-h')} colorIndex={14} labelWidth={140} hidden={mutationUrgency.length === 0}
+      insight={generateInsight(mutationUrgency, 'bar-h', 'l\'urgence de mutation')} /> },
+    { key: 'mismatch-by-title-type', el: () => <ChartCard title={ct('mismatch-by-title-type', 'Discordants par type de titre')} icon={FileText} data={mismatchByTitleType} type={ty('mismatch-by-title-type', 'bar-v')} colorIndex={15} hidden={mismatchByTitleType.length === 0}
+      insight={generateInsight(mismatchByTitleType, 'bar-v', 'les discordants par type de titre')} /> },
+
     // Geo
     { key: 'geo', el: () => <GeoCharts records={filtered} /> },
   ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)),
-  [filtered, byTitleType, byLeaseType, byLeaseDuration, byIssueYear, issueTrend, byLegalStatus, genderData, byNationality, byEntityType, byRightType, ownerDuration, byMutationType, byHistLegalStatus, histDuration, transfersPerParcel, v, ct, cx, ty, ord]);
+  [filtered, byTitleType, byLeaseType, byLeaseDuration, byIssueYear, issueTrend, byLegalStatus, genderData, byNationality, byEntityType, byRightType, ownerDuration, byMutationType, byHistLegalStatus, histDuration, transfersPerParcel, titleOwnerMatch, mutationUrgency, mismatchByTitleType, discordants, v, ct, cx, ty, ord]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
