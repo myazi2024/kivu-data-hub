@@ -4,7 +4,7 @@ import { countBy, getSectionType } from '@/utils/analyticsHelpers';
 import { normalizeTitleType } from '@/utils/titleTypeNormalizer';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { FileText, Users, Globe, Clock, KeyRound, UserCheck, Scale, ArrowRightLeft } from 'lucide-react';
+import { FileText, Users, Globe, Clock, KeyRound, UserCheck, Scale, ArrowRightLeft, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, ColorMappedPieCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
