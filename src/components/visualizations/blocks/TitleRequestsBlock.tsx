@@ -153,7 +153,7 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
     }},
     { key: 'evolution', el: () => <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type={ty('evolution', 'area')} colorIndex={0} colSpan={2}
       insight={generateInsight(trend, 'area', 'les demandes de titres')} /> },
-  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filtered, byRequestType, byRequesterType, byStatus, byPayment, byOwnerLegalStatus, genderData, byNationality, byDeducedTitleType, ownerSameData, surfaceDist, revenueTrend, processingComparison, trend, genderInsight, processingInsight, byLeaseType, data.parcels, v, ct, cx, ty, ord]);
+  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filtered, byRequestType, byRequesterType, byStatus, byPayment, byOwnerLegalStatus, genderData, byNationality, byDeducedTitleType, ownerSameData, surfaceDist, revenueTrend, processingComparison, trend, genderInsight, processingInsight, byLeaseType, byParcelTitleType, byParcelOwnerStatus, data.parcels, v, ct, cx, ty, ord]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
