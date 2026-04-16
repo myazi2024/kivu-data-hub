@@ -243,16 +243,24 @@ export const AnalyticsFilters: React.FC<Props> = ({
 
   const resetIdleTimer = useCallback(() => {
     setFiltersVisible(true);
+    document.body.classList.remove('cursor-none');
     clearTimeout(idleTimerRef.current);
-    idleTimerRef.current = setTimeout(() => setFiltersVisible(false), 3000);
+    idleTimerRef.current = setTimeout(() => {
+      setFiltersVisible(false);
+      document.body.classList.add('cursor-none');
+    }, 3000);
   }, []);
 
   useEffect(() => {
     document.addEventListener('mousemove', resetIdleTimer);
-    idleTimerRef.current = setTimeout(() => setFiltersVisible(false), 3000);
+    idleTimerRef.current = setTimeout(() => {
+      setFiltersVisible(false);
+      document.body.classList.add('cursor-none');
+    }, 3000);
     return () => {
       document.removeEventListener('mousemove', resetIdleTimer);
       clearTimeout(idleTimerRef.current);
+      document.body.classList.remove('cursor-none');
     };
   }, [resetIdleTimer]);
 
