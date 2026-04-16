@@ -6,20 +6,11 @@ export interface CrossVariable {
 
 export const CROSS_VARIABLE_REGISTRY: Record<string, Record<string, CrossVariable[]>> = {
   'title-requests': {
-    'request-type': [{ label: 'Statut', field: 'status' }, { label: 'Paiement', field: 'payment_status' }, { label: 'Province', field: 'province' }, { label: 'Usage', field: 'declared_usage' }],
-    'requester-type': [{ label: 'Statut', field: 'status' }, { label: 'Genre', field: 'requester_gender' }, { label: 'Province', field: 'province' }],
-    'status': [{ label: 'Type demande', field: 'request_type' }, { label: 'Paiement', field: 'payment_status' }, { label: 'Province', field: 'province' }],
-    'payment': [{ label: 'Statut', field: 'status' }, { label: 'Type demande', field: 'request_type' }, { label: 'Province', field: 'province' }],
-    'legal-status': [{ label: 'Usage', field: 'declared_usage' }, { label: 'Province', field: 'province' }, { label: 'Statut', field: 'status' }],
-    'gender': [{ label: 'Statut', field: 'status' }, { label: 'Type demande', field: 'request_type' }, { label: 'Province', field: 'province' }],
-    'nationality': [{ label: 'Statut', field: 'status' }, { label: 'Province', field: 'province' }],
-    'deduced-title': [{ label: 'Statut', field: 'status' }, { label: 'Province', field: 'province' }],
-    'owner-same': [{ label: 'Statut', field: 'status' }, { label: 'Province', field: 'province' }],
-    'surface': [{ label: 'Province', field: 'province' }, { label: 'Usage', field: 'declared_usage' }, { label: 'Statut', field: 'status' }],
+    'title-type': [{ label: 'Province', field: 'province' }, { label: 'Usage', field: 'declared_usage' }, { label: 'Statut juridique', field: 'current_owner_legal_status' }],
     'lease-type': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }],
-    'subdivided': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }],
-    'parcel-title-type': [{ label: 'Province', field: 'province' }, { label: 'Usage', field: 'declared_usage' }],
-    'parcel-owner-status': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }],
+    'legal-status': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }],
+    'nationality': [{ label: 'Province', field: 'province' }],
+    'gender': [{ label: 'Province', field: 'province' }],
   },
   'parcels-titled': {
     'built-vs-unbuilt': [{ label: 'Province', field: 'province' }, { label: 'Usage', field: 'declared_usage' }, { label: 'Statut juridique', field: 'current_owner_legal_status' }],
