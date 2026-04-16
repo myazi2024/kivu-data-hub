@@ -39,7 +39,7 @@ export interface TabFilterConfig {
 
 /** Default filter settings per tab (matches current hardcoded behavior) */
 const TAB_FILTER_DEFAULTS: Record<string, TabFilterConfig> = {
-  'title-requests': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
+  'title-requests': { hideStatus: true, hideTime: false, hideLocation: false, dateField: 'title_issue_date' },
   'parcels-titled': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
   'contributions': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
   'expertise': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },

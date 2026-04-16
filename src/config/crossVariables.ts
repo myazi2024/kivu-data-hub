@@ -8,9 +8,11 @@ export const CROSS_VARIABLE_REGISTRY: Record<string, Record<string, CrossVariabl
   'title-requests': {
     'title-type': [{ label: 'Province', field: 'province' }, { label: 'Usage', field: 'declared_usage' }, { label: 'Statut juridique', field: 'current_owner_legal_status' }],
     'lease-type': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }],
+    'lease-duration': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }],
+    'issue-year': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }],
+    'issue-trend': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }],
     'legal-status': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }],
-    'nationality': [{ label: 'Province', field: 'province' }],
-    'gender': [{ label: 'Province', field: 'province' }],
+    'owner-duration': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }],
   },
   'parcels-titled': {
     'built-vs-unbuilt': [{ label: 'Province', field: 'province' }, { label: 'Usage', field: 'declared_usage' }, { label: 'Statut juridique', field: 'current_owner_legal_status' }],
