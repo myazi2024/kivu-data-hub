@@ -95,7 +95,7 @@ export const SubdivisionBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'surface', el: () => <ChartCard title={ct('surface', 'Surface parcelle mère')} icon={Ruler} data={surfaceDist} type={ty('surface', 'bar-v')} colorIndex={5} hidden={surfaceDist.length === 0}
       insight={generateInsight(surfaceDist, 'bar-v', 'les surfaces des parcelles mères')} crossVariables={cx('surface')} rawRecords={filtered} groupField="parent_parcel_area_sqm" /> },
     { key: 'revenue-trend', el: () => <ChartCard title={ct('revenue-trend', 'Revenus/mois')} icon={DollarSign} data={revenueTrend} type={ty('revenue-trend', 'area')} colorIndex={2} hidden={revenueTrend.length < 2}
-      insight={generateInsight(revenueTrend, 'area', 'les revenus de lotissement')} /> },
+      insight={generateInsight(revenueTrend, 'area', 'les revenus de lotissement')} crossVariables={cx('revenue-trend')} rawRecords={filtered} groupField="purpose_of_subdivision" /> },
     { key: 'geo', el: () => <GeoCharts records={filtered} /> },
     { key: 'evolution', el: () => <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type={ty('evolution', 'area')} colorIndex={7} colSpan={2}
       insight={generateInsight(trend, 'area', 'les demandes de lotissement')} /> },
