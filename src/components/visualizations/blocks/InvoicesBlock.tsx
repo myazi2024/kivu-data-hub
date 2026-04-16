@@ -48,7 +48,7 @@ export const InvoicesBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'geo-zone', el: () => <ChartCard title={ct('geo-zone', 'Zone géographique')} icon={MapPin} data={byGeoZone} type={ty('geo-zone', 'bar-h')} colorIndex={6} labelWidth={100} hidden={byGeoZone.length === 0}
       insight={generateInsight(byGeoZone, 'bar-h', 'les zones géographiques')} crossVariables={cx('geo-zone')} rawRecords={filtered} groupField="geographical_zone" /> },
     { key: 'revenue-trend', el: () => <ChartCard title={ct('revenue-trend', 'Revenus/mois')} icon={DollarSign} data={revenueTrend} type={ty('revenue-trend', 'area')} colorIndex={2} hidden={revenueTrend.length < 2}
-      insight={generateInsight(revenueTrend, 'area', 'les revenus mensuels')} /> },
+      insight={generateInsight(revenueTrend, 'area', 'les revenus mensuels')} crossVariables={cx('revenue-trend')} rawRecords={filtered} groupField="payment_method" /> },
     { key: 'geo', el: () => <GeoCharts records={filtered} /> },
     { key: 'evolution', el: () => <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type={ty('evolution', 'area')} colorIndex={0} colSpan={2}
       insight={generateInsight(trend, 'area', 'les factures')} /> },

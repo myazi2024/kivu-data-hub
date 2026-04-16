@@ -159,7 +159,7 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'built-area', el: () => <ChartCard title={ct('built-area', 'Surface bâtie')} icon={Ruler} data={builtAreaDist} type={ty('built-area', 'bar-v')} colorIndex={1} hidden={builtAreaDist.length === 0}
       insight={generateInsight(builtAreaDist, 'bar-v', 'les surfaces bâties')} crossVariables={cx('built-area')} rawRecords={filtered} groupField="total_built_area_sqm" /> },
     { key: 'equipment', el: () => <ChartCard title={ct('equipment', 'Équipements')} icon={Zap} data={equipmentData} type={ty('equipment', 'bar-h')} colorIndex={9} labelWidth={100} hidden={equipmentData.length === 0}
-      insight="Répartition des équipements disponibles dans les biens expertisés." /> },
+      insight="Répartition des équipements disponibles dans les biens expertisés." crossVariables={cx('equipment')} rawRecords={filtered} groupField="construction_quality" /> },
     { key: 'wall-material', el: () => <ChartCard title={ct('wall-material', 'Matériau murs')} icon={Layers} data={byWallMaterial} type={ty('wall-material', 'bar-h')} colorIndex={3} labelWidth={110} hidden={byWallMaterial.length === 0}
       insight={generateInsight(byWallMaterial, 'bar-h', 'les matériaux de murs')} crossVariables={cx('wall-material')} rawRecords={filtered} groupField="wall_material" /> },
     { key: 'roof-material', el: () => <ChartCard title={ct('roof-material', 'Matériau toiture')} icon={Building} data={byRoofMaterial} type={ty('roof-material', 'pie')} colorIndex={1} hidden={byRoofMaterial.length === 0}
@@ -169,7 +169,7 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'road-access', el: () => <ChartCard title={ct('road-access', 'Accès routier')} icon={MapPin} data={byRoadAccess} type={ty('road-access', 'pie')} colorIndex={0} hidden={byRoadAccess.length === 0}
       insight={generateInsight(byRoadAccess, 'pie', 'les types d\'accès routier')} crossVariables={cx('road-access')} rawRecords={filtered} groupField="road_access_type" /> },
     { key: 'proximity', el: () => <ChartCard title={ct('proximity', 'Proximité moy.')} icon={MapPin} data={proximityData} type={ty('proximity', 'bar-h')} colorIndex={6} labelWidth={110} hidden={proximityData.length === 0}
-      insight="Distance moyenne aux infrastructures clés (routes, marchés, écoles, hôpitaux)." /> },
+      insight="Distance moyenne aux infrastructures clés (routes, marchés, écoles, hôpitaux)." crossVariables={cx('proximity')} rawRecords={filtered} groupField="construction_quality" /> },
     { key: 'risk-zones', el: () => <ChartCard title={ct('risk-zones', 'Zones à risque')} icon={ShieldAlert} data={riskData} type={ty('risk-zones', 'pie')} colorIndex={4} hidden={riskData.length === 0}
       insight={riskData.length > 0 ? `${riskData.filter(r => r.name !== 'Hors risque').reduce((s, r) => s + r.value, 0)} bien(s) situé(s) en zone à risque.` : ''} crossVariables={cx('risk-zones')} rawRecords={filtered} groupField="flood_risk_zone" /> },
     { key: 'market-value', el: () => <ChartCard title={ct('market-value', 'Valeur marchande')} icon={DollarSign} data={valueDist} type={ty('market-value', 'bar-v')} colorIndex={2} hidden={valueDist.length === 0}

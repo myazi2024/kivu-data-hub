@@ -277,33 +277,33 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'legal-status', el: () => <ChartCard title={ct('legal-status', 'Statut juridique')} icon={Scale} data={byLegalStatus} type={ty('legal-status', 'donut')} colorIndex={4} hidden={byLegalStatus.length === 0}
       insight={generateInsight(byLegalStatus, 'donut', 'les statuts juridiques')} crossVariables={cx('legal-status')} rawRecords={filtered} groupField="current_owner_legal_status" /> },
     { key: 'gender', el: () => genderData.length === 0 ? null : <ColorMappedPieCard title={ct('gender', 'Genre (pers. physique)')} icon={Users} iconColor="text-pink-500" data={genderData} colorMap={GENDER_COLORS}
-      insight={generateInsight(genderData, 'pie', 'le genre des propriétaires')} /> },
+      insight={generateInsight(genderData, 'pie', 'le genre des propriétaires')} crossVariables={cx('gender')} rawRecords={filtered} groupField="current_owner_gender" /> },
     { key: 'nationality', el: () => <ChartCard title={ct('nationality', 'Nationalité')} icon={Globe} data={byNationality} type={ty('nationality', 'pie')} colorIndex={9} hidden={byNationality.length === 0}
-      insight={generateInsight(byNationality, 'pie', 'les nationalités')} /> },
+      insight={generateInsight(byNationality, 'pie', 'les nationalités')} crossVariables={cx('nationality')} rawRecords={filtered} groupField="current_owner_nationality" /> },
     { key: 'entity-type', el: () => <ChartCard title={ct('entity-type', 'Type d\'entité (pers. morale)')} data={byEntityType} type={ty('entity-type', 'bar-h')} colorIndex={7} labelWidth={100} hidden={byEntityType.length === 0}
-      insight={generateInsight(byEntityType, 'bar-h', 'les types d\'entité')} /> },
+      insight={generateInsight(byEntityType, 'bar-h', 'les types d\'entité')} crossVariables={cx('entity-type')} rawRecords={filtered} groupField="entity_type" /> },
     { key: 'right-type', el: () => <ChartCard title={ct('right-type', 'Droit de l\'État')} data={byRightType} type={ty('right-type', 'pie')} colorIndex={11} hidden={byRightType.length === 0}
-      insight={generateInsight(byRightType, 'pie', 'les droits étatiques')} /> },
+      insight={generateInsight(byRightType, 'pie', 'les droits étatiques')} crossVariables={cx('right-type')} rawRecords={filtered} groupField="state_right_type" /> },
     { key: 'owner-duration', el: () => <ChartCard title={ct('owner-duration', 'Ancienneté de détention')} icon={Clock} data={ownerDuration} type={ty('owner-duration', 'bar-v')} colorIndex={3} hidden={ownerDuration.length === 0}
       insight={generateInsight(ownerDuration, 'bar-v', 'l\'ancienneté de détention')} crossVariables={cx('owner-duration')} rawRecords={filtered} groupField="property_title_type" /> },
 
     // Ownership history block
     { key: 'mutation-type', el: () => <ChartCard title={ct('mutation-type', 'Type de mutation')} icon={ArrowRightLeft} data={byMutationType} type={ty('mutation-type', 'bar-h')} colorIndex={1} labelWidth={100} hidden={byMutationType.length === 0}
-      insight={generateInsight(byMutationType, 'bar-h', 'les types de mutation')} /> },
+      insight={generateInsight(byMutationType, 'bar-h', 'les types de mutation')} crossVariables={cx('mutation-type')} rawRecords={linkedOwnership} groupField="mutation_type" /> },
     { key: 'hist-legal-status', el: () => <ChartCard title={ct('hist-legal-status', 'Statut juridique (anciens)')} data={byHistLegalStatus} type={ty('hist-legal-status', 'donut')} colorIndex={8} hidden={byHistLegalStatus.length === 0}
-      insight={generateInsight(byHistLegalStatus, 'donut', 'les statuts juridiques historiques')} /> },
+      insight={generateInsight(byHistLegalStatus, 'donut', 'les statuts juridiques historiques')} crossVariables={cx('hist-legal-status')} rawRecords={linkedOwnership} groupField="legal_status" /> },
     { key: 'hist-duration', el: () => <ChartCard title={ct('hist-duration', 'Durée détention (anciens)')} data={histDuration} type={ty('hist-duration', 'bar-v')} colorIndex={6} hidden={histDuration.length === 0}
-      insight={generateInsight(histDuration, 'bar-v', 'la durée de détention historique')} /> },
+      insight={generateInsight(histDuration, 'bar-v', 'la durée de détention historique')} crossVariables={cx('hist-duration')} rawRecords={linkedOwnership} groupField="legal_status" /> },
     { key: 'transfers-per-parcel', el: () => <ChartCard title={ct('transfers-per-parcel', 'Transferts par parcelle')} icon={UserCheck} data={transfersPerParcel} type={ty('transfers-per-parcel', 'bar-v')} colorIndex={10} hidden={transfersPerParcel.length === 0}
-      insight={generateInsight(transfersPerParcel, 'bar-v', 'les transferts par parcelle')} /> },
+      insight={generateInsight(transfersPerParcel, 'bar-v', 'les transferts par parcelle')} crossVariables={cx('transfers-per-parcel')} rawRecords={filtered} groupField="property_title_type" /> },
 
     // Title/owner concordance block
     { key: 'title-owner-match', el: () => <ChartCard title={ct('title-owner-match', 'Concordance titre / propriétaire')} icon={ShieldCheck} data={titleOwnerMatch} type={ty('title-owner-match', 'donut')} colorIndex={12} hidden={titleOwnerMatch.length === 0}
-      insight={generateInsight(titleOwnerMatch, 'donut', 'la concordance titre/propriétaire')} /> },
+      insight={generateInsight(titleOwnerMatch, 'donut', 'la concordance titre/propriétaire')} crossVariables={cx('title-owner-match')} rawRecords={filtered} groupField="is_title_in_current_owner_name" /> },
     { key: 'mutation-urgency', el: () => <ChartCard title={ct('mutation-urgency', 'Urgence de mutation')} icon={AlertTriangle} data={mutationUrgency} type={ty('mutation-urgency', 'bar-h')} colorIndex={14} labelWidth={140} hidden={mutationUrgency.length === 0}
-      insight={generateInsight(mutationUrgency, 'bar-h', 'l\'urgence de mutation')} /> },
+      insight={generateInsight(mutationUrgency, 'bar-h', 'l\'urgence de mutation')} crossVariables={cx('mutation-urgency')} rawRecords={filtered} groupField="property_title_type" /> },
     { key: 'mismatch-by-title-type', el: () => <ChartCard title={ct('mismatch-by-title-type', 'Discordants par type de titre')} icon={FileText} data={mismatchByTitleType} type={ty('mismatch-by-title-type', 'bar-v')} colorIndex={15} hidden={mismatchByTitleType.length === 0}
-      insight={generateInsight(mismatchByTitleType, 'bar-v', 'les discordants par type de titre')} /> },
+      insight={generateInsight(mismatchByTitleType, 'bar-v', 'les discordants par type de titre')} crossVariables={cx('mismatch-by-title-type')} rawRecords={filtered} groupField="property_title_type" /> },
 
     // Geo
     { key: 'geo', el: () => <GeoCharts records={filtered} /> },

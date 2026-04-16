@@ -124,7 +124,7 @@ export const MutationBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'late-fees', el: () => <ChartCard title={ct('late-fees', 'Retard mutation')} data={byLateFees} type={ty('late-fees', 'pie')} colorIndex={4} hidden={byLateFees.length === 0}
       insight={generateInsight(byLateFees, 'pie', 'les retards de mutation')} crossVariables={cx('late-fees')} rawRecords={filtered} groupField="late_fee_amount" /> },
     { key: 'revenue-trend', el: () => <ChartCard title={ct('revenue-trend', 'Revenus/mois')} icon={TrendingUp} data={revenueTrend} type={ty('revenue-trend', 'area')} colorIndex={2} hidden={revenueTrend.length < 2}
-      insight={generateInsight(revenueTrend, 'area', 'les revenus de mutation')} /> },
+      insight={generateInsight(revenueTrend, 'area', 'les revenus de mutation')} crossVariables={cx('revenue-trend')} rawRecords={filtered} groupField="mutation_type" /> },
     { key: 'geo', el: () => <GeoCharts records={filtered} /> },
     { key: 'evolution', el: () => <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type={ty('evolution', 'area')} colorIndex={6} colSpan={2}
       insight={generateInsight(trend, 'area', 'les demandes de mutation')} /> },
