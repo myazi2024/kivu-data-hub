@@ -1,14 +1,10 @@
 
-## Masquer la barre de défilement verticale avec les filtres et le curseur
+
+## Doubler la taille du logo dans les titres des visuels
 
 ### Modification
 
-**Fichier :** `src/components/visualizations/filters/AnalyticsFilters.tsx`
+**Fichier :** `src/components/visualizations/shared/ChartCard.tsx`, ligne 66
 
-Ajouter/retirer la classe `overflow-hidden` sur `document.documentElement` (ou `document.body`) en même temps que `cursor-none` :
+Changer `h-3 w-3` (12px) en `h-6 w-6` (24px) dans le composant `ChartLogoIcon`.
 
-- Dans `resetIdleTimer`, au timeout : `document.documentElement.style.overflow = 'hidden'`
-- Dans `resetIdleTimer`, au reset : `document.documentElement.style.overflow = ''`
-- Dans le cleanup : `document.documentElement.style.overflow = ''`
-
-Cela masque la scrollbar verticale quand l'utilisateur est inactif, et la restaure dès qu'il bouge la souris.
