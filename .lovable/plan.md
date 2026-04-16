@@ -1,64 +1,51 @@
 
 
-# Audit du mode test — Alignement des données générées
+# Ajout des visuels "Titre au nom du propriétaire" dans l'onglet Titres fonciers
 
-## Problème principal identifié
+## Contexte
 
-Le champ **`nationality`** a été ajouté au formulaire CCC (bloc Propriétaire actuel, `current_owners_details` JSONB) mais n'est **pas généré** dans les données test.
+Le formulaire CCC collecte `is_title_in_current_owner_name` (booléen) qui indique si le titre de propriété est au nom du propriétaire actuel. Ce champ existe en base (tables `cadastral_parcels` et `cadastral_contributions`) mais n'est **ni récupéré ni exploité** dans les analytics.
 
-## Détail
+Combiné avec `title_issue_date` et `owner.since`, on peut déduire :
+- Titres **concordants** (au nom du propriétaire) vs **discordants** (pas au nom du propriétaire)
+- Parmi les discordants : ceux **dans le délai légal** de mutation (≤ 20 jours depuis acquisition) vs **hors délai** (pénalités de retard applicables)
 
-### 1. `nationality` manquant dans `current_owners_details` (contributions)
+## Modifications prévues
 
-**Fichier** : `testDataGenerators.ts`, lignes 328-337
+### 1. Fetch de données — `src/hooks/useLandDataAnalytics.tsx`
+Ajouter `is_title_in_current_owner_name` au SELECT de `cadastral_parcels` et `cadastral_contributions`.
 
-Le JSONB `current_owners_details` dans `generateContributions` ne contient pas `nationality` :
-```ts
-current_owners_details: [{
-  lastName, firstName, middleName, gender, legalStatus, since,
-  entityType: '', entitySubType: '', entitySubTypeOther: '',
-  stateExploitedBy: '', rightType: '',
-  // ❌ nationality MANQUANT
-}]
+### 2. Types — `src/types/landAnalytics.ts`
+Ajouter `is_title_in_current_owner_name?: boolean | null` à `ParcelRecord` et `ContributionRecord`.
+
+### 3. Bloc de visualisation — `src/components/visualizations/blocks/TitleRequestsBlock.tsx`
+
+Ajouter **3 nouveaux charts** et **1 KPI** :
+
+- **KPI `kpi-discordants`** : Nombre (et %) de titres dont le nom ne correspond pas au propriétaire actuel
+- **Chart `title-owner-match`** (donut) : Répartition "Au nom du propriétaire" vs "Pas au nom du propriétaire" vs "Non renseigné"
+- **Chart `mutation-urgency`** (bar-h) : Parmi les discordants, répartition "Dans le délai légal (≤ 20j)" vs "Hors délai (pénalités)" — calculé via `owner.since` par rapport à aujourd'hui, ou `title_issue_date`
+- **Chart `mismatch-by-title-type`** (bar-v) : Discordants ventilés par type de titre (Certificat d'enregistrement, Contrat de location, etc.)
+
+Logique de calcul du délai :
+```text
+Si is_title_in_current_owner_name === false :
+  - Si owner.since existe : jours = (aujourd'hui - owner.since)
+  - Si jours ≤ 20 → "Dans le délai"
+  - Si jours > 20 → "Hors délai (pénalités)"
+  - Si owner.since absent → "Délai inconnu"
 ```
 
-Or l'analytics (`TitleRequestsBlock.tsx` ligne 142) fait `countBy(owners, 'nationality')` et le KPI "% Congolais" filtre sur `nationality === 'Congolais (RD)'`. Résultat : **tous les graphiques nationalité affichent 0 / vide** avec les données test.
+### 4. Registry — `src/config/analyticsTabsRegistry.ts`
+Ajouter les 3 nouveaux charts et le KPI dans la section `title-requests`.
 
-### 2. Données existantes alignées — Pas d'autre champ manquant
+### 5. Données test — `src/components/admin/test-mode/testDataGenerators.ts`
+Vérifier que `is_title_in_current_owner_name` est déjà généré (✓ confirmé : `idx % 3 !== 0`). S'assurer que `owner.since` est suffisamment varié pour produire des cas dans/hors délai.
 
-Les autres champs récemment ajoutés (`previousTitleType`, `previousTitleCustomName`) sont des champs optionnels qui n'alimentent pas l'analytics, donc leur absence est acceptable.
-
-### 3. Enrichissement de `entityType` et `rightType`
-
-Ces champs sont toujours vides (`''`) dans les données test, ce qui rend les charts "Type d'entité (pers. morale)" et "Droit de l'État" systématiquement vides. Il faut les peupler conditionnellement selon le `legalStatus`.
-
-### 4. Parcelles — `current_owners_details` absent
-
-La table `cadastral_parcels` (générateur `generateParcels`, ligne 196) n'inclut pas de `current_owners_details`. Ce n'est pas bloquant car les analytics extraient depuis les contributions, mais c'est une incohérence.
-
-## Corrections à apporter
-
-### Fichier modifié (1) : `src/components/admin/test-mode/testDataGenerators.ts`
-
-**A. Contributions — `current_owners_details`** (lignes 328-337) :
-
-Ajouter `nationality` avec distribution réaliste (~80% "Congolais (RD)", ~20% "Étranger") et peupler `entityType`/`rightType` conditionnellement :
-
-```ts
-const legalStatus = pick(LEGAL_STATUSES, idx);
-const nationality = idx % 5 === 0 ? 'Étranger' : 'Congolais (RD)';
-const entityType = legalStatus === 'Personne morale' 
-  ? pick(['SARL', 'SA', 'SNC', 'ONG', 'Coopérative'], idx) : '';
-const rightType = legalStatus === 'État' 
-  ? pick(['Concession', 'Affectation'], idx) : '';
-
-current_owners_details: [{
-  ...existant,
-  nationality,
-  entityType,
-  rightType,
-}]
-```
-
-**B. Parcelles — `current_owners_details`** : Optionnel, non prioritaire.
+### Fichiers modifiés (5)
+- `src/hooks/useLandDataAnalytics.tsx`
+- `src/types/landAnalytics.ts`
+- `src/components/visualizations/blocks/TitleRequestsBlock.tsx`
+- `src/config/analyticsTabsRegistry.ts`
+- `src/components/admin/test-mode/testDataGenerators.ts` (si ajustement nécessaire sur `since`)
 
