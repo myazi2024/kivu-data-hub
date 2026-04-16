@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { MapPin, BarChart3, Info, Database, Loader2, Copy, Check, Maximize, Minimize } from 'lucide-react';
+import { MapPin, BarChart3, Info, Database, Loader2, Copy, Check, Maximize, Minimize, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { normalizeTitleType } from '@/utils/titleTypeNormalizer';
 import DRCMapWithTooltip from './DRCMapWithTooltip';
