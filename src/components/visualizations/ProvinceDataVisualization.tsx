@@ -83,6 +83,15 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
 }) => {
   const { visibleTabs, isLoading: tabsLoading } = useAnalyticsTabsConfig();
   const [activeTab, setActiveTab] = useState('');
+  const [isIdle, setIsIdle] = useState(false);
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsIdle(document.body.classList.contains('cursor-none'));
+    });
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   // Load global watermark config
   const globalDefaults = ANALYTICS_TABS_REGISTRY['_global']
