@@ -125,6 +125,7 @@ interface DRCInteractiveMapProps {
 }
 
 const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedProvince, setSelectedProvince] = useState<ProvinceData | null>(null);
   const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
   const [mapInstance, setMapInstance] = useState<any>(null);
@@ -133,12 +134,13 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const [isCopying, setIsCopying] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [externalProvinceId, setExternalProvinceId] = useState<string | null>(null);
-  const [selectedVille, setSelectedVille] = useState<string | undefined>(undefined);
-  const [selectedCommune, setSelectedCommune] = useState<string | undefined>(undefined);
-  const [selectedQuartier, setSelectedQuartier] = useState<string | undefined>(undefined);
-  const [selectedTerritoire, setSelectedTerritoire] = useState<string | undefined>(undefined);
-  const [selectedSectionType, setSelectedSectionType] = useState<string>('all');
+  const [selectedVille, setSelectedVille] = useState<string | undefined>(() => searchParams.get('ville') || undefined);
+  const [selectedCommune, setSelectedCommune] = useState<string | undefined>(() => searchParams.get('commune') || undefined);
+  const [selectedQuartier, setSelectedQuartier] = useState<string | undefined>(() => searchParams.get('quartier') || undefined);
+  const [selectedTerritoire, setSelectedTerritoire] = useState<string | undefined>(() => searchParams.get('territoire') || undefined);
+  const [selectedSectionType, setSelectedSectionType] = useState<string>(() => searchParams.get('section') || 'all');
   const mapCardRef = React.useRef<HTMLDivElement>(null);
+  const urlInitRef = React.useRef(false);
 
   const { isTestRoute } = useTestEnvironment();
   const { data: analytics, isLoading, dataUpdatedAt } = useLandDataAnalytics(isTestRoute);
