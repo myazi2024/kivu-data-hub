@@ -164,6 +164,48 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
     return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
   }, [owners]);
 
+  // ── Title/owner concordance charts ──
+  const titleOwnerMatch = useMemo(() => {
+    const map = new Map<string, number>();
+    filtered.forEach(p => {
+      const val = p.is_title_in_current_owner_name;
+      const label = val === true ? 'Au nom du propriétaire' : val === false ? 'Pas au nom du propriétaire' : '(Non renseigné)';
+      map.set(label, (map.get(label) || 0) + 1);
+    });
+    return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
+  }, [filtered]);
+
+  const discordants = useMemo(() => filtered.filter(p => p.is_title_in_current_owner_name === false), [filtered]);
+
+  const mutationUrgency = useMemo(() => {
+    const now = Date.now();
+    const map = new Map<string, number>();
+    discordants.forEach(p => {
+      // Find owner.since from linked contribution
+      const contrib = linkedContribs.find(c => c.parcel_number === p.parcel_number);
+      const details = contrib?.current_owners_details;
+      const ownerList = Array.isArray(details) ? details : details ? [details] : [];
+      const since = ownerList[0]?.since;
+      if (!since) {
+        map.set('Délai inconnu', (map.get('Délai inconnu') || 0) + 1);
+        return;
+      }
+      const days = (now - new Date(since).getTime()) / (24 * 3600 * 1000);
+      const label = days <= 20 ? 'Dans le délai légal (≤ 20j)' : 'Hors délai (pénalités)';
+      map.set(label, (map.get(label) || 0) + 1);
+    });
+    return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
+  }, [discordants, linkedContribs]);
+
+  const mismatchByTitleType = useMemo(() => {
+    const map = new Map<string, number>();
+    discordants.forEach(p => {
+      const n = normalizeTitleType(p.property_title_type);
+      map.set(n, (map.get(n) || 0) + 1);
+    });
+    return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  }, [discordants]);
+
   // ── Ownership history charts ──
   const byMutationType = useMemo(() => countBy(linkedOwnership, 'mutation_type'), [linkedOwnership]);
   const byHistLegalStatus = useMemo(() => countBy(linkedOwnership, 'legal_status'), [linkedOwnership]);
