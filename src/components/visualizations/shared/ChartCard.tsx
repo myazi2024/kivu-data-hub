@@ -63,7 +63,7 @@ const ChartLogoIcon: React.FC = () => {
   const { config } = useAppAppearance();
   const logoUrl = typeof config.logo_url === 'string' ? config.logo_url : '';
   if (!logoUrl) return null;
-  return <img src={logoUrl} className="return <img src={logoUrl} className="h-6 w-6 object-contain shrink-0 opacity-80" alt="" />;" alt="" />;
+  return <img src={logoUrl} className="h-6 w-6 object-contain shrink-0 opacity-80" alt="" />;
 };
 
 const tooltipStyle = { fontSize: 10 };
