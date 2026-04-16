@@ -338,7 +338,7 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
           middleName: idx % 3 === 0 ? 'Mutombo' : '',
           gender: idx % 2 === 0 ? 'Masculin' : 'Féminin',
           legalStatus: ownerLegalStatus,
-          since: randomDateInPast(10),
+          since: idx % 7 === 0 ? randomDateInPast(0.05) : randomDateInPast(10),
           nationality: ownerNationality,
           entityType: ownerEntityType, entitySubType: '', entitySubTypeOther: '',
           stateExploitedBy: '', rightType: ownerRightType,
