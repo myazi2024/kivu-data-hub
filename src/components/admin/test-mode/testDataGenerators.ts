@@ -325,16 +325,25 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
       floor_number: constructionNature ? String(randInt(0, 3)) : null,
       apartment_number: idx % 15 === 0 ? `A${randInt(1, 20)}` : null,
       whatsapp_number: `+243${seededInt(idx * 13 + 1, 810000000, 899999999)}`,
-      current_owners_details: [{
-        lastName: ownerParts[0] || 'Test',
-        firstName: ownerParts[1] || 'Utilisateur',
-        middleName: idx % 3 === 0 ? 'Mutombo' : '',
-        gender: idx % 2 === 0 ? 'Masculin' : 'Féminin',
-        legalStatus: pick(LEGAL_STATUSES, idx),
-        since: randomDateInPast(10),
-        entityType: '', entitySubType: '', entitySubTypeOther: '',
-        stateExploitedBy: '', rightType: '',
-      }] as unknown as Json,
+      current_owners_details: (() => {
+        const ownerLegalStatus = pick(LEGAL_STATUSES, idx);
+        const ownerNationality = idx % 5 === 0 ? 'Étranger' : 'Congolais (RD)';
+        const ownerEntityType = ownerLegalStatus === 'Personne morale'
+          ? pick(['SARL', 'SA', 'SNC', 'ONG', 'Coopérative'], idx) : '';
+        const ownerRightType = ownerLegalStatus === 'État'
+          ? pick(['Concession', 'Affectation'], idx) : '';
+        return [{
+          lastName: ownerParts[0] || 'Test',
+          firstName: ownerParts[1] || 'Utilisateur',
+          middleName: idx % 3 === 0 ? 'Mutombo' : '',
+          gender: idx % 2 === 0 ? 'Masculin' : 'Féminin',
+          legalStatus: ownerLegalStatus,
+          since: randomDateInPast(10),
+          nationality: ownerNationality,
+          entityType: ownerEntityType, entitySubType: '', entitySubTypeOther: '',
+          stateExploitedBy: '', rightType: ownerRightType,
+        }];
+      })() as unknown as Json,
       building_permits: constructionNature ? [{
         permitType: idx % 3 === 0 ? 'regularization' : 'construction',
         permitNumber: `PC-${randInt(2018, 2025)}-${String(randInt(1, 999)).padStart(3, '0')}`,
