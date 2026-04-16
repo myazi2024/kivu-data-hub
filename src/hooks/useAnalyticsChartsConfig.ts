@@ -64,6 +64,7 @@ export const DATE_FIELD_OPTIONS = [
   { value: 'contract_date', label: 'Date de contrat (contract_date)' },
   { value: 'survey_date', label: "Date d'arpentage (survey_date)" },
   { value: 'payment_date', label: 'Date de paiement (payment_date)' },
+  { value: 'title_issue_date', label: 'Date de délivrance (title_issue_date)' },
 ];
 
 /** Available status fields for admin selection */
