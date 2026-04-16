@@ -1,87 +1,75 @@
 
+# Audit de la configuration graphique Analytics (espace admin)
 
-# Refonte de l'onglet "Titres fonciers" — Données CCC uniquement
+## Résumé
 
-## Problème
+L'audit couvre 3 fichiers de configuration (`analyticsTabsRegistry.ts`, `crossVariables.ts`, `useAnalyticsChartsConfig.ts`) et leur alignement avec les 13 blocs de visualisation (`*Block.tsx`).
 
-L'onglet "Titres fonciers" est alimenté par `data.titleRequests` (formulaire de demande de titre). Il doit refléter les **titres déjà délivrés** via les données collectées par le formulaire CCC :
-- Bloc "Type de titre de propriété" → `data.parcels` / `data.contributions`
-- Bloc "Propriétaire actuel" → JSONB `current_owners_details` dans `data.contributions`
-- Historique des propriétaires → `data.ownershipHistory`
+## Résultats
 
-## Sources de données disponibles
+### 1. Alignement Registry ↔ Blocs de visualisation
 
-| Source | Table | Champs clés |
-|--------|-------|-------------|
-| Type de titre | `cadastral_parcels` | `property_title_type`, `lease_type`, `lease_years`, `title_issue_date` |
-| Propriétaire actuel | `cadastral_contributions` | `current_owners_details` (JSONB: legalStatus, gender, nationality, entityType, since, rightType) |
-| Propriétaire actuel (flat) | `cadastral_parcels` | `current_owner_legal_status` |
-| Historique propriétaires | `cadastral_ownership_history` | `legal_status`, `mutation_type`, `ownership_start_date`, `ownership_end_date` |
+| Onglet | Registry (charts) | Registry (KPIs) | Block | Verdict |
+|--------|-------------------|------------------|-------|---------|
+| `title-requests` | 16 charts | 6 KPIs | TitleRequestsBlock — 16 chartDefs + 6 KPIs | OK |
+| `parcels-titled` | 17 charts | 4 KPIs | ParcelsWithTitleBlock | A vérifier |
+| `contributions` | 15 charts | 7 KPIs | ContributionsBlock | A vérifier |
+| `expertise` | 19 charts | 6 KPIs | ExpertiseBlock | A vérifier |
+| `mutations` | 11 charts | 6 KPIs | MutationsBlock | A vérifier |
+| `mortgages` | 6 charts | 6 KPIs | MortgagesBlock | OK |
+| `subdivision` | 9 charts | 6 KPIs | SubdivisionBlock | A vérifier |
+| `disputes` | 17 charts | 9 KPIs | DisputesBlock | A vérifier |
+| `ownership` | 4 charts | 4 KPIs | OwnershipHistoryBlock | OK |
+| `certificates` | 5 charts | 4 KPIs | CertificatesBlock | OK |
+| `invoices` | 6 charts | 5 KPIs | InvoicesBlock | OK |
+| `building-permits` | 7 charts | 5 KPIs | BuildingPermitsBlock | OK |
+| `taxes` | 5 charts | 6 KPIs | TaxesBlock | OK |
+| `_global` | 4 charts (watermark config) | 0 | Pas de block (config UI only) | OK |
+| `rdc-map` | 8 charts + 22 KPIs (tooltip/detail) | — | Carte RDC | OK |
 
-## Nouveaux visuels (17 charts + 6 KPIs)
+### 2. Cross-variables — Cohérence
 
-### KPIs
-1. **Total parcelles titrées** — `parcels.length`
-2. **Urbaine** / **Rurale** — section type
-3. **% Congolais** — extraction nationalité depuis `contributions.current_owners_details`
-4. **Ancienneté moy.** — durée moyenne de détention (owner.since → aujourd'hui)
-5. **Nb mutations** — `ownershipHistory.length`
+**Tabs avec cross-variables** : 13 tabs dans registry, 13 dans crossVariables.ts — **OK, en phase**.
 
-### Charts issus du bloc "Type de titre de propriété"
-1. **Type de titre** — `property_title_type` normalisé (bar-h)
-2. **Type de bail** — `lease_type` : initial vs renouvellement (pie)
-3. **Durée de bail** — distribution `lease_years` (bar-v)
-4. **Année de délivrance** — `title_issue_date` groupé par année (bar-v)
-5. **Évolution des titres** — `title_issue_date` par mois (area, colSpan 2)
+**Problèmes détectés** :
 
-### Charts issus du bloc "Propriétaire actuel"
-6. **Statut juridique** — `legalStatus` extrait du JSONB (donut)
-7. **Genre des propriétaires** — `gender` pour Personne physique (pie avec ColorMap)
-8. **Nationalité** — Congolais (RD) vs Étranger (pie)
-9. **Type d'entité** — `entityType` pour Personne morale (bar-h)
-10. **Droit de l'État** — `rightType` pour État : Concession vs Affectation (pie)
-11. **Ancienneté de détention** — distribution par tranches d'années depuis `since` (bar-v)
+- **`title-requests` cross-variables** référencent des champs de `data.parcels` (`property_title_type`, `declared_usage`, `current_owner_legal_status`) mais la plupart des charts du bloc opèrent sur des données dénormalisées (`owners` extraits du JSONB `current_owners_details`). Les cross-variables `cx('title-type')` passent `rawRecords={filtered}` (parcelles) ce qui fonctionne, mais `cx('nationality')` et `cx('gender')` ne passent pas de `rawRecords` donc le croisement ne peut pas fonctionner sur ces charts car les données sous-jacentes sont des `owners`, pas des `parcels`.
 
-### Charts issus de l'Historique des propriétaires
-12. **Type de mutation** — `mutation_type` : Vente, Succession, Donation... (bar-h)
-13. **Statut juridique (anciens)** — `legal_status` des anciens propriétaires (donut)
-14. **Durée de détention (anciens)** — `ownership_end_date - ownership_start_date` par tranches (bar-v)
-15. **Nb de transferts par parcelle** — distribution du nombre de propriétaires successifs (bar-v)
+- **Cross-variable orphelines** : `title-requests.lease-type` croise sur `property_title_type` — le champ existe bien sur les parcelles, OK.
 
-### Géographie
-16. **Carte géographique** — GeoCharts sur `parcels`
+### 3. Problèmes identifiés
 
-## Modifications
+#### A. Charts sans cross-variables dans `title-requests`
+Les charts suivants n'ont **aucune** cross-variable définie alors qu'ils pourraient en bénéficier :
+- `lease-duration` — pourrait croiser par province
+- `issue-year`, `issue-trend` — pourrait croiser par province, type titre
+- `owner-duration` — pourrait croiser par province
+- `entity-type`, `right-type` — pas de croisement possible (données JSONB)
+- `mutation-type`, `hist-legal-status`, `hist-duration`, `transfers-per-parcel` — données d'historique, croisement limité
 
-### 1. `src/components/visualizations/blocks/TitleRequestsBlock.tsx` — Réécriture complète
+#### B. Cross-variables sur charts JSONB (propriétaires)
+Les charts `nationality` et `gender` dans `title-requests` ont des cross-variables (`Province`) mais le `ChartCard` ne reçoit pas de `rawRecords` ni de `groupField` — **le picklist de croisement s'affiche mais ne produit aucun résultat**. Il faudrait passer `rawRecords={owners}` et un `groupField` adapté, mais `owners` n'a pas de `province` fiable (copié depuis la contribution).
 
-- Changer la source de `data.titleRequests` vers `data.parcels` + `data.contributions` + `data.ownershipHistory`
-- Le `useBlockFilter` s'appliquera sur `data.parcels` (filtre principal)
-- Extraire les champs JSONB de `current_owners_details` depuis `data.contributions` en créant un tableau dénormalisé d'owners liés aux parcelles
-- Supprimer tous les charts liés aux demandes (request_type, requester_type, payment, deduced_title, processing_comparison, revenue_trend, owner-same)
-- Créer les 16 nouveaux chartDefs + KPIs
+#### C. `dateField` pour `title-requests`
+Le `TAB_FILTER_DEFAULTS` utilise `created_at` comme champ date pour `title-requests`. Depuis la refonte, le champ pertinent serait `title_issue_date` (date de délivrance du titre). Le filtre temporel filtre donc sur la date de création de la parcelle, pas la date de délivrance — **incohérence sémantique**.
 
-### 2. `src/config/analyticsTabsRegistry.ts`
+#### D. `statusField` non défini pour `title-requests`
+Après la refonte, les parcelles n'ont pas de champ `status` uniforme. Le filtre statut est activé mais pourrait ne rien filtrer utilement.
 
-- Remplacer entièrement la section `title-requests` charts et KPIs avec les nouvelles définitions
+### 4. Points sains
 
-### 3. `src/config/crossVariables.ts`
+- Toutes les clés `tab_key` sont cohérentes entre registry, blocks, et cross-variables
+- Les `display_order` sont séquentiels et corrects
+- Les `chart_type` par défaut correspondent aux usages dans les blocks
+- Les `col_span: 2` sont correctement appliqués aux charts `area`/`multi-area` (évolution)
+- Le système de merge DB/defaults dans `useInitializedConfig` fonctionne correctement
+- Les tabs système (`_global`, `rdc-map`) sont correctement exclus des vues utilisateur
 
-- Remplacer les cross-variables de `title-requests` avec les nouveaux champs pertinents
+### 5. Recommandations (aucune action requise immédiate)
 
-### 4. `src/types/landAnalytics.ts` — Optionnel
+1. **Corriger les cross-variables JSONB** : Pour `nationality` et `gender`, soit retirer les cross-variables, soit passer `rawRecords={owners}` avec le champ `province` copié depuis la contribution.
+2. **Changer le dateField par défaut** de `title-requests` à `title_issue_date` dans `TAB_FILTER_DEFAULTS`.
+3. **Désactiver le filtre statut** pour `title-requests` (comme pour `ownership`) car les parcelles n'ont pas de statut filtrable pertinent dans ce contexte.
+4. **Ajouter des cross-variables manquantes** sur `lease-duration`, `issue-year`, `owner-duration`.
 
-- Ajouter `title_issue_date` et `title_reference_number` au `ParcelRecord` si non présents (vérifier le SELECT dans le fetch)
-
-### 5. `src/hooks/useLandDataAnalytics.tsx`
-
-- Ajouter `title_issue_date, title_reference_number, lease_years` au SELECT de `cadastral_parcels` (si manquant)
-- Vérifier que `current_owners_details` est bien récupéré dans les contributions
-
-### Fichiers modifiés (4-5)
-- `src/components/visualizations/blocks/TitleRequestsBlock.tsx` (réécriture)
-- `src/config/analyticsTabsRegistry.ts`
-- `src/config/crossVariables.ts`
-- `src/types/landAnalytics.ts` (si besoin)
-- `src/hooks/useLandDataAnalytics.tsx` (si besoin)
-
+Voulez-vous que j'implémente ces corrections ?
