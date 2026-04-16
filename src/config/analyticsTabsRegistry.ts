@@ -20,7 +20,9 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'title-requests', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 12, custom_title: 'Géographie' },
       { tab_key: 'title-requests', item_key: 'lease-type', item_type: 'chart', is_visible: true, display_order: 13, custom_title: 'Type de bail', chart_type: 'bar-h' },
       { tab_key: 'title-requests', item_key: 'subdivided', item_type: 'chart', is_visible: true, display_order: 14, custom_title: 'Loties vs Non loties', chart_type: 'pie' },
-      { tab_key: 'title-requests', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 15, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
+      { tab_key: 'title-requests', item_key: 'parcel-title-type', item_type: 'chart', is_visible: true, display_order: 16, custom_title: 'Type de titre (cadastre)', chart_type: 'bar-h' },
+      { tab_key: 'title-requests', item_key: 'parcel-owner-status', item_type: 'chart', is_visible: true, display_order: 17, custom_title: 'Propriétaire actuel (cadastre)', chart_type: 'donut' },
+      { tab_key: 'title-requests', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 18, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
     ],
     kpis: [
       { tab_key: 'title-requests', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Total' },

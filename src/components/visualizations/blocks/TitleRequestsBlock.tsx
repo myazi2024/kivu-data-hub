@@ -1,6 +1,7 @@
 import React, { useMemo, memo } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
 import { countBy, trendByMonth, getSectionType, avgProcessingDays, surfaceDistribution, sumByMonth } from '@/utils/analyticsHelpers';
+import { normalizeTitleType } from '@/utils/titleTypeNormalizer';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { FileText, Users, DollarSign, TrendingUp, Globe, Ruler, Clock, UserCheck, KeyRound } from 'lucide-react';
@@ -44,6 +45,17 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
   const surfaceDist = useMemo(() => surfaceDistribution(filtered), [filtered]);
   const ownerSameData = useMemo(() => countBy(filtered, 'requester_type'), [filtered]);
   const byLeaseType = useMemo(() => countBy(data.parcels, 'lease_type'), [data.parcels]);
+
+  const byParcelTitleType = useMemo(() => {
+    const map = new Map<string, number>();
+    data.parcels.forEach(p => {
+      const normalized = normalizeTitleType(p.property_title_type);
+      map.set(normalized, (map.get(normalized) || 0) + 1);
+    });
+    return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  }, [data.parcels]);
+
+  const byParcelOwnerStatus = useMemo(() => countBy(data.parcels, 'current_owner_legal_status'), [data.parcels]);
 
   const revenueTrend = useMemo(() => sumByMonth(filtered.filter(r => r.payment_status === 'paid')), [filtered]);
 
@@ -124,6 +136,10 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
       insight={processingInsight} /> },
     { key: 'lease-type', el: () => <ChartCard title={ct('lease-type', 'Type de bail')} icon={KeyRound} data={byLeaseType} type={ty('lease-type', 'bar-h')} colorIndex={13} hidden={byLeaseType.length === 0}
       insight={generateInsight(byLeaseType, 'bar-h', 'les types de bail')} crossVariables={cx('lease-type')} rawRecords={data.parcels} groupField="lease_type" /> },
+    { key: 'parcel-title-type', el: () => <ChartCard title={ct('parcel-title-type', 'Type de titre (cadastre)')} icon={FileText} data={byParcelTitleType} type={ty('parcel-title-type', 'bar-h')} colorIndex={7} labelWidth={120} hidden={byParcelTitleType.length === 0}
+      insight={generateInsight(byParcelTitleType, 'bar-h', 'les types de titre cadastrés')} crossVariables={cx('parcel-title-type')} rawRecords={data.parcels} groupField="property_title_type" /> },
+    { key: 'parcel-owner-status', el: () => <ChartCard title={ct('parcel-owner-status', 'Propriétaire actuel (cadastre)')} icon={UserCheck} data={byParcelOwnerStatus} type={ty('parcel-owner-status', 'donut')} colorIndex={8} hidden={byParcelOwnerStatus.length === 0}
+      insight={generateInsight(byParcelOwnerStatus, 'donut', 'les statuts des propriétaires cadastrés')} crossVariables={cx('parcel-owner-status')} rawRecords={data.parcels} groupField="current_owner_legal_status" /> },
     { key: 'geo', el: () => <GeoCharts records={filtered} /> },
     { key: 'subdivided', el: () => {
       const lotie = data.parcels.filter(p => p.is_subdivided === true).length;
@@ -137,7 +153,7 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
     }},
     { key: 'evolution', el: () => <ChartCard title={ct('evolution', 'Évolution')} icon={TrendingUp} data={trend} type={ty('evolution', 'area')} colorIndex={0} colSpan={2}
       insight={generateInsight(trend, 'area', 'les demandes de titres')} /> },
-  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filtered, byRequestType, byRequesterType, byStatus, byPayment, byOwnerLegalStatus, genderData, byNationality, byDeducedTitleType, ownerSameData, surfaceDist, revenueTrend, processingComparison, trend, genderInsight, processingInsight, byLeaseType, data.parcels, v, ct, cx, ty, ord]);
+  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filtered, byRequestType, byRequesterType, byStatus, byPayment, byOwnerLegalStatus, genderData, byNationality, byDeducedTitleType, ownerSameData, surfaceDist, revenueTrend, processingComparison, trend, genderInsight, processingInsight, byLeaseType, byParcelTitleType, byParcelOwnerStatus, data.parcels, v, ct, cx, ty, ord]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
