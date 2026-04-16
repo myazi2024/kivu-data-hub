@@ -602,10 +602,18 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
           <div className={`${activeMobilePanel !== 'analytics' ? 'hidden lg:flex' : 'flex'} lg:col-span-8 flex-col min-h-0 h-full`}>
             <Card className="flex-1 flex flex-col overflow-hidden border-border/30 min-h-0">
               <CardHeader className="px-2 py-1 border-b border-border/20 flex-shrink-0">
-                <CardTitle className="text-[11px] sm:text-xs font-medium text-foreground flex items-center gap-1">
-                  <BarChart3 className="h-3.5 w-3.5 text-primary" />
-                  <span>Analytics</span>
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-[11px] sm:text-xs font-medium text-foreground flex items-center gap-1">
+                    <BarChart3 className="h-3.5 w-3.5 text-primary" />
+                    <span>Analytics</span>
+                  </CardTitle>
+                  {dataUpdatedAt > 0 && (
+                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 gap-0.5 font-normal text-muted-foreground">
+                      <Clock className="h-2.5 w-2.5" />
+                      Maj {new Date(dataUpdatedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    </Badge>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="flex-1 p-0 overflow-hidden charts-compact text-[10px] min-h-0">
                 <div className="h-full p-1.5 sm:p-2">
