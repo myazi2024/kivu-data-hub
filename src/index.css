@@ -55,8 +55,8 @@ All colors MUST be HSL.
     --shadow-card: 0 4px 15px -5px hsl(var(--seloger-red) / 0.1);
     --shadow-hover: 0 8px 25px -8px hsl(var(--seloger-red) / 0.2);
     /* Analytics shadows (doubled) */
-    --shadow-analytics: 0 8px 30px -10px hsl(var(--seloger-red) / 0.2);
-    --shadow-analytics-hover: 0 16px 50px -16px hsl(var(--seloger-red) / 0.35);
+    --shadow-analytics: 0 24px 90px -10px hsl(var(--seloger-red) / 0.6);
+    --shadow-analytics-hover: 0 48px 150px -16px hsl(var(--seloger-red) / 1);
     
     /* Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
