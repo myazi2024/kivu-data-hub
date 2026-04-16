@@ -13,6 +13,17 @@ export const CROSS_VARIABLE_REGISTRY: Record<string, Record<string, CrossVariabl
     'issue-trend': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }],
     'legal-status': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }],
     'owner-duration': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }],
+    'gender': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }, { label: 'Usage', field: 'declared_usage' }],
+    'nationality': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }, { label: 'Statut juridique', field: 'current_owner_legal_status' }],
+    'entity-type': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }],
+    'right-type': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }],
+    'mutation-type': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }, { label: 'Statut juridique', field: 'current_owner_legal_status' }],
+    'hist-legal-status': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }],
+    'hist-duration': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }],
+    'transfers-per-parcel': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }, { label: 'Usage', field: 'declared_usage' }],
+    'title-owner-match': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }, { label: 'Statut juridique', field: 'current_owner_legal_status' }],
+    'mutation-urgency': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }],
+    'mismatch-by-title-type': [{ label: 'Province', field: 'province' }, { label: 'Statut juridique', field: 'current_owner_legal_status' }],
   },
   'parcels-titled': {
     'built-vs-unbuilt': [{ label: 'Province', field: 'province' }, { label: 'Usage', field: 'declared_usage' }, { label: 'Statut juridique', field: 'current_owner_legal_status' }],
@@ -62,6 +73,8 @@ export const CROSS_VARIABLE_REGISTRY: Record<string, Record<string, CrossVariabl
     'built-area': [{ label: 'Province', field: 'province' }, { label: 'Qualité', field: 'construction_quality' }, { label: 'Condition', field: 'property_condition' }],
     'sound-env': [{ label: 'Province', field: 'province' }, { label: 'Qualité', field: 'construction_quality' }],
     'garden': [{ label: 'Province', field: 'province' }, { label: 'Qualité', field: 'construction_quality' }],
+    'equipment': [{ label: 'Province', field: 'province' }, { label: 'Qualité', field: 'construction_quality' }, { label: 'Condition', field: 'property_condition' }],
+    'proximity': [{ label: 'Province', field: 'province' }, { label: 'Qualité', field: 'construction_quality' }],
   },
   'mutations': {
     'status': [{ label: 'Type mutation', field: 'mutation_type' }, { label: 'Province', field: 'province' }, { label: 'Paiement', field: 'payment_status' }],
@@ -71,6 +84,7 @@ export const CROSS_VARIABLE_REGISTRY: Record<string, Record<string, CrossVariabl
     'market-value': [{ label: 'Type mutation', field: 'mutation_type' }, { label: 'Province', field: 'province' }],
     'title-age': [{ label: 'Type mutation', field: 'mutation_type' }, { label: 'Province', field: 'province' }],
     'late-fees': [{ label: 'Type mutation', field: 'mutation_type' }, { label: 'Province', field: 'province' }],
+    'revenue-trend': [{ label: 'Type mutation', field: 'mutation_type' }, { label: 'Province', field: 'province' }],
   },
   'subdivision': {
     'status': [{ label: 'Objet', field: 'purpose_of_subdivision' }, { label: 'Province', field: 'province' }, { label: 'Demandeur', field: 'requester_type' }],
@@ -79,6 +93,7 @@ export const CROSS_VARIABLE_REGISTRY: Record<string, Record<string, CrossVariabl
     'requester-type': [{ label: 'Statut', field: 'status' }, { label: 'Province', field: 'province' }],
     'payment': [{ label: 'Statut', field: 'status' }, { label: 'Province', field: 'province' }],
     'surface': [{ label: 'Province', field: 'province' }, { label: 'Objet', field: 'purpose_of_subdivision' }],
+    'revenue-trend': [{ label: 'Objet', field: 'purpose_of_subdivision' }, { label: 'Province', field: 'province' }],
   },
   'disputes': {
     'nature': [{ label: 'Statut', field: 'current_status' }, { label: 'Province', field: 'province' }, { label: 'Type', field: 'dispute_type' }],
@@ -87,28 +102,28 @@ export const CROSS_VARIABLE_REGISTRY: Record<string, Record<string, CrossVariabl
     'type': [{ label: 'Nature', field: 'dispute_nature' }, { label: 'Province', field: 'province' }, { label: 'Résolution', field: 'resolution_level' }],
     'resolution-level': [{ label: 'Nature', field: 'dispute_nature' }, { label: 'Province', field: 'province' }],
     'declarant-quality': [{ label: 'Nature', field: 'dispute_nature' }, { label: 'Province', field: 'province' }],
-    'lifting-status': [{ label: 'Nature', field: 'dispute_nature' }, { label: 'Province', field: 'province' }],
+    'lifting-status': [{ label: 'Nature', field: 'dispute_nature' }, { label: 'Province', field: 'province' }, { label: 'Type', field: 'dispute_type' }],
     'lifting-nature': [{ label: 'Province', field: 'province' }],
     'lifting-resolution-level': [{ label: 'Nature', field: 'dispute_nature' }, { label: 'Province', field: 'province' }, { label: 'Statut levée', field: 'lifting_status' }],
-    'lifting-reason': [{ label: 'Nature', field: 'dispute_nature' }, { label: 'Province', field: 'province' }],
+    'lifting-reason': [{ label: 'Nature', field: 'dispute_nature' }, { label: 'Province', field: 'province' }, { label: 'Type', field: 'dispute_type' }],
   },
   'mortgages': {
     'creditor-type': [{ label: 'Statut', field: 'mortgage_status' }, { label: 'Province', field: 'province' }],
-    'amount-brackets': [{ label: 'Province', field: 'province' }, { label: 'Créancier', field: 'creditor_type' }],
+    'amount-brackets': [{ label: 'Province', field: 'province' }, { label: 'Créancier', field: 'creditor_type' }, { label: 'Statut', field: 'mortgage_status' }],
     'status': [{ label: 'Créancier', field: 'creditor_type' }, { label: 'Province', field: 'province' }],
-    'duration': [{ label: 'Province', field: 'province' }, { label: 'Créancier', field: 'creditor_type' }],
+    'duration': [{ label: 'Province', field: 'province' }, { label: 'Créancier', field: 'creditor_type' }, { label: 'Statut', field: 'mortgage_status' }],
   },
   'building-permits': {
     'status': [{ label: 'Service', field: 'issuing_service' }, { label: 'Province', field: 'province' }],
-    'current-status': [{ label: 'Province', field: 'province' }, { label: 'Service', field: 'issuing_service' }],
+    'current-status': [{ label: 'Province', field: 'province' }, { label: 'Service', field: 'issuing_service' }, { label: 'Type permis', field: 'permit_type' }],
     'issuing-service': [{ label: 'Statut', field: 'administrative_status' }, { label: 'Province', field: 'province' }],
     'permit-type': [{ label: 'Statut', field: 'administrative_status' }, { label: 'Province', field: 'province' }],
-    'validity-period': [{ label: 'Province', field: 'province' }, { label: 'Statut', field: 'administrative_status' }],
+    'validity-period': [{ label: 'Province', field: 'province' }, { label: 'Statut', field: 'administrative_status' }, { label: 'Type permis', field: 'permit_type' }],
   },
   'taxes': {
     'status': [{ label: 'Exercice', field: 'tax_year' }, { label: 'Province', field: 'province' }],
     'fiscal-year': [{ label: 'Statut', field: 'payment_status' }, { label: 'Province', field: 'province' }],
-    'amount-range': [{ label: 'Statut', field: 'payment_status' }, { label: 'Province', field: 'province' }],
+    'amount-range': [{ label: 'Statut', field: 'payment_status' }, { label: 'Province', field: 'province' }, { label: 'Exercice', field: 'tax_year' }],
   },
   'ownership': {
     'legal-status': [{ label: 'Type mutation', field: 'mutation_type' }, { label: 'Province', field: 'province' }],
@@ -117,11 +132,13 @@ export const CROSS_VARIABLE_REGISTRY: Record<string, Record<string, CrossVariabl
   'certificates': {
     'cert-type': [{ label: 'Statut', field: 'status' }, { label: 'Province', field: 'province' }],
     'status': [{ label: 'Type certificat', field: 'certificate_type' }, { label: 'Province', field: 'province' }],
+    'type-trend': [{ label: 'Province', field: 'province' }, { label: 'Type certificat', field: 'certificate_type' }],
   },
   'invoices': {
     'status': [{ label: 'Paiement', field: 'payment_method' }, { label: 'Province', field: 'province' }, { label: 'Zone géo', field: 'geographical_zone' }],
     'payment-method': [{ label: 'Statut', field: 'status' }, { label: 'Province', field: 'province' }],
     'geo-zone': [{ label: 'Statut', field: 'status' }, { label: 'Province', field: 'province' }],
+    'revenue-trend': [{ label: 'Paiement', field: 'payment_method' }, { label: 'Province', field: 'province' }, { label: 'Zone géo', field: 'geographical_zone' }],
   },
 };
 
