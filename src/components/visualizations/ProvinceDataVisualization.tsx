@@ -1,4 +1,4 @@
-import React, { useState, memo, useMemo, Suspense } from 'react';
+import React, { useState, useEffect, memo, useMemo, Suspense } from 'react';
 import { useAppAppearance } from '@/hooks/useAppAppearance';
 import { FileText, Building, Search, ArrowRightLeft, Scissors, AlertTriangle, Loader2, Database, History, Award, Receipt, Landmark, FileCheck, DollarSign } from 'lucide-react';
 import { useLandDataAnalytics, LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
