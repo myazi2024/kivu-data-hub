@@ -237,8 +237,32 @@ export const AnalyticsFilters: React.FC<Props> = ({
   const selectCls = "h-6 text-[10px] w-auto min-w-[70px]";
   const sep = <span className="text-[10px] text-muted-foreground">›</span>;
 
+  // Auto-hide filters after 3s of mouse inactivity
+  const [filtersVisible, setFiltersVisible] = useState(true);
+  const idleTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const resetIdleTimer = useCallback(() => {
+    setFiltersVisible(true);
+    clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = setTimeout(() => setFiltersVisible(false), 3000);
+  }, []);
+
+  useEffect(() => {
+    document.addEventListener('mousemove', resetIdleTimer);
+    idleTimerRef.current = setTimeout(() => setFiltersVisible(false), 3000);
+    return () => {
+      document.removeEventListener('mousemove', resetIdleTimer);
+      clearTimeout(idleTimerRef.current);
+    };
+  }, [resetIdleTimer]);
+
   return (
-    <div className="space-y-1 bg-background/95 backdrop-blur-sm rounded-md p-1.5 border border-border/30 shadow-sm sticky top-0 z-10">
+    <div
+      className={`space-y-1 bg-background/95 backdrop-blur-sm rounded-md border border-border/30 shadow-sm sticky top-0 z-10 transition-all duration-300 ease-in-out ${
+        filtersVisible ? 'opacity-100 max-h-40 p-1.5' : 'opacity-0 max-h-0 p-0 overflow-hidden'
+      }`}
+      onMouseEnter={resetIdleTimer}
+    >
       {/* Row 1: Temps */}
       {!hideTime && (
       <div className="flex items-center gap-1 flex-wrap">
