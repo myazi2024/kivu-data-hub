@@ -31,6 +31,7 @@ export interface CurrentOwner {
   stateExploitedBy: string;
   rightType: string;
   since: string;
+  nationality: string;
   previousTitleType?: string;
   previousTitleCustomName?: string;
 }
@@ -626,6 +627,27 @@ const CurrentOwnersSection: React.FC<CurrentOwnersSectionProps> = ({
                 )}
               </div>
             )}
+          </div>
+
+          {/* Nationalité */}
+          <div className="space-y-1.5">
+            <Label className={cn("text-sm font-medium", highlightRequiredFields && !owner.nationality && "text-destructive")}>
+              Nationalité <span className="text-destructive">*</span>
+            </Label>
+            <RadioGroup
+              value={owner.nationality || ''}
+              onValueChange={(value) => updateCurrentOwner(index, 'nationality', value)}
+              className="flex gap-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="Congolais (RD)" id={`nationality-congolais-${index}`} />
+                <Label htmlFor={`nationality-congolais-${index}`} className="text-sm cursor-pointer">Congolais (RD)</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="Étranger" id={`nationality-etranger-${index}`} />
+                <Label htmlFor={`nationality-etranger-${index}`} className="text-sm cursor-pointer">Étranger</Label>
+              </div>
+            </RadioGroup>
           </div>
 
           {/* ID document */}

@@ -393,7 +393,7 @@ export const useCCCFormState = ({
     setCurrentOwners([...currentOwners, {
       lastName: '', middleName: '', firstName: '', legalStatus: 'Personne physique',
       gender: '', entityType: '', entitySubType: '', entitySubTypeOther: '',
-      stateExploitedBy: '', rightType: '', since: '', previousTitleType: '', previousTitleCustomName: ''
+      stateExploitedBy: '', rightType: '', since: '', nationality: '', previousTitleType: '', previousTitleCustomName: ''
     }]);
     markDirty();
   };
@@ -632,6 +632,7 @@ export const useCCCFormState = ({
       if (!firstOwner.entityType) missing.push({ field: 'ownerEntityType', label: "Type d'entreprise du propriétaire", tab: 'general' });
     }
     if (!firstOwner?.since) missing.push({ field: 'ownerSince', label: 'Date "Propriétaire depuis"', tab: 'general' });
+    if (!firstOwner?.nationality) missing.push({ field: 'ownerNationality', label: 'Nationalité du propriétaire', tab: 'general' });
 
     if (formData.isTitleInCurrentOwnerName === false && formData.titleIssueDate) {
       if (firstOwner?.since && new Date(firstOwner.since) < new Date(formData.titleIssueDate)) missing.push({ field: 'ownerSinceDate', label: 'Date "Propriétaire depuis" doit être ≥ date de délivrance', tab: 'general' });
@@ -1060,7 +1061,7 @@ export const useCCCFormState = ({
     setSectionType(''); setSectionTypeAutoDetected(false); setActiveTab('general'); setHasShownConfetti(false); setShowExitConfirmation(false);
     setOwnershipMode('unique'); setLeaseYears(0);
     setPreviousOwners([{ name: '', legalStatus: 'Personne physique', entityType: '', entitySubType: '', entitySubTypeOther: '', stateExploitedBy: '', startDate: '', endDate: '', mutationType: 'Vente' }]);
-    setCurrentOwners([{ lastName: '', middleName: '', firstName: '', legalStatus: 'Personne physique', gender: '', entityType: '', entitySubType: '', entitySubTypeOther: '', stateExploitedBy: '', rightType: '', since: '', previousTitleType: '', previousTitleCustomName: '' }]);
+    setCurrentOwners([{ lastName: '', middleName: '', firstName: '', legalStatus: 'Personne physique', gender: '', entityType: '', entitySubType: '', entitySubTypeOther: '', stateExploitedBy: '', rightType: '', since: '', nationality: '', previousTitleType: '', previousTitleCustomName: '' }]);
     setHasMortgage(null);
     setHasDispute(null);
     setTaxRecords([{ taxType: 'Impôt foncier annuel', taxYear: '', taxAmount: '', paymentStatus: 'Payé', paymentDate: '', receiptFile: null }]);
@@ -1148,10 +1149,10 @@ export const useCCCFormState = ({
 
         const ownersDetails = contrib.current_owners_details as any[];
         if (ownersDetails && Array.isArray(ownersDetails) && ownersDetails.length > 0) {
-          setCurrentOwners(ownersDetails.map((o: any) => ({ lastName: o.last_name || o.lastName || '', middleName: o.middle_name || o.middleName || '', firstName: o.first_name || o.firstName || '', legalStatus: o.legal_status || o.legalStatus || 'Personne physique', gender: o.gender || '', entityType: o.entity_type || o.entityType || '', entitySubType: o.entity_sub_type || o.entitySubType || '', entitySubTypeOther: o.entity_sub_type_other || o.entitySubTypeOther || '', stateExploitedBy: o.state_exploited_by || o.stateExploitedBy || '', rightType: o.right_type || o.rightType || '', since: o.since || '', previousTitleType: o.previous_title_type || o.previousTitleType || '', previousTitleCustomName: o.previous_title_custom_name || o.previousTitleCustomName || '' })));
+          setCurrentOwners(ownersDetails.map((o: any) => ({ lastName: o.last_name || o.lastName || '', middleName: o.middle_name || o.middleName || '', firstName: o.first_name || o.firstName || '', legalStatus: o.legal_status || o.legalStatus || 'Personne physique', gender: o.gender || '', entityType: o.entity_type || o.entityType || '', entitySubType: o.entity_sub_type || o.entitySubType || '', entitySubTypeOther: o.entity_sub_type_other || o.entitySubTypeOther || '', stateExploitedBy: o.state_exploited_by || o.stateExploitedBy || '', rightType: o.right_type || o.rightType || '', since: o.since || '', nationality: o.nationality || '', previousTitleType: o.previous_title_type || o.previousTitleType || '', previousTitleCustomName: o.previous_title_custom_name || o.previousTitleCustomName || '' })));
           if (ownersDetails.length > 1) setOwnershipMode('multiple');
         } else if (contrib.current_owner_name) {
-          setCurrentOwners([{ lastName: contrib.current_owner_name, middleName: '', firstName: '', legalStatus: contrib.current_owner_legal_status || 'Personne physique', gender: '', entityType: '', entitySubType: '', entitySubTypeOther: '', stateExploitedBy: '', rightType: '', since: contrib.current_owner_since || '', previousTitleType: '', previousTitleCustomName: '' }]);
+          setCurrentOwners([{ lastName: contrib.current_owner_name, middleName: '', firstName: '', legalStatus: contrib.current_owner_legal_status || 'Personne physique', gender: '', entityType: '', entitySubType: '', entitySubTypeOther: '', stateExploitedBy: '', rightType: '', since: contrib.current_owner_since || '', nationality: '', previousTitleType: '', previousTitleCustomName: '' }]);
         }
 
         const ownerHistory = contrib.ownership_history as any[];
