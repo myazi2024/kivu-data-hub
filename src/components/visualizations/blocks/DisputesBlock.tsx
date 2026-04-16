@@ -15,7 +15,7 @@ interface Props { data: LandAnalyticsData; }
 const TAB_KEY = 'disputes';
 
 export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
-  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx, ty, ord } = useBlockFilter(TAB_KEY, data.disputes);
+  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx, ty, ord, exportCSV } = useBlockFilter(TAB_KEY, data.disputes);
 
   const { enCours, resolus, byNature, byType, byStatus, byResolutionLevel, byDeclarantQuality, trend, natureStatusCross, resolutionStatus } = useMemo(() => {
     const enCours = filtered.filter(d => !['resolved', 'closed', 'resolu', 'leve'].includes(d.current_status));
@@ -174,6 +174,7 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
       <AnalyticsFilters data={data.disputes} filter={filter} onChange={setFilter}
         hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation}
         dateField={filterConfig.dateField} statusField={filterConfig.statusField}
+        onExport={() => exportCSV(['parcel_number','province','dispute_nature','dispute_type','current_status','resolution_level','declarant_quality','created_at'])}
       />
       <KpiGrid items={kpiItems} />
 

@@ -1,11 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAppAppearance } from '@/hooks/useAppAppearance';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { MapPin, BarChart3, Info, Database, Loader2, Copy, Check, Maximize, Minimize } from 'lucide-react';
+import { MapPin, BarChart3, Info, Database, Loader2, Copy, Check, Maximize, Minimize, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { normalizeTitleType } from '@/utils/titleTypeNormalizer';
 import DRCMapWithTooltip from './DRCMapWithTooltip';
@@ -124,6 +125,7 @@ interface DRCInteractiveMapProps {
 }
 
 const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedProvince, setSelectedProvince] = useState<ProvinceData | null>(null);
   const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
   const [mapInstance, setMapInstance] = useState<any>(null);
@@ -132,15 +134,16 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const [isCopying, setIsCopying] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [externalProvinceId, setExternalProvinceId] = useState<string | null>(null);
-  const [selectedVille, setSelectedVille] = useState<string | undefined>(undefined);
-  const [selectedCommune, setSelectedCommune] = useState<string | undefined>(undefined);
-  const [selectedQuartier, setSelectedQuartier] = useState<string | undefined>(undefined);
-  const [selectedTerritoire, setSelectedTerritoire] = useState<string | undefined>(undefined);
-  const [selectedSectionType, setSelectedSectionType] = useState<string>('all');
+  const [selectedVille, setSelectedVille] = useState<string | undefined>(() => searchParams.get('ville') || undefined);
+  const [selectedCommune, setSelectedCommune] = useState<string | undefined>(() => searchParams.get('commune') || undefined);
+  const [selectedQuartier, setSelectedQuartier] = useState<string | undefined>(() => searchParams.get('quartier') || undefined);
+  const [selectedTerritoire, setSelectedTerritoire] = useState<string | undefined>(() => searchParams.get('territoire') || undefined);
+  const [selectedSectionType, setSelectedSectionType] = useState<string>(() => searchParams.get('section') || 'all');
   const mapCardRef = React.useRef<HTMLDivElement>(null);
+  const urlInitRef = React.useRef(false);
 
   const { isTestRoute } = useTestEnvironment();
-  const { data: analytics, isLoading } = useLandDataAnalytics(isTestRoute);
+  const { data: analytics, isLoading, dataUpdatedAt } = useLandDataAnalytics(isTestRoute);
   const { config: brandingConfig } = useAppAppearance();
 
   const rdcMapDefaults = ANALYTICS_TABS_REGISTRY['rdc-map']
@@ -189,6 +192,33 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
       return { id: meta.id, name: meta.name, ...indicators };
     });
   }, [analytics]);
+
+  // ── URL → State: initialize province from URL on first load ──
+  useEffect(() => {
+    if (urlInitRef.current || provincesData.length === 0) return;
+    urlInitRef.current = true;
+    const pName = searchParams.get('province');
+    if (pName) {
+      const normalize = (s: string) => s.toLowerCase().replace(/[-\s]/g, '');
+      const province = provincesData.find(p => normalize(p.name) === normalize(pName));
+      if (province) {
+        setSelectedProvince(province);
+        setExternalProvinceId(province.id);
+      }
+    }
+  }, [provincesData, searchParams]);
+
+  // ── State → URL: sync filters to URL params ──
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (selectedProvince) params.set('province', selectedProvince.name);
+    if (selectedVille) params.set('ville', selectedVille);
+    if (selectedCommune) params.set('commune', selectedCommune);
+    if (selectedQuartier) params.set('quartier', selectedQuartier);
+    if (selectedTerritoire) params.set('territoire', selectedTerritoire);
+    if (selectedSectionType !== 'all') params.set('section', selectedSectionType);
+    setSearchParams(params, { replace: true });
+  }, [selectedProvince, selectedVille, selectedCommune, selectedQuartier, selectedTerritoire, selectedSectionType]);
 
   /** Paliers choroplèthes — configurables depuis admin */
   const DENSITY_TIERS = useMemo(() => {
@@ -602,10 +632,18 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
           <div className={`${activeMobilePanel !== 'analytics' ? 'hidden lg:flex' : 'flex'} lg:col-span-8 flex-col min-h-0 h-full`}>
             <Card className="flex-1 flex flex-col overflow-hidden border-border/30 min-h-0">
               <CardHeader className="px-2 py-1 border-b border-border/20 flex-shrink-0">
-                <CardTitle className="text-[11px] sm:text-xs font-medium text-foreground flex items-center gap-1">
-                  <BarChart3 className="h-3.5 w-3.5 text-primary" />
-                  <span>Analytics</span>
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-[11px] sm:text-xs font-medium text-foreground flex items-center gap-1">
+                    <BarChart3 className="h-3.5 w-3.5 text-primary" />
+                    <span>Analytics</span>
+                  </CardTitle>
+                  {dataUpdatedAt > 0 && (
+                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 gap-0.5 font-normal text-muted-foreground">
+                      <Clock className="h-2.5 w-2.5" />
+                      Maj {new Date(dataUpdatedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    </Badge>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="flex-1 p-0 overflow-hidden charts-compact text-[10px] min-h-0">
                 <div className="h-full p-1.5 sm:p-2">

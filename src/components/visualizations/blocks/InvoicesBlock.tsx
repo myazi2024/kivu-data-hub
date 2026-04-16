@@ -15,7 +15,7 @@ interface Props { data: LandAnalyticsData; }
 const TAB_KEY = 'invoices';
 
 export const InvoicesBlock: React.FC<Props> = memo(({ data }) => {
-  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx, ty, ord } = useBlockFilter(TAB_KEY, data.invoices);
+  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx, ty, ord, exportCSV } = useBlockFilter(TAB_KEY, data.invoices);
 
   const byStatus = useMemo(() => countBy(filtered, 'status'), [filtered]);
   const byPaymentMethod = useMemo(() => countBy(filtered, 'payment_method'), [filtered]);
@@ -57,7 +57,7 @@ export const InvoicesBlock: React.FC<Props> = memo(({ data }) => {
   return (
     <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
-      <AnalyticsFilters data={data.invoices} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} />
+      <AnalyticsFilters data={data.invoices} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} onExport={() => exportCSV(['invoice_number', 'parcel_number', 'client_email', 'total_amount_usd', 'status', 'payment_method', 'created_at'])} />
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {chartDefs.map(d => <React.Fragment key={d.key}>{d.el()}</React.Fragment>)}

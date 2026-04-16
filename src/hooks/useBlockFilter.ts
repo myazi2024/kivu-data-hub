@@ -1,9 +1,10 @@
-import { useState, useContext, useEffect, useMemo } from 'react';
+import { useState, useContext, useEffect, useMemo, useCallback } from 'react';
 import { AnalyticsFilter, defaultFilter, applyFilters, buildFilterLabel } from '@/utils/analyticsHelpers';
 import { MapProvinceContext, VilleFilterContext, CommuneFilterContext, QuartierFilterContext } from '@/components/visualizations/filters/AnalyticsFilters';
 import { useTabChartsConfig, useTabFilterConfig, useTabCrossConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { getCrossVariables, getCrossVariablesWithOverrides, CrossVariable } from '@/config/crossVariables';
 import { useAnalyticsChartsConfig } from '@/hooks/useAnalyticsChartsConfig';
+import { exportRecordsToCSV } from '@/utils/csvExport';
 
 /**
  * Centralised hook for analytics blocks.
@@ -66,6 +67,11 @@ export function useBlockFilter(tabKey: string, records: any[]) {
   const ct = (key: string, fallback: string) =>
     getChartConfig(key)?.custom_title || fallback;
 
+  /** Export filtered data to CSV */
+  const exportCSV = useCallback((fields: string[], filename?: string) => {
+    exportRecordsToCSV(filtered, filename || `${tabKey}_export`, fields);
+  }, [filtered, tabKey]);
+
   return {
     filter,
     setFilter,
@@ -85,5 +91,7 @@ export function useBlockFilter(tabKey: string, records: any[]) {
       ((getChartConfig(key)?.chart_type as T) || fallback),
     /** Get display_order for sorting */
     ord: (key: string) => getChartConfig(key)?.display_order ?? 99,
+    /** Export filtered data to CSV */
+    exportCSV,
   };
 }

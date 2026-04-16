@@ -2,7 +2,7 @@ import React, { useMemo, useCallback, useContext, createContext, useEffect, useR
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MapPin, Calendar, X, CheckCircle } from 'lucide-react';
+import { MapPin, Calendar, X, CheckCircle, Download } from 'lucide-react';
 import { AnalyticsFilter, defaultFilter, extractUnique, getAvailableYears, getSectionType } from '@/utils/analyticsHelpers';
 
 /** Context to propagate province filter changes up to the map */
@@ -62,13 +62,14 @@ interface Props {
   hideStatus?: boolean;
   hideTime?: boolean;
   hideLocation?: boolean;
+  onExport?: () => void;
 }
 
 const MONTHS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
 
 export const AnalyticsFilters: React.FC<Props> = ({
   data, filter, onChange, onVilleChange, onCommuneChange, dateField = 'created_at',
-  statusField, hideStatus = false, hideTime = false, hideLocation = false,
+  statusField, hideStatus = false, hideTime = false, hideLocation = false, onExport,
 }) => {
   const provinceFilterCallback = useContext(ProvinceFilterContext);
   const mapProvince = useContext(MapProvinceContext);
@@ -317,8 +318,17 @@ export const AnalyticsFilters: React.FC<Props> = ({
         )}
 
 
-        {hasActiveFilters && (
-          <Button variant="ghost" size="sm" className="h-5 text-[10px] px-1.5 ml-auto" onClick={reset}><X className="h-2.5 w-2.5" /></Button>
+        {(hasActiveFilters || onExport) && (
+          <div className="flex items-center gap-0.5 ml-auto">
+            {onExport && (
+              <Button variant="ghost" size="sm" className="h-5 text-[10px] px-1.5" onClick={onExport} title="Exporter en CSV">
+                <Download className="h-2.5 w-2.5" />
+              </Button>
+            )}
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" className="h-5 text-[10px] px-1.5" onClick={reset}><X className="h-2.5 w-2.5" /></Button>
+            )}
+          </div>
         )}
       </div>
       )}

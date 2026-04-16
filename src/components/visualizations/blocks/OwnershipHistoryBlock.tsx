@@ -15,7 +15,7 @@ interface Props { data: LandAnalyticsData; }
 const TAB_KEY = 'ownership';
 
 export const OwnershipHistoryBlock: React.FC<Props> = memo(({ data }) => {
-  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx, ty, ord } = useBlockFilter(TAB_KEY, data.ownershipHistory);
+  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx, ty, ord, exportCSV } = useBlockFilter(TAB_KEY, data.ownershipHistory);
 
   const byLegalStatus = useMemo(() => countBy(filtered, 'legal_status'), [filtered]);
   const byMutationType = useMemo(() => countBy(filtered, 'mutation_type'), [filtered]);
@@ -56,7 +56,7 @@ export const OwnershipHistoryBlock: React.FC<Props> = memo(({ data }) => {
   return (
     <FilterLabelContext.Provider value={filterLabel}>
     <div className="space-y-2">
-      <AnalyticsFilters data={data.ownershipHistory} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} />
+      <AnalyticsFilters data={data.ownershipHistory} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} onExport={() => exportCSV(['parcel_id', 'owner_name', 'legal_status', 'mutation_type', 'ownership_start_date', 'ownership_end_date', 'created_at'])} />
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {chartDefs.map(d => <React.Fragment key={d.key}>{d.el()}</React.Fragment>)}
