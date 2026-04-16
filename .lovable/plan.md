@@ -1,88 +1,42 @@
 
 
-# Audit de la configuration graphique Analytics — Résultats
+# Audit du mode test — Résultats et corrections
 
-## Synthèse globale
+## Problème principal : `is_title_in_current_owner_name` absent des parcelles test
 
-L'audit couvre les 3 fichiers de config (`analyticsTabsRegistry.ts`, `crossVariables.ts`, `useAnalyticsChartsConfig.ts`) et les 13 blocs de visualisation.
+Le champ est généré dans `generateContributions` (ligne 399) mais **pas dans `generateParcels`** (lignes 196-250). Or le bloc analytics `TitleRequestsBlock` utilise `data.parcels` (via `filtered`) pour les 3 nouveaux charts de concordance :
 
-## 1. Alignement Registry ↔ Blocs
+- `title-owner-match` (donut) — ligne 170 : `p.is_title_in_current_owner_name`
+- `mutation-urgency` (bar-h) — ligne 178 : `filtered.filter(p => p.is_title_in_current_owner_name === false)`
+- `mismatch-by-title-type` (bar-v) — ligne 200+
 
-| Onglet | Registry (charts + KPIs) | Block chartDefs + KPIs | Verdict |
-|--------|--------------------------|------------------------|---------|
-| `title-requests` | 19 charts + 7 KPIs | 19 charts + 7 KPIs | **OK** |
-| `parcels-titled` | 17 charts + 4 KPIs | 17 charts + 4 KPIs | **OK** |
-| `contributions` | 15 charts + 7 KPIs | 15 charts + 7 KPIs | **OK** |
-| `expertise` | 19 charts + 6 KPIs | 19 charts + 6 KPIs | **OK** |
-| `mutations` | 11 charts + 6 KPIs | 11 charts + 6 KPIs | **OK** |
-| `mortgages` | 6 charts + 6 KPIs | 6 charts + 6 KPIs | **OK** |
-| `subdivision` | 9 charts + 6 KPIs | 9 charts + 6 KPIs | **OK** |
-| `disputes` | 17 charts + 9 KPIs | 17 charts + 9 KPIs | **OK** |
-| `ownership` | 4 charts + 4 KPIs | 4 charts + 4 KPIs | **OK** |
-| `certificates` | 5 charts + 4 KPIs | 5 charts + 4 KPIs | **OK** |
-| `invoices` | 6 charts + 5 KPIs | 6 charts + 5 KPIs | **OK** |
-| `building-permits` | 7 charts + 5 KPIs | 7 charts + 5 KPIs | **OK** |
-| `taxes` | 5 charts + 6 KPIs | 5 charts + 6 KPIs | **OK** |
-| `_global` | 4 config items | N/A (config only) | **OK** |
-| `rdc-map` | 8 charts + 22 KPIs | Carte RDC | **OK** |
+**Résultat** : en mode test, toutes les parcelles ont `is_title_in_current_owner_name = null` → les 3 charts et le KPI "Titres discordants" affichent 0 / "(Non renseigné)" à 100%.
 
-**Tous les onglets sont parfaitement alignés.** Aucune clé orpheline, aucune clé manquante.
+## Autres vérifications (OK)
 
-## 2. Cross-variables — Cohérence
+| Élément | Statut |
+|---------|--------|
+| `nationality` dans `current_owners_details` (contributions) | OK (corrigé précédemment) |
+| `entityType` / `rightType` conditionnels | OK |
+| `owner.since` varié (dans/hors délai 20j) | OK (ligne 341 : `idx % 7 === 0` → récent) |
+| Steps de génération (14 étapes) alignés avec les fonctions | OK |
+| RPC `count_test_data_stats` — toutes les tables comptées | OK |
+| RPC `cleanup_all_test_data` — FK-safe order | OK |
+| Rollback frontend `rollbackTestData` — ordre cohérent | OK |
+| `EMPTY_STATS` / `TestDataStats` — 20 champs alignés avec la RPC | OK |
+| Filtres TEST-% dans `useLandDataAnalytics` (fetchAll) | OK |
+| `title_issue_date` dans parcelles test | OK (ligne 225) |
+| `lease_years` dans parcelles test | OK (ligne 217) |
 
-13 tabs dans le registry, 13 dans `crossVariables.ts` — **en phase**.
+## Correction à apporter
 
-### Problème identifié : cross-variables ajoutées en config mais non passées dans le bloc
+### Fichier : `src/components/admin/test-mode/testDataGenerators.ts`
 
-Lors du dernier audit, des cross-variables ont été ajoutées dans `crossVariables.ts` pour les charts `lease-duration`, `issue-year`, `issue-trend`, `owner-duration` et `legal-status` de l'onglet `title-requests`. **Mais le bloc `TitleRequestsBlock.tsx` ne passe pas `crossVariables={cx(...)}` ni `rawRecords` ni `groupField` à ces charts** (lignes 269-288).
+Dans `generateParcels` (ligne 196-250), ajouter `is_title_in_current_owner_name` avec la même logique que les contributions :
 
-Concrètement, les charts suivants ont des cross-variables définies dans la config mais **aucun picklist ne s'affiche** :
-- `lease-duration` — config: Province, Type titre → **bloc: aucun `cx()` passé**
-- `issue-year` — config: Province, Type titre → **bloc: aucun `cx()` passé**
-- `issue-trend` — config: Province, Type titre → **bloc: aucun `cx()` passé**
-- `owner-duration` — config: Province, Type titre → **bloc: aucun `cx()` passé**
-- `legal-status` — config: Province, Type titre → **bloc: aucun `cx()` passé**
-
-C'est le seul problème fonctionnel trouvé.
-
-## 3. Filtres — TAB_FILTER_DEFAULTS
-
-| Tab | hideStatus | dateField | Verdict |
-|-----|-----------|-----------|---------|
-| `title-requests` | `true` | `title_issue_date` | **OK** (corrigé lors du dernier audit) |
-| `ownership` | `true` | `ownership_start_date` | **OK** |
-| `disputes` | `false` | `created_at`, statusField: `current_status` | **OK** |
-| Tous les autres | `false` | `created_at` | **OK** |
-
-`title_issue_date` n'est pas dans `DATE_FIELD_OPTIONS` — l'admin ne pourra pas le sélectionner dans le dropdown si on le change. **Problème mineur** : il faudrait l'ajouter à la liste.
-
-## 4. Points sains
-
-- Tous les `display_order` sont séquentiels et corrects
-- Les `chart_type` par défaut correspondent aux usages dans les blocks
-- Les `col_span: 2` sont bien appliqués aux charts évolution/tendance
-- Le merge DB/defaults (`useInitializedConfig`) fonctionne correctement
-- Les tabs système (`_global`, `rdc-map`) sont exclus des vues utilisateur
-
-## 5. Corrections à apporter
-
-### A. Passer les cross-variables aux 5 charts dans `TitleRequestsBlock.tsx`
-
-Ajouter `crossVariables={cx('...')} rawRecords={filtered} groupField="..."` aux charts :
-- `lease-duration` → `groupField="lease_years"`
-- `issue-year` → `groupField="title_issue_date"`
-- `issue-trend` → `groupField="title_issue_date"`
-- `owner-duration` → pas de groupField direct (données dénormalisées depuis owners), utiliser `rawRecords={filtered}` avec `groupField="property_title_type"`
-- `legal-status` → données JSONB (owners), utiliser `rawRecords={filtered}` avec `groupField="current_owner_legal_status"`
-
-### B. Ajouter `title_issue_date` à `DATE_FIELD_OPTIONS`
-
-Dans `useAnalyticsChartsConfig.ts`, ajouter :
 ```ts
-{ value: 'title_issue_date', label: 'Date de délivrance (title_issue_date)' }
+is_title_in_current_owner_name: idx % 3 !== 0,  // ~67% concordants, ~33% discordants
 ```
 
-### Fichiers modifiés (2)
-- `src/components/visualizations/blocks/TitleRequestsBlock.tsx` — ajouter `crossVariables`/`rawRecords`/`groupField` aux 5 charts
-- `src/hooks/useAnalyticsChartsConfig.ts` — ajouter `title_issue_date` à `DATE_FIELD_OPTIONS`
+C'est la seule modification nécessaire (1 ligne ajoutée dans 1 fichier).
 
