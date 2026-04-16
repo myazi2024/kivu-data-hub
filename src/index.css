@@ -464,6 +464,12 @@ All colors MUST be HSL.
   animation: marquee 30s linear infinite;
 }
 
+/* Hide cursor on idle */
+.cursor-none,
+.cursor-none * {
+  cursor: none !important;
+}
+
 .animate-marquee:hover {
   animation-play-state: paused;
 }
