@@ -193,6 +193,33 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     });
   }, [analytics]);
 
+  // ── URL → State: initialize province from URL on first load ──
+  useEffect(() => {
+    if (urlInitRef.current || provincesData.length === 0) return;
+    urlInitRef.current = true;
+    const pName = searchParams.get('province');
+    if (pName) {
+      const normalize = (s: string) => s.toLowerCase().replace(/[-\s]/g, '');
+      const province = provincesData.find(p => normalize(p.name) === normalize(pName));
+      if (province) {
+        setSelectedProvince(province);
+        setExternalProvinceId(province.id);
+      }
+    }
+  }, [provincesData, searchParams]);
+
+  // ── State → URL: sync filters to URL params ──
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (selectedProvince) params.set('province', selectedProvince.name);
+    if (selectedVille) params.set('ville', selectedVille);
+    if (selectedCommune) params.set('commune', selectedCommune);
+    if (selectedQuartier) params.set('quartier', selectedQuartier);
+    if (selectedTerritoire) params.set('territoire', selectedTerritoire);
+    if (selectedSectionType !== 'all') params.set('section', selectedSectionType);
+    setSearchParams(params, { replace: true });
+  }, [selectedProvince, selectedVille, selectedCommune, selectedQuartier, selectedTerritoire, selectedSectionType]);
+
   /** Paliers choroplèthes — configurables depuis admin */
   const DENSITY_TIERS = useMemo(() => {
     const tierKeys = ['map-tier-1', 'map-tier-2', 'map-tier-3', 'map-tier-4'];
