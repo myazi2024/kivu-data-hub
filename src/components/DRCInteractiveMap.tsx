@@ -140,7 +140,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const mapCardRef = React.useRef<HTMLDivElement>(null);
 
   const { isTestRoute } = useTestEnvironment();
-  const { data: analytics, isLoading } = useLandDataAnalytics(isTestRoute);
+  const { data: analytics, isLoading, dataUpdatedAt } = useLandDataAnalytics(isTestRoute);
   const { config: brandingConfig } = useAppAppearance();
 
   const rdcMapDefaults = ANALYTICS_TABS_REGISTRY['rdc-map']
