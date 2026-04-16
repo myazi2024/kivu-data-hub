@@ -25,7 +25,7 @@ interface ChartCardProps {
   labelWidth?: number;
   maxItems?: number;
   hidden?: boolean;
-  insight?: string;
+  insight?: string | ChartInsight;
   // Cross-variable support
   crossVariables?: CrossVariable[];
   rawRecords?: any[];
@@ -43,7 +43,7 @@ interface StackedBarCardProps {
   labelWidth?: number;
   maxItems?: number;
   hidden?: boolean;
-  insight?: string;
+  insight?: string | ChartInsight;
 }
 
 interface MultiDataPieProps {
@@ -52,7 +52,7 @@ interface MultiDataPieProps {
   iconColor?: string;
   data: { name: string; value: number }[];
   colorMap?: Record<string, string>;
-  insight?: string;
+  insight?: string | ChartInsight;
   crossVariables?: CrossVariable[];
   rawRecords?: any[];
   groupField?: string;
@@ -65,12 +65,32 @@ const colSpanClass: Record<number, string> = { 2: 'md:col-span-2', 3: 'md:col-sp
 
 const truncLabel = (s: string, max = 16) => s.length > max ? s.slice(0, max) + '…' : s;
 
-const InsightText: React.FC<{ text?: string }> = ({ text }) => {
+const InsightText: React.FC<{ text?: string | ChartInsight }> = ({ text }) => {
   if (!text) return null;
+  if (typeof text === 'string') {
+    return (
+      <div className="flex items-start gap-1 mt-1 px-0.5">
+        <Info className="h-2.5 w-2.5 text-muted-foreground shrink-0 mt-0.5" />
+        <p className="text-[9px] text-muted-foreground leading-tight italic">{text}</p>
+      </div>
+    );
+  }
   return (
-    <div className="flex items-start gap-1 mt-1 px-0.5">
-      <Info className="h-2.5 w-2.5 text-muted-foreground shrink-0 mt-0.5" />
-      <p className="text-[9px] text-muted-foreground leading-tight italic">{text}</p>
+    <div className="mt-1.5 px-0.5 space-y-1">
+      <div className="flex items-start gap-1">
+        <BookOpen className="h-2.5 w-2.5 text-blue-400 shrink-0 mt-0.5" />
+        <p className="text-[9px] text-muted-foreground leading-tight">
+          <span className="font-semibold not-italic">Définition :</span>{' '}
+          <span className="italic">{text.definition}</span>
+        </p>
+      </div>
+      <div className="flex items-start gap-1">
+        <TrendingUp className="h-2.5 w-2.5 text-emerald-400 shrink-0 mt-0.5" />
+        <p className="text-[9px] text-muted-foreground leading-tight">
+          <span className="font-semibold not-italic">Interprétation :</span>{' '}
+          <span className="italic">{text.interpretation}</span>
+        </p>
+      </div>
     </div>
   );
 };
@@ -449,7 +469,7 @@ interface MultiAreaChartCardProps {
   iconColor?: string;
   colSpan?: number;
   series: MultiAreaSeries[];
-  insight?: string;
+  insight?: string | ChartInsight;
 }
 
 export const MultiAreaChartCard: React.FC<MultiAreaChartCardProps> = memo(({
