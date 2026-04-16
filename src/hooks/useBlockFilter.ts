@@ -1,9 +1,10 @@
-import { useState, useContext, useEffect, useMemo } from 'react';
+import { useState, useContext, useEffect, useMemo, useCallback } from 'react';
 import { AnalyticsFilter, defaultFilter, applyFilters, buildFilterLabel } from '@/utils/analyticsHelpers';
 import { MapProvinceContext, VilleFilterContext, CommuneFilterContext, QuartierFilterContext } from '@/components/visualizations/filters/AnalyticsFilters';
 import { useTabChartsConfig, useTabFilterConfig, useTabCrossConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { getCrossVariables, getCrossVariablesWithOverrides, CrossVariable } from '@/config/crossVariables';
 import { useAnalyticsChartsConfig } from '@/hooks/useAnalyticsChartsConfig';
+import { exportRecordsToCSV } from '@/utils/csvExport';
 
 /**
  * Centralised hook for analytics blocks.
