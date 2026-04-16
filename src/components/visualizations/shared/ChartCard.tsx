@@ -4,6 +4,7 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import { CHART_HEIGHT as BASE_CH, NoData } from '@/utils/analyticsConstants';
 import { CHART_COLORS, crossBy } from '@/utils/analyticsHelpers';
 import { LucideIcon, Info, Copy, Check, GitBranch, X, BookOpen, TrendingUp } from 'lucide-react';
+import { useAppAppearance } from '@/hooks/useAppAppearance';
 import { ChartInsight } from '@/utils/chartInsights';
 import { toPng } from 'html-to-image';
 import { toast } from 'sonner';
@@ -57,6 +58,13 @@ interface MultiDataPieProps {
   rawRecords?: any[];
   groupField?: string;
 }
+
+const ChartLogoIcon: React.FC = () => {
+  const { config } = useAppAppearance();
+  const logoUrl = typeof config.logo_url === 'string' ? config.logo_url : '';
+  if (!logoUrl) return null;
+  return <img src={logoUrl} className="h-3 w-3 object-contain shrink-0 opacity-80" alt="" />;
+};
 
 const tooltipStyle = { fontSize: 10 };
 const gridStroke = 'hsl(var(--border))';
@@ -319,9 +327,11 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
     <Card ref={ref} onClick={() => setFocused(f => !f)} className={`border-border/30 cursor-pointer transition-all duration-200 ${focused ? 'scale-[1.03] shadow-xl z-10 ring-2 ring-primary/30' : ''} ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
       <CardHeader className="pb-1 px-2 pt-2">
         <div className="flex items-start gap-1">
-          {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'} shrink-0 mt-0.5`} />}
           <div className="min-w-0 flex-1">
-            <CardTitle className="text-xs font-semibold leading-tight break-words">{title}</CardTitle>
+            <div className="flex items-center gap-1">
+              <CardTitle className="text-xs font-semibold leading-tight break-words">{title}</CardTitle>
+              <ChartLogoIcon />
+            </div>
             {filterLabel && <ChartFilterSubtitle filterLabel={filterLabel} />}
           </div>
           {truncated && !isCrossMode && <span className="text-[8px] text-muted-foreground shrink-0 mt-0.5">Top {maxItems}/{data.length}</span>}
@@ -419,9 +429,11 @@ export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
     <Card ref={ref} onClick={() => setFocused(f => !f)} className={`border-border/30 cursor-pointer transition-all duration-200 ${focused ? 'scale-[1.03] shadow-xl z-10 ring-2 ring-primary/30' : ''} ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
       <CardHeader className="pb-1 px-2 pt-2">
         <div className="flex items-start gap-1">
-          {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'} shrink-0 mt-0.5`} />}
           <div className="min-w-0 flex-1">
-            <CardTitle className="text-xs font-semibold leading-tight break-words">{title}</CardTitle>
+            <div className="flex items-center gap-1">
+              <CardTitle className="text-xs font-semibold leading-tight break-words">{title}</CardTitle>
+              <ChartLogoIcon />
+            </div>
             {filterLabel && <ChartFilterSubtitle filterLabel={filterLabel} />}
           </div>
           <CopyButton onClick={copy} copied={copied} />
@@ -531,9 +543,11 @@ export const MultiAreaChartCard: React.FC<MultiAreaChartCardProps> = memo(({
     <Card ref={ref} onClick={() => setFocused(f => !f)} className={`border-border/30 cursor-pointer transition-all duration-200 ${focused ? 'scale-[1.03] shadow-xl z-10 ring-2 ring-primary/30' : ''} ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
       <CardHeader className="pb-1 px-2 pt-2">
         <div className="flex items-start gap-1">
-          {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'} shrink-0 mt-0.5`} />}
           <div className="min-w-0 flex-1">
-            <CardTitle className="text-xs font-semibold leading-tight break-words">{title}</CardTitle>
+            <div className="flex items-center gap-1">
+              <CardTitle className="text-xs font-semibold leading-tight break-words">{title}</CardTitle>
+              <ChartLogoIcon />
+            </div>
             {filterLabel && <ChartFilterSubtitle filterLabel={filterLabel} />}
           </div>
           <CopyButton onClick={copy} copied={copied} />
@@ -594,9 +608,11 @@ export const ColorMappedPieCard: React.FC<MultiDataPieProps> = memo(({
     <Card ref={ref} onClick={() => setFocused(f => !f)} className={`border-border/30 cursor-pointer transition-all duration-200 ${focused ? 'scale-[1.03] shadow-xl z-10 ring-2 ring-primary/30' : ''}`}>
       <CardHeader className="pb-1 px-2 pt-2">
         <div className="flex items-start gap-1">
-          {Icon && <Icon className={`h-3 w-3 ${iconColor || 'text-primary'} shrink-0 mt-0.5`} />}
           <div className="min-w-0 flex-1">
-            <CardTitle className="text-xs font-semibold leading-tight break-words">{title}</CardTitle>
+            <div className="flex items-center gap-1">
+              <CardTitle className="text-xs font-semibold leading-tight break-words">{title}</CardTitle>
+              <ChartLogoIcon />
+            </div>
             {filterLabel && <ChartFilterSubtitle filterLabel={filterLabel} />}
           </div>
           <div className="flex items-center gap-0.5 shrink-0">
