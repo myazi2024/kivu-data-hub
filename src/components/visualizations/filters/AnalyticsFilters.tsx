@@ -244,10 +244,12 @@ export const AnalyticsFilters: React.FC<Props> = ({
   const resetIdleTimer = useCallback(() => {
     setFiltersVisible(true);
     document.body.classList.remove('cursor-none');
+    document.body.classList.remove('hide-scrollbar');
     clearTimeout(idleTimerRef.current);
     idleTimerRef.current = setTimeout(() => {
       setFiltersVisible(false);
       document.body.classList.add('cursor-none');
+      document.body.classList.add('hide-scrollbar');
     }, 3000);
   }, []);
 
@@ -256,11 +258,13 @@ export const AnalyticsFilters: React.FC<Props> = ({
     idleTimerRef.current = setTimeout(() => {
       setFiltersVisible(false);
       document.body.classList.add('cursor-none');
+      document.body.classList.add('hide-scrollbar');
     }, 3000);
     return () => {
       document.removeEventListener('mousemove', resetIdleTimer);
       clearTimeout(idleTimerRef.current);
       document.body.classList.remove('cursor-none');
+      document.body.classList.remove('hide-scrollbar');
     };
   }, [resetIdleTimer]);
 
