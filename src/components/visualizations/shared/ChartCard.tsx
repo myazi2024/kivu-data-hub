@@ -303,6 +303,7 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
 }) => {
   const { ref, copied, copy } = useCopyAsImage();
   const filterLabel = useContext(FilterLabelContext);
+  const wmConfig = useContext(WatermarkConfigContext);
   const [crossField, setCrossField] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
   if (hidden) return null;
@@ -411,6 +412,7 @@ export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
 }) => {
   const { ref, copied, copy } = useCopyAsImage();
   const filterLabel = useContext(FilterLabelContext);
+  const wmConfig = useContext(WatermarkConfigContext);
   const [focused, setFocused] = useState(false);
   if (hidden) return null;
 
