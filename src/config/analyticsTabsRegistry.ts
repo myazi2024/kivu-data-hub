@@ -20,7 +20,10 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'title-requests', item_key: 'hist-legal-status', item_type: 'chart', is_visible: true, display_order: 12, custom_title: 'Statut juridique (anciens)', chart_type: 'donut' },
       { tab_key: 'title-requests', item_key: 'hist-duration', item_type: 'chart', is_visible: true, display_order: 13, custom_title: 'Durée détention (anciens)', chart_type: 'bar-v' },
       { tab_key: 'title-requests', item_key: 'transfers-per-parcel', item_type: 'chart', is_visible: true, display_order: 14, custom_title: 'Transferts par parcelle', chart_type: 'bar-v' },
-      { tab_key: 'title-requests', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 15, custom_title: 'Géographie' },
+      { tab_key: 'title-requests', item_key: 'title-owner-match', item_type: 'chart', is_visible: true, display_order: 15, custom_title: 'Concordance titre / propriétaire', chart_type: 'donut' },
+      { tab_key: 'title-requests', item_key: 'mutation-urgency', item_type: 'chart', is_visible: true, display_order: 16, custom_title: 'Urgence de mutation', chart_type: 'bar-h' },
+      { tab_key: 'title-requests', item_key: 'mismatch-by-title-type', item_type: 'chart', is_visible: true, display_order: 17, custom_title: 'Discordants par type de titre', chart_type: 'bar-v' },
+      { tab_key: 'title-requests', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 18, custom_title: 'Géographie' },
     ],
     kpis: [
       { tab_key: 'title-requests', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Parcelles titrées' },
@@ -29,6 +32,7 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'title-requests', item_key: 'kpi-congolais', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: '% Congolais' },
       { tab_key: 'title-requests', item_key: 'kpi-anciennete', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Ancienneté moy.' },
       { tab_key: 'title-requests', item_key: 'kpi-mutations', item_type: 'kpi', is_visible: true, display_order: 5, custom_title: 'Mutations' },
+      { tab_key: 'title-requests', item_key: 'kpi-discordants', item_type: 'kpi', is_visible: true, display_order: 6, custom_title: 'Titres discordants' },
     ],
   },
   'parcels-titled': {

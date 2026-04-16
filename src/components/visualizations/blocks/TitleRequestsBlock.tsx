@@ -4,7 +4,7 @@ import { countBy, getSectionType } from '@/utils/analyticsHelpers';
 import { normalizeTitleType } from '@/utils/titleTypeNormalizer';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { FileText, Users, Globe, Clock, KeyRound, UserCheck, Scale, ArrowRightLeft } from 'lucide-react';
+import { FileText, Users, Globe, Clock, KeyRound, UserCheck, Scale, ArrowRightLeft, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, ColorMappedPieCard, FilterLabelContext } from '../shared/ChartCard';
 import { GeoCharts } from '../shared/GeoCharts';
@@ -30,13 +30,14 @@ function extractOwners(contributions: any[]): any[] {
     list.forEach((o: any) => {
       owners.push({
         ...o,
-        // carry geo from contribution
         province: c.province,
         ville: c.ville,
         commune: c.commune,
         quartier: c.quartier,
         parcel_type: c.parcel_type,
         section_type: c.section_type,
+        is_title_in_current_owner_name: c.is_title_in_current_owner_name,
+        property_title_type: c.property_title_type,
       });
     });
   });
@@ -163,6 +164,48 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
     return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
   }, [owners]);
 
+  // ── Title/owner concordance charts ──
+  const titleOwnerMatch = useMemo(() => {
+    const map = new Map<string, number>();
+    filtered.forEach(p => {
+      const val = p.is_title_in_current_owner_name;
+      const label = val === true ? 'Au nom du propriétaire' : val === false ? 'Pas au nom du propriétaire' : '(Non renseigné)';
+      map.set(label, (map.get(label) || 0) + 1);
+    });
+    return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
+  }, [filtered]);
+
+  const discordants = useMemo(() => filtered.filter(p => p.is_title_in_current_owner_name === false), [filtered]);
+
+  const mutationUrgency = useMemo(() => {
+    const now = Date.now();
+    const map = new Map<string, number>();
+    discordants.forEach(p => {
+      // Find owner.since from linked contribution
+      const contrib = linkedContribs.find(c => c.parcel_number === p.parcel_number);
+      const details = contrib?.current_owners_details;
+      const ownerList = Array.isArray(details) ? details : details ? [details] : [];
+      const since = ownerList[0]?.since;
+      if (!since) {
+        map.set('Délai inconnu', (map.get('Délai inconnu') || 0) + 1);
+        return;
+      }
+      const days = (now - new Date(since).getTime()) / (24 * 3600 * 1000);
+      const label = days <= 20 ? 'Dans le délai légal (≤ 20j)' : 'Hors délai (pénalités)';
+      map.set(label, (map.get(label) || 0) + 1);
+    });
+    return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
+  }, [discordants, linkedContribs]);
+
+  const mismatchByTitleType = useMemo(() => {
+    const map = new Map<string, number>();
+    discordants.forEach(p => {
+      const n = normalizeTitleType(p.property_title_type);
+      map.set(n, (map.get(n) || 0) + 1);
+    });
+    return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  }, [discordants]);
+
   // ── Ownership history charts ──
   const byMutationType = useMemo(() => countBy(linkedOwnership, 'mutation_type'), [linkedOwnership]);
   const byHistLegalStatus = useMemo(() => countBy(linkedOwnership, 'legal_status'), [linkedOwnership]);
@@ -211,9 +254,10 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
       { key: 'kpi-congolais', label: ct('kpi-congolais', '% Congolais'), value: `${stats.pctCongolais}%`, cls: 'text-blue-600', tooltip: `${owners.filter(o => o.nationality === 'Congolais (RD)').length} sur ${owners.length}` },
       { key: 'kpi-anciennete', label: ct('kpi-anciennete', 'Ancienneté moy.'), value: stats.avgDuration > 0 ? `${stats.avgDuration} ans` : 'N/A', cls: 'text-violet-600' },
       { key: 'kpi-mutations', label: ct('kpi-mutations', 'Mutations'), value: linkedOwnership.length, cls: 'text-rose-600' },
+      { key: 'kpi-discordants', label: ct('kpi-discordants', 'Titres discordants'), value: discordants.length, cls: 'text-orange-600', tooltip: filtered.length > 0 ? `${Math.round((discordants.length / filtered.length) * 100)}% des parcelles` : '' },
     ];
     return all.filter(k => v(k.key));
-  }, [filtered, stats, owners, linkedOwnership, v, ct]);
+  }, [filtered, stats, owners, linkedOwnership, discordants, v, ct]);
 
   // ── Chart definitions ──
   const chartDefs = useMemo(() => [
@@ -253,10 +297,18 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'transfers-per-parcel', el: () => <ChartCard title={ct('transfers-per-parcel', 'Transferts par parcelle')} icon={UserCheck} data={transfersPerParcel} type={ty('transfers-per-parcel', 'bar-v')} colorIndex={10} hidden={transfersPerParcel.length === 0}
       insight={generateInsight(transfersPerParcel, 'bar-v', 'les transferts par parcelle')} /> },
 
+    // Title/owner concordance block
+    { key: 'title-owner-match', el: () => <ChartCard title={ct('title-owner-match', 'Concordance titre / propriétaire')} icon={ShieldCheck} data={titleOwnerMatch} type={ty('title-owner-match', 'donut')} colorIndex={12} hidden={titleOwnerMatch.length === 0}
+      insight={generateInsight(titleOwnerMatch, 'donut', 'la concordance titre/propriétaire')} /> },
+    { key: 'mutation-urgency', el: () => <ChartCard title={ct('mutation-urgency', 'Urgence de mutation')} icon={AlertTriangle} data={mutationUrgency} type={ty('mutation-urgency', 'bar-h')} colorIndex={14} labelWidth={140} hidden={mutationUrgency.length === 0}
+      insight={generateInsight(mutationUrgency, 'bar-h', 'l\'urgence de mutation')} /> },
+    { key: 'mismatch-by-title-type', el: () => <ChartCard title={ct('mismatch-by-title-type', 'Discordants par type de titre')} icon={FileText} data={mismatchByTitleType} type={ty('mismatch-by-title-type', 'bar-v')} colorIndex={15} hidden={mismatchByTitleType.length === 0}
+      insight={generateInsight(mismatchByTitleType, 'bar-v', 'les discordants par type de titre')} /> },
+
     // Geo
     { key: 'geo', el: () => <GeoCharts records={filtered} /> },
   ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)),
-  [filtered, byTitleType, byLeaseType, byLeaseDuration, byIssueYear, issueTrend, byLegalStatus, genderData, byNationality, byEntityType, byRightType, ownerDuration, byMutationType, byHistLegalStatus, histDuration, transfersPerParcel, v, ct, cx, ty, ord]);
+  [filtered, byTitleType, byLeaseType, byLeaseDuration, byIssueYear, issueTrend, byLegalStatus, genderData, byNationality, byEntityType, byRightType, ownerDuration, byMutationType, byHistLegalStatus, histDuration, transfersPerParcel, titleOwnerMatch, mutationUrgency, mismatchByTitleType, discordants, v, ct, cx, ty, ord]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
