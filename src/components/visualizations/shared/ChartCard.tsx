@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, AreaChart, Area, Legend } from 'recharts';
 import { CHART_HEIGHT as BASE_CH, NoData } from '@/utils/analyticsConstants';
 import { CHART_COLORS, crossBy } from '@/utils/analyticsHelpers';
-import { LucideIcon, Info, Copy, Check, GitBranch, X, BookOpen, TrendingUp } from 'lucide-react';
+import { Info, Copy, Check, GitBranch, X, BookOpen, TrendingUp } from 'lucide-react';
+import { useAppAppearance } from '@/hooks/useAppAppearance';
 import { ChartInsight } from '@/utils/chartInsights';
 import { toPng } from 'html-to-image';
 import { toast } from 'sonner';
@@ -15,8 +16,6 @@ export const FilterLabelContext = createContext<string>('');
 
 interface ChartCardProps {
   title: string;
-  icon?: LucideIcon;
-  iconColor?: string;
   colSpan?: number;
   data: { name: string; value: number }[];
   type: 'bar-h' | 'bar-v' | 'pie' | 'donut' | 'area';
@@ -34,8 +33,6 @@ interface ChartCardProps {
 
 interface StackedBarCardProps {
   title: string;
-  icon?: LucideIcon;
-  iconColor?: string;
   colSpan?: number;
   data: any[];
   bars: { dataKey: string; name: string; color: string }[];
@@ -48,8 +45,6 @@ interface StackedBarCardProps {
 
 interface MultiDataPieProps {
   title: string;
-  icon?: LucideIcon;
-  iconColor?: string;
   data: { name: string; value: number }[];
   colorMap?: Record<string, string>;
   insight?: string | ChartInsight;
@@ -463,8 +458,6 @@ export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
 interface MultiAreaSeries { key: string; label: string; data: { name: string; value: number }[] }
 interface MultiAreaChartCardProps {
   title: string;
-  icon?: LucideIcon;
-  iconColor?: string;
   colSpan?: number;
   series: MultiAreaSeries[];
   insight?: string | ChartInsight;
