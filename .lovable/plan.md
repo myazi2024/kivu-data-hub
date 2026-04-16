@@ -1,37 +1,45 @@
 
 
-## Ajouter le logo à droite du titre des visuels Analytics
+# Masquer le curseur avec le bloc de filtres
 
-### Objectif
-Afficher le logo de l'application à droite du titre de chaque carte de visualisation, avec une taille proportionnelle au titre (text-xs).
+## Objectif
 
-### Modifications
+Quand le bloc de filtres disparaît après 3 secondes d'inactivité, le curseur de souris doit aussi disparaître. Les deux réapparaissent ensemble dès que l'utilisateur bouge la souris.
 
-**Fichier :** `src/components/visualizations/shared/ChartCard.tsx`
+## Modification
 
-Dans les composants `ChartCard` (lignes 320-338) et `StackedBarCard` (lignes 420-428), modifier le `CardHeader` pour insérer le logo entre le titre et les boutons d'action :
+**Fichier :** `src/components/visualizations/filters/AnalyticsFilters.tsx`
+
+Dans le `useEffect` existant (lignes 250-257), ajouter/retirer la classe `cursor-none` sur `document.body` selon l'état `filtersVisible` :
 
 ```tsx
-// Dans CardHeader, après le titre et avant les boutons d'action
-<div className="flex items-center gap-0.5 shrink-0">
-  {/* Logo ajouté ici */}
-  <img 
-    src={config.logoUrl || "/bic-logo.png"} 
-    alt="" 
-    className="h-3.5 w-3.5 object-contain opacity-80" 
-  />
-  {hasCross && (...)}
-  <CopyButton ... />
-</div>
+const resetIdleTimer = useCallback(() => {
+  setFiltersVisible(true);
+  document.body.classList.remove('cursor-none');
+  clearTimeout(idleTimerRef.current);
+  idleTimerRef.current = setTimeout(() => {
+    setFiltersVisible(false);
+    document.body.classList.add('cursor-none');
+  }, 3000);
+}, []);
 ```
 
-Le logo est récupéré via le `WatermarkConfigContext` déjà existant (lignes 99-101), qui fournit l'URL du logo configuré dans l'administration.
+Et dans le cleanup du `useEffect`, s'assurer de retirer la classe au démontage :
 
-**Taille choisie :** `h-3.5 w-3.5` (14px) — proportionnelle au titre `text-xs` (12px) et aux icônes `h-3 w-3`.
+```tsx
+return () => {
+  document.removeEventListener('mousemove', resetIdleTimer);
+  clearTimeout(idleTimerRef.current);
+  document.body.classList.remove('cursor-none');
+};
+```
 
-### Fichiers modifiés
+Ajouter dans `src/index.css` :
+```css
+.cursor-none, .cursor-none * {
+  cursor: none !important;
+}
+```
 
-| Fichier | Changement |
-|---------|------------|
-| `src/components/visualizations/shared/ChartCard.tsx` | Ajouter balise `<img>` logo dans le header de `ChartCard` et `StackedBarCard` |
+Un seul fichier logique modifié + une ligne CSS.
 

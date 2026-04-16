@@ -303,7 +303,6 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
 }) => {
   const { ref, copied, copy } = useCopyAsImage();
   const filterLabel = useContext(FilterLabelContext);
-  const wmConfig = useContext(WatermarkConfigContext);
   const [crossField, setCrossField] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
   if (hidden) return null;
@@ -334,7 +333,6 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
                 onSelect={setCrossField}
               />
             )}
-            <img src={wmConfig.logoUrl || "/bic-logo.png"} alt="" className="h-3.5 w-3.5 object-contain opacity-80" />
             <CopyButton onClick={copy} copied={copied} />
           </div>
         </div>
@@ -412,7 +410,6 @@ export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
 }) => {
   const { ref, copied, copy } = useCopyAsImage();
   const filterLabel = useContext(FilterLabelContext);
-  const wmConfig = useContext(WatermarkConfigContext);
   const [focused, setFocused] = useState(false);
   if (hidden) return null;
 
@@ -427,7 +424,6 @@ export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
             <CardTitle className="text-xs font-semibold leading-tight break-words">{title}</CardTitle>
             {filterLabel && <ChartFilterSubtitle filterLabel={filterLabel} />}
           </div>
-          <img src={wmConfig.logoUrl || "/bic-logo.png"} alt="" className="h-3.5 w-3.5 object-contain opacity-80" />
           <CopyButton onClick={copy} copied={copied} />
         </div>
       </CardHeader>
