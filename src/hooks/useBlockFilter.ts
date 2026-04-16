@@ -67,6 +67,11 @@ export function useBlockFilter(tabKey: string, records: any[]) {
   const ct = (key: string, fallback: string) =>
     getChartConfig(key)?.custom_title || fallback;
 
+  /** Export filtered data to CSV */
+  const exportCSV = useCallback((fields: string[], filename?: string) => {
+    exportRecordsToCSV(filtered, filename || `${tabKey}_export`, fields);
+  }, [filtered, tabKey]);
+
   return {
     filter,
     setFilter,
@@ -86,5 +91,7 @@ export function useBlockFilter(tabKey: string, records: any[]) {
       ((getChartConfig(key)?.chart_type as T) || fallback),
     /** Get display_order for sorting */
     ord: (key: string) => getChartConfig(key)?.display_order ?? 99,
+    /** Export filtered data to CSV */
+    exportCSV,
   };
 }
