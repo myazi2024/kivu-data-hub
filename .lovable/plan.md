@@ -1,26 +1,21 @@
 
 
-## Supprimer le bouton "Export CSV" dans Analytics
-
-### Objectif
-Retirer la fonctionnalité d'export CSV des dashboards Analytics publics.
+## Doubler l'intensité des ombres des visuels Analytics
 
 ### Analyse
-Le bouton "Exporter" est rendu via le composant `AnalyticsFilters` (prop `onExport`), utilisé dans tous les blocks Analytics (`OwnershipHistoryBlock`, `TitleRequestsBlock`, etc.). Chaque block passe `onExport={() => exportCSV(...)}` provenant du hook `useBlockFilter`.
+Les ombres des visuels Analytics sont définies dans `src/index.css` via la classe `.analytics-card` (et probablement `.analytics-panel`), avec un `box-shadow` interne combiné à des pseudo-éléments. Pour doubler l'effet, il faut amplifier les valeurs (opacité, blur, spread) du `box-shadow` principal et de l'état hover.
 
-### Modifications
+### Modification
 
-**1. `src/components/visualizations/filters/AnalyticsFilters.tsx`**
-- Supprimer le rendu du bouton "Exporter" et l'icône `Download` associée.
-- Conserver la prop `onExport` optionnelle pour ne pas casser les signatures (ou la retirer entièrement).
+**`src/index.css`**
+- Sur `.analytics-card` : doubler l'opacité et/ou le blur des `box-shadow` (inset + externe légère).
+- Sur `.analytics-card:hover` : doubler également l'intensité du halo.
+- Idem pour `.analytics-panel` si applicable.
 
-**Approche choisie** : retirer purement le bouton du JSX. Le plus simple et propre.
-
-**2. Blocks Analytics (~13 fichiers dans `src/components/visualizations/blocks/*.tsx`)**
-- Retirer la prop `onExport={() => exportCSV(...)}` passée à `AnalyticsFilters`.
-- Conserver `exportCSV` dans `useBlockFilter` (utilisable côté admin si besoin futur), mais ne plus l'invoquer depuis l'UI publique.
+Exemple de transformation :
+- Avant : `box-shadow: 0 1px 3px hsl(var(--foreground) / 0.08), inset 0 1px 0 0 hsl(var(--background) / 0.6);`
+- Après : `box-shadow: 0 2px 6px hsl(var(--foreground) / 0.16), inset 0 2px 0 0 hsl(var(--background) / 0.6);`
 
 ### Résultat
-- Plus aucun bouton "Exporter CSV" visible sur les dashboards Analytics publics (`/map` et autres vues).
-- Les filtres et le reste de l'UI restent intacts.
+Les visuels Analytics (graphiques, KPI, panneaux) auront un relief deux fois plus prononcé, tout en restant cohérents avec le design system sémantique.
 
