@@ -369,10 +369,22 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     try {
       const html2canvas = (await import('html2canvas')).default;
       const canvas = await html2canvas(mapCardRef.current, { backgroundColor: null, scale: 2, borderRadius: 12 } as any);
+      const profileSlug = activeProfile?.tabKey || 'rdc-map';
+      const dateSlug = new Date().toISOString().slice(0, 10);
+      const filename = `carte-rdc-${profileSlug}-${dateSlug}.png`;
       canvas.toBlob(async (blob) => {
         if (blob) {
-          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-          toast.success('Image copiée dans le presse-papier');
+          try {
+            await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+            toast.success(`Image copiée — ${filename}`);
+          } catch {
+            // Fallback: trigger download with profile-aware filename
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = filename; a.click();
+            URL.revokeObjectURL(url);
+            toast.success(`Image téléchargée — ${filename}`);
+          }
         }
         setIsCopying(false);
       }, 'image/png');
