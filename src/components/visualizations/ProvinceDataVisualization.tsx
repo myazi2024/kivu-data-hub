@@ -153,7 +153,7 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-w-0 min-h-0 overflow-y-auto overflow-x-hidden p-1 lg:p-0 lg:mt-1.5">
+      <div className="flex-1 min-w-0 min-h-0 overflow-y-auto overflow-x-hidden p-2 lg:p-3">
         <WatermarkContext.Provider value={watermarkText}>
           <WatermarkConfigContext.Provider value={watermarkConfig}>
             <MapProvinceContext.Provider value={selectedProvince?.name || null}>
