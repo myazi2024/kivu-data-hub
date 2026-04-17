@@ -395,7 +395,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
             
             {/* Carte RDC */}
             <div className={`flex flex-col min-h-0 transition-all duration-300 w-full ${selectedProvince ? 'h-1/2 lg:h-auto' : 'h-full lg:h-auto'} lg:flex-[3]`}>
-              <Card ref={mapCardRef} className="flex-1 overflow-hidden flex flex-col border-border/30">
+              <Card ref={mapCardRef} className="analytics-panel border-0 flex-1 overflow-hidden flex flex-col">
                 <CardContent className="p-0 flex-1 flex flex-col relative min-h-0">
                   <div className="bg-muted/20 px-2 py-0.5 border-b border-border/30 flex-shrink-0">
                     <h2 className="text-[10px] sm:text-xs font-medium text-foreground flex items-center gap-1">
@@ -538,7 +538,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
 
             {/* Données géographiques — scoped stats */}
             <div className={`${activeMobilePanel === 'analytics' ? 'hidden lg:block' : selectedProvince ? 'h-1/2' : 'hidden lg:block'} lg:h-auto lg:flex-[2] min-h-0 overflow-hidden transition-all duration-300 w-full`}>
-              <Card className="h-full flex flex-col border-border/30 overflow-hidden">
+              <Card className="analytics-panel border-0 h-full flex flex-col overflow-hidden">
                 <ScrollArea className="flex-1">
                   {selectedProvince && scopedStats ? (
                     <div className="p-2 space-y-2">
@@ -564,67 +564,67 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                         </h5>
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-1">
                           {isChartVisible('detail-cert-enreg') && (
-                            <Card className="p-1 border-border/30">
+                            <Card className="analytics-card border-0 p-1">
                               <div className="text-[10px] text-muted-foreground truncate">{dt('detail-cert-enreg', 'Certif. enregistrement')}</div>
                               <div className="text-[11px] font-bold text-primary">{formatNumber(scopedStats.certEnregCount)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-contrat-loc') && (
-                            <Card className="p-1 border-border/30">
+                            <Card className="analytics-card border-0 p-1">
                               <div className="text-[10px] text-muted-foreground truncate">{dt('detail-contrat-loc', 'Contrat location')}</div>
                               <div className="text-[11px] font-bold text-blue-600">{formatNumber(scopedStats.contratLocCount)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-fiche-parc') && (
-                            <Card className="p-1 border-border/30">
+                            <Card className="analytics-card border-0 p-1">
                               <div className="text-[10px] text-muted-foreground truncate">{dt('detail-fiche-parc', 'Fiche parcellaire')}</div>
                               <div className="text-[11px] font-bold text-emerald-600">{formatNumber(scopedStats.ficheParcCount)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-title-req') && (
-                            <Card className="p-1 border-border/30">
+                            <Card className="analytics-card border-0 p-1">
                               <div className="text-[10px] text-muted-foreground truncate">{dt('detail-title-req', 'Titres demandés')}</div>
                               <div className="text-[11px] font-bold text-violet-600">{formatNumber(scopedStats.titleRequestsCount)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-disputes') && (
-                            <Card className="p-1 border-border/30">
+                            <Card className="analytics-card border-0 p-1">
                               <div className="text-[10px] text-muted-foreground truncate">{dt('detail-disputes', 'Litiges fonciers')}</div>
                               <div className="text-[11px] font-bold text-orange-500">{formatNumber(scopedStats.disputesCount)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-mortgages') && (
-                            <Card className="p-1 border-border/30">
+                            <Card className="analytics-card border-0 p-1">
                               <div className="text-[10px] text-muted-foreground truncate">{dt('detail-mortgages', 'Hypothèques actives')}</div>
                               <div className="text-[11px] font-bold text-red-600">{formatNumber(scopedStats.activeMortgagesCount)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-mutations') && (
-                            <Card className="p-1 border-border/30">
+                            <Card className="analytics-card border-0 p-1">
                               <div className="text-[10px] text-muted-foreground truncate">{dt('detail-mutations', 'Mutations en cours')}</div>
                               <div className="text-[11px] font-bold text-violet-600">{formatNumber(scopedStats.pendingMutationsCount)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-expertises') && (
-                            <Card className="p-1 border-border/30">
+                            <Card className="analytics-card border-0 p-1">
                               <div className="text-[10px] text-muted-foreground truncate">{dt('detail-expertises', 'Expertises en cours')}</div>
                               <div className="text-[11px] font-bold text-blue-600">{formatNumber(scopedStats.pendingExpertisesCount)}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-avg-surface') && (
-                            <Card className="p-1 border-border/30">
+                            <Card className="analytics-card border-0 p-1">
                               <div className="text-[10px] text-muted-foreground truncate">{dt('detail-avg-surface', 'Sup. moy. parcelle')}</div>
                               <div className="text-[11px] font-bold text-emerald-700">{scopedStats.avgParcelSurfaceSqm > 0 ? `${formatNumber(scopedStats.avgParcelSurfaceSqm)} m²` : '—'}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-avg-building') && (
-                            <Card className="p-1 border-border/30">
+                            <Card className="analytics-card border-0 p-1">
                               <div className="text-[10px] text-muted-foreground truncate">{dt('detail-avg-building', 'Sup. moy. construction')}</div>
                               <div className="text-[11px] font-bold text-emerald-600">{scopedStats.avgBuildingSurfaceSqm > 0 ? `${formatNumber(scopedStats.avgBuildingSurfaceSqm)} m²` : '—'}</div>
                             </Card>
                           )}
                           {isChartVisible('detail-avg-height') && (
-                            <Card className="p-1 border-border/30">
+                            <Card className="analytics-card border-0 p-1">
                               <div className="text-[10px] text-muted-foreground truncate">{dt('detail-avg-height', 'Haut. moy. construction')}</div>
                               <div className="text-[11px] font-bold text-blue-600">{scopedStats.avgBuildingHeightM > 0 ? `${scopedStats.avgBuildingHeightM} m` : '—'}</div>
                             </Card>

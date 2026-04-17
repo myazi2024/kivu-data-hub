@@ -289,6 +289,52 @@ All colors MUST be HSL.
   }
 }
 
+/* ═══ Analytics surfaces — relief interne fiable, indépendant du débordement parent ═══ */
+@layer components {
+  .analytics-card {
+    @apply relative isolate overflow-hidden rounded-lg border border-border bg-gradient-to-br from-card to-muted/30 transition-all duration-200;
+    box-shadow:
+      inset 0 1px 0 0 hsl(var(--background) / 0.6),
+      inset 0 -1px 0 0 hsl(var(--foreground) / 0.04),
+      0 1px 2px 0 hsl(var(--foreground) / 0.06),
+      0 4px 12px -4px hsl(var(--foreground) / 0.12);
+  }
+  .analytics-card::before {
+    content: '';
+    @apply pointer-events-none absolute inset-0 rounded-lg;
+    box-shadow:
+      inset 0 0 0 1px hsl(var(--foreground) / 0.04),
+      inset 0 8px 16px -8px hsl(var(--foreground) / 0.06);
+  }
+  .analytics-card::after {
+    content: '';
+    @apply pointer-events-none absolute -inset-px rounded-lg opacity-0 transition-opacity duration-200;
+    box-shadow:
+      0 0 0 1px hsl(var(--primary) / 0.25),
+      0 8px 24px -6px hsl(var(--primary) / 0.25);
+  }
+  .analytics-card:hover::after {
+    @apply opacity-100;
+  }
+  .analytics-card.is-focused {
+    @apply -translate-y-0.5;
+  }
+  .analytics-card.is-focused::after {
+    @apply opacity-100;
+    box-shadow:
+      0 0 0 2px hsl(var(--primary) / 0.5),
+      0 12px 32px -8px hsl(var(--primary) / 0.35);
+  }
+
+  .analytics-panel {
+    @apply relative isolate rounded-lg border border-border bg-gradient-to-b from-card to-muted/20;
+    box-shadow:
+      inset 0 1px 0 0 hsl(var(--background) / 0.5),
+      0 2px 6px 0 hsl(var(--foreground) / 0.08),
+      0 12px 28px -10px hsl(var(--foreground) / 0.18);
+  }
+}
+
 /* Charts compact mode overrides */
 @layer components {
   .charts-compact .recharts-default-tooltip,

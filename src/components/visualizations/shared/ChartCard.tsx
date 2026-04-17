@@ -324,7 +324,7 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
   const CH = type === 'bar-h' && displayData.length > 5 ? Math.max(BASE_CH, displayData.length * 28) : BASE_CH;
 
   return (
-    <Card ref={ref} onClick={() => setFocused(f => !f)} className={`border-border/30 cursor-pointer transition-all duration-200 shadow-[var(--shadow-analytics)] hover:shadow-[var(--shadow-analytics-hover)] ${focused ? 'scale-[1.03] shadow-xl z-10 ring-2 ring-primary/30' : ''} ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
+    <Card ref={ref} onClick={() => setFocused(f => !f)} className={`analytics-card border-0 cursor-pointer ${focused ? 'is-focused z-10' : ''} ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
       <CardHeader className="pb-1 px-2 pt-2">
         <div className="flex items-start gap-1">
           <div className="min-w-0 flex-1">
@@ -426,7 +426,7 @@ export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
   const displayData = data.slice(0, maxItems);
 
   return (
-    <Card ref={ref} onClick={() => setFocused(f => !f)} className={`border-border/30 cursor-pointer transition-all duration-200 shadow-[var(--shadow-analytics)] hover:shadow-[var(--shadow-analytics-hover)] ${focused ? 'scale-[1.03] shadow-xl z-10 ring-2 ring-primary/30' : ''} ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
+    <Card ref={ref} onClick={() => setFocused(f => !f)} className={`analytics-card border-0 cursor-pointer ${focused ? 'is-focused z-10' : ''} ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
       <CardHeader className="pb-1 px-2 pt-2">
         <div className="flex items-start gap-1">
           <div className="min-w-0 flex-1">
@@ -540,7 +540,7 @@ export const MultiAreaChartCard: React.FC<MultiAreaChartCardProps> = memo(({
   if (allData.length === 0) return null;
 
   return (
-    <Card ref={ref} onClick={() => setFocused(f => !f)} className={`border-border/30 cursor-pointer transition-all duration-200 shadow-[var(--shadow-analytics)] hover:shadow-[var(--shadow-analytics-hover)] ${focused ? 'scale-[1.03] shadow-xl z-10 ring-2 ring-primary/30' : ''} ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
+    <Card ref={ref} onClick={() => setFocused(f => !f)} className={`analytics-card border-0 cursor-pointer ${focused ? 'is-focused z-10' : ''} ${colSpan ? colSpanClass[colSpan] || '' : ''}`}>
       <CardHeader className="pb-1 px-2 pt-2">
         <div className="flex items-start gap-1">
           <div className="min-w-0 flex-1">
@@ -605,7 +605,7 @@ export const ColorMappedPieCard: React.FC<MultiDataPieProps> = memo(({
   const isCrossMode = hasCross && crossField;
   
   return (
-    <Card ref={ref} onClick={() => setFocused(f => !f)} className={`border-border/30 cursor-pointer transition-all duration-200 shadow-[var(--shadow-analytics)] hover:shadow-[var(--shadow-analytics-hover)] ${focused ? 'scale-[1.03] shadow-xl z-10 ring-2 ring-primary/30' : ''}`}>
+    <Card ref={ref} onClick={() => setFocused(f => !f)} className={`analytics-card border-0 cursor-pointer ${focused ? 'is-focused z-10' : ''}`}>
       <CardHeader className="pb-1 px-2 pt-2">
         <div className="flex items-start gap-1">
           <div className="min-w-0 flex-1">
