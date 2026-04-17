@@ -837,6 +837,8 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                     selectedQuartier={selectedQuartier}
                     selectedTerritoire={selectedTerritoire}
                     selectedSectionType={selectedSectionType}
+                    initialTab={activeAnalyticsTab}
+                    forcedTab={forcedTab}
                   />
                 </div>
               </CardContent>
