@@ -720,6 +720,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                     onQuartierChange={setSelectedQuartier}
                     onTerritoireChange={setSelectedTerritoire}
                     onSectionTypeChange={setSelectedSectionType}
+                    onActiveTabChange={setActiveAnalyticsTab}
                     selectedVille={selectedVille}
                     selectedCommune={selectedCommune}
                     selectedQuartier={selectedQuartier}
