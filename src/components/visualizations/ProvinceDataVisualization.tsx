@@ -80,20 +80,27 @@ interface ProvinceDataVisualizationProps {
   initialTab?: string | null;
   /** When set, force the active tab to this value (used by Reset button) */
   forcedTab?: string | null;
+  /** Called once after a forcedTab has been applied — parent should clear the forcedTab to avoid loops */
+  onForcedTabApplied?: () => void;
 }
 
 const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
   analytics, selectedProvince, onProvinceFilter, onVilleChange, onCommuneChange, onQuartierChange, onTerritoireChange, onSectionTypeChange, onActiveTabChange,
   selectedVille, selectedCommune, selectedQuartier, selectedTerritoire, selectedSectionType,
-  initialTab, forcedTab,
+  initialTab, forcedTab, onForcedTabApplied,
 }) => {
   const { visibleTabs, isLoading: tabsLoading } = useAnalyticsTabsConfig();
   const [activeTab, setActiveTab] = useState(initialTab || '');
 
-  // Apply forced tab change (e.g. from Reset button)
+  // Apply forced tab change (e.g. from Reset button), then signal parent to clear it
   useEffect(() => {
     if (forcedTab && forcedTab !== activeTab) {
       setActiveTab(forcedTab);
+    }
+    if (forcedTab) {
+      // Defer one tick so the setActiveTab has propagated, then ask parent to clear forcedTab
+      const id = setTimeout(() => onForcedTabApplied?.(), 0);
+      return () => clearTimeout(id);
     }
   }, [forcedTab]);
   const [isIdle, setIsIdle] = useState(false);
