@@ -569,6 +569,19 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   )}
 
                   <div className="absolute bottom-5 right-2 z-10 flex gap-1">
+                    {/* Bouton réinitialiser à la vue par défaut — visible uniquement si profil métier actif */}
+                    {activeProfile && (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-6 w-6 rounded-full bg-background/80 backdrop-blur-sm border-border/50 shadow-sm"
+                        onClick={resetToDefaultMap}
+                        title="Revenir à la vue cartographique par défaut"
+                        aria-label="Revenir à la vue cartographique par défaut"
+                      >
+                        <RotateCcw className="h-3 w-3 text-muted-foreground" />
+                      </Button>
+                    )}
                     {/* Bouton copier en image — configurable */}
                     {isChartVisible('map-copy-button') && (
                       <Button
@@ -601,12 +614,22 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                         <div className="space-y-1.5">
                           <div className="flex items-center gap-1">
                             <Info className="h-3 w-3 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                            <span className="text-blue-700 dark:text-blue-300">Données calculées depuis Supabase</span>
+                            <span className="text-blue-700 dark:text-blue-300">
+                              Données calculées depuis Supabase{activeProfile?.dataSource ? ` — table ${activeProfile.dataSource}` : ''}
+                            </span>
                           </div>
                           <div className="flex items-center gap-1">
                             <MapPin className="h-3 w-3 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
-                            <span className="text-emerald-700 dark:text-emerald-300">Couleur = densité de parcelles</span>
+                            <span className="text-emerald-700 dark:text-emerald-300">
+                              Couleur = {activeProfile ? activeProfile.legendTitle.toLowerCase() : 'densité de parcelles'}
+                            </span>
                           </div>
+                          {activeProfile && adaptiveTiers && (
+                            <div className="flex items-center gap-1">
+                              <BarChart3 className="h-3 w-3 text-violet-600 dark:text-violet-400 flex-shrink-0" />
+                              <span className="text-violet-700 dark:text-violet-300">Paliers calculés par quartiles (Q1/Q2/Q3)</span>
+                            </div>
+                          )}
                         </div>
                       </PopoverContent>
                     </Popover>
