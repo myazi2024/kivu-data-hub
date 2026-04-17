@@ -289,7 +289,8 @@ All colors MUST be HSL.
   }
 }
 
-  /* ═══ Analytics surfaces — relief interne fiable, indépendant du débordement parent ═══ */
+/* ═══ Analytics surfaces — relief interne fiable, indépendant du débordement parent ═══ */
+@layer components {
   .analytics-card {
     @apply relative isolate overflow-hidden rounded-lg border border-border bg-gradient-to-br from-card to-muted/30 transition-all duration-200;
     box-shadow:
@@ -332,8 +333,9 @@ All colors MUST be HSL.
       0 2px 6px 0 hsl(var(--foreground) / 0.08),
       0 12px 28px -10px hsl(var(--foreground) / 0.18);
   }
+}
 
-  /* Charts compact mode overrides */
+/* Charts compact mode overrides */
 @layer components {
   .charts-compact .recharts-default-tooltip,
   .charts-compact .recharts-legend-item-text,
