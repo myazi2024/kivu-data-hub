@@ -20,4 +20,6 @@ export interface ProvinceData {
   // Optional: profile-driven metric and tooltip when a non-default Analytics tab is active
   metricValue?: number;
   extraTooltipLines?: { label: string; value: string; color?: string }[];
+  /** True when the active profile has no record at all for this province */
+  noData?: boolean;
 }

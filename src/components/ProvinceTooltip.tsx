@@ -42,6 +42,7 @@ const ProvinceTooltip: React.FC<ProvinceTooltipProps> = ({ province, lineConfigs
   // Profile mode: when extraTooltipLines is provided by the active Analytics tab profile,
   // render those instead of the default lines.
   const useProfile = Array.isArray(province.extraTooltipLines) && province.extraTooltipLines.length > 0;
+  const isNoData = useProfile && province.noData;
 
   return (
     <div className="w-36 sm:w-40 md:w-44 p-2 bg-background/90 backdrop-blur-md border border-border/60 shadow-lg rounded-md">
@@ -49,28 +50,34 @@ const ProvinceTooltip: React.FC<ProvinceTooltipProps> = ({ province, lineConfigs
         <h3 className="font-semibold text-xs text-foreground border-b border-border/50 pb-0.5 mb-1">
           {province.name}
         </h3>
-        <div className="grid grid-cols-1 gap-0.5 text-[10px] leading-tight">
-          {useProfile
-            ? province.extraTooltipLines!.map((line, idx) => (
-                <div key={`profile-${idx}`} className="flex justify-between items-center gap-1">
-                  <span className="text-muted-foreground text-[9px] truncate">{line.label} :</span>
-                  <span className={`font-medium ${line.color || 'text-foreground'} text-right text-[9px] truncate`}>{line.value}</span>
-                </div>
-              ))
-            : DEFAULT_LINES.map(line => {
-                if (!isVisible(line.key)) return null;
-                const value = province[line.field] as number;
-                const formatted = line.format === 'avg-sqm' ? fmtAvg(value, 'm²')
-                  : line.format === 'avg-m' ? fmtAvg(value, 'm')
-                  : fmtN(value);
-                return (
-                  <div key={line.key} className="flex justify-between items-center">
-                    <span className="text-muted-foreground text-[9px]">{getTitle(line.key, line.label)} :</span>
-                    <span className={`font-medium ${line.color} text-right text-[9px]`}>{formatted}</span>
+        {isNoData ? (
+          <div className="text-[10px] text-muted-foreground italic py-1">
+            Aucune donnée disponible pour cette province.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-0.5 text-[10px] leading-tight">
+            {useProfile
+              ? province.extraTooltipLines!.map((line, idx) => (
+                  <div key={`profile-${idx}`} className="flex justify-between items-center gap-1">
+                    <span className="text-muted-foreground text-[9px] truncate">{line.label} :</span>
+                    <span className={`font-medium ${line.color || 'text-foreground'} text-right text-[9px] truncate`}>{line.value}</span>
                   </div>
-                );
-              })}
-        </div>
+                ))
+              : DEFAULT_LINES.map(line => {
+                  if (!isVisible(line.key)) return null;
+                  const value = province[line.field] as number;
+                  const formatted = line.format === 'avg-sqm' ? fmtAvg(value, 'm²')
+                    : line.format === 'avg-m' ? fmtAvg(value, 'm')
+                    : fmtN(value);
+                  return (
+                    <div key={line.key} className="flex justify-between items-center">
+                      <span className="text-muted-foreground text-[9px]">{getTitle(line.key, line.label)} :</span>
+                      <span className={`font-medium ${line.color} text-right text-[9px]`}>{formatted}</span>
+                    </div>
+                  );
+                })}
+          </div>
+        )}
       </div>
     </div>
   );
