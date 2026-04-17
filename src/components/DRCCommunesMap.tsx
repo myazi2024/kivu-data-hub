@@ -11,6 +11,10 @@ interface Props {
   ville?: string;
   commune?: string;
   onCommuneSelect?: (commune: string) => void;
+  /** Optional drilldown coloring: returns a CSS color per commune name. When provided, overrides the default tile palette. */
+  getEntityColor?: (communeName: string) => string | undefined;
+  /** Optional title shown in the top-left chip when drilldown coloring is active */
+  profileLabel?: string;
 }
 
 const COLORS = [
