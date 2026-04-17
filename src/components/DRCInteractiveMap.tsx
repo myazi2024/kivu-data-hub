@@ -20,6 +20,7 @@ import { useLandDataAnalytics } from '@/hooks/useLandDataAnalytics';
 import { useTestEnvironment } from '@/hooks/useTestEnvironment';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { getTerritoiresForProvince, getProvinceForTerritoire } from '@/lib/geographicData';
+import { MAP_TAB_PROFILES, type MapTabProfile } from '@/config/mapTabProfiles';
 
 /** Province IDs and names for the 26 provinces */
 const PROVINCE_META: { id: string; name: string }[] = [
@@ -139,6 +140,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const [selectedQuartier, setSelectedQuartier] = useState<string | undefined>(() => searchParams.get('quartier') || undefined);
   const [selectedTerritoire, setSelectedTerritoire] = useState<string | undefined>(() => searchParams.get('territoire') || undefined);
   const [selectedSectionType, setSelectedSectionType] = useState<string>(() => searchParams.get('section') || 'all');
+  const [activeAnalyticsTab, setActiveAnalyticsTab] = useState<string>('rdc-map');
   const mapCardRef = React.useRef<HTMLDivElement>(null);
   const urlInitRef = React.useRef(false);
 
