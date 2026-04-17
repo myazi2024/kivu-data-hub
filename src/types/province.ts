@@ -17,4 +17,7 @@ export interface ProvinceData {
   avgBuildingHeightM: number;
   // Kept for choropleth (parcels total)
   parcelsCount: number;
+  // Optional: profile-driven metric and tooltip when a non-default Analytics tab is active
+  metricValue?: number;
+  extraTooltipLines?: { label: string; value: string; color?: string }[];
 }
