@@ -369,10 +369,22 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     try {
       const html2canvas = (await import('html2canvas')).default;
       const canvas = await html2canvas(mapCardRef.current, { backgroundColor: null, scale: 2, borderRadius: 12 } as any);
+      const profileSlug = activeProfile?.tabKey || 'rdc-map';
+      const dateSlug = new Date().toISOString().slice(0, 10);
+      const filename = `carte-rdc-${profileSlug}-${dateSlug}.png`;
       canvas.toBlob(async (blob) => {
         if (blob) {
-          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-          toast.success('Image copiée dans le presse-papier');
+          try {
+            await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+            toast.success(`Image copiée — ${filename}`);
+          } catch {
+            // Fallback: trigger download with profile-aware filename
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = filename; a.click();
+            URL.revokeObjectURL(url);
+            toast.success(`Image téléchargée — ${filename}`);
+          }
         }
         setIsCopying(false);
       }, 'image/png');
@@ -400,62 +412,67 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const resetToDefaultMap = useCallback(() => {
     setForcedTab('rdc-map');
     setActiveAnalyticsTab('rdc-map');
-    // Clear after one tick so the prop change propagates
-    setTimeout(() => setForcedTab(null), 50);
   }, []);
 
-  /** Drilldown choropleth: commune-level color when an Analytics profile is active.
-   *  Reuses the active profile's metric on a per-commune slice within the selected ville. */
-  const getCommuneColor = useCallback((communeName: string): string | undefined => {
-    if (!activeProfile || !analytics || !selectedVille) return undefined;
-    // Build a tiny per-commune analytics view by re-filtering each record set to that commune
-    const sliceByCommune = <T extends { ville?: string | null; commune?: string | null; province?: string | null }>(arr: T[]): T[] =>
-      arr.filter(r => norm(r.commune) === norm(communeName) && norm(r.ville) === norm(selectedVille));
+  /** Callback once the forced tab has been applied — clears it to avoid re-trigger loops */
+  const handleForcedTabApplied = useCallback(() => {
+    setForcedTab(null);
+  }, []);
 
-    const slicedAnalytics = {
-      ...analytics,
-      parcels: sliceByCommune(analytics.parcels as any),
-      contributions: sliceByCommune(analytics.contributions as any),
-      titleRequests: sliceByCommune(analytics.titleRequests as any),
-      disputes: sliceByCommune(analytics.disputes as any),
-      mortgages: sliceByCommune((analytics.mortgages || []) as any),
-      mutationRequests: sliceByCommune(analytics.mutationRequests as any),
-      expertiseRequests: sliceByCommune(analytics.expertiseRequests as any),
-      subdivisionRequests: sliceByCommune(analytics.subdivisionRequests as any),
-      ownershipHistory: sliceByCommune(analytics.ownershipHistory as any),
-      certificates: sliceByCommune(analytics.certificates as any),
-      invoices: sliceByCommune(analytics.invoices as any),
-      buildingPermits: sliceByCommune(analytics.buildingPermits as any),
-      taxHistory: sliceByCommune(analytics.taxHistory as any),
-    } as typeof analytics;
+  /** Generic per-entity color factory: re-uses the active profile's metric on a slice
+   *  filtered by the chosen geographic level (commune | quartier | territoire). */
+  const buildEntityColorFn = useCallback(
+    (level: 'commune' | 'quartier' | 'territoire') => {
+      if (!activeProfile || !analytics) return undefined;
 
-    // Province name for the active selection (any value works — metric does its own filterProv)
-    const provinceName = selectedProvince?.name || '';
-    // We need a synthetic province name that matches all records since they're already commune-filtered.
-    // Trick: feed an "any-province" predicate by building a thin analytics whose records all share the same province.
-    const synthetic = {
-      ...slicedAnalytics,
-      parcels: (slicedAnalytics.parcels as any[]).map((r: any) => ({ ...r, province: '__commune__' })),
-      contributions: (slicedAnalytics.contributions as any[]).map((r: any) => ({ ...r, province: '__commune__' })),
-      titleRequests: (slicedAnalytics.titleRequests as any[]).map((r: any) => ({ ...r, province: '__commune__' })),
-      disputes: (slicedAnalytics.disputes as any[]).map((r: any) => ({ ...r, province: '__commune__' })),
-      mortgages: (slicedAnalytics.mortgages as any[]).map((r: any) => ({ ...r, province: '__commune__' })),
-      mutationRequests: (slicedAnalytics.mutationRequests as any[]).map((r: any) => ({ ...r, province: '__commune__' })),
-      expertiseRequests: (slicedAnalytics.expertiseRequests as any[]).map((r: any) => ({ ...r, province: '__commune__' })),
-      subdivisionRequests: (slicedAnalytics.subdivisionRequests as any[]).map((r: any) => ({ ...r, province: '__commune__' })),
-      ownershipHistory: (slicedAnalytics.ownershipHistory as any[]).map((r: any) => ({ ...r, province: '__commune__' })),
-      certificates: (slicedAnalytics.certificates as any[]).map((r: any) => ({ ...r, province: '__commune__' })),
-      invoices: (slicedAnalytics.invoices as any[]).map((r: any) => ({ ...r, province: '__commune__' })),
-      buildingPermits: (slicedAnalytics.buildingPermits as any[]).map((r: any) => ({ ...r, province: '__commune__' })),
-      taxHistory: (slicedAnalytics.taxHistory as any[]).map((r: any) => ({ ...r, province: '__commune__' })),
-    } as typeof analytics;
+      const matchPredicate = (name: string) => {
+        const n = norm(name);
+        return (r: any) => {
+          if (level === 'commune') return norm(r.commune) === n && (!selectedVille || norm(r.ville) === norm(selectedVille));
+          if (level === 'quartier') return norm(r.quartier) === n && (!selectedCommune || norm(r.commune) === norm(selectedCommune));
+          return norm(r.territoire) === n && (!selectedProvince || norm(r.province) === norm(selectedProvince.name));
+        };
+      };
 
-    const v = activeProfile.metric({ analytics: synthetic, provinceName: '__commune__' });
-    if (v <= 0) return NO_DATA_COLOR;
-    const tiers = adaptiveTiers || activeProfile.tiers;
-    const tier = tiers.find(t => v >= t.min && v <= t.max) || tiers[0];
-    return tier.color;
-  }, [activeProfile, analytics, selectedVille, selectedProvince, adaptiveTiers]);
+      return (entityName: string): string | undefined => {
+        const pred = matchPredicate(entityName);
+        const slicer = <T,>(arr: T[]): T[] => (arr || []).filter(pred as any).map((r: any) => ({ ...r, province: '__entity__' })) as T[];
+        const sliced = {
+          ...analytics,
+          parcels: slicer(analytics.parcels as any),
+          contributions: slicer(analytics.contributions as any),
+          titleRequests: slicer(analytics.titleRequests as any),
+          disputes: slicer(analytics.disputes as any),
+          mortgages: slicer((analytics.mortgages || []) as any),
+          mutationRequests: slicer(analytics.mutationRequests as any),
+          expertiseRequests: slicer(analytics.expertiseRequests as any),
+          subdivisionRequests: slicer((analytics as any).subdivisionRequests || []),
+          ownershipHistory: slicer((analytics as any).ownershipHistory || []),
+          certificates: slicer((analytics as any).certificates || []),
+          invoices: slicer((analytics as any).invoices || []),
+          buildingPermits: slicer((analytics as any).buildingPermits || []),
+          taxHistory: slicer((analytics as any).taxHistory || []),
+        } as typeof analytics;
+
+        const v = activeProfile.metric({ analytics: sliced, provinceName: '__entity__' });
+        if (v <= 0) return NO_DATA_COLOR;
+        const tiers = adaptiveTiers || activeProfile.tiers;
+        const tier = tiers.find(t => v >= t.min && v <= t.max) || tiers[0];
+        return tier.color;
+      };
+    },
+    [activeProfile, analytics, selectedVille, selectedCommune, selectedProvince, adaptiveTiers],
+  );
+
+  const getCommuneColor = useMemo(() => buildEntityColorFn('commune'), [buildEntityColorFn]);
+  const getQuartierColor = useMemo(() => buildEntityColorFn('quartier'), [buildEntityColorFn]);
+  const getTerritoireColor = useMemo(() => buildEntityColorFn('territoire'), [buildEntityColorFn]);
+
+  /** Whether the current adaptive tiers contain any non-zero data */
+  const hasAnyMetricData = useMemo(() => {
+    if (!activeProfile) return true;
+    return provincesData.some(p => (p.metricValue ?? 0) > 0);
+  }, [activeProfile, provincesData]);
 
   if (isLoading) {
     return (
@@ -523,6 +540,8 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                           territoire={selectedTerritoire}
                           showAll={!selectedProvince}
                           territoireNames={selectedProvince ? getTerritoiresForProvince(selectedProvince.name) : undefined}
+                          getEntityColor={getTerritoireColor}
+                          profileLabel={activeProfile?.legendTitle}
                           onTerritoireSelect={(name) => {
                             if (!selectedProvince) {
                               const provinceName = getProvinceForTerritoire(name);
@@ -541,7 +560,14 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                       </div>
                     ) : selectedVille && selectedCommune && selectedVille.toLowerCase() === 'goma' ? (
                       <div key="quartiers" className="w-full h-full animate-fade-in">
-                        <DRCQuartiersMap ville={selectedVille} commune={selectedCommune} quartier={selectedQuartier} onQuartierSelect={setSelectedQuartier} />
+                        <DRCQuartiersMap
+                          ville={selectedVille}
+                          commune={selectedCommune}
+                          quartier={selectedQuartier}
+                          onQuartierSelect={setSelectedQuartier}
+                          getEntityColor={getQuartierColor}
+                          profileLabel={activeProfile?.legendTitle}
+                        />
                       </div>
                     ) : selectedVille ? (
                       <div key="communes" className="w-full h-full animate-fade-in">
@@ -572,30 +598,54 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                     )}
                   </div>
                   {/* Légende contextuelle — scope dynamique (profil ou défaut) */}
-                  {selectedProvince && (activeProfile || scopedStats) && (
-                    <div className="absolute bottom-5 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30 animate-fade-in max-w-[140px]">
-                      <div className="text-[10px] font-medium text-foreground mb-0.5 truncate">{scopeLabel}</div>
-                      <div className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
-                        {activeProfile && analytics
-                          ? (activeProfile.legendStats?.({ analytics, provinceName: selectedProvince.name })
-                              ?? activeProfile.tooltipLines({ analytics, provinceName: selectedProvince.name }).slice(0, 4)
-                            ).map((s, i) => (
-                              <div key={i} className="flex justify-between gap-2">
-                                <span className="truncate">{s.label}</span>
-                                <span className={`font-medium ${s.color || 'text-foreground'}`}>{s.value}</span>
-                              </div>
-                            ))
-                          : (
-                            <>
-                              <div className="flex justify-between gap-2"><span>Certif. enreg.</span><span className="font-medium text-foreground">{formatNumber(scopedStats!.certEnregCount)}</span></div>
-                              <div className="flex justify-between gap-2"><span>Titres dem.</span><span className="font-medium text-foreground">{formatNumber(scopedStats!.titleRequestsCount)}</span></div>
-                              <div className="flex justify-between gap-2"><span>Litiges</span><span className="font-medium text-foreground">{formatNumber(scopedStats!.disputesCount)}</span></div>
-                              <div className="flex justify-between gap-2"><span>Sup. moy.</span><span className="font-medium text-foreground">{scopedStats!.avgParcelSurfaceSqm > 0 ? `${scopedStats!.avgParcelSurfaceSqm} m²` : '—'}</span></div>
-                            </>
-                          )}
+                  {selectedProvince && (activeProfile || scopedStats) && (() => {
+                    // For profile legends: build a scope-filtered analytics view (province + optional ville/commune/quartier)
+                    let profileLines: { label: string; value: string; color?: string }[] | undefined;
+                    if (activeProfile && analytics) {
+                      const predicate = buildScopePredicate(selectedProvince.name, selectedVille, selectedCommune, selectedQuartier, selectedTerritoire);
+                      const sliceArr = <T,>(arr: T[]): T[] => (arr || []).filter(predicate as any).map((r: any) => ({ ...r, province: selectedProvince.name })) as T[];
+                      const scopedAnalytics = {
+                        ...analytics,
+                        parcels: sliceArr(analytics.parcels as any),
+                        contributions: sliceArr(analytics.contributions as any),
+                        titleRequests: sliceArr(analytics.titleRequests as any),
+                        disputes: sliceArr(analytics.disputes as any),
+                        mortgages: sliceArr((analytics.mortgages || []) as any),
+                        mutationRequests: sliceArr(analytics.mutationRequests as any),
+                        expertiseRequests: sliceArr(analytics.expertiseRequests as any),
+                        subdivisionRequests: sliceArr((analytics as any).subdivisionRequests || []),
+                        ownershipHistory: sliceArr((analytics as any).ownershipHistory || []),
+                        certificates: sliceArr((analytics as any).certificates || []),
+                        invoices: sliceArr((analytics as any).invoices || []),
+                        buildingPermits: sliceArr((analytics as any).buildingPermits || []),
+                        taxHistory: sliceArr((analytics as any).taxHistory || []),
+                      } as typeof analytics;
+                      const ctx = { analytics: scopedAnalytics, provinceName: selectedProvince.name };
+                      profileLines = activeProfile.legendStats?.(ctx) ?? activeProfile.tooltipLines(ctx).slice(0, 4);
+                    }
+                    return (
+                      <div className="absolute bottom-5 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30 animate-fade-in max-w-[140px]">
+                        <div className="text-[10px] font-medium text-foreground mb-0.5 truncate">{scopeLabel}</div>
+                        <div className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
+                          {profileLines
+                            ? profileLines.map((s, i) => (
+                                <div key={i} className="flex justify-between gap-2">
+                                  <span className="truncate">{s.label}</span>
+                                  <span className={`font-medium ${s.color || 'text-foreground'}`}>{s.value}</span>
+                                </div>
+                              ))
+                            : (
+                              <>
+                                <div className="flex justify-between gap-2"><span>Certif. enreg.</span><span className="font-medium text-foreground">{formatNumber(scopedStats!.certEnregCount)}</span></div>
+                                <div className="flex justify-between gap-2"><span>Titres dem.</span><span className="font-medium text-foreground">{formatNumber(scopedStats!.titleRequestsCount)}</span></div>
+                                <div className="flex justify-between gap-2"><span>Litiges</span><span className="font-medium text-foreground">{formatNumber(scopedStats!.disputesCount)}</span></div>
+                                <div className="flex justify-between gap-2"><span>Sup. moy.</span><span className="font-medium text-foreground">{scopedStats!.avgParcelSurfaceSqm > 0 ? `${scopedStats!.avgParcelSurfaceSqm} m²` : '—'}</span></div>
+                              </>
+                            )}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {/* Pied de carte : date + copyright */}
                   <div className="absolute bottom-0 left-0 right-0 z-10 text-center py-0.5 flex items-center justify-center gap-0.5">
@@ -606,24 +656,31 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   {/* Mini-légende choroplèthe par profil — visible quand un onglet métier est actif */}
                   {activeProfile && (
                     <div
-                      className="absolute top-2 right-2 z-10 bg-background/85 backdrop-blur-sm rounded-md px-2 py-1.5 border border-border/40 shadow-sm animate-fade-in max-w-[170px]"
+                      className="absolute top-2 right-2 z-50 bg-background/85 backdrop-blur-sm rounded-md px-2 py-1.5 border border-border/40 shadow-sm animate-fade-in max-w-[170px]"
                       role="region"
                       aria-live="polite"
                       aria-label={`Légende : ${activeProfile.legendTitle}`}
                     >
                       <div className="text-[9px] font-semibold text-foreground mb-1 truncate">{activeProfile.legendTitle}</div>
-                      <div className="flex flex-col gap-0.5">
-                        {(adaptiveTiers || activeProfile.tiers).map((t, i) => (
-                          <div key={i} className="flex items-center gap-1.5" role="img" aria-label={`Palier ${t.label} : de ${t.min} à ${t.max === Infinity ? '∞' : t.max}`}>
-                            <span className="inline-block h-2.5 w-2.5 rounded-sm border border-border/40" style={{ backgroundColor: t.color }} aria-hidden="true" />
-                            <span className="text-[9px] text-muted-foreground truncate">{t.label}</span>
+                      {hasAnyMetricData ? (
+                        <div className="flex flex-col gap-0.5">
+                          {(adaptiveTiers || activeProfile.tiers).map((t, i) => (
+                            <div key={i} className="flex items-center gap-1.5" role="img" aria-label={`Palier ${t.label} : de ${t.min} à ${t.max === Infinity ? '∞' : t.max}`}>
+                              <span className="inline-block h-2.5 w-2.5 rounded-sm border border-border/40" style={{ backgroundColor: t.color }} aria-hidden="true" />
+                              <span className="text-[9px] text-muted-foreground truncate">{t.label}</span>
+                            </div>
+                          ))}
+                          <div className="flex items-center gap-1.5 pt-0.5 mt-0.5 border-t border-border/30" role="img" aria-label="Aucune donnée disponible">
+                            <span className="inline-block h-2.5 w-2.5 rounded-sm border border-border/40" style={{ backgroundColor: 'hsl(var(--muted))' }} aria-hidden="true" />
+                            <span className="text-[9px] text-muted-foreground italic truncate">Aucune donnée</span>
                           </div>
-                        ))}
-                        <div className="flex items-center gap-1.5 pt-0.5 mt-0.5 border-t border-border/30" role="img" aria-label="Aucune donnée disponible">
-                          <span className="inline-block h-2.5 w-2.5 rounded-sm border border-border/40" style={{ backgroundColor: 'hsl(var(--muted))' }} aria-hidden="true" />
-                          <span className="text-[9px] text-muted-foreground italic truncate">Aucune donnée</span>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5" role="img" aria-label="Aucune occurrence pour ce profil">
+                          <span className="inline-block h-2.5 w-2.5 rounded-sm border border-border/40" style={{ backgroundColor: 'hsl(var(--muted))' }} aria-hidden="true" />
+                          <span className="text-[9px] text-muted-foreground italic">Aucune occurrence pour ce profil</span>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -839,6 +896,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                     selectedSectionType={selectedSectionType}
                     initialTab={activeAnalyticsTab}
                     forcedTab={forcedTab}
+                    onForcedTabApplied={handleForcedTabApplied}
                   />
                 </div>
               </CardContent>

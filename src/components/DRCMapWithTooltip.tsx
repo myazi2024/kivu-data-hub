@@ -89,7 +89,7 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
             path.setAttribute('stroke', '#ffffff');
             path.setAttribute('stroke-width', '2');
             path.setAttribute('cursor', 'pointer');
-            path.setAttribute('style', 'transition: opacity 0.4s ease, fill 0.2s ease;');
+            path.setAttribute('style', 'transition: fill 300ms ease, opacity 200ms ease, stroke-width 150ms ease;');
             
             if (province) {
               path.setAttribute('data-province', province.id);
