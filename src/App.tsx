@@ -129,15 +129,19 @@ const App = () => (
                   <Route path="/verify/:code?" element={<VerifyDocument />} />
                   <Route path="/pitch-partenaires" element={<PitchPartenaires />} />
 
-                  {/* Test environment mirror routes */}
-                  <Route path="/test/map" element={<Map />} />
+                  {/* Test environment mirror routes — admin only */}
+                  <Route path="/test/map" element={
+                    <ProtectedRoute requiredRoles={['admin', 'super_admin']}>
+                      <Map />
+                    </ProtectedRoute>
+                  } />
                   <Route path="/test/cadastral-map" element={
-                    <ProtectedRoute>
+                    <ProtectedRoute requiredRoles={['admin', 'super_admin']}>
                       <CadastralMap />
                     </ProtectedRoute>
                   } />
                   <Route path="/test/mon-compte" element={
-                    <ProtectedRoute>
+                    <ProtectedRoute requiredRoles={['admin', 'super_admin']}>
                       <UserDashboard />
                     </ProtectedRoute>
                   } />

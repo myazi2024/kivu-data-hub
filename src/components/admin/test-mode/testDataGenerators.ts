@@ -6,7 +6,7 @@ import type { Json } from '@/integrations/supabase/types';
 /** Generate a unique suffix to avoid duplicate parcel_number on repeated clicks */
 export const uniqueSuffix = () => {
   const ts = Date.now().toString(36).toUpperCase();
-  const rand = Math.random().toString(36).substring(2, 5).toUpperCase();
+  const rand = crypto.randomUUID().replace(/-/g, '').substring(0, 5).toUpperCase();
   return `${ts}-${rand}`;
 };
 
@@ -1140,7 +1140,7 @@ export const generateCertificates = async (
     recipient_name: `Test Propriétaire ${i + 1}`,
     status: pick(CERT_STATUSES, i),
     generated_by: userId ?? null,
-    metadata: { test_mode: true } as unknown as Json,
+    metadata: { test_mode: 'true' } as unknown as Json,
     generated_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
   }));
 
