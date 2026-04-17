@@ -1,34 +1,55 @@
 
-## Rendre visibles les ombres des cards Analytics
+## Refonte de la profondeur visuelle des cards Analytics
 
 ### Diagnostic
-Les variables `--shadow-analytics` sont bien appliquées sur `<Card>` dans `ChartCard.tsx`, mais elles sont **visuellement coupées** par :
-1. Le conteneur scroll parent dans `ProvinceDataVisualization.tsx` (ligne 156) : `overflow-x-hidden` rogne les ombres horizontales
-2. Le `gap-2` (8px) entre cards dans tous les blocks : trop serré, les ombres des cards adjacentes se recouvrent et s'annulent visuellement
-3. Aucun padding autour du grid : ombres des cards de bord coupées
-4. Le `KpiGrid` au-dessus a le même problème
+- L’approche actuelle repose sur des `box-shadow` externes sur les cartes des graphiques.
+- Dans Analytics, ces cartes sont rendues dans plusieurs conteneurs avec `overflow-hidden` / `overflow-x-hidden` (`DRCInteractiveMap.tsx`, `ProvinceDataVisualization.tsx`), donc les ombres débordantes sont souvent rognées.
+- Même quand elles ne sont pas coupées, elles restent trop discrètes sur un fond clair.
+- Il faut donc abandonner la logique “ombre externe seule” et passer à une **surface Analytics dédiée**, visible même sans débordement.
 
-### Modifications
+### Refonte proposée
+1. Créer un nouveau style Analytics réutilisable dans `src/index.css` :
+   - `.analytics-panel` pour les grands blocs
+   - `.analytics-card` pour les KPI, graphiques et mini-cards
+2. Ce nouveau style ne dépendra plus principalement d’un `box-shadow` externe, mais d’un relief combiné :
+   - fond légèrement dégradé
+   - bordure/ring plus lisible
+   - ombre interne (`inset`) via pseudo-élément
+   - léger halo/relief au hover
+3. Supprimer l’usage de `shadow-[var(--shadow-analytics)]` sur les visuels Analytics.
+4. Remplacer l’effet de focus actuel en `scale` par un état plus stable (`ring` + léger lift), pour éviter les effets coupés.
 
-**1. `src/components/visualizations/ProvinceDataVisualization.tsx` (ligne 156)**
+### Fichiers à modifier
+- `src/index.css`
+  - ajouter les classes utilitaires `.analytics-panel` et `.analytics-card`
+  - retirer ou cesser d’utiliser `--shadow-analytics` / `--shadow-analytics-hover`
+- `src/components/visualizations/shared/ChartCard.tsx`
+  - appliquer `.analytics-card` à :
+    - `ChartCard`
+    - `StackedBarCard`
+    - `MultiAreaChartCard`
+    - `ColorMappedPieCard`
+  - revoir l’état focus/hover
+- `src/components/visualizations/shared/KpiGrid.tsx`
+  - appliquer `.analytics-card` aux KPI
+- `src/components/DRCInteractiveMap.tsx`
+  - appliquer `.analytics-panel` aux grands blocs Analytics
+  - appliquer `.analytics-card` aux petites cards de stats pour homogénéiser tout l’espace Analytics
 
-Ajouter du padding et garder `overflow-x-hidden` (nécessaire), mais le padding du contenu compensera :
-```tsx
-className="flex-1 min-w-0 min-h-0 overflow-y-auto overflow-x-hidden p-2 lg:p-3"
-```
-(au lieu de `p-1 lg:p-0 lg:mt-1.5`)
+### Détails techniques
+- Rester 100% en classes sémantiques (`bg-card`, `border-border`, `ring-border`, `from-background`, `to-muted/20`, etc.)
+- Utiliser `relative isolate overflow-hidden` + pseudo-éléments `before/after` pour créer une profondeur visible même dans les conteneurs clippés
+- Si une ombre externe légère est conservée, elle restera secondaire ; la profondeur principale viendra du relief interne et du contour
 
-**2. Tous les blocks dans `src/components/visualizations/blocks/*.tsx`**
+### Résultat attendu
+- Le bloc principal qui contient les diagrammes aura enfin une vraie présence visuelle
+- Chaque visuel aura son relief individuel
+- Les KPI, graphiques, mini-cards et panneaux Analytics auront un rendu cohérent
+- Le rendu restera visible même dans les zones avec `overflow-hidden`
 
-Remplacer `gap-2` par `gap-4 md:gap-5` sur le grid de chart cards pour laisser de la place aux ombres :
-```tsx
-<div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
-```
-
-Fichiers concernés (13) :
-- OwnershipHistoryBlock, TitleRequestsBlock, CertificatesBlock, BuildingPermitsBlock, ExpertiseBlock, TaxesBlock, MortgagesBlock, MutationBlock, DisputesBlock, ParcelsBlock, et autres blocks listés.
-
-**3. Vérifier `KpiGrid`** — appliquer la même logique de gap si applicable.
-
-### Résultat
-Les ombres `--shadow-analytics` (déjà définies) deviennent **réellement visibles** autour de chaque card individuellement, avec assez d'espace de respiration entre les cards et autour du grid.
+### Validation
+- Vérifier sur desktop et sur viewport compact que :
+  - le bloc Analytics principal ressort clairement
+  - chaque graphique a bien son relief propre
+  - les KPI ont la même profondeur visuelle
+  - aucun effet n’est rogné pendant le scroll ou dans les panneaux Analytics
