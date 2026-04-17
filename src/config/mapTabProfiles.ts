@@ -511,3 +511,6 @@ export const MAP_TAB_PROFILES: Record<string, MapTabProfile> = {
   'building-permits': buildingPermitsProfile,
   'taxes': taxesProfile,
 };
+
+/** Default profile (parcels density) — exported for explicit fallback usage */
+export { rdcMapProfile };
