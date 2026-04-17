@@ -178,7 +178,7 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
       />
       <KpiGrid items={kpiItems} />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
         {mainChartDefs.map(d => <React.Fragment key={d.key}>{d.el()}</React.Fragment>)}
       </div>
 
@@ -189,7 +189,7 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
             <h3 className="text-sm font-semibold text-foreground">Levées de litige</h3>
             <span className="text-xs text-muted-foreground">({liftingDisputes.length})</span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
             {liftingChartDefs.map(d => <React.Fragment key={d.key}>{d.el()}</React.Fragment>)}
           </div>
         </>

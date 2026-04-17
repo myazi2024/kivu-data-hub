@@ -79,7 +79,7 @@ export const CertificatesBlock: React.FC<Props> = memo(({ data }) => {
     <div className="space-y-2">
       <AnalyticsFilters data={data.certificates} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} onExport={() => exportCSV(['parcel_number', 'certificate_type', 'recipient_name', 'reference_number', 'status', 'generated_at'])} />
       <KpiGrid items={kpiItems} />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
         {chartDefs.map(d => <React.Fragment key={d.key}>{d.el()}</React.Fragment>)}
       </div>
     </div>

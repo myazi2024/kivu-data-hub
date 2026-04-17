@@ -221,7 +221,7 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     <div className="space-y-2">
       <AnalyticsFilters data={data.parcels} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} onExport={() => exportCSV(['parcel_number', 'province', 'ville', 'commune', 'quartier', 'parcel_type', 'property_title_type', 'declared_usage', 'construction_type', 'area_sqm', 'created_at'])} />
       <KpiGrid items={kpiItems} />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
         {chartDefs.map(d => <React.Fragment key={d.key}>{d.el()}</React.Fragment>)}
       </div>
     </div>
