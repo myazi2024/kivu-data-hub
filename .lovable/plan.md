@@ -1,21 +1,38 @@
 
 
-## Doubler l'intensité des ombres des visuels Analytics
+## Préfixer les titres des visuels avec le nom de l'onglet
 
-### Analyse
-Les ombres des visuels Analytics sont définies dans `src/index.css` via la classe `.analytics-card` (et probablement `.analytics-panel`), avec un `box-shadow` interne combiné à des pseudo-éléments. Pour doubler l'effet, il faut amplifier les valeurs (opacité, blur, spread) du `box-shadow` principal et de l'état hover.
+### Approche
+Centraliser dans `useBlockFilter.ts` (utilisé par les 13 blocks). Modifier la fonction `ct(key, fallback)` pour préfixer automatiquement le résultat (custom_title ou fallback) avec le label de l'onglet.
 
 ### Modification
 
-**`src/index.css`**
-- Sur `.analytics-card` : doubler l'opacité et/ou le blur des `box-shadow` (inset + externe légère).
-- Sur `.analytics-card:hover` : doubler également l'intensité du halo.
-- Idem pour `.analytics-panel` si applicable.
+**`src/hooks/useBlockFilter.ts`**
+- Récupérer `ANALYTICS_TABS_REGISTRY[tabKey].label` (ex. "Titres fonciers", "Mutations", "Hypothèques", etc.).
+- Modifier `ct` :
+  ```ts
+  const tabLabel = ANALYTICS_TABS_REGISTRY[tabKey]?.label;
+  const ct = (key: string, fallback: string) => {
+    const base = getChartConfig(key)?.custom_title || fallback;
+    // Ne pas préfixer les KPI (clés commençant par 'kpi-')
+    if (!tabLabel || key.startsWith('kpi-')) return base;
+    // Éviter double préfixe si déjà présent
+    if (base.startsWith(`${tabLabel} : `)) return base;
+    return `${tabLabel} : ${base}`;
+  };
+  ```
 
-Exemple de transformation :
-- Avant : `box-shadow: 0 1px 3px hsl(var(--foreground) / 0.08), inset 0 1px 0 0 hsl(var(--background) / 0.6);`
-- Après : `box-shadow: 0 2px 6px hsl(var(--foreground) / 0.16), inset 0 2px 0 0 hsl(var(--background) / 0.6);`
+### Détails
+- **KPI exclus** : les KPI (`kpi-total`, `kpi-active`, etc.) restent courts car affichés en grille compacte. Seuls les titres des graphiques (ChartCard) sont préfixés.
+- **Idempotent** : si un admin a déjà saisi un titre incluant le préfixe via la config DB, pas de duplication.
+- **Aucun changement** dans les 13 blocks ni dans `ChartCard`.
 
 ### Résultat
-Les visuels Analytics (graphiques, KPI, panneaux) auront un relief deux fois plus prononcé, tout en restant cohérents avec le design system sémantique.
+Dans l'onglet "Titres fonciers", les visuels deviennent :
+- "Titres fonciers : Type de titre"
+- "Titres fonciers : Type de bail"
+- "Titres fonciers : Statut juridique"
+- etc.
+
+Idem pour tous les autres onglets (Mutations, Hypothèques, Litiges, Autorisations, etc.) avec leur label respectif issu du registre `ANALYTICS_TABS_REGISTRY`.
 
