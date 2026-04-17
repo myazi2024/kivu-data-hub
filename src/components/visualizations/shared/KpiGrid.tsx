@@ -36,8 +36,8 @@ export const KpiGrid: React.FC<Props> = memo(({ items, cols }) => {
         {items.map((kpi, i) => (
           <Tooltip key={i}>
             <TooltipTrigger asChild>
-              <Card className="border-border/30 cursor-default">
-                <CardContent className="p-2">
+              <Card className="analytics-card border-0 cursor-default">
+                <CardContent className="relative z-[1] p-2">
                   <p className="text-[9px] text-muted-foreground truncate">{kpi.label}</p>
                   <p className={`text-lg font-bold ${kpi.cls}`}>{kpi.value}</p>
                 </CardContent>
