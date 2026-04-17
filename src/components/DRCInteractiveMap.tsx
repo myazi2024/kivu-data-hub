@@ -206,10 +206,18 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
         const ctx = { analytics, provinceName: meta.name };
         base.metricValue = activeProfile.metric(ctx);
         base.extraTooltipLines = activeProfile.tooltipLines(ctx);
+        base.noData = activeProfile.hasData ? !activeProfile.hasData(ctx) : false;
       }
       return base;
     });
   }, [analytics, activeProfile]);
+
+  /** Adaptive tiers from real province distribution (quartiles), with static fallback */
+  const adaptiveTiers: MapTier[] | null = useMemo(() => {
+    if (!activeProfile || !activeProfile.palette) return null;
+    const values = provincesData.map(p => p.metricValue ?? 0);
+    return computeAdaptiveTiers(values, activeProfile.palette, activeProfile.tiers, activeProfile.adaptiveUnit || '');
+  }, [activeProfile, provincesData]);
 
   // ── URL → State: initialize province from URL on first load ──
   useEffect(() => {
@@ -375,16 +383,26 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   };
 
   /** Choropleth color: profile-driven when an analytics tab is active, else default tiers */
-  const getProvinceColor = (province: ProvinceData) => {
+  const getProvinceColor = useCallback((province: ProvinceData) => {
     if (activeProfile) {
+      if (province.noData) return NO_DATA_COLOR;
       const v = province.metricValue ?? 0;
-      const tier = activeProfile.tiers.find(t => v >= t.min && v <= t.max) || activeProfile.tiers[0];
+      const tiers = adaptiveTiers || activeProfile.tiers;
+      const tier = tiers.find(t => v >= t.min && v <= t.max) || tiers[0];
       return tier.color;
     }
     const count = province.parcelsCount;
     const tier = DENSITY_TIERS.find(t => count >= t.min && count <= t.max) || DENSITY_TIERS[0];
     return tier.color;
-  };
+  }, [activeProfile, adaptiveTiers, DENSITY_TIERS]);
+
+  /** Reset to default RDC map view */
+  const resetToDefaultMap = useCallback(() => {
+    setForcedTab('rdc-map');
+    setActiveAnalyticsTab('rdc-map');
+    // Clear after one tick so the prop change propagates
+    setTimeout(() => setForcedTab(null), 50);
+  }, []);
 
   if (isLoading) {
     return (
