@@ -126,7 +126,7 @@ export function computeAdaptiveTiers(
 }
 
 // Semantic palettes — using HSL color values (theme-resilient enough on choropleth).
-const PALETTES = {
+export const PALETTES = {
   blue:     ['hsl(213 30% 85%)', 'hsl(213 60% 65%)', 'hsl(213 75% 50%)', 'hsl(213 85% 35%)'] as [string, string, string, string],
   violet:   ['hsl(265 30% 85%)', 'hsl(265 55% 65%)', 'hsl(265 70% 50%)', 'hsl(265 80% 35%)'] as [string, string, string, string],
   indigo:   ['hsl(235 30% 85%)', 'hsl(235 55% 65%)', 'hsl(235 70% 50%)', 'hsl(235 80% 35%)'] as [string, string, string, string],
@@ -151,6 +151,9 @@ const titleRequestsProfile: MapTabProfile = {
   label: 'Titres fonciers',
   legendTitle: 'Densité de parcelles titrées',
   tiers: makeTiers([20, 80, 300], PALETTES.blue),
+  palette: PALETTES.blue,
+  dataSource: 'cadastral_parcels',
+  hasData: ({ analytics, provinceName }) => filterProv(analytics.parcels, provinceName).length > 0,
   metric: ({ analytics, provinceName }) => {
     const parcels = filterProv(analytics.parcels, provinceName);
     return parcels.filter(p => !!p.property_title_type).length;
@@ -186,6 +189,9 @@ const parcelsTitledProfile: MapTabProfile = {
   label: 'Constructions',
   legendTitle: 'Constructions déclarées',
   tiers: makeTiers([10, 50, 200], PALETTES.violet),
+  palette: PALETTES.violet,
+  dataSource: 'cadastral_contributions.building_shapes',
+  hasData: ({ analytics, provinceName }) => filterProv(analytics.contributions, provinceName).length > 0,
   metric: ({ analytics, provinceName }) => {
     const contribs = filterProv(analytics.contributions, provinceName);
     let n = 0;
@@ -220,6 +226,9 @@ const contributionsProfile: MapTabProfile = {
   label: 'Contributions',
   legendTitle: 'Contributions soumises',
   tiers: makeTiers([10, 50, 200], PALETTES.indigo),
+  palette: PALETTES.indigo,
+  dataSource: 'cadastral_contributions',
+  hasData: ({ analytics, provinceName }) => filterProv(analytics.contributions, provinceName).length > 0,
   metric: ({ analytics, provinceName }) => filterProv(analytics.contributions, provinceName).length,
   tooltipLines: ({ analytics, provinceName }) => {
     const c = filterProv(analytics.contributions, provinceName);
@@ -237,6 +246,9 @@ const expertiseProfile: MapTabProfile = {
   label: 'Expertises',
   legendTitle: 'Demandes d\'expertise',
   tiers: makeTiers([5, 25, 100], PALETTES.cyan),
+  palette: PALETTES.cyan,
+  dataSource: 'real_estate_expertise_requests',
+  hasData: ({ analytics, provinceName }) => filterProv(analytics.expertiseRequests, provinceName).length > 0,
   metric: ({ analytics, provinceName }) => filterProv(analytics.expertiseRequests, provinceName).length,
   tooltipLines: ({ analytics, provinceName }) => {
     const e = filterProv(analytics.expertiseRequests, provinceName);
@@ -257,6 +269,9 @@ const mutationsProfile: MapTabProfile = {
   label: 'Mutations',
   legendTitle: 'Mutations en cours',
   tiers: makeTiers([5, 20, 80], PALETTES.amber),
+  palette: PALETTES.amber,
+  dataSource: 'mutation_requests',
+  hasData: ({ analytics, provinceName }) => filterProv(analytics.mutationRequests, provinceName).length > 0,
   metric: ({ analytics, provinceName }) => {
     const m = filterProv(analytics.mutationRequests, provinceName);
     return m.filter(x => x.status === 'pending' || x.status === 'en_cours').length;
