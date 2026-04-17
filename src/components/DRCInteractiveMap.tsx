@@ -20,6 +20,7 @@ import { useLandDataAnalytics } from '@/hooks/useLandDataAnalytics';
 import { useTestEnvironment } from '@/hooks/useTestEnvironment';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { getTerritoiresForProvince, getProvinceForTerritoire } from '@/lib/geographicData';
+import { MAP_TAB_PROFILES, type MapTabProfile } from '@/config/mapTabProfiles';
 
 /** Province IDs and names for the 26 provinces */
 const PROVINCE_META: { id: string; name: string }[] = [
@@ -139,6 +140,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const [selectedQuartier, setSelectedQuartier] = useState<string | undefined>(() => searchParams.get('quartier') || undefined);
   const [selectedTerritoire, setSelectedTerritoire] = useState<string | undefined>(() => searchParams.get('territoire') || undefined);
   const [selectedSectionType, setSelectedSectionType] = useState<string>(() => searchParams.get('section') || 'all');
+  const [activeAnalyticsTab, setActiveAnalyticsTab] = useState<string>('rdc-map');
   const mapCardRef = React.useRef<HTMLDivElement>(null);
   const urlInitRef = React.useRef(false);
 
@@ -172,7 +174,14 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
 
   const dt = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
 
-  /** Build province data from real Supabase analytics */
+  /** Active profile for the analytics tab — null when on default 'rdc-map' tab */
+  const activeProfile: MapTabProfile | null = useMemo(
+    () => MAP_TAB_PROFILES[activeAnalyticsTab] || null,
+    [activeAnalyticsTab],
+  );
+
+  /** Build province data from real Supabase analytics. When a profile is active,
+   *  inject the profile-driven metricValue and extraTooltipLines on each province. */
   const provincesData: ProvinceData[] = useMemo(() => {
     if (!analytics) return PROVINCE_META.map(p => buildEmptyProvince(p));
 
@@ -189,9 +198,17 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
         expertiseRequests.filter(pFilter),
         contributions.filter(pFilter),
       );
-      return { id: meta.id, name: meta.name, ...indicators };
+
+      const base: ProvinceData = { id: meta.id, name: meta.name, ...indicators };
+
+      if (activeProfile) {
+        const ctx = { analytics, provinceName: meta.name };
+        base.metricValue = activeProfile.metric(ctx);
+        base.extraTooltipLines = activeProfile.tooltipLines(ctx);
+      }
+      return base;
     });
-  }, [analytics]);
+  }, [analytics, activeProfile]);
 
   // ── URL → State: initialize province from URL on first load ──
   useEffect(() => {
@@ -355,8 +372,13 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     }
   };
 
-  /** Choropleth color based on fixed density tiers */
+  /** Choropleth color: profile-driven when an analytics tab is active, else default tiers */
   const getProvinceColor = (province: ProvinceData) => {
+    if (activeProfile) {
+      const v = province.metricValue ?? 0;
+      const tier = activeProfile.tiers.find(t => v >= t.min && v <= t.max) || activeProfile.tiers[0];
+      return tier.color;
+    }
     const count = province.parcelsCount;
     const tier = DENSITY_TIERS.find(t => count >= t.min && count <= t.max) || DENSITY_TIERS[0];
     return tier.color;
@@ -400,7 +422,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   <div className="bg-muted/20 px-2 py-0.5 border-b border-border/30 flex-shrink-0">
                     <h2 className="text-[10px] sm:text-xs font-medium text-foreground flex items-center gap-1">
                       <MapPin className="h-3 w-3 text-primary" />
-                      <span>{selectedTerritoire ? `${selectedTerritoire} — ${selectedProvince?.name || ''}` : selectedSectionType === 'rurale' && selectedProvince ? `Territoires — ${selectedProvince.name}` : selectedSectionType === 'rurale' ? 'Territoires — RDC' : selectedVille ? `${selectedVille}${selectedCommune ? ` — ${selectedCommune}` : ''}${selectedQuartier ? ` — ${selectedQuartier}` : ''}` : selectedProvince ? selectedProvince.name : 'République Démocratique du Congo'}</span>
+                      <span>{selectedTerritoire ? `${selectedTerritoire} — ${selectedProvince?.name || ''}` : selectedSectionType === 'rurale' && selectedProvince ? `Territoires — ${selectedProvince.name}` : selectedSectionType === 'rurale' ? 'Territoires — RDC' : selectedVille ? `${selectedVille}${selectedCommune ? ` — ${selectedCommune}` : ''}${selectedQuartier ? ` — ${selectedQuartier}` : ''}` : selectedProvince ? `${activeProfile ? `${activeProfile.label} — ` : ''}${selectedProvince.name}` : activeProfile ? `${activeProfile.label} — République Démocratique du Congo` : 'République Démocratique du Congo'}</span>
                     </h2>
                     <p className="text-[10px] text-muted-foreground leading-tight">
                       {selectedTerritoire
@@ -470,15 +492,28 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                       </div>
                     )}
                   </div>
-                  {/* Légende contextuelle — scope dynamique */}
-                  {selectedProvince && scopedStats && (
-                    <div className="absolute bottom-5 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30 animate-fade-in">
-                      <div className="text-[10px] font-medium text-foreground mb-0.5">{scopeLabel}</div>
+                  {/* Légende contextuelle — scope dynamique (profil ou défaut) */}
+                  {selectedProvince && (activeProfile || scopedStats) && (
+                    <div className="absolute bottom-5 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30 animate-fade-in max-w-[140px]">
+                      <div className="text-[10px] font-medium text-foreground mb-0.5 truncate">{scopeLabel}</div>
                       <div className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
-                        <div className="flex justify-between gap-2"><span>Certif. enreg.</span><span className="font-medium text-foreground">{formatNumber(scopedStats.certEnregCount)}</span></div>
-                        <div className="flex justify-between gap-2"><span>Titres dem.</span><span className="font-medium text-foreground">{formatNumber(scopedStats.titleRequestsCount)}</span></div>
-                        <div className="flex justify-between gap-2"><span>Litiges</span><span className="font-medium text-foreground">{formatNumber(scopedStats.disputesCount)}</span></div>
-                        <div className="flex justify-between gap-2"><span>Sup. moy.</span><span className="font-medium text-foreground">{scopedStats.avgParcelSurfaceSqm > 0 ? `${scopedStats.avgParcelSurfaceSqm} m²` : '—'}</span></div>
+                        {activeProfile && analytics
+                          ? (activeProfile.legendStats?.({ analytics, provinceName: selectedProvince.name })
+                              ?? activeProfile.tooltipLines({ analytics, provinceName: selectedProvince.name }).slice(0, 4)
+                            ).map((s, i) => (
+                              <div key={i} className="flex justify-between gap-2">
+                                <span className="truncate">{s.label}</span>
+                                <span className={`font-medium ${s.color || 'text-foreground'}`}>{s.value}</span>
+                              </div>
+                            ))
+                          : (
+                            <>
+                              <div className="flex justify-between gap-2"><span>Certif. enreg.</span><span className="font-medium text-foreground">{formatNumber(scopedStats!.certEnregCount)}</span></div>
+                              <div className="flex justify-between gap-2"><span>Titres dem.</span><span className="font-medium text-foreground">{formatNumber(scopedStats!.titleRequestsCount)}</span></div>
+                              <div className="flex justify-between gap-2"><span>Litiges</span><span className="font-medium text-foreground">{formatNumber(scopedStats!.disputesCount)}</span></div>
+                              <div className="flex justify-between gap-2"><span>Sup. moy.</span><span className="font-medium text-foreground">{scopedStats!.avgParcelSurfaceSqm > 0 ? `${scopedStats!.avgParcelSurfaceSqm} m²` : '—'}</span></div>
+                            </>
+                          )}
                       </div>
                     </div>
                   )}
@@ -488,7 +523,22 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                     <span className="text-[10px] text-muted-foreground">{todayStr} — {watermarkText}</span>
                     {brandingConfig?.logo_url && <img src={String(brandingConfig.logo_url)} alt="" className="h-3 w-3 inline-block object-contain" />}
                   </div>
-                  
+
+                  {/* Mini-légende choroplèthe par profil — visible quand un onglet métier est actif */}
+                  {activeProfile && (
+                    <div className="absolute top-2 right-2 z-10 bg-background/85 backdrop-blur-sm rounded-md px-2 py-1.5 border border-border/40 shadow-sm animate-fade-in max-w-[160px]">
+                      <div className="text-[9px] font-semibold text-foreground mb-1 truncate">{activeProfile.legendTitle}</div>
+                      <div className="flex flex-col gap-0.5">
+                        {activeProfile.tiers.map((t, i) => (
+                          <div key={i} className="flex items-center gap-1.5">
+                            <span className="inline-block h-2.5 w-2.5 rounded-sm border border-border/40" style={{ backgroundColor: t.color }} />
+                            <span className="text-[9px] text-muted-foreground truncate">{t.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="absolute bottom-5 right-2 z-10 flex gap-1">
                     {/* Bouton copier en image — configurable */}
                     {isChartVisible('map-copy-button') && (
@@ -670,6 +720,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                     onQuartierChange={setSelectedQuartier}
                     onTerritoireChange={setSelectedTerritoire}
                     onSectionTypeChange={setSelectedSectionType}
+                    onActiveTabChange={setActiveAnalyticsTab}
                     selectedVille={selectedVille}
                     selectedCommune={selectedCommune}
                     selectedQuartier={selectedQuartier}

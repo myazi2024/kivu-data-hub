@@ -70,6 +70,7 @@ interface ProvinceDataVisualizationProps {
   onQuartierChange?: (quartier: string | undefined) => void;
   onTerritoireChange?: (territoire: string | undefined) => void;
   onSectionTypeChange?: (sectionType: string) => void;
+  onActiveTabChange?: (tabKey: string) => void;
   selectedVille?: string | null;
   selectedCommune?: string | null;
   selectedQuartier?: string | null;
@@ -78,12 +79,17 @@ interface ProvinceDataVisualizationProps {
 }
 
 const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
-  analytics, selectedProvince, onProvinceFilter, onVilleChange, onCommuneChange, onQuartierChange, onTerritoireChange, onSectionTypeChange,
+  analytics, selectedProvince, onProvinceFilter, onVilleChange, onCommuneChange, onQuartierChange, onTerritoireChange, onSectionTypeChange, onActiveTabChange,
   selectedVille, selectedCommune, selectedQuartier, selectedTerritoire, selectedSectionType,
 }) => {
   const { visibleTabs, isLoading: tabsLoading } = useAnalyticsTabsConfig();
   const [activeTab, setActiveTab] = useState('');
   const [isIdle, setIsIdle] = useState(false);
+
+  // Notify parent when active tab changes (used by DRC map to swap profile)
+  useEffect(() => {
+    if (activeTab) onActiveTabChange?.(activeTab);
+  }, [activeTab, onActiveTabChange]);
 
   useEffect(() => {
     const observer = new MutationObserver(() => {
