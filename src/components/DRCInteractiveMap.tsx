@@ -540,6 +540,8 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                           territoire={selectedTerritoire}
                           showAll={!selectedProvince}
                           territoireNames={selectedProvince ? getTerritoiresForProvince(selectedProvince.name) : undefined}
+                          getEntityColor={getTerritoireColor}
+                          profileLabel={activeProfile?.legendTitle}
                           onTerritoireSelect={(name) => {
                             if (!selectedProvince) {
                               const provinceName = getProvinceForTerritoire(name);
@@ -558,7 +560,14 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                       </div>
                     ) : selectedVille && selectedCommune && selectedVille.toLowerCase() === 'goma' ? (
                       <div key="quartiers" className="w-full h-full animate-fade-in">
-                        <DRCQuartiersMap ville={selectedVille} commune={selectedCommune} quartier={selectedQuartier} onQuartierSelect={setSelectedQuartier} />
+                        <DRCQuartiersMap
+                          ville={selectedVille}
+                          commune={selectedCommune}
+                          quartier={selectedQuartier}
+                          onQuartierSelect={setSelectedQuartier}
+                          getEntityColor={getQuartierColor}
+                          profileLabel={activeProfile?.legendTitle}
+                        />
                       </div>
                     ) : selectedVille ? (
                       <div key="communes" className="w-full h-full animate-fade-in">
