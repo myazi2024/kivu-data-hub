@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { MapPin, BarChart3, Info, Database, Loader2, Copy, Check, Maximize, Minimize, Clock } from 'lucide-react';
+import { MapPin, BarChart3, Info, Database, Loader2, Copy, Check, Maximize, Minimize, Clock, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { normalizeTitleType } from '@/utils/titleTypeNormalizer';
 import DRCMapWithTooltip from './DRCMapWithTooltip';
@@ -20,7 +20,7 @@ import { useLandDataAnalytics } from '@/hooks/useLandDataAnalytics';
 import { useTestEnvironment } from '@/hooks/useTestEnvironment';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { getTerritoiresForProvince, getProvinceForTerritoire } from '@/lib/geographicData';
-import { MAP_TAB_PROFILES, type MapTabProfile } from '@/config/mapTabProfiles';
+import { MAP_TAB_PROFILES, computeAdaptiveTiers, NO_DATA_COLOR, type MapTabProfile, type MapTier } from '@/config/mapTabProfiles';
 
 /** Province IDs and names for the 26 provinces */
 const PROVINCE_META: { id: string; name: string }[] = [
