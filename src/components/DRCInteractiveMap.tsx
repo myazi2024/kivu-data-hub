@@ -312,7 +312,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     return () => document.removeEventListener('fullscreenchange', handler);
   }, [onFullscreenChange]);
 
-  const toggleFullscreen = () => {
+  const toggleFullscreen = React.useCallback(() => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => {
         toast.error('Le mode plein écran n\'est pas disponible');
@@ -320,7 +320,21 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     } else {
       document.exitFullscreen();
     }
-  };
+  }, []);
+
+  // Keyboard shortcut: F to toggle fullscreen
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() !== 'f') return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (target && target.matches('input, textarea, select, [contenteditable="true"]')) return;
+      e.preventDefault();
+      toggleFullscreen();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toggleFullscreen]);
 
   const handleCopyImage = async () => {
     if (!mapCardRef.current || isCopying) return;
