@@ -174,7 +174,7 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
       <AnalyticsFilters data={data.disputes} filter={filter} onChange={setFilter}
         hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation}
         dateField={filterConfig.dateField} statusField={filterConfig.statusField}
-        onExport={() => exportCSV(['parcel_number','province','dispute_nature','dispute_type','current_status','resolution_level','declarant_quality','created_at'])}
+       
       />
       <KpiGrid items={kpiItems} />
 
