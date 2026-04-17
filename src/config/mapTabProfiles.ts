@@ -73,6 +73,9 @@ function topValue<T>(rows: T[], field: (r: T) => string | null | undefined): str
   return best;
 }
 
+/** Color used for "no data available" provinces — neutral, theme-aware */
+export const NO_DATA_COLOR = 'hsl(var(--muted))';
+
 /** Build 4 tiers with min/max thresholds and a color palette */
 function makeTiers(thresholds: [number, number, number], colors: [string, string, string, string], unit = ''): MapTier[] {
   const [t1, t2, t3] = thresholds;
@@ -83,6 +86,35 @@ function makeTiers(thresholds: [number, number, number], colors: [string, string
     { label: `${t2 + 1}–${t3}${u}`, min: t2 + 1,  max: t3,       color: colors[2] },
     { label: `${t3 + 1}+${u}`,      min: t3 + 1,  max: Infinity, color: colors[3] },
   ];
+}
+
+/** Compute a quartile of a sorted ascending numeric array (linear interpolation) */
+function quantile(sorted: number[], q: number): number {
+  if (sorted.length === 0) return 0;
+  const pos = (sorted.length - 1) * q;
+  const base = Math.floor(pos);
+  const rest = pos - base;
+  const next = sorted[base + 1];
+  return next !== undefined ? sorted[base] + rest * (next - sorted[base]) : sorted[base];
+}
+
+/**
+ * Compute adaptive tiers based on the actual distribution of values.
+ * Uses Q1/Q2/Q3 quartiles. Falls back to the static `fallback` tiers if all
+ * values are zero (avoids meaningless "0-0" buckets).
+ */
+export function computeAdaptiveTiers(
+  values: number[],
+  palette: [string, string, string, string],
+  fallback: MapTier[],
+  unit = '',
+): MapTier[] {
+  const positives = values.filter(v => v > 0).sort((a, b) => a - b);
+  if (positives.length < 2) return fallback;
+  const q1 = Math.max(1, Math.round(quantile(positives, 0.25)));
+  const q2 = Math.max(q1 + 1, Math.round(quantile(positives, 0.5)));
+  const q3 = Math.max(q2 + 1, Math.round(quantile(positives, 0.75)));
+  return makeTiers([q1, q2, q3], palette, unit);
 }
 
 // Semantic palettes — using HSL color values (theme-resilient enough on choropleth).
