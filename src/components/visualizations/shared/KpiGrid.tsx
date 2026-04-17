@@ -32,7 +32,7 @@ export const KpiGrid: React.FC<Props> = memo(({ items, cols }) => {
   const cls = gridClass[Math.min(n, 6)] || 'grid-cols-2 md:grid-cols-4';
   return (
     <TooltipProvider>
-      <div className={`grid gap-1.5 ${cls}`}>
+      <div className={`grid gap-3 md:gap-4 ${cls}`}>
         {items.map((kpi, i) => (
           <Tooltip key={i}>
             <TooltipTrigger asChild>

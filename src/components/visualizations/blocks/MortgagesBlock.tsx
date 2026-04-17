@@ -83,7 +83,7 @@ export const MortgagesBlock: React.FC<Props> = memo(({ data }) => {
       <div className="space-y-2">
         <AnalyticsFilters data={data.mortgages} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} onExport={() => exportCSV(['parcel_id', 'province', 'creditor_type', 'mortgage_status', 'mortgage_amount_usd', 'duration_months', 'contract_date', 'created_at'])} />
         <KpiGrid items={kpiItems} />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
           {chartDefs.map(d => <React.Fragment key={d.key}>{d.el()}</React.Fragment>)}
         </div>
       </div>

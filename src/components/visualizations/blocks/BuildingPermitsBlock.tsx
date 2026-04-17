@@ -88,7 +88,7 @@ export const BuildingPermitsBlock: React.FC<Props> = memo(({ data }) => {
       <div className="space-y-2">
         <AnalyticsFilters data={data.buildingPermits} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} onExport={() => exportCSV(['parcel_id', 'permit_number', 'administrative_status', 'issue_date', 'validity_period_months', 'issuing_service', 'created_at'])} />
         <KpiGrid items={kpiItems} />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
           {chartDefs.map(d => <React.Fragment key={d.key}>{d.el()}</React.Fragment>)}
         </div>
       </div>
