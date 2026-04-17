@@ -76,14 +76,26 @@ interface ProvinceDataVisualizationProps {
   selectedQuartier?: string | null;
   selectedTerritoire?: string | null;
   selectedSectionType?: string | null;
+  /** Initial tab key to activate on mount (from URL) */
+  initialTab?: string | null;
+  /** When set, force the active tab to this value (used by Reset button) */
+  forcedTab?: string | null;
 }
 
 const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
   analytics, selectedProvince, onProvinceFilter, onVilleChange, onCommuneChange, onQuartierChange, onTerritoireChange, onSectionTypeChange, onActiveTabChange,
   selectedVille, selectedCommune, selectedQuartier, selectedTerritoire, selectedSectionType,
+  initialTab, forcedTab,
 }) => {
   const { visibleTabs, isLoading: tabsLoading } = useAnalyticsTabsConfig();
-  const [activeTab, setActiveTab] = useState('');
+  const [activeTab, setActiveTab] = useState(initialTab || '');
+
+  // Apply forced tab change (e.g. from Reset button)
+  useEffect(() => {
+    if (forcedTab && forcedTab !== activeTab) {
+      setActiveTab(forcedTab);
+    }
+  }, [forcedTab]);
   const [isIdle, setIsIdle] = useState(false);
 
   // Notify parent when active tab changes (used by DRC map to swap profile)
