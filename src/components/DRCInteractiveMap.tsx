@@ -492,7 +492,13 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                       </div>
                     ) : selectedVille ? (
                       <div key="communes" className="w-full h-full animate-fade-in">
-                        <DRCCommunesMap ville={selectedVille} commune={selectedCommune} onCommuneSelect={setSelectedCommune} />
+                        <DRCCommunesMap
+                          ville={selectedVille}
+                          commune={selectedCommune}
+                          onCommuneSelect={setSelectedCommune}
+                          getEntityColor={getCommuneColor}
+                          profileLabel={activeProfile?.legendTitle}
+                        />
                       </div>
                     ) : (
                       <div key="provinces" className="w-full h-full flex items-center justify-center animate-fade-in" style={{ transform: 'scale(0.9)', transformOrigin: 'center center' }}>
