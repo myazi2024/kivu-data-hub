@@ -140,7 +140,8 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const [selectedQuartier, setSelectedQuartier] = useState<string | undefined>(() => searchParams.get('quartier') || undefined);
   const [selectedTerritoire, setSelectedTerritoire] = useState<string | undefined>(() => searchParams.get('territoire') || undefined);
   const [selectedSectionType, setSelectedSectionType] = useState<string>(() => searchParams.get('section') || 'all');
-  const [activeAnalyticsTab, setActiveAnalyticsTab] = useState<string>('rdc-map');
+  const [activeAnalyticsTab, setActiveAnalyticsTab] = useState<string>(() => searchParams.get('tab') || 'rdc-map');
+  const [forcedTab, setForcedTab] = useState<string | null>(null);
   const mapCardRef = React.useRef<HTMLDivElement>(null);
   const urlInitRef = React.useRef(false);
 
