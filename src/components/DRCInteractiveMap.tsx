@@ -174,7 +174,14 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
 
   const dt = (key: string, fallback: string) => getChartConfig(key)?.custom_title || fallback;
 
-  /** Build province data from real Supabase analytics */
+  /** Active profile for the analytics tab — null when on default 'rdc-map' tab */
+  const activeProfile: MapTabProfile | null = useMemo(
+    () => MAP_TAB_PROFILES[activeAnalyticsTab] || null,
+    [activeAnalyticsTab],
+  );
+
+  /** Build province data from real Supabase analytics. When a profile is active,
+   *  inject the profile-driven metricValue and extraTooltipLines on each province. */
   const provincesData: ProvinceData[] = useMemo(() => {
     if (!analytics) return PROVINCE_META.map(p => buildEmptyProvince(p));
 
@@ -191,9 +198,17 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
         expertiseRequests.filter(pFilter),
         contributions.filter(pFilter),
       );
-      return { id: meta.id, name: meta.name, ...indicators };
+
+      const base: ProvinceData = { id: meta.id, name: meta.name, ...indicators };
+
+      if (activeProfile) {
+        const ctx = { analytics, provinceName: meta.name };
+        base.metricValue = activeProfile.metric(ctx);
+        base.extraTooltipLines = activeProfile.tooltipLines(ctx);
+      }
+      return base;
     });
-  }, [analytics]);
+  }, [analytics, activeProfile]);
 
   // ── URL → State: initialize province from URL on first load ──
   useEffect(() => {
@@ -357,8 +372,13 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     }
   };
 
-  /** Choropleth color based on fixed density tiers */
+  /** Choropleth color: profile-driven when an analytics tab is active, else default tiers */
   const getProvinceColor = (province: ProvinceData) => {
+    if (activeProfile) {
+      const v = province.metricValue ?? 0;
+      const tier = activeProfile.tiers.find(t => v >= t.min && v <= t.max) || activeProfile.tiers[0];
+      return tier.color;
+    }
     const count = province.parcelsCount;
     const tier = DENSITY_TIERS.find(t => count >= t.min && count <= t.max) || DENSITY_TIERS[0];
     return tier.color;
