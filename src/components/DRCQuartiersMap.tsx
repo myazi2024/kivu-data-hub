@@ -12,6 +12,10 @@ interface Props {
   commune?: string;
   quartier?: string;
   onQuartierSelect?: (quartier: string) => void;
+  /** Optional drilldown coloring per quartier name */
+  getEntityColor?: (quartierName: string) => string | undefined;
+  /** Optional title shown in top-left chip when drilldown coloring is active */
+  profileLabel?: string;
 }
 
 const COLORS = [
@@ -27,7 +31,7 @@ const HIGHLIGHT = 'hsl(var(--primary) / 0.7)';
 const STROKE = 'hsl(var(--foreground) / 0.3)';
 const HIGHLIGHT_STROKE = 'hsl(var(--primary))';
 
-const DRCQuartiersMap: React.FC<Props> = ({ ville, commune, quartier, onQuartierSelect }) => {
+const DRCQuartiersMap: React.FC<Props> = ({ ville, commune, quartier, onQuartierSelect, getEntityColor, profileLabel }) => {
   const features = useGeoJsonData<Feature>('/goma-quartiers.geojson');
   const [hovered, setHovered] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -74,7 +78,16 @@ const DRCQuartiersMap: React.FC<Props> = ({ ville, commune, quartier, onQuartier
           const isHovered = hovered === name;
           const hasSelection = !!quartier;
           const path = projectFeature(f.geometry, animBbox, dims.w, dims.h, padding);
-          const fill = isSelected ? HIGHLIGHT : isHovered ? 'hsl(var(--primary) / 0.55)' : hasSelection ? 'hsl(var(--muted) / 0.15)' : COLORS[i % COLORS.length];
+          const profileColor = getEntityColor?.(name);
+          const fill = isSelected
+            ? HIGHLIGHT
+            : isHovered
+              ? 'hsl(var(--primary) / 0.55)'
+              : profileColor
+                ? profileColor
+                : hasSelection
+                  ? 'hsl(var(--muted) / 0.15)'
+                  : COLORS[i % COLORS.length];
           const stroke = isSelected ? HIGHLIGHT_STROKE : hasSelection ? 'hsl(var(--foreground) / 0.1)' : STROKE;
           const strokeWidth = isSelected ? 2 : isHovered ? 1.5 : 0.8;
 
@@ -117,6 +130,12 @@ const DRCQuartiersMap: React.FC<Props> = ({ ville, commune, quartier, onQuartier
         <div className="absolute top-2 left-2 bg-background/90 backdrop-blur-sm border border-border/50 rounded px-2 py-1 text-[10px] shadow-sm pointer-events-none z-10">
           <span className="font-medium">{hovered}</span>
           <span className="text-muted-foreground ml-1">— {commune || ville}</span>
+        </div>
+      )}
+      {profileLabel && !hovered && (
+        <div className="absolute top-2 left-2 bg-background/85 backdrop-blur-sm border border-border/40 rounded px-1.5 py-0.5 text-[9px] shadow-sm pointer-events-none z-10">
+          <span className="font-medium text-foreground">{profileLabel}</span>
+          <span className="text-muted-foreground ml-1">— par quartier</span>
         </div>
       )}
     </div>
