@@ -38,13 +38,21 @@ export interface MapTabProfile {
   tabKey: string;
   label: string;            // Header label, ex. "Litiges fonciers — RDC"
   legendTitle: string;      // Mini-legend title
-  tiers: MapTier[];         // Choropleth tiers
+  tiers: MapTier[];         // Choropleth tiers (static fallback)
+  /** Palette used to recompute adaptive tiers from real data distribution */
+  palette?: [string, string, string, string];
+  /** Unit appended to adaptive tier labels (ex: "lots") */
+  adaptiveUnit?: string;
+  /** Primary Supabase table the metric is computed from (for info popover) */
+  dataSource?: string;
   /** Compute the choropleth metric value for a given province */
   metric: (ctx: ProfileContext) => number;
   /** Tooltip lines (1–4) for hover */
   tooltipLines: (ctx: ProfileContext) => MapTooltipLine[];
   /** Mini KPI block shown bottom-left of map for the active scope */
   legendStats?: (ctx: ProfileContext) => MapLegendStat[];
+  /** Whether the province has any record at all (used to render the no-data state) */
+  hasData?: (ctx: ProfileContext) => boolean;
 }
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -73,6 +81,9 @@ function topValue<T>(rows: T[], field: (r: T) => string | null | undefined): str
   return best;
 }
 
+/** Color used for "no data available" provinces — neutral, theme-aware */
+export const NO_DATA_COLOR = 'hsl(var(--muted))';
+
 /** Build 4 tiers with min/max thresholds and a color palette */
 function makeTiers(thresholds: [number, number, number], colors: [string, string, string, string], unit = ''): MapTier[] {
   const [t1, t2, t3] = thresholds;
@@ -85,8 +96,37 @@ function makeTiers(thresholds: [number, number, number], colors: [string, string
   ];
 }
 
+/** Compute a quartile of a sorted ascending numeric array (linear interpolation) */
+function quantile(sorted: number[], q: number): number {
+  if (sorted.length === 0) return 0;
+  const pos = (sorted.length - 1) * q;
+  const base = Math.floor(pos);
+  const rest = pos - base;
+  const next = sorted[base + 1];
+  return next !== undefined ? sorted[base] + rest * (next - sorted[base]) : sorted[base];
+}
+
+/**
+ * Compute adaptive tiers based on the actual distribution of values.
+ * Uses Q1/Q2/Q3 quartiles. Falls back to the static `fallback` tiers if all
+ * values are zero (avoids meaningless "0-0" buckets).
+ */
+export function computeAdaptiveTiers(
+  values: number[],
+  palette: [string, string, string, string],
+  fallback: MapTier[],
+  unit = '',
+): MapTier[] {
+  const positives = values.filter(v => v > 0).sort((a, b) => a - b);
+  if (positives.length < 2) return fallback;
+  const q1 = Math.max(1, Math.round(quantile(positives, 0.25)));
+  const q2 = Math.max(q1 + 1, Math.round(quantile(positives, 0.5)));
+  const q3 = Math.max(q2 + 1, Math.round(quantile(positives, 0.75)));
+  return makeTiers([q1, q2, q3], palette, unit);
+}
+
 // Semantic palettes — using HSL color values (theme-resilient enough on choropleth).
-const PALETTES = {
+export const PALETTES = {
   blue:     ['hsl(213 30% 85%)', 'hsl(213 60% 65%)', 'hsl(213 75% 50%)', 'hsl(213 85% 35%)'] as [string, string, string, string],
   violet:   ['hsl(265 30% 85%)', 'hsl(265 55% 65%)', 'hsl(265 70% 50%)', 'hsl(265 80% 35%)'] as [string, string, string, string],
   indigo:   ['hsl(235 30% 85%)', 'hsl(235 55% 65%)', 'hsl(235 70% 50%)', 'hsl(235 80% 35%)'] as [string, string, string, string],
@@ -111,6 +151,9 @@ const titleRequestsProfile: MapTabProfile = {
   label: 'Titres fonciers',
   legendTitle: 'Densité de parcelles titrées',
   tiers: makeTiers([20, 80, 300], PALETTES.blue),
+  palette: PALETTES.blue,
+  dataSource: 'cadastral_parcels',
+  hasData: ({ analytics, provinceName }) => filterProv(analytics.parcels, provinceName).length > 0,
   metric: ({ analytics, provinceName }) => {
     const parcels = filterProv(analytics.parcels, provinceName);
     return parcels.filter(p => !!p.property_title_type).length;
@@ -146,6 +189,9 @@ const parcelsTitledProfile: MapTabProfile = {
   label: 'Constructions',
   legendTitle: 'Constructions déclarées',
   tiers: makeTiers([10, 50, 200], PALETTES.violet),
+  palette: PALETTES.violet,
+  dataSource: 'cadastral_contributions.building_shapes',
+  hasData: ({ analytics, provinceName }) => filterProv(analytics.contributions, provinceName).length > 0,
   metric: ({ analytics, provinceName }) => {
     const contribs = filterProv(analytics.contributions, provinceName);
     let n = 0;
@@ -180,6 +226,9 @@ const contributionsProfile: MapTabProfile = {
   label: 'Contributions',
   legendTitle: 'Contributions soumises',
   tiers: makeTiers([10, 50, 200], PALETTES.indigo),
+  palette: PALETTES.indigo,
+  dataSource: 'cadastral_contributions',
+  hasData: ({ analytics, provinceName }) => filterProv(analytics.contributions, provinceName).length > 0,
   metric: ({ analytics, provinceName }) => filterProv(analytics.contributions, provinceName).length,
   tooltipLines: ({ analytics, provinceName }) => {
     const c = filterProv(analytics.contributions, provinceName);
@@ -197,6 +246,9 @@ const expertiseProfile: MapTabProfile = {
   label: 'Expertises',
   legendTitle: 'Demandes d\'expertise',
   tiers: makeTiers([5, 25, 100], PALETTES.cyan),
+  palette: PALETTES.cyan,
+  dataSource: 'real_estate_expertise_requests',
+  hasData: ({ analytics, provinceName }) => filterProv(analytics.expertiseRequests, provinceName).length > 0,
   metric: ({ analytics, provinceName }) => filterProv(analytics.expertiseRequests, provinceName).length,
   tooltipLines: ({ analytics, provinceName }) => {
     const e = filterProv(analytics.expertiseRequests, provinceName);
@@ -217,6 +269,9 @@ const mutationsProfile: MapTabProfile = {
   label: 'Mutations',
   legendTitle: 'Mutations en cours',
   tiers: makeTiers([5, 20, 80], PALETTES.amber),
+  palette: PALETTES.amber,
+  dataSource: 'mutation_requests',
+  hasData: ({ analytics, provinceName }) => filterProv(analytics.mutationRequests, provinceName).length > 0,
   metric: ({ analytics, provinceName }) => {
     const m = filterProv(analytics.mutationRequests, provinceName);
     return m.filter(x => x.status === 'pending' || x.status === 'en_cours').length;
@@ -240,6 +295,9 @@ const mortgagesProfile: MapTabProfile = {
   label: 'Hypothèques',
   legendTitle: 'Hypothèques actives',
   tiers: makeTiers([5, 25, 100], PALETTES.green),
+  palette: PALETTES.green,
+  dataSource: 'cadastral_mortgages',
+  hasData: ({ analytics, provinceName }) => filterProv(analytics.mortgages || [], provinceName).length > 0,
   metric: ({ analytics, provinceName }) => {
     const m = filterProv(analytics.mortgages || [], provinceName);
     return m.filter(x => x.mortgage_status === 'active').length;
@@ -247,14 +305,14 @@ const mortgagesProfile: MapTabProfile = {
   tooltipLines: ({ analytics, provinceName }) => {
     const m = filterProv(analytics.mortgages || [], provinceName);
     const active = m.filter(x => x.mortgage_status === 'active').length;
-    const closed = m.filter(x => x.mortgage_status === 'paid' || x.mortgage_status === 'closed').length;
     const banks = m.filter(x => norm(x.creditor_type).includes('banque') || norm(x.creditor_type).includes('bank')).length;
     const pctBank = m.length ? (banks / m.length) * 100 : 0;
+    const avgAmount = m.length ? m.reduce((s, x: any) => s + (x.mortgage_amount_usd || 0), 0) / m.length : 0;
     return [
       { label: 'Inscriptions', value: fmtN(m.length), color: 'text-primary' },
       { label: 'Actives',      value: fmtN(active),   color: 'text-emerald-600' },
-      { label: 'Soldées',      value: fmtN(closed),   color: 'text-blue-600' },
       { label: '% bancaires',  value: fmtPct(pctBank),color: 'text-violet-600' },
+      { label: 'Montant moy.', value: m.length ? fmtUsd(avgAmount) : '—', color: 'text-blue-600' },
     ];
   },
 };
@@ -262,16 +320,23 @@ const mortgagesProfile: MapTabProfile = {
 const subdivisionProfile: MapTabProfile = {
   tabKey: 'subdivision',
   label: 'Lotissements',
-  legendTitle: 'Demandes de lotissement',
-  tiers: makeTiers([3, 10, 30], PALETTES.teal),
-  metric: ({ analytics, provinceName }) => filterProv(analytics.subdivisionRequests, provinceName).length,
+  legendTitle: 'Lots créés',
+  tiers: makeTiers([10, 50, 200], PALETTES.teal),
+  palette: PALETTES.teal,
+  dataSource: 'subdivision_requests',
+  adaptiveUnit: 'lots',
+  hasData: ({ analytics, provinceName }) => filterProv(analytics.subdivisionRequests, provinceName).length > 0,
+  metric: ({ analytics, provinceName }) => {
+    const s = filterProv(analytics.subdivisionRequests, provinceName);
+    return s.reduce((acc, x: any) => acc + (x.number_of_lots || 0), 0);
+  },
   tooltipLines: ({ analytics, provinceName }) => {
     const s = filterProv(analytics.subdivisionRequests, provinceName);
     const inProgress = s.filter(x => x.status === 'pending' || x.status === 'en_cours').length;
     const approved = s.filter(x => x.status === 'approved').length;
-    const lots = s.reduce((acc, x) => acc + (x.number_of_lots || 0), 0);
+    const lots = s.reduce((acc, x: any) => acc + (x.number_of_lots || 0), 0);
     return [
-      { label: 'Total',     value: fmtN(s.length),   color: 'text-primary' },
+      { label: 'Demandes',  value: fmtN(s.length),   color: 'text-primary' },
       { label: 'En cours',  value: fmtN(inProgress), color: 'text-amber-600' },
       { label: 'Validés',   value: fmtN(approved),   color: 'text-emerald-600' },
       { label: 'Lots créés',value: fmtN(lots),       color: 'text-blue-600' },
@@ -284,6 +349,9 @@ const disputesProfile: MapTabProfile = {
   label: 'Litiges fonciers',
   legendTitle: 'Densité de litiges',
   tiers: makeTiers([3, 15, 50], PALETTES.red),
+  palette: PALETTES.red,
+  dataSource: 'cadastral_land_disputes',
+  hasData: ({ analytics, provinceName }) => filterProv(analytics.disputes, provinceName).length > 0,
   metric: ({ analytics, provinceName }) => filterProv(analytics.disputes, provinceName).length,
   tooltipLines: ({ analytics, provinceName }) => {
     const d = filterProv(analytics.disputes, provinceName);
@@ -304,6 +372,9 @@ const ownershipProfile: MapTabProfile = {
   label: 'Historique propriété',
   legendTitle: 'Transferts de propriété',
   tiers: makeTiers([5, 25, 100], PALETTES.rose),
+  palette: PALETTES.rose,
+  dataSource: 'cadastral_ownership_history',
+  hasData: ({ analytics, provinceName }) => filterProv(analytics.ownershipHistory, provinceName).length > 0,
   metric: ({ analytics, provinceName }) => filterProv(analytics.ownershipHistory, provinceName).length,
   tooltipLines: ({ analytics, provinceName }) => {
     const h = filterProv(analytics.ownershipHistory, provinceName);
@@ -324,6 +395,9 @@ const certificatesProfile: MapTabProfile = {
   label: 'Certificats',
   legendTitle: 'Certificats émis',
   tiers: makeTiers([5, 20, 80], PALETTES.emerald),
+  palette: PALETTES.emerald,
+  dataSource: 'generated_certificates',
+  hasData: ({ analytics, provinceName }) => filterProv(analytics.certificates, provinceName).length > 0,
   metric: ({ analytics, provinceName }) => filterProv(analytics.certificates, provinceName).length,
   tooltipLines: ({ analytics, provinceName }) => {
     const c = filterProv(analytics.certificates, provinceName);
@@ -340,6 +414,9 @@ const invoicesProfile: MapTabProfile = {
   label: 'Factures',
   legendTitle: 'Factures émises',
   tiers: makeTiers([10, 50, 200], PALETTES.slate),
+  palette: PALETTES.slate,
+  dataSource: 'cadastral_invoices',
+  hasData: ({ analytics, provinceName }) => filterProv(analytics.invoices, provinceName).length > 0,
   metric: ({ analytics, provinceName }) => filterProv(analytics.invoices, provinceName).length,
   tooltipLines: ({ analytics, provinceName }) => {
     const inv = filterProv(analytics.invoices, provinceName);
@@ -360,6 +437,9 @@ const buildingPermitsProfile: MapTabProfile = {
   label: 'Autorisations',
   legendTitle: 'Autorisations délivrées',
   tiers: makeTiers([5, 25, 100], PALETTES.orange),
+  palette: PALETTES.orange,
+  dataSource: 'cadastral_building_permits',
+  hasData: ({ analytics, provinceName }) => filterProv(analytics.buildingPermits, provinceName).length > 0,
   metric: ({ analytics, provinceName }) => filterProv(analytics.buildingPermits, provinceName).length,
   tooltipLines: ({ analytics, provinceName }) => {
     const p = filterProv(analytics.buildingPermits, provinceName);
@@ -380,6 +460,9 @@ const taxesProfile: MapTabProfile = {
   label: 'Taxes foncières',
   legendTitle: 'Taxes déclarées',
   tiers: makeTiers([10, 50, 200], PALETTES.yellow),
+  palette: PALETTES.yellow,
+  dataSource: 'cadastral_tax_history',
+  hasData: ({ analytics, provinceName }) => filterProv(analytics.taxHistory, provinceName).length > 0,
   metric: ({ analytics, provinceName }) => filterProv(analytics.taxHistory, provinceName).length,
   tooltipLines: ({ analytics, provinceName }) => {
     const t = filterProv(analytics.taxHistory, provinceName);
@@ -394,6 +477,20 @@ const taxesProfile: MapTabProfile = {
     ];
   },
 };
+
+/** Default map profile — choropleth by total parcels (existing behavior). */
+const rdcMapProfile: MapTabProfile = {
+  tabKey: 'rdc-map',
+  label: 'Carte RDC',
+  legendTitle: 'Densité de parcelles',
+  tiers: makeTiers([30, 100, 500], PALETTES.slate),
+  palette: PALETTES.slate,
+  dataSource: 'cadastral_parcels',
+  hasData: ({ analytics, provinceName }) => filterProv(analytics.parcels, provinceName).length > 0,
+  metric: ({ analytics, provinceName }) => filterProv(analytics.parcels, provinceName).length,
+  tooltipLines: () => [],
+};
+
 
 /**
  * Public registry: keyed by Analytics tab key.
@@ -414,3 +511,6 @@ export const MAP_TAB_PROFILES: Record<string, MapTabProfile> = {
   'building-permits': buildingPermitsProfile,
   'taxes': taxesProfile,
 };
+
+/** Default profile (parcels density) — exported for explicit fallback usage */
+export { rdcMapProfile };

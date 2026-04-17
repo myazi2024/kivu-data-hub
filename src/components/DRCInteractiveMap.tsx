@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { MapPin, BarChart3, Info, Database, Loader2, Copy, Check, Maximize, Minimize, Clock } from 'lucide-react';
+import { MapPin, BarChart3, Info, Database, Loader2, Copy, Check, Maximize, Minimize, Clock, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { normalizeTitleType } from '@/utils/titleTypeNormalizer';
 import DRCMapWithTooltip from './DRCMapWithTooltip';
@@ -20,7 +20,7 @@ import { useLandDataAnalytics } from '@/hooks/useLandDataAnalytics';
 import { useTestEnvironment } from '@/hooks/useTestEnvironment';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { getTerritoiresForProvince, getProvinceForTerritoire } from '@/lib/geographicData';
-import { MAP_TAB_PROFILES, type MapTabProfile } from '@/config/mapTabProfiles';
+import { MAP_TAB_PROFILES, computeAdaptiveTiers, NO_DATA_COLOR, type MapTabProfile, type MapTier } from '@/config/mapTabProfiles';
 
 /** Province IDs and names for the 26 provinces */
 const PROVINCE_META: { id: string; name: string }[] = [
@@ -140,7 +140,8 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const [selectedQuartier, setSelectedQuartier] = useState<string | undefined>(() => searchParams.get('quartier') || undefined);
   const [selectedTerritoire, setSelectedTerritoire] = useState<string | undefined>(() => searchParams.get('territoire') || undefined);
   const [selectedSectionType, setSelectedSectionType] = useState<string>(() => searchParams.get('section') || 'all');
-  const [activeAnalyticsTab, setActiveAnalyticsTab] = useState<string>('rdc-map');
+  const [activeAnalyticsTab, setActiveAnalyticsTab] = useState<string>(() => searchParams.get('tab') || 'rdc-map');
+  const [forcedTab, setForcedTab] = useState<string | null>(null);
   const mapCardRef = React.useRef<HTMLDivElement>(null);
   const urlInitRef = React.useRef(false);
 
@@ -205,10 +206,18 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
         const ctx = { analytics, provinceName: meta.name };
         base.metricValue = activeProfile.metric(ctx);
         base.extraTooltipLines = activeProfile.tooltipLines(ctx);
+        base.noData = activeProfile.hasData ? !activeProfile.hasData(ctx) : false;
       }
       return base;
     });
   }, [analytics, activeProfile]);
+
+  /** Adaptive tiers from real province distribution (quartiles), with static fallback */
+  const adaptiveTiers: MapTier[] | null = useMemo(() => {
+    if (!activeProfile || !activeProfile.palette) return null;
+    const values = provincesData.map(p => p.metricValue ?? 0);
+    return computeAdaptiveTiers(values, activeProfile.palette, activeProfile.tiers, activeProfile.adaptiveUnit || '');
+  }, [activeProfile, provincesData]);
 
   // ── URL → State: initialize province from URL on first load ──
   useEffect(() => {
@@ -234,8 +243,9 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     if (selectedQuartier) params.set('quartier', selectedQuartier);
     if (selectedTerritoire) params.set('territoire', selectedTerritoire);
     if (selectedSectionType !== 'all') params.set('section', selectedSectionType);
+    if (activeAnalyticsTab && activeAnalyticsTab !== 'rdc-map') params.set('tab', activeAnalyticsTab);
     setSearchParams(params, { replace: true });
-  }, [selectedProvince, selectedVille, selectedCommune, selectedQuartier, selectedTerritoire, selectedSectionType]);
+  }, [selectedProvince, selectedVille, selectedCommune, selectedQuartier, selectedTerritoire, selectedSectionType, activeAnalyticsTab]);
 
   /** Paliers choroplèthes — configurables depuis admin */
   const DENSITY_TIERS = useMemo(() => {
@@ -373,16 +383,26 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   };
 
   /** Choropleth color: profile-driven when an analytics tab is active, else default tiers */
-  const getProvinceColor = (province: ProvinceData) => {
+  const getProvinceColor = useCallback((province: ProvinceData) => {
     if (activeProfile) {
+      if (province.noData) return NO_DATA_COLOR;
       const v = province.metricValue ?? 0;
-      const tier = activeProfile.tiers.find(t => v >= t.min && v <= t.max) || activeProfile.tiers[0];
+      const tiers = adaptiveTiers || activeProfile.tiers;
+      const tier = tiers.find(t => v >= t.min && v <= t.max) || tiers[0];
       return tier.color;
     }
     const count = province.parcelsCount;
     const tier = DENSITY_TIERS.find(t => count >= t.min && count <= t.max) || DENSITY_TIERS[0];
     return tier.color;
-  };
+  }, [activeProfile, adaptiveTiers, DENSITY_TIERS]);
+
+  /** Reset to default RDC map view */
+  const resetToDefaultMap = useCallback(() => {
+    setForcedTab('rdc-map');
+    setActiveAnalyticsTab('rdc-map');
+    // Clear after one tick so the prop change propagates
+    setTimeout(() => setForcedTab(null), 50);
+  }, []);
 
   if (isLoading) {
     return (
