@@ -598,30 +598,54 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                     )}
                   </div>
                   {/* Légende contextuelle — scope dynamique (profil ou défaut) */}
-                  {selectedProvince && (activeProfile || scopedStats) && (
-                    <div className="absolute bottom-5 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30 animate-fade-in max-w-[140px]">
-                      <div className="text-[10px] font-medium text-foreground mb-0.5 truncate">{scopeLabel}</div>
-                      <div className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
-                        {activeProfile && analytics
-                          ? (activeProfile.legendStats?.({ analytics, provinceName: selectedProvince.name })
-                              ?? activeProfile.tooltipLines({ analytics, provinceName: selectedProvince.name }).slice(0, 4)
-                            ).map((s, i) => (
-                              <div key={i} className="flex justify-between gap-2">
-                                <span className="truncate">{s.label}</span>
-                                <span className={`font-medium ${s.color || 'text-foreground'}`}>{s.value}</span>
-                              </div>
-                            ))
-                          : (
-                            <>
-                              <div className="flex justify-between gap-2"><span>Certif. enreg.</span><span className="font-medium text-foreground">{formatNumber(scopedStats!.certEnregCount)}</span></div>
-                              <div className="flex justify-between gap-2"><span>Titres dem.</span><span className="font-medium text-foreground">{formatNumber(scopedStats!.titleRequestsCount)}</span></div>
-                              <div className="flex justify-between gap-2"><span>Litiges</span><span className="font-medium text-foreground">{formatNumber(scopedStats!.disputesCount)}</span></div>
-                              <div className="flex justify-between gap-2"><span>Sup. moy.</span><span className="font-medium text-foreground">{scopedStats!.avgParcelSurfaceSqm > 0 ? `${scopedStats!.avgParcelSurfaceSqm} m²` : '—'}</span></div>
-                            </>
-                          )}
+                  {selectedProvince && (activeProfile || scopedStats) && (() => {
+                    // For profile legends: build a scope-filtered analytics view (province + optional ville/commune/quartier)
+                    let profileLines: { label: string; value: string; color?: string }[] | undefined;
+                    if (activeProfile && analytics) {
+                      const predicate = buildScopePredicate(selectedProvince.name, selectedVille, selectedCommune, selectedQuartier, selectedTerritoire);
+                      const sliceArr = <T,>(arr: T[]): T[] => (arr || []).filter(predicate as any).map((r: any) => ({ ...r, province: selectedProvince.name })) as T[];
+                      const scopedAnalytics = {
+                        ...analytics,
+                        parcels: sliceArr(analytics.parcels as any),
+                        contributions: sliceArr(analytics.contributions as any),
+                        titleRequests: sliceArr(analytics.titleRequests as any),
+                        disputes: sliceArr(analytics.disputes as any),
+                        mortgages: sliceArr((analytics.mortgages || []) as any),
+                        mutationRequests: sliceArr(analytics.mutationRequests as any),
+                        expertiseRequests: sliceArr(analytics.expertiseRequests as any),
+                        subdivisionRequests: sliceArr((analytics as any).subdivisionRequests || []),
+                        ownershipHistory: sliceArr((analytics as any).ownershipHistory || []),
+                        certificates: sliceArr((analytics as any).certificates || []),
+                        invoices: sliceArr((analytics as any).invoices || []),
+                        buildingPermits: sliceArr((analytics as any).buildingPermits || []),
+                        taxHistory: sliceArr((analytics as any).taxHistory || []),
+                      } as typeof analytics;
+                      const ctx = { analytics: scopedAnalytics, provinceName: selectedProvince.name };
+                      profileLines = activeProfile.legendStats?.(ctx) ?? activeProfile.tooltipLines(ctx).slice(0, 4);
+                    }
+                    return (
+                      <div className="absolute bottom-5 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30 animate-fade-in max-w-[140px]">
+                        <div className="text-[10px] font-medium text-foreground mb-0.5 truncate">{scopeLabel}</div>
+                        <div className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
+                          {profileLines
+                            ? profileLines.map((s, i) => (
+                                <div key={i} className="flex justify-between gap-2">
+                                  <span className="truncate">{s.label}</span>
+                                  <span className={`font-medium ${s.color || 'text-foreground'}`}>{s.value}</span>
+                                </div>
+                              ))
+                            : (
+                              <>
+                                <div className="flex justify-between gap-2"><span>Certif. enreg.</span><span className="font-medium text-foreground">{formatNumber(scopedStats!.certEnregCount)}</span></div>
+                                <div className="flex justify-between gap-2"><span>Titres dem.</span><span className="font-medium text-foreground">{formatNumber(scopedStats!.titleRequestsCount)}</span></div>
+                                <div className="flex justify-between gap-2"><span>Litiges</span><span className="font-medium text-foreground">{formatNumber(scopedStats!.disputesCount)}</span></div>
+                                <div className="flex justify-between gap-2"><span>Sup. moy.</span><span className="font-medium text-foreground">{scopedStats!.avgParcelSurfaceSqm > 0 ? `${scopedStats!.avgParcelSurfaceSqm} m²` : '—'}</span></div>
+                              </>
+                            )}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {/* Pied de carte : date + copyright */}
                   <div className="absolute bottom-0 left-0 right-0 z-10 text-center py-0.5 flex items-center justify-center gap-0.5">
