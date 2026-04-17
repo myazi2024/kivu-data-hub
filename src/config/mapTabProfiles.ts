@@ -38,13 +38,21 @@ export interface MapTabProfile {
   tabKey: string;
   label: string;            // Header label, ex. "Litiges fonciers — RDC"
   legendTitle: string;      // Mini-legend title
-  tiers: MapTier[];         // Choropleth tiers
+  tiers: MapTier[];         // Choropleth tiers (static fallback)
+  /** Palette used to recompute adaptive tiers from real data distribution */
+  palette?: [string, string, string, string];
+  /** Unit appended to adaptive tier labels (ex: "lots") */
+  adaptiveUnit?: string;
+  /** Primary Supabase table the metric is computed from (for info popover) */
+  dataSource?: string;
   /** Compute the choropleth metric value for a given province */
   metric: (ctx: ProfileContext) => number;
   /** Tooltip lines (1–4) for hover */
   tooltipLines: (ctx: ProfileContext) => MapTooltipLine[];
   /** Mini KPI block shown bottom-left of map for the active scope */
   legendStats?: (ctx: ProfileContext) => MapLegendStat[];
+  /** Whether the province has any record at all (used to render the no-data state) */
+  hasData?: (ctx: ProfileContext) => boolean;
 }
 
 // ───────────────────────────────────────────────────────────────────────────
