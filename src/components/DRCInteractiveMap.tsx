@@ -523,7 +523,22 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                     <span className="text-[10px] text-muted-foreground">{todayStr} — {watermarkText}</span>
                     {brandingConfig?.logo_url && <img src={String(brandingConfig.logo_url)} alt="" className="h-3 w-3 inline-block object-contain" />}
                   </div>
-                  
+
+                  {/* Mini-légende choroplèthe par profil — visible quand un onglet métier est actif */}
+                  {activeProfile && (
+                    <div className="absolute top-2 right-2 z-10 bg-background/85 backdrop-blur-sm rounded-md px-2 py-1.5 border border-border/40 shadow-sm animate-fade-in max-w-[160px]">
+                      <div className="text-[9px] font-semibold text-foreground mb-1 truncate">{activeProfile.legendTitle}</div>
+                      <div className="flex flex-col gap-0.5">
+                        {activeProfile.tiers.map((t, i) => (
+                          <div key={i} className="flex items-center gap-1.5">
+                            <span className="inline-block h-2.5 w-2.5 rounded-sm border border-border/40" style={{ backgroundColor: t.color }} />
+                            <span className="text-[9px] text-muted-foreground truncate">{t.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="absolute bottom-5 right-2 z-10 flex gap-1">
                     {/* Bouton copier en image — configurable */}
                     {isChartVisible('map-copy-button') && (
