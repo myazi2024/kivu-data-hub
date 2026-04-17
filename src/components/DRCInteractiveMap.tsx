@@ -422,7 +422,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   <div className="bg-muted/20 px-2 py-0.5 border-b border-border/30 flex-shrink-0">
                     <h2 className="text-[10px] sm:text-xs font-medium text-foreground flex items-center gap-1">
                       <MapPin className="h-3 w-3 text-primary" />
-                      <span>{selectedTerritoire ? `${selectedTerritoire} — ${selectedProvince?.name || ''}` : selectedSectionType === 'rurale' && selectedProvince ? `Territoires — ${selectedProvince.name}` : selectedSectionType === 'rurale' ? 'Territoires — RDC' : selectedVille ? `${selectedVille}${selectedCommune ? ` — ${selectedCommune}` : ''}${selectedQuartier ? ` — ${selectedQuartier}` : ''}` : selectedProvince ? selectedProvince.name : 'République Démocratique du Congo'}</span>
+                      <span>{selectedTerritoire ? `${selectedTerritoire} — ${selectedProvince?.name || ''}` : selectedSectionType === 'rurale' && selectedProvince ? `Territoires — ${selectedProvince.name}` : selectedSectionType === 'rurale' ? 'Territoires — RDC' : selectedVille ? `${selectedVille}${selectedCommune ? ` — ${selectedCommune}` : ''}${selectedQuartier ? ` — ${selectedQuartier}` : ''}` : selectedProvince ? `${activeProfile ? `${activeProfile.label} — ` : ''}${selectedProvince.name}` : activeProfile ? `${activeProfile.label} — République Démocratique du Congo` : 'République Démocratique du Congo'}</span>
                     </h2>
                     <p className="text-[10px] text-muted-foreground leading-tight">
                       {selectedTerritoire
@@ -492,15 +492,28 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                       </div>
                     )}
                   </div>
-                  {/* Légende contextuelle — scope dynamique */}
-                  {selectedProvince && scopedStats && (
-                    <div className="absolute bottom-5 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30 animate-fade-in">
-                      <div className="text-[10px] font-medium text-foreground mb-0.5">{scopeLabel}</div>
+                  {/* Légende contextuelle — scope dynamique (profil ou défaut) */}
+                  {selectedProvince && (activeProfile || scopedStats) && (
+                    <div className="absolute bottom-5 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30 animate-fade-in max-w-[140px]">
+                      <div className="text-[10px] font-medium text-foreground mb-0.5 truncate">{scopeLabel}</div>
                       <div className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
-                        <div className="flex justify-between gap-2"><span>Certif. enreg.</span><span className="font-medium text-foreground">{formatNumber(scopedStats.certEnregCount)}</span></div>
-                        <div className="flex justify-between gap-2"><span>Titres dem.</span><span className="font-medium text-foreground">{formatNumber(scopedStats.titleRequestsCount)}</span></div>
-                        <div className="flex justify-between gap-2"><span>Litiges</span><span className="font-medium text-foreground">{formatNumber(scopedStats.disputesCount)}</span></div>
-                        <div className="flex justify-between gap-2"><span>Sup. moy.</span><span className="font-medium text-foreground">{scopedStats.avgParcelSurfaceSqm > 0 ? `${scopedStats.avgParcelSurfaceSqm} m²` : '—'}</span></div>
+                        {activeProfile && analytics
+                          ? (activeProfile.legendStats?.({ analytics, provinceName: selectedProvince.name })
+                              ?? activeProfile.tooltipLines({ analytics, provinceName: selectedProvince.name }).slice(0, 4)
+                            ).map((s, i) => (
+                              <div key={i} className="flex justify-between gap-2">
+                                <span className="truncate">{s.label}</span>
+                                <span className={`font-medium ${s.color || 'text-foreground'}`}>{s.value}</span>
+                              </div>
+                            ))
+                          : (
+                            <>
+                              <div className="flex justify-between gap-2"><span>Certif. enreg.</span><span className="font-medium text-foreground">{formatNumber(scopedStats!.certEnregCount)}</span></div>
+                              <div className="flex justify-between gap-2"><span>Titres dem.</span><span className="font-medium text-foreground">{formatNumber(scopedStats!.titleRequestsCount)}</span></div>
+                              <div className="flex justify-between gap-2"><span>Litiges</span><span className="font-medium text-foreground">{formatNumber(scopedStats!.disputesCount)}</span></div>
+                              <div className="flex justify-between gap-2"><span>Sup. moy.</span><span className="font-medium text-foreground">{scopedStats!.avgParcelSurfaceSqm > 0 ? `${scopedStats!.avgParcelSurfaceSqm} m²` : '—'}</span></div>
+                            </>
+                          )}
                       </div>
                     </div>
                   )}
