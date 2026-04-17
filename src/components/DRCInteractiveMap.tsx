@@ -235,8 +235,9 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     if (selectedQuartier) params.set('quartier', selectedQuartier);
     if (selectedTerritoire) params.set('territoire', selectedTerritoire);
     if (selectedSectionType !== 'all') params.set('section', selectedSectionType);
+    if (activeAnalyticsTab && activeAnalyticsTab !== 'rdc-map') params.set('tab', activeAnalyticsTab);
     setSearchParams(params, { replace: true });
-  }, [selectedProvince, selectedVille, selectedCommune, selectedQuartier, selectedTerritoire, selectedSectionType]);
+  }, [selectedProvince, selectedVille, selectedCommune, selectedQuartier, selectedTerritoire, selectedSectionType, activeAnalyticsTab]);
 
   /** Paliers choroplèthes — configurables depuis admin */
   const DENSITY_TIERS = useMemo(() => {
