@@ -1,92 +1,74 @@
 
 
-## Audit Carte RDC dynamique × Onglets Analytics
+## Audit — Carte RDC dynamique × Onglet Analytics (état post-implémentation)
 
-### Vue d'ensemble
+### Vérifications effectuées
+Lecture ciblée de `mapTabProfiles.ts`, `DRCInteractiveMap.tsx`, `ProvinceDataVisualization.tsx`, `DRCCommunesMap.tsx`, `DRCMapWithTooltip.tsx`, `ProvinceTooltip.tsx`.
 
-| Aspect | État | Commentaire |
-|---|---|---|
-| Sync `activeTab` → carte | ✅ | `onActiveTabChange` propagé proprement |
-| 13 profils métiers | ✅ | Couvrent tous les onglets sauf `rdc-map` (défaut) |
-| Choroplèthe par profil | ✅ | `getProvinceColor` bascule via `metricValue` |
-| Mini-légende paliers | ✅ | Top-right, animée, repliable visuellement |
-| Tooltip dynamique | ✅ | `extraTooltipLines` injecté dans `ProvinceData` |
-| En-tête de carte | ✅ | Préfixé par `activeProfile.label` |
-| Légende contextuelle scope | ✅ | `legendStats` ou fallback tooltip |
-| Drilldown sous-province | ⚠️ | Maps Communes/Quartiers/Territoires ignorent `activeProfile` |
-| Paliers adaptatifs | ⚠️ | Seuils figés en code, peu pertinents pour faibles volumes |
-| Mode test | ⚠️ | Profils calculent depuis `analytics` global (ignorent `isTestRoute` filtres) — OK car analytics est déjà filtré en amont |
-| Performance | ⚠️ | `metric` + `tooltipLines` recalculés × 26 provinces à chaque tab change, sans mémo intra-profile |
-| Popover Info | ❌ | Texte figé : « Couleur = densité de parcelles » même quand profil actif |
-| Filtre ville/commune × profil | ❌ | Quand un onglet métier est actif et user descend en ville, la carte communale reste neutre (perd la métrique) |
-| Légende A11Y | ⚠️ | Carrés colorés sans `aria-label`/`role="img"` |
-| Bouton « Réinitialiser onglet » | ❌ | Pas de moyen rapide de revenir au mode `rdc-map` depuis la carte |
-| État `activeAnalyticsTab` URL | ❌ | Non synchronisé à `?tab=` — partage de lien perd le contexte métier |
-| Transitions paliers | ⚠️ | `transition-colors` non garanti sur SVG `fill` (paths via `setAttribute`) |
-| Profil par défaut `rdc-map` | ⚠️ | Pas dans `MAP_TAB_PROFILES` → onglet « Carte RDC » garde le visuel ancien : OK mais incohérent avec les autres |
+### Tableau de conformité
 
-### Améliorations proposées
+| # | Fonctionnalité | État | Constat |
+|---|---|---|---|
+| 1 | Sync `activeTab` → carte | ✅ | `onActiveTabChange` propagé |
+| 2 | 13 profils métiers | ✅ | Tous présents + `rdcMapProfile` unifié |
+| 3 | Choroplèthe par profil | ✅ | `getProvinceColor` consomme `metricValue` |
+| 4 | Mini-légende paliers | ✅ | Top-right, ARIA, repliable |
+| 5 | Tooltip dynamique | ✅ | `extraTooltipLines` rendu |
+| 6 | URL `?tab=` persistante | ✅ | `searchParams` lu/écrit |
+| 7 | Paliers adaptatifs (quartiles) | ✅ | `computeAdaptiveTiers` actif |
+| 8 | Profil `rdc-map` explicite | ✅ | Pipeline unique |
+| 9 | Drilldown profil → communes | ✅ | `getEntityColor` câblé |
+| 10 | Bouton « Reset onglet » | ✅ | `RotateCcw` + `forcedTab` |
+| 11 | Popover Info contextuel | ✅ | Affiche `dataSource` + méthode |
+| 12 | État « pas de données » | ✅ | `noData` + couleur neutre |
+| 13 | A11Y mini-légende | ✅ | `role`, `aria-live` |
+| 14 | Transitions SVG `fill` | ⚠️ | CSS transition non appliquée sur paths injectés via `setAttribute` |
+| 15 | Drilldown Quartiers/Territoires | ❌ | `DRCQuartiersMap` & `DRCTerritoiresMap` ignorent toujours `activeProfile` |
+| 16 | Mémoïsation profil | ⚠️ | Pas de cache `Map` interne ; recalcul à chaque re-render parent |
+| 17 | Légende contextuelle bottom-left × profil ville | ⚠️ | Reste sur stats globales province quand drilldown ville actif |
+| 18 | Bouton « Copier image » × profil | ⚠️ | Capture probable mais légende dynamique non incluse dans le PNG (à vérifier) |
+| 19 | Profil dans titre exporté/partagé | ❌ | Pas de mention du profil dans le nom de fichier export |
+| 20 | Mode plein écran × mini-légende | ⚠️ | Z-index/position à valider en fullscreen |
+| 21 | Fallback tiers vides | ⚠️ | Si toutes provinces à 0 et `noData`, mini-légende affiche 4 paliers vides peu lisibles |
+| 22 | URL `?tab=` × refresh + `forcedTab` | ⚠️ | Risque de boucle si `forcedTab` reste défini après application (pas de `null` reset) |
+| 23 | Performance switch onglet | ⚠️ | 26 provinces × `metric()` + `tooltipLines()` à chaque tab change, pas de mémo par `(tabKey, dataUpdatedAt)` |
+| 24 | Sync filtre ville → profil province | ⚠️ | Quand ville sélectionnée, métrique province reste calculée sur toute la province (perte de cohérence visuelle) |
 
-#### 1. URL persistante de l'onglet actif
-Ajouter `?tab=` dans `searchParams`, initialiser `activeAnalyticsTab` depuis l'URL, et propager le changement vers `ProvinceDataVisualization` (nouveau prop `initialTab`). Permet le partage de contexte complet (province + onglet + filtres).
+### Améliorations proposées (priorisées)
 
-#### 2. Paliers adaptatifs (quantiles)
-Remplacer les seuils statiques `makeTiers([3,15,50], …)` par un calcul dynamique basé sur la **distribution réelle par province** (quartiles Q1/Q2/Q3 de `metricValue`). Évite que toutes les provinces tombent dans le même palier sur les jeux de données peu denses (Expertise, Lotissement). Conserver les seuils statiques comme fallback si toutes les provinces sont à 0.
+#### P1 — Correctifs essentiels
+1. **Transitions SVG fluides** (`DRCMapWithTooltip.tsx`) : appliquer `path.style.transition = 'fill 300ms ease, opacity 200ms ease'` à l'attachement initial des paths, pour fluidifier le changement de palette.
+2. **Reset `forcedTab` après application** (`DRCInteractiveMap.tsx` + `ProvinceDataVisualization.tsx`) : passer `forcedTab` à `null` après `setActiveTab` via callback `onForcedTabApplied`, pour éviter re-trigger.
+3. **Fallback mini-légende vide** (`DRCInteractiveMap.tsx`) : si tous `metricValue === 0`, afficher uniquement la pastille « Aucune donnée » + message « Aucune occurrence pour ce profil » au lieu des 4 paliers hachurés.
 
-```ts
-// Nouveau helper dans mapTabProfiles.ts
-export function computeAdaptiveTiers(values: number[], palette): MapTier[] { … }
-```
+#### P2 — Cohérence drilldown
+4. **Drilldown Quartiers & Territoires** : étendre le pattern `getEntityColor` à `DRCQuartiersMap.tsx` et `DRCTerritoiresMap.tsx` (mêmes signatures que `DRCCommunesMap`). Permet de garder le profil métier sur tous les niveaux de zoom.
+5. **Légende bottom-left contextuelle au scope** : quand `selectedVille`/`selectedCommune` actif et profil métier sélectionné, recalculer `legendStats` filtré par ville/commune au lieu d'utiliser les stats province.
 
-Appliquer dans `DRCInteractiveMap`: si `activeProfile`, calculer les tiers à partir des `metricValue` puis les passer à `getProvinceColor` et à la mini-légende.
+#### P3 — Performance
+6. **Cache profil par `(tabKey, dataUpdatedAt)`** : dans `provincesData` (`DRCInteractiveMap.tsx`), introduire `useRef<Map<string, ProvinceMetric>>` et invalider via `analytics.dataUpdatedAt` pour éviter recalculs sur chaque setState non lié au profil.
+7. **Mémoïser `getCommuneColor` correctement** : dépendances actuelles incluent `analytics` complet → recalcul fréquent. Filtrer une fois par commune via `useMemo` indexé.
 
-#### 3. Profil `rdc-map` explicite (cohérence)
-Créer un profil `rdcMapProfile` (parcelles totales, palette neutre, paliers admin actuels) afin que **tous** les onglets passent par le même pipeline (`metric`/`tiers`/`tooltipLines`). Supprime le code dual `if (activeProfile) … else …`.
-
-#### 4. Drilldown : propager le profil aux sous-cartes
-Étendre `DRCCommunesMap`, `DRCQuartiersMap`, `DRCTerritoiresMap` pour accepter un prop optionnel `getEntityColor` calculé depuis le profil actif (par commune/quartier/territoire). Permet de conserver le contexte métier en zoom : ex. carte des **litiges par commune de Goma** quand l'onglet Litiges est actif. (Implémentation incrémentale : commencer par `DRCCommunesMap`.)
-
-#### 5. Popover Info contextuel
-Rendre le contenu dynamique :
-- Titre dynamique : « Couleur = `activeProfile.legendTitle.toLowerCase()` »
-- Source : « Données calculées depuis Supabase » + nom de la table principale du profil (parcels, mortgages, disputes…).
-
-#### 6. Bouton « Vue cartographique par défaut »
-Ajouter un petit bouton-icône (ex. `RotateCcw`) dans la barre top-right de la carte, visible uniquement si `activeProfile`, qui réinitialise `activeAnalyticsTab` à `rdc-map` (callback vers `ProvinceDataVisualization` via nouveau prop `requestedTab`).
-
-#### 7. Performance : mémoïsation profil
-Mémoïser `metric(ctx)` et `tooltipLines(ctx)` par `(tabKey, provinceName, dataUpdatedAt)` via une `Map` locale dans le `useMemo` de `provincesData`. Évite des recalculs sur chaque `setSelectedProvince`.
-
-#### 8. Transitions visuelles
-Dans `DRCMapWithTooltip`, ajouter `path.style.transition = 'fill 300ms ease'` lors de l'attachement initial pour fluidifier le changement de palette à chaque switch d'onglet.
-
-#### 9. Accessibilité légende
-- `role="img"` + `aria-label` sur chaque pastille de palier (« Palier élevé : 16 à 50 »).
-- `aria-live="polite"` sur la mini-légende quand le profil change pour annoncer le changement de contexte.
-
-#### 10. Profils enrichis (3 ajouts utiles)
-- **Mortgages** : ajouter « montant moyen $ » dans `tooltipLines` (déjà calculé en interne ailleurs).
-- **Subdivision** : palier basé sur `number_of_lots` total, pas sur le nombre de demandes (plus représentatif de l'intensité foncière).
-- **Ownership** : mise à zéro silencieuse quand `analytics.ownershipHistory` n'a aucune ligne pour la province (pour éviter la teinte "0–5" trompeuse en gris neutre — utiliser un état `no-data` distinct).
-
-#### 11. État « pas de données » par province
-Ajouter une couleur `neutral` (gris très clair, hachuré CSS) pour les provinces où `metricValue === 0` **et** total métier === 0. Distingue « zéro réel » de « pas encore d'enregistrement ». Tooltip indique alors « Aucune donnée disponible ».
+#### P4 — Export & UX
+8. **Nom de fichier export contextuel** : `Copier image` → nom `carte-rdc-{activeProfile.tabKey}-{date}.png`.
+9. **Mini-légende incluse dans capture PNG** : vérifier que `html2canvas`/équivalent englobe bien le bloc top-right (sinon élargir la zone capturée).
+10. **Fullscreen × mini-légende** : ajuster `z-index` et position absolue pour rester visible et accessible en mode plein écran.
 
 ### Fichiers impactés
 
 | Fichier | Changements |
 |---|---|
-| `src/config/mapTabProfiles.ts` | + `computeAdaptiveTiers`, + `rdcMapProfile`, enrichissements profils #10, gestion no-data #11 |
-| `src/components/DRCInteractiveMap.tsx` | URL `?tab=`, tiers adaptatifs, mémo profil, bouton reset, popover dynamique, intégration profil unique |
-| `src/components/visualizations/ProvinceDataVisualization.tsx` | Accepter `initialTab` + `forcedTab` (depuis URL/reset) |
-| `src/components/DRCMapWithTooltip.tsx` | `transition` CSS sur paths SVG, gestion fill no-data |
-| `src/components/DRCCommunesMap.tsx` | Prop optionnel `getEntityColor` (drilldown métier) |
-| `src/components/ProvinceTooltip.tsx` | Affichage « Aucune donnée » si scope vide |
+| `src/components/DRCMapWithTooltip.tsx` | P1.1 — transition CSS sur paths |
+| `src/components/DRCInteractiveMap.tsx` | P1.2, P1.3, P3.6, P3.7, P4.8, P4.9, P4.10, P2.5 |
+| `src/components/visualizations/ProvinceDataVisualization.tsx` | P1.2 — callback `onForcedTabApplied` |
+| `src/components/DRCQuartiersMap.tsx` | P2.4 — `getEntityColor` |
+| `src/components/DRCTerritoiresMap.tsx` | P2.4 — `getEntityColor` |
 
-### Validation
-- Vérifier que le partage d'URL `/?province=Kinshasa&tab=disputes` restaure carte + onglet correctement.
-- Tester sur un dataset peu dense (Expertise) : les 26 provinces ne doivent plus tomber toutes dans le palier le plus bas.
-- Vérifier transition fluide entre 13 onglets sans flash.
-- Vérifier qu'au drilldown commune (Goma → Katindo), la carte conserve la palette du profil actif.
-- A11Y : NVDA/VoiceOver annoncent le changement de profil.
+### Validation post-implémentation
+- Switch entre 13 onglets sans flash visuel (transitions SVG actives).
+- `?tab=disputes` puis clic Reset → URL revient à `?tab=rdc-map` sans boucle.
+- Onglet Expertise (faible volume) → mini-légende affiche message « Aucune occurrence » au lieu de 4 paliers vides.
+- Drilldown Goma → Katindo (commune) → Quartier : palette du profil litiges conservée à tous les niveaux.
+- Capture PNG : nom = `carte-rdc-disputes-2026-04-17.png`, mini-légende visible dans l'image.
+- Plein écran : mini-légende top-right reste visible et lisible.
 
