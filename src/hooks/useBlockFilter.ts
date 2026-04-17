@@ -63,9 +63,14 @@ export function useBlockFilter(tabKey: string, records: any[]) {
     };
   }, [tabKey, crossOverrides]);
 
-  /** Shorthand: get custom title or fallback */
-  const ct = (key: string, fallback: string) =>
-    getChartConfig(key)?.custom_title || fallback;
+  /** Shorthand: get custom title or fallback, prefixed with tab label (except KPIs) */
+  const tabLabel = ANALYTICS_TABS_REGISTRY[tabKey]?.label;
+  const ct = (key: string, fallback: string) => {
+    const base = getChartConfig(key)?.custom_title || fallback;
+    if (!tabLabel || key.startsWith('kpi-')) return base;
+    if (base.startsWith(`${tabLabel} : `)) return base;
+    return `${tabLabel} : ${base}`;
+  };
 
   /** Export filtered data to CSV */
   const exportCSV = useCallback((fields: string[], filename?: string) => {
