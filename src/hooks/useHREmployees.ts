@@ -1,10 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export interface HREmployee {
   id: string;
   matricule: string;
+  user_id: string | null;
   first_name: string;
   last_name: string;
   email: string | null;
@@ -26,43 +28,51 @@ export interface HREmployee {
 
 export type HREmployeeInsert = Omit<HREmployee, 'id' | 'matricule' | 'created_at' | 'updated_at'>;
 
-export function useHREmployees() {
+export function useHREmployees(initialPageSize = 20) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(initialPageSize);
+
   const query = useQuery({
-    queryKey: ['hr-employees'],
+    queryKey: ['hr-employees', page, pageSize],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+      const { data, error, count } = await supabase
         .from('hr_employees')
-        .select('*')
-        .order('last_name');
+        .select('*', { count: 'exact' })
+        .order('last_name')
+        .range(from, to);
       if (error) throw error;
-      return data as HREmployee[];
+      return { rows: (data || []) as HREmployee[], total: count || 0 };
     },
   });
 
   const addMutation = useMutation({
     mutationFn: async (employee: Partial<HREmployeeInsert>) => {
+      const payload: any = {
+        first_name: employee.first_name!,
+        last_name: employee.last_name!,
+        department: employee.department!,
+        position: employee.position!,
+        email: employee.email || null,
+        phone: employee.phone || null,
+        salary_usd: employee.salary_usd || 0,
+        birth_date: employee.birth_date || null,
+        gender: employee.gender || null,
+        emergency_contact_name: employee.emergency_contact_name || null,
+        emergency_contact_phone: employee.emergency_contact_phone || null,
+        hire_date: employee.hire_date || new Date().toISOString().split('T')[0],
+        status: employee.status || 'active',
+        notes: employee.notes || null,
+        matricule: '',
+      };
+      if (employee.user_id) payload.user_id = employee.user_id;
       const { data, error } = await supabase
         .from('hr_employees')
-        .insert({
-          first_name: employee.first_name!,
-          last_name: employee.last_name!,
-          department: employee.department!,
-          position: employee.position!,
-          email: employee.email || null,
-          phone: employee.phone || null,
-          salary_usd: employee.salary_usd || 0,
-          birth_date: employee.birth_date || null,
-          gender: employee.gender || null,
-          emergency_contact_name: employee.emergency_contact_name || null,
-          emergency_contact_phone: employee.emergency_contact_phone || null,
-          hire_date: employee.hire_date || new Date().toISOString().split('T')[0],
-          status: employee.status || 'active',
-          notes: employee.notes || null,
-          matricule: '',
-        })
+        .insert(payload)
         .select()
         .single();
       if (error) throw error;
@@ -105,8 +115,17 @@ export function useHREmployees() {
     },
   });
 
+  const totalCount = query.data?.total || 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
   return {
-    employees: query.data || [],
+    employees: query.data?.rows || [],
+    totalCount,
+    page,
+    pageSize,
+    totalPages,
+    setPage,
+    setPageSize,
     isLoading: query.isLoading,
     error: query.error,
     addEmployee: addMutation.mutateAsync,
@@ -117,3 +136,4 @@ export function useHREmployees() {
     isDeleting: deleteMutation.isPending,
   };
 }
+
