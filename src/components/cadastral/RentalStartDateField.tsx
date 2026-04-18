@@ -26,13 +26,11 @@ const RentalStartDateField: React.FC<RentalStartDateFieldProps> = ({
 }) => {
   const selected = value && isValid(parseISO(value)) ? parseISO(value) : undefined;
   const today = new Date();
-  const maxDate = constructionYear
-    ? new Date(Math.min(today.getTime(), new Date(constructionYear, 11, 31).getTime()))
-    : today;
   const minDate = constructionYear ? new Date(constructionYear, 0, 1) : new Date(1900, 0, 1);
+  const maxDate = today;
 
-  const isInvalid = selected && constructionYear && (
-    selected > maxDate || selected < minDate
+  const isInvalid = selected && (
+    selected > maxDate || (constructionYear && selected < minDate)
   );
 
   return (
@@ -79,12 +77,12 @@ const RentalStartDateField: React.FC<RentalStartDateFieldProps> = ({
       )}
       {constructionYear && (
         <p className="text-[11px] text-muted-foreground">
-          La date doit être ≤ 31/12/{constructionYear} et ≤ aujourd'hui.
+          La date doit être ≥ 01/01/{constructionYear} et ≤ aujourd'hui.
         </p>
       )}
       {isInvalid && (
         <p className="text-[11px] text-destructive font-medium">
-          Date invalide : doit être ≤ 31/12/{constructionYear}.
+          Date invalide : doit être ≥ 01/01/{constructionYear} (la mise en location ne peut précéder la construction).
         </p>
       )}
     </div>
