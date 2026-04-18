@@ -634,9 +634,9 @@ export const ParcelMapPreview = ({
     if (!isParcelComplete) return;
     
     // Vérifier si le point est dans la parcelle
+    // Si en dehors → ignorer silencieusement (le drag de la carte reste possible depuis l'extérieur)
     const latLngs = validCoords.map(c => [parseFloat(c.lat), parseFloat(c.lng)] as [number, number]);
     if (!isPointInPolygon([lat, lng], latLngs)) {
-      toast.error("Cliquez à l'intérieur de la parcelle pour placer le sommet");
       return;
     }
     
