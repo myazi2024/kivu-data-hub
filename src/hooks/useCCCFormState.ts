@@ -164,8 +164,7 @@ export const useCCCFormState = ({
   const [formData, setFormData] = useState<CadastralContributionData>({ parcelNumber });
 
   const [parcelSides, setParcelSides] = useState<Array<{ name: string; length: string }>>([
-    { name: 'Côté Nord', length: '' }, { name: 'Côté Sud', length: '' },
-    { name: 'Côté Est', length: '' }, { name: 'Côté Ouest', length: '' }
+    { name: 'Côté 1', length: '' }, { name: 'Côté 2', length: '' }, { name: 'Côté 3', length: '' }
   ]);
 
   const [availableVilles, setAvailableVilles] = useState<string[]>([]);
@@ -1185,7 +1184,7 @@ export const useCCCFormState = ({
     setTaxRecords([{ taxType: 'Impôt foncier annuel', taxYear: '', taxAmount: '', paymentStatus: 'Payé', paymentDate: '', receiptFile: null }]);
     setMortgageRecords([{ mortgageAmount: '', duration: '', creditorName: '', creditorType: 'Banque', contractDate: '', mortgageStatus: 'Active', receiptFile: null }]);
     setObligationType('taxes');
-    setParcelSides([{ name: 'Côté Nord', length: '' }, { name: 'Côté Sud', length: '' }, { name: 'Côté Est', length: '' }, { name: 'Côté Ouest', length: '' }]);
+    setParcelSides([{ name: 'Côté 1', length: '' }, { name: 'Côté 2', length: '' }, { name: 'Côté 3', length: '' }]);
     setAvailableVilles([]); setAvailableCommunes([]); setAvailableTerritoires([]); setAvailableCollectivites([]); setAvailableQuartiers([]); setAvailableAvenues([]);
     setAvailableConstructionNatures([]); setAvailableDeclaredUsages([]); setAvailableConstructionMaterials([]); setAvailableStandings([]);
     setRoadSides([]);
