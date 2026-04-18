@@ -1,43 +1,69 @@
 
-## Test étape 1 (fix 3.5 + 3.8) en preview
+## Étape 2/4 — Extraction de `useFormPersistence`
 
-L'utilisateur veut valider manuellement les deux fixes appliqués dans `useCCCFormState.ts` avant d'enchaîner avec l'extraction des sous-hooks.
+### Objectif
+Extraire toute la logique de persistance localStorage + tracking des fichiers uploadés du hook monolithique vers `src/hooks/ccc/useFormPersistence.ts`. Aucune modification du comportement observable, contrat de retour identique.
 
-### Scénarios à exécuter dans la preview
+### Périmètre extrait
+Depuis `src/hooks/useCCCFormState.ts` :
+- Constantes `STORAGE_KEY`, `STORAGE_SCHEMA_VERSION`
+- `useEffect` de **chargement** initial du brouillon (`loadVersioned`) avec gestion `expired` / `schema_mismatch` / `parse_error` (toast utilisateur)
+- `useEffect` de **sauvegarde debounced** (1 500 ms) via `saveVersioned` sur changement de `formData` + slices liés
+- `submitUploadedPathsRef` (tracking des chemins Storage uploadés pendant la session)
+- `trackUploadedPath(path)` — ajoute un chemin au ref
+- `rollbackUploadedFiles()` — supprime les fichiers du bucket en cas d'échec submit
+- `clearDraft()` — purge localStorage après submit réussi ou abandon explicite
+- `hasRestoredDraft` (flag exposé pour bandeau "Brouillon restauré")
 
-**Scénario A — Fix 3.5 : guard sync `currentOwners` → `previousOwners[last].endDate`**
-1. Ouvrir le formulaire CCC (depuis /cadastral-map ou catalogue Actions).
-2. Aller à l'onglet **Propriété**.
-3. Ajouter un propriétaire précédent (previousOwner) avec une `endDate` vide.
-4. Renseigner `currentOwners[0].since` = `2020-01-15` → vérifier que `previousOwners[last].endDate` se remplit automatiquement avec cette date.
-5. Modifier `currentOwners[0].firstName` plusieurs fois (taper du texte) → **résultat attendu** : `previousOwners[last].endDate` reste à `2020-01-15` et n'est PAS ré-écrasée à chaque frappe.
-6. Si l'utilisateur a manuellement édité `endDate` à une autre valeur, elle doit être préservée tant que `since` ne change pas.
+### Signature du nouveau hook
 
-**Scénario B — Fix 3.8 : memoization de `getMissingFields`**
-1. Ouvrir React DevTools → Profiler.
-2. Démarrer un enregistrement, taper plusieurs caractères dans un champ texte (ex : `firstName`).
-3. Arrêter l'enregistrement → vérifier que le hook `useCCCFormState` ne déclenche pas de recalculs lourds redondants. La liste des champs manquants doit être stable entre frappes ne touchant pas aux deps.
-4. Naviguer entre onglets → `isTabComplete` / `isTabAccessible` doivent rester réactifs (les onglets passent au vert dès qu'ils sont complétés).
+```ts
+// src/hooks/ccc/useFormPersistence.ts
+export function useFormPersistence(params: {
+  user: User | null;
+  formData: CCCFormData;
+  currentOwners: Owner[];
+  previousOwners: Owner[];
+  parcelSides: ParcelSide[];
+  gpsCoordinates: GPSCoord[];
+  buildingShapes: BuildingShape[];
+  // ... autres slices à persister
+  setFormData: (d: CCCFormData) => void;
+  setCurrentOwners: (o: Owner[]) => void;
+  // ... autres setters pour restore
+}): {
+  hasRestoredDraft: boolean;
+  trackUploadedPath: (path: string) => void;
+  rollbackUploadedFiles: () => Promise<void>;
+  clearDraft: () => void;
+}
+```
 
-**Scénario C — Non-régression globale**
-1. Remplir les 5 onglets de bout en bout, soumettre.
-2. Recharger en cours de saisie → brouillon restauré (TTL/version OK, héritage Lot A).
-3. Cascade géographique : changer Province → City/Municipality/Quartier se vident.
-4. Cascade construction : changer Type → Nature/Usage se vident, Location injecté si éligible.
+### Garanties non-régression
+- Mêmes clés localStorage (`STORAGE_KEY`, `STORAGE_SCHEMA_VERSION` inchangés).
+- Même délai de debounce (1 500 ms).
+- Mêmes toasts (texte identique, mêmes variants).
+- `rollbackUploadedFiles` reste appelé depuis le `catch` de `handleSubmit` dans l'orchestrateur.
+- `clearDraft` reste appelé après submit réussi et dans `handleClose` si l'utilisateur confirme l'abandon.
 
-### Comment je procède
-- `browser--navigate_to_sandbox` sur `/cadastral-map` (viewport 875×623 conservé).
-- `browser--observe` pour identifier le bouton d'ouverture du formulaire CCC.
-- `browser--act` pour : ouvrir le formulaire, naviguer aux onglets, remplir les champs des scénarios A et C.
-- `browser--screenshot` après chaque scénario pour confirmer visuellement.
-- Lecture des `browser--read_console_logs` à la fin pour repérer warnings/erreurs.
+### Plan d'exécution
+1. Créer `src/hooks/ccc/useFormPersistence.ts` avec la signature ci-dessus.
+2. Déplacer le `useEffect` de chargement (premier mount, dépend de `user`).
+3. Déplacer le `useEffect` de sauvegarde debounced (clearTimeout sur cleanup).
+4. Déplacer `submitUploadedPathsRef`, `trackUploadedPath`, `rollbackUploadedFiles` (utilise `supabase.storage.from(...).remove()`).
+5. Déplacer `clearDraft`.
+6. Dans `useCCCFormState.ts` : remplacer le code extrait par `const { hasRestoredDraft, trackUploadedPath, rollbackUploadedFiles, clearDraft } = useFormPersistence({ ... })`.
+7. Vérifier que `handleSubmit`, `handleClose`, et les composants d'upload utilisent toujours `trackUploadedPath` / `rollbackUploadedFiles` / `clearDraft` exposés via le contrat de retour de `useCCCFormState`.
 
-### Limites connues
-- Le scénario B (Profiler React DevTools) ne peut pas être validé via l'automation : je vérifierai indirectement que les transitions UI restent fluides et que `isFormValidForSubmission` se met bien à jour quand un champ requis bascule.
-- Si un blocage auth apparaît, je m'arrête et préviens l'utilisateur.
+### Validation post-implémentation
+- TypeScript compile sans erreur.
+- Le contrat de retour public de `useCCCFormState` reste strictement identique (mêmes noms, mêmes types).
+- Test manuel rapide après déploiement : recharger le formulaire en cours de saisie → brouillon restauré, soumettre → brouillon purgé.
 
-### Si un bug est détecté
-- Je m'arrête immédiatement, documente la repro et propose un fix avant de toucher au code.
+### Note runtime error
+"Map container is already initialized" est une erreur connue de `ParcelMapPreview` (mapbox réinitialisation), **non liée** à cette extraction. À traiter séparément si demandé.
 
 ### Fichiers
-- Aucun changement de code prévu — test uniquement.
+- **Créé** : `src/hooks/ccc/useFormPersistence.ts` (~200 l)
+- **Modifié** : `src/hooks/useCCCFormState.ts` (suppression du bloc persistance, ajout de l'appel au sous-hook)
+- **Inchangés** : 5 onglets, `CadastralContributionDialog`, `useCadastralContribution`, tous les composants d'upload
