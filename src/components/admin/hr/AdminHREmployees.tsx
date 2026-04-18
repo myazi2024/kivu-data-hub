@@ -7,11 +7,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Search, UserCheck, Clock, UserX, Pencil, Trash2, Eye, Download } from 'lucide-react';
+import { Plus, Search, UserCheck, Clock, UserX, Pencil, Trash2, Eye, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { exportRecordsToCSV } from '@/utils/csvExport';
 import { departments } from './hrData';
 import type { HREmployee, HREmployeeInsert } from '@/hooks/useHREmployees';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { usePagination } from '@/hooks/usePagination';
+import { supabase } from '@/integrations/supabase/client';
+import { useEffect } from 'react';
 
 interface Props {
   hook: {
