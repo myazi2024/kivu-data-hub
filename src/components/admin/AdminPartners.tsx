@@ -33,6 +33,7 @@ const AdminPartners = () => {
     setLoading(true);
     const { data } = await (supabase as any).from('partners')
       .select('*')
+      .is('deleted_at', null)
       .order('display_order', { ascending: true });
     setPartners(data || []);
     setLoading(false);
@@ -101,9 +102,11 @@ const AdminPartners = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Supprimer ce partenaire ?')) return;
-    const { error } = await (supabase as any).from('partners').delete().eq('id', id);
+    const { error } = await (supabase as any).from('partners')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', id);
     if (error) { toast.error(error.message); return; }
-    toast.success('Partenaire supprimé');
+    toast.success('Partenaire supprimé (corbeille)');
     fetchPartners();
   };
 

@@ -96,6 +96,7 @@ const AdminPublications: React.FC<AdminPublicationsProps> = ({ onRefresh }) => {
       const { data, error } = await supabase
         .from('publications')
         .select('*')
+        .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -139,15 +140,15 @@ const AdminPublications: React.FC<AdminPublicationsProps> = ({ onRefresh }) => {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer cette publication ?')) return;
-    
+
     try {
       const { error } = await supabase
         .from('publications')
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq('id', id);
-      
+
       if (error) throw error;
-      toast.success('Publication supprimée avec succès');
+      toast.success('Publication supprimée (corbeille)');
       fetchPublications();
       onRefresh();
     } catch (error) {
