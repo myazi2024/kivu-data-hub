@@ -694,7 +694,6 @@ export const useCCCFormState = ({
   // une seule fois par changement de deps, puis getMissingFields() retourne la
   // référence stable. Évite la ré-évaluation O(n²) sur chaque render.
   const missingFieldsList = useMemo(() => {
-    const compute = () => {
     const missing: Array<{ field: string; label: string; tab: string }> = [];
     const isTerrainNu = formData.constructionType === 'Terrain nu';
     const isAppartement = formData.propertyCategory === 'Appartement';
@@ -944,9 +943,7 @@ export const useCCCFormState = ({
       }
     }
 
-      return missing;
-    };
-    return compute();
+    return missing;
   }, [formData, customTitleName, currentOwners, previousOwners, sectionType, permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, hasDispute, mortgageRecords, ownerDocFile, titleDocFiles, editingContributionId, roadSides, servitude, buildingShapes, constructionMode, additionalConstructions, soundEnvironment, nearbySoundSources]);
 
   // Function wrapper preserves the public API (callers expect to invoke getMissingFields()).
