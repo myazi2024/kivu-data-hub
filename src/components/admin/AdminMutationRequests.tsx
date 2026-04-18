@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import MutationStatsCards from './mutation/MutationStatsCards';
 import MutationFilters from './mutation/MutationFilters';
 import MutationFeesConfig from './mutation/MutationFeesConfig';
@@ -25,7 +28,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { 
-  FileEdit, Eye, CheckCircle, XCircle, 
+  FileEdit, Eye, CheckCircle, XCircle, Settings, Plus, Trash2, Edit2, RotateCcw,
   Loader2, RefreshCw, DollarSign, MapPin, User, Calendar,
   Save, Download
 } from 'lucide-react';
@@ -34,7 +37,7 @@ import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/shared/PaginationControls';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { exportToCSV } from '@/utils/csvExport';
-import { getMutationTypeLabel, MUTATION_STATUS_LABELS } from '@/components/cadastral/mutation/MutationConstants';
+import { getMutationTypeLabel, MUTATION_TYPES, MUTATION_STATUS_LABELS } from '@/components/cadastral/mutation/MutationConstants';
 
 import type { MutationFee, MutationRequest, MutationRequestWithProfile } from '@/types/mutation';
 
