@@ -549,6 +549,7 @@ export type Database = {
           rejection_date: string | null
           rejection_reason: string | null
           rejection_reasons: Json | null
+          rental_start_date: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           road_sides: Json | null
@@ -630,6 +631,7 @@ export type Database = {
           rejection_date?: string | null
           rejection_reason?: string | null
           rejection_reasons?: Json | null
+          rental_start_date?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           road_sides?: Json | null
@@ -711,6 +713,7 @@ export type Database = {
           rejection_date?: string | null
           rejection_reason?: string | null
           rejection_reasons?: Json | null
+          rental_start_date?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           road_sides?: Json | null
@@ -1186,6 +1189,7 @@ export type Database = {
           property_title_type: string
           province: string | null
           quartier: string | null
+          rental_start_date: string | null
           road_sides: Json | null
           servitude_data: Json | null
           sound_environment: string | null
@@ -1246,6 +1250,7 @@ export type Database = {
           property_title_type?: string
           province?: string | null
           quartier?: string | null
+          rental_start_date?: string | null
           road_sides?: Json | null
           servitude_data?: Json | null
           sound_environment?: string | null
@@ -1306,6 +1311,7 @@ export type Database = {
           property_title_type?: string
           province?: string | null
           quartier?: string | null
+          rental_start_date?: string | null
           road_sides?: Json | null
           servitude_data?: Json | null
           sound_environment?: string | null

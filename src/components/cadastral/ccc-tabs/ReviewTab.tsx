@@ -391,7 +391,7 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
             <Button type="button" variant="ghost" size="sm" onClick={() => handleTabChange('obligations')} className="text-xs h-6 px-2">Modifier</Button>
           </div>
           <div className="space-y-2 text-xs">
-            <TaxSummary taxRecords={taxRecords} formData={formData} />
+            <TaxSummary taxRecords={taxRecords} formData={formData} additionalConstructions={additionalConstructions} />
             
             {/* Hypothèque */}
             <div className="pt-1 border-t border-border/50">
@@ -555,10 +555,10 @@ const ReviewLine: React.FC<{ label: string; value: string }> = ({ label, value }
 );
 
 /* ─── Tax Summary ─── */
-const TaxSummary: React.FC<{ taxRecords: TaxRecord[]; formData: CadastralContributionData }> = ({ taxRecords, formData }) => {
+const TaxSummary: React.FC<{ taxRecords: TaxRecord[]; formData: CadastralContributionData; additionalConstructions?: AdditionalConstruction[] }> = ({ taxRecords, formData, additionalConstructions = [] }) => {
   const currentYear = new Date().getFullYear();
   const requiredYears = [currentYear - 1, currentYear - 2, currentYear - 3];
-  const hasLocationUsage = formData.declaredUsage === 'Location' || (Array.isArray(formData.additionalConstructions) && formData.additionalConstructions.some((c: any) => c.declaredUsage === 'Location'));
+  const hasLocationUsage = formData.declaredUsage === 'Location' || additionalConstructions.some(c => c.declaredUsage === 'Location');
   const requiredTaxTypes = ['Impôt foncier annuel', ...(hasLocationUsage ? ['Impôt sur les revenus locatifs'] : [])];
   
   const taxStatusByYearType: { year: number; taxType: string; paid: boolean; amount?: string; status?: string }[] = [];
@@ -571,7 +571,13 @@ const TaxSummary: React.FC<{ taxRecords: TaxRecord[]; formData: CadastralContrib
   
   const unpaidItems = taxStatusByYearType.filter(t => !t.paid);
   const paidItems = taxStatusByYearType.filter(t => t.paid);
-  
+
+  // Cohérence IRL : nombre de constructions en location vs nombre d'entrées IRL
+  const rentalConstructionsCount = (formData.declaredUsage === 'Location' ? 1 : 0)
+    + additionalConstructions.filter(c => c.declaredUsage === 'Location').length;
+  const irlEntriesCount = taxRecords.filter(t => t.taxType === 'Impôt sur les revenus locatifs' && t.taxAmount && t.taxYear).length;
+  const irlMismatch = rentalConstructionsCount > 0 && irlEntriesCount !== rentalConstructionsCount;
+
   return (
     <div className="space-y-2">
       <div className="font-medium">Bilan fiscal (3 dernières années) :</div>
@@ -608,6 +614,31 @@ const TaxSummary: React.FC<{ taxRecords: TaxRecord[]; formData: CadastralContrib
           <p className="text-[11px] text-green-800 dark:text-green-200 flex items-center gap-1">
             <CheckCircle2 className="h-3 w-3 flex-shrink-0" />
             <span>Conformité fiscale complète sur les 3 dernières années.</span>
+          </p>
+        </div>
+      )}
+
+      {/* Cohérence IRL × constructions en location */}
+      {rentalConstructionsCount > 0 && (
+        <div className={`mt-1 p-2 rounded-lg border ${
+          irlMismatch
+            ? (irlEntriesCount < rentalConstructionsCount
+                ? 'bg-destructive/10 border-destructive/30'
+                : 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800')
+            : 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800'
+        }`}>
+          <p className={`text-[11px] flex items-start gap-1 ${
+            irlMismatch
+              ? (irlEntriesCount < rentalConstructionsCount ? 'text-destructive' : 'text-amber-800 dark:text-amber-200')
+              : 'text-green-800 dark:text-green-200'
+          }`}>
+            {irlMismatch ? <AlertTriangle className="h-3 w-3 mt-0.5 flex-shrink-0" /> : <CheckCircle2 className="h-3 w-3 mt-0.5 flex-shrink-0" />}
+            <span>
+              <strong>Cohérence IRL :</strong> {irlEntriesCount} déclaration(s) IRL renseignée(s) pour {rentalConstructionsCount} construction(s) en location.
+              {irlMismatch && irlEntriesCount < rentalConstructionsCount && ` Manque ${rentalConstructionsCount - irlEntriesCount} déclaration(s) IRL.`}
+              {irlMismatch && irlEntriesCount > rentalConstructionsCount && ` ${irlEntriesCount - rentalConstructionsCount} déclaration(s) IRL en trop.`}
+              {!irlMismatch && ' Conforme.'}
+            </span>
           </p>
         </div>
       )}

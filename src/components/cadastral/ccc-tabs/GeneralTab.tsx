@@ -11,6 +11,7 @@ import { Plus, Trash2, Info, X, ChevronRight, Users } from 'lucide-react';
 import { MdDashboard, MdLocationOn, MdInsertDriveFile } from 'react-icons/md';
 import BlockResetButton from '../BlockResetButton';
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
+import RentalStartDateField from '../RentalStartDateField';
 import { PropertyTitleTypeSelect, PROPERTY_TITLE_TYPES, getEffectiveTitleName } from '../PropertyTitleTypeSelect';
 
 import { InputWithPopover } from '../InputWithPopover';
@@ -997,7 +998,14 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({
               </PopoverContent>
             </Popover>
           </div>
-          <Select value={formData.declaredUsage || ''} onValueChange={(value) => { handleInputChange('declaredUsage', value); setHighlightRequiredFields(false); }} disabled={!formData.constructionType || !formData.constructionNature}>
+          <Select value={formData.declaredUsage || ''} onValueChange={(value) => {
+            handleInputChange('declaredUsage', value);
+            // Vider rentalStartDate si on quitte "Location"
+            if (value !== 'Location' && formData.rentalStartDate) {
+              handleInputChange('rentalStartDate', undefined);
+            }
+            setHighlightRequiredFields(false);
+          }} disabled={!formData.constructionType || !formData.constructionNature}>
             <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder={!formData.constructionType || !formData.constructionNature ? "Type et nature d'abord" : "Sélectionner"} /></SelectTrigger>
             <SelectContent className="rounded-xl">
               {availableDeclaredUsages.map(usage => <SelectItem key={usage} value={usage}>{usage}</SelectItem>)}
@@ -1073,7 +1081,15 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({
       {formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && formData.constructionType && formData.constructionType !== 'Terrain nu' && (
         <div className="space-y-1.5">
           <Label className="text-sm font-medium">Année de construction</Label>
-          <Select value={formData.constructionYear?.toString() || ''} onValueChange={(value) => handleInputChange('constructionYear', parseInt(value))}>
+          <Select value={formData.constructionYear?.toString() || ''} onValueChange={(value) => {
+            const y = parseInt(value);
+            handleInputChange('constructionYear', y);
+            // Si la date de location devient invalide, l'effacer
+            if (formData.rentalStartDate && y) {
+              const max = new Date(y, 11, 31);
+              if (new Date(formData.rentalStartDate) > max) handleInputChange('rentalStartDate', undefined);
+            }
+          }}>
             <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Sélectionner l'année" /></SelectTrigger>
             <SelectContent className="rounded-xl max-h-60">
               {Array.from({ length: new Date().getFullYear() - 1950 + 1 }, (_, i) => new Date().getFullYear() - i).map(year => (
@@ -1082,6 +1098,16 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({
             </SelectContent>
           </Select>
         </div>
+      )}
+
+      {/* Date de mise en location — conditionnel si usage = Location */}
+      {formData.declaredUsage === 'Location' && (
+        <RentalStartDateField
+          value={formData.rentalStartDate}
+          onChange={(v) => handleInputChange('rentalStartDate', v)}
+          constructionYear={formData.constructionYear}
+          highlightRequired={highlightRequiredFields}
+        />
       )}
 
       {/* Hosting capacity sub-block */}
