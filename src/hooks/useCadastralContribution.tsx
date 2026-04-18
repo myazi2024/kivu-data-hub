@@ -357,6 +357,14 @@ export const useCadastralContribution = () => {
       return { valid: false, message: "La superficie doit être supérieure à 0" };
     }
 
+    // Validate WhatsApp number format (E.164: +[country][number], 8-15 digits)
+    if (data.whatsappNumber) {
+      const trimmed = data.whatsappNumber.replace(/\s+/g, '');
+      if (!/^\+[1-9]\d{7,14}$/.test(trimmed)) {
+        return { valid: false, message: "Le numéro WhatsApp doit être au format international (ex : +243812345678)" };
+      }
+    }
+
     return { valid: true };
   };
 
