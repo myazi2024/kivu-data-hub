@@ -1,74 +1,69 @@
 
 
-## Audit — Carte RDC dynamique × Onglet Analytics (état post-implémentation)
+## Plan : "Location" dans CCC → date de mise en location + IRL conditionnel
 
-### Vérifications effectuées
-Lecture ciblée de `mapTabProfiles.ts`, `DRCInteractiveMap.tsx`, `ProvinceDataVisualization.tsx`, `DRCCommunesMap.tsx`, `DRCMapWithTooltip.tsx`, `ProvinceTooltip.tsx`.
+### Exploration ciblée requise
+Avant implémentation, je dois identifier :
+1. Le bloc Construction de l'onglet Infos (champ `usage` / `declared_usage`).
+2. `AdditionalConstructionBlock` (constructions additionnelles).
+3. Le sous-onglet Taxes de l'onglet Obligations (sélection des types de taxes).
+4. L'onglet Envoi/Récapitulatif (logique fiscale IRL).
+5. Le state CCC central (`useCCCFormState`) pour stockage de la nouvelle date et propagation cross-onglets.
 
-### Tableau de conformité
+### 1. Onglet Infos — Construction principale
+- Sous le champ `usage` (onglet déclaré), si `usage === 'Location'` :
+  - Afficher un champ **« En location depuis quand ? »** (Shadcn Datepicker, `pointer-events-auto`).
+  - Validation : `rentalStartDate ≤ constructionYear` (au 31 déc. de l'année de construction). Message d'erreur clair si saisie postérieure.
+  - Date max = aujourd'hui ; date min = année de construction (1er janv.).
+  - Champ obligatoire si `usage === 'Location'` ; bloque la validation de l'onglet sinon.
+- Stockage : nouveau champ `rental_start_date` (ISO) dans le state de la construction principale → persisté dans `cadastral_parcels` (colonne à ajouter via migration) ou dans le JSONB déjà utilisé pour les attributs de construction.
 
-| # | Fonctionnalité | État | Constat |
-|---|---|---|---|
-| 1 | Sync `activeTab` → carte | ✅ | `onActiveTabChange` propagé |
-| 2 | 13 profils métiers | ✅ | Tous présents + `rdcMapProfile` unifié |
-| 3 | Choroplèthe par profil | ✅ | `getProvinceColor` consomme `metricValue` |
-| 4 | Mini-légende paliers | ✅ | Top-right, ARIA, repliable |
-| 5 | Tooltip dynamique | ✅ | `extraTooltipLines` rendu |
-| 6 | URL `?tab=` persistante | ✅ | `searchParams` lu/écrit |
-| 7 | Paliers adaptatifs (quartiles) | ✅ | `computeAdaptiveTiers` actif |
-| 8 | Profil `rdc-map` explicite | ✅ | Pipeline unique |
-| 9 | Drilldown profil → communes | ✅ | `getEntityColor` câblé |
-| 10 | Bouton « Reset onglet » | ✅ | `RotateCcw` + `forcedTab` |
-| 11 | Popover Info contextuel | ✅ | Affiche `dataSource` + méthode |
-| 12 | État « pas de données » | ✅ | `noData` + couleur neutre |
-| 13 | A11Y mini-légende | ✅ | `role`, `aria-live` |
-| 14 | Transitions SVG `fill` | ⚠️ | CSS transition non appliquée sur paths injectés via `setAttribute` |
-| 15 | Drilldown Quartiers/Territoires | ❌ | `DRCQuartiersMap` & `DRCTerritoiresMap` ignorent toujours `activeProfile` |
-| 16 | Mémoïsation profil | ⚠️ | Pas de cache `Map` interne ; recalcul à chaque re-render parent |
-| 17 | Légende contextuelle bottom-left × profil ville | ⚠️ | Reste sur stats globales province quand drilldown ville actif |
-| 18 | Bouton « Copier image » × profil | ⚠️ | Capture probable mais légende dynamique non incluse dans le PNG (à vérifier) |
-| 19 | Profil dans titre exporté/partagé | ❌ | Pas de mention du profil dans le nom de fichier export |
-| 20 | Mode plein écran × mini-légende | ⚠️ | Z-index/position à valider en fullscreen |
-| 21 | Fallback tiers vides | ⚠️ | Si toutes provinces à 0 et `noData`, mini-légende affiche 4 paliers vides peu lisibles |
-| 22 | URL `?tab=` × refresh + `forcedTab` | ⚠️ | Risque de boucle si `forcedTab` reste défini après application (pas de `null` reset) |
-| 23 | Performance switch onglet | ⚠️ | 26 provinces × `metric()` + `tooltipLines()` à chaque tab change, pas de mémo par `(tabKey, dataUpdatedAt)` |
-| 24 | Sync filtre ville → profil province | ⚠️ | Quand ville sélectionnée, métrique province reste calculée sur toute la province (perte de cohérence visuelle) |
+### 2. Onglet Infos — Constructions additionnelles
+- Réplication exacte dans `AdditionalConstructionBlock` :
+  - Même champ conditionnel + même règle de validation par construction.
+  - Stockage dans le JSONB `additional_constructions` (champ `rental_start_date` par item).
+- Utiliser `resolveAvailableUsages` (déjà partagé) → aucune divergence d'options.
 
-### Améliorations proposées (priorisées)
+### 3. Onglet Obligations — Sous-onglet Taxes
+- Calcul d'un flag dérivé `hasAnyRentalUsage` :
+  - `true` si construction principale OU au moins une construction additionnelle a `usage === 'Location'`.
+- Dans la liste des types de taxes :
+  - **« Impôt sur le revenu locatif » (IRL)** visible/sélectionnable **uniquement si** `hasAnyRentalUsage === true`.
+  - Sinon : option masquée + tooltip explicatif (« Disponible si au moins une construction est en location »).
+  - Si l'utilisateur désélectionne « Location » après avoir ajouté un IRL → purger automatiquement les entrées IRL du state (avec `toast` informatif).
+- Aligner avec `mem://features/cadastral-form/tax-selection-logic-fr` (logique de déduplication IRL existante).
 
-#### P1 — Correctifs essentiels
-1. **Transitions SVG fluides** (`DRCMapWithTooltip.tsx`) : appliquer `path.style.transition = 'fill 300ms ease, opacity 200ms ease'` à l'attachement initial des paths, pour fluidifier le changement de palette.
-2. **Reset `forcedTab` après application** (`DRCInteractiveMap.tsx` + `ProvinceDataVisualization.tsx`) : passer `forcedTab` à `null` après `setActiveTab` via callback `onForcedTabApplied`, pour éviter re-trigger.
-3. **Fallback mini-légende vide** (`DRCInteractiveMap.tsx`) : si tous `metricValue === 0`, afficher uniquement la pastille « Aucune donnée » + message « Aucune occurrence pour ce profil » au lieu des 4 paliers hachurés.
+### 4. Onglet Envoi/Récapitulatif — Cohérence IRL
+- Compter `rentalConstructionsCount = (main usage === Location ? 1 : 0) + additional.filter(usage === Location).length`.
+- Compter `irlEntriesCount` dans l'historique fiscal.
+- Afficher un **bilan IRL** dans le bloc fiscal récap :
+  - Si `irlEntriesCount < rentalConstructionsCount` → alerte rouge « X construction(s) en location sans IRL renseigné ».
+  - Si `irlEntriesCount > rentalConstructionsCount` → alerte ambre « Trop d'entrées IRL par rapport au nombre de constructions en location ».
+  - Si égalité → check vert.
+- Bloquer la soumission si `irlEntriesCount !== rentalConstructionsCount` (cohérence stricte demandée).
+- Étendre le bloc « Bilan de conformité fiscale 3 ans » existant (cf. `mem://features/cadastral-form/fiscal-review-logic-fr`).
 
-#### P2 — Cohérence drilldown
-4. **Drilldown Quartiers & Territoires** : étendre le pattern `getEntityColor` à `DRCQuartiersMap.tsx` et `DRCTerritoiresMap.tsx` (mêmes signatures que `DRCCommunesMap`). Permet de garder le profil métier sur tous les niveaux de zoom.
-5. **Légende bottom-left contextuelle au scope** : quand `selectedVille`/`selectedCommune` actif et profil métier sélectionné, recalculer `legendStats` filtré par ville/commune au lieu d'utiliser les stats province.
+### 5. Persistance & rétrocompatibilité
+- Migration : ajouter `rental_start_date DATE` dans `cadastral_parcels` (construction principale).
+- `additional_constructions` JSONB : nouveau champ `rental_start_date` par item (rétrocompatible, pas de migration).
+- Pas d'impact sur les fiches existantes : champ optionnel sauf si `usage === 'Location'`.
+- Mettre à jour `CadastralDocumentView` (section Construction) pour afficher la date de mise en location quand renseignée.
 
-#### P3 — Performance
-6. **Cache profil par `(tabKey, dataUpdatedAt)`** : dans `provincesData` (`DRCInteractiveMap.tsx`), introduire `useRef<Map<string, ProvinceMetric>>` et invalider via `analytics.dataUpdatedAt` pour éviter recalculs sur chaque setState non lié au profil.
-7. **Mémoïser `getCommuneColor` correctement** : dépendances actuelles incluent `analytics` complet → recalcul fréquent. Filtrer une fois par commune via `useMemo` indexé.
+### 6. Validation E2E
+- Sélectionner `Location` → datepicker apparaît, refuse une date > année construction, exige une saisie.
+- Ajouter une 2e construction `Location` avec sa propre date.
+- Onglet Obligations → IRL devient sélectionnable, ajouter 2 entrées IRL.
+- Récap → bilan vert.
+- Désélectionner `Location` sur une construction → IRL associé purgé + alerte cohérence si reste mal aligné.
+- Soumission bloquée tant que `IRL count ≠ rental constructions count`.
 
-#### P4 — Export & UX
-8. **Nom de fichier export contextuel** : `Copier image` → nom `carte-rdc-{activeProfile.tabKey}-{date}.png`.
-9. **Mini-légende incluse dans capture PNG** : vérifier que `html2canvas`/équivalent englobe bien le bloc top-right (sinon élargir la zone capturée).
-10. **Fullscreen × mini-légende** : ajuster `z-index` et position absolue pour rester visible et accessible en mode plein écran.
-
-### Fichiers impactés
-
-| Fichier | Changements |
-|---|---|
-| `src/components/DRCMapWithTooltip.tsx` | P1.1 — transition CSS sur paths |
-| `src/components/DRCInteractiveMap.tsx` | P1.2, P1.3, P3.6, P3.7, P4.8, P4.9, P4.10, P2.5 |
-| `src/components/visualizations/ProvinceDataVisualization.tsx` | P1.2 — callback `onForcedTabApplied` |
-| `src/components/DRCQuartiersMap.tsx` | P2.4 — `getEntityColor` |
-| `src/components/DRCTerritoiresMap.tsx` | P2.4 — `getEntityColor` |
-
-### Validation post-implémentation
-- Switch entre 13 onglets sans flash visuel (transitions SVG actives).
-- `?tab=disputes` puis clic Reset → URL revient à `?tab=rdc-map` sans boucle.
-- Onglet Expertise (faible volume) → mini-légende affiche message « Aucune occurrence » au lieu de 4 paliers vides.
-- Drilldown Goma → Katindo (commune) → Quartier : palette du profil litiges conservée à tous les niveaux.
-- Capture PNG : nom = `carte-rdc-disputes-2026-04-17.png`, mini-légende visible dans l'image.
-- Plein écran : mini-légende top-right reste visible et lisible.
+### Fichiers à modifier (estimation après exploration)
+- `src/components/cadastral/CadastralContributionDialog/...` (onglet Infos, bloc Construction principale)
+- `src/components/cadastral/CadastralContributionDialog/AdditionalConstructionBlock.tsx`
+- `src/components/cadastral/CadastralContributionDialog/...` (onglet Obligations / Taxes)
+- `src/components/cadastral/CadastralContributionDialog/ReviewTab.tsx` (récap fiscal)
+- `src/hooks/useCCCFormState.ts` (state central + dérivés `hasAnyRentalUsage`, compteurs)
+- `src/utils/declaredUsageNormalizer.ts` (aucun changement, déjà compatible)
+- Migration SQL : `cadastral_parcels.rental_start_date DATE NULL`
+- `src/components/cadastral/cadastral-document/sections/ConstructionSection.tsx` (affichage lecture)
 
