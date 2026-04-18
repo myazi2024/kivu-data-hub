@@ -230,6 +230,7 @@ export default function AdminAuditLogs() {
                           </div>
                         </DialogContent>
                       </Dialog>
+                      </div>
                     </ResponsiveTableCell>
                   </ResponsiveTableRow>
                 ))}
