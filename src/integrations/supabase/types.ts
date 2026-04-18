@@ -5690,7 +5690,12 @@ export type Database = {
           reasons: string[]
         }[]
       }
-      escalate_stale_disputes: { Args: { p_days?: number }; Returns: number }
+      escalate_stale_disputes: {
+        Args: { _threshold_days?: number }
+        Returns: {
+          escalated_count: number
+        }[]
+      }
       escalate_stale_requests: {
         Args: { p_days?: number }
         Returns: {
