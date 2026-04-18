@@ -44,8 +44,11 @@ const emptyForm = {
   price_usd: 0, category: 'research', status: 'draft', featured: false,
 };
 
+interface PublicationCategory { id: string; slug: string; name: string; is_active: boolean; }
+
 const AdminPublications: React.FC<AdminPublicationsProps> = ({ onRefresh }) => {
   const [publications, setPublications] = useState<Publication[]>([]);
+  const [categories, setCategories] = useState<PublicationCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Publication | null>(null);
   const [open, setOpen] = useState(false);
@@ -78,7 +81,17 @@ const AdminPublications: React.FC<AdminPublicationsProps> = ({ onRefresh }) => {
     a.href = url; a.download = `publications-${format(new Date(), 'yyyy-MM-dd')}.csv`; a.click();
   };
 
-  useEffect(() => { fetchPublications(); }, []);
+  useEffect(() => { fetchPublications(); fetchCategories(); }, []);
+
+  const fetchCategories = async () => {
+    const { data } = await (supabase as any)
+      .from('publication_categories')
+      .select('id, slug, name, is_active')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true });
+    setCategories((data as PublicationCategory[]) || []);
+  };
+
 
   const fetchPublications = async () => {
     try {
@@ -207,10 +220,16 @@ const AdminPublications: React.FC<AdminPublicationsProps> = ({ onRefresh }) => {
                           <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v })}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="research">Recherche</SelectItem>
-                              <SelectItem value="report">Rapport</SelectItem>
-                              <SelectItem value="analysis">Analyse</SelectItem>
-                              <SelectItem value="guide">Guide</SelectItem>
+                              {categories.length === 0 ? (
+                                <>
+                                  <SelectItem value="research">Recherche</SelectItem>
+                                  <SelectItem value="report">Rapport</SelectItem>
+                                  <SelectItem value="analysis">Analyse</SelectItem>
+                                  <SelectItem value="guide">Guide</SelectItem>
+                                </>
+                              ) : categories.map(c => (
+                                <SelectItem key={c.id} value={c.slug}>{c.name}</SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
@@ -304,10 +323,16 @@ const AdminPublications: React.FC<AdminPublicationsProps> = ({ onRefresh }) => {
               <SelectTrigger className="w-full sm:w-[140px] h-9"><SelectValue placeholder="Catégorie" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="_all">Toutes catégories</SelectItem>
-                <SelectItem value="research">Recherche</SelectItem>
-                <SelectItem value="report">Rapport</SelectItem>
-                <SelectItem value="analysis">Analyse</SelectItem>
-                <SelectItem value="guide">Guide</SelectItem>
+                {categories.length === 0 ? (
+                  <>
+                    <SelectItem value="research">Recherche</SelectItem>
+                    <SelectItem value="report">Rapport</SelectItem>
+                    <SelectItem value="analysis">Analyse</SelectItem>
+                    <SelectItem value="guide">Guide</SelectItem>
+                  </>
+                ) : categories.map(c => (
+                  <SelectItem key={c.id} value={c.slug}>{c.name}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

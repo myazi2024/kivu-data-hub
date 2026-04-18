@@ -23,6 +23,7 @@ import {
   Gift,
   Map as MapIcon,
   Tag,
+  Tags,
   Building2,
   Receipt,
   TrendingUp,
@@ -176,9 +177,11 @@ export const menuItems = [
   {
     category: 'Contenu',
     items: [
+      { icon: LayoutDashboard, label: 'Hub Contenu', value: 'content-hub', badge: null, keywords: ['hub', 'kpi', 'overview', 'éditorial', 'agrégé'] },
       { icon: Handshake, label: 'Partenaires', value: 'partners', badge: null, keywords: ['collaboration', 'sponsor', 'partenariat'] },
       { icon: Presentation, label: 'Présentation BIC', value: 'pitch-config', badge: null, keywords: ['pitch', 'présentation', 'slides', 'investisseur'] },
       { icon: Newspaper, label: 'Publications', value: 'publications', badge: null, keywords: ['blog', 'actualités', 'news', 'post'] },
+      { icon: Tags, label: 'Catégories Publications', value: 'publication-categories', badge: null, keywords: ['catégorie', 'rubrique', 'publication'] },
       { icon: BookOpen, label: 'Articles', value: 'articles', badge: null, keywords: ['blog', 'contenu', 'rédaction', 'texte'] },
       { icon: Palette, label: 'Thèmes Articles', value: 'article-themes', badge: null, keywords: ['catégorie', 'rubrique', 'sujet'] },
       { icon: Bell, label: 'Notifications', value: 'notifications', badge: null, keywords: ['alerte', 'message', 'push', 'email'] },

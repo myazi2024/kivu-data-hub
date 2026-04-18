@@ -7,7 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Pencil, Trash2, GripVertical, ExternalLink } from 'lucide-react';
+import { Plus, Pencil, Trash2, GripVertical, ExternalLink, ArrowUp, ArrowDown } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Partner {
@@ -28,6 +28,8 @@ const AdminPartners = () => {
   const [form, setForm] = useState({ name: '', website_url: '', display_order: 0, is_active: true });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [reordering, setReordering] = useState(false);
 
   const fetchPartners = async () => {
     setLoading(true);
@@ -40,6 +42,49 @@ const AdminPartners = () => {
   };
 
   useEffect(() => { fetchPartners(); }, []);
+
+  const persistOrder = async (ordered: Partner[]) => {
+    setReordering(true);
+    setPartners(ordered);
+    try {
+      // Mise à jour séquentielle (5-50 lignes max attendues)
+      const updates = ordered.map((p, idx) =>
+        (supabase as any).from('partners').update({ display_order: idx }).eq('id', p.id)
+      );
+      const results = await Promise.all(updates);
+      if (results.some(r => r.error)) throw new Error('Réordonnancement partiel');
+      toast.success('Ordre mis à jour');
+    } catch (e: any) {
+      toast.error(e.message || 'Erreur réordonnancement');
+      fetchPartners();
+    } finally {
+      setReordering(false);
+    }
+  };
+
+  const moveBy = (id: string, delta: number) => {
+    const idx = partners.findIndex(p => p.id === id);
+    if (idx < 0) return;
+    const target = idx + delta;
+    if (target < 0 || target >= partners.length) return;
+    const next = [...partners];
+    [next[idx], next[target]] = [next[target], next[idx]];
+    persistOrder(next);
+  };
+
+  const onDragStart = (id: string) => setDragId(id);
+  const onDragOver = (e: React.DragEvent) => e.preventDefault();
+  const onDrop = (targetId: string) => {
+    if (!dragId || dragId === targetId) { setDragId(null); return; }
+    const src = partners.findIndex(p => p.id === dragId);
+    const tgt = partners.findIndex(p => p.id === targetId);
+    if (src < 0 || tgt < 0) return;
+    const next = [...partners];
+    const [moved] = next.splice(src, 1);
+    next.splice(tgt, 0, moved);
+    setDragId(null);
+    persistOrder(next);
+  };
 
   const openCreate = () => {
     setEditing(null);
@@ -175,9 +220,21 @@ const AdminPartners = () => {
                 <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Chargement...</TableCell></TableRow>
               ) : partners.length === 0 ? (
                 <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Aucun partenaire</TableCell></TableRow>
-              ) : partners.map(p => (
-                <TableRow key={p.id}>
-                  <TableCell className="text-muted-foreground">{p.display_order}</TableCell>
+              ) : partners.map((p, idx) => (
+                <TableRow
+                  key={p.id}
+                  draggable
+                  onDragStart={() => onDragStart(p.id)}
+                  onDragOver={onDragOver}
+                  onDrop={() => onDrop(p.id)}
+                  className={`${dragId === p.id ? 'opacity-50' : ''} ${reordering ? 'pointer-events-none' : ''}`}
+                >
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
+                      <span className="text-muted-foreground text-xs">{idx}</span>
+                    </div>
+                  </TableCell>
                   <TableCell>
                     {p.logo_url ? (
                       <img src={p.logo_url} alt={p.name} className="h-8 w-auto object-contain" />
@@ -196,12 +253,18 @@ const AdminPartners = () => {
                     )}
                   </TableCell>
                   <TableCell>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${p.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${p.is_active ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
                       {p.is_active ? 'Oui' : 'Non'}
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
+                      <Button variant="ghost" size="icon" disabled={idx === 0 || reordering} onClick={() => moveBy(p.id, -1)} title="Monter">
+                        <ArrowUp className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" disabled={idx === partners.length - 1 || reordering} onClick={() => moveBy(p.id, 1)} title="Descendre">
+                        <ArrowDown className="h-4 w-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
                       <Button variant="ghost" size="icon" onClick={() => handleDelete(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                     </div>

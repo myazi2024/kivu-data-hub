@@ -74,6 +74,8 @@ const tabComponents: Record<string, React.LazyExoticComponent<any>> = {
   'publications': lazy(() => import('@/components/admin/AdminPublications')),
   'articles': lazy(() => import('@/components/admin/AdminArticles')),
   'article-themes': lazy(() => import('@/components/admin/AdminArticleThemes')),
+  'content-hub': lazy(() => import('@/components/admin/AdminContentHub')),
+  'publication-categories': lazy(() => import('@/components/admin/AdminPublicationCategories')),
   'notifications': lazy(() => import('@/components/admin/AdminNotifications').then(m => ({ default: m.AdminNotifications }))),
   'parcel-actions-config': lazy(() => import('@/components/admin/AdminParcelActionsConfig')),
   'test-mode': lazy(() => import('@/components/admin/AdminTestMode')),

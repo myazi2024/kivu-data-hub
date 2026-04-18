@@ -5757,6 +5757,12 @@ export type Database = {
     }
     Functions: {
       archive_stale_articles: { Args: { _months?: number }; Returns: number }
+      auto_archive_stale_articles: {
+        Args: never
+        Returns: {
+          archived_count: number
+        }[]
+      }
       auto_cancel_stale_pending: { Args: never; Returns: number }
       calculate_ccc_value: {
         Args: { contribution_id: string }
