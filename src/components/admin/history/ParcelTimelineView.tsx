@@ -38,6 +38,16 @@ export const ParcelTimelineView = () => {
     setSearched(trimmed);
   };
 
+  const handleExportDossier = async () => {
+    if (!searched) return;
+    try {
+      await exportParcelDossier(searched);
+      toast.success('Dossier exporté');
+    } catch (e: any) {
+      toast.error(e.message || "Erreur d'export");
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -57,6 +67,11 @@ export const ParcelTimelineView = () => {
           <Button onClick={handleSearch} size="sm" disabled={loading}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
           </Button>
+          {searched && events.length > 0 && (
+            <Button onClick={handleExportDossier} size="sm" variant="outline" title="Exporter le dossier complet (CSV)">
+              <Download className="h-4 w-4" />
+            </Button>
+          )}
         </div>
 
         {error && <p className="text-xs text-destructive">{error}</p>}
