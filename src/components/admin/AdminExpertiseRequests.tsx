@@ -33,6 +33,8 @@ import {
 import type { ExpertiseRequest } from '@/types/expertise';
 import ExpertiseStatsCards from './expertise/ExpertiseStatsCards';
 import ExpertiseFilters from './expertise/ExpertiseFilters';
+import ExpertiseProcessDialog, { type ExpertiseProcessAction } from './expertise/ExpertiseProcessDialog';
+import ExpertiseRequestsTable from './expertise/ExpertiseRequestsTable';
 
 // Helper to get extended data — reads from DB columns first, falls back to legacy JSON in additional_notes
 const getExtendedData = (req: ExpertiseRequest): { userNotes: string; extendedData: Record<string, any> } => {
@@ -429,98 +431,12 @@ export const AdminExpertiseRequests: React.FC = () => {
       />
 
       {/* Table */}
-      <Card>
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            </div>
-          ) : requests.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <FileSearch className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Aucune demande d'expertise trouvée</p>
-            </div>
-          ) : (
-            <ResponsiveTable>
-              <ResponsiveTableHeader>
-                <ResponsiveTableRow>
-                  <ResponsiveTableHead>Référence</ResponsiveTableHead>
-                  <ResponsiveTableHead>Parcelle</ResponsiveTableHead>
-                  <ResponsiveTableHead priority="low">Demandeur</ResponsiveTableHead>
-                  <ResponsiveTableHead priority="low">Date</ResponsiveTableHead>
-                  <ResponsiveTableHead>Statut</ResponsiveTableHead>
-                  <ResponsiveTableHead>Paiement</ResponsiveTableHead>
-                  <ResponsiveTableHead priority="low">Valeur</ResponsiveTableHead>
-                  <ResponsiveTableHead className="text-right">Actions</ResponsiveTableHead>
-                </ResponsiveTableRow>
-              </ResponsiveTableHeader>
-              <ResponsiveTableBody>
-                {requests.map((request) => (
-                  <ResponsiveTableRow key={request.id}>
-                    <ResponsiveTableCell>
-                      <span className="font-mono text-sm">{request.reference_number}</span>
-                    </ResponsiveTableCell>
-                    <ResponsiveTableCell>
-                      <span className="font-medium">{request.parcel_number}</span>
-                    </ResponsiveTableCell>
-                    <ResponsiveTableCell label="Demandeur" priority="low">
-                      <div>
-                        <p className="text-sm font-medium">{request.requester_name}</p>
-                        {request.requester_email && (
-                          <p className="text-xs text-muted-foreground">{request.requester_email}</p>
-                        )}
-                      </div>
-                    </ResponsiveTableCell>
-                    <ResponsiveTableCell label="Date" priority="low">
-                      <span className="text-sm">
-                        {format(new Date(request.created_at), 'dd/MM/yyyy', { locale: fr })}
-                      </span>
-                    </ResponsiveTableCell>
-                    <ResponsiveTableCell>
-                      <StatusBadge status={request.status as any} />
-                    </ResponsiveTableCell>
-                    <ResponsiveTableCell>
-                      <Badge variant={request.payment_status === 'paid' ? 'default' : request.payment_status === 'failed' ? 'destructive' : 'secondary'}>
-                        {request.payment_status === 'paid' ? 'Payé' : request.payment_status === 'failed' ? 'Échoué' : 'En attente'}
-                      </Badge>
-                    </ResponsiveTableCell>
-                    <ResponsiveTableCell label="Valeur" priority="low">
-                      {request.market_value_usd ? (
-                        <span className="font-bold text-green-600">
-                          ${request.market_value_usd.toLocaleString()}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </ResponsiveTableCell>
-                    <ResponsiveTableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleViewDetails(request)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        {request.status !== 'completed' && request.status !== 'rejected' && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleOpenProcess(request)}
-                          >
-                            <UserCheck className="h-4 w-4 mr-1" />
-                            Traiter
-                          </Button>
-                        )}
-                      </div>
-                    </ResponsiveTableCell>
-                  </ResponsiveTableRow>
-                ))}
-              </ResponsiveTableBody>
-            </ResponsiveTable>
-          )}
-        </CardContent>
-      </Card>
+      <ExpertiseRequestsTable
+        loading={loading}
+        requests={requests}
+        onViewDetails={handleViewDetails}
+        onProcess={handleOpenProcess}
+      />
 
       {/* Pagination */}
       {totalCount > itemsPerPage && (
@@ -923,143 +839,28 @@ export const AdminExpertiseRequests: React.FC = () => {
       </Dialog>
 
       {/* Process Dialog */}
-      <Dialog open={showProcessDialog} onOpenChange={setShowProcessDialog}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Traiter la demande</DialogTitle>
-            <DialogDescription>
-              {selectedRequest?.reference_number} - {selectedRequest?.parcel_number}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div className="flex gap-2">
-              <Button
-                variant={processAction === 'complete' ? 'default' : 'outline'}
-                onClick={() => setProcessAction('complete')}
-                className="flex-1"
-              >
-                <Check className="h-4 w-4 mr-2" />
-                Compléter
-              </Button>
-              <Button
-                variant={processAction === 'reject' ? 'destructive' : 'outline'}
-                onClick={() => setProcessAction('reject')}
-                className="flex-1"
-              >
-                <X className="h-4 w-4 mr-2" />
-                Rejeter
-              </Button>
-            </div>
-
-            {processAction === 'complete' ? (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Valeur vénale (USD) *</Label>
-                  <Input
-                    type="number"
-                    value={marketValue}
-                    onChange={(e) => setMarketValue(e.target.value)}
-                    placeholder="Ex: 50000"
-                  />
-                </div>
-
-                <Separator />
-                <p className="text-xs font-semibold text-muted-foreground">Informations de l'expert</p>
-
-                <div className="space-y-2">
-                  <Label>Nom de l'expert immobilier</Label>
-                  <Input
-                    value={expertName}
-                    onChange={(e) => setExpertName(e.target.value)}
-                    placeholder="Ex: Jean-Paul MUKENDI"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Titre / Fonction</Label>
-                  <Input
-                    value={expertTitle}
-                    onChange={(e) => setExpertTitle(e.target.value)}
-                    placeholder="Ex: L'Expert Évaluateur Agréé"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Sceau / Cachet (image)</Label>
-                  <div className="flex gap-2 items-center">
-                    {stampImageUrl && (
-                      <img src={stampImageUrl} alt="Sceau" className="h-10 w-10 object-contain border rounded" />
-                    )}
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      disabled={uploadingStamp}
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleUploadStamp(file);
-                      }}
-                    />
-                  </div>
-                  <p className="text-[10px] text-muted-foreground">
-                    Format PNG recommandé avec fond transparent. Apparaîtra à côté de la signature sur le certificat.
-                  </p>
-                </div>
-
-                <Alert className="bg-primary/5 border-primary/20">
-                  <Award className="h-4 w-4 text-primary" />
-                  <AlertDescription className="text-xs">
-                    Le certificat PDF sera <strong>généré automatiquement</strong> avec le nom de l'expert, le sceau et toutes les informations du bien.
-                  </AlertDescription>
-                </Alert>
-                <div className="space-y-2">
-                  <Label>Notes de traitement</Label>
-                  <Textarea
-                    value={processingNotes}
-                    onChange={(e) => setProcessingNotes(e.target.value)}
-                    placeholder="Observations..."
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Raison du rejet *</Label>
-                  <Textarea
-                    value={rejectionReason}
-                    onChange={(e) => setRejectionReason(e.target.value)}
-                    placeholder="Indiquez la raison du rejet..."
-                    className="min-h-[100px]"
-                  />
-                </div>
-              </div>
-            )}
-
-            <div className="flex gap-2 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setShowProcessDialog(false)}
-                className="flex-1"
-              >
-                Annuler
-              </Button>
-              <Button
-                onClick={handleProcessRequest}
-                disabled={processing}
-                className="flex-1"
-                variant={processAction === 'reject' ? 'destructive' : 'default'}
-              >
-                {processing ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : processAction === 'complete' ? (
-                  <Check className="h-4 w-4 mr-2" />
-                ) : (
-                  <X className="h-4 w-4 mr-2" />
-                )}
-                {processAction === 'complete' ? 'Valider' : 'Rejeter'}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ExpertiseProcessDialog
+        open={showProcessDialog}
+        onOpenChange={setShowProcessDialog}
+        request={selectedRequest}
+        processAction={processAction as ExpertiseProcessAction}
+        onActionChange={(a) => setProcessAction(a)}
+        marketValue={marketValue}
+        onMarketValueChange={setMarketValue}
+        expertName={expertName}
+        onExpertNameChange={setExpertName}
+        expertTitle={expertTitle}
+        onExpertTitleChange={setExpertTitle}
+        stampImageUrl={stampImageUrl}
+        uploadingStamp={uploadingStamp}
+        onUploadStamp={handleUploadStamp}
+        processingNotes={processingNotes}
+        onNotesChange={setProcessingNotes}
+        rejectionReason={rejectionReason}
+        onRejectionReasonChange={setRejectionReason}
+        processing={processing}
+        onConfirm={handleProcessRequest}
+      />
     </div>
   );
 };

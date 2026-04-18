@@ -1,19 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import MutationStatsCards from './mutation/MutationStatsCards';
 import MutationFilters from './mutation/MutationFilters';
 import MutationFeesConfig from './mutation/MutationFeesConfig';
+import MutationDetailsDialog from './mutation/MutationDetailsDialog';
+import MutationProcessDialog, { type MutationProcessAction } from './mutation/MutationProcessDialog';
+import MutationFeeFormDialog from './mutation/MutationFeeFormDialog';
 import { 
   ResponsiveTable, 
   ResponsiveTableHeader, 
@@ -27,10 +21,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { 
-  FileEdit, Eye, CheckCircle, XCircle, Settings, Plus, Trash2, Edit2, RotateCcw,
-  Loader2, RefreshCw, DollarSign, MapPin, User, Calendar,
-  Save, Download
+import {
+  FileEdit, Eye, CheckCircle, RefreshCw, Download, Loader2
 } from 'lucide-react';
 import { generateAndUploadCertificate } from '@/utils/certificateService';
 import { usePagination } from '@/hooks/usePagination';
@@ -408,11 +400,6 @@ const AdminMutationRequests: React.FC = () => {
     return statusMap[status] || { variant: 'default', label: status };
   };
 
-  const safeProposedChanges = (request: MutationRequest | null) => {
-    if (!request?.proposed_changes) return {} as Record<string, any>;
-    return request.proposed_changes;
-  };
-
   const columns = [
     {
       key: 'reference_number',
@@ -617,346 +604,41 @@ const AdminMutationRequests: React.FC = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Details Dialog */}
-      <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="text-sm">Détails de la demande</DialogTitle>
-          </DialogHeader>
-          {selectedRequest && (() => {
-            const changes = safeProposedChanges(selectedRequest);
-            return (
-            <ScrollArea className="max-h-[60vh]">
-              <div className="space-y-4 pr-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Référence</Label>
-                    <p className="font-mono font-bold">{selectedRequest.reference_number || '-'}</p>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Parcelle</Label>
-                    <p className="font-mono">{selectedRequest.parcel_number}</p>
-                  </div>
-                </div>
+      <MutationDetailsDialog
+        open={showDetailsDialog}
+        onOpenChange={setShowDetailsDialog}
+        request={selectedRequest}
+        getPaymentBadge={getPaymentBadge}
+      />
 
-                <div>
-                  <Label className="text-xs text-muted-foreground">Type de mutation</Label>
-                  <p className="font-medium">{getMutationTypeLabel(selectedRequest.mutation_type)}</p>
-                </div>
+      <MutationProcessDialog
+        open={showProcessDialog}
+        onOpenChange={setShowProcessDialog}
+        request={selectedRequest}
+        processAction={processAction}
+        onActionChange={setProcessAction}
+        processingNotes={processingNotes}
+        onNotesChange={setProcessingNotes}
+        rejectionReason={rejectionReason}
+        onRejectionReasonChange={setRejectionReason}
+        processing={processing}
+        onConfirm={handleProcessRequest}
+      />
 
-                <Separator />
-
-                <div>
-                  <Label className="text-xs text-muted-foreground">Demandeur</Label>
-                  <p className="font-medium">{selectedRequest.requester_name}</p>
-                  {selectedRequest.requester_email && (
-                    <p className="text-xs text-muted-foreground">{selectedRequest.requester_email}</p>
-                  )}
-                  {selectedRequest.requester_phone && (
-                    <p className="text-xs text-muted-foreground">{selectedRequest.requester_phone}</p>
-                  )}
-                </div>
-
-                {selectedRequest.beneficiary_name && (
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Bénéficiaire</Label>
-                    <p className="font-medium">{selectedRequest.beneficiary_name}</p>
-                  </div>
-                )}
-
-                <Separator />
-
-                <div>
-                  <Label className="text-xs text-muted-foreground">Modifications demandées</Label>
-                  <p className="text-sm mt-1">
-                    {changes.description || 'Non spécifié'}
-                  </p>
-                </div>
-
-                {selectedRequest.justification && (
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Justification</Label>
-                    <p className="text-sm mt-1">{selectedRequest.justification}</p>
-                  </div>
-                )}
-
-                {/* Documents joints — read from column first, fallback to JSON */}
-                {(() => {
-                  const docs = Array.isArray(selectedRequest.supporting_documents) && selectedRequest.supporting_documents.length > 0
-                    ? selectedRequest.supporting_documents
-                    : Array.isArray(changes.supporting_documents) ? changes.supporting_documents : [];
-                  if (docs.length === 0) return null;
-                  return (
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Documents joints</Label>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {docs.map((url: string, i: number) => (
-                          <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline">
-                            Document {i + 1}
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* Certificat d'expertise — read from columns first, fallback to JSON */}
-                {(() => {
-                  const certUrl = selectedRequest.expertise_certificate_url || changes.expertise_certificate_url;
-                  const marketVal = selectedRequest.market_value_usd ?? changes.market_value_usd;
-                  const certDate = selectedRequest.expertise_certificate_date || changes.expertise_certificate_date;
-                  if (!certUrl) return null;
-                  return (
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Certificat d'expertise</Label>
-                      <div className="mt-1 space-y-1">
-                        <a href={certUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline block">
-                          Voir le certificat
-                        </a>
-                        {marketVal && (
-                          <p className="text-xs">Valeur vénale: <strong>${Number(marketVal).toLocaleString()}</strong></p>
-                        )}
-                        {certDate && (
-                          <p className="text-xs text-muted-foreground">Date: {certDate}</p>
-                        )}
-                        {selectedRequest.title_age && (
-                          <p className="text-xs text-muted-foreground">Ancienneté titre: {selectedRequest.title_age === '10_or_more' ? '≥ 10 ans' : '< 10 ans'}</p>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                <Separator />
-
-                {/* Décomposition des frais */}
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground font-semibold">Détail des frais</Label>
-                  
-                  {Array.isArray(selectedRequest.fee_items) && selectedRequest.fee_items.map((item: any, i: number) => (
-                    <div key={i} className="flex justify-between text-xs">
-                      <span>{item.fee_name}</span>
-                      <span className="font-mono">${Number(item.amount_usd).toFixed(2)}</span>
-                    </div>
-                  ))}
-
-                  {/* Mutation fees — columns first, fallback JSON */}
-                  {(() => {
-                    const mutFee = selectedRequest.mutation_fee_amount ?? changes.mutation_fees?.mutation_fee;
-                    const bankFee = selectedRequest.bank_fee_amount ?? changes.mutation_fees?.bank_fee;
-                    if (!mutFee) return null;
-                    return (
-                      <>
-                        <div className="flex justify-between text-xs">
-                          <span>Frais de mutation</span>
-                          <span className="font-mono">${Number(mutFee).toFixed(2)}</span>
-                        </div>
-                        {Number(bankFee) > 0 && (
-                          <div className="flex justify-between text-xs">
-                            <span>Frais bancaires</span>
-                            <span className="font-mono">${Number(bankFee).toFixed(2)}</span>
-                          </div>
-                        )}
-                      </>
-                    );
-                  })()}
-
-                  {/* Late fees — columns first, fallback JSON */}
-                  {(() => {
-                    const lateFee = selectedRequest.late_fee_amount ?? changes.late_fees?.fee;
-                    const lateDays = selectedRequest.late_fee_days ?? changes.late_fees?.days;
-                    if (!lateFee) return null;
-                    return (
-                      <div className="flex justify-between text-xs text-orange-600">
-                        <span>Retard ({lateDays}j)</span>
-                        <span className="font-mono">${Number(lateFee).toFixed(2)}</span>
-                      </div>
-                    );
-                  })()}
-
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold">Total</span>
-                    <span className="text-lg font-bold text-primary">${Number(selectedRequest.total_amount_usd).toFixed(2)}</span>
-                  </div>
-                </div>
-
-                <div className="text-right">
-                  <Label className="text-xs text-muted-foreground">Paiement</Label>
-                  <div className="mt-1">
-                    {(() => {
-                      const badge = getPaymentBadge(selectedRequest.payment_status);
-                      return <Badge variant={badge.variant}>{badge.label}</Badge>;
-                    })()}
-                  </div>
-                </div>
-              </div>
-            </ScrollArea>
-            );
-          })()}
-        </DialogContent>
-      </Dialog>
-
-      {/* Process Dialog */}
-      <Dialog open={showProcessDialog} onOpenChange={setShowProcessDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="text-sm">Traiter la demande</DialogTitle>
-            <DialogDescription className="text-xs">
-              {selectedRequest?.reference_number || '-'} — {selectedRequest ? getMutationTypeLabel(selectedRequest.mutation_type) : ''} — Parcelle {selectedRequest?.parcel_number}
-            </DialogDescription>
-          </DialogHeader>
-          {selectedRequest && (
-            <div className="space-y-4">
-              {/* Quick context */}
-              <Card className="bg-muted/50 border-0">
-                <CardContent className="p-3 space-y-1.5">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Demandeur</span>
-                    <span className="font-medium">{selectedRequest.requester_name}</span>
-                  </div>
-                  {selectedRequest.beneficiary_name && (
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Bénéficiaire</span>
-                      <span className="font-medium">{selectedRequest.beneficiary_name}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Montant payé</span>
-                    <span className="font-bold text-primary">${Number(selectedRequest.total_amount_usd).toFixed(2)}</span>
-                  </div>
-                  {selectedRequest.proposed_changes && (() => {
-                    const mv = (selectedRequest as any).market_value_usd ?? (selectedRequest.proposed_changes as any)?.market_value_usd;
-                    if (!mv) return null;
-                    return (
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">Valeur vénale</span>
-                        <span>${Number(mv).toLocaleString()}</span>
-                      </div>
-                    );
-                  })()}
-                  {selectedRequest.justification && (
-                    <div className="pt-1 border-t">
-                      <span className="text-[10px] text-muted-foreground">Justification :</span>
-                      <p className="text-xs mt-0.5">{selectedRequest.justification}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <div className="space-y-2">
-                <Label className="text-xs">Action</Label>
-                <Select value={processAction} onValueChange={(v: any) => setProcessAction(v)}>
-                  <SelectTrigger className="h-9">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="approve">Approuver</SelectItem>
-                    <SelectItem value="reject">Rejeter</SelectItem>
-                    <SelectItem value="hold">Mettre en attente</SelectItem>
-                    <SelectItem value="return">Renvoyer pour correction</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {processAction === 'reject' && (
-                <div className="space-y-2">
-                  <Label className="text-xs">Motif du rejet *</Label>
-                  <Textarea
-                    value={rejectionReason}
-                    onChange={(e) => setRejectionReason(e.target.value)}
-                    placeholder="Indiquez le motif du rejet..."
-                    className="min-h-[80px]"
-                  />
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <Label className="text-xs">Notes de traitement</Label>
-                <Textarea
-                  value={processingNotes}
-                  onChange={(e) => setProcessingNotes(e.target.value)}
-                  placeholder="Notes internes..."
-                  className="min-h-[60px]"
-                />
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowProcessDialog(false)}>
-              Annuler
-            </Button>
-            <Button 
-              onClick={handleProcessRequest}
-              disabled={processing || (processAction === 'reject' && !rejectionReason.trim())}
-            >
-              {processing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Confirmer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Fee Dialog */}
-      <Dialog open={showFeeDialog} onOpenChange={setShowFeeDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="text-sm">
-              {editingFee ? 'Modifier le frais' : 'Ajouter un frais'}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-xs">Nom du frais *</Label>
-              <Input
-                value={feeName}
-                onChange={(e) => setFeeName(e.target.value)}
-                placeholder="Ex: Frais de dossier"
-                className="h-9"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs">Montant (USD) *</Label>
-              <Input
-                type="number"
-                value={feeAmount}
-                onChange={(e) => setFeeAmount(e.target.value)}
-                placeholder="25.00"
-                className="h-9"
-                min="0"
-                step="0.01"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs">Description</Label>
-              <Textarea
-                value={feeDescription}
-                onChange={(e) => setFeeDescription(e.target.value)}
-                placeholder="Description optionnelle..."
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="mandatory"
-                checked={feeMandatory}
-                onCheckedChange={(checked) => setFeeMandatory(!!checked)}
-              />
-              <Label htmlFor="mandatory" className="text-xs cursor-pointer">
-                Frais obligatoire
-              </Label>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowFeeDialog(false)}>
-              Annuler
-            </Button>
-            <Button onClick={handleSaveFee}>
-              <Save className="h-4 w-4 mr-1" />
-              Enregistrer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <MutationFeeFormDialog
+        open={showFeeDialog}
+        onOpenChange={setShowFeeDialog}
+        editingFee={editingFee}
+        feeName={feeName}
+        onNameChange={setFeeName}
+        feeAmount={feeAmount}
+        onAmountChange={setFeeAmount}
+        feeDescription={feeDescription}
+        onDescriptionChange={setFeeDescription}
+        feeMandatory={feeMandatory}
+        onMandatoryChange={setFeeMandatory}
+        onSave={handleSaveFee}
+      />
     </div>
   );
 };
