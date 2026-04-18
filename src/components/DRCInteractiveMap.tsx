@@ -1,5 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useAppAppearance } from '@/hooks/useAppAppearance';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -21,36 +20,16 @@ import { useTestEnvironment } from '@/hooks/useTestEnvironment';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { getTerritoiresForProvince, getProvinceForTerritoire } from '@/lib/geographicData';
 import { MAP_TAB_PROFILES, computeAdaptiveTiers, NO_DATA_COLOR, type MapTabProfile, type MapTier } from '@/config/mapTabProfiles';
-
-/** Province IDs and names for the 26 provinces */
-const PROVINCE_META: { id: string; name: string }[] = [
-  { id: 'CDKN', name: 'Kinshasa' },
-  { id: 'CDNK', name: 'Nord-Kivu' },
-  { id: 'CDSK', name: 'Sud-Kivu' },
-  { id: 'CDBC', name: 'Kongo-Central' },
-  { id: 'CDHK', name: 'Haut-Katanga' },
-  { id: 'CDLU', name: 'Lualaba' },
-  { id: 'CDKC', name: 'Kasaï-Central' },
-  { id: 'CDKS', name: 'Kasaï' },
-  { id: 'CDKE', name: 'Kasaï-Oriental' },
-  { id: 'CDSA', name: 'Sankuru' },
-  { id: 'CDLO', name: 'Lomami' },
-  { id: 'CDMA', name: 'Maniema' },
-  { id: 'CDTO', name: 'Tshopo' },
-  { id: 'CDIT', name: 'Ituri' },
-  { id: 'CDHU', name: 'Haut-Uele' },
-  { id: 'CDBU', name: 'Bas-Uele' },
-  { id: 'CDMO', name: 'Mongala' },
-  { id: 'CDSU', name: 'Sud-Ubangi' },
-  { id: 'CDNU', name: 'Nord-Ubangi' },
-  { id: 'CDTU', name: 'Tshuapa' },
-  { id: 'CDMN', name: 'Mai-Ndombe' },
-  { id: 'CDKL', name: 'Kwilu' },
-  { id: 'CDKG', name: 'Kwango' },
-  { id: 'CDTA', name: 'Tanganyika' },
-  { id: 'CDHL', name: 'Haut-Lomami' },
-  { id: 'CDEQ', name: 'Équateur' },
-];
+import {
+  PROVINCE_META,
+  DEFAULT_DENSITY_TIERS,
+  DENSITY_TIER_KEYS,
+  TOOLTIP_LINE_KEYS,
+  norm,
+  buildEmptyProvince,
+  buildScopePredicate,
+} from './map/meta/mapMeta';
+import { useMapDrilldown } from './map/hooks/useMapDrilldown';
 
 
 /** Compute the 11 new indicators from filtered record sets */
@@ -101,49 +80,43 @@ function computeIndicators(
   };
 }
 
-/** Normalize string for comparison */
-const norm = (s?: string | null) => (s || '').trim().toLowerCase();
-
-/** Build a filter predicate based on the most specific geo scope */
-function buildScopePredicate(
-  province?: string,
-  ville?: string,
-  commune?: string,
-  quartier?: string,
-  territoire?: string,
-): (record: any) => boolean {
-  if (quartier) return (r) => norm(r.quartier) === norm(quartier) && norm(r.commune) === norm(commune) && norm(r.ville) === norm(ville) && norm(r.province) === norm(province);
-  if (commune) return (r) => norm(r.commune) === norm(commune) && norm(r.ville) === norm(ville) && norm(r.province) === norm(province);
-  if (ville) return (r) => norm(r.ville) === norm(ville) && norm(r.province) === norm(province);
-  if (territoire && province) return (r) => norm(r.territoire) === norm(territoire) && norm(r.province) === norm(province);
-  if (territoire) return (r) => norm(r.territoire) === norm(territoire);
-  if (province) return (r) => norm(r.province) === norm(province);
-  return () => false;
-}
 
 interface DRCInteractiveMapProps {
   onFullscreenChange?: (isFullscreen: boolean) => void;
 }
 
 const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [selectedProvince, setSelectedProvince] = useState<ProvinceData | null>(null);
+  const provincesDataRef = React.useRef<ProvinceData[]>([]);
+  const drilldown = useMapDrilldown(() => provincesDataRef.current);
+  const {
+    selectedProvince,
+    externalProvinceId,
+    selectedVille,
+    selectedCommune,
+    selectedQuartier,
+    selectedTerritoire,
+    selectedSectionType,
+    activeAnalyticsTab,
+    setSelectedProvince,
+    setExternalProvinceId,
+    setSelectedVille,
+    setSelectedCommune,
+    setSelectedQuartier,
+    setSelectedTerritoire,
+    setSelectedSectionType,
+    setActiveAnalyticsTab,
+    handleProvinceFilter,
+    clearGeoSelection,
+  } = drilldown;
+
   const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
   const [mapInstance, setMapInstance] = useState<any>(null);
   const [activeMobilePanel, setActiveMobilePanel] = useState<'map' | 'details' | 'analytics'>('map');
   const [isMapZoomed, setIsMapZoomed] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [externalProvinceId, setExternalProvinceId] = useState<string | null>(null);
-  const [selectedVille, setSelectedVille] = useState<string | undefined>(() => searchParams.get('ville') || undefined);
-  const [selectedCommune, setSelectedCommune] = useState<string | undefined>(() => searchParams.get('commune') || undefined);
-  const [selectedQuartier, setSelectedQuartier] = useState<string | undefined>(() => searchParams.get('quartier') || undefined);
-  const [selectedTerritoire, setSelectedTerritoire] = useState<string | undefined>(() => searchParams.get('territoire') || undefined);
-  const [selectedSectionType, setSelectedSectionType] = useState<string>(() => searchParams.get('section') || 'all');
-  const [activeAnalyticsTab, setActiveAnalyticsTab] = useState<string>(() => searchParams.get('tab') || 'rdc-map');
   const [forcedTab, setForcedTab] = useState<string | null>(null);
   const mapCardRef = React.useRef<HTMLDivElement>(null);
-  const urlInitRef = React.useRef(false);
 
   const { isTestRoute } = useTestEnvironment();
   const { data: analytics, isLoading, dataUpdatedAt } = useLandDataAnalytics(isTestRoute);
@@ -211,6 +184,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
       return base;
     });
   }, [analytics, activeProfile]);
+  provincesDataRef.current = provincesData;
 
   /** Adaptive tiers from real province distribution (quartiles), with static fallback */
   const adaptiveTiers: MapTier[] | null = useMemo(() => {
@@ -219,33 +193,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     return computeAdaptiveTiers(values, activeProfile.palette, activeProfile.tiers, activeProfile.adaptiveUnit || '');
   }, [activeProfile, provincesData]);
 
-  // ── URL → State: initialize province from URL on first load ──
-  useEffect(() => {
-    if (urlInitRef.current || provincesData.length === 0) return;
-    urlInitRef.current = true;
-    const pName = searchParams.get('province');
-    if (pName) {
-      const normalize = (s: string) => s.toLowerCase().replace(/[-\s]/g, '');
-      const province = provincesData.find(p => normalize(p.name) === normalize(pName));
-      if (province) {
-        setSelectedProvince(province);
-        setExternalProvinceId(province.id);
-      }
-    }
-  }, [provincesData, searchParams]);
 
-  // ── State → URL: sync filters to URL params ──
-  useEffect(() => {
-    const params = new URLSearchParams();
-    if (selectedProvince) params.set('province', selectedProvince.name);
-    if (selectedVille) params.set('ville', selectedVille);
-    if (selectedCommune) params.set('commune', selectedCommune);
-    if (selectedQuartier) params.set('quartier', selectedQuartier);
-    if (selectedTerritoire) params.set('territoire', selectedTerritoire);
-    if (selectedSectionType !== 'all') params.set('section', selectedSectionType);
-    if (activeAnalyticsTab && activeAnalyticsTab !== 'rdc-map') params.set('tab', activeAnalyticsTab);
-    setSearchParams(params, { replace: true });
-  }, [selectedProvince, selectedVille, selectedCommune, selectedQuartier, selectedTerritoire, selectedSectionType, activeAnalyticsTab]);
 
   /** Paliers choroplèthes — configurables depuis admin */
   const DENSITY_TIERS = useMemo(() => {
@@ -305,28 +253,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     return parts.join(' — ') || '';
   }, [selectedProvince, selectedVille, selectedCommune, selectedQuartier, selectedTerritoire]);
 
-  /** Handle province filter from Analytics → zoom map */
-  const handleProvinceFilter = React.useCallback((provinceName: string | undefined) => {
-    if (!provinceName) {
-      setSelectedProvince(null);
-      setExternalProvinceId(null);
-      setSelectedVille(undefined);
-      setSelectedCommune(undefined);
-      setSelectedQuartier(undefined);
-      setSelectedTerritoire(undefined);
-      return;
-    }
-    const normalize = (s: string) => s.toLowerCase().replace(/[-\s]/g, '');
-    const province = provincesData.find(p => normalize(p.name) === normalize(provinceName));
-    if (province) {
-      setSelectedProvince(province);
-      setExternalProvinceId(province.id);
-      setSelectedVille(undefined);
-      setSelectedCommune(undefined);
-      setSelectedQuartier(undefined);
-      setSelectedTerritoire(undefined);
-    }
-  }, [provincesData]);
+
 
   // Fullscreen sync
   React.useEffect(() => {
@@ -907,24 +834,5 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   );
 };
 
-/** Build an empty province for loading state */
-function buildEmptyProvince(meta: { id: string; name: string }): ProvinceData {
-  return {
-    id: meta.id,
-    name: meta.name,
-    certEnregCount: 0,
-    contratLocCount: 0,
-    ficheParcCount: 0,
-    titleRequestsCount: 0,
-    disputesCount: 0,
-    activeMortgagesCount: 0,
-    pendingMutationsCount: 0,
-    pendingExpertisesCount: 0,
-    avgParcelSurfaceSqm: 0,
-    avgBuildingSurfaceSqm: 0,
-    avgBuildingHeightM: 0,
-    parcelsCount: 0,
-  };
-}
 
 export default DRCInteractiveMap;
