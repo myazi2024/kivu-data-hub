@@ -141,24 +141,12 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
   };
 
   const getRoleBadge = (role: string) => {
-    const config: Record<string, { variant: any, icon: any, label: string }> = {
-      super_admin: { variant: 'destructive', icon: Shield, label: 'Super Admin' },
-      admin: { variant: 'default', icon: Shield, label: 'Admin' },
-      partner: { variant: 'secondary', icon: UsersIcon, label: 'Partenaire' },
-      expert_immobilier: { variant: 'secondary', icon: UserIcon, label: 'Expert Immobilier' },
-      mortgage_officer: { variant: 'secondary', icon: UserIcon, label: 'Agent Hypothécaire' },
-      notaire: { variant: 'secondary', icon: UserIcon, label: 'Notaire' },
-      geometre: { variant: 'secondary', icon: UserIcon, label: 'Géomètre' },
-      urbaniste: { variant: 'secondary', icon: UserIcon, label: 'Urbaniste' },
-      user: { variant: 'outline', icon: UserIcon, label: 'Utilisateur' }
-    };
-    
-    const { variant, icon: Icon, label } = config[role] || config.user;
-    
+    const meta = ROLE_CONFIG[(role as AppRole)] || ROLE_CONFIG.user;
+    const Icon = meta.icon;
     return (
-      <Badge variant={variant} className="flex items-center gap-1 text-xs py-0.5 px-2">
+      <Badge variant={meta.badgeVariant} className="flex items-center gap-1 text-xs py-0.5 px-2">
         <Icon className="w-3 h-3" />
-        {label}
+        {meta.label}
       </Badge>
     );
   };
