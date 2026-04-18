@@ -22,6 +22,7 @@ import { PaginationControls } from '@/components/shared/PaginationControls';
 import { exportToCSV } from '@/utils/csvExport';
 import { logContributionAudit } from '@/utils/contributionAudit';
 import CCCStatsCards from './ccc/CCCStatsCards';
+import CCCBulkActions from './ccc/CCCBulkActions';
 
 interface ValidationResult {
   valid: boolean;
