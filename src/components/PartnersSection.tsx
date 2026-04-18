@@ -19,9 +19,6 @@ const PartnersSection = () => {
         .eq('is_active', true)
         .is('deleted_at', null)
         .order('display_order', { ascending: true });
-      setPartners(data || []);
-    };
-        .order('display_order', { ascending: true });
       if (data) setPartners(data as Partner[]);
     };
     fetchPartners();
