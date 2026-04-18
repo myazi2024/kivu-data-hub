@@ -163,10 +163,17 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
           <span className="hidden sm:inline">Voir</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-[95vw] md:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-[95vw] md:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-base md:text-lg">Détails utilisateur</DialogTitle>
         </DialogHeader>
+        <Tabs defaultValue="info" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 h-9">
+            <TabsTrigger value="info" className="text-xs">Infos</TabsTrigger>
+            <TabsTrigger value="notes" className="text-xs gap-1"><StickyNote className="w-3 h-3" />Notes</TabsTrigger>
+            <TabsTrigger value="activity" className="text-xs gap-1"><Activity className="w-3 h-3" />Activité</TabsTrigger>
+          </TabsList>
+          <TabsContent value="info" className="mt-3">
         <div className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
             <div>
@@ -331,7 +338,14 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
               />
             )}
           </div>
-        </div>
+        </TabsContent>
+        <TabsContent value="notes" className="mt-3">
+          <AdminUserNotes userId={user.user_id} />
+        </TabsContent>
+        <TabsContent value="activity" className="mt-3">
+          <AdminUserActivity userId={user.user_id} />
+        </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
