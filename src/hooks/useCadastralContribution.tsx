@@ -32,6 +32,7 @@ export interface CadastralContributionData {
   floorNumber?: string;
   standing?: string;
   constructionYear?: number;
+  rentalStartDate?: string; // ISO yyyy-MM-dd, requis si declaredUsage === 'Location'
   
   // Capacité d'accueil
   isOccupied?: boolean;

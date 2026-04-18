@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
 import { useToast } from '@/hooks/use-toast';
 import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
+import RentalStartDateField from './RentalStartDateField';
 
 export interface AdditionalConstructionPermit {
   permitType: 'construction' | 'regularization';
@@ -27,6 +28,7 @@ export interface AdditionalConstruction {
   declaredUsage: string;
   standing: string;
   constructionYear?: number;
+  rentalStartDate?: string; // ISO yyyy-MM-dd, requis si declaredUsage === 'Location'
   apartmentNumber?: string;
   floorNumber?: string;
   // Capacité d'accueil
