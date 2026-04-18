@@ -9,9 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { CheckCircle, XCircle, AlertTriangle, Eye, Gift, Users, Play, FileText, Building2, MessageSquare, Route, BrickWall, Download, ExternalLink, RotateCcw, Search } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Eye, Gift, Users, Play, FileText, Building2, MessageSquare, Route, BrickWall, Download, ExternalLink, RotateCcw, Search, MessageCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
 import { AppealManagementDialog } from './appeals/AppealManagementDialog';
 import { PermitRequestDialog } from './permits/PermitRequestDialog';
 import { DocumentsGalleryDialog } from './documents/DocumentsGalleryDialog';
@@ -19,6 +20,7 @@ import { StatusBadge, StatusType } from '@/components/shared/StatusBadge';
 import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/shared/PaginationControls';
 import { exportToCSV } from '@/utils/csvExport';
+import { logContributionAudit } from '@/utils/contributionAudit';
 
 interface ValidationResult {
   valid: boolean;
@@ -133,13 +135,17 @@ const AdminCCCContributions: React.FC = () => {
   const [showPermitDialog, setShowPermitDialog] = useState(false);
   const [showDocumentsDialog, setShowDocumentsDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  
+  const [userFilter, setUserFilter] = useState('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+
   // Pagination - sera initialisée après filteredContributions
 
   useEffect(() => {
     fetchContributions();
-    
-    // Realtime subscription pour synchroniser les changements (suppressions, mises à jour)
+
+    // Realtime debounced (300 ms) pour limiter les refetch en rafale
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const channel = supabase
       .channel('admin-contributions-changes')
       .on(
@@ -149,15 +155,15 @@ const AdminCCCContributions: React.FC = () => {
           schema: 'public',
           table: 'cadastral_contributions'
         },
-        (payload) => {
-          console.log('Contribution change detected:', payload.eventType);
-          // Rafraîchir les données pour tous les types d'événements
-          fetchContributions();
+        () => {
+          if (debounceTimer) clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => fetchContributions(), 300);
         }
       )
       .subscribe();
 
     return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
   }, []);
