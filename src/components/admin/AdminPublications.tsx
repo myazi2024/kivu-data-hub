@@ -220,10 +220,16 @@ const AdminPublications: React.FC<AdminPublicationsProps> = ({ onRefresh }) => {
                           <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v })}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="research">Recherche</SelectItem>
-                              <SelectItem value="report">Rapport</SelectItem>
-                              <SelectItem value="analysis">Analyse</SelectItem>
-                              <SelectItem value="guide">Guide</SelectItem>
+                              {categories.length === 0 ? (
+                                <>
+                                  <SelectItem value="research">Recherche</SelectItem>
+                                  <SelectItem value="report">Rapport</SelectItem>
+                                  <SelectItem value="analysis">Analyse</SelectItem>
+                                  <SelectItem value="guide">Guide</SelectItem>
+                                </>
+                              ) : categories.map(c => (
+                                <SelectItem key={c.id} value={c.slug}>{c.name}</SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
@@ -317,10 +323,16 @@ const AdminPublications: React.FC<AdminPublicationsProps> = ({ onRefresh }) => {
               <SelectTrigger className="w-full sm:w-[140px] h-9"><SelectValue placeholder="Catégorie" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="_all">Toutes catégories</SelectItem>
-                <SelectItem value="research">Recherche</SelectItem>
-                <SelectItem value="report">Rapport</SelectItem>
-                <SelectItem value="analysis">Analyse</SelectItem>
-                <SelectItem value="guide">Guide</SelectItem>
+                {categories.length === 0 ? (
+                  <>
+                    <SelectItem value="research">Recherche</SelectItem>
+                    <SelectItem value="report">Rapport</SelectItem>
+                    <SelectItem value="analysis">Analyse</SelectItem>
+                    <SelectItem value="guide">Guide</SelectItem>
+                  </>
+                ) : categories.map(c => (
+                  <SelectItem key={c.id} value={c.slug}>{c.name}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
