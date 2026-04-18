@@ -21,6 +21,7 @@ import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/shared/PaginationControls';
 import { exportToCSV } from '@/utils/csvExport';
 import { logContributionAudit } from '@/utils/contributionAudit';
+import CCCStatsCards from './ccc/CCCStatsCards';
 
 interface ValidationResult {
   valid: boolean;
@@ -929,67 +930,7 @@ const AdminCCCContributions: React.FC = () => {
   return (
     <div className="space-y-2">
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-        <Card>
-          <CardContent className="pt-3 pb-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">Total</p>
-                <p className="text-lg font-bold">{stats.total}</p>
-              </div>
-              <Users className="h-5 w-5 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-3 pb-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">Attente</p>
-                <p className="text-lg font-bold">{stats.pending}</p>
-              </div>
-              <Badge variant="secondary" className="text-xs">{stats.pending}</Badge>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-3 pb-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">Approuvés</p>
-                <p className="text-lg font-bold">{stats.approved}</p>
-              </div>
-              <CheckCircle className="h-5 w-5 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-3 pb-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">Rejetés</p>
-                <p className="text-lg font-bold">{stats.rejected}</p>
-              </div>
-              <XCircle className="h-5 w-5 text-red-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-3 pb-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">Suspects</p>
-                <p className="text-lg font-bold">{stats.suspicious}</p>
-              </div>
-              <AlertTriangle className="h-5 w-5 text-orange-500" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <CCCStatsCards stats={stats} />
 
       {/* Alert */}
       {stats.pending > 0 && (

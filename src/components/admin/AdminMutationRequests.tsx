@@ -11,6 +11,9 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import MutationStatsCards from './mutation/MutationStatsCards';
+import MutationFilters from './mutation/MutationFilters';
+import MutationFeesConfig from './mutation/MutationFeesConfig';
 import { 
   ResponsiveTable, 
   ResponsiveTableHeader, 
@@ -25,9 +28,9 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { 
-  FileEdit, Search, Eye, CheckCircle, XCircle, 
+  FileEdit, Eye, CheckCircle, XCircle, Settings, Plus, Trash2, Edit2, RotateCcw,
   Loader2, RefreshCw, DollarSign, MapPin, User, Calendar,
-  Settings, Plus, Trash2, Edit2, Save, Download, RotateCcw
+  Save, Download
 } from 'lucide-react';
 import { generateAndUploadCertificate } from '@/utils/certificateService';
 import { usePagination } from '@/hooks/usePagination';
@@ -543,89 +546,16 @@ const AdminMutationRequests: React.FC = () => {
         </TabsList>
 
         <TabsContent value="requests" className="space-y-4">
-          {/* Stats - all statuses */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-            <Card>
-              <CardContent className="p-3">
-                <div className="text-xs text-muted-foreground">Total</div>
-                <div className="text-xl font-bold">{stats.total}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-3">
-                <div className="text-xs text-muted-foreground">En attente</div>
-                <div className="text-xl font-bold text-orange-600">{stats.pending}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-3">
-                <div className="text-xs text-muted-foreground">Approuvées</div>
-                <div className="text-xl font-bold text-green-600">{stats.approved}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-3">
-                <div className="text-xs text-muted-foreground">Rejetées</div>
-                <div className="text-xl font-bold text-destructive">{stats.rejected}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-3">
-                <div className="text-xs text-muted-foreground">Annulées</div>
-                <div className="text-xl font-bold text-muted-foreground">{stats.cancelled}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-3">
-                <div className="text-xs text-muted-foreground">Suspendues</div>
-                <div className="text-xl font-bold text-amber-600">{stats.onHold}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-3">
-                <div className="text-xs text-muted-foreground">Revenus</div>
-                <div className="text-xl font-bold text-primary">${stats.revenue.toFixed(2)}</div>
-              </CardContent>
-            </Card>
-          </div>
+          <MutationStatsCards stats={stats} />
 
-          {/* Filters - with type filter */}
-          <div className="flex flex-col sm:flex-row gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Rechercher..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 h-9 text-sm"
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[150px] h-9">
-                <SelectValue placeholder="Statut" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="_all">Tous statuts</SelectItem>
-                <SelectItem value="pending">En attente</SelectItem>
-                <SelectItem value="in_review">En cours</SelectItem>
-                <SelectItem value="approved">Approuvée</SelectItem>
-                <SelectItem value="rejected">Rejetée</SelectItem>
-                <SelectItem value="on_hold">Suspendue</SelectItem>
-                <SelectItem value="cancelled">Annulée</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-full sm:w-[150px] h-9">
-                <SelectValue placeholder="Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="_all">Tous types</SelectItem>
-                {MUTATION_TYPES.map(t => (
-                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <MutationFilters
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            statusFilter={statusFilter}
+            onStatusChange={setStatusFilter}
+            typeFilter={typeFilter}
+            onTypeChange={setTypeFilter}
+          />
 
           {/* Table */}
           {loading ? (
@@ -678,102 +608,12 @@ const AdminMutationRequests: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="config" className="space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
-                  Configuration des frais
-                </CardTitle>
-                <Button 
-                  size="sm" 
-                  onClick={() => {
-                    resetFeeForm();
-                    setShowFeeDialog(true);
-                  }}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Ajouter
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {/* Active fees */}
-                {fees.filter(f => f.is_active).map((fee) => (
-                  <div 
-                    key={fee.id}
-                    className="flex items-center justify-between p-3 border rounded-lg"
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm">{fee.fee_name}</span>
-                        {fee.is_mandatory && (
-                          <Badge variant="secondary" className="text-[10px]">Obligatoire</Badge>
-                        )}
-                      </div>
-                      {fee.description && (
-                        <p className="text-xs text-muted-foreground mt-0.5">{fee.description}</p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-primary">${Number(fee.amount_usd).toFixed(2)}</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0"
-                        onClick={() => openEditFee(fee)}
-                      >
-                        <Edit2 className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0 text-destructive"
-                        onClick={() => handleToggleFeeActive(fee.id, true)}
-                        title="Désactiver"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-
-                {/* Inactive fees — reactivation */}
-                {fees.filter(f => !f.is_active).length > 0 && (
-                  <>
-                    <Separator className="my-3" />
-                    <p className="text-xs font-medium text-muted-foreground">Frais désactivés</p>
-                    {fees.filter(f => !f.is_active).map((fee) => (
-                      <div 
-                        key={fee.id}
-                        className="flex items-center justify-between p-3 border rounded-lg opacity-60"
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm line-through">{fee.fee_name}</span>
-                            <Badge variant="outline" className="text-[10px]">Inactif</Badge>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground text-sm">${Number(fee.amount_usd).toFixed(2)}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0 text-green-600"
-                            onClick={() => handleToggleFeeActive(fee.id, false)}
-                            title="Réactiver"
-                          >
-                            <RotateCcw className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <MutationFeesConfig
+            fees={fees}
+            onAdd={() => { resetFeeForm(); setShowFeeDialog(true); }}
+            onEdit={openEditFee}
+            onToggleActive={handleToggleFeeActive}
+          />
         </TabsContent>
       </Tabs>
 
