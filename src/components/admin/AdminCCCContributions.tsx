@@ -983,21 +983,13 @@ const AdminCCCContributions: React.FC = () => {
             />
           </div>
 
-          {/* Bulk actions bar */}
-          {selectedIds.size > 0 && (
-            <div className="flex flex-wrap items-center gap-2 mb-3 p-2 bg-muted rounded-md">
-              <span className="text-xs font-medium">{selectedIds.size} sélectionnée(s)</span>
-              <Button size="sm" variant="default" disabled={bulkBusy} onClick={bulkApprove} className="h-7 text-xs">
-                <CheckCircle className="h-3 w-3 mr-1" /> Approuver
-              </Button>
-              <Button size="sm" variant="destructive" disabled={bulkBusy} onClick={bulkReject} className="h-7 text-xs">
-                <XCircle className="h-3 w-3 mr-1" /> Rejeter
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())} className="h-7 text-xs">
-                Désélectionner
-              </Button>
-            </div>
-          )}
+          <CCCBulkActions
+            selectedCount={selectedIds.size}
+            busy={bulkBusy}
+            onApprove={bulkApprove}
+            onReject={bulkReject}
+            onClear={() => setSelectedIds(new Set())}
+          />
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-6 h-8 md:h-10">
