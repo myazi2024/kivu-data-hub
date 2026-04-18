@@ -58,6 +58,7 @@ export const useCCCFormState = ({
   const formDirtyRef = useRef(false);
   const isLoadingFromDbRef = useRef(false);
   const isClosingAfterSuccessRef = useRef(false);
+  const lastIrlValidRefsRef = useRef<string>('');
   const [showQuickAuth, setShowQuickAuth] = useState(false);
   const [pendingSubmission, setPendingSubmission] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -627,8 +628,15 @@ export const useCCCFormState = ({
 
   const removeParcelSide = (index: number) => {
     if (parcelSides.length > 2) {
-      setParcelSides(parcelSides.filter((_, i) => i !== index));
-      if (index < gpsCoordinates.length) setGpsCoordinates(gpsCoordinates.filter((_, i) => i !== index));
+      setParcelSides(parcelSides.filter((_, i) => i !== index).map((s, i) => ({
+        ...s,
+        name: /^Côté \d+$/.test(s.name) ? `Côté ${i + 1}` : s.name,
+      })));
+      // C4: renuméroter les bornes GPS restantes pour rester cohérent avec les côtés
+      setGpsCoordinates(gpsCoordinates.filter((_, i) => i !== index).map((g, i) => ({
+        ...g,
+        borne: `Borne ${i + 1}`,
+      })));
       markDirty();
     }
   };
@@ -1219,6 +1227,7 @@ export const useCCCFormState = ({
   }, []);
 
   // Purge / nettoyage des IRL orphelins quand l'usage des constructions change
+  // C3: Guard via ref pour éviter le re-toast à chaque keystroke sur taxRecords
   useEffect(() => {
     const validRefs = new Set<string>();
     if (formData.declaredUsage === 'Location') validRefs.add('main');
@@ -1226,14 +1235,12 @@ export const useCCCFormState = ({
       if (c.declaredUsage === 'Location') validRefs.add(`additional:${idx}`);
     });
 
-    const orphans = taxRecords.filter(t =>
-      t.taxType === 'Impôt sur les revenus locatifs' &&
-      t.constructionRef &&
-      !validRefs.has(t.constructionRef)
-    );
+    const validRefsKey = Array.from(validRefs).sort().join('|');
+    // Si l'état "Location" n'a pas changé depuis la dernière exécution, ne rien faire
+    if (validRefsKey === lastIrlValidRefsRef.current) return;
+    lastIrlValidRefsRef.current = validRefsKey;
 
     if (validRefs.size === 0) {
-      // Plus aucune Location → purger tous les IRL
       const hasIrl = taxRecords.some(t => t.taxType === 'Impôt sur les revenus locatifs');
       if (hasIrl) {
         setTaxRecords(prev => prev.filter(t => t.taxType !== 'Impôt sur les revenus locatifs'));
@@ -1242,8 +1249,15 @@ export const useCCCFormState = ({
           description: "Les entrées « Impôt sur les revenus locatifs » ont été retirées car aucune construction n'est en location.",
         });
       }
-    } else if (orphans.length > 0) {
-      // Purger seulement les IRL dont la construction n'est plus en Location
+      return;
+    }
+
+    const orphans = taxRecords.filter(t =>
+      t.taxType === 'Impôt sur les revenus locatifs' &&
+      t.constructionRef &&
+      !validRefs.has(t.constructionRef)
+    );
+    if (orphans.length > 0) {
       setTaxRecords(prev => prev.filter(t =>
         !(t.taxType === 'Impôt sur les revenus locatifs' && t.constructionRef && !validRefs.has(t.constructionRef))
       ));
@@ -1252,7 +1266,7 @@ export const useCCCFormState = ({
         description: `${orphans.length} déclaration(s) IRL retirée(s) : la construction associée n'est plus en location.`,
       });
     }
-  }, [formData.declaredUsage, additionalConstructions, taxRecords, toast]);
+  }, [formData.declaredUsage, additionalConstructions]);
 
   // Load from localStorage
   useEffect(() => { if (open && !editingContributionId) loadFormDataFromStorage(); }, [open, editingContributionId]);
@@ -1412,6 +1426,10 @@ export const useCCCFormState = ({
     if (isLoadingFromDbRef.current) return;
     const sides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
     if (sides.length < 3) return;
+    // C5: si l'utilisateur a déclaré 4 côtés ou plus mais n'en a renseigné que 3,
+    // on ne calcule rien pour éviter une surface fausse silencieuse.
+    if (parcelSides.length >= 4 && sides.length < parcelSides.length) return;
+
     if (sides.length === 3) {
       const lengths = sides.map(s => parseFloat(s.length));
       const s = (lengths[0] + lengths[1] + lengths[2]) / 2;
@@ -1423,11 +1441,8 @@ export const useCCCFormState = ({
     if (sides.length === 4) {
       const lengths = sides.map(s => parseFloat(s.length));
       const tolerance = (side: number) => Math.max(0.5, side * 0.01);
-      // FIX: Compare opposite sides (Nord↔Sud = 0↔1, Est↔Ouest = 2↔3)
       const isRectangle = Math.abs(lengths[0] - lengths[1]) < tolerance(lengths[0]) && Math.abs(lengths[2] - lengths[3]) < tolerance(lengths[2]);
-      // FIX: For rectangle, area = side_a * side_b where a and b are adjacent (Nord * Est)
       if (isRectangle) { handleInputChange('areaSqm', parseFloat((lengths[0] * lengths[2]).toFixed(2))); return; }
-      // FIX: Brahmagupta for cyclic quadrilateral — sides must be in order (adjacent): Nord, Est, Sud, Ouest
       const a = lengths[0], b = lengths[2], c = lengths[1], d = lengths[3];
       const total = a + b + c + d;
       if (a >= total - a || b >= total - b || c >= total - c || d >= total - d) return;
