@@ -18,6 +18,7 @@ import { exportToCSVWithAudit } from '@/utils/csvExportSecure';
 import { supabase } from '@/integrations/supabase/client';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ROLE_CONFIG, ROLE_HIERARCHY, type AppRole } from '@/constants/roles';
+import { useUserPermission } from '@/hooks/useUserPermissions';
 
 interface AdminUsersProps {
   onRefresh: () => void;
@@ -25,6 +26,7 @@ interface AdminUsersProps {
 
 const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
   const { users, loading, fetchUsers, blockUser, unblockUser } = useUserManagement();
+  const canExportPii = useUserPermission('users', 'export_pii');
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('_all');
   const [statusFilter, setStatusFilter] = useState<string>('_all');
@@ -107,9 +109,18 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
             </CardTitle>
             <div className="flex gap-1.5">
               <BulkActionsDialog selectedUsers={selectedUsers} onComplete={() => { fetchUsers(); setSelectedUsers([]); }} />
-              <Button onClick={handleExportCSV} variant="outline" size="sm" className="gap-1.5 h-7 text-xs">
-                <Download className="w-3 h-3" /> Exporter CSV
-              </Button>
+              {canExportPii !== false && (
+                <Button
+                  onClick={handleExportCSV}
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 h-7 text-xs"
+                  disabled={canExportPii === null}
+                  title="Permission requise: users.export_pii"
+                >
+                  <Download className="w-3 h-3" /> Exporter CSV
+                </Button>
+              )}
             </div>
           </div>
 
