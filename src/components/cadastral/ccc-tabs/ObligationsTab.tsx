@@ -203,6 +203,52 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                   </div>
                 </div>
 
+                {/* IRL : sélecteur de la construction concernée (1 IRL ↔ 1 construction Location) */}
+                {tax.taxType === 'Impôt sur les revenus locatifs' && (() => {
+                  const allRefs = buildRentalConstructionRefs(
+                    formData.declaredUsage,
+                    Array.isArray(formData.additionalConstructions) ? (formData.additionalConstructions as any) : []
+                  );
+                  const usedRefs = new Set(
+                    taxRecords
+                      .filter((t, i) => i !== index && t.taxType === 'Impôt sur les revenus locatifs' && t.constructionRef)
+                      .map(t => t.constructionRef as string)
+                  );
+                  const isMissing = !tax.constructionRef;
+                  return (
+                    <div className="space-y-1">
+                      <Label className="text-sm font-medium">
+                        Construction concernée <span className="text-destructive">*</span>
+                      </Label>
+                      <Select
+                        value={tax.constructionRef || ''}
+                        onValueChange={(value) => updateTaxRecord(index, 'constructionRef', value)}
+                      >
+                        <SelectTrigger className={`h-10 text-sm rounded-xl ${isMissing ? 'border-destructive ring-1 ring-destructive/40' : ''}`}>
+                          <SelectValue placeholder="Sélectionner la construction louée" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          {allRefs.length === 0 ? (
+                            <div className="px-2 py-1.5 text-xs text-muted-foreground">Aucune construction en location.</div>
+                          ) : (
+                            allRefs.map(opt => {
+                              const taken = usedRefs.has(opt.ref) && opt.ref !== tax.constructionRef;
+                              return (
+                                <SelectItem key={opt.ref} value={opt.ref} disabled={taken}>
+                                  {opt.label}{taken ? ' (déjà déclarée)' : ''}
+                                </SelectItem>
+                              );
+                            })
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[11px] text-muted-foreground">
+                        L'IRL est rattaché à une construction louée précise. 1 IRL par construction en location.
+                      </p>
+                    </div>
+                  );
+                })()}
+
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
                     <Label className="text-sm font-medium">Montant (USD)</Label>
