@@ -8,13 +8,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Gift, Eye, Ban, TrendingUp, DollarSign, AlertCircle, Search, Download } from 'lucide-react';
+import { Gift, Eye, Ban, TrendingUp, DollarSign, AlertCircle, Search, Download, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { getCodeStatus } from '@/utils/cccCodeUtils';
 import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/shared/PaginationControls';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { OrphanCodesPanel } from './ccc/OrphanCodesPanel';
 
 interface CCCCode {
   id: string;
@@ -150,7 +152,21 @@ export default function AdminCCCCodes() {
   }
 
   return (
-    <div className="space-y-4">
+    <Tabs defaultValue="all" className="space-y-4">
+      <TabsList className="grid w-full grid-cols-2 max-w-md">
+        <TabsTrigger value="all" className="text-xs sm:text-sm">
+          <Gift className="h-3 w-3 mr-1" /> Tous les codes
+        </TabsTrigger>
+        <TabsTrigger value="orphan" className="text-xs sm:text-sm">
+          <AlertTriangle className="h-3 w-3 mr-1" /> Codes orphelins
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="orphan">
+        <OrphanCodesPanel />
+      </TabsContent>
+
+      <TabsContent value="all" className="space-y-4">
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         <Card>
