@@ -112,6 +112,7 @@ export const menuItems = [
       { icon: Settings, label: 'Mode de Paiement', value: 'payment-mode', badge: null, keywords: ['test', 'production', 'sandbox', 'live'] },
       { icon: Layers, label: 'Intégration Services', value: 'payment-integration', badge: null, keywords: ['api', 'webhook', 'connexion', 'service'] },
       { icon: TrendingUp, label: 'Monitoring', value: 'payment-monitoring', badge: null, keywords: ['surveillance', 'suivi', 'temps réel', 'alertes'] },
+      { icon: Layers, label: 'Vue Unifiée', value: 'unified-payments', badge: null, keywords: ['unifié', 'agrégé', 'tous paiements', 'sources'] },
     ]
   },
   {
@@ -123,6 +124,7 @@ export const menuItems = [
       { icon: ScrollText, label: 'Transactions', value: 'transactions', badge: null, keywords: ['historique', 'opérations', 'mouvements'] },
       { icon: DollarSign, label: 'Commissions', value: 'commissions', badge: null, keywords: ['gain', 'marge', 'pourcentage', 'frais'] },
       { icon: Percent, label: 'Commissions Revendeurs', value: 'reseller-commissions', badge: null, keywords: ['agent', 'partenaire', 'commission'] },
+      { icon: DollarSign, label: 'Ventes Revendeurs', value: 'reseller-sales', badge: null, keywords: ['vente', 'revendeur', 'commission générée', 'pipeline'] },
       { icon: ShoppingCart, label: 'Revendeurs', value: 'resellers', badge: null, keywords: ['agent', 'distributeur', 'partenaire'] },
       { icon: Tag, label: 'Codes de Remise', value: 'discount-codes', badge: null, keywords: ['promo', 'réduction', 'coupon', 'remise'] },
     ]
