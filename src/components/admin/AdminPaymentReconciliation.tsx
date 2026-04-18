@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/shared/PaginationControls';
+import BillingAnomaliesPanel from '@/components/admin/billing/BillingAnomaliesPanel';
 
 interface PaymentTransaction {
   id: string;
@@ -168,6 +169,9 @@ const AdminPaymentReconciliation = () => {
           </div>
         </div>
       </Card>
+
+      {/* Anomalies (P1) */}
+      <BillingAnomaliesPanel />
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-2">

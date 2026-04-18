@@ -152,6 +152,150 @@ export type Database = {
         }
         Relationships: []
       }
+      archived_invoices: {
+        Row: {
+          archive_reason: string | null
+          archived_at: string
+          archived_by: string | null
+          client_email: string
+          client_name: string | null
+          client_organization: string | null
+          created_at: string
+          currency_code: string
+          discount_amount_usd: number | null
+          discount_code_used: string | null
+          exchange_rate_used: number
+          geographical_zone: string | null
+          id: string
+          invoice_number: string
+          original_amount_usd: number | null
+          parcel_number: string
+          payment_id: string | null
+          payment_method: string | null
+          search_date: string
+          selected_services: Json
+          status: string
+          total_amount_usd: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          archive_reason?: string | null
+          archived_at?: string
+          archived_by?: string | null
+          client_email: string
+          client_name?: string | null
+          client_organization?: string | null
+          created_at?: string
+          currency_code?: string
+          discount_amount_usd?: number | null
+          discount_code_used?: string | null
+          exchange_rate_used?: number
+          geographical_zone?: string | null
+          id?: string
+          invoice_number: string
+          original_amount_usd?: number | null
+          parcel_number: string
+          payment_id?: string | null
+          payment_method?: string | null
+          search_date?: string
+          selected_services: Json
+          status?: string
+          total_amount_usd?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          archive_reason?: string | null
+          archived_at?: string
+          archived_by?: string | null
+          client_email?: string
+          client_name?: string | null
+          client_organization?: string | null
+          created_at?: string
+          currency_code?: string
+          discount_amount_usd?: number | null
+          discount_code_used?: string | null
+          exchange_rate_used?: number
+          geographical_zone?: string | null
+          id?: string
+          invoice_number?: string
+          original_amount_usd?: number | null
+          parcel_number?: string
+          payment_id?: string | null
+          payment_method?: string | null
+          search_date?: string
+          selected_services?: Json
+          status?: string
+          total_amount_usd?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      archived_transactions: {
+        Row: {
+          amount_usd: number
+          archive_reason: string | null
+          archived_at: string
+          archived_by: string | null
+          created_at: string | null
+          currency_code: string
+          error_message: string | null
+          exchange_rate_used: number
+          id: string
+          invoice_id: string | null
+          metadata: Json | null
+          payment_method: string
+          phone_number: string | null
+          provider: string
+          status: string
+          transaction_reference: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount_usd?: number
+          archive_reason?: string | null
+          archived_at?: string
+          archived_by?: string | null
+          created_at?: string | null
+          currency_code?: string
+          error_message?: string | null
+          exchange_rate_used?: number
+          id?: string
+          invoice_id?: string | null
+          metadata?: Json | null
+          payment_method: string
+          phone_number?: string | null
+          provider: string
+          status?: string
+          transaction_reference?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount_usd?: number
+          archive_reason?: string | null
+          archived_at?: string
+          archived_by?: string | null
+          created_at?: string | null
+          currency_code?: string
+          error_message?: string | null
+          exchange_rate_used?: number
+          id?: string
+          invoice_id?: string | null
+          metadata?: Json | null
+          payment_method?: string
+          phone_number?: string | null
+          provider?: string
+          status?: string
+          transaction_reference?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       article_favorites: {
         Row: {
           article_id: string
@@ -321,6 +465,42 @@ export type Database = {
           table_name?: string | null
           user_agent?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      billing_config_audit: {
+        Row: {
+          action: string
+          admin_id: string | null
+          admin_name: string | null
+          created_at: string
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+          record_id: string | null
+          table_name: string
+        }
+        Insert: {
+          action: string
+          admin_id?: string | null
+          admin_name?: string | null
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          table_name: string
+        }
+        Update: {
+          action?: string
+          admin_id?: string | null
+          admin_name?: string | null
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          table_name?: string
         }
         Relationships: []
       }
@@ -4828,6 +5008,16 @@ export type Database = {
       }
     }
     Views: {
+      billing_anomalies: {
+        Row: {
+          amount: number | null
+          anomaly_type: string | null
+          created_at: string | null
+          ref_id: string | null
+          related_id: string | null
+        }
+        Relationships: []
+      }
       cadastral_orphan_codes: {
         Row: {
           code: string | null
@@ -5029,6 +5219,7 @@ export type Database = {
       }
     }
     Functions: {
+      auto_cancel_stale_pending: { Args: never; Returns: number }
       calculate_ccc_value: {
         Args: { contribution_id: string }
         Returns: number
@@ -5074,6 +5265,7 @@ export type Database = {
           reasons: string[]
         }[]
       }
+      expire_discount_codes: { Args: never; Returns: number }
       expire_outdated_ccc_codes: { Args: never; Returns: number }
       export_user_data: { Args: { target_user_id: string }; Returns: Json }
       extract_owner_names_from_details: {
@@ -5242,6 +5434,7 @@ export type Database = {
         Args: { contribution_id: string }
         Returns: string
       }
+      purge_test_billing_data: { Args: { p_reason?: string }; Returns: Json }
       user_has_permission: {
         Args: { _action: string; _resource: string; _user_id: string }
         Returns: boolean
