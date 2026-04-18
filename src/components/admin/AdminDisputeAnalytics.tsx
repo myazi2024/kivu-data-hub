@@ -20,14 +20,16 @@ interface Dispute {
   dispute_start_date: string | null;
 }
 
+// Aligned with DISPUTE_NATURES in src/utils/disputeSharedTypes.ts (#audit)
 const NATURE_LABELS: Record<string, string> = {
-  limite_terrain: 'Limite de terrain',
-  revendication_propriete: 'Revendication de propriété',
-  heritage_succession: 'Héritage / Succession',
+  succession: 'Litige successoral',
+  delimitation: 'Conflit de délimitation',
+  construction_anarchique: 'Construction anarchique',
+  expropriation: 'Expropriation',
   double_vente: 'Double vente',
   occupation_illegale: 'Occupation illégale',
-  servitude: 'Servitude',
-  empiètement: 'Empiètement',
+  contestation_titre: 'Contestation de titre',
+  servitude: 'Litige de servitude',
   autre: 'Autre',
 };
 
