@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Loader2, Info, Trash2, RefreshCw, RotateCcw, Play } from 'lucide-react';
 import type { TestDataStats } from './types';
+import TestDataExportButton from './TestDataExportButton';
 
 interface TestDataStatsCardProps {
   stats: TestDataStats;

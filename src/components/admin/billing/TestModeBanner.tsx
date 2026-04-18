@@ -27,17 +27,17 @@ const TestModeBanner = () => {
   if (ratio === null || ratio < 0.5) return null;
 
   return (
-    <Card className="p-3 border-amber-500/50 bg-amber-50 dark:bg-amber-950/30">
+    <Card className="w-full p-3 border-amber-500/50 bg-amber-50 dark:bg-amber-950/30">
       <div className="flex items-start gap-2">
         <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
-        <div className="text-xs">
+        <div className="text-xs min-w-0 flex-1">
           <p className="font-semibold text-amber-700 dark:text-amber-300">
             Mode test actif — {Math.round(ratio * 100)}% des factures sont des tests
           </p>
           <p className="text-[10px] text-amber-600/80 dark:text-amber-400/80 mt-0.5">
             Les revenus affichés incluent des transactions de test. Utilisez la purge
-            (Factures &rarr; Purger TEST) pour archiver les données fictives avant la mise
-            en production.
+            (Mode Test &rarr; Nettoyer tout) pour supprimer les données fictives avant la
+            mise en production.
           </p>
         </div>
       </div>
