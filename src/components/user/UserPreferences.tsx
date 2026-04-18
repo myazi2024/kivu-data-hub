@@ -3,10 +3,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Download, Trash2, Bell, Mail, Shield, Loader2 } from 'lucide-react';
+import { trackEvent } from '@/lib/analytics';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,6 +41,9 @@ export const UserPreferences: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [emailConfirmation, setEmailConfirmation] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchPreferences();
@@ -123,38 +128,43 @@ export const UserPreferences: React.FC = () => {
 
   const deleteAccount = async () => {
     if (!user) return;
-
+    setDeleting(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('user_id', user.id);
+      // Server-side, RGPD-compliant deletion through SECURITY DEFINER RPC.
+      // Verifies email match server-side, anonymizes profile, and audits.
+      const { error } = await supabase.rpc('request_account_deletion', {
+        confirmation_email: emailConfirmation.trim(),
+      });
 
       if (error) throw error;
 
+      trackEvent('user_account_delete_request');
       await supabase.auth.signOut();
-      
-      toast({
-        title: 'Compte supprimé'
-      });
 
+      toast({ title: 'Compte supprimé', description: 'Votre compte a été désactivé.' });
       window.location.href = '/';
     } catch (error: any) {
       toast({
         title: 'Erreur',
-        description: error.message,
-        variant: 'destructive'
+        description: error.message?.includes('Email confirmation does not match')
+          ? "L'email saisi ne correspond pas à votre compte."
+          : error.message || 'Impossible de supprimer le compte',
+        variant: 'destructive',
       });
+    } finally {
+      setDeleting(false);
     }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground motion-reduce:animate-none" />
       </div>
     );
   }
+
+  const emailMatches = emailConfirmation.trim().toLowerCase() === (user?.email ?? '').toLowerCase();
 
   return (
     <div className="space-y-3">
@@ -167,7 +177,7 @@ export const UserPreferences: React.FC = () => {
             </div>
             <h3 className="text-sm font-semibold">Notifications</h3>
           </div>
-          
+
           <div className="space-y-3">
             <div className="flex items-center justify-between p-2.5 bg-muted/30 rounded-xl">
               <div className="flex items-center gap-2">
@@ -209,7 +219,7 @@ export const UserPreferences: React.FC = () => {
             </div>
             <h3 className="text-sm font-semibold">Confidentialité</h3>
           </div>
-          
+
           <div className="flex items-center justify-between p-2.5 bg-muted/30 rounded-xl">
             <div>
               <p className="text-xs font-medium">Partage de données</p>
@@ -232,37 +242,62 @@ export const UserPreferences: React.FC = () => {
             </div>
             <h3 className="text-sm font-semibold">Mes données (RGPD)</h3>
           </div>
-          
+
           <div className="space-y-2">
-            <Button 
-              onClick={exportData} 
-              variant="outline" 
-              size="sm" 
+            <Button
+              onClick={exportData}
+              variant="outline"
+              size="sm"
               className="w-full justify-start gap-2 h-9 rounded-xl text-xs"
               disabled={exporting}
             >
-              {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+              {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" /> : <Download className="h-3.5 w-3.5" />}
               Exporter mes données
             </Button>
 
-            <AlertDialog>
+            <AlertDialog
+              open={deleteDialogOpen}
+              onOpenChange={(o) => {
+                setDeleteDialogOpen(o);
+                if (!o) setEmailConfirmation('');
+              }}
+            >
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" size="sm" className="w-full justify-start gap-2 h-9 rounded-xl text-xs">
                   <Trash2 className="h-3.5 w-3.5" />
                   Supprimer mon compte
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent className="max-w-[340px] rounded-2xl">
+              <AlertDialogContent className="max-w-[360px] rounded-2xl">
                 <AlertDialogHeader>
                   <AlertDialogTitle className="text-sm">Supprimer le compte ?</AlertDialogTitle>
                   <AlertDialogDescription className="text-xs">
-                    Cette action est irréversible. Toutes vos données seront supprimées.
+                    Cette action est irréversible. Vos données personnelles seront anonymisées
+                    et votre profil désactivé. Pour confirmer, saisissez votre email&nbsp;:
+                    <span className="block mt-1 font-medium text-foreground">{user?.email}</span>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
+                <div className="py-2">
+                  <Label htmlFor="del-email" className="text-[11px]">Confirmer l'email</Label>
+                  <Input
+                    id="del-email"
+                    type="email"
+                    autoComplete="off"
+                    value={emailConfirmation}
+                    onChange={(e) => setEmailConfirmation(e.target.value)}
+                    placeholder={user?.email ?? ''}
+                    className="h-9 text-sm rounded-xl mt-1"
+                    disabled={deleting}
+                  />
+                </div>
                 <AlertDialogFooter className="gap-2">
-                  <AlertDialogCancel className="text-xs h-8">Annuler</AlertDialogCancel>
-                  <AlertDialogAction onClick={deleteAccount} className="bg-destructive text-xs h-8">
-                    Supprimer
+                  <AlertDialogCancel className="text-xs h-8" disabled={deleting}>Annuler</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={(e) => { e.preventDefault(); deleteAccount(); }}
+                    className="bg-destructive text-xs h-8"
+                    disabled={!emailMatches || deleting}
+                  >
+                    {deleting ? 'Suppression…' : 'Supprimer définitivement'}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
