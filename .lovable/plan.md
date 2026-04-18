@@ -1,41 +1,52 @@
 
-## Audit du menu "Données foncières"
+## Lot M2 — Modularisation de `DRCInteractiveMap.tsx` (930 l)
 
-Avant de présenter un plan d'action, j'ai besoin d'explorer le module pour produire un audit fondé sur le code réel (pas sur des suppositions). Je vais lire les fichiers clés du module Analytics, puis livrer l'audit dans une forme actionnable.
+### Objectif
+Découper le composant monolithique de la carte interactive `/map` en sous-modules à responsabilité unique, sans changer le comportement observable. Cible : composant racine ~250 l + 5 sous-modules.
 
-### Périmètre de l'audit
-- Page d'entrée Analytics + routing
-- Hook `useLandDataAnalytics` (fetch, pagination, filtres test)
-- Composants de graphiques + registres (chart registry, cross-variable registry)
-- Carte interactive (`/map`) — drilldown 4 niveaux
-- Configuration admin des analytics (ordre, types, visibilité)
-- Performance, sécurité, dette technique connue
+### Découpage proposé
 
-### Axes évalués
-1. **Architecture & modularité** — taille des fichiers, séparation des responsabilités, respect du seuil 1000l
-2. **Performance** — pagination, mémoïsation, lazy loading, taille des payloads, cache React Query
-3. **Sécurité & RLS** — filtrage TEST côté client vs serveur, exposition PII, politiques RLS sur les tables sources
-4. **Cohérence des données** — enrichissement parcel_id/parcel_number, normalisation des statuts, alignement avec les specs (mutation, expertise, litige, etc.)
-5. **UX & accessibilité** — responsive (875px viewport), états vides/loading/erreur, filtres, exports
-6. **Configuration admin** — pilotage dynamique (ordre, types), couverture des entités
-7. **Carte interactive** — drilldown, bornes GeoJSON, performance des couches
-8. **Dette technique connue** — référencer mem `land-data-analytics-debt-fr` et confirmer/mettre à jour
+```text
+src/components/map/
+├── DRCInteractiveMap.tsx          (~250 l) — orchestrateur
+├── meta/
+│   └── mapMeta.ts                 (~80 l)  — constantes (niveaux, couleurs, libellés)
+├── hooks/
+│   ├── useMapDrilldown.ts         (~120 l) — état niveau (province→territoire→commune→quartier)
+│   ├── useMapIndicators.ts        (~150 l) — calculs KPI par feature (parcelles, titres, litiges…)
+│   └── useMapGeoData.ts           (~80 l)  — chargement GeoJSON 4 niveaux + cache
+├── layers/
+│   ├── ProvinceLayer.tsx          (~100 l) — rendu SVG niveau 1
+│   ├── TerritoryLayer.tsx         (~100 l) — niveau 2
+│   ├── MunicipalityLayer.tsx      (~100 l) — niveau 3
+│   └── QuartierLayer.tsx          (~100 l) — niveau 4
+└── ui/
+    ├── MapKPICards.tsx            (~120 l) — cartes d'indicateurs latérales
+    ├── MapBreadcrumb.tsx          (~60 l)  — fil d'Ariane drilldown
+    └── MapLegend.tsx              (~80 l)  — légende couleur/seuils
+```
 
-### Livrables
-- Rapport structuré par axe : **constats → sévérité (bloquant / majeur / mineur) → recommandation**
-- Top 5 actions prioritaires avec estimation d'effort
-- Backlog de refactor proposé (lots indépendants, à valider avant exécution)
+### Garanties non-régression
+- Comportement identique : même drilldown 4 niveaux, mêmes seuils, mêmes couleurs (cf. mem `interactive-map-layers-fr`)
+- Mêmes KPI, mêmes formats d'affichage, même fullscreen
+- Mêmes données GeoJSON sources (aucun changement de fetch)
+- `Map.tsx` (page) inchangé : importe toujours `DRCInteractiveMap` avec la même prop `onFullscreenChange`
 
-### Étapes d'exploration (read-only)
-1. Lire les mems pertinents : `land-data-analytics-structure-fr`, `land-data-analytics-debt-fr`, `analytics-config-management-fr`, `cross-variable-analytics-fr`, `interactive-map-layers-fr`, `supabase-data-fetching-pagination-analytics-fr`, `status-normalization-pattern-fr`
-2. Lister `src/components/analytics/`, `src/components/cadastral-map/`, `src/pages/` (routes Analytics + Map)
-3. Lire `useLandDataAnalytics.tsx` (déjà partiellement vu), les registres de charts, la page racine, la carte
-4. Vérifier les politiques RLS des tables sources (`supabase--read_query` sur `pg_policies`) pour les tables listées dans `TEST_FILTER_COLUMN`
-5. Mesurer la taille des fichiers > 500 lignes du module
-6. Vérifier le routing (où `/map` et la page analytics sont déclarés) pour confirmer le lazy loading
+### Plan d'exécution (4 sous-étapes commitables)
+1. **M2.1** — Extraire `mapMeta.ts` + `useMapGeoData` + `useMapDrilldown` (état pur, pas de UI)
+2. **M2.2** — Extraire `useMapIndicators` (logique KPI mémoïsée)
+3. **M2.3** — Extraire les 4 `*Layer.tsx` (rendu SVG par niveau)
+4. **M2.4** — Extraire `MapKPICards` + `MapBreadcrumb` + `MapLegend`, finaliser orchestrateur
 
-### Question préalable
+### Validation après chaque sous-étape
+- TypeScript compile
+- Test manuel `/map` : drilldown province → territoire → commune → quartier, retour, fullscreen, KPI cohérents
+- Aucun changement de contrat avec `Map.tsx`
 
-Souhaitez-vous que je couvre **toute la zone "Données foncières"** (page Analytics + carte interactive `/map` + configuration admin) ou seulement un sous-ensemble (p. ex. juste les graphiques, juste la carte, juste l'admin) ? Cela conditionne l'effort d'exploration et la longueur du rapport final.
+### Notes
+- Pas de changement de logique métier, pas de changement de fetch, pas de changement RLS
+- Les Lots M1 (sécurité PII) et M5 (RPC server-side) restent à planifier ensuite séparément
+- Mémoriser la nouvelle architecture une fois M2 terminé (mise à jour de `mem://admin/land-data-analytics-debt-fr`)
 
-Si vous approuvez ce plan d'audit (et précisez le périmètre), je passe en mode default pour exécuter l'exploration et livrer le rapport.
+### Démarrage
+Je commence par **M2.1** (constantes + hooks de données/drilldown) après approbation. Confirmez-vous ?
