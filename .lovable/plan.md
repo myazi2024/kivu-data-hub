@@ -1,65 +1,41 @@
 
-## Étape 4/4 — Extraction de `useFormValidation` + finalisation orchestrateur
+## Audit du menu "Données foncières"
 
-### Objectif
-Dernière étape du Lot B : extraire la logique de validation/complétude vers `useFormValidation`, puis nettoyer `useCCCFormState.ts` pour qu'il devienne un orchestrateur fin (~400 l cible).
+Avant de présenter un plan d'action, j'ai besoin d'explorer le module pour produire un audit fondé sur le code réel (pas sur des suppositions). Je vais lire les fichiers clés du module Analytics, puis livrer l'audit dans une forme actionnable.
 
-### Périmètre extrait depuis `useCCCFormState.ts`
+### Périmètre de l'audit
+- Page d'entrée Analytics + routing
+- Hook `useLandDataAnalytics` (fetch, pagination, filtres test)
+- Composants de graphiques + registres (chart registry, cross-variable registry)
+- Carte interactive (`/map`) — drilldown 4 niveaux
+- Configuration admin des analytics (ordre, types, visibilité)
+- Performance, sécurité, dette technique connue
 
-**Vers `src/hooks/ccc/useFormValidation.ts`** :
-- `getMissingFields(formData, currentOwners, ...)` — calcul des champs manquants par onglet (déjà mémoïsé fix 3.8)
-- `isTabComplete(tabId)` — booléen par onglet
-- `isTabAccessible(tabId)` — règle de progression (onglet N accessible si N-1 complet)
-- `isFormValidForSubmission` — agrégat global (tous onglets complets + GPS + sound)
-- `getCompletenessScore()` — calcul du score 14 champs + GPS + Sound (aligné sur logique SQL backend, cf. mem score-completude-ccc)
+### Axes évalués
+1. **Architecture & modularité** — taille des fichiers, séparation des responsabilités, respect du seuil 1000l
+2. **Performance** — pagination, mémoïsation, lazy loading, taille des payloads, cache React Query
+3. **Sécurité & RLS** — filtrage TEST côté client vs serveur, exposition PII, politiques RLS sur les tables sources
+4. **Cohérence des données** — enrichissement parcel_id/parcel_number, normalisation des statuts, alignement avec les specs (mutation, expertise, litige, etc.)
+5. **UX & accessibilité** — responsive (875px viewport), états vides/loading/erreur, filtres, exports
+6. **Configuration admin** — pilotage dynamique (ordre, types), couverture des entités
+7. **Carte interactive** — drilldown, bornes GeoJSON, performance des couches
+8. **Dette technique connue** — référencer mem `land-data-analytics-debt-fr` et confirmer/mettre à jour
 
-### Signature
+### Livrables
+- Rapport structuré par axe : **constats → sévérité (bloquant / majeur / mineur) → recommandation**
+- Top 5 actions prioritaires avec estimation d'effort
+- Backlog de refactor proposé (lots indépendants, à valider avant exécution)
 
-```ts
-// src/hooks/ccc/useFormValidation.ts
-export function useFormValidation(params: {
-  formData: CadastralContributionData;
-  currentOwners: Owner[];
-  previousOwners: Owner[];
-  parcelSides: ParcelSide[];
-  gpsCoordinates: GPSCoord[];
-  buildingShapes: BuildingShape[];
-  soundLevel: number | null;
-  // autres slices nécessaires au calcul
-}): {
-  missingFields: Record<TabId, string[]>;
-  isTabComplete: (tabId: TabId) => boolean;
-  isTabAccessible: (tabId: TabId) => boolean;
-  isFormValidForSubmission: boolean;
-  completenessScore: number;
-};
-```
+### Étapes d'exploration (read-only)
+1. Lire les mems pertinents : `land-data-analytics-structure-fr`, `land-data-analytics-debt-fr`, `analytics-config-management-fr`, `cross-variable-analytics-fr`, `interactive-map-layers-fr`, `supabase-data-fetching-pagination-analytics-fr`, `status-normalization-pattern-fr`
+2. Lister `src/components/analytics/`, `src/components/cadastral-map/`, `src/pages/` (routes Analytics + Map)
+3. Lire `useLandDataAnalytics.tsx` (déjà partiellement vu), les registres de charts, la page racine, la carte
+4. Vérifier les politiques RLS des tables sources (`supabase--read_query` sur `pg_policies`) pour les tables listées dans `TEST_FILTER_COLUMN`
+5. Mesurer la taille des fichiers > 500 lignes du module
+6. Vérifier le routing (où `/map` et la page analytics sont déclarés) pour confirmer le lazy loading
 
-Tout en `useMemo` pour préserver le fix 3.8 (pas de recalcul à chaque frappe non liée).
+### Question préalable
 
-### Garanties non-régression
-- Mêmes règles, mêmes seuils, même score (référence : mem `score-completude-ccc`).
-- Mêmes textes/labels de champs manquants (utilisés dans bandeaux UI).
-- Contrat public de `useCCCFormState` strictement identique : `missingFields`, `isTabComplete`, `isTabAccessible`, `isFormValidForSubmission`, `completenessScore` continuent d'être exposés tels quels.
-- Aucun changement d'ordre des hooks (appel inconditionnel au même endroit).
+Souhaitez-vous que je couvre **toute la zone "Données foncières"** (page Analytics + carte interactive `/map` + configuration admin) ou seulement un sous-ensemble (p. ex. juste les graphiques, juste la carte, juste l'admin) ? Cela conditionne l'effort d'exploration et la longueur du rapport final.
 
-### Plan d'exécution
-1. Lire `src/hooks/useCCCFormState.ts` pour identifier précisément les blocs validation/complétude restants.
-2. Créer `src/hooks/ccc/useFormValidation.ts` avec la signature ci-dessus, tout mémoïsé.
-3. Dans `useCCCFormState.ts` :
-   - Supprimer les fonctions/`useMemo` extraits.
-   - Ajouter `const validation = useFormValidation({ ... })` et déstructurer dans le retour.
-4. Vérifier que le retour public reste byte-pour-byte compatible (mêmes clés, mêmes types).
-5. Mesurer la taille finale de `useCCCFormState.ts` (cible : ~400 l).
-
-### Validation post-implémentation
-- TypeScript compile sans erreur.
-- Bandeaux "champs manquants" affichent les mêmes messages.
-- Les onglets passent au vert dans le même ordre / aux mêmes seuils.
-- Score de complétude inchangé (vérifier sur un brouillon partiellement rempli).
-- Bouton de soumission s'active/désactive aux mêmes conditions.
-
-### Fichiers
-- **Créé** : `src/hooks/ccc/useFormValidation.ts` (~150 l)
-- **Modifié** : `src/hooks/useCCCFormState.ts` (suppression bloc validation, ajout appel sous-hook — orchestrateur final ~400 l)
-- **Inchangés** : 5 onglets, `CadastralContributionDialog`, `useCadastralContribution`, `useFormPersistence`, `useGeographicCascade`, `useConstructionCascade`
+Si vous approuvez ce plan d'audit (et précisez le périmètre), je passe en mode default pour exécuter l'exploration et livrer le rapport.
