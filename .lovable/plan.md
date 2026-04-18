@@ -1,36 +1,65 @@
 
 
-## Correctif : inverser la règle de validation de la date de mise en location
+## Plan : IRL par construction (1 IRL par construction en Location)
 
-### Problème
-Actuellement dans `RentalStartDateField.tsx` :
-- `maxDate = min(today, 31/12/constructionYear)` → la date doit être **≤** année de construction.
-- Message : "doit être ≤ 31/12/{constructionYear}".
+### Contexte
+La logique actuelle calcule déjà `rentalConstructionsCount` (principale + additionnelles en Location) et exige `irlEntriesCount === rentalConstructionsCount`. Mais :
+- L'option IRL dans le picklist « Type de taxe » dépend du flag global `hasAnyRentalUsage` → ✅ déjà OK dès qu'**au moins une** construction est en Location.
+- Manque : **identification de la construction** rattachée à chaque entrée IRL + UX qui guide à saisir 1 IRL par construction Location.
 
-C'est la règle inverse de la logique réelle : on ne peut pas mettre en location un bien **avant** sa construction. La date de mise en location doit être **≥** année de construction (et ≤ aujourd'hui).
+### Vérifications à faire
+1. Confirmer que IRL apparaît bien dès qu'**une seule** construction additionnelle est en Location (pas seulement la principale).
+2. Confirmer le shape de `taxRecords` (champ pour rattacher la construction).
 
-### Correction
+### Modifications
 
-Dans `src/components/cadastral/RentalStartDateField.tsx` :
+#### 1. Picklist IRL — confirmation logique globale
+- `useCCCFormState.ts` : `hasAnyRentalUsage = main.declaredUsage === 'Location' || additional.some(c => c.declaredUsage === 'Location')`.
+- Vérifier que le composant TaxesTab consomme ce flag (et non `formData.declaredUsage` seul). Corriger si régression.
 
-- `minDate` = `1er janvier de constructionYear` (inchangé sur le fond, mais devient la borne basse réelle).
-- `maxDate` = `today` (suppression du plafond au 31/12/constructionYear).
-- `disabled` du Calendar : `d > today || d < minDate`.
-- `isInvalid` : `selected < minDate || selected > today`.
-- Message d'aide : « La date doit être ≥ 01/01/{constructionYear} et ≤ aujourd'hui. »
-- Message d'erreur : « Date invalide : doit être ≥ 01/01/{constructionYear} (la mise en location ne peut précéder la construction). »
+#### 2. Rattachement IRL ↔ Construction
+- Étendre le type `TaxRecord` avec un champ optionnel `constructionRef` :
+  - `'main'` pour la construction principale
+  - `'additional:<id>'` pour une construction additionnelle (utiliser l'`id` stable déjà présent dans `additionalConstructions`)
+- Dans le formulaire de saisie d'une taxe IRL (sous-onglet Taxes) :
+  - Afficher un sélecteur **« Construction concernée »** uniquement quand `taxType === 'Impôt sur les revenus locatifs'`.
+  - Options = liste des constructions en Location (label : « Principale », « Construction #2 (Commerciale, 2018) », etc.).
+  - Filtrer les options déjà rattachées à un autre IRL pour empêcher les doublons.
+  - Champ obligatoire (bloque la sauvegarde de l'entrée IRL).
 
-### Propagation
-- `src/hooks/useCCCFormState.ts` : si une règle de validation `rentalStartDate ≤ constructionYear` a été ajoutée dans `getMissingFields` ou un effet, l'inverser en `rentalStartDate ≥ constructionYear`.
-- `src/components/cadastral/AdditionalConstructionBlock.tsx` : utilise déjà le composant partagé → aucun changement direct sauf si une validation locale a été dupliquée (à vérifier en édition).
+#### 3. Validation cohérence renforcée (`useCCCFormState.ts → getMissingFields`)
+- Calculer `rentalConstructionRefs = ['main' si Location, ...additional.filter(Location).map(id => 'additional:'+id)]`.
+- Calculer `irlRefs = taxRecords.filter(IRL).map(t => t.constructionRef)`.
+- Erreurs détaillées :
+  - **Manquants** : `rentalConstructionRefs` non couverts par `irlRefs` → message « IRL manquant pour : Construction principale, Construction #2 ».
+  - **Orphelins** : IRL avec `constructionRef` qui n'existe plus / n'est plus en Location → message « IRL orphelin à supprimer ».
+  - **Doublons** : 2 IRL pour la même construction → message « 2 IRL pour la même construction ».
+- Bloquer la soumission tant que la couverture n'est pas exacte (1 IRL ↔ 1 construction Location).
 
-### Fichiers
-- `src/components/cadastral/RentalStartDateField.tsx` (correctif principal)
-- `src/hooks/useCCCFormState.ts` (vérifier/corriger toute validation miroir)
+#### 4. Auto-purge cohérence
+- Effet existant qui purge IRL si plus aucune Location → étendre :
+  - Si une construction additionnelle passe de Location à autre chose : purger les IRL avec `constructionRef === 'additional:<id>'` correspondant + toast informatif.
+  - Si une construction additionnelle est supprimée : idem.
 
-### Validation
-- Sélectionner Location, année de construction = 2015 → calendrier autorise du 01/01/2015 à aujourd'hui ; refuse 2014 et antérieur.
-- Saisir une date 2010 → erreur explicite affichée.
-- Saisir 2020 → accepté.
-- Vérifier que le récapitulatif et la soumission ne bloquent plus pour ce motif.
+#### 5. Récapitulatif (ReviewTab)
+- Bloc « Cohérence IRL » : afficher la liste détaillée par construction :
+  - ✅ Principale (Résidentielle, 2010) → IRL 2024 renseigné
+  - ❌ Construction #2 (Commerciale, 2015) → IRL manquant
+- Lien « Aller à l'onglet Obligations ».
+
+#### 6. Persistance
+- Le champ `constructionRef` est stocké dans le JSONB `tax_history` (rétrocompatible, pas de migration SQL).
+- Pour les fiches existantes sans `constructionRef`, considérer comme rattachées à `main` par défaut.
+
+### Fichiers à modifier
+- `src/hooks/useCCCFormState.ts` (validation, purge, dérivés)
+- `src/components/cadastral/ccc-tabs/ObligationsTab/...` (form taxe : sélecteur Construction)
+- `src/components/cadastral/ccc-tabs/ReviewTab.tsx` (bilan détaillé par construction)
+- `src/types/...` (TaxRecord.constructionRef)
+
+### Validation E2E
+- 1 principale (Habitation) + 2 additionnelles (Location, Location) → IRL apparaît dans picklist, sélecteur Construction propose les 2 additionnelles, bloque tant que les 2 ne sont pas couvertes.
+- Passer 1 additionnelle en Habitation → IRL associé purgé automatiquement, toast affiché.
+- Récap affiche statut par construction.
+- Soumission bloquée si 1 construction Location sans IRL.
 
