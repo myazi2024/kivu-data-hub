@@ -7,11 +7,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Search, UserCheck, Clock, UserX, Pencil, Trash2, Eye, Download } from 'lucide-react';
+import { Plus, Search, UserCheck, Clock, UserX, Pencil, Trash2, Eye, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { exportRecordsToCSV } from '@/utils/csvExport';
 import { departments } from './hrData';
 import type { HREmployee, HREmployeeInsert } from '@/hooks/useHREmployees';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { usePagination } from '@/hooks/usePagination';
+import { supabase } from '@/integrations/supabase/client';
+import { useEffect } from 'react';
 
 interface Props {
   hook: {
@@ -35,8 +38,10 @@ const emptyForm: Partial<HREmployeeInsert> = {
   first_name: '', last_name: '', email: '', phone: '', department: '', position: '',
   salary_usd: 0, birth_date: null, gender: null, emergency_contact_name: null,
   emergency_contact_phone: null, hire_date: new Date().toISOString().split('T')[0],
-  status: 'active', notes: null,
+  status: 'active', notes: null, user_id: null,
 };
+
+interface ProfileLite { id: string; email: string | null; full_name: string | null; }
 
 export default function AdminHREmployees({ hook }: Props) {
   const { employees, addEmployee, updateEmployee, deleteEmployee, isAdding, isUpdating, isDeleting } = hook;
@@ -46,6 +51,23 @@ export default function AdminHREmployees({ hook }: Props) {
   const [detailEmployee, setDetailEmployee] = useState<HREmployee | null>(null);
   const [editEmployee, setEditEmployee] = useState<HREmployee | null>(null);
   const [form, setForm] = useState<Partial<HREmployeeInsert>>(emptyForm);
+
+  // Profile search for user_id linkage
+  const [profileQuery, setProfileQuery] = useState('');
+  const [profileResults, setProfileResults] = useState<ProfileLite[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    if (profileQuery.length < 3) { setProfileResults([]); return; }
+    const t = setTimeout(async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, email, full_name')
+        .or(`email.ilike.%${profileQuery}%,full_name.ilike.%${profileQuery}%`)
+        .limit(8);
+      if (!cancelled) setProfileResults((data || []) as ProfileLite[]);
+    }, 300);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [profileQuery]);
 
   const filtered = employees.filter(e => {
     const matchSearch = `${e.first_name} ${e.last_name} ${e.position} ${e.matricule}`.toLowerCase().includes(search.toLowerCase());
@@ -78,6 +100,7 @@ export default function AdminHREmployees({ hook }: Props) {
       hire_date: editEmployee.hire_date,
       status: editEmployee.status,
       notes: editEmployee.notes,
+      user_id: editEmployee.user_id,
     });
     setEditEmployee(null);
   };
@@ -124,6 +147,39 @@ export default function AdminHREmployees({ hook }: Props) {
         </Select>
       </div>
       <div className="col-span-2"><Label>Notes</Label><Textarea value={data.notes || ''} onChange={e => setData({ ...data, notes: e.target.value || null })} /></div>
+      <div className="col-span-2 space-y-1.5">
+        <Label>Compte utilisateur lié (optionnel)</Label>
+        {data.user_id ? (
+          <div className="flex items-center gap-2 p-2 border rounded text-xs bg-muted/30">
+            <code className="flex-1 truncate">{data.user_id}</code>
+            <Button size="sm" variant="ghost" type="button" onClick={() => setData({ ...data, user_id: null })}>Retirer</Button>
+          </div>
+        ) : (
+          <>
+            <Input
+              placeholder="Rechercher par email ou nom (min. 3 caractères)..."
+              value={profileQuery}
+              onChange={e => setProfileQuery(e.target.value)}
+              className="h-8 text-xs"
+            />
+            {profileResults.length > 0 && (
+              <div className="border rounded max-h-32 overflow-y-auto">
+                {profileResults.map(p => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className="w-full text-left px-2 py-1.5 text-xs hover:bg-muted"
+                    onClick={() => { setData({ ...data, user_id: p.id }); setProfileQuery(''); setProfileResults([]); }}
+                  >
+                    <div className="font-medium">{p.full_name || '(sans nom)'}</div>
+                    <div className="text-muted-foreground">{p.email || p.id}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 

@@ -11,6 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload, Save, Paintbrush, Type, Image, Moon, Sun, RotateCcw, Trash2, Fingerprint, RectangleHorizontal, Eye, Home } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import AppearancePresets, { type AppearancePreset } from './appearance/AppearancePresets';
+import AppearanceHistoryTab from './appearance/AppearanceHistoryTab';
+import { useGoogleFontInjection } from '@/hooks/useGoogleFontInjection';
 
 const FONT_OPTIONS = [
   { value: 'Inter, sans-serif', label: 'Inter' },
@@ -260,6 +263,21 @@ const AdminAppearance = () => {
   const [heroOverlayOpacity, setHeroOverlayOpacity] = useState(80);
   const [uploadingHero, setUploadingHero] = useState(false);
 
+  // Google Fonts custom URL
+  const [googleFontUrl, setGoogleFontUrl] = useState('');
+  useGoogleFontInjection(googleFontUrl);
+
+  // Active sub-tab (config | history)
+  const [topTab, setTopTab] = useState<'config' | 'history'>('config');
+
+  const applyPreset = (preset: AppearancePreset) => {
+    setLightColors(prev => ({ ...prev, ...preset.light }));
+    setDarkColors(prev => ({ ...prev, ...preset.dark }));
+    setFontFamily(preset.fontFamily);
+    setBorderRadius(preset.borderRadius);
+    toast({ title: `Preset « ${preset.name} » chargé`, description: 'Cliquez sur Sauvegarder pour appliquer.' });
+  };
+
   const currentColors = colorMode === 'light' ? lightColors : darkColors;
   const setCurrentColors = colorMode === 'light' ? setLightColors : setDarkColors;
 
@@ -292,6 +310,7 @@ const AdminAppearance = () => {
               case 'hero_image_url': setHeroImageUrl(val || ''); break;
               case 'hero_title': setHeroTitle(val || 'Consultez les informations cadastrales des parcelles depuis chez vous.'); break;
               case 'hero_overlay_opacity': setHeroOverlayOpacity(typeof val === 'number' ? val : 80); break;
+              case 'google_font_url': setGoogleFontUrl(typeof val === 'string' ? val : ''); break;
             }
           }
         }
@@ -369,6 +388,7 @@ const AdminAppearance = () => {
         upsertConfig('hero_image_url', heroImageUrl),
         upsertConfig('hero_title', heroTitle),
         upsertConfig('hero_overlay_opacity', heroOverlayOpacity),
+        upsertConfig('google_font_url', googleFontUrl),
       ]);
       toast({ title: 'Configuration sauvegardée', description: 'Les changements seront appliqués au prochain chargement.' });
     } catch (e: any) {
@@ -422,6 +442,19 @@ const AdminAppearance = () => {
           </Button>
         </div>
       </div>
+
+      <Tabs value={topTab} onValueChange={(v) => setTopTab(v as 'config' | 'history')}>
+        <TabsList>
+          <TabsTrigger value="config" className="text-xs">Configuration</TabsTrigger>
+          <TabsTrigger value="history" className="text-xs">Historique</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="history" className="mt-4">
+          <AppearanceHistoryTab />
+        </TabsContent>
+
+        <TabsContent value="config" className="mt-4 space-y-6">
+          <AppearancePresets onApply={applyPreset} />
 
       <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
         {/* Left: Config panels */}
@@ -624,6 +657,16 @@ const AdminAppearance = () => {
                     step={1}
                   />
                 </div>
+                <div>
+                  <Label className="text-xs mb-1 block">Google Fonts URL (optionnel)</Label>
+                  <Input
+                    value={googleFontUrl}
+                    onChange={e => setGoogleFontUrl(e.target.value)}
+                    placeholder="https://fonts.googleapis.com/css2?family=..."
+                    className="h-8 text-xs"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">Injecté dans le &lt;head&gt;. Mettez ensuite la famille dans la police ci-dessus.</p>
+                </div>
               </CardContent>
             </Card>
 
@@ -683,6 +726,8 @@ const AdminAppearance = () => {
           </div>
         </div>
       </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

@@ -24,7 +24,15 @@ const AdminSystemHealth = () => {
   const { settings } = useSystemSettings();
   const { snapshots, refetch: refetchSnaps, insertSnapshot } = useSystemHealthSnapshots(24);
 
-  const thresholds = settings.latency_thresholds || { db: 500, auth: 300, storage: 500, edge: 2000 };
+  const dbThreshold = Number(settings.health_db_threshold_ms) || 500;
+  const edgeThreshold = Number(settings.health_edge_threshold_ms) || 1000;
+  const thresholds = {
+    db: dbThreshold,
+    auth: 300,
+    storage: 500,
+    edge: edgeThreshold,
+    ...(settings.latency_thresholds || {}),
+  };
 
   const checkSystemHealth = async () => {
     setLoading(true);

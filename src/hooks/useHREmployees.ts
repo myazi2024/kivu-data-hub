@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 export interface HREmployee {
   id: string;
   matricule: string;
+  user_id: string | null;
   first_name: string;
   last_name: string;
   email: string | null;
@@ -38,31 +39,33 @@ export function useHREmployees() {
         .select('*')
         .order('last_name');
       if (error) throw error;
-      return data as HREmployee[];
+      return (data || []) as HREmployee[];
     },
   });
 
   const addMutation = useMutation({
     mutationFn: async (employee: Partial<HREmployeeInsert>) => {
+      const payload: any = {
+        first_name: employee.first_name!,
+        last_name: employee.last_name!,
+        department: employee.department!,
+        position: employee.position!,
+        email: employee.email || null,
+        phone: employee.phone || null,
+        salary_usd: employee.salary_usd || 0,
+        birth_date: employee.birth_date || null,
+        gender: employee.gender || null,
+        emergency_contact_name: employee.emergency_contact_name || null,
+        emergency_contact_phone: employee.emergency_contact_phone || null,
+        hire_date: employee.hire_date || new Date().toISOString().split('T')[0],
+        status: employee.status || 'active',
+        notes: employee.notes || null,
+        matricule: '',
+      };
+      if (employee.user_id) payload.user_id = employee.user_id;
       const { data, error } = await supabase
         .from('hr_employees')
-        .insert({
-          first_name: employee.first_name!,
-          last_name: employee.last_name!,
-          department: employee.department!,
-          position: employee.position!,
-          email: employee.email || null,
-          phone: employee.phone || null,
-          salary_usd: employee.salary_usd || 0,
-          birth_date: employee.birth_date || null,
-          gender: employee.gender || null,
-          emergency_contact_name: employee.emergency_contact_name || null,
-          emergency_contact_phone: employee.emergency_contact_phone || null,
-          hire_date: employee.hire_date || new Date().toISOString().split('T')[0],
-          status: employee.status || 'active',
-          notes: employee.notes || null,
-          matricule: '',
-        })
+        .insert(payload)
         .select()
         .single();
       if (error) throw error;
