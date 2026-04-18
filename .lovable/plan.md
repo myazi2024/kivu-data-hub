@@ -1,71 +1,65 @@
 
-## Étape 3/4 — Extraction de `useGeographicCascade` et `useConstructionCascade`
+## Étape 4/4 — Extraction de `useFormValidation` + finalisation orchestrateur
 
 ### Objectif
-Extraire les deux cascades de dépendances (géographique et construction) du hook monolithique vers deux sous-hooks dédiés. Aucune modification du comportement observable.
+Dernière étape du Lot B : extraire la logique de validation/complétude vers `useFormValidation`, puis nettoyer `useCCCFormState.ts` pour qu'il devienne un orchestrateur fin (~400 l cible).
 
-### Sous-hook 1 : `useGeographicCascade`
+### Périmètre extrait depuis `useCCCFormState.ts`
 
-**Périmètre extrait** depuis `useCCCFormState.ts` :
-- `useEffect` Province → reset City / Municipality / Quartier
-- `useEffect` City → reset Municipality / Quartier
-- `useEffect` Municipality → reset Quartier
-- Logique de filtrage des options dépendantes (via `getPicklistDependentOptions`)
+**Vers `src/hooks/ccc/useFormValidation.ts`** :
+- `getMissingFields(formData, currentOwners, ...)` — calcul des champs manquants par onglet (déjà mémoïsé fix 3.8)
+- `isTabComplete(tabId)` — booléen par onglet
+- `isTabAccessible(tabId)` — règle de progression (onglet N accessible si N-1 complet)
+- `isFormValidForSubmission` — agrégat global (tous onglets complets + GPS + sound)
+- `getCompletenessScore()` — calcul du score 14 champs + GPS + Sound (aligné sur logique SQL backend, cf. mem score-completude-ccc)
 
-**Signature** :
+### Signature
+
 ```ts
-// src/hooks/ccc/useGeographicCascade.ts
-export function useGeographicCascade(params: {
-  formData: CCCFormData;
-  updateFormData: (patch: Partial<CCCFormData>) => void;
-}): void;
-```
-Hook à effets uniquement (pas de retour) — il observe `formData.province/city/municipality` et émet les resets.
-
-### Sous-hook 2 : `useConstructionCascade`
-
-**Périmètre extrait** :
-- `useEffect` Construction Type → reset Nature, Declared Usage
-- `useEffect` Construction Nature → reset Declared Usage
-- Calcul des `availableUsages` via `resolveAvailableUsages` (réutilisation de l'utilitaire existant `src/utils/constructionUsageResolver.ts`, ne pas dupliquer)
-- Injection conditionnelle de `Location` (déjà gérée dans le resolver)
-
-**Signature** :
-```ts
-// src/hooks/ccc/useConstructionCascade.ts
-export function useConstructionCascade(params: {
-  formData: CCCFormData;
-  updateFormData: (patch: Partial<CCCFormData>) => void;
-  getPicklistDependentOptions: (key: string) => Record<string, string[]>;
+// src/hooks/ccc/useFormValidation.ts
+export function useFormValidation(params: {
+  formData: CadastralContributionData;
+  currentOwners: Owner[];
+  previousOwners: Owner[];
+  parcelSides: ParcelSide[];
+  gpsCoordinates: GPSCoord[];
+  buildingShapes: BuildingShape[];
+  soundLevel: number | null;
+  // autres slices nécessaires au calcul
 }): {
-  availableUsages: string[];
+  missingFields: Record<TabId, string[]>;
+  isTabComplete: (tabId: TabId) => boolean;
+  isTabAccessible: (tabId: TabId) => boolean;
+  isFormValidForSubmission: boolean;
+  completenessScore: number;
 };
 ```
 
+Tout en `useMemo` pour préserver le fix 3.8 (pas de recalcul à chaque frappe non liée).
+
 ### Garanties non-régression
-- Mêmes effets, mêmes ordres de reset.
-- `resolveAvailableUsages` reste l'unique source de vérité (utilisé aussi par `AdditionalConstructionBlock`).
-- Le contrat public de `useCCCFormState` reste strictement identique : `availableUsages` continue d'être exposé.
+- Mêmes règles, mêmes seuils, même score (référence : mem `score-completude-ccc`).
+- Mêmes textes/labels de champs manquants (utilisés dans bandeaux UI).
+- Contrat public de `useCCCFormState` strictement identique : `missingFields`, `isTabComplete`, `isTabAccessible`, `isFormValidForSubmission`, `completenessScore` continuent d'être exposés tels quels.
+- Aucun changement d'ordre des hooks (appel inconditionnel au même endroit).
 
 ### Plan d'exécution
-1. Créer `src/hooks/ccc/useGeographicCascade.ts` (effets uniquement).
-2. Créer `src/hooks/ccc/useConstructionCascade.ts` (effets + retour `availableUsages`).
+1. Lire `src/hooks/useCCCFormState.ts` pour identifier précisément les blocs validation/complétude restants.
+2. Créer `src/hooks/ccc/useFormValidation.ts` avec la signature ci-dessus, tout mémoïsé.
 3. Dans `useCCCFormState.ts` :
-   - Supprimer les 3 `useEffect` géographiques.
-   - Supprimer les 2 `useEffect` construction.
-   - Ajouter `useGeographicCascade({ formData, updateFormData })`.
-   - Ajouter `const { availableUsages } = useConstructionCascade({ formData, updateFormData, getPicklistDependentOptions })`.
-4. Vérifier que `availableUsages` reste exposé dans le retour du hook racine.
+   - Supprimer les fonctions/`useMemo` extraits.
+   - Ajouter `const validation = useFormValidation({ ... })` et déstructurer dans le retour.
+4. Vérifier que le retour public reste byte-pour-byte compatible (mêmes clés, mêmes types).
+5. Mesurer la taille finale de `useCCCFormState.ts` (cible : ~400 l).
 
 ### Validation post-implémentation
 - TypeScript compile sans erreur.
-- Contrat public de `useCCCFormState` strictement identique.
-- Test manuel rapide : changer Province → City se vide ; changer Construction Type → Nature/Usage se vident ; éligibilité `Location` préservée.
-
-### Note sur l'erreur runtime
-"Should have a queue" — erreur React liée à un hook conditionnel ou à un changement d'ordre de hooks. Je vérifierai après l'extraction que l'ordre des hooks dans `useCCCFormState` reste stable (les nouveaux sous-hooks appelés inconditionnellement, au même endroit qu'avant).
+- Bandeaux "champs manquants" affichent les mêmes messages.
+- Les onglets passent au vert dans le même ordre / aux mêmes seuils.
+- Score de complétude inchangé (vérifier sur un brouillon partiellement rempli).
+- Bouton de soumission s'active/désactive aux mêmes conditions.
 
 ### Fichiers
-- **Créés** : `src/hooks/ccc/useGeographicCascade.ts` (~60 l), `src/hooks/ccc/useConstructionCascade.ts` (~60 l)
-- **Modifié** : `src/hooks/useCCCFormState.ts` (suppression des 5 useEffect, ajout des 2 appels de sous-hooks)
-- **Inchangés** : 5 onglets, `CadastralContributionDialog`, `constructionUsageResolver.ts`, `AdditionalConstructionBlock`
+- **Créé** : `src/hooks/ccc/useFormValidation.ts` (~150 l)
+- **Modifié** : `src/hooks/useCCCFormState.ts` (suppression bloc validation, ajout appel sous-hook — orchestrateur final ~400 l)
+- **Inchangés** : 5 onglets, `CadastralContributionDialog`, `useCadastralContribution`, `useFormPersistence`, `useGeographicCascade`, `useConstructionCascade`
