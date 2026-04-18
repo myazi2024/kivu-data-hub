@@ -1155,6 +1155,8 @@ export type Database = {
           dispute_nature: string
           dispute_start_date: string | null
           dispute_type: string
+          escalated: boolean
+          escalated_at: string | null
           id: string
           lifting_documents: Json | null
           lifting_reason: string | null
@@ -1182,6 +1184,8 @@ export type Database = {
           dispute_nature: string
           dispute_start_date?: string | null
           dispute_type: string
+          escalated?: boolean
+          escalated_at?: string | null
           id?: string
           lifting_documents?: Json | null
           lifting_reason?: string | null
@@ -1209,6 +1213,8 @@ export type Database = {
           dispute_nature?: string
           dispute_start_date?: string | null
           dispute_type?: string
+          escalated?: boolean
+          escalated_at?: string | null
           id?: string
           lifting_documents?: Json | null
           lifting_reason?: string | null
@@ -1286,6 +1292,8 @@ export type Database = {
           creditor_name: string
           creditor_type: string
           duration_months: number
+          escalated: boolean
+          escalated_at: string | null
           id: string
           mortgage_amount_usd: number
           mortgage_status: string
@@ -1299,6 +1307,8 @@ export type Database = {
           creditor_name: string
           creditor_type?: string
           duration_months?: number
+          escalated?: boolean
+          escalated_at?: string | null
           id?: string
           mortgage_amount_usd?: number
           mortgage_status?: string
@@ -1312,6 +1322,8 @@ export type Database = {
           creditor_name?: string
           creditor_type?: string
           duration_months?: number
+          escalated?: boolean
+          escalated_at?: string | null
           id?: string
           mortgage_amount_usd?: number
           mortgage_status?: string
@@ -2765,6 +2777,8 @@ export type Database = {
           created_at: string
           declared_usage: string | null
           deduced_title_type: string | null
+          escalated: boolean
+          escalated_at: string | null
           estimated_processing_days: number | null
           fee_items: Json
           floor_number: string | null
@@ -2834,6 +2848,8 @@ export type Database = {
           created_at?: string
           declared_usage?: string | null
           deduced_title_type?: string | null
+          escalated?: boolean
+          escalated_at?: string | null
           estimated_processing_days?: number | null
           fee_items?: Json
           floor_number?: string | null
@@ -2903,6 +2919,8 @@ export type Database = {
           created_at?: string
           declared_usage?: string | null
           deduced_title_type?: string | null
+          escalated?: boolean
+          escalated_at?: string | null
           estimated_processing_days?: number | null
           fee_items?: Json
           floor_number?: string | null
@@ -3138,6 +3156,8 @@ export type Database = {
           beneficiary_name: string | null
           beneficiary_phone: string | null
           created_at: string
+          escalated: boolean
+          escalated_at: string | null
           estimated_processing_days: number | null
           expertise_certificate_date: string | null
           expertise_certificate_url: string | null
@@ -3178,6 +3198,8 @@ export type Database = {
           beneficiary_name?: string | null
           beneficiary_phone?: string | null
           created_at?: string
+          escalated?: boolean
+          escalated_at?: string | null
           estimated_processing_days?: number | null
           expertise_certificate_date?: string | null
           expertise_certificate_url?: string | null
@@ -3218,6 +3240,8 @@ export type Database = {
           beneficiary_name?: string | null
           beneficiary_phone?: string | null
           created_at?: string
+          escalated?: boolean
+          escalated_at?: string | null
           estimated_processing_days?: number | null
           expertise_certificate_date?: string | null
           expertise_certificate_url?: string | null
@@ -4180,6 +4204,8 @@ export type Database = {
           distance_to_market_km: number | null
           distance_to_school_km: number | null
           erosion_risk_zone: boolean | null
+          escalated: boolean
+          escalated_at: string | null
           expertise_date: string | null
           expertise_report_url: string | null
           facade_orientation: string | null
@@ -4268,6 +4294,8 @@ export type Database = {
           distance_to_market_km?: number | null
           distance_to_school_km?: number | null
           erosion_risk_zone?: boolean | null
+          escalated?: boolean
+          escalated_at?: string | null
           expertise_date?: string | null
           expertise_report_url?: string | null
           facade_orientation?: string | null
@@ -4356,6 +4384,8 @@ export type Database = {
           distance_to_market_km?: number | null
           distance_to_school_km?: number | null
           erosion_risk_zone?: boolean | null
+          escalated?: boolean
+          escalated_at?: string | null
           expertise_date?: string | null
           expertise_report_url?: string | null
           facade_orientation?: string | null
@@ -4437,6 +4467,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      request_admin_audit: {
+        Row: {
+          action: string
+          admin_id: string | null
+          admin_name: string | null
+          created_at: string
+          id: string
+          new_status: string | null
+          old_status: string | null
+          payload: Json | null
+          rejection_reason: string | null
+          request_id: string
+          request_table: string
+        }
+        Insert: {
+          action: string
+          admin_id?: string | null
+          admin_name?: string | null
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          old_status?: string | null
+          payload?: Json | null
+          rejection_reason?: string | null
+          request_id: string
+          request_table: string
+        }
+        Update: {
+          action?: string
+          admin_id?: string | null
+          admin_name?: string | null
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          old_status?: string | null
+          payload?: Json | null
+          rejection_reason?: string | null
+          request_id?: string
+          request_table?: string
+        }
+        Relationships: []
       }
       reseller_sales: {
         Row: {
@@ -4580,6 +4652,42 @@ export type Database = {
           },
         ]
       }
+      service_sla_config: {
+        Row: {
+          created_at: string
+          critical_days: number
+          id: string
+          is_active: boolean
+          service_key: string
+          service_label: string
+          target_days: number
+          updated_at: string
+          warning_days: number
+        }
+        Insert: {
+          created_at?: string
+          critical_days?: number
+          id?: string
+          is_active?: boolean
+          service_key: string
+          service_label: string
+          target_days?: number
+          updated_at?: string
+          warning_days?: number
+        }
+        Update: {
+          created_at?: string
+          critical_days?: number
+          id?: string
+          is_active?: boolean
+          service_key?: string
+          service_label?: string
+          target_days?: number
+          updated_at?: string
+          warning_days?: number
+        }
+        Relationships: []
+      }
       subdivision_lots: {
         Row: {
           area_sqm: number
@@ -4695,6 +4803,8 @@ export type Database = {
           additional_documents: Json | null
           approved_at: string | null
           created_at: string
+          escalated: boolean
+          escalated_at: string | null
           estimated_processing_days: number | null
           fee_items: Json | null
           final_paid_at: string | null
@@ -4741,6 +4851,8 @@ export type Database = {
           additional_documents?: Json | null
           approved_at?: string | null
           created_at?: string
+          escalated?: boolean
+          escalated_at?: string | null
           estimated_processing_days?: number | null
           fee_items?: Json | null
           final_paid_at?: string | null
@@ -4787,6 +4899,8 @@ export type Database = {
           additional_documents?: Json | null
           approved_at?: string | null
           created_at?: string
+          escalated?: boolean
+          escalated_at?: string | null
           estimated_processing_days?: number | null
           fee_items?: Json | null
           final_paid_at?: string | null
@@ -5463,6 +5577,20 @@ export type Database = {
         }
         Relationships: []
       }
+      requests_health_overview: {
+        Row: {
+          approved: number | null
+          escalated_count: number | null
+          in_review: number | null
+          pending: number | null
+          rejected: number | null
+          service: string | null
+          service_label: string | null
+          stale_30d: number | null
+          total: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       auto_cancel_stale_pending: { Args: never; Returns: number }
@@ -5509,6 +5637,13 @@ export type Database = {
           fraud_score: number
           is_suspicious: boolean
           reasons: string[]
+        }[]
+      }
+      escalate_stale_requests: {
+        Args: { p_days?: number }
+        Returns: {
+          escalated_count: number
+          service: string
         }[]
       }
       expire_discount_codes: { Args: never; Returns: number }
@@ -5681,6 +5816,16 @@ export type Database = {
         Returns: string
       }
       purge_test_billing_data: { Args: { p_reason?: string }; Returns: Json }
+      regenerate_missing_certificates: {
+        Args: never
+        Returns: {
+          approved_at: string
+          reference_number: string
+          request_id: string
+          request_table: string
+          user_id: string
+        }[]
+      }
       user_has_permission: {
         Args: { _action: string; _resource: string; _user_id: string }
         Returns: boolean
