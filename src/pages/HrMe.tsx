@@ -70,9 +70,16 @@ const HrMe = () => {
           ) : (
             <div className="space-y-2">
               {leaves.map(l => (
-                <div key={l.id} className="flex items-center justify-between p-2 bg-muted/40 rounded text-xs">
-                  <span>{l.start_date} → {l.end_date}</span>
-                  <Badge variant={l.status === 'approved' ? 'default' : l.status === 'rejected' ? 'destructive' : 'secondary'}>{l.status}</Badge>
+                <div key={l.id} className="p-2 bg-muted/40 rounded text-xs space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span>{l.start_date} → {l.end_date} <span className="text-muted-foreground">({l.leave_type})</span></span>
+                    <Badge variant={l.status === 'approved' ? 'default' : l.status === 'rejected' ? 'destructive' : 'secondary'}>
+                      {l.status === 'approved' ? 'Approuvé' : l.status === 'rejected' ? 'Refusé' : 'En attente'}
+                    </Badge>
+                  </div>
+                  {l.status === 'rejected' && l.rejection_reason && (
+                    <p className="text-destructive italic">Motif : {l.rejection_reason}</p>
+                  )}
                 </div>
               ))}
             </div>

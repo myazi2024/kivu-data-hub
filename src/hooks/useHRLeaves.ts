@@ -11,6 +11,7 @@ export interface HRLeaveRequest {
   days_count: number | null;
   status: 'pending' | 'approved' | 'rejected';
   reason: string | null;
+  rejection_reason: string | null;
   approved_by: string | null;
   reviewed_at: string | null;
   created_at: string;
@@ -82,11 +83,11 @@ export function useHRLeaves() {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: 'approved' | 'rejected' }) => {
-      const { error } = await supabase
-        .from('hr_leave_requests')
-        .update({ status, reviewed_at: new Date().toISOString() })
-        .eq('id', id);
+    mutationFn: async ({ id, status, rejection_reason }: { id: string; status: 'approved' | 'rejected'; rejection_reason?: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const patch: any = { status, reviewed_at: new Date().toISOString(), approved_by: user?.id || null };
+      if (status === 'rejected') patch.rejection_reason = rejection_reason || null;
+      const { error } = await supabase.from('hr_leave_requests').update(patch).eq('id', id);
       if (error) throw error;
     },
     onSuccess: (_, { status }) => {
@@ -105,6 +106,9 @@ export function useHRLeaves() {
     isLoading: leavesQuery.isLoading,
     addLeave: addLeaveMutation.mutateAsync,
     updateStatus: updateStatusMutation.mutateAsync,
+    approveLeave: (id: string) => updateStatusMutation.mutateAsync({ id, status: 'approved' }),
+    rejectLeave: (id: string, rejection_reason: string) => updateStatusMutation.mutateAsync({ id, status: 'rejected', rejection_reason }),
     isAdding: addLeaveMutation.isPending,
+    isUpdating: updateStatusMutation.isPending,
   };
 }
