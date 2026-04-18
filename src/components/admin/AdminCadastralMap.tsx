@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { geographicData } from '@/lib/geographicData';
 import { AdminParcelEditDialog } from './AdminParcelEditDialog';
+import { EmptyMapBanner } from './map/EmptyMapBanner';
 
 // Extraire les provinces
 const provinces = Object.keys(geographicData);
