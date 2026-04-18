@@ -1,6 +1,6 @@
 import React, { useState, useEffect, memo, useMemo, Suspense } from 'react';
 import { useAppAppearance } from '@/hooks/useAppAppearance';
-import { FileText, Building, Search, ArrowRightLeft, Scissors, AlertTriangle, Loader2, Database, History, Award, Receipt, Landmark, FileCheck, DollarSign, ShieldAlert, Ruler, Hexagon } from 'lucide-react';
+import { FileText, Building, Search, ArrowRightLeft, Scissors, AlertTriangle, Loader2, Database, History, Award, Receipt, Landmark, FileCheck, DollarSign, ShieldAlert, Ruler, Hexagon, ShieldCheck } from 'lucide-react';
 import { useLandDataAnalytics, LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { ProvinceData } from '@/types/province';
 import { useAnalyticsTabsConfig, useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
@@ -24,6 +24,7 @@ const InvoicesBlock = React.lazy(() => import('./blocks/InvoicesBlock').then(m =
 const ServitudesBlock = React.lazy(() => import('./blocks/ServitudesBlock').then(m => ({ default: m.ServitudesBlock })));
 const BoundaryBlock = React.lazy(() => import('./blocks/BoundaryBlock').then(m => ({ default: m.BoundaryBlock })));
 const GeometryBlock = React.lazy(() => import('./blocks/GeometryBlock').then(m => ({ default: m.GeometryBlock })));
+const ConsistencyBlock = React.lazy(() => import('./blocks/ConsistencyBlock').then(m => ({ default: m.ConsistencyBlock })));
 
 const BlockFallback = () => (
   <div className="flex items-center justify-center p-8">
@@ -49,6 +50,7 @@ const ICON_MAP: Record<string, React.ComponentType<any>> = {
   'servitudes': ShieldAlert,
   'boundary': Ruler,
   'geometry': Hexagon,
+  'consistency': ShieldCheck,
 };
 
 const BLOCK_MAP: Record<string, React.ComponentType<{ data: any }>> = {
@@ -68,6 +70,7 @@ const BLOCK_MAP: Record<string, React.ComponentType<{ data: any }>> = {
   'servitudes': ServitudesBlock,
   'boundary': BoundaryBlock,
   'geometry': GeometryBlock,
+  'consistency': ConsistencyBlock,
 };
 
 interface ProvinceDataVisualizationProps {
