@@ -9,314 +9,290 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Plus, Edit, Trash2, FileText, Search, Download } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Plus, Edit, Trash2, FileText, Search, Download, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/shared/PaginationControls';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import RichTextEditor from '@/components/shared/RichTextEditor';
+import StorageFileUpload from '@/components/shared/StorageFileUpload';
 
 interface Publication {
   id: string;
   title: string;
-  description: string;
+  description: string | null;
+  content: string | null;
+  cover_image_url: string | null;
+  file_url: string | null;
   price_usd: number;
   category: string;
   status: string;
   featured: boolean;
   download_count: number;
   created_at: string;
-  created_by: string;
+  created_by: string | null;
 }
 
-interface AdminPublicationsProps {
-  onRefresh: () => void;
-}
+interface AdminPublicationsProps { onRefresh: () => void; }
+
+const emptyForm = {
+  title: '', description: '', content: '',
+  cover_image_url: '', file_url: '',
+  price_usd: 0, category: 'research', status: 'draft', featured: false,
+};
 
 const AdminPublications: React.FC<AdminPublicationsProps> = ({ onRefresh }) => {
   const [publications, setPublications] = useState<Publication[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingPublication, setEditingPublication] = useState<Publication | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<Publication | null>(null);
+  const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('_all');
   const [categoryFilter, setCategoryFilter] = useState<string>('_all');
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    content: '',
-    price_usd: 0,
-    category: 'research',
-    status: 'draft',
-    featured: false
-  });
+  const [formData, setFormData] = useState(emptyForm);
+  const [saving, setSaving] = useState(false);
 
-  // Filtered publications
-  const filteredPublications = useMemo(() => {
-    return publications.filter(pub => {
-      const matchesSearch = pub.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (pub.description && pub.description.toLowerCase().includes(searchQuery.toLowerCase()));
-      const matchesStatus = statusFilter === '_all' || pub.status === statusFilter;
-      const matchesCategory = categoryFilter === '_all' || pub.category === categoryFilter;
-      return matchesSearch && matchesStatus && matchesCategory;
-    });
-  }, [publications, searchQuery, statusFilter, categoryFilter]);
+  const filtered = useMemo(() => publications.filter(p => {
+    const ms = p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()));
+    const mst = statusFilter === '_all' || p.status === statusFilter;
+    const mc = categoryFilter === '_all' || p.category === categoryFilter;
+    return ms && mst && mc;
+  }), [publications, searchQuery, statusFilter, categoryFilter]);
 
-  // Pagination
-  const pagination = usePagination(filteredPublications, { initialPageSize: 15 });
+  const pagination = usePagination(filtered, { initialPageSize: 15 });
 
-  // CSV Export
   const exportToCSV = () => {
     const csv = [
       ['Titre', 'Catégorie', 'Prix USD', 'Statut', 'Téléchargements', 'Date'].join(','),
-      ...filteredPublications.map(p => [
-        `"${p.title.replace(/"/g, '""')}"`,
-        p.category,
-        p.price_usd,
-        p.status,
-        p.download_count,
-        format(new Date(p.created_at), 'dd/MM/yyyy', { locale: fr })
-      ].join(','))
+      ...filtered.map(p => [
+        `"${p.title.replace(/"/g, '""')}"`, p.category, p.price_usd, p.status, p.download_count,
+        format(new Date(p.created_at), 'dd/MM/yyyy', { locale: fr }),
+      ].join(',')),
     ].join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     const a = document.createElement('a');
-    a.href = url;
-    a.download = `publications-${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    a.click();
+    a.href = url; a.download = `publications-${format(new Date(), 'yyyy-MM-dd')}.csv`; a.click();
   };
 
-  useEffect(() => {
-    fetchPublications();
-  }, []);
+  useEffect(() => { fetchPublications(); }, []);
 
   const fetchPublications = async () => {
     try {
       const { data, error } = await supabase
-        .from('publications')
-        .select('*')
-        .is('deleted_at', null)
+        .from('publications').select('*').is('deleted_at', null)
         .order('created_at', { ascending: false });
-
       if (error) throw error;
-      setPublications(data || []);
-    } catch (error) {
-      console.error('Erreur lors du chargement des publications:', error);
-      toast.error('Erreur lors du chargement des publications');
-    } finally {
-      setLoading(false);
-    }
+      setPublications((data as Publication[]) || []);
+    } catch {
+      toast.error('Erreur chargement publications');
+    } finally { setLoading(false); }
   };
 
   const handleSave = async () => {
+    if (!formData.title.trim()) { toast.error('Titre requis'); return; }
+    setSaving(true);
     try {
-      if (editingPublication) {
-        const { error } = await supabase
-          .from('publications')
-          .update(formData)
-          .eq('id', editingPublication.id);
-        
+      const payload = {
+        title: formData.title.trim(),
+        description: formData.description || null,
+        content: formData.content || null,
+        cover_image_url: formData.cover_image_url || null,
+        file_url: formData.file_url || null,
+        price_usd: formData.price_usd,
+        category: formData.category,
+        status: formData.status,
+        featured: formData.featured,
+      };
+      if (editing) {
+        const { error } = await supabase.from('publications').update(payload).eq('id', editing.id);
         if (error) throw error;
-        toast.success('Publication mise à jour avec succès');
+        toast.success('Publication mise à jour');
       } else {
-        const { error } = await supabase
-          .from('publications')
-          .insert([{ ...formData, created_by: (await supabase.auth.getUser()).data.user?.id }]);
-        
+        const { data: { user } } = await supabase.auth.getUser();
+        const { error } = await supabase.from('publications').insert([{ ...payload, created_by: user?.id }]);
         if (error) throw error;
-        toast.success('Publication créée avec succès');
+        toast.success('Publication créée');
       }
-      
       fetchPublications();
       onRefresh();
-      setIsDialogOpen(false);
+      setOpen(false);
       resetForm();
-    } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error);
-      toast.error('Erreur lors de la sauvegarde');
-    }
+    } catch (e: any) {
+      toast.error(e.message || 'Erreur sauvegarde');
+    } finally { setSaving(false); }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette publication ?')) return;
-
-    try {
-      const { error } = await supabase
-        .from('publications')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', id);
-
-      if (error) throw error;
-      toast.success('Publication supprimée (corbeille)');
-      fetchPublications();
-      onRefresh();
-    } catch (error) {
-      console.error('Erreur lors de la suppression:', error);
-      toast.error('Erreur lors de la suppression');
-    }
+    if (!confirm('Supprimer cette publication ?')) return;
+    const { error } = await supabase.from('publications').update({ deleted_at: new Date().toISOString() }).eq('id', id);
+    if (error) return toast.error('Erreur suppression');
+    toast.success('Publication supprimée');
+    fetchPublications();
+    onRefresh();
   };
 
-  const openEditDialog = (publication: Publication) => {
-    setEditingPublication(publication);
+  const openEdit = (p: Publication) => {
+    setEditing(p);
     setFormData({
-      title: publication.title,
-      description: publication.description || '',
-      content: '',
-      price_usd: publication.price_usd,
-      category: publication.category,
-      status: publication.status,
-      featured: publication.featured
+      title: p.title,
+      description: p.description || '',
+      content: p.content || '',
+      cover_image_url: p.cover_image_url || '',
+      file_url: p.file_url || '',
+      price_usd: p.price_usd,
+      category: p.category,
+      status: p.status,
+      featured: p.featured,
     });
-    setIsDialogOpen(true);
+    setOpen(true);
   };
 
-  const resetForm = () => {
-    setEditingPublication(null);
-    setFormData({
-      title: '',
-      description: '',
-      content: '',
-      price_usd: 0,
-      category: 'research',
-      status: 'draft',
-      featured: false
-    });
-  };
+  const resetForm = () => { setEditing(null); setFormData(emptyForm); };
 
   const getStatusBadge = (status: string) => {
-    const variants = {
-      draft: 'secondary',
-      published: 'default',
-      archived: 'destructive'
-    } as const;
-    
-    return <Badge variant={variants[status as keyof typeof variants] || 'secondary'}>{status}</Badge>;
+    const v = { draft: 'secondary', published: 'default', archived: 'destructive' } as const;
+    return <Badge variant={v[status as keyof typeof v] || 'secondary'}>{status}</Badge>;
   };
 
-  if (loading) {
-    return <div className="flex items-center justify-center h-64">Chargement...</div>;
-  }
+  if (loading) return <div className="flex items-center justify-center h-64">Chargement...</div>;
 
   return (
     <Card>
       <CardHeader>
         <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <CardTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              Gestion des Publications ({filteredPublications.length})
+              <FileText className="w-5 h-5" /> Publications ({filtered.length})
             </CardTitle>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={exportToCSV} className="gap-1">
-                <Download className="h-4 w-4" />
-                Exporter
+                <Download className="h-4 w-4" /> Exporter
               </Button>
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
-                  <Button onClick={resetForm}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Nouvelle Publication
-                  </Button>
+                  <Button onClick={resetForm}><Plus className="w-4 h-4 mr-2" />Nouvelle</Button>
                 </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingPublication ? 'Modifier' : 'Créer'} une Publication
-                </DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="title">Titre</Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="Titre de la publication"
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Description de la publication"
-                  />
-                </div>
+                <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>{editing ? 'Modifier' : 'Créer'} une Publication</DialogTitle>
+                  </DialogHeader>
+                  <Tabs defaultValue="info" className="w-full">
+                    <TabsList className="grid w-full grid-cols-3">
+                      <TabsTrigger value="info">Infos</TabsTrigger>
+                      <TabsTrigger value="content">Contenu</TabsTrigger>
+                      <TabsTrigger value="files">Fichiers</TabsTrigger>
+                    </TabsList>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="price">Prix (USD)</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      value={formData.price_usd}
-                      onChange={(e) => setFormData({ ...formData, price_usd: parseFloat(e.target.value) || 0 })}
-                      placeholder="0.00"
-                    />
+                    <TabsContent value="info" className="space-y-4 pt-4">
+                      <div>
+                        <Label>Titre *</Label>
+                        <Input value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
+                      </div>
+                      <div>
+                        <Label>Description courte</Label>
+                        <Textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={3} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>Prix (USD)</Label>
+                          <Input type="number" step="0.01" value={formData.price_usd}
+                            onChange={(e) => setFormData({ ...formData, price_usd: parseFloat(e.target.value) || 0 })} />
+                        </div>
+                        <div>
+                          <Label>Catégorie</Label>
+                          <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="research">Recherche</SelectItem>
+                              <SelectItem value="report">Rapport</SelectItem>
+                              <SelectItem value="analysis">Analyse</SelectItem>
+                              <SelectItem value="guide">Guide</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>Statut</Label>
+                          <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="draft">Brouillon</SelectItem>
+                              <SelectItem value="published">Publié</SelectItem>
+                              <SelectItem value="archived">Archivé</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex items-end gap-2 pb-2">
+                          <Switch checked={formData.featured} onCheckedChange={(v) => setFormData({ ...formData, featured: v })} />
+                          <Label>En vedette</Label>
+                        </div>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="content" className="pt-4">
+                      <Label>Contenu (description longue)</Label>
+                      <RichTextEditor
+                        value={formData.content}
+                        onChange={(v) => setFormData({ ...formData, content: v })}
+                        minHeight={320}
+                      />
+                    </TabsContent>
+
+                    <TabsContent value="files" className="space-y-4 pt-4">
+                      <div>
+                        <Label>Image de couverture</Label>
+                        <StorageFileUpload
+                          bucket="articles"
+                          value={formData.cover_image_url || null}
+                          onChange={(url) => setFormData({ ...formData, cover_image_url: url || '' })}
+                          accept="image/*"
+                          isPublic
+                          pathPrefix="publication-covers"
+                          maxSizeMB={5}
+                        />
+                      </div>
+                      <div>
+                        <Label>Fichier PDF (livré après achat)</Label>
+                        <StorageFileUpload
+                          bucket="publications"
+                          value={formData.file_url || null}
+                          onChange={(url) => setFormData({ ...formData, file_url: url || '' })}
+                          accept="application/pdf"
+                          isPublic={false}
+                          maxSizeMB={50}
+                          label="PDF privé (téléchargement post-achat)"
+                        />
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          Le fichier reste privé. Le téléchargement se fait via une URL signée après paiement.
+                        </p>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+
+                  <div className="flex justify-end gap-2 pt-4 border-t">
+                    <Button variant="outline" onClick={() => setOpen(false)}>Annuler</Button>
+                    <Button onClick={handleSave} disabled={saving}>
+                      {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                      {editing ? 'Mettre à jour' : 'Créer'}
+                    </Button>
                   </div>
-                  
-                  <div>
-                    <Label htmlFor="category">Catégorie</Label>
-                    <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="research">Recherche</SelectItem>
-                        <SelectItem value="report">Rapport</SelectItem>
-                        <SelectItem value="analysis">Analyse</SelectItem>
-                        <SelectItem value="guide">Guide</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="status">Statut</Label>
-                  <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="draft">Brouillon</SelectItem>
-                      <SelectItem value="published">Publié</SelectItem>
-                      <SelectItem value="archived">Archivé</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex justify-end space-x-2">
-                  <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                    Annuler
-                  </Button>
-                  <Button onClick={handleSave}>
-                    {editingPublication ? 'Mettre à jour' : 'Créer'}
-                  </Button>
-                </div>
-              </div>
-              </DialogContent>
-            </Dialog>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
-          
-          {/* Search and Filters */}
+
           <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Rechercher par titre ou description..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 h-9"
-              />
+              <Input placeholder="Rechercher..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-8 h-9" />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[140px] h-9">
-                <SelectValue placeholder="Statut" />
-              </SelectTrigger>
+              <SelectTrigger className="w-full sm:w-[140px] h-9"><SelectValue placeholder="Statut" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="_all">Tous statuts</SelectItem>
                 <SelectItem value="draft">Brouillon</SelectItem>
@@ -325,9 +301,7 @@ const AdminPublications: React.FC<AdminPublicationsProps> = ({ onRefresh }) => {
               </SelectContent>
             </Select>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-full sm:w-[140px] h-9">
-                <SelectValue placeholder="Catégorie" />
-              </SelectTrigger>
+              <SelectTrigger className="w-full sm:w-[140px] h-9"><SelectValue placeholder="Catégorie" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="_all">Toutes catégories</SelectItem>
                 <SelectItem value="research">Recherche</SelectItem>
@@ -346,54 +320,44 @@ const AdminPublications: React.FC<AdminPublicationsProps> = ({ onRefresh }) => {
               <TableHead>Titre</TableHead>
               <TableHead>Catégorie</TableHead>
               <TableHead>Prix</TableHead>
+              <TableHead>Fichier</TableHead>
               <TableHead>Statut</TableHead>
-              <TableHead>Téléchargements</TableHead>
+              <TableHead>Tél.</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {pagination.paginatedData.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                  {searchQuery || statusFilter !== '_all' || categoryFilter !== '_all' 
-                    ? 'Aucune publication trouvée avec ces filtres' 
-                    : 'Aucune publication'}
+              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Aucune publication</TableCell></TableRow>
+            ) : pagination.paginatedData.map(p => (
+              <TableRow key={p.id}>
+                <TableCell className="font-medium">
+                  <div className="flex items-center gap-2">
+                    {p.cover_image_url && <img src={p.cover_image_url} alt="" className="h-8 w-8 rounded object-cover" />}
+                    <span>{p.title}</span>
+                  </div>
+                </TableCell>
+                <TableCell>{p.category}</TableCell>
+                <TableCell>${p.price_usd}</TableCell>
+                <TableCell>
+                  {p.file_url
+                    ? <Badge variant="outline" className="gap-1"><FileText className="h-3 w-3" />PDF</Badge>
+                    : <Badge variant="secondary">Aucun</Badge>}
+                </TableCell>
+                <TableCell>{getStatusBadge(p.status)}</TableCell>
+                <TableCell>{p.download_count}</TableCell>
+                <TableCell>{format(new Date(p.created_at), 'dd/MM/yyyy', { locale: fr })}</TableCell>
+                <TableCell>
+                  <div className="flex space-x-1">
+                    <Button variant="ghost" size="sm" onClick={() => openEdit(p)}><Edit className="w-4 h-4" /></Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(p.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                  </div>
                 </TableCell>
               </TableRow>
-            ) : (
-              pagination.paginatedData.map((publication) => (
-                <TableRow key={publication.id}>
-                  <TableCell className="font-medium">{publication.title}</TableCell>
-                  <TableCell>{publication.category}</TableCell>
-                  <TableCell>${publication.price_usd}</TableCell>
-                  <TableCell>{getStatusBadge(publication.status)}</TableCell>
-                  <TableCell>{publication.download_count}</TableCell>
-                  <TableCell>{format(new Date(publication.created_at), 'dd/MM/yyyy', { locale: fr })}</TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditDialog(publication)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete(publication.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
+            ))}
           </TableBody>
         </Table>
-        
         {pagination.totalPages > 1 && (
           <PaginationControls
             currentPage={pagination.currentPage}
