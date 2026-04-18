@@ -11,24 +11,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useNavigate } from 'react-router-dom';
+import { resolveActionUrl } from '@/utils/userDashboardLinks';
 
 export const NotificationBell: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
   const [open, setOpen] = useState(false);
-
-  const resolveActionUrl = (actionUrl: string): string => {
-    // Mapping des routes obsolètes vers les routes actuelles
-    const routeMapping: Record<string, string> = {
-      '/user-dashboard': '/mon-compte',
-    };
-    
-    const [basePath, queryString] = actionUrl.split('?');
-    const resolvedPath = routeMapping[basePath] || basePath;
-    
-    return queryString ? `${resolvedPath}?${queryString}` : resolvedPath;
-  };
 
   const handleNotificationClick = async (notification: typeof notifications[0]) => {
     await markAsRead(notification.id);

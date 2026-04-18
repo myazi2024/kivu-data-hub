@@ -132,7 +132,7 @@ export const UserLandTitleRequests: React.FC = () => {
                 <ScrollText className="h-6 w-6 text-muted-foreground" />
               </div>
               <p className="text-sm text-muted-foreground">Aucune demande de titre foncier</p>
-              <Link to="/carte-cadastrale">
+              <Link to="/cadastral-map">
                 <Button size="sm" className="mt-3 gap-2 rounded-xl">
                   <Plus className="h-3.5 w-3.5" />
                   Faire une demande

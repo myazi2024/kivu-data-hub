@@ -50,40 +50,23 @@ export function UserBuildingPermits() {
 
   const fetchBuildingPermits = async () => {
     if (!user) return;
-    
+
     try {
       setLoading(true);
 
-      // Fetch permit_request contributions
-      let q1 = supabase
+      // Single query merging permit_request + update-with-building_permits.
+      // Uses .or() to avoid two round-trips and client-side merge.
+      let q = supabase
         .from('cadastral_contributions')
         .select('*')
         .eq('user_id', user.id)
-        .eq('contribution_type', 'permit_request')
+        .or('contribution_type.eq.permit_request,and(contribution_type.eq.update,building_permits.not.is.null)')
         .order('created_at', { ascending: false });
-      q1 = applyTestFilter(q1, 'parcel_number', isTestRoute);
-      const { data: permitRequests, error: err1 } = await q1;
+      q = applyTestFilter(q, 'parcel_number', isTestRoute);
+      const { data, error } = await q;
 
-      if (err1) throw err1;
-
-      // Fetch update contributions that specifically have building_permits data
-      let q2 = supabase
-        .from('cadastral_contributions')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('contribution_type', 'update')
-        .not('building_permits', 'is', null)
-        .order('created_at', { ascending: false });
-      q2 = applyTestFilter(q2, 'parcel_number', isTestRoute);
-      const { data: updateContribs, error: err2 } = await q2;
-
-      if (err2) throw err2;
-
-      // Merge both lists
-      const allPermits = [...(permitRequests || []), ...(updateContribs || [])];
-      // Sort by created_at descending
-      allPermits.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-      setPermits(allPermits);
+      if (error) throw error;
+      setPermits(data || []);
     } catch (error) {
       console.error('Error fetching building permits:', error);
       toast.error("Erreur lors du chargement des demandes d'autorisation");
@@ -161,7 +144,7 @@ export function UserBuildingPermits() {
             <p className="text-xs text-muted-foreground mt-1">
               Demandez une autorisation depuis la Carte cadastrale
             </p>
-            <a href="/carte-cadastrale">
+            <a href="/cadastral-map">
               <Button size="sm" className="mt-3 gap-2 rounded-xl">
                 <Building2 className="h-3.5 w-3.5" />
                 Faire une demande
