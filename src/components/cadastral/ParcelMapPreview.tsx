@@ -504,7 +504,10 @@ export const ParcelMapPreview = ({
             const { latitude, longitude, accuracy } = position.coords;
             
             // Centrer la carte sur la position de l'utilisateur
-            map.setView([latitude, longitude], 18);
+            // Guard: vérifier que la carte est toujours montée et initialisée
+            if (mapInstanceRef.current && (map as any)?._loaded && map.getContainer()?.isConnected) {
+              try { map.setView([latitude, longitude], 18); } catch (e) { console.warn('setView skipped:', e); }
+            }
             
         // Nettoyer les anciens marqueurs de position
             userLocationLayersRef.current.forEach(layer => {
@@ -1024,8 +1027,8 @@ export const ParcelMapPreview = ({
             map.fitBounds(polygon.getBounds(), { padding: [40, 40] });
           }
         } else if (latLngs.length > 0) {
-          if (shouldAutoCenter) {
-            map.setView(latLngs[0], 19);
+          if (shouldAutoCenter && mapInstanceRef.current && (map as any)?._loaded && map.getContainer()?.isConnected) {
+            try { map.setView(latLngs[0], 19); } catch (e) { console.warn('setView skipped:', e); }
           }
           setSurfaceArea(0);
           setPerimeterLength(0);
