@@ -292,6 +292,9 @@ export const AdminArticleThemes: React.FC = () => {
                         <Badge variant="outline" className="text-[9px] h-4 px-1">
                           {theme.short_name}
                         </Badge>
+                        <Badge variant="secondary" className="text-[9px] h-4 px-1">
+                          {counts[theme.id] || 0} art.
+                        </Badge>
                       </div>
                       {theme.description && (
                         <p className="text-[10px] text-muted-foreground truncate">
@@ -338,6 +341,18 @@ export const AdminArticleThemes: React.FC = () => {
                       onClick={() => openEditDialog(theme)}
                     >
                       <Edit2 className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      onClick={() => handleDelete(theme)}
+                      disabled={deleting === theme.id}
+                      title={(counts[theme.id] || 0) > 0 ? 'Articles liés — impossible' : 'Supprimer'}
+                    >
+                      {deleting === theme.id
+                        ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        : <Trash2 className="h-3.5 w-3.5 text-destructive" />}
                     </Button>
                   </div>
                 </div>
