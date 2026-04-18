@@ -1611,8 +1611,13 @@ const AdminContributionConfig = ({ initialTab, scrollToLegend }: { initialTab?: 
     </div>
 
     <div className="space-y-4">
+      <div className="flex justify-end">
+        <ConfigJsonExportImport tableName="cadastral_contribution_config" />
+      </div>
       <ConfigTemplates onApplyTemplate={handleApplyTemplate} />
       <ConfigPreview config={formSections} type="sections" />
+      <ConfigSnapshotPanel tableName="cadastral_contribution_config" title="Contribution CCC" />
+      <SystemConfigAuditViewer tableName="cadastral_contribution_config" limit={20} title="Audit CCC" />
       <ConfigHistory onRestore={handleRestoreFromHistory} />
     </div>
   </div>
