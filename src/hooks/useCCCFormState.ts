@@ -1072,7 +1072,7 @@ export const useCCCFormState = ({
         if (tax.receiptFile) { receiptUrl = await uploadFile(tax.receiptFile, 'tax-receipts'); if (!receiptUrl) throw new Error('Erreur téléchargement reçu taxe'); }
         const parsedYear = parseInt(tax.taxYear); const parsedAmount = parseFloat(tax.taxAmount);
         if (isNaN(parsedYear) || isNaN(parsedAmount)) return null;
-        return { taxYear: parsedYear, amountUsd: parsedAmount, paymentStatus: tax.paymentStatus, paymentDate: tax.paymentDate || undefined, receiptUrl: receiptUrl || tax.existingReceiptUrl || undefined, taxType: tax.taxType, remainingAmount: tax.remainingAmount ? parseFloat(tax.remainingAmount) : undefined };
+        return { taxYear: parsedYear, amountUsd: parsedAmount, paymentStatus: tax.paymentStatus, paymentDate: tax.paymentDate || undefined, receiptUrl: receiptUrl || tax.existingReceiptUrl || undefined, taxType: tax.taxType, remainingAmount: tax.remainingAmount ? parseFloat(tax.remainingAmount) : undefined, constructionRef: tax.constructionRef || undefined };
       }))).filter(Boolean);
 
       const mortgageHistoryData = (await Promise.all(mortgageRecords.filter(m => m.mortgageAmount && m.duration && m.creditorName).map(async (mortgage) => {
