@@ -19,8 +19,7 @@ export const useServiceSLA = () => {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      // @ts-expect-error table not yet in generated types
-      const { data, error: e } = await supabase.from('service_sla_config').select('*').order('service_label');
+      const { data, error: e } = await (supabase as any).from('service_sla_config').select('*').order('service_label');
       if (e) throw e;
       setItems((data as ServiceSLA[]) || []);
     } catch (e: any) {
@@ -31,8 +30,7 @@ export const useServiceSLA = () => {
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
   const update = useCallback(async (id: string, patch: Partial<ServiceSLA>) => {
-    // @ts-expect-error table not yet in generated types
-    const { error: e } = await supabase.from('service_sla_config').update(patch).eq('id', id);
+    const { error: e } = await (supabase as any).from('service_sla_config').update(patch).eq('id', id);
     if (e) throw e;
     await fetchAll();
   }, [fetchAll]);

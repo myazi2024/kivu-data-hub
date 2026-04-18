@@ -38,9 +38,8 @@ export const useRequestsHealth = (enabled: boolean = true) => {
     setError(null);
     try {
       const [{ data: healthData, error: hErr }, { data: missData, error: mErr }] = await Promise.all([
-        // @ts-expect-error view not in generated types yet
-        supabase.from('requests_health_overview').select('*'),
-        supabase.rpc('regenerate_missing_certificates' as any),
+        (supabase as any).from('requests_health_overview').select('*'),
+        (supabase as any).rpc('regenerate_missing_certificates'),
       ]);
       if (hErr) throw hErr;
       if (mErr) throw mErr;
@@ -56,7 +55,7 @@ export const useRequestsHealth = (enabled: boolean = true) => {
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
   const escalateStale = useCallback(async (days: number = 30): Promise<EscalationResult[]> => {
-    const { data, error: e } = await supabase.rpc('escalate_stale_requests' as any, { p_days: days });
+    const { data, error: e } = await (supabase as any).rpc('escalate_stale_requests', { p_days: days });
     if (e) throw e;
     await fetchAll();
     return (data as EscalationResult[]) || [];
