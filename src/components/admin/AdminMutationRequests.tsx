@@ -72,6 +72,7 @@ const AdminMutationRequests: React.FC = () => {
           *,
           profiles:user_id (full_name, email)
         `)
+        .not('reference_number', 'ilike', 'TEST-%')
         .order('created_at', { ascending: false })
         .limit(2000);
 
