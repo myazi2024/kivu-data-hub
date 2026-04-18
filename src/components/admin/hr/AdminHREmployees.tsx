@@ -38,8 +38,10 @@ const emptyForm: Partial<HREmployeeInsert> = {
   first_name: '', last_name: '', email: '', phone: '', department: '', position: '',
   salary_usd: 0, birth_date: null, gender: null, emergency_contact_name: null,
   emergency_contact_phone: null, hire_date: new Date().toISOString().split('T')[0],
-  status: 'active', notes: null,
+  status: 'active', notes: null, user_id: null,
 };
+
+interface ProfileLite { id: string; email: string | null; full_name: string | null; }
 
 export default function AdminHREmployees({ hook }: Props) {
   const { employees, addEmployee, updateEmployee, deleteEmployee, isAdding, isUpdating, isDeleting } = hook;
@@ -49,6 +51,23 @@ export default function AdminHREmployees({ hook }: Props) {
   const [detailEmployee, setDetailEmployee] = useState<HREmployee | null>(null);
   const [editEmployee, setEditEmployee] = useState<HREmployee | null>(null);
   const [form, setForm] = useState<Partial<HREmployeeInsert>>(emptyForm);
+
+  // Profile search for user_id linkage
+  const [profileQuery, setProfileQuery] = useState('');
+  const [profileResults, setProfileResults] = useState<ProfileLite[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    if (profileQuery.length < 3) { setProfileResults([]); return; }
+    const t = setTimeout(async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, email, full_name')
+        .or(`email.ilike.%${profileQuery}%,full_name.ilike.%${profileQuery}%`)
+        .limit(8);
+      if (!cancelled) setProfileResults((data || []) as ProfileLite[]);
+    }, 300);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [profileQuery]);
 
   const filtered = employees.filter(e => {
     const matchSearch = `${e.first_name} ${e.last_name} ${e.position} ${e.matricule}`.toLowerCase().includes(search.toLowerCase());
