@@ -20,7 +20,37 @@ export interface TaxRecord {
   remainingAmount?: string;
   receiptFile: File | null;
   existingReceiptUrl?: string;
+  /**
+   * Référence de la construction concernée pour l'IRL.
+   * - 'main' : construction principale (onglet Infos)
+   * - 'additional:<index>' : construction additionnelle (index dans additionalConstructions)
+   * Obligatoire uniquement quand taxType === 'Impôt sur les revenus locatifs'.
+   */
+  constructionRef?: string;
 }
+
+/**
+ * Helpers IRL : libellé d'une construction et liste des refs en Location.
+ */
+export const buildRentalConstructionRefs = (
+  declaredUsage: string | undefined,
+  additionalConstructions: Array<{ declaredUsage?: string; propertyCategory?: string; constructionType?: string; constructionYear?: number }> = []
+): { ref: string; label: string }[] => {
+  const refs: { ref: string; label: string }[] = [];
+  if (declaredUsage === 'Location') {
+    refs.push({ ref: 'main', label: 'Construction principale' });
+  }
+  additionalConstructions.forEach((c, idx) => {
+    if (c?.declaredUsage === 'Location') {
+      const parts = [
+        c.propertyCategory || c.constructionType || 'Construction',
+        c.constructionYear ? String(c.constructionYear) : null,
+      ].filter(Boolean);
+      refs.push({ ref: `additional:${idx}`, label: `Construction #${idx + 2} (${parts.join(', ')})` });
+    }
+  });
+  return refs;
+};
 
 export interface MortgageRecord {
   mortgageAmount: string;
