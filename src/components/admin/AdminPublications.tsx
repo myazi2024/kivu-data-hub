@@ -44,8 +44,11 @@ const emptyForm = {
   price_usd: 0, category: 'research', status: 'draft', featured: false,
 };
 
+interface PublicationCategory { id: string; slug: string; name: string; is_active: boolean; }
+
 const AdminPublications: React.FC<AdminPublicationsProps> = ({ onRefresh }) => {
   const [publications, setPublications] = useState<Publication[]>([]);
+  const [categories, setCategories] = useState<PublicationCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Publication | null>(null);
   const [open, setOpen] = useState(false);
@@ -78,7 +81,17 @@ const AdminPublications: React.FC<AdminPublicationsProps> = ({ onRefresh }) => {
     a.href = url; a.download = `publications-${format(new Date(), 'yyyy-MM-dd')}.csv`; a.click();
   };
 
-  useEffect(() => { fetchPublications(); }, []);
+  useEffect(() => { fetchPublications(); fetchCategories(); }, []);
+
+  const fetchCategories = async () => {
+    const { data } = await (supabase as any)
+      .from('publication_categories')
+      .select('id, slug, name, is_active')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true });
+    setCategories((data as PublicationCategory[]) || []);
+  };
+
 
   const fetchPublications = async () => {
     try {
