@@ -863,6 +863,7 @@ export type Database = {
           road_sides: Json | null
           servitude_data: Json | null
           sound_environment: string | null
+          source_form_type: string | null
           standing: string | null
           status: string
           tax_history: Json | null
@@ -945,6 +946,7 @@ export type Database = {
           road_sides?: Json | null
           servitude_data?: Json | null
           sound_environment?: string | null
+          source_form_type?: string | null
           standing?: string | null
           status?: string
           tax_history?: Json | null
@@ -1027,6 +1029,7 @@ export type Database = {
           road_sides?: Json | null
           servitude_data?: Json | null
           sound_environment?: string | null
+          source_form_type?: string | null
           standing?: string | null
           status?: string
           tax_history?: Json | null
@@ -6088,6 +6091,10 @@ export type Database = {
           total_activities: number
         }[]
       }
+      get_user_dashboard_stats: {
+        Args: { target_user_id: string }
+        Returns: Json
+      }
       get_user_highest_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -6200,6 +6207,10 @@ export type Database = {
           request_table: string
           user_id: string
         }[]
+      }
+      request_account_deletion: {
+        Args: { confirmation_email: string }
+        Returns: Json
       }
       swap_theme_order: {
         Args: { _theme_a: string; _theme_b: string }
