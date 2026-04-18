@@ -690,7 +690,11 @@ export const useCCCFormState = ({
   };
 
   // ─── Validation: getMissingFields ───
-  const getMissingFields = useCallback(() => {
+  // FIX audit 3.8: mémoïsation via useMemo. Le tableau résultat est calculé
+  // une seule fois par changement de deps, puis getMissingFields() retourne la
+  // référence stable. Évite la ré-évaluation O(n²) sur chaque render.
+  const missingFieldsList = useMemo(() => {
+    const compute = () => {
     const missing: Array<{ field: string; label: string; tab: string }> = [];
     const isTerrainNu = formData.constructionType === 'Terrain nu';
     const isAppartement = formData.propertyCategory === 'Appartement';
@@ -940,11 +944,22 @@ export const useCCCFormState = ({
       }
     }
 
-    return missing;
+      return missing;
+    };
+    return compute();
   }, [formData, customTitleName, currentOwners, previousOwners, sectionType, permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, hasDispute, mortgageRecords, ownerDocFile, titleDocFiles, editingContributionId, roadSides, servitude, buildingShapes, constructionMode, additionalConstructions, soundEnvironment, nearbySoundSources]);
 
-  const getMissingFieldsForTab = useCallback((tab: string) => getMissingFields().filter(f => f.tab === tab), [getMissingFields]);
-  const isTabComplete = useCallback((tab: string) => getMissingFieldsForTab(tab).length === 0, [getMissingFieldsForTab]);
+  // Function wrapper preserves the public API (callers expect to invoke getMissingFields()).
+  const getMissingFields = useCallback(() => missingFieldsList, [missingFieldsList]);
+
+  const getMissingFieldsForTab = useCallback(
+    (tab: string) => missingFieldsList.filter(f => f.tab === tab),
+    [missingFieldsList],
+  );
+  const isTabComplete = useCallback(
+    (tab: string) => missingFieldsList.every(f => f.tab !== tab),
+    [missingFieldsList],
+  );
   const tabOrder = ['general', 'location', 'history', 'obligations', 'review'];
   const isTabAccessible = useCallback((tab: string) => {
     const tabIndex = tabOrder.indexOf(tab);
@@ -1454,17 +1469,25 @@ export const useCCCFormState = ({
   }, [parcelNumber]);
 
   // Sync LAST previous owner end date with current owner since (only if not manually set)
+  // FIX audit 3.5: dépendre uniquement de currentOwners[0]?.since (string) au lieu de
+  // l'array complet. Évite la ré-exécution à chaque frappe sur firstName/lastName/etc.
+  const firstOwnerSince = currentOwners[0]?.since;
   useEffect(() => {
     if (isLoadingFromDbRef.current) return;
-    if (currentOwners.length > 0 && currentOwners[0]?.since && previousOwners.length > 0) {
+    if (firstOwnerSince && previousOwners.length > 0) {
       const lastIdx = previousOwners.length - 1;
       const lastPreviousOwner = previousOwners[lastIdx];
       // Only auto-fill if endDate is empty (don't overwrite manual entries)
       if (!lastPreviousOwner.endDate) {
-        const updated = [...previousOwners]; updated[lastIdx] = { ...updated[lastIdx], endDate: currentOwners[0].since }; setPreviousOwners(updated);
+        setPreviousOwners(prev => {
+          const updated = [...prev];
+          updated[lastIdx] = { ...updated[lastIdx], endDate: firstOwnerSince };
+          return updated;
+        });
       }
     }
-  }, [currentOwners]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firstOwnerSince]);
 
   // Surface calculation from parcel sides
   // Sides order: [Nord, Sud, Est, Ouest] → opposite pairs: Nord↔Sud (0↔1), Est↔Ouest (2↔3)
