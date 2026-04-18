@@ -3,8 +3,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Eye, CheckCircle, History, StickyNote, Activity } from 'lucide-react';
-import { AdminUserNotes } from './AdminUserNotes';
-import { AdminUserActivity } from './AdminUserActivity';
 import { UserProfile } from '@/hooks/useUserManagement';
 import { useAdminUserStatistics } from '@/hooks/useAdminUserStatistics';
 import { UserStatsDisplay } from './UserStatsDisplay';
