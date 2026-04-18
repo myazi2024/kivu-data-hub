@@ -832,7 +832,7 @@ export const ParcelMapPreview = ({
 
           const isSelected = selectedBorne === coord.borne;
           const marker = L.marker([lat, lng], {
-            draggable: !isGroupDragMode && !isDrawingMode && !isMarkerMoveMode && mapConfig.enableDragging !== false,
+            draggable: !isGroupDragMode && !isDrawingMode && !isDrawingBuilding && !isMarkerMoveMode && mapConfig.enableDragging !== false,
             icon: L.divIcon({
               className: 'custom-marker',
               html: `<div style="
