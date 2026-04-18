@@ -32,6 +32,7 @@ export const usePublications = () => {
         .from('publications')
         .select('*')
         .eq('status', 'published')
+        .is('deleted_at', null)
         .order('featured', { ascending: false })
         .order('created_at', { ascending: false });
 

@@ -17,6 +17,10 @@ const PartnersSection = () => {
         .from('partners')
         .select('id, name, logo_url, website_url')
         .eq('is_active', true)
+        .is('deleted_at', null)
+        .order('display_order', { ascending: true });
+      setPartners(data || []);
+    };
         .order('display_order', { ascending: true });
       if (data) setPartners(data as Partner[]);
     };
