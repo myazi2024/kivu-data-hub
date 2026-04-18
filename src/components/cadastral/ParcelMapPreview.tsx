@@ -1289,6 +1289,23 @@ export const ParcelMapPreview = ({
     };
   }, [isMapReady, validCoords, roadSides, mapConfig, isGroupDragMode, isDrawingMode, selectedBorne, isDrawingBuilding, buildingVertices]);
 
+  // Pendant le tracé d'une construction : forcer l'activation du drag/zoom de la carte
+  // après chaque redraw, et désactiver explicitement le drag des marqueurs de bornes
+  // pour qu'ils n'interceptent pas le mousedown du pan.
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !isDrawingBuilding) return;
+    try {
+      map.dragging.enable();
+      map.scrollWheelZoom.enable();
+      map.doubleClickZoom.enable();
+      map.touchZoom.enable();
+    } catch {}
+    markersRef.current.forEach((m: any) => {
+      try { m.dragging?.disable(); } catch {}
+    });
+  }, [isDrawingBuilding, isMapReady, buildingVertices, validCoords]);
+
   // Supprimer une construction par ID (préserve les linkedIndex des autres)
   const removeBuildingById = useCallback((buildingId: string) => {
     if (!onBuildingShapesChange) return;
