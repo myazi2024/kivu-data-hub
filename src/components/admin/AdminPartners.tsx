@@ -220,9 +220,21 @@ const AdminPartners = () => {
                 <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Chargement...</TableCell></TableRow>
               ) : partners.length === 0 ? (
                 <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Aucun partenaire</TableCell></TableRow>
-              ) : partners.map(p => (
-                <TableRow key={p.id}>
-                  <TableCell className="text-muted-foreground">{p.display_order}</TableCell>
+              ) : partners.map((p, idx) => (
+                <TableRow
+                  key={p.id}
+                  draggable
+                  onDragStart={() => onDragStart(p.id)}
+                  onDragOver={onDragOver}
+                  onDrop={() => onDrop(p.id)}
+                  className={`${dragId === p.id ? 'opacity-50' : ''} ${reordering ? 'pointer-events-none' : ''}`}
+                >
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
+                      <span className="text-muted-foreground text-xs">{idx}</span>
+                    </div>
+                  </TableCell>
                   <TableCell>
                     {p.logo_url ? (
                       <img src={p.logo_url} alt={p.name} className="h-8 w-auto object-contain" />
@@ -241,12 +253,18 @@ const AdminPartners = () => {
                     )}
                   </TableCell>
                   <TableCell>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${p.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${p.is_active ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
                       {p.is_active ? 'Oui' : 'Non'}
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
+                      <Button variant="ghost" size="icon" disabled={idx === 0 || reordering} onClick={() => moveBy(p.id, -1)} title="Monter">
+                        <ArrowUp className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" disabled={idx === partners.length - 1 || reordering} onClick={() => moveBy(p.id, 1)} title="Descendre">
+                        <ArrowDown className="h-4 w-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
                       <Button variant="ghost" size="icon" onClick={() => handleDelete(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                     </div>
