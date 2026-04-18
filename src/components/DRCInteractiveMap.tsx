@@ -107,36 +107,15 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     [activeAnalyticsTab],
   );
 
-  /** Build province data from real Supabase analytics. When a profile is active,
-   *  inject the profile-driven metricValue and extraTooltipLines on each province. */
-  const provincesData: ProvinceData[] = useMemo(() => {
-    if (!analytics) return PROVINCE_META.map(p => buildEmptyProvince(p));
-
-    const { parcels, titleRequests, contributions, disputes, mutationRequests, expertiseRequests, mortgages } = analytics;
-
-    return PROVINCE_META.map(meta => {
-      const pFilter = (r: any) => r.province === meta.name;
-      const indicators = computeIndicators(
-        parcels.filter(pFilter),
-        titleRequests.filter(pFilter),
-        disputes.filter(pFilter),
-        (mortgages || []).filter(pFilter),
-        mutationRequests.filter(pFilter),
-        expertiseRequests.filter(pFilter),
-        contributions.filter(pFilter),
-      );
-
-      const base: ProvinceData = { id: meta.id, name: meta.name, ...indicators };
-
-      if (activeProfile) {
-        const ctx = { analytics, provinceName: meta.name };
-        base.metricValue = activeProfile.metric(ctx);
-        base.extraTooltipLines = activeProfile.tooltipLines(ctx);
-        base.noData = activeProfile.hasData ? !activeProfile.hasData(ctx) : false;
-      }
-      return base;
-    });
-  }, [analytics, activeProfile]);
+  const { provincesData, scopedStats, totalParcels } = useMapIndicators({
+    analytics,
+    activeProfile,
+    selectedProvince,
+    selectedVille,
+    selectedCommune,
+    selectedQuartier,
+    selectedTerritoire,
+  });
   provincesDataRef.current = provincesData;
 
   /** Adaptive tiers from real province distribution (quartiles), with static fallback */
