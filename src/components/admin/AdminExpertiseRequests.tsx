@@ -31,6 +31,8 @@ import {
   BUILDING_POSITION_LABELS, ACCESSIBILITY_LABELS
 } from '@/constants/expertiseLabels';
 import type { ExpertiseRequest } from '@/types/expertise';
+import ExpertiseStatsCards from './expertise/ExpertiseStatsCards';
+import ExpertiseFilters from './expertise/ExpertiseFilters';
 
 // Helper to get extended data — reads from DB columns first, falls back to legacy JSON in additional_notes
 const getExtendedData = (req: ExpertiseRequest): { userNotes: string; extendedData: Record<string, any> } => {

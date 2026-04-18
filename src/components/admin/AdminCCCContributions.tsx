@@ -21,6 +21,7 @@ import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/shared/PaginationControls';
 import { exportToCSV } from '@/utils/csvExport';
 import { logContributionAudit } from '@/utils/contributionAudit';
+import CCCStatsCards from './ccc/CCCStatsCards';
 
 interface ValidationResult {
   valid: boolean;
