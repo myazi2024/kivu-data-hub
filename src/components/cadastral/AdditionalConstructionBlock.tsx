@@ -286,7 +286,14 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
               </PopoverContent>
             </Popover>
           </div>
-          <Select value={data.declaredUsage} onValueChange={(v) => update('declaredUsage', v)} disabled={!data.constructionType || !data.constructionNature}>
+          <Select value={data.declaredUsage} onValueChange={(v) => {
+            // Vider rentalStartDate si on quitte "Location"
+            if (v !== 'Location' && data.rentalStartDate) {
+              onChange(index, { ...data, declaredUsage: v, rentalStartDate: undefined });
+            } else {
+              update('declaredUsage', v);
+            }
+          }} disabled={!data.constructionType || !data.constructionNature}>
             <SelectTrigger className="h-10 rounded-xl text-sm">
               <SelectValue placeholder={!data.constructionType || !data.constructionNature ? "Type et nature d'abord" : "Sélectionner"} />
             </SelectTrigger>
@@ -391,7 +398,16 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
           <Label className="text-sm font-medium">Année de construction</Label>
           <Select
             value={data.constructionYear?.toString() || ''}
-            onValueChange={(v) => update('constructionYear', parseInt(v))}
+            onValueChange={(v) => {
+              // Si on change l'année, vider la date de location si elle devient invalide
+              const y = parseInt(v);
+              const next: AdditionalConstruction = { ...data, constructionYear: y };
+              if (data.rentalStartDate && y) {
+                const max = new Date(y, 11, 31);
+                if (new Date(data.rentalStartDate) > max) next.rentalStartDate = undefined;
+              }
+              onChange(index, next);
+            }}
           >
             <SelectTrigger className="h-10 rounded-xl text-sm">
               <SelectValue placeholder="Sélectionner l'année" />
@@ -403,6 +419,15 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
             </SelectContent>
           </Select>
         </div>
+      )}
+
+      {/* Date de mise en location — conditionnel si usage = Location */}
+      {data.declaredUsage === 'Location' && (
+        <RentalStartDateField
+          value={data.rentalStartDate}
+          onChange={(v) => update('rentalStartDate', v)}
+          constructionYear={data.constructionYear}
+        />
       )}
 
       {/* Capacité d'accueil */}
