@@ -67,6 +67,8 @@ interface ObligationsTabProps {
   parcelNumber: string;
   parcelId?: string;
   formData: CadastralContributionData;
+  /** Constructions additionnelles — source de vérité pour le picklist IRL */
+  additionalConstructions?: Array<{ declaredUsage?: string; propertyCategory?: string; constructionType?: string; constructionYear?: number }>;
   obligationType: 'taxes' | 'mortgages' | 'disputes';
   setObligationType: (v: 'taxes' | 'mortgages' | 'disputes') => void;
   // Tax
@@ -105,7 +107,7 @@ interface ObligationsTabProps {
 
 const ObligationsTab: React.FC<ObligationsTabProps> = ({
   parcelNumber, parcelId,
-  formData, obligationType, setObligationType,
+  formData, additionalConstructions, obligationType, setObligationType,
   taxRecords, updateTaxRecord, addTaxRecord, removeTaxRecord,
   handleTaxFileChange, removeTaxFile, showTaxWarning, highlightIncompleteTax,
   hasMortgage, setHasMortgage, mortgageRecords, setMortgageRecords,
@@ -171,9 +173,13 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                     <Select value={tax.taxType} onValueChange={(value) => updateTaxRecord(index, 'taxType', value)}>
                       <SelectTrigger className="h-10 text-sm rounded-xl"><SelectValue placeholder="Type" /></SelectTrigger>
                       <SelectContent className="rounded-xl">
-                        {['Impôt foncier annuel', ...((formData.declaredUsage === 'Location' || (Array.isArray(formData.additionalConstructions) && formData.additionalConstructions.some((c: any) => c.declaredUsage === 'Location'))) ? ['Impôt sur les revenus locatifs'] : [])].map(opt => (
-                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                        ))}
+                        {(() => {
+                          const additional = additionalConstructions ?? (Array.isArray((formData as any).additionalConstructions) ? (formData as any).additionalConstructions : []);
+                          const hasAnyRental = formData.declaredUsage === 'Location' || additional.some((c: any) => c?.declaredUsage === 'Location');
+                          return ['Impôt foncier annuel', ...(hasAnyRental ? ['Impôt sur les revenus locatifs'] : [])].map(opt => (
+                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                          ));
+                        })()}
                       </SelectContent>
                     </Select>
                   </div>

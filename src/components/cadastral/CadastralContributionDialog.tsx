@@ -173,7 +173,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               <TabsContent value="obligations" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
                 <ObligationsTab
                   parcelNumber={parcelNumber}
-                  formData={state.formData} obligationType={state.obligationType} setObligationType={state.setObligationType}
+                  formData={state.formData} additionalConstructions={state.additionalConstructions}
+                  obligationType={state.obligationType} setObligationType={state.setObligationType}
                   taxRecords={state.taxRecords} updateTaxRecord={state.updateTaxRecord} addTaxRecord={state.addTaxRecord}
                   removeTaxRecord={state.removeTaxRecord} handleTaxFileChange={state.handleTaxFileChange} removeTaxFile={state.removeTaxFile}
                   showTaxWarning={state.showTaxWarning} highlightIncompleteTax={state.highlightIncompleteTax}

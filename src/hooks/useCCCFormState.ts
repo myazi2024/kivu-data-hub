@@ -14,6 +14,7 @@ import { CurrentOwner, BuildingPermit } from '@/components/cadastral/ccc-tabs/Ge
 import { PreviousOwner } from '@/components/cadastral/ccc-tabs/HistoryTab';
 import { TaxRecord, MortgageRecord } from '@/components/cadastral/ccc-tabs/ObligationsTab';
 import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
+import { normalizeConstructionNature } from '@/utils/constructionNatureNormalizer';
 import {
   getAllProvinces,
   getVillesForProvince,
@@ -704,8 +705,10 @@ export const useCCCFormState = ({
         }
       }
     });
-    if (!isTerrainNu && formData.constructionNature && formData.constructionNature !== 'Non bâti' && formData.constructionNature !== 'Construction précaire' && !formData.constructionMaterials) missing.push({ field: 'constructionMaterials', label: 'Matériaux de construction', tab: 'general' });
-    if (!isTerrainNu && formData.constructionNature && formData.constructionNature !== 'Non bâti' && formData.constructionNature !== 'Construction précaire' && !formData.standing) missing.push({ field: 'standing', label: 'Standing', tab: 'general' });
+    const normalizedNature = formData.constructionNature ? normalizeConstructionNature(formData.constructionNature) : '';
+    const isPrecaireOrUnbuilt = normalizedNature === 'Précaire' || normalizedNature === 'Non bâti';
+    if (!isTerrainNu && formData.constructionNature && !isPrecaireOrUnbuilt && !formData.constructionMaterials) missing.push({ field: 'constructionMaterials', label: 'Matériaux de construction', tab: 'general' });
+    if (!isTerrainNu && formData.constructionNature && !isPrecaireOrUnbuilt && !formData.standing) missing.push({ field: 'standing', label: 'Standing', tab: 'general' });
     if (!isTerrainNu && formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && !formData.constructionYear) missing.push({ field: 'constructionYear', label: 'Année de construction', tab: 'general' });
     if (isAppartement) {
       if (!formData.apartmentNumber) missing.push({ field: 'apartmentNumber', label: "Numéro de l'appartement", tab: 'general' });
