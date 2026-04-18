@@ -30,7 +30,7 @@ const HeroSection = () => {
   return (
     <>
       <Helmet>
-        <link rel="preload" as="image" href={heroImage} fetchpriority="high" />
+        <link rel="preload" as="image" href={heroImage} />
       </Helmet>
 
       <section className="relative min-h-[85dvh] flex items-center justify-center overflow-hidden">
