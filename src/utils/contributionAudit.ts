@@ -33,7 +33,7 @@ export async function logContributionAudit(params: {
       adminName = user.email ?? null;
     }
 
-    await supabase.from('cadastral_contribution_audit').insert({
+    await (supabase as any).from('cadastral_contribution_audit').insert({
       contribution_id: params.contributionId,
       admin_id: user.id,
       admin_name: adminName,
