@@ -20,17 +20,12 @@ import { useTestEnvironment } from '@/hooks/useTestEnvironment';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { getTerritoiresForProvince, getProvinceForTerritoire } from '@/lib/geographicData';
 import { MAP_TAB_PROFILES, computeAdaptiveTiers, NO_DATA_COLOR, type MapTabProfile, type MapTier } from '@/config/mapTabProfiles';
-import {
-  PROVINCE_META,
-  DEFAULT_DENSITY_TIERS,
-  DENSITY_TIER_KEYS,
-  TOOLTIP_LINE_KEYS,
-  norm,
-  buildEmptyProvince,
-  buildScopePredicate,
-} from './map/meta/mapMeta';
+import { norm, buildScopePredicate } from './map/meta/mapMeta';
 import { useMapDrilldown } from './map/hooks/useMapDrilldown';
 import { useMapIndicators } from './map/hooks/useMapIndicators';
+import { MapLegend } from './map/ui/MapLegend';
+import { MapScopeLegend } from './map/ui/MapScopeLegend';
+import { MapKPICards } from './map/ui/MapKPICards';
 
 
 
@@ -442,7 +437,6 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   </div>
                   {/* Légende contextuelle — scope dynamique (profil ou défaut) */}
                   {selectedProvince && (activeProfile || scopedStats) && (() => {
-                    // For profile legends: build a scope-filtered analytics view (province + optional ville/commune/quartier)
                     let profileLines: { label: string; value: string; color?: string }[] | undefined;
                     if (activeProfile && analytics) {
                       const predicate = buildScopePredicate(selectedProvince.name, selectedVille, selectedCommune, selectedQuartier, selectedTerritoire);
@@ -467,26 +461,17 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                       profileLines = activeProfile.legendStats?.(ctx) ?? activeProfile.tooltipLines(ctx).slice(0, 4);
                     }
                     return (
-                      <div className="absolute bottom-5 left-2 z-10 bg-background/80 backdrop-blur-sm rounded px-1.5 py-1 border border-border/30 animate-fade-in max-w-[140px]">
-                        <div className="text-[10px] font-medium text-foreground mb-0.5 truncate">{scopeLabel}</div>
-                        <div className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
-                          {profileLines
-                            ? profileLines.map((s, i) => (
-                                <div key={i} className="flex justify-between gap-2">
-                                  <span className="truncate">{s.label}</span>
-                                  <span className={`font-medium ${s.color || 'text-foreground'}`}>{s.value}</span>
-                                </div>
-                              ))
-                            : (
-                              <>
-                                <div className="flex justify-between gap-2"><span>Certif. enreg.</span><span className="font-medium text-foreground">{formatNumber(scopedStats!.certEnregCount)}</span></div>
-                                <div className="flex justify-between gap-2"><span>Titres dem.</span><span className="font-medium text-foreground">{formatNumber(scopedStats!.titleRequestsCount)}</span></div>
-                                <div className="flex justify-between gap-2"><span>Litiges</span><span className="font-medium text-foreground">{formatNumber(scopedStats!.disputesCount)}</span></div>
-                                <div className="flex justify-between gap-2"><span>Sup. moy.</span><span className="font-medium text-foreground">{scopedStats!.avgParcelSurfaceSqm > 0 ? `${scopedStats!.avgParcelSurfaceSqm} m²` : '—'}</span></div>
-                              </>
-                            )}
-                        </div>
-                      </div>
+                      <MapScopeLegend
+                        scopeLabel={scopeLabel}
+                        profileLines={profileLines}
+                        fallbackStats={scopedStats ? {
+                          certEnregCount: scopedStats.certEnregCount,
+                          titleRequestsCount: scopedStats.titleRequestsCount,
+                          disputesCount: scopedStats.disputesCount,
+                          avgParcelSurfaceSqm: scopedStats.avgParcelSurfaceSqm,
+                        } : undefined}
+                        formatNumber={formatNumber}
+                      />
                     );
                   })()}
 
@@ -498,33 +483,11 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
 
                   {/* Mini-légende choroplèthe par profil — visible quand un onglet métier est actif */}
                   {activeProfile && (
-                    <div
-                      className="absolute top-2 right-2 z-50 bg-background/85 backdrop-blur-sm rounded-md px-2 py-1.5 border border-border/40 shadow-sm animate-fade-in max-w-[170px]"
-                      role="region"
-                      aria-live="polite"
-                      aria-label={`Légende : ${activeProfile.legendTitle}`}
-                    >
-                      <div className="text-[9px] font-semibold text-foreground mb-1 truncate">{activeProfile.legendTitle}</div>
-                      {hasAnyMetricData ? (
-                        <div className="flex flex-col gap-0.5">
-                          {(adaptiveTiers || activeProfile.tiers).map((t, i) => (
-                            <div key={i} className="flex items-center gap-1.5" role="img" aria-label={`Palier ${t.label} : de ${t.min} à ${t.max === Infinity ? '∞' : t.max}`}>
-                              <span className="inline-block h-2.5 w-2.5 rounded-sm border border-border/40" style={{ backgroundColor: t.color }} aria-hidden="true" />
-                              <span className="text-[9px] text-muted-foreground truncate">{t.label}</span>
-                            </div>
-                          ))}
-                          <div className="flex items-center gap-1.5 pt-0.5 mt-0.5 border-t border-border/30" role="img" aria-label="Aucune donnée disponible">
-                            <span className="inline-block h-2.5 w-2.5 rounded-sm border border-border/40" style={{ backgroundColor: 'hsl(var(--muted))' }} aria-hidden="true" />
-                            <span className="text-[9px] text-muted-foreground italic truncate">Aucune donnée</span>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1.5" role="img" aria-label="Aucune occurrence pour ce profil">
-                          <span className="inline-block h-2.5 w-2.5 rounded-sm border border-border/40" style={{ backgroundColor: 'hsl(var(--muted))' }} aria-hidden="true" />
-                          <span className="text-[9px] text-muted-foreground italic">Aucune occurrence pour ce profil</span>
-                        </div>
-                      )}
-                    </div>
+                    <MapLegend
+                      activeProfile={activeProfile}
+                      adaptiveTiers={adaptiveTiers}
+                      hasAnyMetricData={hasAnyMetricData}
+                    />
                   )}
 
                   <div className="absolute bottom-5 right-2 z-10 flex gap-1">
@@ -602,97 +565,14 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
               <Card className="analytics-panel border-0 h-full flex flex-col overflow-hidden">
                 <ScrollArea className="flex-1">
                   {selectedProvince && scopedStats ? (
-                    <div className="p-2 space-y-2">
-                      <div className="flex items-center justify-between gap-1 mb-1">
-                        <div className="flex items-center gap-1 min-w-0">
-                          <MapPin className="h-3 w-3 text-primary flex-shrink-0" />
-                          <span className="text-[11px] sm:text-xs font-medium text-foreground truncate">{scopeLabel}</span>
-                        </div>
-                        <button
-                          onClick={() => { setSelectedProvince(null); setSelectedVille(undefined); setSelectedCommune(undefined); setSelectedQuartier(undefined); }}
-                          className="lg:hidden flex-shrink-0 h-5 w-5 flex items-center justify-center rounded-full bg-muted hover:bg-destructive hover:text-destructive-foreground transition-colors text-muted-foreground"
-                          aria-label="Fermer"
-                        >
-                          <span className="text-xs font-medium leading-none">✕</span>
-                        </button>
-                      </div>
-                      
-                      {/* Indicateurs fonciers */}
-                      <div className="space-y-1">
-                        <h5 className="text-[10px] font-medium text-foreground flex items-center gap-1">
-                          <Database className="h-3 w-3 text-primary" />
-                          Indicateurs fonciers
-                        </h5>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1">
-                          {isChartVisible('detail-cert-enreg') && (
-                            <Card className="analytics-card border-0 p-1">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-cert-enreg', 'Certif. enregistrement')}</div>
-                              <div className="text-[11px] font-bold text-primary">{formatNumber(scopedStats.certEnregCount)}</div>
-                            </Card>
-                          )}
-                          {isChartVisible('detail-contrat-loc') && (
-                            <Card className="analytics-card border-0 p-1">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-contrat-loc', 'Contrat location')}</div>
-                              <div className="text-[11px] font-bold text-blue-600">{formatNumber(scopedStats.contratLocCount)}</div>
-                            </Card>
-                          )}
-                          {isChartVisible('detail-fiche-parc') && (
-                            <Card className="analytics-card border-0 p-1">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-fiche-parc', 'Fiche parcellaire')}</div>
-                              <div className="text-[11px] font-bold text-emerald-600">{formatNumber(scopedStats.ficheParcCount)}</div>
-                            </Card>
-                          )}
-                          {isChartVisible('detail-title-req') && (
-                            <Card className="analytics-card border-0 p-1">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-title-req', 'Titres demandés')}</div>
-                              <div className="text-[11px] font-bold text-violet-600">{formatNumber(scopedStats.titleRequestsCount)}</div>
-                            </Card>
-                          )}
-                          {isChartVisible('detail-disputes') && (
-                            <Card className="analytics-card border-0 p-1">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-disputes', 'Litiges fonciers')}</div>
-                              <div className="text-[11px] font-bold text-orange-500">{formatNumber(scopedStats.disputesCount)}</div>
-                            </Card>
-                          )}
-                          {isChartVisible('detail-mortgages') && (
-                            <Card className="analytics-card border-0 p-1">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-mortgages', 'Hypothèques actives')}</div>
-                              <div className="text-[11px] font-bold text-red-600">{formatNumber(scopedStats.activeMortgagesCount)}</div>
-                            </Card>
-                          )}
-                          {isChartVisible('detail-mutations') && (
-                            <Card className="analytics-card border-0 p-1">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-mutations', 'Mutations en cours')}</div>
-                              <div className="text-[11px] font-bold text-violet-600">{formatNumber(scopedStats.pendingMutationsCount)}</div>
-                            </Card>
-                          )}
-                          {isChartVisible('detail-expertises') && (
-                            <Card className="analytics-card border-0 p-1">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-expertises', 'Expertises en cours')}</div>
-                              <div className="text-[11px] font-bold text-blue-600">{formatNumber(scopedStats.pendingExpertisesCount)}</div>
-                            </Card>
-                          )}
-                          {isChartVisible('detail-avg-surface') && (
-                            <Card className="analytics-card border-0 p-1">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-avg-surface', 'Sup. moy. parcelle')}</div>
-                              <div className="text-[11px] font-bold text-emerald-700">{scopedStats.avgParcelSurfaceSqm > 0 ? `${formatNumber(scopedStats.avgParcelSurfaceSqm)} m²` : '—'}</div>
-                            </Card>
-                          )}
-                          {isChartVisible('detail-avg-building') && (
-                            <Card className="analytics-card border-0 p-1">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-avg-building', 'Sup. moy. construction')}</div>
-                              <div className="text-[11px] font-bold text-emerald-600">{scopedStats.avgBuildingSurfaceSqm > 0 ? `${formatNumber(scopedStats.avgBuildingSurfaceSqm)} m²` : '—'}</div>
-                            </Card>
-                          )}
-                          {isChartVisible('detail-avg-height') && (
-                            <Card className="analytics-card border-0 p-1">
-                              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-avg-height', 'Haut. moy. construction')}</div>
-                              <div className="text-[11px] font-bold text-blue-600">{scopedStats.avgBuildingHeightM > 0 ? `${scopedStats.avgBuildingHeightM} m` : '—'}</div>
-                            </Card>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                    <MapKPICards
+                      scopeLabel={scopeLabel}
+                      scopedStats={scopedStats}
+                      isChartVisible={isChartVisible}
+                      dt={dt}
+                      formatNumber={formatNumber}
+                      onClose={() => { setSelectedProvince(null); setSelectedVille(undefined); setSelectedCommune(undefined); setSelectedQuartier(undefined); }}
+                    />
                   ) : (
                     <div className="flex items-center justify-center h-full p-4">
                       <p className="text-[10px] text-muted-foreground text-center">Cliquez sur une province</p>
