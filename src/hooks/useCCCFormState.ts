@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useFormPersistence } from '@/hooks/ccc/useFormPersistence';
+import { useGeographicCascade } from '@/hooks/ccc/useGeographicCascade';
+import { useConstructionCascade } from '@/hooks/ccc/useConstructionCascade';
 import { supabase } from '@/integrations/supabase/client';
 import { useCadastralContribution, CadastralContributionData } from '@/hooks/useCadastralContribution';
 import { useContributionConfig } from '@/hooks/useContributionConfig';
