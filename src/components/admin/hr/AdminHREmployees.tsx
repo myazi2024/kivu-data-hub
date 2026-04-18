@@ -100,6 +100,7 @@ export default function AdminHREmployees({ hook }: Props) {
       hire_date: editEmployee.hire_date,
       status: editEmployee.status,
       notes: editEmployee.notes,
+      user_id: editEmployee.user_id,
     });
     setEditEmployee(null);
   };
@@ -146,6 +147,39 @@ export default function AdminHREmployees({ hook }: Props) {
         </Select>
       </div>
       <div className="col-span-2"><Label>Notes</Label><Textarea value={data.notes || ''} onChange={e => setData({ ...data, notes: e.target.value || null })} /></div>
+      <div className="col-span-2 space-y-1.5">
+        <Label>Compte utilisateur lié (optionnel)</Label>
+        {data.user_id ? (
+          <div className="flex items-center gap-2 p-2 border rounded text-xs bg-muted/30">
+            <code className="flex-1 truncate">{data.user_id}</code>
+            <Button size="sm" variant="ghost" type="button" onClick={() => setData({ ...data, user_id: null })}>Retirer</Button>
+          </div>
+        ) : (
+          <>
+            <Input
+              placeholder="Rechercher par email ou nom (min. 3 caractères)..."
+              value={profileQuery}
+              onChange={e => setProfileQuery(e.target.value)}
+              className="h-8 text-xs"
+            />
+            {profileResults.length > 0 && (
+              <div className="border rounded max-h-32 overflow-y-auto">
+                {profileResults.map(p => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className="w-full text-left px-2 py-1.5 text-xs hover:bg-muted"
+                    onClick={() => { setData({ ...data, user_id: p.id }); setProfileQuery(''); setProfileResults([]); }}
+                  >
+                    <div className="font-medium">{p.full_name || '(sans nom)'}</div>
+                    <div className="text-muted-foreground">{p.email || p.id}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 
