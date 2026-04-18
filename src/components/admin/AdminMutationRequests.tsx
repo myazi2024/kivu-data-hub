@@ -400,11 +400,6 @@ const AdminMutationRequests: React.FC = () => {
     return statusMap[status] || { variant: 'default', label: status };
   };
 
-  const safeProposedChanges = (request: MutationRequest | null) => {
-    if (!request?.proposed_changes) return {} as Record<string, any>;
-    return request.proposed_changes;
-  };
-
   const columns = [
     {
       key: 'reference_number',
