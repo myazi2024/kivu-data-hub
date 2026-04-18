@@ -973,7 +973,7 @@ export const useCCCFormState = ({
     }
   }, [getMissingFieldsForTab, toast, handleTabChange]);
 
-  const isFormValidForSubmission = () => getMissingFields().length === 0;
+  const isFormValidForSubmission = useCallback(() => getMissingFields().length === 0, [getMissingFields]);
 
   // ─── CCC Value calculation ───
   const calculateCCCValue = useMemo(() => {
