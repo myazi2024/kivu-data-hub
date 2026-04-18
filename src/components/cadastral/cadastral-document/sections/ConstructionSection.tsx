@@ -29,6 +29,9 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({ number, parce
           {parcel.construction_nature && <DataField label="Nature" value={parcel.construction_nature} />}
           {parcel.construction_materials && <DataField label="Matériaux" value={parcel.construction_materials} />}
           {parcel.construction_year && <DataField label="Année" value={parcel.construction_year} />}
+          {(parcel as any).declared_usage === 'Location' && (parcel as any).rental_start_date && (
+            <DataField label="En location depuis" value={formatDate((parcel as any).rental_start_date)} />
+          )}
         </DataGrid>
       )}
 
