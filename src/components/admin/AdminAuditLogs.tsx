@@ -21,6 +21,7 @@ import {
 import { exportToCSV } from '@/utils/csvExport';
 import { useAuditLogsPaginated, AuditLogRow } from '@/hooks/useAuditLogsPaginated';
 import { Link } from 'react-router-dom';
+import AuditDrillDownButton from './audit/AuditDrillDownButton';
 
 const ACTIONS = ['INSERT', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT', 'EXPORT'];
 
@@ -187,12 +188,14 @@ export default function AdminAuditLogs() {
                       <span className="text-xs">{log.user_email || (log.user_id ? log.user_id.substring(0, 8) + '...' : 'System')}</span>
                     </ResponsiveTableCell>
                     <ResponsiveTableCell priority="high" label="Détails">
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button variant="ghost" size="sm" onClick={() => setSelectedLog(log)}>
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </DialogTrigger>
+                      <div className="flex items-center gap-1">
+                        <AuditDrillDownButton tableName={log.table_name} recordId={log.record_id} />
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="ghost" size="sm" onClick={() => setSelectedLog(log)}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
                         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                           <DialogHeader><DialogTitle>Détails du log</DialogTitle></DialogHeader>
                           <div className="space-y-3 text-sm">

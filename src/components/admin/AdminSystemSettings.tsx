@@ -14,6 +14,8 @@ const SETTING_LABELS: Record<string, { label: string; description: string }> = {
   latency_thresholds: { label: 'Seuils latence (ms)', description: 'JSON {"db":500,"auth":300,"storage":500,"edge":2000}' },
   audit_logs_purge_days: { label: 'Rétention logs audit (jours)', description: 'Cron purge mensuel' },
   test_mode_max_hours: { label: 'Alerte mode test (h)', description: 'Heures avant alerte si test mode actif' },
+  health_db_threshold_ms: { label: 'Seuil santé BD (ms)', description: 'Au-delà, la base est marquée dégradée' },
+  health_edge_threshold_ms: { label: 'Seuil santé Edge (ms)', description: 'Au-delà, les edge functions sont marquées dégradées' },
 };
 
 const AdminSystemSettings = () => {
