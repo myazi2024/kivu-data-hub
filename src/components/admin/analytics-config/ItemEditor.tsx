@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronUp, ChevronDown } from 'lucide-react';
+import { ChevronUp, ChevronDown, AlertCircle } from 'lucide-react';
 import { ChartConfigItem } from '@/hooks/useAnalyticsChartsConfig';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { CHART_TYPE_OPTIONS } from '@/config/chartTypeOptions';
+import { isValidLucideIcon } from '@/utils/analyticsConfigSync';
 
 interface ItemEditorProps {
   item: ChartConfigItem;
@@ -25,6 +26,12 @@ const isFixedTypeChart = (item: ChartConfigItem) =>
 export const ItemEditor: React.FC<ItemEditorProps> = ({ item, onChange, onMoveUp, onMoveDown, isFirst, isLast }) => {
   const isMobile = useIsMobile();
   const fixedType = isFixedTypeChart(item);
+  const [iconValid, setIconValid] = useState(true);
+  useEffect(() => {
+    let cancel = false;
+    isValidLucideIcon(item.custom_icon || '').then(v => { if (!cancel) setIconValid(v); });
+    return () => { cancel = true; };
+  }, [item.custom_icon]);
 
   if (isMobile) {
     return (
