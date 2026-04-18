@@ -1766,10 +1766,11 @@ export const ParcelMapPreview = ({
     }
 
     if (isDrawingBuilding) {
-      map.dragging.disable();
-      map.scrollWheelZoom.disable();
-      map.doubleClickZoom.disable();
-      map.touchZoom.disable();
+      // Garder drag/zoom actifs pour permettre le recentrage hors-parcelle
+      map.dragging.enable();
+      map.scrollWheelZoom.enable();
+      map.doubleClickZoom.enable();
+      map.touchZoom.enable();
       container.dataset.addingBuilding = 'true';
       container.style.cursor = 'crosshair';
       return;
