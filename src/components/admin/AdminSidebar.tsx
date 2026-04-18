@@ -23,6 +23,7 @@ import {
   Gift,
   Map as MapIcon,
   Tag,
+  Tags,
   Building2,
   Receipt,
   TrendingUp,
