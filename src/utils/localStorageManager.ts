@@ -1,12 +1,82 @@
 /**
- * 💾 Gestionnaire localStorage avec gestion des quotas et erreurs
+ * 💾 Gestionnaire localStorage avec gestion des quotas, TTL et versioning
  */
 
 export interface StorageResult<T> {
   success: boolean;
   data?: T;
   error?: string;
+  reason?: 'expired' | 'schema_mismatch' | 'parse_error' | 'not_found' | 'unknown';
 }
+
+export interface VersionedStorage<T> {
+  schemaVersion: number;
+  savedAt: string; // ISO timestamp
+  data: T;
+}
+
+/**
+ * Sauvegarder des données versionnées (recommandé pour les brouillons de formulaires).
+ */
+export const saveVersioned = <T>(
+  key: string,
+  data: T,
+  schemaVersion: number,
+): StorageResult<void> => {
+  const payload: VersionedStorage<T> = {
+    schemaVersion,
+    savedAt: new Date().toISOString(),
+    data,
+  };
+  return saveToLocalStorage(key, payload);
+};
+
+/**
+ * Charger des données versionnées avec contrôle TTL et schemaVersion.
+ * Si TTL dépassé ou schema mismatch, la clé est purgée et `success=false` retourné.
+ */
+export const loadVersioned = <T>(
+  key: string,
+  expectedSchemaVersion: number,
+  ttlDays: number = 30,
+): StorageResult<T> => {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return { success: false, reason: 'not_found', error: 'Aucune donnée trouvée' };
+
+    let parsed: VersionedStorage<T>;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      localStorage.removeItem(key);
+      return { success: false, reason: 'parse_error', error: 'Données corrompues, supprimées.' };
+    }
+
+    if (!parsed || typeof parsed !== 'object' || !('schemaVersion' in parsed) || !('data' in parsed)) {
+      localStorage.removeItem(key);
+      return { success: false, reason: 'schema_mismatch', error: 'Format de brouillon obsolète, supprimé.' };
+    }
+
+    if (parsed.schemaVersion !== expectedSchemaVersion) {
+      localStorage.removeItem(key);
+      return { success: false, reason: 'schema_mismatch', error: 'Brouillon issu d\'une version antérieure du formulaire, supprimé.' };
+    }
+
+    if (parsed.savedAt) {
+      const ageMs = Date.now() - new Date(parsed.savedAt).getTime();
+      const ageDays = ageMs / (1000 * 60 * 60 * 24);
+      if (ageDays > ttlDays) {
+        localStorage.removeItem(key);
+        return { success: false, reason: 'expired', error: `Brouillon expiré (> ${ttlDays} jours), supprimé.` };
+      }
+    }
+
+    return { success: true, data: parsed.data };
+  } catch (error) {
+    console.error('Erreur chargement versionné:', error);
+    return { success: false, reason: 'unknown', error: 'Erreur lors du chargement des données' };
+  }
+};
 
 /**
  * Sauvegarder des données dans le localStorage avec gestion du quota
