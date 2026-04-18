@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { geographicData } from '@/lib/geographicData';
 import { AdminParcelEditDialog } from './AdminParcelEditDialog';
+import { EmptyMapBanner } from './map/EmptyMapBanner';
 
 // Extraire les provinces
 const provinces = Object.keys(geographicData);
@@ -303,6 +304,7 @@ const AdminCadastralMap = () => {
 
   return (
     <div className="space-y-4 p-2 md:p-4">
+      <EmptyMapBanner />
       {/* Statistiques */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <Card>

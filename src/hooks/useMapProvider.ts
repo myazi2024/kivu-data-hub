@@ -85,12 +85,24 @@ export const useMapProvider = () => {
   }, []);
 
   /**
-   * Construit l'URL de tuile finale en remplaçant {apiKey} si nécessaire.
+   * Construit l'URL de tuile finale.
+   * - Si le fournisseur nécessite une clé API : route via l'edge function proxy-mapbox-tiles
+   *   (la clé MAPBOX_ACCESS_TOKEN reste côté serveur, jamais exposée au client).
+   * - Sinon : utilise directement le template (OSM, etc.).
+   * Le paramètre `apiKey` est conservé pour rétro-compatibilité mais n'est plus utilisé.
    */
-  const getTileUrl = (apiKey?: string): string => {
-    let url = provider.tile_url_template;
-    if (provider.requires_api_key && apiKey) {
-      url = url.replace('{apiKey}', apiKey);
+  const getTileUrl = (_apiKey?: string): string => {
+    const url = provider.tile_url_template;
+    if (provider.requires_api_key) {
+      // Pour Mapbox : extraire styleId et router via edge function
+      // Pattern attendu: https://api.mapbox.com/styles/v1/{user}/{style}/tiles/{z}/{x}/{y}?access_token={apiKey}
+      const m = url.match(/\/styles\/v1\/([^/]+)\/([^/]+)\/tiles/);
+      if (m) {
+        const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL;
+        if (supabaseUrl) {
+          return `${supabaseUrl}/functions/v1/proxy-mapbox-tiles/styles/v1/${m[1]}/${m[2]}/tiles/{z}/{x}/{y}`;
+        }
+      }
     }
     return url;
   };

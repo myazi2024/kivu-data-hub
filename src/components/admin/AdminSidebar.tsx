@@ -141,6 +141,7 @@ export const menuItems = [
       { icon: Search, label: 'Config Recherche', value: 'search-config', badge: null, keywords: ['filtre', 'rechercher', 'paramètres'] },
       { icon: FileSearch, label: 'Config Résultats', value: 'results-config', badge: null, keywords: ['affichage', 'résultats', 'liste'] },
       { icon: Compass, label: 'Zones Territoriales', value: 'zones', badge: null, keywords: ['province', 'commune', 'territoire', 'ville', 'quartier'] },
+      { icon: Database, label: 'Hub Configuration', value: 'config-hub', badge: null, keywords: ['config', 'hub', 'centralisé', 'audit', 'snapshot'] },
     ]
   },
   {

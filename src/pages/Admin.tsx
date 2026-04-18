@@ -49,6 +49,7 @@ const tabComponents: Record<string, React.LazyExoticComponent<any>> = {
   'search-config': lazy(() => import('@/components/admin/AdminSearchBarConfig')),
   'results-config': lazy(() => import('@/components/admin/AdminResultsConfig')),
   'zones': lazy(() => import('@/components/admin/AdminTerritorialZones')),
+  'config-hub': lazy(() => import('@/components/admin/AdminConfigHub')),
   'permits': lazy(() => import('@/components/admin/AdminBuildingPermits')),
   'permit-fees-config': lazy(() => import('@/components/admin/AdminPermitFeesConfig')),
   'land-title-requests': lazy(() => import('@/components/admin/AdminLandTitleRequests')),

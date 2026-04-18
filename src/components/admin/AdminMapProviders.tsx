@@ -12,9 +12,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { logAuditAction } from '@/utils/supabaseConfigUtils';
+import { GoogleProviderWarning } from './map/GoogleProviderWarning';
 import {
   Map as MapIcon, Plus, Edit, Trash2, Star, StarOff, RefreshCw,
-  Eye, EyeOff, Key, Globe, Info, CheckCircle2, ArrowUpDown, Loader2
+  Eye, EyeOff, Key, Globe, Info, CheckCircle2, ArrowUpDown, Loader2, ShieldCheck
 } from 'lucide-react';
 
 interface MapProvider {
@@ -105,6 +106,25 @@ const AdminMapProviders: React.FC = () => {
     if (!editingProvider.provider_key || !editingProvider.provider_name || !editingProvider.tile_url_template) {
       toast.error('Clé, nom et URL de tuile sont obligatoires');
       return;
+    }
+
+    // P1.7 — Test de validité de la tuile (HEAD sur z=2,x=1,y=1)
+    if (!editingProvider.requires_api_key) {
+      const sample = editingProvider
+        .tile_url_template!
+        .replace('{z}', '2').replace('{x}', '1').replace('{y}', '1')
+        .replace(/\{s\}/, (editingProvider.extra_config?.subdomains as string)?.[0] || 'a');
+      try {
+        const res = await fetch(sample, { method: 'GET', mode: 'no-cors' });
+        // En no-cors, on ne peut pas lire le statut, mais une erreur réseau lèvera
+        if ((res as any).status && (res as any).status >= 400) {
+          const proceed = window.confirm(`La tuile de test a renvoyé HTTP ${(res as any).status}. Continuer quand même ?`);
+          if (!proceed) return;
+        }
+      } catch (err) {
+        const proceed = window.confirm("Impossible de joindre l'URL de tuile (test). Continuer quand même ?");
+        if (!proceed) return;
+      }
     }
 
     setSaving(true);
@@ -226,9 +246,15 @@ const AdminMapProviders: React.FC = () => {
       });
 
       let tileUrl = previewProvider.tile_url_template;
-      // Pour les fournisseurs nécessitant une clé API, afficher un message
+      // Pour Mapbox : router via la edge function proxy (clé jamais exposée)
       if (previewProvider.requires_api_key) {
-        tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+        const m = tileUrl.match(/\/styles\/v1\/([^/]+)\/([^/]+)\/tiles/);
+        const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL;
+        if (m && supabaseUrl) {
+          tileUrl = `${supabaseUrl}/functions/v1/proxy-mapbox-tiles/styles/v1/${m[1]}/${m[2]}/tiles/{z}/{x}/{y}`;
+        } else {
+          tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+        }
       }
 
       const opts: Record<string, any> = {
@@ -262,6 +288,7 @@ const AdminMapProviders: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <GoogleProviderWarning />
       {/* En-tête avec statistiques */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
