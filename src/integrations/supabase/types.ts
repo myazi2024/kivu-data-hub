@@ -5708,6 +5708,13 @@ export type Database = {
       generate_ccc_code: { Args: never; Returns: string }
       generate_invoice_number: { Args: never; Returns: string }
       generate_land_title_reference: { Args: never; Returns: string }
+      generate_mortgage_receipt: {
+        Args: { _mortgage_id: string; _payment_id?: string }
+        Returns: {
+          receipt_id: string
+          verification_code: string
+        }[]
+      }
       generate_mutation_reference: { Args: never; Returns: string }
       generate_permit_number: {
         Args: { permit_type: string; province: string }
@@ -5770,6 +5777,20 @@ export type Database = {
           reviewed_at: string
           status: string
           user_id: string
+        }[]
+      }
+      get_parcel_timeline: {
+        Args: { _parcel_number: string }
+        Returns: {
+          amount_usd: number
+          description: string
+          event_date: string
+          event_type: string
+          metadata: Json
+          reference: string
+          source_table: string
+          status: string
+          title: string
         }[]
       }
       get_parcel_with_pii: { Args: { p_parcel_number: string }; Returns: Json }
@@ -5852,6 +5873,19 @@ export type Database = {
       is_permit_valid: {
         Args: { issue_date: string; validity_months: number }
         Returns: boolean
+      }
+      list_dispute_mortgage_overlaps: {
+        Args: never
+        Returns: {
+          active_disputes_count: number
+          active_mortgages_count: number
+          dispute_references: string[]
+          mortgage_references: string[]
+          parcel_id: string
+          parcel_number: string
+          risk_level: string
+          total_mortgage_amount_usd: number
+        }[]
       }
       list_missing_mortgage_receipts: {
         Args: never

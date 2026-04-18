@@ -5,6 +5,7 @@ import { fr } from 'date-fns/locale';
 import { formatCurrency } from '@/utils/formatters';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { getCreditorTypeLabel, getMortgageStatusType } from './mortgageHelpers';
+import { MortgagePaymentsPanel } from './MortgagePaymentsPanel';
 import type { Mortgage } from './mortgageTypes';
 
 interface MortgageDetailsDialogProps {
@@ -13,10 +14,9 @@ interface MortgageDetailsDialogProps {
   mortgage: Mortgage | null;
 }
 
-/** Fix #8: Added mortgage status display with StatusBadge */
 const MortgageDetailsDialog: React.FC<MortgageDetailsDialogProps> = ({ open, onOpenChange, mortgage }) => (
   <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent className="max-w-[340px] rounded-2xl">
+    <DialogContent className="max-w-md rounded-2xl max-h-[90vh] overflow-y-auto">
       <DialogHeader><DialogTitle className="text-sm">Détails de l'hypothèque</DialogTitle></DialogHeader>
       {mortgage && (
         <div className="space-y-3 py-2">
@@ -56,6 +56,10 @@ const MortgageDetailsDialog: React.FC<MortgageDetailsDialogProps> = ({ open, onO
               <p className="text-[10px] text-muted-foreground mb-1">Date contrat</p>
               <p className="text-xs">{format(new Date(mortgage.contract_date), 'dd MMM yyyy', { locale: fr })}</p>
             </div>
+          </div>
+          <div className="border-t pt-2">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Paiements</p>
+            <MortgagePaymentsPanel mortgageId={mortgage.id} totalAmount={mortgage.mortgage_amount_usd} />
           </div>
         </div>
       )}

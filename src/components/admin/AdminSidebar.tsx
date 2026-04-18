@@ -163,6 +163,7 @@ export const menuItems = [
   {
     category: 'Historiques & Litiges',
     items: [
+      { icon: LayoutDashboard, label: 'Hub Historiques', value: 'history-hub', badge: null, keywords: ['hub', 'transversal', 'timeline', 'parcelle', 'alerte', 'croisée'] },
       { icon: Scale, label: 'Litiges Fonciers', value: 'land-disputes', badge: 'disputes', keywords: ['conflit', 'dispute', 'contestation', 'tribunal'] },
       { icon: PieChart, label: 'Analytics Litiges', value: 'dispute-analytics', badge: null, keywords: ['statistiques', 'stats', 'graphiques'] },
       { icon: Database, label: 'Hypothèques', value: 'mortgages', badge: 'mortgages', keywords: ['crédit', 'prêt', 'banque', 'garantie'] },
