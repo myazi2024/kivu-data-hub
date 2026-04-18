@@ -15,6 +15,7 @@ export type AnalyticsEvent =
   | 'user_dashboard_tab_click'
   | 'user_profile_update'
   | 'user_contribution_delete'
+  | 'user_contribution_edit_open'
   | 'user_referral_link_copy'
   | 'user_account_delete_request';
 
