@@ -18,6 +18,8 @@ interface AppearanceConfig {
   hero_phrases?: string[];
   hero_secondary_link_label?: string;
   hero_secondary_link_href?: string;
+  support_whatsapp_number?: string;
+  support_whatsapp_message?: string;
 }
 
 export const useAppAppearance = () => {

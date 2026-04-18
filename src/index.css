@@ -524,8 +524,13 @@ All colors MUST be HSL.
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-marquee {
-    animation: none;
-    transform: none;
+  .animate-marquee,
+  .animate-shake,
+  .animate-scale-in,
+  .animate-fade-in,
+  .animate-pulse {
+    animation: none !important;
+    transform: none !important;
   }
 }
+
