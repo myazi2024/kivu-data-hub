@@ -758,18 +758,65 @@ export const useCCCFormState = ({
       if (tax.taxAmount && tax.taxYear && !tax.receiptFile && !tax.existingReceiptUrl) missing.push({ field: `taxReceipt_${idx}`, label: `Reçu de ${tax.taxType} ${tax.taxYear}`, tab: 'obligations' });
     });
 
-    // OBLIGATIONS - IRL × Constructions en location (cohérence stricte)
-    const rentalConstructionsCount = (formData.declaredUsage === 'Location' ? 1 : 0)
-      + additionalConstructions.filter(c => c.declaredUsage === 'Location').length;
-    if (rentalConstructionsCount > 0) {
-      const irlEntriesCount = taxRecords.filter(t => t.taxType === 'Impôt sur les revenus locatifs' && t.taxAmount && t.taxYear).length;
-      if (irlEntriesCount !== rentalConstructionsCount) {
+    // OBLIGATIONS - IRL × Constructions en location (cohérence stricte 1:1 par construction)
+    const rentalRefs: string[] = [];
+    const rentalLabels: Record<string, string> = {};
+    if (formData.declaredUsage === 'Location') {
+      rentalRefs.push('main');
+      rentalLabels['main'] = 'Construction principale';
+    }
+    additionalConstructions.forEach((c, idx) => {
+      if (c.declaredUsage === 'Location') {
+        const ref = `additional:${idx}`;
+        rentalRefs.push(ref);
+        const parts = [c.propertyCategory || c.constructionType || 'Construction', c.constructionYear ? String(c.constructionYear) : null].filter(Boolean);
+        rentalLabels[ref] = `Construction #${idx + 2} (${parts.join(', ')})`;
+      }
+    });
+
+    if (rentalRefs.length > 0) {
+      const irlRecords = taxRecords.filter(t => t.taxType === 'Impôt sur les revenus locatifs' && t.taxAmount && t.taxYear);
+      const irlRefs = irlRecords.map(t => t.constructionRef).filter(Boolean) as string[];
+
+      // Manquants : constructions Location sans IRL
+      const missingRefs = rentalRefs.filter(r => !irlRefs.includes(r));
+      missingRefs.forEach(r => {
         missing.push({
-          field: 'irlCoherence',
-          label: `Cohérence IRL : ${irlEntriesCount} déclaration(s) IRL pour ${rentalConstructionsCount} construction(s) en location (doit être égal)`,
+          field: `irlMissing_${r}`,
+          label: `IRL manquant pour : ${rentalLabels[r]}`,
+          tab: 'obligations',
+        });
+      });
+
+      // Orphelins : IRL avec ref qui n'existe plus / n'est plus en Location
+      const orphanRefs = irlRefs.filter(r => !rentalRefs.includes(r));
+      orphanRefs.forEach(r => {
+        missing.push({
+          field: `irlOrphan_${r}`,
+          label: `IRL orphelin (la construction associée n'est plus en Location) — à supprimer`,
+          tab: 'obligations',
+        });
+      });
+
+      // IRL sans ref renseignée
+      const unassignedCount = irlRecords.filter(t => !t.constructionRef).length;
+      if (unassignedCount > 0) {
+        missing.push({
+          field: 'irlUnassigned',
+          label: `${unassignedCount} déclaration(s) IRL sans construction rattachée`,
           tab: 'obligations',
         });
       }
+
+      // Doublons : 2 IRL pour la même construction
+      const refCounts = irlRefs.reduce<Record<string, number>>((acc, r) => { acc[r] = (acc[r] || 0) + 1; return acc; }, {});
+      Object.entries(refCounts).filter(([, n]) => n > 1).forEach(([r, n]) => {
+        missing.push({
+          field: `irlDuplicate_${r}`,
+          label: `${n} IRL déclarés pour la même construction (${rentalLabels[r] || r})`,
+          tab: 'obligations',
+        });
+      });
     }
 
     // OBLIGATIONS - MORTGAGE
