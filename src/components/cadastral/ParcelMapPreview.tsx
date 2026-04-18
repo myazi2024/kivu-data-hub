@@ -2207,7 +2207,7 @@ export const ParcelMapPreview = ({
         )}
 
         {/* Boutons Tracer/Terminer + Superficie/Périmètre sur la carte (en haut à gauche) */}
-        {enableDrawingMode && (
+        {enableDrawingMode && !isDrawingBuilding && (
           <div className="absolute top-2 left-2 z-[1000] flex items-center gap-1.5">
             <Button 
               type="button"
