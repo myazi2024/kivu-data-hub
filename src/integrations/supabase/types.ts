@@ -489,6 +489,36 @@ export type Database = {
           },
         ]
       }
+      cadastral_contribution_audit: {
+        Row: {
+          action: string
+          admin_id: string | null
+          admin_name: string | null
+          contribution_id: string
+          created_at: string
+          id: string
+          payload: Json | null
+        }
+        Insert: {
+          action: string
+          admin_id?: string | null
+          admin_name?: string | null
+          contribution_id: string
+          created_at?: string
+          id?: string
+          payload?: Json | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string | null
+          admin_name?: string | null
+          contribution_id?: string
+          created_at?: string
+          id?: string
+          payload?: Json | null
+        }
+        Relationships: []
+      }
       cadastral_contribution_config: {
         Row: {
           config_key: string
@@ -4798,6 +4828,40 @@ export type Database = {
       }
     }
     Views: {
+      cadastral_orphan_codes: {
+        Row: {
+          code: string | null
+          contribution_id: string | null
+          created_at: string | null
+          expires_at: string | null
+          id: string | null
+          invalidated_at: string | null
+          invalidation_reason: string | null
+          invoice_id: string | null
+          is_used: boolean | null
+          is_valid: boolean | null
+          parcel_number: string | null
+          used_at: string | null
+          user_id: string | null
+          value_usd: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cadastral_contributor_codes_contribution_id_fkey"
+            columns: ["contribution_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_contributions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cadastral_contributor_codes_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cadastral_parcels_public: {
         Row: {
           area_hectares: number | null
@@ -5010,6 +5074,7 @@ export type Database = {
           reasons: string[]
         }[]
       }
+      expire_outdated_ccc_codes: { Args: never; Returns: number }
       export_user_data: { Args: { target_user_id: string }; Returns: Json }
       extract_owner_names_from_details: {
         Args: { owners_details: Json }

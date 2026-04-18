@@ -9,9 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { CheckCircle, XCircle, AlertTriangle, Eye, Gift, Users, Play, FileText, Building2, MessageSquare, Route, BrickWall, Download, ExternalLink, RotateCcw, Search } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Eye, Gift, Users, Play, FileText, Building2, MessageSquare, Route, BrickWall, Download, ExternalLink, RotateCcw, Search, MessageCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
 import { AppealManagementDialog } from './appeals/AppealManagementDialog';
 import { PermitRequestDialog } from './permits/PermitRequestDialog';
 import { DocumentsGalleryDialog } from './documents/DocumentsGalleryDialog';
@@ -19,6 +20,7 @@ import { StatusBadge, StatusType } from '@/components/shared/StatusBadge';
 import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/shared/PaginationControls';
 import { exportToCSV } from '@/utils/csvExport';
+import { logContributionAudit } from '@/utils/contributionAudit';
 
 interface ValidationResult {
   valid: boolean;
@@ -133,13 +135,17 @@ const AdminCCCContributions: React.FC = () => {
   const [showPermitDialog, setShowPermitDialog] = useState(false);
   const [showDocumentsDialog, setShowDocumentsDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  
+  const [userFilter, setUserFilter] = useState('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+
   // Pagination - sera initialisée après filteredContributions
 
   useEffect(() => {
     fetchContributions();
-    
-    // Realtime subscription pour synchroniser les changements (suppressions, mises à jour)
+
+    // Realtime debounced (300 ms) pour limiter les refetch en rafale
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const channel = supabase
       .channel('admin-contributions-changes')
       .on(
@@ -149,15 +155,15 @@ const AdminCCCContributions: React.FC = () => {
           schema: 'public',
           table: 'cadastral_contributions'
         },
-        (payload) => {
-          console.log('Contribution change detected:', payload.eventType);
-          // Rafraîchir les données pour tous les types d'événements
-          fetchContributions();
+        () => {
+          if (debounceTimer) clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => fetchContributions(), 300);
         }
       )
       .subscribe();
 
     return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
   }, []);
@@ -589,6 +595,7 @@ const AdminCCCContributions: React.FC = () => {
         ? 'Contribution approuvée et données ajoutées à la parcelle existante ! Le code CCC a été généré.'
         : 'Contribution approuvée et parcelle créée ! Le code CCC a été généré.';
       toast.success(successMessage);
+      await logContributionAudit({ contributionId, action: 'approve', payload: { isUpdateContribution } });
       await fetchContributions();
       setIsDetailsOpen(false);
       setValidationResult(null);
@@ -655,6 +662,7 @@ const AdminCCCContributions: React.FC = () => {
       }
 
       toast.success('Contribution rejetée');
+      await logContributionAudit({ contributionId, action: 'reject', payload: { reason: rejectionReason } });
       await fetchContributions();
       setIsDetailsOpen(false);
       setRejectionReason('');
@@ -746,6 +754,7 @@ const AdminCCCContributions: React.FC = () => {
       }
 
       toast.success('Contribution renvoyée pour correction');
+      await logContributionAudit({ contributionId, action: 'return', payload: { reason: returnReason } });
       await fetchContributions();
       setIsDetailsOpen(false);
       setReturnReason('');
@@ -776,17 +785,16 @@ const AdminCCCContributions: React.FC = () => {
   };
 
   const filteredContributions = useMemo(() => {
+    const userQ = userFilter.trim().toLowerCase();
     return contributions.filter(c => {
-      // Status/suspicious filter
       const matchesTab = (() => {
         if (activeTab === 'all') return true;
         if (activeTab === 'suspicious') return c.is_suspicious;
         return c.status === activeTab;
       })();
 
-      // Search filter
       const query = searchQuery.toLowerCase().trim();
-      const matchesSearch = !query || 
+      const matchesSearch = !query ||
         c.parcel_number?.toLowerCase().includes(query) ||
         c.province?.toLowerCase().includes(query) ||
         c.ville?.toLowerCase().includes(query) ||
@@ -794,9 +802,80 @@ const AdminCCCContributions: React.FC = () => {
         c.current_owner_name?.toLowerCase().includes(query) ||
         c.user_id?.toLowerCase().includes(query);
 
-      return matchesTab && matchesSearch;
+      const matchesUser = !userQ || c.user_id?.toLowerCase().includes(userQ);
+
+      return matchesTab && matchesSearch && matchesUser;
     });
-  }, [contributions, activeTab, searchQuery]);
+  }, [contributions, activeTab, searchQuery, userFilter]);
+
+  // Bulk actions
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const bulkApprove = async () => {
+    if (selectedIds.size === 0) return;
+    setBulkBusy(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const ids = Array.from(selectedIds);
+      const { error } = await supabase
+        .from('cadastral_contributions')
+        .update({ status: 'approved', reviewed_by: user?.id, reviewed_at: new Date().toISOString() })
+        .in('id', ids);
+      if (error) throw error;
+      await Promise.all(ids.map(id =>
+        logContributionAudit({ contributionId: id, action: 'bulk_approve', payload: { count: ids.length } })
+      ));
+      toast.success(`${ids.length} contribution(s) approuvée(s)`);
+      setSelectedIds(new Set());
+      await fetchContributions();
+    } catch (err: any) {
+      toast.error(err.message ?? 'Erreur lors de l\'approbation en masse');
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const bulkReject = async () => {
+    if (selectedIds.size === 0) return;
+    const reason = window.prompt('Motif du rejet (obligatoire et appliqué à toutes les contributions sélectionnées) :');
+    if (!reason || !reason.trim()) {
+      toast.error('Motif obligatoire pour rejeter');
+      return;
+    }
+    setBulkBusy(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const ids = Array.from(selectedIds);
+      const { error } = await supabase
+        .from('cadastral_contributions')
+        .update({
+          status: 'rejected',
+          rejection_reason: reason,
+          rejected_by: user?.id,
+          reviewed_by: user?.id,
+          reviewed_at: new Date().toISOString(),
+        })
+        .in('id', ids);
+      if (error) throw error;
+      await Promise.all(ids.map(id =>
+        logContributionAudit({ contributionId: id, action: 'bulk_reject', payload: { reason, count: ids.length } })
+      ));
+      toast.success(`${ids.length} contribution(s) rejetée(s)`);
+      setSelectedIds(new Set());
+      await fetchContributions();
+    } catch (err: any) {
+      toast.error(err.message ?? 'Erreur lors du rejet en masse');
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
 
   // Pagination avec usePagination
   const {
@@ -944,16 +1023,40 @@ const AdminCCCContributions: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent className="p-2 md:p-6">
-          {/* Search */}
-          <div className="relative mb-3">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          {/* Search + user filter */}
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_220px] gap-2 mb-3">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher par parcelle, province, ville, propriétaire..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 h-9 text-sm"
+              />
+            </div>
             <Input
-              placeholder="Rechercher par parcelle, province, ville, propriétaire..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 h-9 text-sm"
+              placeholder="Filtrer par user_id (UUID partiel)"
+              value={userFilter}
+              onChange={(e) => setUserFilter(e.target.value)}
+              className="h-9 text-sm font-mono"
             />
           </div>
+
+          {/* Bulk actions bar */}
+          {selectedIds.size > 0 && (
+            <div className="flex flex-wrap items-center gap-2 mb-3 p-2 bg-muted rounded-md">
+              <span className="text-xs font-medium">{selectedIds.size} sélectionnée(s)</span>
+              <Button size="sm" variant="default" disabled={bulkBusy} onClick={bulkApprove} className="h-7 text-xs">
+                <CheckCircle className="h-3 w-3 mr-1" /> Approuver
+              </Button>
+              <Button size="sm" variant="destructive" disabled={bulkBusy} onClick={bulkReject} className="h-7 text-xs">
+                <XCircle className="h-3 w-3 mr-1" /> Rejeter
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())} className="h-7 text-xs">
+                Désélectionner
+              </Button>
+            </div>
+          )}
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-6 h-8 md:h-10">
@@ -970,6 +1073,7 @@ const AdminCCCContributions: React.FC = () => {
                 <ResponsiveTable>
                   <ResponsiveTableHeader>
                     <ResponsiveTableRow>
+                      <ResponsiveTableHead priority="high"> </ResponsiveTableHead>
                       <ResponsiveTableHead priority="high">Parcelle</ResponsiveTableHead>
                       <ResponsiveTableHead priority="low">Contributeur</ResponsiveTableHead>
                       <ResponsiveTableHead priority="medium">Complétion</ResponsiveTableHead>
@@ -982,13 +1086,30 @@ const AdminCCCContributions: React.FC = () => {
                   <ResponsiveTableBody>
                   {paginatedContributions.map((contribution) => {
                     const completeness = calculateCompleteness(contribution);
+                    const canSelect = contribution.status === 'pending' || contribution.status === 'returned';
                     return (
                       <ResponsiveTableRow key={contribution.id}>
+                        <ResponsiveTableCell priority="high" label="Sélection">
+                          {canSelect ? (
+                            <Checkbox
+                              checked={selectedIds.has(contribution.id)}
+                              onCheckedChange={() => toggleSelect(contribution.id)}
+                              aria-label="Sélectionner"
+                            />
+                          ) : null}
+                        </ResponsiveTableCell>
                         <ResponsiveTableCell priority="high" label="Parcelle" className="font-mono text-xs md:text-sm">
                           {contribution.parcel_number}
                         </ResponsiveTableCell>
                         <ResponsiveTableCell priority="low" label="Contributeur" className="text-xs md:text-sm">
-                          {contribution.user_id.substring(0, 8)}...
+                          <button
+                            type="button"
+                            className="font-mono text-primary hover:underline"
+                            onClick={() => setUserFilter(contribution.user_id)}
+                            title="Filtrer par cet utilisateur"
+                          >
+                            {contribution.user_id.substring(0, 8)}…
+                          </button>
                         </ResponsiveTableCell>
                         <ResponsiveTableCell priority="medium" label="Complétion">
                           <div className="flex items-center gap-1 md:gap-2">
