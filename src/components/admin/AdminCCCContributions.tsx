@@ -785,17 +785,16 @@ const AdminCCCContributions: React.FC = () => {
   };
 
   const filteredContributions = useMemo(() => {
+    const userQ = userFilter.trim().toLowerCase();
     return contributions.filter(c => {
-      // Status/suspicious filter
       const matchesTab = (() => {
         if (activeTab === 'all') return true;
         if (activeTab === 'suspicious') return c.is_suspicious;
         return c.status === activeTab;
       })();
 
-      // Search filter
       const query = searchQuery.toLowerCase().trim();
-      const matchesSearch = !query || 
+      const matchesSearch = !query ||
         c.parcel_number?.toLowerCase().includes(query) ||
         c.province?.toLowerCase().includes(query) ||
         c.ville?.toLowerCase().includes(query) ||
@@ -803,9 +802,80 @@ const AdminCCCContributions: React.FC = () => {
         c.current_owner_name?.toLowerCase().includes(query) ||
         c.user_id?.toLowerCase().includes(query);
 
-      return matchesTab && matchesSearch;
+      const matchesUser = !userQ || c.user_id?.toLowerCase().includes(userQ);
+
+      return matchesTab && matchesSearch && matchesUser;
     });
-  }, [contributions, activeTab, searchQuery]);
+  }, [contributions, activeTab, searchQuery, userFilter]);
+
+  // Bulk actions
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const bulkApprove = async () => {
+    if (selectedIds.size === 0) return;
+    setBulkBusy(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const ids = Array.from(selectedIds);
+      const { error } = await supabase
+        .from('cadastral_contributions')
+        .update({ status: 'approved', reviewed_by: user?.id, reviewed_at: new Date().toISOString() })
+        .in('id', ids);
+      if (error) throw error;
+      await Promise.all(ids.map(id =>
+        logContributionAudit({ contributionId: id, action: 'bulk_approve', payload: { count: ids.length } })
+      ));
+      toast.success(`${ids.length} contribution(s) approuvée(s)`);
+      setSelectedIds(new Set());
+      await fetchContributions();
+    } catch (err: any) {
+      toast.error(err.message ?? 'Erreur lors de l\'approbation en masse');
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const bulkReject = async () => {
+    if (selectedIds.size === 0) return;
+    const reason = window.prompt('Motif du rejet (obligatoire et appliqué à toutes les contributions sélectionnées) :');
+    if (!reason || !reason.trim()) {
+      toast.error('Motif obligatoire pour rejeter');
+      return;
+    }
+    setBulkBusy(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const ids = Array.from(selectedIds);
+      const { error } = await supabase
+        .from('cadastral_contributions')
+        .update({
+          status: 'rejected',
+          rejection_reason: reason,
+          rejected_by: user?.id,
+          reviewed_by: user?.id,
+          reviewed_at: new Date().toISOString(),
+        })
+        .in('id', ids);
+      if (error) throw error;
+      await Promise.all(ids.map(id =>
+        logContributionAudit({ contributionId: id, action: 'bulk_reject', payload: { reason, count: ids.length } })
+      ));
+      toast.success(`${ids.length} contribution(s) rejetée(s)`);
+      setSelectedIds(new Set());
+      await fetchContributions();
+    } catch (err: any) {
+      toast.error(err.message ?? 'Erreur lors du rejet en masse');
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
 
   // Pagination avec usePagination
   const {
