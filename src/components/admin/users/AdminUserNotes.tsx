@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useAdminNotes } from '@/hooks/useAdminNotes';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserPermission } from '@/hooks/useUserPermissions';
 import { StickyNote, Plus, Trash2, Edit, AlertCircle } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
@@ -18,6 +19,7 @@ interface AdminUserNotesProps {
 export const AdminUserNotes: React.FC<AdminUserNotesProps> = ({ userId }) => {
   const { notes, loading, fetchNotes, addNote, updateNote, deleteNote } = useAdminNotes(userId);
   const { profile } = useAuth();
+  const canDelete = useUserPermission('notes', 'delete');
   const [open, setOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<string | null>(null);
   const [noteContent, setNoteContent] = useState('');
@@ -160,14 +162,17 @@ export const AdminUserNotes: React.FC<AdminUserNotesProps> = ({ userId }) => {
                     >
                       <Edit className="w-2.5 h-2.5" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-4 w-4 p-0 hover:text-destructive"
-                      onClick={() => handleDelete(note.id)}
-                    >
-                      <Trash2 className="w-2.5 h-2.5" />
-                    </Button>
+                    {canDelete && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-4 w-4 p-0 hover:text-destructive"
+                        onClick={() => handleDelete(note.id)}
+                        title="Supprimer (permission notes.delete)"
+                      >
+                        <Trash2 className="w-2.5 h-2.5" />
+                      </Button>
+                    )}
                   </div>
                 </div>
                 <p className="text-[10px] whitespace-pre-wrap">{note.note_content}</p>

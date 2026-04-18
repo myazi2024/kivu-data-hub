@@ -91,6 +91,7 @@ export const menuItems = [
       { icon: Shield, label: 'Rôles', value: 'roles', badge: null, keywords: ['admin', 'moderateur', 'droits', 'accès'] },
       { icon: Key, label: 'Permissions', value: 'permissions', badge: null, keywords: ['autorisation', 'accès', 'droits', 'sécurité'] },
       { icon: AlertTriangle, label: 'Détection Fraude', value: 'fraud', badge: null, keywords: ['suspicious', 'suspect', 'alerte', 'anomalie', 'risque'] },
+      { icon: Shield, label: 'Hub Sécurité', value: 'security-hub', badge: null, keywords: ['hub', 'sécurité', 'inactifs', 'risque', 'audit', '2fa'] },
     ]
   },
   {

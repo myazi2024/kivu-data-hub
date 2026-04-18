@@ -18,6 +18,7 @@ const tabComponents: Record<string, React.LazyExoticComponent<any>> = {
   'roles': lazy(() => import('@/components/admin/AdminUserRolesEnhanced').then(m => ({ default: m.AdminUserRolesEnhanced }))),
   'permissions': lazy(() => import('@/components/admin/AdminPermissions').then(m => ({ default: m.AdminPermissions }))),
   'fraud': lazy(() => import('@/components/admin/AdminFraudDetection')),
+  'security-hub': lazy(() => import('@/components/admin/security/AdminSecurityHub')),
   'ccc': lazy(() => import('@/components/admin/AdminCCCContributions')),
   'validation': lazy(() => import('@/components/admin/AdminValidation')),
   'ccc-codes': lazy(() => import('@/components/admin/AdminCCCCodes')),
