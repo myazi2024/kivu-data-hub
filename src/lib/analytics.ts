@@ -7,7 +7,11 @@ import { supabase } from '@/integrations/supabase/client';
 
 export type AnalyticsEvent =
   | 'hero_cta_click'
-  | 'partner_logo_click';
+  | 'partner_logo_click'
+  | 'cadastral_map_search'
+  | 'cadastral_map_parcel_select'
+  | 'cadastral_map_geolocate'
+  | 'cadastral_map_whatsapp_click';
 
 export async function trackEvent(event: AnalyticsEvent, payload?: Record<string, any>) {
   try {
