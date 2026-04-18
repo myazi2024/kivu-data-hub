@@ -11,6 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload, Save, Paintbrush, Type, Image, Moon, Sun, RotateCcw, Trash2, Fingerprint, RectangleHorizontal, Eye, Home } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import AppearancePresets, { type AppearancePreset } from './appearance/AppearancePresets';
+import AppearanceHistoryTab from './appearance/AppearanceHistoryTab';
+import { useGoogleFontInjection } from '@/hooks/useGoogleFontInjection';
 
 const FONT_OPTIONS = [
   { value: 'Inter, sans-serif', label: 'Inter' },
