@@ -420,6 +420,8 @@ export default function AdminCCCCodes() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+      </TabsContent>
+    </Tabs>
   );
 }
+
