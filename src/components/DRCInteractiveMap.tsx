@@ -834,24 +834,5 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   );
 };
 
-/** Build an empty province for loading state */
-function buildEmptyProvince(meta: { id: string; name: string }): ProvinceData {
-  return {
-    id: meta.id,
-    name: meta.name,
-    certEnregCount: 0,
-    contratLocCount: 0,
-    ficheParcCount: 0,
-    titleRequestsCount: 0,
-    disputesCount: 0,
-    activeMortgagesCount: 0,
-    pendingMutationsCount: 0,
-    pendingExpertisesCount: 0,
-    avgParcelSurfaceSqm: 0,
-    avgBuildingSurfaceSqm: 0,
-    avgBuildingHeightM: 0,
-    parcelsCount: 0,
-  };
-}
 
 export default DRCInteractiveMap;
