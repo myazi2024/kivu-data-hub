@@ -654,6 +654,30 @@ export const useCCCFormState = ({
     if (!formData.constructionType) missing.push({ field: 'constructionType', label: 'Type de construction', tab: 'general' });
     if (!formData.constructionNature) missing.push({ field: 'constructionNature', label: 'Nature de construction', tab: 'general' });
     if (!formData.declaredUsage) missing.push({ field: 'declaredUsage', label: 'Usage déclaré', tab: 'general' });
+    // Si usage = Location, exiger la date de mise en location ≤ 31/12/constructionYear
+    if (formData.declaredUsage === 'Location') {
+      if (!formData.rentalStartDate) {
+        missing.push({ field: 'rentalStartDate', label: 'En location depuis quand ? (construction principale)', tab: 'general' });
+      } else if (formData.constructionYear) {
+        const max = new Date(formData.constructionYear, 11, 31);
+        if (new Date(formData.rentalStartDate) > max) {
+          missing.push({ field: 'rentalStartDate', label: `Date de mise en location > 31/12/${formData.constructionYear}`, tab: 'general' });
+        }
+      }
+    }
+    // Constructions additionnelles : même règle
+    additionalConstructions.forEach((c, idx) => {
+      if (c.declaredUsage === 'Location') {
+        if (!c.rentalStartDate) {
+          missing.push({ field: `additionalRentalStartDate_${idx}`, label: `En location depuis quand ? (construction #${idx + 2})`, tab: 'general' });
+        } else if (c.constructionYear) {
+          const max = new Date(c.constructionYear, 11, 31);
+          if (new Date(c.rentalStartDate) > max) {
+            missing.push({ field: `additionalRentalStartDate_${idx}`, label: `Date de mise en location > 31/12/${c.constructionYear} (construction #${idx + 2})`, tab: 'general' });
+          }
+        }
+      }
+    });
     if (!isTerrainNu && formData.constructionNature && formData.constructionNature !== 'Non bâti' && formData.constructionNature !== 'Construction précaire' && !formData.constructionMaterials) missing.push({ field: 'constructionMaterials', label: 'Matériaux de construction', tab: 'general' });
     if (!isTerrainNu && formData.constructionNature && formData.constructionNature !== 'Non bâti' && formData.constructionNature !== 'Construction précaire' && !formData.standing) missing.push({ field: 'standing', label: 'Standing', tab: 'general' });
     if (!isTerrainNu && formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && !formData.constructionYear) missing.push({ field: 'constructionYear', label: 'Année de construction', tab: 'general' });
@@ -1134,6 +1158,7 @@ export const useCCCFormState = ({
           constructionNature: contrib.construction_nature || undefined, constructionMaterials: contrib.construction_materials || undefined,
           declaredUsage: contrib.declared_usage || undefined, standing: contrib.standing || undefined,
           constructionYear: contrib.construction_year || undefined,
+          rentalStartDate: (contrib as any).rental_start_date || undefined,
           isOccupied: (contrib as any).is_occupied ?? undefined,
           occupantCount: (contrib as any).occupant_count || undefined,
           hostingCapacity: (contrib as any).hosting_capacity || undefined,
@@ -1195,7 +1220,7 @@ export const useCCCFormState = ({
         const additionalConstr = (contrib as any).additional_constructions as any[];
         if (additionalConstr && Array.isArray(additionalConstr) && additionalConstr.length > 0) {
           setConstructionMode('multiple');
-          setAdditionalConstructions(additionalConstr.map((c: any) => ({ propertyCategory: c.propertyCategory || '', constructionType: c.constructionType || '', constructionNature: c.constructionNature || '', constructionMaterials: c.constructionMaterials || '', declaredUsage: c.declaredUsage || '', standing: c.standing || '', constructionYear: c.constructionYear || undefined, apartmentNumber: c.apartmentNumber || undefined, floorNumber: c.floorNumber || undefined, isOccupied: c.isOccupied ?? undefined, occupantCount: c.occupantCount ?? undefined, hostingCapacity: c.hostingCapacity ?? undefined, permitMode: c.permitMode || undefined, permit: c.permit || undefined })));
+          setAdditionalConstructions(additionalConstr.map((c: any) => ({ propertyCategory: c.propertyCategory || '', constructionType: c.constructionType || '', constructionNature: c.constructionNature || '', constructionMaterials: c.constructionMaterials || '', declaredUsage: c.declaredUsage || '', standing: c.standing || '', constructionYear: c.constructionYear || undefined, rentalStartDate: c.rentalStartDate || undefined, apartmentNumber: c.apartmentNumber || undefined, floorNumber: c.floorNumber || undefined, isOccupied: c.isOccupied ?? undefined, occupantCount: c.occupantCount ?? undefined, hostingCapacity: c.hostingCapacity ?? undefined, permitMode: c.permitMode || undefined, permit: c.permit || undefined })));
         }
 
         // Restore roadSides, servitude, hasDispute, disputeData, buildingShapes from DB

@@ -287,6 +287,7 @@ export const useCadastralContribution = () => {
       hosting_capacity: data.hostingCapacity || null,
       declared_usage: data.declaredUsage,
       standing: data.standing || null,
+      rental_start_date: data.rentalStartDate || null,
       building_permits: buildingPermitsSnake,
       previous_permit_number: data.previousPermitNumber || data.permitRequest?.originalPermitNumber,
       province: data.province,
