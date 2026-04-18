@@ -2534,6 +2534,7 @@ export type Database = {
           salary_usd: number | null
           status: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           birth_date?: string | null
@@ -2555,6 +2556,7 @@ export type Database = {
           salary_usd?: number | null
           status?: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           birth_date?: string | null
@@ -2576,6 +2578,7 @@ export type Database = {
           salary_usd?: number | null
           status?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -5222,6 +5225,69 @@ export type Database = {
         }
         Relationships: []
       }
+      system_health_snapshots: {
+        Row: {
+          auth_latency_ms: number | null
+          captured_at: string
+          db_latency_ms: number | null
+          edge_fn_latency_ms: number | null
+          edge_fn_status: string | null
+          id: string
+          notes: Json | null
+          storage_latency_ms: number | null
+          total_records: number | null
+          total_tables: number | null
+        }
+        Insert: {
+          auth_latency_ms?: number | null
+          captured_at?: string
+          db_latency_ms?: number | null
+          edge_fn_latency_ms?: number | null
+          edge_fn_status?: string | null
+          id?: string
+          notes?: Json | null
+          storage_latency_ms?: number | null
+          total_records?: number | null
+          total_tables?: number | null
+        }
+        Update: {
+          auth_latency_ms?: number | null
+          captured_at?: string
+          db_latency_ms?: number | null
+          edge_fn_latency_ms?: number | null
+          edge_fn_status?: string | null
+          id?: string
+          notes?: Json | null
+          storage_latency_ms?: number | null
+          total_records?: number | null
+          total_tables?: number | null
+        }
+        Relationships: []
+      }
+      system_settings: {
+        Row: {
+          description: string | null
+          setting_key: string
+          setting_value: Json
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          description?: string | null
+          setting_key: string
+          setting_value: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          description?: string | null
+          setting_key?: string
+          setting_value?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       tax_exemptions_config: {
         Row: {
           created_at: string
@@ -5764,6 +5830,7 @@ export type Database = {
         }[]
       }
       auto_cancel_stale_pending: { Args: never; Returns: number }
+      bulk_update_parcel_actions: { Args: { _actions: Json }; Returns: Json }
       calculate_ccc_value: {
         Args: { contribution_id: string }
         Returns: number
@@ -5783,6 +5850,7 @@ export type Database = {
       check_service_usage: { Args: { service_id_param: string }; Returns: Json }
       cleanup_all_test_data: { Args: never; Returns: Json }
       cleanup_expired_data: { Args: never; Returns: undefined }
+      count_audit_logs: { Args: never; Returns: number }
       count_test_data_stats: { Args: never; Returns: Json }
       create_cadastral_invoice_secure: {
         Args: {
@@ -6026,6 +6094,13 @@ export type Database = {
           reference_number: string
         }[]
       }
+      list_public_tables_with_count: {
+        Args: never
+        Returns: {
+          row_count: number
+          table_name: string
+        }[]
+      }
       log_audit_action: {
         Args: {
           action_param: string
@@ -6041,6 +6116,7 @@ export type Database = {
         Returns: string
       }
       publish_scheduled_articles: { Args: never; Returns: number }
+      purge_old_audit_logs: { Args: { _days?: number }; Returns: Json }
       purge_test_billing_data: { Args: { p_reason?: string }; Returns: Json }
       reconcile_tax_records: {
         Args: never

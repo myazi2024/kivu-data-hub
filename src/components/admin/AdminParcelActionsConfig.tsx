@@ -31,10 +31,11 @@ const CATEGORIES = [
   { value: 'expertise', label: 'Expertise' },
   { value: 'mutation', label: 'Mutation' },
   { value: 'mortgage', label: 'Hypothèque' },
-  { value: 'permit', label: 'Permis' },
+  { value: 'building_permit', label: 'Autorisation' },
   { value: 'tax', label: 'Taxes' },
   { value: 'subdivision', label: 'Lotissement' },
-  { value: 'dispute', label: 'Litige' }
+  { value: 'dispute', label: 'Litige' },
+  { value: 'title', label: 'Titre foncier' }
 ];
 
 const AdminParcelActionsConfig: React.FC = () => {
