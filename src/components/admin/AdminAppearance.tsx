@@ -667,6 +667,12 @@ const AdminAppearance = () => {
                   />
                   <p className="text-[10px] text-muted-foreground mt-1">Injecté dans le &lt;head&gt;. Mettez ensuite la famille dans la police ci-dessus.</p>
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-sm">
                   <RectangleHorizontal className="h-4 w-4" /> Forme
                 </CardTitle>
               </CardHeader>
