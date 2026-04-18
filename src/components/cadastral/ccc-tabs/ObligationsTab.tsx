@@ -10,7 +10,6 @@ import BlockResetButton from '../BlockResetButton';
 import { MdAccountBalance, MdInsertDriveFile } from 'react-icons/md';
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
 import LandDisputeReportForm from '../LandDisputeReportForm';
-import type { AdditionalConstruction } from '../AdditionalConstructionBlock';
 
 export interface TaxRecord {
   taxType: string;
@@ -38,7 +37,6 @@ interface ObligationsTabProps {
   parcelNumber: string;
   parcelId?: string;
   formData: CadastralContributionData;
-  additionalConstructions?: AdditionalConstruction[];
   obligationType: 'taxes' | 'mortgages' | 'disputes';
   setObligationType: (v: 'taxes' | 'mortgages' | 'disputes') => void;
   // Tax
@@ -77,7 +75,7 @@ interface ObligationsTabProps {
 
 const ObligationsTab: React.FC<ObligationsTabProps> = ({
   parcelNumber, parcelId,
-  formData, additionalConstructions = [], obligationType, setObligationType,
+  formData, obligationType, setObligationType,
   taxRecords, updateTaxRecord, addTaxRecord, removeTaxRecord,
   handleTaxFileChange, removeTaxFile, showTaxWarning, highlightIncompleteTax,
   hasMortgage, setHasMortgage, mortgageRecords, setMortgageRecords,
@@ -87,12 +85,6 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
   getPicklistOptions, handleTabChange, handleNextTab,
   resetTaxBlock, resetMortgageBlock
 }) => {
-  const hasAnyRentalUsage = formData.declaredUsage === 'Location'
-    || additionalConstructions.some(c => c.declaredUsage === 'Location');
-  const taxTypeOptions = (getPicklistOptions('picklist_tax_type') || []).filter(opt => {
-    if (opt === 'Impôt sur les revenus locatifs') return hasAnyRentalUsage;
-    return true;
-  });
   return (
     <div className="space-y-3 mt-4 animate-fade-in">
       {/* Toggle */}
@@ -149,16 +141,11 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                     <Select value={tax.taxType} onValueChange={(value) => updateTaxRecord(index, 'taxType', value)}>
                       <SelectTrigger className="h-10 text-sm rounded-xl"><SelectValue placeholder="Type" /></SelectTrigger>
                       <SelectContent className="rounded-xl">
-                        {taxTypeOptions.map(opt => (
+                        {['Impôt foncier annuel', ...((formData.declaredUsage === 'Location' || (Array.isArray(formData.additionalConstructions) && formData.additionalConstructions.some((c: any) => c.declaredUsage === 'Location'))) ? ['Impôt sur les revenus locatifs'] : [])].map(opt => (
                           <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    {!hasAnyRentalUsage && (
-                      <p className="text-[11px] text-muted-foreground leading-tight">
-                        💡 « Impôt sur le revenu locatif » s'affiche dès qu'au moins une construction est déclarée en usage « Location ».
-                      </p>
-                    )}
                   </div>
                   <div className="space-y-1">
                     <Label className="text-sm font-medium">Année</Label>
