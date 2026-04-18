@@ -1111,17 +1111,18 @@ export const useCCCFormState = ({
     }
 
     setUploading(true);
+    submitUploadedPathsRef.current = []; // reset tracker pour ce cycle
     try {
       let ownerDocUrl = null;
       let titleDocUrls: string[] = [];
       if (ownerDocFile) {
         ownerDocUrl = await uploadFile(ownerDocFile, 'owner-documents');
-        if (!ownerDocUrl) { toast({ title: "Erreur de téléchargement", description: "Impossible de télécharger le document du propriétaire", variant: "destructive" }); setUploading(false); return; }
+        if (!ownerDocUrl) { await rollbackUploadedFiles(); toast({ title: "Erreur de téléchargement", description: "Impossible de télécharger le document du propriétaire", variant: "destructive" }); setUploading(false); return; }
       }
       if (titleDocFiles.length > 0) {
         for (const file of titleDocFiles) {
           const url = await uploadFile(file, 'title-documents');
-          if (!url) { toast({ title: "Erreur de téléchargement", description: "Impossible de télécharger un document de titre", variant: "destructive" }); setUploading(false); return; }
+          if (!url) { await rollbackUploadedFiles(); toast({ title: "Erreur de téléchargement", description: "Impossible de télécharger un document de titre", variant: "destructive" }); setUploading(false); return; }
           titleDocUrls.push(url);
         }
       }
@@ -1207,13 +1208,16 @@ export const useCCCFormState = ({
       const result = editingContributionId ? await updateContribution(editingContributionId, dataToSubmit) : await submitContribution(dataToSubmit);
       if (result?.success) {
         clearSavedFormData();
+        submitUploadedPathsRef.current = []; // succès → on garde les fichiers
         formDirtyRef.current = false;
         isClosingAfterSuccessRef.current = true;
         setShowSuccess(true);
       } else if (result && !result.success) {
         console.error('Échec de la soumission');
+        await rollbackUploadedFiles();
       }
     } catch (error) {
+      await rollbackUploadedFiles();
       toast({ title: "Erreur", description: error instanceof Error ? error.message : "Une erreur est survenue", variant: "destructive" });
     } finally {
       setUploading(false);
