@@ -77,9 +77,9 @@ export const RoleAssignForm: React.FC<Props> = ({ allUsers, currentUserId, isSup
         </Button>
       </div>
       {isSensitive && (
-        <div className="flex items-center gap-1 p-1.5 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
-          <AlertTriangle className="w-2.5 h-2.5 text-amber-600 dark:text-amber-400 shrink-0" />
-          <p className="text-[9px] text-amber-700 dark:text-amber-300">
+        <div className="flex items-center gap-1 p-1.5 bg-warning/10 rounded-lg border border-warning/30">
+          <AlertTriangle className="w-2.5 h-2.5 text-warning shrink-0" />
+          <p className="text-[9px] text-warning-foreground">
             Rôle sensible — confirmation requise lors de l'attribution.
           </p>
         </div>

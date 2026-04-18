@@ -86,13 +86,10 @@ export const useAdminUserStatistics = (userId: string | null) => {
     }
   }, [userId]);
 
-  // Auto-fetch when userId changes
+  // Auto-fetch when userId changes (cache key already includes start/end dates)
   useEffect(() => {
-    if (userId) {
-      fetchStatistics();
-    } else {
-      setStatistics(null);
-    }
+    if (userId) fetchStatistics();
+    else setStatistics(null);
   }, [userId, fetchStatistics]);
 
   return {

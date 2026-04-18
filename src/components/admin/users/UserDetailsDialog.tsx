@@ -1,15 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Eye, CheckCircle, History, Shield, Users as UsersIcon, User as UserIcon } from 'lucide-react';
+import { Eye, CheckCircle, History, StickyNote, Activity } from 'lucide-react';
 import { UserProfile } from '@/hooks/useUserManagement';
 import { useAdminUserStatistics } from '@/hooks/useAdminUserStatistics';
 import { UserStatsDisplay } from './UserStatsDisplay';
 import { BlockUserDialog } from './BlockUserDialog';
+import { AdminUserNotes } from './AdminUserNotes';
+import { AdminUserActivity } from './AdminUserActivity';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
+import { ROLE_CONFIG, type AppRole } from '@/constants/roles';
 
 interface UserDetailsDialogProps {
   user: UserProfile;
