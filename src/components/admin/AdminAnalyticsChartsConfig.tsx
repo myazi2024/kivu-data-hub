@@ -175,7 +175,9 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
   const handleSave = useCallback(async () => {
     setIsSaving(true);
     try {
-      await upsertConfig.mutateAsync(localItems[activeTab] || []);
+      const items = localItems[activeTab] || [];
+      await upsertConfig.mutateAsync(items);
+      await logConfigAudit({ action: 'upsert', tab_key: activeTab, item_count: items.length });
       toast.success(`Configuration "${ANALYTICS_TABS_REGISTRY[activeTab]?.label}" sauvegardée`);
       setModifiedTabs(prev => { const n = new Set(prev); n.delete(activeTab); return n; });
     } catch (error: any) {
@@ -190,7 +192,9 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
       const tabItems = tabConfigToItems(localTabs);
       const allFilterItems = Object.values(localFilters).flat();
       const crossItems = buildCrossItems(localCross);
-      await upsertConfig.mutateAsync([...allChartItems, ...tabItems, ...allFilterItems, ...crossItems]);
+      const all = [...allChartItems, ...tabItems, ...allFilterItems, ...crossItems];
+      await upsertConfig.mutateAsync(all);
+      await logConfigAudit({ action: 'upsert_all', item_count: all.length });
       toast.success('Toute la configuration Analytics a été sauvegardée');
       setModifiedTabs(new Set());
       setHasTabChanges(false); setHasFilterChanges(false); setHasCrossChanges(false);
@@ -661,6 +665,9 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
           </Button>
         </div>
       )}
+
+      {/* SYNC / COHERENCE VIEW */}
+      {viewMode === 'sync' && <SyncManager />}
 
       {/* Unsaved changes dialog */}
       <AlertDialog open={!!pendingTabSwitch} onOpenChange={(open) => { if (!open) setPendingTabSwitch(null); }}>
