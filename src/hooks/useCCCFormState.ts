@@ -178,9 +178,7 @@ export const useCCCFormState = ({
   const [sectionType, setSectionType] = useState<'urbaine' | 'rurale' | ''>('');
   const [sectionTypeAutoDetected, setSectionTypeAutoDetected] = useState(false);
 
-  const STORAGE_KEY = `cadastral_contribution_${parcelNumber}`;
-  const STORAGE_SCHEMA_VERSION = 2;
-  const STORAGE_TTL_DAYS = 30;
+  // Note: STORAGE_KEY/SCHEMA/TTL gérés dans useFormPersistence (sous-hook).
 
   // ─── Helper: mark form dirty ───
   const markDirty = useCallback(() => { formDirtyRef.current = true; }, []);
@@ -271,9 +269,7 @@ export const useCCCFormState = ({
     return true;
   };
 
-  // Tracker des fichiers uploadés pendant un cycle de soumission (pour rollback en cas d'échec)
-  const submitUploadedPathsRef = useRef<string[]>([]);
-
+  // Tracker des fichiers uploadés (extrait dans useFormPersistence — exposé via trackUploadedPath/rollbackUploadedFiles/resetUploadedTracker)
   const uploadFile = async (file: File, path: string): Promise<string | null> => {
     try {
       const fileExt = file.name.split('.').pop();
@@ -282,24 +278,11 @@ export const useCCCFormState = ({
       const { error: uploadError } = await supabase.storage.from('cadastral-documents').upload(filePath, file);
       if (uploadError) { console.error('Upload error:', uploadError); return null; }
       // Tracker pour rollback éventuel
-      submitUploadedPathsRef.current.push(filePath);
+      trackUploadedPath(filePath);
       const { data: signedData, error: signedError } = await supabase.storage.from('cadastral-documents').createSignedUrl(filePath, 60 * 60 * 24 * 365 * 10);
       if (signedError || !signedData?.signedUrl) { console.error('Signed URL error:', signedError); return null; }
       return signedData.signedUrl;
     } catch (error) { console.error('Error uploading file:', error); return null; }
-  };
-
-  const rollbackUploadedFiles = async () => {
-    const paths = submitUploadedPathsRef.current;
-    if (paths.length === 0) return;
-    try {
-      await supabase.storage.from('cadastral-documents').remove(paths);
-      console.warn(`🧹 Rollback: ${paths.length} fichier(s) orphelin(s) supprimé(s)`);
-    } catch (e) {
-      console.error('Rollback uploads échoué (fichiers orphelins possibles):', e);
-    } finally {
-      submitUploadedPathsRef.current = [];
-    }
   };
 
   // ─── CRUD: Previous owners ───
@@ -1045,7 +1028,7 @@ export const useCCCFormState = ({
     }
 
     setUploading(true);
-    submitUploadedPathsRef.current = []; // reset tracker pour ce cycle
+    resetUploadedTracker(); // reset tracker pour ce cycle
     try {
       let ownerDocUrl = null;
       let titleDocUrls: string[] = [];
@@ -1142,7 +1125,7 @@ export const useCCCFormState = ({
       const result = editingContributionId ? await updateContribution(editingContributionId, dataToSubmit) : await submitContribution(dataToSubmit);
       if (result?.success) {
         clearSavedFormData();
-        submitUploadedPathsRef.current = []; // succès → on garde les fichiers
+        resetUploadedTracker(); // succès → on garde les fichiers
         formDirtyRef.current = false;
         isClosingAfterSuccessRef.current = true;
         setShowSuccess(true);
@@ -1248,8 +1231,7 @@ export const useCCCFormState = ({
     }
   }, [formData.declaredUsage, additionalConstructions, taxRecords, toast]);
 
-  // Load from localStorage
-  useEffect(() => { if (open && !editingContributionId) loadFormDataFromStorage(); }, [open, editingContributionId]);
+  // Load from localStorage: géré dans useFormPersistence
 
   // Load from DB in edit mode
   useEffect(() => {
@@ -1369,13 +1351,7 @@ export const useCCCFormState = ({
     fetchContribution();
   }, [open, editingContributionId]);
 
-  // Auto-save debounced
-  useEffect(() => {
-    if (open && formData.parcelNumber && !editingContributionId && !isLoadingFromDbRef.current) {
-      const timeoutId = setTimeout(() => saveFormDataToStorage(), 1500);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [open, formData, currentOwners, previousOwners, taxRecords, mortgageRecords, buildingPermits, gpsCoordinates, parcelSides, permitMode, permitRequest, hasMortgage, hasDispute, ownershipMode, leaseYears, roadSides, obligationType, sectionType, saveFormDataToStorage, editingContributionId]);
+  // Auto-save debounced: géré dans useFormPersistence
 
   // Auto-detect section type from parcel number
   useEffect(() => {
