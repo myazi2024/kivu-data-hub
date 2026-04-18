@@ -443,6 +443,19 @@ const AdminAppearance = () => {
         </div>
       </div>
 
+      <Tabs value={topTab} onValueChange={(v) => setTopTab(v as 'config' | 'history')}>
+        <TabsList>
+          <TabsTrigger value="config" className="text-xs">Configuration</TabsTrigger>
+          <TabsTrigger value="history" className="text-xs">Historique</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="history" className="mt-4">
+          <AppearanceHistoryTab />
+        </TabsContent>
+
+        <TabsContent value="config" className="mt-4 space-y-6">
+          <AppearancePresets onApply={applyPreset} />
+
       <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
         {/* Left: Config panels */}
         <div className="space-y-6">
