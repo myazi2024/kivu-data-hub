@@ -328,6 +328,50 @@ export type Database = {
           },
         ]
       }
+      article_revisions: {
+        Row: {
+          article_id: string
+          content: string
+          created_at: string
+          edited_by: string | null
+          edited_by_name: string | null
+          id: string
+          revision_number: number
+          summary: string | null
+          title: string
+        }
+        Insert: {
+          article_id: string
+          content: string
+          created_at?: string
+          edited_by?: string | null
+          edited_by_name?: string | null
+          id?: string
+          revision_number: number
+          summary?: string | null
+          title: string
+        }
+        Update: {
+          article_id?: string
+          content?: string
+          created_at?: string
+          edited_by?: string | null
+          edited_by_name?: string | null
+          id?: string
+          revision_number?: number
+          summary?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_revisions_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       article_themes: {
         Row: {
           created_at: string
@@ -366,6 +410,7 @@ export type Database = {
       }
       articles: {
         Row: {
+          author_display_name: string | null
           author_id: string | null
           author_name: string | null
           content: string
@@ -374,7 +419,12 @@ export type Database = {
           deleted_at: string | null
           id: string
           is_published: boolean
+          last_viewed_at: string | null
+          meta_description: string | null
+          meta_title: string | null
+          og_image_url: string | null
           published_at: string | null
+          scheduled_at: string | null
           slug: string
           summary: string
           tags: string[] | null
@@ -384,6 +434,7 @@ export type Database = {
           view_count: number
         }
         Insert: {
+          author_display_name?: string | null
           author_id?: string | null
           author_name?: string | null
           content: string
@@ -392,7 +443,12 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           is_published?: boolean
+          last_viewed_at?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
+          og_image_url?: string | null
           published_at?: string | null
+          scheduled_at?: string | null
           slug: string
           summary: string
           tags?: string[] | null
@@ -402,6 +458,7 @@ export type Database = {
           view_count?: number
         }
         Update: {
+          author_display_name?: string | null
           author_id?: string | null
           author_name?: string | null
           content?: string
@@ -410,7 +467,12 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           is_published?: boolean
+          last_viewed_at?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
+          og_image_url?: string | null
           published_at?: string | null
+          scheduled_at?: string | null
           slug?: string
           summary?: string
           tags?: string[] | null
@@ -3509,6 +3571,7 @@ export type Database = {
       partners: {
         Row: {
           created_at: string | null
+          deleted_at: string | null
           display_order: number | null
           id: string
           is_active: boolean | null
@@ -3519,6 +3582,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          deleted_at?: string | null
           display_order?: number | null
           id?: string
           is_active?: boolean | null
@@ -3529,6 +3593,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          deleted_at?: string | null
           display_order?: number | null
           id?: string
           is_active?: boolean | null
@@ -4093,6 +4158,39 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      publication_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
           updated_at?: string
         }
         Relationships: []
@@ -5529,6 +5627,20 @@ export type Database = {
         }
         Relationships: []
       }
+      content_hub_stats: {
+        Row: {
+          active_partners: number | null
+          active_themes: number | null
+          draft_articles: number | null
+          published_articles: number | null
+          published_publications: number | null
+          scheduled_articles: number | null
+          stale_articles: number | null
+          total_downloads: number | null
+          total_views: number | null
+        }
+        Relationships: []
+      }
       payment_methods_public: {
         Row: {
           config_type: string | null
@@ -5644,6 +5756,7 @@ export type Database = {
       }
     }
     Functions: {
+      archive_stale_articles: { Args: { _months?: number }; Returns: number }
       auto_cancel_stale_pending: { Args: never; Returns: number }
       calculate_ccc_value: {
         Args: { contribution_id: string }
@@ -5873,6 +5986,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_article_view: {
+        Args: { _article_id: string }
+        Returns: undefined
+      }
       is_expert_or_admin: { Args: { _user_id: string }; Returns: boolean }
       is_hr_admin: { Args: { _user_id: string }; Returns: boolean }
       is_permit_valid: {
@@ -5917,6 +6034,7 @@ export type Database = {
         Args: { contribution_id: string }
         Returns: string
       }
+      publish_scheduled_articles: { Args: never; Returns: number }
       purge_test_billing_data: { Args: { p_reason?: string }; Returns: Json }
       reconcile_tax_records: {
         Args: never
@@ -5938,6 +6056,14 @@ export type Database = {
           request_table: string
           user_id: string
         }[]
+      }
+      swap_theme_order: {
+        Args: { _theme_a: string; _theme_b: string }
+        Returns: undefined
+      }
+      track_publication_download: {
+        Args: { _publication_id: string }
+        Returns: undefined
       }
       user_has_permission: {
         Args: { _action: string; _resource: string; _user_id: string }
@@ -5995,6 +6121,7 @@ export type Database = {
         | "notaire"
         | "geometre"
         | "urbaniste"
+        | "editor"
       document_type:
         | "report"
         | "invoice"
@@ -6146,6 +6273,7 @@ export const Constants = {
         "notaire",
         "geometre",
         "urbaniste",
+        "editor",
       ],
       document_type: [
         "report",

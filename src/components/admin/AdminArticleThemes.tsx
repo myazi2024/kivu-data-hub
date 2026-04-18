@@ -152,22 +152,17 @@ export const AdminArticleThemes: React.FC = () => {
   const handleReorder = async (theme: ArticleTheme, direction: 'up' | 'down') => {
     const currentIndex = themes.findIndex(t => t.id === theme.id);
     const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-    
+
     if (newIndex < 0 || newIndex >= themes.length) return;
 
     const otherTheme = themes[newIndex];
-    
+
     try {
-      await supabase
-        .from('article_themes')
-        .update({ display_order: newIndex + 1 })
-        .eq('id', theme.id);
-
-      await supabase
-        .from('article_themes')
-        .update({ display_order: currentIndex + 1 })
-        .eq('id', otherTheme.id);
-
+      const { error } = await supabase.rpc('swap_theme_order', {
+        _theme_a: theme.id,
+        _theme_b: otherTheme.id,
+      });
+      if (error) throw error;
       fetchThemes();
     } catch (error) {
       console.error('Error reordering themes:', error);

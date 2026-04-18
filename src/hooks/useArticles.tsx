@@ -125,15 +125,14 @@ export const useArticleBySlug = (slug: string) => {
         .maybeSingle();
 
         if (error) throw error;
-        
-        // Incrémenter le compteur de vues
+
+        // Incrémenter le compteur de vues côté serveur (sécurisé, atomique)
         if (data) {
-          await supabase
-            .from('articles')
-            .update({ view_count: (data.view_count || 0) + 1 })
-            .eq('id', data.id);
+          supabase.rpc('increment_article_view', { _article_id: data.id }).then(({ error: rpcErr }) => {
+            if (rpcErr) console.warn('view count rpc failed', rpcErr);
+          });
         }
-        
+
         setArticle(data);
       } catch (error) {
         console.error('Error fetching article:', error);
