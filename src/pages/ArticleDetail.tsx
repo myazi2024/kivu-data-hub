@@ -136,7 +136,7 @@ const ArticleDetail = () => {
         <meta name="twitter:description" content={article.summary} />
         {article.cover_image_url && <meta name="twitter:image" content={article.cover_image_url} />}
         <meta name="article:published_time" content={article.published_at} />
-        {article.author_name && <meta name="article:author" content={article.author_name} />}
+        {(article.author_display_name || article.author_name) && <meta name="article:author" content={article.author_display_name || article.author_name} />}
         {article.tags && <meta name="article:tag" content={article.tags.join(', ')} />}
       </Helmet>
 
@@ -204,8 +204,8 @@ const ArticleDetail = () => {
 
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  {article.author_name && (
-                    <span className="font-medium">{article.author_name}</span>
+                  {(article.author_display_name || article.author_name) && (
+                    <span className="font-medium">{article.author_display_name || article.author_name}</span>
                   )}
                   <div className="flex items-center gap-1">
                     <Calendar className="h-4 w-4" />

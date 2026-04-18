@@ -28,10 +28,12 @@ interface ArticleTheme {
 
 export const AdminArticleThemes: React.FC = () => {
   const [themes, setThemes] = useState<ArticleTheme[]>([]);
+  const [counts, setCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [editingTheme, setEditingTheme] = useState<ArticleTheme | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   // Form state
   const [themeName, setThemeName] = useState('');
@@ -51,7 +53,23 @@ export const AdminArticleThemes: React.FC = () => {
         .order('display_order');
 
       if (error) throw error;
-      setThemes((data || []) as ArticleTheme[]);
+      const list = (data || []) as ArticleTheme[];
+      setThemes(list);
+
+      // Compter les articles liés (non supprimés)
+      const ids = list.map(t => t.id);
+      if (ids.length) {
+        const { data: arts } = await supabase
+          .from('articles')
+          .select('theme_id')
+          .in('theme_id', ids)
+          .is('deleted_at', null);
+        const map: Record<string, number> = {};
+        (arts || []).forEach((a: any) => { map[a.theme_id] = (map[a.theme_id] || 0) + 1; });
+        setCounts(map);
+      } else {
+        setCounts({});
+      }
     } catch (error) {
       console.error('Error fetching themes:', error);
       toast.error('Erreur lors du chargement des thèmes');
@@ -63,6 +81,26 @@ export const AdminArticleThemes: React.FC = () => {
   useEffect(() => {
     fetchThemes();
   }, []);
+
+  const handleDelete = async (theme: ArticleTheme) => {
+    const linked = counts[theme.id] || 0;
+    if (linked > 0) {
+      toast.error(`Impossible : ${linked} article(s) lié(s) à ce thème. Réaffectez-les ou désactivez le thème.`);
+      return;
+    }
+    if (!confirm(`Supprimer définitivement le thème "${theme.name}" ?`)) return;
+    setDeleting(theme.id);
+    try {
+      const { error } = await supabase.from('article_themes').delete().eq('id', theme.id);
+      if (error) throw error;
+      toast.success('Thème supprimé');
+      fetchThemes();
+    } catch (e: any) {
+      toast.error(e.message || 'Erreur suppression');
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   const resetForm = () => {
     setThemeName('');
@@ -254,6 +292,9 @@ export const AdminArticleThemes: React.FC = () => {
                         <Badge variant="outline" className="text-[9px] h-4 px-1">
                           {theme.short_name}
                         </Badge>
+                        <Badge variant="secondary" className="text-[9px] h-4 px-1">
+                          {counts[theme.id] || 0} art.
+                        </Badge>
                       </div>
                       {theme.description && (
                         <p className="text-[10px] text-muted-foreground truncate">
@@ -300,6 +341,18 @@ export const AdminArticleThemes: React.FC = () => {
                       onClick={() => openEditDialog(theme)}
                     >
                       <Edit2 className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      onClick={() => handleDelete(theme)}
+                      disabled={deleting === theme.id}
+                      title={(counts[theme.id] || 0) > 0 ? 'Articles liés — impossible' : 'Supprimer'}
+                    >
+                      {deleting === theme.id
+                        ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        : <Trash2 className="h-3.5 w-3.5 text-destructive" />}
                     </Button>
                   </div>
                 </div>
