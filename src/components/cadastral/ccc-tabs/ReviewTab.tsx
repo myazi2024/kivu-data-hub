@@ -572,11 +572,32 @@ const TaxSummary: React.FC<{ taxRecords: TaxRecord[]; formData: CadastralContrib
   const unpaidItems = taxStatusByYearType.filter(t => !t.paid);
   const paidItems = taxStatusByYearType.filter(t => t.paid);
 
-  // Cohérence IRL : nombre de constructions en location vs nombre d'entrées IRL
-  const rentalConstructionsCount = (formData.declaredUsage === 'Location' ? 1 : 0)
-    + additionalConstructions.filter(c => c.declaredUsage === 'Location').length;
-  const irlEntriesCount = taxRecords.filter(t => t.taxType === 'Impôt sur les revenus locatifs' && t.taxAmount && t.taxYear).length;
-  const irlMismatch = rentalConstructionsCount > 0 && irlEntriesCount !== rentalConstructionsCount;
+  // Cohérence IRL : 1 IRL par construction en location
+  const rentalRefs: { ref: string; label: string }[] = [];
+  if (formData.declaredUsage === 'Location') {
+    rentalRefs.push({ ref: 'main', label: 'Construction principale' });
+  }
+  additionalConstructions.forEach((c, idx) => {
+    if (c.declaredUsage === 'Location') {
+      const parts = [c.propertyCategory || c.constructionType || 'Construction', c.constructionYear ? String(c.constructionYear) : null].filter(Boolean);
+      rentalRefs.push({ ref: `additional:${idx}`, label: `Construction #${idx + 2} (${parts.join(', ')})` });
+    }
+  });
+  const irlRecords = taxRecords.filter(t => t.taxType === 'Impôt sur les revenus locatifs' && t.taxAmount && t.taxYear);
+  const validRefs = new Set(rentalRefs.map(r => r.ref));
+  const orphanIrl = irlRecords.filter(t => !t.constructionRef || !validRefs.has(t.constructionRef));
+  const refToIrl = new Map<string, typeof irlRecords[number][]>();
+  irlRecords.forEach(t => {
+    if (t.constructionRef && validRefs.has(t.constructionRef)) {
+      const arr = refToIrl.get(t.constructionRef) || [];
+      arr.push(t);
+      refToIrl.set(t.constructionRef, arr);
+    }
+  });
+  const irlMismatch = rentalRefs.length > 0 && (
+    orphanIrl.length > 0 ||
+    rentalRefs.some(r => (refToIrl.get(r.ref) || []).length !== 1)
+  );
 
   return (
     <div className="space-y-2">
@@ -618,28 +639,43 @@ const TaxSummary: React.FC<{ taxRecords: TaxRecord[]; formData: CadastralContrib
         </div>
       )}
 
-      {/* Cohérence IRL × constructions en location */}
-      {rentalConstructionsCount > 0 && (
+      {/* Cohérence IRL : détail par construction en location */}
+      {rentalRefs.length > 0 && (
         <div className={`mt-1 p-2 rounded-lg border ${
           irlMismatch
-            ? (irlEntriesCount < rentalConstructionsCount
-                ? 'bg-destructive/10 border-destructive/30'
-                : 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800')
+            ? 'bg-destructive/10 border-destructive/30'
             : 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800'
         }`}>
-          <p className={`text-[11px] flex items-start gap-1 ${
-            irlMismatch
-              ? (irlEntriesCount < rentalConstructionsCount ? 'text-destructive' : 'text-amber-800 dark:text-amber-200')
-              : 'text-green-800 dark:text-green-200'
+          <p className={`text-[11px] font-medium mb-1 flex items-start gap-1 ${
+            irlMismatch ? 'text-destructive' : 'text-green-800 dark:text-green-200'
           }`}>
             {irlMismatch ? <AlertTriangle className="h-3 w-3 mt-0.5 flex-shrink-0" /> : <CheckCircle2 className="h-3 w-3 mt-0.5 flex-shrink-0" />}
-            <span>
-              <strong>Cohérence IRL :</strong> {irlEntriesCount} déclaration(s) IRL renseignée(s) pour {rentalConstructionsCount} construction(s) en location.
-              {irlMismatch && irlEntriesCount < rentalConstructionsCount && ` Manque ${rentalConstructionsCount - irlEntriesCount} déclaration(s) IRL.`}
-              {irlMismatch && irlEntriesCount > rentalConstructionsCount && ` ${irlEntriesCount - rentalConstructionsCount} déclaration(s) IRL en trop.`}
-              {!irlMismatch && ' Conforme.'}
-            </span>
+            <span><strong>Cohérence IRL</strong> — 1 déclaration par construction en location :</span>
           </p>
+          <ul className="space-y-0.5 ml-4">
+            {rentalRefs.map(r => {
+              const matches = refToIrl.get(r.ref) || [];
+              const ok = matches.length === 1;
+              const tooMany = matches.length > 1;
+              return (
+                <li key={r.ref} className={`text-[11px] flex items-start gap-1 ${ok ? 'text-green-700 dark:text-green-400' : 'text-destructive'}`}>
+                  {ok ? <CheckCircle2 className="h-3 w-3 mt-0.5 flex-shrink-0" /> : <AlertTriangle className="h-3 w-3 mt-0.5 flex-shrink-0" />}
+                  <span>
+                    {r.label} —{' '}
+                    {ok && `IRL ${matches[0].taxYear} renseigné (${matches[0].taxAmount} USD)`}
+                    {matches.length === 0 && 'IRL manquant'}
+                    {tooMany && `${matches.length} IRL déclarés (doublon)`}
+                  </span>
+                </li>
+              );
+            })}
+            {orphanIrl.map((t, idx) => (
+              <li key={`orphan-${idx}`} className="text-[11px] flex items-start gap-1 text-destructive">
+                <AlertTriangle className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                <span>IRL {t.taxYear} ({t.taxAmount} USD) sans construction valide — à supprimer</span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>

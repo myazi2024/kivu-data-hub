@@ -429,7 +429,33 @@ export const useCCCFormState = ({
   const removeTaxRecord = (index: number) => { setTaxRecords(taxRecords.filter((_, i) => i !== index)); markDirty(); };
 
   const updateTaxRecord = (index: number, field: string, value: string) => {
-    const updated = [...taxRecords]; updated[index] = { ...updated[index], [field]: value }; setTaxRecords(updated); markDirty();
+    const updated = [...taxRecords];
+    updated[index] = { ...updated[index], [field]: value };
+    // Auto-assign / clear constructionRef on taxType change
+    if (field === 'taxType') {
+      if (value === 'Impôt sur les revenus locatifs') {
+        // Auto-assign first available rentalRef if none yet
+        const usedRefs = new Set(
+          updated
+            .filter((t, i) => i !== index && t.taxType === 'Impôt sur les revenus locatifs' && t.constructionRef)
+            .map(t => t.constructionRef as string)
+        );
+        const available: string[] = [];
+        if (formData.declaredUsage === 'Location') available.push('main');
+        additionalConstructions.forEach((c, idx) => {
+          if (c.declaredUsage === 'Location') available.push(`additional:${idx}`);
+        });
+        const free = available.find(r => !usedRefs.has(r));
+        if (free && !updated[index].constructionRef) {
+          updated[index] = { ...updated[index], constructionRef: free };
+        }
+      } else {
+        // Non-IRL : clear constructionRef
+        updated[index] = { ...updated[index], constructionRef: undefined };
+      }
+    }
+    setTaxRecords(updated);
+    markDirty();
   };
 
   const handleTaxFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -732,18 +758,65 @@ export const useCCCFormState = ({
       if (tax.taxAmount && tax.taxYear && !tax.receiptFile && !tax.existingReceiptUrl) missing.push({ field: `taxReceipt_${idx}`, label: `Reçu de ${tax.taxType} ${tax.taxYear}`, tab: 'obligations' });
     });
 
-    // OBLIGATIONS - IRL × Constructions en location (cohérence stricte)
-    const rentalConstructionsCount = (formData.declaredUsage === 'Location' ? 1 : 0)
-      + additionalConstructions.filter(c => c.declaredUsage === 'Location').length;
-    if (rentalConstructionsCount > 0) {
-      const irlEntriesCount = taxRecords.filter(t => t.taxType === 'Impôt sur les revenus locatifs' && t.taxAmount && t.taxYear).length;
-      if (irlEntriesCount !== rentalConstructionsCount) {
+    // OBLIGATIONS - IRL × Constructions en location (cohérence stricte 1:1 par construction)
+    const rentalRefs: string[] = [];
+    const rentalLabels: Record<string, string> = {};
+    if (formData.declaredUsage === 'Location') {
+      rentalRefs.push('main');
+      rentalLabels['main'] = 'Construction principale';
+    }
+    additionalConstructions.forEach((c, idx) => {
+      if (c.declaredUsage === 'Location') {
+        const ref = `additional:${idx}`;
+        rentalRefs.push(ref);
+        const parts = [c.propertyCategory || c.constructionType || 'Construction', c.constructionYear ? String(c.constructionYear) : null].filter(Boolean);
+        rentalLabels[ref] = `Construction #${idx + 2} (${parts.join(', ')})`;
+      }
+    });
+
+    if (rentalRefs.length > 0) {
+      const irlRecords = taxRecords.filter(t => t.taxType === 'Impôt sur les revenus locatifs' && t.taxAmount && t.taxYear);
+      const irlRefs = irlRecords.map(t => t.constructionRef).filter(Boolean) as string[];
+
+      // Manquants : constructions Location sans IRL
+      const missingRefs = rentalRefs.filter(r => !irlRefs.includes(r));
+      missingRefs.forEach(r => {
         missing.push({
-          field: 'irlCoherence',
-          label: `Cohérence IRL : ${irlEntriesCount} déclaration(s) IRL pour ${rentalConstructionsCount} construction(s) en location (doit être égal)`,
+          field: `irlMissing_${r}`,
+          label: `IRL manquant pour : ${rentalLabels[r]}`,
+          tab: 'obligations',
+        });
+      });
+
+      // Orphelins : IRL avec ref qui n'existe plus / n'est plus en Location
+      const orphanRefs = irlRefs.filter(r => !rentalRefs.includes(r));
+      orphanRefs.forEach(r => {
+        missing.push({
+          field: `irlOrphan_${r}`,
+          label: `IRL orphelin (la construction associée n'est plus en Location) — à supprimer`,
+          tab: 'obligations',
+        });
+      });
+
+      // IRL sans ref renseignée
+      const unassignedCount = irlRecords.filter(t => !t.constructionRef).length;
+      if (unassignedCount > 0) {
+        missing.push({
+          field: 'irlUnassigned',
+          label: `${unassignedCount} déclaration(s) IRL sans construction rattachée`,
           tab: 'obligations',
         });
       }
+
+      // Doublons : 2 IRL pour la même construction
+      const refCounts = irlRefs.reduce<Record<string, number>>((acc, r) => { acc[r] = (acc[r] || 0) + 1; return acc; }, {});
+      Object.entries(refCounts).filter(([, n]) => n > 1).forEach(([r, n]) => {
+        missing.push({
+          field: `irlDuplicate_${r}`,
+          label: `${n} IRL déclarés pour la même construction (${rentalLabels[r] || r})`,
+          tab: 'obligations',
+        });
+      });
     }
 
     // OBLIGATIONS - MORTGAGE
@@ -999,7 +1072,7 @@ export const useCCCFormState = ({
         if (tax.receiptFile) { receiptUrl = await uploadFile(tax.receiptFile, 'tax-receipts'); if (!receiptUrl) throw new Error('Erreur téléchargement reçu taxe'); }
         const parsedYear = parseInt(tax.taxYear); const parsedAmount = parseFloat(tax.taxAmount);
         if (isNaN(parsedYear) || isNaN(parsedAmount)) return null;
-        return { taxYear: parsedYear, amountUsd: parsedAmount, paymentStatus: tax.paymentStatus, paymentDate: tax.paymentDate || undefined, receiptUrl: receiptUrl || tax.existingReceiptUrl || undefined, taxType: tax.taxType, remainingAmount: tax.remainingAmount ? parseFloat(tax.remainingAmount) : undefined };
+        return { taxYear: parsedYear, amountUsd: parsedAmount, paymentStatus: tax.paymentStatus, paymentDate: tax.paymentDate || undefined, receiptUrl: receiptUrl || tax.existingReceiptUrl || undefined, taxType: tax.taxType, remainingAmount: tax.remainingAmount ? parseFloat(tax.remainingAmount) : undefined, constructionRef: tax.constructionRef || undefined };
       }))).filter(Boolean);
 
       const mortgageHistoryData = (await Promise.all(mortgageRecords.filter(m => m.mortgageAmount && m.duration && m.creditorName).map(async (mortgage) => {
@@ -1142,11 +1215,22 @@ export const useCCCFormState = ({
     }
   }, []);
 
-  // Purge automatique des entrées IRL si plus aucune construction n'est en location
+  // Purge / nettoyage des IRL orphelins quand l'usage des constructions change
   useEffect(() => {
-    const hasLocationUsage = formData.declaredUsage === 'Location'
-      || additionalConstructions.some(c => c.declaredUsage === 'Location');
-    if (!hasLocationUsage) {
+    const validRefs = new Set<string>();
+    if (formData.declaredUsage === 'Location') validRefs.add('main');
+    additionalConstructions.forEach((c, idx) => {
+      if (c.declaredUsage === 'Location') validRefs.add(`additional:${idx}`);
+    });
+
+    const orphans = taxRecords.filter(t =>
+      t.taxType === 'Impôt sur les revenus locatifs' &&
+      t.constructionRef &&
+      !validRefs.has(t.constructionRef)
+    );
+
+    if (validRefs.size === 0) {
+      // Plus aucune Location → purger tous les IRL
       const hasIrl = taxRecords.some(t => t.taxType === 'Impôt sur les revenus locatifs');
       if (hasIrl) {
         setTaxRecords(prev => prev.filter(t => t.taxType !== 'Impôt sur les revenus locatifs'));
@@ -1155,6 +1239,15 @@ export const useCCCFormState = ({
           description: "Les entrées « Impôt sur les revenus locatifs » ont été retirées car aucune construction n'est en location.",
         });
       }
+    } else if (orphans.length > 0) {
+      // Purger seulement les IRL dont la construction n'est plus en Location
+      setTaxRecords(prev => prev.filter(t =>
+        !(t.taxType === 'Impôt sur les revenus locatifs' && t.constructionRef && !validRefs.has(t.constructionRef))
+      ));
+      toast({
+        title: 'IRL mis à jour',
+        description: `${orphans.length} déclaration(s) IRL retirée(s) : la construction associée n'est plus en location.`,
+      });
     }
   }, [formData.declaredUsage, additionalConstructions, taxRecords, toast]);
 
@@ -1235,7 +1328,7 @@ export const useCCCFormState = ({
 
         const taxes = contrib.tax_history as any[];
         if (taxes && Array.isArray(taxes) && taxes.length > 0) {
-          setTaxRecords(taxes.map((t: any) => ({ taxType: t.tax_type || 'Impôt foncier annuel', taxYear: String(t.tax_year || ''), taxAmount: String(t.amount_usd || ''), paymentStatus: t.payment_status || 'Payé', paymentDate: t.payment_date || '', remainingAmount: t.remaining_amount ? String(t.remaining_amount) : undefined, receiptFile: null, existingReceiptUrl: t.receipt_document_url || undefined })));
+          setTaxRecords(taxes.map((t: any) => ({ taxType: t.tax_type || 'Impôt foncier annuel', taxYear: String(t.tax_year || ''), taxAmount: String(t.amount_usd || ''), paymentStatus: t.payment_status || 'Payé', paymentDate: t.payment_date || '', remainingAmount: t.remaining_amount ? String(t.remaining_amount) : undefined, receiptFile: null, existingReceiptUrl: t.receipt_document_url || undefined, constructionRef: t.constructionRef || t.construction_ref || (t.tax_type === 'Impôt sur les revenus locatifs' ? 'main' : undefined) })));
         }
 
         const mortgages = contrib.mortgage_history as any[];
