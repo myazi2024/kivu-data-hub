@@ -20,17 +20,12 @@ import { useTestEnvironment } from '@/hooks/useTestEnvironment';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { getTerritoiresForProvince, getProvinceForTerritoire } from '@/lib/geographicData';
 import { MAP_TAB_PROFILES, computeAdaptiveTiers, NO_DATA_COLOR, type MapTabProfile, type MapTier } from '@/config/mapTabProfiles';
-import {
-  PROVINCE_META,
-  DEFAULT_DENSITY_TIERS,
-  DENSITY_TIER_KEYS,
-  TOOLTIP_LINE_KEYS,
-  norm,
-  buildEmptyProvince,
-  buildScopePredicate,
-} from './map/meta/mapMeta';
+import { norm, buildScopePredicate } from './map/meta/mapMeta';
 import { useMapDrilldown } from './map/hooks/useMapDrilldown';
 import { useMapIndicators } from './map/hooks/useMapIndicators';
+import { MapLegend } from './map/ui/MapLegend';
+import { MapScopeLegend } from './map/ui/MapScopeLegend';
+import { MapKPICards } from './map/ui/MapKPICards';
 
 
 
