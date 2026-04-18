@@ -349,6 +349,9 @@ export const useCCCFormState = ({
     return true;
   };
 
+  // Tracker des fichiers uploadés pendant un cycle de soumission (pour rollback en cas d'échec)
+  const submitUploadedPathsRef = useRef<string[]>([]);
+
   const uploadFile = async (file: File, path: string): Promise<string | null> => {
     try {
       const fileExt = file.name.split('.').pop();
@@ -356,10 +359,25 @@ export const useCCCFormState = ({
       const filePath = `${path}/${fileName}`;
       const { error: uploadError } = await supabase.storage.from('cadastral-documents').upload(filePath, file);
       if (uploadError) { console.error('Upload error:', uploadError); return null; }
+      // Tracker pour rollback éventuel
+      submitUploadedPathsRef.current.push(filePath);
       const { data: signedData, error: signedError } = await supabase.storage.from('cadastral-documents').createSignedUrl(filePath, 60 * 60 * 24 * 365 * 10);
       if (signedError || !signedData?.signedUrl) { console.error('Signed URL error:', signedError); return null; }
       return signedData.signedUrl;
     } catch (error) { console.error('Error uploading file:', error); return null; }
+  };
+
+  const rollbackUploadedFiles = async () => {
+    const paths = submitUploadedPathsRef.current;
+    if (paths.length === 0) return;
+    try {
+      await supabase.storage.from('cadastral-documents').remove(paths);
+      console.warn(`🧹 Rollback: ${paths.length} fichier(s) orphelin(s) supprimé(s)`);
+    } catch (e) {
+      console.error('Rollback uploads échoué (fichiers orphelins possibles):', e);
+    } finally {
+      submitUploadedPathsRef.current = [];
+    }
   };
 
   // ─── CRUD: Previous owners ───
