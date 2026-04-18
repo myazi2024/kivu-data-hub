@@ -164,8 +164,7 @@ export const useCCCFormState = ({
   const [formData, setFormData] = useState<CadastralContributionData>({ parcelNumber });
 
   const [parcelSides, setParcelSides] = useState<Array<{ name: string; length: string }>>([
-    { name: 'Côté Nord', length: '' }, { name: 'Côté Sud', length: '' },
-    { name: 'Côté Est', length: '' }, { name: 'Côté Ouest', length: '' }
+    { name: 'Côté 1', length: '' }, { name: 'Côté 2', length: '' }, { name: 'Côté 3', length: '' }
   ]);
 
   const [availableVilles, setAvailableVilles] = useState<string[]>([]);
@@ -179,6 +178,8 @@ export const useCCCFormState = ({
   const [sectionTypeAutoDetected, setSectionTypeAutoDetected] = useState(false);
 
   const STORAGE_KEY = `cadastral_contribution_${parcelNumber}`;
+  const STORAGE_SCHEMA_VERSION = 2;
+  const STORAGE_TTL_DAYS = 30;
 
   // ─── Helper: mark form dirty ───
   const markDirty = useCallback(() => { formDirtyRef.current = true; }, []);
@@ -231,7 +232,12 @@ export const useCCCFormState = ({
       timestamp: new Date().toISOString()
     };
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+      const wrapped = {
+        schemaVersion: STORAGE_SCHEMA_VERSION,
+        savedAt: new Date().toISOString(),
+        data: dataToSave,
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(wrapped));
       localStorage.setItem('auth_redirect_url', window.location.pathname + window.location.search);
     } catch (error) {
       console.error('Erreur sauvegarde:', error);
@@ -241,36 +247,64 @@ export const useCCCFormState = ({
   const loadFormDataFromStorage = () => {
     try {
       const savedData = localStorage.getItem(STORAGE_KEY);
-      if (savedData) {
-        const parsed = JSON.parse(savedData);
-        if (parsed.formData) setFormData(parsed.formData);
-        if (parsed.currentOwners) setCurrentOwners(parsed.currentOwners);
-        if (parsed.previousOwners) setPreviousOwners(parsed.previousOwners);
-        if (parsed.taxRecords) setTaxRecords(parsed.taxRecords);
-        if (parsed.mortgageRecords) setMortgageRecords(parsed.mortgageRecords);
-        if (parsed.permitMode) setPermitMode(parsed.permitMode);
-        if (parsed.buildingPermits) setBuildingPermits(parsed.buildingPermits);
-        if (parsed.permitRequest) setPermitRequest(parsed.permitRequest);
-        if (parsed.gpsCoordinates) setGpsCoordinates(parsed.gpsCoordinates);
-        if (parsed.parcelSides) setParcelSides(parsed.parcelSides);
-        if (parsed.obligationType) setObligationType(parsed.obligationType);
-        if (parsed.sectionType) setSectionType(parsed.sectionType);
-        if (parsed.hasMortgage !== undefined) setHasMortgage(parsed.hasMortgage);
-        if (parsed.hasDispute !== undefined) setHasDispute(parsed.hasDispute);
-        if (parsed.ownershipMode) setOwnershipMode(parsed.ownershipMode);
-        if (parsed.leaseYears !== undefined) setLeaseYears(parsed.leaseYears);
-        if (parsed.roadSides) setRoadSides(parsed.roadSides);
-        if (parsed.servitude) setServitude(parsed.servitude);
-        if (parsed.customTitleName) setCustomTitleName(parsed.customTitleName);
-        if (parsed.constructionMode) setConstructionMode(parsed.constructionMode);
-        if (parsed.additionalConstructions) setAdditionalConstructions(parsed.additionalConstructions);
-        if (parsed.buildingShapes) setBuildingShapes(parsed.buildingShapes);
-        if (parsed.disputeFormData) setDisputeFormData(parsed.disputeFormData);
-        if (parsed.soundEnvironment) setSoundEnvironment(parsed.soundEnvironment);
-        if (parsed.nearbySoundSources) setNearbySoundSources(parsed.nearbySoundSources);
-        if (parsed.isOccupied !== undefined) setFormData(prev => ({ ...prev, isOccupied: parsed.isOccupied, occupantCount: parsed.occupantCount, hostingCapacity: parsed.hostingCapacity }));
-        toast({ title: "Données restaurées", description: "Vos données précédentes ont été restaurées." });
+      if (!savedData) return;
+
+      let envelope: any;
+      try {
+        envelope = JSON.parse(savedData);
+      } catch {
+        localStorage.removeItem(STORAGE_KEY);
+        return;
       }
+
+      // Détecter le format versionné vs ancien format brut
+      let parsed: any;
+      if (envelope && typeof envelope === 'object' && 'schemaVersion' in envelope && 'data' in envelope) {
+        if (envelope.schemaVersion !== STORAGE_SCHEMA_VERSION) {
+          localStorage.removeItem(STORAGE_KEY);
+          return;
+        }
+        if (envelope.savedAt) {
+          const ageDays = (Date.now() - new Date(envelope.savedAt).getTime()) / (1000 * 60 * 60 * 24);
+          if (ageDays > STORAGE_TTL_DAYS) {
+            localStorage.removeItem(STORAGE_KEY);
+            return;
+          }
+        }
+        parsed = envelope.data;
+      } else {
+        // Ancien format non versionné → on purge silencieusement
+        localStorage.removeItem(STORAGE_KEY);
+        return;
+      }
+
+      if (parsed.formData) setFormData(parsed.formData);
+      if (parsed.currentOwners) setCurrentOwners(parsed.currentOwners);
+      if (parsed.previousOwners) setPreviousOwners(parsed.previousOwners);
+      if (parsed.taxRecords) setTaxRecords(parsed.taxRecords);
+      if (parsed.mortgageRecords) setMortgageRecords(parsed.mortgageRecords);
+      if (parsed.permitMode) setPermitMode(parsed.permitMode);
+      if (parsed.buildingPermits) setBuildingPermits(parsed.buildingPermits);
+      if (parsed.permitRequest) setPermitRequest(parsed.permitRequest);
+      if (parsed.gpsCoordinates) setGpsCoordinates(parsed.gpsCoordinates);
+      if (parsed.parcelSides) setParcelSides(parsed.parcelSides);
+      if (parsed.obligationType) setObligationType(parsed.obligationType);
+      if (parsed.sectionType) setSectionType(parsed.sectionType);
+      if (parsed.hasMortgage !== undefined) setHasMortgage(parsed.hasMortgage);
+      if (parsed.hasDispute !== undefined) setHasDispute(parsed.hasDispute);
+      if (parsed.ownershipMode) setOwnershipMode(parsed.ownershipMode);
+      if (parsed.leaseYears !== undefined) setLeaseYears(parsed.leaseYears);
+      if (parsed.roadSides) setRoadSides(parsed.roadSides);
+      if (parsed.servitude) setServitude(parsed.servitude);
+      if (parsed.customTitleName) setCustomTitleName(parsed.customTitleName);
+      if (parsed.constructionMode) setConstructionMode(parsed.constructionMode);
+      if (parsed.additionalConstructions) setAdditionalConstructions(parsed.additionalConstructions);
+      if (parsed.buildingShapes) setBuildingShapes(parsed.buildingShapes);
+      if (parsed.disputeFormData) setDisputeFormData(parsed.disputeFormData);
+      if (parsed.soundEnvironment) setSoundEnvironment(parsed.soundEnvironment);
+      if (parsed.nearbySoundSources) setNearbySoundSources(parsed.nearbySoundSources);
+      if (parsed.isOccupied !== undefined) setFormData(prev => ({ ...prev, isOccupied: parsed.isOccupied, occupantCount: parsed.occupantCount, hostingCapacity: parsed.hostingCapacity }));
+      toast({ title: "Données restaurées", description: "Vos données précédentes ont été restaurées." });
     } catch (error) {
       console.error('Erreur chargement:', error);
     }
@@ -315,6 +349,9 @@ export const useCCCFormState = ({
     return true;
   };
 
+  // Tracker des fichiers uploadés pendant un cycle de soumission (pour rollback en cas d'échec)
+  const submitUploadedPathsRef = useRef<string[]>([]);
+
   const uploadFile = async (file: File, path: string): Promise<string | null> => {
     try {
       const fileExt = file.name.split('.').pop();
@@ -322,10 +359,25 @@ export const useCCCFormState = ({
       const filePath = `${path}/${fileName}`;
       const { error: uploadError } = await supabase.storage.from('cadastral-documents').upload(filePath, file);
       if (uploadError) { console.error('Upload error:', uploadError); return null; }
+      // Tracker pour rollback éventuel
+      submitUploadedPathsRef.current.push(filePath);
       const { data: signedData, error: signedError } = await supabase.storage.from('cadastral-documents').createSignedUrl(filePath, 60 * 60 * 24 * 365 * 10);
       if (signedError || !signedData?.signedUrl) { console.error('Signed URL error:', signedError); return null; }
       return signedData.signedUrl;
     } catch (error) { console.error('Error uploading file:', error); return null; }
+  };
+
+  const rollbackUploadedFiles = async () => {
+    const paths = submitUploadedPathsRef.current;
+    if (paths.length === 0) return;
+    try {
+      await supabase.storage.from('cadastral-documents').remove(paths);
+      console.warn(`🧹 Rollback: ${paths.length} fichier(s) orphelin(s) supprimé(s)`);
+    } catch (e) {
+      console.error('Rollback uploads échoué (fichiers orphelins possibles):', e);
+    } finally {
+      submitUploadedPathsRef.current = [];
+    }
   };
 
   // ─── CRUD: Previous owners ───
@@ -921,7 +973,7 @@ export const useCCCFormState = ({
     }
   }, [getMissingFieldsForTab, toast, handleTabChange]);
 
-  const isFormValidForSubmission = () => getMissingFields().length === 0;
+  const isFormValidForSubmission = useCallback(() => getMissingFields().length === 0, [getMissingFields]);
 
   // ─── CCC Value calculation ───
   const calculateCCCValue = useMemo(() => {
@@ -1059,17 +1111,18 @@ export const useCCCFormState = ({
     }
 
     setUploading(true);
+    submitUploadedPathsRef.current = []; // reset tracker pour ce cycle
     try {
       let ownerDocUrl = null;
       let titleDocUrls: string[] = [];
       if (ownerDocFile) {
         ownerDocUrl = await uploadFile(ownerDocFile, 'owner-documents');
-        if (!ownerDocUrl) { toast({ title: "Erreur de téléchargement", description: "Impossible de télécharger le document du propriétaire", variant: "destructive" }); setUploading(false); return; }
+        if (!ownerDocUrl) { await rollbackUploadedFiles(); toast({ title: "Erreur de téléchargement", description: "Impossible de télécharger le document du propriétaire", variant: "destructive" }); setUploading(false); return; }
       }
       if (titleDocFiles.length > 0) {
         for (const file of titleDocFiles) {
           const url = await uploadFile(file, 'title-documents');
-          if (!url) { toast({ title: "Erreur de téléchargement", description: "Impossible de télécharger un document de titre", variant: "destructive" }); setUploading(false); return; }
+          if (!url) { await rollbackUploadedFiles(); toast({ title: "Erreur de téléchargement", description: "Impossible de télécharger un document de titre", variant: "destructive" }); setUploading(false); return; }
           titleDocUrls.push(url);
         }
       }
@@ -1155,13 +1208,16 @@ export const useCCCFormState = ({
       const result = editingContributionId ? await updateContribution(editingContributionId, dataToSubmit) : await submitContribution(dataToSubmit);
       if (result?.success) {
         clearSavedFormData();
+        submitUploadedPathsRef.current = []; // succès → on garde les fichiers
         formDirtyRef.current = false;
         isClosingAfterSuccessRef.current = true;
         setShowSuccess(true);
       } else if (result && !result.success) {
         console.error('Échec de la soumission');
+        await rollbackUploadedFiles();
       }
     } catch (error) {
+      await rollbackUploadedFiles();
       toast({ title: "Erreur", description: error instanceof Error ? error.message : "Une erreur est survenue", variant: "destructive" });
     } finally {
       setUploading(false);
@@ -1185,7 +1241,7 @@ export const useCCCFormState = ({
     setTaxRecords([{ taxType: 'Impôt foncier annuel', taxYear: '', taxAmount: '', paymentStatus: 'Payé', paymentDate: '', receiptFile: null }]);
     setMortgageRecords([{ mortgageAmount: '', duration: '', creditorName: '', creditorType: 'Banque', contractDate: '', mortgageStatus: 'Active', receiptFile: null }]);
     setObligationType('taxes');
-    setParcelSides([{ name: 'Côté Nord', length: '' }, { name: 'Côté Sud', length: '' }, { name: 'Côté Est', length: '' }, { name: 'Côté Ouest', length: '' }]);
+    setParcelSides([{ name: 'Côté 1', length: '' }, { name: 'Côté 2', length: '' }, { name: 'Côté 3', length: '' }]);
     setAvailableVilles([]); setAvailableCommunes([]); setAvailableTerritoires([]); setAvailableCollectivites([]); setAvailableQuartiers([]); setAvailableAvenues([]);
     setAvailableConstructionNatures([]); setAvailableDeclaredUsages([]); setAvailableConstructionMaterials([]); setAvailableStandings([]);
     setRoadSides([]);
