@@ -657,12 +657,16 @@ const AdminAppearance = () => {
                     step={1}
                   />
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-sm">
+                <div>
+                  <Label className="text-xs mb-1 block">Google Fonts URL (optionnel)</Label>
+                  <Input
+                    value={googleFontUrl}
+                    onChange={e => setGoogleFontUrl(e.target.value)}
+                    placeholder="https://fonts.googleapis.com/css2?family=..."
+                    className="h-8 text-xs"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">Injecté dans le &lt;head&gt;. Mettez ensuite la famille dans la police ci-dessus.</p>
+                </div>
                   <RectangleHorizontal className="h-4 w-4" /> Forme
                 </CardTitle>
               </CardHeader>
