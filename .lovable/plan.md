@@ -1,69 +1,71 @@
 
-## Étape 2/4 — Extraction de `useFormPersistence`
+## Étape 3/4 — Extraction de `useGeographicCascade` et `useConstructionCascade`
 
 ### Objectif
-Extraire toute la logique de persistance localStorage + tracking des fichiers uploadés du hook monolithique vers `src/hooks/ccc/useFormPersistence.ts`. Aucune modification du comportement observable, contrat de retour identique.
+Extraire les deux cascades de dépendances (géographique et construction) du hook monolithique vers deux sous-hooks dédiés. Aucune modification du comportement observable.
 
-### Périmètre extrait
-Depuis `src/hooks/useCCCFormState.ts` :
-- Constantes `STORAGE_KEY`, `STORAGE_SCHEMA_VERSION`
-- `useEffect` de **chargement** initial du brouillon (`loadVersioned`) avec gestion `expired` / `schema_mismatch` / `parse_error` (toast utilisateur)
-- `useEffect` de **sauvegarde debounced** (1 500 ms) via `saveVersioned` sur changement de `formData` + slices liés
-- `submitUploadedPathsRef` (tracking des chemins Storage uploadés pendant la session)
-- `trackUploadedPath(path)` — ajoute un chemin au ref
-- `rollbackUploadedFiles()` — supprime les fichiers du bucket en cas d'échec submit
-- `clearDraft()` — purge localStorage après submit réussi ou abandon explicite
-- `hasRestoredDraft` (flag exposé pour bandeau "Brouillon restauré")
+### Sous-hook 1 : `useGeographicCascade`
 
-### Signature du nouveau hook
+**Périmètre extrait** depuis `useCCCFormState.ts` :
+- `useEffect` Province → reset City / Municipality / Quartier
+- `useEffect` City → reset Municipality / Quartier
+- `useEffect` Municipality → reset Quartier
+- Logique de filtrage des options dépendantes (via `getPicklistDependentOptions`)
 
+**Signature** :
 ```ts
-// src/hooks/ccc/useFormPersistence.ts
-export function useFormPersistence(params: {
-  user: User | null;
+// src/hooks/ccc/useGeographicCascade.ts
+export function useGeographicCascade(params: {
   formData: CCCFormData;
-  currentOwners: Owner[];
-  previousOwners: Owner[];
-  parcelSides: ParcelSide[];
-  gpsCoordinates: GPSCoord[];
-  buildingShapes: BuildingShape[];
-  // ... autres slices à persister
-  setFormData: (d: CCCFormData) => void;
-  setCurrentOwners: (o: Owner[]) => void;
-  // ... autres setters pour restore
+  updateFormData: (patch: Partial<CCCFormData>) => void;
+}): void;
+```
+Hook à effets uniquement (pas de retour) — il observe `formData.province/city/municipality` et émet les resets.
+
+### Sous-hook 2 : `useConstructionCascade`
+
+**Périmètre extrait** :
+- `useEffect` Construction Type → reset Nature, Declared Usage
+- `useEffect` Construction Nature → reset Declared Usage
+- Calcul des `availableUsages` via `resolveAvailableUsages` (réutilisation de l'utilitaire existant `src/utils/constructionUsageResolver.ts`, ne pas dupliquer)
+- Injection conditionnelle de `Location` (déjà gérée dans le resolver)
+
+**Signature** :
+```ts
+// src/hooks/ccc/useConstructionCascade.ts
+export function useConstructionCascade(params: {
+  formData: CCCFormData;
+  updateFormData: (patch: Partial<CCCFormData>) => void;
+  getPicklistDependentOptions: (key: string) => Record<string, string[]>;
 }): {
-  hasRestoredDraft: boolean;
-  trackUploadedPath: (path: string) => void;
-  rollbackUploadedFiles: () => Promise<void>;
-  clearDraft: () => void;
-}
+  availableUsages: string[];
+};
 ```
 
 ### Garanties non-régression
-- Mêmes clés localStorage (`STORAGE_KEY`, `STORAGE_SCHEMA_VERSION` inchangés).
-- Même délai de debounce (1 500 ms).
-- Mêmes toasts (texte identique, mêmes variants).
-- `rollbackUploadedFiles` reste appelé depuis le `catch` de `handleSubmit` dans l'orchestrateur.
-- `clearDraft` reste appelé après submit réussi et dans `handleClose` si l'utilisateur confirme l'abandon.
+- Mêmes effets, mêmes ordres de reset.
+- `resolveAvailableUsages` reste l'unique source de vérité (utilisé aussi par `AdditionalConstructionBlock`).
+- Le contrat public de `useCCCFormState` reste strictement identique : `availableUsages` continue d'être exposé.
 
 ### Plan d'exécution
-1. Créer `src/hooks/ccc/useFormPersistence.ts` avec la signature ci-dessus.
-2. Déplacer le `useEffect` de chargement (premier mount, dépend de `user`).
-3. Déplacer le `useEffect` de sauvegarde debounced (clearTimeout sur cleanup).
-4. Déplacer `submitUploadedPathsRef`, `trackUploadedPath`, `rollbackUploadedFiles` (utilise `supabase.storage.from(...).remove()`).
-5. Déplacer `clearDraft`.
-6. Dans `useCCCFormState.ts` : remplacer le code extrait par `const { hasRestoredDraft, trackUploadedPath, rollbackUploadedFiles, clearDraft } = useFormPersistence({ ... })`.
-7. Vérifier que `handleSubmit`, `handleClose`, et les composants d'upload utilisent toujours `trackUploadedPath` / `rollbackUploadedFiles` / `clearDraft` exposés via le contrat de retour de `useCCCFormState`.
+1. Créer `src/hooks/ccc/useGeographicCascade.ts` (effets uniquement).
+2. Créer `src/hooks/ccc/useConstructionCascade.ts` (effets + retour `availableUsages`).
+3. Dans `useCCCFormState.ts` :
+   - Supprimer les 3 `useEffect` géographiques.
+   - Supprimer les 2 `useEffect` construction.
+   - Ajouter `useGeographicCascade({ formData, updateFormData })`.
+   - Ajouter `const { availableUsages } = useConstructionCascade({ formData, updateFormData, getPicklistDependentOptions })`.
+4. Vérifier que `availableUsages` reste exposé dans le retour du hook racine.
 
 ### Validation post-implémentation
 - TypeScript compile sans erreur.
-- Le contrat de retour public de `useCCCFormState` reste strictement identique (mêmes noms, mêmes types).
-- Test manuel rapide après déploiement : recharger le formulaire en cours de saisie → brouillon restauré, soumettre → brouillon purgé.
+- Contrat public de `useCCCFormState` strictement identique.
+- Test manuel rapide : changer Province → City se vide ; changer Construction Type → Nature/Usage se vident ; éligibilité `Location` préservée.
 
-### Note runtime error
-"Map container is already initialized" est une erreur connue de `ParcelMapPreview` (mapbox réinitialisation), **non liée** à cette extraction. À traiter séparément si demandé.
+### Note sur l'erreur runtime
+"Should have a queue" — erreur React liée à un hook conditionnel ou à un changement d'ordre de hooks. Je vérifierai après l'extraction que l'ordre des hooks dans `useCCCFormState` reste stable (les nouveaux sous-hooks appelés inconditionnellement, au même endroit qu'avant).
 
 ### Fichiers
-- **Créé** : `src/hooks/ccc/useFormPersistence.ts` (~200 l)
-- **Modifié** : `src/hooks/useCCCFormState.ts` (suppression du bloc persistance, ajout de l'appel au sous-hook)
-- **Inchangés** : 5 onglets, `CadastralContributionDialog`, `useCadastralContribution`, tous les composants d'upload
+- **Créés** : `src/hooks/ccc/useGeographicCascade.ts` (~60 l), `src/hooks/ccc/useConstructionCascade.ts` (~60 l)
+- **Modifié** : `src/hooks/useCCCFormState.ts` (suppression des 5 useEffect, ajout des 2 appels de sous-hooks)
+- **Inchangés** : 5 onglets, `CadastralContributionDialog`, `constructionUsageResolver.ts`, `AdditionalConstructionBlock`
