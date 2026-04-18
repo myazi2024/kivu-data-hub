@@ -30,6 +30,7 @@ import {
   buildScopePredicate,
 } from './map/meta/mapMeta';
 import { useMapDrilldown } from './map/hooks/useMapDrilldown';
+import { useMapIndicators } from './map/hooks/useMapIndicators';
 
 
 
@@ -154,25 +155,8 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   }, [getChartConfig, getGlobalConfig]);
   const formatNumber = (value: number): string => new Intl.NumberFormat('fr-FR').format(value);
 
-  const totalParcels = useMemo(() => provincesData.reduce((s, p) => s + p.parcelsCount, 0), [provincesData]);
   const todayStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-  /** Scoped stats: recalculate KPIs based on the most specific geographic filter */
-  const scopedStats = useMemo(() => {
-    if (!analytics || !selectedProvince) return null;
-    const predicate = buildScopePredicate(selectedProvince.name, selectedVille, selectedCommune, selectedQuartier, selectedTerritoire);
-    const { parcels, titleRequests, contributions, disputes, mutationRequests, expertiseRequests, mortgages } = analytics;
-
-    return computeIndicators(
-      parcels.filter(predicate),
-      titleRequests.filter(predicate),
-      disputes.filter(predicate),
-      (mortgages || []).filter(predicate),
-      mutationRequests.filter(predicate),
-      expertiseRequests.filter(predicate),
-      contributions.filter(predicate),
-    );
-  }, [analytics, selectedProvince, selectedVille, selectedCommune, selectedQuartier, selectedTerritoire]);
 
   /** Label for the detail block header */
   const scopeLabel = useMemo(() => {
