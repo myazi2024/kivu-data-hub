@@ -63,6 +63,7 @@ const AdminLandTitleRequests: React.FC = () => {
       const { data, error } = await supabase
         .from('land_title_requests')
         .select(ADMIN_LIST_COLUMNS)
+        .not('reference_number', 'ilike', 'TEST-%')
         .order('created_at', { ascending: false })
         .limit(2000);
 

@@ -5485,6 +5485,39 @@ export type Database = {
           },
         ]
       }
+      test_entities_registry: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          label_key: string
+          marker_column: string
+          marker_pattern: string
+          table_name: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          label_key: string
+          marker_column: string
+          marker_pattern?: string
+          table_name: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          label_key?: string
+          marker_column?: string
+          marker_pattern?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
       user_activity_logs: {
         Row: {
           activity_details: Json | null
@@ -5879,6 +5912,7 @@ export type Database = {
       }
       check_service_usage: { Args: { service_id_param: string }; Returns: Json }
       cleanup_all_test_data: { Args: never; Returns: Json }
+      cleanup_all_test_data_auto: { Args: never; Returns: Json }
       cleanup_expired_data: { Args: never; Returns: undefined }
       count_audit_logs: { Args: never; Returns: number }
       count_test_data_stats: { Args: never; Returns: Json }

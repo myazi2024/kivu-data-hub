@@ -40,14 +40,34 @@ Le mode test est un système transversal contrôlé depuis l'admin (`AdminTestMo
 
 ### 6. Nettoyage
 
-#### Méthode recommandée : RPC serveur
-- La fonction `cleanup_all_test_data()` supprime toutes les données test en respectant l'ordre FK (enfants → parents)
-- Appelable depuis l'admin via le bouton « Nettoyer tout » ou manuellement : `SELECT cleanup_all_test_data()`
-- Peut être planifiée via une tâche cron SQL
+#### Manuel — RPC `cleanup_all_test_data()`
+- Purge **immédiate** de toutes les données préfixées `TEST-` (respecte l'ordre FK).
+- Vérifie le rôle `admin`/`super_admin` (RAISE EXCEPTION sinon).
+- Loggue dans `audit_logs` (`MANUAL_TEST_DATA_CLEANUP`) avec total + détail par table.
+- Appelée depuis l'admin via le bouton « Nettoyer tout ».
 
-#### Méthode dépréciée : Edge Function
-- L'Edge Function `cleanup-test-data` n'est plus recommandée
-- Utilisez la RPC serveur à la place
+#### Automatique — RPC `cleanup_all_test_data_auto()` + cron `cleanup-test-data-daily-rpc`
+- Cron pg_cron exécuté chaque jour à **03:00 UTC** : `SELECT public.cleanup_all_test_data_auto();`.
+- Aucun JWT en clair dans le cron (appel SQL direct, pas d'edge function).
+- Ne supprime que les données plus anciennes que `test_data_retention_days` (config `test_mode`).
+- N'agit que si `test_mode.enabled = true` ET `test_mode.auto_cleanup = true`.
+- Loggue dans `audit_logs` (`AUTO_TEST_DATA_CLEANUP`).
+
+#### Edge Function `cleanup-test-data` — dépréciée
+- Conservée pour compat mais **non utilisée par le cron** (qui appelle directement la RPC).
+- Toujours utilisable manuellement par un admin authentifié si besoin.
+
+### 6.bis Trigger anti-insert prod (`prevent_test_data_in_prod`)
+- BEFORE INSERT sur 10 tables (parcels, contributions, invoices, codes, disputes,
+  expertise, titres, mutations, lotissements, conflits limites).
+- Bloque toute ligne dont la colonne marqueur commence par `TEST-` quand
+  `test_mode.enabled = false`. Évite que des tests ne fuient en production.
+
+### 6.ter Registry `test_entities_registry`
+- Table publique listant les entités test (table_name, marker_column, label_key).
+- Source unique pour `count_test_data_stats()` (côté serveur) et `TEST_ENTITIES`
+  (côté client, `src/constants/testEntities.ts`).
+- Utilisée par l'export CSV pré-purge.
 
 ### 7. Simulation de paiement
 - Bouton « Simuler le paiement (test) » dans le catalogue de services

@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Loader2, Info, Trash2, RefreshCw, RotateCcw, Play } from 'lucide-react';
 import type { TestDataStats } from './types';
+import TestDataExportButton from './TestDataExportButton';
 
 interface TestDataStatsCardProps {
   stats: TestDataStats;
@@ -92,6 +93,8 @@ const TestDataStatsCard: React.FC<TestDataStatsCardProps> = ({
             )}
             Actualiser
           </Button>
+
+          <TestDataExportButton disabled={total === 0 || cleaningUp || generatingData || regenerating} />
 
           {onGenerate && isTestModeActive && total === 0 && (
             <Button
