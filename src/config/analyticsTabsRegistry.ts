@@ -379,6 +379,26 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'geometry', item_key: 'kpi-with-gps', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'Avec GPS' },
     ],
   },
+  'consistency': {
+    label: 'Cohérence & Anti-fraude',
+    charts: [
+      { tab_key: 'consistency', item_key: 'tax-comparison', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Cohérence taxes (déclaré vs officiel)', chart_type: 'pie' },
+      { tab_key: 'consistency', item_key: 'mortgage-comparison', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Cohérence hypothèques', chart_type: 'pie' },
+      { tab_key: 'consistency', item_key: 'dispute-comparison', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Cohérence litiges', chart_type: 'pie' },
+      { tab_key: 'consistency', item_key: 'corrective', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Initiales vs Correctives', chart_type: 'donut' },
+      { tab_key: 'consistency', item_key: 'ownership-declared', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Historique propriété déclaré', chart_type: 'donut' },
+      { tab_key: 'consistency', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Géographie incohérences' },
+    ],
+    kpis: [
+      { tab_key: 'consistency', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Contributions analysées' },
+      { tab_key: 'consistency', item_key: 'kpi-incoherence-rate', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Taux incohérence' },
+      { tab_key: 'consistency', item_key: 'kpi-tax-mismatch', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'Écarts taxes' },
+      { tab_key: 'consistency', item_key: 'kpi-mortgage-mismatch', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Écarts hypothèques' },
+      { tab_key: 'consistency', item_key: 'kpi-dispute-mismatch', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Écarts litiges' },
+      { tab_key: 'consistency', item_key: 'kpi-corrective', item_type: 'kpi', is_visible: true, display_order: 5, custom_title: 'Contributions correctives' },
+      { tab_key: 'consistency', item_key: 'kpi-ownership-declared', item_type: 'kpi', is_visible: true, display_order: 6, custom_title: 'Avec historique propriété' },
+    ],
+  },
   '_global': {
     label: 'Global',
     charts: [
