@@ -1435,153 +1435,31 @@ export const useCCCFormState = ({
     } else { setShouldBlinkSuperficie(false); setShowAreaMismatchWarning(false); }
   }, [formData.areaSqm, permitRequest.estimatedArea, permitRequest.permitType, permitMode]);
 
-  // Geographic cascade effects
-  useEffect(() => {
-    if (isLoadingFromDbRef.current) return;
-    if (formData.province) {
-      setAvailableVilles(getVillesForProvince(formData.province));
-      setAvailableTerritoires(getTerritoiresForProvince(formData.province));
-      if (!getVillesForProvince(formData.province).includes(formData.ville || '')) { handleInputChange('ville', undefined); setAvailableCommunes([]); handleInputChange('commune', undefined); }
-      if (!getTerritoiresForProvince(formData.province).includes(formData.territoire || '')) { handleInputChange('territoire', undefined); setAvailableCollectivites([]); handleInputChange('collectivite', undefined); }
-    } else { setAvailableVilles([]); setAvailableCommunes([]); setAvailableTerritoires([]); setAvailableCollectivites([]); }
-  }, [formData.province]);
+  // Geographic cascade (extracted to dedicated sub-hook)
+  useGeographicCascade({
+    formData,
+    handleInputChange,
+    isLoadingFromDbRef,
+    setAvailableVilles,
+    setAvailableCommunes,
+    setAvailableTerritoires,
+    setAvailableCollectivites,
+    setAvailableQuartiers,
+    setAvailableAvenues,
+  });
 
-  useEffect(() => {
-    if (isLoadingFromDbRef.current) return;
-    if (formData.province && formData.ville) {
-      const communes = getCommunesForVille(formData.province, formData.ville); setAvailableCommunes(communes);
-      if (!communes.includes(formData.commune || '')) { handleInputChange('commune', undefined); setAvailableQuartiers([]); handleInputChange('quartier', undefined); setAvailableAvenues([]); handleInputChange('avenue', undefined); }
-    } else { setAvailableCommunes([]); setAvailableQuartiers([]); setAvailableAvenues([]); }
-  }, [formData.province, formData.ville]);
-
-  useEffect(() => {
-    if (isLoadingFromDbRef.current) return;
-    if (formData.province && formData.ville && formData.commune) {
-      const quartiers = getQuartiersForCommune(formData.province, formData.ville, formData.commune); setAvailableQuartiers(quartiers);
-      if (!quartiers.includes(formData.quartier || '')) { handleInputChange('quartier', undefined); setAvailableAvenues([]); handleInputChange('avenue', undefined); }
-    } else { setAvailableQuartiers([]); setAvailableAvenues([]); }
-  }, [formData.province, formData.ville, formData.commune]);
-
-  useEffect(() => {
-    if (isLoadingFromDbRef.current) return;
-    if (formData.province && formData.ville && formData.commune && formData.quartier) {
-      const avenues = getAvenuesForQuartier(formData.province, formData.ville, formData.commune, formData.quartier); setAvailableAvenues(avenues);
-      if (!avenues.includes(formData.avenue || '')) handleInputChange('avenue', undefined);
-    } else { setAvailableAvenues([]); }
-  }, [formData.province, formData.ville, formData.commune, formData.quartier]);
-
-  useEffect(() => {
-    if (isLoadingFromDbRef.current) return;
-    if (formData.province && formData.territoire) {
-      const collectivites = getCollectivitesForTerritoire(formData.province, formData.territoire); setAvailableCollectivites(collectivites);
-      if (!collectivites.includes(formData.collectivite || '')) handleInputChange('collectivite', undefined);
-    } else { setAvailableCollectivites([]); }
-  }, [formData.province, formData.territoire]);
-
-  // Construction cascade effects
-  useEffect(() => {
-    if (!formData.propertyCategory) { setAvailableConstructionTypes([]); handleInputChange('constructionType', undefined); return; }
-    const allowedTypes = CATEGORY_TO_CONSTRUCTION_TYPES[formData.propertyCategory] || [];
-    setAvailableConstructionTypes(allowedTypes);
-    if (allowedTypes.length === 1) { if (formData.constructionType !== allowedTypes[0]) handleInputChange('constructionType', allowedTypes[0]); }
-    else if (formData.constructionType && !allowedTypes.includes(formData.constructionType)) handleInputChange('constructionType', undefined);
-  }, [formData.propertyCategory]);
-
-  const MATERIALS_BY_NATURE_FALLBACK: Record<string, string[]> = {
-    Durable: ['Béton armé', 'Briques cuites', 'Parpaings', 'Pierre naturelle'],
-    'Semi-durable': ['Semi-dur', 'Briques adobes', 'Bois', 'Mixte'],
-    Précaire: ['Tôles', 'Bois', 'Paille', 'Autre'],
-  };
-  const STANDING_BY_NATURE_FALLBACK: Record<string, string[]> = {
-    Durable: ['Haut standing', 'Moyen standing', 'Économique'],
-    'Semi-durable': ['Moyen standing', 'Économique'],
-    Précaire: ['Économique'],
-  };
-
-  // Helper: build reverse mapping material -> nature
-  const buildMaterialToNatureMap = useCallback((materialsMap: Record<string, string[]>): Record<string, string> => {
-    const reverseMap: Record<string, string> = {};
-    for (const [nature, materials] of Object.entries(materialsMap)) {
-      for (const mat of materials) {
-        if (!reverseMap[mat]) reverseMap[mat] = nature; // first match wins
-      }
-    }
-    return reverseMap;
-  }, []);
-
-  // When constructionType changes: reset children, compute available materials (flattened from all natures)
-  useEffect(() => {
-    if (!formData.constructionType) {
-      setAvailableConstructionNatures([]); handleInputChange('constructionNature', undefined);
-      setAvailableDeclaredUsages([]); handleInputChange('declaredUsage', undefined);
-      setAvailableConstructionMaterials([]); handleInputChange('constructionMaterials', undefined);
-      setAvailableStandings([]); handleInputChange('standing', undefined);
-      return;
-    }
-    // Compute natures for this type (still needed for usage/standing downstream)
-    const natureMap = getPicklistDependentOptions('picklist_construction_nature');
-    const natures = natureMap[formData.constructionType] || [];
-    setAvailableConstructionNatures(natures);
-
-    // Compute flattened materials from all natures of this type
-    const dbMaterialsMap = getPicklistDependentOptions('picklist_construction_materials');
-    const hasMaterialsInDb = Object.keys(dbMaterialsMap).length > 0;
-    const allMaterials: string[] = [];
-    const seen = new Set<string>();
-    for (const nature of natures) {
-      if (nature === 'Non bâti') continue;
-      const mats = hasMaterialsInDb ? (dbMaterialsMap[nature] || []) : (MATERIALS_BY_NATURE_FALLBACK[nature] || []);
-      for (const m of mats) {
-        if (!seen.has(m)) { seen.add(m); allMaterials.push(m); }
-      }
-    }
-    setAvailableConstructionMaterials(allMaterials);
-
-    // Reset if current values are no longer valid
-    if (formData.constructionMaterials && !allMaterials.includes(formData.constructionMaterials)) {
-      handleInputChange('constructionMaterials', undefined);
-      handleInputChange('constructionNature', undefined);
-    }
-    if (formData.constructionNature && !natures.includes(formData.constructionNature)) {
-      handleInputChange('constructionNature', undefined);
-    }
-  }, [formData.constructionType, getPicklistDependentOptions]);
-
-  // When constructionMaterials changes: auto-fill constructionNature via reverse lookup
-  useEffect(() => {
-    if (!formData.constructionMaterials || !formData.constructionType) {
-      if (!formData.constructionMaterials) {
-        handleInputChange('constructionNature', undefined);
-        setAvailableStandings([]); handleInputChange('standing', undefined);
-      }
-      return;
-    }
-    const dbMaterialsMap = getPicklistDependentOptions('picklist_construction_materials');
-    const hasMaterialsInDb = Object.keys(dbMaterialsMap).length > 0;
-    const materialsMap = hasMaterialsInDb ? dbMaterialsMap : MATERIALS_BY_NATURE_FALLBACK;
-    const reverseMap = buildMaterialToNatureMap(materialsMap);
-    const deducedNature = reverseMap[formData.constructionMaterials];
-    if (deducedNature && deducedNature !== formData.constructionNature) {
-      handleInputChange('constructionNature', deducedNature);
-    }
-  }, [formData.constructionMaterials, formData.constructionType, getPicklistDependentOptions, buildMaterialToNatureMap]);
-
-  // Usage depends on type + nature (shared logic via resolveAvailableUsages)
-  useEffect(() => {
-    if (!formData.constructionType || !formData.constructionNature) { setAvailableDeclaredUsages([]); handleInputChange('declaredUsage', undefined); return; }
-    const usages = resolveAvailableUsages(formData.constructionType, formData.constructionNature, getPicklistDependentOptions);
-    setAvailableDeclaredUsages(usages);
-    if (formData.declaredUsage && !usages.includes(formData.declaredUsage)) handleInputChange('declaredUsage', undefined);
-  }, [formData.constructionType, formData.constructionNature, getPicklistDependentOptions]);
-
-  // Standing depends on nature
-  useEffect(() => {
-    if (!formData.constructionNature || formData.constructionNature === 'Non bâti') { setAvailableStandings([]); handleInputChange('standing', undefined); return; }
-    const dbStandingMap = getPicklistDependentOptions('picklist_standing');
-    const standings = (Object.keys(dbStandingMap).length > 0 ? dbStandingMap[formData.constructionNature] : STANDING_BY_NATURE_FALLBACK[formData.constructionNature]) || [];
-    setAvailableStandings(standings);
-    if (formData.standing && !standings.includes(formData.standing)) handleInputChange('standing', undefined);
-  }, [formData.constructionNature, getPicklistDependentOptions]);
+  // Construction cascade (extracted to dedicated sub-hook)
+  useConstructionCascade({
+    formData,
+    handleInputChange,
+    getPicklistDependentOptions,
+    categoryToConstructionTypes: CATEGORY_TO_CONSTRUCTION_TYPES,
+    setAvailableConstructionTypes,
+    setAvailableConstructionNatures,
+    setAvailableConstructionMaterials,
+    setAvailableDeclaredUsages,
+    setAvailableStandings,
+  });
 
   useEffect(() => {
     if (permitMode === 'request' && formData.declaredUsage && !permitRequest.plannedUsage) setPermitRequest(prev => ({ ...prev, plannedUsage: formData.declaredUsage || '' }));
