@@ -1,5 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -28,25 +27,19 @@ export interface HREmployee {
 
 export type HREmployeeInsert = Omit<HREmployee, 'id' | 'matricule' | 'created_at' | 'updated_at'>;
 
-export function useHREmployees(initialPageSize = 20) {
+export function useHREmployees() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(initialPageSize);
-
   const query = useQuery({
-    queryKey: ['hr-employees', page, pageSize],
+    queryKey: ['hr-employees'],
     queryFn: async () => {
-      const from = page * pageSize;
-      const to = from + pageSize - 1;
-      const { data, error, count } = await supabase
+      const { data, error } = await supabase
         .from('hr_employees')
-        .select('*', { count: 'exact' })
-        .order('last_name')
-        .range(from, to);
+        .select('*')
+        .order('last_name');
       if (error) throw error;
-      return { rows: (data || []) as HREmployee[], total: count || 0 };
+      return (data || []) as HREmployee[];
     },
   });
 
@@ -115,17 +108,8 @@ export function useHREmployees(initialPageSize = 20) {
     },
   });
 
-  const totalCount = query.data?.total || 0;
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-
   return {
-    employees: query.data?.rows || [],
-    totalCount,
-    page,
-    pageSize,
-    totalPages,
-    setPage,
-    setPageSize,
+    employees: query.data || [],
     isLoading: query.isLoading,
     error: query.error,
     addEmployee: addMutation.mutateAsync,
@@ -136,4 +120,3 @@ export function useHREmployees(initialPageSize = 20) {
     isDeleting: deleteMutation.isPending,
   };
 }
-
