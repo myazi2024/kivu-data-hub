@@ -133,6 +133,7 @@ export type Database = {
           config_key: string
           config_value: Json
           id: string
+          is_active: boolean
           updated_at: string
           updated_by: string | null
         }
@@ -140,6 +141,7 @@ export type Database = {
           config_key: string
           config_value?: Json
           id?: string
+          is_active?: boolean
           updated_at?: string
           updated_by?: string | null
         }
@@ -147,6 +149,7 @@ export type Database = {
           config_key?: string
           config_value?: Json
           id?: string
+          is_active?: boolean
           updated_at?: string
           updated_by?: string | null
         }
@@ -1866,6 +1869,112 @@ export type Database = {
         }
         Relationships: []
       }
+      cities: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          province_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          province_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          province_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cities_province_id_fkey"
+            columns: ["province_id"]
+            isOneToOne: false
+            referencedRelation: "provinces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      communes: {
+        Row: {
+          city_id: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          city_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          city_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communes_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      config_snapshots: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          description: string | null
+          id: string
+          row_count: number
+          snapshot_data: Json
+          snapshot_name: string
+          table_name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          description?: string | null
+          id?: string
+          row_count?: number
+          snapshot_data: Json
+          snapshot_name: string
+          table_name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          description?: string | null
+          id?: string
+          row_count?: number
+          snapshot_data?: Json
+          snapshot_name?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
       currency_config: {
         Row: {
           currency_code: string
@@ -2849,6 +2958,36 @@ export type Database = {
           user_id?: string
           village?: string | null
           ville?: string | null
+        }
+        Relationships: []
+      }
+      map_config: {
+        Row: {
+          config_key: string
+          config_value: Json
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          config_key: string
+          config_value?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          config_key?: string
+          config_value?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
         }
         Relationships: []
       }
@@ -3850,6 +3989,39 @@ export type Database = {
         }
         Relationships: []
       }
+      provinces: {
+        Row: {
+          capital: string | null
+          code: string
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          capital?: string | null
+          code: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          capital?: string | null
+          code?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       publication_downloads: {
         Row: {
           downloaded_at: string
@@ -3948,6 +4120,41 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      quartiers: {
+        Row: {
+          commune_id: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          commune_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          commune_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quartiers_commune_id_fkey"
+            columns: ["commune_id"]
+            isOneToOne: false
+            referencedRelation: "communes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       real_estate_expertise_requests: {
         Row: {
@@ -4710,6 +4917,45 @@ export type Database = {
           updated_at?: string
           usage_count?: number
           value?: string
+        }
+        Relationships: []
+      }
+      system_config_audit: {
+        Row: {
+          action: string
+          admin_id: string | null
+          admin_name: string | null
+          config_key: string | null
+          created_at: string
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+          record_id: string | null
+          table_name: string
+        }
+        Insert: {
+          action: string
+          admin_id?: string | null
+          admin_name?: string | null
+          config_key?: string | null
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          table_name: string
+        }
+        Update: {
+          action?: string
+          admin_id?: string | null
+          admin_name?: string | null
+          config_key?: string | null
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          table_name?: string
         }
         Relationships: []
       }
