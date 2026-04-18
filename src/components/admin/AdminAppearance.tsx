@@ -263,6 +263,21 @@ const AdminAppearance = () => {
   const [heroOverlayOpacity, setHeroOverlayOpacity] = useState(80);
   const [uploadingHero, setUploadingHero] = useState(false);
 
+  // Google Fonts custom URL
+  const [googleFontUrl, setGoogleFontUrl] = useState('');
+  useGoogleFontInjection(googleFontUrl);
+
+  // Active sub-tab (config | history)
+  const [topTab, setTopTab] = useState<'config' | 'history'>('config');
+
+  const applyPreset = (preset: AppearancePreset) => {
+    setLightColors(prev => ({ ...prev, ...preset.light }));
+    setDarkColors(prev => ({ ...prev, ...preset.dark }));
+    setFontFamily(preset.fontFamily);
+    setBorderRadius(preset.borderRadius);
+    toast({ title: `Preset « ${preset.name} » chargé`, description: 'Cliquez sur Sauvegarder pour appliquer.' });
+  };
+
   const currentColors = colorMode === 'light' ? lightColors : darkColors;
   const setCurrentColors = colorMode === 'light' ? setLightColors : setDarkColors;
 
@@ -295,6 +310,7 @@ const AdminAppearance = () => {
               case 'hero_image_url': setHeroImageUrl(val || ''); break;
               case 'hero_title': setHeroTitle(val || 'Consultez les informations cadastrales des parcelles depuis chez vous.'); break;
               case 'hero_overlay_opacity': setHeroOverlayOpacity(typeof val === 'number' ? val : 80); break;
+              case 'google_font_url': setGoogleFontUrl(typeof val === 'string' ? val : ''); break;
             }
           }
         }
@@ -372,6 +388,7 @@ const AdminAppearance = () => {
         upsertConfig('hero_image_url', heroImageUrl),
         upsertConfig('hero_title', heroTitle),
         upsertConfig('hero_overlay_opacity', heroOverlayOpacity),
+        upsertConfig('google_font_url', googleFontUrl),
       ]);
       toast({ title: 'Configuration sauvegardée', description: 'Les changements seront appliqués au prochain chargement.' });
     } catch (e: any) {
