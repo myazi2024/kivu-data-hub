@@ -15,6 +15,9 @@ export interface MortgageRequest {
   change_justification?: string | null;
 }
 
+/** Business lifecycle states for an approved mortgage (post-workflow) */
+export type MortgageLifecycleState = 'active' | 'paid' | 'defaulted' | 'renegotiated' | 'cancelled';
+
 /** Shared interface for validated mortgages across admin components (#16) */
 export interface Mortgage {
   id: string;
@@ -23,6 +26,8 @@ export interface Mortgage {
   creditor_type: string;
   mortgage_amount_usd: number;
   mortgage_status: string;
+  /** Business state set after the workflow status reaches approved/completed */
+  lifecycle_state?: MortgageLifecycleState | null;
   contract_date: string;
   duration_months: number;
   created_at: string;

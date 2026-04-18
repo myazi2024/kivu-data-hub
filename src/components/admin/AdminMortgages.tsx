@@ -22,7 +22,7 @@ import MortgageRequestCard from './mortgage/MortgageRequestCard';
 import MortgageDetailsDialog from './mortgage/MortgageDetailsDialog';
 import MortgageRequestDetailsDialog from './mortgage/MortgageRequestDetailsDialog';
 import { ApproveConfirmDialog, RejectDialog, ReturnDialog } from './mortgage/MortgageAdminDialogs';
-import { getMortgageStatusType, getCreditorTypeLabel, getRequestTypeLabel } from './mortgage/mortgageHelpers';
+import { getMortgageStatusType, getCreditorTypeLabel, getRequestTypeLabel, resolveLifecycleState } from './mortgage/mortgageHelpers';
 
 import type { Mortgage, MortgageRequest } from './mortgage/mortgageTypes';
 
@@ -59,7 +59,7 @@ const AdminMortgages = () => {
       // Fix #20: Select only required columns instead of *
       const { data: approvedData, error: approvedError } = await supabase
         .from('cadastral_mortgages')
-        .select('id, parcel_id, creditor_name, creditor_type, mortgage_amount_usd, mortgage_status, contract_date, duration_months, created_at, reference_number, cadastral_parcels(parcel_number)')
+        .select('id, parcel_id, creditor_name, creditor_type, mortgage_amount_usd, mortgage_status, lifecycle_state, contract_date, duration_months, created_at, reference_number, cadastral_parcels(parcel_number)')
         .order('created_at', { ascending: false })
         .limit(2000);
 
@@ -89,14 +89,14 @@ const AdminMortgages = () => {
     }
   };
 
-  // Filter approved mortgages
+  // Filter approved mortgages — use lifecycle_state with fallback to workflow status
   const filteredMortgages = mortgages.filter(m => {
     const matchesSearch = searchTerm === '' ||
       m.creditor_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       m.parcel_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       m.reference_number?.toLowerCase().includes(searchTerm.toLowerCase());
-    const normalizedStatus = normalizeMortgageStatus(m.mortgage_status);
-    const matchesStatus = filterStatus === '_all' || normalizedStatus === filterStatus;
+    const effective = resolveLifecycleState(m.mortgage_status, m.lifecycle_state) ?? normalizeMortgageStatus(m.mortgage_status);
+    const matchesStatus = filterStatus === '_all' || effective === filterStatus;
     return matchesSearch && matchesStatus;
   });
 
@@ -125,10 +125,10 @@ const AdminMortgages = () => {
   const requestsPagination = usePagination(pendingRequests, { initialPageSize: 15 });
   const historyPagination = usePagination(processedRequests, { initialPageSize: 15 });
 
-  const activeCount = mortgages.filter(m => normalizeMortgageStatus(m.mortgage_status) === 'active').length;
-  const paidCount = mortgages.filter(m => normalizeMortgageStatus(m.mortgage_status) === 'paid').length;
+  const activeCount = mortgages.filter(m => resolveLifecycleState(m.mortgage_status, m.lifecycle_state) === 'active').length;
+  const paidCount = mortgages.filter(m => resolveLifecycleState(m.mortgage_status, m.lifecycle_state) === 'paid').length;
   const pendingCount = requests.filter(r => r.status === 'pending').length;
-  const totalAmount = mortgages.filter(m => normalizeMortgageStatus(m.mortgage_status) === 'active').reduce((sum, m) => sum + (m.mortgage_amount_usd || 0), 0);
+  const totalAmount = mortgages.filter(m => resolveLifecycleState(m.mortgage_status, m.lifecycle_state) === 'active').reduce((sum, m) => sum + (m.mortgage_amount_usd || 0), 0);
 
   const handleApproveClick = (request: MortgageRequest) => {
     setPendingApproveRequest(request);

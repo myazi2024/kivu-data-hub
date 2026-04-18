@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { RefreshCw, Receipt, Search, Download } from 'lucide-react';
+import { RefreshCw, Receipt, Search, Download, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { usePagination } from '@/hooks/usePagination';
@@ -25,6 +26,7 @@ interface TaxRecord {
 }
 
 const AdminTaxHistory = () => {
+  const navigate = useNavigate();
   const [records, setRecords] = useState<TaxRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -209,7 +211,15 @@ const AdminTaxHistory = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <Receipt className="h-3.5 w-3.5 text-primary shrink-0" />
-                        <span className="text-xs font-medium truncate">{record.parcel_number}</span>
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/admin?tab=parcels&parcel=${encodeURIComponent(record.parcel_number || '')}`)}
+                          className="text-xs font-medium truncate hover:underline inline-flex items-center gap-1"
+                          title="Voir la parcelle"
+                        >
+                          {record.parcel_number}
+                          <ExternalLink className="h-3 w-3 opacity-60" />
+                        </button>
                         <StatusBadge status={getTaxStatusType(record.payment_status)} compact />
                       </div>
                       <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
