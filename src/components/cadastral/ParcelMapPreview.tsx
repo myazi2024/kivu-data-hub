@@ -2397,11 +2397,12 @@ export const ParcelMapPreview = ({
             </>
           )}
         </div>
+        )}
         
         {/* Boutons de contrôle sur la carte (à droite) */}
         <div className="absolute top-2 right-2 z-[1000] flex flex-col gap-1.5">
           {/* Bouton vérification voisins */}
-          {isParcelComplete && (
+          {isParcelComplete && !isDrawingBuilding && (
             <Button
               type="button"
               size="sm"
