@@ -407,7 +407,12 @@ export const ParcelMapPreview = ({
 
   // Initialiser la carte une seule fois
   useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return;
+    if (!mapRef.current) return;
+    if (mapInstanceRef.current) return;
+    // Guard contre double-init (HMR/StrictMode) : si le container Leaflet a déjà un _leaflet_id résiduel
+    if ((mapRef.current as any)._leaflet_id) {
+      try { delete (mapRef.current as any)._leaflet_id; } catch {}
+    }
 
     const initMap = async () => {
       const L = await import('leaflet');
@@ -832,7 +837,7 @@ export const ParcelMapPreview = ({
 
           const isSelected = selectedBorne === coord.borne;
           const marker = L.marker([lat, lng], {
-            draggable: !isGroupDragMode && !isDrawingMode && !isMarkerMoveMode && mapConfig.enableDragging !== false,
+            draggable: !isGroupDragMode && !isDrawingMode && !isDrawingBuilding && !isMarkerMoveMode && mapConfig.enableDragging !== false,
             icon: L.divIcon({
               className: 'custom-marker',
               html: `<div style="
@@ -1065,6 +1070,7 @@ export const ParcelMapPreview = ({
               fillColor: '#ffffff',
               fillOpacity: 1,
               weight: 2,
+              interactive: !isDrawingBuilding,
             }).addTo(map);
 
             // Double-clic = édition manuelle GPS
@@ -1282,6 +1288,23 @@ export const ParcelMapPreview = ({
       cancelled = true;
     };
   }, [isMapReady, validCoords, roadSides, mapConfig, isGroupDragMode, isDrawingMode, selectedBorne, isDrawingBuilding, buildingVertices]);
+
+  // Pendant le tracé d'une construction : forcer l'activation du drag/zoom de la carte
+  // après chaque redraw, et désactiver explicitement le drag des marqueurs de bornes
+  // pour qu'ils n'interceptent pas le mousedown du pan.
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !isDrawingBuilding) return;
+    try {
+      map.dragging.enable();
+      map.scrollWheelZoom.enable();
+      map.doubleClickZoom.enable();
+      map.touchZoom.enable();
+    } catch {}
+    markersRef.current.forEach((m: any) => {
+      try { m.dragging?.disable(); } catch {}
+    });
+  }, [isDrawingBuilding, isMapReady, buildingVertices, validCoords]);
 
   // Supprimer une construction par ID (préserve les linkedIndex des autres)
   const removeBuildingById = useCallback((buildingId: string) => {
