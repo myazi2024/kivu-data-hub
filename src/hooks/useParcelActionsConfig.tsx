@@ -248,23 +248,29 @@ export const useParcelActionsConfig = () => {
 
   const saveConfig = useCallback(async (newActions: ParcelAction[]) => {
     try {
-      const results = await Promise.all(
-        newActions.map(action => {
-          const dbData = mapParcelActionToDb(action);
-          const { id: _, ...updatePayload } = dbData;
-          return supabase
-            .from('parcel_actions_config')
-            .update(updatePayload)
-            .eq('id', action.id);
-        })
-      );
+      // Use transactional RPC for atomic bulk update
+      const payload = newActions.map(action => {
+        const dbData = mapParcelActionToDb(action);
+        return {
+          id: action.id,
+          label: dbData.label,
+          description: dbData.description,
+          is_active: dbData.is_active,
+          is_visible: dbData.is_visible,
+          display_order: dbData.display_order,
+          badge_type: dbData.badge_type,
+          badge_label: dbData.badge_label,
+          badge_color: dbData.badge_color,
+          requires_auth: dbData.requires_auth,
+          category: dbData.category,
+        };
+      });
 
-      const failed = results.find(r => r.error);
-      if (failed?.error) {
-        console.error('Error saving action:', failed.error);
-        throw failed.error;
+      const { error } = await (supabase as any).rpc('bulk_update_parcel_actions', { _actions: payload });
+      if (error) {
+        console.error('Error saving (RPC):', error);
+        throw error;
       }
-      
       setActions(newActions);
       return true;
     } catch (e) {

@@ -103,17 +103,17 @@ const AdminSystemHub = () => {
 
       {/* Alertes */}
       {(auditAlert || testAlert) && (
-        <Card className="border-yellow-500/30 bg-yellow-500/5">
+        <Card className="border-warning/30 bg-warning/5">
           <CardContent className="p-3 space-y-2">
             {auditAlert && (
               <div className="flex items-center gap-2 text-xs">
-                <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                <AlertTriangle className="h-4 w-4 text-warning" />
                 <span><strong>{stats.auditLogsCount.toLocaleString('fr-FR')}</strong> entrées audit_logs (&gt; 1M). Lancer la purge.</span>
               </div>
             )}
             {testAlert && (
               <div className="flex items-center gap-2 text-xs">
-                <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                <AlertTriangle className="h-4 w-4 text-warning" />
                 <span>Mode Test actif — vérifiez qu'il n'est pas activé en production.</span>
               </div>
             )}

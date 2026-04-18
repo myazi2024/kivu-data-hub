@@ -83,6 +83,8 @@ const tabComponents: Record<string, React.LazyExoticComponent<any>> = {
   'system-health': lazy(() => import('@/components/admin/AdminSystemHealth')),
   'appearance': lazy(() => import('@/components/admin/AdminAppearance')),
   'hr': lazy(() => import('@/components/admin/hr/AdminHR')),
+  'system-hub': lazy(() => import('@/components/admin/AdminSystemHub')),
+  'system-settings': lazy(() => import('@/components/admin/AdminSystemSettings')),
 };
 
 // Tabs that receive onRefresh prop
