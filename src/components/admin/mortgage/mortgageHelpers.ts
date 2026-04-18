@@ -1,7 +1,33 @@
 import type { StatusType } from '@/components/shared/StatusBadge';
 import { normalizeMortgageStatus } from '@/utils/mortgageReferences';
+import type { MortgageLifecycleState } from './mortgageTypes';
 
-export const getMortgageStatusType = (status: string): StatusType => {
+/**
+ * Resolve effective lifecycle state from a mortgage row.
+ * Workflow status `approved` / `completed` without explicit lifecycle defaults to `active`.
+ */
+export const resolveLifecycleState = (
+  mortgageStatus?: string | null,
+  lifecycleState?: MortgageLifecycleState | null,
+): MortgageLifecycleState | null => {
+  if (lifecycleState) return lifecycleState;
+  const normalized = (mortgageStatus || '').toLowerCase();
+  if (['approved', 'completed', 'active'].includes(normalized)) return 'active';
+  if (['paid', 'paid_off', 'settled'].includes(normalized)) return 'paid';
+  return null;
+};
+
+export const getMortgageStatusType = (status: string, lifecycle?: MortgageLifecycleState | null): StatusType => {
+  const effective = resolveLifecycleState(status, lifecycle);
+  if (effective) {
+    switch (effective) {
+      case 'active': return 'active';
+      case 'paid': return 'paid';
+      case 'defaulted': return 'defaulted';
+      case 'renegotiated': return 'active';
+      case 'cancelled': return 'rejected';
+    }
+  }
   const normalized = normalizeMortgageStatus(status);
   switch (normalized) {
     case 'active': return 'active';
@@ -11,8 +37,20 @@ export const getMortgageStatusType = (status: string): StatusType => {
     case 'pending': return 'pending';
     case 'rejected': return 'rejected';
     case 'approved': return 'active';
+    case 'in_review': return 'pending';
     case 'returned': return 'pending';
     default: return 'pending';
+  }
+};
+
+export const getLifecycleLabel = (state: MortgageLifecycleState | null | undefined): string => {
+  switch (state) {
+    case 'active': return 'Active';
+    case 'paid': return 'Soldée';
+    case 'defaulted': return 'En défaut';
+    case 'renegotiated': return 'Renégociée';
+    case 'cancelled': return 'Annulée';
+    default: return '—';
   }
 };
 
