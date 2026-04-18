@@ -832,7 +832,7 @@ export const ParcelMapPreview = ({
 
           const isSelected = selectedBorne === coord.borne;
           const marker = L.marker([lat, lng], {
-            draggable: !isGroupDragMode && !isDrawingMode && !isMarkerMoveMode && mapConfig.enableDragging !== false,
+            draggable: !isGroupDragMode && !isDrawingMode && !isDrawingBuilding && !isMarkerMoveMode && mapConfig.enableDragging !== false,
             icon: L.divIcon({
               className: 'custom-marker',
               html: `<div style="
@@ -1282,6 +1282,21 @@ export const ParcelMapPreview = ({
       cancelled = true;
     };
   }, [isMapReady, validCoords, roadSides, mapConfig, isGroupDragMode, isDrawingMode, selectedBorne, isDrawingBuilding, buildingVertices]);
+
+  // Force-enable map dragging during building drawing & disable borne markers' drag
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !isDrawingBuilding) return;
+    try {
+      map.dragging.enable();
+      map.scrollWheelZoom.enable();
+      map.touchZoom.enable();
+      map.doubleClickZoom.enable();
+    } catch {}
+    markersRef.current.forEach((m: any) => {
+      try { m.dragging?.disable(); } catch {}
+    });
+  }, [isDrawingBuilding, isMapReady, buildingVertices, validCoords]);
 
   // Supprimer une construction par ID (préserve les linkedIndex des autres)
   const removeBuildingById = useCallback((buildingId: string) => {
