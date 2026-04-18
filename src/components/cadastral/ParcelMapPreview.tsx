@@ -2207,7 +2207,7 @@ export const ParcelMapPreview = ({
         )}
 
         {/* Boutons Tracer/Terminer + Superficie/Périmètre sur la carte (en haut à gauche) */}
-        {enableDrawingMode && (
+        {enableDrawingMode && !isDrawingBuilding && (
           <div className="absolute top-2 left-2 z-[1000] flex items-center gap-1.5">
             <Button 
               type="button"
@@ -2263,6 +2263,7 @@ export const ParcelMapPreview = ({
         )}
         
         {/* Indicateur Nord / Boussole + Boutons suppression - coin inférieur gauche */}
+        {!isDrawingBuilding && (
         <div className="absolute bottom-10 left-2 z-[1000] flex flex-col items-center gap-1.5">
           {/* Boussole avec indicateur Nord */}
           <div 
@@ -2396,11 +2397,12 @@ export const ParcelMapPreview = ({
             </>
           )}
         </div>
+        )}
         
         {/* Boutons de contrôle sur la carte (à droite) */}
         <div className="absolute top-2 right-2 z-[1000] flex flex-col gap-1.5">
           {/* Bouton vérification voisins */}
-          {isParcelComplete && (
+          {isParcelComplete && !isDrawingBuilding && (
             <Button
               type="button"
               size="sm"
