@@ -15,6 +15,9 @@ interface AppearanceConfig {
   hero_image_url?: string;
   hero_title?: string;
   hero_overlay_opacity?: number;
+  hero_phrases?: string[];
+  hero_secondary_link_label?: string;
+  hero_secondary_link_href?: string;
 }
 
 export const useAppAppearance = () => {
