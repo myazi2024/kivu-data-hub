@@ -66,7 +66,7 @@ const AdminRequestsHub = () => {
         </CardContent></Card>
         <Card><CardContent className="p-3">
           <p className="text-[10px] text-muted-foreground uppercase">Stale &gt; 30j</p>
-          <p className="text-2xl font-bold text-orange-600">{totalStale}</p>
+          <p className="text-2xl font-bold text-warning">{totalStale}</p>
         </CardContent></Card>
         <Card><CardContent className="p-3">
           <p className="text-[10px] text-muted-foreground uppercase">Cert. manquants</p>
@@ -100,7 +100,7 @@ const AdminRequestsHub = () => {
                       <div className="flex items-center gap-2">
                         <p className="font-medium text-sm">{r.service_label}</p>
                         {r.stale_30d > 0 && <Badge variant="destructive" className="text-[10px]">{r.stale_30d} stales</Badge>}
-                        {r.escalated_count > 0 && <Badge variant="outline" className="text-[10px] text-orange-600 border-orange-600">{r.escalated_count} esc.</Badge>}
+                        {r.escalated_count > 0 && <Badge variant="outline" className="text-[10px] text-warning border-warning">{r.escalated_count} esc.</Badge>}
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {r.total} total · {r.pending} pending · {r.in_review} review · {r.approved} approuvés · {r.rejected} rejetés
