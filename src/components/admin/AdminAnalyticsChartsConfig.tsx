@@ -30,6 +30,8 @@ import { TabManager } from '@/components/admin/analytics-config/TabManager';
 import { FilterManager } from '@/components/admin/analytics-config/FilterManager';
 import { CrossVariableManager } from '@/components/admin/analytics-config/CrossVariableManager';
 import { GlobalWatermarkConfig } from '@/components/admin/analytics-config/GlobalWatermarkConfig';
+import { SyncManager } from '@/components/admin/analytics-config/SyncManager';
+import { logConfigAudit } from '@/utils/analyticsConfigSync';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
