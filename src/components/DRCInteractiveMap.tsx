@@ -1,5 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useAppAppearance } from '@/hooks/useAppAppearance';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -21,36 +20,16 @@ import { useTestEnvironment } from '@/hooks/useTestEnvironment';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { getTerritoiresForProvince, getProvinceForTerritoire } from '@/lib/geographicData';
 import { MAP_TAB_PROFILES, computeAdaptiveTiers, NO_DATA_COLOR, type MapTabProfile, type MapTier } from '@/config/mapTabProfiles';
-
-/** Province IDs and names for the 26 provinces */
-const PROVINCE_META: { id: string; name: string }[] = [
-  { id: 'CDKN', name: 'Kinshasa' },
-  { id: 'CDNK', name: 'Nord-Kivu' },
-  { id: 'CDSK', name: 'Sud-Kivu' },
-  { id: 'CDBC', name: 'Kongo-Central' },
-  { id: 'CDHK', name: 'Haut-Katanga' },
-  { id: 'CDLU', name: 'Lualaba' },
-  { id: 'CDKC', name: 'Kasaï-Central' },
-  { id: 'CDKS', name: 'Kasaï' },
-  { id: 'CDKE', name: 'Kasaï-Oriental' },
-  { id: 'CDSA', name: 'Sankuru' },
-  { id: 'CDLO', name: 'Lomami' },
-  { id: 'CDMA', name: 'Maniema' },
-  { id: 'CDTO', name: 'Tshopo' },
-  { id: 'CDIT', name: 'Ituri' },
-  { id: 'CDHU', name: 'Haut-Uele' },
-  { id: 'CDBU', name: 'Bas-Uele' },
-  { id: 'CDMO', name: 'Mongala' },
-  { id: 'CDSU', name: 'Sud-Ubangi' },
-  { id: 'CDNU', name: 'Nord-Ubangi' },
-  { id: 'CDTU', name: 'Tshuapa' },
-  { id: 'CDMN', name: 'Mai-Ndombe' },
-  { id: 'CDKL', name: 'Kwilu' },
-  { id: 'CDKG', name: 'Kwango' },
-  { id: 'CDTA', name: 'Tanganyika' },
-  { id: 'CDHL', name: 'Haut-Lomami' },
-  { id: 'CDEQ', name: 'Équateur' },
-];
+import {
+  PROVINCE_META,
+  DEFAULT_DENSITY_TIERS,
+  DENSITY_TIER_KEYS,
+  TOOLTIP_LINE_KEYS,
+  norm,
+  buildEmptyProvince,
+  buildScopePredicate,
+} from './map/meta/mapMeta';
+import { useMapDrilldown } from './map/hooks/useMapDrilldown';
 
 
 /** Compute the 11 new indicators from filtered record sets */
