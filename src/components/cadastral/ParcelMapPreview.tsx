@@ -420,13 +420,6 @@ export const ParcelMapPreview = ({
         shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
       });
 
-      // C1: Nettoyer un éventuel _leaflet_id résiduel (StrictMode/HMR) avant init
-      if (mapRef.current && (mapRef.current as any)._leaflet_id) {
-        try { delete (mapRef.current as any)._leaflet_id; } catch {}
-        mapRef.current.innerHTML = '';
-      }
-      if (!mapRef.current) return;
-
       const map = L.map(mapRef.current, {
         zoomControl: false,
         attributionControl: true,
@@ -596,13 +589,8 @@ export const ParcelMapPreview = ({
 
     return () => {
       if (mapInstanceRef.current) {
-        try { mapInstanceRef.current.remove(); } catch (e) { console.warn('[ParcelMap] cleanup error', e); }
+        mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
-      }
-      // Forcer le retrait du tag _leaflet_id pour permettre une ré-initialisation propre
-      if (mapRef.current && (mapRef.current as any)._leaflet_id) {
-        try { delete (mapRef.current as any)._leaflet_id; } catch {}
-        try { mapRef.current.innerHTML = ''; } catch {}
       }
     };
   }, []);
