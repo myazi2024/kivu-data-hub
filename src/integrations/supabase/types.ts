@@ -5995,6 +5995,7 @@ export type Database = {
         | "notaire"
         | "geometre"
         | "urbaniste"
+        | "editor"
       document_type:
         | "report"
         | "invoice"
@@ -6146,6 +6147,7 @@ export const Constants = {
         "notaire",
         "geometre",
         "urbaniste",
+        "editor",
       ],
       document_type: [
         "report",
