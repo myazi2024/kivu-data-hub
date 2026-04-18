@@ -2263,6 +2263,7 @@ export const ParcelMapPreview = ({
         )}
         
         {/* Indicateur Nord / Boussole + Boutons suppression - coin inférieur gauche */}
+        {!isDrawingBuilding && (
         <div className="absolute bottom-10 left-2 z-[1000] flex flex-col items-center gap-1.5">
           {/* Boussole avec indicateur Nord */}
           <div 
