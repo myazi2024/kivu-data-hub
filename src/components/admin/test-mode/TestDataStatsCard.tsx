@@ -94,6 +94,8 @@ const TestDataStatsCard: React.FC<TestDataStatsCardProps> = ({
             Actualiser
           </Button>
 
+          <TestDataExportButton disabled={total === 0 || cleaningUp || generatingData || regenerating} />
+
           {onGenerate && isTestModeActive && total === 0 && (
             <Button
               variant="default"
