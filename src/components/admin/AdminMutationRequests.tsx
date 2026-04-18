@@ -1,19 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import MutationStatsCards from './mutation/MutationStatsCards';
 import MutationFilters from './mutation/MutationFilters';
 import MutationFeesConfig from './mutation/MutationFeesConfig';
+import MutationDetailsDialog from './mutation/MutationDetailsDialog';
+import MutationProcessDialog, { type MutationProcessAction } from './mutation/MutationProcessDialog';
+import MutationFeeFormDialog from './mutation/MutationFeeFormDialog';
 import { 
   ResponsiveTable, 
   ResponsiveTableHeader, 
