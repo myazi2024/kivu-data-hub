@@ -19,7 +19,11 @@ export interface Article {
   summary: string;
   content: string;
   cover_image_url?: string;
+  og_image_url?: string;
+  meta_title?: string;
+  meta_description?: string;
   author_name?: string;
+  author_display_name?: string;
   tags?: string[];
   view_count: number;
   published_at: string;
