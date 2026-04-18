@@ -147,6 +147,7 @@ export const menuItems = [
   {
     category: 'Demandes & Procédures',
     items: [
+      { icon: LayoutDashboard, label: 'Hub Demandes', value: 'requests-hub', badge: null, keywords: ['hub', 'transversal', 'sla', 'stale', 'escalade', 'certificats'] },
       { icon: Building2, label: 'Autorisation de Bâtir', value: 'permits', badge: 'permits', keywords: ['permis', 'construction', 'bâtiment', 'urbanisme'] },
       { icon: Receipt, label: 'Config Frais Autorisation', value: 'permit-fees-config', badge: null, keywords: ['tarif', 'prix', 'coût'] },
       { icon: Landmark, label: 'Demandes Titres Fonciers', value: 'land-title-requests', badge: 'landTitle', keywords: ['titre', 'foncier', 'propriété', 'certificat'] },
