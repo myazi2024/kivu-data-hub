@@ -46,6 +46,7 @@ const AboutCCC = React.lazy(() => import("./pages/AboutCCC"));
 const AboutDiscountCodes = React.lazy(() => import("./pages/AboutDiscountCodes"));
 const VerifyDocument = React.lazy(() => import("./pages/VerifyDocument"));
 const PitchPartenaires = React.lazy(() => import("./pages/PitchPartenaires"));
+const HrMe = React.lazy(() => import("./pages/HrMe"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -128,6 +129,7 @@ const App = () => (
                   <Route path="/discount-codes" element={<Navigate to="/about-discount-codes" replace />} />
                   <Route path="/verify/:code?" element={<VerifyDocument />} />
                   <Route path="/pitch-partenaires" element={<PitchPartenaires />} />
+                  <Route path="/hr/me" element={<ProtectedRoute><HrMe /></ProtectedRoute>} />
 
                   {/* Test environment mirror routes — admin only */}
                   <Route path="/test/map" element={
