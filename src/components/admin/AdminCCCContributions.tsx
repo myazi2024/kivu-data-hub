@@ -1023,16 +1023,40 @@ const AdminCCCContributions: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent className="p-2 md:p-6">
-          {/* Search */}
-          <div className="relative mb-3">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          {/* Search + user filter */}
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_220px] gap-2 mb-3">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher par parcelle, province, ville, propriétaire..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 h-9 text-sm"
+              />
+            </div>
             <Input
-              placeholder="Rechercher par parcelle, province, ville, propriétaire..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 h-9 text-sm"
+              placeholder="Filtrer par user_id (UUID partiel)"
+              value={userFilter}
+              onChange={(e) => setUserFilter(e.target.value)}
+              className="h-9 text-sm font-mono"
             />
           </div>
+
+          {/* Bulk actions bar */}
+          {selectedIds.size > 0 && (
+            <div className="flex flex-wrap items-center gap-2 mb-3 p-2 bg-muted rounded-md">
+              <span className="text-xs font-medium">{selectedIds.size} sélectionnée(s)</span>
+              <Button size="sm" variant="default" disabled={bulkBusy} onClick={bulkApprove} className="h-7 text-xs">
+                <CheckCircle className="h-3 w-3 mr-1" /> Approuver
+              </Button>
+              <Button size="sm" variant="destructive" disabled={bulkBusy} onClick={bulkReject} className="h-7 text-xs">
+                <XCircle className="h-3 w-3 mr-1" /> Rejeter
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())} className="h-7 text-xs">
+                Désélectionner
+              </Button>
+            </div>
+          )}
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-6 h-8 md:h-10">
@@ -1049,6 +1073,7 @@ const AdminCCCContributions: React.FC = () => {
                 <ResponsiveTable>
                   <ResponsiveTableHeader>
                     <ResponsiveTableRow>
+                      <ResponsiveTableHead priority="high"> </ResponsiveTableHead>
                       <ResponsiveTableHead priority="high">Parcelle</ResponsiveTableHead>
                       <ResponsiveTableHead priority="low">Contributeur</ResponsiveTableHead>
                       <ResponsiveTableHead priority="medium">Complétion</ResponsiveTableHead>
@@ -1061,13 +1086,30 @@ const AdminCCCContributions: React.FC = () => {
                   <ResponsiveTableBody>
                   {paginatedContributions.map((contribution) => {
                     const completeness = calculateCompleteness(contribution);
+                    const canSelect = contribution.status === 'pending' || contribution.status === 'returned';
                     return (
                       <ResponsiveTableRow key={contribution.id}>
+                        <ResponsiveTableCell priority="high" label="Sélection">
+                          {canSelect ? (
+                            <Checkbox
+                              checked={selectedIds.has(contribution.id)}
+                              onCheckedChange={() => toggleSelect(contribution.id)}
+                              aria-label="Sélectionner"
+                            />
+                          ) : null}
+                        </ResponsiveTableCell>
                         <ResponsiveTableCell priority="high" label="Parcelle" className="font-mono text-xs md:text-sm">
                           {contribution.parcel_number}
                         </ResponsiveTableCell>
                         <ResponsiveTableCell priority="low" label="Contributeur" className="text-xs md:text-sm">
-                          {contribution.user_id.substring(0, 8)}...
+                          <button
+                            type="button"
+                            className="font-mono text-primary hover:underline"
+                            onClick={() => setUserFilter(contribution.user_id)}
+                            title="Filtrer par cet utilisateur"
+                          >
+                            {contribution.user_id.substring(0, 8)}…
+                          </button>
                         </ResponsiveTableCell>
                         <ResponsiveTableCell priority="medium" label="Complétion">
                           <div className="flex items-center gap-1 md:gap-2">
