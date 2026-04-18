@@ -1,14 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { supabase } from '@/integrations/supabase/client';
-import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { Eye, FileText, CheckCircle, XCircle, Clock, AlertTriangle, ChevronLeft, ChevronRight, Search, Plus, Pencil, Trash2, RotateCcw } from 'lucide-react';
@@ -18,6 +15,11 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import TaxFormDialog from '@/components/cadastral/TaxFormDialog';
 import MortgageFormDialog from '@/components/cadastral/MortgageFormDialog';
 import BuildingPermitFormDialog from '@/components/cadastral/BuildingPermitFormDialog';
+import { useUserContributions } from '@/hooks/useUserContributions';
+import { detectFormType, mapContributionToFormDraft } from '@/utils/contributionFormMapping';
+import { UserContributionDeleteDialog } from '@/components/user/contributions/UserContributionDeleteDialog';
+import { trackEvent } from '@/lib/analytics';
+import { CADASTRAL_MAP_ROUTE } from '@/utils/userDashboardLinks';
 
 interface Contribution {
   id: string;
@@ -51,13 +53,9 @@ interface Contribution {
 
 export const UserContributions: React.FC = () => {
   const { user } = useAuth();
-  const { isTestRoute } = useTestEnvironment();
   const navigate = useNavigate();
-  const [contributions, setContributions] = useState<Contribution[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedContribution, setSelectedContribution] = useState<Contribution | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [cccCode, setCccCode] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [contributionToEdit, setContributionToEdit] = useState<Contribution | null>(null);
@@ -65,100 +63,23 @@ export const UserContributions: React.FC = () => {
   const [editFormType, setEditFormType] = useState<'ccc' | 'tax' | 'mortgage' | 'permit'>('ccc');
   const [contributionToDelete, setContributionToDelete] = useState<Contribution | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const itemsPerPage = 10;
 
-  // Détecter le type de formulaire d'origine pour une contribution
-  const detectOriginalFormType = (contribution: Contribution): 'ccc' | 'tax' | 'mortgage' | 'permit' => {
-    // Vérifier les données spécifiques pour déterminer le formulaire d'origine
-    if (contribution.tax_history && Array.isArray(contribution.tax_history) && contribution.tax_history.length > 0) {
-      // Si c'est uniquement un historique fiscal sans autres données complètes, c'est le formulaire Tax
-      const hasMortgage = contribution.mortgage_history && Array.isArray(contribution.mortgage_history) && contribution.mortgage_history.length > 0;
-      const hasPermit = contribution.building_permits && Array.isArray(contribution.building_permits) && contribution.building_permits.length > 0;
-      const hasOwnerDetails = contribution.current_owner_name && contribution.property_title_type;
-      
-      if (!hasMortgage && !hasPermit && !hasOwnerDetails) {
-        return 'tax';
-      }
-    }
-    
-    if (contribution.mortgage_history && Array.isArray(contribution.mortgage_history) && contribution.mortgage_history.length > 0) {
-      // Si c'est uniquement un historique hypothécaire
-      const hasTax = contribution.tax_history && Array.isArray(contribution.tax_history) && contribution.tax_history.length > 0;
-      const hasPermit = contribution.building_permits && Array.isArray(contribution.building_permits) && contribution.building_permits.length > 0;
-      const hasOwnerDetails = contribution.current_owner_name && contribution.property_title_type;
-      
-      if (!hasTax && !hasPermit && !hasOwnerDetails) {
-        return 'mortgage';
-      }
-    }
-    
-    if (contribution.building_permits && Array.isArray(contribution.building_permits) && contribution.building_permits.length > 0) {
-      // Si c'est uniquement un permis de bâtir
-      const hasTax = contribution.tax_history && Array.isArray(contribution.tax_history) && contribution.tax_history.length > 0;
-      const hasMortgage = contribution.mortgage_history && Array.isArray(contribution.mortgage_history) && contribution.mortgage_history.length > 0;
-      const hasOwnerDetails = contribution.current_owner_name && contribution.property_title_type;
-      
-      if (!hasTax && !hasMortgage && !hasOwnerDetails) {
-        return 'permit';
-      }
-    }
-    
-    // Par défaut, utiliser le formulaire CCC complet
-    return 'ccc';
-  };
+  // useQuery-backed hook with realtime invalidation, joined CCC code,
+  // server-side pagination and shared cache key.
+  const {
+    rows: contributions,
+    total,
+    pageSize: itemsPerPage,
+    loading,
+    deleteContribution,
+    deleting,
+    refetch,
+  } = useUserContributions(currentPage);
 
-  useEffect(() => {
-    if (user) {
-      fetchContributions();
-    }
-  }, [user]);
-
-  // Récupérer le code CCC quand le dialog s'ouvre
-  useEffect(() => {
-    if (isDetailsOpen && selectedContribution?.status === 'approved') {
-      fetchCCCCode(selectedContribution.id);
-    } else {
-      setCccCode(null);
-    }
-  }, [isDetailsOpen, selectedContribution]);
-
-  const fetchContributions = async () => {
-    try {
-      setLoading(true);
-      let query = supabase
-        .from('cadastral_contributions')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false });
-      query = applyTestFilter(query, 'parcel_number', isTestRoute);
-      const { data, error } = await query;
-
-      if (error) throw error;
-      setContributions(data || []);
-    } catch (error: any) {
-      toast.error('Erreur lors du chargement des contributions');
-      console.error('Error fetching contributions:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchCCCCode = async (contributionId: string) => {
-    try {
-      const { data } = await supabase
-        .from('cadastral_contributor_codes')
-        .select('code')
-        .eq('contribution_id', contributionId)
-        .maybeSingle();
-      
-      if (data) {
-        setCccCode(data.code);
-      }
-    } catch (error) {
-      console.error('Error fetching CCC code:', error);
-    }
-  };
+  // Joined CCC code on row — no extra fetch needed.
+  const cccCode = selectedContribution
+    ? (contributions.find(c => c.id === selectedContribution.id) as any)?.ccc_code ?? null
+    : null;
 
   // Détermine le type de contribution (hypothèque, permis, etc.)
   const getContributionTypeLabel = (contribution: Contribution) => {
