@@ -7,6 +7,7 @@ import { PeriodFilter } from '@/components/admin/dashboard/PeriodFilter';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { DollarSign, TrendingUp, TrendingDown, CreditCard, Users, FileText, Percent } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import TestModeBanner from '@/components/admin/billing/TestModeBanner';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
 
@@ -134,6 +135,7 @@ const AdminFinancialDashboard = () => {
 
   return (
     <div className="space-y-6">
+      <TestModeBanner />
       {/* Period Filter */}
       <PeriodFilter
         periodType={periodType}
