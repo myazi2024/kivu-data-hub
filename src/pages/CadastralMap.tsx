@@ -1,17 +1,14 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Navigation from '@/components/ui/navigation';
-import Footer from '@/components/Footer';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
-import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Loader2, Search, X, MessageCircle, AlertTriangle, Settings2, Star, Sparkles, FileEdit, HelpCircle, MapPinPlus, FileCheck2, AlertCircle } from 'lucide-react';
+import { MapPin, Loader2, Search, X, MessageCircle, AlertTriangle, Settings2, Star, Sparkles, HelpCircle, MapPinPlus, FileCheck2, AlertCircle, LocateFixed } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import CCCIntroDialog from '@/components/cadastral/CCCIntroDialog';
@@ -21,475 +18,147 @@ import SearchHistory from '@/components/cadastral/SearchHistory';
 import ParcelActionsDropdown from '@/components/cadastral/ParcelActionsDropdown';
 import LandTitleRequestDialog from '@/components/cadastral/LandTitleRequestDialog';
 import LandTitleTermsDialog from '@/components/cadastral/LandTitleTermsDialog';
+import CadastralResultsDialog from '@/components/cadastral/CadastralResultsDialog';
 import { useAdvancedCadastralSearch } from '@/hooks/useAdvancedCadastralSearch';
 import { useSearchHistory } from '@/hooks/useSearchHistory';
 import { useSearchBarConfig } from '@/hooks/useSearchBarConfig';
 import { useCadastralSearch } from '@/hooks/useCadastralSearch';
-import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
 import { useMapConfig } from '@/hooks/useMapConfig';
-import CadastralResultsDialog from '@/components/cadastral/CadastralResultsDialog';
+import { useAppAppearance } from '@/hooks/useAppAppearance';
+
+import { useCadastralMapData, useParcelHistory, type ParcelData } from '@/hooks/useCadastralMapData';
+import { useStripeReturnHandler } from '@/hooks/useStripeReturnHandler';
+import { useLandTitleNotificationFlow } from '@/hooks/useLandTitleNotificationFlow';
+import { useLeafletMap } from '@/hooks/useLeafletMap';
+import { playFeedbackBeep } from '@/lib/feedbackAudio';
+import { trackEvent } from '@/lib/analytics';
+
 import 'leaflet/dist/leaflet.css';
 
-interface ParcelData {
-  id: string;
-  parcel_number: string;
-  gps_coordinates: any;
-  parcel_sides: any;
-  latitude: number;
-  longitude: number;
-  current_owner_name: string;
-  area_sqm: number;
-  province: string;
-  ville: string;
-  commune: string;
-  quartier: string;
-}
-
-interface ParcelHistoryData {
-  ownership_history: any[];
-  tax_history: any[];
-  mortgage_history: any[];
-  boundary_history: any[];
-  building_permits: any[];
-}
-
 const CadastralMap = () => {
-  const { isTestRoute: isTestEnv } = useTestEnvironment();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const isMobile = useIsMobile();
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
-  const [parcels, setParcels] = useState<ParcelData[]>([]);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+
+  // Data layer
+  const { parcels, subdivisionLots, loading } = useCadastralMapData();
   const [filteredParcels, setFilteredParcels] = useState<ParcelData[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  // Selection
   const [selectedParcel, setSelectedParcel] = useState<ParcelData | null>(null);
+  const { data: selectedParcelHistory, isLoading: loadingHistory } = useParcelHistory(selectedParcel?.id ?? null);
+  const hasIncompleteData = useMemo(() => {
+    if (!selectedParcel || !selectedParcelHistory) return false;
+    const hasLocation = !!(selectedParcel.province && selectedParcel.ville);
+    const hasGPS = Array.isArray(selectedParcel.gps_coordinates) && selectedParcel.gps_coordinates.length > 0;
+    const hasLocationHistory = hasLocation || selectedParcelHistory.boundary_history.length > 0 || hasGPS;
+    const hasHistory = selectedParcelHistory.ownership_history.length > 0;
+    const hasObligations = selectedParcelHistory.tax_history.length > 0 || selectedParcelHistory.mortgage_history.length > 0;
+    return [hasLocationHistory, hasHistory, hasObligations].filter(v => !v).length >= 2;
+  }, [selectedParcel, selectedParcelHistory]);
+
+  // Search UI state
   const [searchQuery, setSearchQuery] = useState('');
   const [searchSuggestions, setSearchSuggestions] = useState<ParcelData[]>([]);
   const [showIntroDialog, setShowIntroDialog] = useState(false);
   const [showContributionDialog, setShowContributionDialog] = useState(false);
-  const [selectedParcelHistory, setSelectedParcelHistory] = useState<ParcelHistoryData | null>(null);
-  const [loadingHistory, setLoadingHistory] = useState(false);
-  const [hasIncompleteData, setHasIncompleteData] = useState(false);
   const [actionsExpanded, setActionsExpanded] = useState(false);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [showManualSearchNotification, setShowManualSearchNotification] = useState(false);
   const [isSearchBarActive, setIsSearchBarActive] = useState(false);
   const [showLandTitleDialog, setShowLandTitleDialog] = useState(false);
   const [showLandTitleTermsDialog, setShowLandTitleTermsDialog] = useState(false);
-  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const [showLandTitleNotification, setShowLandTitleNotification] = useState(false);
-  const landTitleNotificationTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const [showLandTitleButton, setShowLandTitleButton] = useState(false);
-  const landTitleButtonTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const [showServiceCatalog, setShowServiceCatalog] = useState(false);
-  
-  // Animation shake et notification caractères invalides
   const [isShaking, setIsShaking] = useState(false);
   const [showInvalidCharNotification, setShowInvalidCharNotification] = useState(false);
-  const invalidCharTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const invalidCharTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const notificationDismissedRef = useRef(false);
 
-  // Viewport height dynamique pour positionnement responsive
+  // Viewport height for responsive positioning
   const [viewportHeight, setViewportHeight] = useState(typeof window !== 'undefined' ? window.innerHeight : 800);
   useEffect(() => {
-    let timeout: NodeJS.Timeout;
+    let timeout: ReturnType<typeof setTimeout>;
     const handleResize = () => {
       clearTimeout(timeout);
       timeout = setTimeout(() => setViewportHeight(window.innerHeight), 150);
     };
     window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      clearTimeout(timeout);
-    };
+    return () => { window.removeEventListener('resize', handleResize); clearTimeout(timeout); };
   }, []);
 
-  // Advanced search hooks
   const advancedSearch = useAdvancedCadastralSearch();
   const searchHistory = useSearchHistory();
   const { config: searchBarConfig, buildAllowedRegex } = useSearchBarConfig();
   const { config: mapConfig } = useMapConfig();
-  
-  // Hook pour la recherche cadastrale (catalogue de services)
+  const { config: appearance } = useAppAppearance();
   const cadastralSearch = useCadastralSearch();
 
-  // Reset hasScrolledToBottom when dialog closes
-  useEffect(() => {
-    if (!showIntroDialog) {
-      // Reset any state if needed
-      setShowManualSearchNotification(false);
-    }
-  }, [showIntroDialog]);
+  // Stripe return polling (with progress indicator)
+  const { polling: stripePolling, pollProgress } = useStripeReturnHandler();
 
-  // Ref pour tracker si l'utilisateur a cliqué sur le bouton (empêche réapparition)
-  const notificationDismissedRef = useRef(false);
-  const landTitleNotificationDismissedRef = useRef(false);
+  // Land title notification state machine (replaces 4 setTimeout cascades)
+  const landTitle = useLandTitleNotificationFlow(hasUserInteracted);
 
-  // Timer d'inactivité pour afficher la notification sur le bouton "Recherche manuelle"
-  useEffect(() => {
-    // Afficher la notification après 5 secondes d'inactivité quand aucun résultat
-    if (searchQuery && filteredParcels.length === 0 && !showManualSearchNotification && !notificationDismissedRef.current) {
-      inactivityTimerRef.current = setTimeout(() => {
-        setShowManualSearchNotification(true);
-      }, 5000);
-    }
+  // Leaflet map (init + tiles via provider + on-demand geo + incremental render)
+  const { mapReady, renderLayers, requestUserLocation, centerOnParcel } = useLeafletMap({
+    containerRef: mapContainerRef,
+    ready: !loading,
+    onParcelClick: (p) => setSelectedParcel(p),
+  });
 
-    return () => {
-      if (inactivityTimerRef.current) {
-        clearTimeout(inactivityTimerRef.current);
-      }
-    };
-  }, [searchQuery, filteredParcels.length, showManualSearchNotification]);
+  // Sync filteredParcels with base data
+  useEffect(() => { setFilteredParcels(parcels); }, [parcels]);
 
-  // Timer pour afficher le bouton "Obtenir titre foncier" 10 secondes après l'ouverture de la page
-  useEffect(() => {
-    // Afficher le bouton après 10 secondes
-    landTitleButtonTimerRef.current = setTimeout(() => {
-      setShowLandTitleButton(true);
-    }, 10000);
-
-    return () => {
-      if (landTitleButtonTimerRef.current) {
-        clearTimeout(landTitleButtonTimerRef.current);
-      }
-    };
-  }, []);
-
-  // Listen for open-ccc-dialog event (from LandTitleRequestDialog button)
-  useEffect(() => {
-    const handleOpenCCC = (e: Event) => {
-      const detail = (e as CustomEvent).detail;
-      if (detail?.parcelNumber) {
-        setSearchQuery(detail.parcelNumber);
-      }
-      setShowContributionDialog(true);
-    };
-    window.addEventListener('open-ccc-dialog', handleOpenCCC);
-    return () => window.removeEventListener('open-ccc-dialog', handleOpenCCC);
-  }, []);
-
-  // Handle Stripe payment return for expertise/certificate access
-  useEffect(() => {
-    const paymentStatus = searchParams.get('payment');
-    const paymentType = searchParams.get('type');
-    const sessionId = searchParams.get('session_id');
-
-    if (!paymentStatus) return;
-
-    const clearPaymentParams = () => {
-      const nextParams = new URLSearchParams(searchParams);
-      nextParams.delete('payment');
-      nextParams.delete('type');
-      nextParams.delete('session_id');
-      setSearchParams(nextParams, { replace: true });
-    };
-
-    const handlePaymentReturn = async () => {
-      if (paymentStatus === 'cancelled') {
-        toast.error('Le paiement a été annulé.');
-        clearPaymentParams();
-        return;
-      }
-
-      if (paymentStatus !== 'success' || !sessionId) return;
-
-      try {
-        if (paymentType === 'certificate_access') {
-          let completedPayment: { expertise_request_id: string } | null = null;
-
-          // Wait up to 30s for webhook sync (Stripe -> Supabase)
-          for (let attempt = 0; attempt < 15; attempt++) {
-            const { data: payment } = await supabase
-              .from('expertise_payments')
-              .select('status, expertise_request_id')
-              .eq('transaction_id', sessionId)
-              .maybeSingle();
-
-            if (payment?.status === 'completed' && payment.expertise_request_id) {
-              completedPayment = { expertise_request_id: payment.expertise_request_id };
-              break;
-            }
-
-            if (payment?.status === 'failed') {
-              throw new Error('Le paiement du certificat a échoué.');
-            }
-
-            await new Promise(resolve => setTimeout(resolve, 2000));
-          }
-
-          if (!completedPayment) {
-            toast.message('Paiement confirmé, synchronisation en cours. Réessayez dans quelques secondes.');
-            clearPaymentParams();
-            return;
-          }
-
-          const { data: expertiseRequest } = await supabase
-            .from('real_estate_expertise_requests')
-            .select('certificate_url')
-            .eq('id', completedPayment.expertise_request_id)
-            .maybeSingle();
-
-          if (expertiseRequest?.certificate_url) {
-            window.open(expertiseRequest.certificate_url, '_blank', 'noopener,noreferrer');
-            toast.success('Paiement réussi ! Le certificat a été ouvert.');
-          } else {
-            toast.success('Paiement réussi ! Le certificat sera disponible dès sa publication.');
-          }
-        } else if (paymentType === 'expertise_fee') {
-          let isCompleted = false;
-
-          // Wait up to 30s for webhook sync (Stripe -> Supabase)
-          for (let attempt = 0; attempt < 15; attempt++) {
-            const { data: payment } = await supabase
-              .from('expertise_payments')
-              .select('status')
-              .eq('transaction_id', sessionId)
-              .maybeSingle();
-
-            if (payment?.status === 'completed') {
-              isCompleted = true;
-              break;
-            }
-
-            if (payment?.status === 'failed') {
-              throw new Error('Le paiement de la demande d’expertise a échoué.');
-            }
-
-            await new Promise(resolve => setTimeout(resolve, 2000));
-          }
-
-          if (isCompleted) {
-            toast.success('Paiement réussi ! Votre demande d’expertise a été enregistrée.');
-          } else {
-            toast.message('Paiement confirmé, synchronisation en cours. Réessayez dans quelques secondes.');
-          }
-        } else if (paymentType === 'mutation_request') {
-          let mutationPayment: { status: string; invoice_id: string | null } | null = null;
-
-          for (let attempt = 0; attempt < 15; attempt++) {
-            const { data: tx } = await supabase
-              .from('payment_transactions')
-              .select('status, invoice_id')
-              .eq('transaction_reference', sessionId)
-              .maybeSingle();
-
-            if (tx?.status === 'completed') {
-              mutationPayment = tx;
-              break;
-            }
-            if (tx?.status === 'failed') {
-              throw new Error('Le paiement de la mutation a échoué.');
-            }
-
-            await new Promise(resolve => setTimeout(resolve, 2000));
-          }
-
-          if (mutationPayment?.invoice_id) {
-            const { data: mutationRequest } = await supabase
-              .from('mutation_requests')
-              .select('reference_number, payment_status')
-              .eq('id', mutationPayment.invoice_id)
-              .maybeSingle();
-
-            if (mutationRequest?.payment_status === 'paid') {
-              toast.success(`Paiement réussi ! Demande ${mutationRequest.reference_number} en cours d'examen.`);
-            } else {
-              toast.message('Paiement confirmé, synchronisation en cours. Vérifiez dans votre tableau de bord.');
-            }
-          } else {
-            toast.message('Paiement confirmé, synchronisation en cours. Vérifiez dans votre tableau de bord.');
-          }
-        } else {
-          toast.success('Paiement réussi.');
-        }
-      } catch (error: any) {
-        console.error('Error while handling Stripe payment return:', error);
-        toast.error(error.message || 'Erreur lors de la vérification du paiement.');
-      } finally {
-        clearPaymentParams();
-      }
-    };
-
-    void handlePaymentReturn();
-  }, [searchParams, setSearchParams]);
-
-  // Only show when user has NOT interacted with anything
-  useEffect(() => {
-    if (showLandTitleButton && !showLandTitleNotification && !landTitleNotificationDismissedRef.current && !hasUserInteracted) {
-      landTitleNotificationTimerRef.current = setTimeout(() => {
-        setShowLandTitleNotification(true);
-      }, 10000);
-    }
-
-    return () => {
-      if (landTitleNotificationTimerRef.current) {
-        clearTimeout(landTitleNotificationTimerRef.current);
-      }
-    };
-  }, [showLandTitleButton, showLandTitleNotification, hasUserInteracted]);
-
-  // Dismiss land title notification when user interacts
-  useEffect(() => {
-    if (hasUserInteracted && showLandTitleNotification) {
-      landTitleNotificationDismissedRef.current = true;
-      setShowLandTitleNotification(false);
-    }
-  }, [hasUserInteracted, showLandTitleNotification]);
-
-  // Gestionnaire de clic global pour fermer la notification "Obtenir titre foncier"
-  useEffect(() => {
-    const handleGlobalClick = () => {
-      if (showLandTitleNotification) {
-        landTitleNotificationDismissedRef.current = true;
-        setShowLandTitleNotification(false);
-      }
-    };
-
-    if (showLandTitleNotification) {
-      document.addEventListener('click', handleGlobalClick);
-    }
-
-    return () => {
-      document.removeEventListener('click', handleGlobalClick);
-    };
-  }, [showLandTitleNotification]);
-
-  // Reset le flag quand la recherche change
-  useEffect(() => {
-    notificationDismissedRef.current = false;
-  }, [searchQuery]);
-
-  // Réinitialiser le timer quand l'utilisateur interagit
-  const handleManualSearchClick = useCallback(() => {
-    notificationDismissedRef.current = true;
-    setShowManualSearchNotification(false);
-    if (inactivityTimerRef.current) {
-      clearTimeout(inactivityTimerRef.current);
-    }
-    setShowIntroDialog(true);
-  }, []);
-
-  // Charger les parcelles depuis cadastral_parcels (accès public)
-  useEffect(() => {
-    const loadParcels = async () => {
-      try {
-        setLoading(true);
-        let query = supabase
-          .from('cadastral_parcels')
-          .select('id, parcel_number, gps_coordinates, parcel_sides, current_owner_name, area_sqm, province, ville, commune, quartier, latitude, longitude, is_subdivided')
-          .is('deleted_at', null);
-        query = applyTestFilter(query, 'parcel_number', isTestEnv);
-        const { data, error } = await query.limit(500);
-
-        if (error) {
-          console.error('Erreur chargement parcelles:', error);
-          toast.error('Erreur lors du chargement des parcelles');
-          return;
-        }
-
-        // Transformer les données pour extraire latitude/longitude
-        const transformedData = (data || []).map(parcel => {
-          let latitude = parcel.latitude;
-          let longitude = parcel.longitude;
-          
-          // Si pas de lat/lng direct, extraire des gps_coordinates
-          if (!latitude && !longitude && parcel.gps_coordinates && Array.isArray(parcel.gps_coordinates) && parcel.gps_coordinates.length > 0) {
-            const firstCoord = parcel.gps_coordinates[0] as any;
-            latitude = firstCoord.lat || firstCoord.latitude;
-            longitude = firstCoord.lng || firstCoord.longitude;
-          }
-
-          return {
-            ...parcel,
-            latitude: latitude || 0,
-            longitude: longitude || 0
-          };
-        }).filter(p => p.latitude !== 0 && p.longitude !== 0);
-
-        setParcels(transformedData);
-        setFilteredParcels(transformedData);
-      } catch (error) {
-        console.error('Erreur:', error);
-        toast.error('Erreur lors du chargement des parcelles');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadParcels();
-  }, []);
-
-  // Recherche prédictive
+  // Predictive search
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchSuggestions([]);
       setFilteredParcels(parcels);
       return;
     }
-
-    const filtered = parcels.filter(parcel => 
-      parcel.parcel_number.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    
-    setSearchSuggestions(filtered.slice(0, 5)); // Max 5 suggestions
+    const q = searchQuery.toLowerCase();
+    const filtered = parcels.filter(p => p.parcel_number.toLowerCase().includes(q));
+    setSearchSuggestions(filtered.slice(0, 5));
     setFilteredParcels(filtered);
   }, [searchQuery, parcels]);
 
-  // Charger l'historique complet d'une parcelle
-  const loadParcelHistory = async (parcelId: string) => {
-    setLoadingHistory(true);
-    try {
-      // Récupérer l'historique - ces tables sont publiques
-      const [ownershipRes, taxRes, mortgageRes, boundaryRes, permitsRes] = await Promise.all([
-        supabase.from('cadastral_ownership_history').select('*').eq('parcel_id', parcelId),
-        supabase.from('cadastral_tax_history').select('*').eq('parcel_id', parcelId),
-        supabase.from('cadastral_mortgages').select('*').eq('parcel_id', parcelId),
-        supabase.from('cadastral_boundary_history').select('*').eq('parcel_id', parcelId),
-        supabase.from('cadastral_building_permits').select('*').eq('parcel_id', parcelId)
-      ]);
+  // Render layers (incremental diff inside the hook)
+  useEffect(() => {
+    if (!mapReady) return;
+    renderLayers({ parcels: filteredParcels, subdivisionLots });
+  }, [mapReady, filteredParcels, subdivisionLots, renderLayers]);
 
-      const historyData: ParcelHistoryData = {
-        ownership_history: ownershipRes.data || [],
-        tax_history: taxRes.data || [],
-        mortgage_history: mortgageRes.data || [],
-        boundary_history: boundaryRes.data || [],
-        building_permits: permitsRes.data || []
-      };
-
-      setSelectedParcelHistory(historyData);
-      
-      // Vérifier si les données sont incomplètes
-      const hasLocation = !!(selectedParcel?.province && selectedParcel?.ville);
-      const hasGPS = !!(selectedParcel?.gps_coordinates && Array.isArray(selectedParcel.gps_coordinates) && selectedParcel.gps_coordinates.length > 0);
-      const hasLocationHistory = hasLocation || historyData.boundary_history.length > 0 || hasGPS;
-      const hasHistory = historyData.ownership_history.length > 0;
-      const hasObligations = historyData.tax_history.length > 0 || historyData.mortgage_history.length > 0;
-
-      // Considérer les données incomplètes si au moins 2 catégories sur 3 sont vides
-      const missingCount = [hasLocationHistory, hasHistory, hasObligations].filter(v => !v).length;
-      setHasIncompleteData(missingCount >= 2);
-    } catch (error) {
-      console.error('Erreur chargement historique:', error);
-    } finally {
-      setLoadingHistory(false);
+  // Manual-search notification timer
+  useEffect(() => {
+    if (searchQuery && filteredParcels.length === 0 && !showManualSearchNotification && !notificationDismissedRef.current) {
+      inactivityTimerRef.current = setTimeout(() => setShowManualSearchNotification(true), 5000);
     }
-  };
+    return () => { if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current); };
+  }, [searchQuery, filteredParcels.length, showManualSearchNotification]);
 
-  const handleSelectParcel = (parcel: ParcelData) => {
+  useEffect(() => { notificationDismissedRef.current = false; }, [searchQuery]);
+
+  // Listen for open-ccc-dialog event
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.parcelNumber) setSearchQuery(detail.parcelNumber);
+      setShowContributionDialog(true);
+    };
+    window.addEventListener('open-ccc-dialog', handler);
+    return () => window.removeEventListener('open-ccc-dialog', handler);
+  }, []);
+
+  const handleSelectParcel = useCallback((parcel: ParcelData) => {
     setSelectedParcel(parcel);
     setSearchQuery(parcel.parcel_number);
     setSearchSuggestions([]);
-    loadParcelHistory(parcel.id);
-    
-    // Centrer la carte sur la parcelle sélectionnée
-    if (mapInstanceRef.current && parcel.latitude && parcel.longitude) {
-      const L = (window as any).L;
-      if (L) {
-        mapInstanceRef.current.setView([parcel.latitude, parcel.longitude], 19);
-      }
-    }
-  };
+    centerOnParcel(parcel, 19);
+    void trackEvent('cadastral_map_parcel_select', { parcel_number: parcel.parcel_number });
+  }, [centerOnParcel]);
 
   const handleClearSearch = () => {
     setSearchQuery('');
@@ -498,52 +167,50 @@ const CadastralMap = () => {
     setSelectedParcel(null);
   };
 
-  // Advanced search handlers
+  const handleManualSearchClick = useCallback(() => {
+    notificationDismissedRef.current = true;
+    setShowManualSearchNotification(false);
+    if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+    setShowIntroDialog(true);
+  }, []);
+
   const handleApplyFilters = async () => {
     const results = await advancedSearch.searchParcels();
     if (results.length > 0) {
-      setFilteredParcels(results);
+      setFilteredParcels(results as any);
       toast.success(`${results.length} parcelle(s) trouvée(s)`);
-      // Fermer le sheet après application
       setShowAdvancedSearch(false);
     } else {
       toast.error('Aucune parcelle ne correspond aux critères');
     }
-    // Sauvegarder dans l'historique avec les filtres
     const filterSummary = Object.entries(advancedSearch.filters)
-      .filter(([_, v]) => v !== undefined && v !== '')
+      .filter(([, v]) => v !== undefined && v !== '')
       .map(([k, v]) => `${k}:${v}`)
       .join(', ');
-    if (filterSummary) {
-      searchHistory.addToHistory(`Filtres: ${filterSummary}`, advancedSearch.filters);
-    }
+    if (filterSummary) searchHistory.addToHistory(`Filtres: ${filterSummary}`, advancedSearch.filters);
   };
 
   const handleSelectFromHistory = (query: string) => {
     setSearchQuery(query);
     setShowAdvancedSearch(false);
-    const filtered = parcels.filter(p => p.parcel_number.toLowerCase().includes(query.toLowerCase()));
-    setFilteredParcels(filtered);
+    setFilteredParcels(parcels.filter(p => p.parcel_number.toLowerCase().includes(query.toLowerCase())));
   };
 
   const handleSelectFromFavorites = (parcelNumber: string) => {
     setShowAdvancedSearch(false);
     const parcel = parcels.find(p => p.parcel_number === parcelNumber);
-    if (parcel) {
-      handleSelectParcel(parcel);
-    }
+    if (parcel) handleSelectParcel(parcel);
   };
 
   const handleAddToFavorites = () => {
-    if (selectedParcel) {
-      searchHistory.addToFavorites({
-        parcel_number: selectedParcel.parcel_number,
-        parcel_id: selectedParcel.id,
-        owner_name: selectedParcel.current_owner_name,
-        location: `${selectedParcel.province || ''} ${selectedParcel.ville || ''} ${selectedParcel.commune || ''}`.trim()
-      });
-      toast.success('Parcelle ajoutée aux favoris');
-    }
+    if (!selectedParcel) return;
+    searchHistory.addToFavorites({
+      parcel_number: selectedParcel.parcel_number,
+      parcel_id: selectedParcel.id,
+      owner_name: selectedParcel.current_owner_name,
+      location: `${selectedParcel.province || ''} ${selectedParcel.ville || ''} ${selectedParcel.commune || ''}`.trim(),
+    });
+    toast.success('Parcelle ajoutée aux favoris');
   };
 
   const handleClearFiltersAndReset = () => {
@@ -552,416 +219,24 @@ const CadastralMap = () => {
     toast.success('Filtres réinitialisés');
   };
 
-  // Initialiser la carte (uniquement quand loading = false)
-  useEffect(() => {
-    if (loading) return; // Attendre que les données soient chargées
-
-    const initMap = async () => {
-      if (!mapRef.current || mapInstanceRef.current) return;
-
-      try {
-        const L = await import('leaflet');
-
-        // Fix pour les icônes Leaflet
-        delete (L as any).Icon.Default.prototype._getIconUrl;
-        L.Icon.Default.mergeOptions({
-          iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-          iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-        });
-
-        // Créer la carte centrée sur Goma, RDC
-        const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-        const map = L.map(mapRef.current, {
-          zoomControl: false,
-          scrollWheelZoom: !isMobile,
-          doubleClickZoom: !isMobile,
-          dragging: true
-        }).setView([-1.6794, 29.2273], 19);
-
-        // Add zoom control positioned bottom-right for both mobile and desktop
-        L.control.zoom({ position: 'bottomright' }).addTo(map);
-
-        // Ajouter la couche de tuiles OpenStreetMap
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap contributors',
-          maxZoom: 19
-        }).addTo(map);
-
-        mapInstanceRef.current = map;
-
-        // Redessiner la carte après initialisation
-        setTimeout(() => map.invalidateSize(), 100);
-
-        // Géolocalisation de l'utilisateur avec marqueur "Vous êtes ici"
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              const { latitude, longitude } = position.coords;
-              
-              // Centrer la carte sur la position de l'utilisateur au zoom max
-              map.setView([latitude, longitude], 19);
-
-              // Marqueur de position utilisateur (cercle bleu)
-              const userMarker = L.circleMarker([latitude, longitude], {
-                radius: 10,
-                fillColor: '#3b82f6',
-                color: '#1d4ed8',
-                weight: 3,
-                opacity: 1,
-                fillOpacity: 0.8
-              }).addTo(map);
-
-              // Cercle de précision
-              if (position.coords.accuracy) {
-                L.circle([latitude, longitude], {
-                  radius: position.coords.accuracy,
-                  fillColor: '#3b82f6',
-                  color: '#3b82f6',
-                  weight: 1,
-                  opacity: 0.2,
-                  fillOpacity: 0.07
-                }).addTo(map);
-              }
-
-              // Popup rouge "Vous êtes ici" qui disparaît après 3 secondes
-              const popupContent = `
-                <div style="
-                  background-color: #dc2626;
-                  color: white;
-                  padding: 6px 14px;
-                  border-radius: 8px;
-                  font-size: 13px;
-                  font-weight: 600;
-                  font-family: system-ui, sans-serif;
-                  white-space: nowrap;
-                  text-align: center;
-                ">
-                  📍 Vous êtes ici
-                </div>
-              `;
-
-              const popup = L.popup({
-                closeButton: false,
-                autoClose: false,
-                closeOnClick: false,
-                className: 'user-location-popup',
-                offset: [0, -12]
-              })
-                .setLatLng([latitude, longitude])
-                .setContent(popupContent)
-                .openOn(map);
-
-              // Fermer la popup après 3 secondes
-              setTimeout(() => {
-                map.closePopup(popup);
-              }, 3000);
-            },
-            (error) => {
-              console.log('Géolocalisation non disponible:', error.message);
-            },
-            { enableHighAccuracy: true, timeout: 10000 }
-          );
-        }
-
-      } catch (error) {
-        console.error('Erreur initialisation carte:', error);
-        toast.error('Erreur lors de l\'initialisation de la carte');
-      }
-    };
-
-    initMap();
-
-    return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-      }
-    };
-  }, [loading]);
-
-  // Fonction pour calculer la distance entre deux points GPS (Haversine)
-  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
-    const R = 6371e3; // Rayon de la Terre en mètres
-    const φ1 = (lat1 * Math.PI) / 180;
-    const φ2 = (lat2 * Math.PI) / 180;
-    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
-    const Δλ = ((lng2 - lng1) * Math.PI) / 180;
-
-    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-              Math.cos(φ1) * Math.cos(φ2) *
-              Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return R * c; // Distance en mètres
+  const handleWhatsAppClick = () => {
+    const phone = appearance.support_whatsapp_number || '243816996077';
+    const message = appearance.support_whatsapp_message || "Bonjour, j'ai besoin d'aide concernant les informations cadastrales.";
+    void trackEvent('cadastral_map_whatsapp_click');
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
-  // Fonction pour calculer la surface d'une parcelle à partir de ses coordonnées GPS
-  const calculateAreaFromCoordinates = (coordinates: any[]): number => {
-    if (!coordinates || coordinates.length < 3) return 0;
-
-    // Convertir les coordonnées géographiques en coordonnées cartésiennes approximatives
-    // en utilisant une projection locale (UTM approximatif)
-    const avgLat = coordinates.reduce((sum, coord) => sum + coord.lat, 0) / coordinates.length;
-    const metersPerDegreeLat = 111320; // mètres par degré de latitude
-    const metersPerDegreeLng = 111320 * Math.cos(avgLat * Math.PI / 180); // ajusté pour la longitude
-
-    // Convertir en coordonnées cartésiennes (mètres)
-    const cartesianCoords = coordinates.map(coord => ({
-      x: coord.lng * metersPerDegreeLng,
-      y: coord.lat * metersPerDegreeLat
-    }));
-
-    // Appliquer la formule de Shoelace pour calculer la surface
-    let area = 0;
-    for (let i = 0; i < cartesianCoords.length; i++) {
-      const j = (i + 1) % cartesianCoords.length;
-      area += cartesianCoords[i].x * cartesianCoords[j].y;
-      area -= cartesianCoords[j].x * cartesianCoords[i].y;
-    }
-
-    return Math.abs(area / 2); // Surface en mètres carrés
+  const handleGeolocate = () => {
+    void trackEvent('cadastral_map_geolocate');
+    requestUserLocation();
   };
-
-  // Afficher les parcelles filtrées sur la carte
-  useEffect(() => {
-    const updateMapWithParcels = async () => {
-      if (!mapInstanceRef.current || filteredParcels.length === 0) return;
-
-      try {
-        const L = await import('leaflet');
-        const map = mapInstanceRef.current;
-        
-        // Nettoyer les marqueurs existants
-        map.eachLayer((layer: any) => {
-          if (layer instanceof L.Marker || layer instanceof L.Polygon) {
-            map.removeLayer(layer);
-          }
-        });
-
-        const bounds = L.latLngBounds([]);
-
-        // Ajouter chaque parcelle filtrée sur la carte
-        filteredParcels.forEach((parcel) => {
-          // Créer un polygone si nous avons des coordonnées GPS
-          if (parcel.gps_coordinates && parcel.gps_coordinates.length >= 3) {
-            const polygonPoints: [number, number][] = parcel.gps_coordinates.map(
-              coord => [coord.lat, coord.lng]
-            );
-            
-            // Rendu conditionnel : parcelle subdivisée / en litige / normale
-            const isSubdivided = (parcel as any).is_subdivided === true;
-            const hasDispute = (parcel as any).has_dispute === true;
-            
-            let polyColor = '#ef4444';
-            let polyWeight = 2;
-            let polyFillOpacity = 0.2;
-            let polyDash: string | undefined = undefined;
-            
-            if (isSubdivided) {
-              polyColor = '#6b7280';
-              polyWeight = 1.5;
-              polyFillOpacity = 0.05;
-              polyDash = '6 4';
-            } else if (hasDispute) {
-              polyColor = '#f97316'; // orange
-              polyWeight = 2.5;
-              polyFillOpacity = 0.15;
-              polyDash = '8 4';
-            }
-            
-            const polygon = L.polygon(polygonPoints, {
-              color: polyColor,
-              weight: polyWeight,
-              fillColor: polyColor,
-              fillOpacity: polyFillOpacity,
-              dashArray: polyDash,
-            }).addTo(map);
-
-            // Labels au centroid
-            if (isSubdivided || hasDispute) {
-              const centLat = polygonPoints.reduce((s, p) => s + p[0], 0) / polygonPoints.length;
-              const centLng = polygonPoints.reduce((s, p) => s + p[1], 0) / polygonPoints.length;
-              
-              if (isSubdivided) {
-                const subdivLabel = L.divIcon({
-                  className: 'subdivided-label',
-                  html: `<div style="
-                    background: hsl(var(--muted));
-                    color: hsl(var(--muted-foreground));
-                    padding: 1px 6px;
-                    border-radius: 4px;
-                    border: 1px solid hsl(var(--border));
-                    font-size: 9px;
-                    font-weight: 600;
-                    white-space: nowrap;
-                    opacity: 0.85;
-                  ">Lotie</div>`,
-                  iconSize: [36, 16],
-                  iconAnchor: [18, 8],
-                });
-                L.marker([centLat, centLng], { icon: subdivLabel }).addTo(map);
-              }
-              
-              if (hasDispute) {
-                const disputeLabel = L.divIcon({
-                  className: 'dispute-label',
-                  html: `<div style="
-                    background: #fff7ed;
-                    color: #c2410c;
-                    padding: 1px 6px;
-                    border-radius: 4px;
-                    border: 1px solid #f97316;
-                    font-size: 9px;
-                    font-weight: 600;
-                    white-space: nowrap;
-                    opacity: 0.9;
-                  ">⚠ Litige</div>`,
-                  iconSize: [50, 16],
-                  iconAnchor: [25, isSubdivided ? -4 : 8],
-                });
-                L.marker([centLat, centLng], { icon: disputeLabel }).addTo(map);
-              }
-            }
-
-            // Extraire les dimensions exactes depuis parcel_sides (formulaire CCC)
-            const parcelSides = parcel.parcel_sides && Array.isArray(parcel.parcel_sides)
-              ? parcel.parcel_sides
-              : null;
-
-            // Ajouter les dimensions sur chaque côté
-            parcel.gps_coordinates.forEach((coord: any, index: number) => {
-              const nextIndex = (index + 1) % parcel.gps_coordinates.length;
-              const nextCoord = parcel.gps_coordinates[nextIndex];
-              
-              // Utiliser la dimension exacte du formulaire CCC si disponible
-              let distance: number;
-              if (parcelSides && parcelSides[index] && parcelSides[index].length) {
-                distance = parseFloat(parcelSides[index].length);
-              } else {
-                // Sinon, calculer à partir des GPS (fallback)
-                distance = calculateDistance(coord.lat, coord.lng, nextCoord.lat, nextCoord.lng);
-              }
-              
-              // Calculer le point médian
-              const midLat = (coord.lat + nextCoord.lat) / 2;
-              const midLng = (coord.lng + nextCoord.lng) / 2;
-              
-              // Créer une icône personnalisée pour afficher la dimension
-              const dimensionIcon = L.divIcon({
-                className: 'dimension-label',
-                html: `<div style="
-                  background: white;
-                  padding: 2px 6px;
-                  border-radius: 4px;
-                  border: 1px solid #ef4444;
-                  font-size: 11px;
-                  font-weight: 600;
-                  color: #ef4444;
-                  white-space: nowrap;
-                  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-                ">${distance.toFixed(1)} m</div>`,
-                iconSize: [60, 20],
-                iconAnchor: [30, 10]
-              });
-              
-              // Ajouter le marqueur de dimension
-              L.marker([midLat, midLng], { icon: dimensionIcon }).addTo(map);
-            });
-
-
-            polygon.on('click', () => {
-              setSelectedParcel(parcel);
-            });
-
-            bounds.extend(polygon.getBounds());
-          } else if (parcel.latitude && parcel.longitude) {
-            // Si pas de polygone mais des coordonnées, ajouter un marqueur
-            const marker = L.marker([parcel.latitude, parcel.longitude]).addTo(map);
-
-            marker.on('click', () => {
-              setSelectedParcel(parcel);
-            });
-
-            bounds.extend([parcel.latitude, parcel.longitude]);
-          }
-        });
-
-        // Afficher les lots de lotissement approuvés
-        try {
-          const { data: subdivisionLots } = await supabase
-            .from('subdivision_lots' as any)
-            .select('*');
-          
-          if (subdivisionLots && subdivisionLots.length > 0) {
-            (subdivisionLots as any[]).forEach((lot: any) => {
-              if (lot.gps_coordinates && Array.isArray(lot.gps_coordinates) && lot.gps_coordinates.length >= 3) {
-                const lotPoints: [number, number][] = lot.gps_coordinates.map((c: any) => [c.lat, c.lng]);
-                const lotColor = lot.color || '#22c55e';
-                
-                const lotPolygon = L.polygon(lotPoints, {
-                  color: lotColor,
-                  weight: 2,
-                  fillColor: lotColor,
-                  fillOpacity: 0.3,
-                  dashArray: '4 4',
-                }).addTo(map);
-                
-                // Popup with lot info
-                lotPolygon.bindPopup(`
-                  <div style="font-size:12px;min-width:120px">
-                    <strong>Lot ${lot.lot_number}</strong><br/>
-                    <span style="color:#666">Parcelle: ${lot.parcel_number}</span><br/>
-                    <span>Surface: ${lot.area_sqm?.toLocaleString()} m²</span><br/>
-                    <span>Usage: ${lot.intended_use || 'Habitation'}</span>
-                    ${lot.owner_name ? `<br/><span>Propriétaire: ${lot.owner_name}</span>` : ''}
-                  </div>
-                `);
-                
-                // Lot number marker at centroid
-                const centLat = lotPoints.reduce((s, p) => s + p[0], 0) / lotPoints.length;
-                const centLng = lotPoints.reduce((s, p) => s + p[1], 0) / lotPoints.length;
-                
-                const lotIcon = L.divIcon({
-                  className: 'lot-label',
-                  html: `<div style="
-                    background:${lotColor};color:white;
-                    padding:2px 6px;border-radius:4px;
-                    font-size:10px;font-weight:700;
-                    white-space:nowrap;text-align:center;
-                    box-shadow:0 1px 3px rgba(0,0,0,0.3);
-                  ">Lot ${lot.lot_number}</div>`,
-                  iconSize: [50, 18],
-                  iconAnchor: [25, 9],
-                });
-                L.marker([centLat, centLng], { icon: lotIcon }).addTo(map);
-                
-                bounds.extend(lotPolygon.getBounds());
-              }
-            });
-          }
-        } catch (e) {
-          console.error('Error loading subdivision lots:', e);
-        }
-
-        // Ajuster la vue pour inclure toutes les parcelles
-        if (bounds.isValid()) {
-          map.fitBounds(bounds, { padding: [50, 50] });
-        }
-      } catch (error) {
-        console.error('Erreur lors de la mise à jour de la carte:', error);
-      }
-    };
-
-    updateMapWithParcels();
-  }, [filteredParcels]);
 
   return (
     <div className="min-h-dvh flex flex-col bg-background">
       <Navigation />
-      
+
       <main className="flex-1 relative" style={{ height: 'calc(100vh - 4rem)' }}>
-        {/* Dynamic zoom control positioning based on panel state */}
+        {/* Dynamic zoom control positioning */}
         <style>{`
           .leaflet-bottom.leaflet-right .leaflet-control-zoom {
             margin-bottom: ${
@@ -976,7 +251,7 @@ const CadastralMap = () => {
             transition: margin-bottom 0.3s ease !important;
           }
         `}</style>
-        {/* Carte en plein écran */}
+
         {loading ? (
           <div className="absolute inset-0 flex items-center justify-center bg-muted/50">
             <div className="text-center">
@@ -985,27 +260,44 @@ const CadastralMap = () => {
             </div>
           </div>
         ) : (
-          <div 
-            ref={mapRef} 
-            style={{ width: '100%', height: 'calc(100vh - 4rem)' }}
-          />
+          <div ref={mapContainerRef} style={{ width: '100%', height: 'calc(100vh - 4rem)' }} />
         )}
 
-        {/* La notification du bouton titre foncier est maintenant dans la barre de recherche */}
+        {/* Stripe polling indicator */}
+        {stripePolling && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1100] bg-background/95 backdrop-blur-md rounded-xl shadow-lg border border-border/50 px-4 py-2 text-xs flex items-center gap-2" role="status" aria-live="polite">
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+            <span>Vérification du paiement... {Math.round(pollProgress * 100)}%</span>
+          </div>
+        )}
 
-        {/* Overlay de recherche - Design moderne avec animation de rebond */}
-        <div 
+        {/* Geolocate floating button (on-demand, no auto prompt) */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleGeolocate}
+              className="absolute right-3 z-[800] h-9 w-9 rounded-xl shadow-lg p-0"
+              style={{ bottom: isMobile ? `${Math.min(viewportHeight * 0.4, 320)}px` : '7rem' }}
+              aria-label="Me localiser"
+            >
+              <LocateFixed className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="left">Me localiser</TooltipContent>
+        </Tooltip>
+
+        {/* Search overlay */}
+        <div
           className={`absolute left-3 z-[900] ${isMobile ? 'right-3' : 'w-[min(24rem,calc(100vw-1.5rem))]'} transform-gpu`}
-          style={{ 
+          style={{
             transition: 'top 0.3s ease, transform 0.3s ease',
-            top: isSearchBarActive || selectedParcel 
-              ? '0.75rem' 
-              : `${viewportHeight - 180}px`
+            top: isSearchBarActive || selectedParcel ? '0.75rem' : `${viewportHeight - 180}px`,
           }}
         >
           <div className="bg-background/95 backdrop-blur-md rounded-2xl shadow-[0_10px_40px_-8px_rgba(0,0,0,0.9),0_4px_16px_-4px_rgba(0,0,0,0.6)] border border-border/50 overflow-hidden">
             <div className={`${selectedParcel && isMobile ? 'p-2' : 'p-2.5'}`}>
-              {/* Barre de recherche */}
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
                   <div className={`absolute left-2.5 top-1/2 -translate-y-1/2 ${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'} text-muted-foreground z-10`}>
@@ -1019,42 +311,20 @@ const CadastralMap = () => {
                       const normalizedValue = inputValue.toUpperCase();
                       const invalidRegex = buildAllowedRegex();
                       const hasInvalidChars = invalidRegex.test(normalizedValue);
-                      
+
                       if (hasInvalidChars) {
                         if (searchBarConfig.feedback.sound_enabled) {
-                          try {
-                            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-                            const oscillator = audioContext.createOscillator();
-                            const gainNode = audioContext.createGain();
-                            
-                            oscillator.connect(gainNode);
-                            gainNode.connect(audioContext.destination);
-                            
-                            oscillator.frequency.value = searchBarConfig.feedback.sound_frequency;
-                            oscillator.type = 'sine';
-                            
-                            gainNode.gain.setValueAtTime(0.08, audioContext.currentTime);
-                            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + searchBarConfig.feedback.sound_duration);
-                            
-                            oscillator.start(audioContext.currentTime);
-                            oscillator.stop(audioContext.currentTime + searchBarConfig.feedback.sound_duration);
-                          } catch (e) {}
+                          playFeedbackBeep(searchBarConfig.feedback.sound_frequency, searchBarConfig.feedback.sound_duration);
                         }
-                        
                         if (searchBarConfig.feedback.shake_enabled) {
                           setIsShaking(true);
                           setTimeout(() => setIsShaking(false), searchBarConfig.feedback.shake_duration);
                         }
-                        
                         setShowInvalidCharNotification(true);
-                        if (invalidCharTimeoutRef.current) {
-                          clearTimeout(invalidCharTimeoutRef.current);
-                        }
-                        invalidCharTimeoutRef.current = setTimeout(() => {
-                          setShowInvalidCharNotification(false);
-                        }, 3000);
+                        if (invalidCharTimeoutRef.current) clearTimeout(invalidCharTimeoutRef.current);
+                        invalidCharTimeoutRef.current = setTimeout(() => setShowInvalidCharNotification(false), 3000);
                       }
-                      
+
                       const sanitizedValue = normalizedValue.replace(new RegExp(invalidRegex.source, 'g'), '');
                       setSearchQuery(sanitizedValue);
                       if (sanitizedValue) setHasUserInteracted(true);
@@ -1067,28 +337,29 @@ const CadastralMap = () => {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && searchQuery.trim()) {
                         searchHistory.addToHistory(searchQuery);
+                        void trackEvent('cadastral_map_search', { query: searchQuery });
                       }
                     }}
                     type="text"
                     inputMode="text"
                     className={`${selectedParcel && isMobile ? 'h-8 text-xs pl-8' : 'h-9 text-sm pl-9'} pr-8 rounded-${searchBarConfig.appearance.border_radius} border-0 bg-muted/50 focus-visible:ring-1 focus-visible:ring-${searchBarConfig.appearance.accent_color}/50 transition-all ${isShaking ? 'animate-shake border-destructive' : ''}`}
                   />
-                  
+
                   {searchQuery && (
                     <Button
                       variant="ghost"
                       size="sm"
                       className={`absolute right-1 top-1/2 -translate-y-1/2 ${selectedParcel && isMobile ? 'h-6 w-6' : 'h-7 w-7'} p-0 rounded-full hover:bg-destructive/10`}
                       onClick={handleClearSearch}
+                      aria-label="Effacer la recherche"
                     >
                       <X className={`${selectedParcel && isMobile ? 'h-3 w-3' : 'h-3.5 w-3.5'} text-muted-foreground`} />
                     </Button>
                   )}
                 </div>
-                
-                {/* Bouton Recherche Avancée - Design compact */}
-                <Button 
-                  variant="ghost" 
+
+                <Button
+                  variant="ghost"
                   size="sm"
                   onClick={() => {
                     if (selectedParcel) return;
@@ -1098,127 +369,83 @@ const CadastralMap = () => {
                   }}
                   disabled={!!selectedParcel}
                   className={`${selectedParcel && isMobile ? 'h-8 w-8' : 'h-9 w-9'} shrink-0 rounded-xl ${showAdvancedSearch ? 'bg-primary/10 text-primary' : 'bg-muted/50'} hover:bg-muted transition-colors`}
+                  aria-label="Recherche avancée"
                   title="Recherche avancée"
                 >
                   <Settings2 className={`${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'} transition-transform duration-300 ${showAdvancedSearch ? 'rotate-90' : ''}`} />
                 </Button>
 
-                {/* Bouton Obtenir titre foncier - Icône seule par défaut, expand on hover (desktop) */}
-                {isMobile ? (
+                {/* Land title button (state-machine driven) */}
+                {landTitle.showButton && (isMobile ? (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span className="inline-flex">
-                        <Popover
-                          open={showLandTitleNotification}
-                          onOpenChange={(nextOpen) => {
-                            if (!nextOpen) {
-                              landTitleNotificationDismissedRef.current = true;
-                            }
-                            setShowLandTitleNotification(nextOpen);
-                          }}
-                        >
+                        <Popover open={landTitle.showNotification} onOpenChange={(o) => { if (!o) landTitle.dismiss(); }}>
                           <PopoverTrigger asChild>
-                            <Button 
-                              variant="destructive" 
+                            <Button
+                              variant="destructive"
                               size="sm"
-                            onClick={() => {
-                              if (selectedParcel) return;
-                              landTitleNotificationDismissedRef.current = true;
-                              setShowLandTitleNotification(false);
-                              setShowLandTitleTermsDialog(true);
-                              setHasUserInteracted(true);
-                            }}
+                              onClick={() => {
+                                if (selectedParcel) return;
+                                landTitle.dismiss();
+                                setShowLandTitleTermsDialog(true);
+                                setHasUserInteracted(true);
+                              }}
                               disabled={!!selectedParcel}
                               className={`${selectedParcel && isMobile ? 'h-8 w-8' : 'h-9 w-9'} shrink-0 rounded-xl transition-colors relative`}
-                              title="Demander un titre foncier"
+                              aria-label="Demander un titre foncier"
                             >
                               <FileCheck2 className={`${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />
-                              {showLandTitleNotification && (
-                                <span className="absolute -top-1 -right-1 h-3 w-3 bg-yellow-400 rounded-full animate-pulse shadow-lg border border-yellow-300" />
+                              {landTitle.showNotification && (
+                                <span className="absolute -top-1 -right-1 h-3 w-3 bg-yellow-400 rounded-full animate-pulse shadow-lg border border-yellow-300" aria-hidden="true" />
                               )}
                             </Button>
                           </PopoverTrigger>
-
-                          <PopoverContent
-                            side="top"
-                            align="end"
-                            sideOffset={10}
-                            className={cn(
-                              "w-[320px] rounded-xl border border-destructive/30 bg-destructive text-destructive-foreground p-3 shadow-lg",
-                              "text-xs leading-relaxed"
-                            )}
-                          >
+                          <PopoverContent side="top" align="end" sideOffset={10} className={cn('w-[320px] rounded-xl border border-destructive/30 bg-destructive text-destructive-foreground p-3 shadow-lg text-xs leading-relaxed')}>
                             <div className="flex items-start gap-2">
                               <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                              <span>
-                                Le numéro parcellaire, souvent appelé numéro SU ou SR, est le numéro unique attribué à une parcelle de terrain au sein d'une zone donnée (urbaine ou rurale) par le cadastre. Ce numéro figure sur le titre foncier délivré par le cadastre. Si vous n'avez pas encore de titre foncier, cliquez ici pour faire votre demande.
-                              </span>
+                              <span>Le numéro parcellaire (SU/SR) figure sur le titre foncier. Si vous n'avez pas encore de titre foncier, cliquez ici pour faire votre demande.</span>
                             </div>
                           </PopoverContent>
                         </Popover>
                       </span>
                     </TooltipTrigger>
-
-                    <TooltipContent side="top" sideOffset={8}>
-                      Demander un titre foncier
-                    </TooltipContent>
+                    <TooltipContent side="top" sideOffset={8}>Demander un titre foncier</TooltipContent>
                   </Tooltip>
                 ) : (
-                  /* Desktop - Icon only, expands to icon+text on hover */
-                  <Popover
-                    open={showLandTitleNotification}
-                    onOpenChange={(nextOpen) => {
-                      if (!nextOpen) {
-                        landTitleNotificationDismissedRef.current = true;
-                      }
-                      setShowLandTitleNotification(nextOpen);
-                    }}
-                  >
+                  <Popover open={landTitle.showNotification} onOpenChange={(o) => { if (!o) landTitle.dismiss(); }}>
                     <PopoverTrigger asChild>
-                      <Button 
-                        variant="destructive" 
+                      <Button
+                        variant="destructive"
                         size="sm"
                         onClick={() => {
                           if (selectedParcel) return;
-                          landTitleNotificationDismissedRef.current = true;
-                          setShowLandTitleNotification(false);
+                          landTitle.dismiss();
                           setShowLandTitleTermsDialog(true);
                           setHasUserInteracted(true);
                         }}
                         disabled={!!selectedParcel}
                         className={`h-9 w-9 shrink-0 rounded-xl transition-all duration-300 ease-in-out relative gap-1.5 text-xs font-medium overflow-hidden px-0 ${selectedParcel ? '' : 'hover:w-auto group hover:px-3'}`}
+                        aria-label="Demander un titre foncier"
                       >
                         <FileCheck2 className="h-4 w-4 shrink-0" />
-                        <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[200px] group-hover:opacity-100 transition-all duration-300 ease-in-out">
-                          Demander un titre foncier
-                        </span>
-                        {showLandTitleNotification && (
-                          <span className="absolute -top-1 -right-1 h-3 w-3 bg-yellow-400 rounded-full animate-pulse shadow-lg border border-yellow-300" />
+                        <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[200px] group-hover:opacity-100 transition-all duration-300 ease-in-out">Demander un titre foncier</span>
+                        {landTitle.showNotification && (
+                          <span className="absolute -top-1 -right-1 h-3 w-3 bg-yellow-400 rounded-full animate-pulse shadow-lg border border-yellow-300" aria-hidden="true" />
                         )}
                       </Button>
                     </PopoverTrigger>
-
-                    <PopoverContent
-                      side="top"
-                      align="end"
-                      sideOffset={10}
-                      className={cn(
-                        "w-[320px] rounded-xl border border-destructive/30 bg-destructive text-destructive-foreground p-3 shadow-lg",
-                        "text-xs leading-relaxed"
-                      )}
-                    >
+                    <PopoverContent side="top" align="end" sideOffset={10} className={cn('w-[320px] rounded-xl border border-destructive/30 bg-destructive text-destructive-foreground p-3 shadow-lg text-xs leading-relaxed')}>
                       <div className="flex items-start gap-2">
                         <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                        <span>
-                          Le numéro parcellaire, souvent appelé numéro SU ou SR, est le numéro unique attribué à une parcelle de terrain au sein d'une zone donnée (urbaine ou rurale) par le cadastre. Ce numéro figure sur le titre foncier délivré par le cadastre. Si vous n'avez pas encore de titre foncier, cliquez ici pour faire votre demande.
-                        </span>
+                        <span>Le numéro parcellaire (SU/SR) figure sur le titre foncier. Si vous n'avez pas encore de titre foncier, cliquez ici pour faire votre demande.</span>
                       </div>
                     </PopoverContent>
                   </Popover>
-                )}
+                ))}
               </div>
 
-              {/* Section Recherche Avancée - Déroulée dans la barre */}
+              {/* Advanced search */}
               <div className={`overflow-hidden transition-all duration-300 ease-out ${showAdvancedSearch ? 'max-h-[500px] opacity-100 mt-3' : 'max-h-0 opacity-0'}`}>
                 <div className="border-t border-border/30 pt-3 space-y-3">
                   {advancedSearch.loading && (
@@ -1227,7 +454,6 @@ const CadastralMap = () => {
                       <span className="ml-2 text-xs text-muted-foreground">Recherche...</span>
                     </div>
                   )}
-                  
                   <AdvancedSearchFilters
                     filters={advancedSearch.filters}
                     onFiltersChange={advancedSearch.updateFilters}
@@ -1235,7 +461,6 @@ const CadastralMap = () => {
                     onClear={handleClearFiltersAndReset}
                     isCompact={true}
                   />
-
                   <SearchHistory
                     onSelectHistory={handleSelectFromHistory}
                     onSelectFavorite={handleSelectFromFavorites}
@@ -1244,7 +469,7 @@ const CadastralMap = () => {
                 </div>
               </div>
 
-              {/* Suggestions - Design moderne */}
+              {/* Suggestions */}
               {searchSuggestions.length > 0 && !(selectedParcel && isMobile) && !showAdvancedSearch && (
                 <div className="mt-2 rounded-xl bg-muted/30 overflow-hidden max-h-36 overflow-y-auto">
                   {searchSuggestions.map((parcel, index) => (
@@ -1263,7 +488,6 @@ const CadastralMap = () => {
                 </div>
               )}
 
-              {/* Footer - Résumé et actions */}
               {!(selectedParcel && isMobile) && !showAdvancedSearch && (
                 <div className="mt-2 flex items-center justify-between">
                   <span className="text-[10px] text-muted-foreground font-medium">
@@ -1273,8 +497,7 @@ const CadastralMap = () => {
               )}
             </div>
           </div>
-          
-          {/* Notification contextuelle pour caractères invalides - Positionnée en dehors de l'overflow-hidden */}
+
           {showInvalidCharNotification && (
             <div className="mt-2 animate-fade-in">
               <div className="bg-destructive text-destructive-foreground text-xs p-3 rounded-xl shadow-lg">
@@ -1282,9 +505,7 @@ const CadastralMap = () => {
                   <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="font-medium mb-0.5">{searchBarConfig.error_message.title}</p>
-                    <p className="text-destructive-foreground/90 text-[11px]">
-                      {searchBarConfig.error_message.description}
-                    </p>
+                    <p className="text-destructive-foreground/90 text-[11px]">{searchBarConfig.error_message.description}</p>
                   </div>
                 </div>
               </div>
@@ -1292,17 +513,10 @@ const CadastralMap = () => {
           )}
         </div>
 
-        {/* Bouton Contribuer - Positionné sous la barre de recherche sur desktop */}
+        {/* Manual contribution CTA when no result */}
         {searchQuery && filteredParcels.length === 0 && !selectedParcel && (
-          <div className={`absolute z-[890] animate-fade-in ${
-            isMobile 
-              ? 'left-1/2 -translate-x-1/2 bottom-[28rem]'
-              : 'left-3 top-[8.5rem]'
-          }`}
-            style={isMobile ? {} : { width: '24rem' }}
-          >
+          <div className={`absolute z-[890] animate-fade-in ${isMobile ? 'left-1/2 -translate-x-1/2 bottom-[28rem]' : 'left-3 top-[8.5rem]'}`} style={isMobile ? {} : { width: '24rem' }}>
             <div className="relative">
-              {/* Bouton principal */}
               <Button
                 variant="default"
                 size="lg"
@@ -1319,13 +533,11 @@ const CadastralMap = () => {
                   </div>
                 </div>
               </Button>
-
-              {/* Notification BELOW the button - yellow color */}
               {showManualSearchNotification && (
                 <div className="mt-2 animate-scale-in">
                   <div className="bg-yellow-400 text-yellow-900 text-xs px-4 py-2.5 rounded-xl shadow-lg text-center w-64 mx-auto">
                     <div className="flex items-center justify-center gap-2">
-                      <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                      <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                       <span>Cette parcelle n'existe pas encore</span>
                     </div>
                   </div>
@@ -1335,11 +547,10 @@ const CadastralMap = () => {
           </div>
         )}
 
-        {/* Panneau d'information de la parcelle sélectionnée - Design moderne */}
+        {/* Selected parcel panel */}
         {selectedParcel && (
           <div className={`absolute ${isMobile ? 'bottom-2 left-3 right-3 max-w-[340px] mx-auto' : 'bottom-4 right-4 w-80'} z-[1000]`}>
             <div className="bg-background/98 backdrop-blur-xl rounded-3xl shadow-[0_8px_40px_-12px_hsl(var(--primary)/1),0_4px_16px_-4px_rgba(0,0,0,1)] border border-border/40 overflow-hidden">
-              {/* Expandable services panel — expands upward within the card */}
               <ParcelActionsDropdown
                 parcelNumber={selectedParcel.parcel_number}
                 parcelId={selectedParcel.id}
@@ -1349,7 +560,6 @@ const CadastralMap = () => {
                 onRequestLandTitle={() => setShowLandTitleTermsDialog(true)}
               />
 
-              {/* Header with gradient accent */}
               <div className="relative px-3.5 py-3 flex items-center justify-between">
                 <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
                 <div className="flex items-center gap-2.5">
@@ -1367,6 +577,7 @@ const CadastralMap = () => {
                     size="sm"
                     className={`h-7 w-7 p-0 rounded-xl transition-all ${searchHistory.isFavorite(selectedParcel.id) ? 'text-yellow-500 bg-yellow-500/10 hover:bg-yellow-500/20' : 'text-muted-foreground hover:bg-muted'}`}
                     onClick={handleAddToFavorites}
+                    aria-label="Ajouter aux favoris"
                   >
                     <Star className={`h-3.5 w-3.5 ${searchHistory.isFavorite(selectedParcel.id) ? 'fill-yellow-500' : ''}`} />
                   </Button>
@@ -1375,135 +586,120 @@ const CadastralMap = () => {
                     size="sm"
                     className="h-7 w-7 p-0 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
                     onClick={() => { setSelectedParcel(null); setActionsExpanded(false); }}
+                    aria-label="Fermer le panneau parcelle"
                   >
                     <X className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               </div>
 
-                {/* Content area */}
-                <div className="px-3.5 pb-3.5">
-                  {/* Quick info chips */}
-                  <div className="flex flex-wrap gap-1.5 mb-3">
-                    <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/5 border border-primary/10 text-[10px]">
-                      <span className="text-muted-foreground">Surface</span>
-                      <span className="font-semibold text-foreground">
-                        {selectedParcel.gps_coordinates && selectedParcel.gps_coordinates.length >= 3
-                          ? calculateAreaFromCoordinates(selectedParcel.gps_coordinates).toLocaleString(undefined, { maximumFractionDigits: 0 })
-                          : selectedParcel.area_sqm?.toLocaleString()
-                        } m²
-                      </span>
+              <div className="px-3.5 pb-3.5">
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/5 border border-primary/10 text-[10px]">
+                    <span className="text-muted-foreground">Surface</span>
+                    <span className="font-semibold text-foreground">
+                      {selectedParcel.area_sqm?.toLocaleString()} m²
+                    </span>
+                  </div>
+                  {selectedParcel.commune && (
+                    <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted/60 text-[10px]">
+                      <span className="font-medium text-foreground/80">{selectedParcel.commune}</span>
                     </div>
-                    {selectedParcel.commune && (
-                      <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted/60 text-[10px]">
-                        <span className="font-medium text-foreground/80">{selectedParcel.commune}</span>
-                      </div>
-                    )}
-                    {selectedParcel.quartier && (
-                      <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted/60 text-[10px]">
-                        <span className="font-medium text-foreground/80">{selectedParcel.quartier}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Action buttons */}
-                  <div className="flex gap-1.5">
-                    <Button
-                      onClick={async () => {
-                        if (!selectedParcel) return;
-                        await cadastralSearch.searchParcel(selectedParcel.parcel_number);
-                        setShowServiceCatalog(true);
-                      }}
-                      className="flex-1 h-9 text-xs rounded-xl font-medium shadow-sm"
-                      size="sm"
-                      disabled={cadastralSearch.loading}
-                    >
-                      {cadastralSearch.loading ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <>
-                          <Search className="h-3 w-3 mr-1.5" />
-                          {isMobile ? "Données" : "Plus de données"}
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      variant={actionsExpanded ? "default" : "secondary"}
-                      size="sm"
-                      className={`flex-1 h-9 text-xs rounded-xl font-medium gap-1 transition-all ${actionsExpanded ? 'shadow-sm' : ''}`}
-                      onClick={() => setActionsExpanded(prev => !prev)}
-                    >
-                      {actionsExpanded ? 'Fermer' : 'Actions'}
-                      {actionsExpanded
-                        ? <X className="h-3 w-3" />
-                        : <Settings2 className="h-3 w-3" />
-                      }
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        const phoneNumber = '243816996077';
-                        const message = 'Bonjour, j\'ai besoin d\'aide concernant les informations cadastrales.';
-                        window.open(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`, '_blank');
-                      }}
-                      variant="outline"
-                      size="sm"
-                      className="h-9 w-9 p-0 rounded-xl shrink-0"
-                      title="Aide WhatsApp"
-                    >
-                      <MessageCircle className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                  
-                  {/* Alerte données incomplètes */}
-                  {hasIncompleteData && (
-                    <button 
-                      onClick={() => setShowContributionDialog(true)}
-                      className="w-full mt-2 flex items-center gap-2 px-3 py-2 rounded-xl bg-orange-500/10 border border-orange-500/20 hover:bg-orange-500/15 transition-colors text-left"
-                    >
-                      <AlertTriangle className="h-3.5 w-3.5 text-orange-600 shrink-0" />
-                      <span className="text-[10px] text-orange-700 leading-tight">
-                        Données incomplètes - Cliquez pour contribuer
-                      </span>
-                    </button>
+                  )}
+                  {selectedParcel.quartier && (
+                    <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted/60 text-[10px]">
+                      <span className="font-medium text-foreground/80">{selectedParcel.quartier}</span>
+                    </div>
                   )}
                 </div>
+
+                <div className="flex gap-1.5">
+                  <Button
+                    onClick={async () => {
+                      if (!selectedParcel) return;
+                      await cadastralSearch.searchParcel(selectedParcel.parcel_number);
+                      setShowServiceCatalog(true);
+                    }}
+                    className="flex-1 h-9 text-xs rounded-xl font-medium shadow-sm"
+                    size="sm"
+                    disabled={cadastralSearch.loading}
+                  >
+                    {cadastralSearch.loading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <>
+                        <Search className="h-3 w-3 mr-1.5" />
+                        {isMobile ? 'Données' : 'Plus de données'}
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant={actionsExpanded ? 'default' : 'secondary'}
+                    size="sm"
+                    className={`flex-1 h-9 text-xs rounded-xl font-medium gap-1 transition-all ${actionsExpanded ? 'shadow-sm' : ''}`}
+                    onClick={() => setActionsExpanded(prev => !prev)}
+                  >
+                    {actionsExpanded ? 'Fermer' : 'Actions'}
+                    {actionsExpanded ? <X className="h-3 w-3" /> : <Settings2 className="h-3 w-3" />}
+                  </Button>
+                  <Button
+                    onClick={handleWhatsAppClick}
+                    variant="outline"
+                    size="sm"
+                    className="h-9 w-9 p-0 rounded-xl shrink-0"
+                    aria-label="Aide WhatsApp"
+                    title="Aide WhatsApp"
+                  >
+                    <MessageCircle className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+
+                {hasIncompleteData && (
+                  <button
+                    onClick={() => setShowContributionDialog(true)}
+                    className="w-full mt-2 flex items-center gap-2 px-3 py-2 rounded-xl bg-orange-500/10 border border-orange-500/20 hover:bg-orange-500/15 transition-colors text-left"
+                  >
+                    <AlertTriangle className="h-3.5 w-3.5 text-orange-600 shrink-0" />
+                    <span className="text-[10px] text-orange-700 leading-tight">Données incomplètes - Cliquez pour contribuer</span>
+                  </button>
+                )}
               </div>
             </div>
+          </div>
         )}
 
-        {/* Légende - Desktop: top-right below nav, Mobile: bottom-left toggle */}
+        {/* Legend */}
         {mapConfig?.legend?.enabled !== false && (() => {
           const legendItems = (mapConfig?.legend?.items || []).filter(item => item.enabled);
           const legendIconMap: Record<string, { desktop: React.ReactNode; mobile: React.ReactNode }> = {
             bornage_gps: {
               desktop: <div className="w-2 h-2 bg-red-500/20 border border-red-500 rounded-sm" />,
-              mobile: <div className="w-2 h-2 bg-red-500/20 border border-red-500 rounded-sm shrink-0" />
+              mobile: <div className="w-2 h-2 bg-red-500/20 border border-red-500 rounded-sm shrink-0" />,
             },
             sans_bornage: {
               desktop: <MapPin className="h-2 w-2 text-blue-500" />,
-              mobile: <MapPin className="h-2 w-2 text-blue-500 shrink-0" />
+              mobile: <MapPin className="h-2 w-2 text-blue-500 shrink-0" />,
             },
             limites: {
               desktop: <div className="w-2 h-px bg-red-500" />,
-              mobile: <div className="w-2 h-px bg-red-500 shrink-0" />
+              mobile: <div className="w-2 h-px bg-red-500 shrink-0" />,
             },
             dimensions: {
               desktop: <div className="px-0.5 text-[5px] font-bold text-red-500 border border-red-500 rounded bg-white leading-none">12m</div>,
-              mobile: <div className="px-0.5 text-[5px] font-bold text-red-500 border border-red-500 rounded bg-white leading-none shrink-0">12m</div>
+              mobile: <div className="px-0.5 text-[5px] font-bold text-red-500 border border-red-500 rounded bg-white leading-none shrink-0">12m</div>,
             },
             incompletes: {
               desktop: <AlertTriangle className="h-2 w-2 text-orange-500" />,
-              mobile: <AlertTriangle className="h-2 w-2 text-orange-500 shrink-0" />
+              mobile: <AlertTriangle className="h-2 w-2 text-orange-500 shrink-0" />,
             },
             favorite: {
               desktop: <Star className="h-2 w-2 text-yellow-500 fill-yellow-500" />,
-              mobile: <Star className="h-2 w-2 text-yellow-500 fill-yellow-500 shrink-0" />
-            }
+              mobile: <Star className="h-2 w-2 text-yellow-500 fill-yellow-500 shrink-0" />,
+            },
           };
           if (legendItems.length === 0) return null;
           return (
             <>
-              {/* Desktop legend */}
               <div className="absolute top-3 right-3 z-[800] hidden md:block max-h-[calc(100vh-8rem)] overflow-auto">
                 <div className="bg-background/95 backdrop-blur-md rounded-lg shadow-lg border border-border/50 p-1.5">
                   <p className="text-[7px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Légende</p>
@@ -1517,19 +713,15 @@ const CadastralMap = () => {
                   </div>
                 </div>
               </div>
-              {/* Mobile legend toggle */}
-              <div 
-                className="absolute left-3 z-[800] md:hidden"
-                style={{
-                  bottom: `${selectedParcel 
-                    ? (actionsExpanded ? Math.min(viewportHeight * 0.55, 480) : Math.min(viewportHeight * 0.3, 240)) 
-                    : Math.min(viewportHeight * 0.25, 192)}px`,
-                  transition: 'bottom 0.3s ease'
-                }}
-              >
+              <div className="absolute left-3 z-[800] md:hidden" style={{
+                bottom: `${selectedParcel
+                  ? (actionsExpanded ? Math.min(viewportHeight * 0.55, 480) : Math.min(viewportHeight * 0.3, 240))
+                  : Math.min(viewportHeight * 0.25, 192)}px`,
+                transition: 'bottom 0.3s ease',
+              }}>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="secondary" size="sm" className="h-7 w-7 rounded-lg shadow-lg p-0">
+                    <Button variant="secondary" size="sm" className="h-7 w-7 rounded-lg shadow-lg p-0" aria-label="Afficher la légende">
                       <HelpCircle className="h-3 w-3" />
                     </Button>
                   </PopoverTrigger>
@@ -1551,61 +743,39 @@ const CadastralMap = () => {
         })()}
       </main>
 
-      {/* Dialog d'introduction CCC */}
       {showIntroDialog && (
         <CCCIntroDialog
           open={showIntroDialog}
-          onOpenChange={(open) => {
-            setShowIntroDialog(open);
-            if (!open) {
-              console.log("Dialog d'introduction fermé");
-            }
-          }}
-          onContinue={() => {
-            console.log("Passage au formulaire CCC");
-            setShowIntroDialog(false);
-            setShowContributionDialog(true);
-          }}
+          onOpenChange={(open) => setShowIntroDialog(open)}
+          onContinue={() => { setShowIntroDialog(false); setShowContributionDialog(true); }}
           parcelNumber={searchQuery}
         />
       )}
 
-      {/* Dialog de contribution */}
       {showContributionDialog && (
         <CadastralContributionDialog
           open={showContributionDialog}
-          onOpenChange={(open) => {
-            setShowContributionDialog(open);
-            if (!open) {
-              console.log("Dialog de contribution fermé");
-            }
-          }}
+          onOpenChange={setShowContributionDialog}
           parcelNumber={selectedParcel?.parcel_number || searchQuery}
         />
       )}
 
-      {/* Dialog des termes et conditions */}
       <LandTitleTermsDialog
         open={showLandTitleTermsDialog}
         onOpenChange={setShowLandTitleTermsDialog}
         onAccept={() => setShowLandTitleDialog(true)}
       />
 
-      {/* Dialog de demande de titre foncier */}
       <LandTitleRequestDialog
         open={showLandTitleDialog}
         onOpenChange={setShowLandTitleDialog}
       />
-      {/* Catalogue de services en overlay */}
+
       {cadastralSearch.searchResult && (
         <CadastralResultsDialog
           result={cadastralSearch.searchResult}
           isOpen={showServiceCatalog}
-          onClose={() => {
-            setShowServiceCatalog(false);
-            cadastralSearch.clearSearch();
-          }}
-          
+          onClose={() => { setShowServiceCatalog(false); cadastralSearch.clearSearch(); }}
         />
       )}
     </div>
