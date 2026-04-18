@@ -208,112 +208,33 @@ export const useCCCFormState = ({
     setAvailableAvenues([]);
   };
 
-  // ─── Storage: save/load/clear ───
+  // ─── Storage: save/load/clear (extrait dans useFormPersistence) ───
   // Sound environment state
   const [soundEnvironment, setSoundEnvironment] = useState('');
   const [nearbySoundSources, setNearbySoundSources] = useState('');
 
-  const saveFormDataToStorage = useCallback(() => {
-    const dataToSave = {
-      formData, currentOwners, previousOwners,
-      taxRecords: taxRecords.map(tax => ({ ...tax, receiptFile: null })),
-      mortgageRecords: mortgageRecords.map(m => ({ ...m, receiptFile: null })),
-      permitMode,
-      buildingPermits: buildingPermits.map(p => ({ ...p, attachmentFile: null })),
-      permitRequest: { ...permitRequest, architecturalPlanImages: [], constructionPhotos: [] },
-      gpsCoordinates, parcelSides, obligationType, sectionType,
-      hasMortgage, hasDispute, ownershipMode, leaseYears, roadSides, servitude, customTitleName, buildingShapes, disputeFormData,
-      isTitleInCurrentOwnerName: formData.isTitleInCurrentOwnerName,
-      constructionMode,
-      additionalConstructions: additionalConstructions.map(c => ({
-        ...c, permit: c.permit ? { ...c.permit, attachmentFile: null } : undefined
-      })),
-      soundEnvironment, nearbySoundSources,
-      isOccupied: formData.isOccupied, occupantCount: formData.occupantCount, hostingCapacity: formData.hostingCapacity,
-      timestamp: new Date().toISOString()
-    };
-    try {
-      const wrapped = {
-        schemaVersion: STORAGE_SCHEMA_VERSION,
-        savedAt: new Date().toISOString(),
-        data: dataToSave,
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(wrapped));
-      localStorage.setItem('auth_redirect_url', window.location.pathname + window.location.search);
-    } catch (error) {
-      console.error('Erreur sauvegarde:', error);
-    }
-  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, permitMode, buildingPermits, permitRequest, gpsCoordinates, parcelSides, obligationType, sectionType, hasMortgage, hasDispute, ownershipMode, leaseYears, roadSides, servitude, customTitleName, constructionMode, additionalConstructions, buildingShapes, disputeFormData, soundEnvironment, nearbySoundSources, STORAGE_KEY]);
+  const STORAGE_KEY = `cadastral_contribution_${parcelNumber}`;
 
-  const loadFormDataFromStorage = () => {
-    try {
-      const savedData = localStorage.getItem(STORAGE_KEY);
-      if (!savedData) return;
-
-      let envelope: any;
-      try {
-        envelope = JSON.parse(savedData);
-      } catch {
-        localStorage.removeItem(STORAGE_KEY);
-        return;
-      }
-
-      // Détecter le format versionné vs ancien format brut
-      let parsed: any;
-      if (envelope && typeof envelope === 'object' && 'schemaVersion' in envelope && 'data' in envelope) {
-        if (envelope.schemaVersion !== STORAGE_SCHEMA_VERSION) {
-          localStorage.removeItem(STORAGE_KEY);
-          return;
-        }
-        if (envelope.savedAt) {
-          const ageDays = (Date.now() - new Date(envelope.savedAt).getTime()) / (1000 * 60 * 60 * 24);
-          if (ageDays > STORAGE_TTL_DAYS) {
-            localStorage.removeItem(STORAGE_KEY);
-            return;
-          }
-        }
-        parsed = envelope.data;
-      } else {
-        // Ancien format non versionné → on purge silencieusement
-        localStorage.removeItem(STORAGE_KEY);
-        return;
-      }
-
-      if (parsed.formData) setFormData(parsed.formData);
-      if (parsed.currentOwners) setCurrentOwners(parsed.currentOwners);
-      if (parsed.previousOwners) setPreviousOwners(parsed.previousOwners);
-      if (parsed.taxRecords) setTaxRecords(parsed.taxRecords);
-      if (parsed.mortgageRecords) setMortgageRecords(parsed.mortgageRecords);
-      if (parsed.permitMode) setPermitMode(parsed.permitMode);
-      if (parsed.buildingPermits) setBuildingPermits(parsed.buildingPermits);
-      if (parsed.permitRequest) setPermitRequest(parsed.permitRequest);
-      if (parsed.gpsCoordinates) setGpsCoordinates(parsed.gpsCoordinates);
-      if (parsed.parcelSides) setParcelSides(parsed.parcelSides);
-      if (parsed.obligationType) setObligationType(parsed.obligationType);
-      if (parsed.sectionType) setSectionType(parsed.sectionType);
-      if (parsed.hasMortgage !== undefined) setHasMortgage(parsed.hasMortgage);
-      if (parsed.hasDispute !== undefined) setHasDispute(parsed.hasDispute);
-      if (parsed.ownershipMode) setOwnershipMode(parsed.ownershipMode);
-      if (parsed.leaseYears !== undefined) setLeaseYears(parsed.leaseYears);
-      if (parsed.roadSides) setRoadSides(parsed.roadSides);
-      if (parsed.servitude) setServitude(parsed.servitude);
-      if (parsed.customTitleName) setCustomTitleName(parsed.customTitleName);
-      if (parsed.constructionMode) setConstructionMode(parsed.constructionMode);
-      if (parsed.additionalConstructions) setAdditionalConstructions(parsed.additionalConstructions);
-      if (parsed.buildingShapes) setBuildingShapes(parsed.buildingShapes);
-      if (parsed.disputeFormData) setDisputeFormData(parsed.disputeFormData);
-      if (parsed.soundEnvironment) setSoundEnvironment(parsed.soundEnvironment);
-      if (parsed.nearbySoundSources) setNearbySoundSources(parsed.nearbySoundSources);
-      if (parsed.isOccupied !== undefined) setFormData(prev => ({ ...prev, isOccupied: parsed.isOccupied, occupantCount: parsed.occupantCount, hostingCapacity: parsed.hostingCapacity }));
-      toast({ title: "Données restaurées", description: "Vos données précédentes ont été restaurées." });
-    } catch (error) {
-      console.error('Erreur chargement:', error);
-    }
-  };
-
-  const clearSavedFormData = () => {
-    try { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem('auth_redirect_url'); } catch (error) { console.error(error); }
-  };
+  const {
+    saveFormDataToStorage,
+    clearSavedFormData,
+    trackUploadedPath,
+    rollbackUploadedFiles,
+    resetUploadedTracker,
+  } = useFormPersistence({
+    open, parcelNumber, editingContributionId, isLoadingFromDbRef,
+    formData, currentOwners, previousOwners, taxRecords, mortgageRecords,
+    permitMode, buildingPermits, permitRequest, gpsCoordinates, parcelSides,
+    obligationType, sectionType, hasMortgage, hasDispute, ownershipMode, leaseYears,
+    roadSides, servitude, customTitleName, constructionMode, additionalConstructions,
+    buildingShapes, disputeFormData, soundEnvironment, nearbySoundSources,
+    setFormData, setCurrentOwners, setPreviousOwners, setTaxRecords, setMortgageRecords,
+    setPermitMode, setBuildingPermits, setPermitRequest, setGpsCoordinates, setParcelSides,
+    setObligationType, setSectionType, setHasMortgage, setHasDispute, setOwnershipMode,
+    setLeaseYears, setRoadSides, setServitude, setCustomTitleName, setConstructionMode,
+    setAdditionalConstructions, setBuildingShapes, setDisputeFormData,
+    setSoundEnvironment, setNearbySoundSources,
+  });
 
   // ─── File handling ───
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'owner' | 'title') => {
