@@ -654,14 +654,14 @@ export const useCCCFormState = ({
     if (!formData.constructionType) missing.push({ field: 'constructionType', label: 'Type de construction', tab: 'general' });
     if (!formData.constructionNature) missing.push({ field: 'constructionNature', label: 'Nature de construction', tab: 'general' });
     if (!formData.declaredUsage) missing.push({ field: 'declaredUsage', label: 'Usage déclaré', tab: 'general' });
-    // Si usage = Location, exiger la date de mise en location ≤ 31/12/constructionYear
+    // Si usage = Location, exiger la date de mise en location ≥ 01/01/constructionYear
     if (formData.declaredUsage === 'Location') {
       if (!formData.rentalStartDate) {
         missing.push({ field: 'rentalStartDate', label: 'En location depuis quand ? (construction principale)', tab: 'general' });
       } else if (formData.constructionYear) {
-        const max = new Date(formData.constructionYear, 11, 31);
-        if (new Date(formData.rentalStartDate) > max) {
-          missing.push({ field: 'rentalStartDate', label: `Date de mise en location > 31/12/${formData.constructionYear}`, tab: 'general' });
+        const min = new Date(formData.constructionYear, 0, 1);
+        if (new Date(formData.rentalStartDate) < min) {
+          missing.push({ field: 'rentalStartDate', label: `Date de mise en location < 01/01/${formData.constructionYear}`, tab: 'general' });
         }
       }
     }
@@ -671,9 +671,9 @@ export const useCCCFormState = ({
         if (!c.rentalStartDate) {
           missing.push({ field: `additionalRentalStartDate_${idx}`, label: `En location depuis quand ? (construction #${idx + 2})`, tab: 'general' });
         } else if (c.constructionYear) {
-          const max = new Date(c.constructionYear, 11, 31);
-          if (new Date(c.rentalStartDate) > max) {
-            missing.push({ field: `additionalRentalStartDate_${idx}`, label: `Date de mise en location > 31/12/${c.constructionYear} (construction #${idx + 2})`, tab: 'general' });
+          const min = new Date(c.constructionYear, 0, 1);
+          if (new Date(c.rentalStartDate) < min) {
+            missing.push({ field: `additionalRentalStartDate_${idx}`, label: `Date de mise en location < 01/01/${c.constructionYear} (construction #${idx + 2})`, tab: 'general' });
           }
         }
       }
