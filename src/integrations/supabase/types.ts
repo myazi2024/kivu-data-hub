@@ -6004,6 +6004,17 @@ export type Database = {
         }[]
       }
       get_current_user_role: { Args: never; Returns: string }
+      get_inactive_users: {
+        Args: { _threshold_days?: number }
+        Returns: {
+          days_inactive: number
+          email: string
+          full_name: string
+          is_blocked: boolean
+          last_activity: string
+          user_id: string
+        }[]
+      }
       get_parcel_contribution_history: {
         Args: { p_parcel_id: string }
         Returns: {
@@ -6157,6 +6168,10 @@ export type Database = {
           table_name_param?: string
         }
         Returns: string
+      }
+      log_pii_export: {
+        Args: { _filters?: Json; _row_count: number; _table_name: string }
+        Returns: undefined
       }
       migrate_approved_contribution: {
         Args: { contribution_id: string }
