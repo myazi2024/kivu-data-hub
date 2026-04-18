@@ -10,7 +10,7 @@ import {
 import {
   Save, Loader2, BarChart3, LayoutGrid, Filter, GitBranch,
   AlertTriangle, Layers, Eye, EyeOff, RotateCcw, Settings,
-  Palette, Map as MapIcon, Globe
+  Palette, Map as MapIcon, Globe, ShieldCheck
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
@@ -30,6 +30,8 @@ import { TabManager } from '@/components/admin/analytics-config/TabManager';
 import { FilterManager } from '@/components/admin/analytics-config/FilterManager';
 import { CrossVariableManager } from '@/components/admin/analytics-config/CrossVariableManager';
 import { GlobalWatermarkConfig } from '@/components/admin/analytics-config/GlobalWatermarkConfig';
+import { SyncManager } from '@/components/admin/analytics-config/SyncManager';
+import { logConfigAudit } from '@/utils/analyticsConfigSync';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -46,6 +48,7 @@ const MODE_CONFIG = [
   { key: 'charts' as const, icon: BarChart3, label: 'Graphiques' },
   { key: 'filters' as const, icon: Filter, label: 'Filtres' },
   { key: 'cross' as const, icon: GitBranch, label: 'Croisements' },
+  { key: 'sync' as const, icon: ShieldCheck, label: 'Cohérence' },
 ];
 
 const AdminAnalyticsChartsConfig: React.FC = () => {
@@ -56,12 +59,12 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
   const { tabs: dbTabs } = useAnalyticsTabsConfig();
   const { upsertConfig } = useAnalyticsChartsConfigMutations();
 
-  const urlMode = searchParams.get('mode') as 'tabs' | 'kpis' | 'charts' | 'filters' | 'cross' | null;
+  const urlMode = searchParams.get('mode') as 'tabs' | 'kpis' | 'charts' | 'filters' | 'cross' | 'sync' | null;
   const urlConfigTab = searchParams.get('configTab');
 
   const defaultFirstTab = Object.keys(ANALYTICS_TABS_REGISTRY).filter(isUserTab)[0];
   const [activeTab, setActiveTab] = useState(urlConfigTab && ANALYTICS_TABS_REGISTRY[urlConfigTab] ? urlConfigTab : defaultFirstTab);
-  const [viewMode, setViewMode] = useState<'tabs' | 'kpis' | 'charts' | 'filters' | 'cross'>(
+  const [viewMode, setViewMode] = useState<'tabs' | 'kpis' | 'charts' | 'filters' | 'cross' | 'sync'>(
     urlMode || (urlConfigTab && SYSTEM_TABS.includes(urlConfigTab) ? 'charts' : 'charts')
   );
 
@@ -80,7 +83,7 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
     }, { replace: true });
   }, [setSearchParams]);
 
-  const handleSetViewMode = useCallback((mode: 'tabs' | 'kpis' | 'charts' | 'filters' | 'cross') => {
+  const handleSetViewMode = useCallback((mode: 'tabs' | 'kpis' | 'charts' | 'filters' | 'cross' | 'sync') => {
     setViewMode(mode);
     updateUrl(mode, activeTab);
   }, [activeTab, updateUrl]);
@@ -172,7 +175,9 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
   const handleSave = useCallback(async () => {
     setIsSaving(true);
     try {
-      await upsertConfig.mutateAsync(localItems[activeTab] || []);
+      const items = localItems[activeTab] || [];
+      await upsertConfig.mutateAsync(items);
+      await logConfigAudit({ action: 'upsert', tab_key: activeTab, item_count: items.length });
       toast.success(`Configuration "${ANALYTICS_TABS_REGISTRY[activeTab]?.label}" sauvegardée`);
       setModifiedTabs(prev => { const n = new Set(prev); n.delete(activeTab); return n; });
     } catch (error: any) {
@@ -187,7 +192,9 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
       const tabItems = tabConfigToItems(localTabs);
       const allFilterItems = Object.values(localFilters).flat();
       const crossItems = buildCrossItems(localCross);
-      await upsertConfig.mutateAsync([...allChartItems, ...tabItems, ...allFilterItems, ...crossItems]);
+      const all = [...allChartItems, ...tabItems, ...allFilterItems, ...crossItems];
+      await upsertConfig.mutateAsync(all);
+      await logConfigAudit({ action: 'upsert_all', item_count: all.length });
       toast.success('Toute la configuration Analytics a été sauvegardée');
       setModifiedTabs(new Set());
       setHasTabChanges(false); setHasFilterChanges(false); setHasCrossChanges(false);
@@ -658,6 +665,9 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
           </Button>
         </div>
       )}
+
+      {/* SYNC / COHERENCE VIEW */}
+      {viewMode === 'sync' && <SyncManager />}
 
       {/* Unsaved changes dialog */}
       <AlertDialog open={!!pendingTabSwitch} onOpenChange={(open) => { if (!open) setPendingTabSwitch(null); }}>

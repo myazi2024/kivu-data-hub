@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronUp, ChevronDown } from 'lucide-react';
+import { ChevronUp, ChevronDown, AlertCircle } from 'lucide-react';
 import { ChartConfigItem } from '@/hooks/useAnalyticsChartsConfig';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { CHART_TYPE_OPTIONS } from '@/config/chartTypeOptions';
+import { isValidLucideIcon } from '@/utils/analyticsConfigSync';
 
 interface ItemEditorProps {
   item: ChartConfigItem;
@@ -25,6 +26,12 @@ const isFixedTypeChart = (item: ChartConfigItem) =>
 export const ItemEditor: React.FC<ItemEditorProps> = ({ item, onChange, onMoveUp, onMoveDown, isFirst, isLast }) => {
   const isMobile = useIsMobile();
   const fixedType = isFixedTypeChart(item);
+  const [iconValid, setIconValid] = useState(true);
+  useEffect(() => {
+    let cancel = false;
+    isValidLucideIcon(item.custom_icon || '').then(v => { if (!cancel) setIconValid(v); });
+    return () => { cancel = true; };
+  }, [item.custom_icon]);
 
   if (isMobile) {
     return (
@@ -58,13 +65,16 @@ export const ItemEditor: React.FC<ItemEditorProps> = ({ item, onChange, onMoveUp
             <Badge variant="outline" className="text-[9px] text-muted-foreground">Type fixe</Badge>
           )}
           {item.item_type === 'chart' && (
-            <Input
-              value={item.custom_icon || ''}
-              onChange={(e) => onChange({ ...item, custom_icon: e.target.value || null })}
-              className="w-[70px] h-6 text-[10px]"
-              placeholder="Icône"
-              title="Nom icône Lucide (ex: FileText)"
-            />
+            <div className="relative">
+              <Input
+                value={item.custom_icon || ''}
+                onChange={(e) => onChange({ ...item, custom_icon: e.target.value || null })}
+                className={`w-[70px] h-6 text-[10px] ${!iconValid ? 'border-destructive pr-5' : ''}`}
+                placeholder="Icône"
+                title={iconValid ? 'Nom icône Lucide (ex: FileText)' : `Icône Lucide invalide : "${item.custom_icon}"`}
+              />
+              {!iconValid && <AlertCircle className="h-3 w-3 text-destructive absolute right-1 top-1.5" />}
+            </div>
           )}
           {item.item_type === 'chart' && (
             <input type="color" value={item.custom_color || '#3b82f6'} onChange={(e) => onChange({ ...item, custom_color: e.target.value })} className="w-6 h-6 rounded cursor-pointer border-0 p-0" title="Couleur" />
@@ -103,13 +113,16 @@ export const ItemEditor: React.FC<ItemEditorProps> = ({ item, onChange, onMoveUp
         <Badge variant="outline" className="text-[9px] text-muted-foreground shrink-0">Type fixe</Badge>
       )}
       {item.item_type === 'chart' && (
-        <Input
-          value={item.custom_icon || ''}
-          onChange={(e) => onChange({ ...item, custom_icon: e.target.value || null })}
-          className="w-[80px] h-7 text-xs shrink-0"
-          placeholder="Icône"
-          title="Nom icône Lucide (ex: FileText)"
-        />
+        <div className="relative shrink-0">
+          <Input
+            value={item.custom_icon || ''}
+            onChange={(e) => onChange({ ...item, custom_icon: e.target.value || null })}
+            className={`w-[80px] h-7 text-xs ${!iconValid ? 'border-destructive pr-5' : ''}`}
+            placeholder="Icône"
+            title={iconValid ? 'Nom icône Lucide (ex: FileText)' : `Icône Lucide invalide : "${item.custom_icon}"`}
+          />
+          {!iconValid && <AlertCircle className="h-3 w-3 text-destructive absolute right-1.5 top-2" />}
+        </div>
       )}
       {item.item_type === 'chart' && (
         <div className="flex items-center gap-1 shrink-0">
