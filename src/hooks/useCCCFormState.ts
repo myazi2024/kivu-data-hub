@@ -1328,7 +1328,7 @@ export const useCCCFormState = ({
 
         const taxes = contrib.tax_history as any[];
         if (taxes && Array.isArray(taxes) && taxes.length > 0) {
-          setTaxRecords(taxes.map((t: any) => ({ taxType: t.tax_type || 'Impôt foncier annuel', taxYear: String(t.tax_year || ''), taxAmount: String(t.amount_usd || ''), paymentStatus: t.payment_status || 'Payé', paymentDate: t.payment_date || '', remainingAmount: t.remaining_amount ? String(t.remaining_amount) : undefined, receiptFile: null, existingReceiptUrl: t.receipt_document_url || undefined })));
+          setTaxRecords(taxes.map((t: any) => ({ taxType: t.tax_type || 'Impôt foncier annuel', taxYear: String(t.tax_year || ''), taxAmount: String(t.amount_usd || ''), paymentStatus: t.payment_status || 'Payé', paymentDate: t.payment_date || '', remainingAmount: t.remaining_amount ? String(t.remaining_amount) : undefined, receiptFile: null, existingReceiptUrl: t.receipt_document_url || undefined, constructionRef: t.constructionRef || t.construction_ref || (t.tax_type === 'Impôt sur les revenus locatifs' ? 'main' : undefined) })));
         }
 
         const mortgages = contrib.mortgage_history as any[];
