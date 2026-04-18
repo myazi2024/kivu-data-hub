@@ -5942,10 +5942,30 @@ export type Database = {
       generate_reseller_code: { Args: never; Returns: string }
       generate_service_id: { Args: { service_name: string }; Returns: string }
       generate_verification_code: { Args: never; Returns: string }
-      get_admin_statistics: {
-        Args: { end_date?: string; start_date?: string; stat_type?: string }
+      get_admin_dashboard_full: {
+        Args: {
+          _exclude_test?: boolean
+          end_date?: string
+          prev_end?: string
+          prev_start?: string
+          start_date?: string
+        }
         Returns: Json
       }
+      get_admin_statistics:
+        | {
+            Args: { end_date?: string; start_date?: string; stat_type?: string }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _exclude_test?: boolean
+              end_date?: string
+              start_date?: string
+              stat_type?: string
+            }
+            Returns: Json
+          }
       get_cadastral_parcel_data: {
         Args: { p_parcel_number: string }
         Returns: Json

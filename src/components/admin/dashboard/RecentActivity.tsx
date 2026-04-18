@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Eye, FileCheck, DollarSign, UserPlus } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -23,6 +25,8 @@ interface RecentActivityProps {
 }
 
 export function RecentActivity({ loading, activities, onViewDetails }: RecentActivityProps) {
+  const [filter, setFilter] = useState<'all' | 'contribution' | 'payment' | 'registration'>('all');
+
   if (loading) {
     return (
       <Card>
@@ -43,6 +47,8 @@ export function RecentActivity({ loading, activities, onViewDetails }: RecentAct
       </Card>
     );
   }
+
+  const filtered = filter === 'all' ? activities : activities.filter(a => a.type === filter);
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -77,14 +83,24 @@ export function RecentActivity({ loading, activities, onViewDetails }: RecentAct
   return (
     <Card>
       <CardHeader className="p-4 md:p-6">
-        <CardTitle className="text-sm md:text-base">Activité récente</CardTitle>
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <CardTitle className="text-sm md:text-base">Activité récente</CardTitle>
+          <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
+            <TabsList className="h-7">
+              <TabsTrigger value="all" className="text-[10px] px-2">Tout</TabsTrigger>
+              <TabsTrigger value="contribution" className="text-[10px] px-2">Contrib</TabsTrigger>
+              <TabsTrigger value="payment" className="text-[10px] px-2">Paiem.</TabsTrigger>
+              <TabsTrigger value="registration" className="text-[10px] px-2">Inscr.</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </CardHeader>
       <CardContent className="p-4 md:p-6 pt-0">
         <div className="space-y-3">
-          {activities.length === 0 ? (
+          {filtered.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">Aucune activité récente</p>
           ) : (
-            activities.map((activity) => (
+            filtered.map((activity) => (
               <div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
                 <div className="mt-0.5">{getIcon(activity.type)}</div>
                 <div className="flex-1 min-w-0">

@@ -56,7 +56,10 @@ interface DashboardData {
   }>;
 }
 
-export const useDashboardData = (startDate?: Date, endDate?: Date) => {
+const TEST_FILTER = (q: any, excludeTest: boolean) =>
+  excludeTest ? q.not('parcel_number', 'ilike', 'TEST-%') : q;
+
+export const useDashboardData = (startDate?: Date, endDate?: Date, excludeTest: boolean = true) => {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<DashboardData>({
     conversionRate: 0,
@@ -86,7 +89,7 @@ export const useDashboardData = (startDate?: Date, endDate?: Date) => {
       const start = startDate || subDays(new Date(), 29);
       const end = endDate || new Date();
 
-      // Fetch all data in parallel
+      // Fetch all data in parallel (with TEST exclusion)
       const [
         invoicesData,
         contributionsData,
@@ -97,21 +100,21 @@ export const useDashboardData = (startDate?: Date, endDate?: Date) => {
         recentPayments,
         recentUsers,
       ] = await Promise.all([
-        supabase
+        TEST_FILTER(supabase
           .from('cadastral_invoices')
           .select('*')
           .gte('created_at', start.toISOString())
-          .lte('created_at', end.toISOString()),
-        supabase
+          .lte('created_at', end.toISOString()), excludeTest),
+        TEST_FILTER(supabase
           .from('cadastral_contributions')
           .select('*')
           .gte('created_at', start.toISOString())
-          .lte('created_at', end.toISOString()),
-        supabase
+          .lte('created_at', end.toISOString()), excludeTest),
+        TEST_FILTER(supabase
           .from('cadastral_contributor_codes')
           .select('*')
           .gte('created_at', start.toISOString())
-          .lte('created_at', end.toISOString()),
+          .lte('created_at', end.toISOString()), excludeTest),
         supabase
           .from('reseller_sales')
           .select('*, resellers(*)')
@@ -121,17 +124,17 @@ export const useDashboardData = (startDate?: Date, endDate?: Date) => {
           .from('profiles')
           .select('*')
           .eq('is_blocked', true),
-        supabase
+        TEST_FILTER(supabase
           .from('cadastral_contributions')
           .select('*, profiles(full_name, email)')
           .order('created_at', { ascending: false })
-          .limit(10),
-        supabase
+          .limit(10), excludeTest),
+        TEST_FILTER(supabase
           .from('cadastral_invoices')
           .select('*, profiles(full_name, email)')
           .eq('status', 'paid')
           .order('created_at', { ascending: false })
-          .limit(10),
+          .limit(10), excludeTest),
         supabase
           .from('profiles')
           .select('*')
@@ -181,11 +184,18 @@ export const useDashboardData = (startDate?: Date, endDate?: Date) => {
         !c.is_used && new Date(c.expires_at) < now
       ).length || 0;
 
+      // Inactive resellers: count distinct active resellers with no recent sale
       const thirtyDaysAgo = subDays(now, 30);
-      const inactiveResellers = await supabase
-        .from('reseller_sales')
-        .select('reseller_id')
-        .lt('created_at', thirtyDaysAgo.toISOString());
+      const [recentSellersRes, allActiveRes] = await Promise.all([
+        supabase
+          .from('reseller_sales')
+          .select('reseller_id')
+          .gte('created_at', thirtyDaysAgo.toISOString()),
+        supabase.from('resellers').select('id').eq('is_active', true),
+      ]);
+      const activeRecentIds = new Set((recentSellersRes.data || []).map((s: any) => s.reseller_id));
+      const inactiveResellersCount =
+        (allActiveRes.data || []).filter((r: any) => !activeRecentIds.has(r.id)).length;
 
       // Fetch pending disputes and mortgages
       const [disputesResult, mortgagesResult] = await Promise.all([
@@ -248,11 +258,13 @@ export const useDashboardData = (startDate?: Date, endDate?: Date) => {
           rank: index + 1,
         }));
 
-      // Top users by spending
+      // Top users by spending — mask email for PII
+      const maskEmail = (e?: string) => e ? e.replace(/^(.).*@(.+)$/, '$1***@$2') : 'Anonyme';
       const userSpending = new Map<string, { name: string; total: number }>();
       invoicesData.data?.forEach(invoice => {
-        if (invoice.user_id) {
-          const current = userSpending.get(invoice.user_id) || { name: invoice.client_name || invoice.client_email, total: 0 };
+        if (invoice.user_id && invoice.status === 'paid') {
+          const displayName = invoice.client_name || maskEmail(invoice.client_email);
+          const current = userSpending.get(invoice.user_id) || { name: displayName, total: 0 };
           current.total += Number(invoice.total_amount_usd) || 0;
           userSpending.set(invoice.user_id, current);
         }
@@ -298,7 +310,7 @@ export const useDashboardData = (startDate?: Date, endDate?: Date) => {
         failedPayments,
         blockedUsers,
         expiredCodes,
-        inactiveResellers: inactiveResellers.data?.length || 0,
+        inactiveResellers: inactiveResellersCount,
         pendingDisputes,
         pendingMortgages,
         recentActivities: activities,
@@ -321,7 +333,7 @@ export const useDashboardData = (startDate?: Date, endDate?: Date) => {
 
   useEffect(() => {
     fetchDashboardData();
-  }, [startDate, endDate]);
+  }, [startDate, endDate, excludeTest]);
 
   return {
     loading,

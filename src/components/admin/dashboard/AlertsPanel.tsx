@@ -28,10 +28,14 @@ interface AlertsPanelProps {
     pendingDisputes?: number;
     pendingMortgages?: number;
   };
+  thresholds?: { overdue_days: number; inactive_days: number };
   onAlertAction?: (alertType: string) => void;
 }
 
-export function AlertsPanel({ loading, alerts, onAlertAction }: AlertsPanelProps) {
+export function AlertsPanel({ loading, alerts, thresholds, onAlertAction }: AlertsPanelProps) {
+  const overdueDays = thresholds?.overdue_days ?? 7;
+  const inactiveDays = thresholds?.inactive_days ?? 30;
+
   if (loading) {
     return (
       <Card>
@@ -49,54 +53,23 @@ export function AlertsPanel({ loading, alerts, onAlertAction }: AlertsPanelProps
 
   const alertItems: AlertItem[] = [
     {
-      id: 'overdue',
-      type: 'warning',
+      id: 'overdue', type: 'warning',
       title: 'Contributions en retard',
-      description: 'Contributions en attente depuis plus de 7 jours',
+      description: `Contributions en attente depuis plus de ${overdueDays} jours`,
       count: alerts.overdueContributions || 0,
     },
-    {
-      id: 'failed',
-      type: 'error',
-      title: 'Paiements échoués',
-      description: 'Paiements nécessitant une attention',
-      count: alerts.failedPayments || 0,
-    },
-    {
-      id: 'blocked',
-      type: 'error',
-      title: 'Utilisateurs bloqués',
-      description: 'Comptes nécessitant une révision',
-      count: alerts.blockedUsers || 0,
-    },
-    {
-      id: 'expired',
-      type: 'warning',
-      title: 'Codes CCC expirés',
-      description: 'Codes non utilisés avant expiration',
-      count: alerts.expiredCodes || 0,
-    },
-    {
-      id: 'inactive',
-      type: 'info',
-      title: 'Revendeurs inactifs',
-      description: 'Aucune vente depuis 30 jours',
-      count: alerts.inactiveResellers || 0,
-    },
-    {
-      id: 'disputes',
-      type: 'warning',
-      title: 'Litiges en attente',
-      description: 'Litiges nécessitant un traitement',
-      count: alerts.pendingDisputes || 0,
-    },
-    {
-      id: 'mortgages',
-      type: 'info',
-      title: 'Hypothèques en attente',
-      description: 'Demandes d\'hypothèque à traiter',
-      count: alerts.pendingMortgages || 0,
-    },
+    { id: 'failed', type: 'error', title: 'Paiements échoués',
+      description: 'Paiements nécessitant une attention', count: alerts.failedPayments || 0 },
+    { id: 'blocked', type: 'error', title: 'Utilisateurs bloqués',
+      description: 'Comptes nécessitant une révision', count: alerts.blockedUsers || 0 },
+    { id: 'expired', type: 'warning', title: 'Codes CCC expirés',
+      description: 'Codes non utilisés avant expiration', count: alerts.expiredCodes || 0 },
+    { id: 'inactive', type: 'info', title: 'Revendeurs inactifs',
+      description: `Aucune vente depuis ${inactiveDays} jours`, count: alerts.inactiveResellers || 0 },
+    { id: 'disputes', type: 'warning', title: 'Litiges en attente',
+      description: 'Litiges nécessitant un traitement', count: alerts.pendingDisputes || 0 },
+    { id: 'mortgages', type: 'info', title: 'Hypothèques en attente',
+      description: 'Demandes d\'hypothèque à traiter', count: alerts.pendingMortgages || 0 },
   ];
 
   const getIcon = (type: string) => {
