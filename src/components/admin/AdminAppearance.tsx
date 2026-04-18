@@ -716,6 +716,8 @@ const AdminAppearance = () => {
           </div>
         </div>
       </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
