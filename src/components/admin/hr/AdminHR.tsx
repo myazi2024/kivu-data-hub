@@ -7,6 +7,8 @@ import AdminHRLeaves from './AdminHRLeaves';
 import AdminHRPerformance from './AdminHRPerformance';
 import AdminHROrgChart from './AdminHROrgChart';
 import AdminHRDocuments from './AdminHRDocuments';
+import AdminHRLeavesApproval from './AdminHRLeavesApproval';
+import { ClipboardCheck } from 'lucide-react';
 import { useHREmployees } from '@/hooks/useHREmployees';
 import { useHRLeaves } from '@/hooks/useHRLeaves';
 import { useHRReviews } from '@/hooks/useHRReviews';
@@ -64,6 +66,7 @@ export default function AdminHR() {
           <TabsTrigger value="employees"><Users className="h-3.5 w-3.5 mr-1" />Employés</TabsTrigger>
           <TabsTrigger value="recruitment"><Briefcase className="h-3.5 w-3.5 mr-1" />Recrutement</TabsTrigger>
           <TabsTrigger value="leaves"><CalendarDays className="h-3.5 w-3.5 mr-1" />Congés</TabsTrigger>
+          <TabsTrigger value="approvals"><ClipboardCheck className="h-3.5 w-3.5 mr-1" />Approbations</TabsTrigger>
           <TabsTrigger value="performance"><Star className="h-3.5 w-3.5 mr-1" />Évaluations</TabsTrigger>
           <TabsTrigger value="orgchart"><GitBranch className="h-3.5 w-3.5 mr-1" />Organigramme</TabsTrigger>
           <TabsTrigger value="documents"><FileText className="h-3.5 w-3.5 mr-1" />Documents</TabsTrigger>
@@ -80,6 +83,9 @@ export default function AdminHR() {
         </TabsContent>
         <TabsContent value="leaves">
           <AdminHRLeaves hook={leavesHook} employees={employeesHook.employees} balances={leavesHook.balances} />
+        </TabsContent>
+        <TabsContent value="approvals">
+          <AdminHRLeavesApproval />
         </TabsContent>
         <TabsContent value="performance">
           <AdminHRPerformance hook={reviewsHook} employees={employeesHook.employees} />

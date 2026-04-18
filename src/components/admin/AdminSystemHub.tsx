@@ -7,6 +7,7 @@ import { Activity, Database, Users, Shield, AlertTriangle, Settings, FileDown, L
 import { Link } from 'react-router-dom';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { toast } from 'sonner';
+import SystemConfigExportButton from './system/SystemConfigExportButton';
 
 interface HubStats {
   auditLogsCount: number;
@@ -95,10 +96,13 @@ const AdminSystemHub = () => {
           <h2 className="text-lg font-bold flex items-center gap-2"><Activity className="h-5 w-5 text-primary" />Hub Système</h2>
           <p className="text-xs text-muted-foreground">Vue transversale santé, audit, configurations</p>
         </div>
-        <Button onClick={exportConfig} disabled={exporting} variant="outline" size="sm">
-          {exporting ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <FileDown className="h-3.5 w-3.5 mr-1" />}
-          Export config JSON
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={exportConfig} disabled={exporting} variant="outline" size="sm">
+            {exporting ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <FileDown className="h-3.5 w-3.5 mr-1" />}
+            Export JSON
+          </Button>
+          <SystemConfigExportButton />
+        </div>
       </div>
 
       {/* Alertes */}

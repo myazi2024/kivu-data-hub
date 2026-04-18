@@ -24,3 +24,9 @@ verify_jwt = false
 
 [functions.health-check]
 verify_jwt = false
+
+[functions.health-snapshot]
+verify_jwt = false
+
+[functions.system-alerts-check]
+verify_jwt = false

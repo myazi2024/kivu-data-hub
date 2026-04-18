@@ -2684,6 +2684,7 @@ export type Database = {
           id: string
           leave_type: string
           reason: string | null
+          rejection_reason: string | null
           reviewed_at: string | null
           start_date: string
           status: string
@@ -2698,6 +2699,7 @@ export type Database = {
           id?: string
           leave_type?: string
           reason?: string | null
+          rejection_reason?: string | null
           reviewed_at?: string | null
           start_date: string
           status?: string
@@ -2712,6 +2714,7 @@ export type Database = {
           id?: string
           leave_type?: string
           reason?: string | null
+          rejection_reason?: string | null
           reviewed_at?: string | null
           start_date?: string
           status?: string
@@ -5183,6 +5186,30 @@ export type Database = {
           updated_at?: string
           usage_count?: number
           value?: string
+        }
+        Relationships: []
+      }
+      system_alerts_state: {
+        Row: {
+          alert_key: string
+          fire_count: number
+          last_fired_at: string
+          last_payload: Json | null
+          updated_at: string
+        }
+        Insert: {
+          alert_key: string
+          fire_count?: number
+          last_fired_at?: string
+          last_payload?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          alert_key?: string
+          fire_count?: number
+          last_fired_at?: string
+          last_payload?: Json | null
+          updated_at?: string
         }
         Relationships: []
       }
