@@ -211,18 +211,22 @@ const AdminOwnershipHistory = () => {
       </Card>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         <Card className="p-2.5 md:p-3 bg-background rounded-xl shadow-sm border text-center">
           <p className="text-lg md:text-xl font-bold text-primary">{totalRecords}</p>
           <p className="text-[9px] md:text-[10px] text-muted-foreground">Enregistrements</p>
         </Card>
         <Card className="p-2.5 md:p-3 bg-background rounded-xl shadow-sm border text-center">
-          <p className="text-lg md:text-xl font-bold text-green-500">{currentOwners}</p>
+          <p className="text-lg md:text-xl font-bold text-primary">{currentOwners}</p>
           <p className="text-[9px] md:text-[10px] text-muted-foreground">Propriétaires actuels</p>
         </Card>
         <Card className="p-2.5 md:p-3 bg-background rounded-xl shadow-sm border text-center">
-          <p className="text-lg md:text-xl font-bold text-blue-500">{recentTransfers}</p>
+          <p className="text-lg md:text-xl font-bold text-primary">{recentTransfers}</p>
           <p className="text-[9px] md:text-[10px] text-muted-foreground">Transferts (30j)</p>
+        </Card>
+        <Card className="p-2.5 md:p-3 bg-background rounded-xl shadow-sm border text-center">
+          <p className={`text-lg md:text-xl font-bold ${anomaliesCount > 0 ? 'text-destructive' : 'text-muted-foreground'}`}>{anomaliesCount}</p>
+          <p className="text-[9px] md:text-[10px] text-muted-foreground">Chaînes incohérentes</p>
         </Card>
       </div>
 
@@ -282,12 +286,18 @@ const AdminOwnershipHistory = () => {
                 <div key={record.id} className="p-2.5 md:p-3 rounded-xl border bg-card">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <Users className="h-3.5 w-3.5 text-primary shrink-0" />
                         <span className="text-xs font-medium truncate">{record.owner_name}</span>
                         {getMutationTypeBadge(record.mutation_type)}
                         {!record.ownership_end_date && (
-                          <Badge variant="outline" className="text-[9px] bg-green-100 text-green-700 border-green-200">Actuel</Badge>
+                          <Badge variant="outline" className="text-[9px] bg-primary/10 text-primary border-primary/20">Actuel</Badge>
+                        )}
+                        {parcelAnomalies.has(record.parcel_number || record.parcel_id) && (
+                          <Badge variant="destructive" className="text-[9px] gap-1">
+                            <AlertTriangle className="h-2.5 w-2.5" />
+                            {parcelAnomalies.get(record.parcel_number || record.parcel_id)?.message}
+                          </Badge>
                         )}
                       </div>
                       <div className="text-[10px] text-muted-foreground truncate">
