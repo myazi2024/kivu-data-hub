@@ -1,88 +1,48 @@
 
-## Audit détaillé — Espace admin "Utilisateurs & Sécurité"
+Plan d'achèvement Lot 2 + Lot 3 — Utilisateurs & Sécurité.
 
-### Périmètre (4 onglets, ~2 700 LOC)
+## Lot 2 — UX & cohérence
 
-| Onglet | Fichier | LOC | Hooks | État |
-|---|---|---|---|---|
-| Utilisateurs | `AdminUsers.tsx` + dossier `users/` (6 sous-comp.) | 354 + ~900 | `useUserManagement`, `useUserFiltering`, `useBulkUserActions`, `useAdminUserStatistics`, `useUserActivity`, `useAdminNotes` | OK fonctionnel, plusieurs frictions |
-| Rôles | `AdminUserRolesEnhanced.tsx` | 663 monolithique | direct supabase | Doublons avec `AdminUsers`, surface large |
-| Permissions | `AdminPermissions.tsx` + `usePermissions` | 187 + 137 | `usePermissions` | Fonctionne (51 perms, matrice OK) |
-| Détection Fraude | `AdminFraudDetection.tsx` | 559 | direct | OK mais isolé |
+1. **Monter notes/activité dans `UserDetailsDialog`** — ajouter 2 onglets (`Notes`, `Activité`) qui rendent `AdminUserNotes` et `AdminUserActivity` (composants déjà existants mais orphelins).
+2. **Lien fraude → profil** — bouton "Voir profil" dans `AdminFraudDetection` qui ouvre `UserDetailsDialog` sur le `user_id` cliqué.
+3. **Filtres fraude** — sélecteurs `severity` (low/medium/high/critical) + plage de dates + pagination serveur (`range`) dans `AdminFraudDetection`.
+4. **Correction formule `detection_rate`** = `blocked_users / users_with_strikes × 100` (au lieu de `usersWithStrikes / totalAttempts`).
+5. **Hub Sécurité** — nouveau composant `AdminSecurityHub.tsx` agrégeant : fraude high/critical 7 j, blocages 7 j, modifications de rôle 7 j (depuis `audit_logs`), top utilisateurs à risque. Ajouté comme onglet dans la section admin Utilisateurs & Sécurité.
+6. **Cache stats par dates** — clé `useAdminUserStatistics` = `(userId, start, end)` au lieu de `userId` seul.
 
-État BD : 3 profiles, 1 admin / 2 user, 0 notes, 0 activity_logs, 53 fraud_attempts (10 critiques, 21 high).
+## Lot 3 — Architecture & dette
 
----
+7. **Découpe `AdminFraudDetection.tsx`** (559 LOC) → `FraudStats.tsx`, `SuspiciousUsersTable.tsx`, `FraudAttemptsTable.tsx` (≤ 200 LOC chacun).
+8. **Permissions opérationnelles** — nouveau hook `useUserPermissions(resource, action)` qui appelle RPC `user_has_permission`. Appliqué à 2 zones critiques :
+   - Bouton "Exporter CSV" dans `AdminUsers` (perm `users.export_pii`).
+   - Bouton "Supprimer" dans `AdminUserNotes` (perm `notes.delete`).
+   Migration : insérer ces 2 permissions dans `permissions` + lier à `super_admin`/`admin` dans `role_permissions`.
+9. **Détection inactifs** — RPC `get_inactive_users(threshold_days)` (déjà créée au Lot 1). Ajouter un panneau `InactiveUsersPanel.tsx` dans le Hub Sécurité avec bouton "Bloquer sélection".
+10. **Mémoire dette 2FA** — créer `mem://security/2fa-admin-debt-fr` documentant l'absence 2FA admin/super_admin comme risque produit.
 
-### A. Sécurité RLS (P0 — bloquant)
+## Fichiers
 
-1. **`profiles` SELECT/UPDATE excluent les super_admin** — politiques `Admins can view/update all profiles` utilisent `get_current_user_role() = 'admin'` (string). `get_current_user_role()` retourne *un seul* rôle ; un super_admin sans rôle 'admin' associé ne peut ni lister ni bloquer les utilisateurs. Pareil pour `fraud_attempts` SELECT. Doit utiliser `has_any_role(auth.uid(), ARRAY['admin','super_admin'])`.
-2. **PII non masquée** dans `AdminUsers` export CSV et `topUsers` analytics (audit précédent) — emails bruts. Conserver brut côté admin authentifié OK, mais l'export CSV devrait être tracé dans `audit_logs` (`pii_export`).
-3. **`AdminUserRolesEnhanced.fetchAllUsers`** charge `profiles` sans pagination → fuite progressive d'emails côté front à mesure que la base grandit ; aucun masquage. Ajouter recherche server-side + limite.
+**Migrations** (1) : insertion permissions `users.export_pii` + `notes.delete` + `role_permissions` super_admin/admin.
 
-### B. Bugs & incohérences (P0/P1)
+**Créés** (~9) :
+- `src/components/admin/security/AdminSecurityHub.tsx`
+- `src/components/admin/security/InactiveUsersPanel.tsx`
+- `src/components/admin/fraud/FraudStats.tsx`
+- `src/components/admin/fraud/SuspiciousUsersTable.tsx`
+- `src/components/admin/fraud/FraudAttemptsTable.tsx`
+- `src/hooks/useUserPermissions.ts`
+- `mem://security/2fa-admin-debt-fr.md`
+- (mise à jour `mem://index.md`)
 
-4. **Doublon Rôles vs Utilisateurs** — onglet "Rôles" duplique l'attribution de rôles déjà gérée dans `UserDetailsDialog` ; deux sources d'historique (`audit_logs WHERE table_name='user_roles'` côté Rôles, `useUserActivity` côté Utilisateurs).
-5. **Hiérarchie de tri incorrecte** dans `AdminUserRolesEnhanced.tsx:599` — l'ordre local omet `notaire/geometre/urbaniste` (fallback `99`) → mauvais "rôle dominant" affiché. Doit utiliser `getHighestRole` de `src/constants/roles.ts`.
-6. **Filtre rôle dans `AdminUsers`** — le sélecteur omet `notaire/geometre/urbaniste` (lignes 184-197) ; impossible de filtrer ces 3 rôles métier officiels.
-7. **`useUserManagement.fetchUsers`** charge tous les profils sans pagination ni tri serveur (limit Supabase 1000) ; à 1 001 utilisateurs, données silencieusement tronquées.
-8. **`removeRole` super_admin** : `window.prompt('CONFIRMER')` bloquant et accessible aussi à un admin (qui ne peut pas supprimer super_admin par RLS) → toast d'erreur muet ensuite. Doit être désactivé côté UI si non super_admin.
-9. **`AdminFraudDetection.fetchData`** : 1 000 fraud_attempts chargés sans pagination serveur, puis JOIN local sur contributions → coût O(n) côté client.
-10. **`stats.detection_rate`** dans Fraude = `usersWithStrikes / totalAttempts × 100` — formule métier incorrecte (mélange utilisateurs et tentatives) → toujours faux.
-11. **Realtime subscribe** dans `AdminUsers` se ré-abonne à chaque changement de référence `fetchUsers` (dépendance inutile) → reconnexions cycliques au websocket.
-12. **`UserStatsDisplay`** appelle `refetch(start, end)` mais `useAdminUserStatistics` cache 2 min ne tient pas compte des dates → stats périodiques peuvent être stales.
+**Édités** (~6) :
+- `src/components/admin/users/UserDetailsDialog.tsx` (onglets Notes + Activité)
+- `src/components/admin/AdminFraudDetection.tsx` (refactor + filtres + lien profil + formule)
+- `src/components/admin/AdminUsers.tsx` (gate export CSV par permission)
+- `src/components/admin/AdminUserNotes.tsx` (gate suppression par permission)
+- `src/hooks/useAdminUserStatistics.tsx` (clé cache datée)
+- `src/pages/Admin.tsx` ou équivalent (montage onglet Hub Sécurité)
 
-### C. UX & fonctionnel (P1)
-
-13. Pas de **vue agrégée "Sécurité"** : fraude, blocages, audit role-changes, échecs login (auth_logs) sont éclatés dans 3 onglets. Manque un hub.
-14. **Aucun lien** entre Détection Fraude et `UserDetailsDialog` (bouton "Voir profil" absent côté Fraude).
-15. **Pas de filtre par sévérité ni par date** sur fraud_attempts.
-16. **`AdminUserNotes` et `AdminUserActivity`** existent mais ne sont **pas montés** dans `UserDetailsDialog` — composants orphelins (cf. doc `VERIFICATION_GESTION_UTILISATEURS.md`).
-17. **Aucune** détection des **comptes inactifs** (last_sign_in via auth.users ou `user_activity_logs`). Pas de bouton "Désactiver inactifs > 90 j".
-18. **Permissions**: pas d'effet visible pour l'utilisateur final — la matrice modifie `role_permissions` mais aucune partie de l'app n'appelle `user_has_permission` (test rapide à confirmer). Risque "permissions cosmétiques".
-19. **2FA admin absent** : `UserAccountSecurity` affiche "Bientôt disponible" — admin/super_admin sans 2FA est un risque P0 produit (à signaler comme dette).
-20. **Pas d'export CSV** dans Rôles ni Permissions.
-21. **Bulk add_role** propose `partner` comme défaut, mais aucun garde-fou contre l'attribution massive de rôles métier sensibles (notaire, geometre).
-
-### D. Architecture & dette (P2)
-
-22. `AdminUserRolesEnhanced.tsx` 663 lignes monolithique → extraire `RoleHierarchyGrid`, `RoleAssignForm`, `RoleHistoryDialog`, `UserRolesList` (≤ 150 lignes chacun).
-23. `AdminFraudDetection.tsx` 559 lignes : extraire `FraudStats`, `SuspiciousUsersTable`, `FraudAttemptsTable`.
-24. Trois définitions locales de `roleConfig` (Users, Roles, Permissions) → centraliser dans `src/constants/roles.ts` (étendre avec icon/color/description).
-25. Pas de typage strict des retours `audit_logs` (`as any` dans 4 endroits).
-26. Pas de **tests** sur `useBulkUserActions`, ni protection idempotence (re-cliquer "Exécuter" peut doubler les notifications).
-
----
-
-### Plan d'action proposé
-
-**Lot 1 — P0 sécurité & correctness (~2 migrations + 5 fichiers)**
-- Migration : remplacer politiques `profiles` (SELECT/UPDATE all) et `fraud_attempts` SELECT par `has_any_role(auth.uid(), ARRAY['admin','super_admin'])`.
-- Audit log automatique sur export CSV utilisateurs (RPC `log_pii_export`).
-- `useUserManagement` : pagination serveur (`range`), tri serveur, exclusion `is_blocked` filtrable côté requête.
-- `AdminUserRolesEnhanced` : utiliser `getHighestRole`, ajouter notaire/geometre/urbaniste au filtre `AdminUsers`.
-- Désactiver bouton retirer super_admin pour non super_admin (UI + RLS déjà OK).
-
-**Lot 2 — P1 UX & cohérence (~6 fichiers)**
-- Monter `AdminUserNotes` + `AdminUserActivity` comme onglets dans `UserDetailsDialog`.
-- Bouton "Voir profil" dans `AdminFraudDetection` ouvrant `UserDetailsDialog`.
-- Filtres sévérité + date dans Fraude, pagination serveur.
-- Corriger formule `detection_rate` (= blocked / usersWithStrikes).
-- Hub "Sécurité" : nouvel onglet `AdminSecurityHub` agrégeant alertes fraude high/critical, blocages 7 j, modifications de rôle 7 j, échecs login auth_logs.
-- Cache `useAdminUserStatistics` clé sur (userId, start, end).
-
-**Lot 3 — P2 architecture & dette (~7 fichiers)**
-- Découpe `AdminUserRolesEnhanced` → 4 fichiers ≤ 150 LOC.
-- Découpe `AdminFraudDetection` → 3 fichiers.
-- Centraliser `roleConfig` dans `src/constants/roles.ts` (ajouter icon/color/description).
-- Implémenter `useUserPermissions` + appliquer `user_has_permission` dans 2 zones critiques (export CSV PII, suppression notes) pour rendre la matrice opérationnelle.
-- Détection inactifs : RPC `get_inactive_users(threshold_days)` + action "Désactiver inactifs".
-- Documenter dette 2FA admin dans memory `security/2fa-admin-debt-fr`.
-
----
-
-### Quel périmètre dois-je implémenter ?
-
-- **(A) Lot 1 seul** — corrige RLS super_admin, pagination profils, hiérarchie rôles, audit PII. Rapide, débloquant.
-- **(B) Lots 1 + 2** — + monte notes/activity orphelins, hub Sécurité, lien fraude→profil, filtres.
-- **(C) Plan complet 1+2+3** — + découpe composants, centralisation `roleConfig`, permissions opérationnelles, détection inactifs.
+## Notes
+- Commencer par fix build (déjà fait au tour précédent — vérifier qu'il n'y a pas d'autre import cassé après refactor `roleConfig`).
+- Pas de breaking change RLS — Lot 1 déjà appliqué.
+- Toutes les requêtes paginées utilisent `.range()` + `count: 'exact'`.
