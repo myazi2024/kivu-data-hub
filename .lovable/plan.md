@@ -1,36 +1,51 @@
 
 
-## Correctif : inverser la règle de validation de la date de mise en location
+## Correctif : afficher IRL dans le picklist Taxes dès qu'une construction est en Location
 
-### Problème
-Actuellement dans `RentalStartDateField.tsx` :
-- `maxDate = min(today, 31/12/constructionYear)` → la date doit être **≤** année de construction.
-- Message : "doit être ≤ 31/12/{constructionYear}".
+### Problème identifié
+Le flag `hasAnyRentalUsage` (calculé dans `useCCCFormState.ts`) est probablement bien défini, mais il n'est **pas consommé** par le composant qui rend la liste des types de taxe dans l'onglet Obligations. Résultat : « Impôt sur le revenu locatif » reste masqué même quand au moins une construction (principale ou additionnelle) a `declaredUsage === 'Location'`.
 
-C'est la règle inverse de la logique réelle : on ne peut pas mettre en location un bien **avant** sa construction. La date de mise en location doit être **≥** année de construction (et ≤ aujourd'hui).
+### Exploration nécessaire (en mode édition)
+1. `src/hooks/useCCCFormState.ts` — confirmer existence et export de `hasAnyRentalUsage`.
+2. Composant du sous-onglet Taxes dans l'onglet Obligations (probablement `ObligationsTab.tsx` ou un sous-composant `TaxRecordForm.tsx` / `TaxHistoryBlock.tsx`).
+3. Identifier la source du picklist `picklist_tax_type` (registry `useCCCFormPicklists`) → la liste contient `'Impôt sur les revenus locatifs'` par défaut.
 
 ### Correction
 
-Dans `src/components/cadastral/RentalStartDateField.tsx` :
+**1. Exposer le flag (si absent)**
+Dans `useCCCFormState.ts`, garantir :
+```ts
+const hasAnyRentalUsage =
+  formData.declaredUsage === 'Location' ||
+  additionalConstructions.some(c => c.declaredUsage === 'Location');
+```
+Et l'inclure dans le `return` du hook.
 
-- `minDate` = `1er janvier de constructionYear` (inchangé sur le fond, mais devient la borne basse réelle).
-- `maxDate` = `today` (suppression du plafond au 31/12/constructionYear).
-- `disabled` du Calendar : `d > today || d < minDate`.
-- `isInvalid` : `selected < minDate || selected > today`.
-- Message d'aide : « La date doit être ≥ 01/01/{constructionYear} et ≤ aujourd'hui. »
-- Message d'erreur : « Date invalide : doit être ≥ 01/01/{constructionYear} (la mise en location ne peut précéder la construction). »
+**2. Filtrer le picklist Taxes**
+Dans le composant qui rend le `<Select>` du type de taxe (onglet Obligations) :
+```ts
+const taxTypeOptions = getOptions('picklist_tax_type').filter(opt => {
+  if (opt === 'Impôt sur les revenus locatifs') return hasAnyRentalUsage;
+  return true;
+});
+```
+- Si `hasAnyRentalUsage === false` → IRL masqué.
+- Si `true` → IRL apparaît normalement dans le picklist.
 
-### Propagation
-- `src/hooks/useCCCFormState.ts` : si une règle de validation `rentalStartDate ≤ constructionYear` a été ajoutée dans `getMissingFields` ou un effet, l'inverser en `rentalStartDate ≥ constructionYear`.
-- `src/components/cadastral/AdditionalConstructionBlock.tsx` : utilise déjà le composant partagé → aucun changement direct sauf si une validation locale a été dupliquée (à vérifier en édition).
+**3. Tooltip d'information (UX)**
+Quand IRL est masqué, ajouter une note discrète sous le champ :
+> « L'Impôt sur le revenu locatif s'affiche automatiquement dès qu'au moins une construction est déclarée en usage "Location". »
 
-### Fichiers
-- `src/components/cadastral/RentalStartDateField.tsx` (correctif principal)
-- `src/hooks/useCCCFormState.ts` (vérifier/corriger toute validation miroir)
+**4. Purge déjà en place**
+La purge automatique des entrées IRL quand `hasAnyRentalUsage` devient `false` est déjà implémentée — pas de changement.
 
-### Validation
-- Sélectionner Location, année de construction = 2015 → calendrier autorise du 01/01/2015 à aujourd'hui ; refuse 2014 et antérieur.
-- Saisir une date 2010 → erreur explicite affichée.
-- Saisir 2020 → accepté.
-- Vérifier que le récapitulatif et la soumission ne bloquent plus pour ce motif.
+### Fichiers à modifier
+- `src/hooks/useCCCFormState.ts` (vérifier export du flag)
+- `src/components/cadastral/ccc-tabs/ObligationsTab.tsx` (ou sous-composant des taxes — à confirmer en édition)
+
+### Validation E2E
+- Onglet Infos : aucune construction en Location → onglet Obligations → IRL absent du picklist.
+- Cocher `Location` sur la construction principale → retour Obligations → IRL apparaît immédiatement.
+- Cocher `Location` uniquement sur une construction additionnelle (principale en Habitation) → IRL apparaît également.
+- Décocher toutes les `Location` → IRL disparaît + entrées IRL existantes purgées (toast).
 
