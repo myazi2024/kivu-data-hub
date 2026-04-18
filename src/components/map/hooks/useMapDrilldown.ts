@@ -6,8 +6,11 @@ import { normalizeProvinceName } from '../meta/mapMeta';
 /**
  * Manages the 4-level drilldown state (province → ville/territoire → commune → quartier),
  * synchronizes it with URL search params (bidirectional), and exposes setters + reset helpers.
+ *
+ * `getProvincesData` is a getter (called inside effects/callbacks) so the hook can be
+ * invoked at the top of the component before `provincesData` is computed.
  */
-export function useMapDrilldown(provincesData: ProvinceData[]) {
+export function useMapDrilldown(getProvincesData: () => ProvinceData[]) {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [selectedProvince, setSelectedProvince] = useState<ProvinceData | null>(null);
@@ -20,10 +23,14 @@ export function useMapDrilldown(provincesData: ProvinceData[]) {
   const [activeAnalyticsTab, setActiveAnalyticsTab] = useState<string>(() => searchParams.get('tab') || 'rdc-map');
 
   const urlInitRef = useRef(false);
+  const getProvincesDataRef = useRef(getProvincesData);
+  getProvincesDataRef.current = getProvincesData;
 
   // ── URL → State: initialize province from URL on first load ──
   useEffect(() => {
-    if (urlInitRef.current || provincesData.length === 0) return;
+    if (urlInitRef.current) return;
+    const provincesData = getProvincesDataRef.current();
+    if (provincesData.length === 0) return;
     urlInitRef.current = true;
     const pName = searchParams.get('province');
     if (pName) {
@@ -33,7 +40,7 @@ export function useMapDrilldown(provincesData: ProvinceData[]) {
         setExternalProvinceId(province.id);
       }
     }
-  }, [provincesData, searchParams]);
+  });
 
   // ── State → URL: sync filters to URL params ──
   useEffect(() => {
@@ -60,6 +67,7 @@ export function useMapDrilldown(provincesData: ProvinceData[]) {
       setSelectedTerritoire(undefined);
       return;
     }
+    const provincesData = getProvincesDataRef.current();
     const province = provincesData.find(p => normalizeProvinceName(p.name) === normalizeProvinceName(provinceName));
     if (province) {
       setSelectedProvince(province);
@@ -69,7 +77,7 @@ export function useMapDrilldown(provincesData: ProvinceData[]) {
       setSelectedQuartier(undefined);
       setSelectedTerritoire(undefined);
     }
-  }, [provincesData]);
+  }, []);
 
   /** Reset all geographic selections (used by mobile "close" button) */
   const clearGeoSelection = useCallback(() => {
@@ -80,7 +88,6 @@ export function useMapDrilldown(provincesData: ProvinceData[]) {
   }, []);
 
   return {
-    // state
     selectedProvince,
     externalProvinceId,
     selectedVille,
@@ -89,7 +96,6 @@ export function useMapDrilldown(provincesData: ProvinceData[]) {
     selectedTerritoire,
     selectedSectionType,
     activeAnalyticsTab,
-    // setters
     setSelectedProvince,
     setExternalProvinceId,
     setSelectedVille,
@@ -98,7 +104,6 @@ export function useMapDrilldown(provincesData: ProvinceData[]) {
     setSelectedTerritoire,
     setSelectedSectionType,
     setActiveAnalyticsTab,
-    // helpers
     handleProvinceFilter,
     clearGeoSelection,
   };
