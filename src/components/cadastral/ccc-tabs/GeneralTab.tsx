@@ -1084,10 +1084,11 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({
           <Select value={formData.constructionYear?.toString() || ''} onValueChange={(value) => {
             const y = parseInt(value);
             handleInputChange('constructionYear', y);
-            // Si la date de location devient invalide, l'effacer
+            // Règle : rentalStartDate doit être ≥ 01/01/constructionYear
+            // Si la date saisie devient antérieure à l'année de construction, l'effacer
             if (formData.rentalStartDate && y) {
-              const max = new Date(y, 11, 31);
-              if (new Date(formData.rentalStartDate) > max) handleInputChange('rentalStartDate', undefined);
+              const min = new Date(y, 0, 1);
+              if (new Date(formData.rentalStartDate) < min) handleInputChange('rentalStartDate', undefined);
             }
           }}>
             <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Sélectionner l'année" /></SelectTrigger>

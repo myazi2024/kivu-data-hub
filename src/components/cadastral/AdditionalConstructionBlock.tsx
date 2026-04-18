@@ -399,12 +399,13 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
           <Select
             value={data.constructionYear?.toString() || ''}
             onValueChange={(v) => {
-              // Si on change l'année, vider la date de location si elle devient invalide
+              // Règle : rentalStartDate doit être ≥ 01/01/constructionYear.
+              // Si l'année change et que la date saisie devient antérieure, l'effacer.
               const y = parseInt(v);
               const next: AdditionalConstruction = { ...data, constructionYear: y };
               if (data.rentalStartDate && y) {
-                const max = new Date(y, 11, 31);
-                if (new Date(data.rentalStartDate) > max) next.rentalStartDate = undefined;
+                const min = new Date(y, 0, 1);
+                if (new Date(data.rentalStartDate) < min) next.rentalStartDate = undefined;
               }
               onChange(index, next);
             }}
