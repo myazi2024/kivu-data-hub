@@ -1018,8 +1018,8 @@ export const ParcelMapPreview = ({
             }
           }
 
-          // Afficher les dimensions
-          if (mapConfig.showSideDimensions) {
+          // Afficher les dimensions (masquées pendant le tracé d'une construction)
+          if (mapConfig.showSideDimensions && !isDrawingBuilding) {
             displaySideDimensions(L, map, latLngs);
           }
 
@@ -2539,7 +2539,7 @@ export const ParcelMapPreview = ({
         )}
         
         {/* Panneau de contrôle parcelle compact (déplacement + rotation) - aligné avec zoom, au-dessus de l'attribution - taille réduite sur desktop */}
-        {!isDrawingMode && !selectedBorne && validCoords.length >= 3 && (
+        {!isDrawingMode && !isDrawingBuilding && !selectedBorne && validCoords.length >= 3 && (
           <div className="absolute bottom-8 right-14 z-[1000] md:scale-[0.65] md:origin-bottom-right">
             <div className="flex flex-col items-end gap-0.5">
               {/* Indicateurs compacts */}
