@@ -10,7 +10,7 @@ import {
 import {
   Save, Loader2, BarChart3, LayoutGrid, Filter, GitBranch,
   AlertTriangle, Layers, Eye, EyeOff, RotateCcw, Settings,
-  Palette, Map as MapIcon, Globe
+  Palette, Map as MapIcon, Globe, ShieldCheck
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
@@ -48,6 +48,7 @@ const MODE_CONFIG = [
   { key: 'charts' as const, icon: BarChart3, label: 'Graphiques' },
   { key: 'filters' as const, icon: Filter, label: 'Filtres' },
   { key: 'cross' as const, icon: GitBranch, label: 'Croisements' },
+  { key: 'sync' as const, icon: ShieldCheck, label: 'Cohérence' },
 ];
 
 const AdminAnalyticsChartsConfig: React.FC = () => {
