@@ -92,11 +92,11 @@ export const MortgagePaymentsPanel: React.FC<Props> = ({ mortgageId, totalAmount
   return (
     <div className="space-y-2">
       <div className="grid grid-cols-3 gap-1.5 text-[10px]">
-        <div className="p-1.5 rounded bg-emerald-500/10 border border-emerald-200">
+        <div className="p-1.5 rounded bg-primary/10 border border-primary/20">
           <p className="text-muted-foreground">Payé</p>
           <p className="font-semibold">{formatCurrency(totalPaid)}</p>
         </div>
-        <div className="p-1.5 rounded bg-amber-500/10 border border-amber-200">
+        <div className="p-1.5 rounded bg-secondary/40 border border-secondary">
           <p className="text-muted-foreground">Restant</p>
           <p className="font-semibold">{formatCurrency(remaining)}</p>
         </div>
