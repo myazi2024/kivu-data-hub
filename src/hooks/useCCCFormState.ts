@@ -1215,11 +1215,22 @@ export const useCCCFormState = ({
     }
   }, []);
 
-  // Purge automatique des entrées IRL si plus aucune construction n'est en location
+  // Purge / nettoyage des IRL orphelins quand l'usage des constructions change
   useEffect(() => {
-    const hasLocationUsage = formData.declaredUsage === 'Location'
-      || additionalConstructions.some(c => c.declaredUsage === 'Location');
-    if (!hasLocationUsage) {
+    const validRefs = new Set<string>();
+    if (formData.declaredUsage === 'Location') validRefs.add('main');
+    additionalConstructions.forEach((c, idx) => {
+      if (c.declaredUsage === 'Location') validRefs.add(`additional:${idx}`);
+    });
+
+    const orphans = taxRecords.filter(t =>
+      t.taxType === 'Impôt sur les revenus locatifs' &&
+      t.constructionRef &&
+      !validRefs.has(t.constructionRef)
+    );
+
+    if (validRefs.size === 0) {
+      // Plus aucune Location → purger tous les IRL
       const hasIrl = taxRecords.some(t => t.taxType === 'Impôt sur les revenus locatifs');
       if (hasIrl) {
         setTaxRecords(prev => prev.filter(t => t.taxType !== 'Impôt sur les revenus locatifs'));
@@ -1228,6 +1239,15 @@ export const useCCCFormState = ({
           description: "Les entrées « Impôt sur les revenus locatifs » ont été retirées car aucune construction n'est en location.",
         });
       }
+    } else if (orphans.length > 0) {
+      // Purger seulement les IRL dont la construction n'est plus en Location
+      setTaxRecords(prev => prev.filter(t =>
+        !(t.taxType === 'Impôt sur les revenus locatifs' && t.constructionRef && !validRefs.has(t.constructionRef))
+      ));
+      toast({
+        title: 'IRL mis à jour',
+        description: `${orphans.length} déclaration(s) IRL retirée(s) : la construction associée n'est plus en location.`,
+      });
     }
   }, [formData.declaredUsage, additionalConstructions, taxRecords, toast]);
 
