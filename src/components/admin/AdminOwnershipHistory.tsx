@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { RefreshCw, Users, Search, Eye, Calendar, ArrowRight, Download } from 'lucide-react';
+import { RefreshCw, Users, Search, Eye, Calendar, ArrowRight, Download, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { usePagination } from '@/hooks/usePagination';
@@ -127,6 +127,50 @@ const AdminOwnershipHistory = () => {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     return date >= thirtyDaysAgo;
   }).length;
+
+  // Detect ownership chain anomalies per parcel:
+  // - Gap: end_date of previous > start_date of next (chronological hole, > 7 days tolerated)
+  // - Overlap: end_date of previous > start_date of next (two simultaneous owners)
+  // - MultipleCurrent: more than one record with no end_date for the same parcel
+  const parcelAnomalies = useMemo(() => {
+    const byParcel = new Map<string, OwnershipRecord[]>();
+    for (const r of records) {
+      const key = r.parcel_number || r.parcel_id;
+      const arr = byParcel.get(key) || [];
+      arr.push(r);
+      byParcel.set(key, arr);
+    }
+    const flagged = new Map<string, { type: 'gap' | 'overlap' | 'multiple_current'; message: string }>();
+    byParcel.forEach((arr, key) => {
+      const sorted = [...arr].sort((a, b) =>
+        new Date(a.ownership_start_date).getTime() - new Date(b.ownership_start_date).getTime()
+      );
+      const currentCount = sorted.filter(r => !r.ownership_end_date).length;
+      if (currentCount > 1) {
+        flagged.set(key, { type: 'multiple_current', message: `${currentCount} propriétaires actuels simultanés` });
+        return;
+      }
+      for (let i = 0; i < sorted.length - 1; i++) {
+        const prev = sorted[i];
+        const next = sorted[i + 1];
+        if (!prev.ownership_end_date) continue;
+        const prevEnd = new Date(prev.ownership_end_date).getTime();
+        const nextStart = new Date(next.ownership_start_date).getTime();
+        const diffDays = (nextStart - prevEnd) / (1000 * 60 * 60 * 24);
+        if (diffDays > 7) {
+          flagged.set(key, { type: 'gap', message: `Trou de ${Math.round(diffDays)} jours dans la chaîne` });
+          return;
+        }
+        if (diffDays < -1) {
+          flagged.set(key, { type: 'overlap', message: `Chevauchement de ${Math.round(-diffDays)} jours` });
+          return;
+        }
+      }
+    });
+    return flagged;
+  }, [records]);
+
+  const anomaliesCount = parcelAnomalies.size;
 
   const handleExportCSV = () => {
     const headers = ['Parcelle', 'Propriétaire', 'Statut juridique', 'Type mutation', 'Date début', 'Date fin', 'Date création'];
