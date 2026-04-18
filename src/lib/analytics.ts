@@ -11,7 +11,12 @@ export type AnalyticsEvent =
   | 'cadastral_map_search'
   | 'cadastral_map_parcel_select'
   | 'cadastral_map_geolocate'
-  | 'cadastral_map_whatsapp_click';
+  | 'cadastral_map_whatsapp_click'
+  | 'user_dashboard_tab_click'
+  | 'user_profile_update'
+  | 'user_contribution_delete'
+  | 'user_referral_link_copy'
+  | 'user_account_delete_request';
 
 export async function trackEvent(event: AnalyticsEvent, payload?: Record<string, any>) {
   try {

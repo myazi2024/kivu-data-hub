@@ -17,16 +17,12 @@ interface CreateNotificationParams {
 
 /**
  * Normalize action_url to use current routes.
- * Keeps the mapping in one place instead of scattered across components.
+ * Delegates to the shared mapping in `userDashboardLinks` to avoid drift.
  */
+import { resolveActionUrl } from '@/utils/userDashboardLinks';
 const normalizeActionUrl = (url?: string): string | undefined => {
   if (!url) return undefined;
-  const routeMapping: Record<string, string> = {
-    '/user-dashboard': '/mon-compte',
-  };
-  const [basePath, queryString] = url.split('?');
-  const resolved = routeMapping[basePath] || basePath;
-  return queryString ? `${resolved}?${queryString}` : resolved;
+  return resolveActionUrl(url);
 };
 
 /**
