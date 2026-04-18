@@ -59,12 +59,12 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
   const { tabs: dbTabs } = useAnalyticsTabsConfig();
   const { upsertConfig } = useAnalyticsChartsConfigMutations();
 
-  const urlMode = searchParams.get('mode') as 'tabs' | 'kpis' | 'charts' | 'filters' | 'cross' | null;
+  const urlMode = searchParams.get('mode') as 'tabs' | 'kpis' | 'charts' | 'filters' | 'cross' | 'sync' | null;
   const urlConfigTab = searchParams.get('configTab');
 
   const defaultFirstTab = Object.keys(ANALYTICS_TABS_REGISTRY).filter(isUserTab)[0];
   const [activeTab, setActiveTab] = useState(urlConfigTab && ANALYTICS_TABS_REGISTRY[urlConfigTab] ? urlConfigTab : defaultFirstTab);
-  const [viewMode, setViewMode] = useState<'tabs' | 'kpis' | 'charts' | 'filters' | 'cross'>(
+  const [viewMode, setViewMode] = useState<'tabs' | 'kpis' | 'charts' | 'filters' | 'cross' | 'sync'>(
     urlMode || (urlConfigTab && SYSTEM_TABS.includes(urlConfigTab) ? 'charts' : 'charts')
   );
 
@@ -83,7 +83,7 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
     }, { replace: true });
   }, [setSearchParams]);
 
-  const handleSetViewMode = useCallback((mode: 'tabs' | 'kpis' | 'charts' | 'filters' | 'cross') => {
+  const handleSetViewMode = useCallback((mode: 'tabs' | 'kpis' | 'charts' | 'filters' | 'cross' | 'sync') => {
     setViewMode(mode);
     updateUrl(mode, activeTab);
   }, [activeTab, updateUrl]);
