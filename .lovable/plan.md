@@ -1,102 +1,75 @@
 
 
-## Audit — Données du formulaire CCC sans visuel dédié dans "Données foncières"
+## Audit détaillé — Espace admin "Config Graphiques"
 
-### Méthode
-Croisement entre :
-- **Colonnes collectées** dans `cadastral_contributions` (BD) + champs dérivés du formulaire CCC
-- **Visuels existants** dans `ContributionsBlock.tsx`, `ParcelsWithTitleBlock.tsx` et autres blocs (`Taxes`, `Mortgages`, `OwnershipHistory`, `BuildingPermits`)
+### 1. Architecture (lecture seule)
 
-Note : "manuellement écarté" — je liste tout ce qui n'a pas de visuel ; vous me direz lesquels exclure. Les champs administratifs internes (id, user_id, reviewed_by, timestamps techniques) sont déjà exclus d'office.
-
----
-
-### A. Champs collectés mais NON visualisés
-
-#### 1. Bloc « Localisation / Géométrie »
-| Champ CCC | Type | Présent dans block ? |
-|---|---|---|
-| `gps_coordinates` | jsonb (sommets) | ❌ Aucun visuel (carte ne consomme pas le polygone) |
-| `parcel_sides` | jsonb (dimensions des côtés) | ❌ Aucun (distrib. longueurs / périmètre) |
-| `road_sides` | jsonb (côtés donnant sur voie) | ❌ Aucun (% parcelles avec accès route) |
-| `area_sqm` (contributions) | numeric | ❌ Distribution surface absente du bloc Contributions (présente uniquement dans ParcelsWithTitle) |
-| `house_number` | text | ❌ Non analysé (taux de remplissage adresse) |
-
-#### 2. Bloc « Propriétaires / Droits »
-| Champ | Manque |
-|---|---|
-| `current_owners_details` | jsonb multi-propriétaires | ❌ Pas de visuel sur **nb de copropriétaires**, répartition genre/nationalité des co-propriétaires |
-| `current_owner_since` | date | ❌ Pas de distribution **ancienneté de propriété** |
-| `is_title_in_current_owner_name` | bool | ❌ Pas de KPI/donut « titre au nom du propriétaire actuel » |
-| `title_issue_date` | date | ❌ Pas de distribution par décennie d'émission du titre (existe pour construction_year, pas pour title) |
-| `title_reference_number` | text | ❌ Taux de remplissage référence titre |
-| `whatsapp_number` | text | ❌ Taux de joignabilité WhatsApp |
-
-#### 3. Bloc « Construction / Bâti »
-| Champ | Manque |
-|---|---|
-| `construction_year` (contributions) | int | ❌ Présent dans ParcelsWithTitle, **absent** du bloc Contributions |
-| `construction_materials` | text | ❌ Absent du bloc Contributions (présent ParcelsWithTitle) |
-| `standing` | text | ❌ Absent du bloc Contributions |
-| `floor_number` / `apartment_number` | text | ❌ Aucun visuel (distribution étages, % appartements vs maisons) |
-| `additional_constructions` | jsonb | ❌ Aucun visuel (nb moyen de bâtiments secondaires) |
-| `building_shapes` | jsonb | ⚠️ Partiellement (taille/hauteur dans ParcelsWithTitle) — **manque** : nb de bâtiments par parcelle, géométrie (rectangle/L/U) |
-
-#### 4. Bloc « Occupation »
-| Champ | Manque |
-|---|---|
-| `occupant_count` | int | ❌ Pas de distribution (densité d'occupation) |
-| `hosting_capacity` | int | ❌ Pas de KPI capacité totale |
-| `lease_years` | int | ❌ Pas de distribution durée des baux |
-| `rental_start_date` | date | ❌ Pas de tendance/ancienneté locative |
-
-#### 5. Bloc « Servitudes & contraintes »
-| Champ | Manque |
-|---|---|
-| `servitude_data` | jsonb | ❌ **Aucun visuel** (types de servitudes, % parcelles grevées) |
-| `dispute_data` | jsonb (détail litige déclaré dans CCC) | ❌ Pas exploité dans bloc Contributions (DisputesBlock utilise table dédiée) |
-
-#### 6. Bloc « Historiques JSONB embarqués »
-Ces champs sont stockés directement dans `cadastral_contributions` et dupliqués dans tables dédiées — mais le contenu CCC brut n'est **jamais comparé** :
-| Champ | Manque |
-|---|---|
-| `ownership_history` (jsonb) | ❌ Pas de KPI « contributions avec historique propriété déclaré » |
-| `boundary_history` (jsonb) | ❌ **Aucun bloc dédié** au bornage (existe dans CCC, absent des blocs analytics) |
-| `tax_history` (jsonb embarqué) | ❌ Non comparé au bloc Taxes (cohérence déclaratif vs payé) |
-| `mortgage_history` (jsonb embarqué) | ❌ Non comparé au bloc Mortgages |
-
-#### 7. Bloc « Workflow / Modération »
-| Champ | Manque |
-|---|---|
-| `changed_fields` / `change_justification` (mises à jour) | ❌ Pas de visuel sur **champs les plus modifiés** ni motifs de modif |
-| `verified_by` / `verified_at` (vs reviewed) | ❌ Pas de KPI vérification distincte de l'approbation |
-| `rejection_reasons` (jsonb détaillé) | ❌ Seul `fraud_reason` est visualisé ; raisons de rejet structurées non exploitées |
-| `original_parcel_id` (lien contribution-correction) | ❌ Pas de KPI « contributions correctives » |
-| `previous_permit_number` | text | ❌ Aucun visuel (lien régularisation ↔ ancien permis) |
-| `permit_request_data` (demandes embarquées CCC) | ❌ Distinct du bloc BuildingPermits — pas de visuel sur les **demandes initiées via CCC** |
-
----
-
-### B. Synthèse — Top manquements à fort potentiel analytique
-
-| # | Indicateur manquant | Champ source | Valeur métier |
+| Couche | Fichier | LOC | Rôle |
 |---|---|---|---|
-| 1 | **Servitudes** (types, % grevés) | `servitude_data` | Élevée — risque foncier |
-| 2 | **Bornage déclaré** (ancienneté, méthode) | `boundary_history` | Élevée — qualité cadastre |
-| 3 | **Multi-propriété** (nb co-propriétaires, genre) | `current_owners_details` | Élevée — équité foncière |
-| 4 | **Densité d'occupation** (occupants/m²) | `occupant_count`, `area_sqm` | Élevée — urbanisme |
-| 5 | **Distribution surface contributions** | `area_sqm` | Moyenne — alignement parcels |
-| 6 | **Ancienneté de propriété** | `current_owner_since` | Moyenne |
-| 7 | **Étages / appartements** | `floor_number`, `apartment_number` | Moyenne — verticalité |
-| 8 | **Bâtiments secondaires** | `additional_constructions` | Moyenne |
-| 9 | **Cohérence déclaratif vs officiel** (taxes/hypothèques embarqués vs tables) | jsonb embarqués | Moyenne — anti-fraude |
-| 10 | **Justifications de modification** | `change_justification`, `changed_fields` | Faible-moyenne |
+| Page admin | `AdminAnalyticsChartsConfig.tsx` | **697** | Conteneur, mode switcher, sauvegarde |
+| Sous-éditeurs | `analytics-config/{TabManager, ItemEditor, FilterManager, CrossVariableManager, GlobalWatermarkConfig}.tsx` | 86 + 124 + 158 + 185 + 90 | Modes spécialisés |
+| Hook état local | `useInitializedConfig.ts` | 114 | Merge BD + registres → state local |
+| Hook BD | `useAnalyticsChartsConfig.ts` | 274 | Queries, mutations, défauts filtres |
+| Registres code | `analyticsTabsRegistry.ts` + `crossVariables.ts` | 449 + 193 | Source de vérité défauts |
+| **Total** | | **2 370** | |
 
----
+5 modes : **Onglets / KPIs / Charts / Filtres / Croisements** + 2 onglets système (`_global`, `rdc-map`).
 
-### C. Question
+### 2. État BD (table `analytics_charts_config`)
 
-**Lesquels de ces champs avez-vous manuellement écartés** (à retirer de la liste avant que je propose un plan d'ajout de visuels) ?
+15 onglets avec overrides actifs. **3 anomalies critiques** :
 
-Une fois la liste filtrée, je proposerai un plan structuré (lots S1, S2, S3) pour intégrer les visuels manquants en respectant l'architecture existante (`ContributionsBlock` + nouveaux blocs `ServitudesBlock` / `BoundaryBlock` si nécessaire).
+| # | Anomalie | Impact |
+|---|---|---|
+| **A1** | `tab_key='boundary'` en BD contient des item_keys de **litiges** (`resolution-rate`, `conflict-type`, `kpi-resolved`…) qui ne matchent **aucun** item du nouveau registre `boundary` (S2 = `coverage`, `age`, `purpose`…). | Le merge perd les overrides ; affichage du bloc Bornage utilise les défauts code. **Collision de namespace.** |
+| **A2** | `servitudes`, `geometry`, `consistency` (S2/S3) **absents de la BD**. | Non-configurables tant qu'admin n'a pas cliqué "Sauvegarder tout". Onglets pas listés dans `useAnalyticsTabsConfig` (filtre par `_tab__` BD). |
+| **A3** | `tab_key='lifting'` orphelin en BD (n'existe pas dans le registre code). | Listé dans le warning de désync mais jamais nettoyé. |
+
+### 3. Audit fonctionnel — ce qui manque
+
+| # | Manque | Sévérité | Détail |
+|---|---|---|---|
+| F1 | **Pas d'ajout d'onglet/KPI/chart** depuis l'admin | Élevée | Tout passe par le registre code. L'admin = visibilité/ordre/style uniquement. |
+| F2 | **Pas de suppression** d'overrides orphelins (boundary collision, lifting) | Élevée | Aucun bouton "Nettoyer la BD". `deleteTabOverrides` existe mais non exposé. |
+| F3 | **Réinitialisation ne purge pas la BD** | Moyenne | Reset local uniquement → si overrides corrompus, persistent. |
+| F4 | **Pas d'init automatique** des nouveaux onglets (`servitudes`, `geometry`, `consistency`) | Moyenne | L'admin doit cliquer manuellement "Sauvegarder tout". |
+| F5 | **Filtres custom impossibles** | Moyenne | Seuls 3 toggles + 2 selects (date_field, status_field). Pas d'ajout. |
+| F6 | **Sauvegarde non-atomique** | Moyenne | "Sauvegarder tout" upsert ~250 items en bloc — pas de transaction, pas de diff. |
+| F7 | **Pas d'audit / versioning** | Moyenne | Aucune trace `who/when/what` sur les changements. |
+| F8 | **Croisements non auto-détectés** | Faible | Un nouveau chart "croisable" doit être ajouté manuellement à `CROSS_VARIABLE_REGISTRY`. |
+| F9 | **Pas de prévisualisation** | Faible | Aucun aperçu du graphique avec la couleur/icône/type choisis. |
+| F10 | **Pas de validation** des `custom_icon` (nom Lucide) ni des bornes watermark | Faible | Saisie libre → erreurs silencieuses si nom invalide. |
+| F11 | **Mobile** : viewport étroit → mode switcher se scroll horizontalement, sidebar remplacée par `<Select>` (OK mais perd les badges "modifié") | Faible | UX dégradée. |
+| F12 | **`AdminAnalyticsChartsConfig.tsx` = 697 lignes** | Faible-Moyenne | Sous le seuil 1000 mais proche ; pourrait être éclaté en 1 fichier par mode. |
+
+### 4. Sécurité & RLS
+
+À vérifier dans un second passage : `analytics_charts_config` doit avoir RLS restreignant `INSERT/UPDATE/DELETE` aux rôles `super_admin` / `admin` uniquement. La page n'est protégée que par le routing admin côté client.
+
+### 5. Recommandations priorisées
+
+**P0 — Correctifs immédiats**
+1. **Nettoyer la collision `boundary`** : purger les 12 lignes BD orphelines (item_keys litiges) sous `tab_key='boundary'`.
+2. **Renommer le tab_key** soit du registre boundary code, soit garder `boundary` pour les litiges historiques. Recommandation : **renommer le nouveau bloc Bornage en `parcel-boundary`** pour éviter la confusion.
+3. **Initialiser** `servitudes`, `geometry`, `consistency` en BD avec `item_type='tab'` + leurs items par défaut.
+4. **Purger `lifting`** orphelin.
+
+**P1 — UX admin**
+5. Bouton **"Nettoyer les overrides orphelins"** (utilise `deleteConfig` sur les `tab_key` non présents dans le registre).
+6. Bouton **"Synchroniser avec le registre"** : crée en BD les nouveaux onglets/items absents.
+7. Indicateur visuel **par onglet** des items orphelins en BD.
+
+**P2 — Évolutions**
+8. Champ **filtre custom** dans FilterManager.
+9. **Aperçu live** d'un chart avec config courante (couleur/icône/type).
+10. **Audit log** (table `analytics_config_audit` : qui, quand, diff JSON).
+11. Validation Lucide icon names + bornes watermark (opacity 0–1, size 30–200).
+12. Modulariser `AdminAnalyticsChartsConfig.tsx` (extraire chaque viewMode dans un sous-composant `views/{TabsView,KpisView,ChartsView}.tsx`).
+
+### 6. Question
+
+Souhaitez-vous que je propose un plan d'implémentation pour :
+- **(A) P0 uniquement** — nettoyage BD + init des nouveaux onglets (rapide, ~30 min)
+- **(B) P0 + P1** — ajoute UX de nettoyage/sync (~1 h)
+- **(C) Plan complet P0+P1+P2** — refonte modulaire + audit log
 
