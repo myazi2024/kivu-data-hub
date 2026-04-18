@@ -1,6 +1,6 @@
 import React, { useState, useEffect, memo, useMemo, Suspense } from 'react';
 import { useAppAppearance } from '@/hooks/useAppAppearance';
-import { FileText, Building, Search, ArrowRightLeft, Scissors, AlertTriangle, Loader2, Database, History, Award, Receipt, Landmark, FileCheck, DollarSign } from 'lucide-react';
+import { FileText, Building, Search, ArrowRightLeft, Scissors, AlertTriangle, Loader2, Database, History, Award, Receipt, Landmark, FileCheck, DollarSign, ShieldAlert, Ruler, Hexagon } from 'lucide-react';
 import { useLandDataAnalytics, LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { ProvinceData } from '@/types/province';
 import { useAnalyticsTabsConfig, useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
@@ -21,6 +21,9 @@ const TaxesBlock = React.lazy(() => import('./blocks/TaxesBlock').then(m => ({ d
 const OwnershipHistoryBlock = React.lazy(() => import('./blocks/OwnershipHistoryBlock').then(m => ({ default: m.OwnershipHistoryBlock })));
 const CertificatesBlock = React.lazy(() => import('./blocks/CertificatesBlock').then(m => ({ default: m.CertificatesBlock })));
 const InvoicesBlock = React.lazy(() => import('./blocks/InvoicesBlock').then(m => ({ default: m.InvoicesBlock })));
+const ServitudesBlock = React.lazy(() => import('./blocks/ServitudesBlock').then(m => ({ default: m.ServitudesBlock })));
+const BoundaryBlock = React.lazy(() => import('./blocks/BoundaryBlock').then(m => ({ default: m.BoundaryBlock })));
+const GeometryBlock = React.lazy(() => import('./blocks/GeometryBlock').then(m => ({ default: m.GeometryBlock })));
 
 const BlockFallback = () => (
   <div className="flex items-center justify-center p-8">
@@ -43,6 +46,9 @@ const ICON_MAP: Record<string, React.ComponentType<any>> = {
   'ownership': History,
   'certificates': Award,
   'invoices': Receipt,
+  'servitudes': ShieldAlert,
+  'boundary': Ruler,
+  'geometry': Hexagon,
 };
 
 const BLOCK_MAP: Record<string, React.ComponentType<{ data: any }>> = {
@@ -59,6 +65,9 @@ const BLOCK_MAP: Record<string, React.ComponentType<{ data: any }>> = {
   'ownership': OwnershipHistoryBlock,
   'certificates': CertificatesBlock,
   'invoices': InvoicesBlock,
+  'servitudes': ServitudesBlock,
+  'boundary': BoundaryBlock,
+  'geometry': GeometryBlock,
 };
 
 interface ProvinceDataVisualizationProps {

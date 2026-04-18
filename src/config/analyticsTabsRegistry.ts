@@ -327,6 +327,58 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'taxes', item_key: 'kpi-avg', item_type: 'kpi', is_visible: true, display_order: 5, custom_title: 'Montant moy.' },
     ],
   },
+  'servitudes': {
+    label: 'Servitudes',
+    charts: [
+      { tab_key: 'servitudes', item_key: 'encumbered-distribution', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Parcelles grevées vs libres', chart_type: 'pie' },
+      { tab_key: 'servitudes', item_key: 'servitude-type', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Types de servitude', chart_type: 'bar-h' },
+      { tab_key: 'servitudes', item_key: 'beneficiary', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Bénéficiaires', chart_type: 'bar-h' },
+      { tab_key: 'servitudes', item_key: 'duration', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Durée des servitudes', chart_type: 'bar-v' },
+      { tab_key: 'servitudes', item_key: 'servitudes-per-parcel', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Servitudes par parcelle', chart_type: 'bar-v' },
+      { tab_key: 'servitudes', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Géographie' },
+    ],
+    kpis: [
+      { tab_key: 'servitudes', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Parcelles analysées' },
+      { tab_key: 'servitudes', item_key: 'kpi-encumbered', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Grevées' },
+      { tab_key: 'servitudes', item_key: 'kpi-servitudes', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'Servitudes' },
+      { tab_key: 'servitudes', item_key: 'kpi-types', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Types distincts' },
+    ],
+  },
+  'boundary': {
+    label: 'Bornage',
+    charts: [
+      { tab_key: 'boundary', item_key: 'coverage', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Couverture bornage', chart_type: 'pie' },
+      { tab_key: 'boundary', item_key: 'age', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Ancienneté du bornage', chart_type: 'bar-v' },
+      { tab_key: 'boundary', item_key: 'purpose', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Motif de bornage', chart_type: 'bar-h' },
+      { tab_key: 'boundary', item_key: 'surveyor', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Géomètres', chart_type: 'bar-h' },
+      { tab_key: 'boundary', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Géographie' },
+      { tab_key: 'boundary', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Évolution bornages', chart_type: 'area', col_span: 2 },
+    ],
+    kpis: [
+      { tab_key: 'boundary', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Parcelles analysées' },
+      { tab_key: 'boundary', item_key: 'kpi-with-boundary', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Avec bornage' },
+      { tab_key: 'boundary', item_key: 'kpi-boundaries', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'Procès-verbaux' },
+      { tab_key: 'boundary', item_key: 'kpi-surveyors', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Géomètres' },
+    ],
+  },
+  'geometry': {
+    label: 'Géométrie',
+    charts: [
+      { tab_key: 'geometry', item_key: 'area-distribution', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Distribution surface', chart_type: 'bar-v' },
+      { tab_key: 'geometry', item_key: 'side-length', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Longueur des côtés', chart_type: 'bar-v' },
+      { tab_key: 'geometry', item_key: 'perimeter', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Périmètre des parcelles', chart_type: 'bar-v' },
+      { tab_key: 'geometry', item_key: 'sides-count', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Forme (nb de côtés)', chart_type: 'bar-v' },
+      { tab_key: 'geometry', item_key: 'road-access', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Accès routier', chart_type: 'pie' },
+      { tab_key: 'geometry', item_key: 'road-sides-count', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Nb côtés sur voie', chart_type: 'bar-v' },
+      { tab_key: 'geometry', item_key: 'gps-coverage', item_type: 'chart', is_visible: true, display_order: 6, custom_title: 'Couverture GPS', chart_type: 'donut' },
+      { tab_key: 'geometry', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 7, custom_title: 'Géographie' },
+    ],
+    kpis: [
+      { tab_key: 'geometry', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Parcelles analysées' },
+      { tab_key: 'geometry', item_key: 'kpi-with-sides', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Avec dimensions' },
+      { tab_key: 'geometry', item_key: 'kpi-with-gps', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'Avec GPS' },
+    ],
+  },
   '_global': {
     label: 'Global',
     charts: [
