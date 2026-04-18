@@ -184,6 +184,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
       return base;
     });
   }, [analytics, activeProfile]);
+  provincesDataRef.current = provincesData;
 
   /** Adaptive tiers from real province distribution (quartiles), with static fallback */
   const adaptiveTiers: MapTier[] | null = useMemo(() => {
@@ -192,33 +193,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     return computeAdaptiveTiers(values, activeProfile.palette, activeProfile.tiers, activeProfile.adaptiveUnit || '');
   }, [activeProfile, provincesData]);
 
-  // ── URL → State: initialize province from URL on first load ──
-  useEffect(() => {
-    if (urlInitRef.current || provincesData.length === 0) return;
-    urlInitRef.current = true;
-    const pName = searchParams.get('province');
-    if (pName) {
-      const normalize = (s: string) => s.toLowerCase().replace(/[-\s]/g, '');
-      const province = provincesData.find(p => normalize(p.name) === normalize(pName));
-      if (province) {
-        setSelectedProvince(province);
-        setExternalProvinceId(province.id);
-      }
-    }
-  }, [provincesData, searchParams]);
 
-  // ── State → URL: sync filters to URL params ──
-  useEffect(() => {
-    const params = new URLSearchParams();
-    if (selectedProvince) params.set('province', selectedProvince.name);
-    if (selectedVille) params.set('ville', selectedVille);
-    if (selectedCommune) params.set('commune', selectedCommune);
-    if (selectedQuartier) params.set('quartier', selectedQuartier);
-    if (selectedTerritoire) params.set('territoire', selectedTerritoire);
-    if (selectedSectionType !== 'all') params.set('section', selectedSectionType);
-    if (activeAnalyticsTab && activeAnalyticsTab !== 'rdc-map') params.set('tab', activeAnalyticsTab);
-    setSearchParams(params, { replace: true });
-  }, [selectedProvince, selectedVille, selectedCommune, selectedQuartier, selectedTerritoire, selectedSectionType, activeAnalyticsTab]);
 
   /** Paliers choroplèthes — configurables depuis admin */
   const DENSITY_TIERS = useMemo(() => {
@@ -278,28 +253,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     return parts.join(' — ') || '';
   }, [selectedProvince, selectedVille, selectedCommune, selectedQuartier, selectedTerritoire]);
 
-  /** Handle province filter from Analytics → zoom map */
-  const handleProvinceFilter = React.useCallback((provinceName: string | undefined) => {
-    if (!provinceName) {
-      setSelectedProvince(null);
-      setExternalProvinceId(null);
-      setSelectedVille(undefined);
-      setSelectedCommune(undefined);
-      setSelectedQuartier(undefined);
-      setSelectedTerritoire(undefined);
-      return;
-    }
-    const normalize = (s: string) => s.toLowerCase().replace(/[-\s]/g, '');
-    const province = provincesData.find(p => normalize(p.name) === normalize(provinceName));
-    if (province) {
-      setSelectedProvince(province);
-      setExternalProvinceId(province.id);
-      setSelectedVille(undefined);
-      setSelectedCommune(undefined);
-      setSelectedQuartier(undefined);
-      setSelectedTerritoire(undefined);
-    }
-  }, [provincesData]);
+
 
   // Fullscreen sync
   React.useEffect(() => {
