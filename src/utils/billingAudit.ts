@@ -19,7 +19,7 @@ export async function logBillingAudit(params: {
       userData.user?.email ||
       null;
 
-    const { error } = await supabase.from('billing_config_audit').insert({
+    const { error } = await (supabase as any).from('billing_config_audit').insert({
       admin_id: adminId,
       admin_name: adminName,
       table_name: params.tableName,
