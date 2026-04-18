@@ -72,7 +72,8 @@ export interface AdminStatistics {
 export const useAdminStatistics = (
   startDate?: Date,
   endDate?: Date,
-  statType: AdminStatType = 'overview'
+  statType: AdminStatType = 'overview',
+  excludeTest: boolean = true
 ) => {
   const [loading, setLoading] = useState(false);
   const [statistics, setStatistics] = useState<AdminStatistics>({});
@@ -87,10 +88,11 @@ export const useAdminStatistics = (
       const end = endDate?.toISOString().split('T')[0] || 
         new Date().toISOString().split('T')[0];
 
-      const { data, error } = await supabase.rpc('get_admin_statistics', {
+      const { data, error } = await (supabase as any).rpc('get_admin_statistics', {
         start_date: start,
         end_date: end,
-        stat_type: statType
+        stat_type: statType,
+        _exclude_test: excludeTest,
       });
 
       if (error) throw error;
@@ -128,7 +130,7 @@ export const useAdminStatistics = (
 
   useEffect(() => {
     fetchStatistics();
-  }, [startStr, endStr, statType]);
+  }, [startStr, endStr, statType, excludeTest]);
 
   return {
     loading,
