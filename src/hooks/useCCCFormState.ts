@@ -429,7 +429,33 @@ export const useCCCFormState = ({
   const removeTaxRecord = (index: number) => { setTaxRecords(taxRecords.filter((_, i) => i !== index)); markDirty(); };
 
   const updateTaxRecord = (index: number, field: string, value: string) => {
-    const updated = [...taxRecords]; updated[index] = { ...updated[index], [field]: value }; setTaxRecords(updated); markDirty();
+    const updated = [...taxRecords];
+    updated[index] = { ...updated[index], [field]: value };
+    // Auto-assign / clear constructionRef on taxType change
+    if (field === 'taxType') {
+      if (value === 'Impôt sur les revenus locatifs') {
+        // Auto-assign first available rentalRef if none yet
+        const usedRefs = new Set(
+          updated
+            .filter((t, i) => i !== index && t.taxType === 'Impôt sur les revenus locatifs' && t.constructionRef)
+            .map(t => t.constructionRef as string)
+        );
+        const available: string[] = [];
+        if (formData.declaredUsage === 'Location') available.push('main');
+        additionalConstructions.forEach((c, idx) => {
+          if (c.declaredUsage === 'Location') available.push(`additional:${idx}`);
+        });
+        const free = available.find(r => !usedRefs.has(r));
+        if (free && !updated[index].constructionRef) {
+          updated[index] = { ...updated[index], constructionRef: free };
+        }
+      } else {
+        // Non-IRL : clear constructionRef
+        updated[index] = { ...updated[index], constructionRef: undefined };
+      }
+    }
+    setTaxRecords(updated);
+    markDirty();
   };
 
   const handleTaxFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
