@@ -95,6 +95,39 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_config_audit: {
+        Row: {
+          action: string
+          admin_id: string
+          admin_name: string | null
+          created_at: string
+          diff: Json | null
+          id: string
+          item_count: number
+          tab_key: string | null
+        }
+        Insert: {
+          action: string
+          admin_id: string
+          admin_name?: string | null
+          created_at?: string
+          diff?: Json | null
+          id?: string
+          item_count?: number
+          tab_key?: string | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string
+          admin_name?: string | null
+          created_at?: string
+          diff?: Json | null
+          id?: string
+          item_count?: number
+          tab_key?: string | null
+        }
+        Relationships: []
+      }
       app_appearance_config: {
         Row: {
           config_key: string
