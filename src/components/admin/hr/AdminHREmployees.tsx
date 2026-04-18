@@ -221,8 +221,8 @@ export default function AdminHREmployees({ hook }: Props) {
         </Select>
       </div>
 
-      <div className="grid gap-3">
-        {filtered.map(emp => {
+      <PaginatedList items={filtered} statusConfig={statusConfig} onDetail={setDetailEmployee} onEdit={(e) => setEditEmployee({ ...e })} onDelete={deleteEmployee} />
+      {false && filtered.map(emp => {
           const sc = statusConfig[emp.status];
           const dept = departments.find(d => d.id === emp.department);
           return (
