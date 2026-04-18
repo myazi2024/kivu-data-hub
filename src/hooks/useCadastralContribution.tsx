@@ -498,9 +498,14 @@ export const useCadastralContribution = () => {
 
       if (contributionError) {
         console.error('Erreur lors de l\'insertion:', contributionError);
+        // Conflit unique (user_id, parcel_number) pour pending/returned
+        const isDuplicate = (contributionError as any).code === '23505'
+          || /duplicate key|cadastral_contributions_user_parcel_active/i.test(contributionError.message || '');
         toast({
-          title: "Erreur de soumission",
-          description: contributionError.message || "Impossible d'enregistrer votre contribution. Veuillez réessayer.",
+          title: isDuplicate ? "Contribution déjà en cours" : "Erreur de soumission",
+          description: isDuplicate
+            ? "Vous avez déjà une contribution en attente ou à corriger pour cette parcelle."
+            : (contributionError.message || "Impossible d'enregistrer votre contribution. Veuillez réessayer."),
           variant: "destructive",
         });
         return { success: false };
