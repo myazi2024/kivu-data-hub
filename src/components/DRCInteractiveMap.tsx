@@ -80,25 +80,6 @@ function computeIndicators(
   };
 }
 
-/** Normalize string for comparison */
-const norm = (s?: string | null) => (s || '').trim().toLowerCase();
-
-/** Build a filter predicate based on the most specific geo scope */
-function buildScopePredicate(
-  province?: string,
-  ville?: string,
-  commune?: string,
-  quartier?: string,
-  territoire?: string,
-): (record: any) => boolean {
-  if (quartier) return (r) => norm(r.quartier) === norm(quartier) && norm(r.commune) === norm(commune) && norm(r.ville) === norm(ville) && norm(r.province) === norm(province);
-  if (commune) return (r) => norm(r.commune) === norm(commune) && norm(r.ville) === norm(ville) && norm(r.province) === norm(province);
-  if (ville) return (r) => norm(r.ville) === norm(ville) && norm(r.province) === norm(province);
-  if (territoire && province) return (r) => norm(r.territoire) === norm(territoire) && norm(r.province) === norm(province);
-  if (territoire) return (r) => norm(r.territoire) === norm(territoire);
-  if (province) return (r) => norm(r.province) === norm(province);
-  return () => false;
-}
 
 interface DRCInteractiveMapProps {
   onFullscreenChange?: (isFullscreen: boolean) => void;
