@@ -595,6 +595,7 @@ const AdminCCCContributions: React.FC = () => {
         ? 'Contribution approuvée et données ajoutées à la parcelle existante ! Le code CCC a été généré.'
         : 'Contribution approuvée et parcelle créée ! Le code CCC a été généré.';
       toast.success(successMessage);
+      await logContributionAudit({ contributionId, action: 'approve', payload: { isUpdateContribution } });
       await fetchContributions();
       setIsDetailsOpen(false);
       setValidationResult(null);
@@ -661,6 +662,7 @@ const AdminCCCContributions: React.FC = () => {
       }
 
       toast.success('Contribution rejetée');
+      await logContributionAudit({ contributionId, action: 'reject', payload: { reason: rejectionReason } });
       await fetchContributions();
       setIsDetailsOpen(false);
       setRejectionReason('');
@@ -752,6 +754,7 @@ const AdminCCCContributions: React.FC = () => {
       }
 
       toast.success('Contribution renvoyée pour correction');
+      await logContributionAudit({ contributionId, action: 'return', payload: { reason: returnReason } });
       await fetchContributions();
       setIsDetailsOpen(false);
       setReturnReason('');
