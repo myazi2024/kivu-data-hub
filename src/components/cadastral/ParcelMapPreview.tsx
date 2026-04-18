@@ -1693,10 +1693,12 @@ export const ParcelMapPreview = ({
 
     const map = mapInstanceRef.current;
     if (map) {
-      map.dragging.disable();
-      map.scrollWheelZoom.disable();
-      map.doubleClickZoom.disable();
-      map.touchZoom.disable();
+      // Garder le drag/zoom actifs : permet de recentrer la carte en cliquant-glissant
+      // depuis l'extérieur de la parcelle pendant le tracé d'une construction.
+      map.dragging.enable();
+      map.scrollWheelZoom.enable();
+      map.doubleClickZoom.enable();
+      map.touchZoom.enable();
       map.getContainer().dataset.drawingMode = 'false';
       map.getContainer().dataset.addingBuilding = 'true';
       map.getContainer().style.cursor = 'crosshair';
