@@ -14,6 +14,7 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/shared/PaginationControls';
 import { exportToCSV } from '@/utils/csvExport';
+import PurgeTestDataButton from '@/components/admin/billing/PurgeTestDataButton';
 
 interface Invoice {
   id: string;
@@ -174,6 +175,7 @@ const AdminInvoices = () => {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">
             <CardTitle className="text-base sm:text-lg">Factures Cadastrales</CardTitle>
             <div className="flex flex-wrap gap-2">
+              <PurgeTestDataButton onDone={() => window.location.reload()} />
               <Button onClick={handleExportCSV} variant="outline" size="sm" className="gap-1 h-8 text-xs">
                 <Download className="h-3 w-3" />
                 <span className="hidden sm:inline">Exporter CSV</span>
