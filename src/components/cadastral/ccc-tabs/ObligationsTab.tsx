@@ -213,7 +213,7 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                 {tax.taxType === 'Impôt sur les revenus locatifs' && (() => {
                   const allRefs = buildRentalConstructionRefs(
                     formData.declaredUsage,
-                    Array.isArray(formData.additionalConstructions) ? (formData.additionalConstructions as any) : []
+                    Array.isArray(additionalConstructions) ? additionalConstructions : []
                   );
                   const usedRefs = new Set(
                     taxRecords
