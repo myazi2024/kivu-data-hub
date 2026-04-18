@@ -22,7 +22,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
-  FileEdit, Eye, CheckCircle, RefreshCw, Download
+  FileEdit, Eye, CheckCircle, RefreshCw, Download, Loader2
 } from 'lucide-react';
 import { generateAndUploadCertificate } from '@/utils/certificateService';
 import { usePagination } from '@/hooks/usePagination';
