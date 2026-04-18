@@ -7,7 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Pencil, Trash2, GripVertical, ExternalLink } from 'lucide-react';
+import { Plus, Pencil, Trash2, GripVertical, ExternalLink, ArrowUp, ArrowDown } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Partner {
@@ -28,6 +28,8 @@ const AdminPartners = () => {
   const [form, setForm] = useState({ name: '', website_url: '', display_order: 0, is_active: true });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [reordering, setReordering] = useState(false);
 
   const fetchPartners = async () => {
     setLoading(true);
@@ -40,6 +42,49 @@ const AdminPartners = () => {
   };
 
   useEffect(() => { fetchPartners(); }, []);
+
+  const persistOrder = async (ordered: Partner[]) => {
+    setReordering(true);
+    setPartners(ordered);
+    try {
+      // Mise à jour séquentielle (5-50 lignes max attendues)
+      const updates = ordered.map((p, idx) =>
+        (supabase as any).from('partners').update({ display_order: idx }).eq('id', p.id)
+      );
+      const results = await Promise.all(updates);
+      if (results.some(r => r.error)) throw new Error('Réordonnancement partiel');
+      toast.success('Ordre mis à jour');
+    } catch (e: any) {
+      toast.error(e.message || 'Erreur réordonnancement');
+      fetchPartners();
+    } finally {
+      setReordering(false);
+    }
+  };
+
+  const moveBy = (id: string, delta: number) => {
+    const idx = partners.findIndex(p => p.id === id);
+    if (idx < 0) return;
+    const target = idx + delta;
+    if (target < 0 || target >= partners.length) return;
+    const next = [...partners];
+    [next[idx], next[target]] = [next[target], next[idx]];
+    persistOrder(next);
+  };
+
+  const onDragStart = (id: string) => setDragId(id);
+  const onDragOver = (e: React.DragEvent) => e.preventDefault();
+  const onDrop = (targetId: string) => {
+    if (!dragId || dragId === targetId) { setDragId(null); return; }
+    const src = partners.findIndex(p => p.id === dragId);
+    const tgt = partners.findIndex(p => p.id === targetId);
+    if (src < 0 || tgt < 0) return;
+    const next = [...partners];
+    const [moved] = next.splice(src, 1);
+    next.splice(tgt, 0, moved);
+    setDragId(null);
+    persistOrder(next);
+  };
 
   const openCreate = () => {
     setEditing(null);
