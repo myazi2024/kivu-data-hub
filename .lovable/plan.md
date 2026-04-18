@@ -1,34 +1,20 @@
 
-## Plan : réactiver le drag de la carte hors-parcelle pendant le tracé
+## Plan : imposer hauteur ≥ 3 m pour chaque construction tracée
 
-### Cause racine
-Dans `ParcelMapPreview.tsx`, les marqueurs des bornes de parcelle sont recréés à chaque tick avec `draggable: true` même quand `isDrawingBuilding === true`. Comme leur icône fait ~28px et couvre les zones autour des bornes, leur handler de mousedown intercepte le drag de la carte avant que Leaflet ne le délègue au pan global.
+### Modification ciblée
+Fichier : `src/components/cadastral/ParcelMapPreview.tsx` (bloc input Hauteur, l. 2801-2819)
 
-### Modifications dans `src/components/cadastral/ParcelMapPreview.tsx`
-
-1. **L. 835** — désactiver le drag des bornes pendant `isDrawingBuilding` :
-   ```ts
-   draggable: !isGroupDragMode && !isDrawingMode && !isDrawingBuilding && !isMarkerMoveMode && mapConfig.enableDragging !== false,
-   ```
-
-2. **Nouveau `useEffect`** dédié au mode tracé construction : après chaque redraw (dépendances `isDrawingBuilding, isMapReady, buildingVertices, validCoords`), forcer `map.dragging.enable()`, `scrollWheelZoom`, `doubleClickZoom`, `touchZoom`, et désactiver explicitement `marker.dragging?.disable()` sur tous les marqueurs de bornes en sécurité.
-
-3. **L. 1062-1170** — circleMarkers de sommets de constructions validées : ajouter `interactive: false` (ou désactiver les listeners mousedown) quand `isDrawingBuilding === true`, pour qu'ils n'interceptent pas un mousedown destiné au pan.
-
-4. **Fix annexe runtime** : le warning « Map container is already initialized » vient du double-init en mode HMR/StrictMode. Ajouter en début de l'effet d'init (l. 356 environ) :
-   ```ts
-   if (mapRef.current && (mapRef.current as any)._leaflet_id) {
-     try { mapInstanceRef.current?.remove(); } catch {}
-     delete (mapRef.current as any)._leaflet_id;
-   }
-   ```
+1. **Input** : passer `min={3}`, garder `step={0.1}`, placeholder `"≥ 3"`.
+2. **Validation visuelle** : `border-destructive` si `heightM == null || heightM < 3` (au lieu du seul `!shape.heightM`).
+3. **Message d'aide** : afficher sous l'input `<p className="text-[10px] text-destructive">Hauteur minimale : 3 m</p>` quand invalide.
+4. **Soumission** : repérer la validation existante du formulaire CCC (LocationTab/useCCCFormState) qui bloque l'étape suivante si une construction n'a pas de hauteur, et étendre la condition à `heightM < 3`. Si la règle de blocage n'existe pas encore au niveau soumission, l'ajouter dans le validator de l'onglet Localisation pour empêcher de passer à l'étape suivante.
+5. **Cohérence admin/review** : aucun changement nécessaire (affichage seulement) — la donnée reste un nombre.
 
 ### Validation E2E
-1. « Tracer une construction » → drag depuis l'extérieur du polygone → la carte se déplace.
-2. Drag depuis sur/près d'un marqueur de borne (extérieur du polygone) → la carte se déplace aussi.
-3. Clic à l'intérieur du polygone → ajoute un sommet.
-4. Valider/Annuler → drag normal des bornes restauré.
-5. Recharger l'onglet Localisation 2× → plus d'erreur "already initialized".
+- Tracer une construction → saisir `2` → bordure rouge + message + bouton "Suivant" bloqué.
+- Saisir `3` ou plus → champ valide, étape suivante autorisée.
+- Vérifier que les constructions existantes avec hauteur < 3 m s'affichent en rouge à la réouverture.
 
-### Fichier
+### Fichiers
 - `src/components/cadastral/ParcelMapPreview.tsx`
+- Validator de soumission de l'onglet Localisation (à confirmer lors de l'implémentation : `ccc-tabs/LocationTab.tsx` ou `useCCCFormState`).
