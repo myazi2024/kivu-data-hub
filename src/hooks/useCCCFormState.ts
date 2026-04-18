@@ -732,6 +732,20 @@ export const useCCCFormState = ({
       if (tax.taxAmount && tax.taxYear && !tax.receiptFile && !tax.existingReceiptUrl) missing.push({ field: `taxReceipt_${idx}`, label: `Reçu de ${tax.taxType} ${tax.taxYear}`, tab: 'obligations' });
     });
 
+    // OBLIGATIONS - IRL × Constructions en location (cohérence stricte)
+    const rentalConstructionsCount = (formData.declaredUsage === 'Location' ? 1 : 0)
+      + additionalConstructions.filter(c => c.declaredUsage === 'Location').length;
+    if (rentalConstructionsCount > 0) {
+      const irlEntriesCount = taxRecords.filter(t => t.taxType === 'Impôt sur les revenus locatifs' && t.taxAmount && t.taxYear).length;
+      if (irlEntriesCount !== rentalConstructionsCount) {
+        missing.push({
+          field: 'irlCoherence',
+          label: `Cohérence IRL : ${irlEntriesCount} déclaration(s) IRL pour ${rentalConstructionsCount} construction(s) en location (doit être égal)`,
+          tab: 'obligations',
+        });
+      }
+    }
+
     // OBLIGATIONS - MORTGAGE
     if (hasMortgage === null) missing.push({ field: 'hasMortgage', label: 'Statut hypothécaire (Oui/Non)', tab: 'obligations' });
     if (hasMortgage === true) {
