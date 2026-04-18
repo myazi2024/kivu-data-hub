@@ -1128,6 +1128,22 @@ export const useCCCFormState = ({
     }
   }, []);
 
+  // Purge automatique des entrées IRL si plus aucune construction n'est en location
+  useEffect(() => {
+    const hasLocationUsage = formData.declaredUsage === 'Location'
+      || additionalConstructions.some(c => c.declaredUsage === 'Location');
+    if (!hasLocationUsage) {
+      const hasIrl = taxRecords.some(t => t.taxType === 'Impôt sur les revenus locatifs');
+      if (hasIrl) {
+        setTaxRecords(prev => prev.filter(t => t.taxType !== 'Impôt sur les revenus locatifs'));
+        toast({
+          title: 'IRL retiré',
+          description: "Les entrées « Impôt sur les revenus locatifs » ont été retirées car aucune construction n'est en location.",
+        });
+      }
+    }
+  }, [formData.declaredUsage, additionalConstructions, taxRecords, toast]);
+
   // Load from localStorage
   useEffect(() => { if (open && !editingContributionId) loadFormDataFromStorage(); }, [open, editingContributionId]);
 
