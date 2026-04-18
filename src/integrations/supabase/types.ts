@@ -1169,6 +1169,7 @@ export type Database = {
           reported_by: string | null
           resolution_details: string | null
           resolution_level: string | null
+          resolution_stage: string | null
           supporting_documents: Json | null
           updated_at: string
         }
@@ -1198,6 +1199,7 @@ export type Database = {
           reported_by?: string | null
           resolution_details?: string | null
           resolution_level?: string | null
+          resolution_stage?: string | null
           supporting_documents?: Json | null
           updated_at?: string
         }
@@ -1227,6 +1229,7 @@ export type Database = {
           reported_by?: string | null
           resolution_details?: string | null
           resolution_level?: string | null
+          resolution_stage?: string | null
           supporting_documents?: Json | null
           updated_at?: string
         }
@@ -1295,6 +1298,9 @@ export type Database = {
           escalated: boolean
           escalated_at: string | null
           id: string
+          lifecycle_state:
+            | Database["public"]["Enums"]["mortgage_lifecycle_state"]
+            | null
           mortgage_amount_usd: number
           mortgage_status: string
           parcel_id: string
@@ -1310,6 +1316,9 @@ export type Database = {
           escalated?: boolean
           escalated_at?: string | null
           id?: string
+          lifecycle_state?:
+            | Database["public"]["Enums"]["mortgage_lifecycle_state"]
+            | null
           mortgage_amount_usd?: number
           mortgage_status?: string
           parcel_id: string
@@ -1325,6 +1334,9 @@ export type Database = {
           escalated?: boolean
           escalated_at?: string | null
           id?: string
+          lifecycle_state?:
+            | Database["public"]["Enums"]["mortgage_lifecycle_state"]
+            | null
           mortgage_amount_usd?: number
           mortgage_status?: string
           parcel_id?: string
@@ -2291,6 +2303,45 @@ export type Database = {
           reference_number?: string
           request_id?: string | null
           status?: string
+        }
+        Relationships: []
+      }
+      history_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_name: string | null
+          changed_fields: Json | null
+          created_at: string
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+          record_id: string
+          table_name: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_name?: string | null
+          changed_fields?: Json | null
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id: string
+          table_name: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_name?: string | null
+          changed_fields?: Json | null
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string
+          table_name?: string
         }
         Relationships: []
       }
@@ -5639,6 +5690,7 @@ export type Database = {
           reasons: string[]
         }[]
       }
+      escalate_stale_disputes: { Args: { p_days?: number }; Returns: number }
       escalate_stale_requests: {
         Args: { p_days?: number }
         Returns: {
@@ -5801,6 +5853,17 @@ export type Database = {
         Args: { issue_date: string; validity_months: number }
         Returns: boolean
       }
+      list_missing_mortgage_receipts: {
+        Args: never
+        Returns: {
+          amount_usd: number
+          contract_date: string
+          creditor_name: string
+          mortgage_id: string
+          parcel_id: string
+          reference_number: string
+        }[]
+      }
       log_audit_action: {
         Args: {
           action_param: string
@@ -5816,6 +5879,17 @@ export type Database = {
         Returns: string
       }
       purge_test_billing_data: { Args: { p_reason?: string }; Returns: Json }
+      reconcile_tax_records: {
+        Args: never
+        Returns: {
+          declaration_amount: number
+          gap_usd: number
+          history_amount: number
+          parcel_id: string
+          parcel_number: string
+          tax_year: number
+        }[]
+      }
       regenerate_missing_certificates: {
         Args: never
         Returns: {
@@ -5889,6 +5963,12 @@ export type Database = {
         | "certificate"
         | "expertise"
         | "mortgage_receipt"
+      mortgage_lifecycle_state:
+        | "active"
+        | "paid"
+        | "defaulted"
+        | "renegotiated"
+        | "cancelled"
       user_role: "admin" | "partner" | "user"
     }
     CompositeTypes: {
@@ -6035,6 +6115,13 @@ export const Constants = {
         "certificate",
         "expertise",
         "mortgage_receipt",
+      ],
+      mortgage_lifecycle_state: [
+        "active",
+        "paid",
+        "defaulted",
+        "renegotiated",
+        "cancelled",
       ],
       user_role: ["admin", "partner", "user"],
     },
