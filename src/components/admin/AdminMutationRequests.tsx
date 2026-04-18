@@ -21,10 +21,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { 
-  FileEdit, Eye, CheckCircle, XCircle, Settings, Plus, Trash2, Edit2, RotateCcw,
-  Loader2, RefreshCw, DollarSign, MapPin, User, Calendar,
-  Save, Download
+import {
+  FileEdit, Eye, CheckCircle, RefreshCw, Download
 } from 'lucide-react';
 import { generateAndUploadCertificate } from '@/utils/certificateService';
 import { usePagination } from '@/hooks/usePagination';
