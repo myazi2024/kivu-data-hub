@@ -2798,24 +2798,29 @@ export const ParcelMapPreview = ({
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
-                      <div className="flex items-center gap-1.5 pl-4">
-                        <label className="text-muted-foreground whitespace-nowrap">Hauteur :</label>
-                        <Input
-                          type="number"
-                          min={0}
-                          step={0.1}
-                          placeholder="m"
-                          value={shape.heightM ?? ''}
-                          onChange={(e) => {
-                            const val = e.target.value === '' ? undefined : parseFloat(e.target.value);
-                            const updated = buildingShapes.map(s =>
-                              s.id === shape.id ? { ...s, heightM: val } : s
-                            );
-                            onBuildingShapesChange(updated);
-                          }}
-                          className={`h-6 w-20 text-xs px-1.5 ${!shape.heightM ? 'border-destructive' : ''}`}
-                        />
-                        <span className="text-muted-foreground">m</span>
+                      <div className="flex flex-col gap-0.5 pl-4">
+                        <div className="flex items-center gap-1.5">
+                          <label className="text-muted-foreground whitespace-nowrap">Hauteur :</label>
+                          <Input
+                            type="number"
+                            min={3}
+                            step={0.1}
+                            placeholder="≥ 3"
+                            value={shape.heightM ?? ''}
+                            onChange={(e) => {
+                              const val = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                              const updated = buildingShapes.map(s =>
+                                s.id === shape.id ? { ...s, heightM: val } : s
+                              );
+                              onBuildingShapesChange(updated);
+                            }}
+                            className={`h-6 w-20 text-xs px-1.5 ${(shape.heightM == null || shape.heightM < 3) ? 'border-destructive' : ''}`}
+                          />
+                          <span className="text-muted-foreground">m</span>
+                        </div>
+                        {(shape.heightM == null || shape.heightM < 3) && (
+                          <p className="text-[10px] text-destructive">Hauteur minimale : 3 m</p>
+                        )}
                       </div>
                     </div>
                 );

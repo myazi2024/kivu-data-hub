@@ -749,6 +749,10 @@ export const useCCCFormState = ({
       if (buildingShapes.length > 0 && missingHeight) {
         missing.push({ field: 'buildingHeight', label: 'Hauteur de construction manquante', tab: 'location' });
       }
+      const tooShort = buildingShapes.some((s: any) => s.heightM != null && s.heightM > 0 && s.heightM < 3);
+      if (buildingShapes.length > 0 && tooShort) {
+        missing.push({ field: 'buildingHeightMin', label: 'Hauteur de construction inférieure à 3 m (minimum requis)', tab: 'location' });
+      }
     }
 
     // HISTORY
