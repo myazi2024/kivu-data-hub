@@ -407,7 +407,12 @@ export const ParcelMapPreview = ({
 
   // Initialiser la carte une seule fois
   useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return;
+    if (!mapRef.current) return;
+    if (mapInstanceRef.current) return;
+    // Guard contre double-init (HMR/StrictMode) : si le container Leaflet a déjà un _leaflet_id résiduel
+    if ((mapRef.current as any)._leaflet_id) {
+      try { delete (mapRef.current as any)._leaflet_id; } catch {}
+    }
 
     const initMap = async () => {
       const L = await import('leaflet');
@@ -832,7 +837,7 @@ export const ParcelMapPreview = ({
 
           const isSelected = selectedBorne === coord.borne;
           const marker = L.marker([lat, lng], {
-            draggable: !isGroupDragMode && !isDrawingMode && !isMarkerMoveMode && mapConfig.enableDragging !== false,
+            draggable: !isGroupDragMode && !isDrawingMode && !isDrawingBuilding && !isMarkerMoveMode && mapConfig.enableDragging !== false,
             icon: L.divIcon({
               className: 'custom-marker',
               html: `<div style="
@@ -1065,6 +1070,7 @@ export const ParcelMapPreview = ({
               fillColor: '#ffffff',
               fillOpacity: 1,
               weight: 2,
+              interactive: !isDrawingBuilding,
             }).addTo(map);
 
             // Double-clic = édition manuelle GPS
