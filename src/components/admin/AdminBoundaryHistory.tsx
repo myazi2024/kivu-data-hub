@@ -285,10 +285,26 @@ const AdminBoundaryHistory = () => {
                 <p className="text-xs font-medium">{selectedRecord.parcel_number}</p>
               </div>
               {selectedRecord.boundary_document_url && (
-                <Button variant="outline" size="sm" className="w-full h-8 text-xs" onClick={() => window.open(selectedRecord.boundary_document_url!, '_blank')}>
-                  <FileText className="h-3 w-3 mr-1" />
-                  Voir le document PV
-                </Button>
+                <div className="space-y-1.5">
+                  <p className="text-[10px] text-muted-foreground">Document PV</p>
+                  {/\.(pdf)$/i.test(selectedRecord.boundary_document_url) ? (
+                    <iframe
+                      src={selectedRecord.boundary_document_url}
+                      className="w-full h-64 rounded-lg border bg-muted"
+                      title="Aperçu PV"
+                    />
+                  ) : /\.(jpe?g|png|webp|gif)$/i.test(selectedRecord.boundary_document_url) ? (
+                    <img
+                      src={selectedRecord.boundary_document_url}
+                      alt="Aperçu PV"
+                      className="w-full max-h-64 object-contain rounded-lg border bg-muted"
+                    />
+                  ) : null}
+                  <Button variant="outline" size="sm" className="w-full h-8 text-xs" onClick={() => window.open(selectedRecord.boundary_document_url!, '_blank')}>
+                    <FileText className="h-3 w-3 mr-1" />
+                    Ouvrir dans un nouvel onglet
+                  </Button>
+                </div>
               )}
             </div>
           )}

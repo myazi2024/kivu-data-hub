@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Scale, Search, Eye, FileText, ChevronLeft, ChevronRight, User, RefreshCw, Link2 } from 'lucide-react';
+import { Scale, Search, Eye, FileText, ChevronLeft, ChevronRight, User, RefreshCw, Link2, Zap, AlertTriangle } from 'lucide-react';
 import { sendDisputeNotification } from '@/utils/disputeUploadUtils';
 import {
   LandDispute,
@@ -210,10 +210,31 @@ const AdminLandDisputes: React.FC = () => {
           </h2>
           <p className="text-xs text-muted-foreground">Gestion des signalements et demandes de levée</p>
         </div>
-        <Button variant="outline" size="sm" onClick={fetchDisputes} className="gap-1">
-          <RefreshCw className="h-3.5 w-3.5" />
-          Actualiser
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              try {
+                const { data, error } = await supabase.rpc('escalate_stale_disputes', { _threshold_days: 30 });
+                if (error) throw error;
+                const count = (data as any)?.[0]?.escalated_count ?? 0;
+                toast.success(`${count} litige(s) escaladé(s)`);
+                fetchDisputes();
+              } catch (e: any) {
+                toast.error(e.message || "Échec de l'escalade");
+              }
+            }}
+            className="gap-1"
+          >
+            <Zap className="h-3.5 w-3.5" />
+            Escalader stales (&gt;30j)
+          </Button>
+          <Button variant="outline" size="sm" onClick={fetchDisputes} className="gap-1">
+            <RefreshCw className="h-3.5 w-3.5" />
+            Actualiser
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -287,7 +308,14 @@ const AdminLandDisputes: React.FC = () => {
                 <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">Aucun litige trouvé</td></tr>
               ) : paginatedDisputes.map((dispute) => (
                 <tr key={dispute.id} className="border-b hover:bg-muted/30 transition-colors">
-                  <td className="p-3 font-mono text-xs font-bold">{dispute.reference_number}</td>
+                  <td className="p-3 font-mono text-xs font-bold">
+                    <span className="inline-flex items-center gap-1">
+                      {dispute.reference_number}
+                      {(dispute as any).escalated && (
+                        <AlertTriangle className="h-3 w-3 text-destructive" aria-label="Escaladé" />
+                      )}
+                    </span>
+                  </td>
                   <td className="p-3 font-mono text-xs">{dispute.parcel_number}</td>
                   <td className="p-3 hidden md:table-cell">
                     <Badge variant={dispute.dispute_type === 'report' ? 'destructive' : 'default'} className="text-[10px]">
