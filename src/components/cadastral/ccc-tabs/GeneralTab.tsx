@@ -916,7 +916,7 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({
             <PopoverContent className="w-72 rounded-xl" align="end">
               <div className="space-y-2 text-xs">
                 <h4 className="font-semibold text-sm">Construction</h4>
-                <p className="text-muted-foreground">Renseignez les détails de votre construction : catégorie de bien, type, nature, matériaux, usage et autorisation de bâtir.</p>
+                <p className="text-muted-foreground">Ces informations nous permettent de savoir si cette parcelle est mise en valeur, afin de vous recommander le service foncier le mieux adapté pour renforcer la sécurité de vos droits sur celle-ci.</p>
               </div>
             </PopoverContent>
           </Popover>
