@@ -23,6 +23,9 @@ import { exportToCSV } from '@/utils/csvExport';
 import { logContributionAudit } from '@/utils/contributionAudit';
 import CCCStatsCards from './ccc/CCCStatsCards';
 import CCCBulkActions from './ccc/CCCBulkActions';
+import { CCCFilters } from './ccc/CCCFilters';
+import { CCCContributionsTable } from './ccc/CCCContributionsTable';
+import { calculateCCCCompleteness } from './ccc/cccCompleteness';
 
 interface ValidationResult {
   valid: boolean;
@@ -679,29 +682,7 @@ const AdminCCCContributions: React.FC = () => {
 
   // Utiliser StatusBadge partagé pour les statuts
 
-  const calculateCompleteness = (contribution: Contribution) => {
-    let filled = 0;
-    const total = 16;
-
-    if (contribution.property_title_type) filled++;
-    if (contribution.current_owner_name || contribution.current_owners_details) filled++;
-    if (contribution.area_sqm && contribution.area_sqm > 0) filled++;
-    if (contribution.province) filled++;
-    if (contribution.property_category) filled++;
-    if (contribution.construction_type) filled++;
-    if (contribution.ownership_history && Array.isArray(contribution.ownership_history) && contribution.ownership_history.length > 0) filled++;
-    if (contribution.boundary_history && Array.isArray(contribution.boundary_history) && contribution.boundary_history.length > 0) filled++;
-    if (contribution.tax_history && Array.isArray(contribution.tax_history) && contribution.tax_history.length > 0) filled++;
-    if (contribution.gps_coordinates && Array.isArray(contribution.gps_coordinates) && contribution.gps_coordinates.length > 0) filled++;
-    if (contribution.owner_document_url) filled++;
-    if (contribution.property_title_document_url) filled++;
-    if (contribution.building_shapes && Array.isArray(contribution.building_shapes) && contribution.building_shapes.length > 0) filled++;
-    if (contribution.road_sides && Array.isArray(contribution.road_sides) && contribution.road_sides.length > 0) filled++;
-    if (contribution.has_dispute !== null) filled++;
-    if (contribution.whatsapp_number) filled++;
-
-    return Math.round((filled / total) * 100);
-  };
+  const calculateCompleteness = (contribution: Contribution) => calculateCCCCompleteness(contribution);
 
   // Renvoyer une contribution pour correction
   const handleReturn = async (contributionId: string) => {
