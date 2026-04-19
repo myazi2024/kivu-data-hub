@@ -1,58 +1,39 @@
 
 
-## Audit du mode test — alignement avec les évolutions récentes
+## Bug : nettoyage mode test bloqué par FK `mutation_requests → cadastral_parcels`
 
-### Constat global
+### Cause
+Lors de la suppression de `cadastral_parcels`, Postgres rejette à cause de `mutation_requests.parcel_id` qui référence encore les parcelles TEST.
 
-Le générateur couvre les **18 entités** déclarées et le registry `test_entities_registry` (11 tables) est cohérent avec les RPC `cleanup_*` et le trigger `prevent_test_data_in_prod` (10 tables). **Mais 5 écarts** sont apparus depuis les derniers chantiers (catalogue dynamique, trigger `provision_service_access`, hub historiques, hub commerce/billing, modularisation lotissement).
+Dans les flux actuels :
+- **`rollback.ts`** (front, post-génération en cas d'échec) supprime `mutation_requests` par `reference_number ILIKE 'TEST-MUT-%-{suffix}'` mais **après** `cadastral_parcels` → trop tard, et le filtre par suffix peut rater des lignes liées aux parcelles via `parcel_id` plutôt que via la référence.
+- **`cleanup-test-data/index.ts`** (edge auto-cleanup) supprime `mutation_requests` à l'**étape 10**, soit après les parcelles à l'étape 8 → même conflit FK.
+- Le RPC `cleanup_all_test_data` (purge manuelle admin) suit probablement le même ordre.
 
-### Écarts détectés
+D'autres FK potentiellement orphelines pointent aussi vers `cadastral_parcels.id` : `subdivision_requests.parcel_id`, `land_title_requests.parcel_id`, `real_estate_expertise_requests.parcel_id`, `cadastral_land_disputes.parcel_id`. Toutes doivent être purgées **avant** les parcelles.
 
-#### 1. Catalogue de services désaligné (P1) — **moyen**
-`generators/invoices.ts` et `generateServiceAccess` utilisent un pool **codé en dur** (`['information', 'location_history', 'history', 'obligations', 'land_disputes']`).
-- Le pool ignore `display_order` et `required_data_fields` du catalogue dynamique.
-- Si l'admin ajoute/désactive un service, les factures test deviennent incohérentes.
-- **Action** : lire `cadastral_services_config` au runtime (`is_active=true`) au début de `generateInvoices` et utiliser uniquement les `service_id` actifs. Idem pour `generateServiceAccess`.
+### Correctifs
 
-#### 2. Doublon `cadastral_service_access` avec le nouveau trigger (P3) — **élevé**
-Depuis `trg_provision_service_access_on_paid`, chaque facture passée à `paid` provisionne automatiquement les accès. Or `generateInvoices` insère déjà des factures `paid` → le trigger crée les accès → puis `generateServiceAccess` réinsère → conflit potentiel `ON CONFLICT (user_id, parcel_number, service_type) DO NOTHING` (le trigger l'absorbe), mais **les deux sources divergent** sur le `service_type` (le trigger lit `selected_services`, le générateur invente une liste différente).
-- **Action** : supprimer `generateServiceAccess` et son étape (Step 5). Le trigger fait foi → garantit aussi qu'on teste réellement le flux production.
-
-#### 3. Lotissements — sous-tables manquantes — **moyen**
-`generateSubdivisionRequests` insère dans `subdivision_requests` mais **jamais** dans `subdivision_lots` ni `subdivision_roads` (zéro ligne en DB). L'admin AdminSubdivision et le canvas LotCanvas restent vides en mode test.
-- **Action** : après insertion de la demande, créer N lignes `subdivision_lots` (via `lots_data`) + 1-2 `subdivision_roads` par demande approuvée.
-
-#### 4. Hypothèques — paiements absents (hub Historiques & Litiges) — **moyen**
-`generateMortgages` n'alimente pas `cadastral_mortgage_payments` (0 ligne). Le hub historiques affiche les hypothèques sans échéances payées → impossible de tester `lifecycle_state` ni les RPC reçus/réconciliation.
-- **Action** : pour chaque hypothèque `active|soldée`, générer 2-6 paiements (`payment_type` = `mensualite|solde_final`).
-
-#### 5. Autorisations de bâtir — paiements + actions admin absents — **moyen**
-`generateBuildingPermits` insère 0 ligne en prod (test_pIdx counts low + filtre i%10===7) et n'alimente ni `permit_payments` ni `permit_admin_actions`. Le module Autorisation ne peut pas être testé bout en bout.
-- **Action** : (a) ajuster le filtre pour garantir ≥1 permit/province ; (b) pour chaque permit `approved|completed`, créer un `permit_payments` `status='completed'` ; (c) pour chaque permit non-`pending`, créer un `permit_admin_actions`.
-
-#### 6. Étape de progression à mettre à jour
-Renommer Step 5 `Accès aux services` → `Lots & routes de lotissement` (puisqu'on supprime l'accès manuel et qu'on ajoute lots/roads).
-
-#### 7. Bonus alignement
-- **Registry** : ajouter `cadastral_mortgages` (marker `reference_number` LIKE 'TEST-HYP-%'), `cadastral_building_permits` (marker `permit_number` LIKE 'TEST-PC%') et `generated_certificates` (marker `reference_number` LIKE 'TEST-CERT-%') au `test_entities_registry` pour que le compteur stats et l'export CSV pré-purge soient exhaustifs. Le RPC `cleanup_all_test_data` les nettoie déjà via cascade FK, donc pas de migration de purge nécessaire.
-
-### Plan d'implémentation
-
-| # | Action | Fichier(s) |
+| # | Fichier | Action |
 |---|---|---|
-| 1 | Charger les `service_id` actifs depuis Supabase au début de `generateInvoices` | `generators/invoices.ts` |
-| 2 | Supprimer `generateServiceAccess` + l'étape 5 + l'import dans `useTestDataActions` | `generators/invoices.ts`, `generators/index.ts`, `useTestDataActions.ts` |
-| 3 | Créer `generators/subdivisionDetails.ts` → `generateSubdivisionLots` + `generateSubdivisionRoads`, appelés après `generateSubdivisionRequests` | nouveau + `useTestDataActions.ts` |
-| 4 | Étendre `generators/mortgages.ts` → `generateMortgagePayments(mortgages)` | `generators/mortgages.ts`, `useTestDataActions.ts` |
-| 5 | Étendre `generators/permits.ts` → ajuster filtre + `generatePermitPayments` + `generatePermitAdminActions` | `generators/permits.ts`, `useTestDataActions.ts` |
-| 6 | Migration : ajouter 3 lignes au `test_entities_registry` (mortgages, permits, certificates) | nouvelle migration SQL |
-| 7 | Renommer libellés des steps + mettre à jour `entities[]` dans `logAuditAction` | `useTestDataActions.ts` |
-| 8 | Mettre à jour `docs/TEST_MODE.md` (suppression step service_access, ajout lots/roads/payments) | `docs/TEST_MODE.md` |
+| 1 | `src/components/admin/test-mode/generators/rollback.ts` | Réordonner : supprimer `mutation_requests`, `subdivision_requests`, `land_title_requests`, `real_estate_expertise_requests` (+ `expertise_payments`), `cadastral_land_disputes` **par `parcel_id IN parcelIds`** AVANT `cadastral_parcels`. Garder le filtrage par `reference_number` en complément pour les lignes sans parcelle. |
+| 2 | `supabase/functions/cleanup-test-data/index.ts` | Déplacer les blocs étape 9-10 (mutations, subdivisions, expertises, disputes, land_title) **avant** l'étape 8 (parcels). Ajouter un `delete().in('parcel_id', parcelIds)` en plus des filtres par `reference_number`. |
+| 3 | Migration SQL | Mettre à jour le RPC `cleanup_all_test_data()` pour appliquer le même ordre FK-safe (children par `parcel_id` → parcelles), puis vérifier `cleanup_old_test_data()` si présent. |
 
 ### Détails techniques
 
-- **Trigger d'idempotence** : `provision_service_access_on_paid` couvre INSERT et UPDATE — donc l'insertion de factures `paid` directes est sans risque.
-- **Catalogue dynamique** : si lecture du catalogue échoue, fallback sur la liste actuelle pour ne pas bloquer la génération.
-- **Lots/roads** : `subdivision_lots.parcel_number` peut rester `NULL` (pas de FK obligatoire) ; `lot_number` calculé à partir de `lots_data`.
-- **Mémoire** : mettre à jour `mem://admin/test-mode-hardening-fr` après implémentation pour refléter la complétude.
+- **Pattern à appliquer** dans rollback ET edge function :
+  ```
+  // Avant cadastral_parcels :
+  delete from mutation_requests where parcel_id = ANY(parcelIds)
+  delete from subdivision_requests where parcel_id = ANY(parcelIds)
+  delete from land_title_requests where parcel_id = ANY(parcelIds)
+  delete from expertise_payments where expertise_request_id IN (... where parcel_id = ANY(parcelIds))
+  delete from real_estate_expertise_requests where parcel_id = ANY(parcelIds)
+  delete from cadastral_land_disputes where parcel_id = ANY(parcelIds)
+  // Puis seulement cadastral_parcels
+  ```
+- **Pourquoi double filtre (parcel_id + reference_number)** : certaines demandes TEST n'ont pas de `parcel_id` (préfixe seul), et certaines parcelles TEST peuvent avoir des demandes legacy sans préfixe TEST sur la référence. Les deux passes garantissent zéro orphelin.
+- **Vérification post-fix** : query SQL `SELECT count(*) FROM mutation_requests m JOIN cadastral_parcels p ON p.id = m.parcel_id WHERE p.parcel_number LIKE 'TEST-%'` doit retourner 0 après purge.
+- Mise à jour mémoire `mem://admin/test-mode-hardening-fr` pour documenter l'ordre FK-safe complet.
 
