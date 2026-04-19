@@ -36,7 +36,15 @@ Le mode test est un système transversal contrôlé depuis l'admin (`AdminTestMo
 
 ### 5. Données de test
 - Toutes les données test ont un préfixe `TEST-` sur leur identifiant de référence
-- Convention : `parcel_number`, `reference_number`, `invoice_number`
+- Convention : `parcel_number`, `reference_number`, `invoice_number`, `permit_number`
+- **Couverture étendue (avr. 2026)** : lots/voies de lotissement (`subdivision_lots`,
+  `subdivision_roads`), paiements d'hypothèques (`cadastral_mortgage_payments`),
+  hypothèques (`cadastral_mortgages`), autorisations de bâtir (`cadastral_building_permits`)
+  et certificats (`generated_certificates`) sont alimentés et tracés au registre.
+- **Catalogue dynamique** : `generateInvoices` lit les `service_id` actifs depuis
+  `cadastral_services_config` au runtime (fallback sur la liste par défaut).
+- **Service access** : provisionné automatiquement par le trigger
+  `trg_provision_service_access_on_paid` (P3) — plus de génération manuelle.
 
 ### 6. Nettoyage
 

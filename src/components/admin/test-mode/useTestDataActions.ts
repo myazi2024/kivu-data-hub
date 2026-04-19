@@ -12,7 +12,6 @@ import {
   generateContributions,
   generateInvoices,
   generatePayments,
-  generateServiceAccess,
   generateTitleRequests,
   generateExpertiseRequests,
   generateExpertisePayments,
@@ -20,15 +19,16 @@ import {
   generateContributorCodes,
   generateFraudAttempts,
   generateBoundaryConflicts,
-  
   generateOwnershipHistory,
   generateTaxHistory,
   generateBoundaryHistory,
   generateMortgages,
+  generateMortgagePayments,
   generateBuildingPermits,
   generateCertificates,
   generateMutationRequests,
   generateSubdivisionRequests,
+  generateSubdivisionLotsAndRoads,
 } from './testDataGenerators';
 
 interface UseTestDataActionsProps {
@@ -42,7 +42,7 @@ const GENERATION_STEPS: GenerationStep[] = [
   { label: 'Contributions cadastrales', status: 'pending' },
   { label: 'Factures', status: 'pending' },
   { label: 'Transactions de paiement', status: 'pending' },
-  { label: 'Accès aux services', status: 'pending' },
+  { label: 'Lots & voies de lotissement', status: 'pending' },
   { label: 'Codes contributeurs (CCC)', status: 'pending' },
   { label: 'Demandes de titres fonciers', status: 'pending' },
   { label: 'Demandes d\'expertise', status: 'pending' },
@@ -196,16 +196,10 @@ export const useTestDataActions = ({
         throw paymentError;
       }
 
-      // Step 5: Service access (non-blocking)
-      updateStep(5, 'running');
-      try {
-        await generateServiceAccess(userId, invoices);
-        updateStep(5, 'done');
-      } catch (saError) {
-        updateStep(5, 'error');
-        failedSteps.push('Accès services');
-        console.error('Service access (non-bloquant):', saError);
-      }
+      // Step 5: Lots & voies de lotissement (placeholder, alimenté à l'étape 13).
+      // L'accès aux services est désormais provisionné automatiquement par le
+      // trigger trg_provision_service_access_on_paid (P3).
+      updateStep(5, 'done');
 
       // Step 6: Contributor codes
       updateStep(6, 'running');
@@ -264,11 +258,12 @@ export const useTestDataActions = ({
         console.error('History (non-blocking):', histError);
       }
 
-      // Step 11: Boundary history + mortgages + building permits + boundary conflicts
+      // Step 11: Boundary history + mortgages (+ payments) + building permits + boundary conflicts
       updateStep(11, 'running');
       try {
         await generateBoundaryHistory(parcels);
-        await generateMortgages(parcels);
+        const mortgages = await generateMortgages(parcels);
+        await generateMortgagePayments(mortgages);
         await generateBuildingPermits(parcels);
         await generateBoundaryConflicts(parcelNumbers, userId);
         updateStep(11, 'done');
@@ -290,11 +285,12 @@ export const useTestDataActions = ({
         console.error('Fraud/certificates (non-blocking):', fcError);
       }
 
-      // Step 13: Mutations & subdivisions (non-blocking)
+      // Step 13: Mutations & subdivisions (+ lots/voies) (non-blocking)
       updateStep(13, 'running');
       try {
         await generateMutationRequests(userId, parcels, suffix);
-        await generateSubdivisionRequests(userId, parcels, suffix);
+        const subdivisions = await generateSubdivisionRequests(userId, parcels, suffix);
+        await generateSubdivisionLotsAndRoads(subdivisions);
         updateStep(13, 'done');
       } catch (msError) {
         updateStep(13, 'error');
@@ -314,12 +310,13 @@ export const useTestDataActions = ({
           suffix,
           failedSteps,
           entities: [
-            'parcels', 'contributions', 'invoices', 'payments', 'service_access',
+            'parcels', 'contributions', 'invoices', 'payments',
+            'service_access (auto via trigger)',
             'contributor_codes', 'title_requests', 'expertise', 'disputes',
             'ownership_history', 'tax_history',
-            'boundary_history', 'mortgages', 'building_permits',
+            'boundary_history', 'mortgages', 'mortgage_payments', 'building_permits',
             'fraud_attempts', 'certificates',
-            'mutation_requests', 'subdivision_requests',
+            'mutation_requests', 'subdivision_requests', 'subdivision_lots', 'subdivision_roads',
           ],
         })
       );
