@@ -258,11 +258,12 @@ export const useTestDataActions = ({
         console.error('History (non-blocking):', histError);
       }
 
-      // Step 11: Boundary history + mortgages + building permits + boundary conflicts
+      // Step 11: Boundary history + mortgages (+ payments) + building permits + boundary conflicts
       updateStep(11, 'running');
       try {
         await generateBoundaryHistory(parcels);
-        await generateMortgages(parcels);
+        const mortgages = await generateMortgages(parcels);
+        await generateMortgagePayments(mortgages);
         await generateBuildingPermits(parcels);
         await generateBoundaryConflicts(parcelNumbers, userId);
         updateStep(11, 'done');
@@ -284,11 +285,12 @@ export const useTestDataActions = ({
         console.error('Fraud/certificates (non-blocking):', fcError);
       }
 
-      // Step 13: Mutations & subdivisions (non-blocking)
+      // Step 13: Mutations & subdivisions (+ lots/voies) (non-blocking)
       updateStep(13, 'running');
       try {
         await generateMutationRequests(userId, parcels, suffix);
-        await generateSubdivisionRequests(userId, parcels, suffix);
+        const subdivisions = await generateSubdivisionRequests(userId, parcels, suffix);
+        await generateSubdivisionLotsAndRoads(subdivisions);
         updateStep(13, 'done');
       } catch (msError) {
         updateStep(13, 'error');
@@ -308,12 +310,13 @@ export const useTestDataActions = ({
           suffix,
           failedSteps,
           entities: [
-            'parcels', 'contributions', 'invoices', 'payments', 'service_access',
+            'parcels', 'contributions', 'invoices', 'payments',
+            'service_access (auto via trigger)',
             'contributor_codes', 'title_requests', 'expertise', 'disputes',
             'ownership_history', 'tax_history',
-            'boundary_history', 'mortgages', 'building_permits',
+            'boundary_history', 'mortgages', 'mortgage_payments', 'building_permits',
             'fraud_attempts', 'certificates',
-            'mutation_requests', 'subdivision_requests',
+            'mutation_requests', 'subdivision_requests', 'subdivision_lots', 'subdivision_roads',
           ],
         })
       );
