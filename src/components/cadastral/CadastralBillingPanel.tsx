@@ -325,7 +325,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             {/* Liste des services */}
             <div className="space-y-2">
               {catalogServices.map((service) => {
-                const IconComponent = getServiceIcon(service.id);
+                const IconComponent = getServiceIcon(service);
                 const isServiceSelected = selectedServiceIds.includes(service.id);
                 const isExpanded = expandedServices.has(service.id);
                 const hasData = serviceAvailability[service.id] ?? true;
