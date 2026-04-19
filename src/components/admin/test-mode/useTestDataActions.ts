@@ -12,7 +12,6 @@ import {
   generateContributions,
   generateInvoices,
   generatePayments,
-  generateServiceAccess,
   generateTitleRequests,
   generateExpertiseRequests,
   generateExpertisePayments,
@@ -20,15 +19,16 @@ import {
   generateContributorCodes,
   generateFraudAttempts,
   generateBoundaryConflicts,
-  
   generateOwnershipHistory,
   generateTaxHistory,
   generateBoundaryHistory,
   generateMortgages,
+  generateMortgagePayments,
   generateBuildingPermits,
   generateCertificates,
   generateMutationRequests,
   generateSubdivisionRequests,
+  generateSubdivisionLotsAndRoads,
 } from './testDataGenerators';
 
 interface UseTestDataActionsProps {
@@ -42,7 +42,7 @@ const GENERATION_STEPS: GenerationStep[] = [
   { label: 'Contributions cadastrales', status: 'pending' },
   { label: 'Factures', status: 'pending' },
   { label: 'Transactions de paiement', status: 'pending' },
-  { label: 'Accès aux services', status: 'pending' },
+  { label: 'Lots & voies de lotissement', status: 'pending' },
   { label: 'Codes contributeurs (CCC)', status: 'pending' },
   { label: 'Demandes de titres fonciers', status: 'pending' },
   { label: 'Demandes d\'expertise', status: 'pending' },
