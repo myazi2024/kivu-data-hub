@@ -168,9 +168,13 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
   for (const [status, ids] of Object.entries(statusGroups)) {
     for (let i = 0; i < ids.length; i += 200) {
       const chunk = ids.slice(i, i + 200);
+      const updatePayload: { status: string; rejection_reason?: string } = { status };
+      if (status === 'rejected') {
+        updatePayload.rejection_reason = 'TEST: rejet automatique simulé';
+      }
       const { error: updateError } = await supabase
         .from('cadastral_contributions')
-        .update({ status })
+        .update(updatePayload)
         .in('id', chunk);
       if (updateError) console.error(`Contribution status update (${status}, batch ${i}):`, updateError.message);
     }
