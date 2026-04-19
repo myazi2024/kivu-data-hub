@@ -1,22 +1,18 @@
 
 
-## Mise à jour du popover d'aide du picklist « Type de titre de propriété »
+## Mise à jour du popover « Titre au nom du propriétaire actuel »
 
 ### Cible
-`src/components/cadastral/PropertyTitleTypeSelect.tsx`, lignes 102-113 (popover déclenché par l'icône `Info` à côté du label « Type de titre de propriété »).
+`src/components/cadastral/ccc-tabs/GeneralTab.tsx`, ligne 269.
 
-### Contenu actuel
-- Titre : « Titres de propriété en RDC »
-- Texte : « Titre officiel délivré par les services cadastraux (pas un acte de vente/donation). »
+### Changement
+Remplacer le texte actuel du popover par une formulation reformulée (ton pro + rassurant) :
 
-### Nouveau contenu (reformulé pro)
-- Titre : « Titre de propriété »
-- Texte : « Le choix effectué indique quel document administratif ou titre foncier couvre cette parcelle dans les registres du service du cadastre de la zone concernée. »
+> « Votre réponse nous permet de déterminer si nous pouvons vous recommander un service de mutation foncière, afin de sécuriser davantage le droit foncier qui couvre cette parcelle. »
 
-Reformulation : « Le choix effectué indique » (plus neutre que « permet de savoir »), « du service du cadastre » (formulation administrative correcte en RDC), « de la zone concernée » (plus précis que « de la zone »).
+Reformulation : suppression du « ou pas » familier, ajout de la virgule de clarté, « afin de » au lieu de « pour », « cette parcelle » au lieu de « la couvre » (référent ambigu).
 
 ### Hors scope
-- Aucun changement aux popovers détaillés par type de titre (icône `Info` dans chaque ligne du select).
-- Aucun changement à la consigne sous le picklist (déjà mise à jour précédemment).
-- Aucune modification de logique, de types ou d'autres composants.
+- Aucune modification de la question elle-même, des boutons Oui/Non, ni de la logique de validation.
+- Pas de changement aux autres popovers de l'onglet.
 
