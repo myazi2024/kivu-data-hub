@@ -3,7 +3,7 @@ import { AnalyticsFilters } from '../filters/AnalyticsFilters';
 import { countBy, trendByMonth, surfaceDistribution, yearDecadeDistribution } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { Building, TrendingUp, Clock, ShieldCheck, Maximize, ArrowUpFromLine, Volume2, Ear, Home, Layers } from 'lucide-react';
+import { Building, TrendingUp, Clock, ShieldCheck, Maximize, ArrowUpFromLine, Volume2, Ear, Home, Layers, Users, Gauge } from 'lucide-react';
 import { SOUND_LABELS } from '@/constants/expertiseLabels';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, FilterLabelContext } from '../shared/ChartCard';
@@ -169,6 +169,41 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
 
   const occupiedCount = useMemo(() => builtParcels.filter(p => p.is_occupied === true).length, [builtParcels]);
   const totalHostingCapacity = useMemo(() => builtParcels.reduce((s, p) => s + (p.hosting_capacity || 0), 0), [builtParcels]);
+  const parcelsWithCapacity = useMemo(() => builtParcels.filter(p => (p.hosting_capacity || 0) > 0), [builtParcels]);
+  const avgHostingCapacity = useMemo(() => parcelsWithCapacity.length > 0 ? Math.round(totalHostingCapacity / parcelsWithCapacity.length) : 0, [totalHostingCapacity, parcelsWithCapacity]);
+
+  const hostingCapacityData = useMemo(() => {
+    const buckets = [
+      { label: '1-2 pers', min: 1, max: 3 },
+      { label: '3-5 pers', min: 3, max: 6 },
+      { label: '6-10 pers', min: 6, max: 11 },
+      { label: '11-20 pers', min: 11, max: 21 },
+      { label: '21-50 pers', min: 21, max: 51 },
+      { label: '> 50 pers', min: 51, max: Infinity },
+    ];
+    const counts = buckets.map(b => ({ name: b.label, value: 0, min: b.min, max: b.max }));
+    parcelsWithCapacity.forEach(p => {
+      const c = p.hosting_capacity || 0;
+      const bucket = counts.find(b => c >= b.min && c < b.max);
+      if (bucket) bucket.value++;
+    });
+    return counts.filter(c => c.value > 0).map(({ name, value }) => ({ name, value }));
+  }, [parcelsWithCapacity]);
+
+  const occupancyPressureData = useMemo(() => {
+    const buckets: Record<string, number> = { 'Sous-occupé': 0, 'Équilibré': 0, 'Saturé': 0 };
+    builtParcels.forEach(p => {
+      const cap = p.hosting_capacity || 0;
+      const occ = p.occupant_count || 0;
+      if (cap > 0 && occ > 0) {
+        const ratio = occ / cap;
+        if (ratio < 0.5) buckets['Sous-occupé']++;
+        else if (ratio <= 1) buckets['Équilibré']++;
+        else buckets['Saturé']++;
+      }
+    });
+    return Object.entries(buckets).filter(([, val]) => val > 0).map(([name, value]) => ({ name, value }));
+  }, [builtParcels]);
 
   // Construction evolution trend (based on built parcels)
   const constructionTrend = useMemo(() => trendByMonth(builtParcels), [builtParcels]);
@@ -177,8 +212,9 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'kpi-constructions', label: ct('kpi-constructions', 'Constructions'), value: builtParcels.length, cls: 'text-primary' },
     { key: 'kpi-occupied', label: ct('kpi-occupied', 'Habitées'), value: occupiedCount, cls: 'text-teal-600', tooltip: pct(occupiedCount, builtParcels.length) },
     { key: 'kpi-hosting', label: ct('kpi-hosting', 'Cap. accueil'), value: totalHostingCapacity > 0 ? totalHostingCapacity.toLocaleString() : 'N/A', cls: 'text-indigo-600', tooltip: 'Capacité d\'accueil totale' },
+    { key: 'kpi-avg-capacity', label: ct('kpi-avg-capacity', 'Cap. moy.'), value: avgHostingCapacity > 0 ? avgHostingCapacity.toLocaleString() : 'N/A', cls: 'text-cyan-600', tooltip: 'Capacité moyenne par construction' },
     { key: 'kpi-multi-constr', label: ct('kpi-multi-constr', 'Multi-constr.'), value: multiConstructionCount, cls: 'text-orange-600', tooltip: pct(multiConstructionCount, builtParcels.length) },
-  ].filter(k => v(k.key)), [builtParcels, occupiedCount, totalHostingCapacity, multiConstructionCount, v, ct]);
+  ].filter(k => v(k.key)), [builtParcels, occupiedCount, totalHostingCapacity, avgHostingCapacity, multiConstructionCount, v, ct]);
 
   const chartDefs = useMemo(() => [
     { key: 'construction-type', el: () => <ChartCard title={ct('construction-type', 'Construction')} icon={Building} data={charts.byConstructionType} type={ty('construction-type', 'bar-h')} colorIndex={3}
@@ -201,6 +237,10 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
       insight={generateInsight(occupationData, 'pie', "l'occupation des constructions")} crossVariables={cx('occupation')} rawRecords={builtParcels} groupField="is_occupied" /> },
     { key: 'floor-dist', el: () => <ChartCard title={ct('floor-dist', 'Nombre d\'étages')} icon={Layers} data={floorDistData} type={ty('floor-dist', 'bar-v')} colorIndex={14} hidden={floorDistData.length === 0}
       insight={generateInsight(floorDistData, 'bar-v', 'la distribution des étages')} crossVariables={cx('floor-dist')} rawRecords={builtParcels} groupField="floor_number" /> },
+    { key: 'hosting-capacity', el: () => <ChartCard title={ct('hosting-capacity', 'Capacité d\'accueil')} icon={Users} data={hostingCapacityData} type={ty('hosting-capacity', 'bar-v')} colorIndex={9} hidden={hostingCapacityData.length === 0}
+      insight={generateInsight(hostingCapacityData, 'bar-v', "la capacité d'accueil des constructions")} crossVariables={cx('hosting-capacity')} rawRecords={parcelsWithCapacity} groupField="hosting_capacity" /> },
+    { key: 'occupancy-pressure', el: () => <ChartCard title={ct('occupancy-pressure', 'Pression d\'occupation')} icon={Gauge} data={occupancyPressureData} type={ty('occupancy-pressure', 'donut')} colorIndex={13} hidden={occupancyPressureData.length === 0}
+      insight={generateInsight(occupancyPressureData, 'donut', "la pression d'occupation (occupants vs capacité)")} crossVariables={cx('occupancy-pressure')} rawRecords={builtParcels} groupField="hosting_capacity" /> },
     { key: 'permit-type', el: () => <ChartCard title={ct('permit-type', 'Autorisation de bâtir')} icon={ShieldCheck} data={permitTypeData} type={ty('permit-type', 'donut')} colorIndex={4} hidden={permitTypeData.length === 0}
       insight={generateInsight(permitTypeData, 'donut', 'les autorisations de bâtir')} crossVariables={cx('permit-type')} rawRecords={filteredContribs} groupField="building_permits" /> },
     { key: 'building-size', el: () => <ChartCard title={ct('building-size', 'Taille construction')} icon={Maximize} data={buildingSizeData} type={ty('building-size', 'bar-v')} colorIndex={2} hidden={buildingSizeData.length === 0}
@@ -214,7 +254,7 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'construction-geo', el: () => <GeoCharts records={builtParcels} /> },
     { key: 'construction-evolution', el: () => <ChartCard title={ct('construction-evolution', 'Évolution constructions')} icon={TrendingUp} data={constructionTrend} type={ty('construction-evolution', 'area')} colorIndex={0} colSpan={2}
       insight={generateInsight(constructionTrend, 'area', 'les constructions')} /> },
-  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filteredParcels, builtParcels, filteredContribs, normalizedParcels, charts, permitTypeData, buildingSizeData, buildingHeightData, soundEnvData, noiseSourcesData, occupationData, floorDistData, builtVsUnbuiltData, constructionTrend, v, ct, cx, ty, ord]);
+  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filteredParcels, builtParcels, filteredContribs, normalizedParcels, parcelsWithCapacity, charts, permitTypeData, buildingSizeData, buildingHeightData, soundEnvData, noiseSourcesData, occupationData, floorDistData, hostingCapacityData, occupancyPressureData, builtVsUnbuiltData, constructionTrend, v, ct, cx, ty, ord]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
