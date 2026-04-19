@@ -41,6 +41,8 @@ export const CROSS_VARIABLE_REGISTRY: Record<string, Record<string, CrossVariabl
     'noise-sources': [{ label: 'Province', field: 'province' }, { label: 'Env. sonore', field: 'sound_environment' }],
     'occupation': [{ label: 'Province', field: 'province' }, { label: 'Type titre', field: 'property_title_type' }, { label: 'Usage', field: 'declared_usage' }],
     'floor-dist': [{ label: 'Province', field: 'province' }, { label: 'Usage', field: 'declared_usage' }],
+    'hosting-capacity': [{ label: 'Occupation', field: 'is_occupied' }, { label: 'Type construction', field: 'construction_type' }, { label: 'Catégorie', field: 'property_category' }, { label: 'Nature', field: 'construction_nature' }, { label: 'Standing', field: 'standing' }, { label: 'Province', field: 'province' }],
+    'occupancy-pressure': [{ label: 'Type construction', field: 'construction_type' }, { label: 'Catégorie', field: 'property_category' }, { label: 'Nature', field: 'construction_nature' }, { label: 'Standing', field: 'standing' }, { label: 'Province', field: 'province' }],
   },
   'contributions': {
     'contribution-type': [{ label: 'Statut', field: 'status' }, { label: 'Province', field: 'province' }, { label: 'Usage', field: 'declared_usage' }],
