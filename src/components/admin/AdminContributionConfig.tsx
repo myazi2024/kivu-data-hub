@@ -23,6 +23,7 @@ import { useConfigHistory } from '@/hooks/useConfigHistory';
 import { useConfigValidation } from '@/hooks/useConfigValidation';
 import AdminPicklistManager from './config/AdminPicklistManager';
 import AdminStaticPicklistManager from './config/AdminStaticPicklistManager';
+import { MapLegendConfig, type MapLegendConfigHandle } from './contribution-config/MapLegendConfig';
 
 const AdminContributionConfig = ({ initialTab, scrollToLegend }: { initialTab?: string; scrollToLegend?: boolean } = {}) => {
   const { configs, loading, updateConfig } = useContributionConfig();
@@ -30,12 +31,12 @@ const AdminContributionConfig = ({ initialTab, scrollToLegend }: { initialTab?: 
   const { saveToHistory } = useConfigHistory();
   const { validateMapPreviewSettings, validateValidationRules, validateCccCalculation } = useConfigValidation();
   const [saving, setSaving] = useState<string | null>(null);
-  const legendRef = useRef<HTMLDivElement>(null);
+  const legendRef = useRef<MapLegendConfigHandle>(null);
 
   useEffect(() => {
     if (scrollToLegend && !loading) {
       setTimeout(() => {
-        legendRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        legendRef.current?.scrollIntoView();
       }, 300);
     }
   }, [scrollToLegend, loading]);
@@ -1386,147 +1387,12 @@ const AdminContributionConfig = ({ initialTab, scrollToLegend }: { initialTab?: 
                 </div>
               </div>
 
-              {/* Section Légende */}
-              <div className="space-y-4">
-                <h4 ref={legendRef} className="text-sm font-semibold flex items-center gap-2">
-                  <span>📋</span> Légende de la carte
-                </h4>
-
-                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                  <div className="space-y-1">
-                    <Label>Afficher la légende</Label>
-                    <p className="text-xs text-muted-foreground">
-                      Afficher le bloc légende sur la carte cadastrale
-                    </p>
-                  </div>
-                  <Switch
-                    checked={mapPreviewSettings.legend?.enabled !== false}
-                    onCheckedChange={(checked) => {
-                      setMapPreviewSettings({
-                        ...mapPreviewSettings,
-                        legend: {
-                          ...mapPreviewSettings.legend,
-                          enabled: checked,
-                          items: mapPreviewSettings.legend?.items || [
-                            { key: 'bornage_gps', label: 'Parcelle avec bornage GPS', mobileLabel: 'Bornage GPS', enabled: true },
-                            { key: 'sans_bornage', label: 'Parcelle sans bornage', mobileLabel: 'Sans bornage', enabled: true },
-                            { key: 'limites', label: 'Limites parcellaires', mobileLabel: 'Limites', enabled: true },
-                            { key: 'dimensions', label: 'Dimensions côtés', mobileLabel: 'Dimensions', enabled: true },
-                            { key: 'incompletes', label: 'Données incomplètes', mobileLabel: 'Incomplètes', enabled: true },
-                            { key: 'favorite', label: 'Parcelle favorite', mobileLabel: 'Favorite', enabled: true },
-                          ]
-                        }
-                      });
-                    }}
-                  />
-                </div>
-
-                {mapPreviewSettings.legend?.enabled !== false && (
-                  <div className="space-y-2">
-                    {(() => {
-                      const defaultLegendItems = [
-                        { key: 'bornage_gps', label: 'Parcelle avec bornage GPS', mobileLabel: 'Bornage GPS', enabled: true },
-                        { key: 'sans_bornage', label: 'Parcelle sans bornage', mobileLabel: 'Sans bornage', enabled: true },
-                        { key: 'limites', label: 'Limites parcellaires', mobileLabel: 'Limites', enabled: true },
-                        { key: 'dimensions', label: 'Dimensions côtés', mobileLabel: 'Dimensions', enabled: true },
-                        { key: 'incompletes', label: 'Données incomplètes', mobileLabel: 'Incomplètes', enabled: true },
-                        { key: 'favorite', label: 'Parcelle favorite', mobileLabel: 'Favorite', enabled: true },
-                      ];
-                      const savedItems = (mapPreviewSettings.legend?.items || []).filter(Boolean);
-                      const mergedItems = defaultLegendItems.map(def => {
-                        const saved = savedItems.find((s: any) => s?.key === def.key);
-                        return saved ? { ...def, ...saved } : def;
-                      });
-                      return mergedItems;
-                    })().map((item: any, index: number) => (
-                      <div key={item.key} className="p-3 bg-muted/20 rounded-lg space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-xs font-medium">{item.key}</Label>
-                          <Switch
-                            checked={item.enabled}
-                            onCheckedChange={(checked) => {
-                              const defaultLegendItems = [
-                                { key: 'bornage_gps', label: 'Parcelle avec bornage GPS', mobileLabel: 'Bornage GPS', enabled: true },
-                                { key: 'sans_bornage', label: 'Parcelle sans bornage', mobileLabel: 'Sans bornage', enabled: true },
-                                { key: 'limites', label: 'Limites parcellaires', mobileLabel: 'Limites', enabled: true },
-                                { key: 'dimensions', label: 'Dimensions côtés', mobileLabel: 'Dimensions', enabled: true },
-                                { key: 'incompletes', label: 'Données incomplètes', mobileLabel: 'Incomplètes', enabled: true },
-                                { key: 'favorite', label: 'Parcelle favorite', mobileLabel: 'Favorite', enabled: true },
-                              ];
-                              const savedItems = (mapPreviewSettings.legend?.items || []).filter(Boolean);
-                              const items = defaultLegendItems.map(def => {
-                                const saved = savedItems.find((s: any) => s?.key === def.key);
-                                return saved ? { ...def, ...saved } : def;
-                              });
-                              items[index] = { ...items[index], enabled: checked };
-                              setMapPreviewSettings({
-                                ...mapPreviewSettings,
-                                legend: { ...mapPreviewSettings.legend, enabled: mapPreviewSettings.legend?.enabled !== false, items }
-                              });
-                            }}
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <Label className="text-[10px] text-muted-foreground">Label desktop</Label>
-                            <Input
-                              value={item.label}
-                              onChange={(e) => {
-                                const defaultLegendItems = [
-                                  { key: 'bornage_gps', label: 'Parcelle avec bornage GPS', mobileLabel: 'Bornage GPS', enabled: true },
-                                  { key: 'sans_bornage', label: 'Parcelle sans bornage', mobileLabel: 'Sans bornage', enabled: true },
-                                  { key: 'limites', label: 'Limites parcellaires', mobileLabel: 'Limites', enabled: true },
-                                  { key: 'dimensions', label: 'Dimensions côtés', mobileLabel: 'Dimensions', enabled: true },
-                                  { key: 'incompletes', label: 'Données incomplètes', mobileLabel: 'Incomplètes', enabled: true },
-                                  { key: 'favorite', label: 'Parcelle favorite', mobileLabel: 'Favorite', enabled: true },
-                                ];
-                                const savedItems = (mapPreviewSettings.legend?.items || []).filter(Boolean);
-                                const items = defaultLegendItems.map(def => {
-                                  const saved = savedItems.find((s: any) => s?.key === def.key);
-                                  return saved ? { ...def, ...saved } : def;
-                                });
-                                items[index] = { ...items[index], label: e.target.value };
-                                setMapPreviewSettings({
-                                  ...mapPreviewSettings,
-                                  legend: { ...mapPreviewSettings.legend, enabled: mapPreviewSettings.legend?.enabled !== false, items }
-                                });
-                              }}
-                              className="h-7 text-xs"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-[10px] text-muted-foreground">Label mobile</Label>
-                            <Input
-                              value={item.mobileLabel}
-                              onChange={(e) => {
-                                const defaultLegendItems = [
-                                  { key: 'bornage_gps', label: 'Parcelle avec bornage GPS', mobileLabel: 'Bornage GPS', enabled: true },
-                                  { key: 'sans_bornage', label: 'Parcelle sans bornage', mobileLabel: 'Sans bornage', enabled: true },
-                                  { key: 'limites', label: 'Limites parcellaires', mobileLabel: 'Limites', enabled: true },
-                                  { key: 'dimensions', label: 'Dimensions côtés', mobileLabel: 'Dimensions', enabled: true },
-                                  { key: 'incompletes', label: 'Données incomplètes', mobileLabel: 'Incomplètes', enabled: true },
-                                  { key: 'favorite', label: 'Parcelle favorite', mobileLabel: 'Favorite', enabled: true },
-                                ];
-                                const savedItems = (mapPreviewSettings.legend?.items || []).filter(Boolean);
-                                const items = defaultLegendItems.map(def => {
-                                  const saved = savedItems.find((s: any) => s?.key === def.key);
-                                  return saved ? { ...def, ...saved } : def;
-                                });
-                                items[index] = { ...items[index], mobileLabel: e.target.value };
-                                setMapPreviewSettings({
-                                  ...mapPreviewSettings,
-                                  legend: { ...mapPreviewSettings.legend, enabled: mapPreviewSettings.legend?.enabled !== false, items }
-                                });
-                              }}
-                              className="h-7 text-xs"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {/* Section Légende — extraite dans MapLegendConfig */}
+              <MapLegendConfig
+                ref={legendRef}
+                value={mapPreviewSettings.legend}
+                onChange={(nextLegend) => setMapPreviewSettings({ ...mapPreviewSettings, legend: nextLegend })}
+              />
 
               <div className="flex gap-2">
                 <Button onClick={handleSaveMapPreviewSettings} disabled={saving === 'map_preview_settings'} className="flex-1">
