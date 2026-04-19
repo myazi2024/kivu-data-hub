@@ -1,51 +1,35 @@
 
-Objectif: corriger définitivement l’erreur de nettoyage du mode test (`column "parcel_id" does not exist`) en réalignant la base et tous les chemins de purge sur le schéma réel.
 
-Constat
-- Le bouton « Nettoyer tout » appelle la RPC `cleanup_all_test_data()` côté base.
-- Dans le code actuel du repo, `permit_payments` et `permit_admin_actions` utilisent bien `contribution_id` uniquement.
-- Le schéma généré (`src/integrations/supabase/types.ts`) confirme qu’ils n’ont ni `permit_id` ni `parcel_id`.
-- Le repo contient déjà une migration corrective pour `cleanup_all_test_data`, mais l’erreur utilisateur indique très probablement que la fonction active en base est encore une version plus ancienne/incohérente.
-- J’ai aussi trouvé que `cleanup_all_test_data_auto()` reste sur une logique plus ancienne et doit être remise au même standard pour éviter un prochain bug.
+## Audit du mode test — état actuel
 
-Plan de correction
-1. Créer une nouvelle migration unique qui recrée proprement :
-   - `public.cleanup_all_test_data()`
-   - `public.cleanup_all_test_data_auto()`
-   avec un ordre FK-safe harmonisé.
+### Ce qui fonctionne
+- **RPC `cleanup_all_test_data()`** : ordre FK-safe correct, utilise `contribution_id` pour `permit_payments`/`permit_admin_actions`, double-passe `parcel_id` + `reference_number`. Audit log OK.
+- **`cleanup_all_test_data_auto()`** : harmonisée avec la RPC manuelle, cron `cleanup-test-data-daily-rpc` à 03:00 UTC OK.
+- **Trigger `prevent_test_data_in_prod`** : actif sur 10 tables.
+- **Données présentes en DB** : 3 510 parcelles, 3 510 contributions, 1 170 factures, 702 paiements, 293 hypothèques, 176 expertises, 176 titres, 52 mutations, 52 disputes, 52 certificats. Cohérent avec les générateurs.
 
-2. Dans ces deux fonctions, appliquer l’ordre suivant :
-   - enfants de `cadastral_contributions` via `contribution_id`
-     (`fraud_attempts`, `permit_payments`, `permit_admin_actions`)
-   - `cadastral_contributor_codes`
-   - `cadastral_service_access`
-   - `payment_transactions`
-   - `cadastral_invoices`
-   - `cadastral_contributions`
-   - enfants de `cadastral_parcels` via `parcel_id`
-     (`mutation_requests`, `subdivision_requests`, `land_title_requests`,
-     `cadastral_land_disputes`, `real_estate_expertise_requests` + `expertise_payments`)
-   - historiques / hypothèques / autorisations
-   - `cadastral_parcels`
-   - tables indépendantes (`generated_certificates`, `cadastral_boundary_conflicts`)
+### Anomalies détectées
 
-3. Remplacer toute logique ambiguë ou héritée par des filtres corrects :
-   - `permit_payments` / `permit_admin_actions` : toujours via `contribution_id`
-   - double passe sur certaines demandes :
-     - par `parcel_id` pour les FK réelles
-     - par `reference_number LIKE 'TEST-%'` pour les enregistrements orphelins de test
+| # | Problème | Impact | Sévérité |
+|---|---|---|---|
+| 1 | **`cadastral_building_permits` : 0 ligne en DB** alors que `generateBuildingPermits` est appelé. La ronde courante n'a peut-être pas été régénérée depuis l'extension, OU l'INSERT échoue silencieusement (étape 11 non-bloquante). | Couverture autorisations à zéro → registry affiche 0, dashboards tronqués. | Moyen |
+| 2 | **`subdivision_requests` : 0 ligne en DB** alors que `generateSubdivisionRequests` existe (étape 13 non-bloquante). Probable échec silencieux non remonté à l'utilisateur. | Lots/voies non générés non plus → couverture lotissement à zéro. | Moyen |
+| 3 | **`subdivision_lots` / `subdivision_roads` absents du registry et de la RPC cleanup**. Cascade FK depuis `subdivision_requests` couvre la suppression, mais ils ne sont pas comptés dans `count_test_data_stats` ni listés à l'export pré-purge. | Visibilité faible. | Faible |
+| 4 | **`cadastral_building_permits` et `cadastral_mortgages` absents du trigger `prevent_test_data_in_prod`** (10 tables couvertes, ces deux ne le sont pas). | Risque insertion test en prod si `test_mode=false`. | Moyen |
+| 5 | **Étapes 11, 12, 13 non-bloquantes silencieuses** : un échec d'insert (RLS, contrainte) est juste loggé en console et résumé en `failedSteps`, mais l'utilisateur peut ne pas voir l'avertissement. | Données partielles non détectées (cas actuel n°1 et n°2). | Moyen |
+| 6 | **Mémoire `mem://admin/test-mode-hardening-fr`** ne mentionne pas la couverture lots/roads ni l'absence de trigger sur permits/mortgages. | Documentation incomplète. | Faible |
 
-4. Aligner l’edge function `supabase/functions/cleanup-test-data/index.ts` sur exactement la même logique que la RPC pour éviter toute divergence future.
+### Plan de correction
 
-5. Vérifier `rollback.ts` et, si nécessaire, le remettre au même ordre FK-safe pour que le rollback local et la purge serveur se comportent pareil.
+1. **Diagnostiquer pourquoi `building_permits` et `subdivision_requests` ne s'insèrent pas** : exécuter une régénération de test, capter les `console.error` dans `useTestDataActions`. Probables causes : RLS sur ces tables, ou contrainte unique sur `permit_number`.
+2. **Ajouter `cadastral_building_permits` et `cadastral_mortgages` au trigger `prevent_test_data_in_prod`** (migration : étendre la liste des tables).
+3. **Étendre `test_entities_registry`** avec `subdivision_lots` et `subdivision_roads` (marker via jointure `subdivision_request_id` LIKE 'TEST-%') pour visibilité dans les stats et l'export CSV.
+4. **Renforcer la remontée d'erreurs** dans `useTestDataActions` : afficher le nom de chaque entité échouée dans le toast principal (déjà partiellement présent via `failedSteps`, mais ne distingue pas autorisations vs lotissements car l'étape 11 et 13 regroupent plusieurs entités).
+5. **Mettre à jour `mem://admin/test-mode-hardening-fr`** pour refléter la couverture finale.
 
-Détails techniques
-- Pas de changement de schéma nécessaire sur les tables métier.
-- Le vrai correctif est de republier une version canonique des fonctions SQL dans une nouvelle migration, plutôt que d’empiler des hypothèses sur les anciennes migrations.
-- La cause la plus probable est un décalage entre le code source et la fonction réellement active en base.
-- J’inclurai `SET search_path = public` dans les fonctions SQL, conformément aux règles du projet.
+### Résultat attendu
+- Couverture 100 % des entités déclarées (autorisations, lotissements + lots/voies).
+- Trigger anti-prod étendu à 12 tables.
+- Visibilité complète dans le dashboard stats et l'export CSV pré-purge.
+- Toast d'avertissement plus précis en cas d'échec partiel.
 
-Résultat attendu
-- Le bouton « Nettoyer tout » ne remonte plus l’erreur `parcel_id does not exist`.
-- La purge manuelle et l’auto-cleanup utilisent la même logique fiable.
-- Le mode test peut être nettoyé puis régénéré sans blocage.
