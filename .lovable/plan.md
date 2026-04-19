@@ -1,19 +1,19 @@
 
 
-## Reformulation du libellé « propriétaire actuel » (cas titre pas au nom)
+## Reformulation du popover « Construction » (onglet Infos)
 
 ### Cible
-`src/components/cadastral/ccc-tabs/GeneralTab.tsx`, ligne 422.
+`src/components/cadastral/ccc-tabs/GeneralTab.tsx`, lignes 917-920.
 
 ### Changement
-Remplacer :
-> « Alors, indiquer le nom du propriétaire actuel tel qu'il figure dans tout document prouvant son droit sur la parcelle. »
+Remplacer le titre et le texte du popover par une formulation orientée bénéfice utilisateur, ton pro + rassurant :
 
-Par (ton pro + rassurant, suppression du « Alors » familier) :
-> « Veuillez indiquer le nom du propriétaire actuel tel qu'il apparaît sur tout document attestant de son droit sur cette parcelle. »
+- **Titre** : « Construction » (inchangé)
+- **Nouveau texte** :
+  > « Ces informations nous permettent de savoir si cette parcelle est mise en valeur, afin de vous recommander le service foncier le mieux adapté pour renforcer la sécurité de vos droits sur celle-ci. »
 
-Justifs : « Veuillez » (politesse pro), « apparaît sur » (plus naturel que « figure dans »), « attestant de » (registre juridique cohérent avec les autres textes du formulaire), « cette parcelle » (référent explicite).
+Justifs : « Ces informations nous permettent de savoir » (plus pro que « Nous voulons savoir »), virgule de clarté avant « afin de », « le mieux adapté » (rassurant), correction « vos droit » → « vos droits », « celle-ci » (référent fluide à « parcelle »).
 
 ### Hors scope
-Aucun autre libellé, logique ou condition modifié.
+Aucun changement aux champs du bloc Construction, à la logique, ni aux autres popovers.
 
