@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
       new_values: { total_deleted: total, per_step: summary },
     });
 
-    return json({ success: true, total_deleted: total, per_step: summary });
+    return json({ ok: true, success: true, total_deleted: total, per_step: summary });
   } catch (e) {
     console.error("Unhandled error:", e);
     return json({ error: e instanceof Error ? e.message : String(e) }, 500);
