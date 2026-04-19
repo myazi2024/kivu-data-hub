@@ -221,16 +221,17 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     onPaymentSuccess(services.length > 0 ? services : selectedServices.map(s => s.id));
   };
 
-  const getServiceIcon = (serviceId: string) => {
-    const iconMap: Record<string, any> = {
-      'information': FileText,
-      'location_history': MapPin,
-      'history': History,
-      'obligations': Receipt,
-      'land_disputes': Scale
-      // Fix #16: Supprimé 'legal_verification' qui n'existe pas dans le catalogue
-    };
-    return iconMap[serviceId] || Building2;
+  // Fallback historique si icon_name absent en BD (rétro-compatibilité)
+  const fallbackIconMap: Record<string, any> = {
+    'information': FileText,
+    'location_history': MapPin,
+    'history': History,
+    'obligations': Receipt,
+    'land_disputes': Scale,
+  };
+  const getServiceIcon = (service: { id: string; icon_name?: string | null }) => {
+    if (service.icon_name) return resolveLucideIcon(service.icon_name, Building2);
+    return fallbackIconMap[service.id] || Building2;
   };
 
   const totalAmount = getTotalAmount();
