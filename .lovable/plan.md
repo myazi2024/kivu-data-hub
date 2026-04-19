@@ -1,25 +1,22 @@
 
-## Remplacement de l'explication contextuelle sous le picklist du type de titre
+
+## Mise à jour du popover d'aide du picklist « Type de titre de propriété »
 
 ### Cible
-`src/components/cadastral/PropertyTitleTypeSelect.tsx`, lignes 165-169.
+`src/components/cadastral/PropertyTitleTypeSelect.tsx`, lignes 102-113 (popover déclenché par l'icône `Info` à côté du label « Type de titre de propriété »).
 
-### Constat
-Le bloc affiche actuellement `selectedType?.description`, qui change selon le titre choisi (ex: « Document administratif prouvant l'enregistrement d'un droit foncier » pour le certificat). L'utilisateur veut une consigne **générique et stable**.
+### Contenu actuel
+- Titre : « Titres de propriété en RDC »
+- Texte : « Titre officiel délivré par les services cadastraux (pas un acte de vente/donation). »
 
-Les `description` propres à chaque type restent utiles dans le popover d'info détaillé (ligne 148) — on ne les supprime pas, on cesse simplement de les afficher sous le select.
+### Nouveau contenu (reformulé pro)
+- Titre : « Titre de propriété »
+- Texte : « Le choix effectué indique quel document administratif ou titre foncier couvre cette parcelle dans les registres du service du cadastre de la zone concernée. »
 
-### Modification
-Remplacer le rendu conditionnel actuel par une phrase unique, toujours visible (sauf quand « Autre » est choisi, car un champ dédié apparaît à la place) :
-
-> « Sélectionnez dans la liste le document administratif ou le titre foncier attestant l'enregistrement d'un droit sur cette parcelle, qu'il soit établi au nom du propriétaire actuel ou non. »
-
-Reformulation pro : verbe à l'impératif soutenu, « attestant » plus juridique que « prouvant », tournure « au nom du propriétaire actuel ou non » plus fluide.
-
-### Affichage
-- Visible en permanence sous le picklist (avant et après sélection) pour guider l'utilisateur dès l'ouverture.
-- Masquée uniquement quand `value === 'Autre'`, car le bloc « Nom du titre de propriété » prend déjà en charge le cas particulier.
+Reformulation : « Le choix effectué indique » (plus neutre que « permet de savoir »), « du service du cadastre » (formulation administrative correcte en RDC), « de la zone concernée » (plus précis que « de la zone »).
 
 ### Hors scope
-- Aucun changement aux popovers d'info par titre (ils gardent `description` + `details`).
-- Aucun changement aux types, aux helpers, ni aux autres composants consommateurs.
+- Aucun changement aux popovers détaillés par type de titre (icône `Info` dans chaque ligne du select).
+- Aucun changement à la consigne sous le picklist (déjà mise à jour précédemment).
+- Aucune modification de logique, de types ou d'autres composants.
+
