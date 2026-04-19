@@ -5989,6 +5989,7 @@ export type Database = {
         }
         Returns: Json
       }
+      get_admin_pending_counts: { Args: never; Returns: Json }
       get_admin_statistics:
         | {
             Args: { end_date?: string; start_date?: string; stat_type?: string }
