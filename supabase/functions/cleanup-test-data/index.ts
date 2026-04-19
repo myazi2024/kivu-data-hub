@@ -145,15 +145,88 @@ Deno.serve(async (req) => {
       supabase.from("cadastral_contributions").delete().ilike("parcel_number", "TEST-%").lt("created_at", cutoffISO).select("id")
     );
 
-    // 7. Parcel children (including mortgage_payments → mortgages)
+    // 7. Resolve parcel_ids EARLY — needed to purge FK children before parcels
     const { data: parcelRows } = await supabase
       .from("cadastral_parcels")
       .select("id")
       .ilike("parcel_number", "TEST-%")
       .lt("created_at", cutoffISO);
     const parcelIds = parcelRows?.map((r: any) => r.id) ?? [];
+
+    // 7a. FK-safe: purge tables referencing cadastral_parcels.id BEFORE parcels.
+    // Double pass per table: by parcel_id (catches legacy refs) + by reference_number (catches orphan TEST refs).
     if (parcelIds.length > 0) {
-      // 7a. mortgage_payments (FK → mortgages) — must delete BEFORE mortgages
+      await safeDelete(
+        "mutation_requests_by_parcel",
+        supabase.from("mutation_requests").delete().in("parcel_id", parcelIds).select("id")
+      );
+      await safeDelete(
+        "subdivision_requests_by_parcel",
+        supabase.from("subdivision_requests").delete().in("parcel_id", parcelIds).select("id")
+      );
+      await safeDelete(
+        "land_title_requests_by_parcel",
+        supabase.from("land_title_requests").delete().in("parcel_id", parcelIds).select("id")
+      );
+      await safeDelete(
+        "cadastral_land_disputes_by_parcel",
+        supabase.from("cadastral_land_disputes").delete().in("parcel_id", parcelIds).select("id")
+      );
+
+      // expertise_payments → real_estate_expertise_requests (by parcel_id)
+      const { data: expByParcel } = await supabase
+        .from("real_estate_expertise_requests")
+        .select("id")
+        .in("parcel_id", parcelIds);
+      const expByParcelIds = expByParcel?.map((r: any) => r.id) ?? [];
+      if (expByParcelIds.length > 0) {
+        await safeDelete(
+          "expertise_payments_by_parcel",
+          supabase.from("expertise_payments").delete().in("expertise_request_id", expByParcelIds).select("id")
+        );
+        await safeDelete(
+          "real_estate_expertise_requests_by_parcel",
+          supabase.from("real_estate_expertise_requests").delete().in("id", expByParcelIds).select("id")
+        );
+      }
+    }
+
+    // 7b. Reference-based pass (orphan TEST refs without parcel_id)
+    await safeDelete(
+      "mutation_requests",
+      supabase.from("mutation_requests").delete().ilike("reference_number", "TEST-%").lt("created_at", cutoffISO).select("id")
+    );
+    await safeDelete(
+      "subdivision_requests",
+      supabase.from("subdivision_requests").delete().ilike("reference_number", "TEST-%").lt("created_at", cutoffISO).select("id")
+    );
+    await safeDelete(
+      "land_title_requests",
+      supabase.from("land_title_requests").delete().ilike("reference_number", "TEST-%").lt("created_at", cutoffISO).select("id")
+    );
+    await safeDelete(
+      "cadastral_land_disputes",
+      supabase.from("cadastral_land_disputes").delete().ilike("parcel_number", "TEST-%").lt("created_at", cutoffISO).select("id")
+    );
+    const { data: expReqRows } = await supabase
+      .from("real_estate_expertise_requests")
+      .select("id")
+      .ilike("reference_number", "TEST-%")
+      .lt("created_at", cutoffISO);
+    const expReqIds = expReqRows?.map((r: any) => r.id) ?? [];
+    if (expReqIds.length > 0) {
+      await safeDelete(
+        "expertise_payments",
+        supabase.from("expertise_payments").delete().in("expertise_request_id", expReqIds).select("id")
+      );
+    }
+    await safeDelete(
+      "real_estate_expertise_requests",
+      supabase.from("real_estate_expertise_requests").delete().ilike("reference_number", "TEST-%").lt("created_at", cutoffISO).select("id")
+    );
+
+    // 7c. Parcel children (mortgages/payments/history/permits)
+    if (parcelIds.length > 0) {
       const { data: mortgageRows } = await supabase
         .from("cadastral_mortgages")
         .select("id")
@@ -188,39 +261,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 8. Parcels
+    // 8. Parcels (now safe — all FK children purged)
     await safeDelete(
       "cadastral_parcels",
       supabase.from("cadastral_parcels").delete().ilike("parcel_number", "TEST-%").lt("created_at", cutoffISO).select("id")
     );
 
-    // 9. expertise_payments (FK → real_estate_expertise_requests) — must be deleted first
-    const { data: expReqRows } = await supabase
-      .from("real_estate_expertise_requests")
-      .select("id")
-      .ilike("reference_number", "TEST-%")
-      .lt("created_at", cutoffISO);
-    const expReqIds = expReqRows?.map((r: any) => r.id) ?? [];
-    if (expReqIds.length > 0) {
-      await safeDelete(
-        "expertise_payments",
-        supabase.from("expertise_payments").delete().in("expertise_request_id", expReqIds).select("id")
-      );
-    }
-
-    // 10. Independent tables (land_title_requests moved OUTSIDE parcel_ids block)
-    await safeDelete(
-      "real_estate_expertise_requests",
-      supabase.from("real_estate_expertise_requests").delete().ilike("reference_number", "TEST-%").lt("created_at", cutoffISO).select("id")
-    );
-    await safeDelete(
-      "cadastral_land_disputes",
-      supabase.from("cadastral_land_disputes").delete().ilike("parcel_number", "TEST-%").lt("created_at", cutoffISO).select("id")
-    );
-    await safeDelete(
-      "land_title_requests",
-      supabase.from("land_title_requests").delete().ilike("reference_number", "TEST-%").lt("created_at", cutoffISO).select("id")
-    );
+    // 9. Independent tables
     await safeDelete(
       "cadastral_boundary_conflicts",
       supabase.from("cadastral_boundary_conflicts").delete().ilike("reporting_parcel_number", "TEST-%").lt("created_at", cutoffISO).select("id")
@@ -229,14 +276,6 @@ Deno.serve(async (req) => {
     await safeDelete(
       "generated_certificates",
       supabase.from("generated_certificates").delete().ilike("reference_number", "TEST-%").lt("generated_at", cutoffISO).select("id")
-    );
-    await safeDelete(
-      "mutation_requests",
-      supabase.from("mutation_requests").delete().ilike("reference_number", "TEST-%").lt("created_at", cutoffISO).select("id")
-    );
-    await safeDelete(
-      "subdivision_requests",
-      supabase.from("subdivision_requests").delete().ilike("reference_number", "TEST-%").lt("created_at", cutoffISO).select("id")
     );
 
     // Audit log
