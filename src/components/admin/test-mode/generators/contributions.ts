@@ -17,6 +17,7 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
     const { pIdx, localIdx, count } = getProvinceInfo(idx);
     const prov = PROVINCES[pIdx];
     const constructionNature = pick(CONSTRUCTION_NATURES, idx);
+    const occupancy = computeOccupancy(idx, !!constructionNature);
     const isSuspicious = idx % 13 === 0;
 
     const isSR = localIdx >= Math.floor(count * 0.75);
