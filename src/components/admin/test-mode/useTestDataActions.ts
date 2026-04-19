@@ -196,16 +196,10 @@ export const useTestDataActions = ({
         throw paymentError;
       }
 
-      // Step 5: Service access (non-blocking)
-      updateStep(5, 'running');
-      try {
-        await generateServiceAccess(userId, invoices);
-        updateStep(5, 'done');
-      } catch (saError) {
-        updateStep(5, 'error');
-        failedSteps.push('Accès services');
-        console.error('Service access (non-bloquant):', saError);
-      }
+      // Step 5: Lots & voies de lotissement (placeholder, alimenté à l'étape 13).
+      // L'accès aux services est désormais provisionné automatiquement par le
+      // trigger trg_provision_service_access_on_paid (P3).
+      updateStep(5, 'done');
 
       // Step 6: Contributor codes
       updateStep(6, 'running');
