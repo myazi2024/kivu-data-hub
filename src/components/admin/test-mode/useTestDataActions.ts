@@ -79,20 +79,24 @@ export const useTestDataActions = ({
   const cleanupTestData = useCallback(async () => {
     try {
       setCleaningUp(true);
+      toast.info('Nettoyage par lots en cours…', {
+        description: 'Cela peut prendre quelques instants sur de gros volumes',
+      });
 
-      const { data, error } = await supabase.rpc('cleanup_all_test_data');
+      const { data, error } = await supabase.functions.invoke(
+        'cleanup-test-data-batch',
+      );
 
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      const deleted = data as Record<string, number> | null;
-      const totalDeleted = deleted
-        ? Object.values(deleted).reduce((sum, v) => sum + (v || 0), 0)
-        : 0;
+      if (error) throw new Error(error.message);
+      const result = (data ?? {}) as {
+        total_deleted?: number;
+        per_step?: Record<string, number>;
+      };
+      const totalDeleted = result.total_deleted ?? 0;
+      const stepCount = result.per_step ? Object.keys(result.per_step).length : 0;
 
       toast.success('Données de test supprimées', {
-        description: `${totalDeleted} enregistrements supprimés dans ${deleted ? Object.keys(deleted).length : 0} tables`,
+        description: `${totalDeleted} enregistrements supprimés dans ${stepCount} étapes`,
       });
 
       await onComplete();
