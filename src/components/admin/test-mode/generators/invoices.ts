@@ -14,20 +14,24 @@ export const generateInvoices = async (userId: string, parcelNumbers: string[]) 
   const PAYMENT_METHODS = ['mobile_money', 'card', 'bank_transfer', 'mobile_money', 'mobile_money'];
   const selectedParcels = parcelNumbers.filter((_, i) => i % 3 === 0);
 
-  const records = selectedParcels.map((pn, i) => ({
-    parcel_number: pn,
-    invoice_number: `TEST-INV-${Date.now().toString(36)}-${i}`,
-    selected_services: pick(SERVICES_POOL, i) as unknown as Json,
-    total_amount_usd: randInt(5, 25),
-    client_email: `test${i + 1}@example.com`,
-    client_name: `Test User ${i + 1}`,
-    status: pick(INV_STATUSES, i),
-    user_id: userId,
-    payment_method: pick(PAYMENT_METHODS, i),
-    discount_amount_usd: i % 5 === 0 ? randInt(1, 5) : null,
-    geographical_zone: PROVINCES[Math.floor(i / (selectedParcels.length / PROVINCES.length)) % PROVINCES.length]?.province ?? 'Kinshasa',
-    created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
-  }));
+  const records = selectedParcels.map((pn, i) => {
+    const hasDiscount = i % 5 === 0;
+    return {
+      parcel_number: pn,
+      invoice_number: `TEST-INV-${Date.now().toString(36)}-${i}`,
+      selected_services: pick(SERVICES_POOL, i) as unknown as Json,
+      total_amount_usd: randInt(5, 25),
+      client_email: `test${i + 1}@example.com`,
+      client_name: `Test User ${i + 1}`,
+      status: pick(INV_STATUSES, i),
+      user_id: userId,
+      payment_method: pick(PAYMENT_METHODS, i),
+      discount_amount_usd: hasDiscount ? randInt(1, 5) : null,
+      discount_code_used: hasDiscount ? `TEST-PROMO-${i}` : null,
+      geographical_zone: PROVINCES[Math.floor(i / (selectedParcels.length / PROVINCES.length)) % PROVINCES.length]?.province ?? 'Kinshasa',
+      created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
+    };
+  });
 
   const allInserted: Array<{ id: string; parcel_number: string; status: string }> = [];
   for (let i = 0; i < records.length; i += 200) {
