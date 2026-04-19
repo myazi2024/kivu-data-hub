@@ -20,6 +20,9 @@ interface CadastralService {
   description: string | null;
   price_usd: number;
   is_active: boolean;
+  icon_name: string | null;
+  display_order: number | null;
+  required_data_fields: any;
   created_at: string;
   updated_at: string;
 }
@@ -33,12 +36,16 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
   const [loading, setLoading] = useState(true);
   const [editingService, setEditingService] = useState<CadastralService | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [requiredDataFieldsText, setRequiredDataFieldsText] = useState('');
+  const [requiredDataFieldsError, setRequiredDataFieldsError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     service_id: '',
     name: '',
     description: '',
     price_usd: 0,
-    is_active: true
+    is_active: true,
+    icon_name: '',
+    display_order: 0,
   });
 
   useEffect(() => {
@@ -51,6 +58,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
       const { data, error } = await supabase
         .from('cadastral_services_config')
         .select('*')
+        .order('display_order', { ascending: true, nullsFirst: false })
         .order('service_id', { ascending: true });
 
       if (error) throw error;
