@@ -4,7 +4,7 @@ import {
   PROVINCES, COLLECTIVITES_SR, CONSTRUCTION_NATURES, CONSTRUCTION_TYPES,
   CONSTRUCTION_MATERIALS, DECLARED_USAGES, LEGAL_STATUSES, OWNER_NAMES,
   PROPERTY_CATEGORIES, STANDINGS, TITLE_TYPES,
-  assertInserted, getProvinceInfo, pick, randInt, randomDateInPast, seededInt,
+  assertInserted, computeOccupancy, getProvinceInfo, pick, randInt, randomDateInPast, seededInt,
   withRetry, BATCH_DELAY_MS,
 } from './_shared';
 
