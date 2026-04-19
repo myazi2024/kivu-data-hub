@@ -20,6 +20,7 @@ export const generateParcels = async (parcelNumbers: string[]) => {
     const isSR = localIdx >= Math.floor(count * 0.75);
     const parcelType = isSR ? 'SR' : 'SU';
     const constructionNature = pick(CONSTRUCTION_NATURES, idx);
+    const occupancy = computeOccupancy(idx, !!constructionNature);
     const ownerSinceDate = randomDateInPast(10);
 
     const areaSqm = seededInt(idx * 7 + 1, 200, 5000);
