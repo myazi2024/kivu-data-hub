@@ -1,28 +1,18 @@
-import React, { useState, useRef } from 'react';
-import { 
-  CreditCard, 
-  CheckCircle, 
-  FileText, 
-  DollarSign,
-  Lock,
-  Receipt,
-  X,
+import React, { useState } from 'react';
+import {
+  FileText,
   MapPin,
   History,
-  Shield,
+  Receipt,
   Building2,
-  ChevronDown,
-  ChevronRight,
-  Info,
-  Scale
+  Scale,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { CheckCircle } from 'lucide-react';
 import { useCadastralCart } from '@/hooks/useCadastralCart';
 import { useCadastralPayment } from '@/hooks/useCadastralPayment';
 import { useCadastralServices } from '@/hooks/useCadastralServices';
@@ -31,12 +21,11 @@ import { useToast } from '@/hooks/use-toast';
 import { usePaymentConfig } from '@/hooks/usePaymentConfig';
 import { useCurrencyConfig } from '@/hooks/useCurrencyConfig';
 import CadastralPaymentDialog from './CadastralPaymentDialog';
-import DiscountCodeInput from './DiscountCodeInput';
-import CurrencySelector from '@/components/payment/CurrencySelector';
-import { formatCurrency } from '@/utils/formatters';
-import { TVA_RATE } from '@/constants/billing';
 import { resolveLucideIcon } from '@/lib/lucideIconMap';
 import { evaluateServiceAvailability } from '@/lib/serviceAvailability';
+import BillingHeader from './billing/BillingHeader';
+import ServiceListItem from './billing/ServiceListItem';
+import BillingTotals from './billing/BillingTotals';
 
 interface CadastralBillingPanelProps {
   searchResult: CadastralSearchResult;
