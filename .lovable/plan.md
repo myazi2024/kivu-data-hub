@@ -1,18 +1,19 @@
 
 
-## Mise à jour du popover « Titre au nom du propriétaire actuel »
+## Reformulation du libellé « propriétaire actuel » (cas titre pas au nom)
 
 ### Cible
-`src/components/cadastral/ccc-tabs/GeneralTab.tsx`, ligne 269.
+`src/components/cadastral/ccc-tabs/GeneralTab.tsx`, ligne 422.
 
 ### Changement
-Remplacer le texte actuel du popover par une formulation reformulée (ton pro + rassurant) :
+Remplacer :
+> « Alors, indiquer le nom du propriétaire actuel tel qu'il figure dans tout document prouvant son droit sur la parcelle. »
 
-> « Votre réponse nous permet de déterminer si nous pouvons vous recommander un service de mutation foncière, afin de sécuriser davantage le droit foncier qui couvre cette parcelle. »
+Par (ton pro + rassurant, suppression du « Alors » familier) :
+> « Veuillez indiquer le nom du propriétaire actuel tel qu'il apparaît sur tout document attestant de son droit sur cette parcelle. »
 
-Reformulation : suppression du « ou pas » familier, ajout de la virgule de clarté, « afin de » au lieu de « pour », « cette parcelle » au lieu de « la couvre » (référent ambigu).
+Justifs : « Veuillez » (politesse pro), « apparaît sur » (plus naturel que « figure dans »), « attestant de » (registre juridique cohérent avec les autres textes du formulaire), « cette parcelle » (référent explicite).
 
 ### Hors scope
-- Aucune modification de la question elle-même, des boutons Oui/Non, ni de la logique de validation.
-- Pas de changement aux autres popovers de l'onglet.
+Aucun autre libellé, logique ou condition modifié.
 
