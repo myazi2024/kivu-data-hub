@@ -243,24 +243,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   return (
     <TooltipProvider>
       <Card className="w-full max-w-[380px] sm:max-w-none mx-auto border-primary/20 bg-gradient-to-br from-background to-secondary/5 rounded-2xl overflow-hidden shadow-sm">
-        <CardHeader className="pb-2 p-3 border-b border-border/50">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-xl bg-primary/10 shadow-sm">
-              <FileText className="h-3.5 w-3.5 text-primary" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <CardTitle className="text-sm font-semibold truncate">
-                {searchResult.parcel.parcel_number}
-              </CardTitle>
-              <p className="text-xs text-muted-foreground truncate">
-                {searchResult.parcel.location} • {searchResult.parcel.parcel_type === 'SU' ? 'Urbaine' : 'Rurale'}
-              </p>
-            </div>
-            <Badge variant="outline" className="text-xs px-1.5 py-0.5 shrink-0">
-              {catalogServices.length} services
-            </Badge>
-          </div>
-        </CardHeader>
+        <BillingHeader parcel={searchResult.parcel} servicesCount={catalogServices.length} />
 
         <CardContent className="space-y-2.5 p-3">
           {/* Message info compact */}
