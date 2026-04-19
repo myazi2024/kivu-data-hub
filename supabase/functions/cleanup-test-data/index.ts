@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
 
     // FK-safe deletion order (children → parents)
 
-    // 1. Fraud attempts (FK → contributions)
+    // 1. Fraud attempts + permit_payments + permit_admin_actions (FK → contributions via contribution_id)
     const { data: contribRows } = await supabase
       .from("cadastral_contributions")
       .select("id")
@@ -112,6 +112,15 @@ Deno.serve(async (req) => {
       await safeDelete(
         "fraud_attempts",
         supabase.from("fraud_attempts").delete().in("contribution_id", contribIds).select("id")
+      );
+      // permit_payments and permit_admin_actions use contribution_id (NOT permit_id)
+      await safeDelete(
+        "permit_payments",
+        supabase.from("permit_payments").delete().in("contribution_id", contribIds).select("id")
+      );
+      await safeDelete(
+        "permit_admin_actions",
+        supabase.from("permit_admin_actions").delete().in("contribution_id", contribIds).select("id")
       );
     }
 
