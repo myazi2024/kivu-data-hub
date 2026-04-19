@@ -67,6 +67,63 @@ export function seededInt(seed: number, min: number, max: number): number {
   return min + h;
 }
 
+/**
+ * Compute deterministic occupancy data (hosting_capacity, occupant_count, is_occupied)
+ * for a given parcel index. Ensures both parcels.ts and contributions.ts produce
+ * identical values so cross-table analytics (hosting-capacity × occupation, etc.) stay consistent.
+ *
+ * Distribution of hosting_capacity covers all 6 Analytics buckets:
+ *   ~35% 1-2 | ~30% 3-5 | ~20% 6-10 | ~10% 11-20 | ~4% 21-50 | ~1% 51-150
+ *
+ * occupant_count is correlated to capacity to populate the 3 occupancy-pressure segments:
+ *   ~25% under-occupied (ratio 0.2-0.4) | ~50% balanced (0.6-0.95) | ~15% saturated (1.05-1.4) | ~10% null
+ */
+export function computeOccupancy(
+  idx: number,
+  hasConstruction: boolean
+): { hosting_capacity: number | null; occupant_count: number | null; is_occupied: boolean | null } {
+  if (!hasConstruction) {
+    return { hosting_capacity: null, occupant_count: null, is_occupied: null };
+  }
+
+  // Capacity bucket (deterministic via idx % 100)
+  const capBucket = idx % 100;
+  let hosting_capacity: number;
+  if (capBucket < 35) hosting_capacity = seededInt(idx * 17 + 1, 1, 2);
+  else if (capBucket < 65) hosting_capacity = seededInt(idx * 17 + 2, 3, 5);
+  else if (capBucket < 85) hosting_capacity = seededInt(idx * 17 + 3, 6, 10);
+  else if (capBucket < 95) hosting_capacity = seededInt(idx * 17 + 4, 11, 20);
+  else if (capBucket < 99) hosting_capacity = seededInt(idx * 17 + 5, 21, 50);
+  else hosting_capacity = seededInt(idx * 17 + 6, 51, 150);
+
+  // Occupancy pressure bucket
+  const occBucket = idx % 20; // 20 slots → 5/10/3/2 = 25/50/15/10%
+  let occupant_count: number | null;
+  let is_occupied: boolean | null;
+  if (occBucket < 5) {
+    // Under-occupied: ratio 0.2-0.4
+    const ratio = 0.2 + (seededInt(idx * 19 + 1, 0, 20) / 100);
+    occupant_count = Math.max(1, Math.round(hosting_capacity * ratio));
+    is_occupied = true;
+  } else if (occBucket < 15) {
+    // Balanced: ratio 0.6-0.95
+    const ratio = 0.6 + (seededInt(idx * 19 + 2, 0, 35) / 100);
+    occupant_count = Math.max(1, Math.round(hosting_capacity * ratio));
+    is_occupied = true;
+  } else if (occBucket < 18) {
+    // Saturated: ratio 1.05-1.4
+    const ratio = 1.05 + (seededInt(idx * 19 + 3, 0, 35) / 100);
+    occupant_count = Math.max(hosting_capacity + 1, Math.round(hosting_capacity * ratio));
+    is_occupied = true;
+  } else {
+    // Vacant / not declared
+    occupant_count = null;
+    is_occupied = occBucket === 18 ? false : null;
+  }
+
+  return { hosting_capacity, occupant_count, is_occupied };
+}
+
 /** Return a random date in the past, formatted YYYY-MM-DD */
 export function randomDateInPast(yearsBack: number): string {
   const now = Date.now();
