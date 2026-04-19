@@ -26,16 +26,18 @@ export const rollbackTestData = async (parcelNumbers: string[], suffix: string) 
   // 7. Purge ALL tables that reference cadastral_parcels.id BEFORE deleting parcels
   // Double pass: by parcel_id (covers legacy refs) + by reference_number (covers TEST refs without parcel_id)
   if (parcelIds.length > 0) {
-    await supabase.from('mutation_requests').delete().in('parcel_id', parcelIds);
-    await supabase.from('subdivision_requests').delete().in('parcel_id', parcelIds);
-    await supabase.from('land_title_requests').delete().in('parcel_id', parcelIds);
-    await supabase.from('cadastral_land_disputes').delete().in('parcel_id', parcelIds);
+    // Cast to any to avoid TS2589 (deep union inference across many tables)
+    const sb = supabase as any;
+    await sb.from('mutation_requests').delete().in('parcel_id', parcelIds);
+    await sb.from('subdivision_requests').delete().in('parcel_id', parcelIds);
+    await sb.from('land_title_requests').delete().in('parcel_id', parcelIds);
+    await sb.from('cadastral_land_disputes').delete().in('parcel_id', parcelIds);
 
     // expertise_payments → real_estate_expertise_requests (by parcel_id)
-    const expReqByParcel = (await supabase.from('real_estate_expertise_requests').select('id').in('parcel_id', parcelIds)).data?.map(r => r.id) ?? [];
+    const expReqByParcel = ((await sb.from('real_estate_expertise_requests').select('id').in('parcel_id', parcelIds)).data ?? []).map((r: { id: string }) => r.id);
     if (expReqByParcel.length > 0) {
-      await supabase.from('expertise_payments').delete().in('expertise_request_id', expReqByParcel);
-      await supabase.from('real_estate_expertise_requests').delete().in('id', expReqByParcel);
+      await sb.from('expertise_payments').delete().in('expertise_request_id', expReqByParcel);
+      await sb.from('real_estate_expertise_requests').delete().in('id', expReqByParcel);
     }
   }
 
