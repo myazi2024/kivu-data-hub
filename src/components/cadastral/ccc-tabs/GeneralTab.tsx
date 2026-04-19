@@ -419,7 +419,7 @@ const CurrentOwnersSection: React.FC<CurrentOwnersSectionProps> = ({
             {formData.isTitleInCurrentOwnerName === true 
               ? `Ajouter le/la propriétaire figurant sur le ${getEffectiveTitleName(formData.propertyTitleType, customTitleName) || 'titre de propriété'}`
               : formData.isTitleInCurrentOwnerName === false
-              ? "Alors, indiquer le nom du propriétaire actuel tel qu'il figure dans tout document prouvant son droit sur la parcelle."
+              ? "Veuillez indiquer le nom du propriétaire actuel tel qu'il apparaît sur tout document attestant de son droit sur cette parcelle."
               : "Propriétaire(s) actuel(s)"}
           </Label>
         </div>
