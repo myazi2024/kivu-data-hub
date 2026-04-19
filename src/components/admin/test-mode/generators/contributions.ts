@@ -118,9 +118,9 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
         paymentDate: randomDateInPast(1),
       }] as unknown as Json,
       has_dispute: idx % 10 === 0,
-      is_occupied: constructionNature ? (idx % 10 < 7 ? true : idx % 10 < 9 ? false : null) : null,
-      occupant_count: constructionNature && idx % 10 < 7 ? randInt(1, 8) : null,
-      hosting_capacity: constructionNature ? randInt(2, 15) : null,
+      is_occupied: occupancy.is_occupied,
+      occupant_count: occupancy.occupant_count,
+      hosting_capacity: occupancy.hosting_capacity,
       additional_constructions: idx % 5 === 0 && constructionNature
         ? [{ type: pick(['Garage', 'Dépendance', 'Kiosque', 'Clôture'], idx), usage: pick(['Stockage', 'Commerce', 'Habitation'], idx), surface_sqm: randInt(10, 80) }] as unknown as Json
         : null,
