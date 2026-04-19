@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { assertInserted, pick, randInt, randomDateInPast } from './_shared';
+import { pick, randInt, randomDateInPast } from './_shared';
 
 /** Step 15: Building permits — ~15% parcels (≥1/province via filtre dense) */
 export const generateBuildingPermits = async (

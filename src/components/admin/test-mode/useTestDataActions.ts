@@ -259,18 +259,27 @@ export const useTestDataActions = ({
       }
 
       // Step 11: Boundary history + mortgages (+ payments) + building permits + boundary conflicts
+      // Each sub-step is independently captured to surface granular failures.
       updateStep(11, 'running');
-      try {
-        await generateBoundaryHistory(parcels);
-        const mortgages = await generateMortgages(parcels);
-        await generateMortgagePayments(mortgages);
-        await generateBuildingPermits(parcels);
-        await generateBoundaryConflicts(parcelNumbers, userId);
-        updateStep(11, 'done');
-      } catch (bmError) {
-        updateStep(11, 'error');
-        failedSteps.push('Bornages/hypothèques/autorisations');
-        console.error('Bornages/hypothèques/autorisations/conflits (non-blocking):', bmError);
+      {
+        const subFailed: string[] = [];
+        try { await generateBoundaryHistory(parcels); }
+        catch (e) { subFailed.push('Bornages'); console.error('Bornages (non-bloquant):', e); }
+        let mortgages: Awaited<ReturnType<typeof generateMortgages>> = [];
+        try { mortgages = await generateMortgages(parcels); }
+        catch (e) { subFailed.push('Hypothèques'); console.error('Hypothèques (non-bloquant):', e); }
+        try { await generateMortgagePayments(mortgages); }
+        catch (e) { subFailed.push('Paiements hypothèques'); console.error('Paiements hypothèques (non-bloquant):', e); }
+        try { await generateBuildingPermits(parcels); }
+        catch (e) { subFailed.push('Autorisations de bâtir'); console.error('Autorisations (non-bloquant):', e); }
+        try { await generateBoundaryConflicts(parcelNumbers, userId); }
+        catch (e) { subFailed.push('Conflits de limites'); console.error('Conflits (non-bloquant):', e); }
+        if (subFailed.length > 0) {
+          updateStep(11, 'error');
+          failedSteps.push(...subFailed);
+        } else {
+          updateStep(11, 'done');
+        }
       }
 
       // Step 12: Fraud attempts + certificates (non-blocking)
@@ -285,17 +294,23 @@ export const useTestDataActions = ({
         console.error('Fraud/certificates (non-blocking):', fcError);
       }
 
-      // Step 13: Mutations & subdivisions (+ lots/voies) (non-blocking)
+      // Step 13: Mutations & subdivisions (+ lots/voies) — granular failure tracking
       updateStep(13, 'running');
-      try {
-        await generateMutationRequests(userId, parcels, suffix);
-        const subdivisions = await generateSubdivisionRequests(userId, parcels, suffix);
-        await generateSubdivisionLotsAndRoads(subdivisions);
-        updateStep(13, 'done');
-      } catch (msError) {
-        updateStep(13, 'error');
-        failedSteps.push('Mutations/lotissements');
-        console.error('Mutations/subdivisions (non-blocking):', msError);
+      {
+        const subFailed: string[] = [];
+        try { await generateMutationRequests(userId, parcels, suffix); }
+        catch (e) { subFailed.push('Mutations'); console.error('Mutations (non-bloquant):', e); }
+        let subdivisions: Array<{ id: string }> = [];
+        try { subdivisions = await generateSubdivisionRequests(userId, parcels, suffix); }
+        catch (e) { subFailed.push('Lotissements'); console.error('Lotissements (non-bloquant):', e); }
+        try { await generateSubdivisionLotsAndRoads(subdivisions); }
+        catch (e) { subFailed.push('Lots/voies de lotissement'); console.error('Lots/voies (non-bloquant):', e); }
+        if (subFailed.length > 0) {
+          updateStep(13, 'error');
+          failedSteps.push(...subFailed);
+        } else {
+          updateStep(13, 'done');
+        }
       }
 
       await logAuditAction(
