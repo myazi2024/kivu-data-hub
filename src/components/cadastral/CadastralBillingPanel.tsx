@@ -36,6 +36,7 @@ import CurrencySelector from '@/components/payment/CurrencySelector';
 import { formatCurrency } from '@/utils/formatters';
 import { TVA_RATE } from '@/constants/billing';
 import { resolveLucideIcon } from '@/lib/lucideIconMap';
+import { evaluateServiceAvailability } from '@/lib/serviceAvailability';
 
 interface CadastralBillingPanelProps {
   searchResult: CadastralSearchResult;
@@ -46,28 +47,23 @@ interface CadastralBillingPanelProps {
   alreadyPaidServices?: string[];
 }
 
-const getServiceDataAvailability = (searchResult: CadastralSearchResult) => {
-  const { parcel, ownership_history, tax_history, mortgage_history, boundary_history, building_permits } = searchResult;
-  
-  const hasInformation = true;
-  const hasLocationHistory = !!(
-    (parcel.province && parcel.ville) || 
-    (boundary_history && boundary_history.length > 0) ||
-    (parcel.gps_coordinates && Array.isArray(parcel.gps_coordinates) && parcel.gps_coordinates.length > 0)
-  );
-  const hasHistory = !!(ownership_history && ownership_history.length > 0);
-  const hasObligations = !!(
-    (tax_history && tax_history.length > 0) ||
-    (mortgage_history && mortgage_history.length > 0)
-  );
-  
+// Fallback hardcodé conservé si aucun spec n'est défini en BD pour un service legacy.
+const legacyAvailability = (searchResult: CadastralSearchResult): Record<string, boolean> => {
+  const { parcel, ownership_history, tax_history, mortgage_history, boundary_history } = searchResult;
   return {
-    'information': hasInformation,
-    'location_history': hasLocationHistory,
-    'history': hasHistory,
-    'obligations': hasObligations,
-    'land_disputes': true
-  } as Record<string, boolean>;
+    information: true,
+    location_history: !!(
+      (parcel.province && parcel.ville) ||
+      (boundary_history && boundary_history.length > 0) ||
+      (parcel.gps_coordinates && Array.isArray(parcel.gps_coordinates) && parcel.gps_coordinates.length > 0)
+    ),
+    history: !!(ownership_history && ownership_history.length > 0),
+    obligations: !!(
+      (tax_history && tax_history.length > 0) ||
+      (mortgage_history && mortgage_history.length > 0)
+    ),
+    land_disputes: true,
+  };
 };
 
 const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({ 
@@ -98,10 +94,20 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   const { currencies, selectedCurrency, setSelectedCurrency, convertFromUsd, exchangeRate } = useCurrencyConfig();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const serviceAvailability = React.useMemo(() => 
-    getServiceDataAvailability(searchResult), 
-    [searchResult]
-  );
+  const serviceAvailability = React.useMemo(() => {
+    const fallback = legacyAvailability(searchResult);
+    const result: Record<string, boolean> = {};
+    catalogServices.forEach(svc => {
+      if (svc.required_data_fields) {
+        result[svc.id] = evaluateServiceAvailability(svc.required_data_fields, searchResult);
+      } else if (svc.id in fallback) {
+        result[svc.id] = fallback[svc.id];
+      } else {
+        result[svc.id] = true;
+      }
+    });
+    return result;
+  }, [searchResult, catalogServices]);
 
   // Fix #18: Synchroniser les prix du panier via batch update (1 seul re-render)
   React.useEffect(() => {
