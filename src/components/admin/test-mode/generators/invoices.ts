@@ -2,14 +2,34 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
 import { PROVINCES, assertInserted, pick, randInt } from './_shared';
 
+/** Fallback aligné sur le catalogue par défaut si la lecture runtime échoue */
+const FALLBACK_SERVICE_IDS = ['information', 'location_history', 'history', 'obligations', 'land_disputes'];
+
+/** Charge dynamiquement les service_id actifs du catalogue (cadastral_services_config) */
+const loadActiveServiceIds = async (): Promise<string[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('cadastral_services_config')
+      .select('service_id')
+      .eq('is_active', true)
+      .is('deleted_at', null)
+      .order('display_order', { ascending: true });
+    if (error || !data || data.length === 0) return FALLBACK_SERVICE_IDS;
+    return data.map((r) => r.service_id);
+  } catch {
+    return FALLBACK_SERVICE_IDS;
+  }
+};
+
 /** Step 2: Generate invoices (~33% of parcels) */
 export const generateInvoices = async (userId: string, parcelNumbers: string[]) => {
-  // Aligné sur cadastral_services_config.service_id (catalogue réel)
+  // P1: Catalogue dynamique — lit cadastral_services_config au runtime
+  const activeServices = await loadActiveServiceIds();
   const SERVICES_POOL: Json[][] = [
-    ['information', 'location_history'],
-    ['information'],
-    ['history', 'obligations'],
-    ['information', 'land_disputes'],
+    activeServices.slice(0, Math.min(2, activeServices.length)),
+    activeServices.slice(0, 1),
+    activeServices.slice(0, Math.min(3, activeServices.length)),
+    activeServices.slice(0, Math.min(2, activeServices.length)),
   ];
   const INV_STATUSES = ['paid', 'pending', 'paid', 'paid', 'pending'];
   const PAYMENT_METHODS = ['mobile_money', 'card', 'bank_transfer', 'mobile_money', 'mobile_money'];
@@ -47,32 +67,9 @@ export const generateInvoices = async (userId: string, parcelNumbers: string[]) 
   return allInserted;
 };
 
-/** Step 4: Service access for paid invoices */
-export const generateServiceAccess = async (
-  userId: string,
-  invoices: Array<{ id: string; parcel_number: string; status: string }>
-) => {
-  const paidInvoices = invoices.filter((inv) => inv.status === 'paid');
-  if (paidInvoices.length === 0) return;
-
-  // Aligné sur cadastral_services_config.service_id (catalogue réel)
-  const SERVICE_TYPES = ['information', 'location_history', 'history', 'obligations', 'land_disputes'];
-
-  const records = paidInvoices.flatMap((inv, i) => {
-    const count = (i % 2) + 1;
-    return SERVICE_TYPES.slice(0, count).map((svc) => ({
-      parcel_number: inv.parcel_number,
-      invoice_id: inv.id,
-      service_type: svc,
-      user_id: userId,
-    }));
-  });
-
-  for (let i = 0; i < records.length; i += 200) {
-    const batch = records.slice(i, i + 200);
-    const { error } = await supabase
-      .from('cadastral_service_access')
-      .insert(batch);
-    if (error) console.error(`Accès services (batch ${i}, non bloquant):`, error);
-  }
-};
+/**
+ * P3 — generateServiceAccess SUPPRIMÉ.
+ * Le trigger `trg_provision_service_access_on_paid` provisionne automatiquement
+ * les accès lorsque la facture passe à `paid` (lit `selected_services`).
+ * Garder un générateur manuel diverge du flux production et est inutile.
+ */
