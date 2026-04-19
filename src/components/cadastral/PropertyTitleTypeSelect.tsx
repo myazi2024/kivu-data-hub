@@ -162,9 +162,9 @@ const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({
           </SelectContent>
         </Select>
         
-        {value && !isAutre && (
+        {!isAutre && (
           <p className="text-xs text-muted-foreground">
-            {selectedType?.description}
+            Sélectionnez dans la liste le document administratif ou le titre foncier attestant l'enregistrement d'un droit sur cette parcelle, qu'il soit établi au nom du propriétaire actuel ou non.
           </p>
         )}
 
