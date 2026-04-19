@@ -150,6 +150,9 @@ export const generateSubdivisionRequests = async (
     .insert(records)
     .select('id');
 
-  if (error) throw new Error(`Lotissements: ${error.message}`);
-  return assertInserted(data, 'Lotissements');
+  if (error) {
+    console.error('Lotissements (non-bloquant):', error);
+    return [];
+  }
+  return data ?? [];
 };

@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { assertInserted, pick, randInt, randomDateInPast } from './_shared';
+import { pick, randInt, randomDateInPast } from './_shared';
 
 /** Step 15: Building permits — ~15% parcels (≥1/province via filtre dense) */
 export const generateBuildingPermits = async (
@@ -37,8 +37,12 @@ export const generateBuildingPermits = async (
       .from('cadastral_building_permits')
       .insert(batch)
       .select('id, administrative_status, permit_number');
-    if (error) throw new Error(`Autorisation de bâtir (batch ${i}): ${error.message}`);
-    allInserted.push(...assertInserted(data, 'Autorisation de bâtir'));
+    if (error) {
+      // Non-bloquant : log + skip batch pour ne pas casser le reste de l'étape 11
+      console.error(`Autorisation de bâtir (batch ${i}, non-bloquant):`, error);
+      continue;
+    }
+    if (data) allInserted.push(...data);
   }
   return allInserted;
 };

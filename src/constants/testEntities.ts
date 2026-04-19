@@ -28,6 +28,7 @@ export const TEST_ENTITIES: TestEntity[] = [
   { labelKey: 'boundaryConflicts',   tableName: 'cadastral_boundary_conflicts',     marker: 'reporting_parcel_number', label: 'Conflits limites' } as never,
   { labelKey: 'mutationRequests',    tableName: 'mutation_requests',                marker: 'reference_number',        label: 'Mutations' } as never,
   { labelKey: 'subdivisionRequests', tableName: 'subdivision_requests',             marker: 'reference_number',        label: 'Lotissements' } as never,
+  { labelKey: 'subdivisionLots',     tableName: 'subdivision_lots',                 marker: 'parcel_number',           label: 'Lots de lotissement' } as never,
   { labelKey: 'mortgages',           tableName: 'cadastral_mortgages',              marker: 'reference_number',        label: 'Hypothèques' } as never,
   { labelKey: 'buildingPermits',     tableName: 'cadastral_building_permits',       marker: 'permit_number',           label: 'Autorisations de bâtir' } as never,
   { labelKey: 'certificates',        tableName: 'generated_certificates',           marker: 'reference_number',        label: 'Certificats' } as never,
