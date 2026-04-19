@@ -78,16 +78,33 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
         return;
       }
 
+      // Parse required_data_fields JSON si non vide
+      let requiredDataFields: any = null;
+      if (requiredDataFieldsText.trim()) {
+        try {
+          requiredDataFields = JSON.parse(requiredDataFieldsText);
+          setRequiredDataFieldsError(null);
+        } catch (e: any) {
+          setRequiredDataFieldsError(`JSON invalide : ${e.message}`);
+          toast.error('Le JSON des règles de disponibilité est invalide');
+          return;
+        }
+      }
+
+      const payload = {
+        name: formData.name,
+        description: formData.description || null,
+        price_usd: formData.price_usd,
+        is_active: formData.is_active,
+        icon_name: formData.icon_name || null,
+        display_order: formData.display_order || 0,
+        required_data_fields: requiredDataFields,
+      };
+
       if (editingService) {
         const { error } = await supabase
           .from('cadastral_services_config')
-          .update({
-            name: formData.name,
-            description: formData.description,
-            price_usd: formData.price_usd,
-            is_active: formData.is_active,
-            updated_at: new Date().toISOString()
-          })
+          .update({ ...payload, updated_at: new Date().toISOString() })
           .eq('id', editingService.id);
 
         if (error) throw error;
@@ -95,7 +112,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
       } else {
         const { error } = await supabase
           .from('cadastral_services_config')
-          .insert([formData]);
+          .insert([{ ...payload, service_id: formData.service_id }]);
 
         if (error) throw error;
         toast.success('✅ Service créé avec succès');
@@ -172,8 +189,14 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
       name: service.name,
       description: service.description || '',
       price_usd: Number(service.price_usd),
-      is_active: service.is_active
+      is_active: service.is_active,
+      icon_name: service.icon_name || '',
+      display_order: service.display_order ?? 0,
     });
+    setRequiredDataFieldsText(
+      service.required_data_fields ? JSON.stringify(service.required_data_fields, null, 2) : ''
+    );
+    setRequiredDataFieldsError(null);
     setIsDialogOpen(true);
   };
 
@@ -184,8 +207,12 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
       name: '',
       description: '',
       price_usd: 0,
-      is_active: true
+      is_active: true,
+      icon_name: '',
+      display_order: 0,
     });
+    setRequiredDataFieldsText('');
+    setRequiredDataFieldsError(null);
   };
 
   const totalRevenue = services.reduce((sum, s) => sum + Number(s.price_usd), 0);
