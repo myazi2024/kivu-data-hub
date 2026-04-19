@@ -383,8 +383,14 @@ export const useTestDataActions = ({
     try {
       setRegenerating(true);
       toast.info('Nettoyage des données existantes (par lots)…');
-      const { error } = await supabase.functions.invoke('cleanup-test-data-batch');
+      const { data, error } = await supabase.functions.invoke('cleanup-test-data-batch');
       if (error) throw new Error(error.message);
+      const result = (data ?? {}) as { ok?: boolean; failed_step?: string; error?: string; partial_total?: number };
+      if (result.ok === false) {
+        throw new Error(
+          `Étape "${result.failed_step}" : ${result.error ?? 'erreur inconnue'} (${result.partial_total ?? 0} déjà supprimés)`,
+        );
+      }
       toast.success('Données nettoyées, régénération en cours…');
       await generateTestData();
     } catch (error: unknown) {
