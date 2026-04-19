@@ -4,11 +4,12 @@ import { PROVINCES, assertInserted, pick, randInt } from './_shared';
 
 /** Step 2: Generate invoices (~33% of parcels) */
 export const generateInvoices = async (userId: string, parcelNumbers: string[]) => {
+  // Aligné sur cadastral_services_config.service_id (catalogue réel)
   const SERVICES_POOL: Json[][] = [
-    ['carte_cadastrale', 'fiche_identification'],
-    ['carte_cadastrale'],
-    ['fiche_identification', 'certificat_bornage'],
-    ['carte_cadastrale', 'certificat_bornage'],
+    ['information', 'location_history'],
+    ['information'],
+    ['history', 'obligations'],
+    ['information', 'land_disputes'],
   ];
   const INV_STATUSES = ['paid', 'pending', 'paid', 'paid', 'pending'];
   const PAYMENT_METHODS = ['mobile_money', 'card', 'bank_transfer', 'mobile_money', 'mobile_money'];
@@ -54,7 +55,8 @@ export const generateServiceAccess = async (
   const paidInvoices = invoices.filter((inv) => inv.status === 'paid');
   if (paidInvoices.length === 0) return;
 
-  const SERVICE_TYPES = ['carte_cadastrale', 'fiche_identification', 'certificat_bornage'];
+  // Aligné sur cadastral_services_config.service_id (catalogue réel)
+  const SERVICE_TYPES = ['information', 'location_history', 'history', 'obligations', 'land_disputes'];
 
   const records = paidInvoices.flatMap((inv, i) => {
     const count = (i % 2) + 1;
