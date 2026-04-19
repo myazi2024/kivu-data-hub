@@ -30,7 +30,7 @@ export const rollbackTestData = async (parcelNumbers: string[], suffix: string) 
     const sb = supabase as any;
     await sb.from('mutation_requests').delete().in('parcel_id', parcelIds);
     await sb.from('subdivision_requests').delete().in('parcel_id', parcelIds);
-    await sb.from('land_title_requests').delete().in('parcel_id', parcelIds);
+    // NOTE: land_title_requests has no parcel_id column — purged by reference_number below
     await sb.from('cadastral_land_disputes').delete().in('parcel_id', parcelIds);
 
     // expertise_payments → real_estate_expertise_requests (by parcel_id)
