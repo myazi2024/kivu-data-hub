@@ -254,7 +254,7 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'construction-geo', el: () => <GeoCharts records={builtParcels} /> },
     { key: 'construction-evolution', el: () => <ChartCard title={ct('construction-evolution', 'Évolution constructions')} icon={TrendingUp} data={constructionTrend} type={ty('construction-evolution', 'area')} colorIndex={0} colSpan={2}
       insight={generateInsight(constructionTrend, 'area', 'les constructions')} /> },
-  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filteredParcels, builtParcels, filteredContribs, normalizedParcels, charts, permitTypeData, buildingSizeData, buildingHeightData, soundEnvData, noiseSourcesData, occupationData, floorDistData, builtVsUnbuiltData, constructionTrend, v, ct, cx, ty, ord]);
+  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filteredParcels, builtParcels, filteredContribs, normalizedParcels, parcelsWithCapacity, charts, permitTypeData, buildingSizeData, buildingHeightData, soundEnvData, noiseSourcesData, occupationData, floorDistData, hostingCapacityData, occupancyPressureData, builtVsUnbuiltData, constructionTrend, v, ct, cx, ty, ord]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
