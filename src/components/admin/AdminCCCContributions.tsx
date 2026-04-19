@@ -23,6 +23,9 @@ import { exportToCSV } from '@/utils/csvExport';
 import { logContributionAudit } from '@/utils/contributionAudit';
 import CCCStatsCards from './ccc/CCCStatsCards';
 import CCCBulkActions from './ccc/CCCBulkActions';
+import { CCCFilters } from './ccc/CCCFilters';
+import { CCCContributionsTable } from './ccc/CCCContributionsTable';
+import { calculateCCCCompleteness } from './ccc/cccCompleteness';
 
 interface ValidationResult {
   valid: boolean;
@@ -679,29 +682,7 @@ const AdminCCCContributions: React.FC = () => {
 
   // Utiliser StatusBadge partagé pour les statuts
 
-  const calculateCompleteness = (contribution: Contribution) => {
-    let filled = 0;
-    const total = 16;
-
-    if (contribution.property_title_type) filled++;
-    if (contribution.current_owner_name || contribution.current_owners_details) filled++;
-    if (contribution.area_sqm && contribution.area_sqm > 0) filled++;
-    if (contribution.province) filled++;
-    if (contribution.property_category) filled++;
-    if (contribution.construction_type) filled++;
-    if (contribution.ownership_history && Array.isArray(contribution.ownership_history) && contribution.ownership_history.length > 0) filled++;
-    if (contribution.boundary_history && Array.isArray(contribution.boundary_history) && contribution.boundary_history.length > 0) filled++;
-    if (contribution.tax_history && Array.isArray(contribution.tax_history) && contribution.tax_history.length > 0) filled++;
-    if (contribution.gps_coordinates && Array.isArray(contribution.gps_coordinates) && contribution.gps_coordinates.length > 0) filled++;
-    if (contribution.owner_document_url) filled++;
-    if (contribution.property_title_document_url) filled++;
-    if (contribution.building_shapes && Array.isArray(contribution.building_shapes) && contribution.building_shapes.length > 0) filled++;
-    if (contribution.road_sides && Array.isArray(contribution.road_sides) && contribution.road_sides.length > 0) filled++;
-    if (contribution.has_dispute !== null) filled++;
-    if (contribution.whatsapp_number) filled++;
-
-    return Math.round((filled / total) * 100);
-  };
+  const calculateCompleteness = (contribution: Contribution) => calculateCCCCompleteness(contribution);
 
   // Renvoyer une contribution pour correction
   const handleReturn = async (contributionId: string) => {
@@ -965,24 +946,12 @@ const AdminCCCContributions: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent className="p-2 md:p-6">
-          {/* Search + user filter */}
-          <div className="grid grid-cols-1 sm:grid-cols-[1fr_220px] gap-2 mb-3">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Rechercher par parcelle, province, ville, propriétaire..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 h-9 text-sm"
-              />
-            </div>
-            <Input
-              placeholder="Filtrer par user_id (UUID partiel)"
-              value={userFilter}
-              onChange={(e) => setUserFilter(e.target.value)}
-              className="h-9 text-sm font-mono"
-            />
-          </div>
+          <CCCFilters
+            searchQuery={searchQuery}
+            onSearchQueryChange={setSearchQuery}
+            userFilter={userFilter}
+            onUserFilterChange={setUserFilter}
+          />
 
           <CCCBulkActions
             selectedCount={selectedIds.size}
@@ -1003,111 +972,29 @@ const AdminCCCContributions: React.FC = () => {
             </TabsList>
 
             <TabsContent value={activeTab} className="mt-2">
-              <div className="overflow-x-auto">
-                <ResponsiveTable>
-                  <ResponsiveTableHeader>
-                    <ResponsiveTableRow>
-                      <ResponsiveTableHead priority="high"> </ResponsiveTableHead>
-                      <ResponsiveTableHead priority="high">Parcelle</ResponsiveTableHead>
-                      <ResponsiveTableHead priority="low">Contributeur</ResponsiveTableHead>
-                      <ResponsiveTableHead priority="medium">Complétion</ResponsiveTableHead>
-                      <ResponsiveTableHead priority="high">Statut</ResponsiveTableHead>
-                      <ResponsiveTableHead priority="low">Score</ResponsiveTableHead>
-                      <ResponsiveTableHead priority="medium">Date</ResponsiveTableHead>
-                      <ResponsiveTableHead priority="high">Actions</ResponsiveTableHead>
-                    </ResponsiveTableRow>
-                  </ResponsiveTableHeader>
-                  <ResponsiveTableBody>
-                  {paginatedContributions.map((contribution) => {
-                    const completeness = calculateCompleteness(contribution);
-                    const canSelect = contribution.status === 'pending' || contribution.status === 'returned';
-                    return (
-                      <ResponsiveTableRow key={contribution.id}>
-                        <ResponsiveTableCell priority="high" label="Sélection">
-                          {canSelect ? (
-                            <Checkbox
-                              checked={selectedIds.has(contribution.id)}
-                              onCheckedChange={() => toggleSelect(contribution.id)}
-                              aria-label="Sélectionner"
-                            />
-                          ) : null}
-                        </ResponsiveTableCell>
-                        <ResponsiveTableCell priority="high" label="Parcelle" className="font-mono text-xs md:text-sm">
-                          {contribution.parcel_number}
-                        </ResponsiveTableCell>
-                        <ResponsiveTableCell priority="low" label="Contributeur" className="text-xs md:text-sm">
-                          <button
-                            type="button"
-                            className="font-mono text-primary hover:underline"
-                            onClick={() => setUserFilter(contribution.user_id)}
-                            title="Filtrer par cet utilisateur"
-                          >
-                            {contribution.user_id.substring(0, 8)}…
-                          </button>
-                        </ResponsiveTableCell>
-                        <ResponsiveTableCell priority="medium" label="Complétion">
-                          <div className="flex items-center gap-1 md:gap-2">
-                            <div className="w-12 md:w-16 bg-secondary rounded-full h-1.5 md:h-2">
-                              <div 
-                                className="bg-primary h-1.5 md:h-2 rounded-full" 
-                                style={{ width: `${completeness}%` }}
-                              />
-                            </div>
-                            <span className="text-xs md:text-sm">{completeness}%</span>
-                          </div>
-                        </ResponsiveTableCell>
-                        <ResponsiveTableCell priority="high" label="Statut">
-                          <StatusBadge status={contribution.status as StatusType} />
-                        </ResponsiveTableCell>
-                        <ResponsiveTableCell priority="low" label="Score">
-                          {contribution.is_suspicious ? (
-                            <Badge variant="destructive" className="text-xs">{contribution.fraud_score}</Badge>
-                          ) : (
-                            <span className="text-muted-foreground text-xs">-</span>
-                          )}
-                        </ResponsiveTableCell>
-                        <ResponsiveTableCell priority="medium" label="Date" className="text-xs md:text-sm">
-                          {new Date(contribution.created_at).toLocaleDateString('fr-FR', { 
-                            day: '2-digit', 
-                            month: '2-digit' 
-                          })}
-                        </ResponsiveTableCell>
-                        <ResponsiveTableCell priority="high" label="Actions">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedContribution(contribution);
-                              setIsDetailsOpen(true);
-                              setValidationResult(null);
-                            }}
-                            className="h-7 w-7 md:h-8 md:w-8 p-0"
-                          >
-                            <Eye className="h-3 w-3 md:h-4 md:w-4" />
-                          </Button>
-                        </ResponsiveTableCell>
-                      </ResponsiveTableRow>
-                    );
-                  })}
-                  </ResponsiveTableBody>
-                </ResponsiveTable>
-                
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <PaginationControls
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    pageSize={pageSize}
-                    totalItems={totalItems}
-                    hasPreviousPage={hasPreviousPage}
-                    hasNextPage={hasNextPage}
-                    onPageChange={goToPage}
-                    onPreviousPage={goToPreviousPage}
-                    onNextPage={goToNextPage}
-                    onPageSizeChange={changePageSize}
-                  />
-                )}
-              </div>
+              <CCCContributionsTable
+                rows={paginatedContributions}
+                selectedIds={selectedIds}
+                onToggleSelect={toggleSelect}
+                onView={(contribution) => {
+                  setSelectedContribution(contribution);
+                  setIsDetailsOpen(true);
+                  setValidationResult(null);
+                }}
+                onUserFilterClick={setUserFilter}
+                pagination={{
+                  currentPage,
+                  totalPages,
+                  pageSize,
+                  totalItems,
+                  hasPreviousPage,
+                  hasNextPage,
+                  onPageChange: goToPage,
+                  onPreviousPage: goToPreviousPage,
+                  onNextPage: goToNextPage,
+                  onPageSizeChange: changePageSize,
+                }}
+              />
             </TabsContent>
           </Tabs>
         </CardContent>
