@@ -266,7 +266,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
                 </PopoverTrigger>
                 <PopoverContent className="w-72 rounded-xl text-xs">
                   <p className="text-muted-foreground">
-                    Il est essentiel que le titre foncier soit enregistré au nom du véritable propriétaire afin de prévenir d'éventuelles complications légales, fiscales ou administratives.
+                    Votre réponse nous permet de déterminer si nous pouvons vous recommander un service de mutation foncière, afin de sécuriser davantage le droit foncier qui couvre cette parcelle.
                   </p>
                 </PopoverContent>
               </Popover>
