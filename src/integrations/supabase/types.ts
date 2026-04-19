@@ -5885,6 +5885,10 @@ export type Database = {
       }
     }
     Functions: {
+      _cleanup_test_data_chunk_internal: {
+        Args: { p_limit: number; p_step: string }
+        Returns: number
+      }
       archive_stale_articles: { Args: { _months?: number }; Returns: number }
       auto_archive_stale_articles: {
         Args: never
@@ -5914,6 +5918,10 @@ export type Database = {
       cleanup_all_test_data: { Args: never; Returns: Json }
       cleanup_all_test_data_auto: { Args: never; Returns: Json }
       cleanup_expired_data: { Args: never; Returns: undefined }
+      cleanup_test_data_chunk: {
+        Args: { p_limit?: number; p_step: string }
+        Returns: number
+      }
       count_audit_logs: { Args: never; Returns: number }
       count_test_data_stats: { Args: never; Returns: Json }
       create_cadastral_invoice_secure: {
