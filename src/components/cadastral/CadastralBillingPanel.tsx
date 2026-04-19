@@ -35,6 +35,7 @@ import DiscountCodeInput from './DiscountCodeInput';
 import CurrencySelector from '@/components/payment/CurrencySelector';
 import { formatCurrency } from '@/utils/formatters';
 import { TVA_RATE } from '@/constants/billing';
+import { resolveLucideIcon } from '@/lib/lucideIconMap';
 
 interface CadastralBillingPanelProps {
   searchResult: CadastralSearchResult;
