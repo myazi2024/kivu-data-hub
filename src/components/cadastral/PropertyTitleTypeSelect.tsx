@@ -98,9 +98,9 @@ const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({
             </PopoverTrigger>
             <PopoverContent className="w-72 rounded-xl" align="end">
               <div className="space-y-2 text-xs">
-                <h4 className="font-semibold text-sm">Titres de propriété en RDC</h4>
+                <h4 className="font-semibold text-sm">Titre de propriété</h4>
                 <p className="text-muted-foreground">
-                  Titre officiel délivré par les services cadastraux (pas un acte de vente/donation).
+                  Le choix effectué indique quel document administratif ou titre foncier couvre cette parcelle dans les registres du service du cadastre de la zone concernée.
                 </p>
               </div>
             </PopoverContent>
