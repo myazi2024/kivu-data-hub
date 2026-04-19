@@ -24,6 +24,13 @@ import { useConfigValidation } from '@/hooks/useConfigValidation';
 import AdminPicklistManager from './config/AdminPicklistManager';
 import AdminStaticPicklistManager from './config/AdminStaticPicklistManager';
 import { MapLegendConfig, type MapLegendConfigHandle } from './contribution-config/MapLegendConfig';
+import { GeneralSettingsSection } from './contribution-config/GeneralSettingsSection';
+import { MarkerStyleSection } from './contribution-config/MarkerStyleSection';
+import { EditingOptionsSection } from './contribution-config/EditingOptionsSection';
+import { ConstraintsSection } from './contribution-config/ConstraintsSection';
+import { RoadTypesSection } from './contribution-config/RoadTypesSection';
+import { DimensionsSection } from './contribution-config/DimensionsSection';
+import { DEFAULT_MAP_PREVIEW_SETTINGS } from './contribution-config/mapPreviewDefaults';
 
 const AdminContributionConfig = ({ initialTab, scrollToLegend }: { initialTab?: string; scrollToLegend?: boolean } = {}) => {
   const { configs, loading, updateConfig } = useContributionConfig();
