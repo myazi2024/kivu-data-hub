@@ -20,6 +20,9 @@ interface CadastralService {
   description: string | null;
   price_usd: number;
   is_active: boolean;
+  icon_name: string | null;
+  display_order: number | null;
+  required_data_fields: any;
   created_at: string;
   updated_at: string;
 }
@@ -33,12 +36,16 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
   const [loading, setLoading] = useState(true);
   const [editingService, setEditingService] = useState<CadastralService | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [requiredDataFieldsText, setRequiredDataFieldsText] = useState('');
+  const [requiredDataFieldsError, setRequiredDataFieldsError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     service_id: '',
     name: '',
     description: '',
     price_usd: 0,
-    is_active: true
+    is_active: true,
+    icon_name: '',
+    display_order: 0,
   });
 
   useEffect(() => {
@@ -51,6 +58,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
       const { data, error } = await supabase
         .from('cadastral_services_config')
         .select('*')
+        .order('display_order', { ascending: true, nullsFirst: false })
         .order('service_id', { ascending: true });
 
       if (error) throw error;
@@ -70,16 +78,33 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
         return;
       }
 
+      // Parse required_data_fields JSON si non vide
+      let requiredDataFields: any = null;
+      if (requiredDataFieldsText.trim()) {
+        try {
+          requiredDataFields = JSON.parse(requiredDataFieldsText);
+          setRequiredDataFieldsError(null);
+        } catch (e: any) {
+          setRequiredDataFieldsError(`JSON invalide : ${e.message}`);
+          toast.error('Le JSON des règles de disponibilité est invalide');
+          return;
+        }
+      }
+
+      const payload = {
+        name: formData.name,
+        description: formData.description || null,
+        price_usd: formData.price_usd,
+        is_active: formData.is_active,
+        icon_name: formData.icon_name || null,
+        display_order: formData.display_order || 0,
+        required_data_fields: requiredDataFields,
+      };
+
       if (editingService) {
         const { error } = await supabase
           .from('cadastral_services_config')
-          .update({
-            name: formData.name,
-            description: formData.description,
-            price_usd: formData.price_usd,
-            is_active: formData.is_active,
-            updated_at: new Date().toISOString()
-          })
+          .update({ ...payload, updated_at: new Date().toISOString() })
           .eq('id', editingService.id);
 
         if (error) throw error;
@@ -87,7 +112,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
       } else {
         const { error } = await supabase
           .from('cadastral_services_config')
-          .insert([formData]);
+          .insert([{ ...payload, service_id: formData.service_id }]);
 
         if (error) throw error;
         toast.success('✅ Service créé avec succès');
@@ -164,8 +189,14 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
       name: service.name,
       description: service.description || '',
       price_usd: Number(service.price_usd),
-      is_active: service.is_active
+      is_active: service.is_active,
+      icon_name: service.icon_name || '',
+      display_order: service.display_order ?? 0,
     });
+    setRequiredDataFieldsText(
+      service.required_data_fields ? JSON.stringify(service.required_data_fields, null, 2) : ''
+    );
+    setRequiredDataFieldsError(null);
     setIsDialogOpen(true);
   };
 
@@ -176,8 +207,12 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
       name: '',
       description: '',
       price_usd: 0,
-      is_active: true
+      is_active: true,
+      icon_name: '',
+      display_order: 0,
     });
+    setRequiredDataFieldsText('');
+    setRequiredDataFieldsError(null);
   };
 
   const totalRevenue = services.reduce((sum, s) => sum + Number(s.price_usd), 0);
@@ -313,6 +348,54 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
                     />
                   </div>
 
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="display_order">Ordre d'affichage</Label>
+                      <Input
+                        id="display_order"
+                        type="number"
+                        min="0"
+                        value={formData.display_order}
+                        onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="icon_name">Icône Lucide</Label>
+                      <Input
+                        id="icon_name"
+                        value={formData.icon_name}
+                        onChange={(e) => setFormData({ ...formData, icon_name: e.target.value })}
+                        placeholder="ex: FileText, MapPin, History"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Nom exact d'une icône <a href="https://lucide.dev/icons/" target="_blank" rel="noreferrer" className="underline">lucide.dev</a>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="required_data_fields">Règles de disponibilité (JSON)</Label>
+                    <Textarea
+                      id="required_data_fields"
+                      value={requiredDataFieldsText}
+                      onChange={(e) => {
+                        setRequiredDataFieldsText(e.target.value);
+                        setRequiredDataFieldsError(null);
+                      }}
+                      rows={6}
+                      className="font-mono text-xs"
+                      placeholder={`{\n  "mode": "any",\n  "rules": [\n    { "type": "non_empty_array", "field": "ownership_history" }\n  ]\n}`}
+                    />
+                    {requiredDataFieldsError && (
+                      <p className="text-xs text-destructive mt-1">{requiredDataFieldsError}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Optionnel. Détermine si la parcelle dispose des données pour ce service.
+                      Types : <code>always_true</code>, <code>truthy</code> (champ + companion), <code>non_empty_array</code>.
+                      Mode : <code>any</code> (au moins une règle) ou <code>all</code> (toutes).
+                    </p>
+                  </div>
+
                   <div className="flex items-center space-x-2">
                     <Switch
                       id="is_active"
@@ -338,27 +421,35 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Ordre</TableHead>
                 <TableHead>ID</TableHead>
                 <TableHead>Nom</TableHead>
+                <TableHead>Icône</TableHead>
                 <TableHead>Prix</TableHead>
+                <TableHead>Règles</TableHead>
                 <TableHead>Statut</TableHead>
-                <TableHead>Dernière MAJ</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {services.map((service) => (
                 <TableRow key={service.id}>
+                  <TableCell className="text-sm text-muted-foreground">{service.display_order ?? '—'}</TableCell>
                   <TableCell className="font-mono text-sm">{service.service_id}</TableCell>
                   <TableCell className="font-medium">{service.name}</TableCell>
+                  <TableCell className="font-mono text-xs">{service.icon_name || '—'}</TableCell>
                   <TableCell>${Number(service.price_usd).toFixed(2)}</TableCell>
+                  <TableCell>
+                    {service.required_data_fields ? (
+                      <Badge variant="outline">Configurées</Badge>
+                    ) : (
+                      <Badge variant="secondary">Aucune</Badge>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Badge variant={service.is_active ? 'default' : 'secondary'}>
                       {service.is_active ? 'Actif' : 'Inactif'}
                     </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {new Date(service.updated_at).toLocaleDateString('fr-FR')}
                   </TableCell>
                   <TableCell>
                     <div className="flex space-x-2">

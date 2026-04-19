@@ -8,6 +8,8 @@ export interface CadastralService {
   price: number;
   description: string;
   icon_name?: string | null;
+  required_data_fields?: unknown;
+  display_order?: number | null;
 }
 
 /**
@@ -40,6 +42,8 @@ export const useCadastralServices = () => {
         price: Number(service.price_usd),
         description: service.description || '',
         icon_name: service.icon_name ?? null,
+        required_data_fields: service.required_data_fields ?? null,
+        display_order: service.display_order ?? null,
       }));
 
       setServices(mappedServices);
