@@ -368,8 +368,8 @@ export const useTestDataActions = ({
     }
     try {
       setRegenerating(true);
-      toast.info('Nettoyage des données existantes…');
-      const { error } = await supabase.rpc('cleanup_all_test_data');
+      toast.info('Nettoyage des données existantes (par lots)…');
+      const { error } = await supabase.functions.invoke('cleanup-test-data-batch');
       if (error) throw new Error(error.message);
       toast.success('Données nettoyées, régénération en cours…');
       await generateTestData();
