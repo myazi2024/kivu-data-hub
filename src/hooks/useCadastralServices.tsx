@@ -7,6 +7,7 @@ export interface CadastralService {
   name: string;
   price: number;
   description: string;
+  icon_name?: string | null;
 }
 
 /**
