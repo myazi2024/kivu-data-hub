@@ -13,7 +13,7 @@ export const generateBuildingPermits = async (
     'Service Urbanisme - Lubumbashi',
     'Division Urbanisme - Matadi',
   ];
-  const ADM_STATUSES = ['Conforme', 'Non autorisé', 'Conforme', 'En attente', 'Conforme'];
+  const ADM_STATUSES = ['approved', 'rejected', 'approved', 'pending', 'completed'];
 
   const records = selected.map((p, i) => {
     const isRegularization = i % 3 === 0;
