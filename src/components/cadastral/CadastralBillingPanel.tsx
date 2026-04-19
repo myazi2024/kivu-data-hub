@@ -312,105 +312,18 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                 const isDisabled = !hasData || isAlreadyPaid;
                 
                 return (
-                  <div 
+                  <ServiceListItem
                     key={service.id}
-                    onClick={() => !isDisabled && handleServiceToggle(service.id)}
-                    className={`
-                      transition-all duration-200 cursor-pointer
-                      ${hasData 
-                        ? 'rounded-2xl border-2 shadow-md hover:shadow-lg' 
-                        : 'rounded-xl border'
-                      }
-                      ${isServiceSelected 
-                        ? 'border-primary bg-primary/5' 
-                        : hasData 
-                          ? 'border-primary/40 bg-background hover:border-primary/60' 
-                          : 'border-border/50 bg-muted/20'
-                      }
-                      ${isDisabled ? 'cursor-not-allowed' : ''}
-                    `}
-                  >
-                    <div className={`flex items-center gap-2 ${hasData ? 'p-3' : 'p-2'}`}>
-                      <div className={`
-                        shrink-0 transition-colors
-                        ${hasData ? 'p-2 rounded-xl' : 'p-1.5 rounded-lg'}
-                        ${isServiceSelected 
-                          ? 'bg-primary text-primary-foreground' 
-                          : hasData 
-                            ? 'bg-primary/10 text-primary' 
-                            : 'bg-muted text-muted-foreground/50'
-                        }
-                      `}>
-                        <IconComponent className={hasData ? 'h-4 w-4' : 'h-3.5 w-3.5'} />
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <h4 className={`
-                          font-medium leading-tight truncate
-                          ${hasData 
-                            ? 'text-sm text-foreground' 
-                            : 'text-xs text-muted-foreground'
-                          }
-                        `}>
-                          {service.name}
-                        </h4>
-                        {isAlreadyPaid ? (
-                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">✓ Déjà acheté</span>
-                        ) : !hasData ? (
-                          <span className="text-[10px] text-muted-foreground/60">Données manquantes</span>
-                        ) : null}
-                      </div>
-
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleServiceExpansion(service.id);
-                        }}
-                        className={`p-0 rounded-lg ${hasData ? 'h-7 w-7' : 'h-6 w-6'}`}
-                      >
-                        <ChevronDown className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''} ${hasData ? 'h-4 w-4' : 'h-3.5 w-3.5'}`} />
-                      </Button>
-
-                      <Badge 
-                        variant={hasData ? "default" : "secondary"} 
-                        className={`shrink-0 ${hasData ? 'text-sm px-2 py-0.5 font-semibold' : 'text-xs px-1.5 py-0.5 opacity-60'}`}
-                      >
-                        ${service.price.toFixed(2)}
-                      </Badge>
-                      
-                      <Checkbox 
-                        checked={isServiceSelected}
-                        disabled={isDisabled}
-                        className={`pointer-events-none ${hasData ? 'h-5 w-5' : 'h-4 w-4 opacity-50'}`}
-                      />
-                    </div>
-
-                    <Collapsible open={isExpanded}>
-                      <CollapsibleContent className={hasData ? 'px-3 pb-3' : 'px-2.5 pb-2.5'}>
-                        <div className="space-y-1.5 text-left pt-1 border-t border-border/50">
-                          <p className={`leading-relaxed ${hasData ? 'text-sm text-muted-foreground' : 'text-xs text-muted-foreground/70'}`}>
-                            {service.description}
-                          </p>
-                          {/* Fix #7: N'afficher "Compléter les données" que si le service N'EST PAS déjà payé */}
-                          {!hasData && !isAlreadyPaid && onRequestContribution && (
-                            <Button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onRequestContribution();
-                              }}
-                              size="sm"
-                              variant="outline"
-                              className="w-full h-7 text-xs rounded-lg"
-                            >
-                              Compléter les données
-                            </Button>
-                          )}
-                        </div>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  </div>
+                    service={service}
+                    Icon={IconComponent}
+                    isSelected={isServiceSelected}
+                    isExpanded={isExpanded}
+                    hasData={hasData}
+                    isAlreadyPaid={isAlreadyPaid}
+                    onToggleSelect={() => handleServiceToggle(service.id)}
+                    onToggleExpand={() => toggleServiceExpansion(service.id)}
+                    onRequestContribution={onRequestContribution}
+                  />
                 );
               })}
             </div>
@@ -418,157 +331,23 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
           )}
 
 
-          {selectedServiceIds.length > 0 && (
-            <div className="rounded-xl border bg-muted/20 p-2.5">
-              <div className="flex items-center gap-2 mb-2">
-                <Receipt className="h-3 w-3 text-primary" />
-                <span className="text-xs font-medium">Code de remise</span>
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0">Optionnel</Badge>
-              </div>
-              <DiscountCodeInput
-                invoiceAmount={totalAmount}
-                onDiscountApplied={setAppliedDiscount}
-                className="bg-background/50 border-border/50"
-              />
-            </div>
-          )}
-
-          {selectedServiceIds.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-muted-foreground">Devise d'affichage</span>
-                <CurrencySelector
-                  currencies={currencies}
-                  selectedCurrency={selectedCurrency}
-                  onCurrencyChange={setSelectedCurrency}
-                />
-              </div>
-              <div className="space-y-1 px-2.5 py-2 bg-muted/20 rounded-xl text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Sous-total ({selectedServiceIds.length} service{selectedServiceIds.length > 1 ? 's' : ''})</span>
-                  <span className="font-medium">{formatCurrency(convertFromUsd(totalAmount), selectedCurrency)}</span>
-                </div>
-                {appliedDiscount && (
-                  <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400">
-                    <span>Remise ({appliedDiscount.code})</span>
-                    <span>-{formatCurrency(convertFromUsd(appliedDiscount.amount), selectedCurrency)}</span>
-                  </div>
-                )}
-                <div className="flex items-center justify-between text-muted-foreground">
-                  <span>{`TVA (${(TVA_RATE * 100).toFixed(0)}%)`}</span>
-                  <span>{formatCurrency(convertFromUsd(discountedAmount * TVA_RATE), selectedCurrency)}</span>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between p-2.5 bg-primary/5 rounded-xl border border-primary/20">
-                <span className="text-sm font-semibold">Total TTC</span>
-                <div className="text-right">
-                  <div className="text-lg font-bold text-primary">
-                    {formatCurrency(convertFromUsd(discountedAmount * (1 + TVA_RATE)), selectedCurrency)}
-                  </div>
-                  {selectedCurrency !== 'USD' && (
-                    <div className="text-[10px] text-muted-foreground">
-                      ≈ {formatCurrency(discountedAmount * (1 + TVA_RATE), 'USD')}
-                    </div>
-                  )}
-                  {appliedDiscount && (
-                    <div className="text-[10px] text-green-600 dark:text-green-400">
-                      Économie: {formatCurrency(convertFromUsd(appliedDiscount.amount * (1 + TVA_RATE)), selectedCurrency)} TTC
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {selectedServiceIds.length > 0 && (
-            <div className={`
-              p-2.5 rounded-xl border transition-all duration-300
-              ${highlightTerms 
-                ? 'border-destructive bg-destructive/5' 
-                : 'border-border bg-muted/20'
-              }
-            `}>
-              <div className="flex items-start gap-2">
-                <Checkbox 
-                  id="terms"
-                  checked={acceptedTerms}
-                  onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
-                  className="mt-0.5 h-4 w-4"
-                />
-                <label 
-                  htmlFor="terms" 
-                  className={`text-xs leading-relaxed cursor-pointer ${highlightTerms ? 'text-destructive' : ''}`}
-                >
-                  J'accepte les{" "}
-                  <a href="/legal" target="_blank" className="text-primary underline">
-                    conditions BIC
-                  </a>
-                  {" "}et confirme la commande.
-                </label>
-              </div>
-            </div>
-          )}
-
-          {/* Bouton de paiement */}
-          <Button 
-            onClick={handleProceedToPayment}
-            disabled={selectedServiceIds.length === 0 || loading || isSubmitting}
-            className={`
-              w-full h-10 text-sm font-semibold rounded-xl
-              ${selectedServiceIds.length > 0 && acceptedTerms 
-                ? 'bg-primary hover:bg-primary/90 shadow-sm' 
-                : selectedServiceIds.length > 0 
-                ? 'bg-muted-foreground/80'
-                : 'opacity-50 cursor-not-allowed bg-muted'
-              }
-            `}
-          >
-            {loading ? (
-              <div className="flex items-center gap-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-background border-t-transparent" />
-                <span>Traitement...</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-              {!isPaymentRequired() ? (
-                  <CheckCircle className="h-4 w-4" />
-                ) : (
-                  <CreditCard className="h-4 w-4" />
-                )}
-                <span>
-                  {selectedServiceIds.length === 0 
-                    ? 'Sélectionner des services' 
-                    : !acceptedTerms 
-                    ? 'Accepter les conditions'
-                    : !isPaymentRequired()
-                    ? 'Accéder aux services'
-                    : 'Payer'
-                  }
-                </span>
-                {selectedServiceIds.length > 0 && acceptedTerms && (
-                  <Lock className="h-3 w-3 ml-auto opacity-70" />
-                )}
-              </div>
-            )}
-          </Button>
-          
-          {selectedServiceIds.length === 0 && (
-            <p className="text-center text-xs text-muted-foreground">
-              Sélectionnez les services souhaités
-            </p>
-          )}
-          
-          {selectedServiceIds.length > 0 && !acceptedTerms && (
-            <p className="text-center text-xs text-amber-600 dark:text-amber-400">
-              Validation des conditions requise
-            </p>
-          )}
-          {!isPaymentRequired() && (
-            <p className="text-[10px] text-muted-foreground/60 text-right mt-1">
-              Accès gratuit
-            </p>
-          )}
+          <BillingTotals
+            selectedCount={selectedServiceIds.length}
+            totalAmount={totalAmount}
+            appliedDiscount={appliedDiscount}
+            onDiscountApplied={setAppliedDiscount}
+            currencies={currencies}
+            selectedCurrency={selectedCurrency}
+            setSelectedCurrency={setSelectedCurrency}
+            convertFromUsd={convertFromUsd}
+            acceptedTerms={acceptedTerms}
+            setAcceptedTerms={setAcceptedTerms}
+            highlightTerms={highlightTerms}
+            loading={loading}
+            isSubmitting={isSubmitting}
+            isPaymentRequired={isPaymentRequired}
+            onProceed={handleProceedToPayment}
+          />
         </CardContent>
       </Card>
 
