@@ -88,14 +88,15 @@ Deno.serve(async (req) => {
         );
         if (error) {
           console.error(`Step ${step} failed:`, error);
-          return json(
-            {
-              error: `Step ${step} failed: ${error.message}`,
-              partial_summary: summary,
-              partial_total: total,
-            },
-            500,
-          );
+          // Return 200 with ok:false so frontend can display the failed step name
+          // instead of a generic "non-2xx" error.
+          return json({
+            ok: false,
+            failed_step: step,
+            error: error.message,
+            partial_summary: summary,
+            partial_total: total,
+          });
         }
         const deleted = (data as number) ?? 0;
         stepTotal += deleted;
