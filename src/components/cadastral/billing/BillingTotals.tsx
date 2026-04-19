@@ -7,6 +7,7 @@ import DiscountCodeInput from '../DiscountCodeInput';
 import CurrencySelector from '@/components/payment/CurrencySelector';
 import { formatCurrency } from '@/utils/formatters';
 import { TVA_RATE } from '@/constants/billing';
+import type { CurrencyCode } from '@/hooks/useCurrencyConfig';
 
 interface AppliedDiscount {
   code: string;
@@ -21,8 +22,8 @@ interface BillingTotalsProps {
   appliedDiscount: AppliedDiscount | null;
   onDiscountApplied: (d: AppliedDiscount | null) => void;
   currencies: any[];
-  selectedCurrency: string;
-  setSelectedCurrency: (c: string) => void;
+  selectedCurrency: CurrencyCode;
+  setSelectedCurrency: (c: CurrencyCode) => void;
   convertFromUsd: (n: number) => number;
   acceptedTerms: boolean;
   setAcceptedTerms: (v: boolean) => void;
