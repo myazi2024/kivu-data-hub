@@ -78,7 +78,7 @@ export const generateMutationRequests = async (
         { fee_name: 'Frais de dossier', amount_usd: 83, is_mandatory: true },
         ...(i % 2 === 0 ? [{ fee_name: 'Frais de mutation', amount_usd: 83, is_mandatory: true }] : []),
       ] as unknown as Json,
-      rejection_reason: status === 'rejected' ? 'Documents insuffisants (test)' : null,
+      rejection_reason: status === 'rejected' ? 'TEST: rejet automatique simulé' : null,
       reviewed_at: status !== 'pending' ? new Date().toISOString() : null,
       created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
     };
@@ -138,6 +138,7 @@ export const generateSubdivisionRequests = async (
         area_sqm: lotArea,
         intended_use: pick(PURPOSES, j),
       })) as unknown as Json,
+      rejection_reason: status === 'rejected' ? 'TEST: rejet automatique simulé' : null,
       reviewed_at: status !== 'pending' ? new Date().toISOString() : null,
       approved_at: status === 'approved' ? new Date().toISOString() : null,
       created_at: new Date(Date.now() - randInt(0, 10 * 365) * 24 * 3600 * 1000).toISOString(),
