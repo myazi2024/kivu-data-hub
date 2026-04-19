@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { AdminSidebar, getTabLabel, getTabCategory } from '@/components/admin/AdminSidebar';
 import { AdminDashboardHeader } from '@/components/admin/AdminDashboardHeader';
-import { usePendingCount } from '@/hooks/usePendingCount';
+import { useAdminPendingCounts } from '@/hooks/useAdminPendingCounts';
 import { ChevronRight } from 'lucide-react';
 
 // Lazy-loaded admin components — object mapping
@@ -128,19 +128,12 @@ const Admin = () => {
 
   const isAdmin = hasAdminRole === true;
 
-  const pendingCount = usePendingCount('cadastral_contributions', { in: { status: ['pending', 'under_review'] } }, isAdmin, refreshKey);
-  const pendingLandTitleCount = usePendingCount('land_title_requests', { in: { status: ['pending', 'in_review'] } }, isAdmin, refreshKey);
-  const pendingPermitsCount = usePendingCount('cadastral_contributions', { not: [['permit_request_data', 'is', null]], eq: { status: 'pending' } }, isAdmin, refreshKey);
-  const pendingMutationsCount = usePendingCount('mutation_requests', { eq: { status: 'pending' } }, isAdmin, refreshKey);
-  const pendingExpertiseCount = usePendingCount('real_estate_expertise_requests', { eq: { status: 'pending' } }, isAdmin, refreshKey);
-  const pendingSubdivisionsCount = usePendingCount('subdivision_requests', { eq: { status: 'pending' } }, isAdmin, refreshKey);
-  const pendingPaymentsCount = usePendingCount('payments', { eq: { status: 'pending' } }, isAdmin, refreshKey);
-  const pendingDisputesCount = usePendingCount('cadastral_land_disputes', { in: { current_status: ['pending', 'under_investigation'] } }, isAdmin, refreshKey);
-  const pendingMortgagesCount = usePendingCount('cadastral_mortgages', { eq: { mortgage_status: 'pending' } }, isAdmin, refreshKey);
+  const { counts, refetch: refetchCounts } = useAdminPendingCounts(isAdmin);
 
   const refreshCounts = useCallback(() => {
     setRefreshKey(k => k + 1);
-  }, []);
+    refetchCounts();
+  }, [refetchCounts]);
 
   if (loading || hasAdminRole === null) {
     return (
@@ -171,17 +164,7 @@ const Admin = () => {
           <h2 className="text-sm lg:text-base font-bold">Admin</h2>
           <p className="text-[10px] text-muted-foreground">Gestion complète</p>
         </div>
-        <AdminSidebar 
-          pendingCount={pendingCount} 
-          pendingLandTitleCount={pendingLandTitleCount}
-          pendingPermitsCount={pendingPermitsCount}
-          pendingMutationsCount={pendingMutationsCount}
-          pendingExpertiseCount={pendingExpertiseCount}
-          pendingSubdivisionsCount={pendingSubdivisionsCount}
-          pendingPaymentsCount={pendingPaymentsCount}
-          pendingDisputesCount={pendingDisputesCount}
-          pendingMortgagesCount={pendingMortgagesCount}
-        />
+        <AdminSidebar counts={counts} />
       </aside>
 
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
@@ -190,18 +173,7 @@ const Admin = () => {
             <h2 className="text-sm font-bold">Admin</h2>
             <p className="text-[10px] text-muted-foreground">Gestion complète</p>
           </div>
-          <AdminSidebar 
-            pendingCount={pendingCount}
-            pendingLandTitleCount={pendingLandTitleCount}
-            pendingPermitsCount={pendingPermitsCount}
-            pendingMutationsCount={pendingMutationsCount}
-            pendingExpertiseCount={pendingExpertiseCount}
-            pendingSubdivisionsCount={pendingSubdivisionsCount}
-            pendingPaymentsCount={pendingPaymentsCount}
-            pendingDisputesCount={pendingDisputesCount}
-            pendingMortgagesCount={pendingMortgagesCount}
-            onNavigate={() => setMobileMenuOpen(false)}
-          />
+          <AdminSidebar counts={counts} onNavigate={() => setMobileMenuOpen(false)} />
         </SheetContent>
       </Sheet>
 

@@ -20,7 +20,7 @@ import {
 } from './sidebarConfig';
 import type { AdminPendingCounts } from '@/hooks/useAdminPendingCounts';
 
-export { getTabLabel, getTabCategory };
+export { menuItems, getTabLabel, getTabCategory };
 
 interface AdminSidebarProps {
   counts: AdminPendingCounts;
