@@ -89,9 +89,23 @@ export const useTestDataActions = ({
 
       if (error) throw new Error(error.message);
       const result = (data ?? {}) as {
+        ok?: boolean;
+        failed_step?: string;
+        error?: string;
         total_deleted?: number;
+        partial_total?: number;
         per_step?: Record<string, number>;
+        partial_summary?: Record<string, number>;
       };
+
+      // Step-level failure (returned as 200 with ok:false)
+      if (result.ok === false) {
+        const partial = result.partial_total ?? 0;
+        throw new Error(
+          `Étape "${result.failed_step}" : ${result.error ?? 'erreur inconnue'} (${partial} déjà supprimés)`,
+        );
+      }
+
       const totalDeleted = result.total_deleted ?? 0;
       const stepCount = result.per_step ? Object.keys(result.per_step).length : 0;
 
@@ -369,8 +383,14 @@ export const useTestDataActions = ({
     try {
       setRegenerating(true);
       toast.info('Nettoyage des données existantes (par lots)…');
-      const { error } = await supabase.functions.invoke('cleanup-test-data-batch');
+      const { data, error } = await supabase.functions.invoke('cleanup-test-data-batch');
       if (error) throw new Error(error.message);
+      const result = (data ?? {}) as { ok?: boolean; failed_step?: string; error?: string; partial_total?: number };
+      if (result.ok === false) {
+        throw new Error(
+          `Étape "${result.failed_step}" : ${result.error ?? 'erreur inconnue'} (${result.partial_total ?? 0} déjà supprimés)`,
+        );
+      }
       toast.success('Données nettoyées, régénération en cours…');
       await generateTestData();
     } catch (error: unknown) {
