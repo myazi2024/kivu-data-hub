@@ -377,12 +377,22 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                         />
                       </div>
                     ) : selectedVille && selectedCommune && selectedVille.toLowerCase() === 'goma' ? (
-                      <div key="quartiers" className="w-full h-full animate-fade-in">
+                      <div key="quartiers-goma" className="w-full h-full animate-fade-in">
                         <DRCQuartiersMap
                           ville={selectedVille}
                           commune={selectedCommune}
                           quartier={selectedQuartier}
                           onQuartierSelect={setSelectedQuartier}
+                          getEntityColor={getQuartierColor}
+                          profileLabel={activeProfile?.legendTitle}
+                        />
+                      </div>
+                    ) : selectedSectionType === 'urbaine' && !selectedVille ? (
+                      <div key="quartiers-all" className="w-full h-full animate-fade-in">
+                        <DRCQuartiersAllMap
+                          showAll
+                          quartier={selectedQuartier}
+                          onQuartierSelect={(name) => setSelectedQuartier(name)}
                           getEntityColor={getQuartierColor}
                           profileLabel={activeProfile?.legendTitle}
                         />
