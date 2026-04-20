@@ -310,13 +310,19 @@ const Partnership = () => {
                   disposition pour explorer les modalités d'une collaboration mutuellement bénéfique.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button size="lg" className="flex items-center gap-2">
-                    <Mail className="h-4 w-4" />
-                    Envoyer une proposition
+                  <Button size="lg" asChild className="flex items-center gap-2">
+                    <a
+                      href="mailto:contact@bic.cd?subject=Proposition%20de%20partenariat%20BIC&body=Bonjour%2C%0D%0A%0D%0AJe%20souhaite%20explorer%20une%20opportunit%C3%A9%20de%20partenariat%20avec%20le%20Bureau%20d%27Informations%20Cadastrales.%0D%0A%0D%0AOrganisation%20%3A%20%0D%0ADomaine%20d%27activit%C3%A9%20%3A%20%0D%0ANature%20du%20partenariat%20envisag%C3%A9%20%3A%20%0D%0A%0D%0ACordialement%2C"
+                    >
+                      <Mail className="h-4 w-4" />
+                      Envoyer une proposition
+                    </a>
                   </Button>
-                  <Button variant="outline" size="lg" className="flex items-center gap-2">
-                    <Phone className="h-4 w-4" />
-                    Nous appeler
+                  <Button variant="outline" size="lg" asChild className="flex items-center gap-2">
+                    <a href="tel:+243816996077">
+                      <Phone className="h-4 w-4" />
+                      Nous appeler
+                    </a>
                   </Button>
                 </div>
               </CardContent>
