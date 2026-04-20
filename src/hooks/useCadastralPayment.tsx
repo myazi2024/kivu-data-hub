@@ -197,13 +197,20 @@ export const useCadastralPayment = () => {
         };
       }
 
-      // Paiement requis → RPC sécurisée
+      // Paiement requis → RPC sécurisée v2 (DGI)
       const { data: rpcResult, error: rpcError } = await supabase.rpc(
-        'create_cadastral_invoice_secure',
+        'create_cadastral_invoice_secure_v2',
         {
           parcel_number_param: parcelNumber,
           selected_services_param: serviceIds,
           discount_code_param: discountData?.code || null,
+          p_client_type: fiscalIdentity?.client_type || null,
+          p_client_name: fiscalIdentity?.client_name || null,
+          p_client_nif: fiscalIdentity?.client_nif || null,
+          p_client_rccm: fiscalIdentity?.client_rccm || null,
+          p_client_id_nat: fiscalIdentity?.client_id_nat || null,
+          p_client_address: fiscalIdentity?.client_address || null,
+          p_client_tax_regime: fiscalIdentity?.client_tax_regime || null,
         }
       );
 
