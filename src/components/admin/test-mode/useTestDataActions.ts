@@ -42,7 +42,7 @@ const GENERATION_STEPS: GenerationStep[] = [
   { label: 'Contributions cadastrales', status: 'pending' },
   { label: 'Factures', status: 'pending' },
   { label: 'Transactions de paiement', status: 'pending' },
-  { label: 'Lots & voies de lotissement', status: 'pending' },
+  { label: 'Provisioning accès services (trigger auto)', status: 'pending' },
   { label: 'Codes contributeurs (CCC)', status: 'pending' },
   { label: 'Demandes de titres fonciers', status: 'pending' },
   { label: 'Demandes d\'expertise', status: 'pending' },
@@ -214,9 +214,10 @@ export const useTestDataActions = ({
         throw paymentError;
       }
 
-      // Step 5: Lots & voies de lotissement (placeholder, alimenté à l'étape 13).
-      // L'accès aux services est désormais provisionné automatiquement par le
-      // trigger trg_provision_service_access_on_paid (P3).
+      // Step 5: Provisioning accès services — exécuté automatiquement côté DB par
+      // le trigger trg_provision_service_access_on_paid (P3) lors du marquage
+      // « payée » des factures à l'étape 4. Aucune action côté client.
+      // (Les lots & voies de lotissement sont générés à l'étape 13.)
       updateStep(5, 'done');
 
       // Step 6: Contributor codes
