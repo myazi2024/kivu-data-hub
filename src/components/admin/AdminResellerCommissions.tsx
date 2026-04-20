@@ -123,6 +123,14 @@ const AdminResellerCommissions = () => {
 
   return (
     <div className="space-y-3 md:space-y-4">
+      {/* Differentiation banner */}
+      <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs">
+        <p className="font-medium text-primary mb-0.5">📈 Vue analytique — Performance revendeurs</p>
+        <p className="text-muted-foreground">
+          Cet écran agrège les ventes par revendeur (totaux, classement). Pour <strong>marquer une commission comme payée</strong>, utilise l'écran « Commissions à payer ».
+        </p>
+      </div>
+
       {/* Header */}
       <Card className="p-3 md:p-4 bg-background rounded-2xl shadow-sm border">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">

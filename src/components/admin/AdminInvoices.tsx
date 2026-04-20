@@ -49,12 +49,19 @@ const AdminInvoices = () => {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const { toast } = useToast();
 
-  // Stats
-  const totalInvoices = invoices.length;
-  const totalRevenue = invoices
+  // Server-side stats (cover all sources, not capped to 2000)
+  const [serverStats, setServerStats] = useState<{
+    total_revenue_usd: number;
+    pending_revenue_usd: number;
+    total_transactions: number;
+  } | null>(null);
+
+  // Local stats (discounts not in RPC — keep client-side aggregate)
+  const totalInvoices = serverStats?.total_transactions ?? invoices.length;
+  const totalRevenue = serverStats?.total_revenue_usd ?? invoices
     .filter(inv => inv.status === 'paid')
     .reduce((sum, inv) => sum + Number(inv.total_amount_usd), 0);
-  const pendingRevenue = invoices
+  const pendingRevenue = serverStats?.pending_revenue_usd ?? invoices
     .filter(inv => inv.status === 'pending')
     .reduce((sum, inv) => sum + Number(inv.total_amount_usd), 0);
   const totalDiscounts = invoices
@@ -62,8 +69,26 @@ const AdminInvoices = () => {
     .reduce((sum, inv) => sum + Number(inv.discount_amount_usd || 0), 0);
 
   useEffect(() => {
-    fetchInvoices();
+    void fetchInvoices();
+    void fetchServerStats();
   }, []);
+
+  const fetchServerStats = async () => {
+    try {
+      // Wide window: last 5 years up to now
+      const to = new Date();
+      const from = new Date();
+      from.setFullYear(from.getFullYear() - 5);
+      const { data, error } = await (supabase as any).rpc('get_billing_summary', {
+        p_from: from.toISOString(),
+        p_to: to.toISOString(),
+      });
+      if (error) throw error;
+      setServerStats(data as any);
+    } catch (e) {
+      console.warn('get_billing_summary unavailable, falling back to client stats', e);
+    }
+  };
 
   const fetchInvoices = async () => {
     try {
