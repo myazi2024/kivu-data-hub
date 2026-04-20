@@ -286,15 +286,15 @@ const AdminTransactions = () => {
               />
             </div>
             <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Type" />
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="Source" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="_all">Tous types</SelectItem>
-                <SelectItem value="payment">Paiement</SelectItem>
-                <SelectItem value="refund">Remboursement</SelectItem>
-                <SelectItem value="commission">Commission</SelectItem>
-                <SelectItem value="discount">Remise</SelectItem>
+                <SelectItem value="_all">Toutes sources</SelectItem>
+                <SelectItem value="cadastral">Cadastre</SelectItem>
+                <SelectItem value="expertise">Expertise</SelectItem>
+                <SelectItem value="permit">Autorisation</SelectItem>
+                <SelectItem value="publication">Publication</SelectItem>
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
