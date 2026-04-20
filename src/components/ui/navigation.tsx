@@ -56,13 +56,14 @@ const Navigation = () => {
   const displayTagline = appearanceConfig.app_tagline || "Bureau d'Informations Cadastrales";
 
   const isAdminOrSuperAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
+  const isLandDataRestricted = !!profile && !LAND_DATA_ROLES.includes(profile.role);
 
   // Prefix test-sensitive routes when in test environment
   const testPrefix = isTestRoute ? '/test' : '';
   const navItems = useMemo(() => [
-    { name: 'Données foncières', href: `${testPrefix}/map` },
-    { name: 'Carte Cadastrale', href: `${testPrefix}/cadastral-map` },
-  ], [testPrefix]);
+    { name: 'Données foncières', href: `${testPrefix}/map`, restricted: isLandDataRestricted },
+    { name: 'Carte Cadastrale', href: `${testPrefix}/cadastral-map`, restricted: isLandDataRestricted },
+  ], [testPrefix, isLandDataRestricted]);
   const monCompteHref = `${testPrefix}/mon-compte`;
 
   return (
@@ -146,9 +147,11 @@ const Navigation = () => {
                   <NavigationMenuItem key={item.name}>
                     <Link
                       to={item.href}
-                      className="px-3 xl:px-4 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors duration-200 hover:bg-secondary/50 rounded-md whitespace-nowrap inline-block"
+                      className="px-3 xl:px-4 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors duration-200 hover:bg-secondary/50 rounded-md whitespace-nowrap inline-flex items-center gap-1"
+                      title={item.restricted ? "Accès restreint — voir les conditions" : undefined}
                     >
                       {item.name}
+                      {item.restricted && <Lock className="h-3 w-3 text-muted-foreground" />}
                     </Link>
                   </NavigationMenuItem>
                 ))}
@@ -276,10 +279,11 @@ const Navigation = () => {
               <Link
                 key={item.name}
                 to={item.href}
-                className="block px-3 py-2 text-sm font-medium text-foreground hover:text-primary-foreground hover:bg-primary/90 rounded-md transition-colors duration-200"
+                className="flex items-center justify-between px-3 py-2 text-sm font-medium text-foreground hover:text-primary-foreground hover:bg-primary/90 rounded-md transition-colors duration-200"
                 onClick={() => setIsOpen(false)}
               >
-                {item.name}
+                <span>{item.name}</span>
+                {item.restricted && <Lock className="h-3 w-3 text-muted-foreground" />}
               </Link>
             ))}
 
