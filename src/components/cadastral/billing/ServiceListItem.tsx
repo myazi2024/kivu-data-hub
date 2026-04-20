@@ -31,6 +31,30 @@ const ServiceListItem: React.FC<ServiceListItemProps> = ({
   onRequestContribution,
 }) => {
   const isDisabled = !hasData || isAlreadyPaid;
+  const viewedRef = useRef(false);
+
+  // Track 'view' une seule fois par montage si le service est exposé à l'utilisateur
+  useEffect(() => {
+    if (hasData && !viewedRef.current) {
+      viewedRef.current = true;
+      trackEvent('cadastral_service_view', {
+        service_id: service.id,
+        price: service.price,
+        category: service.category ?? 'consultation',
+        is_already_paid: isAlreadyPaid,
+      });
+    }
+  }, [hasData, isAlreadyPaid, service.id, service.price, service.category]);
+
+  const handleToggleSelect = () => {
+    if (isDisabled) return;
+    trackEvent(isSelected ? 'cadastral_service_unselect' : 'cadastral_service_select', {
+      service_id: service.id,
+      price: service.price,
+      category: service.category ?? 'consultation',
+    });
+    onToggleSelect();
+  };
 
   const category = service.category ?? 'consultation';
   const categoryMeta: Record<string, { label: string; className: string }> = {
@@ -42,7 +66,7 @@ const ServiceListItem: React.FC<ServiceListItemProps> = ({
 
   return (
     <div
-      onClick={() => !isDisabled && onToggleSelect()}
+      onClick={() => !isDisabled && handleToggleSelect()}
       className={`
         transition-all duration-200 cursor-pointer
         ${hasData ? 'rounded-2xl border-2 shadow-md hover:shadow-lg' : 'rounded-xl border'}
