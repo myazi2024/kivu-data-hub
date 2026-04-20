@@ -6042,6 +6042,10 @@ export type Database = {
             }
             Returns: Json
           }
+      get_billing_summary: {
+        Args: { p_from: string; p_to: string }
+        Returns: Json
+      }
       get_cadastral_parcel_data: {
         Args: { p_parcel_number: string }
         Returns: Json
@@ -6279,6 +6283,13 @@ export type Database = {
           request_id: string
           request_table: string
           user_id: string
+        }[]
+      }
+      regenerate_orphan_reseller_sales: {
+        Args: never
+        Returns: {
+          inserted_count: number
+          scanned_count: number
         }[]
       }
       request_account_deletion: {

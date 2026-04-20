@@ -56,42 +56,57 @@ const AdminCommissions = () => {
   const fetchCommissions = async () => {
     try {
       setLoading(true);
+      // Single join query to avoid N+1 (was fetching reseller + profile per row)
       const { data: salesData, error } = await supabase
         .from('reseller_sales')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select(`
+          *,
+          resellers:reseller_id (
+            user_id,
+            business_name,
+            reseller_code,
+            commission_rate
+          )
+        `)
+        .order('created_at', { ascending: false })
+        .limit(1000);
 
       if (error) throw error;
 
-      // Fetch reseller details separately
-      const commissionsWithDetails = await Promise.all(
-        (salesData || []).map(async (sale) => {
-          const { data: reseller } = await supabase
-            .from('resellers')
-            .select('business_name, reseller_code, commission_rate, user_id')
-            .eq('id', sale.reseller_id)
-            .single();
-
-          if (reseller) {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('full_name, email')
-              .eq('user_id', reseller.user_id)
-              .single();
-
-            return {
-              ...sale,
-              resellers: {
-                ...reseller,
-                profiles: profile || { full_name: null, email: '' }
-              }
-            };
-          }
-          return null;
-        })
+      // Batch-fetch profiles for all resellers in a single query
+      const userIds = Array.from(
+        new Set(
+          (salesData || [])
+            .map((s: any) => s.resellers?.user_id)
+            .filter(Boolean),
+        ),
       );
 
-      setCommissions(commissionsWithDetails.filter(Boolean) as Commission[]);
+      let profilesMap: Record<string, { full_name: string | null; email: string }> = {};
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, email')
+          .in('user_id', userIds as string[]);
+        profilesMap = (profiles || []).reduce((acc, p: any) => {
+          acc[p.user_id] = { full_name: p.full_name, email: p.email || '' };
+          return acc;
+        }, {} as Record<string, { full_name: string | null; email: string }>);
+      }
+
+      const enriched = (salesData || [])
+        .filter((s: any) => s.resellers)
+        .map((s: any) => ({
+          ...s,
+          resellers: {
+            business_name: s.resellers.business_name,
+            reseller_code: s.resellers.reseller_code,
+            commission_rate: s.resellers.commission_rate,
+            profiles: profilesMap[s.resellers.user_id] || { full_name: null, email: '' },
+          },
+        })) as Commission[];
+
+      setCommissions(enriched);
     } catch (error: any) {
       console.error('Erreur:', error);
       toast({
