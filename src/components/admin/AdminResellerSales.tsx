@@ -113,9 +113,11 @@ const AdminResellerSales = () => {
                 variant="outline"
                 size="sm"
                 onClick={regenerateOrphans}
+                disabled={regenerating}
                 className="h-8 text-xs text-amber-600"
               >
-                {orphanCount} factures orphelines
+                <RefreshCw className={`h-3 w-3 mr-1 ${regenerating ? 'animate-spin' : ''}`} />
+                Régénérer {orphanCount} orphelines
               </Button>
             )}
             <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="h-8 text-xs">
