@@ -137,6 +137,7 @@ const AdminFinancialDashboard = () => {
   return (
     <div className="space-y-6">
       <TestModeBanner />
+      <BillingAnomaliesPanel />
       {/* Period Filter */}
       <PeriodFilter
         periodType={periodType}
