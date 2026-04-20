@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, TestTube, AlertTriangle } from 'lucide-react';
+import { Loader2, TestTube, AlertTriangle, BarChart3, Map as MapIcon } from 'lucide-react';
 import { useTestMode, TestModeConfig } from '@/hooks/useTestMode';
 import { useAuth } from '@/hooks/useAuth';
 import { upsertSearchConfig, logAuditAction } from '@/utils/supabaseConfigUtils';
@@ -213,17 +213,21 @@ const AdminTestMode: React.FC = () => {
                 href="/test/map"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+                aria-label="Ouvrir Analytics test dans un nouvel onglet"
+                className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
               >
-                📊 Analytics / Données foncières (test)
+                <BarChart3 className="h-4 w-4" aria-hidden="true" />
+                Analytics / Données foncières (test)
               </a>
               <a
                 href="/test/cadastral-map"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+                aria-label="Ouvrir Carte cadastrale test dans un nouvel onglet"
+                className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
               >
-                🗺️ Carte cadastrale (test)
+                <MapIcon className="h-4 w-4" aria-hidden="true" />
+                Carte cadastrale (test)
               </a>
             </div>
           )}

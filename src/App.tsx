@@ -15,6 +15,7 @@ import LandDataAccessGate from "@/components/access/LandDataAccessGate";
 import { CartButton } from '@/components/cart/CartButton';
 import { TestEnvironmentProvider } from '@/hooks/useTestEnvironment';
 import TestEnvironmentBanner from '@/components/TestEnvironmentBanner';
+import TestEmptyStateBanner from '@/components/TestEmptyStateBanner';
 import React, { Suspense } from "react";
 import { Loader2 } from "lucide-react";
 import { useAppAppearance } from "@/hooks/useAppAppearance";
@@ -91,6 +92,7 @@ const App = () => (
               <AppearanceLoader />
               <ScrollToTopOnRouteChange />
               <TestEnvironmentBanner />
+              <TestEmptyStateBanner />
               <Suspense fallback={<PageLoader />}>
                 <Routes>
                   <Route path="/" element={<Index />} />
