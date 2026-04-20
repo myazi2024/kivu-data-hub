@@ -10,6 +10,7 @@ import { useCartAccessCheck } from '@/hooks/useCartAccessCheck';
 import { useCadastralServices } from '@/hooks/useCadastralServices';
 import { trackEvent } from '@/lib/analytics';
 import { cn } from '@/lib/utils';
+import CartParcelDiscountInput from './cart/CartParcelDiscountInput';
 
 /**
  * Mapping catégorie → libellé court + classes sémantiques (design tokens).
