@@ -1,50 +1,68 @@
 
 
-## Fix — Mode test : RPC stats cassée par les entrées registry invalides
+## Audit — Liens « Mode test » dans l'admin
 
-### Cause racine
+### État actuel
 
-La migration `20260420193550` a inséré 8 lignes dans `test_entities_registry` pour couvrir les tables enfants. Trois de ces lignes pointent vers des **tables qui n'existent pas** (noms erronés) et cinq pointent vers des **colonnes marqueurs inexistantes** ou non préfixées `TEST-` :
+Deux liens proposés dans `AdminTestMode.tsx` (lignes 211–228) et `TestModeGuide.tsx` (lignes 31–43) :
 
-| label_key | table_name déclaré | Réalité |
+| Lien | URL cible | Composant rendu |
 |---|---|---|
-| `expertisePayments` | `real_estate_expertise_payments` | Table → `expertise_payments` |
-| `permitPayments` | `building_permit_payments` | Table → `permit_payments` |
-| `permitAdminActions` | `building_permit_admin_actions` | Table → `permit_admin_actions` |
-| `fraudAttempts` | `fraud_attempts` | Pas de colonne `reference_number` |
-| `ownershipHistory` / `taxHistory` / `boundaryHistory` / `mortgagePayments` | tables OK | Colonnes marqueurs ne sont jamais préfixées `TEST-` (lien par FK) |
+| 📊 Analytics / Données foncières (test) | `/test/map` | `<Map />` |
+| 🗺️ Carte cadastrale (test) | `/test/cadastral-map` | `<CadastralMap />` |
 
-À chaque ouverture de l'admin Mode Test, la boucle `EXECUTE format(...)` de `count_test_data_stats()` plante sur la première table fantôme → toast « relation public.real_estate_expertise_payments does not exist ».
+### Anomalies détectées
 
-### Correctif (1 migration, données seules — pas de schéma)
+#### 🔴 Incohérence d'accès — `/test/map` vs `/map`
 
-**Désactiver dans le registry les 8 entrées ajoutées par la migration précédente.** La RPC `count_test_data_stats()` couvre déjà ces entités via FK (`parcel_id`, `expertise_request_id`, `contribution_id`) — leur présence dans le registry est redondante et nuisible.
+`src/App.tsx` :
+- `/map` (prod) est protégée par **`<LandDataAccessGate>`** (rôles métier requis).
+- `/test/map` (test) est protégée par **`<ProtectedRoute requiredRoles={['admin','super_admin']}>`** seulement.
 
-```sql
-UPDATE public.test_entities_registry
-   SET is_active = false
- WHERE label_key IN (
-   'ownershipHistory','taxHistory','boundaryHistory',
-   'mortgagePayments','expertisePayments','fraudAttempts',
-   'permitPayments','permitAdminActions'
- );
-```
+Conséquence : les deux routes rendent le même composant `<Map />`, mais avec des contrôles d'accès différents. C'est cohérent (admin/super_admin ont accès partout), donc OK. **Pas un bug.**
 
-### Conséquences
+#### 🟠 Lien `<a href>` au lieu de `<Link>`
+Les deux liens utilisent `<a href="/test/...">` avec `target="_blank"`. Cela force un **rechargement complet** de l'app au lieu d'une navigation SPA. Effets :
+- Perte de l'état React (cache TanStack Query, contexte test, etc. — mais re-créés via `TestEnvironmentProvider`).
+- Délai d'ouverture (rebuild Vite, reload bundles).
+- Acceptable car `target="_blank"` ouvre un nouvel onglet (impossible avec `<Link>` sans astuce).
 
-- **Stats admin** : le compteur `expertisePayments`, `ownershipHistory`, etc. continue d'être renvoyé par la RPC (logique FK déjà présente, lignes 33–75 de la fonction). Aucune perte.
-- **Export CSV pré-purge** (`TestDataExportButton`) : ne tentera plus d'exporter des tables fantômes. Les entités enfants restent purgées par l'edge `cleanup-test-data-batch` (qui a sa propre liste interne de 23 étapes).
-- **Frontend** : aucun changement requis. `loadTestEntities()` filtre déjà sur `is_active = true`.
+**Pas un bug bloquant**, mais le `target="_blank"` est délibéré pour garder l'admin ouvert. ✅
 
-### Hors périmètre
+#### 🟡 Doublon de liens (admin)
+Les mêmes deux liens existent **aux deux endroits** :
+- `AdminTestMode.tsx` (en-tête de la carte « Mode Test Global », visible **uniquement si `isTestModeActive`**)
+- `TestModeGuide.tsx` (toujours visible dans le guide)
 
-- Pas de modification de la RPC `count_test_data_stats()` (déjà correcte).
-- Pas de modification de l'edge `cleanup-test-data-batch`.
-- Pas de modification de `src/constants/testEntities.ts`.
+Comportement divergent :
+- Dans `AdminTestMode`, les liens disparaissent quand le mode test est désactivé.
+- Dans `TestModeGuide`, ils restent affichés en permanence → un admin peut cliquer alors que le mode test est OFF, atterrir sur `/test/map` qui rendra des graphiques **vides** (les données TEST-% ont été purgées ou jamais générées).
 
-### Validation attendue
+#### 🟡 `/test/map` trompeur quand mode test est OFF
+La route `/test/map` rend `<Map />` qui appelle `useLandDataAnalytics(isTestRoute)`. Sur route `/test/*`, le hook filtre `parcel_number ilike 'TEST-%'`. Si aucune donnée TEST n'existe (cas actuel : 0 enregistrements), tous les graphiques affichent **0**. L'admin pense que les analytics sont cassés.
 
-- Ouvrir admin → Mode Test → les statistiques s'affichent sans toast d'erreur.
-- Export CSV pré-purge fonctionne sur les 14 entités racines historiques.
-- La purge batched continue de couvrir l'ensemble des 23 tables enfants.
+**Aucun garde-fou** : aucune bannière n'indique « Mode test OFF — générez des données via le bouton ci-contre ».
+
+#### 🟡 Bannière `TestEnvironmentBanner`
+Montée globalement dans `App.tsx`. Vérification : s'affiche bien sur `/test/*` indépendamment de `test_mode.enabled` (le provider détecte la route, pas la config). C'est **cohérent** : la bannière distingue test/prod par URL, pas par flag.
+
+### Synthèse
+
+| Sévérité | Constat |
+|---|---|
+| 🟢 OK | Routes définies, composants protégés (admin/super_admin), bannière test active |
+| 🟡 UX | Pas de garde-fou si données TEST absentes — l'admin voit des dashboards à 0 sans explication |
+| 🟡 Doublon | Liens en double dans `AdminTestMode` + `TestModeGuide`, comportements de visibilité divergents |
+| 🟢 Sécurité | Aucune fuite : routes test bloquées au public et aux non-admins |
+
+### Recommandations (à valider)
+
+1. **Empty state explicite** sur `/test/*` quand 0 données TEST :
+   - Détecter via `useTestDataStats` (déjà disponible en admin).
+   - Afficher une bannière contextuelle « Aucune donnée test — [Générer maintenant] » au-dessus de `<Map />` si `isTestRoute && totalTestRecords === 0 && isAdmin`.
+2. **Unifier l'affichage des liens** : retirer le doublon de `TestModeGuide.tsx` (garder uniquement dans `AdminTestMode.tsx`), OU rendre les deux blocs conditionnels à `isTestModeActive`.
+3. **Cohérence a11y** : les deux liens utilisent un emoji comme icône — les remplacer par `lucide-react` (`BarChart3`, `Map`) pour le focus ring + lecteur d'écran.
+4. **Audit URL** : aucune référence cassée, mais ajouter un test e2e simple « clic admin → onglet ouvert avec bannière test » serait utile à terme.
+
+Aucune correction n'est appliquée sans validation explicite.
 
