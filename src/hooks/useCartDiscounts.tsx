@@ -132,12 +132,10 @@ export const useCartDiscounts = () => {
     }
     const timer = setTimeout(async () => {
       try {
-        await supabase
-          .from('cadastral_cart_drafts')
-          .upsert(
-            { user_id: userId, discounts_data: map as any },
-            { onConflict: 'user_id' }
-          );
+        await supabase.rpc('upsert_cadastral_cart_draft', {
+          _cart_data: null as any,
+          _discounts_data: map as any,
+        });
       } catch (e) {
         console.error('Cart discounts push failed:', e);
       }
