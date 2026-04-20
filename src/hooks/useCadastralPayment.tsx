@@ -7,6 +7,7 @@ import { useCadastralCart } from './useCadastralCart';
 import { useTestMode } from './useTestMode';
 import { usePaymentConfig } from './usePaymentConfig';
 import { trackEvent } from '@/lib/analytics';
+import type { ClientFiscalIdentity } from '@/components/billing/ClientFiscalIdentityForm';
 
 export interface CadastralPaymentData {
   provider: string;
@@ -68,12 +69,15 @@ export const useCadastralPayment = () => {
   /**
    * Crée une facture. Si le paiement n'est pas requis → accès gratuit.
    */
-  const createInvoice = useCallback(async (discountData?: {
-    code: string;
-    amount: number;
-    reseller_id: string;
-    code_id: string;
-  }) => {
+  const createInvoice = useCallback(async (
+    discountData?: {
+      code: string;
+      amount: number;
+      reseller_id: string;
+      code_id: string;
+    },
+    fiscalIdentity?: ClientFiscalIdentity,
+  ) => {
     if (!user) {
       toast({ title: "Authentification requise", description: "Vous devez être connecté pour créer une facture", variant: "destructive" });
       return null;
@@ -109,7 +113,13 @@ export const useCadastralPayment = () => {
             discount_code_used: 'BYPASS',
             payment_method: 'BYPASS',
             client_email: user.email || '',
-            client_name: user.user_metadata?.full_name || null,
+            client_name: fiscalIdentity?.client_name || user.user_metadata?.full_name || null,
+            client_type: fiscalIdentity?.client_type || null,
+            client_nif: fiscalIdentity?.client_nif?.trim() || null,
+            client_rccm: fiscalIdentity?.client_rccm?.trim() || null,
+            client_id_nat: fiscalIdentity?.client_id_nat?.trim() || null,
+            client_address: fiscalIdentity?.client_address?.trim() || null,
+            client_tax_regime: fiscalIdentity?.client_tax_regime?.trim() || null,
             geographical_zone: selectedServices[0]?.parcel_location || '',
             status: 'paid',
             currency_code: 'USD',
@@ -152,7 +162,13 @@ export const useCadastralPayment = () => {
             discount_amount_usd: 0,
             payment_method: 'TEST',
             client_email: user.email || '',
-            client_name: user.user_metadata?.full_name || null,
+            client_name: fiscalIdentity?.client_name || user.user_metadata?.full_name || null,
+            client_type: fiscalIdentity?.client_type || null,
+            client_nif: fiscalIdentity?.client_nif?.trim() || null,
+            client_rccm: fiscalIdentity?.client_rccm?.trim() || null,
+            client_id_nat: fiscalIdentity?.client_id_nat?.trim() || null,
+            client_address: fiscalIdentity?.client_address?.trim() || null,
+            client_tax_regime: fiscalIdentity?.client_tax_regime?.trim() || null,
             geographical_zone: selectedServices[0]?.parcel_location || '',
             status: 'pending',
             currency_code: 'USD',
@@ -181,13 +197,20 @@ export const useCadastralPayment = () => {
         };
       }
 
-      // Paiement requis → RPC sécurisée
+      // Paiement requis → RPC sécurisée v2 (DGI)
       const { data: rpcResult, error: rpcError } = await supabase.rpc(
-        'create_cadastral_invoice_secure',
+        'create_cadastral_invoice_secure_v2',
         {
           parcel_number_param: parcelNumber,
           selected_services_param: serviceIds,
           discount_code_param: discountData?.code || null,
+          p_client_type: fiscalIdentity?.client_type || null,
+          p_client_name: fiscalIdentity?.client_name || null,
+          p_client_nif: fiscalIdentity?.client_nif || null,
+          p_client_rccm: fiscalIdentity?.client_rccm || null,
+          p_client_id_nat: fiscalIdentity?.client_id_nat || null,
+          p_client_address: fiscalIdentity?.client_address || null,
+          p_client_tax_regime: fiscalIdentity?.client_tax_regime || null,
         }
       );
 
