@@ -6216,6 +6216,30 @@ export type Database = {
           total_amount_usd: number
         }[]
       }
+      create_cadastral_invoice_secure_v2: {
+        Args: {
+          discount_code_param?: string
+          p_client_address?: string
+          p_client_id_nat?: string
+          p_client_name?: string
+          p_client_nif?: string
+          p_client_rccm?: string
+          p_client_tax_regime?: string
+          p_client_type?: string
+          parcel_number_param: string
+          selected_services_param: string[]
+        }
+        Returns: {
+          discount_amount_usd: number
+          discount_code_used: string
+          error_message: string
+          invoice_id: string
+          invoice_number: string
+          original_amount_usd: number
+          services_data: Json
+          total_amount_usd: number
+        }[]
+      }
       detect_suspicious_contribution: {
         Args: { p_parcel_number: string; p_user_id: string }
         Returns: {
