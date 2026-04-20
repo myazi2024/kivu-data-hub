@@ -43,10 +43,10 @@ export const BillingOverviewTab = () => {
         supabase.from('publications').select('id, title, category, price_usd, status, updated_at').is('deleted_at', null),
         supabase.from('cadastral_services_config').select('id, name, service_id, price_usd, is_active, updated_at').is('deleted_at', null),
         supabase.from('permit_fees_config').select('id, fee_name, permit_type, amount_usd, is_active, updated_at'),
-        (supabase as any).from('mutation_fees_config').select('id, fee_name, mutation_type, amount_usd, is_active, updated_at'),
+        (supabase as any).from('mutation_fees_config').select('id, fee_name, description, amount_usd, is_active, updated_at'),
         (supabase as any).from('land_title_fees_by_type').select('id, fee_name, title_type, base_amount_usd, is_active, updated_at'),
-        (supabase as any).from('subdivision_fees_config').select('id, fee_name, fee_type, amount_usd, is_active, updated_at'),
-        (supabase as any).from('expertise_fees_config').select('id, fee_name, fee_type, amount_usd, is_active, updated_at'),
+        (supabase as any).from('subdivision_rate_config').select('id, section_type, location_name, rate_per_sqm_usd, is_active, updated_at'),
+        (supabase as any).from('expertise_fees_config').select('id, fee_name, description, amount_usd, is_active, updated_at'),
       ]);
 
       const all: Row[] = [];
