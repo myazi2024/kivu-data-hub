@@ -28,7 +28,12 @@ const DocumentFooter: React.FC<DocumentFooterProps> = ({ parcelNumber, verificat
       <div className="flex items-start gap-5">
         <div className="flex-shrink-0">
           {verifyUrl ? (
-            <canvas ref={canvasRef} className="rounded-md border border-border" />
+            <canvas
+              ref={canvasRef}
+              className="rounded-md border border-border"
+              role="img"
+              aria-label="QR code de vérification du document"
+            />
           ) : (
             <Skeleton className="h-[100px] w-[100px] rounded-md" />
           )}
