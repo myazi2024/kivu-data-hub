@@ -8,6 +8,7 @@ import {
   Scale,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -267,39 +268,63 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             </Alert>
           ) : (
           <div className="space-y-2">
-            {/* Fix #6: "Tout sélectionner" corrigé — utilise addService/removeService au lieu de toggle */}
-            <div className="flex items-center justify-between p-2 bg-muted/30 rounded-xl border border-dashed">
-              <div className="flex items-center gap-2">
-                <Checkbox 
-                  checked={allSelectableSelected}
-                  onCheckedChange={(checked) => {
-                    if (checked) {
-                      // Ajouter tous les services sélectionnables non encore sélectionnés
-                      selectableServices.forEach(service => {
-                        if (!selectedServiceIds.includes(service.id)) {
+            {/* P2 — Bundle "Tout ajouter" : dossier complet en 1 clic */}
+            {(() => {
+              const bundleTotal = selectableServices.reduce((acc, s) => acc + s.price, 0);
+              const remainingToAdd = selectableServices.filter(s => !selectedServiceIds.includes(s.id));
+              const remainingValue = remainingToAdd.reduce((acc, s) => acc + s.price, 0);
+              if (selectableServices.length <= 1) return null;
+              return (
+                <div className="rounded-xl border border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10 p-2.5 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="text-xs font-semibold text-primary flex items-center gap-1.5">
+                        <CheckCircle className="h-3.5 w-3.5" />
+                        Dossier complet de la parcelle
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">
+                        {selectableServices.length} services pour ${bundleTotal.toFixed(2)} — toutes les informations en 1 paiement.
+                      </p>
+                    </div>
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5 shrink-0">
+                      {selectableServices.length} dispo.
+                    </Badge>
+                  </div>
+                  {allSelectableSelected ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full h-8 text-xs"
+                      onClick={() => selectedServiceIds.forEach(id => removeService(id))}
+                    >
+                      Tout retirer
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      className="w-full h-8 text-xs"
+                      onClick={() => {
+                        remainingToAdd.forEach(service => {
                           addService({
                             id: service.id,
                             name: service.name,
                             price: service.price,
                             description: service.description,
                             parcel_number: searchResult.parcel.parcel_number,
-                            parcel_location: searchResult.parcel.location
+                            parcel_location: searchResult.parcel.location,
+                            category: (service as any).category,
                           });
-                        }
-                      });
-                    } else {
-                      // Retirer tous les services sélectionnés
-                      selectedServiceIds.forEach(id => removeService(id));
-                    }
-                  }}
-                  className="h-3.5 w-3.5"
-                />
-                <span className="text-xs font-medium">Tout sélectionner</span>
-              </div>
-              <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
-                {selectableServices.length} dispo.
-              </Badge>
-            </div>
+                        });
+                      }}
+                    >
+                      {selectedServiceIds.length === 0
+                        ? `Tout ajouter — $${bundleTotal.toFixed(2)}`
+                        : `Compléter le dossier (+$${remainingValue.toFixed(2)})`}
+                    </Button>
+                  )}
+                </div>
+              );
+            })()}
             
             {/* Liste des services */}
             <div className="space-y-2">

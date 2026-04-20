@@ -23,7 +23,8 @@ export type AnalyticsEvent =
   | 'cadastral_service_unselect'
   | 'cadastral_service_purchase'
   | 'cadastral_cart_open'
-  | 'cadastral_cart_pay_parcel';
+  | 'cadastral_cart_pay_parcel'
+  | 'cadastral_cart_complete_bundle';
 
 export async function trackEvent(event: AnalyticsEvent, payload?: Record<string, any>) {
   try {
