@@ -9,6 +9,8 @@ export interface CadastralCartService {
   description?: string;
   parcel_number: string;
   parcel_location: string;
+  /** Optionnel : catégorie du service (consultation/fiscal/juridique). */
+  category?: string;
 }
 
 /**
