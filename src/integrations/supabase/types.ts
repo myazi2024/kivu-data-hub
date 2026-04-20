@@ -533,6 +533,21 @@ export type Database = {
         }
         Relationships: []
       }
+      bic_invoice_seq_year: {
+        Row: {
+          last_value: number
+          year: number
+        }
+        Insert: {
+          last_value?: number
+          year: number
+        }
+        Update: {
+          last_value?: number
+          year?: number
+        }
+        Relationships: []
+      }
       billing_config_audit: {
         Row: {
           action: string
@@ -1154,71 +1169,160 @@ export type Database = {
           },
         ]
       }
+      cadastral_credit_notes: {
+        Row: {
+          amount_usd: number
+          created_at: string
+          credit_note_number: string
+          currency_code: string
+          exchange_rate_used: number
+          id: string
+          issued_at: string
+          issued_by: string | null
+          notes: string | null
+          original_invoice_id: string
+          reason: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount_usd: number
+          created_at?: string
+          credit_note_number: string
+          currency_code?: string
+          exchange_rate_used?: number
+          id?: string
+          issued_at?: string
+          issued_by?: string | null
+          notes?: string | null
+          original_invoice_id: string
+          reason: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_usd?: number
+          created_at?: string
+          credit_note_number?: string
+          currency_code?: string
+          exchange_rate_used?: number
+          id?: string
+          issued_at?: string
+          issued_by?: string | null
+          notes?: string | null
+          original_invoice_id?: string
+          reason?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cadastral_credit_notes_original_invoice_id_fkey"
+            columns: ["original_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cadastral_invoices: {
         Row: {
+          client_address: string | null
           client_email: string
+          client_id_nat: string | null
           client_name: string | null
+          client_nif: string | null
           client_organization: string | null
+          client_rccm: string | null
+          client_tax_regime: string | null
+          client_type: string | null
           created_at: string
           currency_code: string
+          dgi_validation_code: string | null
           discount_amount_usd: number | null
           discount_code_used: string | null
           exchange_rate_used: number
           geographical_zone: string | null
           id: string
           invoice_number: string
+          invoice_signature: string | null
           original_amount_usd: number | null
+          paid_at: string | null
           parcel_number: string
           payment_id: string | null
           payment_method: string | null
           search_date: string
           selected_services: Json
+          signature_algorithm: string | null
+          signed_at: string | null
           status: string
           total_amount_usd: number
           updated_at: string
           user_id: string | null
         }
         Insert: {
+          client_address?: string | null
           client_email: string
+          client_id_nat?: string | null
           client_name?: string | null
+          client_nif?: string | null
           client_organization?: string | null
+          client_rccm?: string | null
+          client_tax_regime?: string | null
+          client_type?: string | null
           created_at?: string
           currency_code?: string
+          dgi_validation_code?: string | null
           discount_amount_usd?: number | null
           discount_code_used?: string | null
           exchange_rate_used?: number
           geographical_zone?: string | null
           id?: string
           invoice_number: string
+          invoice_signature?: string | null
           original_amount_usd?: number | null
+          paid_at?: string | null
           parcel_number: string
           payment_id?: string | null
           payment_method?: string | null
           search_date?: string
           selected_services: Json
+          signature_algorithm?: string | null
+          signed_at?: string | null
           status?: string
           total_amount_usd?: number
           updated_at?: string
           user_id?: string | null
         }
         Update: {
+          client_address?: string | null
           client_email?: string
+          client_id_nat?: string | null
           client_name?: string | null
+          client_nif?: string | null
           client_organization?: string | null
+          client_rccm?: string | null
+          client_tax_regime?: string | null
+          client_type?: string | null
           created_at?: string
           currency_code?: string
+          dgi_validation_code?: string | null
           discount_amount_usd?: number | null
           discount_code_used?: string | null
           exchange_rate_used?: number
           geographical_zone?: string | null
           id?: string
           invoice_number?: string
+          invoice_signature?: string | null
           original_amount_usd?: number | null
+          paid_at?: string | null
           parcel_number?: string
           payment_id?: string | null
           payment_method?: string | null
           search_date?: string
           selected_services?: Json
+          signature_algorithm?: string | null
+          signed_at?: string | null
           status?: string
           total_amount_usd?: number
           updated_at?: string
@@ -2058,6 +2162,93 @@ export type Database = {
           },
         ]
       }
+      company_legal_info: {
+        Row: {
+          address_line1: string
+          address_line2: string | null
+          bank_account: string | null
+          bank_name: string | null
+          bank_swift: string | null
+          capital_amount: string | null
+          city: string
+          country: string
+          created_at: string
+          email: string | null
+          id: string
+          id_nat: string
+          is_active: boolean
+          legal_form: string | null
+          legal_name: string
+          logo_url: string | null
+          nif: string
+          phone: string | null
+          province: string
+          rccm: string
+          tax_regime: string
+          trade_name: string | null
+          tva_number: string | null
+          updated_at: string
+          updated_by: string | null
+          website: string | null
+        }
+        Insert: {
+          address_line1: string
+          address_line2?: string | null
+          bank_account?: string | null
+          bank_name?: string | null
+          bank_swift?: string | null
+          capital_amount?: string | null
+          city: string
+          country?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          id_nat: string
+          is_active?: boolean
+          legal_form?: string | null
+          legal_name: string
+          logo_url?: string | null
+          nif: string
+          phone?: string | null
+          province: string
+          rccm: string
+          tax_regime?: string
+          trade_name?: string | null
+          tva_number?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          website?: string | null
+        }
+        Update: {
+          address_line1?: string
+          address_line2?: string | null
+          bank_account?: string | null
+          bank_name?: string | null
+          bank_swift?: string | null
+          capital_amount?: string | null
+          city?: string
+          country?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          id_nat?: string
+          is_active?: boolean
+          legal_form?: string | null
+          legal_name?: string
+          logo_url?: string | null
+          nif?: string
+          phone?: string | null
+          province?: string
+          rccm?: string
+          tax_regime?: string
+          trade_name?: string | null
+          tva_number?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
       config_snapshots: {
         Row: {
           created_at: string
@@ -2264,6 +2455,12 @@ export type Database = {
       }
       expertise_payments: {
         Row: {
+          client_address: string | null
+          client_id_nat: string | null
+          client_nif: string | null
+          client_rccm: string | null
+          client_tax_regime: string | null
+          client_type: string | null
           created_at: string
           expertise_request_id: string
           fee_items: Json
@@ -2280,6 +2477,12 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          client_address?: string | null
+          client_id_nat?: string | null
+          client_nif?: string | null
+          client_rccm?: string | null
+          client_tax_regime?: string | null
+          client_type?: string | null
           created_at?: string
           expertise_request_id: string
           fee_items?: Json
@@ -2296,6 +2499,12 @@ export type Database = {
           user_id: string
         }
         Update: {
+          client_address?: string | null
+          client_id_nat?: string | null
+          client_nif?: string | null
+          client_rccm?: string | null
+          client_tax_regime?: string | null
+          client_type?: string | null
           created_at?: string
           expertise_request_id?: string
           fee_items?: Json
@@ -3484,6 +3693,12 @@ export type Database = {
       orders: {
         Row: {
           amount: number
+          client_address: string | null
+          client_id_nat: string | null
+          client_nif: string | null
+          client_rccm: string | null
+          client_tax_regime: string | null
+          client_type: string | null
           created_at: string
           currency: string | null
           email: string
@@ -3496,6 +3711,12 @@ export type Database = {
         }
         Insert: {
           amount: number
+          client_address?: string | null
+          client_id_nat?: string | null
+          client_nif?: string | null
+          client_rccm?: string | null
+          client_tax_regime?: string | null
+          client_type?: string | null
           created_at?: string
           currency?: string | null
           email: string
@@ -3508,6 +3729,12 @@ export type Database = {
         }
         Update: {
           amount?: number
+          client_address?: string | null
+          client_id_nat?: string | null
+          client_nif?: string | null
+          client_rccm?: string | null
+          client_tax_regime?: string | null
+          client_type?: string | null
           created_at?: string
           currency?: string | null
           email?: string
@@ -3889,6 +4116,12 @@ export type Database = {
       }
       permit_payments: {
         Row: {
+          client_address: string | null
+          client_id_nat: string | null
+          client_nif: string | null
+          client_rccm: string | null
+          client_tax_regime: string | null
+          client_type: string | null
           contribution_id: string
           created_at: string
           fee_items: Json
@@ -3906,6 +4139,12 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          client_address?: string | null
+          client_id_nat?: string | null
+          client_nif?: string | null
+          client_rccm?: string | null
+          client_tax_regime?: string | null
+          client_type?: string | null
           contribution_id: string
           created_at?: string
           fee_items?: Json
@@ -3923,6 +4162,12 @@ export type Database = {
           user_id: string
         }
         Update: {
+          client_address?: string | null
+          client_id_nat?: string | null
+          client_nif?: string | null
+          client_rccm?: string | null
+          client_tax_regime?: string | null
+          client_type?: string | null
           contribution_id?: string
           created_at?: string
           fee_items?: Json
@@ -6010,6 +6255,10 @@ export type Database = {
         }[]
       }
       generate_mutation_reference: { Args: never; Returns: string }
+      generate_normalized_invoice_number: {
+        Args: { p_year?: number }
+        Returns: string
+      }
       generate_permit_number: {
         Args: { permit_type: string; province: string }
         Returns: string
