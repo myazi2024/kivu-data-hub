@@ -13,7 +13,7 @@ interface SectionCardProps {
 }
 
 export const SectionCard: React.FC<SectionCardProps> = ({ number, icon, title, children, className }) => (
-  <section className={cn('relative rounded-lg border border-border/60 bg-card overflow-hidden print:border print:border-border print:rounded-none print:shadow-none', className)}>
+  <section className={cn('relative rounded-lg border border-border/60 bg-card overflow-hidden print:border print:border-border print:rounded-none print:shadow-none print:break-inside-avoid', className)}>
     <div className="border-l-4 border-l-primary">
       <div className="flex items-center gap-2.5 px-5 py-3 bg-muted/30 border-b border-border/40 print:bg-muted/20">
         <span className="flex items-center justify-center w-6 h-6 rounded-md bg-primary text-primary-foreground text-xs font-bold shrink-0">
@@ -111,8 +111,8 @@ interface StatusAlertProps {
 }
 
 const alertStyles = {
-  success: 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-300',
-  warning: 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300',
+  success: 'border-[hsl(var(--success-border))] bg-[hsl(var(--success-muted))] text-[hsl(var(--success))]',
+  warning: 'border-[hsl(var(--warning-border))] bg-[hsl(var(--warning-muted))] text-[hsl(var(--warning))]',
   danger: 'border-destructive/30 bg-destructive/5 text-destructive',
 };
 

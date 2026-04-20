@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building, FileText } from 'lucide-react';
+import { Building, FileText, CheckCircle2, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { SectionCard, DataGrid, DataField, DocTable } from '../primitives';
 import { CadastralParcel } from '@/types/cadastral';
@@ -50,8 +50,14 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({ number, parce
                 <tr key={permit.id}>
                   <td className="font-mono text-xs">{permit.permit_number}</td>
                   <td className="text-xs">{formatDate(permit.issue_date)}</td>
-                  <td className={isValid ? 'text-green-600' : 'text-destructive'}>
-                    <span className="text-xs">{isValid ? '✅ Valide' : '❌ Expiré'} — {endDate.toLocaleDateString('fr-FR')}</span>
+                  <td>
+                    <span className="inline-flex items-center gap-1 text-xs">
+                      <Badge variant={isValid ? 'default' : 'destructive'} className="text-xs gap-1">
+                        {isValid ? <CheckCircle2 className="h-3 w-3" aria-hidden="true" /> : <XCircle className="h-3 w-3" aria-hidden="true" />}
+                        {isValid ? 'Valide' : 'Expiré'}
+                      </Badge>
+                      <span className="text-muted-foreground">— {endDate.toLocaleDateString('fr-FR')}</span>
+                    </span>
                   </td>
                   <td>
                     <Badge variant={['Conforme', 'Approuvé', 'Délivré', 'Delivre'].includes(permit.administrative_status) ? 'default' :

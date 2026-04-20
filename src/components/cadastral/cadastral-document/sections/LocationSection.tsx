@@ -60,8 +60,8 @@ const LocationSection: React.FC<LocationSectionProps> = ({ number, parcel, bound
             {parcel.village && <DataField label="Village" value={parcel.village} />}
           </>
         )}
-        {parcel.latitude && parcel.longitude && (
-          <DataField label="Coordonnées GPS" value={`${parcel.latitude.toFixed(6)}, ${parcel.longitude.toFixed(6)}`} mono />
+        {parcel.latitude != null && parcel.longitude != null && (
+          <DataField label="Coordonnées GPS" value={`${Number(parcel.latitude).toFixed(6)}, ${Number(parcel.longitude).toFixed(6)}`} mono />
         )}
         {parcel.nombre_bornes && <DataField label="Nombre de bornes" value={parcel.nombre_bornes} />}
       </DataGrid>
