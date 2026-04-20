@@ -29,7 +29,8 @@ const AdminResellerSales = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    const [{ data: salesData }, { count: orphan }] = await Promise.all([
+    // Single parallel fetch — orphans = paid invoices with code minus reseller_sales rows
+    const [{ data: salesData }, { data: paidInv }] = await Promise.all([
       supabase
         .from('reseller_sales')
         .select('*')
@@ -37,18 +38,12 @@ const AdminResellerSales = () => {
         .limit(1000),
       supabase
         .from('cadastral_invoices')
-        .select('id', { count: 'exact', head: true })
+        .select('id')
         .eq('status', 'paid')
-        .not('discount_code_used', 'is', null),
+        .not('discount_code_used', 'is', null)
+        .limit(2000),
     ]);
     setSales((salesData ?? []) as Sale[]);
-    // Orphans = paid invoices with code but no reseller_sales row
-    const { data: paidInv } = await supabase
-      .from('cadastral_invoices')
-      .select('id')
-      .eq('status', 'paid')
-      .not('discount_code_used', 'is', null)
-      .limit(2000);
     const salesInv = new Set((salesData ?? []).map((s) => s.invoice_id));
     const missing = (paidInv ?? []).filter((i) => !salesInv.has(i.id)).length;
     setOrphanCount(missing);
