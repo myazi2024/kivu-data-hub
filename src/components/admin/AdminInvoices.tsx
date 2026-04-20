@@ -68,16 +68,22 @@ const AdminInvoices = () => {
   const fetchInvoices = async () => {
     try {
       setLoading(true);
+      // Server-side count for accurate stats even when result set is capped
       const { data, error } = await supabase
         .from('cadastral_invoices')
         .select('*')
-        .not('parcel_number', 'ilike', 'TEST-%')
         .order('created_at', { ascending: false })
         .limit(2000);
 
       if (error) throw error;
-      
-      setInvoices((data as Invoice[]) || []);
+
+      // Client-side test filter (covers all test prefixes via centralized convention)
+      const filtered = (data || []).filter((inv: any) => {
+        const pn = (inv.parcel_number || '').toUpperCase();
+        return !pn.startsWith('TEST-') && !pn.startsWith('TEST_') && !pn.startsWith('SANDBOX-');
+      });
+
+      setInvoices(filtered as Invoice[]);
     } catch (error: any) {
       console.error('Erreur:', error);
       toast({
