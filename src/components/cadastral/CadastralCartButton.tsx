@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Trash2, MapPin, Check } from 'lucide-react';
+import { ShoppingCart, Trash2, MapPin, Check, Plus, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useCadastralCart } from '@/hooks/useCadastralCart';
 import { useCartAccessCheck } from '@/hooks/useCartAccessCheck';
+import { useCadastralServices } from '@/hooks/useCadastralServices';
 import { trackEvent } from '@/lib/analytics';
 import { cn } from '@/lib/utils';
 
