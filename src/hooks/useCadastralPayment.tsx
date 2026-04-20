@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useCadastralCart } from './useCadastralCart';
 import { useTestMode } from './useTestMode';
 import { usePaymentConfig } from './usePaymentConfig';
+import { trackEvent } from '@/lib/analytics';
 
 export interface CadastralPaymentData {
   provider: string;
@@ -120,6 +121,15 @@ export const useCadastralPayment = () => {
         if (error) throw error;
 
         await grantServiceAccess(user.id, invoice.id, parcelNumber, serviceIds);
+
+        trackEvent('cadastral_service_purchase', {
+          parcel_number: parcelNumber,
+          invoice_id: invoice.id,
+          service_ids: serviceIds,
+          service_count: serviceIds.length,
+          total_usd: 0,
+          payment_method: 'BYPASS',
+        });
 
         toast({ title: "Accès accordé", description: "Services accessibles gratuitement" });
         clearServices();
@@ -290,6 +300,15 @@ export const useCadastralPayment = () => {
         setPaymentStep('success');
         toast({ title: "Paiement réussi", description: "Vos services sont maintenant accessibles" });
 
+        trackEvent('cadastral_service_purchase', {
+          parcel_number: invoice.data.parcel_number,
+          invoice_id: invoiceId,
+          service_ids: invoiceServiceIds,
+          service_count: invoiceServiceIds.length,
+          total_usd: invoice.data.total_amount_usd,
+          payment_method: paymentData.provider,
+        });
+
         clearServices();
         window.dispatchEvent(new CustomEvent('cadastralPaymentCompleted'));
 
@@ -403,6 +422,19 @@ export const useCadastralPayment = () => {
 
       setPaymentStep('success');
       toast({ title: "Paiement test simulé", description: "Services débloqués (mode test)" });
+
+      if (invoice.data) {
+        const serviceIds = await getInvoiceServices(invoiceId);
+        trackEvent('cadastral_service_purchase', {
+          parcel_number: invoice.data.parcel_number,
+          invoice_id: invoiceId,
+          service_ids: serviceIds,
+          service_count: serviceIds.length,
+          total_usd: 0,
+          payment_method: 'TEST',
+        });
+      }
+
       clearServices();
       window.dispatchEvent(new CustomEvent('cadastralPaymentCompleted'));
 

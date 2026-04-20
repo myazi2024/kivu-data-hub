@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useCadastralCart } from '@/hooks/useCadastralCart';
+import { trackEvent } from '@/lib/analytics';
 
 /**
  * Bouton flottant + Sheet récapitulant le panier multi-parcelles cadastral.
@@ -33,7 +34,19 @@ const CadastralCartButton: React.FC = () => {
   if (totalServices === 0) return null;
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
+    <Sheet
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (next) {
+          trackEvent('cadastral_cart_open', {
+            parcel_count: parcelCount,
+            service_count: totalServices,
+            total_usd: total,
+          });
+        }
+      }}
+    >
       <SheetTrigger asChild>
         <Button
           size="lg"
@@ -124,6 +137,11 @@ const CadastralCartButton: React.FC = () => {
                     size="sm"
                     className="w-full h-8 text-xs"
                     onClick={() => {
+                      trackEvent('cadastral_cart_pay_parcel', {
+                        parcel_number: p.parcelNumber,
+                        service_count: p.services.length,
+                        subtotal_usd: subtotal,
+                      });
                       setParcelNumber(p.parcelNumber);
                       setOpen(false);
                     }}
