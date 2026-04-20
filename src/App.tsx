@@ -101,9 +101,9 @@ const App = () => (
                     </LandDataAccessGate>
                   } />
                   <Route path="/cadastral-map" element={
-                    <LandDataAccessGate>
+                    <ProtectedRoute>
                       <CadastralMap />
-                    </LandDataAccessGate>
+                    </ProtectedRoute>
                   } />
                   <Route path="/admin" element={
                     <ProtectedRoute requiredRoles={['admin', 'super_admin']}>
