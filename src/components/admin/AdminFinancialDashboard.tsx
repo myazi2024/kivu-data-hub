@@ -8,6 +8,7 @@ import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, Cart
 import { DollarSign, TrendingUp, TrendingDown, CreditCard, Users, FileText, Percent } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import TestModeBanner from '@/components/admin/billing/TestModeBanner';
+import BillingAnomaliesPanel from '@/components/admin/billing/BillingAnomaliesPanel';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
 
