@@ -277,7 +277,7 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
   title, icon: Icon, iconColor, colSpan, data, type, color, colorIndex = 0, labelWidth = 90, maxItems = 10, hidden = false, insight,
   crossVariables, rawRecords, groupField,
 }) => {
-  const { ref, copied, copy } = useCopyAsImage();
+  const { ref, getBlob } = useChartImageBlob();
   const filterLabel = useContext(FilterLabelContext);
   const [crossField, setCrossField] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
@@ -311,7 +311,7 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
                 onSelect={setCrossField}
               />
             )}
-            <CopyButton onClick={copy} copied={copied} />
+            <ShareButton getBlob={getBlob} title={title} variant="chart" />
           </div>
         </div>
       </CardHeader>
@@ -386,7 +386,7 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
 export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
   title, icon: Icon, iconColor, colSpan, data, bars, layout = 'horizontal', labelWidth = 90, maxItems = 8, hidden = false, insight,
 }) => {
-  const { ref, copied, copy } = useCopyAsImage();
+  const { ref, getBlob } = useChartImageBlob();
   const filterLabel = useContext(FilterLabelContext);
   const [focused, setFocused] = useState(false);
   if (hidden) return null;
@@ -404,7 +404,7 @@ export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
             </div>
             {filterLabel && <ChartFilterSubtitle filterLabel={filterLabel} />}
           </div>
-          <CopyButton onClick={copy} copied={copied} />
+          <ShareButton getBlob={getBlob} title={title} variant="chart" />
         </div>
       </CardHeader>
       <CardContent className="px-2 pb-2 relative">
@@ -453,7 +453,7 @@ interface MultiAreaChartCardProps {
 export const MultiAreaChartCard: React.FC<MultiAreaChartCardProps> = memo(({
   title, icon: Icon, iconColor, colSpan, series, insight,
 }) => {
-  const { ref, copied, copy } = useCopyAsImage();
+  const { ref, getBlob } = useChartImageBlob();
   const filterLabel = useContext(FilterLabelContext);
   const [focused, setFocused] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(() => new Set(['all']));
@@ -518,7 +518,7 @@ export const MultiAreaChartCard: React.FC<MultiAreaChartCardProps> = memo(({
             </div>
             {filterLabel && <ChartFilterSubtitle filterLabel={filterLabel} />}
           </div>
-          <CopyButton onClick={copy} copied={copied} />
+          <ShareButton getBlob={getBlob} title={title} variant="chart" />
         </div>
         {/* Checkboxes */}
         <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5" onClick={e => e.stopPropagation()}>
@@ -564,7 +564,7 @@ export const ColorMappedPieCard: React.FC<MultiDataPieProps> = memo(({
   title, icon: Icon, iconColor, data, colorMap = {}, insight,
   crossVariables, rawRecords, groupField,
 }) => {
-  const { ref, copied, copy } = useCopyAsImage();
+  const { ref, getBlob } = useChartImageBlob();
   const filterLabel = useContext(FilterLabelContext);
   const [crossField, setCrossField] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
@@ -591,7 +591,7 @@ export const ColorMappedPieCard: React.FC<MultiDataPieProps> = memo(({
                 onSelect={setCrossField}
               />
             )}
-            <CopyButton onClick={copy} copied={copied} />
+            <ShareButton getBlob={getBlob} title={title} variant="chart" />
           </div>
         </div>
       </CardHeader>
