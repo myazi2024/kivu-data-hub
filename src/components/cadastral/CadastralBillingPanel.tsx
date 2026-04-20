@@ -82,6 +82,13 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [highlightTerms, setHighlightTerms] = useState(false);
   const [expandedServices, setExpandedServices] = useState<Set<string>>(new Set());
+  const [fiscalIdentity, setFiscalIdentity] = useState<ClientFiscalIdentity>(() => {
+    try {
+      const stored = localStorage.getItem('bic_last_fiscal_identity');
+      if (stored) return { ...EMPTY_FISCAL_IDENTITY, ...JSON.parse(stored) };
+    } catch {}
+    return EMPTY_FISCAL_IDENTITY;
+  });
   const { toast } = useToast();
   // Fix #10: Une seule instanciation de usePaymentConfig, passée au dialog
   const { paymentMode, isPaymentRequired, availableMethods } = usePaymentConfig();
