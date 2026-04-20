@@ -7,6 +7,7 @@ import { useCadastralCart } from './useCadastralCart';
 import { useTestMode } from './useTestMode';
 import { usePaymentConfig } from './usePaymentConfig';
 import { trackEvent } from '@/lib/analytics';
+import type { ClientFiscalIdentity } from '@/components/billing/ClientFiscalIdentityForm';
 
 export interface CadastralPaymentData {
   provider: string;
