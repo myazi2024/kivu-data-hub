@@ -349,8 +349,8 @@ const AdminTransactions = () => {
                     <ResponsiveTableCell priority="high" label="Référence">
                       <span className="font-mono text-xs">{transaction.reference}</span>
                     </ResponsiveTableCell>
-                    <ResponsiveTableCell priority="medium" label="Type">
-                      {getTypeBadge(transaction.type)}
+                    <ResponsiveTableCell priority="medium" label="Source">
+                      <Badge variant="outline" className="text-[10px]">{SOURCE_LABELS[transaction.source]}</Badge>
                     </ResponsiveTableCell>
                     <ResponsiveTableCell priority="low" label="Utilisateur">
                       <span className="text-xs">{transaction.user_email}</span>
