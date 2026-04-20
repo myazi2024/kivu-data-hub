@@ -165,10 +165,10 @@ const AdminTransactions = () => {
           tx.user_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
           tx.description.toLowerCase().includes(searchTerm.toLowerCase());
         
-        const matchesType = typeFilter === '_all' || tx.type === typeFilter;
+        const matchesSource = typeFilter === '_all' || tx.source === typeFilter;
         const matchesStatus = statusFilter === '_all' || tx.status === statusFilter;
         
-        return matchesSearch && matchesType && matchesStatus;
+        return matchesSearch && matchesSource && matchesStatus;
       })
       .sort((a, b) => {
         if (sortBy === 'date') {
