@@ -15,6 +15,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { CheckCircle } from 'lucide-react';
 import { useCadastralCart } from '@/hooks/useCadastralCart';
+import { useCartDiscounts } from '@/hooks/useCartDiscounts';
 import { useCadastralPayment } from '@/hooks/useCadastralPayment';
 import { useCadastralServices } from '@/hooks/useCadastralServices';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
