@@ -19,6 +19,7 @@ import ParcelActionsDropdown from '@/components/cadastral/ParcelActionsDropdown'
 import LandTitleRequestDialog from '@/components/cadastral/LandTitleRequestDialog';
 import LandTitleTermsDialog from '@/components/cadastral/LandTitleTermsDialog';
 import CadastralResultsDialog from '@/components/cadastral/CadastralResultsDialog';
+import CadastralCartButton from '@/components/cadastral/CadastralCartButton';
 import { useAdvancedCadastralSearch } from '@/hooks/useAdvancedCadastralSearch';
 import { useSearchHistory } from '@/hooks/useSearchHistory';
 import { useSearchBarConfig } from '@/hooks/useSearchBarConfig';
@@ -778,6 +779,8 @@ const CadastralMap = () => {
           onClose={() => { setShowServiceCatalog(false); cadastralSearch.clearSearch(); }}
         />
       )}
+
+      <CadastralCartButton />
     </div>
   );
 };
