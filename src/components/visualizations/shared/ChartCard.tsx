@@ -3,13 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, AreaChart, Area, Legend } from 'recharts';
 import { CHART_HEIGHT as BASE_CH, NoData } from '@/utils/analyticsConstants';
 import { CHART_COLORS, crossBy } from '@/utils/analyticsHelpers';
-import { LucideIcon, Info, Copy, Check, GitBranch, X, BookOpen, TrendingUp } from 'lucide-react';
+import { LucideIcon, Info, GitBranch, X, BookOpen, TrendingUp } from 'lucide-react';
 import { useAppAppearance } from '@/hooks/useAppAppearance';
 import { ChartInsight } from '@/utils/chartInsights';
 import { toPng } from 'html-to-image';
-import { toast } from 'sonner';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CrossVariable } from '@/config/crossVariables';
+import ShareButton from '@/components/shared/ShareButton';
 
 /** Context providing the active filter label string to all chart cards */
 export const FilterLabelContext = createContext<string>('');
