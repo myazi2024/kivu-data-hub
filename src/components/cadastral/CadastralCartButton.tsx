@@ -39,10 +39,12 @@ const CadastralCartButton: React.FC = () => {
     removeServiceForParcel,
     clearParcel,
     setParcelNumber,
+    addServiceForParcel,
     parcelNumber: activeParcelNumber,
   } = useCadastralCart();
 
   const { isOwned, allOwnedFor } = useCartAccessCheck(parcels);
+  const { services: catalogServices } = useCadastralServices();
 
   const totalServices = parcels.reduce((acc, p) => acc + p.services.length, 0);
   const total = getTotalAcrossParcels();
