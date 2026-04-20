@@ -130,7 +130,7 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
       if (existing && existing.services.some(s => s.id === service.id)) return prev;
       const updated: CadastralCartParcel = existing
         ? { ...existing, parcelLocation: existing.parcelLocation || parcelLocation, services: [...existing.services, service] }
-        : { parcelNumber, parcelLocation, services: [service] };
+        : { parcelNumber, parcelLocation, services: [service], addedAt: Date.now() };
       return { ...prev, [parcelNumber]: updated };
     });
   }, []);
@@ -156,7 +156,10 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
     });
   }, []);
 
-  const parcels = useMemo<CadastralCartParcel[]>(() => Object.values(parcelsMap), [parcelsMap]);
+  const parcels = useMemo<CadastralCartParcel[]>(
+    () => Object.values(parcelsMap).sort((a, b) => a.addedAt - b.addedAt),
+    [parcelsMap]
+  );
   const getParcelCount = useCallback(() => parcels.length, [parcels]);
   const getTotalAcrossParcels = useCallback(
     () => parcels.reduce((sum, p) => sum + p.services.reduce((s, sv) => s + sv.price, 0), 0),
@@ -182,7 +185,7 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
       if (existing && existing.services.some(s => s.id === service.id)) return prev;
       const updated: CadastralCartParcel = existing
         ? { ...existing, services: [...existing.services, service] }
-        : { parcelNumber: pn, parcelLocation: loc, services: [service] };
+        : { parcelNumber: pn, parcelLocation: loc, services: [service], addedAt: Date.now() };
       return { ...prev, [pn]: updated };
     });
     if (!activeParcelNumber) setActiveParcelNumber(pn);
@@ -199,7 +202,7 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
         if (existing && existing.services.some(s => s.id === svc.id)) continue;
         next[pn] = existing
           ? { ...existing, services: [...existing.services, svc] }
-          : { parcelNumber: pn, parcelLocation: svc.parcel_location || '', services: [svc] };
+          : { parcelNumber: pn, parcelLocation: svc.parcel_location || '', services: [svc], addedAt: Date.now() };
       }
       return next;
     });
@@ -225,7 +228,7 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
       }
       const updated: CadastralCartParcel = existing
         ? { ...existing, services: [...existing.services, service] }
-        : { parcelNumber: pn, parcelLocation: service.parcel_location || '', services: [service] };
+        : { parcelNumber: pn, parcelLocation: service.parcel_location || '', services: [service], addedAt: Date.now() };
       return { ...prev, [pn]: updated };
     });
     if (!activeParcelNumber) setActiveParcelNumber(pn);
