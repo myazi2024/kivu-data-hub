@@ -114,3 +114,15 @@ export function getHighestRole(roles: string[]): AppRole {
 
 /** Sensitive roles requiring extra UI guard for bulk assignment. */
 export const SENSITIVE_ROLES: AppRole[] = ['super_admin', 'admin', 'notaire', 'geometre', 'urbaniste'];
+
+/** Roles authorized to access the "Données foncières" menu (carte RDC + analytics + carte cadastrale). */
+export const LAND_DATA_ROLES: AppRole[] = [
+  'super_admin',
+  'admin',
+  'expert_immobilier',
+  'mortgage_officer',
+  'notaire',
+  'geometre',
+  'urbaniste',
+  'partner',
+];

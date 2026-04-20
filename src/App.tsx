@@ -11,6 +11,7 @@ import { CookieProvider } from "@/hooks/useCookies";
 import CookieBanner from "@/components/CookieBanner";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import LandDataAccessGate from "@/components/access/LandDataAccessGate";
 import { CartButton } from '@/components/cart/CartButton';
 import { TestEnvironmentProvider } from '@/hooks/useTestEnvironment';
 import TestEnvironmentBanner from '@/components/TestEnvironmentBanner';
@@ -94,11 +95,15 @@ const App = () => (
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/publications" element={<Publications />} />
-                  <Route path="/map" element={<Map />} />
+                  <Route path="/map" element={
+                    <LandDataAccessGate>
+                      <Map />
+                    </LandDataAccessGate>
+                  } />
                   <Route path="/cadastral-map" element={
-                    <ProtectedRoute>
+                    <LandDataAccessGate>
                       <CadastralMap />
-                    </ProtectedRoute>
+                    </LandDataAccessGate>
                   } />
                   <Route path="/admin" element={
                     <ProtectedRoute requiredRoles={['admin', 'super_admin']}>
