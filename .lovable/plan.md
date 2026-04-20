@@ -1,146 +1,94 @@
 
 
-## Audit — Conformité Facture Normalisée DGI (RDC)
+## Vérification post-Phase 1 DGI — Aucun bug bloquant
 
-### Référentiel DGI (rappel des exigences)
+### ✅ Vérifications passées
 
-La facture normalisée DGI repose sur **4 piliers** :
-1. **Identification fiscale** complète émetteur **et** client (NIF, RCCM, ID-NAT, adresse)
-2. **Mentions légales obligatoires** (« Facture normalisée », régime fiscal, devise officielle CDF, taux TVA 16% explicite avec base HT/TTC séparées)
-3. **Sécurité & traçabilité** (numérotation séquentielle non réinitialisable, signature électronique, code de vérification DGI, QR sécurisé)
-4. **Archivage** (conservation 10 ans, immuabilité post-émission, journal d'audit)
+| Élément | État |
+|---|---|
+| Migrations BD appliquées | ✅ Colonnes `client_*`, `paid_at`, `invoice_signature`, `dgi_validation_code` présentes sur `cadastral_invoices` |
+| Tables nouvelles | ✅ `company_legal_info`, `cadastral_credit_notes`, `bic_invoice_seq_year` créées |
+| RPC + trigger | ✅ `generate_normalized_invoice_number`, `prevent_paid_invoice_mutation` opérationnels |
+| RLS | ✅ Activé sur toutes les nouvelles tables (correctif du 2e migration) |
+| `search_path` fonctions | ✅ Corrigé (warn linter résiduel concerne d'autres fonctions historiques) |
+| `src/lib/pdf.ts` | ✅ Compile, intègre `fetchCompanyLegalInfo`, mention « FACTURE NORMALISÉE », bilingue USD/CDF, décomposition HT/TVA/TTC |
+| `types.ts` | ✅ Régénéré avec les nouvelles tables/RPC |
+| Dev-server | ✅ Aucune erreur de compilation depuis 14:56 (les `[vite] page reload pdf.ts` sont normaux) |
+| Console preview | ✅ Propre (uniquement le warning `RESET_BLANK_CHECK` Lovable, sans rapport) |
 
----
+### ⚠️ Écarts vs plan annoncé (à compléter dans une itération suivante)
 
-### État actuel — Constats
+#### E1 — `ClientFiscalIdentityForm` créé mais **non branché**
+- Le composant existe (`src/components/billing/ClientFiscalIdentityForm.tsx`) et est exporté.
+- **Aucun dialog de paiement ne l'importe** : `CadastralPaymentDialog`, `PermitPaymentDialog`, mutation/expertise/publication continuent de soumettre **sans NIF/RCCM client**.
+- Conséquence : les nouvelles colonnes `client_nif`, `client_rccm`, `client_id_nat`, `client_address`, `client_tax_regime`, `client_type` restent **vides** sur les nouvelles factures → le bloc « FACTURÉ À » du PDF n'affiche rien de plus qu'avant.
 
-#### ✅ Points conformes
+#### E2 — `create_cadastral_invoice_secure` n'écrit pas l'identité fiscale
+- La RPC actuelle `INSERT` toujours uniquement `client_email` + `client_name` (extraits du profil).
+- Même si l'UI capturait NIF/RCCM, la RPC ne les transmettrait pas.
+- À refactorer : ajouter paramètres `p_client_type`, `p_client_nif`, `p_client_rccm`, `p_client_id_nat`, `p_client_address`, `p_client_tax_regime` + persistance.
 
-| # | Élément | État |
-|---|---|---|
-| 1 | QR code de vérification | ✅ Présent (`createDocumentVerification` + URL publique) |
-| 2 | Numérotation unique | ✅ `invoice_number` unique, format préfixé |
-| 3 | Identité émetteur (BIC) | ✅ RCCM, ID-NAT, N° Impôt, N° TVA présents dans `BIC_COMPANY_INFO` |
-| 4 | Devise CDF supportée | ✅ Colonnes `currency_code`, `exchange_rate_used` en BD |
-| 5 | TVA 16% calculée | ✅ Conforme au taux DGI (constante `TVA_RATE`) |
-| 6 | Audit / immuabilité | ⚠️ Partiel (pas de verrou explicite post-émission) |
+#### E3 — Numérotation séquentielle DGI **non utilisée**
+- RPC `generate_normalized_invoice_number(year)` créée mais aucun appelant.
+- Les factures continuent d'être numérotées par le défaut existant (timestamp) → format `BIC/2026/000123` non émis.
 
-#### 🔴 Non-conformités majeures
+#### E4 — Régularisation des factures historiques
+- Les factures pré-Phase 1 ont `client_type = NULL`. Le PDF gère bien ce cas (n'affiche pas le bloc), mais cela signifie qu'elles **resteront non conformes DGI** indéfiniment sans rétro-saisie.
 
-| # | Manquement | Gravité | Impact DGI |
-|---|---|---|---|
-| **N1** | **NIF client absent** de `cadastral_invoices` (pas de colonne `client_nif`, `client_rccm`, `client_id_nat`, `client_address`) | 🔴 Critique | Une facture sans NIF client B2B est **rejetée** par la DGI |
-| **N2** | **Mention « Facture normalisée »** absente du PDF (titre actuel : « Justificatif de paiement ») | 🔴 Critique | Document non reconnu comme facture fiscale |
-| **N3** | **TVA appliquée sur le total après remise mais affichage trompeur** : prix services présentés TTC ? HT ? jamais explicité. Sous-total HT, base imposable, TVA et TTC doivent apparaître **séparément** | 🔴 Critique | Violation art. règles facturation DGI |
-| **N4** | **Devise CDF non affichée sur le PDF** : tout le PDF est en USD seulement, sans contre-valeur CDF (devise officielle obligatoire en RDC) | 🔴 Critique | Facture en devise étrangère sans équivalence CDF non recevable |
-| **N5** | **Aucun code de validation DGI / FNI** (Facturation Normalisée Intégrée) — pas d'intégration au système télédéclaratif | 🔴 Critique | Hors-circuit DGI 2024+ |
-| **N6** | **Signature électronique absente** : QR pointe vers vérification interne BIC, pas signature cryptographique du document | 🟠 Élevé | Intégrité non prouvable juridiquement |
-| **N7** | **Numérotation non séquentielle stricte** : format `TEST-INV-{timestamp36}-{i}` ou ad-hoc, pas de séquence annuelle continue (ex. `BIC/2026/000123`) | 🟠 Élevé | Exigence séquentialité non respectée |
-| **N8** | **Champs émetteur hardcodés** dans `src/lib/pdf.ts` (RCCM, NIF, etc.) au lieu d'une table `company_legal_info` configurable et auditée | 🟡 Moyen | Maintenance + conformité multi-entité |
-| **N9** | **Pas d'archivage immuable** : aucun trigger empêchant l'`UPDATE` d'une facture `paid` (modification possible post-émission) | 🟠 Élevé | Violation principe d'immuabilité |
-| **N10** | **Mode de paiement & date de règlement** mentionnés mais pas formellement structurés (DGI demande date facturation + date paiement distinctes) | 🟡 Moyen | Champ `paid_at` absent du schéma |
-| **N11** | **Aucune gestion d'avoir / facture rectificative** (table `credit_notes`, lien `original_invoice_id`) | 🟡 Moyen | Annulation = suppression silencieuse, non conforme |
-| **N12** | **Régime fiscal de l'émetteur** (réel / forfaitaire / IPR) non mentionné sur le PDF | 🟡 Moyen | Mention obligatoire DGI |
+### 🚫 Aucun bug bloquant
 
----
-
-### Plan de mise en conformité (priorisé)
-
-#### 🔴 Phase 1 — Conformité minimale DGI (bloquant)
-
-**P1.1 — Identification fiscale du client**
-- Migration BD : ajout colonnes sur `cadastral_invoices` (et `expertise_payments`, `permit_payments`, `orders`) :
-  - `client_nif text`, `client_rccm text`, `client_id_nat text`, `client_address text`, `client_tax_regime text`
-- Ajout des champs dans tous les dialogs de paiement (`CadastralPaymentDialog`, mutation, expertise, autorisation, publication) avec :
-  - Toggle « Particulier / Entreprise »
-  - Si entreprise → NIF/RCCM **obligatoires** avec validation (`validateNIF` déjà existant)
-  - Si particulier → ID national ou pièce d'identité
-
-**P1.2 — Mentions légales DGI sur PDF**
-- Renommer titre : `JUSTIFICATIF DE PAIEMENT` → **`FACTURE NORMALISÉE`**
-- Ajouter bloc « Émetteur » avec : Dénomination, RCCM, ID-NAT, NIF, Régime fiscal, Adresse complète
-- Ajouter bloc « Client » miroir
-- Décomposition fiscale obligatoire :
-  ```
-  Sous-total HT      : X,XX USD / Y,YY CDF
-  Remise commerciale : -...
-  Base imposable     : ...
-  TVA 16%            : ...
-  Total TTC          : ...
-  ```
-- Mention pied de page : « Facture normalisée — Direction Générale des Impôts (DGI) — Code de vérification : XXXX »
-
-**P1.3 — Affichage bilingue USD/CDF**
-- Utiliser `currency_config` + `exchange_rate_used` déjà en BD
-- Afficher chaque montant en USD **et** CDF (équivalence au taux du jour de facturation, fixée à l'émission)
-
-**P1.4 — Numérotation séquentielle continue**
-- Création séquence Postgres : `bic_invoice_seq` (annuelle, non réinitialisable)
-- RPC `generate_normalized_invoice_number(year)` retournant `BIC/2026/000001`
-- Refactor `create_cadastral_invoice_secure` + générateurs autres services pour utiliser la RPC unique
-
-#### 🟠 Phase 2 — Intégrité & immuabilité
-
-**P2.1 — Verrou post-émission**
-- Trigger `BEFORE UPDATE` sur `cadastral_invoices` : si `OLD.status = 'paid'` → bloquer toute modification sauf champs whitelist (`updated_at`, audit fields)
-- Idem sur tables sœurs (orders, expertise_payments, permit_payments)
-
-**P2.2 — Signature électronique**
-- Edge function `sign-invoice` : SHA-256(invoice payload) + signature HMAC avec secret serveur
-- Stockage `invoice_signature text`, `signature_algorithm text`, `signed_at timestamptz`
-- Affichage hash tronqué + QR sur PDF
-
-**P2.3 — Avoirs / factures rectificatives**
-- Table `cadastral_credit_notes` : `id`, `original_invoice_id` (FK), `reason`, `amount_usd`, `created_by`
-- Remplacer toute logique « cancel » par création d'avoir lié
-
-**P2.4 — Date de paiement**
-- Ajout colonne `paid_at timestamptz` (déjà partiellement reflété par `payment_transactions`)
-- Renseigné par trigger lors de passage `pending` → `paid`
-
-#### 🟡 Phase 3 — Configuration & gouvernance
-
-**P3.1 — Table émetteur configurable**
-- `company_legal_info` : 1 ligne par entité émettrice, audit log, lecture par `src/lib/pdf.ts` au lieu de constante hardcodée
-- Onglet admin « Identité légale émetteur » dans `AdminBillingConfig`
-
-**P3.2 — Préparation FNI/DGI**
-- Champ `dgi_validation_code text nullable` sur factures
-- Edge function stub `submit-to-dgi` (placeholder API DGI quand disponible)
-- Rapport admin « Factures non transmises DGI »
-
-**P3.3 — Archivage 10 ans**
-- Politique RLS : empêcher `DELETE` sur factures > 0j post-émission (déjà partiel)
-- Job cron : snapshot mensuel JSON archivable
-
----
-
-### Détails techniques
-
-**Migrations BD nécessaires** :
-1. Colonnes client fiscales sur 4 tables de facturation
-2. Séquence + RPC `generate_normalized_invoice_number`
-3. Trigger immuabilité post-paid
-4. Tables `company_legal_info`, `cadastral_credit_notes`
-5. Colonnes `invoice_signature`, `paid_at`, `dgi_validation_code`
-
-**Fichiers à modifier** :
-- `src/lib/pdf.ts` — refonte complète bloc émetteur/client + mentions DGI + bilingue
-- `src/components/cadastral/CadastralPaymentDialog.tsx` (+ équivalents expertise/mutation/permit/publication) — capture identité fiscale client
-- `src/components/admin/billing/CompanyLegalInfoTab.tsx` (nouveau)
-- `src/components/admin/billing/CreditNotesTab.tsx` (nouveau)
-
-**Edge functions** :
-- `sign-invoice` (signature HMAC)
-- `submit-to-dgi` (stub interopérabilité future)
-
-**Hors périmètre immédiat** :
-- Intégration réelle API FNI DGI (nécessite agrément officiel + certificat fiscal)
-- Module e-tax recouvrement
+- Pas d'erreur TS, pas de crash runtime, pas de régression UI
+- Le warning Vite « Failed to resolve AdminLandTitleFeesConfig » dans les logs date de 13:44 — résolu depuis (fichier présent + export default OK)
+- Linter Supabase : 8 warnings, **aucun lié aux nouveaux objets** (warnings préexistants sur d'autres fonctions/buckets)
 
 ### Recommandation
 
-L'application présente la **structure technique** (TVA, CDF, QR, audit) mais **manque les éléments réglementaires** clés : NIF client, mention « facture normalisée », bilingue USD/CDF, immuabilité, séquence officielle. La **Phase 1 (P1.1 → P1.4)** est indispensable avant toute commercialisation B2B en RDC.
+La Phase 1 est **techniquement déployée sans casser l'existant**, mais elle reste **à 50% fonctionnelle** : l'infrastructure (BD + PDF) est prête, l'**alimentation des données** (UI + RPC) ne l'est pas.
 
-Veux-tu que je démarre par la **Phase 1 complète** (4 chantiers, ~1 migration + refonte PDF + capture identité client sur tous les dialogs de paiement) ?
+### Plan correctif proposé (Phase 1.5 — Branchement)
+
+#### Étape A — RPC enrichie
+Migration : créer `create_cadastral_invoice_secure_v2(parcel, services, discount, client_type, client_nif, client_rccm, client_id_nat, client_address, client_tax_regime)` qui :
+- Persiste les 6 nouveaux champs
+- Appelle `generate_normalized_invoice_number()` pour `invoice_number`
+- Conserve l'ancienne RPC pour rétro-compatibilité (alias)
+
+#### Étape B — Branchement UI (5 dialogs)
+- `CadastralPaymentDialog` → ajouter section `<ClientFiscalIdentityForm />` avant le bouton "Payer"
+- `PermitPaymentDialog` → idem + transmettre à la RPC permit
+- `MutationRequestDialog` (étape paiement) → idem
+- `RealEstateExpertiseRequestDialog` (étape paiement) → idem
+- Dialog publications (orders) → idem
+
+Persistance : pré-remplissage depuis le **dernier client_* utilisé** par l'utilisateur (UX) + validation `validateFiscalIdentity()` déjà fournie.
+
+#### Étape C — Bascule numérotation
+- Trigger BD `BEFORE INSERT` sur `cadastral_invoices` : si `invoice_number` IS NULL → `generate_normalized_invoice_number()`
+- Idem sur `expertise_payments`, `permit_payments`, `orders` (créer colonne `invoice_number` si absente)
+
+#### Étape D — Onglet admin "Identité légale émetteur"
+- Nouveau composant `CompanyLegalInfoTab` dans `AdminBillingConfig` (10e onglet) pour éditer la table `company_legal_info` (cohérence multi-entité, audit log).
+
+### Détails techniques
+
+- **Fichiers à modifier (Étape B)** :
+  - `src/components/cadastral/CadastralPaymentDialog.tsx`
+  - `src/components/cadastral/PermitPaymentDialog.tsx`
+  - `src/components/cadastral/MutationRequestDialog.tsx` (ou son sous-composant paiement)
+  - `src/components/cadastral/RealEstateExpertiseRequestDialog.tsx`
+  - Dialog publications (à localiser via `orders` insert)
+  - `src/hooks/useCadastralPayment.tsx` (signature étendue)
+- **Fichiers à créer (Étape D)** :
+  - `src/components/admin/billing/CompanyLegalInfoTab.tsx`
+- **Migrations** :
+  - 1 migration : RPC v2 + triggers numérotation auto + (optionnel) colonnes invoice_number sur tables sœurs
+- **Hors périmètre** : Phase 2 (signature HMAC, immuabilité étendue) et Phase 3 (FNI DGI).
+
+### Priorités
+
+1. **Étape A + B** indispensables pour rendre la Phase 1 réellement utile (NIF client persisté).
+2. **Étape C** pour passer aux numéros officiels `BIC/2026/000xxx`.
+3. **Étape D** pour rendre l'identité émetteur configurable (sinon valeurs FALLBACK figées).
+
+Veux-tu que je démarre par les **Étapes A + B + C** (branchement complet du flux DGI) ?
 
