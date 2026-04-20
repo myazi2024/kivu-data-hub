@@ -1,47 +1,81 @@
 
 
-## Vérification post-refonte `AnalyticsDashboard` — Aucun bug détecté
+## Remplacer "Copier" par "Partager" — Carte RDC + Analytics
 
-### ✅ Contrôles passés
+### Périmètre
 
-| Contrôle | Résultat |
-|---|---|
-| Compilation TS du composant refactoré | ✅ Imports tous résolus (`useAdvancedAnalytics`, 8 sous-composants, `Card`, `Tabs`, `Select`, `Info`) |
-| API du hook `useAdvancedAnalytics` | ✅ Expose bien les 8 propriétés consommées + `loading` |
-| Sous-composants Analytics (8) | ✅ Inchangés, continuent d'importer leurs types depuis `useAdvancedAnalytics` |
-| Imports retirés (Math.random, hardcoded zones, KPI cards locales) | ✅ Aucun autre fichier ne les référençait |
-| Route `/admin?tab=analytics` | ✅ Charge correctement (l'utilisateur y est actuellement, console propre) |
-| Console preview | ✅ Aucun warning lié (uniquement `RESET_BLANK_CHECK` Lovable + reconnexion HMR) |
-| Doublonnage avec `AdminDashboardOverview` | ✅ Éliminé — message redirectionnel ajouté |
+| Composant | Bouton(s) concerné(s) | Source |
+|---|---|---|
+| `DRCInteractiveMap.tsx` | 1 bouton "Copier en image" sur la carte | ligne 508-519 |
+| `ChartCard.tsx` | `CopyButton` partagé par tous les graphiques (`ChartCard` + `StackedBarCard`) — utilisé dans les onglets analytics intégrés à la carte (territorial, dashboards visualisations) | lignes 216-224, 312, 421 |
 
-### 🟢 Aucun bug bloquant
+Ces deux composants sont les **seuls** points qui exposent un bouton "Copier" dans le menu **Données foncières** (`/map`) et ses onglets analytics. Les autres `clipboard.writeText` du repo (codes CCC, références, parrainage) restent inchangés — ils copient du **texte fonctionnel**, pas une image partageable.
 
-- Pas d'erreur TS, pas de crash runtime, pas de référence orpheline
-- Le composant est passé de 484 lignes (avec données fictives) à 114 lignes (pur routeur d'onglets spécialisés)
-- Les 8 onglets restants sont alimentés par `useAdvancedAnalytics`, déjà fiable côté requêtes réelles
+### Comportement cible
 
-### ⚠️ Dette technique restante (rappel — non régressive)
+Au clic sur le bouton **Partager** (icône `Share2` de lucide-react) :
 
-Issus du plan initial mais non traités à dessein (priorité Phase 1 DGI précédente) :
+1. **Génération de l'image** (réutilise la logique existante : `html-to-image` pour les charts, `html2canvas` pour la carte) → `Blob PNG`.
+2. **Tentative `navigator.share`** avec `files: [File]` si supporté (mobile + Safari/Chrome récents) → ouvre la **feuille de partage native** (WhatsApp, Twitter, Facebook, Mail, Messages, etc.).
+3. **Fallback popover** si `navigator.canShare({ files })` est `false` (desktop la plupart du temps) :
+   - **Copier l'image** (presse-papiers — comportement actuel)
+   - **Télécharger l'image** (PNG)
+   - **Partager sur WhatsApp** (lien `https://wa.me/?text=...` avec URL de la page)
+   - **Partager sur X / Twitter** (intent `https://twitter.com/intent/tweet?...`)
+   - **Partager sur Facebook** (sharer.php avec URL)
+   - **Partager sur LinkedIn** (sharing/share-offsite)
+   - **Copier le lien de la page**
 
-- **P3** — `useAdvancedAnalytics` n'utilise toujours pas React Query (re-fetch à chaque changement de période, `select('*')` sur `payments`)
-- **P4** — Loading global plutôt qu'incrémental ; sélecteur de période non synchronisé avec celui du Dashboard
-- **B5/B6** — Dans `useAdvancedAnalytics` : pas de `?? 0` systématique sur `amount_usd`, pas de filtre `excludeTest`
-- **B8** — Police XAxis `fontSize: 6` toujours présente dans les sous-composants (`PaymentAnalytics`, `BusinessKPIs`)
+> Note : les liens sociaux desktop ne peuvent pas attacher l'image directement (limitation des web intents) — ils partagent l'URL de la page + un texte avec le titre du graphique. L'utilisateur peut copier/télécharger l'image en parallèle pour la joindre manuellement. Mobile via `navigator.share` partage l'image nativement.
 
-Ces points existaient **avant** la refonte et n'ont pas été introduits par celle-ci.
+### Implémentation
 
-### Recommandation
+#### 1. Nouveau composant partagé `ShareButton`
+Fichier : `src/components/shared/ShareButton.tsx`
 
-La refonte de `AnalyticsDashboard` est **propre, sans régression**. La structure de l'application est intacte. Les onglets spécialisés fonctionnent comme avant (même hook, mêmes composants enfants).
+Props :
+```ts
+{ getBlob: () => Promise<Blob>; title: string; size?: 'sm'|'icon-xs'|'icon'; }
+```
 
-Si tu souhaites compléter l'audit, le prochain chantier logique est **P3 + P4** : migration de `useAdvancedAnalytics` vers React Query + skeletons incrémentaux + filtre `excludeTest` partagé avec le Dashboard.
+Contenu :
+- Bouton icône `Share2` (`title="Partager"`)
+- `Popover` avec la liste d'options ci-dessus (icônes lucide : `Copy`, `Download`, `MessageCircle`/WhatsApp, `Twitter`, `Facebook`, `Linkedin`, `Link`)
+- Détection : si `navigator.canShare?.({ files: [testFile] })` → bouton ouvre directement le share natif (sans popover) ; sinon ouvre popover.
+- Toasts de feedback (`sonner` / `use-toast` selon le composant appelant)
 
-**Veux-tu que j'enchaîne sur P3 (React Query + sécurisation `?? 0` + `excludeTest`) ?**
+#### 2. `ChartCard.tsx` (refonte mineure)
+- Remplacer `CopyButton` par `ShareButton`
+- `getBlob` = factorisation de `useCopyAsImage` → exposer un nouveau hook `useChartImageBlob()` retournant `{ ref, getBlob }`
+- Mettre à jour `ChartCard` et `StackedBarCard` (2 appels)
 
-<lov-actions>
-<lov-suggestion message="Teste la page /admin?tab=analytics de bout en bout (changement de période, navigation entre les 8 onglets) pour confirmer qu'il n'y a aucune régression visible.">Vérifier que tout fonctionne</lov-suggestion>
-<lov-suggestion message="Migre useAdvancedAnalytics vers React Query (staleTime 60s, queryKeys par section), ajoute le ?? 0 sur amount_usd et un filtre excludeTest partagé avec le Dashboard (P3).">Lancer P3 — Performance & cohérence</lov-suggestion>
-<lov-suggestion message="Remplace les Skeletons globaux des 8 sous-onglets Analytics par des skeletons par card et corrige fontSize XAxis (6 → 11) dans PaymentAnalytics et BusinessKPIs (P4 + B8).">Lancer P4 — UX skeletons & lisibilité</lov-suggestion>
-<lov-suggestion message="Audite la section « Configuration » de l'admin (sidebar) à la recherche de bugs, doublons et configurations non branchées.">Auditer la section Configuration</lov-suggestion>
-</lov-actions>
+#### 3. `DRCInteractiveMap.tsx`
+- Remplacer le bouton "Copier en image" (lignes 508-519) par `<ShareButton getBlob={getMapBlob} title="Carte RDC — {profile}" />`
+- Extraire la logique html2canvas dans `getMapBlob: () => Promise<Blob>`
+- Conserver la clé de visibilité `'map-copy-button'` (renommer le label admin si nécessaire — voir détails)
+
+#### 4. Configuration admin (cohérence)
+- `AdminAnalyticsChartsConfig` expose probablement `'map-copy-button'`. Garder la clé technique pour ne rien casser, mais mettre à jour le label affiché : « Bouton Partager (carte) ». Vérifier également d'éventuelles clés `chart-copy-*` côté charts config.
+
+### Détails techniques
+
+**Fichiers modifiés** :
+- `src/components/visualizations/shared/ChartCard.tsx` — remplacer `CopyButton` par `ShareButton`, factoriser hook image
+- `src/components/DRCInteractiveMap.tsx` — remplacer le bouton + extraire `getMapBlob`
+
+**Fichier créé** :
+- `src/components/shared/ShareButton.tsx` (~120 lignes)
+
+**Dépendances** : aucune nouvelle (lucide-react, popover déjà dispo). `navigator.share` est natif.
+
+**Hors périmètre** :
+- Boutons "Copier" ailleurs (codes CCC, références demandes, parrainage, `MortgagePaymentsPanel`, `subdivision/StepSummary`, `ResellerDashboard`, etc.) — ils copient du **texte fonctionnel** (codes/refs), pas pertinent pour le partage social. À traiter dans un chantier séparé si demandé.
+- Modification de la table `system_config_audit` ou de la clé d'admin (cosmétique uniquement).
+
+### Validation
+
+- Cliquer le bouton sur un chart sur desktop → popover avec 7 options
+- Cliquer sur mobile → feuille de partage native (WhatsApp/Messages/etc.)
+- Bouton sur la carte : idem
+- Vérifier que les anciennes routes/labels admin n'affichent pas d'erreur
+
