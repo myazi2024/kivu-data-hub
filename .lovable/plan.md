@@ -1,99 +1,69 @@
 
 
-## Audit — Configuration de la facturation (`/admin?tab=billing-config`)
+## Audit post-implémentation — Bugs détectés dans `BillingOverviewTab` & `MortgageDisputeFeesTab`
 
-### Couverture actuelle de l'écran `AdminBillingConfig`
+L'intégration P1+P2 a introduit **3 bugs de schéma** dans la nouvelle vue d'ensemble. Les 9 onglets s'affichent, mais l'agrégation de la "Vue d'ensemble" échoue silencieusement (catch global) sur 3 sources sur 7 → **chiffres incomplets** dans les cartes de totaux et dans le tableau.
 
-L'écran actuel ne propose que **3 onglets** :
-1. **Publications** — prix unitaires (table `publications`)
-2. **Services cadastraux** — 5 services par parcelle (table `cadastral_services_config`)
-3. **Frais d'autorisation de bâtir** (permis) — table `permit_fees_config`
+### Bugs identifiés
 
-### Services payants NON pris en charge dans cet écran
-
-Recensement complet vs. table de configuration et écran admin existant ailleurs :
-
-| Service payant | Table BD | Écran admin dédié | Visible dans Config Facturation ? |
+| # | Fichier | Problème | Impact |
 |---|---|---|---|
-| Publications (kiosque) | `publications` | AdminPublications | ✅ Oui |
-| Services cadastraux (5 services / parcelle) | `cadastral_services_config` | AdminCadastralServices | ✅ Oui |
-| Autorisation de bâtir (permis) | `permit_fees_config` | AdminPermitFeesConfig | ✅ Oui |
-| **Mutation foncière** | `mutation_fees_config` *(à confirmer)* | AdminMutationFeesConfig | ❌ Non |
-| **Titre foncier** (initial / renouvellement / duplicata) | `land_title_fees_by_type` + `land_title_fees_config` | AdminLandTitleRequests (pas de config dédiée) | ❌ Non |
-| **Lotissement (subdivision)** | `subdivision_fees_config` | AdminSubdivisionFeesConfig | ❌ Non |
-| **Expertise immobilière** + **accès certificat** | `expertise_fees_config` | AdminExpertiseFeesConfig | ❌ Non |
-| **Hypothèque (inscription + radiation)** | `cadastral_contribution_config` clé `mortgage_cancellation_fees` | Aucun écran de config dédié | ❌ Non |
-| **Litiges fonciers (frais de levée)** | inconnu / hardcodé | Aucun | ❌ Non |
-| **Fiscalité** (Impôt foncier, Bâtisse, IRL — taux/barèmes) | `cadastral_contribution_config` (probable) | Partiel (AdminTaxHistory = lecture seule) | ❌ Non |
-| **Codes CCC** (valeur USD attribuée) | `cadastral_contribution_config` | AdminContributionConfig | ❌ Non |
-| **Codes de remise** (déjà gérés ailleurs) | `discount_codes` | AdminDiscountCodes | ⚠️ Hors périmètre OK |
+| 1 | `BillingOverviewTab.tsx` ligne 49 | Requête sur `subdivision_fees_config` — **table inexistante** (vraie table : `subdivision_rate_config`) | Catégorie "Lotissement" toujours vide / erreur 404 PostgREST |
+| 2 | `BillingOverviewTab.tsx` ligne 47 | `mutation_fees_config` → champ `mutation_type` **inexistant** (table plate : `fee_name`, `amount_usd`) | Référence affichée = `'—'` même quand des frais existent (cosmetic mais trompeur) |
+| 3 | `BillingOverviewTab.tsx` ligne 51 | `expertise_fees_config` → champ `fee_type` **inexistant** | Idem (référence vide) |
 
-### Constats
+### Constats secondaires (non bloquants)
 
-- **8 services payants sur 11** ne sont **pas** consultables/modifiables depuis "Config Facturation" — l'admin doit naviguer dans 6 écrans différents pour ajuster les tarifs.
-- L'écran existe sous un nom (« Configuration de la facturation ») qui suggère un point unique alors qu'il ne couvre que 3 services sur 11.
-- Aucun récapitulatif global des prix actifs (introuvable « combien coûte tel service au total »).
-- Pas de **mise à jour en masse** sur les frais hors-permis (mutation, lotissement, expertise, titre foncier).
-- Pas d'**historique des changements de tarifs** ni de **journal d'audit** visible depuis l'écran.
-- Pas d'**export CSV** des grilles tarifaires.
-- Pas de **frais hypothèque** ni de **frais de levée de litige** configurables nulle part de manière centralisée — risque de valeurs codées en dur.
+- **Toast "Impossible de charger la vue d'ensemble"** s'affiche à chaque ouverture à cause du bug n°1 (la requête sur table absente fait throw). Confusion UX.
+- **`MortgageDisputeFeesTab`** : OK fonctionnellement, mais les valeurs par défaut (50/100/25 USD radiation, 30 USD litige) sont **arbitraires** et ne correspondent pas forcément aux frais réellement appliqués côté services hypothèque/litige existants → à confirmer côté code consommateur dans une étape ultérieure (hors périmètre de ce fix).
+- **9 onglets sur viewport 875px** : `flex-wrap` activé, donc OK, mais visuellement chargé. Acceptable.
 
-### Plan proposé — Refonte de `AdminBillingConfig` en hub unifié
+### Plan de correction
 
-**Objectif** : faire de cet écran le **point d'entrée unique** de tous les tarifs facturables.
+#### Fix 1 — Mapper `subdivision_rate_config` correctement
 
-#### Étape 1 — Élargir la couverture des onglets (P1)
+Dans `BillingOverviewTab.tsx`, remplacer la requête `subdivision_fees_config` par :
 
-Passer de 3 à **8 onglets** :
-1. Publications (existant)
-2. Services cadastraux (existant)
-3. Autorisation de bâtir (existant)
-4. **Mutation foncière** (nouveau — wrap `AdminMutationFeesConfig`)
-5. **Titre foncier** (nouveau — table `land_title_fees_by_type`, lecture/édition)
-6. **Lotissement** (nouveau — wrap `AdminSubdivisionFeesConfig`)
-7. **Expertise + Certificat** (nouveau — wrap `AdminExpertiseFeesConfig`)
-8. **Hypothèque & Litiges** (nouveau — frais radiation + levée litige)
+```ts
+(supabase as any).from('subdivision_rate_config').select('id, section_type, location_name, rate_per_sqm_usd, is_active, updated_at')
+```
 
-Pattern : composer les écrans existants via lazy import plutôt que de dupliquer la logique.
+Puis adapter le mapping :
+- `name` = `${section_type} — ${location_name}` (ex: "urban — Gombe")
+- `reference` = `section_type`
+- `price_usd` = `rate_per_sqm_usd` (préciser dans l'UI que c'est un **taux/m²**, pas un montant fixe)
 
-#### Étape 2 — Onglet "Vue d'ensemble" (P2)
+#### Fix 2 — Mutation : retirer `mutation_type`
 
-Premier onglet par défaut : **tableau récapitulatif** de tous les tarifs actifs avec :
-- Service / Catégorie / Prix USD / Statut / Dernière modification
-- Filtres par catégorie et recherche
-- Bouton "Exporter CSV"
+Champ inexistant → utiliser `description` (tronqué) ou simplement `'—'` pour la colonne Référence. La table mutation_fees_config est plate (frais génériques par mutation, pas typés).
 
-#### Étape 3 — Mise à jour en masse globale (P3)
+```ts
+(supabase as any).from('mutation_fees_config').select('id, fee_name, description, amount_usd, is_active, updated_at')
+// reference: f.description ? f.description.slice(0, 30) : '—'
+```
 
-Étendre l'opération `applyBulkUpdate` aux 5 nouvelles catégories pour permettre `+10%` global sur l'inflation.
+#### Fix 3 — Expertise : retirer `fee_type`
 
-#### Étape 4 — Journal d'audit tarifaire (P4)
+Idem — table plate. Utiliser `description` comme référence.
 
-- Ajouter `pricing_change_log` (table à créer) qui trace `service_type`, `service_id`, `old_price`, `new_price`, `changed_by`, `changed_at`
-- Trigger BD sur `publications`, `cadastral_services_config`, `permit_fees_config`, `mutation_fees_config`, `land_title_fees_by_type`, `subdivision_fees_config`, `expertise_fees_config`
-- Onglet "Historique" dans l'écran
+```ts
+(supabase as any).from('expertise_fees_config').select('id, fee_name, description, amount_usd, is_active, updated_at')
+```
 
-#### Étape 5 — Frais hypothèque & litiges configurables (P5)
+#### Fix 4 — Affichage taux/m² pour Lotissement
 
-- Vérifier si `mortgage_cancellation_fees` (clé `cadastral_contribution_config`) est exposé en UI → sinon ajouter formulaire dédié
-- Identifier où le **frais de levée de litige** est défini (probablement codé en dur) → migrer vers `cadastral_contribution_config` clé `dispute_lifting_fee` et exposer
+Dans la colonne "Prix USD" du tableau et dans la carte Total, ajouter une mention `/m²` quand `category === 'Lotissement'` pour éviter la confusion (les frais lotissement sont surfaciques, pas forfaitaires). Le total $ agrégé pour cette catégorie devient une **somme de taux** sans signification métier — afficher `${count} tarifs configurés` au lieu de `Total $X`.
 
 ### Détails techniques
 
-- **Fichiers modifiés** : `src/components/admin/AdminBillingConfig.tsx` (refonte tabs)
-- **Fichiers créés** :
-  - `src/components/admin/billing/BillingOverviewTab.tsx`
-  - `src/components/admin/billing/BillingAuditLogTab.tsx`
-  - `src/components/admin/billing/MortgageDisputeFeesTab.tsx`
-- **Migration BD** : table `pricing_change_log` + 7 triggers
-- **Sidebar** : conserver les liens directs existants (Config Frais Mutation, Lotissement, Expert., Permis) — l'écran central devient un raccourci pratique, pas un remplacement
-- **Hors périmètre** : `discount-codes`, `currency-config` (déjà autonomes et bien placés)
+- **Fichiers modifiés** : `src/components/admin/billing/BillingOverviewTab.tsx` uniquement (3 lignes de query + ajustements mapping + condition d'affichage Lotissement)
+- **Aucune migration BD** nécessaire
+- **Aucun nouvel import**
+- **Tests** : ouvrir l'onglet "Vue d'ensemble", vérifier que les 7 catégories s'affichent sans toast d'erreur et que la catégorie Lotissement liste les tarifs configurés
 
-### Questions
+### Hors périmètre (à traiter dans P3/P4/P5)
 
-1. Veux-tu **tout intégrer dans `AdminBillingConfig`** (8 onglets) ou plutôt créer un nouvel écran "Hub Tarifs" laissant `AdminBillingConfig` léger ?
-2. **Étape 4 (audit log)** : on ajoute la table + triggers maintenant ou on la garde pour plus tard ?
-3. **Étape 5 (hypothèque/litiges)** : confirme-t-on que les frais sont actuellement codés en dur ? (je le vérifierai à l'implémentation)
-
-Priorité suggérée : **P1 + P2** d'abord (couverture + vue d'ensemble), puis P3/P4/P5 selon ton besoin.
+- Bulk update étendu (P3)
+- Audit log avec triggers BD (P4)
+- Validation que les frais hypothèque/litige sont bien lus par les services consommateurs (P5)
 
