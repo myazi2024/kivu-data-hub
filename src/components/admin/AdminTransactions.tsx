@@ -320,7 +320,7 @@ const AdminTransactions = () => {
                   </Button>
                 </ResponsiveTableHead>
                 <ResponsiveTableHead priority="high">Référence</ResponsiveTableHead>
-                <ResponsiveTableHead priority="medium">Type</ResponsiveTableHead>
+                <ResponsiveTableHead priority="medium">Source</ResponsiveTableHead>
                 <ResponsiveTableHead priority="low">Utilisateur</ResponsiveTableHead>
                 <ResponsiveTableHead priority="low">Description</ResponsiveTableHead>
                 <ResponsiveTableHead priority="high">
