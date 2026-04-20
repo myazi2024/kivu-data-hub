@@ -6577,6 +6577,10 @@ export type Database = {
         Args: { _publication_id: string }
         Returns: undefined
       }
+      upsert_cadastral_cart_draft: {
+        Args: { _cart_data?: Json; _discounts_data?: Json }
+        Returns: undefined
+      }
       user_has_permission: {
         Args: { _action: string; _resource: string; _user_id: string }
         Returns: boolean

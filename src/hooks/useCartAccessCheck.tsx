@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { checkMultipleServiceAccess } from '@/utils/checkServiceAccess';
+import { supabase } from '@/integrations/supabase/client';
 import type { CadastralCartParcel } from '@/hooks/useCadastralCart';
 
 /**
@@ -31,16 +31,31 @@ export const useCartAccessCheck = (parcels: CadastralCartParcel[]) => {
     }
     setLoading(true);
     try {
-      const results = await Promise.all(
-        parcels.map(async (p) => {
-          const ids = p.services.map((s) => s.id);
-          if (ids.length === 0) return [p.parcelNumber, [] as string[]] as const;
-          const owned = await checkMultipleServiceAccess(user.id, p.parcelNumber, ids);
-          return [p.parcelNumber, owned] as const;
-        })
+      // Fix: 1 seule requête batch (au lieu de N requêtes parallèles)
+      const parcelNumbers = parcels.map((p) => p.parcelNumber);
+      const allServiceIds = Array.from(
+        new Set(parcels.flatMap((p) => p.services.map((s) => s.id)))
       );
       const next: Record<string, string[]> = {};
-      for (const [pn, owned] of results) next[pn] = owned;
+      parcels.forEach((p) => { next[p.parcelNumber] = []; });
+
+      if (parcelNumbers.length > 0 && allServiceIds.length > 0) {
+        const { data, error } = await supabase
+          .from('cadastral_service_access')
+          .select('parcel_number, service_type, expires_at')
+          .eq('user_id', user.id)
+          .in('parcel_number', parcelNumbers)
+          .in('service_type', allServiceIds);
+
+        if (!error && data) {
+          const now = Date.now();
+          for (const row of data) {
+            if (row.expires_at && new Date(row.expires_at).getTime() <= now) continue;
+            const list = next[row.parcel_number];
+            if (list && !list.includes(row.service_type)) list.push(row.service_type);
+          }
+        }
+      }
       setAccessMap(next);
     } finally {
       setLoading(false);

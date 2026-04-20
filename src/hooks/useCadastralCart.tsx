@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useMemo } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode, useCallback, useMemo } from 'react';
 import { CookieManager, ConsentAwareStorage } from '@/lib/cookies';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -195,20 +195,15 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, hydrated]);
 
-  // Push debounced 800ms vers Supabase
+  // Push debounced 800ms vers Supabase via RPC unifiée (évite race avec discounts)
   useEffect(() => {
     if (!hydrated || !userId) return;
     const timer = setTimeout(async () => {
       try {
-        await supabase
-          .from('cadastral_cart_drafts')
-          .upsert(
-            {
-              user_id: userId,
-              cart_data: { parcelsMap, activeParcelNumber } as any,
-            },
-            { onConflict: 'user_id' }
-          );
+        await supabase.rpc('upsert_cadastral_cart_draft', {
+          _cart_data: { parcelsMap, activeParcelNumber } as any,
+          _discounts_data: null as any,
+        });
       } catch (e) {
         console.error('Cart remote push failed:', e);
       }
@@ -217,14 +212,17 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
   }, [parcelsMap, activeParcelNumber, userId, hydrated]);
 
   // ---------- Purge post-paiement (P6) ----------
-  // Sur événement `cadastralPaymentCompleted`, retire uniquement les services
-  // dont l'accès a été accordé pour les parcelles présentes dans le panier.
+  // Listener stable (pas de dépendance) — utilise une ref pour lire le dernier parcelsMap.
+  // Évite la fenêtre de course où un événement serait perdu entre remove/addEventListener.
+  const parcelsMapRef = useRef(parcelsMap);
+  useEffect(() => { parcelsMapRef.current = parcelsMap; }, [parcelsMap]);
+
   useEffect(() => {
     const handler = async () => {
       const { data: userRes } = await supabase.auth.getUser();
       const userId = userRes.user?.id;
       if (!userId) return;
-      const snapshot = Object.values(parcelsMap);
+      const snapshot = Object.values(parcelsMapRef.current);
       if (snapshot.length === 0) return;
       try {
         const { data, error } = await supabase
@@ -258,7 +256,7 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
     };
     window.addEventListener('cadastralPaymentCompleted', handler);
     return () => window.removeEventListener('cadastralPaymentCompleted', handler);
-  }, [parcelsMap]);
+  }, []);
 
 
   // ---------- API multi-parcelles ----------

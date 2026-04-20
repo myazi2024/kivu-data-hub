@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { CheckCircle } from 'lucide-react';
+import { ConsentAwareStorage } from '@/lib/cookies';
 import { useCadastralCart } from '@/hooks/useCadastralCart';
 import { useCartDiscounts } from '@/hooks/useCartDiscounts';
 import { useCadastralPayment } from '@/hooks/useCadastralPayment';
@@ -84,7 +85,8 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   const [expandedServices, setExpandedServices] = useState<Set<string>>(new Set());
   const [fiscalIdentity, setFiscalIdentity] = useState<ClientFiscalIdentity>(() => {
     try {
-      const stored = localStorage.getItem('bic_last_fiscal_identity');
+      // PII fiscale (RCCM/NIF) → consent-aware storage (RGPD)
+      const stored = ConsentAwareStorage.getItem('bic_last_fiscal_identity');
       if (stored) return { ...EMPTY_FISCAL_IDENTITY, ...JSON.parse(stored) };
     } catch {}
     return EMPTY_FISCAL_IDENTITY;
@@ -99,7 +101,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { get: getCartDiscount } = useCartDiscounts();
 
-  // P4 — Auto-applique le code promo mémorisé pour cette parcelle
+  // P4 — Sync code promo mémorisé ↔ état local (auto-apply + auto-clear)
   React.useEffect(() => {
     const memorized = getCartDiscount(searchResult.parcel.parcel_number);
     if (memorized && (!appliedDiscount || appliedDiscount.code !== memorized.code)) {
@@ -109,8 +111,11 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
         reseller_id: memorized.reseller_id ?? '',
         code_id: memorized.code_id,
       });
+    } else if (!memorized && appliedDiscount) {
+      // Le code a été retiré depuis le drawer → reset local
+      setAppliedDiscount(null);
     }
-  }, [searchResult.parcel.parcel_number, getCartDiscount]);
+  }, [searchResult.parcel.parcel_number, getCartDiscount, appliedDiscount]);
 
   const serviceAvailability = React.useMemo(() => {
     const fallback = legacyAvailability(searchResult);
@@ -226,8 +231,8 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
       return;
     }
 
-    // Mémoriser pour la prochaine facture
-    try { localStorage.setItem('bic_last_fiscal_identity', JSON.stringify(fiscalIdentity)); } catch {}
+    // Mémoriser pour la prochaine facture (PII → consent-aware)
+    try { ConsentAwareStorage.setItem('bic_last_fiscal_identity', JSON.stringify(fiscalIdentity)); } catch {}
 
     setIsSubmitting(true);
     try {
